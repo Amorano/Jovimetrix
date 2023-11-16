@@ -7,11 +7,14 @@
 
                Procedural & Compositing Image Manipulation Nodes
                     http://www.github.com/amorano/jovimetrix
+
+@author: amorano
+@title: Jovimetrix Composition Pack
+@nickname: Jovimetrix
+@description: Transform, Mirror, Invert and Manipulate Image inputs.
 """
 
 import torch
-import numpy as np
-
 from ..util import *
 
 # =============================================================================

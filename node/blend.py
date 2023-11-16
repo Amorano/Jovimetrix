@@ -7,11 +7,15 @@
 
                Procedural & Compositing Image Manipulation Nodes
                     http://www.github.com/amorano/jovimetrix
+
+@author: amorano
+@title: Jovimetrix Composition Pack
+@nickname: Jovimetrix
+@description: Blending operations for image inputs.
 """
 
 import numpy as np
 from PIL import Image, ImageChops
-
 from ..util import *
 
 # =============================================================================

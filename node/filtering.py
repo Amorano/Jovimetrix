@@ -7,10 +7,14 @@
 
                Procedural & Compositing Image Manipulation Nodes
                     http://www.github.com/amorano/jovimetrix
+
+@author: amorano
+@title: Jovimetrix Composition Pack
+@nickname: Jovimetrix
+@description: Filtering operations for image inputs.
 """
 
 from PIL import ImageFilter
-
 from ..util import *
 
 # =============================================================================

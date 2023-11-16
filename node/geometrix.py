@@ -7,6 +7,11 @@
 
                Procedural & Compositing Image Manipulation Nodes
                     http://www.github.com/amorano/jovimetrix
+
+@author: amorano
+@title: Jovimetrix Composition Pack
+@nickname: Jovimetrix
+@description: Shapes and Shaders.
 """
 
 import concurrent.futures

@@ -7,11 +7,14 @@
 
                Procedural & Compositing Image Manipulation Nodes
                     http://www.github.com/amorano/jovimetrix
+
+@author: amorano
+@title: Jovimetrix Composition Pack
+@nickname: Jovimetrix
+@description: Remapping images to new perspectives.
 """
 
-import numpy as np
-from PIL import Image, ImageFilter
-
+from PIL import Image
 from ..util import *
 
 # =============================================================================
