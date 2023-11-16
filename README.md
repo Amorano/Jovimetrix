@@ -21,6 +21,7 @@ TRANSFORMATION
 * Mirror. Flip an Image across the X axis, the Y Axis or both, with independant centers.
 * HSV Adjustment. Tweak the Hue, Saturation and Value for an Image.
 * Lumen. Contrast, Gamma and Exposure controls.
+* Tile. Repeat an image along the X, Y or XY at irregular intervals
 
 FILTERING
 ---------
