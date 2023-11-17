@@ -1,4 +1,4 @@
-# jovimetrix
+# Jovimetrix
 My personal collection of custom ComfyUI nodes that have a nunber of useful functions.
 
 CREATION
@@ -21,6 +21,7 @@ TRANSFORMATION
 * Mirror. Flip an Image across the X axis, the Y Axis or both, with independant centers.
 * HSV Adjustment. Tweak the Hue, Saturation and Value for an Image.
 * Lumen. Contrast, Gamma and Exposure controls.
+* Tile. Repeat an image along the X, Y or XY at irregular intervals
 
 FILTERING
 ---------
@@ -37,22 +38,16 @@ BLENDING
 
 * Blending Node. Takes 2 Image inputs and an apha and performs a linear blend (alpha) between both images based on the selected operations. Operations include:
 
-    Linear Interoplation
-    Add
-    Minimum
-    Maxium
-    Multiply
-    Soft Light
-    Hard Light
-    Overlay
-    Screen
-    Subtract
-    Logical AND
-    Logical OR
-    Logical XOR
-
-MAPPING
----------
-
-* 1
-* 2
+  * Linear Interoplation
+  * Add
+  * Minimum
+  * Maxium
+  * Multiply
+  * Soft Light
+  * Hard Light
+  * Overlay
+  * Screen
+  * Subtract
+  * Logical AND
+  * Logical OR
+  * Logical XOR
