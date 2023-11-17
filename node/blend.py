@@ -27,6 +27,7 @@ __all__ = ["BlendNode"]
 # =============================================================================
 # === COMPOSITING ===
 # =============================================================================
+
 class BlendNode:
     """
     """
@@ -40,7 +41,8 @@ class BlendNode:
         'HARD LIGHT': ImageChops.hard_light,
         'OVERLAY': ImageChops.overlay,
         'SCREEN': ImageChops.screen,
-        'SUBTRACT': ImageChops.difference,
+        'SUBTRACT': ImageChops.subtract,
+        'DIFFERENCE': ImageChops.difference,
         'LOGICAL AND': np.bitwise_and,
         'LOGICAL OR': np.bitwise_or,
         'LOGICAL XOR': np.bitwise_xor,
@@ -71,12 +73,12 @@ class BlendNode:
         imageA = tensor2cv(imageA)
         imageA = SCALEFIT(imageA, width, height, modeA)
         h, w, _ = imageA.shape
-        print('BLEND', w, h)
+        # print('BLEND', w, h)
 
         imageB = tensor2cv(imageB)
         imageB = SCALEFIT(imageB, width, height, modeB)
         h, w, _ = imageB.shape
-        print('BLEND', w, h)
+        # print('BLEND', w, h)
 
         if (op := BlendNode.OPS.get(func, None)):
             alpha = min(max(alpha, 0.), 1.)
@@ -94,7 +96,10 @@ class BlendNode:
             else:
                 imageA = cv2pil(imageA)
                 imageB = cv2pil(imageB)
-                imageB = imageB.point(lambda i: int(i * alpha))
+                if func == 'MULTIPLY':
+                    imageB = imageB.point(lambda i: 255 - int(i * alpha))
+                else:
+                    imageB = imageB.point(lambda i: int(i * alpha))
                 imageA = pil2cv(op(imageA, imageB))
 
         # rebound to target width and height

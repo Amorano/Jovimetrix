@@ -297,7 +297,7 @@ class PixelShaderNode:
                     try:
                         val = eval(exp.replace("^", "**"))
                     except Exception as e:
-                        print(str(e))
+                        #print(str(e))
                         continue
                 result.append(int(val * 255))
             return result

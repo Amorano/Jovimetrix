@@ -30,7 +30,7 @@ def load_nodes():
     root = os.path.dirname(os.path.abspath(__file__))
     root = os.path.join(root, "node")
 
-    order = ["geometrix", "transform", "filtering", "blend", "mapping", "wip"]
+    order = ["geometrix", "transform", "filtering", "blend", "mapping"]
     for module_name in order:
         try:
             module = importlib.import_module(

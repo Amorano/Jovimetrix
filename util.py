@@ -149,14 +149,14 @@ def EDGEWRAP(image: cv2.Mat, tileX: float=1., tileY: float=1., edge: str="WRAP")
     height, width, _ = image.shape
     tileX = int(tileX * width * 0.5) if edge in ["WRAP", "WRAPX"] else 0
     tileY = int(tileY * height * 0.5) if edge in ["WRAP", "WRAPY"] else 0
-    print('EDGEWRAP', width, height, tileX, tileY)
+    #print('EDGEWRAP', width, height, tileX, tileY)
     return cv2.copyMakeBorder(image, tileY, tileY, tileX, tileX, cv2.BORDER_WRAP)
 
 # TRANSLATION
 def TRANSLATE(image: cv2.Mat, offsetX: float, offsetY: float) -> cv2.Mat:
     height, width, _ = image.shape
     M = np.float32([[1, 0, offsetX * width], [0, 1, offsetY * height]])
-    print('TRANSLATE', offsetX, offsetY)
+    #print('TRANSLATE', offsetX, offsetY)
     return cv2.warpAffine(image, M, (width, height), flags=cv2.INTER_LINEAR)
 
 # ROTATION
@@ -164,7 +164,7 @@ def ROTATE(image: cv2.Mat, angle: float, center=(0.5 ,0.5)) -> cv2.Mat:
     height, width, _ = image.shape
     center = (int(width * center[0]), int(height * center[1]))
     M = cv2.getRotationMatrix2D(center, -angle, 1.0)
-    print('ROTATE', angle)
+    #print('ROTATE', angle)
     return cv2.warpAffine(image, M, (width, height), flags=cv2.INTER_LINEAR)
 
 def SCALEFIT(image: cv2.Mat, width: int, height: int, mode: str="FIT") -> cv2.Mat:
@@ -195,12 +195,12 @@ def TRANSFORM(image: cv2.Mat, offsetX: float=0., offsetY: float=0., angle: float
             sizeY = 1.
         image = EDGEWRAP(image, tx, ty)
         h, w, _ = image.shape
-        print('EDGEWRAP_POST', w, h)
+        #print('EDGEWRAP_POST', w, h)
 
     if sizeX != 1. or sizeY != 1.:
         wx = int(width * sizeX)
         hx = int(height * sizeY)
-        print('SCALE', wx, hx)
+        #print('SCALE', wx, hx)
         image = cv2.resize(image, (wx, hx), interpolation=cv2.INTER_AREA)
 
     if edge != "CLIP":
