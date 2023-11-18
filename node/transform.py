@@ -112,7 +112,7 @@ class MirrorNode:
             if axis == 'X':
                 image = MIRROR(image, x, 1, invert=invert)
             else:
-                image = MIRROR(image, 1 - y, 0, invert=invert)
+                image = MIRROR(image, y, 0, invert=invert)
         return (cv2tensor(image),)
 
 #

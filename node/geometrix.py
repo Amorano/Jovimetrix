@@ -74,8 +74,8 @@ class ShapeNode:
 
     DESCRIPTION = ""
     CATEGORY = "JOVIMETRIX 🔺🟩🔵"
-    RETURN_TYPES = ("IMAGE",)
-    RETURN_NAMES = ("SHAPE", )
+    RETURN_TYPES = ("IMAGE", "MASK", )
+    RETURN_NAMES = ("SHAPE", "MASK", )
     OUTPUT_NODE = True
     FUNCTION = "run"
 
@@ -102,10 +102,12 @@ class ShapeNode:
                 image = sh_ellipse(width, height, sizeX, sizeX, fill=fill)
 
         image = image.rotate(-angle)
-        image = pil2cv(image)
         if invert > 0.:
+            image = pil2cv(image)
             image = INVERT(image, invert)
-        return (cv2tensor(image),)
+            image = cv2pil(image)
+
+        return (pil2tensor(image), pil2tensor(image.convert("L")), )
 
 # =============================================================================
 # === CONSTANT NODE ===
@@ -242,6 +244,78 @@ class GradientNode:
 # =============================================================================
 # === PER PIXEL SHADER NODE ===
 # =============================================================================
+def shader(image: cv2.Mat, width: int, height: int, R: str, G: str, B: str):
+    import math
+    from ast import literal_eval
+
+    R = R.lower().strip()
+    G = G.lower().strip()
+    B = B.lower().strip()
+
+    def parseChannel(chan, x, y, u, v, i, w, h) -> str:
+        """
+        x, y - current x,y position (output)
+        u, v - tex-coord position (output)
+        w, h - width/height (output)
+        i    - value in original image at (x, y)
+        """
+        exp = chan.replace("$x", str(x))
+        exp = exp.replace("$y", str(y))
+        exp = exp.replace("$u", str(u))
+        exp = exp.replace("$v", str(v))
+        exp = exp.replace("$w", str(w))
+        exp = exp.replace("$h", str(h))
+        ir, ig, ib, = i
+        exp = exp.replace("$r", str(ir))
+        exp = exp.replace("$g", str(ig))
+        exp = exp.replace("$b", str(ib))
+        return exp
+
+    # Define the pixel shader function
+    def pixel_shader(x, y, u, v, w, h):
+        result = []
+        i = image[y, x]
+        for who, val in ((B, i[2]), (G, i[1]), (R, i[0]), ):
+            if who == "":
+                result.append(val)
+                continue
+            exp = parseChannel(who, x, y, u, v, val, w, h)
+            try:
+                val = literal_eval(exp)
+            except:
+                try:
+                    val = eval(exp.replace("^", "**"))
+                except Exception as e:
+                    #print(str(e))
+                    continue
+            result.append(int(val * 255))
+        return result
+
+    # Function to process a chunk in parallel
+    def process_chunk(chunk_coords):
+        y_start, y_end, x_start, x_end, width, height = chunk_coords
+        for y in range(y_start, y_end):
+            for x in range(x_start, x_end):
+                image[y, x] = pixel_shader(x, y, x/width, y/height, width, height)
+
+    # 12 seems to be the legit balance *for single node
+    chunkX = chunkY = 8
+
+    # Divide the image into chunks
+    chunk_coords = []
+    for y in range(0, height, chunkY):
+        for x in range(0, width, chunkX):
+            y_end = min(y + chunkY, height)
+            x_end = min(x + chunkX, width)
+            chunk_coords.append((y, y_end, x, x_end, width, height))
+
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        futures = {executor.submit(process_chunk, chunk): chunk for chunk in chunk_coords}
+        for _ in concurrent.futures.as_completed(futures):
+            pass
+
+    return image
+
 class PixelShaderNode:
     @classmethod
     def INPUT_TYPES(s):
@@ -263,73 +337,47 @@ class PixelShaderNode:
     FUNCTION = "run"
 
     def run(self, width, height, R, G, B):
-        import math
-        from ast import literal_eval
-
         # Create an empty numpy array to store the pixel values
         image = np.zeros((height, width, 3), dtype=np.uint8)
+        image = shader(image, width, height, R, G, B)
+        print('PixelShaderImageNode', image.shape)
+        return (cv2tensor(image),)
 
-        R = R.lower().strip()
-        G = G.lower().strip()
-        B = B.lower().strip()
+class PixelShaderImageNode:
+    @classmethod
+    def INPUT_TYPES(s):
+        d = {
+            "required": {},
+            "optional": {
+                "image": ("IMAGE", ),
+                "R": ("STRING", {"multiline": True, "default": "1. - np.minimum(1, np.sqrt((($u-0.5)**2 + ($v-0.5)**2) * 2))"}),
+                "G": ("STRING", {"multiline": True}),
+                "B": ("STRING", {"multiline": True}),
+            },
+        }
+        return deep_merge_dict(d, IT_WH)
 
-        def parseChannel(chan, x, y, tu, tv, w, h) -> str:
-            exp = chan.replace("$x", str(x))
-            exp = exp.replace("$y", str(y))
-            exp = exp.replace("$u", str(tu))
-            exp = exp.replace("$v", str(tv))
-            exp = exp.replace("$w", str(w))
-            exp = exp.replace("$h", str(h))
-            return exp
+    DESCRIPTION = ""
+    CATEGORY = "JOVIMETRIX 🔺🟩🔵"
+    RETURN_TYPES = ("IMAGE",)
+    RETURN_NAMES = ("SHAPE",)
+    OUTPUT_NODE = True
+    FUNCTION = "run"
 
-        # Define the pixel shader function
-        def pixel_shader(x, y, tu, tv, w, h):
-            result = []
-            for who in (B, G, R, ):
-                if who == "":
-                    result.append(0)
-                    continue
-
-                exp = parseChannel(who, x, y, tu, tv, w, h)
-                try:
-                    val = literal_eval(exp)
-                except:
-                    try:
-                        val = eval(exp.replace("^", "**"))
-                    except Exception as e:
-                        #print(str(e))
-                        continue
-                result.append(int(val * 255))
-            return result
-
-        # Function to process a chunk in parallel
-        def process_chunk(chunk_coords):
-            y_start, y_end, x_start, x_end, width, height = chunk_coords
-            for y in range(y_start, y_end):
-                for x in range(x_start, x_end):
-                    image[y, x] = pixel_shader(x, y, x/width, y/height, width, height)
-
-        # 12 seems to be the legit balance
-        chunkX = chunkY = 12
-
-        # Divide the image into chunks
-        chunk_coords = []
-        for y in range(0, height, chunkY):
-            for x in range(0, width, chunkX):
-                y_end = min(y + chunkY, height)
-                x_end = min(x + chunkX, width)
-                chunk_coords.append((y, y_end, x, x_end, width, height))
-
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            futures = {executor.submit(process_chunk, chunk): chunk for chunk in chunk_coords}
-            for future in concurrent.futures.as_completed(futures):
-                pass
-
-        return (pil2tensor(cv2pil(image)),)
+    def run(self, image, width, height, R, G, B):
+        image = tensor2cv(image)
+        h, w, _ = image.shape
+        if h != height or w != width:
+            # force input image to desired output for sampling
+            image = cv2.resize(image, (width, height), interpolation=cv2.INTER_AREA)
+        image = shader(image, width, height, R, G, B)
+        print('PixelShaderImageNode', image.shape)
+        return (cv2tensor(image),)
 
 NODE_CLASS_MAPPINGS = {
     "✨ Shape Generator (jov)": ShapeNode,
-    "🔆 Pixel Shader Image (jov)": PixelShaderNode,
+    "🔆 Pixel Shader (jov)": PixelShaderNode,
+    "🔆 Pixel Shader Image (jov)": PixelShaderImageNode,
     "🟪 Constant Image (jov)": ConstantNode,
     #"🥻 Gradient (jov)": GradientNode,
 }
