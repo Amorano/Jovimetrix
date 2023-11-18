@@ -88,6 +88,10 @@ def cv2tensor(image: cv2.Mat) -> torch.Tensor:
     image = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
     return torch.from_numpy(np.array(image).astype(np.float32) / 255.0).unsqueeze(0)
 
+def cv2mask(image: cv2.Mat) -> torch.Tensor:
+    image = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2GRAY))
+    return torch.from_numpy(np.array(image).astype(np.float32) / 255.0).unsqueeze(0)
+
 # PIL to Tensor RGB
 def np2tensor(image: np.ndarray) -> torch.Tensor:
     return torch.from_numpy(image.astype(np.float32) / 255.0).unsqueeze(0)

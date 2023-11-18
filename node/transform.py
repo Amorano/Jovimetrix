@@ -142,7 +142,6 @@ class HSVNode:
         return (image,)
 
 class LumenNode:
-
     OPS = {
         'CONTRAST': CONTRAST,
         'GAMMA': GAMMA,
@@ -170,6 +169,41 @@ class LumenNode:
         image = LumenNode.OPS[op](image, adjust)
         return (image,)
 
+class ExpandImageNode:
+    @classmethod
+    def INPUT_TYPES(cls):
+        d = {"required": {
+                    "imageA": ("IMAGE", ),
+                    "imageB": ("IMAGE", ),
+                    "axis": (["HORIZONTAL", "VERTICAL"], {"default": "HORIZONTAL"}),
+                },
+                "optional": {
+                    "flip": ("BOOLEAN", {"default": False}),
+                    "width": ("INT", {"default": 512, "min": 64, "max": 4096, "step": 64}),
+                    "height": ("INT", {"default": 512, "min": 64, "max": 4096, "step": 64}),
+                },
+        }
+        return deep_merge_dict(d, IT_WH, IT_WHMODE)
+
+    DESCRIPTION = "Contrast, Gamma and Exposure controls."
+    CATEGORY = "JOVIMETRIX 🔺🟩🔵"
+    RETURN_TYPES = ("IMAGE", "MASK", )
+    RETURN_NAMES = ("IMAGE", "MASK", )
+    OUTPUT_NODE = True
+    FUNCTION = "run"
+
+    def run(self, imageA, imageB, axis, flip, width, height, mode):
+        imageA = tensor2cv(imageA)
+        imageB = tensor2cv(imageB)
+        if flip:
+            imageA, imageB = imageB, imageA
+        axis = 1 if axis == "HORIZONTAL" else 0
+        image = np.concatenate((imageA, imageB), axis=axis)
+        if mode != "NONE":
+            image = SCALEFIT(image, width, height, mode)
+        # print(image.shape)
+        return (cv2tensor(image), cv2mask(image), )
+
 NODE_CLASS_MAPPINGS = {
     "🌱 Transform Image (jov)": TransformNode,
     "🔳 Tile Image (jov)": TileNode,
@@ -177,6 +211,7 @@ NODE_CLASS_MAPPINGS = {
     "🔰 Mirror Image (jov)": MirrorNode,
     "🌈 HSV Image (jov)": HSVNode,
     "🔧 Adjust Image (jov)": LumenNode,
+    "🎇 Expand Image (jov)": ExpandImageNode,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {k: k for k in NODE_CLASS_MAPPINGS}

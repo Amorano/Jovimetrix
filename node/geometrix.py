@@ -129,119 +129,6 @@ class ConstantNode:
         return (pil2tensor(image),)
 
 # =============================================================================
-# === GRADIENT NODE ===
-# =============================================================================
-def gradient_radial(width: int, height: int, center: tuple = None, radius: float = None,
-                    color1: tuple = (255, 255, 255), color2: tuple = (0, 0, 0)) -> np.ndarray:
-
-    if center:
-        center = np.clip(center, -0.5, 0.5)
-        center = (width * (0.5 + center[0]), height * (0.5 + center[1]))
-    else:
-        center = (width // 2, height // 2)
-
-    if radius:
-        radius = np.clip(radius, 0, 1)
-        radius = min(width, height) / 2. * radius
-    else:
-        radius = min(width, height) / 2.
-
-    # Create a meshgrid for calculating the distance from the center
-    y, x = np.ogrid[:height, :width]
-    distance = np.sqrt((x - center[0]) ** 2 + (y - center[1]) ** 2)
-
-    # Convert color1 and color2 to arrays and reshape them for proper broadcasting
-    color1 = np.array(color1).reshape(1, 1, 3)
-    color2 = np.array(color2).reshape(1, 1, 3)
-
-    # Create the gradient image
-    gradient_image = np.zeros((height, width, 3), dtype=np.uint8)
-    a = np.maximum(0, color1 * (1 - distance / radius)[:, :, np.newaxis])
-    b = np.maximum(0, color2 * (distance / radius)[:, :, np.newaxis])
-    gradient_image[:, :] = (a + b).astype(np.uint8)
-    return gradient_image
-
-class Point(object):
-    def __init__(self, x, y):
-        self.x, self.y = x, y
-
-    def rot_x(self, degrees):
-        radians = np.radians(degrees)
-        return self.x * np.cos(radians) + self.y * np.sin(radians)
-
-def gradient_color(minval, maxval, val, color_palette: List[Tuple]) -> tuple[int, int, int]:
-    """ Computes intermediate RGB color of a value in the range of minval
-        to maxval (inclusive) based on a color_palette representing the range.
-    """
-    max_index = len(color_palette)-1
-    delta = maxval - minval
-    if delta == 0:
-        delta = 1
-    v = float(val-minval) / delta * max_index
-    i1, i2 = int(v), min(int(v)+1, max_index)
-    (r1, g1, b1), (r2, g2, b2) = color_palette[i1], color_palette[i2]
-    f = v - i1
-    return int(r1 + f*(r2-r1)), int(g1 + f*(g2-g1)), int(b1 + f*(b2-b1))
-
-def gradient_linear(width: int, height: int, color_palette: List[Tuple], degrees: float=0.) -> np.ndarray:
-    minval, maxval = 1, len(color_palette)
-    delta = maxval - minval
-    # make a 32x32 and stretch
-    size = 32
-    image = Image.new("RGB", (size, size), 'WHITE')
-    for x in range(size):
-        for y in range(size):
-            p = Point(x, y)
-            f = (p.rot_x(degrees)) / size
-            val = minval + f * delta
-            color = gradient_color(minval, maxval, val, color_palette)
-            image.putpixel((x, y), color)
-
-    image = image.resize((width, height))
-    return pil2np(image)
-
-class GradientNode:
-    @classmethod
-    def INPUT_TYPES(s):
-        d = {
-            "required": {
-                "style": (["LINEAR", "RADIAL", "DIAMOND"], {"default": "LINEAR"}),
-            },
-            "optional": {
-                "angle": ("FLOAT", {"default": 0., "min": -180., "max": 180., "step": 10}),
-                "centerX": ("FLOAT", {"default": 0., "min": -0.5, "max": 0.5, "step": 0.1}),
-                "centerY": ("FLOAT", {"default": 0., "min": -0.5, "max": 0.5, "step": 0.1}),
-                "radius": ("FLOAT", {"default": 1., "min": 0., "max": 2., "step": 0.1}),
-            }
-        }
-        return deep_merge_dict(d, IT_WH)
-
-    DESCRIPTION = ""
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵"
-    RETURN_TYPES = ("IMAGE",)
-    RETURN_NAMES = ("SHAPE", )
-    OUTPUT_NODE = True
-    FUNCTION = "run"
-
-    def run(self, style, angle, width, height, centerX, centerY, radius):
-        angle = np.deg2rad(angle)
-        match style:
-            case "RADIAL":
-                image = gradient_radial(width, height, (centerX, centerY), radius=radius, )
-
-            case "DIAMOND":
-                image = np.ones((height, width, 3), dtype=np.uint8)
-
-            case _:
-                palette = [
-                    (0,0,0),
-                    (255,255,255)
-                ]
-                image = gradient_linear(width, height, palette, angle)
-
-        return (np2tensor(image),)
-
-# =============================================================================
 # === PER PIXEL SHADER NODE ===
 # =============================================================================
 def shader(image: cv2.Mat, width: int, height: int, R: str, G: str, B: str):
@@ -331,8 +218,8 @@ class PixelShaderNode:
 
     DESCRIPTION = ""
     CATEGORY = "JOVIMETRIX 🔺🟩🔵"
-    RETURN_TYPES = ("IMAGE",)
-    RETURN_NAMES = ("SHAPE",)
+    RETURN_TYPES = ("IMAGE", "MASK",)
+    RETURN_NAMES = ("SHAPE", "MASK", )
     OUTPUT_NODE = True
     FUNCTION = "run"
 
@@ -340,8 +227,8 @@ class PixelShaderNode:
         # Create an empty numpy array to store the pixel values
         image = np.zeros((height, width, 3), dtype=np.uint8)
         image = shader(image, width, height, R, G, B)
-        print('PixelShaderImageNode', image.shape)
-        return (cv2tensor(image),)
+        # print('PixelShaderImageNode', image.shape)
+        return (cv2tensor(image), cv2mask(image), )
 
 class PixelShaderImageNode:
     @classmethod
@@ -359,8 +246,8 @@ class PixelShaderImageNode:
 
     DESCRIPTION = ""
     CATEGORY = "JOVIMETRIX 🔺🟩🔵"
-    RETURN_TYPES = ("IMAGE",)
-    RETURN_NAMES = ("SHAPE",)
+    RETURN_TYPES = ("IMAGE", "MASK",)
+    RETURN_NAMES = ("SHAPE", "MASK", )
     OUTPUT_NODE = True
     FUNCTION = "run"
 
@@ -371,8 +258,8 @@ class PixelShaderImageNode:
             # force input image to desired output for sampling
             image = cv2.resize(image, (width, height), interpolation=cv2.INTER_AREA)
         image = shader(image, width, height, R, G, B)
-        print('PixelShaderImageNode', image.shape)
-        return (cv2tensor(image),)
+        # print('PixelShaderImageNode', image.shape)
+        return (cv2tensor(image), cv2mask(image), )
 
 NODE_CLASS_MAPPINGS = {
     "✨ Shape Generator (jov)": ShapeNode,

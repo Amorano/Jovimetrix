@@ -77,7 +77,7 @@ IT_WH = {
 IT_WHMODE = {
     "required":{},
     "optional": {
-        "mode": (["FIT", "CROP", "ASPECT"], {"default": "FIT"}),
+        "mode": (["NONE", "FIT", "CROP", "ASPECT"], {"default": "NONE"}),
     }
 }
 
