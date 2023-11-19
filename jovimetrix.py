@@ -33,25 +33,21 @@ GO NUTS; JUST TRY NOT TO DO IT IN YOUR HEAD.
 @author: amorano
 @title: Jovimetrix Composition Pack
 @nickname: Jovimetrix
-@description:
+@description: Procedural & Compositing. Includes a Webcam node.
 """
 
 import cv2
 import torch
-import torch.nn.functional as F
 import numpy as np
 from scipy.ndimage import rotate
 from PIL import Image, ImageDraw, ImageChops, ImageFilter
 
-import os
 import time
-import math
-from ast import literal_eval
 import logging
 import concurrent.futures
 
-logger = logging.getLogger(__package__)
-logger.setLevel(logging.INFO)
+log = logging.getLogger(__package__)
+log.setLevel(logging.INFO)
 
 # =============================================================================
 # === CORE NODES ===
@@ -336,14 +332,14 @@ def EDGEWRAP(image: cv2.Mat, tileX: float=1., tileY: float=1., edge: str="WRAP")
     height, width, _ = image.shape
     tileX = int(tileX * width * 0.5) if edge in ["WRAP", "WRAPX"] else 0
     tileY = int(tileY * height * 0.5) if edge in ["WRAP", "WRAPY"] else 0
-    #print('EDGEWRAP', width, height, tileX, tileY)
+    #log.info('EDGEWRAP', width, height, tileX, tileY)
     return cv2.copyMakeBorder(image, tileY, tileY, tileX, tileX, cv2.BORDER_WRAP)
 
 def TRANSLATE(image: cv2.Mat, offsetX: float, offsetY: float) -> cv2.Mat:
     """TRANSLATION."""
     height, width, _ = image.shape
     M = np.float32([[1, 0, offsetX * width], [0, 1, offsetY * height]])
-    #print('TRANSLATE', offsetX, offsetY)
+    #log.info('TRANSLATE', offsetX, offsetY)
     return cv2.warpAffine(image, M, (width, height), flags=cv2.INTER_LINEAR)
 
 def ROTATE(image: cv2.Mat, angle: float, center=(0.5 ,0.5)) -> cv2.Mat:
@@ -351,7 +347,7 @@ def ROTATE(image: cv2.Mat, angle: float, center=(0.5 ,0.5)) -> cv2.Mat:
     height, width, _ = image.shape
     center = (int(width * center[0]), int(height * center[1]))
     M = cv2.getRotationMatrix2D(center, -angle, 1.0)
-    #print('ROTATE', angle)
+    #log.info('ROTATE', angle)
     return cv2.warpAffine(image, M, (width, height), flags=cv2.INTER_LINEAR)
 
 def SCALEFIT(image: cv2.Mat, width: int, height: int, mode: str="FIT") -> cv2.Mat:
@@ -383,12 +379,12 @@ def TRANSFORM(image: cv2.Mat, offsetX: float=0., offsetY: float=0., angle: float
             sizeY = 1.
         image = EDGEWRAP(image, tx, ty)
         h, w, _ = image.shape
-        #print('EDGEWRAP_POST', w, h)
+        #log.info('EDGEWRAP_POST', w, h)
 
     if sizeX != 1. or sizeY != 1.:
         wx = int(width * sizeX)
         hx = int(height * sizeY)
-        #print('SCALE', wx, hx)
+        #log.info('SCALE', wx, hx)
         image = cv2.resize(image, (wx, hx), interpolation=cv2.INTER_AREA)
 
     if edge != "CLIP":
@@ -573,6 +569,9 @@ class PixelShaderBaseNode(JovimetrixBaseNode):
 
     @staticmethod
     def shader(image: cv2.Mat, width: int, height: int, R: str, G: str, B: str):
+        import math
+        from ast import literal_eval
+
         R = R.lower().strip()
         G = G.lower().strip()
         B = B.lower().strip()
@@ -613,7 +612,7 @@ class PixelShaderBaseNode(JovimetrixBaseNode):
                         i = eval(exp.replace("^", "**"))
                         result.append(int(i * 255))
                     except Exception as e:
-                        print(str(e))
+                        log.error(str(e))
                         result.append(image[y, x][i])
                         continue
 
@@ -903,6 +902,7 @@ class WebCamNode(JovimetrixBaseNode):
         d = {"required": {
             "cam": ("INT", {"min": 0, "max": WebCamNode.MAXCAM-1, "step":1, "default": 0}),
             "rate": ("INT", {"min": 1, "max": 60, "step": 1, "default": WebCamNode.MAXFPS}),
+            "pause": ("BOOLEAN", {"default": False})
         }}
         return deep_merge_dict(d, IT_WH, IT_WHMODE)
 
@@ -911,17 +911,16 @@ class WebCamNode(JovimetrixBaseNode):
         try:
             camera = WebCamNode.CAMERA[camIdx]
         except KeyError as _:
-            print(f"initialize camera out of range {camIdx}")
+            log.warn(f"initialize camera out of range {camIdx}")
             return
 
         if camera:
-            # we already have this camera
-            print(f"Camera already captured {camIdx}")
+            log.warn(f"Camera already captured {camIdx}")
             return camera
 
         camera = cv2.VideoCapture(camIdx)
         if camera is None or not camera.isOpened():
-            print(f"cannot open webcam {camIdx}")
+            log.warn(f"cannot open webcam {camIdx}")
             return
 
         WebCamNode.CAMERA[camIdx] = camera
@@ -932,10 +931,10 @@ class WebCamNode(JovimetrixBaseNode):
         if WebCamNode.CAMERA[cam] and WebCamNode.CAMERA[cam].isOpened() and rate != WebCamNode.CAMFPS[cam]:
             WebCamNode.CAMERA.set(cv2.CAP_PROP_FPS, rate)
             WebCamNode.CAMFPS[cam] = rate
-            print(cam, rate)
+            log.info('CAMERA RATE CHANGE', cam, rate)
 
     @classmethod
-    def IS_CHANGED(cls, cam: int, rate: float, width: int, height: int, mode: str):
+    def IS_CHANGED(cls, cam: int, rate: float, width: int, height: int, mode: str, pause: bool):
         if WebCamNode.CAMERA[cam] is None:
             cls.INIT(cam, rate)
         if rate != WebCamNode.CAMFPS[cam]:
@@ -943,35 +942,42 @@ class WebCamNode(JovimetrixBaseNode):
         return float("nan")
 
     def __init__(self):
-        self.__failed = None
         self.__last = None
         self.__camera = None
+        self.__pause = False
 
     def __del__(self):
         if self.__camera:
-            print("releasing camera")
+            log.info("releasing camera")
             self.__camera.RELEASE(self.__camera)
         self.__camera = None
 
-    def run(self, cam, rate, width, height, mode):
+    def run(self, cam, rate, width, height, mode, pause):
+        self.__pause = pause
+        if pause:
+            return self.__last
+
         if self.__camera is None:
             self.__camera = WebCamNode.INIT(cam, rate)
             image = torch.zeros((height, width, 3), dtype=torch.uint8)
             image = tensor2cv(image)
-            self.__last = self.__failed = (cv2tensor(image), cv2mask(image), )
+            self.__last = (cv2tensor(image), cv2mask(image), )
             time.sleep(0.2)
 
-        if self.__camera is None:
-            print(f"Failed to read webcam {cam}")
-            return self.__last
+        if not self.__pause:
+            if self.__camera is None:
+                log.warn(f"Failed to read webcam {cam}")
+                return self.__last
 
-        ret, image = self.__camera.read()
-        if not ret:
-            print(f"Failed to read webcam {cam}")
-            return self.__failed
+            ret, image = self.__camera.read()
+            if not ret:
+                log.warn(f"Failed to read webcam {cam}")
+                return self.__last
 
-        image = SCALEFIT(image, width, height, mode=mode)
-        self.__last = (cv2tensor(image), cv2mask(image), )
+            image = SCALEFIT(image, width, height, mode=mode)
+            self.__last = (cv2tensor(image), cv2mask(image), )
+
+        self.__pause = pause
         return self.__last
 
 NODE_CLASS_MAPPINGS = {
