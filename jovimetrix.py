@@ -38,6 +38,7 @@ GO NUTS; JUST TRY NOT TO DO IT IN YOUR HEAD.
 
 import cv2
 import torch
+import torch.nn.functional as F
 import numpy as np
 from scipy.ndimage import rotate
 from PIL import Image, ImageDraw, ImageChops, ImageFilter
@@ -287,7 +288,6 @@ def rotate_ndarray(image, angle, clip=True):
         return rotated_image
 
     # Compute the dimensions for clipping
-    # print(image.shape, rotated_image.shape)
     height, width, _ = image.shape
     rotated_height, rotated_width, _ = rotated_image.shape
 
@@ -390,7 +390,6 @@ def TRANSFORM(image: cv2.Mat, offsetX: float=0., offsetY: float=0., angle: float
 
     if edge != "CLIP":
         image = CROP_CENTER(image, width, height)
-    #return image
 
     # TRANSLATION
     if offsetX != 0. or offsetY != 0.:
@@ -413,18 +412,18 @@ def INVERT(image: cv2.Mat, invert: float=1.) -> cv2.Mat:
     inverted = np.abs(255 - image)
     return cv2.addWeighted(image, 1. - invert, inverted, invert, 0)
 
-def GAMMA(image, gamma):
-    gamma_inv = 1. / max(0.01, min(0.9999999, gamma))
+def GAMMA(image: cv2.Mat, value: float) -> cv2.Mat:
+    gamma_inv = 1. / max(0.01, min(0.9999999, value))
     return image.pow(gamma_inv)
 
-def CONTRAST(image, contrast):
-    image = (image - 0.5) * contrast + 0.5
+def CONTRAST(image: cv2.Mat, value: float) -> cv2.Mat:
+    image = (image - 0.5) * value + 0.5
     return torch.clamp(image, 0.0, 1.0)
 
-def EXPOSURE(image, exposure):
-    return image * (2.0**(exposure))
+def EXPOSURE(image: cv2.Mat, value: float) -> cv2.Mat:
+    return image * (2.0**(value))
 
-def HSV(image: cv2.Mat, hue, saturation, value):
+def HSV(image: cv2.Mat, hue, saturation, value) -> cv2.Mat:
     image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
     hue /= 360.
     image[:, :, 0] = (image[:, :, 0] + hue) % 180
@@ -558,7 +557,8 @@ class ConstantNode(JovimetrixBaseNode):
 class PixelShaderBaseNode(JovimetrixBaseNode):
     @classmethod
     def INPUT_TYPES(s):
-        d = {"optional": {
+        d = {"required": {},
+            "optional": {
                 "R": ("STRING", {"multiline": True, "default": "1. - np.minimum(1, np.sqrt((($u-0.5)**2 + ($v-0.5)**2) * 2))"}),
                 "G": ("STRING", {"multiline": True}),
                 "B": ("STRING", {"multiline": True}),
@@ -574,7 +574,7 @@ class PixelShaderBaseNode(JovimetrixBaseNode):
         G = G.lower().strip()
         B = B.lower().strip()
 
-        def parseChannel(chan, x, y, u, v, i, w, h) -> str:
+        def parseChannel(chan, x, y) -> str:
             """
             x, y - current x,y position (output)
             u, v - tex-coord position (output)
@@ -583,42 +583,48 @@ class PixelShaderBaseNode(JovimetrixBaseNode):
             """
             exp = chan.replace("$x", str(x))
             exp = exp.replace("$y", str(y))
-            exp = exp.replace("$u", str(u))
-            exp = exp.replace("$v", str(v))
-            exp = exp.replace("$w", str(w))
-            exp = exp.replace("$h", str(h))
-            ir, ig, ib, = i
+            exp = exp.replace("$u", str(x/width))
+            exp = exp.replace("$v", str(y/height))
+            exp = exp.replace("$w", str(width))
+            exp = exp.replace("$h", str(height))
+            ir, ig, ib, = image[y, x]
             exp = exp.replace("$r", str(ir))
             exp = exp.replace("$g", str(ig))
             exp = exp.replace("$b", str(ib))
             return exp
 
         # Define the pixel shader function
-        def pixel_shader(x, y, u, v, w, h):
+        def pixel_shader(x, y):
             result = []
-            i = image[y, x]
-            for who, val in ((B, i[2]), (G, i[1]), (R, i[0]), ):
+            for i, who in enumerate((B, G, R, )):
                 if who == "":
-                    result.append(val)
+                    result.append(image[y, x][i])
                     continue
-                exp = parseChannel(who, x, y, u, v, val, w, h)
+
+                exp = parseChannel(who, x, y)
                 try:
-                    val = literal_eval(exp)
+                    i = literal_eval(exp)
+                    result.append(int(i * 255))
                 except:
                     try:
-                        val = eval(exp.replace("^", "**"))
+                        i = eval(exp.replace("^", "**"))
+                        result.append(int(i * 255))
                     except Exception as e:
-                        #print(str(e))
+                        print(str(e))
+                        result.append(image[y, x][i])
                         continue
-                result.append(int(val * 255))
+
             return result
+
+        # Create an empty numpy array to store the pixel values
+        ret = np.zeros((height, width, 3), dtype=np.uint8)
 
         # Function to process a chunk in parallel
         def process_chunk(chunk_coords):
-            y_start, y_end, x_start, x_end, width, height = chunk_coords
+            y_start, y_end, x_start, x_end = chunk_coords
             for y in range(y_start, y_end):
                 for x in range(x_start, x_end):
-                    image[y, x] = pixel_shader(x, y, x/width, y/height, width, height)
+                    ret[y, x] = pixel_shader(x, y)
 
         # 12 seems to be the legit balance *for single node
         chunkX = chunkY = 8
@@ -629,28 +635,33 @@ class PixelShaderBaseNode(JovimetrixBaseNode):
             for x in range(0, width, chunkX):
                 y_end = min(y + chunkY, height)
                 x_end = min(x + chunkX, width)
-                chunk_coords.append((y, y_end, x, x_end, width, height))
+                chunk_coords.append((y, y_end, x, x_end))
 
         with concurrent.futures.ThreadPoolExecutor() as executor:
             futures = {executor.submit(process_chunk, chunk): chunk for chunk in chunk_coords}
             for _ in concurrent.futures.as_completed(futures):
                 pass
 
-        return image
+        return ret
 
-    def run(self, image, width, height, R, G, B):
+    def run(self, image: torch.tensor, width: int, height: int, R: str, G: str, B: str) -> torch.tensor:
         image = tensor2cv(image)
         image = PixelShaderBaseNode.shader(image, width, height, R, G, B)
         return (cv2tensor(image), cv2mask(image), )
 
 class PixelShaderNode(PixelShaderBaseNode):
     DESCRIPTION = ""
-    def run(self, width, height, R, G, B):
-        image = torch.empty((height, width, 3), dtype=np.uint8)
+    def run(self, width: int, height: int, R: str, G: str, B: str) -> torch.tensor:
+        image = torch.zeros((height, width, 3), dtype=torch.uint8)
         return super().run(image, width, height, R, G, B)
 
 class PixelShaderImageNode(PixelShaderBaseNode):
     DESCRIPTION = ""
+    def run(self, image: torch.tensor, width: int, height: int, R: str, G: str, B: str) -> torch.tensor:
+        image = tensor2cv(image)
+        image = cv2.resize(image, (width, height))
+        image = cv2tensor(image)
+        return super().run(image, width, height, R, G, B)
 
 class MirrorNode(JovimetrixBaseNode):
     @classmethod
@@ -670,7 +681,7 @@ class MirrorNode(JovimetrixBaseNode):
         while (len(mode) > 0):
             axis, mode = mode[0], mode[1:]
             px = [y, x][axis == 'X']
-            pixels = MIRROR(pixels, px, axis == 'X', invert=invert)
+            pixels = MIRROR(pixels, px, int(axis == 'X'), invert=invert)
         return (cv2tensor(pixels), cv2mask(pixels), )
 
 class HSVNode(JovimetrixBaseNode):
@@ -751,48 +762,40 @@ class BlendNode(JovimetrixBaseNode):
 
     @staticmethod
     def blend(maskA, maskB, alpha, func):
-        if (op := BlendNode.OPS.get(func, None)):
-            alpha = min(max(alpha, 0.), 1.)
-            if func == 'LERP':
-                maskA = cv2pil(maskA)
-                maskB = cv2pil(maskB)
-                maskA = op(maskA, maskB, alpha)
-                maskA = pil2cv(maskA)
-            elif func.startswith("LOGICAL"):
-                maskA = np.array(maskA)
-                maskB = np.array(maskB)
-                maskA = op(maskA, maskB)
-                maskA = Image.fromarray(maskA)
-                maskA = pil2cv(maskA)
+        if (op := BlendNode.OPS.get(func, None)) is None:
+            return maskA
+        alpha = min(max(alpha, 0.), 1.)
+        if func == 'LERP':
+            maskA = cv2pil(maskA)
+            maskB = cv2pil(maskB)
+            maskA = op(maskA, maskB, alpha)
+            maskA = pil2cv(maskA)
+        elif func.startswith("LOGICAL"):
+            maskA = np.array(maskA)
+            maskB = np.array(maskB)
+            maskA = op(maskA, maskB)
+            maskA = Image.fromarray(maskA)
+            maskA = pil2cv(maskA)
+        else:
+            maskA = cv2pil(maskA)
+            maskB = cv2pil(maskB)
+            if func == 'MULTIPLY':
+                maskB = maskB.point(lambda i: 255 - int(i * alpha))
             else:
-                maskA = cv2pil(maskA)
-                maskB = cv2pil(maskB)
-                if func == 'MULTIPLY':
-                    maskB = maskB.point(lambda i: 255 - int(i * alpha))
-                else:
-                    maskB = maskB.point(lambda i: int(i * alpha))
-                maskA = pil2cv(op(maskA, maskB))
+                maskB = maskB.point(lambda i: int(i * alpha))
+            maskA = pil2cv(op(maskA, maskB))
         return maskA
 
-    def run(self, imageA: torch.tensor, imageB: torch.tensor, alpha: float, func, modeA, modeB, width, height, mode, invert):
+    def run(self, imageA: torch.tensor, imageB: torch.tensor, alpha: float, func, modeA, modeB, width, height, mode, invert) -> (torch.tensor, torch.tensor):
         imageA = tensor2cv(imageA)
         imageB = tensor2cv(imageB)
-
         imageA = SCALEFIT(imageA, width, height, modeA)
-        h, w, _ = imageA.shape
-        print('BLEND', func, w, h)
-
         imageB = SCALEFIT(imageB, width, height, modeB)
-        h, w, _ = imageB.shape
-        print('BLEND', w, h)
-
         imageA = BlendNode.blend(imageA, imageB, alpha, func)
-
         if invert:
             imageA = INVERT(imageA, invert)
-
         imageA = SCALEFIT(imageA, width, height, mode)
-        return (cv2tensor(imageA),)
+        return (cv2tensor(imageA), cv2mask(imageA),)
 
 class AdjustNode(JovimetrixBaseNode):
     OPS = {
@@ -827,21 +830,23 @@ class AdjustNode(JovimetrixBaseNode):
 
     DESCRIPTION = "A single node with multiple operations."
 
-    def run(self, pixels, func, radius, alpha):
+    def run(self, pixels, func, radius, alpha)  -> (torch.tensor, torch.tensor):
         if (op := AdjustNode.OPS.get(func, None)):
            pixels = tensor2pil(pixels)
            pixels = pixels.filter(op(radius))
         elif (op := AdjustNode.OPS_PRE.get(func, None)):
             pixels = tensor2pil(pixels)
             pixels = pixels.filter(op())
-        elif (op := AdjustNode.OPS_CV2.get(func, None)):
-            pixels = tensor2cv(pixels)
-            if op == 'INVERT':
+        else:
+            if func == 'INVERT':
+                pixels = tensor2cv(pixels)
                 pixels = INVERT(pixels, alpha)
+                pixels = cv2pil(pixels)
             else:
+                op = AdjustNode.OPS_CV2[func]
                 pixels = op(pixels, alpha)
-            pixels = cv2pil(pixels)
-        return (cv2tensor(pixels), cv2mask(pixels), )
+                pixels = tensor2pil(pixels)
+        return (pil2tensor(pixels), pil2tensor(pixels.convert("L")), )
 
 class ProjectionNode(JovimetrixBaseNode):
     @classmethod
@@ -870,6 +875,20 @@ class ProjectionNode(JovimetrixBaseNode):
                 target_image.putpixel((x_target, y_target), px)
         return (pil2tensor(target_image),)
 
+class RouteNode(JovimetrixBaseNode):
+    @classmethod
+    def INPUT_TYPES(s):
+        return {"required": {
+            "o": (WILDCARD, {"default": None}),
+        }}
+
+    DESCRIPTION = ""
+    RETURN_TYPES = (WILDCARD,)
+    RETURN_NAMES = ("🚌",)
+
+    def run(self, o):
+        return (o,)
+
 NODE_CLASS_MAPPINGS = {
     "🟪 Constant (jov)": ConstantNode,
     "✨ Shape Generator (jov)": ShapeNode,
@@ -888,6 +907,8 @@ NODE_CLASS_MAPPINGS = {
     "⚗️ Blend (jov)": BlendNode,
 
     # "🗺️ Projection (jov)": ProjectionNode,
+
+    "🚌 Route (jov)": RouteNode,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {k: k for k in NODE_CLASS_MAPPINGS}
