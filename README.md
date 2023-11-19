@@ -1,53 +1,62 @@
-# Jovimetrix
-My personal collection of custom ComfyUI nodes that have a nunber of useful functions.
+# JOVIMETRIX
+COMFYUI Nodes for the composition of images and masks.
 
 CREATION
 --------
 
-* 2D Shape Node. Shapes include:
-    Circle
-    Square
-    Rectangle
-    Ellipse
-    Polygon (3-100 sides)
-* Per Pixel Shader. Allows user function to generate a per pixel result of the supplied Width x Height. It injects $x, $y, $tu, $tv, $w and $h as variables the user can use in defining said functions.
-* Constant Node. Set a single RGB value. Useful for masks, overlays and general filtering.
+* 2D SHAPE
+  * CIRCLE
+  * SQUARE
+  * RECTANGLE
+  * ELLIPSE
+  * POLYGON (3+ sides)
+* PER PIXEL SHADER. Two nodes, one with input Image support. Allows user function to generate a per pixel result into an image of (Width x Height). variables include:
+  * $x, $y: Current image (x, y)
+  * $u, $v: Normalized texuture coordinates [0..1]
+  * $w, $h: WIDTH and HEIGHT of the target output
+  * $ir, $ig, $ib: The RED, GREEN and BLUE values for the current image input ($x, $y).
+* CONSTANT. Set a single RGB value. Useful for masks, overlays and general filtering.
 
-TRANSFORMATION
+MANIPULATION
 --------------
 
-* Transform. Translate, Rotate, Scale, Tile and Invert an Image. All options allow for CROP or WRAPing of the edges.
-* Invert. Alpha blend an Image's inverted version. with the original.
-* Mirror. Flip an Image across the X axis, the Y Axis or both, with independant centers.
-* HSV Adjustment. Tweak the Hue, Saturation and Value for an Image.
-* Lumen. Contrast, Gamma and Exposure controls.
-* Tile. Repeat an image along the X, Y or XY at irregular intervals
+* TRANSFORM. Translate, Rotate, Scale, Tile and Invert an Image. All options allow for CROP or WRAPing of the edges.
+* MIRROR. Flip an Image across the X axis, the Y Axis or both, with independant centers.
+* TILE. Repeat an image along the X, Y or XY at irregular intervals
 
-FILTERING
+ADJUSTMENT
 ---------
 
-A single node with multiple operations:
+* HSV. Tweak the Hue, Saturation and Value for an Image.
 
-* Blur
-* Sharpen
-* Emboss
-* Find Edges
+* ADJUST
+  * EMBOSS
+  * FIND EDGES
+
+  Take Radius:
+    * BLUR
+    * SHARPEN
+
+  Take Scalar:
+    * CONTRAST
+    * GAMMA
+    * EXPOSURE
+    * INVERT
 
 BLENDING
 --------
 
-* Blending Node. Takes 2 Image inputs and an apha and performs a linear blend (alpha) between both images based on the selected operations. Operations include:
-
-  * Linear Interoplation
-  * Add
-  * Minimum
-  * Maxium
-  * Multiply
-  * Soft Light
-  * Hard Light
-  * Overlay
-  * Screen
-  * Subtract
-  * Logical AND
-  * Logical OR
-  * Logical XOR
+* BLEND. Takes 2 inputs with an apha and performs a linear blend (alpha) between both inputs based on the selected operation. Operations include:
+  * LINEAR INTEROPLATION
+  * ADD
+  * MINIMUM
+  * MAXIUM
+  * MULTIPLY
+  * SOFT LIGHT
+  * HARD LIGHT
+  * OVERLAY
+  * SCREEN
+  * SUBTRACT
+  * LOGICAL AND
+  * LOGICAL OR
+  * LOGICAL XOR
