@@ -2,11 +2,10 @@
 __pycache__/
 *.py[cod]
 *$py.class
-_lib/
+_lib/*
+_res/*
 *.code-workspace
 .vscode/
-res/*
-*.png
 
 # C extensions
 *.so
