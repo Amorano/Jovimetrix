@@ -473,7 +473,7 @@ def EXTEND(imageA: cv2.Mat, imageB: cv2.Mat, axis: int=0, flip: bool=False) -> c
 
 class TransformNode(JovimetrixBaseNode):
     @classmethod
-    def INPUT_TYPES(s):
+    def INPUT_TYPES(cls):
         return deep_merge_dict(IT_PIXELS, IT_TRS, IT_EDGE, IT_WH, IT_WHMODE)
 
     DESCRIPTION = "Translate, Rotate, Scale, Tile and Invert an input. All options allow for CROP or WRAPing of the edges."
@@ -485,7 +485,7 @@ class TransformNode(JovimetrixBaseNode):
 
 class TileNode(JovimetrixBaseNode):
     @classmethod
-    def INPUT_TYPES(s):
+    def INPUT_TYPES(cls):
         return deep_merge_dict(IT_PIXELS, IT_TILE)
 
     DESCRIPTION = "Tile an Image with optional crop to original image size."
@@ -501,7 +501,7 @@ class TileNode(JovimetrixBaseNode):
 
 class ShapeNode(JovimetrixBaseNode):
     @classmethod
-    def INPUT_TYPES(s):
+    def INPUT_TYPES(cls):
         d = {
             "required": {
                 "shape": (["CIRCLE", "SQUARE", "ELLIPSE", "RECTANGLE", "POLYGON"], {"default": "SQUARE"}),
@@ -547,7 +547,7 @@ class ShapeNode(JovimetrixBaseNode):
 
 class ConstantNode(JovimetrixBaseNode):
     @classmethod
-    def INPUT_TYPES(s):
+    def INPUT_TYPES(cls):
         return deep_merge_dict(IT_REQUIRED, IT_WH, IT_COLOR)
 
     DESCRIPTION = ""
@@ -559,7 +559,7 @@ class ConstantNode(JovimetrixBaseNode):
 
 class PixelShaderBaseNode(JovimetrixBaseNode):
     @classmethod
-    def INPUT_TYPES(s):
+    def INPUT_TYPES(cls):
         d = {"required": {},
             "optional": {
                 "R": ("STRING", {"multiline": True, "default": "1. - np.minimum(1, np.sqrt((($u-0.5)**2 + ($v-0.5)**2) * 2))"}),
@@ -567,7 +567,7 @@ class PixelShaderBaseNode(JovimetrixBaseNode):
                 "B": ("STRING", {"multiline": True}),
             },
         }
-        if s == PixelShaderImageNode:
+        if cls == PixelShaderImageNode:
             return deep_merge_dict(IT_IMAGE, d, IT_WH)
         return deep_merge_dict(d, IT_WH)
 
@@ -668,7 +668,7 @@ class PixelShaderImageNode(PixelShaderBaseNode):
 
 class MirrorNode(JovimetrixBaseNode):
     @classmethod
-    def INPUT_TYPES(s):
+    def INPUT_TYPES(cls):
         d = {"required": {
                 "x": ("FLOAT", {"default": 0.5, "min": 0., "max": 1., "step": 0.05}),
                 "y": ("FLOAT", {"default": 0.5, "min": 0., "max": 1., "step": 0.05}),
@@ -709,7 +709,7 @@ class HSVNode(JovimetrixBaseNode):
 
 class ExtendNode(JovimetrixBaseNode):
     @classmethod
-    def INPUT_TYPES(s):
+    def INPUT_TYPES(cls):
         d = {"required": {
                 "axis": (["HORIZONTAL", "VERTICAL"], {"default": "HORIZONTAL"}),
             },
@@ -748,7 +748,7 @@ class BlendNode(JovimetrixBaseNode):
     }
 
     @classmethod
-    def INPUT_TYPES(s):
+    def INPUT_TYPES(cls):
         d = {"required": {
                     "imageA": ("IMAGE", ),
                     "imageB": ("IMAGE", ),
@@ -820,7 +820,7 @@ class AdjustNode(JovimetrixBaseNode):
     }
 
     @classmethod
-    def INPUT_TYPES(s):
+    def INPUT_TYPES(cls):
         ops = list(AdjustNode.OPS.keys()) + list(AdjustNode.OPS_PRE.keys()) + list(AdjustNode.OPS_CV2.keys())
         d = {"required": {
                 "func": (ops, {"default": "BLUR"}),
@@ -853,7 +853,7 @@ class AdjustNode(JovimetrixBaseNode):
 
 class ProjectionNode(JovimetrixBaseNode):
     @classmethod
-    def INPUT_TYPES(s):
+    def INPUT_TYPES(cls):
         d = {"required": {
                 "proj": (["SPHERICAL", "CYLINDRICAL"], {"default": "SPHERICAL"}),
             }}
@@ -880,7 +880,7 @@ class ProjectionNode(JovimetrixBaseNode):
 
 class RouteNode(JovimetrixBaseNode):
     @classmethod
-    def INPUT_TYPES(s):
+    def INPUT_TYPES(cls):
         return {"required": {
             "o": (WILDCARD, {"default": None}),
         }}
@@ -892,49 +892,84 @@ class RouteNode(JovimetrixBaseNode):
     def run(self, o):
         return (o,)
 
+class WebCamNode(JovimetrixBaseNode):
+    MAXCAM = 5
+    MAXFPS = 60
+    CAMERA = {i: None for i in range(MAXCAM)}
+    CAMFPS = {i: 12 for i in range(MAXCAM)}
 
-class WebcamNode(JovimetrixBaseNode):
     @classmethod
-    def INPUT_TYPES(s):
+    def INPUT_TYPES(cls):
         d = {"required": {
-            "cam": ("INT", {"min": 0, "max": 20, "step":1, "display": "slider", "default": 0}),
-            "rate": ("INT", {"min": 1, "max": 60, "step": 1, "default": 12}),
+            "cam": ("INT", {"min": 0, "max": WebCamNode.MAXCAM-1, "step":1, "display": "slider", "default": 0}),
+            "rate": ("INT", {"min": 1, "max": 60, "step": 1, "default": WebCamNode.MAXFPS}),
         }}
         return deep_merge_dict(d, IT_WH, IT_WHMODE)
 
     @classmethod
-    def IS_CHANGED(s, cam, rate, width, height, mode):
+    def INIT(cls, camIdx: int, rate: float):
+        try:
+            camera = WebCamNode.CAMERA[camIdx]
+        except KeyError as _:
+            print(f"initialize camera out of range {camIdx}")
+            return
+
+        if camera:
+            # we already have this camera
+            print(f"Camera already captured {camIdx}")
+            return camera
+
+        camera = cv2.VideoCapture(camIdx)
+        if camera is None or not camera.isOpened():
+            print(f"cannot open webcam {camIdx}")
+            return
+
+        WebCamNode.CAMERA[camIdx] = camera
+        WebCamNode.FRAMERATE(camIdx, rate)
+
+    @classmethod
+    def FRAMERATE(cls, cam: int, rate: float):
+        if WebCamNode.CAMERA[cam] and WebCamNode.CAMERA[cam].isOpened() and rate != WebCamNode.CAMFPS[cam]:
+            WebCamNode.CAMERA.set(cv2.CAP_PROP_FPS, rate)
+            WebCamNode.CAMFPS[cam] = rate
+            print(cam, rate)
+
+    @classmethod
+    def IS_CHANGED(cls, cam: int, rate: float, width: int, height: int, mode: str):
+        if WebCamNode.CAMERA[cam] is None:
+            cls.INIT(cam, rate)
+        if rate != WebCamNode.CAMFPS[cam]:
+            cls.FRAMERATE(cam, rate)
         return float("nan")
 
     def __init__(self):
-        self.__camera = None
         self.__failed = None
         self.__last = None
+        self.__camera = None
 
     def __del__(self):
         if self.__camera:
             print("releasing camera")
-            self.__camera.release()
+            self.__camera.RELEASE(self.__camera)
         self.__camera = None
 
     def run(self, cam, rate, width, height, mode):
         if self.__camera is None:
-            self.__camera = cv2.VideoCapture(cam)
-            self.__camera.set(cv2.CAP_PROP_FPS, rate)
+            self.__camera = WebCamNode.INIT(cam, rate)
             image = torch.zeros((height, width, 3), dtype=torch.uint8)
             image = tensor2cv(image)
             self.__last = self.__failed = (cv2tensor(image), cv2mask(image), )
             time.sleep(0.2)
 
-        if self.__camera is None or not self.__camera.isOpened():
-            print(f"Cannot open webcam {cam}")
-            return self.__failed
+        if self.__camera is None:
+            print(f"Failed to read webcam {cam}")
+            return self.__last
 
         ret, image = self.__camera.read()
         if not ret:
             print(f"Failed to read webcam {cam}")
-            return self.__last
-        # image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            return self.__failed
+
         image = SCALEFIT(image, width, height, mode=mode)
         self.__last = (cv2tensor(image), cv2mask(image), )
         return self.__last
@@ -960,7 +995,7 @@ NODE_CLASS_MAPPINGS = {
 
     "🚌 Route (jov)": RouteNode,
 
-    "📷 WebCam (jov)": WebcamNode,
+    "📷 WebCam (jov)": WebCamNode,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {k: k for k in NODE_CLASS_MAPPINGS}
