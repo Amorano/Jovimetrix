@@ -12,7 +12,7 @@ CREATION
   * RECTANGLE
   * ELLIPSE
   * POLYGON (3+ sides)
-* PER PIXEL SHADER. Two nodes, one with input Image support. Allows user function to generate a per pixel result into an image of (Width x Height). variables include:
+* PER PIXEL SHADER. Two nodes, one with source Image support. Allows user function to generate a per pixel result into an image of (Width x Height). variables include:
   * $x, $y: Current image (x, y)
   * $u, $v: Normalized texuture coordinates [0..1]
   * $w, $h: WIDTH and HEIGHT of the target output
@@ -22,14 +22,15 @@ CREATION
 MANIPULATION
 --------------
 
-* TRANSFORM. Translate, Rotate, Scale, Tile and Invert an Image. All options allow for CROP or WRAPing of the edges.
-* MIRROR. Flip an Image across the X axis, the Y Axis or both, with independant centers.
-* TILE. Repeat an image along the X, Y or XY at irregular intervals
+* TRANSFORM. Translate, Rotate, and Scale an input. Options allow for CROP or WRAPing of the edges.
+* MIRROR. Flip an input across the X axis, the Y Axis or both, with independant centers.
+* TILE. Repeat an input along the X, Y or XY at irregular intervals
+* EXTEND. Combine two inputs into a new image, side by side or top-down.
 
 ADJUSTMENT
 ---------
 
-* HSV. Tweak the Hue, Saturation and Value for an Image.
+* HSV. Tweak the Hue, Saturation and Value for an input.
 
 * ADJUST
   * EMBOSS
