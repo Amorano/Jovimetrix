@@ -43,6 +43,8 @@ import numpy as np
 from scipy.ndimage import rotate
 from PIL import Image, ImageDraw, ImageChops, ImageFilter
 
+import os
+import time
 import math
 from ast import literal_eval
 import logging
@@ -194,7 +196,8 @@ IT_COLOR = {
 }
 
 IT_TRS = deep_merge_dict(IT_TRANS, IT_ROT, IT_SCALE)
-IT_WHFULL = deep_merge_dict(IT_WH, IT_WHMODE, IT_INVERT)
+
+IT_WHMODEI = deep_merge_dict(IT_WH, IT_WHMODE, IT_INVERT)
 
 # =============================================================================
 # === MATRIX SUPPORT ===
@@ -756,7 +759,7 @@ class BlendNode(JovimetrixBaseNode):
                     "modeA": (["FIT", "CROP", "ASPECT"], {"default": "FIT"}),
                     "modeB": (["FIT", "CROP", "ASPECT"], {"default": "FIT"}),
             }}
-        return deep_merge_dict(d, IT_WHFULL)
+        return deep_merge_dict(d, IT_WHMODEI)
 
     DESCRIPTION = "Takes 2 Image inputs and an apha and performs a linear blend (alpha) between both images based on the selected operations."
 
@@ -889,6 +892,53 @@ class RouteNode(JovimetrixBaseNode):
     def run(self, o):
         return (o,)
 
+
+class WebcamNode(JovimetrixBaseNode):
+    @classmethod
+    def INPUT_TYPES(s):
+        d = {"required": {
+            "cam": ("INT", {"min": 0, "max": 20, "step":1, "display": "slider", "default": 0}),
+            "rate": ("INT", {"min": 1, "max": 60, "step": 1, "default": 12}),
+        }}
+        return deep_merge_dict(d, IT_WH, IT_WHMODE)
+
+    @classmethod
+    def IS_CHANGED(s, cam, rate, width, height, mode):
+        return float("nan")
+
+    def __init__(self):
+        self.__camera = None
+        self.__failed = None
+        self.__last = None
+
+    def __del__(self):
+        if self.__camera:
+            print("releasing camera")
+            self.__camera.release()
+        self.__camera = None
+
+    def run(self, cam, rate, width, height, mode):
+        if self.__camera is None:
+            self.__camera = cv2.VideoCapture(cam)
+            self.__camera.set(cv2.CAP_PROP_FPS, rate)
+            image = torch.zeros((height, width, 3), dtype=torch.uint8)
+            image = tensor2cv(image)
+            self.__last = self.__failed = (cv2tensor(image), cv2mask(image), )
+            time.sleep(0.2)
+
+        if self.__camera is None or not self.__camera.isOpened():
+            print(f"Cannot open webcam {cam}")
+            return self.__failed
+
+        ret, image = self.__camera.read()
+        if not ret:
+            print(f"Failed to read webcam {cam}")
+            return self.__last
+        # image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        image = SCALEFIT(image, width, height, mode=mode)
+        self.__last = (cv2tensor(image), cv2mask(image), )
+        return self.__last
+
 NODE_CLASS_MAPPINGS = {
     "🟪 Constant (jov)": ConstantNode,
     "✨ Shape Generator (jov)": ShapeNode,
@@ -909,6 +959,8 @@ NODE_CLASS_MAPPINGS = {
     # "🗺️ Projection (jov)": ProjectionNode,
 
     "🚌 Route (jov)": RouteNode,
+
+    "📷 WebCam (jov)": WebcamNode,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {k: k for k in NODE_CLASS_MAPPINGS}
