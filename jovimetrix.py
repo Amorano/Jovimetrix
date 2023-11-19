@@ -901,7 +901,7 @@ class WebCamNode(JovimetrixBaseNode):
     @classmethod
     def INPUT_TYPES(cls):
         d = {"required": {
-            "cam": ("INT", {"min": 0, "max": WebCamNode.MAXCAM-1, "step":1, "display": "slider", "default": 0}),
+            "cam": ("INT", {"min": 0, "max": WebCamNode.MAXCAM-1, "step":1, "default": 0}),
             "rate": ("INT", {"min": 1, "max": 60, "step": 1, "default": WebCamNode.MAXFPS}),
         }}
         return deep_merge_dict(d, IT_WH, IT_WHMODE)
