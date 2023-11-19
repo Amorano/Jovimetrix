@@ -428,7 +428,7 @@ def EXPOSURE(image: cv2.Mat, value: float) -> cv2.Mat:
 
 def HSV(image: cv2.Mat, hue, saturation, value) -> cv2.Mat:
     image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-    hue /= 360.
+    hue *= 255
     image[:, :, 0] = (image[:, :, 0] + hue) % 180
     image[:, :, 1] = np.clip(image[:, :, 1] * saturation, 0, 255)
     image[:, :, 2] = np.clip(image[:, :, 2] * value, 0, 255)
@@ -692,9 +692,9 @@ class HSVNode(JovimetrixBaseNode):
     def INPUT_TYPES(cls):
         d = {
             "optional": {
-                "hue": ("FLOAT",{"default": 0.5, "min": 0., "max": 1., "step": 0.02},),
-                "saturation": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 5.0, "step": 0.02}, ),
-                "value": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 5.0, "step": 0.02}, ),
+                "hue": ("FLOAT",{"default": 0., "min": 0., "max": 1., "step": 0.01},),
+                "saturation": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 100.0, "step": 0.01}, ),
+                "value": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 100.0, "step": 0.01}, ),
             }
         }
         return deep_merge_dict(IT_IMAGE, d)
@@ -703,7 +703,7 @@ class HSVNode(JovimetrixBaseNode):
 
     def run(self, image, hue, saturation, value):
         image = tensor2cv(image)
-        if hue != 0.5 or saturation != 1. or value != 1.:
+        if hue != 0. or saturation != 1. or value != 1.:
             image = HSV(image, hue, saturation, value)
         return (cv2tensor(image),)
 
