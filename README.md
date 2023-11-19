@@ -1,6 +1,8 @@
 # JOVIMETRIX
 COMFYUI Nodes for the composition of images and masks.
 
+![image](res/overview.png)
+
 CREATION
 --------
 
