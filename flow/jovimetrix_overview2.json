@@ -1,0 +1,10063 @@
+{
+  "last_node_id": 660,
+  "last_link_id": 1206,
+  "nodes": [
+    {
+      "id": 93,
+      "type": "PreviewImage",
+      "pos": [
+        -5640,
+        1240
+      ],
+      "size": {
+        "0": 205,
+        "1": 246
+      },
+      "flags": {},
+      "order": 18,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 130,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 77,
+      "type": "🌈 HSV (jov)",
+      "pos": [
+        -4750,
+        825
+      ],
+      "size": {
+        "0": 210,
+        "1": 126
+      },
+      "flags": {},
+      "order": 96,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 948
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            110
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🌈 HSV (jov)"
+      },
+      "widgets_values": [
+        0.75,
+        1,
+        1
+      ]
+    },
+    {
+      "id": 103,
+      "type": "🌈 HSV (jov)",
+      "pos": [
+        -4750,
+        1250
+      ],
+      "size": {
+        "0": 210,
+        "1": 126
+      },
+      "flags": {},
+      "order": 93,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 945
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            149
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🌈 HSV (jov)"
+      },
+      "widgets_values": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": 110,
+      "type": "🌈 HSV (jov)",
+      "pos": [
+        -4156.706531065103,
+        831.2446062973445
+      ],
+      "size": {
+        "0": 210,
+        "1": 126
+      },
+      "flags": {},
+      "order": 126,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 955
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            154
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🌈 HSV (jov)"
+      },
+      "widgets_values": [
+        0.5,
+        0.5,
+        1
+      ]
+    },
+    {
+      "id": 121,
+      "type": "🌈 HSV (jov)",
+      "pos": [
+        -3300,
+        825
+      ],
+      "size": {
+        "0": 210,
+        "1": 126
+      },
+      "flags": {},
+      "order": 148,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 962
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            164
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🌈 HSV (jov)"
+      },
+      "widgets_values": [
+        0.5,
+        1,
+        0.5
+      ]
+    },
+    {
+      "id": 122,
+      "type": "🌈 HSV (jov)",
+      "pos": [
+        -3050,
+        825
+      ],
+      "size": {
+        "0": 210,
+        "1": 126
+      },
+      "flags": {},
+      "order": 149,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 963
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            163
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🌈 HSV (jov)"
+      },
+      "widgets_values": [
+        0.5,
+        1,
+        0.75
+      ]
+    },
+    {
+      "id": 104,
+      "type": "PreviewImage",
+      "pos": [
+        -4750,
+        1400
+      ],
+      "size": {
+        "0": 205,
+        "1": 246
+      },
+      "flags": {},
+      "order": 119,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 149,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 72,
+      "type": "PreviewImage",
+      "pos": [
+        -5000,
+        950
+      ],
+      "size": {
+        "0": 205,
+        "1": 246
+      },
+      "flags": {},
+      "order": 121,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 108,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 74,
+      "type": "PreviewImage",
+      "pos": [
+        -5250,
+        950
+      ],
+      "size": {
+        "0": 205,
+        "1": 246
+      },
+      "flags": {},
+      "order": 120,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 106,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 109,
+      "type": "🌈 HSV (jov)",
+      "pos": [
+        -4406.706531065103,
+        831.2446062973445
+      ],
+      "size": {
+        "0": 210,
+        "1": 126
+      },
+      "flags": {},
+      "order": 125,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 954
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            155
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🌈 HSV (jov)"
+      },
+      "widgets_values": [
+        0.5,
+        0.25,
+        1
+      ]
+    },
+    {
+      "id": 23,
+      "type": "PreviewImage",
+      "pos": [
+        -6120,
+        840
+      ],
+      "size": {
+        "0": 205,
+        "1": 246
+      },
+      "flags": {},
+      "order": 25,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 20,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 89,
+      "type": "PreviewImage",
+      "pos": [
+        -6120,
+        1660
+      ],
+      "size": {
+        "0": 205,
+        "1": 246
+      },
+      "flags": {},
+      "order": 21,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 128,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 91,
+      "type": "PreviewImage",
+      "pos": [
+        -5640,
+        840
+      ],
+      "size": {
+        "0": 205,
+        "1": 246
+      },
+      "flags": {},
+      "order": 19,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 129,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 111,
+      "type": "🌈 HSV (jov)",
+      "pos": [
+        -3900,
+        825
+      ],
+      "size": {
+        "0": 210,
+        "1": 126
+      },
+      "flags": {},
+      "order": 127,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 956
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            153
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🌈 HSV (jov)"
+      },
+      "widgets_values": [
+        0.5,
+        0.75,
+        1
+      ]
+    },
+    {
+      "id": 114,
+      "type": "🌈 HSV (jov)",
+      "pos": [
+        -3900,
+        1275
+      ],
+      "size": {
+        "0": 210,
+        "1": 126
+      },
+      "flags": {},
+      "order": 124,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 953
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            161
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🌈 HSV (jov)"
+      },
+      "widgets_values": [
+        0.5,
+        1,
+        1
+      ]
+    },
+    {
+      "id": 120,
+      "type": "🌈 HSV (jov)",
+      "pos": [
+        -3550,
+        825
+      ],
+      "size": {
+        "0": 210,
+        "1": 126
+      },
+      "flags": {},
+      "order": 147,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 961
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            165
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🌈 HSV (jov)"
+      },
+      "widgets_values": [
+        0.5,
+        1,
+        0.25
+      ]
+    },
+    {
+      "id": 118,
+      "type": "PreviewImage",
+      "pos": [
+        -3300,
+        950
+      ],
+      "size": {
+        "0": 205,
+        "1": 246
+      },
+      "flags": {},
+      "order": 167,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 164,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 125,
+      "type": "🌈 HSV (jov)",
+      "pos": [
+        -3050,
+        1275
+      ],
+      "size": {
+        "0": 210,
+        "1": 126
+      },
+      "flags": {},
+      "order": 145,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 959
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            171
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🌈 HSV (jov)"
+      },
+      "widgets_values": [
+        0.5,
+        1,
+        1
+      ]
+    },
+    {
+      "id": 124,
+      "type": "🌈 HSV (jov)",
+      "pos": [
+        -3550,
+        1275
+      ],
+      "size": {
+        "0": 210,
+        "1": 126
+      },
+      "flags": {},
+      "order": 146,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 960
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            172
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🌈 HSV (jov)"
+      },
+      "widgets_values": [
+        0.5,
+        1,
+        0
+      ]
+    },
+    {
+      "id": 113,
+      "type": "🌈 HSV (jov)",
+      "pos": [
+        -4400,
+        1275
+      ],
+      "size": {
+        "0": 210,
+        "1": 126
+      },
+      "flags": {},
+      "order": 123,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 952
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            162
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🌈 HSV (jov)"
+      },
+      "widgets_values": [
+        0.5,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 102,
+      "type": "🌈 HSV (jov)",
+      "pos": [
+        -5250,
+        1250
+      ],
+      "size": {
+        "0": 210,
+        "1": 126
+      },
+      "flags": {},
+      "order": 92,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 944
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            148
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🌈 HSV (jov)"
+      },
+      "widgets_values": [
+        0,
+        1,
+        1
+      ]
+    },
+    {
+      "id": 71,
+      "type": "PreviewImage",
+      "pos": [
+        -4750,
+        950
+      ],
+      "size": {
+        "0": 205,
+        "1": 246
+      },
+      "flags": {},
+      "order": 122,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 110,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 75,
+      "type": "🌈 HSV (jov)",
+      "pos": [
+        -5250,
+        825
+      ],
+      "size": {
+        "0": 210,
+        "1": 126
+      },
+      "flags": {},
+      "order": 94,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 946
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            106
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🌈 HSV (jov)"
+      },
+      "widgets_values": [
+        0.25,
+        1,
+        1
+      ]
+    },
+    {
+      "id": 17,
+      "type": "PreviewImage",
+      "pos": [
+        -6660,
+        840
+      ],
+      "size": {
+        "0": 188.5479736328125,
+        "1": 246
+      },
+      "flags": {},
+      "order": 27,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 868
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 117,
+      "type": "PreviewImage",
+      "pos": [
+        -3050,
+        950
+      ],
+      "size": {
+        "0": 205,
+        "1": 246
+      },
+      "flags": {},
+      "order": 168,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 163,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 95,
+      "type": "PreviewImage",
+      "pos": [
+        -5640,
+        1640
+      ],
+      "size": {
+        "0": 205,
+        "1": 246
+      },
+      "flags": {},
+      "order": 20,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 131,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 260,
+      "type": "PreviewImage",
+      "pos": [
+        233.2996774255651,
+        1412.2040394425158
+      ],
+      "size": {
+        "0": 205,
+        "1": 246
+      },
+      "flags": {},
+      "order": 22,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 308,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 105,
+      "type": "PreviewImage",
+      "pos": [
+        -5250,
+        1400
+      ],
+      "size": {
+        "0": 205,
+        "1": 246
+      },
+      "flags": {},
+      "order": 118,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 148,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 92,
+      "type": "✨ Shape Generator (jov)",
+      "pos": [
+        -5880,
+        1220
+      ],
+      "size": {
+        "0": 210,
+        "1": 346
+      },
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            130
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "✨ Shape Generator (jov)"
+      },
+      "widgets_values": [
+        "POLYGON",
+        3,
+        256,
+        256,
+        1,
+        1,
+        0,
+        0,
+        0.7499999999999998,
+        0.9000000000000002,
+        0
+      ]
+    },
+    {
+      "id": 90,
+      "type": "✨ Shape Generator (jov)",
+      "pos": [
+        -5880,
+        820
+      ],
+      "size": {
+        "0": 210,
+        "1": 346
+      },
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            129
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "✨ Shape Generator (jov)"
+      },
+      "widgets_values": [
+        "RECTANGLE",
+        4,
+        256,
+        256,
+        0,
+        1,
+        1,
+        0,
+        0.75,
+        0.9,
+        0
+      ]
+    },
+    {
+      "id": 94,
+      "type": "✨ Shape Generator (jov)",
+      "pos": [
+        -5880,
+        1620
+      ],
+      "size": {
+        "0": 210,
+        "1": 346
+      },
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            131
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "✨ Shape Generator (jov)"
+      },
+      "widgets_values": [
+        "POLYGON",
+        7,
+        256,
+        256,
+        1,
+        0,
+        1,
+        0,
+        0.75,
+        0.9,
+        0
+      ]
+    },
+    {
+      "id": 88,
+      "type": "✨ Shape Generator (jov)",
+      "pos": [
+        -6340,
+        1620
+      ],
+      "size": {
+        "0": 210,
+        "1": 346
+      },
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            128
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "✨ Shape Generator (jov)"
+      },
+      "widgets_values": [
+        "ELLIPSE",
+        5,
+        256,
+        256,
+        0,
+        0,
+        1,
+        0,
+        0.75,
+        0.9,
+        0
+      ]
+    },
+    {
+      "id": 116,
+      "type": "PreviewImage",
+      "pos": [
+        -4400,
+        1400
+      ],
+      "size": {
+        "0": 205,
+        "1": 246
+      },
+      "flags": {},
+      "order": 140,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 162,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 115,
+      "type": "PreviewImage",
+      "pos": [
+        -3900,
+        1400
+      ],
+      "size": {
+        "0": 205,
+        "1": 246
+      },
+      "flags": {},
+      "order": 141,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 161,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 106,
+      "type": "PreviewImage",
+      "pos": [
+        -3900,
+        950
+      ],
+      "size": {
+        "0": 205,
+        "1": 246
+      },
+      "flags": {},
+      "order": 144,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 153,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 107,
+      "type": "PreviewImage",
+      "pos": [
+        -4160,
+        950
+      ],
+      "size": {
+        "0": 205,
+        "1": 246
+      },
+      "flags": {},
+      "order": 143,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 154,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 108,
+      "type": "PreviewImage",
+      "pos": [
+        -4410,
+        950
+      ],
+      "size": {
+        "0": 205,
+        "1": 246
+      },
+      "flags": {},
+      "order": 142,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 155,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 126,
+      "type": "PreviewImage",
+      "pos": [
+        -3050,
+        1410
+      ],
+      "size": {
+        "0": 205,
+        "1": 246
+      },
+      "flags": {},
+      "order": 164,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 171,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 127,
+      "type": "PreviewImage",
+      "pos": [
+        -3550,
+        1410
+      ],
+      "size": {
+        "0": 205,
+        "1": 246
+      },
+      "flags": {},
+      "order": 165,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 172,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 119,
+      "type": "PreviewImage",
+      "pos": [
+        -3550,
+        950
+      ],
+      "size": {
+        "0": 205,
+        "1": 246
+      },
+      "flags": {},
+      "order": 166,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 165,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 307,
+      "type": "⚗️ Blend (jov)",
+      "pos": [
+        1447.2996774255648,
+        1039.2040394425158
+      ],
+      "size": {
+        "0": 210,
+        "1": 246
+      },
+      "flags": {},
+      "order": 49,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "imageA",
+          "type": "IMAGE",
+          "link": 1038,
+          "slot_index": 0
+        },
+        {
+          "name": "imageB",
+          "type": "IMAGE",
+          "link": 1039
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            380
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "⚗️ Blend (jov)"
+      },
+      "widgets_values": [
+        0.4999999999999996,
+        "ADD",
+        "FIT",
+        "FIT",
+        256,
+        256,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 308,
+      "type": "PreviewImage",
+      "pos": [
+        1457.2996774255648,
+        1299.2040394425158
+      ],
+      "size": {
+        "0": 210,
+        "1": 246
+      },
+      "flags": {},
+      "order": 68,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 380
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 281,
+      "type": "⚗️ Blend (jov)",
+      "pos": [
+        -1580,
+        2420
+      ],
+      "size": {
+        "0": 210,
+        "1": 246
+      },
+      "flags": {
+        "pinned": true
+      },
+      "order": 56,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "imageA",
+          "type": "IMAGE",
+          "link": 1028,
+          "slot_index": 0
+        },
+        {
+          "name": "imageB",
+          "type": "IMAGE",
+          "link": 1030
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            346,
+            819,
+            822,
+            823,
+            824,
+            827,
+            828,
+            829,
+            830
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "⚗️ Blend (jov)"
+      },
+      "widgets_values": [
+        0.4999999999999996,
+        "ADD",
+        "FIT",
+        "FIT",
+        256,
+        256,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 287,
+      "type": "PreviewImage",
+      "pos": [
+        -2200,
+        2130
+      ],
+      "size": {
+        "0": 210,
+        "1": 246
+      },
+      "flags": {},
+      "order": 71,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 879
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 331,
+      "type": "PreviewImage",
+      "pos": [
+        -2690,
+        2130
+      ],
+      "size": {
+        "0": 210,
+        "1": 246
+      },
+      "flags": {},
+      "order": 72,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 881
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 333,
+      "type": "PreviewImage",
+      "pos": [
+        -2450,
+        2130
+      ],
+      "size": {
+        "0": 210,
+        "1": 246
+      },
+      "flags": {},
+      "order": 70,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 880
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 337,
+      "type": "PreviewImage",
+      "pos": [
+        -2200,
+        2540
+      ],
+      "size": {
+        "0": 210,
+        "1": 246
+      },
+      "flags": {},
+      "order": 73,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 878
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 335,
+      "type": "PreviewImage",
+      "pos": [
+        -2690,
+        2540
+      ],
+      "size": {
+        "0": 210,
+        "1": 246
+      },
+      "flags": {},
+      "order": 69,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 882
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 52,
+      "type": "✨ Shape Generator (jov)",
+      "pos": [
+        -35.700322574435006,
+        1299.2040394425158
+      ],
+      "size": {
+        "0": 210,
+        "1": 318
+      },
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            67,
+            308
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "✨ Shape Generator (jov)"
+      },
+      "widgets_values": [
+        "CIRCLE",
+        4,
+        320,
+        320,
+        1,
+        0,
+        1,
+        0,
+        0.8,
+        0.9,
+        0
+      ]
+    },
+    {
+      "id": 51,
+      "type": "✨ Shape Generator (jov)",
+      "pos": [
+        -42.70032257443498,
+        938.204039442515
+      ],
+      "size": {
+        "0": 210,
+        "1": 318
+      },
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            306
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": [
+            1033
+          ],
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "✨ Shape Generator (jov)"
+      },
+      "widgets_values": [
+        "CIRCLE",
+        4,
+        448,
+        448,
+        0.7000000000000001,
+        1,
+        1,
+        0,
+        0.8,
+        0.8,
+        0
+      ]
+    },
+    {
+      "id": 258,
+      "type": "PreviewImage",
+      "pos": [
+        232.2996774255651,
+        841.204039442515
+      ],
+      "size": {
+        "0": 205,
+        "1": 246
+      },
+      "flags": {},
+      "order": 23,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 306,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 359,
+      "type": "PreviewImage",
+      "pos": [
+        733.2996774255649,
+        826.204039442515
+      ],
+      "size": {
+        "0": 227.26608276367188,
+        "1": 261.63720703125
+      },
+      "flags": {},
+      "order": 47,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 1034,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 259,
+      "type": "PreviewImage",
+      "pos": [
+        490.2996774255651,
+        1135.2040394425158
+      ],
+      "size": {
+        "0": 205,
+        "1": 246
+      },
+      "flags": {},
+      "order": 67,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 608,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 283,
+      "type": "PreviewImage",
+      "pos": [
+        -1580,
+        2680
+      ],
+      "size": {
+        "0": 210,
+        "1": 246
+      },
+      "flags": {},
+      "order": 81,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 346
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 87,
+      "type": "PreviewImage",
+      "pos": [
+        -6120,
+        1240
+      ],
+      "size": {
+        "0": 205,
+        "1": 246
+      },
+      "flags": {},
+      "order": 26,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 127,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 27,
+      "type": "⚗️ Blend (jov)",
+      "pos": [
+        229.2996774255651,
+        1139.2040394425158
+      ],
+      "size": {
+        "0": 210,
+        "1": 246
+      },
+      "flags": {},
+      "order": 48,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "imageA",
+          "type": "IMAGE",
+          "link": 1035
+        },
+        {
+          "name": "imageB",
+          "type": "IMAGE",
+          "link": 67,
+          "slot_index": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            608
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "⚗️ Blend (jov)"
+      },
+      "widgets_values": [
+        0.49999999999999983,
+        "ADD",
+        "FIT",
+        "FIT",
+        256,
+        256,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 403,
+      "type": "PreviewImage",
+      "pos": [
+        -1030,
+        2760
+      ],
+      "size": {
+        "0": 205,
+        "1": 246
+      },
+      "flags": {},
+      "order": 114,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 833,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 404,
+      "type": "PreviewImage",
+      "pos": [
+        -800,
+        2760
+      ],
+      "size": {
+        "0": 205,
+        "1": 246
+      },
+      "flags": {},
+      "order": 115,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 832,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 405,
+      "type": "PreviewImage",
+      "pos": [
+        -570,
+        2760
+      ],
+      "size": {
+        "0": 203.73497009277344,
+        "1": 248.79507446289062
+      },
+      "flags": {},
+      "order": 116,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 831,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 318,
+      "type": "PreviewImage",
+      "pos": [
+        -1260,
+        2140
+      ],
+      "size": {
+        "0": 205,
+        "1": 246
+      },
+      "flags": {},
+      "order": 109,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 820,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 319,
+      "type": "PreviewImage",
+      "pos": [
+        -1030,
+        2140
+      ],
+      "size": {
+        "0": 205,
+        "1": 246
+      },
+      "flags": {},
+      "order": 110,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 821,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 324,
+      "type": "PreviewImage",
+      "pos": [
+        -800,
+        2140
+      ],
+      "size": {
+        "0": 205,
+        "1": 246
+      },
+      "flags": {},
+      "order": 111,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 826,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 328,
+      "type": "PreviewImage",
+      "pos": [
+        -570,
+        2140
+      ],
+      "size": {
+        "0": 205,
+        "1": 246
+      },
+      "flags": {},
+      "order": 112,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 825,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 76,
+      "type": "🌈 HSV (jov)",
+      "pos": [
+        -5000,
+        825
+      ],
+      "size": {
+        "0": 210,
+        "1": 126
+      },
+      "flags": {},
+      "order": 95,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 947
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            108
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🌈 HSV (jov)"
+      },
+      "widgets_values": [
+        0.5,
+        1,
+        1
+      ]
+    },
+    {
+      "id": 11,
+      "type": "✨ Shape Generator (jov)",
+      "pos": [
+        -6340,
+        820
+      ],
+      "size": {
+        "0": 210,
+        "1": 346
+      },
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            20
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "✨ Shape Generator (jov)"
+      },
+      "widgets_values": [
+        "CIRCLE",
+        5,
+        256,
+        256,
+        1,
+        0,
+        0,
+        0,
+        0.75,
+        0.9,
+        0
+      ]
+    },
+    {
+      "id": 86,
+      "type": "✨ Shape Generator (jov)",
+      "pos": [
+        -6340,
+        1220
+      ],
+      "size": {
+        "0": 210,
+        "1": 346
+      },
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            127
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "✨ Shape Generator (jov)"
+      },
+      "widgets_values": [
+        "SQUARE",
+        5,
+        256,
+        256,
+        0,
+        1,
+        0,
+        0,
+        0.75,
+        0.9,
+        0
+      ]
+    },
+    {
+      "id": 159,
+      "type": "PreviewImage",
+      "pos": [
+        -2314,
+        3114
+      ],
+      "size": {
+        "0": 280,
+        "1": 290
+      },
+      "flags": {},
+      "order": 31,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 423,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 468,
+      "type": "🟪 Constant (jov)",
+      "pos": [
+        -6892,
+        841
+      ],
+      "size": {
+        "0": 210,
+        "1": 174
+      },
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            868
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🟪 Constant (jov)"
+      },
+      "widgets_values": [
+        256,
+        256,
+        0,
+        1,
+        1
+      ]
+    },
+    {
+      "id": 469,
+      "type": "🟪 Constant (jov)",
+      "pos": [
+        -6886,
+        1169
+      ],
+      "size": {
+        "0": 210,
+        "1": 174
+      },
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            869
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🟪 Constant (jov)"
+      },
+      "widgets_values": [
+        256,
+        256,
+        1,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 524,
+      "type": "🚌 Route (jov)",
+      "pos": [
+        -4145,
+        1668
+      ],
+      "size": {
+        "0": 210,
+        "1": 26
+      },
+      "flags": {},
+      "order": 97,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "o",
+          "type": "*",
+          "link": 949,
+          "slot_index": 0
+        }
+      ],
+      "outputs": [
+        {
+          "name": "🚌",
+          "type": "*",
+          "links": [
+            952,
+            953,
+            954,
+            955,
+            956,
+            958
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🚌 Route (jov)"
+      },
+      "color": "#222",
+      "bgcolor": "#000"
+    },
+    {
+      "id": 437,
+      "type": "🔳 Tile (jov)",
+      "pos": [
+        -2688,
+        2819
+      ],
+      "size": {
+        "0": 210,
+        "1": 102
+      },
+      "flags": {},
+      "order": 50,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixels",
+          "type": "*",
+          "link": 873,
+          "slot_index": 0
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            882
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🔳 Tile (jov)"
+      },
+      "widgets_values": [
+        0,
+        1
+      ]
+    },
+    {
+      "id": 473,
+      "type": "🔳 Tile (jov)",
+      "pos": [
+        -2690,
+        2410
+      ],
+      "size": {
+        "0": 210,
+        "1": 102
+      },
+      "flags": {},
+      "order": 53,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixels",
+          "type": "*",
+          "link": 876,
+          "slot_index": 0
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            881
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🔳 Tile (jov)"
+      },
+      "widgets_values": [
+        1,
+        0
+      ]
+    },
+    {
+      "id": 523,
+      "type": "🚌 Route (jov)",
+      "pos": [
+        -5283,
+        1676
+      ],
+      "size": {
+        "0": 210,
+        "1": 26
+      },
+      "flags": {},
+      "order": 74,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "o",
+          "type": "*",
+          "link": 1020,
+          "slot_index": 0
+        }
+      ],
+      "outputs": [
+        {
+          "name": "🚌",
+          "type": "*",
+          "links": [
+            944,
+            945,
+            946,
+            947,
+            948,
+            949
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🚌 Route (jov)"
+      },
+      "color": "#222",
+      "bgcolor": "#000"
+    },
+    {
+      "id": 535,
+      "type": "🌱 Transform (jov)",
+      "pos": [
+        -1870,
+        2340
+      ],
+      "size": {
+        "0": 210,
+        "1": 270
+      },
+      "flags": {},
+      "order": 33,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixels",
+          "type": "*",
+          "link": 1027
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            1028
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🌱 Transform (jov)"
+      },
+      "widgets_values": [
+        0.1,
+        -0.1,
+        85,
+        1,
+        1,
+        "CLIP",
+        256,
+        256,
+        "NONE"
+      ]
+    },
+    {
+      "id": 536,
+      "type": "🌱 Transform (jov)",
+      "pos": [
+        -1860,
+        2670
+      ],
+      "size": {
+        "0": 210,
+        "1": 270
+      },
+      "flags": {},
+      "order": 34,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixels",
+          "type": "*",
+          "link": 1029
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            1030
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🌱 Transform (jov)"
+      },
+      "widgets_values": [
+        -0.09999999999999999,
+        0.1,
+        85,
+        1,
+        1,
+        "CLIP",
+        256,
+        256,
+        "NONE"
+      ]
+    },
+    {
+      "id": 402,
+      "type": "PreviewImage",
+      "pos": [
+        -1260,
+        2760
+      ],
+      "size": {
+        "0": 205,
+        "1": 246
+      },
+      "flags": {},
+      "order": 113,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 1032,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 439,
+      "type": "🔰 Mirror (jov)",
+      "pos": [
+        -1260,
+        2420
+      ],
+      "size": {
+        "0": 210,
+        "1": 150
+      },
+      "flags": {},
+      "order": 82,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixels",
+          "type": "*",
+          "link": 819
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            820
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🔰 Mirror (jov)"
+      },
+      "widgets_values": [
+        0.3,
+        0.5,
+        "X",
+        0
+      ]
+    },
+    {
+      "id": 440,
+      "type": "🔰 Mirror (jov)",
+      "pos": [
+        -1030,
+        2420
+      ],
+      "size": {
+        "0": 210,
+        "1": 150
+      },
+      "flags": {},
+      "order": 83,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixels",
+          "type": "*",
+          "link": 822,
+          "slot_index": 0
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            821
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🔰 Mirror (jov)"
+      },
+      "widgets_values": [
+        0.5,
+        0.3,
+        "Y",
+        0
+      ]
+    },
+    {
+      "id": 442,
+      "type": "🔰 Mirror (jov)",
+      "pos": [
+        -550,
+        2420
+      ],
+      "size": {
+        "0": 210,
+        "1": 150
+      },
+      "flags": {},
+      "order": 85,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixels",
+          "type": "*",
+          "link": 824,
+          "slot_index": 0
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            825
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🔰 Mirror (jov)"
+      },
+      "widgets_values": [
+        0.4,
+        0.3,
+        "YX",
+        0
+      ]
+    },
+    {
+      "id": 446,
+      "type": "🔰 Mirror (jov)",
+      "pos": [
+        -550,
+        2610
+      ],
+      "size": {
+        "0": 210,
+        "1": 150
+      },
+      "flags": {},
+      "order": 89,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixels",
+          "type": "*",
+          "link": 830,
+          "slot_index": 0
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            831
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🔰 Mirror (jov)"
+      },
+      "widgets_values": [
+        0.4,
+        0.3,
+        "YX",
+        1
+      ]
+    },
+    {
+      "id": 444,
+      "type": "🔰 Mirror (jov)",
+      "pos": [
+        -1020,
+        2610
+      ],
+      "size": {
+        "0": 210,
+        "1": 150
+      },
+      "flags": {},
+      "order": 87,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixels",
+          "type": "*",
+          "link": 828,
+          "slot_index": 0
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            833
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🔰 Mirror (jov)"
+      },
+      "widgets_values": [
+        0.5,
+        0.3,
+        "Y",
+        1
+      ]
+    },
+    {
+      "id": 445,
+      "type": "🔰 Mirror (jov)",
+      "pos": [
+        -790,
+        2610
+      ],
+      "size": {
+        "0": 210,
+        "1": 150
+      },
+      "flags": {
+        "collapsed": false
+      },
+      "order": 88,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixels",
+          "type": "*",
+          "link": 829,
+          "slot_index": 0
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            832
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🔰 Mirror (jov)"
+      },
+      "widgets_values": [
+        0.3,
+        0.4,
+        "XY",
+        1
+      ]
+    },
+    {
+      "id": 443,
+      "type": "🔰 Mirror (jov)",
+      "pos": [
+        -1260,
+        2610
+      ],
+      "size": {
+        "0": 210,
+        "1": 150
+      },
+      "flags": {},
+      "order": 86,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixels",
+          "type": "*",
+          "link": 827
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            1032
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🔰 Mirror (jov)"
+      },
+      "widgets_values": [
+        0.3,
+        0.5,
+        "X",
+        0.25
+      ]
+    },
+    {
+      "id": 538,
+      "type": "🌱 Transform (jov)",
+      "pos": [
+        473.2996774255651,
+        826.204039442515
+      ],
+      "size": {
+        "0": 210,
+        "1": 270
+      },
+      "flags": {},
+      "order": 24,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixels",
+          "type": "*",
+          "link": 1033,
+          "slot_index": 0
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            1034,
+            1035
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🌱 Transform (jov)"
+      },
+      "widgets_values": [
+        0,
+        0,
+        0,
+        0.5,
+        0.5,
+        "WRAP",
+        256,
+        256,
+        "NONE"
+      ]
+    },
+    {
+      "id": 305,
+      "type": "✨ Shape Generator (jov)",
+      "pos": [
+        940.2996774255649,
+        1114.2040394425158
+      ],
+      "size": {
+        "0": 210,
+        "1": 318
+      },
+      "flags": {
+        "pinned": false
+      },
+      "order": 10,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            1036,
+            1037
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "✨ Shape Generator (jov)"
+      },
+      "widgets_values": [
+        "POLYGON",
+        3,
+        256,
+        256,
+        0.6,
+        0.2,
+        0.8999999999999999,
+        0.7499999999999998,
+        0.7499999999999998,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 539,
+      "type": "🌱 Transform (jov)",
+      "pos": [
+        1187.2996774255648,
+        949.204039442515
+      ],
+      "size": {
+        "0": 210,
+        "1": 270
+      },
+      "flags": {},
+      "order": 29,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixels",
+          "type": "*",
+          "link": 1036
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            1038
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🌱 Transform (jov)"
+      },
+      "widgets_values": [
+        0.1,
+        -0.1,
+        85,
+        1,
+        1,
+        "CLIP",
+        256,
+        256,
+        "NONE"
+      ]
+    },
+    {
+      "id": 540,
+      "type": "🌱 Transform (jov)",
+      "pos": [
+        1197.2996774255648,
+        1279.2040394425158
+      ],
+      "size": {
+        "0": 210,
+        "1": 270
+      },
+      "flags": {},
+      "order": 30,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixels",
+          "type": "*",
+          "link": 1037
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            1039
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🌱 Transform (jov)"
+      },
+      "widgets_values": [
+        -0.09999999999999999,
+        0.1,
+        85,
+        1,
+        1,
+        "CLIP",
+        256,
+        256,
+        "NONE"
+      ]
+    },
+    {
+      "id": 441,
+      "type": "🔰 Mirror (jov)",
+      "pos": [
+        -790,
+        2430
+      ],
+      "size": {
+        "0": 210,
+        "1": 150
+      },
+      "flags": {
+        "collapsed": false
+      },
+      "order": 84,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixels",
+          "type": "*",
+          "link": 823,
+          "slot_index": 0
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            826
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🔰 Mirror (jov)"
+      },
+      "widgets_values": [
+        0.3,
+        0.4,
+        "XY",
+        0
+      ]
+    },
+    {
+      "id": 167,
+      "type": "PreviewImage",
+      "pos": [
+        -2680,
+        810
+      ],
+      "size": {
+        "0": 205,
+        "1": 246
+      },
+      "flags": {},
+      "order": 170,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 1050,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 166,
+      "type": "PreviewImage",
+      "pos": [
+        -2440,
+        810
+      ],
+      "size": {
+        "0": 205,
+        "1": 246
+      },
+      "flags": {},
+      "order": 171,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 1052,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 340,
+      "type": "PreviewImage",
+      "pos": [
+        -2440,
+        1750
+      ],
+      "size": {
+        "0": 205,
+        "1": 246
+      },
+      "flags": {},
+      "order": 169,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 1049,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 179,
+      "type": "PreviewImage",
+      "pos": [
+        -2680,
+        1750
+      ],
+      "size": {
+        "0": 205,
+        "1": 246
+      },
+      "flags": {},
+      "order": 151,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 1042,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 541,
+      "type": "🌱 Transform (jov)",
+      "pos": [
+        -2680,
+        1100
+      ],
+      "size": {
+        "0": 210,
+        "1": 270
+      },
+      "flags": {},
+      "order": 172,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixels",
+          "type": "*",
+          "link": 1060
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": null,
+          "shape": 3
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🌱 Transform (jov)"
+      },
+      "widgets_values": [
+        0,
+        0,
+        0,
+        1,
+        1,
+        "CLIP",
+        256,
+        256,
+        "NONE"
+      ],
+      "color": "#322",
+      "bgcolor": "#533"
+    },
+    {
+      "id": 542,
+      "type": "🌱 Transform (jov)",
+      "pos": [
+        -2440,
+        1100
+      ],
+      "size": {
+        "0": 210,
+        "1": 270
+      },
+      "flags": {},
+      "order": 173,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixels",
+          "type": "*",
+          "link": 1061
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": null,
+          "shape": 3
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🌱 Transform (jov)"
+      },
+      "widgets_values": [
+        0,
+        0,
+        0,
+        1,
+        1,
+        "CLIP",
+        256,
+        256,
+        "NONE"
+      ],
+      "color": "#322",
+      "bgcolor": "#533"
+    },
+    {
+      "id": 544,
+      "type": "🌱 Transform (jov)",
+      "pos": [
+        -2680,
+        1470
+      ],
+      "size": {
+        "0": 210,
+        "1": 270
+      },
+      "flags": {},
+      "order": 175,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixels",
+          "type": "*",
+          "link": 1063
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": null,
+          "shape": 3
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🌱 Transform (jov)"
+      },
+      "widgets_values": [
+        0,
+        0,
+        0,
+        1,
+        1,
+        "CLIP",
+        256,
+        256,
+        "NONE"
+      ],
+      "color": "#322",
+      "bgcolor": "#533"
+    },
+    {
+      "id": 545,
+      "type": "🌱 Transform (jov)",
+      "pos": [
+        -2440,
+        1470
+      ],
+      "size": {
+        "0": 210,
+        "1": 270
+      },
+      "flags": {},
+      "order": 174,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixels",
+          "type": "*",
+          "link": 1062
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": null,
+          "shape": 3
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🌱 Transform (jov)"
+      },
+      "widgets_values": [
+        0,
+        0,
+        0,
+        1,
+        1,
+        "CLIP",
+        256,
+        256,
+        "NONE"
+      ],
+      "color": "#322",
+      "bgcolor": "#533"
+    },
+    {
+      "id": 548,
+      "type": "PreviewImage",
+      "pos": [
+        -1920,
+        810
+      ],
+      "size": {
+        "0": 205,
+        "1": 246
+      },
+      "flags": {},
+      "order": 200,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 1091,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 549,
+      "type": "PreviewImage",
+      "pos": [
+        -2160,
+        810
+      ],
+      "size": {
+        "0": 205,
+        "1": 246
+      },
+      "flags": {},
+      "order": 199,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 1092,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 551,
+      "type": "PreviewImage",
+      "pos": [
+        -1920,
+        1750
+      ],
+      "size": {
+        "0": 205,
+        "1": 246
+      },
+      "flags": {},
+      "order": 201,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 1085,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 550,
+      "type": "PreviewImage",
+      "pos": [
+        -2160,
+        1750
+      ],
+      "size": {
+        "0": 205,
+        "1": 246
+      },
+      "flags": {},
+      "order": 202,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 1086,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 559,
+      "type": "PreviewImage",
+      "pos": [
+        -1669.4950481070691,
+        1750
+      ],
+      "size": {
+        "0": 205,
+        "1": 246
+      },
+      "flags": {},
+      "order": 208,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 1084,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 560,
+      "type": "PreviewImage",
+      "pos": [
+        -1429.4950481070691,
+        1750
+      ],
+      "size": {
+        "0": 205,
+        "1": 246
+      },
+      "flags": {},
+      "order": 209,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 1083,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 557,
+      "type": "PreviewImage",
+      "pos": [
+        -1429.4950481070691,
+        810
+      ],
+      "size": {
+        "0": 205,
+        "1": 246
+      },
+      "flags": {},
+      "order": 207,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 1081,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 563,
+      "type": "🌱 Transform (jov)",
+      "pos": [
+        -1429.4950481070691,
+        1100
+      ],
+      "size": {
+        "0": 210,
+        "1": 270
+      },
+      "flags": {},
+      "order": 203,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixels",
+          "type": "*",
+          "link": 1077
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            1081
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🌱 Transform (jov)"
+      },
+      "widgets_values": [
+        0,
+        0,
+        0,
+        1,
+        1,
+        "CLIP",
+        256,
+        256,
+        "NONE"
+      ],
+      "color": "#322",
+      "bgcolor": "#533"
+    },
+    {
+      "id": 562,
+      "type": "🌱 Transform (jov)",
+      "pos": [
+        -1669.4950481070691,
+        1100
+      ],
+      "size": {
+        "0": 210,
+        "1": 270
+      },
+      "flags": {},
+      "order": 206,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixels",
+          "type": "*",
+          "link": 1099
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            1082
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🌱 Transform (jov)"
+      },
+      "widgets_values": [
+        0,
+        0,
+        0,
+        1,
+        1,
+        "CLIP",
+        256,
+        256,
+        "NONE"
+      ],
+      "color": "#322",
+      "bgcolor": "#533"
+    },
+    {
+      "id": 565,
+      "type": "🌱 Transform (jov)",
+      "pos": [
+        -1429.4950481070691,
+        1470
+      ],
+      "size": {
+        "0": 210,
+        "1": 270
+      },
+      "flags": {},
+      "order": 205,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixels",
+          "type": "*",
+          "link": 1079
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            1083
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🌱 Transform (jov)"
+      },
+      "widgets_values": [
+        0,
+        0,
+        0,
+        1,
+        1,
+        "CLIP",
+        256,
+        256,
+        "NONE"
+      ],
+      "color": "#322",
+      "bgcolor": "#533"
+    },
+    {
+      "id": 564,
+      "type": "🌱 Transform (jov)",
+      "pos": [
+        -1669.4950481070691,
+        1470
+      ],
+      "size": {
+        "0": 210,
+        "1": 270
+      },
+      "flags": {},
+      "order": 204,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixels",
+          "type": "*",
+          "link": 1078
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            1084
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🌱 Transform (jov)"
+      },
+      "widgets_values": [
+        0,
+        0,
+        0,
+        1,
+        1,
+        "CLIP",
+        256,
+        256,
+        "NONE"
+      ],
+      "color": "#322",
+      "bgcolor": "#533"
+    },
+    {
+      "id": 556,
+      "type": "🌱 Transform (jov)",
+      "pos": [
+        -1920,
+        1470
+      ],
+      "size": {
+        "0": 210,
+        "1": 270
+      },
+      "flags": {},
+      "order": 190,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixels",
+          "type": "*",
+          "link": 1087
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            1085
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🌱 Transform (jov)"
+      },
+      "widgets_values": [
+        0,
+        0,
+        0,
+        1,
+        1,
+        "CLIP",
+        256,
+        256,
+        "NONE"
+      ],
+      "color": "#322",
+      "bgcolor": "#533"
+    },
+    {
+      "id": 555,
+      "type": "🌱 Transform (jov)",
+      "pos": [
+        -2160,
+        1470
+      ],
+      "size": {
+        "0": 210,
+        "1": 270
+      },
+      "flags": {},
+      "order": 191,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixels",
+          "type": "*",
+          "link": 1088
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            1086
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🌱 Transform (jov)"
+      },
+      "widgets_values": [
+        0,
+        0,
+        0,
+        1,
+        1,
+        "CLIP",
+        256,
+        256,
+        "NONE"
+      ],
+      "color": "#322",
+      "bgcolor": "#533"
+    },
+    {
+      "id": 554,
+      "type": "🌱 Transform (jov)",
+      "pos": [
+        -1920,
+        1100
+      ],
+      "size": {
+        "0": 210,
+        "1": 270
+      },
+      "flags": {},
+      "order": 189,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixels",
+          "type": "*",
+          "link": 1069
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            1091
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🌱 Transform (jov)"
+      },
+      "widgets_values": [
+        0,
+        0,
+        0,
+        1,
+        1,
+        "CLIP",
+        256,
+        256,
+        "NONE"
+      ],
+      "color": "#322",
+      "bgcolor": "#533"
+    },
+    {
+      "id": 553,
+      "type": "🌱 Transform (jov)",
+      "pos": [
+        -2160,
+        1100
+      ],
+      "size": {
+        "0": 210,
+        "1": 270
+      },
+      "flags": {},
+      "order": 188,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixels",
+          "type": "*",
+          "link": 1068
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            1092
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🌱 Transform (jov)"
+      },
+      "widgets_values": [
+        0,
+        0,
+        0,
+        1,
+        1,
+        "CLIP",
+        256,
+        256,
+        "NONE"
+      ],
+      "color": "#322",
+      "bgcolor": "#533"
+    },
+    {
+      "id": 552,
+      "type": "🚌 Route (jov)",
+      "pos": [
+        -2044,
+        1410
+      ],
+      "size": {
+        "0": 210,
+        "1": 26
+      },
+      "flags": {},
+      "order": 176,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "o",
+          "type": "*",
+          "link": 1089,
+          "slot_index": 0
+        }
+      ],
+      "outputs": [
+        {
+          "name": "🚌",
+          "type": "*",
+          "links": [
+            1068,
+            1069,
+            1087,
+            1088,
+            1090
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🚌 Route (jov)"
+      },
+      "color": "#222",
+      "bgcolor": "#000"
+    },
+    {
+      "id": 132,
+      "type": "PreviewImage",
+      "pos": [
+        -6660,
+        1140
+      ],
+      "size": {
+        "0": 188.5479736328125,
+        "1": 246
+      },
+      "flags": {},
+      "order": 28,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 869
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 572,
+      "type": "PreviewImage",
+      "pos": [
+        -3556,
+        2283
+      ],
+      "size": {
+        "0": 210,
+        "1": 246
+      },
+      "flags": {},
+      "order": 108,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 1114
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 582,
+      "type": "PreviewImage",
+      "pos": [
+        -3550,
+        1850
+      ],
+      "size": {
+        "0": 210,
+        "1": 246
+      },
+      "flags": {},
+      "order": 100,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 1115
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 584,
+      "type": "PreviewImage",
+      "pos": [
+        -3030,
+        2283
+      ],
+      "size": {
+        "0": 210,
+        "1": 246
+      },
+      "flags": {},
+      "order": 101,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 1116
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 588,
+      "type": "PreviewImage",
+      "pos": [
+        -3290,
+        1850
+      ],
+      "size": {
+        "0": 210,
+        "1": 246
+      },
+      "flags": {},
+      "order": 99,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 1124
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 591,
+      "type": "PreviewImage",
+      "pos": [
+        -4420,
+        2283
+      ],
+      "size": {
+        "0": 210,
+        "1": 246
+      },
+      "flags": {},
+      "order": 139,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 1125
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 595,
+      "type": "PreviewImage",
+      "pos": [
+        -3900,
+        2283
+      ],
+      "size": {
+        "0": 210,
+        "1": 246
+      },
+      "flags": {},
+      "order": 130,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 1128
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 597,
+      "type": "PreviewImage",
+      "pos": [
+        -3890,
+        1850
+      ],
+      "size": {
+        "0": 210,
+        "1": 246
+      },
+      "flags": {},
+      "order": 131,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 1130
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 599,
+      "type": "PreviewImage",
+      "pos": [
+        -4160,
+        1850
+      ],
+      "size": {
+        "0": 210,
+        "1": 246
+      },
+      "flags": {},
+      "order": 132,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 1132
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 593,
+      "type": "PreviewImage",
+      "pos": [
+        -4420,
+        1850
+      ],
+      "size": {
+        "0": 210,
+        "1": 246
+      },
+      "flags": {},
+      "order": 129,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 1126
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 602,
+      "type": "PreviewImage",
+      "pos": [
+        -5270,
+        2283
+      ],
+      "size": {
+        "0": 210,
+        "1": 246
+      },
+      "flags": {},
+      "order": 163,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 1134
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 606,
+      "type": "PreviewImage",
+      "pos": [
+        -4740,
+        2283
+      ],
+      "size": {
+        "0": 210,
+        "1": 246
+      },
+      "flags": {},
+      "order": 153,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 1137
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 608,
+      "type": "PreviewImage",
+      "pos": [
+        -4730,
+        1850
+      ],
+      "size": {
+        "0": 210,
+        "1": 246
+      },
+      "flags": {},
+      "order": 154,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 1139
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 610,
+      "type": "PreviewImage",
+      "pos": [
+        -5000,
+        1850
+      ],
+      "size": {
+        "0": 210,
+        "1": 246
+      },
+      "flags": {},
+      "order": 155,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 1141
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 604,
+      "type": "PreviewImage",
+      "pos": [
+        -5260,
+        1850
+      ],
+      "size": {
+        "0": 210,
+        "1": 246
+      },
+      "flags": {},
+      "order": 152,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 1135
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 613,
+      "type": "PreviewImage",
+      "pos": [
+        -5280,
+        3280
+      ],
+      "size": {
+        "0": 210,
+        "1": 246
+      },
+      "flags": {},
+      "order": 184,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 1143
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 614,
+      "type": "🕸️ Adjust (jov)",
+      "pos": [
+        -5280,
+        3550
+      ],
+      "size": {
+        "0": 210,
+        "1": 126
+      },
+      "flags": {},
+      "order": 161,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixels",
+          "type": "*",
+          "link": 1170,
+          "slot_index": 0
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            1143
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🕸️ Adjust (jov)"
+      },
+      "widgets_values": [
+        "INVERT",
+        1,
+        0
+      ]
+    },
+    {
+      "id": 615,
+      "type": "PreviewImage",
+      "pos": [
+        -5280,
+        2830
+      ],
+      "size": {
+        "0": 210,
+        "1": 246
+      },
+      "flags": {},
+      "order": 177,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 1144
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 616,
+      "type": "🕸️ Adjust (jov)",
+      "pos": [
+        -5280,
+        3110
+      ],
+      "size": {
+        "0": 210,
+        "1": 126
+      },
+      "flags": {},
+      "order": 156,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixels",
+          "type": "*",
+          "link": 1145,
+          "slot_index": 0
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            1144
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🕸️ Adjust (jov)"
+      },
+      "widgets_values": [
+        "INVERT",
+        1,
+        0.25
+      ]
+    },
+    {
+      "id": 617,
+      "type": "PreviewImage",
+      "pos": [
+        -4760,
+        3290
+      ],
+      "size": {
+        "0": 210,
+        "1": 246
+      },
+      "flags": {},
+      "order": 178,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 1146
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 618,
+      "type": "🕸️ Adjust (jov)",
+      "pos": [
+        -4760,
+        3560
+      ],
+      "size": {
+        "0": 210,
+        "1": 126
+      },
+      "flags": {},
+      "order": 157,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixels",
+          "type": "*",
+          "link": 1147,
+          "slot_index": 0
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            1146
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🕸️ Adjust (jov)"
+      },
+      "widgets_values": [
+        "INVERT",
+        1,
+        1
+      ]
+    },
+    {
+      "id": 619,
+      "type": "PreviewImage",
+      "pos": [
+        -4750,
+        2830
+      ],
+      "size": {
+        "0": 210,
+        "1": 246
+      },
+      "flags": {},
+      "order": 179,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 1148
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 620,
+      "type": "🕸️ Adjust (jov)",
+      "pos": [
+        -4750,
+        3110
+      ],
+      "size": {
+        "0": 210,
+        "1": 126
+      },
+      "flags": {},
+      "order": 158,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixels",
+          "type": "*",
+          "link": 1149,
+          "slot_index": 0
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            1148
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🕸️ Adjust (jov)"
+      },
+      "widgets_values": [
+        "INVERT",
+        1,
+        0.75
+      ]
+    },
+    {
+      "id": 622,
+      "type": "🕸️ Adjust (jov)",
+      "pos": [
+        -5020,
+        3130
+      ],
+      "size": {
+        "0": 210,
+        "1": 126
+      },
+      "flags": {},
+      "order": 159,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixels",
+          "type": "*",
+          "link": 1151,
+          "slot_index": 0
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            1150
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🕸️ Adjust (jov)"
+      },
+      "widgets_values": [
+        "INVERT",
+        1,
+        0.5
+      ]
+    },
+    {
+      "id": 621,
+      "type": "PreviewImage",
+      "pos": [
+        -5020,
+        2850
+      ],
+      "size": {
+        "0": 210,
+        "1": 246
+      },
+      "flags": {},
+      "order": 180,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 1150
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 626,
+      "type": "PreviewImage",
+      "pos": [
+        -4390,
+        2860
+      ],
+      "size": {
+        "0": 210,
+        "1": 246
+      },
+      "flags": {},
+      "order": 193,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 1153
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 630,
+      "type": "PreviewImage",
+      "pos": [
+        -3860,
+        2860
+      ],
+      "size": {
+        "0": 210,
+        "1": 246
+      },
+      "flags": {},
+      "order": 194,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 1157
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 632,
+      "type": "PreviewImage",
+      "pos": [
+        -4130,
+        2860
+      ],
+      "size": {
+        "0": 210,
+        "1": 246
+      },
+      "flags": {},
+      "order": 195,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 1159
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 636,
+      "type": "PreviewImage",
+      "pos": [
+        -3860,
+        3460
+      ],
+      "size": {
+        "0": 210,
+        "1": 246
+      },
+      "flags": {},
+      "order": 197,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 1166
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 638,
+      "type": "PreviewImage",
+      "pos": [
+        -4130,
+        3460
+      ],
+      "size": {
+        "0": 210,
+        "1": 246
+      },
+      "flags": {},
+      "order": 196,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 1167
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 634,
+      "type": "PreviewImage",
+      "pos": [
+        -4390,
+        3460
+      ],
+      "size": {
+        "0": 210,
+        "1": 246
+      },
+      "flags": {},
+      "order": 198,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 1165
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 586,
+      "type": "PreviewImage",
+      "pos": [
+        -3020,
+        1850
+      ],
+      "size": {
+        "0": 210,
+        "1": 246
+      },
+      "flags": {},
+      "order": 98,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 1123
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 590,
+      "type": "🚌 Route (jov)",
+      "pos": [
+        -4180,
+        2660
+      ],
+      "size": {
+        "0": 210,
+        "1": 26
+      },
+      "flags": {},
+      "order": 79,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "o",
+          "type": "*",
+          "link": 1164
+        }
+      ],
+      "outputs": [
+        {
+          "name": "🚌",
+          "type": "*",
+          "links": [
+            1127,
+            1129,
+            1131,
+            1133,
+            1163,
+            1168
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🚌 Route (jov)"
+      },
+      "color": "#222",
+      "bgcolor": "#000"
+    },
+    {
+      "id": 601,
+      "type": "🚌 Route (jov)",
+      "pos": [
+        -5030,
+        2660
+      ],
+      "size": {
+        "0": 210,
+        "1": 26
+      },
+      "flags": {},
+      "order": 106,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "o",
+          "type": "*",
+          "link": 1163
+        }
+      ],
+      "outputs": [
+        {
+          "name": "🚌",
+          "type": "*",
+          "links": [
+            1136,
+            1138,
+            1140,
+            1142,
+            1162,
+            1169
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🚌 Route (jov)"
+      },
+      "color": "#222",
+      "bgcolor": "#000"
+    },
+    {
+      "id": 640,
+      "type": "🚌 Route (jov)",
+      "pos": [
+        -4126,
+        3894
+      ],
+      "size": {
+        "0": 210,
+        "1": 26
+      },
+      "flags": {},
+      "order": 162,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "o",
+          "type": "*",
+          "link": 1174,
+          "slot_index": 0
+        }
+      ],
+      "outputs": [
+        {
+          "name": "🚌",
+          "type": "*",
+          "links": [
+            1171,
+            1172,
+            1173
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🚌 Route (jov)"
+      },
+      "color": "#222",
+      "bgcolor": "#000"
+    },
+    {
+      "id": 623,
+      "type": "🚌 Route (jov)",
+      "pos": [
+        -4126,
+        3320
+      ],
+      "size": {
+        "0": 210,
+        "1": 26
+      },
+      "flags": {},
+      "order": 160,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "o",
+          "type": "*",
+          "link": 1161,
+          "slot_index": 0
+        }
+      ],
+      "outputs": [
+        {
+          "name": "🚌",
+          "type": "*",
+          "links": [
+            1154,
+            1158,
+            1160
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🚌 Route (jov)"
+      },
+      "color": "#222",
+      "bgcolor": "#000"
+    },
+    {
+      "id": 641,
+      "type": "PreviewImage",
+      "pos": [
+        -3500,
+        2860
+      ],
+      "size": {
+        "0": 210,
+        "1": 246
+      },
+      "flags": {},
+      "order": 58,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 1175
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 643,
+      "type": "PreviewImage",
+      "pos": [
+        -3100,
+        2850
+      ],
+      "size": {
+        "0": 210,
+        "1": 246
+      },
+      "flags": {},
+      "order": 57,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 1177
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 471,
+      "type": "🚌 Route (jov)",
+      "pos": [
+        -2447,
+        2677
+      ],
+      "size": {
+        "0": 210,
+        "1": 26
+      },
+      "flags": {},
+      "order": 32,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "o",
+          "type": "*",
+          "link": 872,
+          "slot_index": 0
+        }
+      ],
+      "outputs": [
+        {
+          "name": "🚌",
+          "type": "*",
+          "links": [
+            873,
+            874,
+            875,
+            876,
+            877,
+            1179
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🚌 Route (jov)"
+      },
+      "color": "#222",
+      "bgcolor": "#000"
+    },
+    {
+      "id": 533,
+      "type": "🚌 Route (jov)",
+      "pos": [
+        -3320,
+        2660
+      ],
+      "size": {
+        "0": 210,
+        "1": 26
+      },
+      "flags": {},
+      "order": 55,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "o",
+          "type": "*",
+          "link": 1179
+        }
+      ],
+      "outputs": [
+        {
+          "name": "🚌",
+          "type": "*",
+          "links": [
+            1020,
+            1119,
+            1120,
+            1121,
+            1122,
+            1164,
+            1180
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🚌 Route (jov)"
+      },
+      "color": "#222",
+      "bgcolor": "#000"
+    },
+    {
+      "id": 644,
+      "type": "🕸️ Adjust (jov)",
+      "pos": [
+        -3100,
+        3120
+      ],
+      "size": {
+        "0": 210,
+        "1": 126
+      },
+      "flags": {},
+      "order": 35,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixels",
+          "type": "*",
+          "link": 1178,
+          "slot_index": 0
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            1177
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🕸️ Adjust (jov)"
+      },
+      "widgets_values": [
+        "EMBOSS",
+        1,
+        1
+      ]
+    },
+    {
+      "id": 642,
+      "type": "🕸️ Adjust (jov)",
+      "pos": [
+        -3500,
+        3130
+      ],
+      "size": {
+        "0": 210,
+        "1": 126
+      },
+      "flags": {},
+      "order": 36,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixels",
+          "type": "*",
+          "link": 1181,
+          "slot_index": 0
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            1175
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🕸️ Adjust (jov)"
+      },
+      "widgets_values": [
+        "FIND_EDGES",
+        1,
+        1
+      ]
+    },
+    {
+      "id": 637,
+      "type": "🕸️ Adjust (jov)",
+      "pos": [
+        -3860,
+        3730
+      ],
+      "size": {
+        "0": 210,
+        "1": 126
+      },
+      "flags": {},
+      "order": 186,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixels",
+          "type": "*",
+          "link": 1172,
+          "slot_index": 0
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            1166
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🕸️ Adjust (jov)"
+      },
+      "widgets_values": [
+        "SHARPEN",
+        22,
+        1
+      ]
+    },
+    {
+      "id": 639,
+      "type": "🕸️ Adjust (jov)",
+      "pos": [
+        -4130,
+        3730
+      ],
+      "size": {
+        "0": 210,
+        "1": 126
+      },
+      "flags": {},
+      "order": 185,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixels",
+          "type": "*",
+          "link": 1171,
+          "slot_index": 0
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            1167
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🕸️ Adjust (jov)"
+      },
+      "widgets_values": [
+        "SHARPEN",
+        11,
+        1
+      ]
+    },
+    {
+      "id": 635,
+      "type": "🕸️ Adjust (jov)",
+      "pos": [
+        -4390,
+        3730
+      ],
+      "size": {
+        "0": 210,
+        "1": 126
+      },
+      "flags": {},
+      "order": 187,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixels",
+          "type": "*",
+          "link": 1173,
+          "slot_index": 0
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            1165
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🕸️ Adjust (jov)"
+      },
+      "widgets_values": [
+        "SHARPEN",
+        2,
+        1
+      ]
+    },
+    {
+      "id": 627,
+      "type": "🕸️ Adjust (jov)",
+      "pos": [
+        -4390,
+        3140
+      ],
+      "size": {
+        "0": 210,
+        "1": 126
+      },
+      "flags": {},
+      "order": 181,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixels",
+          "type": "*",
+          "link": 1154,
+          "slot_index": 0
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            1153
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🕸️ Adjust (jov)"
+      },
+      "widgets_values": [
+        "BLUR",
+        2,
+        1
+      ]
+    },
+    {
+      "id": 633,
+      "type": "🕸️ Adjust (jov)",
+      "pos": [
+        -4130,
+        3140
+      ],
+      "size": {
+        "0": 210,
+        "1": 126
+      },
+      "flags": {},
+      "order": 183,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixels",
+          "type": "*",
+          "link": 1160,
+          "slot_index": 0
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            1159
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🕸️ Adjust (jov)"
+      },
+      "widgets_values": [
+        "BLUR",
+        11,
+        1
+      ]
+    },
+    {
+      "id": 631,
+      "type": "🕸️ Adjust (jov)",
+      "pos": [
+        -3860,
+        3140
+      ],
+      "size": {
+        "0": 210,
+        "1": 126
+      },
+      "flags": {},
+      "order": 182,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixels",
+          "type": "*",
+          "link": 1158,
+          "slot_index": 0
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            1157
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🕸️ Adjust (jov)"
+      },
+      "widgets_values": [
+        "BLUR",
+        22,
+        1
+      ]
+    },
+    {
+      "id": 605,
+      "type": "🕸️ Adjust (jov)",
+      "pos": [
+        -5260,
+        2130
+      ],
+      "size": {
+        "0": 210,
+        "1": 126
+      },
+      "flags": {},
+      "order": 133,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixels",
+          "type": "*",
+          "link": 1136,
+          "slot_index": 0
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            1135
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🕸️ Adjust (jov)"
+      },
+      "widgets_values": [
+        "CONTRAST",
+        1,
+        0.25
+      ]
+    },
+    {
+      "id": 611,
+      "type": "🕸️ Adjust (jov)",
+      "pos": [
+        -5000,
+        2130
+      ],
+      "size": {
+        "0": 210,
+        "1": 126
+      },
+      "flags": {},
+      "order": 136,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixels",
+          "type": "*",
+          "link": 1142,
+          "slot_index": 0
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            1141
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🕸️ Adjust (jov)"
+      },
+      "widgets_values": [
+        "CONTRAST",
+        1,
+        0.5
+      ]
+    },
+    {
+      "id": 609,
+      "type": "🕸️ Adjust (jov)",
+      "pos": [
+        -4730,
+        2130
+      ],
+      "size": {
+        "0": 210,
+        "1": 126
+      },
+      "flags": {},
+      "order": 135,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixels",
+          "type": "*",
+          "link": 1140,
+          "slot_index": 0
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            1139
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🕸️ Adjust (jov)"
+      },
+      "widgets_values": [
+        "CONTRAST",
+        1,
+        0.75
+      ]
+    },
+    {
+      "id": 607,
+      "type": "🕸️ Adjust (jov)",
+      "pos": [
+        -4740,
+        2560
+      ],
+      "size": {
+        "0": 210,
+        "1": 126
+      },
+      "flags": {},
+      "order": 134,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixels",
+          "type": "*",
+          "link": 1138,
+          "slot_index": 0
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            1137
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🕸️ Adjust (jov)"
+      },
+      "widgets_values": [
+        "CONTRAST",
+        1,
+        1
+      ]
+    },
+    {
+      "id": 603,
+      "type": "🕸️ Adjust (jov)",
+      "pos": [
+        -5270,
+        2560
+      ],
+      "size": {
+        "0": 210,
+        "1": 126
+      },
+      "flags": {},
+      "order": 138,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixels",
+          "type": "*",
+          "link": 1169,
+          "slot_index": 0
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            1134
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🕸️ Adjust (jov)"
+      },
+      "widgets_values": [
+        "CONTRAST",
+        1,
+        0
+      ]
+    },
+    {
+      "id": 594,
+      "type": "🕸️ Adjust (jov)",
+      "pos": [
+        -4420,
+        2130
+      ],
+      "size": {
+        "0": 210,
+        "1": 126
+      },
+      "flags": {},
+      "order": 102,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixels",
+          "type": "*",
+          "link": 1127,
+          "slot_index": 0
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            1126
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🕸️ Adjust (jov)"
+      },
+      "widgets_values": [
+        "CONTRAST",
+        1,
+        0.25
+      ]
+    },
+    {
+      "id": 600,
+      "type": "🕸️ Adjust (jov)",
+      "pos": [
+        -4160,
+        2130
+      ],
+      "size": {
+        "0": 210,
+        "1": 126
+      },
+      "flags": {},
+      "order": 105,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixels",
+          "type": "*",
+          "link": 1133,
+          "slot_index": 0
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            1132
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🕸️ Adjust (jov)"
+      },
+      "widgets_values": [
+        "CONTRAST",
+        1,
+        0.5
+      ]
+    },
+    {
+      "id": 598,
+      "type": "🕸️ Adjust (jov)",
+      "pos": [
+        -3890,
+        2130
+      ],
+      "size": {
+        "0": 210,
+        "1": 126
+      },
+      "flags": {},
+      "order": 104,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixels",
+          "type": "*",
+          "link": 1131,
+          "slot_index": 0
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            1130
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🕸️ Adjust (jov)"
+      },
+      "widgets_values": [
+        "CONTRAST",
+        1,
+        0.75
+      ]
+    },
+    {
+      "id": 596,
+      "type": "🕸️ Adjust (jov)",
+      "pos": [
+        -3900,
+        2560
+      ],
+      "size": {
+        "0": 210,
+        "1": 126
+      },
+      "flags": {},
+      "order": 103,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixels",
+          "type": "*",
+          "link": 1129,
+          "slot_index": 0
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            1128
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🕸️ Adjust (jov)"
+      },
+      "widgets_values": [
+        "CONTRAST",
+        1,
+        1
+      ]
+    },
+    {
+      "id": 592,
+      "type": "🕸️ Adjust (jov)",
+      "pos": [
+        -4420,
+        2560
+      ],
+      "size": {
+        "0": 210,
+        "1": 126
+      },
+      "flags": {},
+      "order": 107,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixels",
+          "type": "*",
+          "link": 1168,
+          "slot_index": 0
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            1125
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🕸️ Adjust (jov)"
+      },
+      "widgets_values": [
+        "CONTRAST",
+        1,
+        0
+      ]
+    },
+    {
+      "id": 583,
+      "type": "🕸️ Adjust (jov)",
+      "pos": [
+        -3550,
+        2130
+      ],
+      "size": {
+        "0": 210,
+        "1": 126
+      },
+      "flags": {},
+      "order": 77,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixels",
+          "type": "*",
+          "link": 1121,
+          "slot_index": 0
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            1115
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🕸️ Adjust (jov)"
+      },
+      "widgets_values": [
+        "GAMMA",
+        1,
+        0.25
+      ]
+    },
+    {
+      "id": 589,
+      "type": "🕸️ Adjust (jov)",
+      "pos": [
+        -3290,
+        2130
+      ],
+      "size": {
+        "0": 210,
+        "1": 126
+      },
+      "flags": {},
+      "order": 76,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixels",
+          "type": "*",
+          "link": 1120,
+          "slot_index": 0
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            1124
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🕸️ Adjust (jov)"
+      },
+      "widgets_values": [
+        "GAMMA",
+        1,
+        0.5
+      ]
+    },
+    {
+      "id": 587,
+      "type": "🕸️ Adjust (jov)",
+      "pos": [
+        -3020,
+        2130
+      ],
+      "size": {
+        "0": 210,
+        "1": 126
+      },
+      "flags": {},
+      "order": 75,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixels",
+          "type": "*",
+          "link": 1119,
+          "slot_index": 0
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            1123
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🕸️ Adjust (jov)"
+      },
+      "widgets_values": [
+        "GAMMA",
+        1,
+        0.75
+      ]
+    },
+    {
+      "id": 585,
+      "type": "🕸️ Adjust (jov)",
+      "pos": [
+        -3030,
+        2560
+      ],
+      "size": {
+        "0": 210,
+        "1": 126
+      },
+      "flags": {},
+      "order": 78,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixels",
+          "type": "*",
+          "link": 1122,
+          "slot_index": 0
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            1116
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🕸️ Adjust (jov)"
+      },
+      "widgets_values": [
+        "GAMMA",
+        1,
+        1
+      ]
+    },
+    {
+      "id": 581,
+      "type": "🕸️ Adjust (jov)",
+      "pos": [
+        -3560,
+        2560
+      ],
+      "size": {
+        "0": 210,
+        "1": 126
+      },
+      "flags": {},
+      "order": 80,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixels",
+          "type": "*",
+          "link": 1180,
+          "slot_index": 0
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            1114
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🕸️ Adjust (jov)"
+      },
+      "widgets_values": [
+        "GAMMA",
+        1,
+        0
+      ]
+    },
+    {
+      "id": 164,
+      "type": "PreviewImage",
+      "pos": [
+        -5650,
+        2420
+      ],
+      "size": {
+        "0": 205,
+        "1": 246
+      },
+      "flags": {},
+      "order": 117,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 1098
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "color": "#2a363b",
+      "bgcolor": "#3f5159"
+    },
+    {
+      "id": 84,
+      "type": "PreviewImage",
+      "pos": [
+        -5910,
+        2420
+      ],
+      "size": {
+        "0": 205,
+        "1": 246
+      },
+      "flags": {},
+      "order": 90,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 1096
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "color": "#2a363b",
+      "bgcolor": "#3f5159"
+    },
+    {
+      "id": 15,
+      "type": "PreviewImage",
+      "pos": [
+        -6170,
+        2420
+      ],
+      "size": {
+        "0": 205,
+        "1": 246
+      },
+      "flags": {},
+      "order": 59,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 1013
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "color": "#2a363b",
+      "bgcolor": "#3f5159"
+    },
+    {
+      "id": 475,
+      "type": "🔳 Tile (jov)",
+      "pos": [
+        -2450,
+        2410
+      ],
+      "size": {
+        "0": 210,
+        "1": 102
+      },
+      "flags": {},
+      "order": 51,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixels",
+          "type": "*",
+          "link": 874,
+          "slot_index": 0
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            880
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🔳 Tile (jov)"
+      },
+      "widgets_values": [
+        3,
+        3
+      ]
+    },
+    {
+      "id": 474,
+      "type": "🔳 Tile (jov)",
+      "pos": [
+        -2200,
+        2410
+      ],
+      "size": {
+        "0": 210,
+        "1": 102
+      },
+      "flags": {},
+      "order": 52,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixels",
+          "type": "*",
+          "link": 875,
+          "slot_index": 0
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            879
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🔳 Tile (jov)"
+      },
+      "widgets_values": [
+        4,
+        2
+      ]
+    },
+    {
+      "id": 472,
+      "type": "🔳 Tile (jov)",
+      "pos": [
+        -2196,
+        2820
+      ],
+      "size": {
+        "0": 210,
+        "1": 102
+      },
+      "flags": {},
+      "order": 54,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixels",
+          "type": "*",
+          "link": 877,
+          "slot_index": 0
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            878
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🔳 Tile (jov)"
+      },
+      "widgets_values": [
+        2,
+        4
+      ]
+    },
+    {
+      "id": 570,
+      "type": "🔆 Pixel Shader Image (jov)",
+      "pos": [
+        -5660,
+        2120
+      ],
+      "size": {
+        "0": 226.8000030517578,
+        "1": 244.00010681152344
+      },
+      "flags": {},
+      "order": 91,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 1097
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            1098
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🔆 Pixel Shader Image (jov)"
+      },
+      "widgets_values": [
+        "",
+        "",
+        "1. - np.minimum(1, np.sqrt((($u-0.5)**2 + ($v-0.5)**2) * 2))",
+        64,
+        64
+      ]
+    },
+    {
+      "id": 101,
+      "type": "✨ Shape Generator (jov)",
+      "pos": [
+        -2609,
+        3124
+      ],
+      "size": {
+        "0": 210,
+        "1": 318
+      },
+      "flags": {
+        "pinned": false
+      },
+      "order": 11,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            423,
+            872,
+            1027,
+            1029,
+            1178,
+            1181
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "✨ Shape Generator (jov)"
+      },
+      "widgets_values": [
+        "POLYGON",
+        5,
+        256,
+        256,
+        0.6000000000000001,
+        1,
+        0.20000000000000004,
+        0,
+        0.8,
+        0.8,
+        0
+      ]
+    },
+    {
+      "id": 534,
+      "type": "🔆 Pixel Shader (jov)",
+      "pos": [
+        -6420,
+        2120
+      ],
+      "size": {
+        "0": 210,
+        "1": 244
+      },
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            1023,
+            1024
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🔆 Pixel Shader (jov)"
+      },
+      "widgets_values": [
+        "",
+        "",
+        "($u + $v) * 0.5",
+        64,
+        64
+      ]
+    },
+    {
+      "id": 569,
+      "type": "🔆 Pixel Shader Image (jov)",
+      "pos": [
+        -5920,
+        2120
+      ],
+      "size": {
+        "0": 226.8000030517578,
+        "1": 244.0000457763672
+      },
+      "flags": {},
+      "order": 60,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 1095
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            1096,
+            1097
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🔆 Pixel Shader Image (jov)"
+      },
+      "widgets_values": [
+        "",
+        "1. - np.minimum(1, np.sqrt((($u-0.5)**2 + ($v-0.5)**2) * 2))",
+        "",
+        64,
+        64
+      ]
+    },
+    {
+      "id": 532,
+      "type": "🔆 Pixel Shader Image (jov)",
+      "pos": [
+        -6180,
+        2120
+      ],
+      "size": {
+        "0": 226.8000030517578,
+        "1": 244.0000457763672
+      },
+      "flags": {},
+      "order": 38,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 1024
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            1013,
+            1095
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🔆 Pixel Shader Image (jov)"
+      },
+      "widgets_values": [
+        "1. - np.minimum(1, np.sqrt((($u-0.5)**2 + ($v-0.5)**2) * 2))",
+        "",
+        "",
+        64,
+        64
+      ]
+    },
+    {
+      "id": 363,
+      "type": "PreviewImage",
+      "pos": [
+        -6420,
+        2420
+      ],
+      "size": {
+        "0": 205,
+        "1": 246
+      },
+      "flags": {},
+      "order": 37,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 1023,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "color": "#2a363b",
+      "bgcolor": "#3f5159"
+    },
+    {
+      "id": 646,
+      "type": "🔆 Pixel Shader (jov)",
+      "pos": [
+        -6650,
+        2120
+      ],
+      "size": {
+        "0": 210,
+        "1": 244
+      },
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            1182
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🔆 Pixel Shader (jov)"
+      },
+      "widgets_values": [
+        "$u",
+        "",
+        "",
+        64,
+        64
+      ]
+    },
+    {
+      "id": 647,
+      "type": "PreviewImage",
+      "pos": [
+        -6880,
+        2420
+      ],
+      "size": {
+        "0": 205,
+        "1": 246
+      },
+      "flags": {},
+      "order": 40,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 1183,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "color": "#2a363b",
+      "bgcolor": "#3f5159"
+    },
+    {
+      "id": 648,
+      "type": "🔆 Pixel Shader (jov)",
+      "pos": [
+        -6880,
+        2120
+      ],
+      "size": {
+        "0": 210,
+        "1": 244
+      },
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            1183
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🔆 Pixel Shader (jov)"
+      },
+      "widgets_values": [
+        "",
+        "$V",
+        "",
+        64,
+        64
+      ]
+    },
+    {
+      "id": 645,
+      "type": "PreviewImage",
+      "pos": [
+        -6650,
+        2420
+      ],
+      "size": {
+        "0": 205,
+        "1": 246
+      },
+      "flags": {},
+      "order": 39,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 1182,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "color": "#2a363b",
+      "bgcolor": "#3f5159"
+    },
+    {
+      "id": 558,
+      "type": "PreviewImage",
+      "pos": [
+        -1669.3876035156259,
+        810
+      ],
+      "size": {
+        "0": 205,
+        "1": 246
+      },
+      "flags": {},
+      "order": 210,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 1082,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 561,
+      "type": "🚌 Route (jov)",
+      "pos": [
+        -1549.4950481070691,
+        1410
+      ],
+      "size": {
+        "0": 210,
+        "1": 26
+      },
+      "flags": {},
+      "order": 192,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "o",
+          "type": "*",
+          "link": 1090,
+          "slot_index": 0
+        }
+      ],
+      "outputs": [
+        {
+          "name": "🚌",
+          "type": "*",
+          "links": [
+            1077,
+            1078,
+            1079,
+            1099
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🚌 Route (jov)"
+      },
+      "color": "#222",
+      "bgcolor": "#000"
+    },
+    {
+      "id": 654,
+      "type": "🎇 Expand (jov)",
+      "pos": [
+        -670,
+        1630
+      ],
+      "size": {
+        "0": 210,
+        "1": 174
+      },
+      "flags": {},
+      "order": 44,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixelA",
+          "type": "*",
+          "link": 1198,
+          "slot_index": 0
+        },
+        {
+          "name": "pixelB",
+          "type": "*",
+          "link": 1196,
+          "slot_index": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            1195
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": [],
+          "shape": 3,
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🎇 Expand (jov)"
+      },
+      "widgets_values": [
+        "VERTICAL",
+        true,
+        256,
+        256,
+        "NONE"
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 657,
+      "type": "PreviewImage",
+      "pos": [
+        -430,
+        830
+      ],
+      "size": {
+        "0": 188.5479736328125,
+        "1": 246
+      },
+      "flags": {},
+      "order": 65,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 1199
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 653,
+      "type": "PreviewImage",
+      "pos": [
+        -880,
+        1350
+      ],
+      "size": {
+        "0": 188.5479736328125,
+        "1": 246
+      },
+      "flags": {},
+      "order": 63,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 1192
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 659,
+      "type": "PreviewImage",
+      "pos": [
+        -430,
+        1350
+      ],
+      "size": {
+        "0": 188.5479736328125,
+        "1": 246
+      },
+      "flags": {},
+      "order": 66,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 1202
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 655,
+      "type": "PreviewImage",
+      "pos": [
+        -660,
+        1350
+      ],
+      "size": {
+        "0": 188.5479736328125,
+        "1": 246
+      },
+      "flags": {},
+      "order": 64,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 1195
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 652,
+      "type": "🎇 Expand (jov)",
+      "pos": [
+        -890,
+        1630
+      ],
+      "size": {
+        "0": 210,
+        "1": 174
+      },
+      "flags": {},
+      "order": 43,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixelA",
+          "type": "*",
+          "link": 1193,
+          "slot_index": 0
+        },
+        {
+          "name": "pixelB",
+          "type": "*",
+          "link": 1194,
+          "slot_index": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            1192
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": [],
+          "shape": 3,
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🎇 Expand (jov)"
+      },
+      "widgets_values": [
+        "VERTICAL",
+        false,
+        256,
+        256,
+        "NONE"
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 567,
+      "type": "PreviewImage",
+      "pos": [
+        -650,
+        830
+      ],
+      "size": {
+        "0": 188.5479736328125,
+        "1": 246
+      },
+      "flags": {},
+      "order": 61,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 1093
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 650,
+      "type": "✨ Shape Generator (jov)",
+      "pos": [
+        -1150,
+        1410
+      ],
+      "size": {
+        "0": 210,
+        "1": 318
+      },
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            1188,
+            1190,
+            1194,
+            1196,
+            1204,
+            1205
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "✨ Shape Generator (jov)"
+      },
+      "widgets_values": [
+        "POLYGON",
+        5,
+        256,
+        256,
+        1,
+        0,
+        1,
+        0,
+        1,
+        1,
+        0
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 649,
+      "type": "✨ Shape Generator (jov)",
+      "pos": [
+        -1140,
+        1020
+      ],
+      "size": {
+        "0": 210,
+        "1": 318
+      },
+      "flags": {},
+      "order": 16,
+      "mode": 0,
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            1187,
+            1189,
+            1193,
+            1198,
+            1203,
+            1206
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": [],
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "✨ Shape Generator (jov)"
+      },
+      "widgets_values": [
+        "POLYGON",
+        4,
+        256,
+        256,
+        1,
+        1,
+        0,
+        0,
+        1,
+        1,
+        0
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 656,
+      "type": "🎇 Expand (jov)",
+      "pos": [
+        -440,
+        1100
+      ],
+      "size": {
+        "0": 210,
+        "1": 174
+      },
+      "flags": {},
+      "order": 45,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixelA",
+          "type": "*",
+          "link": 1203
+        },
+        {
+          "name": "pixelB",
+          "type": "*",
+          "link": 1204,
+          "slot_index": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            1199
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": [],
+          "shape": 3,
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🎇 Expand (jov)"
+      },
+      "widgets_values": [
+        "HORIZONTAL",
+        false,
+        256,
+        256,
+        "FIT"
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 651,
+      "type": "🎇 Expand (jov)",
+      "pos": [
+        -900,
+        1100
+      ],
+      "size": {
+        "0": 210,
+        "1": 174
+      },
+      "flags": {},
+      "order": 42,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixelA",
+          "type": "*",
+          "link": 1189
+        },
+        {
+          "name": "pixelB",
+          "type": "*",
+          "link": 1190,
+          "slot_index": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            1191
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": [],
+          "shape": 3,
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🎇 Expand (jov)"
+      },
+      "widgets_values": [
+        "HORIZONTAL",
+        false,
+        256,
+        256,
+        "NONE"
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 431,
+      "type": "🎇 Expand (jov)",
+      "pos": [
+        -670,
+        1100
+      ],
+      "size": {
+        "0": 210,
+        "1": 174
+      },
+      "flags": {},
+      "order": 41,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixelA",
+          "type": "*",
+          "link": 1187
+        },
+        {
+          "name": "pixelB",
+          "type": "*",
+          "link": 1188
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            1093
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": [],
+          "shape": 3,
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🎇 Expand (jov)"
+      },
+      "widgets_values": [
+        "HORIZONTAL",
+        true,
+        256,
+        256,
+        "NONE"
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 568,
+      "type": "PreviewImage",
+      "pos": [
+        -880,
+        830
+      ],
+      "size": {
+        "0": 188.5479736328125,
+        "1": 246
+      },
+      "flags": {},
+      "order": 62,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 1191
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 658,
+      "type": "🎇 Expand (jov)",
+      "pos": [
+        -440,
+        1630
+      ],
+      "size": {
+        "0": 210,
+        "1": 174
+      },
+      "flags": {},
+      "order": 46,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixelA",
+          "type": "*",
+          "link": 1206,
+          "slot_index": 0
+        },
+        {
+          "name": "pixelB",
+          "type": "*",
+          "link": 1205,
+          "slot_index": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            1202
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": [],
+          "shape": 3,
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🎇 Expand (jov)"
+      },
+      "widgets_values": [
+        "VERTICAL",
+        false,
+        256,
+        256,
+        "FIT"
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 526,
+      "type": "🚌 Route (jov)",
+      "pos": [
+        -2560,
+        1410
+      ],
+      "size": {
+        "0": 210,
+        "1": 26
+      },
+      "flags": {},
+      "order": 150,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "o",
+          "type": "*",
+          "link": 965,
+          "slot_index": 0
+        }
+      ],
+      "outputs": [
+        {
+          "name": "🚌",
+          "type": "*",
+          "links": [
+            1049,
+            1050,
+            1052,
+            1060,
+            1061,
+            1062,
+            1063,
+            1089
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🚌 Route (jov)"
+      },
+      "color": "#222",
+      "bgcolor": "#000"
+    },
+    {
+      "id": 525,
+      "type": "🚌 Route (jov)",
+      "pos": [
+        -3308,
+        1660
+      ],
+      "size": {
+        "0": 210,
+        "1": 26
+      },
+      "flags": {},
+      "order": 128,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "o",
+          "type": "*",
+          "link": 958,
+          "slot_index": 0
+        }
+      ],
+      "outputs": [
+        {
+          "name": "🚌",
+          "type": "*",
+          "links": [
+            959,
+            960,
+            961,
+            962,
+            963,
+            965,
+            1042
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🚌 Route (jov)"
+      },
+      "color": "#222",
+      "bgcolor": "#000"
+    },
+    {
+      "id": 612,
+      "type": "🚌 Route (jov)",
+      "pos": [
+        -5040,
+        3660
+      ],
+      "size": {
+        "0": 210,
+        "1": 26
+      },
+      "flags": {},
+      "order": 137,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "o",
+          "type": "*",
+          "link": 1162,
+          "slot_index": 0
+        }
+      ],
+      "outputs": [
+        {
+          "name": "🚌",
+          "type": "*",
+          "links": [
+            1145,
+            1147,
+            1149,
+            1151,
+            1161,
+            1170,
+            1174
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "🚌 Route (jov)"
+      },
+      "color": "#222",
+      "bgcolor": "#000"
+    },
+    {
+      "id": 660,
+      "type": "Note",
+      "pos": [
+        1161,
+        170
+      ],
+      "size": [
+        637.0301765883264,
+        327.8835768108525
+      ],
+      "flags": {},
+      "order": 17,
+      "mode": 0,
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        ""
+      ],
+      "color": "#432",
+      "bgcolor": "#653",
+      "shape": 4
+    }
+  ],
+  "links": [
+    [
+      20,
+      11,
+      0,
+      23,
+      0,
+      "IMAGE"
+    ],
+    [
+      67,
+      52,
+      0,
+      27,
+      1,
+      "IMAGE"
+    ],
+    [
+      106,
+      75,
+      0,
+      74,
+      0,
+      "IMAGE"
+    ],
+    [
+      108,
+      76,
+      0,
+      72,
+      0,
+      "IMAGE"
+    ],
+    [
+      110,
+      77,
+      0,
+      71,
+      0,
+      "IMAGE"
+    ],
+    [
+      127,
+      86,
+      0,
+      87,
+      0,
+      "IMAGE"
+    ],
+    [
+      128,
+      88,
+      0,
+      89,
+      0,
+      "IMAGE"
+    ],
+    [
+      129,
+      90,
+      0,
+      91,
+      0,
+      "IMAGE"
+    ],
+    [
+      130,
+      92,
+      0,
+      93,
+      0,
+      "IMAGE"
+    ],
+    [
+      131,
+      94,
+      0,
+      95,
+      0,
+      "IMAGE"
+    ],
+    [
+      148,
+      102,
+      0,
+      105,
+      0,
+      "IMAGE"
+    ],
+    [
+      149,
+      103,
+      0,
+      104,
+      0,
+      "IMAGE"
+    ],
+    [
+      153,
+      111,
+      0,
+      106,
+      0,
+      "IMAGE"
+    ],
+    [
+      154,
+      110,
+      0,
+      107,
+      0,
+      "IMAGE"
+    ],
+    [
+      155,
+      109,
+      0,
+      108,
+      0,
+      "IMAGE"
+    ],
+    [
+      161,
+      114,
+      0,
+      115,
+      0,
+      "IMAGE"
+    ],
+    [
+      162,
+      113,
+      0,
+      116,
+      0,
+      "IMAGE"
+    ],
+    [
+      163,
+      122,
+      0,
+      117,
+      0,
+      "IMAGE"
+    ],
+    [
+      164,
+      121,
+      0,
+      118,
+      0,
+      "IMAGE"
+    ],
+    [
+      165,
+      120,
+      0,
+      119,
+      0,
+      "IMAGE"
+    ],
+    [
+      171,
+      125,
+      0,
+      126,
+      0,
+      "IMAGE"
+    ],
+    [
+      172,
+      124,
+      0,
+      127,
+      0,
+      "IMAGE"
+    ],
+    [
+      306,
+      51,
+      0,
+      258,
+      0,
+      "IMAGE"
+    ],
+    [
+      308,
+      52,
+      0,
+      260,
+      0,
+      "IMAGE"
+    ],
+    [
+      346,
+      281,
+      0,
+      283,
+      0,
+      "IMAGE"
+    ],
+    [
+      380,
+      307,
+      0,
+      308,
+      0,
+      "IMAGE"
+    ],
+    [
+      423,
+      101,
+      0,
+      159,
+      0,
+      "IMAGE"
+    ],
+    [
+      608,
+      27,
+      0,
+      259,
+      0,
+      "IMAGE"
+    ],
+    [
+      819,
+      281,
+      0,
+      439,
+      0,
+      "*"
+    ],
+    [
+      820,
+      439,
+      0,
+      318,
+      0,
+      "IMAGE"
+    ],
+    [
+      821,
+      440,
+      0,
+      319,
+      0,
+      "IMAGE"
+    ],
+    [
+      822,
+      281,
+      0,
+      440,
+      0,
+      "*"
+    ],
+    [
+      823,
+      281,
+      0,
+      441,
+      0,
+      "*"
+    ],
+    [
+      824,
+      281,
+      0,
+      442,
+      0,
+      "*"
+    ],
+    [
+      825,
+      442,
+      0,
+      328,
+      0,
+      "IMAGE"
+    ],
+    [
+      826,
+      441,
+      0,
+      324,
+      0,
+      "IMAGE"
+    ],
+    [
+      827,
+      281,
+      0,
+      443,
+      0,
+      "*"
+    ],
+    [
+      828,
+      281,
+      0,
+      444,
+      0,
+      "*"
+    ],
+    [
+      829,
+      281,
+      0,
+      445,
+      0,
+      "*"
+    ],
+    [
+      830,
+      281,
+      0,
+      446,
+      0,
+      "*"
+    ],
+    [
+      831,
+      446,
+      0,
+      405,
+      0,
+      "IMAGE"
+    ],
+    [
+      832,
+      445,
+      0,
+      404,
+      0,
+      "IMAGE"
+    ],
+    [
+      833,
+      444,
+      0,
+      403,
+      0,
+      "IMAGE"
+    ],
+    [
+      868,
+      468,
+      0,
+      17,
+      0,
+      "IMAGE"
+    ],
+    [
+      869,
+      469,
+      0,
+      132,
+      0,
+      "IMAGE"
+    ],
+    [
+      872,
+      101,
+      0,
+      471,
+      0,
+      "*"
+    ],
+    [
+      873,
+      471,
+      0,
+      437,
+      0,
+      "*"
+    ],
+    [
+      874,
+      471,
+      0,
+      475,
+      0,
+      "*"
+    ],
+    [
+      875,
+      471,
+      0,
+      474,
+      0,
+      "*"
+    ],
+    [
+      876,
+      471,
+      0,
+      473,
+      0,
+      "*"
+    ],
+    [
+      877,
+      471,
+      0,
+      472,
+      0,
+      "*"
+    ],
+    [
+      878,
+      472,
+      0,
+      337,
+      0,
+      "IMAGE"
+    ],
+    [
+      879,
+      474,
+      0,
+      287,
+      0,
+      "IMAGE"
+    ],
+    [
+      880,
+      475,
+      0,
+      333,
+      0,
+      "IMAGE"
+    ],
+    [
+      881,
+      473,
+      0,
+      331,
+      0,
+      "IMAGE"
+    ],
+    [
+      882,
+      437,
+      0,
+      335,
+      0,
+      "IMAGE"
+    ],
+    [
+      944,
+      523,
+      0,
+      102,
+      0,
+      "IMAGE"
+    ],
+    [
+      945,
+      523,
+      0,
+      103,
+      0,
+      "IMAGE"
+    ],
+    [
+      946,
+      523,
+      0,
+      75,
+      0,
+      "IMAGE"
+    ],
+    [
+      947,
+      523,
+      0,
+      76,
+      0,
+      "IMAGE"
+    ],
+    [
+      948,
+      523,
+      0,
+      77,
+      0,
+      "IMAGE"
+    ],
+    [
+      949,
+      523,
+      0,
+      524,
+      0,
+      "*"
+    ],
+    [
+      952,
+      524,
+      0,
+      113,
+      0,
+      "IMAGE"
+    ],
+    [
+      953,
+      524,
+      0,
+      114,
+      0,
+      "IMAGE"
+    ],
+    [
+      954,
+      524,
+      0,
+      109,
+      0,
+      "IMAGE"
+    ],
+    [
+      955,
+      524,
+      0,
+      110,
+      0,
+      "IMAGE"
+    ],
+    [
+      956,
+      524,
+      0,
+      111,
+      0,
+      "IMAGE"
+    ],
+    [
+      958,
+      524,
+      0,
+      525,
+      0,
+      "*"
+    ],
+    [
+      959,
+      525,
+      0,
+      125,
+      0,
+      "IMAGE"
+    ],
+    [
+      960,
+      525,
+      0,
+      124,
+      0,
+      "IMAGE"
+    ],
+    [
+      961,
+      525,
+      0,
+      120,
+      0,
+      "IMAGE"
+    ],
+    [
+      962,
+      525,
+      0,
+      121,
+      0,
+      "IMAGE"
+    ],
+    [
+      963,
+      525,
+      0,
+      122,
+      0,
+      "IMAGE"
+    ],
+    [
+      965,
+      525,
+      0,
+      526,
+      0,
+      "*"
+    ],
+    [
+      1013,
+      532,
+      0,
+      15,
+      0,
+      "IMAGE"
+    ],
+    [
+      1020,
+      533,
+      0,
+      523,
+      0,
+      "*"
+    ],
+    [
+      1023,
+      534,
+      0,
+      363,
+      0,
+      "IMAGE"
+    ],
+    [
+      1024,
+      534,
+      0,
+      532,
+      0,
+      "IMAGE"
+    ],
+    [
+      1027,
+      101,
+      0,
+      535,
+      0,
+      "*"
+    ],
+    [
+      1028,
+      535,
+      0,
+      281,
+      0,
+      "IMAGE"
+    ],
+    [
+      1029,
+      101,
+      0,
+      536,
+      0,
+      "*"
+    ],
+    [
+      1030,
+      536,
+      0,
+      281,
+      1,
+      "IMAGE"
+    ],
+    [
+      1032,
+      443,
+      0,
+      402,
+      0,
+      "IMAGE"
+    ],
+    [
+      1033,
+      51,
+      1,
+      538,
+      0,
+      "*"
+    ],
+    [
+      1034,
+      538,
+      0,
+      359,
+      0,
+      "IMAGE"
+    ],
+    [
+      1035,
+      538,
+      0,
+      27,
+      0,
+      "IMAGE"
+    ],
+    [
+      1036,
+      305,
+      0,
+      539,
+      0,
+      "*"
+    ],
+    [
+      1037,
+      305,
+      0,
+      540,
+      0,
+      "*"
+    ],
+    [
+      1038,
+      539,
+      0,
+      307,
+      0,
+      "IMAGE"
+    ],
+    [
+      1039,
+      540,
+      0,
+      307,
+      1,
+      "IMAGE"
+    ],
+    [
+      1042,
+      525,
+      0,
+      179,
+      0,
+      "IMAGE"
+    ],
+    [
+      1049,
+      526,
+      0,
+      340,
+      0,
+      "IMAGE"
+    ],
+    [
+      1050,
+      526,
+      0,
+      167,
+      0,
+      "IMAGE"
+    ],
+    [
+      1052,
+      526,
+      0,
+      166,
+      0,
+      "IMAGE"
+    ],
+    [
+      1060,
+      526,
+      0,
+      541,
+      0,
+      "*"
+    ],
+    [
+      1061,
+      526,
+      0,
+      542,
+      0,
+      "*"
+    ],
+    [
+      1062,
+      526,
+      0,
+      545,
+      0,
+      "*"
+    ],
+    [
+      1063,
+      526,
+      0,
+      544,
+      0,
+      "*"
+    ],
+    [
+      1068,
+      552,
+      0,
+      553,
+      0,
+      "*"
+    ],
+    [
+      1069,
+      552,
+      0,
+      554,
+      0,
+      "*"
+    ],
+    [
+      1077,
+      561,
+      0,
+      563,
+      0,
+      "*"
+    ],
+    [
+      1078,
+      561,
+      0,
+      564,
+      0,
+      "*"
+    ],
+    [
+      1079,
+      561,
+      0,
+      565,
+      0,
+      "*"
+    ],
+    [
+      1081,
+      563,
+      0,
+      557,
+      0,
+      "IMAGE"
+    ],
+    [
+      1082,
+      562,
+      0,
+      558,
+      0,
+      "IMAGE"
+    ],
+    [
+      1083,
+      565,
+      0,
+      560,
+      0,
+      "IMAGE"
+    ],
+    [
+      1084,
+      564,
+      0,
+      559,
+      0,
+      "IMAGE"
+    ],
+    [
+      1085,
+      556,
+      0,
+      551,
+      0,
+      "IMAGE"
+    ],
+    [
+      1086,
+      555,
+      0,
+      550,
+      0,
+      "IMAGE"
+    ],
+    [
+      1087,
+      552,
+      0,
+      556,
+      0,
+      "*"
+    ],
+    [
+      1088,
+      552,
+      0,
+      555,
+      0,
+      "*"
+    ],
+    [
+      1089,
+      526,
+      0,
+      552,
+      0,
+      "*"
+    ],
+    [
+      1090,
+      552,
+      0,
+      561,
+      0,
+      "*"
+    ],
+    [
+      1091,
+      554,
+      0,
+      548,
+      0,
+      "IMAGE"
+    ],
+    [
+      1092,
+      553,
+      0,
+      549,
+      0,
+      "IMAGE"
+    ],
+    [
+      1093,
+      431,
+      0,
+      567,
+      0,
+      "IMAGE"
+    ],
+    [
+      1095,
+      532,
+      0,
+      569,
+      0,
+      "IMAGE"
+    ],
+    [
+      1096,
+      569,
+      0,
+      84,
+      0,
+      "IMAGE"
+    ],
+    [
+      1097,
+      569,
+      0,
+      570,
+      0,
+      "IMAGE"
+    ],
+    [
+      1098,
+      570,
+      0,
+      164,
+      0,
+      "IMAGE"
+    ],
+    [
+      1099,
+      561,
+      0,
+      562,
+      0,
+      "*"
+    ],
+    [
+      1114,
+      581,
+      0,
+      572,
+      0,
+      "IMAGE"
+    ],
+    [
+      1115,
+      583,
+      0,
+      582,
+      0,
+      "IMAGE"
+    ],
+    [
+      1116,
+      585,
+      0,
+      584,
+      0,
+      "IMAGE"
+    ],
+    [
+      1119,
+      533,
+      0,
+      587,
+      0,
+      "*"
+    ],
+    [
+      1120,
+      533,
+      0,
+      589,
+      0,
+      "*"
+    ],
+    [
+      1121,
+      533,
+      0,
+      583,
+      0,
+      "*"
+    ],
+    [
+      1122,
+      533,
+      0,
+      585,
+      0,
+      "*"
+    ],
+    [
+      1123,
+      587,
+      0,
+      586,
+      0,
+      "IMAGE"
+    ],
+    [
+      1124,
+      589,
+      0,
+      588,
+      0,
+      "IMAGE"
+    ],
+    [
+      1125,
+      592,
+      0,
+      591,
+      0,
+      "IMAGE"
+    ],
+    [
+      1126,
+      594,
+      0,
+      593,
+      0,
+      "IMAGE"
+    ],
+    [
+      1127,
+      590,
+      0,
+      594,
+      0,
+      "*"
+    ],
+    [
+      1128,
+      596,
+      0,
+      595,
+      0,
+      "IMAGE"
+    ],
+    [
+      1129,
+      590,
+      0,
+      596,
+      0,
+      "*"
+    ],
+    [
+      1130,
+      598,
+      0,
+      597,
+      0,
+      "IMAGE"
+    ],
+    [
+      1131,
+      590,
+      0,
+      598,
+      0,
+      "*"
+    ],
+    [
+      1132,
+      600,
+      0,
+      599,
+      0,
+      "IMAGE"
+    ],
+    [
+      1133,
+      590,
+      0,
+      600,
+      0,
+      "*"
+    ],
+    [
+      1134,
+      603,
+      0,
+      602,
+      0,
+      "IMAGE"
+    ],
+    [
+      1135,
+      605,
+      0,
+      604,
+      0,
+      "IMAGE"
+    ],
+    [
+      1136,
+      601,
+      0,
+      605,
+      0,
+      "*"
+    ],
+    [
+      1137,
+      607,
+      0,
+      606,
+      0,
+      "IMAGE"
+    ],
+    [
+      1138,
+      601,
+      0,
+      607,
+      0,
+      "*"
+    ],
+    [
+      1139,
+      609,
+      0,
+      608,
+      0,
+      "IMAGE"
+    ],
+    [
+      1140,
+      601,
+      0,
+      609,
+      0,
+      "*"
+    ],
+    [
+      1141,
+      611,
+      0,
+      610,
+      0,
+      "IMAGE"
+    ],
+    [
+      1142,
+      601,
+      0,
+      611,
+      0,
+      "*"
+    ],
+    [
+      1143,
+      614,
+      0,
+      613,
+      0,
+      "IMAGE"
+    ],
+    [
+      1144,
+      616,
+      0,
+      615,
+      0,
+      "IMAGE"
+    ],
+    [
+      1145,
+      612,
+      0,
+      616,
+      0,
+      "*"
+    ],
+    [
+      1146,
+      618,
+      0,
+      617,
+      0,
+      "IMAGE"
+    ],
+    [
+      1147,
+      612,
+      0,
+      618,
+      0,
+      "*"
+    ],
+    [
+      1148,
+      620,
+      0,
+      619,
+      0,
+      "IMAGE"
+    ],
+    [
+      1149,
+      612,
+      0,
+      620,
+      0,
+      "*"
+    ],
+    [
+      1150,
+      622,
+      0,
+      621,
+      0,
+      "IMAGE"
+    ],
+    [
+      1151,
+      612,
+      0,
+      622,
+      0,
+      "*"
+    ],
+    [
+      1153,
+      627,
+      0,
+      626,
+      0,
+      "IMAGE"
+    ],
+    [
+      1154,
+      623,
+      0,
+      627,
+      0,
+      "*"
+    ],
+    [
+      1157,
+      631,
+      0,
+      630,
+      0,
+      "IMAGE"
+    ],
+    [
+      1158,
+      623,
+      0,
+      631,
+      0,
+      "*"
+    ],
+    [
+      1159,
+      633,
+      0,
+      632,
+      0,
+      "IMAGE"
+    ],
+    [
+      1160,
+      623,
+      0,
+      633,
+      0,
+      "*"
+    ],
+    [
+      1161,
+      612,
+      0,
+      623,
+      0,
+      "*"
+    ],
+    [
+      1162,
+      601,
+      0,
+      612,
+      0,
+      "*"
+    ],
+    [
+      1163,
+      590,
+      0,
+      601,
+      0,
+      "*"
+    ],
+    [
+      1164,
+      533,
+      0,
+      590,
+      0,
+      "*"
+    ],
+    [
+      1165,
+      635,
+      0,
+      634,
+      0,
+      "IMAGE"
+    ],
+    [
+      1166,
+      637,
+      0,
+      636,
+      0,
+      "IMAGE"
+    ],
+    [
+      1167,
+      639,
+      0,
+      638,
+      0,
+      "IMAGE"
+    ],
+    [
+      1168,
+      590,
+      0,
+      592,
+      0,
+      "*"
+    ],
+    [
+      1169,
+      601,
+      0,
+      603,
+      0,
+      "*"
+    ],
+    [
+      1170,
+      612,
+      0,
+      614,
+      0,
+      "*"
+    ],
+    [
+      1171,
+      640,
+      0,
+      639,
+      0,
+      "*"
+    ],
+    [
+      1172,
+      640,
+      0,
+      637,
+      0,
+      "*"
+    ],
+    [
+      1173,
+      640,
+      0,
+      635,
+      0,
+      "*"
+    ],
+    [
+      1174,
+      612,
+      0,
+      640,
+      0,
+      "*"
+    ],
+    [
+      1175,
+      642,
+      0,
+      641,
+      0,
+      "IMAGE"
+    ],
+    [
+      1177,
+      644,
+      0,
+      643,
+      0,
+      "IMAGE"
+    ],
+    [
+      1178,
+      101,
+      0,
+      644,
+      0,
+      "*"
+    ],
+    [
+      1179,
+      471,
+      0,
+      533,
+      0,
+      "*"
+    ],
+    [
+      1180,
+      533,
+      0,
+      581,
+      0,
+      "*"
+    ],
+    [
+      1181,
+      101,
+      0,
+      642,
+      0,
+      "*"
+    ],
+    [
+      1182,
+      646,
+      0,
+      645,
+      0,
+      "IMAGE"
+    ],
+    [
+      1183,
+      648,
+      0,
+      647,
+      0,
+      "IMAGE"
+    ],
+    [
+      1187,
+      649,
+      0,
+      431,
+      0,
+      "*"
+    ],
+    [
+      1188,
+      650,
+      0,
+      431,
+      1,
+      "*"
+    ],
+    [
+      1189,
+      649,
+      0,
+      651,
+      0,
+      "*"
+    ],
+    [
+      1190,
+      650,
+      0,
+      651,
+      1,
+      "*"
+    ],
+    [
+      1191,
+      651,
+      0,
+      568,
+      0,
+      "IMAGE"
+    ],
+    [
+      1192,
+      652,
+      0,
+      653,
+      0,
+      "IMAGE"
+    ],
+    [
+      1193,
+      649,
+      0,
+      652,
+      0,
+      "*"
+    ],
+    [
+      1194,
+      650,
+      0,
+      652,
+      1,
+      "*"
+    ],
+    [
+      1195,
+      654,
+      0,
+      655,
+      0,
+      "IMAGE"
+    ],
+    [
+      1196,
+      650,
+      0,
+      654,
+      1,
+      "*"
+    ],
+    [
+      1198,
+      649,
+      0,
+      654,
+      0,
+      "*"
+    ],
+    [
+      1199,
+      656,
+      0,
+      657,
+      0,
+      "IMAGE"
+    ],
+    [
+      1202,
+      658,
+      0,
+      659,
+      0,
+      "IMAGE"
+    ],
+    [
+      1203,
+      649,
+      0,
+      656,
+      0,
+      "*"
+    ],
+    [
+      1204,
+      650,
+      0,
+      656,
+      1,
+      "*"
+    ],
+    [
+      1205,
+      650,
+      0,
+      658,
+      1,
+      "*"
+    ],
+    [
+      1206,
+      649,
+      0,
+      658,
+      0,
+      "*"
+    ]
+  ],
+  "groups": [
+    {
+      "title": "                     SHAPE GENERATOR",
+      "bounding": [
+        -6398,
+        700,
+        998,
+        1279
+      ],
+      "color": "#8A8",
+      "font_size": 48
+    },
+    {
+      "title": "        TRANSFORM",
+      "bounding": [
+        -2699,
+        700,
+        500,
+        1300
+      ],
+      "color": "#A88",
+      "font_size": 48
+    },
+    {
+      "title": "Group",
+      "bounding": [
+        -100,
+        701,
+        1899,
+        1599
+      ],
+      "color": "#444",
+      "font_size": 24
+    },
+    {
+      "title": "                        BLUR",
+      "bounding": [
+        -4442,
+        2730,
+        824,
+        584
+      ],
+      "color": "#A88",
+      "font_size": 48
+    },
+    {
+      "title": "PIXEL SHADER",
+      "bounding": [
+        -6900,
+        2001,
+        1501,
+        700
+      ],
+      "color": "#a1309b",
+      "font_size": 48
+    },
+    {
+      "title": "                          HUE",
+      "bounding": [
+        -5298,
+        702,
+        799,
+        998
+      ],
+      "color": "#A88",
+      "font_size": 48
+    },
+    {
+      "title": "                  EXPOSURE",
+      "bounding": [
+        -3600,
+        1740,
+        801,
+        960
+      ],
+      "color": "#a1309b",
+      "font_size": 48
+    },
+    {
+      "title": "                 SATURATION",
+      "bounding": [
+        -4448,
+        701,
+        799,
+        999
+      ],
+      "color": "#8A8",
+      "font_size": 48
+    },
+    {
+      "title": "                        VALUE",
+      "bounding": [
+        -3599,
+        700,
+        799,
+        998
+      ],
+      "color": "#88A",
+      "font_size": 48
+    },
+    {
+      "title": "CONSTANT",
+      "bounding": [
+        -6899,
+        701,
+        458,
+        697
+      ],
+      "color": "#3f789e",
+      "font_size": 48
+    },
+    {
+      "title": "                       GAMMA",
+      "bounding": [
+        -4450,
+        1742,
+        810,
+        957
+      ],
+      "color": "#b58b2a",
+      "font_size": 48
+    },
+    {
+      "title": "                    CONTRAST",
+      "bounding": [
+        -5300,
+        1741,
+        801,
+        959
+      ],
+      "color": "#8AA",
+      "font_size": 48
+    },
+    {
+      "title": "                  CREATION",
+      "bounding": [
+        -6900,
+        540,
+        1501,
+        139
+      ],
+      "color": "#b06634",
+      "font_size": 96
+    },
+    {
+      "title": "                                 ADJUSTMENT",
+      "bounding": [
+        -5299,
+        542,
+        2499,
+        136
+      ],
+      "color": "#b58b2a",
+      "font_size": 96
+    },
+    {
+      "title": "                             MANIPULATION",
+      "bounding": [
+        -2699,
+        541,
+        2499,
+        138
+      ],
+      "color": "#88A",
+      "font_size": 96
+    },
+    {
+      "title": "          ROTATE",
+      "bounding": [
+        -2180,
+        700,
+        480,
+        1302
+      ],
+      "color": "#8A8",
+      "font_size": 48
+    },
+    {
+      "title": "           SCALE",
+      "bounding": [
+        -1679,
+        700,
+        481,
+        1300
+      ],
+      "color": "#88A",
+      "font_size": 48
+    },
+    {
+      "title": "                   SHARPEN",
+      "bounding": [
+        -4430,
+        3355,
+        801,
+        568
+      ],
+      "color": "#88A",
+      "font_size": 48
+    },
+    {
+      "title": "     EMBOSS",
+      "bounding": [
+        -3172,
+        2716,
+        372,
+        598
+      ],
+      "color": "#8A8",
+      "font_size": 48
+    },
+    {
+      "title": "  FIND EDGES",
+      "bounding": [
+        -3583,
+        2721,
+        382,
+        593
+      ],
+      "color": "#8AA",
+      "font_size": 48
+    },
+    {
+      "title": "                                BLEND",
+      "bounding": [
+        -100,
+        540,
+        1901,
+        140
+      ],
+      "color": "#a1309b",
+      "font_size": 96
+    },
+    {
+      "title": "                                                       MIRROR",
+      "bounding": [
+        -1930,
+        2021,
+        1731,
+        1080
+      ],
+      "color": "#8AA",
+      "font_size": 48
+    },
+    {
+      "title": "                    TILING",
+      "bounding": [
+        -2713,
+        2022,
+        756,
+        978
+      ],
+      "color": "#3f789e",
+      "font_size": 48
+    },
+    {
+      "title": "                   INVERSION ",
+      "bounding": [
+        -5301,
+        2720,
+        802,
+        980
+      ],
+      "color": "#A88",
+      "font_size": 48
+    },
+    {
+      "title": "EXTENDER",
+      "bounding": [
+        -1170,
+        701,
+        968,
+        1298
+      ],
+      "color": "#a1309b",
+      "font_size": 48
+    },
+    {
+      "title": "     JOVIMETRIX OVERVIEW AND NODE REFERENCE",
+      "bounding": [
+        -6894,
+        143,
+        6695,
+        358
+      ],
+      "color": "#444",
+      "font_size": 256
+    },
+    {
+      "title": "    v0.92",
+      "bounding": [
+        -101,
+        140,
+        1232,
+        360
+      ],
+      "color": "#A88",
+      "font_size": 256
+    }
+  ],
+  "config": {},
+  "extra": {},
+  "version": 0.4
+}
