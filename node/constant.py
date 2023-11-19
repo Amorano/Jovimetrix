@@ -11,53 +11,31 @@
 @author: amorano
 @title: Jovimetrix Composition Pack
 @nickname: Jovimetrix
-@description: Filtering operations for image and mask inputs.
+@description: Constant color.
 """
 
-from PIL import ImageFilter
-from .. import deep_merge_dict, IT_PIXELS
-from ..util import JovimetrixBaseNode, tensor2pil, pil2tensor
+from PIL import Image
 
-__all__ = ["FilterNode"]
+from .. import IT_COLOR, IT_WH, deep_merge_dict
+from ..util import JovimetrixBaseNode, pil2tensor
+
+__all__ = ["ConstantNode"]
 
 # =============================================================================
-class FilterNode(JovimetrixBaseNode):
-    OPS = {
-        'BLUR': ImageFilter.GaussianBlur,
-        'SHARPEN': ImageFilter.UnsharpMask,
-    }
-
-    OPS_PRE = {
-        # PREDEFINED
-        'EMBOSS': ImageFilter.EMBOSS,
-        'FIND_EDGES': ImageFilter.FIND_EDGES,
-    }
+class ConstantNode(JovimetrixBaseNode):
     @classmethod
     def INPUT_TYPES(s):
-        ops = list(FilterNode.OPS.keys()) + list(FilterNode.OPS_PRE.keys())
-        d = {"required": {
-                    "func": (ops, {"default": "BLUR"}),
-            },
-            "optional": {
-                "radius": ("INT", {"default": 1, "min": 0, "step": 1}),
-        }}
-        return deep_merge_dict(IT_PIXELS, d)
+        return deep_merge_dict(IT_WH, IT_COLOR)
 
-    DESCRIPTION = "A single node with multiple operations."
+    DESCRIPTION = ""
+    CATEGORY = "JOVIMETRIX 🔺🟩🔵/Image"
 
-    def run(self, image, func, radius):
-        image = tensor2pil(image)
-
-        if (op := FilterNode.OPS.get(func, None)):
-           image = image.filter(op(radius))
-
-        elif (op := FilterNode.OPS_PRE.get(func, None)):
-            image = image.filter(op())
-
+    def run(self, width, height, R, G, B):
+        image = Image.new("RGB", (width, height), (int(R * 255.), int(G * 255.), int(B * 255.)) )
         return (pil2tensor(image),)
 
 NODE_CLASS_MAPPINGS = {
-    "🕸️ Filter (jov)": FilterNode,
+    "🟪 Constant Image (jov)": ConstantNode,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {k: k for k in NODE_CLASS_MAPPINGS}

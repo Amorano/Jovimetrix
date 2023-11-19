@@ -12,40 +12,23 @@
 import torch
 import cv2
 import numpy as np
-from PIL import Image, ImageOps
+from PIL import Image
 from scipy.ndimage import rotate
 
-from . import *
+# =============================================================================
+# === BASE NODE FOR ALL ===
+# =============================================================================
+class JovimetrixBaseNode:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {"required":{}}
 
-def deep_merge_dict(*dicts: dict) -> dict:
-    """
-    Deep merge multiple dictionaries recursively.
-    """
-    def _deep_merge(d1, d2):
-        if not isinstance(d1, dict) or not isinstance(d2, dict):
-            return d2
-
-        merged_dict = d1.copy()
-
-        for key in d2:
-            if key in merged_dict:
-                if isinstance(merged_dict[key], dict) and isinstance(d2[key], dict):
-                    merged_dict[key] = _deep_merge(merged_dict[key], d2[key])
-                elif isinstance(merged_dict[key], list) and isinstance(d2[key], list):
-                    merged_dict[key].extend(d2[key])
-                else:
-                    merged_dict[key] = d2[key]
-            else:
-                merged_dict[key] = d2[key]
-        return merged_dict
-
-    merged = {}
-    for d in dicts:
-        merged = _deep_merge(merged, d)
-    return merged
-
-# Translate, Rotate, Scale Params
-IT_TRS = deep_merge_dict(IT_TRANS, IT_ROT, IT_SCALE)
+    DESCRIPTION = "A Jovimetrix Node"
+    CATEGORY = "JOVIMETRIX 🔺🟩🔵"
+    RETURN_TYPES = ("IMAGE", "MASK",)
+    RETURN_NAMES = ("image", "mask",)
+    OUTPUT_NODE = True
+    FUNCTION = "run"
 
 # =============================================================================
 # === IMAGE SUPPORT ===
@@ -244,18 +227,13 @@ def CONTRAST(image, contrast):
 def EXPOSURE(image, exposure):
     return image * (2.0**(exposure))
 
-def HSV(image: torch.Tensor, hue, saturation, value):
-    image = tensor2pil(image)
-    image = image.convert("HSV")
-
-    h, s, v = image.split()
-
-    h = h.point(lambda x: (x + (hue - 0.5) * 255) % 256)
-    s = s.point(lambda x: int(x * saturation))
-    v = v.point(lambda x: int(x * value))
-
-    image = Image.merge("HSV", (h, s, v)).convert("RGB")
-    return pil2tensor(image)
+def HSV(image: cv2.Mat, hue, saturation, value):
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+    hue /= 360.
+    image[:, :, 0] = (image[:, :, 0] + hue) % 180
+    image[:, :, 1] = np.clip(image[:, :, 1] * saturation, 0, 255)
+    image[:, :, 2] = np.clip(image[:, :, 2] * value, 0, 255)
+    return cv2.cvtColor(image, cv2.COLOR_HSV2BGR)
 
 def MIRROR(image: cv2.Mat, pX: float, axis: int, invert: bool=False) -> cv2.Mat:
     output =  np.zeros_like(image)
@@ -284,9 +262,8 @@ def MIRROR(image: cv2.Mat, pX: float, axis: int, invert: bool=False) -> cv2.Mat:
 
     return output
 
-# wildcard trick is taken from pythongossss's
-class AnyType(str):
-    def __ne__(self, __value: object) -> bool:
-        return False
-
-any_typ = AnyType("*")
+def EXTEND(imageA: cv2.Mat, imageB: cv2.Mat, axis: int=0, flip: bool=False) -> cv2.Mat:
+    if flip:
+        imageA, imageB = imageB, imageA
+    axis = 1 if axis == "HORIZONTAL" else 0
+    return np.concatenate((imageA, imageB), axis=axis)

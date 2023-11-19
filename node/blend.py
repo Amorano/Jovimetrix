@@ -14,15 +14,13 @@
 @description: Blending operations for image inputs.
 """
 
+import torch
 import numpy as np
 from PIL import Image, ImageChops
-from ..util import *
+from .. import deep_merge_dict, IT_WHFULL
+from ..util import cv2pil, pil2cv, cv2tensor, tensor2cv, JovimetrixBaseNode, SCALEFIT, INVERT
 
-# =============================================================================
-# === EXPORT ===
-# =============================================================================
-
-__all__ = ["BlendNode"]
+__all__ = ["BlendNode", "BlendMaskNode"]
 
 # =============================================================================
 # === COMPOSITING ===
@@ -70,25 +68,7 @@ def blend(maskA, maskB, alpha, func):
             maskA = pil2cv(op(maskA, maskB))
     return maskA
 
-def transformBlend(imageA: cv2.Mat, imageB: cv2.Mat, alpha: float, func, modeA, modeB, width, height, mode, invert) -> cv2.Mat:
-    imageA = SCALEFIT(imageA, width, height, modeA)
-    h, w, _ = imageA.shape
-    print('BLEND', func, w, h)
-
-    imageB = SCALEFIT(imageB, width, height, modeB)
-    h, w, _ = imageB.shape
-    print('BLEND', w, h)
-
-    imageA = blend(imageA, imageB, alpha, func)
-
-    if invert:
-        imageA = INVERT(imageA, invert)
-
-    return SCALEFIT(imageA, width, height, mode)
-
-class BlendNode:
-    """
-    """
+class BlendNode(JovimetrixBaseNode):
     @classmethod
     def INPUT_TYPES(s):
         d = {"required": {
@@ -101,55 +81,32 @@ class BlendNode:
                     "modeA": (["FIT", "CROP", "ASPECT"], {"default": "FIT"}),
                     "modeB": (["FIT", "CROP", "ASPECT"], {"default": "FIT"}),
             }}
-        return deep_merge_dict(d, IT_WH, IT_WHMODE, IT_INVERT)
+        return deep_merge_dict(d, IT_WHFULL)
 
     DESCRIPTION = "Takes 2 Image inputs and an apha and performs a linear blend (alpha) between both images based on the selected operations."
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵"
-    RETURN_TYPES = ("IMAGE", "MASK", )
-    RETURN_NAMES = ("IMAGE", "MASK", )
-    OUTPUT_NODE = True
-    FUNCTION = "run"
 
     def run(self, imageA: torch.tensor, imageB: torch.tensor, alpha: float, func, modeA, modeB, width, height, mode, invert):
         imageA = tensor2cv(imageA)
         imageB = tensor2cv(imageB)
-        imageA = transformBlend(imageA, imageB, alpha, func, modeA, modeB, width, height, mode, invert)
-        return (cv2tensor(imageA), cv2mask(imageA), )
 
-class BlendMaskNode:
-    """
-    Made specifically for Matisse
-    """
-    @classmethod
-    def INPUT_TYPES(s):
-        d = {"required": {
-                    "maskA": ("MASK", ),
-                    "maskB": ("MASK", ),
-                    "alpha": ("FLOAT", {"default": 1., "min": 0., "max": 1., "step": 0.05}),
-                },
-                "optional": {
-                    "func": (_OPS, {"default": "LERP"}),
-                    "modeA": (["FIT", "CROP", "ASPECT"], {"default": "FIT"}),
-                    "modeB": (["FIT", "CROP", "ASPECT"], {"default": "FIT"}),
-            }}
-        return deep_merge_dict(d, IT_WH, IT_WHMODE, IT_INVERT)
+        imageA = SCALEFIT(imageA, width, height, modeA)
+        h, w, _ = imageA.shape
+        print('BLEND', func, w, h)
 
-    DESCRIPTION = "Takes 2 Image inputs and an apha and performs a linear blend (alpha) between both masks based on the selected operations."
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵"
-    RETURN_TYPES = ("MASK",)
-    RETURN_NAMES = ("MASK", )
-    OUTPUT_NODE = True
-    FUNCTION = "run"
+        imageB = SCALEFIT(imageB, width, height, modeB)
+        h, w, _ = imageB.shape
+        print('BLEND', w, h)
 
-    def run(self, imageA: torch.tensor, imageB: torch.tensor, alpha: float, func, modeA, modeB, width, height, mode, invert):
-        imageA = tensor2cv(imageA)
-        imageB = tensor2cv(imageB)
-        imageA = transformBlend(imageA, imageB, alpha, func, modeA, modeB, width, height, mode, invert)
+        imageA = blend(imageA, imageB, alpha, func)
+
+        if invert:
+            imageA = INVERT(imageA, invert)
+
+        imageA = SCALEFIT(imageA, width, height, mode)
         return (cv2tensor(imageA),)
 
 NODE_CLASS_MAPPINGS = {
     "⚗️ Blend Images (jov)": BlendNode,
-    "🧪 Blend Masks (jov)": BlendMaskNode,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {k: k for k in NODE_CLASS_MAPPINGS}

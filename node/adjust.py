@@ -11,53 +11,39 @@
 @author: amorano
 @title: Jovimetrix Composition Pack
 @nickname: Jovimetrix
-@description: Filtering operations for image and mask inputs.
+@description: Adjust Gamma, Contrast or Exposure on input.
 """
 
-from PIL import ImageFilter
-from .. import deep_merge_dict, IT_PIXELS
-from ..util import JovimetrixBaseNode, tensor2pil, pil2tensor
+from .. import deep_merge_dict, IT_MASK
+from ..util import JovimetrixBaseNode, CONTRAST, GAMMA, EXPOSURE, cv2mask, cv2tensor
 
-__all__ = ["FilterNode"]
-
+__all__ = ["AdjustNode"]
 # =============================================================================
-class FilterNode(JovimetrixBaseNode):
+class AdjustNode(JovimetrixBaseNode):
     OPS = {
-        'BLUR': ImageFilter.GaussianBlur,
-        'SHARPEN': ImageFilter.UnsharpMask,
+        'CONTRAST': CONTRAST,
+        'GAMMA': GAMMA,
+        'EXPOSURE': EXPOSURE,
     }
 
-    OPS_PRE = {
-        # PREDEFINED
-        'EMBOSS': ImageFilter.EMBOSS,
-        'FIND_EDGES': ImageFilter.FIND_EDGES,
-    }
     @classmethod
     def INPUT_TYPES(s):
-        ops = list(FilterNode.OPS.keys()) + list(FilterNode.OPS_PRE.keys())
-        d = {"required": {
-                    "func": (ops, {"default": "BLUR"}),
-            },
+        d = {
             "optional": {
-                "radius": ("INT", {"default": 1, "min": 0, "step": 1}),
-        }}
-        return deep_merge_dict(IT_PIXELS, d)
+                "op": (["CONTRAST", "GAMMA", "EXPOSURE"], ),
+                "adjust": ("FLOAT",{"default": 1., "min": 0., "max": 1., "step": 0.02},),
+            }
+        }
+        return deep_merge_dict(IT_MASK, d)
 
-    DESCRIPTION = "A single node with multiple operations."
+    DESCRIPTION = "Contrast, Gamma and Exposure controls for an input."
 
-    def run(self, image, func, radius):
-        image = tensor2pil(image)
-
-        if (op := FilterNode.OPS.get(func, None)):
-           image = image.filter(op(radius))
-
-        elif (op := FilterNode.OPS_PRE.get(func, None)):
-            image = image.filter(op())
-
-        return (pil2tensor(image),)
+    def run(self, pixels, op, adjust):
+        pixels = AdjustNode.OPS[op](pixels, adjust)
+        return (cv2tensor(pixels), cv2mask(pixels), )
 
 NODE_CLASS_MAPPINGS = {
-    "🕸️ Filter (jov)": FilterNode,
+    "🔧 Adjust (jov)": AdjustNode,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {k: k for k in NODE_CLASS_MAPPINGS}

@@ -11,53 +11,32 @@
 @author: amorano
 @title: Jovimetrix Composition Pack
 @nickname: Jovimetrix
-@description: Filtering operations for image and mask inputs.
+@description: Invert inputs.
 """
 
-from PIL import ImageFilter
-from .. import deep_merge_dict, IT_PIXELS
-from ..util import JovimetrixBaseNode, tensor2pil, pil2tensor
+from .. import IT_PIXELS, deep_merge_dict
+from ..util import JovimetrixBaseNode, INVERT, tensor2cv, cv2mask, cv2tensor
 
-__all__ = ["FilterNode"]
+__all__ = ["InvertNode"]
 
 # =============================================================================
-class FilterNode(JovimetrixBaseNode):
-    OPS = {
-        'BLUR': ImageFilter.GaussianBlur,
-        'SHARPEN': ImageFilter.UnsharpMask,
-    }
-
-    OPS_PRE = {
-        # PREDEFINED
-        'EMBOSS': ImageFilter.EMBOSS,
-        'FIND_EDGES': ImageFilter.FIND_EDGES,
-    }
+class InvertNode(JovimetrixBaseNode):
     @classmethod
     def INPUT_TYPES(s):
-        ops = list(FilterNode.OPS.keys()) + list(FilterNode.OPS_PRE.keys())
         d = {"required": {
-                    "func": (ops, {"default": "BLUR"}),
-            },
-            "optional": {
-                "radius": ("INT", {"default": 1, "min": 0, "step": 1}),
+            "alpha": ("FLOAT", {"default": 1., "min": 0., "max": 1., "step": 0.05}),
         }}
         return deep_merge_dict(IT_PIXELS, d)
 
-    DESCRIPTION = "A single node with multiple operations."
+    DESCRIPTION = "Alpha blend an input's inverted version with the original."
 
-    def run(self, image, func, radius):
-        image = tensor2pil(image)
-
-        if (op := FilterNode.OPS.get(func, None)):
-           image = image.filter(op(radius))
-
-        elif (op := FilterNode.OPS_PRE.get(func, None)):
-            image = image.filter(op())
-
-        return (pil2tensor(image),)
+    def run(self, pixels, alpha):
+        pixels = tensor2cv(pixels)
+        pixels = INVERT(pixels, alpha)
+        return (cv2tensor(pixels), cv2mask(pixels), )
 
 NODE_CLASS_MAPPINGS = {
-    "🕸️ Filter (jov)": FilterNode,
+    "🎭 Invert (jov)": InvertNode,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {k: k for k in NODE_CLASS_MAPPINGS}

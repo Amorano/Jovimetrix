@@ -11,207 +11,29 @@
 @author: amorano
 @title: Jovimetrix Composition Pack
 @nickname: Jovimetrix
-@description: Transform, Mirror, Invert and Manipulate Image inputs.
+@description: Transform inputs
 """
 
-import torch
-from ..util import *
+from .. import IT_TRS, IT_WH, IT_PIXELS, IT_EDGE, IT_WHMODE, deep_merge_dict
+from ..util import JovimetrixBaseNode, TRANSFORM, tensor2cv, cv2mask, cv2tensor
+
+__all__ = ["TransformNode"]
 
 # =============================================================================
-# === EXPORT ===
-# =============================================================================
-
-__all__ = ["TransformNode", "InvertNode", "MirrorNode", "HSVNode", "AdjustmentNode"]
-
-# =============================================================================
-# === SINGLE IMAGE MANIPUALTION ===
-# =============================================================================
-# offset: coords should be in range -0.5..0.5
-class TransformNode:
+class TransformNode(JovimetrixBaseNode):
     @classmethod
     def INPUT_TYPES(s):
-        return deep_merge_dict(IT_IMAGE, IT_TRS, IT_EDGE, IT_WH, IT_WHMODE)
+        return deep_merge_dict(IT_PIXELS, IT_TRS, IT_EDGE, IT_WH, IT_WHMODE)
 
-    DESCRIPTION = "Translate, Rotate, Scale, Tile and Invert an Image. All options allow for CROP or WRAPing of the edges."
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵"
-    RETURN_TYPES = ("IMAGE",)
-    RETURN_NAMES = ("SHAPE", )
-    OUTPUT_NODE = True
-    FUNCTION = "run"
+    DESCRIPTION = "Translate, Rotate, Scale, Tile and Invert an input. All options allow for CROP or WRAPing of the edges."
 
-    def run(self, image, offsetX, offsetY, angle, sizeX, sizeY, edge, width, height, mode):
-        image = tensor2cv(image)
-        image = TRANSFORM(image, offsetX, offsetY, angle, sizeX, sizeY, edge, width, height, mode)
-        return (cv2tensor(image),)
-
-class TileNode:
-    @classmethod
-    def INPUT_TYPES(s):
-        return deep_merge_dict(IT_IMAGE, IT_TILE)
-
-    DESCRIPTION = "Tile an Image with optional crop to original image size."
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵"
-    RETURN_TYPES = ("IMAGE",)
-    RETURN_NAMES = ("SHAPE", )
-    OUTPUT_NODE = True
-    FUNCTION = "run"
-
-    def run(self, image, tileX, tileY):
-        image = tensor2cv(image)
-        height, width, _ = image.shape
-        image = EDGEWRAP(image, tileX, tileY)
-        # rebound to target width and height
-        image = cv2.resize(image, (width, height))
-        return (cv2tensor(image),)
-
-#
-class InvertNode:
-    @classmethod
-    def INPUT_TYPES(s):
-        d = {"required": {
-            "alpha": ("FLOAT", {"default": 1., "min": 0., "max": 1., "step": 0.05}),
-        }}
-        return deep_merge_dict(IT_IMAGE, d)
-
-    DESCRIPTION = "Alpha blend an Image's inverted version. with the original."
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵"
-    RETURN_TYPES = ("IMAGE",)
-    RETURN_NAMES = ("SHAPE", )
-    OUTPUT_NODE = True
-    FUNCTION = "run"
-
-    def run(self, image, alpha):
-        image = tensor2cv(image)
-        image = INVERT(image, alpha)
-        return (cv2tensor(image),)
-
-#
-class MirrorNode:
-    @classmethod
-    def INPUT_TYPES(s):
-        d = {
-            "required": {
-                "x": ("FLOAT", {"default": 0.5, "min": 0., "max": 1., "step": 0.05}),
-                "y": ("FLOAT", {"default": 0.5, "min": 0., "max": 1., "step": 0.05}),
-                "mode": (["X", "Y", "XY", "YX"], {"default": "X"}),
-            },
-        }
-        return deep_merge_dict(IT_IMAGE, d, IT_INVERT)
-
-    DESCRIPTION = "Flip an Image across the X axis, the Y Axis or both, with independant centers."
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵"
-    RETURN_TYPES = ("IMAGE",)
-    RETURN_NAMES = ("SHAPE", )
-    OUTPUT_NODE = True
-    FUNCTION = "run"
-
-    def run(self, image, x, y, mode, invert):
-        image = tensor2cv(image)
-        while (len(mode) > 0):
-            axis, mode = mode[0], mode[1:]
-            if axis == 'X':
-                image = MIRROR(image, x, 1, invert=invert)
-            else:
-                image = MIRROR(image, y, 0, invert=invert)
-        return (cv2tensor(image),)
-
-#
-class HSVNode:
-    @classmethod
-    def INPUT_TYPES(cls):
-        d = {
-            "optional": {
-                "hue": ("FLOAT",{"default": 0.5, "min": 0., "max": 1., "step": 0.02},),
-                "saturation": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 5.0, "step": 0.02}, ),
-                "value": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 5.0, "step": 0.02}, ),
-            }
-        }
-        return deep_merge_dict(IT_IMAGE, d)
-
-    DESCRIPTION = "Tweak the Hue, Saturation and Value for an Image."
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵"
-    RETURN_TYPES = ("IMAGE",)
-    RETURN_NAMES = ("IMAGE", )
-    OUTPUT_NODE = True
-    FUNCTION = "run"
-
-    def run(self, image, hue, saturation, value):
-        if hue != 0.5 or saturation != 1. or value != 1.:
-            image = HSV(image, hue, saturation, value)
-            image = torch.clamp(image, 0.0, 1.0)
-        return (image,)
-
-class LumenNode:
-    OPS = {
-        'CONTRAST': CONTRAST,
-        'GAMMA': GAMMA,
-        'EXPOSURE': EXPOSURE,
-    }
-
-    @classmethod
-    def INPUT_TYPES(cls):
-        d = {
-            "optional": {
-                "op": (["CONTRAST", "GAMMA", "EXPOSURE"], ),
-                "adjust": ("FLOAT",{"default": 1., "min": 0., "max": 1., "step": 0.02},),
-            }
-        }
-        return deep_merge_dict(IT_IMAGE, d)
-
-    DESCRIPTION = "Contrast, Gamma and Exposure controls."
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵"
-    RETURN_TYPES = ("IMAGE",)
-    RETURN_NAMES = ("IMAGE", )
-    OUTPUT_NODE = True
-    FUNCTION = "run"
-
-    def run(self, image, op, adjust):
-        image = LumenNode.OPS[op](image, adjust)
-        return (image,)
-
-class ExpandImageNode:
-    @classmethod
-    def INPUT_TYPES(cls):
-        d = {"required": {
-                    "imageA": ("IMAGE", ),
-                    "imageB": ("IMAGE", ),
-                    "axis": (["HORIZONTAL", "VERTICAL"], {"default": "HORIZONTAL"}),
-                },
-                "optional": {
-                    "flip": ("BOOLEAN", {"default": False}),
-                    "width": ("INT", {"default": 512, "min": 64, "max": 4096, "step": 64}),
-                    "height": ("INT", {"default": 512, "min": 64, "max": 4096, "step": 64}),
-                },
-        }
-        return deep_merge_dict(d, IT_WH, IT_WHMODE)
-
-    DESCRIPTION = "Contrast, Gamma and Exposure controls."
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵"
-    RETURN_TYPES = ("IMAGE", "MASK", )
-    RETURN_NAMES = ("IMAGE", "MASK", )
-    OUTPUT_NODE = True
-    FUNCTION = "run"
-
-    def run(self, imageA, imageB, axis, flip, width, height, mode):
-        imageA = tensor2cv(imageA)
-        imageB = tensor2cv(imageB)
-        if flip:
-            imageA, imageB = imageB, imageA
-        axis = 1 if axis == "HORIZONTAL" else 0
-        image = np.concatenate((imageA, imageB), axis=axis)
-        if mode != "NONE":
-            image = SCALEFIT(image, width, height, mode)
-        # print(image.shape)
-        return (cv2tensor(image), cv2mask(image), )
+    def run(self, pixels, offsetX, offsetY, angle, sizeX, sizeY, edge, width, height, mode):
+        pixels = tensor2cv(pixels)
+        pixels = TRANSFORM(pixels, offsetX, offsetY, angle, sizeX, sizeY, edge, width, height, mode)
+        return (cv2tensor(pixels), cv2mask(pixels), )
 
 NODE_CLASS_MAPPINGS = {
     "🌱 Transform Image (jov)": TransformNode,
-    "🔳 Tile Image (jov)": TileNode,
-    "🎭 Invert Image (jov)": InvertNode,
-    "🔰 Mirror Image (jov)": MirrorNode,
-    "🌈 HSV Image (jov)": HSVNode,
-    "🔧 Adjust Image (jov)": LumenNode,
-    "🎇 Expand Image (jov)": ExpandImageNode,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {k: k for k in NODE_CLASS_MAPPINGS}

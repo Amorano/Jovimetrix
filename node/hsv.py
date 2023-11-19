@@ -11,53 +11,38 @@
 @author: amorano
 @title: Jovimetrix Composition Pack
 @nickname: Jovimetrix
-@description: Filtering operations for image and mask inputs.
+@description: HSV Image inputs.
 """
 
-from PIL import ImageFilter
-from .. import deep_merge_dict, IT_PIXELS
-from ..util import JovimetrixBaseNode, tensor2pil, pil2tensor
+from .. import IT_IMAGE, deep_merge_dict
+from ..util import JovimetrixBaseNode, HSV, tensor2cv, cv2tensor
 
-__all__ = ["FilterNode"]
+__all__ = ["HSVNode"]
 
 # =============================================================================
-class FilterNode(JovimetrixBaseNode):
-    OPS = {
-        'BLUR': ImageFilter.GaussianBlur,
-        'SHARPEN': ImageFilter.UnsharpMask,
-    }
-
-    OPS_PRE = {
-        # PREDEFINED
-        'EMBOSS': ImageFilter.EMBOSS,
-        'FIND_EDGES': ImageFilter.FIND_EDGES,
-    }
+class HSVNode(JovimetrixBaseNode):
     @classmethod
-    def INPUT_TYPES(s):
-        ops = list(FilterNode.OPS.keys()) + list(FilterNode.OPS_PRE.keys())
-        d = {"required": {
-                    "func": (ops, {"default": "BLUR"}),
-            },
+    def INPUT_TYPES(cls):
+        d = {
             "optional": {
-                "radius": ("INT", {"default": 1, "min": 0, "step": 1}),
-        }}
-        return deep_merge_dict(IT_PIXELS, d)
+                "hue": ("FLOAT",{"default": 0.5, "min": 0., "max": 1., "step": 0.02},),
+                "saturation": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 5.0, "step": 0.02}, ),
+                "value": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 5.0, "step": 0.02}, ),
+            }
+        }
+        return deep_merge_dict(IT_IMAGE, d)
 
-    DESCRIPTION = "A single node with multiple operations."
+    DESCRIPTION = "Tweak the Hue, Saturation and Value for an Image."
+    CATEGORY = "JOVIMETRIX 🔺🟩🔵/Image"
 
-    def run(self, image, func, radius):
-        image = tensor2pil(image)
-
-        if (op := FilterNode.OPS.get(func, None)):
-           image = image.filter(op(radius))
-
-        elif (op := FilterNode.OPS_PRE.get(func, None)):
-            image = image.filter(op())
-
-        return (pil2tensor(image),)
+    def run(self, image, hue, saturation, value):
+        image = tensor2cv(image)
+        if hue != 0.5 or saturation != 1. or value != 1.:
+            image = HSV(image, hue, saturation, value)
+        return (cv2tensor(image),)
 
 NODE_CLASS_MAPPINGS = {
-    "🕸️ Filter (jov)": FilterNode,
+    "🌈 HSV Image (jov)": HSVNode,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {k: k for k in NODE_CLASS_MAPPINGS}

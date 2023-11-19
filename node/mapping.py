@@ -15,18 +15,13 @@
 """
 
 from PIL import Image
-from ..util import *
-
-# =============================================================================
-# === EXPORT ===
-# =============================================================================
+from .. import IT_WH, IT_IMAGE, deep_merge_dict
+from ..util import JovimetrixBaseNode, pil2tensor, tensor2pil
 
 __all__ = ["MappingNode"]
 
 # =============================================================================
-# === MAPPING ===
-# =============================================================================
-class MappingNode:
+class MappingNode(JovimetrixBaseNode):
     @classmethod
     def INPUT_TYPES(s):
         d = {"required": {
@@ -35,11 +30,9 @@ class MappingNode:
         return deep_merge_dict(IT_IMAGE, d, IT_WH)
 
     DESCRIPTION = ""
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵"
+    CATEGORY = "JOVIMETRIX 🔺🟩🔵/Image"
     RETURN_TYPES = ("IMAGE",)
-    RETURN_NAMES = ("SHAPE", )
-    OUTPUT_NODE = True
-    FUNCTION = "run"
+    RETURN_NAMES = ("image", )
 
     def run(self, image, proj, width, height):
         image = tensor2pil(image)

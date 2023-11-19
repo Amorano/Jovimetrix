@@ -11,53 +11,34 @@
 @author: amorano
 @title: Jovimetrix Composition Pack
 @nickname: Jovimetrix
-@description: Filtering operations for image and mask inputs.
+@description: Tile inputs.
 """
 
-from PIL import ImageFilter
-from .. import deep_merge_dict, IT_PIXELS
-from ..util import JovimetrixBaseNode, tensor2pil, pil2tensor
+import cv2
+from .. import IT_PIXELS, IT_TILE, deep_merge_dict
+from ..util import JovimetrixBaseNode, EDGEWRAP, tensor2cv, cv2mask, cv2tensor
 
-__all__ = ["FilterNode"]
+__all__ = ["TileNode"]
 
 # =============================================================================
-class FilterNode(JovimetrixBaseNode):
-    OPS = {
-        'BLUR': ImageFilter.GaussianBlur,
-        'SHARPEN': ImageFilter.UnsharpMask,
-    }
-
-    OPS_PRE = {
-        # PREDEFINED
-        'EMBOSS': ImageFilter.EMBOSS,
-        'FIND_EDGES': ImageFilter.FIND_EDGES,
-    }
+class TileNode(JovimetrixBaseNode):
     @classmethod
     def INPUT_TYPES(s):
-        ops = list(FilterNode.OPS.keys()) + list(FilterNode.OPS_PRE.keys())
-        d = {"required": {
-                    "func": (ops, {"default": "BLUR"}),
-            },
-            "optional": {
-                "radius": ("INT", {"default": 1, "min": 0, "step": 1}),
-        }}
-        return deep_merge_dict(IT_PIXELS, d)
+        return deep_merge_dict(IT_PIXELS, IT_TILE)
 
-    DESCRIPTION = "A single node with multiple operations."
+    DESCRIPTION = "Tile an Image with optional crop to original image size."
+    CATEGORY = "JOVIMETRIX 🔺🟩🔵"
 
-    def run(self, image, func, radius):
-        image = tensor2pil(image)
-
-        if (op := FilterNode.OPS.get(func, None)):
-           image = image.filter(op(radius))
-
-        elif (op := FilterNode.OPS_PRE.get(func, None)):
-            image = image.filter(op())
-
-        return (pil2tensor(image),)
+    def run(self, pixels, tileX, tileY):
+        pixels = tensor2cv(pixels)
+        height, width, _ = pixels.shape
+        pixels = EDGEWRAP(pixels, tileX, tileY)
+        # rebound to target width and height
+        pixels = cv2.resize(pixels, (width, height))
+        return (cv2tensor(pixels), cv2mask(pixels), )
 
 NODE_CLASS_MAPPINGS = {
-    "🕸️ Filter (jov)": FilterNode,
+    "🔳 Tile (jov)": TileNode,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {k: k for k in NODE_CLASS_MAPPINGS}
