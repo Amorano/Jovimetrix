@@ -99,7 +99,20 @@ class ShapeNode(JovimetrixBaseNode):
 
         return (pil2tensor(image), pil2tensor(image.convert("L")), )
 
+class ConstantNode(JovimetrixBaseNode):
+    @classmethod
+    def INPUT_TYPES(s):
+        return deep_merge_dict(IT_WH, IT_COLOR)
+
+    DESCRIPTION = ""
+    CATEGORY = "JOVIMETRIX 🔺🟩🔵"
+
+    def run(self, width, height, R, G, B):
+        image = Image.new("RGB", (width, height), (int(R * 255.), int(G * 255.), int(B * 255.)) )
+        return (pil2tensor(image),)
+
 NODE_CLASS_MAPPINGS = {
+    "🟪 Constant (jov)": ConstantNode,
     "✨ Shape Generator (jov)": ShapeNode
 }
 

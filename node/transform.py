@@ -33,7 +33,7 @@ class TransformNode(JovimetrixBaseNode):
         return (cv2tensor(pixels), cv2mask(pixels), )
 
 NODE_CLASS_MAPPINGS = {
-    "🌱 Transform Image (jov)": TransformNode,
+    "🌱 Transform (jov)": TransformNode,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {k: k for k in NODE_CLASS_MAPPINGS}

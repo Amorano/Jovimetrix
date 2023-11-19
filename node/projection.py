@@ -11,32 +11,45 @@
 @author: amorano
 @title: Jovimetrix Composition Pack
 @nickname: Jovimetrix
-@description: Invert inputs.
+@description: Remapping images to new perspectives.
 """
 
-from .. import IT_PIXELS, deep_merge_dict
-from ..util import JovimetrixBaseNode, INVERT, tensor2cv, cv2mask, cv2tensor
+from PIL import Image
+from .. import IT_WH, IT_IMAGE, deep_merge_dict
+from ..util import JovimetrixBaseNode, pil2tensor, tensor2pil
 
-__all__ = ["InvertNode"]
+__all__ = ["MappingNode"]
 
 # =============================================================================
-class InvertNode(JovimetrixBaseNode):
+class ProjectionNode(JovimetrixBaseNode):
     @classmethod
     def INPUT_TYPES(s):
         d = {"required": {
-            "alpha": ("FLOAT", {"default": 1., "min": 0., "max": 1., "step": 0.05}),
-        }}
-        return deep_merge_dict(IT_PIXELS, d)
+                "proj": (["SPHERICAL", "CYLINDRICAL"], {"default": "SPHERICAL"}),
+            }}
+        return deep_merge_dict(IT_IMAGE, d, IT_WH)
 
-    DESCRIPTION = "Alpha blend an input's inverted version with the original."
+    DESCRIPTION = ""
 
-    def run(self, pixels, alpha):
-        pixels = tensor2cv(pixels)
-        pixels = INVERT(pixels, alpha)
-        return (cv2tensor(pixels), cv2mask(pixels), )
+    def run(self, image, proj, width, height):
+        image = tensor2pil(image)
+
+        source_width, source_height = image.size
+        target_image = Image.new("RGB", (width, height))
+        for y_target in range(height):
+            for x_target in range(width):
+                x_source = int((x_target / width) * source_width)
+
+                if proj == "SPHERICAL":
+                    x_source %= source_width
+                y_source = int(y_target / height * source_height)
+                px = image.getpixel((x_source, y_source))
+
+                target_image.putpixel((x_target, y_target), px)
+        return (pil2tensor(target_image),)
 
 NODE_CLASS_MAPPINGS = {
-    "🎭 Invert (jov)": InvertNode,
+    "🗺️ Projection (jov)": ProjectionNode,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {k: k for k in NODE_CLASS_MAPPINGS}

@@ -15,11 +15,12 @@
 """
 
 import cv2
+import torch
 import concurrent.futures
 import numpy as np
 
-from .. import IT_WH, IT_IMAGE, deep_merge_dict
-from ..util import JovimetrixBaseNode, cv2mask, cv2tensor
+from .. import IT_WH, deep_merge_dict
+from ..util import JovimetrixBaseNode, cv2mask, cv2tensor, tensor2cv
 
 __all__ = ["PixelShaderNode", "PixelShaderImageNode"]
 
@@ -105,23 +106,17 @@ class PixelShaderBaseNode(JovimetrixBaseNode):
                 "B": ("STRING", {"multiline": True}),
             },
         }
-        if s == PixelShaderImageNode:
-            return deep_merge_dict(IT_IMAGE, d, IT_WH)
         return deep_merge_dict(d, IT_WH)
 
-    RETURN_TYPES = ("IMAGE", "MASK",)
-    RETURN_NAMES = ("image", "mask", )
-
     def run(self, image, width, height, R, G, B):
+        image = tensor2cv(image)
         image = shader(image, width, height, R, G, B)
-        print('PixelShaderBaseNode', image.shape)
         return (cv2tensor(image), cv2mask(image), )
 
 class PixelShaderNode(PixelShaderBaseNode):
     DESCRIPTION = ""
     def run(self, width, height, R, G, B):
-        # Create an empty numpy array to store the pixel values
-        image = np.zeros((height, width, 3), dtype=np.uint8)
+        image = torch.empty((height, width, 3), dtype=np.uint8)
         return super().run(image, width, height, R, G, B)
 
 class PixelShaderImageNode(PixelShaderBaseNode):

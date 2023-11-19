@@ -20,7 +20,7 @@ from PIL import Image, ImageChops
 from .. import deep_merge_dict, IT_WHFULL
 from ..util import cv2pil, pil2cv, cv2tensor, tensor2cv, JovimetrixBaseNode, SCALEFIT, INVERT
 
-__all__ = ["BlendNode", "BlendMaskNode"]
+__all__ = ["BlendNode"]
 
 # =============================================================================
 # === COMPOSITING ===
@@ -42,7 +42,6 @@ OPS = {
     'LOGICAL OR': np.bitwise_or,
     'LOGICAL XOR': np.bitwise_xor,
 }
-_OPS = list(OPS.keys())
 
 def blend(maskA, maskB, alpha, func):
     if (op := OPS.get(func, None)):
@@ -77,7 +76,7 @@ class BlendNode(JovimetrixBaseNode):
                     "alpha": ("FLOAT", {"default": 1., "min": 0., "max": 1., "step": 0.01}),
                 },
                 "optional": {
-                    "func": (_OPS, {"default": "LERP"}),
+                    "func": (list(OPS.keys()), {"default": "LERP"}),
                     "modeA": (["FIT", "CROP", "ASPECT"], {"default": "FIT"}),
                     "modeB": (["FIT", "CROP", "ASPECT"], {"default": "FIT"}),
             }}
@@ -106,7 +105,7 @@ class BlendNode(JovimetrixBaseNode):
         return (cv2tensor(imageA),)
 
 NODE_CLASS_MAPPINGS = {
-    "⚗️ Blend Images (jov)": BlendNode,
+    "⚗️ Blend (jov)": BlendNode,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {k: k for k in NODE_CLASS_MAPPINGS}

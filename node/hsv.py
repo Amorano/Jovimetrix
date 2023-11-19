@@ -33,7 +33,6 @@ class HSVNode(JovimetrixBaseNode):
         return deep_merge_dict(IT_IMAGE, d)
 
     DESCRIPTION = "Tweak the Hue, Saturation and Value for an Image."
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/Image"
 
     def run(self, image, hue, saturation, value):
         image = tensor2cv(image)
@@ -42,7 +41,7 @@ class HSVNode(JovimetrixBaseNode):
         return (cv2tensor(image),)
 
 NODE_CLASS_MAPPINGS = {
-    "🌈 HSV Image (jov)": HSVNode,
+    "🌈 HSV (jov)": HSVNode,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {k: k for k in NODE_CLASS_MAPPINGS}
