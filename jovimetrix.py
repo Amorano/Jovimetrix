@@ -45,6 +45,7 @@ from PIL import Image, ImageDraw, ImageChops, ImageFilter
 import time
 import logging
 import concurrent.futures
+from typing import Tuple, Optional
 
 log = logging.getLogger(__package__)
 log.setLevel(logging.INFO)
@@ -55,7 +56,7 @@ log.setLevel(logging.INFO)
 
 class JovimetrixBaseNode:
     @classmethod
-    def INPUT_TYPES(cls):
+    def INPUT_TYPES(cls) -> dict:
         return {"required":{}}
 
     DESCRIPTION = "A Jovimetrix Node"
@@ -279,7 +280,7 @@ def sh_polygon(width: int, height: int, size: float=1., sides: int=3, angle: flo
 # === IMAGE FUNCTIONS ===
 # =============================================================================
 
-def rotate_ndarray(image, angle, clip=True):
+def rotate_ndarray(image: np.ndarray, angle: float, clip: bool=True) -> np.ndarray:
     """."""
     rotated_image = rotate(image, angle, reshape=not clip, mode='constant', cval=0)
 
@@ -353,7 +354,7 @@ def ROTATE(image: cv2.Mat, angle: float, center=(0.5 ,0.5)) -> cv2.Mat:
 def SCALEFIT(image: cv2.Mat, width: int, height: int, mode: str="FIT") -> cv2.Mat:
     """Scale a matrix into a defined width, height explicitly or by a guiding edge."""
     h, w, _ = image.shape
-    if w == width and h == height:
+    if mode == "NONE" or (w == width and h == height):
         return image
     if mode == "ASPECT":
         scalar = max(width, height)
@@ -469,25 +470,27 @@ def EXTEND(imageA: cv2.Mat, imageB: cv2.Mat, axis: int=0, flip: bool=False) -> c
 
 class TransformNode(JovimetrixBaseNode):
     @classmethod
-    def INPUT_TYPES(cls):
+    def INPUT_TYPES(cls) -> dict:
         return deep_merge_dict(IT_PIXELS, IT_TRS, IT_EDGE, IT_WH, IT_WHMODE)
 
     DESCRIPTION = "Translate, Rotate, Scale, Tile and Invert an input. All options allow for CROP or WRAPing of the edges."
 
-    def run(self, pixels, offsetX, offsetY, angle, sizeX, sizeY, edge, width, height, mode):
+    def run(self, pixels: torch.tensor, offsetX: float, offsetY: float, angle: float, sizeX: float, sizeY: float,
+            edge: str, width: int, height: int, mode: str) -> (torch.tensor, torch.tensor):
+
         pixels = tensor2cv(pixels)
         pixels = TRANSFORM(pixels, offsetX, offsetY, angle, sizeX, sizeY, edge, width, height, mode)
         return (cv2tensor(pixels), cv2mask(pixels), )
 
 class TileNode(JovimetrixBaseNode):
     @classmethod
-    def INPUT_TYPES(cls):
+    def INPUT_TYPES(cls) -> dict:
         return deep_merge_dict(IT_PIXELS, IT_TILE)
 
     DESCRIPTION = "Tile an Image with optional crop to original image size."
     CATEGORY = "JOVIMETRIX 🔺🟩🔵"
 
-    def run(self, pixels, tileX, tileY):
+    def run(self, pixels: torch.tensor, tileX: float, tileY: float) -> (torch.tensor, torch.tensor):
         pixels = tensor2cv(pixels)
         height, width, _ = pixels.shape
         pixels = EDGEWRAP(pixels, tileX, tileY)
@@ -497,7 +500,7 @@ class TileNode(JovimetrixBaseNode):
 
 class ShapeNode(JovimetrixBaseNode):
     @classmethod
-    def INPUT_TYPES(cls):
+    def INPUT_TYPES(cls) -> dict:
         d = {
             "required": {
                 "shape": (["CIRCLE", "SQUARE", "ELLIPSE", "RECTANGLE", "POLYGON"], {"default": "SQUARE"}),
@@ -511,7 +514,9 @@ class ShapeNode(JovimetrixBaseNode):
     RETURN_TYPES = ("IMAGE", "MASK", )
     RETURN_NAMES = ("image", "mask", )
 
-    def run(self, shape, sides, width, height, R, G, B, angle, sizeX, sizeY, invert):
+    def run(self, shape: str, sides: int, width: int, height: int, R: float, G: float, B: float,
+            angle: float, sizeX: float, sizeY: float, invert: float) -> (torch.tensor, torch.tensor):
+
         image = None
         fill = (int(R * 255.),
                 int(G * 255.),
@@ -543,19 +548,19 @@ class ShapeNode(JovimetrixBaseNode):
 
 class ConstantNode(JovimetrixBaseNode):
     @classmethod
-    def INPUT_TYPES(cls):
+    def INPUT_TYPES(cls) -> dict:
         return deep_merge_dict(IT_REQUIRED, IT_WH, IT_COLOR)
 
     DESCRIPTION = ""
     CATEGORY = "JOVIMETRIX 🔺🟩🔵"
 
-    def run(self, width, height, R, G, B):
+    def run(self, width: int, height: int, R: float, G: float, B: float) -> (torch.tensor, torch.tensor):
         image = Image.new("RGB", (width, height), (int(R * 255.), int(G * 255.), int(B * 255.)) )
-        return (pil2tensor(image),)
+        return (pil2tensor(image), pil2tensor(image.convert("L")),)
 
 class PixelShaderBaseNode(JovimetrixBaseNode):
     @classmethod
-    def INPUT_TYPES(cls):
+    def INPUT_TYPES(cls) -> dict:
         d = {"required": {},
             "optional": {
                 "R": ("STRING", {"multiline": True, "default": "1. - np.minimum(1, np.sqrt((($u-0.5)**2 + ($v-0.5)**2) * 2))"}),
@@ -568,7 +573,7 @@ class PixelShaderBaseNode(JovimetrixBaseNode):
         return deep_merge_dict(d, IT_WH)
 
     @staticmethod
-    def shader(image: cv2.Mat, width: int, height: int, R: str, G: str, B: str):
+    def shader(image: cv2.Mat, width: int, height: int, R: str, G: str, B: str) -> np.ndarray:
         import math
         from ast import literal_eval
 
@@ -646,20 +651,20 @@ class PixelShaderBaseNode(JovimetrixBaseNode):
 
         return ret
 
-    def run(self, image: torch.tensor, width: int, height: int, R: str, G: str, B: str) -> torch.tensor:
+    def run(self, image: torch.tensor, width: int, height: int, R: str, G: str, B: str) -> (torch.tensor, torch.tensor):
         image = tensor2cv(image)
         image = PixelShaderBaseNode.shader(image, width, height, R, G, B)
         return (cv2tensor(image), cv2mask(image), )
 
 class PixelShaderNode(PixelShaderBaseNode):
     DESCRIPTION = ""
-    def run(self, width: int, height: int, R: str, G: str, B: str) -> torch.tensor:
+    def run(self, width: int, height: int, R: str, G: str, B: str) -> (torch.tensor, torch.tensor):
         image = torch.zeros((height, width, 3), dtype=torch.uint8)
         return super().run(image, width, height, R, G, B)
 
 class PixelShaderImageNode(PixelShaderBaseNode):
     DESCRIPTION = ""
-    def run(self, image: torch.tensor, width: int, height: int, R: str, G: str, B: str) -> torch.tensor:
+    def run(self, image: torch.tensor, width: int, height: int, R: str, G: str, B: str) -> (torch.tensor, torch.tensor):
         image = tensor2cv(image)
         image = cv2.resize(image, (width, height))
         image = cv2tensor(image)
@@ -667,7 +672,7 @@ class PixelShaderImageNode(PixelShaderBaseNode):
 
 class MirrorNode(JovimetrixBaseNode):
     @classmethod
-    def INPUT_TYPES(cls):
+    def INPUT_TYPES(cls) -> dict:
         d = {"required": {
                 "x": ("FLOAT", {"default": 0.5, "min": 0., "max": 1., "step": 0.05}),
                 "y": ("FLOAT", {"default": 0.5, "min": 0., "max": 1., "step": 0.05}),
@@ -678,7 +683,7 @@ class MirrorNode(JovimetrixBaseNode):
 
     DESCRIPTION = "Flip an input across the X axis, the Y Axis or both, with independant centers."
 
-    def run(self, pixels, x, y, mode, invert):
+    def run(self, pixels, x, y, mode, invert) -> (torch.tensor, torch.tensor):
         pixels = tensor2cv(pixels)
         while (len(mode) > 0):
             axis, mode = mode[0], mode[1:]
@@ -688,7 +693,7 @@ class MirrorNode(JovimetrixBaseNode):
 
 class HSVNode(JovimetrixBaseNode):
     @classmethod
-    def INPUT_TYPES(cls):
+    def INPUT_TYPES(cls) -> dict:
         d = {
             "optional": {
                 "hue": ("FLOAT",{"default": 0., "min": 0., "max": 1., "step": 0.01},),
@@ -700,15 +705,15 @@ class HSVNode(JovimetrixBaseNode):
 
     DESCRIPTION = "Tweak the Hue, Saturation and Value for an Image."
 
-    def run(self, image, hue, saturation, value):
+    def run(self, image: torch.tensor, hue: float, saturation: float, value: float) -> (torch.tensor, torch.tensor):
         image = tensor2cv(image)
         if hue != 0. or saturation != 1. or value != 1.:
             image = HSV(image, hue, saturation, value)
-        return (cv2tensor(image),)
+        return (cv2tensor(image), cv2mask(image), )
 
 class ExtendNode(JovimetrixBaseNode):
     @classmethod
-    def INPUT_TYPES(cls):
+    def INPUT_TYPES(cls) -> dict:
         d = {"required": {
                 "axis": (["HORIZONTAL", "VERTICAL"], {"default": "HORIZONTAL"}),
             },
@@ -720,7 +725,8 @@ class ExtendNode(JovimetrixBaseNode):
 
     DESCRIPTION = "Contrast, Gamma and Exposure controls for images."
 
-    def run(self, pixelA, pixelB, axis, flip, width, height, mode):
+    def run(self, pixelA: torch.tensor, pixelB: torch.tensor, axis: str, flip: str,
+            width: int, height: int, mode: str) -> (torch.tensor, torch.tensor):
         pixelA = tensor2cv(pixelA)
         pixelB = tensor2cv(pixelB)
         pixelA = EXTEND(pixelA, pixelB, axis, flip)
@@ -747,7 +753,7 @@ class BlendNode(JovimetrixBaseNode):
     }
 
     @classmethod
-    def INPUT_TYPES(cls):
+    def INPUT_TYPES(cls) -> dict:
         d = {"required": {
                     "imageA": ("IMAGE", ),
                     "imageB": ("IMAGE", ),
@@ -763,7 +769,7 @@ class BlendNode(JovimetrixBaseNode):
     DESCRIPTION = "Takes 2 Image inputs and an apha and performs a linear blend (alpha) between both images based on the selected operations."
 
     @staticmethod
-    def blend(maskA, maskB, alpha, func):
+    def blend(maskA, maskB, alpha: float, func: float) -> cv2.Mat:
         if (op := BlendNode.OPS.get(func, None)) is None:
             return maskA
         alpha = min(max(alpha, 0.), 1.)
@@ -788,7 +794,8 @@ class BlendNode(JovimetrixBaseNode):
             maskA = pil2cv(op(maskA, maskB))
         return maskA
 
-    def run(self, imageA: torch.tensor, imageB: torch.tensor, alpha: float, func, modeA, modeB, width, height, mode, invert) -> (torch.tensor, torch.tensor):
+    def run(self, imageA: torch.tensor, imageB: torch.tensor, alpha: float, func: str, modeA: str,
+            modeB: str, width: int, height: int, mode: str, invert) -> (torch.tensor, torch.tensor):
         imageA = tensor2cv(imageA)
         imageB = tensor2cv(imageB)
         imageA = SCALEFIT(imageA, width, height, modeA)
@@ -819,7 +826,7 @@ class AdjustNode(JovimetrixBaseNode):
     }
 
     @classmethod
-    def INPUT_TYPES(cls):
+    def INPUT_TYPES(cls) -> dict:
         ops = list(AdjustNode.OPS.keys()) + list(AdjustNode.OPS_PRE.keys()) + list(AdjustNode.OPS_CV2.keys())
         d = {"required": {
                 "func": (ops, {"default": "BLUR"}),
@@ -832,7 +839,7 @@ class AdjustNode(JovimetrixBaseNode):
 
     DESCRIPTION = "A single node with multiple operations."
 
-    def run(self, pixels, func, radius, alpha)  -> (torch.tensor, torch.tensor):
+    def run(self, pixels: torch.tensor, func: str, radius: float, alpha: float)  -> (torch.tensor, torch.tensor):
         if (op := AdjustNode.OPS.get(func, None)):
            pixels = tensor2pil(pixels)
            pixels = pixels.filter(op(radius))
@@ -852,7 +859,7 @@ class AdjustNode(JovimetrixBaseNode):
 
 class ProjectionNode(JovimetrixBaseNode):
     @classmethod
-    def INPUT_TYPES(cls):
+    def INPUT_TYPES(cls) -> dict:
         d = {"required": {
                 "proj": (["SPHERICAL", "CYLINDRICAL"], {"default": "SPHERICAL"}),
             }}
@@ -860,7 +867,7 @@ class ProjectionNode(JovimetrixBaseNode):
 
     DESCRIPTION = ""
 
-    def run(self, image, proj, width, height):
+    def run(self, image: torch.tensor, proj: str, width: int, height: int):
         image = tensor2pil(image)
 
         source_width, source_height = image.size
@@ -879,7 +886,7 @@ class ProjectionNode(JovimetrixBaseNode):
 
 class RouteNode(JovimetrixBaseNode):
     @classmethod
-    def INPUT_TYPES(cls):
+    def INPUT_TYPES(cls) -> dict:
         return {"required": {
             "o": (WILDCARD, {"default": None}),
         }}
@@ -888,7 +895,7 @@ class RouteNode(JovimetrixBaseNode):
     RETURN_TYPES = (WILDCARD,)
     RETURN_NAMES = ("🚌",)
 
-    def run(self, o):
+    def run(self, o: object) -> [object, ]:
         return (o,)
 
 class WebCamNode(JovimetrixBaseNode):
@@ -898,73 +905,147 @@ class WebCamNode(JovimetrixBaseNode):
     CAMFPS = {i: 12 for i in range(MAXCAM)}
 
     @classmethod
-    def INPUT_TYPES(cls):
+    def INPUT_TYPES(cls) -> dict:
         d = {"required": {
-            "cam": ("INT", {"min": 0, "max": WebCamNode.MAXCAM-1, "step":1, "default": 0}),
-            "rate": ("INT", {"min": 1, "max": 60, "step": 1, "default": WebCamNode.MAXFPS}),
-            "pause": ("BOOLEAN", {"default": False})
-        }}
-        return deep_merge_dict(d, IT_WH, IT_WHMODE)
+                "cam": ("INT", {"min": 0, "max": WebCamNode.MAXCAM-1, "step":1, "default": 0}),
+                "rate": ("INT", {"min": 1, "max": 60, "step": 1, "default": WebCamNode.MAXFPS}),
+            },
+            "optional": {
+                "hold": ("BOOLEAN", {"default": False}),
+                "orient": (["NORMAL", "FLIPX", "FLIPY", "FLIPXY"], {"default": "NORMAL"}),
+            }}
+        return deep_merge_dict(d, IT_WH, IT_WHMODEI)
 
     @classmethod
-    def INIT(cls, camIdx: int, rate: float):
+    def INIT(cls, cam: int, width: int, height:int, rate: float) -> Optional[cv2.VideoCapture]:
+        """
+        Initialize a webcam.
+
+        Args:
+            cam (int): Index of the webcam.
+            rate (float): Frames per second.
+
+        Returns:
+            Optional[cv2.VideoCapture]: Initialized webcam if successful, None otherwise.
+        """
         try:
-            camera = WebCamNode.CAMERA[camIdx]
-        except KeyError as _:
-            log.warn(f"initialize camera out of range {camIdx}")
-            return
+            camera = cls.CAMERA[cam]
+        except KeyError:
+            log.warn(f"initialize camera out of range {cam}")
+            return None
 
         if camera:
-            log.warn(f"Camera already captured {camIdx}")
+            log.warn(f"camera already captured {cam}")
             return camera
 
-        camera = cv2.VideoCapture(camIdx)
+        camera = cv2.VideoCapture(cam)
         if camera is None or not camera.isOpened():
-            log.warn(f"cannot open webcam {camIdx}")
-            return
+            log.warn(f"cannot open webcam {cam}")
+            return None
 
-        WebCamNode.CAMERA[camIdx] = camera
-        WebCamNode.FRAMERATE(camIdx, rate)
+        # JACK IT UP HIGH AS CAN BE -- WE CONTROL IT PER NODE
+        camera.set(cv2.CAP_PROP_FRAME_WIDTH, width)
+        camera.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
+        camera.set(cv2.CAP_PROP_FPS, 10000)
+
+        cls.CAMERA[cam] = camera
+        cls.CAMFPS[cam] = rate
+        # cls.FRAMERATE(cam, rate)
+        log.info(f'cam capture {cam}')
+        return camera
 
     @classmethod
-    def FRAMERATE(cls, cam: int, rate: float):
-        if WebCamNode.CAMERA[cam] and WebCamNode.CAMERA[cam].isOpened() and rate != WebCamNode.CAMFPS[cam]:
-            WebCamNode.CAMERA.set(cv2.CAP_PROP_FPS, rate)
-            WebCamNode.CAMFPS[cam] = rate
-            log.info('CAMERA RATE CHANGE', cam, rate)
+    def FRAMERATE(cls, cam: int, rate: float) -> None:
+        """
+        Set the framerate of a webcam.
+
+        Args:
+            cam (int): Index of the webcam.
+            rate (float): Frames per second.
+        """
+        log.info('CAMERA RATE CHANGE', cls.CAMERA[cam], cam, rate)
+        if cls.CAMERA[cam] and cls.CAMERA[cam].isOpened() and rate != cls.CAMERA[cam].get(cv2.CAP_PROP_FPS):
+            cls.CAMERA[cam].set(cv2.CAP_PROP_FPS, rate)
+            cls.CAMFPS[cam] = rate
 
     @classmethod
-    def IS_CHANGED(cls, cam: int, rate: float, width: int, height: int, mode: str, pause: bool):
-        if WebCamNode.CAMERA[cam] is None:
-            cls.INIT(cam, rate)
-        if rate != WebCamNode.CAMFPS[cam]:
-            cls.FRAMERATE(cam, rate)
+    def IS_CHANGED(cls, cam: int, rate: float, hold: bool, orient: str, width: int, height: int, mode: str, invert: float) -> float:
+        """
+        Check if webcam parameters have changed.
+
+        Args:
+            cam (int): Index of the webcam.
+            rate (float): Frames per second.
+            hold (bool): Hold last frame flag.
+            orient (str): Final image presentation orientation flag.
+            width (int): Width of the image.
+            height (int): Height of the image.
+            mode (str): Scale processing mode.
+            invert (float): Amount to invert the output
+
+        Returns:
+            float: cached value.
+        """
+        if cls.CAMERA[cam] is None:
+            cls.INIT(cam, width, height, rate)
+        #if rate != cls.CAMFPS[cam]:
+        #    cls.FRAMERATE(cam, rate)
         return float("nan")
 
-    def __init__(self):
-        self.__last = None
+    def __init__(self) -> None:
+        """
+        Initialize WebCamNode instance.
+        """
+        image = torch.zeros((1, 1, 3), dtype=torch.uint8)
+        image = tensor2cv(image)
+        self.__last = (cv2tensor(image), cv2mask(image), )
         self.__camera = None
-        self.__pause = False
+        self.__time = time.time()
 
-    def __del__(self):
-        if self.__camera:
-            log.info("releasing camera")
-            self.__camera.RELEASE(self.__camera)
+    def __del__(self) -> None:
+        """
+        Release the camera resource when the instance is deleted.
+        """
+        #if self.__camera:
+            #log.info("releasing camera")
+            #self.__camera.RELEASE(self.__camera)
         self.__camera = None
 
-    def run(self, cam, rate, width, height, mode, pause):
-        self.__pause = pause
-        if pause:
+    def run(self, cam: int, rate: float, hold: bool, orient: str, width: int, height: int, mode: str, invert: float):
+        """
+        Return a current frame from the webcam if it is active and the FPS check passes.
+
+        Args:
+            cam (int): Index of the webcam.
+            rate (float): Frames per second.
+            hold (bool): Hold last frame flag.
+            orient (str): Final image presentation orientation flag.
+            width (int): Width of the image.
+            height (int): Height of the image.
+            mode (str): Scale processing mode.
+            invert (float): Amount to invert the output
+
+        Returns:
+            (image (torch.tensor), mask (torch.tensor)): The image and its mask result.
+        """
+        if hold:
+            log.info(f'capture paused {cam}')
             return self.__last
 
         if self.__camera is None:
             self.__camera = WebCamNode.INIT(cam, rate)
+            if self.__camera is None:
+                log.warn(f"camera initialize failed {cam}")
+                return self.__last
+
             image = torch.zeros((height, width, 3), dtype=torch.uint8)
             image = tensor2cv(image)
             self.__last = (cv2tensor(image), cv2mask(image), )
-            time.sleep(0.2)
 
-        if not self.__pause:
+        # per frame second diff
+        rate = 1. / rate
+
+        if time.time() - self.__time > rate:
             if self.__camera is None:
                 log.warn(f"Failed to read webcam {cam}")
                 return self.__last
@@ -974,10 +1055,21 @@ class WebCamNode(JovimetrixBaseNode):
                 log.warn(f"Failed to read webcam {cam}")
                 return self.__last
 
-            image = SCALEFIT(image, width, height, mode=mode)
-            self.__last = (cv2tensor(image), cv2mask(image), )
+            if mode != "NONE":
+                image = SCALEFIT(image, width, height, mode=mode)
 
-        self.__pause = pause
+            if orient in ["FLIPX", "FLIPXY"]:
+                image = cv2.flip(image, 1)
+
+            if orient in ["FLIPY", "FLIPXY"]:
+                image = cv2.flip(image, 0)
+
+            if invert != 0.:
+                image = INVERT(image, invert)
+
+            self.__last = (cv2tensor(image), cv2mask(image), )
+            self.__time = time.time()
+
         return self.__last
 
 NODE_CLASS_MAPPINGS = {
@@ -989,19 +1081,15 @@ NODE_CLASS_MAPPINGS = {
     "🌱 Transform (jov)": TransformNode,
     "🔳 Tile (jov)": TileNode,
     "🔰 Mirror (jov)": MirrorNode,
+    "🎇 Expand (jov)": ExtendNode,
 
     "🌈 HSV (jov)": HSVNode,
     "🕸️ Adjust (jov)": AdjustNode,
-
-    "🎇 Expand (jov)": ExtendNode,
-
     "⚗️ Blend (jov)": BlendNode,
 
     # "🗺️ Projection (jov)": ProjectionNode,
-
-    "🚌 Route (jov)": RouteNode,
-
     "📷 WebCam (jov)": WebCamNode,
+    "🚌 Route (jov)": RouteNode,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {k: k for k in NODE_CLASS_MAPPINGS}
