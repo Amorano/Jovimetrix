@@ -29,6 +29,17 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 GO NUTS; JUST TRY NOT TO DO IT IN YOUR HEAD.
+
+@title: Jovimetrix Composition Pack
+@category: Compositing
+@tags: compositing, composition, video, mask, shape, webcam
+@description: Procedural & Compositing. Includes a Webcam node.
+@author: amorano
+@reference: https://github.com/Amorano/Jovimetrix
+@node list: ConstantNode, ShapeNode, PixelShaderNode, PixelShaderImageNode,
+            TransformNode, TileNode, MirrorNode, ExtendNode, HSVNode, AdjustNode,
+            BlendNode, ProjectionNode, WebCamNode, RouteNode
+@version: 0.92
 """
 
 from .jovimetrix import NODE_CLASS_MAPPINGS
