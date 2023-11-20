@@ -47,6 +47,9 @@ import logging
 import concurrent.futures
 from typing import Tuple, Optional
 
+from comtypes import client, GUID, IUnknown, POINTER, IPersist
+from comtypes.persist import IPropertyBag, wstring_at
+
 log = logging.getLogger(__package__)
 log.setLevel(logging.INFO)
 
@@ -196,6 +199,22 @@ IT_TRS = deep_merge_dict(IT_TRANS, IT_ROT, IT_SCALE)
 
 IT_WHMODEI = deep_merge_dict(IT_WH, IT_WHMODE, IT_INVERT)
 
+OP_BLEND = {
+    'LERP': "",
+    'ADD': ImageChops.add,
+    'MINIMUM': ImageChops.darker,
+    'MAXIMUM': ImageChops.lighter,
+    'MULTIPLY': ImageChops.multiply,
+    'SOFT LIGHT': ImageChops.soft_light,
+    'HARD LIGHT': ImageChops.hard_light,
+    'OVERLAY': ImageChops.overlay,
+    'SCREEN': ImageChops.screen,
+    'SUBTRACT': ImageChops.subtract,
+    'DIFFERENCE': ImageChops.difference,
+    'LOGICAL AND': np.bitwise_and,
+    'LOGICAL OR': np.bitwise_or,
+    'LOGICAL XOR': np.bitwise_xor,
+}
 # =============================================================================
 # === MATRIX SUPPORT ===
 # =============================================================================
@@ -205,6 +224,11 @@ def tensor2pil(image: torch.Tensor) -> Image:
     image = np.clip(image, 0, 255)
     image = image.astype(np.uint8)
     return Image.fromarray(image)
+
+def mask2pil(mask: torch.Tensor) -> Image:
+    mask = (mask.numpy().squeeze() * 255).astype(np.uint8)
+    mask = np.squeeze(mask)
+    return Image.fromarray(mask, mode="L")
 
 def tensor2cv(image: torch.Tensor) -> cv2.Mat:
     """Torch Tensor to CV2 Matrix."""
@@ -218,15 +242,23 @@ def tensor2np(tensor: torch.Tensor) -> np.ndarray:
 
 def pil2tensor(image: Image) -> torch.Tensor:
     """PIL Image to Tensor RGB."""
-    return torch.from_numpy(np.array(image).astype(np.float32) / 255.0).unsqueeze(0)
-
-def pil2np(image: Image) -> np.ndarray:
-    """PIL Image to Numpy Array."""
-    return (np.array(image).astype(np.float32) / 255.0)[ :, :, :]
+    return torch.from_numpy(np.array(image).astype(np.float64) / 255.0).unsqueeze(0)
 
 def pil2cv(image: Image) -> cv2.Mat:
     """PIL to CV2 Matrix."""
     return cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
+
+def pil2np(image: Image) -> np.ndarray:
+    """PIL Image to Numpy Array."""
+    return (np.array(image).astype(np.float64) / 255.0)[ :, :, :]
+
+def pil2mask(image: Image) -> torch.Tensor:
+    if image.mode == "L":
+        image_np = np.array(image).astype(np.float64) / 255.0
+    else:
+        image_np = np.array(image.convert("L")).astype(np.float64) / 255.0
+    mask = torch.from_numpy(image_np).unsqueeze(0)
+    return 1.0 - mask if image.mode == "L" else mask
 
 def cv2pil(image: cv2.Mat) -> Image:
     """CV2 Matrix to PIL."""
@@ -235,16 +267,16 @@ def cv2pil(image: cv2.Mat) -> Image:
 def cv2tensor(image: cv2.Mat) -> torch.Tensor:
     """CV2 Matrix to Torch Tensor."""
     image = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
-    return torch.from_numpy(np.array(image).astype(np.float32) / 255.0).unsqueeze(0)
+    return torch.from_numpy(np.array(image).astype(np.float64) / 255.0).unsqueeze(0)
 
 def cv2mask(image: cv2.Mat) -> torch.Tensor:
     """CV2 to Greyscale MASK."""
     image = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2GRAY))
-    return torch.from_numpy(np.array(image).astype(np.float32) / 255.0).unsqueeze(0)
+    return torch.from_numpy(np.array(image).astype(np.float64) / 255.0).unsqueeze(0)
 
 def np2tensor(image: np.ndarray) -> torch.Tensor:
     """NumPy to Torch Tensor."""
-    return torch.from_numpy(image.astype(np.float32) / 255.0).unsqueeze(0)
+    return torch.from_numpy(image.astype(np.float64) / 255.0).unsqueeze(0)
 
 # =============================================================================
 # === SHAPE FUNCTIONS ===
@@ -279,28 +311,6 @@ def sh_polygon(width: int, height: int, size: float=1., sides: int=3, angle: flo
 # =============================================================================
 # === IMAGE FUNCTIONS ===
 # =============================================================================
-
-def rotate_ndarray(image: np.ndarray, angle: float, clip: bool=True) -> np.ndarray:
-    """."""
-    rotated_image = rotate(image, angle, reshape=not clip, mode='constant', cval=0)
-
-    if not clip:
-        return rotated_image
-
-    # Compute the dimensions for clipping
-    height, width, _ = image.shape
-    rotated_height, rotated_width, _ = rotated_image.shape
-
-    # Calculate the difference in dimensions
-    height_diff = rotated_height - height
-    width_diff = rotated_width - width
-
-    # Calculate the starting indices for clipping
-    start_height = height_diff // 2
-    start_width = width_diff // 2
-
-    # Clip the rotated image
-    return rotated_image[start_height:start_height + height, start_width:start_width + width]
 
 def CROP(image: cv2.Mat, x1: int, y1: int, x2: int, y2: int) -> cv2.Mat:
     """."""
@@ -350,6 +360,28 @@ def ROTATE(image: cv2.Mat, angle: float, center=(0.5 ,0.5)) -> cv2.Mat:
     M = cv2.getRotationMatrix2D(center, -angle, 1.0)
     #log.info('ROTATE', angle)
     return cv2.warpAffine(image, M, (width, height), flags=cv2.INTER_LINEAR)
+
+def ROTATE_NDARRAY(image: np.ndarray, angle: float, clip: bool=True) -> np.ndarray:
+    """."""
+    rotated_image = rotate(image, angle, reshape=not clip, mode='constant', cval=0)
+
+    if not clip:
+        return rotated_image
+
+    # Compute the dimensions for clipping
+    height, width, _ = image.shape
+    rotated_height, rotated_width, _ = rotated_image.shape
+
+    # Calculate the difference in dimensions
+    height_diff = rotated_height - height
+    width_diff = rotated_width - width
+
+    # Calculate the starting indices for clipping
+    start_height = height_diff // 2
+    start_width = width_diff // 2
+
+    # Clip the rotated image
+    return rotated_image[start_height:start_height + height, start_width:start_width + width]
 
 def SCALEFIT(image: cv2.Mat, width: int, height: int, mode: str="FIT") -> cv2.Mat:
     """Scale a matrix into a defined width, height explicitly or by a guiding edge."""
@@ -464,6 +496,64 @@ def EXTEND(imageA: cv2.Mat, imageB: cv2.Mat, axis: int=0, flip: bool=False) -> c
     axis = 1 if axis == "HORIZONTAL" else 0
     return np.concatenate((imageA, imageB), axis=axis)
 
+def LERP(imageA: cv2.Mat, imageB: cv2.Mat, mask: cv2.Mat=None, alpha: float=1.) -> cv2.Mat:
+    """
+    dest = take A op B
+    blend A + dest * (1 - A)
+    """
+
+    # prep layers
+    imageA = imageA.astype(np.float64)
+    imageB = imageB.astype(np.float64)
+
+    # normalize mask
+    alpha = min(max(alpha, 0.), 1.)
+    if mask is None:
+        height, width, _ = imageA.shape
+        mask = cv2.empty((height, width, 1), dtype=cv2.uint8)
+
+    # normalize the mask
+    info = np.iinfo(mask.dtype)
+    mask = mask.astype(np.float64) / info.max * alpha
+
+    # Multiply the foreground with the alpha matte
+    imageA = cv2.multiply(mask, imageA)
+
+    # Multiply the background with ( 1 - alpha )
+    imageB = cv2.multiply(1.0 - mask, imageB)
+
+    # Add the masked foreground and background.
+    imageA = cv2.add(imageA, imageB) # / 255
+    return imageA.astype(np.uint8)
+
+def BLEND(imageA: cv2.Mat, imageB: cv2.Mat, func: str, width: int, height: int, mask: cv2.Mat=None, alpha: float=1.) -> cv2.Mat:
+    if (op := OP_BLEND.get(func, None)) is None:
+        return imageA
+
+    alpha = min(max(alpha, 0.), 1.)
+    if mask is None:
+        height, width, _ = imageA.shape
+        mask = cv2.empty((height, width, 1), dtype=cv2.uint8)
+
+    # recale images to match sourceA size...
+    def adjustSize(who: cv2.Mat) -> cv2.Mat:
+        h, w, _ = who.shape
+        if (w != width or h != height):
+            return SCALEFIT(who, width, height)
+        return who
+
+    imageA = adjustSize(imageA)
+    imageB = adjustSize(imageB)
+    mask = adjustSize(mask)
+
+    if func.startswith("LOGICAL"):
+        imageB = op(np.array(imageA), np.array(imageB))
+        imageB = pil2cv(Image.fromarray(imageB))
+    elif func != "LERP":
+        imageB = pil2cv(op(cv2pil(imageA), cv2pil(imageB)))
+
+    # take the new B and mix with mask and alpha
+    return LERP(imageA, imageB, mask, alpha)
 # =============================================================================
 # === NODES ===
 # =============================================================================
@@ -735,72 +825,27 @@ class ExtendNode(JovimetrixBaseNode):
         return (cv2tensor(pixelA), cv2mask(pixelA), )
 
 class BlendNode(JovimetrixBaseNode):
-    OPS = {
-        'LERP': Image.blend,
-        'ADD': ImageChops.add,
-        'MINIMUM': ImageChops.darker,
-        'MAXIMUM': ImageChops.lighter,
-        'MULTIPLY': ImageChops.multiply,
-        'SOFT LIGHT': ImageChops.soft_light,
-        'HARD LIGHT': ImageChops.hard_light,
-        'OVERLAY': ImageChops.overlay,
-        'SCREEN': ImageChops.screen,
-        'SUBTRACT': ImageChops.subtract,
-        'DIFFERENCE': ImageChops.difference,
-        'LOGICAL AND': np.bitwise_and,
-        'LOGICAL OR': np.bitwise_or,
-        'LOGICAL XOR': np.bitwise_xor,
-    }
-
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"required": {
-                    "imageA": ("IMAGE", ),
-                    "imageB": ("IMAGE", ),
-                    "alpha": ("FLOAT", {"default": 1., "min": 0., "max": 1., "step": 0.01}),
-                },
-                "optional": {
-                    "func": (list(BlendNode.OPS.keys()), {"default": "LERP"}),
-                    "modeA": (["FIT", "CROP", "ASPECT"], {"default": "FIT"}),
-                    "modeB": (["FIT", "CROP", "ASPECT"], {"default": "FIT"}),
-            }}
+                "imageA": ("IMAGE", ),
+                "imageB": ("IMAGE", ),
+                "alpha": ("FLOAT", {"default": 1., "min": 0., "max": 1., "step": 0.01}),
+            },
+            "optional": {
+                "func": (list(OP_BLEND.keys()), {"default": "LERP"}),
+                "mask": (WILDCARD, {} ),
+        }}
         return deep_merge_dict(d, IT_WHMODEI)
 
-    DESCRIPTION = "Takes 2 Image inputs and an apha and performs a linear blend (alpha) between both images based on the selected operations."
+    DESCRIPTION = "Applies selected operation to 2 inputs with optional mask using a linear blend (alpha)."
 
-    @staticmethod
-    def blend(maskA, maskB, alpha: float, func: float) -> cv2.Mat:
-        if (op := BlendNode.OPS.get(func, None)) is None:
-            return maskA
-        alpha = min(max(alpha, 0.), 1.)
-        if func == 'LERP':
-            maskA = cv2pil(maskA)
-            maskB = cv2pil(maskB)
-            maskA = op(maskA, maskB, alpha)
-            maskA = pil2cv(maskA)
-        elif func.startswith("LOGICAL"):
-            maskA = np.array(maskA)
-            maskB = np.array(maskB)
-            maskA = op(maskA, maskB)
-            maskA = Image.fromarray(maskA)
-            maskA = pil2cv(maskA)
-        else:
-            maskA = cv2pil(maskA)
-            maskB = cv2pil(maskB)
-            if func == 'MULTIPLY':
-                maskB = maskB.point(lambda i: 255 - int(i * alpha))
-            else:
-                maskB = maskB.point(lambda i: int(i * alpha))
-            maskA = pil2cv(op(maskA, maskB))
-        return maskA
-
-    def run(self, imageA: torch.tensor, imageB: torch.tensor, alpha: float, func: str, modeA: str,
-            modeB: str, width: int, height: int, mode: str, invert) -> (torch.tensor, torch.tensor):
+    def run(self, imageA: torch.tensor, imageB: torch.tensor, alpha: float, func: str, mask: torch.tensor,
+            width: int, height: int, mode: str, invert) -> (torch.tensor, torch.tensor):
         imageA = tensor2cv(imageA)
         imageB = tensor2cv(imageB)
-        imageA = SCALEFIT(imageA, width, height, modeA)
-        imageB = SCALEFIT(imageB, width, height, modeB)
-        imageA = BlendNode.blend(imageA, imageB, alpha, func)
+        mask = tensor2cv(mask)
+        imageA = BLEND(imageA, imageB, func, width, height, mask=mask, alpha=alpha)
         if invert:
             imageA = INVERT(imageA, invert)
         imageA = SCALEFIT(imageA, width, height, mode)
@@ -898,75 +943,123 @@ class RouteNode(JovimetrixBaseNode):
     def run(self, o: object) -> [object, ]:
         return (o,)
 
+class Camera:
+    def __init__(self, camIndex: int, width: int, height: int, fps: int) -> None:
+        """
+        Initialize a webcam via index
+
+        Args:
+            camIndex (int): Index of the webcam.
+            width (int): Width
+            height (int): Height
+            rate (float): Frames per second.
+
+        Returns:
+            Optional[cv2.VideoCapture]: Initialized webcam if successful, None otherwise.
+        """
+        self.__camera = camera
+        self.__fps = fps
+        self.__width = width
+        self.__height = height
+
+        try:
+            self.__camera = cv2.VideoCapture(camIndex)
+        except Exception as _:
+            log.warn(f"initialize camera out of range {camIndex}")
+            return
+
+        if self.__camera:
+            log.warn(f"camera already captured {camIndex}")
+            return
+
+        camera = cv2.VideoCapture(camIndex)
+        if camera is None or not camera.isOpened():
+            log.warn(f"cannot open webcam {camera}")
+            return
+
+        # JACK IT UP HIGH AS CAN BE -- WE CONTROL IT PER NODE
+        self.Size(width, height)
+        self.Framerate(10000)
+        log.info(f'cam capture {camera}')
+
+    def Framerate(self, fps: float) -> None:
+        """
+        Set the framerate of a webcam.
+
+        Args:
+            fps (float): Frames per second.
+        """
+        self.__camera.set(cv2.CAP_PROP_FPS, fps)
+        self.__fps = fps
+
+    def Size(self, width: int, height: int) -> None:
+        """
+        Set the width and height of a capture camera.
+
+        Args:
+            width (int): Width
+            height (int): Height
+        """
+        self.__camera.set(cv2.CAP_PROP_FRAME_WIDTH, width)
+        self.__camera.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
+        self.__width, self.__height = (width, height,)
+
+
+class IPersistStream(IPersist):
+    _case_insensitive_ = True
+    _iid_ = GUID('{00000109-0000-0000-C000-000000000046}')
+    _idlflags_ = []
+
+class ICreateDevEnum(IUnknown):
+    _case_insensitive_ = True
+    _iid_ = GUID('{29840822-5B84-11D0-BD3B-00A0C911CE86}')
+    _idlflags_ = []
+
+class IMoniker(IPersistStream):
+    _case_insensitive_ = True
+    _iid_ = GUID("{0000000F-0000-0000-C000-000000000046}")
+    _idlflags_ = []
+
+def _get_filter_name(arg):
+    qedit = client.GetModule("qedit.dll")
+    if type(arg) == POINTER(IMoniker):
+        property_bag = arg.BindToStorage(0, 0, IPropertyBag._iid_).QueryInterface(IPropertyBag)
+        return property_bag.Read("FriendlyName", pErrorLog=None)
+    elif type(arg) == POINTER(qedit.IBaseFilter):
+        filter_info = arg.QueryFilterInfo()
+        return wstring_at(filter_info.achName)
+    else:
+        return None
+
+def cameraIterator():
+    CLSID_VideoInputDeviceCategory = "{860BB310-5D01-11d0-BD3B-00A0C911CE86}"
+    CLSID_SystemDeviceEnum         = "{62BE5D10-60EB-11d0-BD3B-00A0C911CE86}"
+
+    # category_clsid = DeviceCategories.CLSID_VideoInputDeviceCategory
+
+    system_device_enum = client.CreateObject(CLSID_SystemDeviceEnum, interface=ICreateDevEnum)
+    filter_enumerator = system_device_enum.CreateClassEnumerator(GUID(CLSID_VideoInputDeviceCategory), dwFlags=0)
+    moniker, count = filter_enumerator.Next(1)
+    result = []
+    while count > 0:
+        result.append(_get_filter_name(moniker))
+        moniker, count = filter_enumerator.Next(1)
+    return result
+
 class WebCamNode(JovimetrixBaseNode):
-    MAXCAM = 5
-    MAXFPS = 60
-    CAMERA = {i: None for i in range(MAXCAM)}
-    CAMFPS = {i: 12 for i in range(MAXCAM)}
+    CAMERA = {}
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"required": {
                 "cam": ("INT", {"min": 0, "max": WebCamNode.MAXCAM-1, "step":1, "default": 0}),
-                "rate": ("INT", {"min": 1, "max": 60, "step": 1, "default": WebCamNode.MAXFPS}),
+                "rate": ("INT", {"min": 1, "max": 60, "step": 1, "default": 60}),
             },
             "optional": {
                 "hold": ("BOOLEAN", {"default": False}),
                 "orient": (["NORMAL", "FLIPX", "FLIPY", "FLIPXY"], {"default": "NORMAL"}),
             }}
         return deep_merge_dict(d, IT_WH, IT_WHMODEI)
-
-    @classmethod
-    def INIT(cls, cam: int, width: int, height:int, rate: float) -> Optional[cv2.VideoCapture]:
-        """
-        Initialize a webcam.
-
-        Args:
-            cam (int): Index of the webcam.
-            rate (float): Frames per second.
-
-        Returns:
-            Optional[cv2.VideoCapture]: Initialized webcam if successful, None otherwise.
-        """
-        try:
-            camera = cls.CAMERA[cam]
-        except KeyError:
-            log.warn(f"initialize camera out of range {cam}")
-            return None
-
-        if camera:
-            log.warn(f"camera already captured {cam}")
-            return camera
-
-        camera = cv2.VideoCapture(cam)
-        if camera is None or not camera.isOpened():
-            log.warn(f"cannot open webcam {cam}")
-            return None
-
-        # JACK IT UP HIGH AS CAN BE -- WE CONTROL IT PER NODE
-        camera.set(cv2.CAP_PROP_FRAME_WIDTH, width)
-        camera.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
-        camera.set(cv2.CAP_PROP_FPS, 10000)
-
-        cls.CAMERA[cam] = camera
-        cls.CAMFPS[cam] = rate
-        # cls.FRAMERATE(cam, rate)
-        log.info(f'cam capture {cam}')
-        return camera
-
-    @classmethod
-    def FRAMERATE(cls, cam: int, rate: float) -> None:
-        """
-        Set the framerate of a webcam.
-
-        Args:
-            cam (int): Index of the webcam.
-            rate (float): Frames per second.
-        """
-        log.info('CAMERA RATE CHANGE', cls.CAMERA[cam], cam, rate)
-        if cls.CAMERA[cam] and cls.CAMERA[cam].isOpened() and rate != cls.CAMERA[cam].get(cv2.CAP_PROP_FPS):
-            cls.CAMERA[cam].set(cv2.CAP_PROP_FPS, rate)
-            cls.CAMFPS[cam] = rate
 
     @classmethod
     def IS_CHANGED(cls, cam: int, rate: float, hold: bool, orient: str, width: int, height: int, mode: str, invert: float) -> float:
@@ -987,9 +1080,16 @@ class WebCamNode(JovimetrixBaseNode):
             float: cached value.
         """
         if cls.CAMERA[cam] is None:
-            cls.INIT(cam, width, height, rate)
-        #if rate != cls.CAMFPS[cam]:
-        #    cls.FRAMERATE(cam, rate)
+            cls.CAMERA[cam] = cls.INIT(cam, width, height, rate)
+
+        if cls.CAMERA[cam] is None:
+            return float("nan")
+
+        if cls.CAMWH[cam][0] != width or cls.CAMWH[1] != height:
+            cls.SIZE(cam, width, height)
+
+        if rate != cls.CAMFPS[cam]:
+            cls.FRAMERATE(cam, rate)
         return float("nan")
 
     def __init__(self) -> None:
@@ -1000,7 +1100,9 @@ class WebCamNode(JovimetrixBaseNode):
         image = tensor2cv(image)
         self.__last = (cv2tensor(image), cv2mask(image), )
         self.__camera = None
+        self.__height = self.__width = 0
         self.__time = time.time()
+
 
     def __del__(self) -> None:
         """
@@ -1033,7 +1135,7 @@ class WebCamNode(JovimetrixBaseNode):
             return self.__last
 
         if self.__camera is None:
-            self.__camera = WebCamNode.INIT(cam, rate)
+            self.__camera = WebCamNode.INIT(cam, width, height, rate)
             if self.__camera is None:
                 log.warn(f"camera initialize failed {cam}")
                 return self.__last

@@ -1,5 +1,5 @@
 # JOVIMETRIX
-COMFYUI Nodes for the composition of images and masks.
+[COMFYUI](https://github.com/comfyanonymous/ComfyUI) Nodes for the composition of images and masks.
 
 ![image](res/overview.png)
 
