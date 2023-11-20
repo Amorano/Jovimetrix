@@ -22,9 +22,6 @@ import logging
 import concurrent.futures
 from typing import Tuple, Optional
 
-from comtypes import client, GUID, IUnknown, POINTER, IPersist
-from comtypes.persist import IPropertyBag, wstring_at
-
 log = logging.getLogger(__package__)
 log.setLevel(logging.INFO)
 
@@ -919,7 +916,7 @@ class RouteNode(JovimetrixBaseNode):
         return (o,)
 
 class Camera:
-    def __init__(self, camIndex: int, width: int, height: int, fps: int) -> None:
+    def __init__(self, camIndex: int, width: int=None, height: int=None, fps: int=None) -> None:
         """
         Initialize a webcam via index
 
@@ -932,32 +929,22 @@ class Camera:
         Returns:
             Optional[cv2.VideoCapture]: Initialized webcam if successful, None otherwise.
         """
-        self.__camera = camera
-        self.__fps = fps
-        self.__width = width
-        self.__height = height
+        self.__camIndex = camIndex
+        self.__fps = fps or 1000
+        self.__width = width or 1920
+        self.__height = height or 1080
 
-        try:
-            self.__camera = cv2.VideoCapture(camIndex)
-        except Exception as _:
-            log.warn(f"initialize camera out of range {camIndex}")
+    def capture(self) -> None:
+        self.__camera = cv2.VideoCapture(self.__camIndex)
+        if self.__camera is None or not self.__camera.isOpened():
+            log.warn(f"cannot open webcam {self.__camIndex}")
             return
 
-        if self.__camera:
-            log.warn(f"camera already captured {camIndex}")
-            return
+        self.size(self.__width, self.__height)
+        self.framerate(self.__fps)
+        log.info(f'cam capture {self.__camIndex}')
 
-        camera = cv2.VideoCapture(camIndex)
-        if camera is None or not camera.isOpened():
-            log.warn(f"cannot open webcam {camera}")
-            return
-
-        # JACK IT UP HIGH AS CAN BE -- WE CONTROL IT PER NODE
-        self.Size(width, height)
-        self.Framerate(10000)
-        log.info(f'cam capture {camera}')
-
-    def Framerate(self, fps: float) -> None:
+    def framerate(self, fps: float) -> None:
         """
         Set the framerate of a webcam.
 
@@ -967,7 +954,7 @@ class Camera:
         self.__camera.set(cv2.CAP_PROP_FPS, fps)
         self.__fps = fps
 
-    def Size(self, width: int, height: int) -> None:
+    def size(self, width: int, height: int) -> None:
         """
         Set the width and height of a capture camera.
 
@@ -979,55 +966,38 @@ class Camera:
         self.__camera.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
         self.__width, self.__height = (width, height,)
 
-
-class IPersistStream(IPersist):
-    _case_insensitive_ = True
-    _iid_ = GUID('{00000109-0000-0000-C000-000000000046}')
-    _idlflags_ = []
-
-class ICreateDevEnum(IUnknown):
-    _case_insensitive_ = True
-    _iid_ = GUID('{29840822-5B84-11D0-BD3B-00A0C911CE86}')
-    _idlflags_ = []
-
-class IMoniker(IPersistStream):
-    _case_insensitive_ = True
-    _iid_ = GUID("{0000000F-0000-0000-C000-000000000046}")
-    _idlflags_ = []
-
-def _get_filter_name(arg):
-    qedit = client.GetModule("qedit.dll")
-    if type(arg) == POINTER(IMoniker):
-        property_bag = arg.BindToStorage(0, 0, IPropertyBag._iid_).QueryInterface(IPropertyBag)
-        return property_bag.Read("FriendlyName", pErrorLog=None)
-    elif type(arg) == POINTER(qedit.IBaseFilter):
-        filter_info = arg.QueryFilterInfo()
-        return wstring_at(filter_info.achName)
-    else:
-        return None
-
-def cameraIterator():
-    CLSID_VideoInputDeviceCategory = "{860BB310-5D01-11d0-BD3B-00A0C911CE86}"
-    CLSID_SystemDeviceEnum         = "{62BE5D10-60EB-11d0-BD3B-00A0C911CE86}"
-
-    # category_clsid = DeviceCategories.CLSID_VideoInputDeviceCategory
-
-    system_device_enum = client.CreateObject(CLSID_SystemDeviceEnum, interface=ICreateDevEnum)
-    filter_enumerator = system_device_enum.CreateClassEnumerator(GUID(CLSID_VideoInputDeviceCategory), dwFlags=0)
-    moniker, count = filter_enumerator.Next(1)
-    result = []
-    while count > 0:
-        result.append(_get_filter_name(moniker))
-        moniker, count = filter_enumerator.Next(1)
-    return result
-
 class WebCamNode(JovimetrixBaseNode):
-    CAMERA = {}
+    CAMR = {}
+    CAMW = {}
+
+    @classmethod
+    def CAMERALIST(cls) -> None:
+        """Test ports and indexes valid camera devices."""
+        port = 0
+        failed = 0
+
+        # if there are more than 3 non working ports stop the testing.
+        while failed < 3:
+            camera = cv2.VideoCapture(port)
+            if camera.isOpened():
+                is_reading, _ = camera.read()
+                # w = camera.get(3)
+                # h = camera.get(4)
+                if is_reading:
+                    # print("Port %s is working and reads images (%s x %s)" %(dev_port,h,w))
+                    cls.CAMR[port] = Camera(port)
+                else:
+                    cls.CAMW[port] = Camera(port)
+                    # print("Port %s for camera ( %s x %s) is present but does not reads." %(dev_port,h,w))
+                camera.release()
+            else:
+                failed += 1
+            port +=1
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"required": {
-                "cam": ("INT", {"min": 0, "max": WebCamNode.MAXCAM-1, "step":1, "default": 0}),
+                "cam": ("INT", {"min": 0, "max": 6, "step":1, "default": 0}),
                 "rate": ("INT", {"min": 1, "max": 60, "step": 1, "default": 60}),
             },
             "optional": {
@@ -1077,7 +1047,6 @@ class WebCamNode(JovimetrixBaseNode):
         self.__camera = None
         self.__height = self.__width = 0
         self.__time = time.time()
-
 
     def __del__(self) -> None:
         """
