@@ -20,8 +20,7 @@ from PIL import Image, ImageDraw, ImageChops, ImageFilter
 import time
 import logging
 import concurrent.futures
-from typing import Tuple, Optional
-from enum import IntEnum, Enum
+from enum import Enum
 
 log = logging.getLogger(__package__)
 log.setLevel(logging.INFO)
@@ -52,27 +51,33 @@ WILDCARD = AnyType("*")
 # === GLOBAL ENUMS ===
 # =============================================================================
 
-class EnumThreshold(IntEnum):
-    BINARY = cv2.THRESH_BINARY,
-    TRUNC = cv2.THRESH_TRUNC,
-    TOZERO = cv2.THRESH_TOZERO,
+class EnumThreshold(Enum):
+    BINARY = cv2.THRESH_BINARY
+    TRUNC = cv2.THRESH_TRUNC
+    TOZERO = cv2.THRESH_TOZERO
 EnumThresholdName = [e.name for e in EnumThreshold]
 
+class EnumAdaptThreshold(Enum):
+    ADAPT_NONE = -1
+    ADAPT_MEAN = cv2.ADAPTIVE_THRESH_MEAN_C
+    ADAPT_GAUSS = cv2.ADAPTIVE_THRESH_GAUSSIAN_C
+EnumAdaptThresholdName = [e.name for e in EnumAdaptThreshold]
+
 class EnumOPBlend(Enum):
-    LERP = None,
-    ADD = ImageChops.add,
-    MINIMUM = ImageChops.darker,
-    MAXIMUM = ImageChops.lighter,
-    MULTIPLY = ImageChops.multiply,
-    SOFT_LIGHT = ImageChops.soft_light,
-    HARD_LIGHT = ImageChops.hard_light,
-    OVERLAY = ImageChops.overlay,
-    SCREEN = ImageChops.screen,
-    SUBTRACT = ImageChops.subtract,
-    DIFFERENCE = ImageChops.difference,
-    LOGICAL_AND = np.bitwise_and,
-    LOGICAL_OR = np.bitwise_or,
-    LOGICAL_XOR = np.bitwise_xor,
+    LERP = None
+    ADD = ImageChops.add
+    MINIMUM = ImageChops.darker
+    MAXIMUM = ImageChops.lighter
+    MULTIPLY = ImageChops.multiply
+    SOFT_LIGHT = ImageChops.soft_light
+    HARD_LIGHT = ImageChops.hard_light
+    OVERLAY = ImageChops.overlay
+    SCREEN = ImageChops.screen
+    SUBTRACT = ImageChops.subtract
+    DIFFERENCE = ImageChops.difference
+    LOGICAL_AND = np.bitwise_and
+    LOGICAL_OR = np.bitwise_or
+    LOGICAL_XOR = np.bitwise_xor
 EnumOPBlendName = [e.name for e in EnumThreshold]
 
 # =============================================================================
@@ -512,7 +517,9 @@ def LERP(imageA: cv2.Mat, imageB: cv2.Mat, mask: cv2.Mat=None, alpha: float=1.) 
     imageA = cv2.add(imageA, imageB)
     return imageA.astype(np.uint8)
 
-def BLEND(imageA: cv2.Mat, imageB: cv2.Mat, func: str, width: int, height: int, mask: cv2.Mat=None, alpha: float=1.) -> cv2.Mat:
+def BLEND(imageA: cv2.Mat, imageB: cv2.Mat, func: str, width: int, height: int,
+          mask: cv2.Mat=None, alpha: float=1.) -> cv2.Mat:
+
     if (op := OP_BLEND.get(func, None)) is None:
         return imageA
 
@@ -541,9 +548,17 @@ def BLEND(imageA: cv2.Mat, imageB: cv2.Mat, func: str, width: int, height: int, 
     # take the new B and mix with mask and alpha
     return LERP(imageA, imageB, mask, alpha)
 
-def THRESHOLD(image: cv2.Mat, threshold: float=0.5, mode: EnumThreshold=EnumThreshold.BINARY) -> cv2.Mat:
-    threshold = int(threshold * 255)
-    _, image = cv2.threshold(image, threshold, 255, EnumThreshold[mode].value)
+def THRESHOLD(image: cv2.Mat, threshold: float=0.5, mode: EnumThreshold=EnumThreshold.BINARY,
+              adapt: EnumAdaptThreshold=EnumAdaptThreshold.ADAPT_NONE, block: int=3, const: float=0.) -> cv2.Mat:
+
+    if adapt != EnumAdaptThreshold.ADAPT_NONE.value:
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        image = cv2.adaptiveThreshold(gray, 255, adapt, cv2.THRESH_BINARY, block, const)
+        image = cv2.multiply(gray, image)
+        image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
+    else:
+        threshold = int(threshold * 255)
+        _, image = cv2.threshold(image, threshold, 255, mode)
     return image
 
 # =============================================================================
@@ -924,15 +939,26 @@ class ThresholdNode(JovimetrixBaseNode):
     def INPUT_TYPES(cls) -> dict:
         d = {"required": {
                 "op": (EnumThresholdName, {"default": EnumThreshold.BINARY.name}),
+                "adapt": (EnumAdaptThresholdName, {"default": EnumAdaptThreshold.ADAPT_NONE.name}),
                 "threshold": ("FLOAT", {"default": 0.5, "min": 0., "max": 1., "step": 0.01},),
+                "block": ("INT", {"default": 3, "min": 1, "max": 31, "step": 2},),
+                "const": ("FLOAT", {"default": 0, "min": -1., "max": 1., "step": 0.01},),
             }}
         return deep_merge_dict(IT_PIXELS, d, IT_WHMODEI)
 
     DESCRIPTION = "Threshold an input (color or mask)."
 
-    def run(self, pixels: torch.tensor, op: EnumThreshold, threshold: float, width: int, height: int, mode: str, invert: float)  -> (torch.tensor, torch.tensor):
+    def run(self, pixels: torch.tensor, op: str, adapt: str, threshold: float,
+            block: int, const: float, width: int, height: int, mode: str, invert: float)  -> (torch.tensor, torch.tensor):
+
         pixels = tensor2cv(pixels)
-        pixels = THRESHOLD(pixels, threshold, op)
+        # force block into odd
+        if block % 2 == 0:
+            block += 1
+
+        op = EnumThreshold[op].value
+        adapt = EnumAdaptThreshold[adapt].value
+        pixels = THRESHOLD(pixels, threshold, op, adapt, block, const)
         pixels = SCALEFIT(pixels, width, height, mode)
         if invert:
             pixels = INVERT(pixels)
