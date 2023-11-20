@@ -21,6 +21,7 @@ import time
 import logging
 import concurrent.futures
 from typing import Tuple, Optional
+from enum import IntEnum, Enum
 
 log = logging.getLogger(__package__)
 log.setLevel(logging.INFO)
@@ -46,6 +47,33 @@ class AnyType(str):
     def __ne__(self, __value: object) -> bool:
         return False
 WILDCARD = AnyType("*")
+
+# =============================================================================
+# === GLOBAL ENUMS ===
+# =============================================================================
+
+class EnumThreshold(IntEnum):
+    BINARY = cv2.THRESH_BINARY,
+    TRUNC = cv2.THRESH_TRUNC,
+    TOZERO = cv2.THRESH_TOZERO,
+EnumThresholdName = [e.name for e in EnumThreshold]
+
+class EnumOPBlend(Enum):
+    LERP = None,
+    ADD = ImageChops.add,
+    MINIMUM = ImageChops.darker,
+    MAXIMUM = ImageChops.lighter,
+    MULTIPLY = ImageChops.multiply,
+    SOFT_LIGHT = ImageChops.soft_light,
+    HARD_LIGHT = ImageChops.hard_light,
+    OVERLAY = ImageChops.overlay,
+    SCREEN = ImageChops.screen,
+    SUBTRACT = ImageChops.subtract,
+    DIFFERENCE = ImageChops.difference,
+    LOGICAL_AND = np.bitwise_and,
+    LOGICAL_OR = np.bitwise_or,
+    LOGICAL_XOR = np.bitwise_xor,
+EnumOPBlendName = [e.name for e in EnumThreshold]
 
 # =============================================================================
 # === GLOBAL SUPPORTS ===
@@ -88,12 +116,6 @@ IT_IMAGE = {
     }
 }
 
-IT_MASK = {
-    "required": {
-        "mask": ("MASK", ),
-    }
-}
-
 IT_PIXELS = {
     "required": {
         "pixels": (WILDCARD, {"default": None}),
@@ -109,8 +131,8 @@ IT_PIXEL2 = {
 
 IT_WH = {
     "optional": {
-        "width": ("INT", {"default": 256, "min": 32, "max": 8192, "step": 1}),
-        "height": ("INT", {"default": 256, "min": 32, "max": 8192, "step": 1}),
+        "width": ("INT", {"default": 256, "min": 32, "max": 8192, "step": 1, "display": "number"}),
+        "height": ("INT", {"default": 256, "min": 32, "max": 8192, "step": 1, "display": "number"}),
     }
 }
 
@@ -122,28 +144,28 @@ IT_WHMODE = {
 
 IT_TRANS = {
     "optional": {
-        "offsetX": ("FLOAT", {"default": 0., "min": -1., "max": 1., "step": 0.05}),
-        "offsetY": ("FLOAT", {"default": 0., "min": -1., "max": 1., "step": 0.05, "display": "number"}),
+        "offsetX": ("FLOAT", {"default": 0., "min": -1., "max": 1., "step": 0.01, "display": "number"}),
+        "offsetY": ("FLOAT", {"default": 0., "min": -1., "max": 1., "step": 0.01, "display": "number"}),
     }
 }
 
 IT_ROT = {
     "optional": {
-        "angle": ("FLOAT", {"default": 0., "min": -180., "max": 180., "step": 5., "display": "number"}),
+        "angle": ("FLOAT", {"default": 0., "min": -180., "max": 180., "step": 1., "display": "number"}),
     }
 }
 
 IT_SCALE = {
     "optional": {
-        "sizeX": ("FLOAT", {"default": 1., "min": 0.01, "max": 2., "step": 0.05}),
-        "sizeY": ("FLOAT", {"default": 1., "min": 0.01, "max": 2., "step": 0.05}),
+        "sizeX": ("FLOAT", {"default": 1., "min": 0.01, "max": 2., "step": 0.01, "display": "number"}),
+        "sizeY": ("FLOAT", {"default": 1., "min": 0.01, "max": 2., "step": 0.01, "display": "number"}),
     }
 }
 
 IT_TILE = {
     "optional": {
         "tileX": ("INT", {"default": 1, "min": 0, "step": 1, "display": "number"}),
-        "tileY": ("INT", {"default": 1, "min": 0, "step": 1}),
+        "tileY": ("INT", {"default": 1, "min": 0, "step": 1, "display": "number"}),
     }
 }
 
@@ -155,15 +177,15 @@ IT_EDGE = {
 
 IT_INVERT = {
     "optional": {
-        "invert": ("FLOAT", {"default": 0., "min": 0., "max": 1., "step": 0.25}),
+        "invert": ("FLOAT", {"default": 0., "min": 0., "max": 1., "step": 0.01}),
     }
 }
 
 IT_COLOR = {
     "optional": {
-        "R": ("FLOAT", {"default": 1., "min": 0., "max": 1., "step": 0.1}),
-        "G": ("FLOAT", {"default": 1., "min": 0., "max": 1., "step": 0.1}),
-        "B": ("FLOAT", {"default": 1., "min": 0., "max": 1., "step": 0.1}),
+        "R": ("FLOAT", {"default": 1., "min": 0., "max": 1., "step": 0.01, "display": "number"}),
+        "G": ("FLOAT", {"default": 1., "min": 0., "max": 1., "step": 0.01, "display": "number"}),
+        "B": ("FLOAT", {"default": 1., "min": 0., "max": 1., "step": 0.01, "display": "number"}),
     }
 }
 
@@ -187,9 +209,11 @@ OP_BLEND = {
     'LOGICAL OR': np.bitwise_or,
     'LOGICAL XOR': np.bitwise_xor,
 }
+
 # =============================================================================
 # === MATRIX SUPPORT ===
 # =============================================================================
+
 def tensor2pil(image: torch.Tensor) -> Image:
     """Torch Tensor to PIL Image."""
     image = 255. * image.cpu().numpy().squeeze()
@@ -516,6 +540,12 @@ def BLEND(imageA: cv2.Mat, imageB: cv2.Mat, func: str, width: int, height: int, 
 
     # take the new B and mix with mask and alpha
     return LERP(imageA, imageB, mask, alpha)
+
+def THRESHOLD(image: cv2.Mat, threshold: float=0.5, mode: EnumThreshold=EnumThreshold.BINARY) -> cv2.Mat:
+    threshold = int(threshold * 255)
+    _, image = cv2.threshold(image, threshold, 255, EnumThreshold[mode].value)
+    return image
+
 # =============================================================================
 # === NODES ===
 # =============================================================================
@@ -726,8 +756,8 @@ class MirrorNode(JovimetrixBaseNode):
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"required": {
-                "x": ("FLOAT", {"default": 0.5, "min": 0., "max": 1., "step": 0.05}),
-                "y": ("FLOAT", {"default": 0.5, "min": 0., "max": 1., "step": 0.05}),
+                "x": ("FLOAT", {"default": 0.5, "min": 0., "max": 1., "step": 0.01}),
+                "y": ("FLOAT", {"default": 0.5, "min": 0., "max": 1., "step": 0.01}),
                 "mode": (["X", "Y", "XY", "YX"], {"default": "X"}),
             },
         }
@@ -788,32 +818,55 @@ class ExtendNode(JovimetrixBaseNode):
             pixelA = SCALEFIT(pixelA, width, height, mode)
         return (cv2tensor(pixelA), cv2mask(pixelA), )
 
-class BlendNode(JovimetrixBaseNode):
+class BlendNodeBase(JovimetrixBaseNode):
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"required": {
-                "imageA": ("IMAGE", ),
-                "imageB": ("IMAGE", ),
                 "alpha": ("FLOAT", {"default": 1., "min": 0., "max": 1., "step": 0.01}),
             },
             "optional": {
                 "func": (list(OP_BLEND.keys()), {"default": "LERP"}),
-                "mask": (WILDCARD, {} ),
         }}
-        return deep_merge_dict(d, IT_WHMODEI)
+
+        if cls == BlendMaskNode:
+            e = {"optional": {"mask": (WILDCARD, {} )}}
+            return deep_merge_dict(IT_PIXEL2, e, d, IT_WHMODEI)
+        return deep_merge_dict(IT_PIXEL2, d, IT_WHMODEI)
 
     DESCRIPTION = "Applies selected operation to 2 inputs with optional mask using a linear blend (alpha)."
 
-    def run(self, imageA: torch.tensor, imageB: torch.tensor, alpha: float, func: str, mask: torch.tensor,
+    def run(self, pixelA: torch.tensor, pixelB: torch.tensor, alpha: float, func: str, mask: torch.tensor,
             width: int, height: int, mode: str, invert) -> (torch.tensor, torch.tensor):
-        imageA = tensor2cv(imageA)
-        imageB = tensor2cv(imageB)
-        mask = tensor2cv(mask)
-        imageA = BLEND(imageA, imageB, func, width, height, mask=mask, alpha=alpha)
+
+        pixelA = tensor2cv(pixelA)
+        pixelB = tensor2cv(pixelB)
+
+        if mask is None:
+            mask = np.zeros((height, width, 3), np.uint8)
+        else:
+            mask = tensor2cv(mask)
+
+        pixelA = BLEND(pixelA, pixelB, func, width, height, mask=mask, alpha=alpha)
         if invert:
-            imageA = INVERT(imageA, invert)
-        imageA = SCALEFIT(imageA, width, height, mode)
-        return (cv2tensor(imageA), cv2mask(imageA),)
+            pixelA = INVERT(pixelA, invert)
+        pixelA = SCALEFIT(pixelA, width, height, mode)
+        return (cv2tensor(pixelA), cv2mask(pixelA),)
+
+class BlendNode(BlendNodeBase):
+    DESCRIPTION = "Applies selected operation to 2 inputs with optional mask using a linear blend (alpha)."
+
+    def run(self, pixelA: torch.tensor, pixelB: torch.tensor, alpha: float, func: str,
+            width: int, height: int, mode: str, invert) -> (torch.tensor, torch.tensor):
+
+        return super().run(pixelA, pixelB, alpha, func, None, width, height, mode, invert)
+
+class BlendMaskNode(BlendNodeBase):
+    DESCRIPTION = "Applies selected operation to 2 inputs with using a linear blend (alpha)."
+
+    def run(self, pixelA: torch.tensor, pixelB: torch.tensor, alpha: float, func: str, mask: torch.tensor,
+            width: int, height: int, mode: str, invert) -> (torch.tensor, torch.tensor):
+
+        return super().run(pixelA, pixelB, alpha, func, mask, width, height, mode, invert)
 
 class AdjustNode(JovimetrixBaseNode):
     OPS = {
@@ -842,7 +895,7 @@ class AdjustNode(JovimetrixBaseNode):
             },
             "optional": {
                 "radius": ("INT", {"default": 1, "min": 0, "step": 1}),
-                "alpha": ("FLOAT",{"default": 1., "min": 0., "max": 1., "step": 0.02},),
+                "alpha": ("FLOAT",{"default": 1., "min": 0., "max": 1., "step": 0.01},),
         }}
         return deep_merge_dict(IT_PIXELS, d)
 
@@ -865,6 +918,25 @@ class AdjustNode(JovimetrixBaseNode):
                 pixels = op(pixels, alpha)
                 pixels = tensor2pil(pixels)
         return (pil2tensor(pixels), pil2tensor(pixels.convert("L")), )
+
+class ThresholdNode(JovimetrixBaseNode):
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        d = {"required": {
+                "op": (EnumThresholdName, {"default": EnumThreshold.BINARY.name}),
+                "threshold": ("FLOAT", {"default": 0.5, "min": 0., "max": 1., "step": 0.01},),
+            }}
+        return deep_merge_dict(IT_PIXELS, d, IT_WHMODEI)
+
+    DESCRIPTION = "Threshold an input (color or mask)."
+
+    def run(self, pixels: torch.tensor, op: EnumThreshold, threshold: float, width: int, height: int, mode: str, invert: float)  -> (torch.tensor, torch.tensor):
+        pixels = tensor2cv(pixels)
+        pixels = THRESHOLD(pixels, threshold, op)
+        pixels = SCALEFIT(pixels, width, height, mode)
+        if invert:
+            pixels = INVERT(pixels)
+        return (cv2tensor(pixels), )
 
 class ProjectionNode(JovimetrixBaseNode):
     @classmethod
@@ -1130,7 +1202,10 @@ NODE_CLASS_MAPPINGS = {
 
     "🌈 HSV (jov)": HSVNode,
     "🕸️ Adjust (jov)": AdjustNode,
+    "📉 Threshold (jov)": ThresholdNode,
+
     "⚗️ Blend (jov)": BlendNode,
+    "⚗️ Blend Mask (jov)": BlendMaskNode,
 
     # "🗺️ Projection (jov)": ProjectionNode,
     "📷 WebCam (jov)": WebCamNode,
