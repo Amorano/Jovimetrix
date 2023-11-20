@@ -109,8 +109,8 @@ IT_PIXEL2 = {
 
 IT_WH = {
     "optional": {
-        "width": ("INT", {"default": 256, "min": 64, "max": 4096, "step": 64}),
-        "height": ("INT", {"default": 256, "min": 64, "max": 4096, "step": 64}),
+        "width": ("INT", {"default": 256, "min": 32, "max": 8192, "step": 1}),
+        "height": ("INT", {"default": 256, "min": 32, "max": 8192, "step": 1}),
     }
 }
 
@@ -789,8 +789,10 @@ class ExtendNode(JovimetrixBaseNode):
 
     def run(self, pixelA: torch.tensor, pixelB: torch.tensor, axis: str, flip: str,
             width: int, height: int, mode: str) -> (torch.tensor, torch.tensor):
-        pixelA = tensor2cv(pixelA)
-        pixelB = tensor2cv(pixelB)
+
+        pixelA = SCALEFIT(tensor2cv(pixelA), width, height)
+        pixelB = SCALEFIT(tensor2cv(pixelB), width, height)
+
         pixelA = EXTEND(pixelA, pixelB, axis, flip)
         if mode != "NONE":
             pixelA = SCALEFIT(pixelA, width, height, mode)
@@ -916,33 +918,42 @@ class RouteNode(JovimetrixBaseNode):
         return (o,)
 
 class Camera:
-    def __init__(self, camIndex: int, width: int=None, height: int=None, fps: int=None) -> None:
+    def __init__(self, cam_idx: int, width: int=None, height: int=None, fps: int=None) -> None:
         """
         Initialize a webcam via index
 
         Args:
-            camIndex (int): Index of the webcam.
+            cam_idx (int): Index of the webcam.
             width (int): Width
             height (int): Height
-            rate (float): Frames per second.
+            fps (float): Frames per second.
 
         Returns:
             Optional[cv2.VideoCapture]: Initialized webcam if successful, None otherwise.
         """
-        self.__camIndex = camIndex
+        self.__camera = None
+        self.__cam_idx = cam_idx
         self.__fps = fps or 1000
         self.__width = width or 1920
         self.__height = height or 1080
 
+    @property
+    def index(self) -> int:
+        return self.__cam_idx
+
+    @property
+    def camera(self) -> cv2.VideoCapture:
+        return self.__camera
+
     def capture(self) -> None:
-        self.__camera = cv2.VideoCapture(self.__camIndex)
+        self.__camera = cv2.VideoCapture(self.__cam_idx)
         if self.__camera is None or not self.__camera.isOpened():
-            log.warn(f"cannot open webcam {self.__camIndex}")
+            log.warn(f"cannot open webcam {self.__cam_idx}")
             return
 
         self.size(self.__width, self.__height)
         self.framerate(self.__fps)
-        log.info(f'cam capture {self.__camIndex}')
+        log.info(f'cam capture {self.__cam_idx}')
 
     def framerate(self, fps: float) -> None:
         """
@@ -997,8 +1008,8 @@ class WebCamNode(JovimetrixBaseNode):
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"required": {
-                "cam": ("INT", {"min": 0, "max": 6, "step":1, "default": 0}),
-                "rate": ("INT", {"min": 1, "max": 60, "step": 1, "default": 60}),
+                "cam_idx": ("INT", {"min": 0, "max": 6, "step":1, "default": 0}),
+                "fps": ("INT", {"min": 1, "max": 60, "step": 1, "default": 60}),
             },
             "optional": {
                 "hold": ("BOOLEAN", {"default": False}),
@@ -1007,13 +1018,13 @@ class WebCamNode(JovimetrixBaseNode):
         return deep_merge_dict(d, IT_WH, IT_WHMODEI)
 
     @classmethod
-    def IS_CHANGED(cls, cam: int, rate: float, hold: bool, orient: str, width: int, height: int, mode: str, invert: float) -> float:
+    def IS_CHANGED(cls, cam_idx: int, fps: float, hold: bool, orient: str, width: int, height: int, mode: str, invert: float) -> float:
         """
         Check if webcam parameters have changed.
 
         Args:
-            cam (int): Index of the webcam.
-            rate (float): Frames per second.
+            cam_idx (int): Index of the webcam.
+            fps (float): Frames per second.
             hold (bool): Hold last frame flag.
             orient (str): Final image presentation orientation flag.
             width (int): Width of the image.
@@ -1024,17 +1035,18 @@ class WebCamNode(JovimetrixBaseNode):
         Returns:
             float: cached value.
         """
-        if cls.CAMERA[cam] is None:
-            cls.CAMERA[cam] = cls.INIT(cam, width, height, rate)
+        if (camera := cls.CAMERA[cam_idx] is None):
+            cls.CAMERA[cam_idx] = Camera(cam_idx, width, height, fps)
 
-        if cls.CAMERA[cam] is None:
+        if camera is None:
             return float("nan")
 
-        if cls.CAMWH[cam][0] != width or cls.CAMWH[1] != height:
-            cls.SIZE(cam, width, height)
+        if camera.width != width or camera.height != height:
+            camera.size(width, height)
 
-        if rate != cls.CAMFPS[cam]:
-            cls.FRAMERATE(cam, rate)
+        if camera.fps != fps:
+            camera.framerate(fps)
+
         return float("nan")
 
     def __init__(self) -> None:
@@ -1057,13 +1069,13 @@ class WebCamNode(JovimetrixBaseNode):
             #self.__camera.RELEASE(self.__camera)
         self.__camera = None
 
-    def run(self, cam: int, rate: float, hold: bool, orient: str, width: int, height: int, mode: str, invert: float):
+    def run(self, cam_idx: int, fps: float, hold: bool, orient: str, width: int, height: int, mode: str, invert: float) -> tuple[torch.Tensor, torch.Tensor]:
         """
         Return a current frame from the webcam if it is active and the FPS check passes.
 
         Args:
-            cam (int): Index of the webcam.
-            rate (float): Frames per second.
+            cam_idx (int): Index of the webcam.
+            fps (float): Frames per second.
             hold (bool): Hold last frame flag.
             orient (str): Final image presentation orientation flag.
             width (int): Width of the image.
@@ -1075,30 +1087,27 @@ class WebCamNode(JovimetrixBaseNode):
             (image (torch.tensor), mask (torch.tensor)): The image and its mask result.
         """
         if hold:
-            log.info(f'capture paused {cam}')
+            log.info(f'capture paused {cam_idx}')
             return self.__last
 
         if self.__camera is None:
-            self.__camera = WebCamNode.INIT(cam, width, height, rate)
-            if self.__camera is None:
-                log.warn(f"camera initialize failed {cam}")
-                return self.__last
-
+            self.__camera = Camera(cam_idx, width, height, fps)
+            self.__camera.capture()
             image = torch.zeros((height, width, 3), dtype=torch.uint8)
             image = tensor2cv(image)
             self.__last = (cv2tensor(image), cv2mask(image), )
 
+        if self.__camera is None or self.__camera.camera is None:
+            log.warn(f"Failed to read webcam {cam_idx}")
+            return self.__last
+
         # per frame second diff
-        rate = 1. / rate
+        fps = 1. / fps
 
-        if time.time() - self.__time > rate:
-            if self.__camera is None:
-                log.warn(f"Failed to read webcam {cam}")
-                return self.__last
-
-            ret, image = self.__camera.read()
+        if (time.time() - self.__time) > fps:
+            ret, image = self.__camera.camera.read()
             if not ret:
-                log.warn(f"Failed to read webcam {cam}")
+                log.warn(f"Failed to read webcam {cam_idx}")
                 return self.__last
 
             if mode != "NONE":
@@ -1127,7 +1136,7 @@ NODE_CLASS_MAPPINGS = {
     "🌱 Transform (jov)": TransformNode,
     "🔳 Tile (jov)": TileNode,
     "🔰 Mirror (jov)": MirrorNode,
-    "🎇 Expand (jov)": ExtendNode,
+    "🎇 Extend (jov)": ExtendNode,
 
     "🌈 HSV (jov)": HSVNode,
     "🕸️ Adjust (jov)": AdjustNode,
