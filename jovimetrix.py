@@ -469,33 +469,23 @@ def EXTEND(imageA: cv2.Mat, imageB: cv2.Mat, axis: int=0, flip: bool=False) -> c
     return np.concatenate((imageA, imageB), axis=axis)
 
 def LERP(imageA: cv2.Mat, imageB: cv2.Mat, mask: cv2.Mat=None, alpha: float=1.) -> cv2.Mat:
-    """
-    dest = take A op B
-    blend A + dest * (1 - A)
-    """
-
-    # prep layers
     imageA = imageA.astype(np.float64)
     imageB = imageB.astype(np.float64)
 
-    # normalize mask
+    # normalize alpha and establish mask
     alpha = min(max(alpha, 0.), 1.)
     if mask is None:
         height, width, _ = imageA.shape
         mask = cv2.empty((height, width, 1), dtype=cv2.uint8)
+    else:
+        # normalize the mask
+        info = np.iinfo(mask.dtype)
+        mask = mask.astype(np.float64) / info.max * alpha
 
-    # normalize the mask
-    info = np.iinfo(mask.dtype)
-    mask = mask.astype(np.float64) / info.max * alpha
-
-    # Multiply the foreground with the alpha matte
-    imageA = cv2.multiply(mask, imageA)
-
-    # Multiply the background with ( 1 - alpha )
-    imageB = cv2.multiply(1.0 - mask, imageB)
-
-    # Add the masked foreground and background.
-    imageA = cv2.add(imageA, imageB) # / 255
+    # LERP
+    imageA = cv2.multiply(1. - mask, imageA)
+    imageB = cv2.multiply(mask, imageB)
+    imageA = cv2.add(imageA, imageB)
     return imageA.astype(np.uint8)
 
 def BLEND(imageA: cv2.Mat, imageB: cv2.Mat, func: str, width: int, height: int, mask: cv2.Mat=None, alpha: float=1.) -> cv2.Mat:
