@@ -1,7 +1,64 @@
-# JOVIMETRIX
-[COMFYUI](https://github.com/comfyanonymous/ComfyUI) Nodes for the composition of images and masks.
 
-![image](res/overview.png)
+<img
+    style="display: block;
+           margin-left: auto;
+           margin-right: auto;
+           width: 100%;"
+    src="res/logo-jovimetrix.png"
+    alt="JOVIMETRIX">
+</img>
+
+<div style="text-align: center;">
+<a href="https://github.com/comfyanonymous/ComfyUI">COMFYUI</a> Nodes for procedural masking, live composition and video manipulation
+<br>
+ALL IMAGES CONTAIN THE EMBEDDED WORKFLOW DEPICTED
+</div>
+
+---
+
+<div style="text-align: center;">GENERAL NODE OVERVIEW</div>
+<img
+    style="display: block;
+           margin-left: auto;
+           margin-right: auto;
+           width: 100%;"
+    src="flow/overview.png"
+    alt="JOVIMETRIX">
+</img>
+
+
+WEBCAM
+------
+<div style="text-align: center;">GENERAL WEBCAM MANIPULATION</div>
+<img
+    style="display: block;
+           margin-left: auto;
+           margin-right: auto;
+           width: 100%;"
+    src="flow/webcam_manipulation.png"
+    alt="JOVIMETRIX">
+</img>
+
+<div style="text-align: center;">GENERAL NODE OVERVIEW</div>
+<img
+    style="display: block;
+           margin-left: auto;
+           margin-right: auto;
+           width: 100%;"
+    src="flow/webcam+mask.png"
+    alt="JOVIMETRIX">
+</img>
+
+<div style="text-align: center;">**WIP**</div>
+<img
+    style="display: block;
+           margin-left: auto;
+           margin-right: auto;
+           width: 100%;"
+    src="flow/webcam_face_detect.png"
+    alt="JOVIMETRIX">
+</img>
+
 
 CREATION
 --------
@@ -12,11 +69,23 @@ CREATION
   * RECTANGLE
   * ELLIPSE
   * POLYGON (3+ sides)
+
+<img
+    style="display: block;
+           margin-left: auto;
+           margin-right: auto;
+           width: 100%;"
+    src="flow/per_pixel_shader_scaling.png"
+    alt="JOVIMETRIX">
+</img>
+
 * PER PIXEL SHADER. Two nodes, one with source Image support. Allows user function to generate a per pixel result into an image of (Width x Height). variables include:
   * $x, $y: Current image (x, y)
   * $u, $v: Normalized texuture coordinates [0..1]
   * $w, $h: WIDTH and HEIGHT of the target output
   * $ir, $ig, $ib: The RED, GREEN and BLUE values for the current image input ($x, $y).
+
+
 * CONSTANT. Set a single RGB value. Useful for masks, overlays and general filtering.
 
 MANIPULATION
