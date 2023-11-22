@@ -33,22 +33,15 @@ pip install -r requirements.txt
 
 <!---------------------------------------------------------------------------->
 
-# REFERENCE
-
-<h3><p align="center">
-<code>COPY EXAMPLE IMAGES INTO COMFYUI TO LOAD SHOWN WORKFLOW</code>
-</p></h3>
+# NODE REFERENCE
 
 <img
-    style="display: block;
-           margin-left: auto;
-           margin-right: auto;
-           width: 100%;"
+    style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
     src="flow/overview.png"
     alt="GENERAL NODE OVERVIEW">
 </img>
 
-<!---------------------------------------------------------------------------->
+<b><code>COPY</code> [EXAMPLE IMAGES](https://github.com/Amorano/Jovimetrix/tree/main/flow) <code>INTO COMFYUI TO LOAD SHOWN WORKFLOW</code></b>
 
 <details>
   <summary><b>CAPTURE</b></summary>
@@ -63,28 +56,19 @@ NODE | OVERVIEW | COMFY UI
     <details>
       <summary><b>WEBCAM EXAMPLE</b></summary>
       <img
-        style="display: block;
-                margin-left: auto;
-                margin-right: auto;
-                width: 100%;"
-        src="flow/webcam_manipulation.png"
-        alt="WEBCAM MANIPULATION">
+        style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
+        src="flow/node_webcam-simple.png"
+        alt="Simple webcam capture setup">
       </img>
       <img
-        style="display: block;
-                margin-left: auto;
-                margin-right: auto;
-                width: 100%;"
-        src="flow/webcam+mask.png"
-        alt="WEBCAM + MASK">
+        style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
+        src="flow/node_webcam-mask.png"
+        alt="Webcam with a simple shape mask for realtime overlay">
       </img>
       <img
-        style="display: block;
-                margin-left: auto;
-                margin-right: auto;
-                width: 100%;"
-        src="flow/webcam_face_detect.png"
-        alt="***WIP*** NO FACE DETECT YET ***WIP***">
+        style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
+        src="flow/node_webcam-multiple.png"
+        alt="Complex filtering with webcams">
       </img>
     </details>
   </ul>
@@ -149,7 +133,7 @@ NODE | OVERVIEW | COMFY UI
       <summary><b>PER PIXEL + IMAGE SHADER EXAMPLE</b></summary>
       <img
         style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
-        src="flow/node_pixelimage.png" alt="PPIMAGESHADER">
+        src="flow/node_pixel-scaling.png" alt="PPIMAGESHADER">
       </img>
     </details>
       <details>
@@ -264,9 +248,9 @@ NODE | OVERVIEW | COMFY UI
   <summary><b>COMPOSE</b></summary>
   <ul>
     <li>Composite Images and Masks together with optional alpha blending.</li>
-    <li>Supports many operations; if there is a favorite mode missing</li>
+    <li>Supports many operations; </li>
 
-[feel free to email me](<mailto:amorano@gmail.com?subject=[GitHub] Jovimetrix>)
+[feel free to submit new ideas for compositing modes](https://github.com/Amorano/Jovimetrix/issues)
 
 NODE | OVERVIEW | COMFY UI
 --|---|---
@@ -278,14 +262,14 @@ NODE | OVERVIEW | COMFY UI
       <summary><b>BLEND WITH MASK EXAMPLE</b></summary>
       <img
         style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
-        src="flow/node_blendmask.png" alt="Compose 2 inputs together an alpha mask and linear blend scalar">
+        src="flow/node_blendmask-simple.png" alt="Compose 2 inputs together an alpha mask and linear blend scalar">
       </img>
     </details>
     <details>
       <summary><b>BLEND EXAMPLE</b></summary>
       <img
         style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
-        src="flow/node_blend.png" alt="Compose 2 inputs together with linear blend scalar">
+        src="flow/node_blend-simple.png" alt="Compose 2 inputs together with linear blend scalar">
       </img>
     </details>
   </ul>

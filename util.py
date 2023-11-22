@@ -26,7 +26,7 @@ def mergePNGMeta(root: str, target: str) -> None:
                 continue
 
             fn = f"{r}/{f}.json"
-            with open(fn, "r") as out:
+            with open(fn, "r", encoding="utf8") as out:
                 data = out.read()
 
             out = f"{target}/{f}.png"
