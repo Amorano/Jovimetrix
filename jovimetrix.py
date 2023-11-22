@@ -923,7 +923,7 @@ class HSVNode(JovimetrixBaseNode):
             }}
         return deep_merge_dict(IT_IMAGE, d, IT_INVERT)
 
-    DESCRIPTION = "Hue, Saturation, Value, Gamma, Contrast and Exposure adjustment"
+    DESCRIPTION = "Adjust Hue, Saturation, Value, Gamma, Contrast and Exposure of an input"
 
     def run(self, image: torch.tensor, hue: float, saturation: float, value: float, contrast: float,
             exposure: float, gamma: float, invert: float) -> tuple[torch.Tensor, torch.Tensor]:
@@ -981,7 +981,7 @@ class AdjustNode(JovimetrixBaseNode):
             }}
         return deep_merge_dict(IT_PIXELS, d)
 
-    DESCRIPTION = "Blur, Sharpen, Emobss and Find Edges"
+    DESCRIPTION = "Find Edges, Blur, Sharpen and Emobss an input"
 
     def run(self, pixels: torch.tensor, func: str, radius: float)  -> tuple[torch.Tensor, torch.Tensor]:
         if (op := AdjustNode.OPS.get(func, None)):
@@ -1004,7 +1004,7 @@ class ThresholdNode(JovimetrixBaseNode):
             }}
         return deep_merge_dict(IT_PIXELS, d, IT_WHMODEI)
 
-    DESCRIPTION = "Threshold an input (color or mask)."
+    DESCRIPTION = "Clip an input based on a mid point value"
 
     def run(self, pixels: torch.tensor, op: str, adapt: str, threshold: float,
             block: int, const: float, width: int, height: int, mode: str, invert: float)  -> tuple[torch.Tensor, torch.Tensor]:

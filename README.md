@@ -1,5 +1,5 @@
 > [!CAUTION]
-> <h3><p align="center">⚠️⚠️ NODES SUBJECT TO CHANGE PRIOR TO VERSION 1.0. USE AT YOUR OWN RISK ⚠️⚠️</p></h3>
+> <h3><p align="center">⚠️ SUBJECT TO CHANGE PRIOR TO VERSION 1.0. USE AT YOUR OWN RISK ⚠️</p></h3>
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="res/logo-jovimetrix.png">
@@ -11,7 +11,7 @@
 <a href="https://github.com/comfyanonymous/ComfyUI">COMFYUI</a> Nodes for procedural masking, live composition and video manipulation
 </p></h3>
 
-<!-------------------------------------------------------------------------------------------------------------------------------------------------------->
+<!---------------------------------------------------------------------------->
 
 # INSTALLATION
 
@@ -31,13 +31,13 @@ If you are using a <code>virtual environment</code> (<code><i>venv</i></code>), 
 pip install -r requirements.txt
 ```
 
-<!-------------------------------------------------------------------------------------------------------------------------------------------------------->
+<!---------------------------------------------------------------------------->
 
 # REFERENCE
 
-<h2><p align="center">
-<code>COPY EXAMPLE IMAGES INTO COMFYUI WINDOW TO LOAD DEPICTED WORKFLOW</code>
-</p></h2>
+<h3><p align="center">
+<code>COPY EXAMPLE IMAGES INTO COMFYUI TO LOAD SHOWN WORKFLOW</code>
+</p></h3>
 
 <img
     style="display: block;
@@ -48,16 +48,17 @@ pip install -r requirements.txt
     alt="GENERAL NODE OVERVIEW">
 </img>
 
+<!---------------------------------------------------------------------------->
+
 <details>
   <summary><b>CAPTURE</b></summary>
   <ul>
     <li>Connect system devices directly into ComfyUI workflows</li>
-    <li></li>
   </ul>
 
 NODE | OVERVIEW | COMFY UI
 ---|---|---
-WEBCAM||![CAPTURE](flow/webcam_manipulation.png)
+📷 WEBCAM|Connect system webcams directly into ComfyUI workflows|![CAPTURE](flow/node_webcam.png "Connect system webcams directly into ComfyUI workflows")
   <ul>
     <details>
       <summary><b>WEBCAM EXAMPLE</b></summary>
@@ -89,18 +90,20 @@ WEBCAM||![CAPTURE](flow/webcam_manipulation.png)
   </ul>
 </details>
 
+<!---------------------------------------------------------------------------->
+
 <details>
   <summary><b>CREATE</b></summary>
   <ul>
-    <li>A constant color node for when you need a block of color</li>
-    <li>Nodes that generate images and masks to further be manipulated
+    <li>Constant color node for when you need a block of color</li>
+    <li>Nodes that generate images and masks in various polygonal shapes
       <ul>
         <li>Ellipse & Circle</li>
         <li>Rectangle & Square</li>
         <li>Polygon of 3 or more sides</li>
       </ul>
     </li>
-    <li>Old-school version of a PerPixel shader -- slow but works until the ![NODE_GLSL](a "GLSL Node") is available. Variables pre-defined for use in the loop include:
+    * Per Pixel Shader with input support. Slow but works until the ![GLSL]("GLSL Node") is available. Variables pre-defined for use in the loop include:
       <ul>
         <li><code>$x</code>, <code>$y</code>: Current image (x, y)</li>
         <li><code>$u</code>, <code>$v</code>: Normalized texuture coordinates [0..1]</li>
@@ -108,79 +111,154 @@ WEBCAM||![CAPTURE](flow/webcam_manipulation.png)
         <li><code>$ir</code>, <code>$ig</code>, <code>$ib</code>: Red, Green & Blue values for current image input (x, y)</li>
       </ul>
     </li>
-  </ul>
 
 NODE | OVERVIEW | COMFY UI
 ---|---|---
-CONSTANT|Set a single RGB value. Useful for masks, overlays and general filtering|![CONSTANT](flow/webcam_manipulation.png)
-SHAPE GENERATOR|Generate polyhedra for masking or texture work|![SHAPE](flow/webcam_manipulation.png)
-PER PIXEL SHADER|Two nodes, one with source Image support. Allows user function to generate a per pixel result into an image of (Width x Height)|![PIXELSHADER](flow/webcam_manipulation.png)
-
-  <details>
-    <summary><b>PER PIXEL SHADER EXAMPLE</b></summary>
-    <img
-      style="display: block;
-            margin-left: auto;
-            margin-right: auto;
-            width: 100%;"
-      src="flow/per_pixel_shader_scaling.png"
-      alt="PER PIXEL SHADER SCALING">
-    </img>
-  </details>
+🟪 CONSTANT|Set a single RGB value. Useful for masks, overlays and general filtering|![CONSTANT](flow/node_constant.png "constant color node for when you need a block of color")
+✨ SHAPE GENERATOR|Generate polyhedra for masking or texture work|![SHAPE](flow/node_shape.png "Nodes that generate images and masks in various polygonal shapes")
+🔆 PER PIXEL SHADER|Per Pixel user function for each R, G, B channel|![PPSHADER](flow/node_pixel.png "Per Pixel shader")
+🔆 PER PIXEL SHADER IMAGE|Per Pixel Shader with input support|![PPSHADER](flow/node_pixelimage.png "Per Pixel Shader with input support")
+🍩 GLSL|GLSL Shader support|![GLSL](flow/node_glsl.png)
+  </ul>
+  <ul>
+    <details>
+      <summary><b>CONSTANT EXAMPLE</b></summary>
+      <img
+        style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
+        src="flow/node_constant.png"
+        alt="CONSTANT">
+      </img>
+    </details>
+    <details>
+      <summary><b>SHAPE GENERATOR EXAMPLE</b></summary>
+      <img
+        style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
+        src="flow/node_shape.png"
+        alt="GENERATOR">
+      </img>
+    </details>
+    <details>
+      <summary><b>PER PIXEL SHADER EXAMPLE</b></summary>
+      <img
+        style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
+        src="flow/node_pixel.png"
+        alt="PPSHADER">
+      </img>
+    </details>
+    <details>
+      <summary><b>PER PIXEL + IMAGE SHADER EXAMPLE</b></summary>
+      <img
+        style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
+        src="flow/node_pixelimage.png" alt="PPIMAGESHADER">
+      </img>
+    </details>
+      <details>
+      <summary><b>GLSL EXAMPLE</b></summary>
+      <img
+        style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
+        src="flow/node_glsl.png" alt="GLSL">
+      </img>
+    </details>
+  </ul>
 </details>
+
+<!---------------------------------------------------------------------------->
 
 <details>
   <summary><b>TRANSFORM</b></summary>
   <ul>
-    <li>TRANSFORM. Translate, Rotate, and Scale an input. Options allow for CROP or WRAPing of the edges</li>
-    <li>MIRROR. Flip an input across the X axis, the Y Axis or both, with independant centers</li>
-    <li>TILE. Repeat an input along the X, Y or XY at irregular intervals</li>
-    <li>EXTEND. Combine two inputs into a new image, side by side or top-down</li>
+    <li>Manipulate inputs with affine transformations</li>
+    <li>Duplicate and Stack inputs</li>
   </ul>
+
 NODE | OVERVIEW | COMFY UI
 --|---|---
-WEBCAM||![CAPTURE](flow/webcam_manipulation.png)
-WEBCAM||![CAPTURE](flow/webcam_manipulation.png)
-WEBCAM||![CAPTURE](flow/webcam_manipulation.png)
-WEBCAM||![CAPTURE](flow/webcam_manipulation.png)
+🌱 TRANSFORM|Translate, Rotate, and Scale an input. Options allow for CROP or WRAPing of the edges|![TRANSFORM](flow/node_transform.png "Translate, Rotate, and Scale an input. Options allow for CROP or WRAPing of the edges")
+🔳 TILE|Repeat an input along the X, Y or XY at irregular intervals|![TILE](flow/node_tile.png "Repeat an input along the X, Y or XY at irregular intervals")
+🔰 MIRROR|Flip an input across the X axis, the Y Axis or both, with independant centers|![MIRROR](flow/node_mirror.png "Flip an input across the X axis, the Y Axis or both, with independant centers")
+🎇 EXTEND|Combine two inputs into a new image, side by side or top-down|![EXTEND](flow/node_extend.png "Combine two inputs into a new image, side by side or top-down")
+🗺️ PROJECTION|Convert inputs to cartesian, polar, ?|![PROJECTION](flow/node_projection.png "Convert inputs to cartesian, polar, ?")
 
-  <details>
-    <summary><b>PER PIXEL SHADER EXAMPLE</b></summary>
-    <img
-      style="display: block;
-            margin-left: auto;
-            margin-right: auto;
-            width: 100%;"
-      src="flow/per_pixel_shader_scaling.png"
-      alt="PER PIXEL SHADER SCALING">
-    </img>
-  </details>
+  <ul>
+    <details>
+      <summary><b>TRANSFORM EXAMPLE</b></summary>
+      <img
+        style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
+        src="flow/node_transform.png" alt="TRANSFORM">
+      </img>
+    </details>
+    <details>
+      <summary><b>TILE EXAMPLE</b></summary>
+      <img
+        style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
+        src="flow/node_tile.png" alt="TILE">
+      </img>
+    </details>
+        <details>
+      <summary><b>MIRROR EXAMPLE</b></summary>
+      <img
+        style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
+        src="flow/node_mirror.png" alt="MIRROR">
+      </img>
+    </details>
+        <details>
+      <summary><b>EXTEND EXAMPLE</b></summary>
+      <img
+        style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
+        src="flow/node_extend.png" alt="EXTEND">
+      </img>
+    </details>
+        <details>
+      <summary><b>PROJECTION EXAMPLE</b></summary>
+      <img
+        style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
+        src="flow/node_projection.png"
+        alt="PROJECTION">
+      </img>
+    </details>
+  </ul>
 </details>
+
+<!---------------------------------------------------------------------------->
 
 <details>
   <summary><b>ADJUST</b></summary>
   <ul>
     <li>Manipulate lighting and color conditions of an input</li>
     <li>Apply matrix operations to images and masks</li>
-  </ul>
 
 NODE | OVERVIEW | COMFY UI
 --|---|---
-HSV|Adjust Hue, Saturation, Value, Gamma, Contrast and Exposure of an input|![HSV NODE](flow/node_hsv.png "Adjust Hue, Saturation, Value, Gamma, Contrast and Exposure of an input")
-ADJUST|Find Edges, Blur, Sharpen and Emobss an input|![ADJUST NODE](flow/node_adjust.png "Find Edges, Blur, Sharpen and Emobss an input")
-
-  <details>
-    <summary><b>PER PIXEL SHADER EXAMPLE</b></summary>
-    <img
-      style="display: block;
-            margin-left: auto;
-            margin-right: auto;
-            width: 100%;"
-      src="flow/per_pixel_shader_scaling.png"
-      alt="PER PIXEL SHADER SCALING">
-    </img>
-  </details>
+🌈 HSV|Adjust Hue, Saturation, Value, Gamma, Contrast and Exposure of an input|![HSV](flow/node_hsv.png "Adjust Hue, Saturation, Value, Gamma, Contrast and Exposure of an input")
+🕸️ ADJUST|Find Edges, Blur, Sharpen and Emobss an input|![ADJUST](flow/node_adjust.png "Find Edges, Blur, Sharpen and Emobss an input")
+📉 THRESHOLD|Clip an input based on a mid point value|![ADJUST](flow/node_threshold.png "Clip an input based on a mid point value")
+  </ul>
+  <ul>
+    <details>
+      <summary><b>HSV EXAMPLE</b></summary>
+      <img
+        style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
+        src="flow/node_hsv.png" alt="HSV">
+      </img>
+    </details>
+    <details>
+      <summary><b>ADJUST EXAMPLE</b></summary>
+      <img
+        style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
+        src="flow/node_adjust.png" alt="ADJUST">
+      </img>
+    </details>
+        <details>
+      <summary><b>THRESHOLD EXAMPLE</b></summary>
+      <img
+        style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
+        src="flow/node_threshold.png" alt="THRESHOLD">
+      </img>
+    </details>
+  </ul>
 </details>
+
+<!---------------------------------------------------------------------------->
 
 <details>
   <summary><b>COMPOSE</b></summary>
@@ -192,37 +270,49 @@ ADJUST|Find Edges, Blur, Sharpen and Emobss an input|![ADJUST NODE](flow/node_ad
 
 NODE | OVERVIEW | COMFY UI
 --|---|---
-⚗️ BLEND MASK|Compose 2 inputs together an alpha mask and linear blend scalar|![BLEND MASK NODE](flow/node_blendmask.png "Compose 2 inputs together an alpha mask and linear blend scalar")
-⚗️ BLEND|Compose 2 inputs together with linear blend scalar|![BLEND NODE](flow/node_blend.png "Compose 2 inputs together with linear blend scalar")
+⚗️ BLEND MASK|Compose 2 inputs together an alpha mask and linear blend scalar|![BLENDMASK](flow/node_blendmask.png "Compose 2 inputs together an alpha mask and linear blend scalar")
+⚗️ BLEND|Compose 2 inputs together with linear blend scalar|![BLEND](flow/node_blend.png "Compose 2 inputs together with linear blend scalar")
   </ul>
   <ul>
     <details>
       <summary><b>BLEND WITH MASK EXAMPLE</b></summary>
       <img
-        style="display: block;
-              margin-left: auto;
-              margin-right: auto;
-              width: 10%;"
-        src="flow/blend+mask.png"
-        alt="Compose 2 inputs together an alpha mask and linear blend scalar">
+        style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
+        src="flow/node_blendmask.png" alt="Compose 2 inputs together an alpha mask and linear blend scalar">
       </img>
     </details>
     <details>
       <summary><b>BLEND EXAMPLE</b></summary>
       <img
-        style="display: block;
-              margin-left: auto;
-              margin-right: auto;
-              width: 10%;"
-        src="flow/blend.png"
-        alt="Compose 2 inputs together with linear blend scalar">
+        style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
+        src="flow/node_blend.png" alt="Compose 2 inputs together with linear blend scalar">
       </img>
     </details>
   </ul>
 </details>
 
-<!-------------------------------------------------------------------------------------------------------------------------------------------------------->
------
+<!---------------------------------------------------------------------------->
+
+<details>
+  <summary><b>UTILITY</b></summary>
+  <ul>
+
+NODE | OVERVIEW | COMFY UI
+--|---|---
+🚌 ROUTE|Send outputs of any type to any input|![ROUTE](flow/node_route.png "Send outputs of any type to any input")
+  </ul>
+  <ul>
+    <details>
+      <summary><b>ROUTE EXAMPLE</b></summary>
+      <img
+        style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
+        src="flow/node_route.png" alt="Send outputs of any type to any input">
+      </img>
+    </details>
+  </ul>
+</details>
+
+---
 
 ## TODO:
 - [✔️] create readme
