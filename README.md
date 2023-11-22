@@ -1,20 +1,11 @@
 > [!CAUTION]
-> <h4><p align="center">⚠️⚠️ NODES SUBJECT TO CHANGE PRIOR TO VERSION 1.0. USE AT YOUR OWN RISK ⚠️⚠️</p></h4>
+> <h3><p align="center">⚠️⚠️ NODES SUBJECT TO CHANGE PRIOR TO VERSION 1.0. USE AT YOUR OWN RISK ⚠️⚠️</p></h3>
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="res/logo-jovimetrix.png">
   <source media="(prefers-color-scheme: light)" srcset="res/logo-jovimetrix-light.png">
-  <img alt="ComfyUI Nodes for procedural masking, live composition and video manipulation" src="res/logo-jovimetrix.png">
+  <img alt="ComfyUI Nodes for procedural masking, live composition and video manipulation">
 </picture>
-
-<img
-    style="display: block;
-           margin-left: auto;
-           margin-right: auto;
-           width: 100%;"
-    src="res/logo-jovimetrix.png"
-    alt="ComfyUI Nodes for procedural masking, live composition and video manipulation">
-</img>
 
 <h3><p align="center">
 <a href="https://github.com/comfyanonymous/ComfyUI">COMFYUI</a> Nodes for procedural masking, live composition and video manipulation
