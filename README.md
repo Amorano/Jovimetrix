@@ -54,11 +54,11 @@ pip install -r requirements.txt
   <summary><b>CAPTURE</b></summary>
   <ul>
     <li>Connect system devices directly into ComfyUI workflows</li>
-  </ul>
 
 NODE | OVERVIEW | COMFY UI
 ---|---|---
 📷 WEBCAM|Connect system webcams directly into ComfyUI workflows|![CAPTURE](flow/node_webcam.png "Connect system webcams directly into ComfyUI workflows")
+ </ul>
   <ul>
     <details>
       <summary><b>WEBCAM EXAMPLE</b></summary>
