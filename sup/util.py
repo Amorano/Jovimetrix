@@ -41,4 +41,4 @@ def mergePNGMeta(root: str, target: str) -> None:
                 print(f"wrote {f} ==> {img}")
 
 if __name__ == "__main__":
-    mergePNGMeta('../../pysssss-workflows', 'flow')
+    mergePNGMeta('../../../pysssss-workflows', '../flow')
