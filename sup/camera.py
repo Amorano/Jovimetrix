@@ -6,6 +6,7 @@ import numpy as np
 
 import time
 import threading
+import concurrent.futures
 from typing import Any
 
 loginfo = print
@@ -68,7 +69,7 @@ class WebCamera:
         self.__thread = threading.Thread(target=self.__process, daemon=True)
         self.__thread.start()
         # give it a beat
-        time.sleep(0.5)
+        time.sleep(0.75)
         loginfo(f"[WebCamera] CAMERA ({self.__idx}) CAPTURE")
 
     def stop(self) -> None:
@@ -133,28 +134,45 @@ class WebCamera:
 
 class CameraManager:
     @classmethod
+    def check_cam_async(cls, idx: int) -> tuple[int, WebCamera | None]:
+        try:
+            camera = WebCamera(idx)
+        except:
+            return idx, None
+
+        camera.capture()
+        if not camera.opened:
+            return idx, None
+
+        ret, _ = camera.frameResult
+        camera.stop()
+        if ret:
+            return idx, camera
+
+    @classmethod
     def devicescan(cls) -> dict[int, WebCamera]:
         """Indexes all devices that responded and if they are read-only."""
 
         idx = 0
         device = {}
         start = time.time()
+        # check for X cameras at a time
+        step = 3
+        found = False
 
         while True:
-            try:
-                camera = WebCamera(idx)
-            except:
-                break
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                futures = [executor.submit(cls.check_cam_async, i) for i in range(idx, idx + step)]
+                for future in concurrent.futures.as_completed(futures):
+                    idx, camera = future.result()
+                    if camera:
+                        device[idx] = camera
+                    else:
+                        found = True
 
-            camera.capture()
-            if not camera.opened:
-                break
-
-            ret, _ = camera.frameResult
-            camera.stop()
-            if ret:
-                device[idx] = camera
-            idx += 1
+                if found:
+                    break
+                idx += step
 
         loginfo(f"[CameraManager] INIT ({time.time()-start:.4})")
         return device
@@ -183,9 +201,13 @@ class CameraManager:
             return
         camera.capture()
 
+    def captureAll(self) -> None:
+        for camera in self.__cams.values():
+            camera.capture()
+
 if __name__ == "__main__":
     camMgr = CameraManager()
-    camMgr.capture(0)
+    camMgr.captureAll()
 
     width = 1024
     height = 384

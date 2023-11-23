@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebGL Example</title>
+</head>
+<body>
+  <canvas id="myCanvas" width="400" height="400"></canvas>
+  <script>
+    // Get the WebGL context from the canvas element
+    const canvas = document.getElementById('myCanvas');
+    const gl = canvas.getContext('webgl');
+
+    if (!gl) {
+      console.log('Unable to initialize WebGL. Your browser may not support it.');
+    } else {
+      console.log('WebGL context initialized successfully.');
+    }
+  </script>
+</body>
+</html>
