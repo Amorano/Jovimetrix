@@ -14,6 +14,25 @@ import math
 from PIL import Image
 from PIL.PngImagePlugin import PngInfo
 
+# =============================================================================
+# === "LOGGER" ===
+# =============================================================================
+LOG = os.environ.get('JOVLOG', False)
+
+def loginfo(msg: str) -> None:
+    if LOG:
+        print(f"\033[48;2;54;135;27;93m[JOV]\033[0m {msg}")
+
+def logwarn(msg: str) -> None:
+    if LOG:
+        print(f"\033[48;2;189;135;54;93m[JOV]\033[0m {msg}")
+
+def logerr(msg: str) -> None:
+    if LOG:
+        print(f"\033[48;2;135;27;81;93m[JOV]\033[0m {msg}")
+
+# =============================================================================
+
 def mergePNGMeta(root: str, target: str) -> None:
     for r, _, fs in os.walk(root):
         for f in fs:

@@ -4,15 +4,16 @@
 import cv2
 import numpy as np
 
+import io
 import time
 import threading
 import contextlib
-from io import StringIO
+import threading
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
 from typing import Any
 
-from util import gridMake
-
-logerr = logwarn = loginfo = print
+from sup.util import loginfo, logwarn, logerr, gridMake
 
 class WebCamera():
     BROKEN = np.zeros((1, 1, 3), dtype=np.uint8)
@@ -41,8 +42,8 @@ class WebCamera():
         except ValueError as _:
             pass
 
-        f = StringIO()
-        e = StringIO()
+        f = io.StringIO()
+        e = io.StringIO()
         with contextlib.redirect_stdout(f), contextlib.redirect_stderr(e):
             self.__thread = threading.Thread(target=self.__run, daemon=True)
             self.__thread.start()
@@ -203,8 +204,67 @@ class CameraManager:
         if (CameraManager.CAMS.get(url, None)) is None:
             CameraManager.CAMS[url] = WebCamera(url=url)
 
-if __name__ == "__main__":
+class StreamingHandler(BaseHTTPRequestHandler):
+    def __init__(self, frame_buffer, *args, **kwargs) -> None:
+        self.frame_buffer = frame_buffer
+        super().__init__(*args, **kwargs)
 
+    def do_GET(self) -> None:
+        if self.path != '/stream.mjpg':
+            return
+
+        self.send_response(200)
+        self.send_header('Content-Type', 'multipart/x-mixed-replace; boundary=frame')
+        self.end_headers()
+        while True:
+            try:
+                frame = self.frame_buffer.get_frame()
+                if frame is not None:
+                    ret, jpeg = cv2.imencode('.jpg', frame)
+                    self.wfile.write(b'--frame\r\n')
+                    self.send_header('Content-Type', 'image/jpeg')
+                    self.send_header('Content-Length', len(jpeg))
+                    self.end_headers()
+                    self.wfile.write(jpeg.tobytes())
+                    self.wfile.write(b'\r\n')
+            except Exception as e:
+                print(f"Error: {e}")
+                break
+
+class FrameBuffer:
+    def __init__(self) -> None:
+        self.frame = None
+        self.lock = threading.Lock()
+
+    def update_frame(self, frame) -> None:
+        with self.lock:
+            self.frame = frame
+
+    def get_frame(self) -> Any | None:
+        with self.lock:
+            return self.frame
+
+def streamTester() -> None:
+    cap = cv2.VideoCapture(0)
+    frame_buffer = FrameBuffer()
+
+    def capture_frames() -> None:
+        while True:
+            ret, frame = cap.read()
+            if ret:
+                frame_buffer.update_frame(frame)
+
+    capture_thread = threading.Thread(target=capture_frames, daemon=True)
+    capture_thread.start()
+
+    try:
+        address = ('', 8000)
+        httpd = ThreadingHTTPServer(address, lambda *args: StreamingHandler(frame_buffer, *args))
+        httpd.serve_forever()
+    finally:
+        cap.release()
+
+def cameraTester() -> None:
     streams = [
         "rtsp://rtspstream:804359a2ea4669af4edf7feab36ce048@zephyr.rtsp.stream/pattern",
 
@@ -281,3 +341,7 @@ if __name__ == "__main__":
             break
 
     cv2.destroyAllWindows()
+
+if __name__ == "__main__":
+    streamTester()
+    # cameraTester()
