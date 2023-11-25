@@ -15,32 +15,25 @@ from typing import Any
 
 from sup.util import loginfo, logwarn, logerr, gridMake
 
-class WebCamera():
-    BROKEN = np.zeros((1, 1, 3), dtype=np.uint8)
-    def __init__(self, url:[int|str]=None, width:int=640, height:int=480, fps:float=60, mode:str="FIT") -> None:
+class MediaStream():
+    def __init__(self, url:int|str, size:tuple[int, int]=None, fps:float=None, mode:str="FIT", backend:int=None) -> None:
         self.__source = None
         self.__running = False
         self.__thread = None
         self.__paused = True
-
-        self.__fps = 0
-        self.fps = fps
-        self.__width = self.width = width
-        self.__height = self.height = height
-
         self.__ret = False
-        self.__frame = np.zeros((width, height, 3), dtype=np.uint8)
-
-        # SCALEFIT
+        self.__backend = [backend] if backend else [cv2.CAP_ANY]
+        self.__broken = self.__frame = None
+        self.__fps = fps
+        self.__size = size
         self.__mode = mode
-
-        self.__backend = [cv2.CAP_ANY]
-        # RTSP or CamIndex...
         self.__url = url
         try:
             self.__url = int(url)
         except ValueError as _:
             pass
+
+        self.capture(size, fps)
 
         f = io.StringIO()
         e = io.StringIO()
@@ -49,99 +42,96 @@ class WebCamera():
             self.__thread.start()
 
     def __run(self) -> None:
-        def captureStream() -> None:
-            found = False
-            for x in self.__backend:
-                self.__source = cv2.VideoCapture(self.__url, x)
-                found = self.__source.isOpened()
-                if found:
-                    break
-
-            if not found:
-                logerr(f"[WebCamera] FAILED ({self.__url}) ")
-                self.__running = False
-                return
-
-            # time.sleep(0.4)
-            self.__paused = False
-            self.__running = True
-            loginfo(f"[WebCamera] RUNNING ({self.__url})")
-
-        captureStream()
-
         while self.__running:
+            waste = time.time() + 1. / self.__fps
             timeout = None
             if not self.__paused:
-                self.__ret, self.__frame = self.__source.read()
+                try:
+                    self.__ret, self.__frame = self.__source.read()
+                except:
+                    self.__ret = False
+                    self.__frame = None
+
                 if self.__ret and self.__frame is not None:
                     timeout = None
-                elif self.__source.isOpened():
-                    if timeout is None:
-                        timeout = time.time()
-                    elif time.time() - timeout > 2:
-                        self.__source.release()
-                        logwarn(f"[WebCamera] TIMEOUT ({self.__url})")
-                        captureStream()
+                else:
+                    self.__frame = self.__broken
+                    if not self.__ret:
+                        # for cameras will just ignore; reached the end of the source
+                        count = self.__source.get(cv2.CAP_PROP_FRAME_COUNT)
+                        pos = self.__source.get(cv2.CAP_PROP_POS_FRAMES)
+                        if pos >= count:
+                            self.__source.set(cv2.CAP_PROP_POS_FRAMES, 0)
 
-                    self.__frame = WebCamera.BROKEN
+                    if self.__source.isOpened():
+                        if timeout is None:
+                            timeout = time.time()
+                        elif time.time() - timeout > 2:
+                            self.__source.release()
+                            logwarn(f"[MediaStream] TIMEOUT ({self.__url})")
+                            self.capture()
 
-                width, height, _ = self.__frame.shape
-                if width != self.__width or height != self.__height:
-                    self.__frame = cv2.resize(self.__frame, (self.__width, self.__height))
+                if self.__frame is not None and self.__size:
+                    width, height, _ = self.__frame.shape
+                    if width != self.__size[0] or height != self.__size[1]:
+                        self.__frame = cv2.resize(self.__frame, self.__size)
 
-            # waste = (time.time() - waste)
-            # waste = min(1, max(0.0001, self.__fps - waste))
-            # time.sleep(waste)
+            waste = max(waste - time.time(), 0)
+            time.sleep(waste)
 
-        loginfo(f"[WebCamera] STOPPED ({self.__url})")
+        loginfo(f"[MediaStream] STOPPED ({self.__url})")
 
     def __del__(self) -> None:
         self.release()
-
-    def capture(self) -> None:
-        self.__paused = False
-        loginfo(f"[WebCamera] CAPTURE ({self.__url})")
-
-    def pause(self) -> None:
-        self.__paused = True
-        logwarn(f"[WebCamera] PAUSED ({self.__url})")
-
-    def release(self) -> None:
-        self.__running = False
-        if self.__source:
-            self.__source.release()
-            logwarn(f"[WebCamera] RELEASED ({self.__url})")
-
         try:
             if self.__thread:
                 del self.__thread
         except AttributeError as _:
             pass
-        logwarn(f"[WebCamera] END ({self.__url})")
+        logwarn(f"[MediaStream] END ({self.__url})")
 
-    @property
-    def fps(self) -> float:
-        return 1. / self.__fps
+    def capture(self, size:tuple[int, int]=None, fps:float=60) -> None:
+        if self.__source and self.__source.isOpened():
+            self.__paused = False
+            self.__running = True
+            return
 
-    @fps.setter
-    def fps(self, fps: float) -> None:
-        self.__fps = 1. / max(1, fps)
+        found = False
+        for x in self.__backend:
+            self.__source = cv2.VideoCapture(self.__url, x)
+            time.sleep(0.4)
+            found = self.__source.isOpened()
+            if found:
+                break
 
-    @property
-    def width(self) -> int:
-        return self.__width
+        if not found:
+            logerr(f"[MediaStream] CAPTURE FAIL ({self.__url}) ")
+            self.__running = False
+            return
 
-    @width.setter
-    def width(self, width: int) -> None:
-        self.__width = np.clip(width, 0, 8192)
+        self.__fps = max(1, self.__fps or self.__source.get(cv2.CAP_PROP_FPS))
+        self.size(size)
+        self.__paused = False
+        self.__running = True
+        loginfo(f"[MediaStream] CAPTURE ({self.__url})")
 
-    @property
-    def height(self) -> int:
-        return self.__height
+    def pause(self) -> None:
+        self.__paused = True
+        logwarn(f"[MediaStream] PAUSED ({self.__url})")
 
-    @height.setter
-    def height(self, height: int) -> None:
-        self.__height = np.clip(height, 0, 8192)
+    def release(self) -> None:
+        self.__running = False
+        if self.__source:
+            self.__source.release()
+        logwarn(f"[MediaStream] RELEASED ({self.__url})")
+
+    def size(self, size:tuple[int, int]) -> None:
+        width = (size[0] if size else None) or self.__source.get(cv2.CAP_PROP_FRAME_WIDTH)
+        width = int(np.clip(width, 0, 8192))
+        height = (size[1] if size else None) or self.__source.get(cv2.CAP_PROP_FRAME_HEIGHT)
+        height = int(np.clip(height, 0, 8192))
+        self.__size = (width, height)
+        self.__frame = self.__broken = np.zeros((width, height, 3), dtype=np.uint8)
 
     @property
     def frame(self) -> Any:
@@ -152,75 +142,79 @@ class WebCamera():
         return self.__ret, self.__frame
 
     @property
-    def opened(self) -> bool:
+    def isOpen(self) -> bool:
         if not self.__source:
             return False
         return self.__source.isOpened()
 
-class CameraManager:
+class StreamManager:
 
-    CAMS = {}
+    STREAM = {}
 
     @classmethod
     def devicescan(cls) -> None:
         """Indexes all devices that responded and if they are read-only."""
 
-        CameraManager.CAMS = {}
+        StreamManager.STREAM = {}
         start = time.time()
-        for i in range(5):
-            camera = WebCamera(i)
-            camera.capture()
-            if not camera.opened:
-                return
+        for i in range(2):
+            stream = MediaStream(i)
+            stream.capture()
+            if not stream.isOpen:
+                stream.release()
+                break
 
-            frame = None
-            timeout = time.time()
-            while (frame is None or not ret) and (time.time() - timeout) < 2:
-                ret, frame = camera.frameResult
+            StreamManager.STREAM[i] = stream
+            stream.release()
 
-            if ret or frame:
-                CameraManager.CAMS[i] = camera
-
-        loginfo(f"[CameraManager] SCAN ({time.time()-start:.4})")
+        loginfo(f"[StreamManager] SCAN ({time.time()-start:.4})")
 
     def __init__(self) -> None:
-        CameraManager.devicescan()
-        loginfo(f"[CameraManager] CAMS {self.camlist}")
+        StreamManager.devicescan()
+        loginfo(f"[StreamManager] STREAM {self.camlist}")
 
     def __del__(self) -> None:
-        for c in CameraManager.CAMS.values():
+        for c in StreamManager.STREAM.values():
             c.release()
 
     @property
-    def camlist(self) -> list[WebCamera]:
-        return list(CameraManager.CAMS.keys())
+    def camlist(self) -> list[str|int]:
+        return list(StreamManager.STREAM.keys())
+
+    @property
+    def streamsActive(self) -> list[MediaStream]:
+        return [stream for stream in StreamManager.STREAM.values() if stream.isOpen]
 
     def frame(self, url: str) -> tuple[bool, Any]:
-        if (camera := CameraManager.CAMS.get(url, None)) is None:
-            return np.zeros((1, 1, 3), dtype=np.uint8)
-        return camera.frameResult
+        if (stream := StreamManager.STREAM.get(url, None)) is None:
+            return False, np.zeros((512, 512, 3), dtype=np.uint8)
+        return stream.frameResult
 
-    def openURL(self, url: str) -> None:
-        if (CameraManager.CAMS.get(url, None)) is None:
-            CameraManager.CAMS[url] = WebCamera(url=url)
+    def openURL(self, url: str, size:tuple[int, int]=None, fps:float=None, backend:int=None) -> MediaStream:
+        if (stream := StreamManager.STREAM.get(url, None)) is None:
+            stream = StreamManager.STREAM[url] = MediaStream(url=url, size=size, fps=fps, backend=backend)
+        stream.capture()
+        return stream
 
 class StreamingHandler(BaseHTTPRequestHandler):
-    def __init__(self, frame_buffer, *args, **kwargs) -> None:
-        self.frame_buffer = frame_buffer
+    def __init__(self, outputs, *args, **kwargs) -> None:
+        self.__outputs = outputs
         super().__init__(*args, **kwargs)
 
     def do_GET(self) -> None:
-        if self.path != '/stream.mjpg':
+        key = self.path.lower()
+        if (data := self.__outputs.get(key, None)) is None:
             return
 
         self.send_response(200)
         self.send_header('Content-Type', 'multipart/x-mixed-replace; boundary=frame')
         self.end_headers()
+
         while True:
             try:
-                frame = self.frame_buffer.get_frame()
+                frame = data['b'] #.get_frame()
                 if frame is not None:
-                    ret, jpeg = cv2.imencode('.jpg', frame)
+                    _, jpeg = cv2.imencode('.jpg', frame)
                     self.wfile.write(b'--frame\r\n')
                     self.send_header('Content-Type', 'image/jpeg')
                     self.send_header('Content-Length', len(jpeg))
@@ -228,44 +222,43 @@ class StreamingHandler(BaseHTTPRequestHandler):
                     self.wfile.write(jpeg.tobytes())
                     self.wfile.write(b'\r\n')
             except Exception as e:
-                print(f"Error: {e}")
+                logerr(f"Error: {e}")
                 break
 
-class FrameBuffer:
-    def __init__(self) -> None:
-        self.frame = None
-        self.lock = threading.Lock()
+class StreamingServer:
+    OUT = {}
 
-    def update_frame(self, frame) -> None:
-        with self.lock:
-            self.frame = frame
+    @classmethod
+    def endpointAdd(cls, name: str, stream: MediaStream) -> None:
+        StreamingServer.OUT[name] = {'_': stream, 'b': None}
 
-    def get_frame(self) -> Any | None:
-        with self.lock:
-            return self.frame
+    def __init__(self, host: str='', port: int=7227) -> None:
+        def capture() -> None:
+            while True:
+                who = list(StreamingServer.OUT.keys())
+                for w in who:
+                    StreamingServer.OUT[w]['b'] = StreamingServer.OUT[w]['_'].frame
+
+        capture_thread = threading.Thread(target=capture, daemon=True)
+        capture_thread.start()
+
+        # SERVER
+        self.__host = host
+        self.__port = port
+        address = (self.__host, self.__port)
+        httpd = ThreadingHTTPServer(address, lambda *args: StreamingHandler(StreamingServer.OUT, *args))
+
+        def server() -> None:
+            while True:
+                httpd.handle_request()
+
+        server_thread = threading.Thread(target=server, daemon=True)
+        server_thread.start()
 
 def streamTester() -> None:
-    cap = cv2.VideoCapture(0)
-    frame_buffer = FrameBuffer()
-
-    def capture_frames() -> None:
-        while True:
-            ret, frame = cap.read()
-            if ret:
-                frame_buffer.update_frame(frame)
-
-    capture_thread = threading.Thread(target=capture_frames, daemon=True)
-    capture_thread.start()
-
-    try:
-        address = ('', 8000)
-        httpd = ThreadingHTTPServer(address, lambda *args: StreamingHandler(frame_buffer, *args))
-        httpd.serve_forever()
-    finally:
-        cap.release()
-
-def cameraTester() -> None:
-    streams = [
+    urls = [
+        0,
+        1,
         "rtsp://rtspstream:804359a2ea4669af4edf7feab36ce048@zephyr.rtsp.stream/pattern",
 
         "http://camera.sissiboo.com:86/mjpg/video.mjpg",
@@ -298,7 +291,7 @@ def cameraTester() -> None:
     ]
     streamIdx = 0
 
-    camMgr = CameraManager()
+    streamMGR = StreamManager()
 
     count = 0
     widthT = 160
@@ -307,18 +300,17 @@ def cameraTester() -> None:
 
     empty = frame = np.zeros((heightT, widthT, 3), dtype=np.uint8)
     while True:
-        cameras = []
-        for x in camMgr.camlist:
-            ret, chunk = camMgr.frame(x)
+        streams = []
+        for x in streamMGR.streamsActive:
+            ret, chunk = streamMGR.frame(x)
             if not ret or chunk is None:
-                cameras.append(empty)
+                streams.append(empty)
                 continue
+            #chunk = cv2.resize(chunk, (widthT, heightT))
+            streams.append(chunk)
 
-            chunk = cv2.resize(chunk, (widthT, heightT))
-            cameras.append(chunk)
-
-        chunks, col, row = gridMake(cameras)
-        if (countNew := len(camMgr.camlist)) != count:
+        chunks, col, row = gridMake(streams)
+        if (countNew := len(streamMGR.streamsActive)) != count:
             frame = np.zeros((heightT * row, widthT * col, 3), dtype=np.uint8)
             count = countNew
 
@@ -333,15 +325,35 @@ def cameraTester() -> None:
         cv2.imshow("Web Camera", frame)
         val = cv2.waitKey(1) & 0xFF
         if val == ord('c'):
-            camMgr.openURL(streams[streamIdx])
+            streamMGR.openURL(urls[streamIdx % len(urls)], (widthT, heightT))
             streamIdx += 1
-            if streamIdx >= len(streams):
-                streamIdx = 0
         elif val == ord('q'):
             break
 
     cv2.destroyAllWindows()
 
+def broadcastTester() -> None:
+    ss = StreamingServer()
+    sm = StreamManager()
+
+    fpath = 'res/stream-video.mp4'
+    device_video = sm.openURL(fpath, fps=1000)
+    ss.endpointAdd('/video.mjpg', device_video)
+
+    device_camera = sm.openURL(0)
+    ss.endpointAdd('/camera.mjpg', device_camera)
+
+    empty = device_camera.frame
+    while 1:
+        cv2.imshow("SERVER", empty)
+        val = cv2.waitKey(1) & 0xFF
+        if val == ord('q'):
+            break
+
+    cv2.destroyAllWindows()
+    device_video.release()
+    device_camera.release()
+
 if __name__ == "__main__":
-    streamTester()
-    # cameraTester()
+    #streamTester()
+    broadcastTester()
