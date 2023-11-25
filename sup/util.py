@@ -10,8 +10,8 @@
 """
 
 import os
+import math
 from PIL import Image
-from PIL.ExifTags import TAGS
 from PIL.PngImagePlugin import PngInfo
 
 def mergePNGMeta(root: str, target: str) -> None:
@@ -39,6 +39,27 @@ def mergePNGMeta(root: str, target: str) -> None:
                 metadata.add_text("workflow", data)
                 image.save(out, pnginfo=metadata)
                 print(f"wrote {f} ==> {img}")
+
+def gridMake(data: list[object]) -> list[object]:
+    size = len(data)
+    grid = int(math.sqrt(size))
+    if grid * grid < size:
+        grid += 1
+    if grid < 1:
+        return [], 0, 0
+
+    rows = size // grid
+    if size % grid != 0:
+        rows += 1
+
+    ret = []
+    cols = 0
+    for j in range(rows):
+        end = min((j + 1) * grid, len(data))
+        cols = max(cols, end - j * grid)
+        d = [data[i] for i in range(j * grid, end)]
+        ret.append(d)
+    return ret, cols, rows
 
 if __name__ == "__main__":
     mergePNGMeta('../../../pysssss-workflows', '../flow')
