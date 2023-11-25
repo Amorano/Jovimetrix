@@ -96,10 +96,11 @@ class MediaStream():
             self.__running = True
             return
 
+        loginfo(f"[MediaStream] CAPTURE ({self.__url})")
         found = False
         for x in self.__backend:
             self.__source = cv2.VideoCapture(self.__url, x)
-            time.sleep(0.4)
+            # time.sleep(0.4)
             found = self.__source.isOpened()
             if found:
                 break
@@ -113,7 +114,7 @@ class MediaStream():
         self.size(size)
         self.__paused = False
         self.__running = True
-        loginfo(f"[MediaStream] CAPTURE ({self.__url})")
+        loginfo(f"[MediaStream] CAPTURED ({self.__url})")
 
     def pause(self) -> None:
         self.__paused = True
@@ -123,7 +124,7 @@ class MediaStream():
         self.__running = False
         if self.__source:
             self.__source.release()
-        logwarn(f"[MediaStream] RELEASED ({self.__url})")
+            logwarn(f"[MediaStream] RELEASED ({self.__url})")
 
     def size(self, size:tuple[int, int]) -> None:
         width = (size[0] if size else None) or self.__source.get(cv2.CAP_PROP_FRAME_WIDTH)
@@ -131,7 +132,7 @@ class MediaStream():
         height = (size[1] if size else None) or self.__source.get(cv2.CAP_PROP_FRAME_HEIGHT)
         height = int(np.clip(height, 0, 8192))
         self.__size = (width, height)
-        self.__frame = self.__broken = np.zeros((width, height, 3), dtype=np.uint8)
+        self.__frame = self.__broken = np.zeros((height, width, 3), dtype=np.uint8)
 
     @property
     def frame(self) -> Any:
@@ -155,16 +156,20 @@ class StreamManager:
     def devicescan(cls) -> None:
         """Indexes all devices that responded and if they are read-only."""
 
+        for stream in StreamManager.STREAM.values():
+            if stream:
+                del stream
         StreamManager.STREAM = {}
+
         start = time.time()
-        for i in range(2):
+        for i in range(5):
             stream = MediaStream(i)
             stream.capture()
             if not stream.isOpen:
-                stream.release()
                 break
-
             StreamManager.STREAM[i] = stream
+
+        for stream in StreamManager.STREAM.values():
             stream.release()
 
         loginfo(f"[StreamManager] SCAN ({time.time()-start:.4})")
@@ -212,8 +217,7 @@ class StreamingHandler(BaseHTTPRequestHandler):
 
         while True:
             try:
-                frame = data['b'] #.get_frame()
-                if frame is not None:
+                if (frame := data['b']) is not None:
                     _, jpeg = cv2.imencode('.jpg', frame)
                     self.wfile.write(b'--frame\r\n')
                     self.send_header('Content-Type', 'image/jpeg')
@@ -255,7 +259,7 @@ class StreamingServer:
         server_thread = threading.Thread(target=server, daemon=True)
         server_thread.start()
 
-def streamTester() -> None:
+def streamReadTest() -> None:
     urls = [
         0,
         1,
@@ -332,13 +336,16 @@ def streamTester() -> None:
 
     cv2.destroyAllWindows()
 
-def broadcastTester() -> None:
+def streamWriteTest() -> None:
     ss = StreamingServer()
     sm = StreamManager()
 
     fpath = 'res/stream-video.mp4'
-    device_video = sm.openURL(fpath, fps=1000)
+    device_video = sm.openURL(fpath, fps=30)
     ss.endpointAdd('/video.mjpg', device_video)
+
+    # @TODO: SOMETHING IS GETTING CHANGED WHEN TRYING TO
+    # RE-ATTACH AN EXISTING STREAM
 
     device_camera = sm.openURL(0)
     ss.endpointAdd('/camera.mjpg', device_camera)
@@ -351,9 +358,7 @@ def broadcastTester() -> None:
             break
 
     cv2.destroyAllWindows()
-    device_video.release()
-    device_camera.release()
 
 if __name__ == "__main__":
-    #streamTester()
-    broadcastTester()
+    #streamReadTest()
+    streamWriteTest()
