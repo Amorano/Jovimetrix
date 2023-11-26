@@ -338,6 +338,7 @@ NODE | OVERVIEW | COMFY UI
 - [⭕] hook GLSL context in litegraph
 - [⭕] redo camera with stream reader/writer defaults
 - [⭕] generalized section to explain common parameters (w/h/invert/mode)
+- [⭕] GAMMA, EXPOSURE, SHARPEN -- check output 
 - [✔️] env switches for logger and stream* service auto-starts
 - [✔️] embed workflows in example images
 - [✔️] create readme
