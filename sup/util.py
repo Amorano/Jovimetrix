@@ -17,7 +17,7 @@ from PIL.PngImagePlugin import PngInfo
 # =============================================================================
 # === "LOGGER" ===
 # =============================================================================
-LOG = os.getenv("JOVLOG", '').lower() in ('true', '1', 't')
+LOG = (os.getenv("JOVLOG", '').lower()) in ('true', '1', 't')
 
 def loginfo(msg: str) -> None:
     if LOG:
@@ -57,7 +57,7 @@ def mergePNGMeta(root: str, target: str) -> None:
                     metadata.add_text(i, str(image.text[i]))
                 metadata.add_text("workflow", data)
                 image.save(out, pnginfo=metadata)
-                print(f"wrote {f} ==> {img}")
+                loginfo(f"wrote {f} ==> {img}")
 
 def gridMake(data: list[object]) -> list[object]:
     size = len(data)

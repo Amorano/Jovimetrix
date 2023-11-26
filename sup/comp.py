@@ -234,7 +234,7 @@ def ROTATE_NDARRAY(image: np.ndarray, angle: float, clip: bool=True) -> np.ndarr
     # Clip the rotated image
     return rotated_image[start_height:start_height + height, start_width:start_width + width]
 
-def SCALEFIT(image: cv2.Mat, width: int, height: int, mode: str='FIT') -> cv2.Mat:
+def SCALEFIT(image: cv2.Mat, width: int, height: int, mode: str) -> cv2.Mat:
     """Scale a matrix into a defined width, height explicitly or by a guiding edge."""
     if mode == "ASPECT":
         h, w, _ = image.shape

@@ -27,15 +27,13 @@ try:
 except:
     from .util import loginfo, logwarn, logerr, gridMake
 
-from sup.comp import SCALEFIT
-
 try:
     from sup.comp import SCALEFIT
 except:
-    from .comp import SCALEFIT
+    from comp import SCALEFIT
 
 class MediaStream():
-    def __init__(self, url:int|str, size:tuple[int, int]=None, fps:float=None, mode:str="FIT", backend:int=None) -> None:
+    def __init__(self, url:int|str, size:tuple[int, int]=None, fps:float=None, mode:str="NONE", backend:int=None) -> None:
         self.__source = None
         self.__quit = False
         self.__thread = None
@@ -83,12 +81,7 @@ class MediaStream():
 
                 if newframe is not None:
                     timeout = None
-                    width, height, _ = newframe.shape
-                    if self.__mode != 'NONE':
-                        if width != self.__size[1] or height != self.__size[0]:
-                            newframe = SCALEFIT(newframe, self.__size[1], self.__size[0], self.__mode)
-                            # newframe = cv2.resize(newframe, self.__size)
-                    self.__frame = newframe
+                    self.__frame = SCALEFIT(newframe, self.__size[0], self.__size[1], self.__mode)
 
                 if not self.__ret or newframe is None and timeout is None:
                     timeout = time.time() + 5.
@@ -147,18 +140,6 @@ class MediaStream():
             logwarn(f"[MediaStream] RELEASED ({self.__url})")
 
     @property
-    def size(self) -> tuple[int, int]:
-        return (self.__size[1], self.__size[0])
-
-    @size.setter
-    def size(self, size:tuple[int, int]) -> None:
-        size = size or (512, 512)
-        width = int(np.clip(size[0] or 512, 0, 8192))
-        height = int(np.clip(size[1] or 512, 0, 8192))
-        self.__size = (height, width)
-        self.__frame = cv2.resize(self.__frame, self.__size)
-
-    @property
     def frame(self) -> tuple[bool, Any]:
         return self.__ret, self.__frame
 
@@ -167,6 +148,36 @@ class MediaStream():
         if not self.__source:
             return False
         return self.__source.isOpened()
+
+    @property
+    def width(self) -> int:
+        return int(self.__source.get(cv2.CAP_PROP_FRAME_WIDTH))
+
+    @property
+    def height(self) -> int:
+        return int(self.__source.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
+    @property
+    def size(self) -> tuple[int, int]:
+        return self.__size
+
+    @size.setter
+    def size(self, size:tuple[int, int]) -> None:
+        size = size or (32, 32)
+
+        width = int(np.clip(size[0] or 32, 0, 8192))
+        height = int(np.clip(size[1] or 32, 0, 8192))
+
+        self.__size = (width, height)
+        self.__frame = cv2.resize(self.__frame, self.__size)
+
+    @property
+    def mode(self) -> str:
+        return self.__mode
+
+    @size.setter
+    def mode(self, mode:str) -> None:
+        self.__mode = mode
 
     @property
     def zoom(self) -> float:
@@ -398,16 +409,17 @@ def streamWriteTest() -> None:
     sm = StreamManager()
 
     fpath = 'res/stream-video.mp4'
-    device_video = sm.capture(fpath, fps=30)
-    ss.endpointAdd('/video', device_video)
-
-    # @TODO: SOMETHING IS GETTING CHANGED WHEN TRYING TO
-    # RE-ATTACH AN EXISTING STREAM
-
+    #device_video = sm.capture(fpath, fps=30)
+    #ss.endpointAdd('/video', device_video)
     device_camera = sm.capture(1)
     ss.endpointAdd('/camera', device_camera)
 
-    _, empty = device_video.frame
+    device_camera.size = (960, 540)
+
+    modeIdx = 0
+    modes = ["NONE", "FIT", "ASPECT", "CROP"]
+
+    _, empty = device_camera.frame
     while 1:
         cv2.imshow("SERVER", empty)
         val = cv2.waitKey(1) & 0xFF
@@ -415,10 +427,15 @@ def streamWriteTest() -> None:
             break
         elif val == ord('z'):
             device_camera.exposure -= 0.02
-            print(device_camera.exposure)
+            loginfo(device_camera.exposure)
         elif val == ord('c'):
             device_camera.exposure += 0.02
-            print(device_camera.exposure)
+            loginfo(device_camera.exposure)
+        elif val == ord('m'):
+            modeIdx = (modeIdx + 1) % len(modes)
+            device_camera.mode = modes[modeIdx]
+            # device_video.mode = modes[modeIdx]
+            loginfo(modes[modeIdx])
 
     cv2.destroyAllWindows()
 

@@ -38,8 +38,8 @@ GO NUTS; JUST TRY NOT TO DO IT IN YOUR HEAD.
 @reference: https://github.com/Amorano/Jovimetrix
 @node list: ConstantNode, ShapeNode, PixelShaderNode, PixelShaderImageNode,
             TransformNode, TileNode, MirrorNode, ExtendNode, HSVNode, AdjustNode,
-            BlendNode, ProjectionNode, WebCamNode, RouteNode
-@version: 0.92
+            BlendNode, ThresholdNode, ProjectionNode, StreamReadNode, StreamWriteNode, RouteNode
+@version: 0.96
 """
 
 from .jovimetrix import NODE_CLASS_MAPPINGS
