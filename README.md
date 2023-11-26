@@ -46,30 +46,40 @@ pip install -r requirements.txt
 <details>
   <summary><b>CAPTURE</b></summary>
   <ul>
-    <li>Connect system devices directly into ComfyUI workflows</li>
+    <li>Connect system media directly into ComfyUI workflows</li>
+    <li>Broadcast ComfyUI media to mjpeg reader endpoints</li>
 
 NODE | OVERVIEW | COMFY UI
 ---|---|---
-📷 WEBCAM|Connect system webcams directly into ComfyUI workflows|![CAPTURE](flow/node_webcam.png "Connect system webcams directly into ComfyUI workflows")
+📺 StreamReader|Connect system media directly into ComfyUI workflows|![CAPTURE](flow/node_streamreader.png "Connect system media directly into ComfyUI workflows")
+🎞️ StreamWriter|Broadcast ComfyUI Node outputs to custom webserver endpoint|![CAPTURE](flow/node_streamwriter.png "Broadcast ComfyUI Node outputs to custom webserver endpoint")
  </ul>
   <ul>
     <details>
-      <summary><b>WEBCAM EXAMPLE</b></summary>
+      <summary><b>STREAM READER EXAMPLE</b></summary>
       <img
         style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
-        src="flow/node_webcam-simple.png"
+        src="flow/node_streamreader-simple.png"
         alt="Simple webcam capture setup">
       </img>
       <img
         style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
-        src="flow/node_webcam-mask.png"
+        src="flow/node_streamreader-mask.png"
         alt="Webcam with a simple shape mask for realtime overlay">
       </img>
       <img
         style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
-        src="flow/node_webcam-multiple.png"
+        src="flow/node_streamreader-multiple.png"
         alt="Complex filtering with webcams">
       </img>
+    </details>
+    <details>
+      <summary><b>STREAM WRITER EXAMPLE</b></summary>
+      <img
+        style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
+        src="flow/node_streamwriter-simple.png"
+        alt="Simple webcam capture setup">
+      </img>      
     </details>
   </ul>
 </details>
@@ -303,4 +313,5 @@ NODE | OVERVIEW | COMFY UI
 - [✔️] embed workflows in example images
 - [⭕] specific single examples for all nodes
 - [⭕] hook GLSL context in litegraph
-
+- [⭕] redo camera with stream reader/writer defaults
+- [⭕] generalized section to explain common parameters (w/h/invert/mode)
