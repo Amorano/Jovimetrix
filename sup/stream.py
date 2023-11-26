@@ -23,14 +23,14 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
 
 try:
-    from sup.util import loginfo, logwarn, logerr, gridMake
-except:
     from .util import loginfo, logwarn, logerr, gridMake
+except:
+    from sup.util import loginfo, logwarn, logerr, gridMake
 
 try:
-    from sup.comp import SCALEFIT
+    from .comp import SCALEFIT
 except:
-    from comp import SCALEFIT
+    from sup.comp import SCALEFIT
 
 class MediaStream():
     def __init__(self, url:int|str, size:tuple[int, int]=None, fps:float=None, mode:str="NONE", backend:int=None) -> None:

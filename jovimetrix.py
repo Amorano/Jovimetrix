@@ -22,7 +22,11 @@ from typing import Any
 
 from .sup.util import loginfo, logwarn, logerr
 from .sup.stream import StreamingServer, StreamManager
-from .sup import comp
+
+try:
+    from .sup import comp
+except:
+    import sup.comp as comp
 
 # =============================================================================
 # === CORE NODES ===
@@ -483,8 +487,8 @@ class ExtendNode(JovimetrixBaseNode):
     def run(self, pixelA: torch.tensor, pixelB: torch.tensor, axis: str, flip: str,
             width: int, height: int, mode: str) -> tuple[torch.Tensor, torch.Tensor]:
 
-        pixelA = comp.SCALEFIT(comp.tensor2cv(pixelA), width, height)
-        pixelB = comp.SCALEFIT(comp.tensor2cv(pixelB), width, height)
+        pixelA = comp.SCALEFIT(comp.tensor2cv(pixelA), width, height, 'FIT')
+        pixelB = comp.SCALEFIT(comp.tensor2cv(pixelB), width, height, 'FIT')
 
         pixelA = comp.EXTEND(pixelA, pixelB, axis, flip)
         if mode != "NONE":
@@ -764,7 +768,7 @@ class StreamReaderNode(JovimetrixBaseNode):
             STREAMMANAGER.pause(idx)
             return (comp.cv2tensor(image), comp.cv2mask(image), )
 
-        image = comp.SCALEFIT(image, width, height)
+        image = comp.SCALEFIT(image, width, height, 'FIT')
 
         if orient in ["FLIPX", "FLIPXY"]:
             image = cv2.flip(image, 1)
@@ -781,7 +785,7 @@ class StreamWriterNode:
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"required": {
-                "route": ("STRING", {"default": "/stream.mjpg"}),
+                "route": ("STRING", {"default": "/stream"}),
             },
             "optional": {
                 "hold": ("BOOLEAN", {"default": False}),

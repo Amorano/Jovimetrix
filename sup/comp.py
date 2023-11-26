@@ -21,9 +21,9 @@ from enum import Enum
 from typing import Any
 
 try:
-    from sup.util import loginfo, logwarn, logerr
-except:
     from .util import loginfo, logwarn, logerr
+except:
+    from sup.util import loginfo, logwarn, logerr
 
 # =============================================================================
 # === GLOBAL ENUMS ===
