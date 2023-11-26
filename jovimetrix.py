@@ -364,6 +364,27 @@ class PixelShaderImageNode(PixelShaderBaseNode):
         image = comp.cv2tensor(image)
         return super().run(image, width, height, R, G, B)
 
+class WaveGeneratorNode(JovimetrixBaseNode):
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        d = {"required":{
+                "type": (list(comp.OP_WAVE.keys()), {"default": "SINE"}),
+                "phase": ("FLOAT", {"default": 1.0, "min": 0.0, "step": 1.0}),
+                "amp": ("FLOAT", {"default": 0.5, "min": 0.0, "step": 0.1}),
+                "offset": ("FLOAT", {"default": 0.0, "min": 0.0, "step": 1.0}),
+                "max": ("FLOAT", {"default": 0.5, "min": 0.0, "max": 9999.0, "step": 0.05}),
+                "frame": ("INT", {"default": 1.0, "min": 0.0, "step": 1.0}),
+            }}
+        return d
+
+    DESCRIPTION = ""
+    RETURN_TYPES = ("FLOAT", "INT", )
+
+    def run(self, image: torch.tensor, width: int, height: int, R: str, G: str, B: str) -> tuple[torch.Tensor, torch.Tensor]:
+        val = 0.
+
+        return (val, int(val))
+
 class GLSLNode:
 
     @classmethod
@@ -722,6 +743,8 @@ class StreamReaderNode(JovimetrixBaseImageNode):
             }}
         return deep_merge_dict(d, IT_WHMODEI, IT_ORIENT)
 
+    DESCRIPTION = ""
+
     @classmethod
     def IS_CHANGED(cls, idx: int, url: str, fps: float, hold: bool, width: int, height: int, mode: str, invert: float, orient: str) -> float:
         """
@@ -801,6 +824,8 @@ class StreamWriterNode(JovimetrixBaseNode):
             }}
         return deep_merge_dict(IT_IMAGE, d, IT_WHMODEI, IT_ORIENT)
 
+    DESCRIPTION = ""
+
     @classmethod
     def IS_CHANGED(cls, hold: bool, width: int, height: int, mode: str, invert: float, orient: str) -> float:
         """
@@ -820,11 +845,8 @@ class StreamWriterNode(JovimetrixBaseNode):
 
         return float("nan")
 
-    DESCRIPTION = ""
-    INPUT_IS_LIST = False
-
     def __init__(self, *arg, **kw) -> None:
-        super().__init__(self, *arg, **kw)
+        super(StreamWriterNode).__init__(self, *arg, **kw)
         self.__host = None
         self.__port = None
 
@@ -871,22 +893,28 @@ class RouteNode(JovimetrixBaseImageNode):
 class TickNode(JovimetrixBaseImageNode):
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        return {"optional": {
-            "total": ("INT", {"min": 0, "default": 0, "step": 1}),
-            # forces a MOD on total
-            "loop": ("BOOLEAN", {"default": False}),
-            # stick the current "count"
-            "reset": ("BOOLEAN", {"default": False}),
-            # manual total = 0
-            "reset": ("BOOLEAN", {"default": False}),
-        }}
+        return {
+            "required": {},
+            "optional": {
+                "total": ("INT", {"min": 0, "default": 0, "step": 1}),
+                # forces a MOD on total
+                "loop": ("BOOLEAN", {"default": False}),
+                # stick the current "count"
+                "hold": ("BOOLEAN", {"default": False}),
+                # manual total = 0
+                "reset": ("BOOLEAN", {"default": False}),
+            }}
 
-    DESCRIPTION = "Periodic pulse exporting sin, cos, normalized, delta since last pulse and count."
-    RETURN_TYPES = ("FLOAT", "FLOAT", "FLOAT", "FLOAT", "FLOAT", "FLOAT", "FLOAT", "INT",)
-    RETURN_NAMES = ("sin", "sinT", "cos", "cosT", "0-1", "🛆", "time", "count 🧮")
+    DESCRIPTION = "Periodic pulse exporting normalized, delta since last pulse and count."
+    RETURN_TYPES = ("INT", "FLOAT", "FLOAT", "FLOAT", )
+    RETURN_NAMES = ("count 🧮", "0-1", "time", "🛆",)
+
+    @classmethod
+    def IS_CHANGED(cls, *arg, **kw) -> Any:
+        return float("nan")
 
     def __init__(self, *arg, **kw) -> None:
-        super().__init__(self, *arg, **kw)
+        super().__init__(*arg, **kw)
         self.__count = 0
         # previous time, current time
         self.__time = time.time()
@@ -897,11 +925,11 @@ class TickNode(JovimetrixBaseImageNode):
             self.__count = 0
 
         count = self.__count
-        if loop:
+        if loop and total > 0:
             count %= total
 
-        sin = np.sin(self.__count)
-        cos = np.cos(self.__count)
+        #sin = np.sin(self.__count)
+        #cos = np.cos(self.__count)
         lin = (self.__count / total) if total != 0 else 1
 
         t = self.__time
@@ -909,18 +937,19 @@ class TickNode(JovimetrixBaseImageNode):
             self.__count += 1
             t = time.time()
 
-        self.__delta = self.__time - t
+        self.__delta = t - self.__time
         self.__time = t
 
-        sinT = np.sin(t)
-        cosT = np.cos(t)
+        #sinT = np.sin(t)
+        #cosT = np.cos(t)
 
-        return (sin, sinT, cos, cosT, lin, self.__delta, t, self.__count,)
+        return (count, lin, t, self.__delta,)
 
 class OptionsNode(JovimetrixBaseNode):
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        return {"required": {
+        return {
+            "required": {
                 "trig": (WILDCARD, {"default": None}),
             },
             "optional": {
@@ -932,7 +961,7 @@ class OptionsNode(JovimetrixBaseNode):
     DESCRIPTION = "Change Jovimetrix Global Options"
 
     def __init__(self, *arg, **kw) -> None:
-        super().__init__(self, *arg, **kw)
+        super().__init__(*arg, **kw)
         self.__host = None
         self.__port = None
 
@@ -959,6 +988,9 @@ NODE_CLASS_MAPPINGS = {
     "🔆 Pixel Shader (jov)": PixelShaderNode,
     "🔆 Pixel Shader Image (jov)": PixelShaderImageNode,
     # "🍩 GLSL (jov)": GLSLNode,
+
+    # FUNCTION
+    "🌊 Wave Generator (jov)": WaveGeneratorNode,
 
     # TRANSFORM
     "🌱 Transform (jov)": TransformNode,

@@ -416,3 +416,99 @@ def THRESHOLD(image: cv2.Mat, threshold: float=0.5, mode: EnumThreshold=EnumThre
         threshold = int(threshold * 255)
         _, image = cv2.threshold(image, threshold, 255, mode)
     return image
+
+# =============================================================================
+# === WAVE FUNCTIONS SIMPLE ===
+# =============================================================================
+
+TAU = 2 * np.pi
+
+def wave_sine(phase: float, amplitude: float, offset: float, timestep: float) -> float:
+    return amplitude * np.sin(TAU * timestep + phase) + offset
+
+def wave_inv_sine(phase: float, amplitude: float, offset: float, timestep: float) -> float:
+    return -amplitude * np.sin(TAU * timestep + phase) + offset
+
+def wave_abs_sine(phase: float, amplitude: float, offset: float, timestep: float) -> float:
+    return np.abs(amplitude * np.sin(TAU * timestep + phase)) + offset
+
+def wave_cosine(phase: float, amplitude: float, offset: float, timestep: float) -> float:
+    return amplitude * np.cos(TAU * timestep + phase) + offset
+
+def wave_inv_cosine(phase: float, amplitude: float, offset: float, timestep: float) -> float:
+    return -amplitude * np.cos(TAU * timestep + phase) + offset
+
+def wave_abs_cosine(phase: float, amplitude: float, offset: float, timestep: float) -> float:
+    return np.abs(amplitude * np.cos(TAU * timestep + phase)) + offset
+
+def wave_sawtooth(phase: float, amplitude: float, offset: float, timestep: float) -> float:
+    return amplitude * (2 * (timestep + phase) % 1 - 0.5) + offset
+
+def wave_triangle(phase: float, amplitude: float, offset: float, timestep: float) -> float:
+    return amplitude * (4 * np.abs((timestep + phase) % 1 - 0.5) - 1) + offset
+
+def wave_ramp(phase: float, amplitude: float, offset: float, timestep: float) -> float:
+    return amplitude * (timestep + phase % 1) + offset
+
+def wave_step_function(phase: float, amplitude: float, offset: float, timestep: float) -> float:
+    return amplitude * np.heaviside(timestep + phase, 1) + offset
+
+def wave_haversine(phase: float, amplitude: float, offset: float, timestep: float) -> float:
+    return amplitude * (1 - np.cos(TAU * (timestep + phase))) + offset
+
+def wave_noise(phase: float, amplitude: float, offset: float, timestep: float) -> float:
+    return amplitude * np.random.uniform(-1, 1) + offset
+
+# =============================================================================
+# === WAVE FUNCTIONS COMPLEX ===
+# =============================================================================
+
+def wave_square(phase: float, amplitude: float, offset: float, timestep: float, duty_cycle: float = 0.5) -> float:
+    return amplitude * np.sign(np.sin(TAU * timestep + phase) - duty_cycle) + offset
+
+def wave_pulse(phase: float, amplitude: float, offset: float, timestep: float, duty_cycle: float = 0.5) -> float:
+    return amplitude * np.sign(np.sin(TAU * timestep + phase) - duty_cycle) + offset
+
+def wave_exponential(phase: float, amplitude: float, offset: float, timestep: float, decay: float = 1.0) -> float:
+    return amplitude * np.exp(-decay * (timestep + phase)) + offset
+
+def wave_rectangular_pulse(phase: float, amplitude: float, offset: float, timestep: float, pulse_width: float = 0.1) -> float:
+    return amplitude * np.heaviside(timestep + phase, 1) * np.heaviside(-(timestep + phase) + pulse_width, 1) + offset
+
+####
+
+def wave_logarithmic(phase: float, amplitude: float, offset: float, timestep: float, base: float = 10) -> float:
+    return amplitude * np.log10(timestep + phase) / np.log10(base) + offset
+
+def wave_gaussian(phase: float, amplitude: float, offset: float, timestep: float, mean: float = 0, std_dev: float = 1) -> float:
+    return amplitude * np.exp(-0.5 * ((timestep + phase - mean) / std_dev)**2) + offset
+
+def wave_chirp_signal(phase: float, amplitude: float, offset: float, timestep: float, frequency_slope: float = 1.0) -> float:
+    return amplitude * np.sin(TAU * frequency_slope * (timestep + phase)**2) + offset
+
+OP_WAVE = {
+    "SINE": wave_sine,
+    "INV SINE": wave_inv_sine,
+    "ABS SINE": wave_abs_sine,
+    "COSINE": wave_cosine,
+    "INV COSINE": wave_inv_cosine,
+    "ABS COSINE": wave_abs_cosine,
+    "SAWTOOTH": wave_sawtooth,
+    "TRIANGLE": wave_triangle,
+    "RAMP": wave_ramp,
+    "STEP": wave_step_function,
+    "HAVER SINE": wave_haversine,
+    "NOISE": wave_noise,
+}
+
+"""
+    "SQUARE": wave_square,
+    "PULSE": wave_pulse,
+    "EXP": wave_exponential,
+    "RECT PULSE": wave_rectangular_pulse,
+
+    "LOG": wave_logarithmic,
+    "GAUSSIAN": wave_gaussian,
+    "CHIRP": wave_chirp_signal,
+}
+"""
