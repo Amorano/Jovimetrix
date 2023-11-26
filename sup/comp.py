@@ -485,30 +485,3 @@ def wave_gaussian(phase: float, amplitude: float, offset: float, timestep: float
 
 def wave_chirp_signal(phase: float, amplitude: float, offset: float, timestep: float, frequency_slope: float = 1.0) -> float:
     return amplitude * np.sin(TAU * frequency_slope * (timestep + phase)**2) + offset
-
-OP_WAVE = {
-    "SINE": wave_sine,
-    "INV SINE": wave_inv_sine,
-    "ABS SINE": wave_abs_sine,
-    "COSINE": wave_cosine,
-    "INV COSINE": wave_inv_cosine,
-    "ABS COSINE": wave_abs_cosine,
-    "SAWTOOTH": wave_sawtooth,
-    "TRIANGLE": wave_triangle,
-    "RAMP": wave_ramp,
-    "STEP": wave_step_function,
-    "HAVER SINE": wave_haversine,
-    "NOISE": wave_noise,
-}
-
-"""
-    "SQUARE": wave_square,
-    "PULSE": wave_pulse,
-    "EXP": wave_exponential,
-    "RECT PULSE": wave_rectangular_pulse,
-
-    "LOG": wave_logarithmic,
-    "GAUSSIAN": wave_gaussian,
-    "CHIRP": wave_chirp_signal,
-}
-"""

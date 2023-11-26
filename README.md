@@ -109,10 +109,11 @@ NODE | OVERVIEW | COMFY UI
 NODE | OVERVIEW | COMFY UI
 ---|---|---
 🟪 CONSTANT|Set a single RGB value. Useful for masks, overlays and general filtering|![CONSTANT](flow/node_constant.png "constant color node for when you need a block of color")
-✨ SHAPE GENERATOR|Generate polyhedra for masking or texture work|![SHAPE](flow/node_shape.png "Nodes that generate images and masks in various polygonal shapes")
+✨ SHAPE GENERATOR|Generate polyhedra for masking or texture work|![SHAPE](flow/node_shape.png "Generate images and masks in various polygonal shapes")
 🔆 PER PIXEL SHADER|Per Pixel user function for each R, G, B channel|![PPSHADER](flow/node_pixel.png "Per Pixel shader")
 🔆 PER PIXEL SHADER IMAGE|Per Pixel Shader with input support|![PPSHADER](flow/node_pixelimage.png "Per Pixel Shader with input support")
-🍩 GLSL|GLSL Shader support|![GLSL](flow/node_glsl.png)
+🍩 GLSL|GLSL Shader support|![GLSL](flow/node_glsl.png ")
+🌊 WAVE GENERATOR|Periodic and Non-Periodic Sinosodials|![WAVE](flow/node_wavegenerator.png "Periodic and Non-Periodic Sinosodials")
   </ul>
   <ul>
     <details>
@@ -120,7 +121,7 @@ NODE | OVERVIEW | COMFY UI
       <img
         style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
         src="flow/node_constant.png"
-        alt="CONSTANT">
+        alt="constant color node for when you need a block of color">
       </img>
     </details>
     <details>
@@ -128,7 +129,7 @@ NODE | OVERVIEW | COMFY UI
       <img
         style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
         src="flow/node_shape.png"
-        alt="GENERATOR">
+        alt="Generate images and masks in various polygonal shapes">
       </img>
     </details>
     <details>
@@ -136,21 +137,28 @@ NODE | OVERVIEW | COMFY UI
       <img
         style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
         src="flow/node_pixel.png"
-        alt="PPSHADER">
+        alt="Per Pixel shader">
       </img>
     </details>
     <details>
       <summary><b>PER PIXEL + IMAGE SHADER EXAMPLE</b></summary>
       <img
         style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
-        src="flow/node_pixel-scaling.png" alt="PPIMAGESHADER">
+        src="flow/node_pixel-scaling.png" alt="Per Pixel Shader with input support">
       </img>
     </details>
-      <details>
+    <details>
       <summary><b>GLSL EXAMPLE</b></summary>
       <img
         style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
         src="flow/node_glsl.png" alt="GLSL">
+      </img>
+    </details>
+    <details>
+      <summary><b>WAVE GENERATOR EXAMPLE</b></summary>
+      <img
+        style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
+        src="flow/node_wavegeneator.png" alt="Periodic and Non-Periodic Sinosodials">
       </img>
     </details>
   </ul>
@@ -178,28 +186,28 @@ NODE | OVERVIEW | COMFY UI
       <summary><b>TRANSFORM EXAMPLE</b></summary>
       <img
         style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
-        src="flow/node_transform.png" alt="TRANSFORM">
+        src="flow/node_transform.png" alt="Translate, Rotate, and Scale an input. Options allow for CROP or WRAPing of the edges">
       </img>
     </details>
     <details>
       <summary><b>TILE EXAMPLE</b></summary>
       <img
         style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
-        src="flow/node_tile.png" alt="TILE">
+        src="flow/node_tile.png" alt="Repeat an input along the X, Y or XY at irregular intervals">
       </img>
     </details>
         <details>
       <summary><b>MIRROR EXAMPLE</b></summary>
       <img
         style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
-        src="flow/node_mirror.png" alt="MIRROR">
+        src="flow/node_mirror.png" alt="Flip an input across the X axis, the Y Axis or both, with independant centers">
       </img>
     </details>
         <details>
       <summary><b>EXTEND EXAMPLE</b></summary>
       <img
         style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
-        src="flow/node_extend.png" alt="EXTEND">
+        src="flow/node_extend.png" alt="Combine two inputs into a new image, side by side or top-down">
       </img>
     </details>
         <details>
@@ -207,7 +215,7 @@ NODE | OVERVIEW | COMFY UI
       <img
         style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
         src="flow/node_projection.png"
-        alt="PROJECTION">
+        alt="Convert inputs to cartesian, polar, ?">
       </img>
     </details>
   </ul>
@@ -232,21 +240,21 @@ NODE | OVERVIEW | COMFY UI
       <summary><b>HSV EXAMPLE</b></summary>
       <img
         style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
-        src="flow/node_hsv.png" alt="HSV">
+        src="flow/node_hsv.png" alt="Adjust Hue, Saturation, Value, Gamma, Contrast and Exposure of an input">
       </img>
     </details>
     <details>
       <summary><b>ADJUST EXAMPLE</b></summary>
       <img
         style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
-        src="flow/node_adjust.png" alt="ADJUST">
+        src="flow/node_adjust.png" alt="Find Edges, Blur, Sharpen and Emobss an input">
       </img>
     </details>
         <details>
       <summary><b>THRESHOLD EXAMPLE</b></summary>
       <img
         style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
-        src="flow/node_threshold.png" alt="THRESHOLD">
+        src="flow/node_threshold.png" alt="Clip an input based on a mid point value">
       </img>
     </details>
   </ul>
@@ -294,6 +302,8 @@ NODE | OVERVIEW | COMFY UI
 NODE | OVERVIEW | COMFY UI
 --|---|---
 🚌 ROUTE|Send outputs of any type to any input|![ROUTE](flow/node_route.png "Send outputs of any type to any input")
+🕛 TICK|Periodic pulse exporting normalized, delta since last pulse and count.|![ROUTE](flow/node_tick.png "Periodic pulse exporting normalized, delta since last pulse and count")
+⚙️ OPTIONS|Change Jovimetrix Global Options|![ROUTE](flow/node_options.png "Change Jovimetrix Global Options")
   </ul>
   <ul>
     <details>
@@ -301,6 +311,20 @@ NODE | OVERVIEW | COMFY UI
       <img
         style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
         src="flow/node_route.png" alt="Send outputs of any type to any input">
+      </img>
+    </details>
+    <details>
+      <summary><b>TICK EXAMPLE</b></summary>
+      <img
+        style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
+        src="flow/node_tick.png" alt="Periodic pulse exporting normalized, delta since last pulse and count">
+      </img>
+    </details>
+    <details>
+      <summary><b>OPTIONS EXAMPLE</b></summary>
+      <img
+        style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
+        src="flow/node_options.png" alt="Change Jovimetrix Global Options">
       </img>
     </details>
   </ul>
