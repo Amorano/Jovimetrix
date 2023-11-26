@@ -388,7 +388,7 @@ def BLEND(imageA: cv2.Mat, imageB: cv2.Mat, func: str, width: int, height: int,
     def adjustSize(who: cv2.Mat) -> cv2.Mat:
         h, w, _ = who.shape
         if (w != width or h != height):
-            return SCALEFIT(who, width, height)
+            return SCALEFIT(who, width, height, 'FIT')
         return who
 
     imageA = adjustSize(imageA)
