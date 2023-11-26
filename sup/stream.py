@@ -1,22 +1,38 @@
-"""Test unit for webcam setup.
+"""
+     ██  ██████  ██    ██ ██ ███    ███ ███████ ████████ ██████  ██ ██   ██ 
+     ██ ██    ██ ██    ██ ██ ████  ████ ██         ██    ██   ██ ██  ██ ██  
+     ██ ██    ██ ██    ██ ██ ██ ████ ██ █████      ██    ██████  ██   ███  
+██   ██ ██    ██  ██  ██  ██ ██  ██  ██ ██         ██    ██   ██ ██  ██ ██ 
+ █████   ██████    ████   ██ ██      ██ ███████    ██    ██   ██ ██ ██   ██ 
+
+               Procedural & Compositing Image Manipulation Nodes
+                    http://www.github.com/amorano/jovimetrix
+
+                    Copyright 2023 Alexander Morano (Joviex)
+
+Test unit for webcam setup.
 """
 
 import cv2
 import numpy as np
 
-import io
 import time
-import threading
-import contextlib
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from typing import Any
 
 try:
-    from .util import loginfo, logwarn, logerr, gridMake
-except:
     from sup.util import loginfo, logwarn, logerr, gridMake
+except:
+    from .util import loginfo, logwarn, logerr, gridMake
+
+from sup.comp import SCALEFIT
+
+try:
+    from sup.comp import SCALEFIT
+except:
+    from .comp import SCALEFIT
 
 class MediaStream():
     def __init__(self, url:int|str, size:tuple[int, int]=None, fps:float=None, mode:str="FIT", backend:int=None) -> None:
@@ -28,21 +44,23 @@ class MediaStream():
         self.__backend = [backend] if backend else [cv2.CAP_ANY]
         self.__frame = np.zeros((1, 1, 3), dtype=np.uint8)
         self.__fps = fps or 60
+        self.__zoom = 0
+        self.__focus = 0
+        self.__exposure = 1
 
         self.size = size
         self.__mode = mode
 
+        self.__isCam = False
         self.__url = url
         try:
             self.__url = int(url)
+            self.__isCam = True
         except ValueError as _:
             pass
 
-        f = io.StringIO()
-        e = io.StringIO()
-        with contextlib.redirect_stdout(f), contextlib.redirect_stderr(e):
-            self.__thread = threading.Thread(target=self.__run, daemon=True)
-            self.__thread.start()
+        self.__thread = threading.Thread(target=self.__run, daemon=True)
+        self.__thread.start()
 
     def __run(self) -> None:
         while not self.__quit:
@@ -55,27 +73,30 @@ class MediaStream():
                 except:
                     self.__ret = False
 
-                if self.__ret and newframe is not None:
-                    timeout = None
-                    width, height, _ = newframe.shape
-                    if width != self.__size[1] or height != self.__size[0]:
-                        newframe = cv2.resize(newframe, self.__size)
-                    self.__frame = newframe
-                else:
-                    if not self.__ret:
+                if not self.__ret:
+                    if not self.__isCam:
                         # for cameras will just ignore; reached the end of the source
                         count = self.__source.get(cv2.CAP_PROP_FRAME_COUNT)
                         pos = self.__source.get(cv2.CAP_PROP_POS_FRAMES)
                         if pos >= count:
                             self.__source.set(cv2.CAP_PROP_POS_FRAMES, 0)
 
-                    if not self.__source.isOpened():
-                        if timeout is None:
-                            timeout = time.time()
-                        elif time.time() - timeout > 2:
-                            self.__source.release()
-                            logwarn(f"[MediaStream] TIMEOUT ({self.__url})")
-                            self.capture()
+                if newframe is not None:
+                    timeout = None
+                    width, height, _ = newframe.shape
+                    if self.__mode != 'NONE':
+                        if width != self.__size[1] or height != self.__size[0]:
+                            newframe = SCALEFIT(newframe, self.__size[1], self.__size[0], self.__mode)
+                            # newframe = cv2.resize(newframe, self.__size)
+                    self.__frame = newframe
+
+                if not self.__ret or newframe is None and timeout is None:
+                    timeout = time.time() + 5.
+
+            if timeout is not None and time.time() > timeout:
+                self.__source.release()
+                logwarn(f"[MediaStream] TIMEOUT ({self.__url})")
+                self.capture()
 
             waste = max(waste - time.time(), 0)
             time.sleep(waste)
@@ -109,7 +130,6 @@ class MediaStream():
 
         if not found:
             logerr(f"[MediaStream] CAPTURE FAIL ({self.__url}) ")
-            self.__running = False
             return
 
         time.sleep(1)
@@ -128,7 +148,7 @@ class MediaStream():
 
     @property
     def size(self) -> tuple[int, int]:
-        return self.__size
+        return (self.__size[1], self.__size[0])
 
     @size.setter
     def size(self, size:tuple[int, int]) -> None:
@@ -147,6 +167,37 @@ class MediaStream():
         if not self.__source:
             return False
         return self.__source.isOpened()
+
+    @property
+    def zoom(self) -> float:
+        return self.__zoom
+
+    @zoom.setter
+    def zoom(self, val: float) -> None:
+        self.__zoom = np.clip(val, 0, 1)
+        val = 100 + 300 * self.__zoom
+        self.__source.set(cv2.CAP_PROP_ZOOM, val)
+
+    @property
+    def exposure(self) -> float:
+        return self.__exposure
+
+    @exposure.setter
+    def exposure(self, val: float) -> None:
+        # -10 to -1 range
+        self.__exposure = np.clip(val, 0, 1)
+        val = -10 + 9 * self.__exposure
+        self.__source.set(cv2.CAP_PROP_EXPOSURE, val)
+
+    @property
+    def focus(self) -> float:
+        return self.__focus
+
+    @focus.setter
+    def focus(self, val: float) -> None:
+        self.__focus = np.clip(val, 0, 1)
+        val = 255 * self.__focus
+        self.__source.set(cv2.CAP_PROP_FOCUS, val)
 
 class StreamManager:
 
@@ -348,13 +399,13 @@ def streamWriteTest() -> None:
 
     fpath = 'res/stream-video.mp4'
     device_video = sm.capture(fpath, fps=30)
-    ss.endpointAdd('/video.mjpg', device_video)
+    ss.endpointAdd('/video', device_video)
 
     # @TODO: SOMETHING IS GETTING CHANGED WHEN TRYING TO
     # RE-ATTACH AN EXISTING STREAM
 
-    device_camera = sm.capture(0)
-    ss.endpointAdd('/camera.mjpg', device_camera)
+    device_camera = sm.capture(1)
+    ss.endpointAdd('/camera', device_camera)
 
     _, empty = device_video.frame
     while 1:
@@ -362,6 +413,12 @@ def streamWriteTest() -> None:
         val = cv2.waitKey(1) & 0xFF
         if val == ord('q'):
             break
+        elif val == ord('z'):
+            device_camera.exposure -= 0.02
+            print(device_camera.exposure)
+        elif val == ord('c'):
+            device_camera.exposure += 0.02
+            print(device_camera.exposure)
 
     cv2.destroyAllWindows()
 
