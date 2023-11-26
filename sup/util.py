@@ -45,7 +45,7 @@ def mergePNGMeta(root: str, target: str) -> None:
                 continue
 
             fn = f"{r}/{f}.json"
-            with open(fn, "r", encoding="utf8") as out:
+            with open(fn, "r", encoding="utf-8") as out:
                 data = out.read()
 
             out = f"{target}/{f}.png"
@@ -55,9 +55,9 @@ def mergePNGMeta(root: str, target: str) -> None:
                     if i == 'workflow':
                         continue
                     metadata.add_text(i, str(image.text[i]))
-                metadata.add_text("workflow", data)
+                metadata.add_text("workflow", data.encode('utf-8'))
                 image.save(out, pnginfo=metadata)
-                loginfo(f"wrote {f} ==> {img}")
+                loginfo(f"wrote {f} ==> {out}")
 
 def gridMake(data: list[object]) -> list[object]:
     size = len(data)
@@ -81,4 +81,4 @@ def gridMake(data: list[object]) -> list[object]:
     return ret, cols, rows
 
 if __name__ == "__main__":
-    mergePNGMeta('../../../pysssss-workflows', '../flow')
+    mergePNGMeta('../../pysssss-workflows', './flow')
