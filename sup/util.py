@@ -17,7 +17,7 @@ from PIL.PngImagePlugin import PngInfo
 # =============================================================================
 # === "LOGGER" ===
 # =============================================================================
-LOG = os.environ.get('JOVLOG', False)
+LOG = os.getenv("JOVLOG", '').lower() in ('true', '1', 't')
 
 def loginfo(msg: str) -> None:
     if LOG:

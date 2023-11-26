@@ -13,27 +13,30 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from typing import Any
 
-from sup.util import loginfo, logwarn, logerr, gridMake
+try:
+    from .util import loginfo, logwarn, logerr, gridMake
+except:
+    from sup.util import loginfo, logwarn, logerr, gridMake
 
 class MediaStream():
     def __init__(self, url:int|str, size:tuple[int, int]=None, fps:float=None, mode:str="FIT", backend:int=None) -> None:
         self.__source = None
-        self.__running = False
+        self.__quit = False
         self.__thread = None
         self.__paused = True
         self.__ret = False
         self.__backend = [backend] if backend else [cv2.CAP_ANY]
-        self.__broken = self.__frame = None
-        self.__fps = fps
-        self.__size = size
+        self.__frame = np.zeros((1, 1, 3), dtype=np.uint8)
+        self.__fps = fps or 60
+
+        self.size = size
         self.__mode = mode
+
         self.__url = url
         try:
             self.__url = int(url)
         except ValueError as _:
             pass
-
-        self.capture(size, fps)
 
         f = io.StringIO()
         e = io.StringIO()
@@ -42,20 +45,23 @@ class MediaStream():
             self.__thread.start()
 
     def __run(self) -> None:
-        while self.__running:
+        while not self.__quit:
             waste = time.time() + 1. / self.__fps
             timeout = None
             if not self.__paused:
+                newframe = None
                 try:
-                    self.__ret, self.__frame = self.__source.read()
+                    self.__ret, newframe = self.__source.read()
                 except:
                     self.__ret = False
-                    self.__frame = None
 
-                if self.__ret and self.__frame is not None:
+                if self.__ret and newframe is not None:
                     timeout = None
+                    width, height, _ = newframe.shape
+                    if width != self.__size[1] or height != self.__size[0]:
+                        newframe = cv2.resize(newframe, self.__size)
+                    self.__frame = newframe
                 else:
-                    self.__frame = self.__broken
                     if not self.__ret:
                         # for cameras will just ignore; reached the end of the source
                         count = self.__source.get(cv2.CAP_PROP_FRAME_COUNT)
@@ -63,18 +69,13 @@ class MediaStream():
                         if pos >= count:
                             self.__source.set(cv2.CAP_PROP_POS_FRAMES, 0)
 
-                    if self.__source.isOpened():
+                    if not self.__source.isOpened():
                         if timeout is None:
                             timeout = time.time()
                         elif time.time() - timeout > 2:
                             self.__source.release()
                             logwarn(f"[MediaStream] TIMEOUT ({self.__url})")
                             self.capture()
-
-                if self.__frame is not None and self.__size:
-                    width, height, _ = self.__frame.shape
-                    if width != self.__size[0] or height != self.__size[1]:
-                        self.__frame = cv2.resize(self.__frame, self.__size)
 
             waste = max(waste - time.time(), 0)
             time.sleep(waste)
@@ -83,8 +84,10 @@ class MediaStream():
 
     def __del__(self) -> None:
         self.release()
+        self.__quit = True
         try:
             if self.__thread:
+                self.__thread.join()
                 del self.__thread
         except AttributeError as _:
             pass
@@ -93,14 +96,13 @@ class MediaStream():
     def capture(self, size:tuple[int, int]=None, fps:float=60) -> None:
         if self.__source and self.__source.isOpened():
             self.__paused = False
-            self.__running = True
+            # logwarn('already captured')
             return
 
         loginfo(f"[MediaStream] CAPTURE ({self.__url})")
         found = False
         for x in self.__backend:
             self.__source = cv2.VideoCapture(self.__url, x)
-            # time.sleep(0.4)
             found = self.__source.isOpened()
             if found:
                 break
@@ -110,10 +112,9 @@ class MediaStream():
             self.__running = False
             return
 
+        time.sleep(1)
         self.__fps = max(1, self.__fps or self.__source.get(cv2.CAP_PROP_FPS))
-        self.size(size)
         self.__paused = False
-        self.__running = True
         loginfo(f"[MediaStream] CAPTURED ({self.__url})")
 
     def pause(self) -> None:
@@ -121,25 +122,24 @@ class MediaStream():
         logwarn(f"[MediaStream] PAUSED ({self.__url})")
 
     def release(self) -> None:
-        self.__running = False
         if self.__source:
             self.__source.release()
             logwarn(f"[MediaStream] RELEASED ({self.__url})")
 
+    @property
+    def size(self) -> tuple[int, int]:
+        return self.__size
+
+    @size.setter
     def size(self, size:tuple[int, int]) -> None:
-        width = (size[0] if size else None) or self.__source.get(cv2.CAP_PROP_FRAME_WIDTH)
-        width = int(np.clip(width, 0, 8192))
-        height = (size[1] if size else None) or self.__source.get(cv2.CAP_PROP_FRAME_HEIGHT)
-        height = int(np.clip(height, 0, 8192))
-        self.__size = (width, height)
-        self.__frame = self.__broken = np.zeros((height, width, 3), dtype=np.uint8)
+        size = size or (512, 512)
+        width = int(np.clip(size[0] or 512, 0, 8192))
+        height = int(np.clip(size[1] or 512, 0, 8192))
+        self.__size = (height, width)
+        self.__frame = cv2.resize(self.__frame, self.__size)
 
     @property
-    def frame(self) -> Any:
-        return self.__frame
-
-    @property
-    def frameResult(self) -> tuple[bool, Any]:
+    def frame(self) -> tuple[bool, Any]:
         return self.__ret, self.__frame
 
     @property
@@ -153,7 +153,7 @@ class StreamManager:
     STREAM = {}
 
     @classmethod
-    def devicescan(cls) -> None:
+    def devicescan(cls, capture:bool=False) -> None:
         """Indexes all devices that responded and if they are read-only."""
 
         for stream in StreamManager.STREAM.values():
@@ -164,42 +164,48 @@ class StreamManager:
         start = time.time()
         for i in range(5):
             stream = MediaStream(i)
-            stream.capture()
-            if not stream.isOpen:
-                break
+            if capture:
+                stream.capture()
+                if not stream.isOpen:
+                    break
             StreamManager.STREAM[i] = stream
 
-        for stream in StreamManager.STREAM.values():
-            stream.release()
+        if capture:
+            for stream in StreamManager.STREAM.values():
+                stream.release()
 
         loginfo(f"[StreamManager] SCAN ({time.time()-start:.4})")
 
-    def __init__(self) -> None:
-        StreamManager.devicescan()
-        loginfo(f"[StreamManager] STREAM {self.camlist}")
+    def __init__(self, autoscan=False) -> None:
+        StreamManager.devicescan(autoscan)
+        loginfo(f"[StreamManager] STREAM {self.streams}")
 
     def __del__(self) -> None:
         for c in StreamManager.STREAM.values():
-            c.release()
+            del c
 
     @property
-    def camlist(self) -> list[str|int]:
+    def streams(self) -> list[str|int]:
         return list(StreamManager.STREAM.keys())
 
     @property
-    def streamsActive(self) -> list[MediaStream]:
+    def active(self) -> list[MediaStream]:
         return [stream for stream in StreamManager.STREAM.values() if stream.isOpen]
 
     def frame(self, url: str) -> tuple[bool, Any]:
         if (stream := StreamManager.STREAM.get(url, None)) is None:
             return False, np.zeros((512, 512, 3), dtype=np.uint8)
-        return stream.frameResult
+        return stream.frame
 
-    def openURL(self, url: str, size:tuple[int, int]=None, fps:float=None, backend:int=None) -> MediaStream:
+    def capture(self, url: str, size:tuple[int, int]=None, fps:float=None, backend:int=None) -> MediaStream:
         if (stream := StreamManager.STREAM.get(url, None)) is None:
             stream = StreamManager.STREAM[url] = MediaStream(url=url, size=size, fps=fps, backend=backend)
         stream.capture()
         return stream
+
+    def pause(self, url: str) -> None:
+        if (stream := StreamManager.STREAM.get(url, None)) is None:
+            stream.pause()
 
 class StreamingHandler(BaseHTTPRequestHandler):
     def __init__(self, outputs, *args, **kwargs) -> None:
@@ -241,12 +247,11 @@ class StreamingServer:
             while True:
                 who = list(StreamingServer.OUT.keys())
                 for w in who:
-                    StreamingServer.OUT[w]['b'] = StreamingServer.OUT[w]['_'].frame
+                    _, frame = StreamingServer.OUT[w]['_'].frame
+                    StreamingServer.OUT[w]['b'] = frame
 
         capture_thread = threading.Thread(target=capture, daemon=True)
         capture_thread.start()
-
-        # SERVER
         self.__host = host
         self.__port = port
         address = (self.__host, self.__port)
@@ -258,6 +263,7 @@ class StreamingServer:
 
         server_thread = threading.Thread(target=server, daemon=True)
         server_thread.start()
+        loginfo("[StreamingServer] STARTED")
 
 def streamReadTest() -> None:
     urls = [
@@ -305,7 +311,7 @@ def streamReadTest() -> None:
     empty = frame = np.zeros((heightT, widthT, 3), dtype=np.uint8)
     while True:
         streams = []
-        for x in streamMGR.streamsActive:
+        for x in streamMGR.active:
             ret, chunk = streamMGR.frame(x)
             if not ret or chunk is None:
                 streams.append(empty)
@@ -314,7 +320,7 @@ def streamReadTest() -> None:
             streams.append(chunk)
 
         chunks, col, row = gridMake(streams)
-        if (countNew := len(streamMGR.streamsActive)) != count:
+        if (countNew := len(streamMGR.active)) != count:
             frame = np.zeros((heightT * row, widthT * col, 3), dtype=np.uint8)
             count = countNew
 
@@ -329,7 +335,7 @@ def streamReadTest() -> None:
         cv2.imshow("Web Camera", frame)
         val = cv2.waitKey(1) & 0xFF
         if val == ord('c'):
-            streamMGR.openURL(urls[streamIdx % len(urls)], (widthT, heightT))
+            streamMGR.capture(urls[streamIdx % len(urls)], (widthT, heightT))
             streamIdx += 1
         elif val == ord('q'):
             break
@@ -341,16 +347,16 @@ def streamWriteTest() -> None:
     sm = StreamManager()
 
     fpath = 'res/stream-video.mp4'
-    device_video = sm.openURL(fpath, fps=30)
+    device_video = sm.capture(fpath, fps=30)
     ss.endpointAdd('/video.mjpg', device_video)
 
     # @TODO: SOMETHING IS GETTING CHANGED WHEN TRYING TO
     # RE-ATTACH AN EXISTING STREAM
 
-    device_camera = sm.openURL(0)
+    device_camera = sm.capture(0)
     ss.endpointAdd('/camera.mjpg', device_camera)
 
-    empty = device_camera.frame
+    _, empty = device_video.frame
     while 1:
         cv2.imshow("SERVER", empty)
         val = cv2.waitKey(1) & 0xFF
