@@ -492,7 +492,7 @@ class ExtendNode(JovimetrixBaseNode):
 
         pixelA = comp.EXTEND(pixelA, pixelB, axis, flip)
         if mode != "NONE":
-            pixelA = comp.SCALEFIT(pixelA, width, height, mode, 'FIT')
+            pixelA = comp.SCALEFIT(pixelA, width, height, mode)
         return (comp.cv2tensor(pixelA), comp.cv2mask(pixelA), )
 
 class ProjectionNode(JovimetrixBaseNode):
@@ -639,7 +639,7 @@ class ThresholdNode(JovimetrixBaseNode):
         op = comp.EnumThreshold[op].value
         adapt = comp.EnumAdaptThreshold[adapt].value
         pixels = comp.THRESHOLD(pixels, threshold, op, adapt, block, const)
-        pixels = comp.SCALEFIT(pixels, width, height, mode, 'FIT')
+        pixels = comp.SCALEFIT(pixels, width, height, mode)
         if invert:
             pixels = comp.INVERT(pixels)
         return (comp.cv2tensor(pixels), comp.cv2mask(pixels), )
@@ -674,7 +674,7 @@ class BlendNodeBase(JovimetrixBaseNode):
         pixelA = comp.BLEND(pixelA, pixelB, func, width, height, mask=mask, alpha=alpha)
         if invert:
             pixelA = comp.INVERT(pixelA, invert)
-        pixelA = comp.SCALEFIT(pixelA, width, height, mode, 'FIT')
+        pixelA = comp.SCALEFIT(pixelA, width, height, mode)
         return (comp.cv2tensor(pixelA), comp.cv2mask(pixelA),)
 
 class BlendNode(BlendNodeBase):

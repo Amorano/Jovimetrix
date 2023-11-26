@@ -79,7 +79,7 @@ NODE | OVERVIEW | COMFY UI
         style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
         src="flow/node_streamwriter-simple.png"
         alt="Simple webcam capture setup">
-      </img>      
+      </img>
     </details>
   </ul>
 </details>
@@ -309,9 +309,11 @@ NODE | OVERVIEW | COMFY UI
 ---
 
 ## TODO:
-- [✔️] create readme
-- [✔️] embed workflows in example images
+
 - [⭕] specific single examples for all nodes
 - [⭕] hook GLSL context in litegraph
 - [⭕] redo camera with stream reader/writer defaults
 - [⭕] generalized section to explain common parameters (w/h/invert/mode)
+- [✔️] env switches for logger and stream* service auto-starts
+- [✔️] embed workflows in example images
+- [✔️] create readme
