@@ -23,9 +23,9 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
 
 try:
-    from .util import loginfo, logwarn, logerr, gridMake
+    from .util import loginfo, logwarn, logerr, gridMake, suppress_std
 except:
-    from sup.util import loginfo, logwarn, logerr, gridMake
+    from sup.util import loginfo, logwarn, logerr, gridMake, suppress_std
 
 try:
     from .comp import SCALEFIT
@@ -67,7 +67,8 @@ class MediaStream():
             if not self.__paused:
                 newframe = None
                 try:
-                    self.__ret, newframe = self.__source.read()
+                    with suppress_std():
+                        self.__ret, newframe = self.__source.read()
                 except:
                     self.__ret = False
 
@@ -107,7 +108,7 @@ class MediaStream():
             pass
         logwarn(f"[MediaStream] END ({self.__url})")
 
-    def capture(self, size:tuple[int, int]=None, fps:float=60) -> None:
+    def capture(self) -> None:
         if self.__source and self.__source.isOpened():
             self.__paused = False
             # logwarn('already captured')
@@ -116,7 +117,8 @@ class MediaStream():
         loginfo(f"[MediaStream] CAPTURE ({self.__url})")
         found = False
         for x in self.__backend:
-            self.__source = cv2.VideoCapture(self.__url, x)
+            with suppress_std():
+                self.__source = cv2.VideoCapture(self.__url, x)
             found = self.__source.isOpened()
             if found:
                 break
@@ -408,33 +410,30 @@ def streamWriteTest() -> None:
     ss = StreamingServer()
     sm = StreamManager()
 
-    fpath = 'res/stream-video.mp4'
-    #device_video = sm.capture(fpath, fps=30)
-    #ss.endpointAdd('/video', device_video)
-    device_camera = sm.capture(1)
-    ss.endpointAdd('/camera', device_camera)
+    for x in sm.active:
+        device = x.capture()
+        ss.endpointAdd(f'/stream{x}', device)
 
-    device_camera.size = (960, 540)
+    fpath = 'res/stream-video.mp4'
+    device_video = sm.capture(fpath)
+    ss.endpointAdd('/video', device_video)
+    device_video.size = (960, 540)
+    device_video.fps = 30
 
     modeIdx = 0
     modes = ["NONE", "FIT", "ASPECT", "CROP"]
 
-    _, empty = device_camera.frame
+    _, empty = device_video.frame
     while 1:
         cv2.imshow("SERVER", empty)
         val = cv2.waitKey(1) & 0xFF
         if val == ord('q'):
             break
-        elif val == ord('z'):
-            device_camera.exposure -= 0.02
-            loginfo(device_camera.exposure)
-        elif val == ord('c'):
-            device_camera.exposure += 0.02
-            loginfo(device_camera.exposure)
         elif val == ord('m'):
             modeIdx = (modeIdx + 1) % len(modes)
-            device_camera.mode = modes[modeIdx]
-            # device_video.mode = modes[modeIdx]
+            device_video.mode = modes[modeIdx]
+            for x in sm.active:
+                x.mode = modes[modeIdx]
             loginfo(modes[modeIdx])
 
     cv2.destroyAllWindows()

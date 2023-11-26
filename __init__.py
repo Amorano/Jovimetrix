@@ -38,10 +38,13 @@ GO NUTS; JUST TRY NOT TO DO IT IN YOUR HEAD.
 @reference: https://github.com/Amorano/Jovimetrix
 @node list: ConstantNode, ShapeNode, PixelShaderNode, PixelShaderImageNode,
             TransformNode, TileNode, MirrorNode, ExtendNode, HSVNode, AdjustNode,
-            BlendNode, ThresholdNode, ProjectionNode, StreamReadNode, StreamWriteNode, RouteNode
+            BlendNode, ThresholdNode, ProjectionNode, StreamReadNode, StreamWriteNode,
+            RouteNode, TickNode, OptionsNode
 @version: 0.96
 """
 
-from .jovimetrix import NODE_CLASS_MAPPINGS
+from .jovimetrix import NODE_CLASS_MAPPINGS, NODE_DISPLAY_NAME_MAPPINGS
 
-__all__ = ['NODE_CLASS_MAPPINGS']
+WEB_DIRECTORY = "./web"
+
+__all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS", "WEB_DIRECTORY"]

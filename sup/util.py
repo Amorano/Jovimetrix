@@ -9,8 +9,13 @@
                     http://www.github.com/amorano/jovimetrix
 """
 
+
 import os
+import sys
 import math
+from contextlib import contextmanager
+from typing import Any, Generator
+
 from PIL import Image
 from PIL.PngImagePlugin import PngInfo
 
@@ -30,6 +35,20 @@ def logwarn(msg: str) -> None:
 def logerr(msg: str) -> None:
     if LOG:
         print(f"\033[48;2;135;27;81;93m[JOV]\033[0m {msg}")
+
+@contextmanager
+def suppress_std() -> Generator[None, Any, None]:
+    with open(os.devnull, "w") as devnull:
+        old_stdout = sys.stdout
+        old_stderr = sys.stderr
+        sys.stdout = devnull
+        sys.stderr = devnull
+
+        try:
+            yield
+        finally:
+            sys.stdout = old_stdout
+            sys.stderr = old_stderr
 
 # =============================================================================
 
