@@ -13,8 +13,10 @@
 
 import gc
 import os
-import concurrent.futures
+import json
+import re
 import time
+import concurrent.futures
 from typing import Any
 
 import cv2
@@ -25,13 +27,10 @@ from PIL import Image, ImageFilter
 try:
     from .sup.util import loginfo, logwarn, logerr
     from .sup.stream import StreamingServer, StreamManager
+    from .sup import comp
 except:
     from sup.util import loginfo, logwarn, logerr
     from sup.stream import StreamingServer, StreamManager
-
-try:
-    from .sup import comp
-except:
     import sup.comp as comp
 
 # =============================================================================
@@ -262,97 +261,70 @@ class PixelShaderBaseNode(JovimetrixImageBaseNode):
     def INPUT_TYPES(cls) -> dict:
         d = {"required": {},
             "optional": {
-                "R": ("STRING", {"multiline": True, "default": "1. - np.minimum(1, np.sqrt((($u-0.5)**2 + ($v-0.5)**2) * 2))"}),
-                "G": ("STRING", {"multiline": True}),
-                "B": ("STRING", {"multiline": True}),
+                "R": ("STRING", {"multiline": True, "default": "255 - np.minimum(1, np.sqrt((($u-0.5)**2 + ($v-0.5)**2) * 3.5)) * 255"}),
+                "G": ("STRING", {"multiline": True, "default": "255 - np.minimum(1, np.sqrt((($u-0.5)**2 + ($v-0.5)**2) * 3.5)) * 255"}),
+                "B": ("STRING", {"multiline": True, "default": "255 - np.minimum(1, np.sqrt((($u-0.5)**2 + ($v-0.5)**2) * 3.5)) * 255"}),
             },
         }
-        if cls == PixelShaderImageNode:
+        if cls == PixelShaderVectorImageNode:
             return deep_merge_dict(IT_IMAGE, d, IT_WH)
         return deep_merge_dict(d, IT_WH)
 
+    @classmethod
+    def IS_CHANGED(cls) -> float:
+        return float("nan")
+
     @staticmethod
-    def shader(image: cv2.Mat, width: int, height: int, R: str, G: str, B: str) -> np.ndarray:
+    def shader(image: cv2.Mat, R: str, G: str, B: str, width: int, height: int, chunkX: int=64, chunkY:int=64) -> np.ndarray:
         import math
         from ast import literal_eval
 
-        R = R.lower().strip()
-        G = G.lower().strip()
-        B = B.lower().strip()
+        out = np.zeros((height, width, 3), dtype=float)
+        R = R.strip()
+        G = G.strip()
+        B = B.strip()
+        err = False
 
-        def parseChannel(chan, x, y) -> str:
-            """
-            x, y - current x,y position (output)
-            u, v - tex-coord position (output)
-            w, h - width/height (output)
-            i    - value in original image at (x, y)
-            """
-            exp = chan.replace("$x", str(x))
-            exp = exp.replace("$y", str(y))
-            exp = exp.replace("$u", str(x/width))
-            exp = exp.replace("$v", str(y/height))
-            exp = exp.replace("$w", str(width))
-            exp = exp.replace("$h", str(height))
-            ir, ig, ib, = image[y, x]
-            exp = exp.replace("$r", str(ir))
-            exp = exp.replace("$g", str(ig))
-            exp = exp.replace("$b", str(ib))
-            return exp
+        for y in range(height):
+            for x in range(width):
+                variables = {
+                    "$x": x,
+                    "$y": y,
+                    "$u": x / width,
+                    "$v": y / height,
+                    "$w": width,
+                    "$h": height,
+                    "$r": image[y, x, 2],
+                    "$g": image[y, x, 1],
+                    "$b": image[y, x, 0],
+                }
 
-        # Define the pixel shader function
-        def pixel_shader(x, y):
-            result = []
-            for i, who in enumerate((B, G, R, )):
-                if who == "":
-                    result.append(image[y, x][i])
-                    continue
+                parseR = re.sub(r'\$(\w+)', lambda match: str(variables.get(match.group(0), match.group(0))), R)
+                parseG = re.sub(r'\$(\w+)', lambda match: str(variables.get(match.group(0), match.group(0))), G)
+                parseB = re.sub(r'\$(\w+)', lambda match: str(variables.get(match.group(0), match.group(0))), B)
 
-                exp = parseChannel(who, x, y)
-                try:
-                    i = literal_eval(exp)
-                    result.append(int(i * 255))
-                except:
-                    try:
-                        i = eval(exp.replace("^", "**"))
-                        result.append(int(i * 255))
-                    except Exception as e:
-                        logerr(str(e))
-                        result.append(image[y, x][i])
+                result = []
+                for i, rgb in enumerate([parseB, parseG, parseR]):
+                    if rgb == "":
+                        out[y, x, i] = 0
                         continue
 
-            return result
+                    try:
+                        out[y, x, i]  = literal_eval(rgb)
+                    except:
+                        try:
+                            out[y, x, i] = eval(rgb.replace("^", "**"))
+                        except Exception as e:
+                            if not err:
+                                err = True
+                                logerr(f'eval failed {str(e)}\n{parseR}\n{parseG}\n{parseB}')
 
-        # Create an empty numpy array to store the pixel values
-        ret = np.zeros((height, width, 3), dtype=np.uint8)
+        return np.clip(out, 0, 255).astype(np.uint8)
 
-        # Function to process a chunk in parallel
-        def process_chunk(chunk_coords):
-            y_start, y_end, x_start, x_end = chunk_coords
-            for y in range(y_start, y_end):
-                for x in range(x_start, x_end):
-                    ret[y, x] = pixel_shader(x, y)
-
-        # 12 seems to be the legit balance *for single node
-        chunkX = chunkY = 8
-
-        # Divide the image into chunks
-        chunk_coords = []
-        for y in range(0, height, chunkY):
-            for x in range(0, width, chunkX):
-                y_end = min(y + chunkY, height)
-                x_end = min(x + chunkX, width)
-                chunk_coords.append((y, y_end, x, x_end))
-
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            futures = {executor.submit(process_chunk, chunk): chunk for chunk in chunk_coords}
-            for _ in concurrent.futures.as_completed(futures):
-                pass
-
-        return ret
-
-    def run(self, image: torch.tensor, width: int, height: int, R: str, G: str, B: str) -> tuple[torch.Tensor, torch.Tensor]:
+    def run(self, image: torch.tensor, R: str, G: str, B: str, width: int, height: int) -> tuple[torch.Tensor, torch.Tensor]:
         image = comp.tensor2cv(image)
-        image = PixelShaderBaseNode.shader(image, width, height, R, G, B)
+        image = cv2.resize(image, (width, height))
+        image = PixelShaderVectorBaseNode.shader(image, R, G, B, width, height)
         return (comp.cv2tensor(image), comp.cv2mask(image), )
 
 class PixelShaderNode(PixelShaderBaseNode):
@@ -366,12 +338,6 @@ class PixelShaderNode(PixelShaderBaseNode):
 class PixelShaderImageNode(PixelShaderBaseNode):
     NAME = "🔆 Pixel Shader Image (jov)"
     DESCRIPTION = ""
-
-    def run(self, image: torch.tensor, width: int, height: int, R: str, G: str, B: str) -> tuple[torch.Tensor, torch.Tensor]:
-        image = comp.tensor2cv(image)
-        image = cv2.resize(image, (width, height))
-        image = comp.cv2tensor(image)
-        return super().run(image, width, height, R, G, B)
 
 class WaveGeneratorNode(JovimetrixBaseNode):
     NAME = "🌊 Wave Generator (jov)"
@@ -805,13 +771,19 @@ class StreamReaderNode(JovimetrixImageBaseNode):
     @classmethod
     def IS_CHANGED(cls, idx: int, url: str, fps: float, hold: bool, width: int, height: int, mode: str, invert: float, orient: str) -> float:
         url = url if url != "" else idx
-        stream = STREAMMANAGER.capture(url)
+        if (stream := STREAMMANAGER.capture(url)) is None:
+            raise Exception(f"stream failed {url}")
 
         if stream.size[0] != width or stream.size[1] != height:
             stream.size = (width, height)
 
         if stream.fps != fps:
             stream.fps = fps
+
+        if hold:
+            stream.pause()
+        else:
+            stream.run()
 
         return float("nan")
 
@@ -836,7 +808,6 @@ class StreamReaderNode(JovimetrixImageBaseNode):
 
         _, image = STREAMMANAGER.frame(idx)
         if hold:
-            STREAMMANAGER.pause(idx)
             return (comp.cv2tensor(image), comp.cv2mask(image), )
 
         image = comp.SCALEFIT(image, width, height, 'FIT')
@@ -1023,14 +994,14 @@ class DisplayDataNode(JovimetrixBaseNode):
     OUTPUT_NODE = True
 
     @classmethod
-    def INPUT_TYPES(cls):  # pylint: disable = invalid-name, missing-function-docstring
+    def INPUT_TYPES(cls) -> dict:
         return {
             "required": {
-            "source": (any, {}),
+            "source": (WILDCARD, {}),
             },
         }
 
-    def main(self, source=None):
+    def main(self, source=None) -> dict:
         value = 'None'
         if source is not None:
             try:
@@ -1041,7 +1012,7 @@ class DisplayDataNode(JovimetrixBaseNode):
                 except Exception:
                     value = 'source exists, but could not be serialized.'
 
-    return {"ui": {"text": (value,)}}
+        return {"ui": {"text": (value,)}}
 
 # =============================================================================
 # === COMFYUI NODE MAP ===

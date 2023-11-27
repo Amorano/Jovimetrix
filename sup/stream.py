@@ -23,10 +23,10 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
 
 try:
-    from .util import loginfo, logwarn, logerr, gridMake, suppress_std
+    from .util import loginfo, logwarn, logerr, gridMake
     from .comp import SCALEFIT
 except:
-    from sup.util import loginfo, logwarn, logerr, gridMake, suppress_std
+    from sup.util import loginfo, logwarn, logerr, gridMake
     from sup.comp import SCALEFIT
 
 class MediaStream():
@@ -64,8 +64,8 @@ class MediaStream():
             if not self.__paused:
                 newframe = None
                 try:
-                    with suppress_std():
-                        self.__ret, newframe = self.__source.read()
+                    # with suppress_std():
+                    self.__ret, newframe = self.__source.read()
                 except:
                     self.__ret = False
 
@@ -81,8 +81,8 @@ class MediaStream():
                     timeout = None
                     self.__frame = SCALEFIT(newframe, self.__size[0], self.__size[1], self.__mode)
 
-                if not self.__ret or newframe is None and timeout is None:
-                    timeout = time.time() + 5.
+                if timeout is None and not self.__ret or newframe is None:
+                    timeout = time.time() + 1.
 
             if timeout is not None and time.time() > timeout:
                 self.__source.release()
@@ -107,15 +107,13 @@ class MediaStream():
 
     def capture(self) -> None:
         if self.__source and self.__source.isOpened():
-            self.__paused = False
             # logwarn('already captured')
             return
 
         loginfo(f"[MediaStream] CAPTURE ({self.__url})")
         found = False
         for x in self.__backend:
-            with suppress_std():
-                self.__source = cv2.VideoCapture(self.__url, x)
+            self.__source = cv2.VideoCapture(self.__url, x)
             found = self.__source.isOpened()
             if found:
                 break
@@ -128,6 +126,9 @@ class MediaStream():
         self.__fps = max(1, self.__fps or self.__source.get(cv2.CAP_PROP_FPS))
         self.__paused = False
         loginfo(f"[MediaStream] CAPTURED ({self.__url})")
+
+    def run(self) -> None:
+        self.__paused = False
 
     def pause(self) -> None:
         self.__paused = True
@@ -328,8 +329,6 @@ class StreamingServer:
 
 def streamReadTest() -> None:
     urls = [
-        0,
-        1,
         "rtsp://rtspstream:804359a2ea4669af4edf7feab36ce048@zephyr.rtsp.stream/pattern",
 
         "http://camera.sissiboo.com:86/mjpg/video.mjpg",
@@ -377,7 +376,7 @@ def streamReadTest() -> None:
             if not ret or chunk is None:
                 streams.append(empty)
                 continue
-            #chunk = cv2.resize(chunk, (widthT, heightT))
+            chunk = cv2.resize(chunk, (widthT, heightT))
             streams.append(chunk)
 
         chunks, col, row = gridMake(streams)
@@ -436,5 +435,5 @@ def streamWriteTest() -> None:
     cv2.destroyAllWindows()
 
 if __name__ == "__main__":
-    #streamReadTest()
-    streamWriteTest()
+    streamReadTest()
+    # streamWriteTest()
