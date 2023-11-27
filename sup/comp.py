@@ -384,7 +384,7 @@ def BLEND(imageA: cv2.Mat, imageB: cv2.Mat, func: str, width: int, height: int,
         height, width, _ = imageA.shape
         mask = cv2.empty((height, width, 1), dtype=cv2.uint8)
 
-    # recale images to match sourceA size...
+    # rescale images to match sourceA size...
     def adjustSize(who: cv2.Mat) -> cv2.Mat:
         h, w, _ = who.shape
         if (w != width or h != height):
@@ -397,7 +397,6 @@ def BLEND(imageA: cv2.Mat, imageB: cv2.Mat, func: str, width: int, height: int,
 
     if func.startswith("LOGICAL"):
         imageB = op(imageA, imageB)
-        # imageB = pil2cv(Image.fromarray(imageB))
     elif func != "LERP":
         imageB = pil2cv(op(cv2pil(imageA), cv2pil(imageB)))
 

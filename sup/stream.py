@@ -24,12 +24,9 @@ from typing import Any
 
 try:
     from .util import loginfo, logwarn, logerr, gridMake, suppress_std
-except:
-    from sup.util import loginfo, logwarn, logerr, gridMake, suppress_std
-
-try:
     from .comp import SCALEFIT
 except:
+    from sup.util import loginfo, logwarn, logerr, gridMake, suppress_std
     from sup.comp import SCALEFIT
 
 class MediaStream():
