@@ -11,6 +11,7 @@
                     Copyright 2023 Alexander Morano (Joviex)
 """
 
+import gc
 import os
 import concurrent.futures
 import time
@@ -985,6 +986,28 @@ class TickNode(JovimetrixBaseImageNode):
 
         return (count, lin, t, self.__delta,)
 
+class ClearCacheNode:
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        return {"required": {
+            "o": (AnyType("*"), {"default": None}),
+        }}
+
+    DESCRIPTION = "Clear the torch cache, we need to pay the bills"
+    CATEGORY = "JOVIMETRIX 🔺🟩🔵/**DO NOT USE**"
+    RETURN_TYPES = (WILDCARD,)
+    RETURN_NAMES = ("🧹",)
+    FUNCTION = "run"
+
+    @classmethod
+    def IS_CHANGED(cls) -> float:
+        return float("nan")
+
+    def run(self, o: object) -> [object, ]:
+        torch.cuda.empty_cache()
+        gc.collect()
+        return (o,)
+
 class OptionsNode(JovimetrixBaseNode):
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -1050,11 +1073,10 @@ NODE_CLASS_MAPPINGS = {
     "🕛 Tick (jov)": TickNode,
     "⚙️ Options (jov)": OptionsNode,
 
-
     # WIP OR BROKEN -- DO NOT USE IN FLOWS
-
     "🍩 GLSL (jov)": GLSLNode,
     "🗺️ Projection (jov)": ProjectionNode,
+    "🧹 Clear Torch Cache (jov)": ClearCacheNode,
 }
 
 # 🔗 ⚓ 🎹 📀 🍿 🎪 🐘
