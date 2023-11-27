@@ -196,19 +196,23 @@ IT_WHMODEI = deep_merge_dict(IT_WH, IT_WHMODE, IT_INVERT)
 # =============================================================================
 
 class ConstantNode(JovimetrixImageBaseNode):
+    NAME = "🟪 Constant (jov)"
+    CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
+    DESCRIPTION = ""
+
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         return deep_merge_dict(IT_REQUIRED, IT_WH, IT_COLOR)
-
-    NAME = "🟪 Constant (jov)"
-    DESCRIPTION = ""
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
 
     def run(self, width: int, height: int, R: float, G: float, B: float) -> tuple[torch.Tensor, torch.Tensor]:
         image = Image.new("RGB", (width, height), (int(R * 255.), int(G * 255.), int(B * 255.)) )
         return (comp.pil2tensor(image), comp.pil2tensor(image.convert("L")),)
 
 class ShapeNode(JovimetrixImageBaseNode):
+    NAME = "✨ Shape Generator (jov)"
+    CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
+    DESCRIPTION = ""
+
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {
@@ -218,10 +222,6 @@ class ShapeNode(JovimetrixImageBaseNode):
             },
         }
         return deep_merge_dict(d, IT_WH, IT_COLOR, IT_ROT, IT_SCALE, IT_INVERT)
-
-    NAME = "✨ Shape Generator (jov)"
-    DESCRIPTION = ""
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
 
     def run(self, shape: str, sides: int, width: int, height: int, R: float, G: float, B: float,
             angle: float, sizeX: float, sizeY: float, invert: float) -> tuple[torch.Tensor, torch.Tensor]:
@@ -256,6 +256,8 @@ class ShapeNode(JovimetrixImageBaseNode):
         return (comp.pil2tensor(image), comp.pil2tensor(image.convert("L")), )
 
 class PixelShaderBaseNode(JovimetrixImageBaseNode):
+    CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
+
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"required": {},
@@ -268,8 +270,6 @@ class PixelShaderBaseNode(JovimetrixImageBaseNode):
         if cls == PixelShaderImageNode:
             return deep_merge_dict(IT_IMAGE, d, IT_WH)
         return deep_merge_dict(d, IT_WH)
-
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
 
     @staticmethod
     def shader(image: cv2.Mat, width: int, height: int, R: str, G: str, B: str) -> np.ndarray:
@@ -356,7 +356,6 @@ class PixelShaderBaseNode(JovimetrixImageBaseNode):
         return (comp.cv2tensor(image), comp.cv2mask(image), )
 
 class PixelShaderNode(PixelShaderBaseNode):
-
     NAME = "🔆 Pixel Shader (jov)"
     DESCRIPTION = ""
 
@@ -365,7 +364,6 @@ class PixelShaderNode(PixelShaderBaseNode):
         return super().run(image, width, height, R, G, B)
 
 class PixelShaderImageNode(PixelShaderBaseNode):
-
     NAME = "🔆 Pixel Shader Image (jov)"
     DESCRIPTION = ""
 
@@ -376,6 +374,10 @@ class PixelShaderImageNode(PixelShaderBaseNode):
         return super().run(image, width, height, R, G, B)
 
 class WaveGeneratorNode(JovimetrixBaseNode):
+    NAME = "🌊 Wave Generator (jov)"
+    CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
+    DESCRIPTION = ""
+    RETURN_TYPES = ("FLOAT", "INT", )
 
     OP_WAVE = {
         "SINE": comp.wave_sine,
@@ -415,11 +417,6 @@ class WaveGeneratorNode(JovimetrixBaseNode):
             }}
         return d
 
-    NAME = "🌊 Wave Generator (jov)"
-    DESCRIPTION = ""
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
-    RETURN_TYPES = ("FLOAT", "INT", )
-
     def run(self, wave: str, phase: float, amp: float, offset: float, max: float, frame: int) -> tuple[float, int]:
         val = 0.
         if (op := WaveGeneratorNode.OP_WAVE.get(wave, None)):
@@ -427,6 +424,10 @@ class WaveGeneratorNode(JovimetrixBaseNode):
         return (val, int(val))
 
 class GLSLNode(JovimetrixImageBaseNode):
+    NAME = "🍩 GLSL (jov)"
+    CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
+    DESCRIPTION = ""
+    POST = True
 
     @classmethod
     def INPUT_TYPES(s) -> dict[str, dict]:
@@ -449,11 +450,6 @@ class GLSLNode(JovimetrixImageBaseNode):
                                 }
                                 """, "multiline": True}),
             }}
-
-    NAME = "🍩 GLSL (jov)"
-    DESCRIPTION = ""
-    POST = True
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
 
     def run(self, vertex: str, fragment: str) -> tuple[torch.Tensor, torch.Tensor]:
         import moderngl
@@ -487,13 +483,13 @@ class GLSLNode(JovimetrixImageBaseNode):
 # =============================================================================
 
 class TransformNode(JovimetrixImageBaseNode):
+    NAME = "🌱 Transform (jov)"
+    CATEGORY = "JOVIMETRIX 🔺🟩🔵/TRANSFORM"
+    DESCRIPTION = "Translate, Rotate, Scale, Tile and Invert an input. All options allow for CROP or WRAPing of the edges."
+
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         return deep_merge_dict(IT_PIXELS, IT_TRS, IT_EDGE, IT_WH, IT_WHMODE)
-
-    NAME = "🌱 Transform (jov)"
-    DESCRIPTION = "Translate, Rotate, Scale, Tile and Invert an input. All options allow for CROP or WRAPing of the edges."
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/TRANSFORM"
 
     def run(self, pixels: torch.tensor, offsetX: float, offsetY: float, angle: float, sizeX: float, sizeY: float,
             edge: str, width: int, height: int, mode: str) -> tuple[torch.Tensor, torch.Tensor]:
@@ -503,13 +499,13 @@ class TransformNode(JovimetrixImageBaseNode):
         return (comp.cv2tensor(pixels), comp.cv2mask(pixels), )
 
 class TileNode(JovimetrixImageBaseNode):
+    NAME = "🔳 Tile (jov)"
+    CATEGORY = "JOVIMETRIX 🔺🟩🔵/TRANSFORM"
+    DESCRIPTION = "Tile an Image with optional crop to original image size."
+
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         return deep_merge_dict(IT_PIXELS, IT_TILE)
-
-    NAME = "🔳 Tile (jov)"
-    DESCRIPTION = "Tile an Image with optional crop to original image size."
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/TRANSFORM"
 
     def run(self, pixels: torch.tensor, tileX: float, tileY: float) -> tuple[torch.Tensor, torch.Tensor]:
         pixels = comp.tensor2cv(pixels)
@@ -520,6 +516,10 @@ class TileNode(JovimetrixImageBaseNode):
         return (comp.cv2tensor(pixels), comp.cv2mask(pixels), )
 
 class MirrorNode(JovimetrixImageBaseNode):
+    NAME = "🔰 Mirror (jov)"
+    CATEGORY = "JOVIMETRIX 🔺🟩🔵/TRANSFORM"
+    DESCRIPTION = "Flip an input across the X axis, the Y Axis or both, with independent centers."
+
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"required": {
@@ -530,10 +530,6 @@ class MirrorNode(JovimetrixImageBaseNode):
         }
         return deep_merge_dict(IT_PIXELS, d, IT_INVERT)
 
-    NAME = "🔰 Mirror (jov)"
-    DESCRIPTION = "Flip an input across the X axis, the Y Axis or both, with independent centers."
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/TRANSFORM"
-
     def run(self, pixels, x, y, mode, invert) -> tuple[torch.Tensor, torch.Tensor]:
         pixels = comp.tensor2cv(pixels)
         while (len(mode) > 0):
@@ -543,6 +539,10 @@ class MirrorNode(JovimetrixImageBaseNode):
         return (comp.cv2tensor(pixels), comp.cv2mask(pixels), )
 
 class ExtendNode(JovimetrixImageBaseNode):
+    NAME = "🎇 Extend (jov)"
+    CATEGORY = "JOVIMETRIX 🔺🟩🔵/TRANSFORM"
+    DESCRIPTION = "Contrast, Gamma and Exposure controls for images."
+
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"required": {
@@ -553,10 +553,6 @@ class ExtendNode(JovimetrixImageBaseNode):
             },
         }
         return deep_merge_dict(IT_PIXEL2, d, IT_WH, IT_WHMODE)
-
-    NAME = "🎇 Extend (jov)"
-    DESCRIPTION = "Contrast, Gamma and Exposure controls for images."
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/TRANSFORM"
 
     def run(self, pixelA: torch.tensor, pixelB: torch.tensor, axis: str, flip: str,
             width: int, height: int, mode: str) -> tuple[torch.Tensor, torch.Tensor]:
@@ -570,17 +566,17 @@ class ExtendNode(JovimetrixImageBaseNode):
         return (comp.cv2tensor(pixelA), comp.cv2mask(pixelA), )
 
 class ProjectionNode(JovimetrixImageBaseNode):
+    NAME = "🗺️ Projection (jov)"
+    CATEGORY = "JOVIMETRIX 🔺🟩🔵/TRANSFORM"
+    DESCRIPTION = ""
+    POST = True
+
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"required": {
                 "proj": (["SPHERICAL", "CYLINDRICAL"], {"default": "SPHERICAL"}),
             }}
         return deep_merge_dict(IT_IMAGE, d, IT_WH)
-
-    NAME = "🗺️ Projection (jov)"
-    DESCRIPTION = ""
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/TRANSFORM"
-    POST = True
 
     def run(self, image: torch.tensor, proj: str, width: int, height: int) -> tuple[torch.Tensor, torch.Tensor]:
         image = comp.tensor2pil(image)
@@ -604,6 +600,10 @@ class ProjectionNode(JovimetrixImageBaseNode):
 # =============================================================================
 
 class HSVNode(JovimetrixImageBaseNode):
+    NAME = "🌈 HSV (jov)"
+    CATEGORY = "JOVIMETRIX 🔺🟩🔵/ADJUST"
+    DESCRIPTION = "Adjust Hue, Saturation, Value, Gamma, Contrast and Exposure of an input"
+
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"required": {
@@ -615,10 +615,6 @@ class HSVNode(JovimetrixImageBaseNode):
                 "gamma": ("FLOAT", {"default": 1.0, "min": 0., "max": 2., "step": 0.01}, ),
             }}
         return deep_merge_dict(IT_IMAGE, d, IT_INVERT)
-
-    NAME = "🌈 HSV (jov)"
-    DESCRIPTION = "Adjust Hue, Saturation, Value, Gamma, Contrast and Exposure of an input"
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/ADJUST"
 
     def run(self, image: torch.tensor, hue: float, saturation: float, value: float, contrast: float,
             exposure: float, gamma: float, invert: float) -> tuple[torch.Tensor, torch.Tensor]:
@@ -657,6 +653,10 @@ class HSVNode(JovimetrixImageBaseNode):
 # =============================================================================
 
 class AdjustNode(JovimetrixImageBaseNode):
+    NAME = "🕸️ Adjust (jov)"
+    CATEGORY = "JOVIMETRIX 🔺🟩🔵/ADJUST"
+    DESCRIPTION = "Find Edges, Blur, Sharpen and Emboss an input"
+
     OPS = {
         'BLUR': ImageFilter.GaussianBlur,
         'SHARPEN': ImageFilter.UnsharpMask,
@@ -677,10 +677,6 @@ class AdjustNode(JovimetrixImageBaseNode):
             }}
         return deep_merge_dict(IT_PIXELS, d, IT_INVERT)
 
-    NAME = "🕸️ Adjust (jov)"
-    DESCRIPTION = "Find Edges, Blur, Sharpen and Emboss an input"
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/ADJUST"
-
     def run(self, pixels: torch.tensor, func: str, radius: float, invert: float)  -> tuple[torch.Tensor, torch.Tensor]:
         pixels = comp.tensor2pil(pixels)
 
@@ -696,6 +692,10 @@ class AdjustNode(JovimetrixImageBaseNode):
         return (comp.pil2tensor(pixels), comp.pil2tensor(pixels.convert("L")), )
 
 class ThresholdNode(JovimetrixImageBaseNode):
+    NAME = "📉 Threshold (jov)"
+    CATEGORY = "JOVIMETRIX 🔺🟩🔵/ADJUST"
+    DESCRIPTION = "Clip an input based on a mid point value"
+
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"required": {
@@ -706,10 +706,6 @@ class ThresholdNode(JovimetrixImageBaseNode):
                 "const": ("FLOAT", {"default": 0, "min": -1., "max": 1., "step": 0.01},),
             }}
         return deep_merge_dict(IT_PIXELS, d, IT_WHMODEI)
-
-    NAME = "📉 Threshold (jov)"
-    DESCRIPTION = "Clip an input based on a mid point value"
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/ADJUST"
 
     def run(self, pixels: torch.tensor, op: str, adapt: str, threshold: float,
             block: int, const: float, width: int, height: int, mode: str, invert: float)  -> tuple[torch.Tensor, torch.Tensor]:
@@ -732,6 +728,8 @@ class ThresholdNode(JovimetrixImageBaseNode):
 # =============================================================================
 
 class BlendBaseNode(JovimetrixImageBaseNode):
+    CATEGORY = "JOVIMETRIX 🔺🟩🔵/COMPOSE"
+
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"required": {
@@ -748,9 +746,6 @@ class BlendBaseNode(JovimetrixImageBaseNode):
             return deep_merge_dict(IT_PIXEL2, e, d, IT_WHMODEI)
         return deep_merge_dict(IT_PIXEL2, d, IT_WHMODEI)
 
-    DESCRIPTION = "Applies selected operation to 2 inputs with optional mask using a linear blend (alpha)."
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/COMPOSE"
-
     def run(self, pixelA: torch.tensor, pixelB: torch.tensor, alpha: float, func: str, mask: torch.tensor,
             width: int, height: int, mode: str, invert) -> tuple[torch.Tensor, torch.Tensor]:
 
@@ -766,7 +761,7 @@ class BlendBaseNode(JovimetrixImageBaseNode):
 class BlendNode(BlendBaseNode):
 
     NAME = "⚗️ Blend (jov)"
-    DESCRIPTION = "Applies selected operation to 2 inputs with optional mask using a linear blend (alpha)."
+    DESCRIPTION = "Applies selected operation to 2 inputs with using a linear blend (alpha)."
 
     def run(self, pixelA: torch.tensor, pixelB: torch.tensor, alpha: float, func: str,
             width: int, height: int, mode: str, invert) -> tuple[torch.Tensor, torch.Tensor]:
@@ -777,7 +772,7 @@ class BlendNode(BlendBaseNode):
 class BlendMaskNode(BlendBaseNode):
 
     NAME = "⚗️ Blend Mask (jov)"
-    DESCRIPTION = "Applies selected operation to 2 inputs with using a linear blend (alpha)."
+    DESCRIPTION = "Applies selected operation to 2 inputs with optional mask using a linear blend (alpha)."
 
     def run(self, pixelA: torch.tensor, pixelB: torch.tensor, alpha: float, func: str, mask: torch.tensor,
             width: int, height: int, mode: str, invert) -> tuple[torch.Tensor, torch.Tensor]:
@@ -804,29 +799,11 @@ class StreamReaderNode(JovimetrixImageBaseNode):
         return deep_merge_dict(d, IT_WHMODEI, IT_ORIENT)
 
     NAME = "📺 StreamReader (jov)"
-    DESCRIPTION = ""
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/STREAM"
+    DESCRIPTION = ""
 
     @classmethod
     def IS_CHANGED(cls, idx: int, url: str, fps: float, hold: bool, width: int, height: int, mode: str, invert: float, orient: str) -> float:
-        """
-        Check if StreamReader parameters have changed.
-
-        Args:
-            idx (int): Index of the StreamReader.
-            url (str): URI for a streaming device.
-            fps (float): Frames per second.
-            hold (bool): Hold last frame flag.
-            width (int): Width of the image.
-            height (int): Height of the image.
-            mode (str): Scale processing mode.
-            invert (float): Amount to invert the output
-            orient (str): Normal, FlipX, FlipY or FlipXY
-
-        Returns:
-            float: cached value.
-        """
-
         url = url if url != "" else idx
         stream = STREAMMANAGER.capture(url)
 
@@ -884,29 +861,14 @@ class StreamWriterNode(JovimetrixBaseNode):
             "optional": {
                 "hold": ("BOOLEAN", {"default": False}),
             }}
-        return deep_merge_dict(IT_IMAGE, d, IT_WHMODEI, IT_ORIENT)
+        return deep_merge_dict(IT_PIXELS, d, IT_WHMODEI, IT_ORIENT)
 
     NAME = "🎞️ StreamWriter (jov)"
-    DESCRIPTION = ""
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/STREAM"
+    DESCRIPTION = ""
 
     @classmethod
-    def IS_CHANGED(cls, hold: bool, width: int, height: int, mode: str, invert: float, orient: str) -> float:
-        """
-        Check if StreamReader parameters have changed.
-
-        Args:
-            hold (bool): Hold last frame flag.
-            width (int): Width of the image.
-            height (int): Height of the image.
-            mode (str): Scale processing mode.
-            invert (float): Amount to invert the output
-            orient (str): Normal, FlipX, FlipY or FlipXY
-
-        Returns:
-            float: cached value.
-        """
-
+    def IS_CHANGED(cls, pixels: torch.Tensor, route: str, hold: bool, width: int, height: int, mode: str, invert: float, orient: str) -> float:
         return float("nan")
 
     def __init__(self, *arg, **kw) -> None:
@@ -914,22 +876,7 @@ class StreamWriterNode(JovimetrixBaseNode):
         self.__host = None
         self.__port = None
 
-    def run(self, hold: bool, width: int, height: int, mode: str, invert: float, orient: str) -> tuple[torch.Tensor, torch.Tensor]:
-        """
-        Return a current frame from the StreamReader if it is active and the FPS check passes.
-
-        Args:
-            hold (bool): Hold last frame flag.
-            width (int): Width of the image.
-            height (int): Height of the image.
-            mode (str): Scale processing mode.
-            invert (float): Amount to invert the output
-            orient (str): Normal, FlipX, FlipY or FlipXY
-
-        Returns:
-            (image (torch.tensor), mask (torch.tensor)): The image and its mask result.
-        """
-
+    def run(self, pixels: torch.Tensor, route: str, hold: bool, width: int, height: int, mode: str, invert: float, orient: str) -> torch.Tensor:
         if STREAMHOST != self.__host or STREAMPORT != self.__port:
             # close old, if any
 
@@ -941,22 +888,28 @@ class StreamWriterNode(JovimetrixBaseNode):
 # =============================================================================
 
 class RouteNode(JovimetrixImageBaseNode):
+    NAME = "🚌 Route (jov)"
+    CATEGORY = "JOVIMETRIX 🔺🟩🔵/UTILITY"
+    DESCRIPTION = "Wheels on the BUS pass the data through, around and around."
+    RETURN_TYPES = (WILDCARD,)
+    RETURN_NAMES = ("🚌",)
+
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         return {"required": {
             "o": (WILDCARD, {"default": None}),
         }}
 
-    NAME = "🚌 Route (jov)"
-    DESCRIPTION = "Wheels on the BUS pass the data through, around and around."
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/UTILITY"
-    RETURN_TYPES = (WILDCARD,)
-    RETURN_NAMES = ("🚌",)
-
     def run(self, o: object) -> [object, ]:
         return (o,)
 
 class TickNode(JovimetrixImageBaseNode):
+    NAME = "🕛 Tick (jov)"
+    CATEGORY = "JOVIMETRIX 🔺🟩🔵/UTILITY"
+    DESCRIPTION = "Periodic pulse exporting normalized, delta since last pulse and count."
+    RETURN_TYPES = ("INT", "FLOAT", "FLOAT", "FLOAT", )
+    RETURN_NAMES = ("count 🧮", "0-1", "time", "🛆",)
+
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         return {
@@ -970,12 +923,6 @@ class TickNode(JovimetrixImageBaseNode):
                 # manual total = 0
                 "reset": ("BOOLEAN", {"default": False}),
             }}
-
-    NAME = "🕛 Tick (jov)"
-    DESCRIPTION = "Periodic pulse exporting normalized, delta since last pulse and count."
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/UTILITY"
-    RETURN_TYPES = ("INT", "FLOAT", "FLOAT", "FLOAT", )
-    RETURN_NAMES = ("count 🧮", "0-1", "time", "🛆",)
 
     @classmethod
     def IS_CHANGED(cls, *arg, **kw) -> Any:
@@ -1014,18 +961,18 @@ class TickNode(JovimetrixImageBaseNode):
         return (count, lin, t, self.__delta,)
 
 class ClearCacheNode(JovimetrixBaseNode):
+    NAME = "🧹 Clear Torch Cache (jov)"
+    CATEGORY = "JOVIMETRIX 🔺🟩🔵/UTILITY"
+    DESCRIPTION = "Clear the torch cache, we need to pay the bills"
+    RETURN_TYPES = (WILDCARD,)
+    RETURN_NAMES = ("🧹",)
+    POST = True
+
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         return {"required": {
             "o": (AnyType("*"), {"default": None}),
         }}
-
-    NAME = "🧹 Clear Torch Cache (jov)"
-    DESCRIPTION = "Clear the torch cache, we need to pay the bills"
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/UTILITY"
-    RETURN_TYPES = (WILDCARD,)
-    RETURN_NAMES = ("🧹",)
-    POST = True
 
     @classmethod
     def IS_CHANGED(cls) -> float:
@@ -1037,6 +984,10 @@ class ClearCacheNode(JovimetrixBaseNode):
         return (o,)
 
 class OptionsNode(JovimetrixBaseNode):
+    NAME = "⚙️ Options (jov)"
+    CATEGORY = "JOVIMETRIX 🔺🟩🔵/UTILITY"
+    DESCRIPTION = "Change Jovimetrix Global Options"
+
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         return {
@@ -1048,10 +999,6 @@ class OptionsNode(JovimetrixBaseNode):
                 "warn": ("BOOLEAN", {"default": False}),
                 "error": ("BOOLEAN", {"default": False}),
             }}
-
-    NAME = "⚙️ Options (jov)"
-    DESCRIPTION = "Change Jovimetrix Global Options"
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/UTILITY"
 
     def __init__(self, *arg, **kw) -> None:
         super().__init__(*arg, **kw)
@@ -1065,38 +1012,36 @@ class OptionsNode(JovimetrixBaseNode):
             # startup server
             pass
 
-'''
 class DisplayDataNode(JovimetrixBaseNode):
     """Display any data node."""
 
-    DESCRIPTION = "Change Jovimetrix Global Options"
+    NAME = "Display Data"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/UTILITY"
-
-    @classmethod
-    def INPUT_TYPES(cls):  # pylint: disable = invalid-name, missing-function-docstring
-    return {
-        "required": {
-        "source": (any, {}),
-        },
-    }
-
+    DESCRIPTION = "Change Jovimetrix Global Options"
     RETURN_TYPES = ()
     FUNCTION = "main"
     OUTPUT_NODE = True
 
+    @classmethod
+    def INPUT_TYPES(cls):  # pylint: disable = invalid-name, missing-function-docstring
+        return {
+            "required": {
+            "source": (any, {}),
+            },
+        }
+
     def main(self, source=None):
-    value = 'None'
-    if source is not None:
-        try:
-        value = json.dumps(source)
-        except Exception:
-        try:
-            value = str(source)
-        except Exception:
-            value = 'source exists, but could not be serialized.'
+        value = 'None'
+        if source is not None:
+            try:
+                value = json.dumps(source)
+            except Exception:
+                try:
+                    value = str(source)
+                except Exception:
+                    value = 'source exists, but could not be serialized.'
 
     return {"ui": {"text": (value,)}}
-'''
 
 # =============================================================================
 # === COMFYUI NODE MAP ===
@@ -1108,6 +1053,7 @@ calling_frame = inspect.getouterframes(current_frame)[0]
 module = inspect.getmodule(calling_frame.frame)
 classes = inspect.getmembers(module, inspect.isclass)
 
+NODE_DISPLAY_NAME_MAPPINGS = {}
 NODE_CLASS_MAPPINGS = {}
 POST = {}
 for class_name, class_object in classes:
@@ -1123,6 +1069,6 @@ for class_name, class_object in classes:
 
 # 🔗 ⚓ 🎹 📀 🍿 🎪 🐘
 
-NODE_DISPLAY_NAME_MAPPINGS = {k: v for k, v in NODE_CLASS_MAPPINGS.items()}
-NODE_DISPLAY_NAME_MAPPINGS.update({k: v for k, v in POST.items()})
-print(1)
+NODE_DISPLAY_NAME_MAPPINGS = {k: k for k, _ in NODE_CLASS_MAPPINGS.items()}
+NODE_CLASS_MAPPINGS.update({k: v for k, v in POST.items()})
+NODE_DISPLAY_NAME_MAPPINGS.update({k: k for k, _ in POST.items()})
