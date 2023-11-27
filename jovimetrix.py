@@ -13,8 +13,10 @@
 
 import gc
 import os
-import concurrent.futures
+import json
+import re
 import time
+import concurrent.futures
 from typing import Any
 
 import cv2
@@ -25,13 +27,10 @@ from PIL import Image, ImageFilter
 try:
     from .sup.util import loginfo, logwarn, logerr
     from .sup.stream import StreamingServer, StreamManager
+    from .sup import comp
 except:
     from sup.util import loginfo, logwarn, logerr
     from sup.stream import StreamingServer, StreamManager
-
-try:
-    from .sup import comp
-except:
     import sup.comp as comp
 
 # =============================================================================
@@ -352,6 +351,7 @@ class PixelShaderBaseNode(JovimetrixImageBaseNode):
 
     def run(self, image: torch.tensor, width: int, height: int, R: str, G: str, B: str) -> tuple[torch.Tensor, torch.Tensor]:
         image = comp.tensor2cv(image)
+        image = cv2.resize(image, (width, height))
         image = PixelShaderBaseNode.shader(image, width, height, R, G, B)
         return (comp.cv2tensor(image), comp.cv2mask(image), )
 
@@ -367,11 +367,74 @@ class PixelShaderImageNode(PixelShaderBaseNode):
     NAME = "🔆 Pixel Shader Image (jov)"
     DESCRIPTION = ""
 
-    def run(self, image: torch.tensor, width: int, height: int, R: str, G: str, B: str) -> tuple[torch.Tensor, torch.Tensor]:
+class PixelShaderVectorNode(PixelShaderBaseNode):
+    NAME = "🔆 Pixel Shader Vector (jov)"
+    CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
+    DESCRIPTION = ""
+
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        d = {"required": {},
+            "optional": {
+                "expression": ("STRING", {"multiline": True, "default": "1. - np.minimum(1, np.sqrt((($u-0.5)**2 + ($v-0.5)**2) * 2))"}),
+            },
+        }
+        if cls == PixelShaderImageNode:
+            return deep_merge_dict(IT_IMAGE, d, IT_WH)
+        return deep_merge_dict(d, IT_WH)
+
+
+    def run(self, image: torch.tensor, width: int, height: int, expression: str) -> tuple[torch.Tensor, torch.Tensor]:
         image = comp.tensor2cv(image)
         image = cv2.resize(image, (width, height))
-        image = comp.cv2tensor(image)
-        return super().run(image, width, height, R, G, B)
+
+        import math
+        from ast import literal_eval
+
+        # Convert the image to a numpy array for easier manipulation
+        img_array = np.array(image)
+
+        # Create coordinate grids
+        x, y = np.meshgrid(np.arange(width), np.arange(height))
+        u, v = x / width, y / height
+
+        rgb = image[y, x]
+        variables = {
+            "$x": x,
+            "$y": y,
+            "$u": x/width,
+            "$v": y/height,
+            "$w": width,
+            "$h": height,
+            "$rgb": img_array
+        }
+
+        # Apply the user-defined per-pixel function
+        try:
+            expression = re.sub(r'\$(\w+)', r'variables["$1"]', expression)
+            image = eval(expression)
+
+        except Exception as e:
+            print(f"Error in expression: {e}")
+            return
+
+        image = np.clip(image, 0, 255)
+
+
+
+
+        # Reshape the arrays to a flat 1D array
+        x_flat, y_flat, u_flat, v_flat = x.flatten(), y.flatten(), u.flatten(), v.flatten()
+        pixels_flat = img_array.flatten().reshape(-1, img_array.shape[2])
+
+        # Apply the user-defined per-pixel function using vectorized operations
+        image = per_pixel_function(pixels_flat, x_flat, y_flat, u_flat, v_flat)
+
+        # Reshape the modified pixels back to the original shape
+        image = image.reshape(img_array.shape)
+
+        return (comp.cv2tensor(image), comp.cv2mask(image), )
+
 
 class WaveGeneratorNode(JovimetrixBaseNode):
     NAME = "🌊 Wave Generator (jov)"
@@ -805,13 +868,19 @@ class StreamReaderNode(JovimetrixImageBaseNode):
     @classmethod
     def IS_CHANGED(cls, idx: int, url: str, fps: float, hold: bool, width: int, height: int, mode: str, invert: float, orient: str) -> float:
         url = url if url != "" else idx
-        stream = STREAMMANAGER.capture(url)
+        if (stream := STREAMMANAGER.capture(url)) is None:
+            raise Exception(f"stream failed {url}")
 
         if stream.size[0] != width or stream.size[1] != height:
             stream.size = (width, height)
 
         if stream.fps != fps:
             stream.fps = fps
+
+        if hold:
+            stream.pause()
+        else:
+            stream.run()
 
         return float("nan")
 
@@ -836,7 +905,6 @@ class StreamReaderNode(JovimetrixImageBaseNode):
 
         _, image = STREAMMANAGER.frame(idx)
         if hold:
-            STREAMMANAGER.pause(idx)
             return (comp.cv2tensor(image), comp.cv2mask(image), )
 
         image = comp.SCALEFIT(image, width, height, 'FIT')
@@ -1023,14 +1091,14 @@ class DisplayDataNode(JovimetrixBaseNode):
     OUTPUT_NODE = True
 
     @classmethod
-    def INPUT_TYPES(cls):  # pylint: disable = invalid-name, missing-function-docstring
+    def INPUT_TYPES(cls) -> dict:
         return {
             "required": {
-            "source": (any, {}),
+            "source": (WILDCARD, {}),
             },
         }
 
-    def main(self, source=None):
+    def main(self, source=None) -> dict:
         value = 'None'
         if source is not None:
             try:
@@ -1041,7 +1109,7 @@ class DisplayDataNode(JovimetrixBaseNode):
                 except Exception:
                     value = 'source exists, but could not be serialized.'
 
-    return {"ui": {"text": (value,)}}
+        return {"ui": {"text": (value,)}}
 
 # =============================================================================
 # === COMFYUI NODE MAP ===
