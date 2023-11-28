@@ -394,8 +394,10 @@ def BLEND(imageA: cv2.Mat, imageB: cv2.Mat, func: str, width: int, height: int,
     # take the new B and mix with mask and alpha
     return LERP(imageA, imageB, mask, alpha)
 
-def THRESHOLD(image: cv2.Mat, threshold: float=0.5, mode: EnumThreshold=EnumThreshold.BINARY,
-              adapt: EnumAdaptThreshold=EnumAdaptThreshold.ADAPT_NONE, block: int=3, const: float=0.) -> cv2.Mat:
+def THRESHOLD(image: cv2.Mat, threshold: float=0.5,
+              mode: EnumThreshold=EnumThreshold.BINARY,
+              adapt: EnumAdaptThreshold=EnumAdaptThreshold.ADAPT_NONE,
+              block: int=3, const: float=0.) -> cv2.Mat:
 
     if adapt != EnumAdaptThreshold.ADAPT_NONE.value:
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -406,6 +408,35 @@ def THRESHOLD(image: cv2.Mat, threshold: float=0.5, mode: EnumThreshold=EnumThre
         threshold = int(threshold * 255)
         _, image = cv2.threshold(image, threshold, 255, mode)
     return image
+
+def LEVELS(image: torch.Tensor, black_point:int=0, white_point=255, mid_point=0.5, gamma=1.0) -> torch.Tensor:
+    """
+    Perform levels adjustment on a torch.tensor representing an image.
+
+    Parameters:
+    - image_tensor (torch.Tensor): Input image tensor.
+    - black_point (float): Black point adjustment (default: 0).
+    - white_point (float): White point adjustment (default: 255).
+    - mid_point (float): Mid-point adjustment (default: 0.5).
+    - gamma (float): Gamma adjustment (default: 1.0).
+
+    Returns:
+    - torch.Tensor: Adjusted image tensor.
+    """
+    # Apply black point adjustment
+    image = torch.maximum(image - black_point, torch.tensor(0.0))
+
+    # Apply white point adjustment
+    image = torch.minimum(image, (white_point - black_point))
+
+    # Apply mid-point adjustment
+    image = (image + mid_point) - 0.5
+
+    # Apply gamma adjustment
+    image = torch.sign(image) * torch.pow(torch.abs(image), 1.0 / gamma)
+
+    # Scale back to the range [0, 1]
+    return (image + 0.5) / white_point
 
 # =============================================================================
 # === WAVE FUNCTIONS SIMPLE ===
