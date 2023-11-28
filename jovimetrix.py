@@ -15,6 +15,7 @@ import gc
 import re
 import json
 import time
+import concurrent.futures
 from typing import Any
 
 import cv2
@@ -331,6 +332,62 @@ class PixelShaderNode(PixelShaderBaseNode):
 class PixelShaderImageNode(PixelShaderBaseNode):
     NAME = "🔆 Pixel Shader Image (jov)"
     DESCRIPTION = ""
+
+    def run(self, image: torch.tensor, width: int, height: int, R: str, G: str, B: str) -> tuple[torch.Tensor, torch.Tensor]:
+        image = comp.tensor2cv(image)
+        image = cv2.resize(image, (width, height))
+        image = comp.cv2tensor(image)
+        return super().run(image, width, height, R, G, B)
+
+class WaveGeneratorNode(JovimetrixBaseNode):
+    NAME = "🌊 Wave Generator (jov)"
+    CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
+    DESCRIPTION = ""
+    RETURN_TYPES = ("FLOAT", "INT", )
+
+    OP_WAVE = {
+        "SINE": comp.wave_sine,
+        "INV SINE": comp.wave_inv_sine,
+        "ABS SINE": comp.wave_abs_sine,
+        "COSINE": comp.wave_cosine,
+        "INV COSINE": comp.wave_inv_cosine,
+        "ABS COSINE": comp.wave_abs_cosine,
+        "SAWTOOTH": comp.wave_sawtooth,
+        "TRIANGLE": comp.wave_triangle,
+        "RAMP": comp.wave_ramp,
+        "STEP": comp.wave_step_function,
+        "HAVER SINE": comp.wave_haversine,
+        "NOISE": comp.wave_noise,
+    }
+    """
+        "SQUARE": comp.wave_square,
+        "PULSE": comp.wave_pulse,
+        "EXP": comp.wave_exponential,
+        "RECT PULSE": comp.wave_rectangular_pulse,
+
+        "LOG": comp.wave_logarithmic,
+        "GAUSSIAN": comp.wave_gaussian,
+        "CHIRP": comp.wave_chirp_signal,
+    }
+    """
+
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        d = {"required":{
+                "wave": (list(WaveGeneratorNode.OP_WAVE.keys()), {"default": "SINE"}),
+                "phase": ("FLOAT", {"default": 1.0, "min": 0.0, "step": 1.0}),
+                "amp": ("FLOAT", {"default": 0.5, "min": 0.0, "step": 0.1}),
+                "offset": ("FLOAT", {"default": 0.0, "min": 0.0, "step": 1.0}),
+                "max": ("FLOAT", {"default": 0.5, "min": 0.0, "max": 9999.0, "step": 0.05}),
+                "frame": ("INT", {"default": 1.0, "min": 0.0, "step": 1.0}),
+            }}
+        return d
+
+    def run(self, wave: str, phase: float, amp: float, offset: float, max: float, frame: int) -> tuple[float, int]:
+        val = 0.
+        if (op := WaveGeneratorNode.OP_WAVE.get(wave, None)):
+            val = op(phase, amp, offset, max, frame)
+        return (val, int(val))
 
 class GLSLNode(JovimetrixImageBaseNode):
     NAME = "🍩 GLSL (jov)"
