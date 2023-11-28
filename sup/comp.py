@@ -11,14 +11,13 @@
                     Copyright 2023 Alexander Morano (Joviex)
 """
 
+from enum import Enum
+
 import cv2
 import torch
 import numpy as np
 from scipy.ndimage import rotate
 from PIL import Image, ImageDraw, ImageChops
-
-from enum import Enum
-from typing import Any
 
 try:
     from .util import loginfo, logwarn, logerr
@@ -33,13 +32,11 @@ class EnumThreshold(Enum):
     BINARY = cv2.THRESH_BINARY
     TRUNC = cv2.THRESH_TRUNC
     TOZERO = cv2.THRESH_TOZERO
-EnumThresholdName = [e.name for e in EnumThreshold]
 
 class EnumAdaptThreshold(Enum):
     ADAPT_NONE = -1
     ADAPT_MEAN = cv2.ADAPTIVE_THRESH_MEAN_C
     ADAPT_GAUSS = cv2.ADAPTIVE_THRESH_GAUSSIAN_C
-EnumAdaptThresholdName = [e.name for e in EnumAdaptThreshold]
 
 class EnumOPBlend(Enum):
     LERP = None
@@ -56,7 +53,6 @@ class EnumOPBlend(Enum):
     LOGICAL_AND = np.bitwise_and
     LOGICAL_OR = np.bitwise_or
     LOGICAL_XOR = np.bitwise_xor
-EnumOPBlendName = [e.name for e in EnumThreshold]
 
 OP_BLEND = {
     'LERP': "",
@@ -234,25 +230,40 @@ def ROTATE_NDARRAY(image: np.ndarray, angle: float, clip: bool=True) -> np.ndarr
     # Clip the rotated image
     return rotated_image[start_height:start_height + height, start_width:start_width + width]
 
-def SCALEFIT(image: cv2.Mat, width: int, height: int, mode: str) -> cv2.Mat:
+def SCALEFIT(image: cv2.Mat, width: int, height: int, mode: str, resample: Image.Resampling=Image.Resampling.LANCZOS) -> cv2.Mat:
     """Scale a matrix into a defined width, height explicitly or by a guiding edge."""
     if mode == "ASPECT":
         h, w, _ = image.shape
         scalar = max(width, height)
         scalar /= max(w, h)
-        return cv2.resize(image, None, fx=scalar, fy=scalar, interpolation=cv2.INTER_AREA)
+        return cv2.resize(image, None, fx=scalar, fy=scalar, interpolation=resample)
     elif mode == "CROP":
         return CROP_CENTER(image, width, height)
     elif mode == "FIT":
-        return cv2.resize(image, (width, height), interpolation=cv2.INTER_AREA)
+        return cv2.resize(image, (width, height), interpolation=resample)
     return image
 
-def TRANSFORM(image: cv2.Mat, offsetX: float=0., offsetY: float=0., angle: float=0., sizeX: float=1., sizeY: float=1., edge:str='CLIP', widthT: int=256, heightT: int=256, mode: str='FIX') -> cv2.Mat:
+def TRANSFORM(image: cv2.Mat, offsetX: float=0., offsetY: float=0., angle: float=0., sizeX: float=1., sizeY: float=1., edge:str='CLIP', widthT: int=256, heightT: int=256, mode: str='FIT', resample: Image.Resampling=Image.Resampling.LANCZOS) -> cv2.Mat:
     """Transform, Rotate and Scale followed by Tiling and then Inversion, conforming to an input wT, hT,."""
     height, width, _ = image.shape
 
     # SCALE
-    if (sizeX != 1. or sizeY != 1.) and edge != "CLIP":
+    if sizeX != 1. or sizeY != 1.:
+        print(width, height, sizeX, sizeY)
+        wx = int(width * sizeX)
+        hx = int(height * sizeY)
+        image = cv2.resize(image, (wx, hx), interpolation=resample)
+
+    # ROTATION
+    if angle != 0:
+        image = ROTATE(image, angle)
+
+    # TRANSLATION
+    if offsetX != 0. or offsetY != 0.:
+        image = TRANSLATE(image, offsetX, offsetY)
+
+    # WRAP first WRAP, WRAPX, WRAPY
+    if edge != "CLIP":
         tx = ty = 0
         if edge in ["WRAP", "WRAPX"] and sizeX < 1.:
             tx = 1. / sizeX - 1
@@ -261,34 +272,14 @@ def TRANSFORM(image: cv2.Mat, offsetX: float=0., offsetY: float=0., angle: float
         if edge in ["WRAP", "WRAPY"] and sizeY < 1.:
             ty = 1. / sizeY - 1
             sizeY = 1.
+
         image = EDGEWRAP(image, tx, ty)
         h, w, _ = image.shape
         loginfo(f"EDGEWRAP_POST [{w}, {h}]")
 
-    if sizeX != 1. or sizeY != 1.:
-        wx = int(width * sizeX)
-        hx = int(height * sizeY)
-        loginfo(f"SCALE [{wx}, {hx}]")
-        image = cv2.resize(image, (wx, hx), interpolation=cv2.INTER_AREA)
-
-    #if edge != "CLIP":
-    #    image = CROP_CENTER(image, width, height)
-
-    # ROTATION
-    if angle != 0:
-        if edge != "CLIP":
-            image = EDGEWRAP(image)
-        image = ROTATE(image, angle)
-
-    # TRANSLATION
-    if offsetX != 0. or offsetY != 0.:
-        if edge != "CLIP":
-            image = EDGEWRAP(image)
-        image = TRANSLATE(image, offsetX, offsetY)
-        if edge != "CLIP":
-            image = CROP_CENTER(image, width, height)
-
-    return SCALEFIT(image, widthT, heightT, mode=mode)
+    # clip to original size first...
+    image = CROP_CENTER(image, width, height)
+    return SCALEFIT(image, widthT, heightT, mode, resample)
 
 def HSV(image: cv2.Mat, hue: float, saturation: float, value: float) -> cv2.Mat:
     image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
@@ -374,7 +365,7 @@ def LERP(imageA: cv2.Mat, imageB: cv2.Mat, mask: cv2.Mat=None, alpha: float=1.) 
     return imageA.astype(np.uint8)
 
 def BLEND(imageA: cv2.Mat, imageB: cv2.Mat, func: str, width: int, height: int,
-          mask: cv2.Mat=None, alpha: float=1.) -> cv2.Mat:
+          mask: cv2.Mat=None, alpha: float=1., resample:Image.Resampling=Image.Resampling.LANCZOS) -> cv2.Mat:
 
     if (op := OP_BLEND.get(func, None)) is None:
         return imageA
@@ -388,7 +379,7 @@ def BLEND(imageA: cv2.Mat, imageB: cv2.Mat, func: str, width: int, height: int,
     def adjustSize(who: cv2.Mat) -> cv2.Mat:
         h, w, _ = who.shape
         if (w != width or h != height):
-            return SCALEFIT(who, width, height, 'FIT')
+            return SCALEFIT(who, width, height, 'FIT', resample)
         return who
 
     imageA = adjustSize(imageA)

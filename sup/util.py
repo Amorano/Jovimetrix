@@ -22,19 +22,20 @@ from PIL.PngImagePlugin import PngInfo
 # =============================================================================
 # === "LOGGER" ===
 # =============================================================================
-LOG = (os.getenv("JOVLOG", '').lower()) in ('true', '1', 't')
+LOGLEVEL = 0
+try: LOGLEVEL = int(os.getenv("JOVLOG"))
+except: pass
 
 def loginfo(msg: str) -> None:
-    if LOG:
+    if LOGLEVEL > 1:
         print(f"\033[48;2;54;135;27;93m[JOV]\033[0m {msg}")
 
 def logwarn(msg: str) -> None:
-    if LOG:
+    if LOGLEVEL > 0:
         print(f"\033[48;2;189;135;54;93m[JOV]\033[0m {msg}")
 
 def logerr(msg: str) -> None:
-    if LOG:
-        print(f"\033[48;2;135;27;81;93m[JOV]\033[0m {msg}")
+    print(f"\033[48;2;135;27;81;93m[JOV]\033[0m {msg}")
 
 @contextmanager
 def suppress_std() -> Generator[None, Any, None]:

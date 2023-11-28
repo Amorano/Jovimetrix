@@ -13,14 +13,14 @@
 Test unit for webcam setup.
 """
 
-import cv2
-import numpy as np
-
+import os
 import time
 import threading
+from typing import Any
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from typing import Any
+import cv2
+import numpy as np
 
 try:
     from .util import loginfo, logwarn, logerr, gridMake
@@ -28,6 +28,12 @@ try:
 except:
     from sup.util import loginfo, logwarn, logerr, gridMake
     from sup.comp import SCALEFIT
+
+__all__ = ["StreamManager"]
+
+# =============================================================================
+# === MEDIA ===
+# =============================================================================
 
 class MediaStream():
     def __init__(self, url:int|str, size:tuple[int, int]=None, fps:float=None, mode:str="NONE", backend:int=None) -> None:
@@ -326,6 +332,27 @@ class StreamingServer:
         server_thread = threading.Thread(target=server, daemon=True)
         server_thread.start()
         loginfo("[StreamingServer] STARTED")
+
+# =============================================================================
+# === GLOBAL CONFIG ===
+# =============================================================================
+
+# auto-scan the camera ports on startup?
+STREAMAUTOSCAN = os.getenv("JOVSTREAM_AUTO", '').lower() in ('true', '1', 't')
+STREAMMANAGER = StreamManager(STREAMAUTOSCAN)
+
+STREAMSERVER:StreamingServer = None
+if (val := os.getenv("JOVSTREAM_SERVER", '').lower() in ('true', '1', 't')):
+    STREAMSERVER = StreamingServer()
+
+STREAMHOST = os.getenv("JOVSTREAM_HOST", '')
+STREAMPORT = 7227
+try: STREAMPORT = int(os.getenv("JOVSTREAM_PORT", STREAMPORT))
+except: pass
+
+# =============================================================================
+# === TESTING ===
+# =============================================================================
 
 def streamReadTest() -> None:
     urls = [
