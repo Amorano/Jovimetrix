@@ -10,7 +10,7 @@
 
                     Copyright 2023 Alexander Morano (Joviex)
 
-Animation Supports
+Animation Supports.
 """
 
 import math
@@ -31,12 +31,28 @@ _OP_EASE = {}
 # =============================================================================
 
 class BadOperatorException(Exception):
+    """Exception for bad operators."""
     pass
 
 class EaseOP(Enum):
+    """Enum class for easing operators."""
     pass
 
 def ease(op: EaseOP, start: float=0, end: float=1, duration: float=1, alpha: np.ndarray=None, clip: tuple[int, int]=(0, 1)) -> np.ndarray:
+    """
+    Compute eased values.
+
+    Parameters:
+        op (EaseOP): Easing operator.
+        start (float): Starting value.
+        end (float): Ending value.
+        duration (float): Duration of the easing.
+        alpha (np.ndarray): Alpha values.
+        clip (tuple[int, int]): Clip range.
+
+    Returns:
+        np.ndarray: Eased values.
+    """
     if (func := _OP_EASE.get(op.name, None)) is None:
         raise BadOperatorException(str(op))
 
@@ -156,7 +172,11 @@ def bounce_in_out(t: np.ndarray) -> np.ndarray:
 # =============================================================================
 
 def importFunctions() -> None:
+    """
+    Import easing functions and update EaseOP enum.
+    """
     import inspect
+
     current_frame = inspect.currentframe()
     calling_frame = inspect.getouterframes(current_frame)[0]
     module = inspect.getmodule(calling_frame.frame)

@@ -249,7 +249,7 @@ def TRANSFORM(image: cv2.Mat, offsetX: float=0., offsetY: float=0., angle: float
 
     # SCALE
     if sizeX != 1. or sizeY != 1.:
-        print(width, height, sizeX, sizeY)
+        loginfo(f"TRANSFORM {width}, {height}, {sizeX}, {sizeY}")
         wx = int(width * sizeX)
         hx = int(height * sizeY)
         image = cv2.resize(image, (wx, hx), interpolation=resample)
