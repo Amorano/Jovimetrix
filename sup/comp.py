@@ -11,6 +11,7 @@
                     Copyright 2023 Alexander Morano (Joviex)
 """
 
+import math
 from enum import Enum
 
 import cv2
@@ -20,9 +21,9 @@ from scipy.ndimage import rotate
 from PIL import Image, ImageDraw, ImageChops
 
 try:
-    from .util import loginfo, logwarn, logerr
+    from .util import loginfo, logwarn, logerr, logdebug
 except:
-    from sup.util import loginfo, logwarn, logerr
+    from sup.util import loginfo, logwarn, logerr, logdebug
 
 # =============================================================================
 # === GLOBAL ENUMS ===
@@ -172,7 +173,7 @@ def CROP(image: cv2.Mat, x1: int, y1: int, x2: int, y2: int) -> cv2.Mat:
     if y2 < y1:
         y1, y2 = y2, y1
 
-    loginfo(f"CROP ({x1}, {y1}) :: ({x2}, {y2}) [{width}x{height}]")
+    logdebug(f"CROP ({x1}, {y1}) :: ({x2}, {y2}) [{width}x{height}]")
     return image[y1:y2, x1:x2]
 
 def CROP_CENTER(image: cv2.Mat, targetW: int, targetH: int) -> cv2.Mat:
@@ -182,7 +183,7 @@ def CROP_CENTER(image: cv2.Mat, targetW: int, targetH: int) -> cv2.Mat:
     w_center = int(width * 0.5)
     w_delta = int(targetW * 0.5)
     h_delta = int(targetH * 0.5)
-    loginfo(f"CROP_CENTER [{w_center}, {h_center}]  [{w_delta}, {h_delta}]")
+    logdebug(f"[CROP_CENTER] [{w_center}, {h_center}]  [{w_delta}, {h_delta}]")
     return CROP(image, w_center - w_delta, h_center - h_delta, w_center + w_delta, h_center + h_delta)
 
 def EDGEWRAP(image: cv2.Mat, tileX: float=1., tileY: float=1., edge: str='WRAP') -> cv2.Mat:
@@ -190,14 +191,14 @@ def EDGEWRAP(image: cv2.Mat, tileX: float=1., tileY: float=1., edge: str='WRAP')
     height, width, _ = image.shape
     tileX = int(tileX * width * 1) if edge in ["WRAP", "WRAPX"] else 0
     tileY = int(tileY * height * 1) if edge in ["WRAP", "WRAPY"] else 0
-    loginfo(f"EDGEWRAP [{width}, {height}]  [{tileX}, {tileY}]")
+    logdebug(f"[EDGEWRAP] [{width}, {height}]  [{tileX}, {tileY}]")
     return cv2.copyMakeBorder(image, tileY, tileY, tileX, tileX, cv2.BORDER_WRAP)
 
 def TRANSLATE(image: cv2.Mat, offsetX: float, offsetY: float) -> cv2.Mat:
     """TRANSLATION."""
     height, width, _ = image.shape
     M = np.float32([[1, 0, offsetX * width], [0, 1, offsetY * height]])
-    loginfo(f"TRANSLATE [{offsetX}, {offsetY}]")
+    logdebug(f"[TRANSLATE] [{offsetX}, {offsetY}]")
     return cv2.warpAffine(image, M, (width, height), flags=cv2.INTER_LINEAR)
 
 def ROTATE(image: cv2.Mat, angle: float, center=(0.5 ,0.5)) -> cv2.Mat:
@@ -205,7 +206,7 @@ def ROTATE(image: cv2.Mat, angle: float, center=(0.5 ,0.5)) -> cv2.Mat:
     height, width, _ = image.shape
     center = (int(width * center[0]), int(height * center[1]))
     M = cv2.getRotationMatrix2D(center, -angle, 1.0)
-    loginfo(f"ROTATE [{angle}]")
+    logdebug(f"[ROTATE] [{angle}]")
     return cv2.warpAffine(image, M, (width, height), flags=cv2.INTER_LINEAR)
 
 def ROTATE_NDARRAY(image: np.ndarray, angle: float, clip: bool=True) -> np.ndarray:
@@ -249,7 +250,7 @@ def TRANSFORM(image: cv2.Mat, offsetX: float=0., offsetY: float=0., angle: float
 
     # SCALE
     if sizeX != 1. or sizeY != 1.:
-        loginfo(f"TRANSFORM {width}, {height}, {sizeX}, {sizeY}")
+        logdebug(f"[TRANSFORM] {width}, {height}, {sizeX}, {sizeY}")
         wx = int(width * sizeX)
         hx = int(height * sizeY)
         image = cv2.resize(image, (wx, hx), interpolation=resample)
@@ -275,7 +276,7 @@ def TRANSFORM(image: cv2.Mat, offsetX: float=0., offsetY: float=0., angle: float
 
         image = EDGEWRAP(image, tx, ty)
         h, w, _ = image.shape
-        loginfo(f"EDGEWRAP_POST [{w}, {h}]")
+        logdebug(f"[EDGEWRAP_POST] [{w}, {h}]")
 
     # clip to original size first...
     image = CROP_CENTER(image, width, height)
@@ -287,29 +288,33 @@ def HSV(image: cv2.Mat, hue: float, saturation: float, value: float) -> cv2.Mat:
     image[:, :, 0] = (image[:, :, 0] + hue) % 180
     image[:, :, 1] = np.clip(image[:, :, 1] * saturation, 0, 255)
     image[:, :, 2] = np.clip(image[:, :, 2] * value, 0, 255)
-    loginfo(f"HSV {hue} {saturation} {value}")
+    logdebug(f"[HSV] {hue} {saturation} {value}")
     return cv2.cvtColor(image, cv2.COLOR_HSV2BGR)
 
 def GAMMA(image: cv2.Mat, value: float) -> cv2.Mat:
-    image = np.clip(cv2.pow(image / 255, value), 0, 1)
-    loginfo(f"GAMMA {image.dtype} ({value})")
-    return np.uint8(image * 255)
+    logdebug(f"[GAMMA] ({value})")
+    if value == 0:
+        return (image * 0).astype(np.uint8)
+
+    invGamma = 1.0 / max(0.000001, value)
+    lookUpTable = np.clip(np.array([((i / 255.0) ** invGamma) * 255
+        for i in np.arange(0, 256)]).astype(np.uint8), 0, 255)
+    return cv2.LUT(image, lookUpTable)
 
 def CONTRAST(image: cv2.Mat, value: float) -> cv2.Mat:
-    image = np.clip((image / 255 - 0.5) * value + 0.5, 0, 1)
-    loginfo(f"CONTRAST {image.dtype} ({value})")
-    return np.uint8(image * 255)
+    logdebug(f"[CONTRAST] ({value})")
+    mean_value = np.mean(image)
+    image = (image - mean_value) * value + mean_value
+    return np.clip(image, 0, 255).astype(np.uint8)
 
 def EXPOSURE(image: cv2.Mat, value: float) -> cv2.Mat:
-    image = np.clip(image / 255 * (2.0 ** value), 0, 1)
-    loginfo(f"EXPOSURE {image.dtype} ({value})")
-    return np.uint8(image * 255)
+    logdebug(f"[EXPOSURE] ({math.pow(2.0, value)})")
+    return np.clip(image * value, 0, 255).astype(np.uint8)
 
 def INVERT(image: cv2.Mat, value: float) -> cv2.Mat:
-    value = np.clip(value, 0, 1)
+    value = np.clip(value, 0, 255)
     inverted = np.abs(255 - image)
-    image = cv2.addWeighted(image, 1 - value, inverted, value, 0)
-    return image
+    return cv2.addWeighted(image, 1 - value, inverted, value, 0)
 
 def MIRROR(image: cv2.Mat, pX: float, axis: int, invert: bool=False) -> cv2.Mat:
     output =  np.zeros_like(image)

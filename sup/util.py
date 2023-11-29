@@ -37,6 +37,10 @@ def logwarn(msg: str) -> None:
 def logerr(msg: str) -> None:
     print(f"\033[48;2;135;27;81;93m[JOV]\033[0m {msg}")
 
+def logdebug(msg: str) -> None:
+    if JOV_LOG > 2:
+        print(f"\033[48;2;135;27;81;93m[JOV]\033[0m {msg}")
+
 @contextmanager
 def suppress_std() -> Generator[None, Any, None]:
     with open(os.devnull, "w") as devnull:

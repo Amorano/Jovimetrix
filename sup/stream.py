@@ -23,10 +23,10 @@ import cv2
 import numpy as np
 
 try:
-    from .util import loginfo, logwarn, logerr, gridMake
+    from .util import loginfo, logwarn, logerr, logdebug, gridMake
     from .comp import SCALEFIT
 except:
-    from sup.util import loginfo, logwarn, logerr, gridMake
+    from sup.util import loginfo, logwarn, logerr, logdebug, gridMake
     from sup.comp import SCALEFIT
 
 __all__ = ["StreamManager"]
@@ -41,6 +41,7 @@ class MediaStream():
         self.__quit = False
         self.__thread = None
         self.__paused = True
+        self.__captured = False
         self.__ret = False
         self.__backend = [backend] if backend else [cv2.CAP_ANY]
         self.__frame = np.zeros((1, 1, 3), dtype=np.uint8)
@@ -112,7 +113,7 @@ class MediaStream():
         logwarn(f"[MediaStream] END ({self.__url})")
 
     def capture(self) -> None:
-        if self.__source and self.__source.isOpened():
+        if self.__captured or (self.__source and self.__source.isOpened()):
             # logwarn('already captured')
             return
 
@@ -131,6 +132,7 @@ class MediaStream():
         time.sleep(1)
         self.__fps = max(1, self.__fps or self.__source.get(cv2.CAP_PROP_FPS))
         self.__paused = False
+        self.__captured = True
         loginfo(f"[MediaStream] CAPTURED ({self.__url})")
 
     def run(self) -> None:
@@ -144,6 +146,7 @@ class MediaStream():
         if self.__source:
             self.__source.release()
             logwarn(f"[MediaStream] RELEASED ({self.__url})")
+        self.__captured = False
 
     @property
     def frame(self) -> tuple[bool, Any]:
@@ -153,7 +156,8 @@ class MediaStream():
     def isOpen(self) -> bool:
         if not self.__source:
             return False
-        return self.__source.isOpened()
+        self.__captured = self.__source.isOpened()
+        return self.__captured
 
     @property
     def width(self) -> int:
@@ -237,6 +241,7 @@ class StreamManager:
                 if not stream.isOpen:
                     break
             StreamManager.STREAM[i] = stream
+            logdebug(f"[StreamManager] PING {i}")
 
         if capture:
             for stream in StreamManager.STREAM.values():
@@ -262,8 +267,16 @@ class StreamManager:
 
     def frame(self, url: str) -> tuple[bool, Any]:
         if (stream := StreamManager.STREAM.get(url, None)) is None:
-            return False, np.zeros((512, 512, 3), dtype=np.uint8)
-        return stream.frame
+            # attempt to capture first time...
+            stream = self.capture(url)
+
+        if not stream.isOpen:
+            stream.capture()
+
+        ret, frame = stream.frame
+        if ret:
+            return ret, frame
+        return ret, np.zeros((512, 512, 3), dtype=np.uint8)
 
     def capture(self, url: str, size:tuple[int, int]=None, fps:float=None, backend:int=None) -> MediaStream:
         if (stream := StreamManager.STREAM.get(url, None)) is None:
@@ -356,8 +369,7 @@ except: pass
 
 def streamReadTest() -> None:
     urls = [
-        "rtsp://rtspstream:804359a2ea4669af4edf7feab36ce048@zephyr.rtsp.stream/pattern",
-
+        0,
         "http://camera.sissiboo.com:86/mjpg/video.mjpg",
         "http://brandts.mine.nu:84/mjpg/video.mjpg",
         "http://webcam.mchcares.com/mjpg/video.mjpg",
@@ -377,8 +389,6 @@ def streamReadTest() -> None:
         "http://195.196.36.242/mjpg/video.mjpg",
         "http://158.58.130.148/mjpg/video.mjpg",
 
-        "rtsp://rtspstream:a0e429a2f87f5ef980d6a22198ecc1dc@zephyr.rtsp.stream/movie",
-
         "http://honjin1.miemasu.net/nphMotionJpeg?Resolution=320x240&Quality=Standard",
         "http://clausenrc5.viewnetcam.com:50003/nphMotionJpeg?Resolution=320x240&Quality=Standard",
         "http://takemotopiano.aa1.netvolante.jp:8190/nphMotionJpeg?Resolution=320x240&Quality=Standard",
@@ -388,8 +398,6 @@ def streamReadTest() -> None:
     ]
     streamIdx = 0
 
-    streamMGR = StreamManager()
-
     count = 0
     widthT = 160
     heightT = 120
@@ -398,8 +406,8 @@ def streamReadTest() -> None:
     empty = frame = np.zeros((heightT, widthT, 3), dtype=np.uint8)
     while True:
         streams = []
-        for x in streamMGR.active:
-            ret, chunk = streamMGR.frame(x)
+        for x in STREAMMANAGER.active:
+            ret, chunk = x.frame
             if not ret or chunk is None:
                 streams.append(empty)
                 continue
@@ -407,7 +415,7 @@ def streamReadTest() -> None:
             streams.append(chunk)
 
         chunks, col, row = gridMake(streams)
-        if (countNew := len(streamMGR.active)) != count:
+        if (countNew := len(STREAMMANAGER.active)) != count:
             frame = np.zeros((heightT * row, widthT * col, 3), dtype=np.uint8)
             count = countNew
 
@@ -422,7 +430,7 @@ def streamReadTest() -> None:
         cv2.imshow("Web Camera", frame)
         val = cv2.waitKey(1) & 0xFF
         if val == ord('c'):
-            streamMGR.capture(urls[streamIdx % len(urls)], (widthT, heightT))
+            STREAMMANAGER.capture(urls[streamIdx % len(urls)], (widthT, heightT))
             streamIdx += 1
         elif val == ord('q'):
             break
