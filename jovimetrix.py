@@ -31,8 +31,8 @@ from .sup.util import loginfo, logwarn, logerr
 
 # =============================================================================
 
-LOGLEVEL = 0
-try: LOGLEVEL = int(os.getenv("JOVLOG"))
+JOV_MAXDELAY = 60.
+try: JOV_MAXDELAY = float(os.getenv("JOV_MAXDELAY", 60.))
 except: pass
 
 # =============================================================================
@@ -1009,7 +1009,7 @@ class TickNode(JovimetrixBaseNode):
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/ANIMATE"
     DESCRIPTION = "Periodic pulse exporting normalized, delta since last pulse and count."
     RETURN_TYPES = ("INT", "FLOAT", "FLOAT", "FLOAT", )
-    RETURN_NAMES = ("🧮", "🛟", "🕛", "🛆🕛",)
+    RETURN_NAMES = ("🧮", "🛟", "🕛", "🔺🕛",)
     OUTPUT_NODE = True
 
     @classmethod
@@ -1177,11 +1177,11 @@ class OptionsNode(JovimetrixBaseNode):
 
     def run(self, o: Any, log: str, host: str, port: int) -> Any:
         if log == "ERROR":
-            util.LOGLEVEL = 0
+            util.JOV_LOG = 0
         elif log == "WARN":
-            util.LOGLEVEL = 1
+            util.JOV_LOG = 1
         elif log == "INFO":
-            util.LOGLEVEL = 2
+            util.JOV_LOG = 2
 
         stream.STREAMPORT = port
         stream.STREAMHOST = host
@@ -1194,6 +1194,7 @@ class DisplayDataNode(JovimetrixBaseNode):
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/UTILITY"
     DESCRIPTION = "Display any data"
     SORT = 100
+    POST = True
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -1236,8 +1237,12 @@ class DelayNode(JovimetrixBaseNode):
                 }}
 
     def run(self, o: Any, delay: float, hold: bool) -> dict:
+        while hold:
+            print(self)
+            time.sleep(0.1)
+            return ([self], )
 
-        delay = max(0, min(delay, 10))
+        delay = max(0, min(delay, JOV_MAXDELAY))
         time.sleep(delay)
         return (o,)
 
@@ -1258,15 +1263,24 @@ for class_name, class_object in classes:
     if class_name.endswith('Node') and not class_name.endswith('BaseNode'):
         name = class_object.NAME
         if hasattr(class_object, 'POST'):
+            class_object.CATEGORY = "JOVIMETRIX 🔺🟩🔵/💣☣️ WIP ☣️💣"
             POST[name] = class_object
         else:
             CLASS_MAPPINGS[name] = class_object
 
-# 🔗 ⚓ 🎹 📀 🍿 🎪 🐘
+# 🔗 ⚓ 🎹 📀 🍿 🎪 🐘 🤯 😱 💀 ⛓️ 🔒 🔑
 
 NODE_DISPLAY_NAME_MAPPINGS = {k: k for k, _ in CLASS_MAPPINGS.items()}
 CLASS_MAPPINGS.update({k: v for k, v in POST.items()})
+
 NODE_DISPLAY_NAME_MAPPINGS.update({k: k for k, _ in POST.items()})
 
-NODE_CLASS_MAPPINGS = {x[0] : x[1] for x in sorted(CLASS_MAPPINGS.items(),
+CLASS_MAPPINGS = {x[0] : x[1] for x in sorted(CLASS_MAPPINGS.items(),
                                                    key=lambda item: getattr(item[1], 'SORT', 0))}
+NODE_CLASS_MAPPINGS = {}
+
+# now sort the categories...
+for c in ["CREATE", "ADJUST", "TRANSFORM", "COMPOSE", "ANIMATE", "STREAM", "UTILITY", "💣☣️ WIP ☣️💣"]:
+    for k, v in CLASS_MAPPINGS.items():
+        if v.CATEGORY.endswith(c):
+            NODE_CLASS_MAPPINGS[k] = v

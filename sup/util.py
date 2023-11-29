@@ -22,16 +22,16 @@ from PIL.PngImagePlugin import PngInfo
 # =============================================================================
 # === "LOGGER" ===
 # =============================================================================
-LOGLEVEL = 0
-try: LOGLEVEL = int(os.getenv("JOVLOG"))
+JOV_LOG = 0
+try: JOV_LOG = int(os.getenv("JOV_LOG"))
 except: pass
 
 def loginfo(msg: str) -> None:
-    if LOGLEVEL > 1:
+    if JOV_LOG > 1:
         print(f"\033[48;2;54;135;27;93m[JOV]\033[0m {msg}")
 
 def logwarn(msg: str) -> None:
-    if LOGLEVEL > 0:
+    if JOV_LOG > 0:
         print(f"\033[48;2;189;135;54;93m[JOV]\033[0m {msg}")
 
 def logerr(msg: str) -> None:

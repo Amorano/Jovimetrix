@@ -338,16 +338,16 @@ class StreamingServer:
 # =============================================================================
 
 # auto-scan the camera ports on startup?
-STREAMAUTOSCAN = os.getenv("JOVSTREAM_AUTO", '').lower() in ('true', '1', 't')
+STREAMAUTOSCAN = os.getenv("JOV_STREAM_AUTO", '').lower() in ('true', '1', 't')
 STREAMMANAGER = StreamManager(STREAMAUTOSCAN)
 
 STREAMSERVER:StreamingServer = None
-if (val := os.getenv("JOVSTREAM_SERVER", '').lower() in ('true', '1', 't')):
+if (val := os.getenv("JOV_STREAM_SERVER", '').lower() in ('true', '1', 't')):
     STREAMSERVER = StreamingServer()
 
-STREAMHOST = os.getenv("JOVSTREAM_HOST", '')
+STREAMHOST = os.getenv("JOV_STREAM_HOST", '')
 STREAMPORT = 7227
-try: STREAMPORT = int(os.getenv("JOVSTREAM_PORT", STREAMPORT))
+try: STREAMPORT = int(os.getenv("JOV_STREAM_PORT", STREAMPORT))
 except: pass
 
 # =============================================================================
