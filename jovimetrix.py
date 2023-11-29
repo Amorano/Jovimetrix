@@ -11,11 +11,11 @@
                     Copyright 2023 Alexander Morano (Joviex)
 """
 
+import os
 import gc
 import re
 import json
 import time
-import concurrent.futures
 from typing import Any
 
 import cv2
@@ -28,6 +28,12 @@ from .sup import stream
 from .sup import comp
 from .sup.anim import ease, EaseOP
 from .sup.util import loginfo, logwarn, logerr
+
+# =============================================================================
+
+LOGLEVEL = 0
+try: LOGLEVEL = int(os.getenv("JOVLOG"))
+except: pass
 
 # =============================================================================
 # === CORE NODES ===
@@ -250,7 +256,7 @@ class ShapeNode(JovimetrixImageBaseNode):
 
         return (comp.pil2tensor(image), comp.pil2tensor(image.convert("L")), )
 
-class PixelShaderBaseNode(JovimetrixImageBaseNode):
+class PixelShaderBaseNode(JovimetrixImageInOutBaseNode):
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
     OUTPUT_IS_LIST = (False, False, )
 
@@ -338,56 +344,6 @@ class PixelShaderImageNode(PixelShaderBaseNode):
         image = cv2.resize(image, (width, height))
         image = comp.cv2tensor(image)
         return super().run(image, width, height, R, G, B)
-
-class WaveGeneratorNode(JovimetrixBaseNode):
-    NAME = "🌊 Wave Generator (jov)"
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
-    DESCRIPTION = ""
-    RETURN_TYPES = ("FLOAT", "INT", )
-
-    OP_WAVE = {
-        "SINE": comp.wave_sine,
-        "INV SINE": comp.wave_inv_sine,
-        "ABS SINE": comp.wave_abs_sine,
-        "COSINE": comp.wave_cosine,
-        "INV COSINE": comp.wave_inv_cosine,
-        "ABS COSINE": comp.wave_abs_cosine,
-        "SAWTOOTH": comp.wave_sawtooth,
-        "TRIANGLE": comp.wave_triangle,
-        "RAMP": comp.wave_ramp,
-        "STEP": comp.wave_step_function,
-        "HAVER SINE": comp.wave_haversine,
-        "NOISE": comp.wave_noise,
-    }
-    """
-        "SQUARE": comp.wave_square,
-        "PULSE": comp.wave_pulse,
-        "EXP": comp.wave_exponential,
-        "RECT PULSE": comp.wave_rectangular_pulse,
-
-        "LOG": comp.wave_logarithmic,
-        "GAUSSIAN": comp.wave_gaussian,
-        "CHIRP": comp.wave_chirp_signal,
-    }
-    """
-
-    @classmethod
-    def INPUT_TYPES(cls) -> dict:
-        d = {"required":{
-                "wave": (list(WaveGeneratorNode.OP_WAVE.keys()), {"default": "SINE"}),
-                "phase": ("FLOAT", {"default": 1.0, "min": 0.0, "step": 1.0}),
-                "amp": ("FLOAT", {"default": 0.5, "min": 0.0, "step": 0.1}),
-                "offset": ("FLOAT", {"default": 0.0, "min": 0.0, "step": 1.0}),
-                "max": ("FLOAT", {"default": 0.5, "min": 0.0, "max": 9999.0, "step": 0.05}),
-                "frame": ("INT", {"default": 1.0, "min": 0.0, "step": 1.0}),
-            }}
-        return d
-
-    def run(self, wave: str, phase: float, amp: float, offset: float, max: float, frame: int) -> tuple[float, int]:
-        val = 0.
-        if (op := WaveGeneratorNode.OP_WAVE.get(wave, None)):
-            val = op(phase, amp, offset, max, frame)
-        return (val, int(val))
 
 class GLSLNode(JovimetrixImageBaseNode):
     NAME = "🍩 GLSL (jov)"
@@ -493,6 +449,7 @@ class TileNode(JovimetrixImageInOutBaseNode):
     NAME = "🔳 Tile (jov)"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/TRANSFORM"
     DESCRIPTION = "Tile an Image with optional crop to original image size."
+    SORT = 5
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -525,6 +482,7 @@ class MirrorNode(JovimetrixImageInOutBaseNode):
     NAME = "🔰 Mirror (jov)"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/TRANSFORM"
     DESCRIPTION = "Flip an input across the X axis, the Y Axis or both, with independent centers."
+    SORT = 25
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -564,6 +522,7 @@ class MergeNode(JovimetrixImageInOutBaseNode):
     NAME = "➕ Merge (jov)"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/TRANSFORM"
     DESCRIPTION = "Union multiple latents horizontal, vertical or in a grid."
+    SORT = 15
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -615,6 +574,7 @@ class ProjectionNode(JovimetrixImageInOutBaseNode):
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/TRANSFORM"
     DESCRIPTION = ""
     POST = True
+    SORT = 55
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -811,6 +771,7 @@ class LevelsNode(JovimetrixImageInOutBaseNode):
     NAME = "📉 Level Adjust (jov)"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/ADJUST"
     DESCRIPTION = "Clip an input based on a low, high and mid point value."
+    POST = True
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -953,6 +914,7 @@ class StreamReaderNode(JovimetrixImageBaseNode):
     @classmethod
     def IS_CHANGED(cls, idx: int, url: str, fps: float, hold: bool, width: int,
                    height: int, mode: str, resample: str, invert: float, orient: str) -> float:
+
         url = url if url != "" else idx
         if (stream := stream.STREAMMANAGER.capture(url)) is None:
             raise Exception(f"stream failed {url}")
@@ -1047,7 +1009,7 @@ class TickNode(JovimetrixBaseNode):
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/ANIMATE"
     DESCRIPTION = "Periodic pulse exporting normalized, delta since last pulse and count."
     RETURN_TYPES = ("INT", "FLOAT", "FLOAT", "FLOAT", )
-    RETURN_NAMES = ("# 🧮", "0-1", "🕛", "🛆🕛",)
+    RETURN_NAMES = ("🧮", "🛟", "🕛", "🛆🕛",)
     OUTPUT_NODE = True
 
     @classmethod
@@ -1100,6 +1062,7 @@ class WaveGeneratorNode(JovimetrixBaseNode):
     DESCRIPTION = ""
     RETURN_TYPES = ("FLOAT", "INT", )
     RETURN_NAMES = ("🛟", "🔟", )
+    POST = True
 
     OP_WAVE = {
         "SINE": comp.wave_sine,
@@ -1166,12 +1129,12 @@ class RouteNode(JovimetrixBaseNode):
         return (o,)
 
 class ClearCacheNode(JovimetrixBaseNode):
-    NAME = "🧹 Clear Global Cache (jov)"
+    NAME = "🧹 Clear Cache (jov)"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/UTILITY"
     DESCRIPTION = "Clear the torch cache, and python caches - we need to pay the bills"
     RETURN_TYPES = (WILDCARD,)
     RETURN_NAMES = ("🧹",)
-    POST = True
+    SORT = 10
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -1196,6 +1159,7 @@ class OptionsNode(JovimetrixBaseNode):
     DESCRIPTION = "Change Jovimetrix Global Options"
     RETURN_TYPES = (WILDCARD, )
     RETURN_NAMES = ("🦄", )
+    SORT = 1
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -1207,7 +1171,11 @@ class OptionsNode(JovimetrixBaseNode):
                 "port": ("INT", {"default": 7227}),
             }}
 
-    def run(self, o: Any, log: str, host: str, port: int) -> tuple[torch.Tensor, torch.Tensor]:
+    @classmethod
+    def IS_CHANGED(cls, o: Any, log: str, host: str, port: int) -> float:
+        return float("nan")
+
+    def run(self, o: Any, log: str, host: str, port: int) -> Any:
         if log == "ERROR":
             util.LOGLEVEL = 0
         elif log == "WARN":
@@ -1220,35 +1188,58 @@ class OptionsNode(JovimetrixBaseNode):
         return (o, )
 
 class DisplayDataNode(JovimetrixBaseNode):
-    """Display any data node."""
+    """Display any data."""
 
-    NAME = "Display Data"
+    NAME = "📊 Display Data"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/UTILITY"
-    DESCRIPTION = "Change Jovimetrix Global Options"
-    RETURN_TYPES = ()
-    FUNCTION = "main"
-    OUTPUT_NODE = True
+    DESCRIPTION = "Display any data"
+    SORT = 100
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        return {
-            "required": {
-            "source": (WILDCARD, {}),
-            },
-        }
+        return {"required": {
+                    "source": (WILDCARD, {}),
+                },
+                "optional": {
 
-    def main(self, source=None) -> dict:
+                }}
+
+    def run(self, source=None) -> dict:
         value = 'None'
         if source is not None:
             try:
-                value = json.dumps(source)
+                value = json.dumps(source, indent=2, sort_keys=True)
             except Exception:
                 try:
                     value = str(source)
                 except Exception:
-                    value = 'source exists, but could not be serialized.'
+                    value = 'source could not be serialized.'
 
         return {"ui": {"text": (value,)}}
+
+class DelayNode(JovimetrixBaseNode):
+    """Delay for some time."""
+
+    NAME = "⏸️ Delay"
+    CATEGORY = "JOVIMETRIX 🔺🟩🔵/UTILITY"
+    DESCRIPTION = "Delay for some time"
+    RETURN_TYPES = (WILDCARD,)
+    RETURN_NAMES = ("🦄",)
+    SORT = 70
+
+    @classmethod
+    def INPUT_TYPES(cls) -> Any:
+        return {"required": {
+                    "o": (WILDCARD, {"default": None}),
+                    "delay": ("FLOAT", {"step": 0.01, "default" : 0}),
+                    "hold": ("BOOLEAN", {"default": True})
+                }}
+
+    def run(self, o: Any, delay: float, hold: bool) -> dict:
+
+        delay = max(0, min(delay, 10))
+        time.sleep(delay)
+        return (o,)
 
 # =============================================================================
 # === COMFYUI NODE MAP ===
@@ -1261,21 +1252,21 @@ module = inspect.getmodule(calling_frame.frame)
 classes = inspect.getmembers(module, inspect.isclass)
 
 NODE_DISPLAY_NAME_MAPPINGS = {}
-NODE_CLASS_MAPPINGS = {}
+CLASS_MAPPINGS = {}
 POST = {}
 for class_name, class_object in classes:
     if class_name.endswith('Node') and not class_name.endswith('BaseNode'):
-        name = class_object.NAME #.encode('utf-8')
+        name = class_object.NAME
         if hasattr(class_object, 'POST'):
-            class_object.CATEGORY = "JOVIMETRIX 🔺🟩🔵/**WIP**"
             POST[name] = class_object
         else:
-            NODE_CLASS_MAPPINGS[name] = class_object
-        cat = class_object.CATEGORY.split('/')[-1].strip(']')
-        loginfo(f"({cat}) {name}")
+            CLASS_MAPPINGS[name] = class_object
 
 # 🔗 ⚓ 🎹 📀 🍿 🎪 🐘
 
-NODE_DISPLAY_NAME_MAPPINGS = {k: k for k, _ in NODE_CLASS_MAPPINGS.items()}
-NODE_CLASS_MAPPINGS.update({k: v for k, v in POST.items()})
+NODE_DISPLAY_NAME_MAPPINGS = {k: k for k, _ in CLASS_MAPPINGS.items()}
+CLASS_MAPPINGS.update({k: v for k, v in POST.items()})
 NODE_DISPLAY_NAME_MAPPINGS.update({k: k for k, _ in POST.items()})
+
+NODE_CLASS_MAPPINGS = {x[0] : x[1] for x in sorted(CLASS_MAPPINGS.items(),
+                                                   key=lambda item: getattr(item[1], 'SORT', 0))}
