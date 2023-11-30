@@ -29,8 +29,6 @@ except:
     from sup.util import loginfo, logwarn, logerr, logdebug, gridMake
     from sup.comp import SCALEFIT
 
-__all__ = ["StreamManager"]
-
 # =============================================================================
 # === MEDIA ===
 # =============================================================================
@@ -180,6 +178,7 @@ class MediaStream():
 
         self.__size = (width, height)
         self.__frame = cv2.resize(self.__frame, self.__size)
+        logdebug("[MediaStream] SIZE ({width}, {height})")
 
     @property
     def mode(self) -> str:
@@ -198,6 +197,7 @@ class MediaStream():
         self.__zoom = np.clip(val, 0, 1)
         val = 100 + 300 * self.__zoom
         self.__source.set(cv2.CAP_PROP_ZOOM, val)
+        logdebug("[MediaStream] ZOOM ({self.__zoom})")
 
     @property
     def exposure(self) -> float:
@@ -286,7 +286,8 @@ class StreamManager:
 
     def pause(self, url: str) -> None:
         if (stream := StreamManager.STREAM.get(url, None)) is None:
-            stream.pause()
+            return
+        stream.pause()
 
 class StreamingHandler(BaseHTTPRequestHandler):
     def __init__(self, outputs, *args, **kwargs) -> None:
@@ -346,6 +347,21 @@ class StreamingServer:
         server_thread.start()
         loginfo("[StreamingServer] STARTED")
 
+def gridImage() -> cv2.Mat:
+    empty = frame = np.zeros((heightT, widthT, 3), dtype=np.uint8)
+    chunks, col, row = gridMake(streams)
+    if (countNew := len(STREAMMANAGER.active)) != count:
+        frame = np.zeros((heightT * row, widthT * col, 3), dtype=np.uint8)
+        count = countNew
+
+    i = 0
+    for y, strip in enumerate(chunks):
+        for x, item in enumerate(strip):
+            y1, y2 = y * heightT, (y+1) * heightT
+            x1, x2 = x * widthT, (x+1) * widthT
+            frame[y1:y2, x1:x2, ] = item
+            i += 1
+
 # =============================================================================
 # === GLOBAL CONFIG ===
 # =============================================================================
@@ -403,13 +419,14 @@ def streamReadTest() -> None:
     heightT = 120
     chunks = []
 
-    empty = frame = np.zeros((heightT, widthT, 3), dtype=np.uint8)
+    frame = np.zeros((heightT, widthT, 3), dtype=np.uint8)
     while True:
         streams = []
         for x in STREAMMANAGER.active:
             ret, chunk = x.frame
             if not ret or chunk is None:
-                streams.append(empty)
+                e = np.zeros((heightT, widthT, 3), dtype=np.uint8)
+                streams.append(e)
                 continue
             chunk = cv2.resize(chunk, (widthT, heightT))
             streams.append(chunk)
@@ -427,7 +444,7 @@ def streamReadTest() -> None:
                 frame[y1:y2, x1:x2, ] = item
                 i += 1
 
-        cv2.imshow("Web Camera", frame)
+        cv2.imshow("Media", frame)
         val = cv2.waitKey(1) & 0xFF
         if val == ord('c'):
             STREAMMANAGER.capture(urls[streamIdx % len(urls)], (widthT, heightT))

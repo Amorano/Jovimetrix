@@ -23,6 +23,8 @@ import torch
 import numpy as np
 from PIL import Image, ImageFilter
 
+import comfy
+
 from .sup import util
 from .sup import stream
 from .sup import comp
@@ -185,6 +187,11 @@ IT_COLOR = {
 IT_ORIENT = {
     "optional": {
         "orient": (["NORMAL", "FLIPX", "FLIPY", "FLIPXY"], {"default": "NORMAL"}),
+    }}
+
+IT_CAM = {
+    "optional": {
+        "zoom": ("FLOAT", {"min": 0, "max": 1, "step": 0.01, "default": 0}),
     }}
 
 IT_TRS = deep_merge_dict(IT_TRANS, IT_ROT, IT_SCALE)
@@ -888,7 +895,7 @@ class StreamReaderNode(JovimetrixImageBaseNode):
                 "fps": ("INT", {"min": 1, "max": 60, "step": 1, "default": 60}),
                 "hold": ("BOOLEAN", {"default": False}),
             }}
-        return deep_merge_dict(d, IT_WHMODEI, IT_SAMPLE, IT_ORIENT)
+        return deep_merge_dict(d, IT_WHMODEI, IT_SAMPLE, IT_ORIENT, IT_CAM)
 
     NAME = "📺 StreamReader (jov)"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/STREAM"
@@ -896,50 +903,39 @@ class StreamReaderNode(JovimetrixImageBaseNode):
 
     @classmethod
     def IS_CHANGED(cls, idx: int, url: str, fps: float, hold: bool, width: int,
-                   height: int, **kw) -> float:
+                   height: int, zoom: float, **kw) -> float:
 
         url = url if url != "" else idx
-        if (stream := stream.STREAMMANAGER.capture(url)) is None:
+        if (device := stream.STREAMMANAGER.capture(url)) is None:
             raise Exception(f"stream failed {url}")
 
-        if stream.size[0] != width or stream.size[1] != height:
-            stream.size = (width, height)
+        if device.size[0] != width or device.size[1] != height:
+            device.size = (width, height)
 
-        if stream.fps != fps:
-            stream.fps = fps
+        if device.zoom != zoom:
+            device.zoom = zoom
 
         if hold:
-            stream.pause()
-        else:
-            stream.run()
+            device.pause()
+            return float("nan")
+
+        device.run()
+        if device.fps != fps:
+            device.fps = fps
 
         return float("nan")
 
     def run(self, idx: int, url: str, fps: float, hold: bool, width: int,
-            height: int, mode: str, resample: str, invert: float, orient: str) -> tuple[torch.Tensor, torch.Tensor]:
-        """
-        Return a current frame from the StreamReader if it is active and the FPS check passes.
+            height: int, mode: str, resample: str, invert: float, orient: str,
+            zoom: float) -> tuple[torch.Tensor, torch.Tensor]:
 
-        Args:
-            idx (int): Index of the StreamReader.
-            url (str): URI for a streaming device.
-            fps (float): Frames per second.
-            hold (bool): Hold last frame flag.
-            width (int): Width of the image.
-            height (int): Height of the image.
-            mode (str): Scale processing mode.
-            invert (float): Amount to invert the output
-            orient (str): Normal, FlipX, FlipY or FlipXY
-
-        Returns:
-            (image (torch.tensor), mask (torch.tensor)): The image and its mask result.
-        """
-
-        # global STREAMMANAGER
         url = url if url != "" else idx
-        ret, image = stream.STREAMMANAGER.frame(idx)
-        if hold:
-            return (comp.cv2tensor(image), comp.cv2mask(image), )
+        if (device := stream.STREAMMANAGER.capture(url)) is None:
+            raise Exception(f"stream failed {url}")
+
+        ret, image = device.frame
+        #if hold:
+        #    return (comp.cv2tensor(image), comp.cv2mask(image), )
 
         rs = Image.Resampling[resample]
         image = comp.SCALEFIT(image, width, height, mode, rs)
@@ -972,9 +968,11 @@ class StreamWriterNode(JovimetrixBaseNode):
     NAME = "🎞️ StreamWriter (jov)"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/STREAM"
     DESCRIPTION = ""
+    OUTPUT_IS_LIST = (None, None,)
 
     @classmethod
-    def IS_CHANGED(cls, pixels: torch.Tensor, route: str, hold: bool, width: int, height: int, mode: str, sampler: str, invert: float, orient: str) -> float:
+    def IS_CHANGED(cls, pixels: torch.Tensor, route: str, hold: bool, width: int,
+                   height: int, mode: str, sampler: str, invert: float, orient: str) -> float:
         return float("nan")
 
     def __init__(self, *arg, **kw) -> None:
@@ -982,8 +980,10 @@ class StreamWriterNode(JovimetrixBaseNode):
         self.__host = None
         self.__port = None
 
-    def run(self, pixels: torch.Tensor, route: str, hold: bool, width: int, height: int, mode: str, sampler: str, invert: float, orient: str) -> torch.Tensor:
-        if stream.STREAMHOST != self.__host or stream.STREAMPORT != self.__port:
+    def run(self, pixels: torch.Tensor, route: str, hold: bool, width: int,
+            height: int, mode: str, sampler: str, invert: float, orient: str) -> torch.Tensor:
+
+       if stream.STREAMHOST != self.__host or stream.STREAMPORT != self.__port:
             # close old, if any
 
             # startup server
@@ -1141,9 +1141,10 @@ class ClearCacheNode(JovimetrixBaseNode):
         if isinstance(o, dict):
             s = o.copy()
 
-        gc.collect()
         torch.cuda.empty_cache()
         torch.cuda.ipc_collect()
+        gc.collect()
+        comfy.model_management.soft_empty_cache()
 
         f, t = torch.cuda.mem_get_info()
         logdebug(f"[{self.NAME}] free: {f}")
