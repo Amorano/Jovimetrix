@@ -173,7 +173,7 @@ def CROP(image: cv2.Mat, x1: int, y1: int, x2: int, y2: int) -> cv2.Mat:
     if y2 < y1:
         y1, y2 = y2, y1
 
-    logdebug(f"CROP ({x1}, {y1}) :: ({x2}, {y2}) [{width}x{height}]")
+    logdebug(f"[CROP] ({x1}, {y1}) :: ({x2}, {y2}) [{width}x{height}]")
     return image[y1:y2, x1:x2]
 
 def CROP_CENTER(image: cv2.Mat, targetW: int, targetH: int) -> cv2.Mat:
@@ -186,12 +186,12 @@ def CROP_CENTER(image: cv2.Mat, targetW: int, targetH: int) -> cv2.Mat:
     logdebug(f"[CROP_CENTER] [{w_center}, {h_center}]  [{w_delta}, {h_delta}]")
     return CROP(image, w_center - w_delta, h_center - h_delta, w_center + w_delta, h_center + h_delta)
 
-def EDGEWRAP(image: cv2.Mat, tileX: float=1., tileY: float=1., edge: str='WRAP') -> cv2.Mat:
+def EDGE_WRAP(image: cv2.Mat, tileX: float=1., tileY: float=1., edge: str='WRAP') -> cv2.Mat:
     """TILING."""
     height, width, _ = image.shape
     tileX = int(tileX * width * 1) if edge in ["WRAP", "WRAPX"] else 0
     tileY = int(tileY * height * 1) if edge in ["WRAP", "WRAPY"] else 0
-    logdebug(f"[EDGEWRAP] [{width}, {height}]  [{tileX}, {tileY}]")
+    logdebug(f"[EDGE_WRAP] [{width}, {height}]  [{tileX}, {tileY}]")
     return cv2.copyMakeBorder(image, tileY, tileY, tileX, tileX, cv2.BORDER_WRAP)
 
 def TRANSLATE(image: cv2.Mat, offsetX: float, offsetY: float) -> cv2.Mat:
@@ -231,8 +231,10 @@ def ROTATE_NDARRAY(image: np.ndarray, angle: float, clip: bool=True) -> np.ndarr
     # Clip the rotated image
     return rotated_image[start_height:start_height + height, start_width:start_width + width]
 
-def SCALEFIT(image: cv2.Mat, width: int, height: int, mode: str, resample: Image.Resampling=Image.Resampling.LANCZOS) -> cv2.Mat:
+def SCALEFIT(image: cv2.Mat, width: int, height: int, mode: str,
+             resample: Image.Resampling=Image.Resampling.LANCZOS) -> cv2.Mat:
     """Scale a matrix into a defined width, height explicitly or by a guiding edge."""
+
     if mode == "ASPECT":
         h, w, _ = image.shape
         scalar = max(width, height)
@@ -244,7 +246,10 @@ def SCALEFIT(image: cv2.Mat, width: int, height: int, mode: str, resample: Image
         return cv2.resize(image, (width, height), interpolation=resample)
     return image
 
-def TRANSFORM(image: cv2.Mat, offsetX: float=0., offsetY: float=0., angle: float=0., sizeX: float=1., sizeY: float=1., edge:str='CLIP', widthT: int=256, heightT: int=256, mode: str='FIT', resample: Image.Resampling=Image.Resampling.LANCZOS) -> cv2.Mat:
+def TRANSFORM(image: cv2.Mat, offsetX: float=0., offsetY: float=0., angle: float=0.,
+              sizeX: float=1., sizeY: float=1., edge:str='CLIP', widthT: int=256,
+              heightT: int=256, mode: str='FIT',
+              resample: Image.Resampling=Image.Resampling.LANCZOS) -> cv2.Mat:
     """Transform, Rotate and Scale followed by Tiling and then Inversion, conforming to an input wT, hT,."""
     height, width, _ = image.shape
 
@@ -274,7 +279,7 @@ def TRANSFORM(image: cv2.Mat, offsetX: float=0., offsetY: float=0., angle: float
             ty = 1. / sizeY - 1
             sizeY = 1.
 
-        image = EDGEWRAP(image, tx, ty)
+        image = EDGE_WRAP(image, tx, ty)
         h, w, _ = image.shape
         logdebug(f"[EDGEWRAP_POST] [{w}, {h}]")
 
@@ -442,6 +447,86 @@ def LEVELS(image: torch.Tensor, black_point:int=0, white_point=255, mid_point=0.
 
     # Scale back to the range [0, 1]
     return (image + 0.5) / white_point
+
+def SHARPEN(image: cv2.Mat, kernel_size=None, sigma:float=1.0, amount:float=1.0, threshold:float=0) -> cv2.Mat:
+    """Return a sharpened version of the image, using an unsharp mask."""
+    kernel_size = (kernel_size, kernel_size) if kernel_size else (5, 5)
+    blurred = cv2.GaussianBlur(image, kernel_size, sigma)
+    sharpened = float(amount + 1) * image - float(amount) * blurred
+    sharpened = np.maximum(sharpened, np.zeros(sharpened.shape))
+    sharpened = np.minimum(sharpened, 255 * np.ones(sharpened.shape))
+    sharpened = sharpened.round().astype(np.uint8)
+    if threshold > 0:
+        low_contrast_mask = np.absolute(image - blurred) < threshold
+        np.copyto(sharpened, image, where=low_contrast_mask)
+    return sharpened
+
+def EDGE_DETECT(image: cv2.Mat, low: float=0.27, high:float=0.6) -> cv2.Mat:
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    image = cv2.GaussianBlur(src=image, ksize=(3, 5), sigmaX=0.5)
+    # Perform Canny edge detection
+    return cv2.Canny(image, int(low * 255), int(high * 255))
+
+def MEDIAN3x3(image: cv2.Mat) -> cv2.Mat:
+    height, width = image.shape
+    out = np.zeros([height, width])
+    for i in range(1, height-1):
+        for j in range(1, width-1):
+            temp = [
+                image[i-1, j-1],
+                image[i-1, j],
+                image[i-1, j + 1],
+                image[i, j-1],
+                image[i, j],
+                image[i, j + 1],
+                image[i + 1, j-1],
+                image[i + 1, j],
+                image[i + 1, j + 1]
+            ]
+
+            temp = sorted(temp)
+            out[i, j]= temp[4]
+    return out
+
+def EMBOSS(image: cv2.Mat, amount: float=1.) -> cv2.Mat:
+    kernel = np.array([
+        [-2,    -1,     0],
+        [-1,    1,      1],
+        [0,     1,      2]
+    ]) * amount
+    return cv2.filter2D(src=image, ddepth=-1, kernel=kernel)
+
+def KERNEL(stride: int) -> np.ndarray:
+    """
+    Generate a kernel matrix with a specific stride.
+
+    The kernel matrix has a size of (stride, stride) and is filled with values
+    such that if i < j, the element is set to -1; if i > j, the element is set to 1.
+
+    Parameters:
+    - stride (int): The size of the square kernel matrix.
+
+    Returns:
+    - np.ndarray: The generated kernel matrix.
+
+    Example:
+    >>> KERNEL(3)
+    array([[ 0,  1,  1],
+           [-1,  0,  1],
+           [-1, -1,  0]], dtype=int8)
+    """
+    # Create an initial matrix of zeros
+    kernel = np.zeros((stride, stride), dtype=np.int8)
+
+    # Create a mask for elements where i < j and set them to -1
+    mask_lower = np.tril(np.ones((stride, stride), dtype=bool), k=-1)
+    kernel[mask_lower] = -1
+
+    # Create a mask for elements where i > j and set them to 1
+    mask_upper = np.triu(np.ones((stride, stride), dtype=bool), k=1)
+    kernel[mask_upper] = 1
+
+    return kernel
 
 # =============================================================================
 # === WAVE FUNCTIONS SIMPLE ===

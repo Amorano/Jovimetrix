@@ -330,6 +330,7 @@ class PixelShaderNode(JovimetrixImageInOutBaseNode):
             B: list[str], width: list[int], height: list[int],
             resample: list[str], **kw) -> tuple[torch.Tensor, torch.Tensor]:
 
+        run = time.time()
         pixels: list[torch.tensor] = kw.get('pixels',
                                             (torch.zeros((height[0], width[0], 3), dtype=torch.uint8),))
 
@@ -348,7 +349,7 @@ class PixelShaderNode(JovimetrixImageInOutBaseNode):
             images.append(comp.cv2tensor(image))
             masks.append(comp.cv2mask(image))
 
-        logdebug(f"[{self.NAME}]")
+        logdebug(f"[{self.NAME}] ({time.time() - run:.5})")
         return (
             torch.stack(images),
             torch.stack(masks)
@@ -462,23 +463,28 @@ class TileNode(JovimetrixImageInOutBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        return deep_merge_dict(IT_REQUIRED, IT_PIXELS, IT_TILE)
+        return deep_merge_dict(IT_REQUIRED, IT_PIXELS, IT_TILE, IT_WH, IT_WHMODE)
 
-    def run(self, pixels: list[torch.tensor], tileX: list[float],
-            tileY: list[float]) -> tuple[list[torch.Tensor], list[torch.Tensor]]:
+    def run(self, pixels: list[torch.tensor], tileX: list[float], tileY: list[float],
+            width: list[int], height: list[int], mode: list[str],
+            resample: list[str]) -> tuple[list[torch.Tensor], list[torch.Tensor]]:
 
         masks = []
         images = []
         for idx, image in enumerate(pixels):
             image = comp.tensor2cv(image)
-            # preserve the old size for the resize or crop?
-            height, width, _ = image.shape
-            image = comp.EDGEWRAP(image, tileX[min(idx, len(tileX)-1)], tileY[min(idx, len(tileY)-1)])
-            # rebound to target width and height
-            #rs = resample[min(idx, len(resample)-1)]
-            #rs = Image.Resampling[rs]
-            image = comp.CROP_CENTER(image, width, height)
-            #image = cv2.resize(image, (width, height), interpolation=rs)
+            image = comp.EDGE_WRAP(image,
+                                  tileX[min(idx, len(tileX)-1)],
+                                  tileY[min(idx, len(tileY)-1)])
+
+            rs = resample[min(idx, len(resample)-1)]
+            rs = Image.Resampling[rs]
+            image = comp.SCALEFIT(image,
+                                  width[min(idx, len(width)-1)],
+                                  height[min(idx, len(height)-1)],
+                                  mode[min(idx, len(mode)-1)],
+                                  rs)
+
             images.append(comp.cv2tensor(image))
             masks.append(comp.cv2mask(image))
 
@@ -616,22 +622,21 @@ class ProjectionNode(JovimetrixImageInOutBaseNode):
 class HSVNode(JovimetrixImageInOutBaseNode):
     NAME = "🌈 HSV (jov)"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/ADJUST"
-    DESCRIPTION = "Adjust Hue, Saturation, Value, Gamma, Contrast and Exposure of an input"
+    DESCRIPTION = "Adjust Hue, Saturation, Value, Contrast Gamma of input."
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"required": {
                 "hue": ("FLOAT",{"default": 0, "min": 0, "max": 1, "step": 0.01},),
                 "saturation": ("FLOAT", {"default": 1, "min": 0, "max": 1, "step": 0.01}, ),
-                "value": ("FLOAT", {"default": 1, "min": 0, "max": 1, "step": 0.01}, ),
+                "value": ("FLOAT", {"default": 1, "min": 0, "max": 250, "step": 0.01}, ),
                 "contrast": ("FLOAT", {"default": 0, "min": 0, "max": 1, "step": 0.01}, ),
-                "exposure": ("FLOAT", {"default": 1, "min": 0, "max": 50, "step": 0.01}, ),
                 "gamma": ("FLOAT", {"default": 1, "min": 0, "max": 250, "step": 0.01}, ),
             }}
         return deep_merge_dict(IT_PIXELS, d, IT_INVERT)
 
     def run(self, pixels: list[torch.tensor], hue: list[float], saturation: list[float],
-            value: list[float], contrast: list[float], exposure: list[float], gamma: list[float],
+            value: list[float], contrast: list[float], gamma: list[float],
             invert: list[float]) -> tuple[torch.Tensor, torch.Tensor]:
 
         masks = []
@@ -641,8 +646,8 @@ class HSVNode(JovimetrixImageInOutBaseNode):
 
             h = hue[min(idx, len(hue)-1)]
             s = saturation[min(idx, len(saturation)-1)]
-            v = value[min(idx, len(value)-1)]
-            if h != 0 or s != 0 or v != 0:
+            # v = value[min(idx, len(value)-1)]
+            if h != 0 or s != 0: # or v != 0:
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
                 if h != 0:
                     h *= 255
@@ -651,14 +656,15 @@ class HSVNode(JovimetrixImageInOutBaseNode):
                 if s != 1:
                     img[:, :, 1] = np.clip(img[:, :, 1] * s, 0, 255)
 
-                if v != 1:
-                    img[:, :, 2] = np.clip(img[:, :, 2] * v, 0, 255)
+                #if v != 1:
+                #    img[:, :, 2] = np.clip(img[:, :, 2] * v, 0, 255)
                 img = cv2.cvtColor(img, cv2.COLOR_HSV2BGR)
 
             if (val := contrast[min(idx, len(contrast)-1)]) != 0:
                 img = comp.CONTRAST(img, 1 - val)
 
-            if (val := exposure[min(idx, len(exposure)-1)]) != 1:
+            #if (val := exposure[min(idx, len(exposure)-1)]) != 1:
+            if (val := value[min(idx, len(value)-1)]) != 1:
                 img = comp.EXPOSURE(img, val)
 
             if (val := gamma[min(idx, len(gamma)-1)]) != 1:
@@ -680,51 +686,83 @@ class AdjustNode(JovimetrixImageInOutBaseNode):
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/ADJUST"
     DESCRIPTION = "Find Edges, Blur, Sharpen and Emboss an input"
 
-    OPS = {
-        'BLUR': ImageFilter.GaussianBlur,
-        'SHARPEN': ImageFilter.UnsharpMask,
-    }
-
-    OPS_PRE = {
-        # PREDEFINED
-        'EMBOSS': ImageFilter.EMBOSS,
-        'FIND_EDGES': ImageFilter.FIND_EDGES,
-    }
-
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        ops = list(AdjustNode.OPS.keys()) + list(AdjustNode.OPS_PRE.keys())
         d = {"required": {
-                "func": (ops, {"default": "BLUR"}),
-                "radius": ("INT", {"default": 1, "min": 0, "step": 1}),
+                "func": (['BLUR', 'STACK BLUR', 'GAUSSIAN BLUR', 'SHARPEN', 'EMBOSS', 'FIND EDGES', 'DILATE', 'ERODE', 'OPEN', 'CLOSE'], {"default": "BLUR"}),
+            },
+            "optional": {
+                "radius": ("INT", {"default": 1, "min": 1,  "max": 2048, "step": 1}),
+                "amount": ("FLOAT", {"default": 1, "min": 0, "step": 0.01}),
+                "low": ("FLOAT", {"default": 0.27, "min": 0, "max": 1, "step": 0.01}),
+                "high": ("FLOAT", {"default": 0.72, "min": 0, "max": 1, "step": 0.01}),
+
             }}
         return deep_merge_dict(IT_PIXELS, d, IT_INVERT)
 
     def run(self, pixels: list[torch.tensor], func: list[str], radius: list[float],
+            amount: list[float], low: list[float], high: list[float],
             invert: list[float])  -> tuple[torch.Tensor, torch.Tensor]:
 
         start = time.time()
         masks = []
         images = []
-        for idx, img in enumerate(pixels):
-            img = comp.tensor2pil(img)
-            f = func[min(idx, len(func)-1)]
-            if (op := AdjustNode.OPS.get(f, None)):
-                r = radius[min(idx, len(radius)-1)]
-                img = img.filter(op(r))
-                logdebug(f"[{self.NAME}] {f} - {radius} ({idx})")
+        for idx, image in enumerate(pixels):
+            image = comp.tensor2cv(image)
 
-            elif (op := AdjustNode.OPS_PRE.get(f, None)):
-                img = img.filter(op())
-                logdebug(f"[{self.NAME}] {f} ({idx})")
+            op = func[min(idx, len(func)-1)]
+            # radius is odd for "kernels"
+            rad = radius[min(idx, len(radius)-1)]
+            rad = rad if rad % 2 == 1 else rad + 1
+            amt = amount[min(idx, len(amount)-1)]
+
+            lo = amount[min(idx, len(low)-1)]
+            hi = amount[min(idx, len(high)-1)]
+
+            match op:
+                case 'BLUR':
+                    image = cv2.blur(image, (rad, rad))
+
+                case 'STACK BLUR':
+                    image = cv2.stackBlur(image, (rad, rad))
+
+                case 'GAUSSIAN BLUR':
+                    image = cv2.GaussianBlur(image, (rad, rad), sigmaX=float(amt))
+
+                case 'MEDIAN BLUR':
+                    image = cv2.medianBlur(image, (rad, rad))
+
+                case 'SHARPEN':
+                    comp.SHARPEN(image, kernel_size=rad, amount=amt)
+
+                case 'EMBOSS':
+                    image = comp.EMBOSS(image, amt)
+
+                case 'FIND_EDGES':
+                    image = comp.EDGE_DETECT(image, low=lo, high=hi)
+
+                case 'OUTLINE':
+                    image = cv2.morphologyEx(image, cv2.MORPH_GRADIENT, (rad, rad))
+
+                case 'DILATE':
+                    image = cv2.dilate(image, (rad, rad), iterations=int(amt))
+
+                case 'ERODE':
+                    image = cv2.erode(image, (rad, rad), iterations=int(amt))
+
+                case 'OPEN':
+                    image = cv2.morphologyEx(image, cv2.MORPH_CLOSE, (rad, rad))
+
+                case 'CLOSE':
+                    image = cv2.morphologyEx(image, cv2.MORPH_CLOSE, (rad, rad))
+
+            logdebug(f"[{self.NAME}] {op} {rad} {amt} {low} {hi} ({idx})")
 
             if (i := invert[min(idx, len(invert)-1)]) != 0:
-                img = comp.pil2cv(img)
-                img = comp.INVERT(img, i)
-                img = comp.cv2pil(img)
+                image = comp.INVERT(image, i)
 
-            images.append(comp.pil2tensor(img))
-            masks.append(comp.pil2mask(img))
+            images.append(comp.cv2tensor(image))
+            masks.append(comp.cv2mask(image))
 
         logdebug(f"[{self.NAME}] {time.time()-start:.5}")
         return (
@@ -866,12 +904,12 @@ class BlendNode(JovimetrixImageInOutBaseNode):
                              m, alpha[min(idx, len(alpha)-1)], rs)
 
             i = invert[min(idx, len(invert)-1)]
-            if i:
+            if i != 0:
                 image = comp.INVERT(image, i)
             image = comp.SCALEFIT(image, w, h, mode[min(idx, len(mode)-1)], rs)
 
             images.append(comp.cv2tensor(image))
-            masks.append(comp.cv2tensor(image))
+            masks.append(comp.cv2mask(image))
 
         return (
             torch.stack(images),
