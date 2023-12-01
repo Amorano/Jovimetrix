@@ -25,10 +25,10 @@ import numpy as np
 
 try:
     from .util import loginfo, logwarn, logerr, logdebug, gridMake
-    from .comp import SCALEFIT
+    from .comp import geo_scalefit
 except:
     from sup.util import loginfo, logwarn, logerr, logdebug, gridMake
-    from sup.comp import SCALEFIT
+    from sup.comp import geo_scalefit
 
 # =============================================================================
 
@@ -89,7 +89,7 @@ class MediaStream():
 
                 if newframe is not None:
                     timeout = None
-                    # self.__frame = SCALEFIT(newframe, self.__size[0], self.__size[1], self.__mode)
+                    # self.__frame = geo_scalefit(newframe, self.__size[0], self.__size[1], self.__mode)
                     self.__frame = newframe
 
                 if timeout is None and (not self.__ret or newframe is None):
@@ -371,7 +371,7 @@ class StreamingServer:
                     _, frame = device.frame
                     StreamingServer.OUT[k]['b'] = frame
 
-def gridImage(data: list[object], width: int, height: int) -> cv2.Mat:
+def gridImage(data: list[object], width: int, height: int) -> np.ndarray:
     #@TODO: makes poor assumption all images are the same dimensions.
     chunks, col, row = gridMake(data)
     frame = np.zeros((height * row, width * col, 3), dtype=np.uint8)

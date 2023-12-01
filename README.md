@@ -100,7 +100,7 @@ NODE | OVERVIEW | COMFY UI
     * Per Pixel Shader with input support. Slow but works until the ![GLSL]("GLSL Node") is available. Variables pre-defined for use in the loop include:
       <ul>
         <li><code>$x</code>, <code>$y</code>: Current image (x, y)</li>
-        <li><code>$u</code>, <code>$v</code>: Normalized texuture coordinates [0..1]</li>
+        <li><code>$u</code>, <code>$v</code>: Normalized texture coordinates [0..1]</li>
         <li><code>$w</code>, <code>$h</code>: Width and Height of the target output</li>
         <li><code>$ir</code>, <code>$ig</code>, <code>$ib</code>: Red, Green & Blue values for current image input (x, y)</li>
       </ul>
@@ -177,7 +177,7 @@ NODE | OVERVIEW | COMFY UI
 --|---|---
 🌱 TRANSFORM|Translate, Rotate, and Scale an input. Options allow for CROP or WRAPing of the edges|![TRANSFORM](flow/node_transform.png "Translate, Rotate, and Scale an input. Options allow for CROP or WRAPing of the edges")
 🔳 TILE|Repeat an input along the X, Y or XY at irregular intervals|![TILE](flow/node_tile.png "Repeat an input along the X, Y or XY at irregular intervals")
-🔰 MIRROR|Flip an input across the X axis, the Y Axis or both, with independant centers|![MIRROR](flow/node_mirror.png "Flip an input across the X axis, the Y Axis or both, with independant centers")
+🔰 MIRROR|Flip an input across the X axis, the Y Axis or both, with independent centers|![MIRROR](flow/node_mirror.png "Flip an input across the X axis, the Y Axis or both, with independant centers")
 🎇 EXTEND|Combine two inputs into a new image, side by side or top-down|![EXTEND](flow/node_extend.png "Combine two inputs into a new image, side by side or top-down")
 🗺️ PROJECTION|Convert inputs to cartesian, polar, ?|![PROJECTION](flow/node_projection.png "Convert inputs to cartesian, polar, ?")
 
@@ -200,7 +200,7 @@ NODE | OVERVIEW | COMFY UI
       <summary><b>MIRROR EXAMPLE</b></summary>
       <img
         style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
-        src="flow/node_mirror.png" alt="Flip an input across the X axis, the Y Axis or both, with independant centers">
+        src="flow/node_mirror.png" alt="Flip an input across the X axis, the Y Axis or both, with independent centers">
       </img>
     </details>
         <details>
@@ -232,7 +232,7 @@ NODE | OVERVIEW | COMFY UI
 NODE | OVERVIEW | COMFY UI
 --|---|---
 🌈 HSV|Adjust Hue, Saturation, Value, Gamma, Contrast and Exposure of an input|![HSV](flow/node_hsv.png "Adjust Hue, Saturation, Value, Gamma, Contrast and Exposure of an input")
-🕸️ ADJUST|Find Edges, Blur, Sharpen and Emobss an input|![ADJUST](flow/node_adjust.png "Find Edges, Blur, Sharpen and Emobss an input")
+🕸️ ADJUST|Find Edges, Blur, Sharpen and Emboss an input|![ADJUST](flow/node_adjust.png "Find Edges, Blur, Sharpen and Emboss an input")
 📉 THRESHOLD|Clip an input based on a mid point value|![ADJUST](flow/node_threshold.png "Clip an input based on a mid point value")
   </ul>
   <ul>
@@ -247,7 +247,7 @@ NODE | OVERVIEW | COMFY UI
       <summary><b>ADJUST EXAMPLE</b></summary>
       <img
         style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
-        src="flow/node_adjust.png" alt="Find Edges, Blur, Sharpen and Emobss an input">
+        src="flow/node_adjust.png" alt="Find Edges, Blur, Sharpen and Emboss an input">
       </img>
     </details>
         <details>
@@ -336,9 +336,5 @@ NODE | OVERVIEW | COMFY UI
 
 - [⭕] specific single examples for all nodes
 - [⭕] hook GLSL context in litegraph
-- [⭕] redo camera with stream reader/writer defaults
+- [⭕] ~redo camera with stream reader~ / writer defaults
 - [⭕] generalized section to explain common parameters (w/h/invert/mode)
-- [⭕] GAMMA, EXPOSURE, SHARPEN -- check output 
-- [✔️] env switches for logger and stream* service auto-starts
-- [✔️] embed workflows in example images
-- [✔️] create readme

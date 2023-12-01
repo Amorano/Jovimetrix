@@ -21,7 +21,7 @@ from typing import Any
 import cv2
 import torch
 import numpy as np
-from PIL import Image, ImageFilter
+from PIL import Image
 
 import comfy
 
@@ -259,7 +259,7 @@ class ShapeNode(JovimetrixImageBaseNode):
         image = image.rotate(-angle)
         if invert > 0.:
             image = comp.pil2cv(image)
-            image = comp.INVERT(image, invert)
+            image = comp.light_invert(image, invert)
             image = comp.cv2pil(image)
 
         return (comp.pil2tensor(image), comp.pil2tensor(image.convert("L")), )
@@ -280,7 +280,7 @@ class PixelShaderNode(JovimetrixImageInOutBaseNode):
         return deep_merge_dict(IT_REQUIRED, IT_PIXELS, d, IT_WH, IT_SAMPLE)
 
     @staticmethod
-    def shader(image: cv2.Mat, R: str, G: str, B: str, width: int, height: int,
+    def shader(image: np.ndarray, R: str, G: str, B: str, width: int, height: int,
                chunkX: int=64, chunkY:int=64) -> np.ndarray:
         import math
         from ast import literal_eval
@@ -412,7 +412,7 @@ class GLSLNode(JovimetrixImageBaseNode):
         return (comp.pil2tensor(image), comp.pil2mask(image))
 
 # =============================================================================
-# === TRANFORM NODES ===
+# === TRANSFORM NODES ===
 # =============================================================================
 
 class TransformNode(JovimetrixImageInOutBaseNode):
@@ -435,7 +435,7 @@ class TransformNode(JovimetrixImageInOutBaseNode):
             image = comp.tensor2cv(image)
             rs = resample[min(idx, len(resample)-1)]
             rs = Image.Resampling[rs]
-            image = comp.TRANSFORM(image,
+            image = comp.geo_transform(image,
                                    offsetX[min(idx, len(offsetX)-1)],
                                    offsetY[min(idx, len(offsetY)-1)],
                                    angle[min(idx, len(angle)-1)],
@@ -473,13 +473,13 @@ class TileNode(JovimetrixImageInOutBaseNode):
         images = []
         for idx, image in enumerate(pixels):
             image = comp.tensor2cv(image)
-            image = comp.EDGE_WRAP(image,
+            image = comp.geo_edge_wrap(image,
                                   tileX[min(idx, len(tileX)-1)],
                                   tileY[min(idx, len(tileY)-1)])
 
             rs = resample[min(idx, len(resample)-1)]
             rs = Image.Resampling[rs]
-            image = comp.SCALEFIT(image,
+            image = comp.geo_scalefit(image,
                                   width[min(idx, len(width)-1)],
                                   height[min(idx, len(height)-1)],
                                   mode[min(idx, len(mode)-1)],
@@ -520,10 +520,10 @@ class MirrorNode(JovimetrixImageInOutBaseNode):
             m = mode[min(idx, len(mode)-1)]
             i = invert[min(idx, len(invert)-1)]
             if 'X' in m:
-                image = comp.MIRROR(image, x, 1, invert=i)
+                image = comp.geo_mirror(image, x, 1, invert=i)
 
             if 'Y' in m:
-                image = comp.MIRROR(image, y, 0, invert=i)
+                image = comp.geo_mirror(image, y, 0, invert=i)
 
             images.append(comp.cv2tensor(image))
             masks.append(comp.cv2mask(image))
@@ -570,11 +570,11 @@ class MergeNode(JovimetrixImageInOutBaseNode):
             h = height[min(idx, len(height)-1)]
             rs = resample[min(idx, len(resample)-1)]
             rs = Image.Resampling[rs]
-            image = comp.SCALEFIT(image, w, h, 'FIT', rs)
+            image = comp.geo_scalefit(image, w, h, 'FIT', rs)
 
-            # image = comp.EXTEND(image, imageB, axis[min(idx, len(axis)-1)], flip[min(idx, len(flip)-1)])
+            # image = comp.geo_extend(image, imageB, axis[min(idx, len(axis)-1)], flip[min(idx, len(flip)-1)])
             if mode != "NONE":
-                image = comp.SCALEFIT(image, w, h, mode[min(idx, len(mode)-1)], rs)
+                image = comp.geo_scalefit(image, w, h, mode[min(idx, len(mode)-1)], rs)
 
             images.append(comp.cv2tensor(image))
             masks.append(comp.cv2mask(image))
@@ -588,32 +588,109 @@ class ProjectionNode(JovimetrixImageInOutBaseNode):
     NAME = "🗺️ Projection (jov)"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/TRANSFORM"
     DESCRIPTION = ""
-    POST = True
     SORT = 55
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"required": {
-                "proj": (["POLAR", "CYLINDRICAL"], {"default": "SPHERICAL"}),
+                "proj": (["SPHERICAL", "FISHEYE"], {"default": "FISHEYE"}),
+                "strength": ("FLOAT", {"default": 1, "min": 0, "step": 0.01}),
             }}
-        return deep_merge_dict(IT_IMAGE, d, IT_WH)
+        return deep_merge_dict(IT_PIXELS, d, IT_WHMODEI, IT_SAMPLE)
 
-    def run(self, image: torch.tensor, proj: str, width: int, height: int) -> tuple[torch.Tensor, torch.Tensor]:
-        image = comp.tensor2pil(image)
+    def run(self, pixels: list[torch.tensor], proj: list[str], strength: list[float],
+            width: list[int], height: list[int], mode: list[str], invert: list[float],
+            resample: list[str]) -> tuple[torch.Tensor, torch.Tensor]:
 
-        source_width, source_height = image.size
-        target_image = Image.new("RGB", (width, height))
-        for y_target in range(height):
-            for x_target in range(width):
-                x_source = int((x_target / width) * source_width)
+        masks = []
+        images = []
+        for idx, image in enumerate(pixels):
+            image = comp.tensor2cv(image)
+            str = strength[min(idx, len(strength)-1)]
+            p = proj[min(idx, len(proj)-1)]
+            logdebug(f"[REMAP] {p} ({str})")
+            match p:
+                case 'SPHERICAL':
+                    image = comp.remap_sphere(image, str)
 
-                if proj == "SPHERICAL":
-                    x_source %= source_width
-                y_source = int(y_target / height * source_height)
-                px = image.getpixel((x_source, y_source))
+                case 'FISHEYE':
+                    image = comp.remap_fisheye(image, str)
 
-                target_image.putpixel((x_target, y_target), px)
-        return (comp.pil2tensor(target_image), comp.pil2mask(target_image),)
+            rs = resample[min(idx, len(resample)-1)]
+            rs = Image.Resampling[rs]
+            image = comp.geo_scalefit(image,
+                                  width[min(idx, len(width)-1)],
+                                  height[min(idx, len(height)-1)],
+                                  mode[min(idx, len(mode)-1)],
+                                  rs)
+
+            i = invert[min(idx, len(invert)-1)]
+            if i != 0:
+                image = comp.light_invert(image, i)
+
+            images.append(comp.cv2tensor(image))
+            masks.append(comp.cv2mask(image))
+
+        return (
+            torch.stack(images),
+            torch.stack(masks)
+        )
+
+class CropNode(JovimetrixImageInOutBaseNode):
+    NAME = "✂️ Crop (jov)"
+    CATEGORY = "JOVIMETRIX 🔺🟩🔵/TRANSFORM"
+    DESCRIPTION = "Robust cropping with color fill"
+    SORT = 55
+
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        d = {"required": {
+                "top": ("FLOAT", {"default": 0, "min": 0, "step": 0.01}),
+                "left": ("FLOAT", {"default": 0, "min": 0, "step": 0.01}),
+                "bottom": ("FLOAT", {"default": 1, "min": 0, "step": 0.01}),
+                "right": ("FLOAT", {"default": 1, "min": 0, "step": 0.01}),
+            },
+            "optional": {
+                "pad":  ("BOOLEAN", {"default": False}),
+            }}
+        return deep_merge_dict(IT_PIXELS, IT_WH, d, IT_COLOR,  IT_INVERT)
+
+    def run(self, pixels: list[torch.tensor], pad: list[bool], top: list[float],
+            left: list[float], bottom: list[float], right: list[float],
+            R: list[float], G: list[float], B: list[float], width: list[int],
+            height: list[int], invert: list[float]) -> tuple[list[torch.Tensor], list[torch.Tensor]]:
+
+        masks = []
+        images = []
+        for idx, image in enumerate(pixels):
+            image = comp.tensor2cv(image)
+
+            t = top[min(idx, len(top)-1)]
+            l = left[min(idx, len(left)-1)]
+            b = bottom[min(idx, len(bottom)-1)]
+            r = right[min(idx, len(right)-1)]
+
+            color = (B[min(idx, len(B)-1)] * 255,
+                     G[min(idx, len(G)-1)] * 255,
+                     R[min(idx, len(R)-1)] * 255)
+
+            w = width[min(idx, len(width)-1)]
+            h = height[min(idx, len(height)-1)]
+            p = pad[min(idx, len(pad)-1)]
+
+            print(l, t, r, b, w, h, p, color)
+            image = comp.geo_crop(image, l, t, r, b, w, h, p, color)
+
+            if (i := invert[min(idx, len(invert)-1)]) != 0:
+                image = comp.light_invert(image, i)
+
+            images.append(comp.cv2tensor(image))
+            masks.append(comp.cv2mask(image))
+
+        return (
+            torch.stack(images),
+            torch.stack(masks)
+        )
 
 # =============================================================================
 # === ADJUST LUMA/COLOR NODES ===
@@ -661,17 +738,17 @@ class HSVNode(JovimetrixImageInOutBaseNode):
                 img = cv2.cvtColor(img, cv2.COLOR_HSV2BGR)
 
             if (val := contrast[min(idx, len(contrast)-1)]) != 0:
-                img = comp.CONTRAST(img, 1 - val)
+                img = comp.light_contrast(img, 1 - val)
 
             #if (val := exposure[min(idx, len(exposure)-1)]) != 1:
             if (val := value[min(idx, len(value)-1)]) != 1:
-                img = comp.EXPOSURE(img, val)
+                img = comp.light_exposure(img, val)
 
             if (val := gamma[min(idx, len(gamma)-1)]) != 1:
-                img = comp.GAMMA(img, val)
+                img = comp.light_gamma(img, val)
 
             if (val := invert[min(idx, len(invert)-1)]) != 0:
-                img = comp.INVERT(img, val)
+                img = comp.light_invert(img, val)
 
             images.append(comp.cv2tensor(img))
             masks.append(comp.cv2mask(img))
@@ -733,13 +810,13 @@ class AdjustNode(JovimetrixImageInOutBaseNode):
                     image = cv2.medianBlur(image, (rad, rad))
 
                 case 'SHARPEN':
-                    comp.SHARPEN(image, kernel_size=rad, amount=amt)
+                    comp.adjust_sharpen(image, kernel_size=rad, amount=amt)
 
                 case 'EMBOSS':
-                    image = comp.EMBOSS(image, amt)
+                    image = comp.morph_emboss(image, amt)
 
                 case 'FIND_EDGES':
-                    image = comp.EDGE_DETECT(image, low=lo, high=hi)
+                    image = comp.morph_edge_detect(image, low=lo, high=hi)
 
                 case 'OUTLINE':
                     image = cv2.morphologyEx(image, cv2.MORPH_GRADIENT, (rad, rad))
@@ -759,7 +836,7 @@ class AdjustNode(JovimetrixImageInOutBaseNode):
             logdebug(f"[{self.NAME}] {op} {rad} {amt} {low} {hi} ({idx})")
 
             if (i := invert[min(idx, len(invert)-1)]) != 0:
-                image = comp.INVERT(image, i)
+                image = comp.light_invert(image, i)
 
             images.append(comp.cv2tensor(image))
             masks.append(comp.cv2mask(image))
@@ -802,13 +879,13 @@ class ThresholdNode(JovimetrixImageInOutBaseNode):
 
             op = comp.EnumThreshold[op[min(idx, len(op)-1)]].value
             adapt = comp.EnumAdaptThreshold[adapt[min(idx, len(adapt)-1)]].value
-            img = comp.THRESHOLD(img, threshold[min(idx, len(threshold)-1)], op,
+            img = comp.adjust_threshold(img, threshold[min(idx, len(threshold)-1)], op,
                                  adapt, block[min(idx, len(block)-1)],
                                  const[min(idx, len(const)-1)])
 
-            # img = comp.SCALEFIT(img, width[min(idx, len(width)-1)], height[min(idx, len(height)-1)], mode[min(idx, len(mode)-1)])
+            # img = comp.geo_scalefit(img, width[min(idx, len(width)-1)], height[min(idx, len(height)-1)], mode[min(idx, len(mode)-1)])
             if (i := invert[min(idx, len(invert)-1)]):
-                img = comp.INVERT(img, i)
+                img = comp.light_invert(img, i)
 
             images.append(comp.cv2tensor(img))
             masks.append(comp.cv2mask(img))
@@ -900,13 +977,13 @@ class BlendNode(JovimetrixImageInOutBaseNode):
             rs = resample[min(idx, len(resample)-1)]
             rs = Image.Resampling[rs]
 
-            image = comp.BLEND(image, pb, func[min(idx, len(func)-1)], w, h,
+            image = comp.comp_blend(image, pb, func[min(idx, len(func)-1)], w, h,
                              m, alpha[min(idx, len(alpha)-1)], rs)
 
             i = invert[min(idx, len(invert)-1)]
             if i != 0:
-                image = comp.INVERT(image, i)
-            image = comp.SCALEFIT(image, w, h, mode[min(idx, len(mode)-1)], rs)
+                image = comp.light_invert(image, i)
+            image = comp.geo_scalefit(image, w, h, mode[min(idx, len(mode)-1)], rs)
 
             images.append(comp.cv2tensor(image))
             masks.append(comp.cv2mask(image))
@@ -976,7 +1053,7 @@ class StreamReaderNode(JovimetrixImageBaseNode):
         #    return (comp.cv2tensor(image), comp.cv2mask(image), )
 
         rs = Image.Resampling[resample]
-        image = comp.SCALEFIT(image, width, height, mode, rs)
+        image = comp.geo_scalefit(image, width, height, mode, rs)
 
         if orient in ["FLIPX", "FLIPXY"]:
             image = cv2.flip(image, 1)
@@ -985,7 +1062,7 @@ class StreamReaderNode(JovimetrixImageBaseNode):
             image = cv2.flip(image, 0)
 
         if invert != 0.:
-            image = comp.INVERT(image, invert)
+            image = comp.light_invert(image, invert)
 
         return (
             torch.stack((comp.cv2tensor(image),)),
