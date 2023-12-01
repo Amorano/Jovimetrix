@@ -163,8 +163,8 @@ IT_SAMPLE = {
 
 IT_TILE = {
     "optional": {
-        "tileX": ("INT", {"default": 1, "min": 0, "step": 1, "display": "number"}),
-        "tileY": ("INT", {"default": 1, "min": 0, "step": 1, "display": "number"}),
+        "tileX": ("INT", {"default": 1, "min": 1, "step": 1}),
+        "tileY": ("INT", {"default": 1, "min": 1, "step": 1}),
     }}
 
 IT_EDGE = {
@@ -474,8 +474,8 @@ class TileNode(JovimetrixImageInOutBaseNode):
         for idx, image in enumerate(pixels):
             image = comp.tensor2cv(image)
             image = comp.geo_edge_wrap(image,
-                                  tileX[min(idx, len(tileX)-1)],
-                                  tileY[min(idx, len(tileY)-1)])
+                                  tileX[min(idx, len(tileX)-1)]-1,
+                                  tileY[min(idx, len(tileY)-1)]-1)
 
             rs = resample[min(idx, len(resample)-1)]
             rs = Image.Resampling[rs]
@@ -723,8 +723,8 @@ class HSVNode(JovimetrixImageInOutBaseNode):
 
             h = hue[min(idx, len(hue)-1)]
             s = saturation[min(idx, len(saturation)-1)]
-            # v = value[min(idx, len(value)-1)]
-            if h != 0 or s != 0: # or v != 0:
+
+            if h != 0 or s != 1:
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
                 if h != 0:
                     h *= 255
@@ -733,14 +733,11 @@ class HSVNode(JovimetrixImageInOutBaseNode):
                 if s != 1:
                     img[:, :, 1] = np.clip(img[:, :, 1] * s, 0, 255)
 
-                #if v != 1:
-                #    img[:, :, 2] = np.clip(img[:, :, 2] * v, 0, 255)
                 img = cv2.cvtColor(img, cv2.COLOR_HSV2BGR)
 
             if (val := contrast[min(idx, len(contrast)-1)]) != 0:
                 img = comp.light_contrast(img, 1 - val)
 
-            #if (val := exposure[min(idx, len(exposure)-1)]) != 1:
             if (val := value[min(idx, len(value)-1)]) != 1:
                 img = comp.light_exposure(img, val)
 

@@ -213,8 +213,8 @@ def geo_crop(image: cv2.Mat, left=None, top=None, right=None, bottom=None,
 def geo_edge_wrap(image: np.ndarray, tileX: float=1., tileY: float=1., edge: str='WRAP') -> np.ndarray:
     """TILING."""
     height, width, _ = image.shape
-    tileX = int(tileX * width * 1) if edge in ["WRAP", "WRAPX"] else 0
-    tileY = int(tileY * height * 1) if edge in ["WRAP", "WRAPY"] else 0
+    tileX = int(tileX * width * 0.5) if edge in ["WRAP", "WRAPX"] else 0
+    tileY = int(tileY * height * 0.5) if edge in ["WRAP", "WRAPY"] else 0
     logdebug(f"[geo_edge_wrap] [{width}, {height}]  [{tileX}, {tileY}]")
     return cv2.copyMakeBorder(image, tileY, tileY, tileX, tileX, cv2.BORDER_WRAP)
 
@@ -283,7 +283,6 @@ def geo_transform(image: np.ndarray, offsetX: float=0., offsetY: float=0., angle
 
     # SCALE
     if sizeX != 1. or sizeY != 1.:
-        logdebug(f"[TRANSFORM] {width}, {height}, {sizeX}, {sizeY}")
         wx = int(width * sizeX)
         hx = int(height * sizeY)
         image = cv2.resize(image, (wx, hx), interpolation=resample)
@@ -308,10 +307,10 @@ def geo_transform(image: np.ndarray, offsetX: float=0., offsetY: float=0., angle
 
         image = geo_edge_wrap(image, tx, ty)
         h, w, _ = image.shape
-        logdebug(f"[EDGEWRAP_POST] [{w}, {h}]")
 
     # clip to original size first...
     image = geo_crop(image)
+    logdebug(f"[TRANSFORM] ({offsetX},{offsetY}), {angle}, ({sizeX},{sizeY}) [{width}x{height} - {mode} - {resample}]")
     return geo_scalefit(image, widthT, heightT, mode, resample)
 
 def geo_extend(imageA: np.ndarray, imageB: np.ndarray, axis: int=0, flip: bool=False) -> np.ndarray:

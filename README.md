@@ -338,3 +338,4 @@ NODE | OVERVIEW | COMFY UI
 - [⭕] hook GLSL context in litegraph
 - [⭕] ~redo camera with stream reader~ / writer defaults
 - [⭕] generalized section to explain common parameters (w/h/invert/mode)
+- [⭕] add flip/alternate? to tile node
