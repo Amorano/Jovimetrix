@@ -339,3 +339,10 @@ NODE | OVERVIEW | COMFY UI
 - [⭕] ~redo camera with stream reader~ / writer defaults
 - [⭕] generalized section to explain common parameters (w/h/invert/mode)
 - [⭕] add flip/alternate? to tile node
+
+## TODO NODES:
+- [⭕] audio
+- [⭕] database
+- [⭕] shotgrid events
+- [⭕] rest points
+- [⭕] keyframe system or general event timeline
