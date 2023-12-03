@@ -332,8 +332,7 @@ class PixelShaderNode(JovimetrixImageInOutBaseNode):
             resample: list[str], pixels: Optional[list[torch.tensor]]=None) -> tuple[torch.Tensor, torch.Tensor]:
 
         run = time.time()
-        # pixels: list[torch.tensor] = kw.get('pixels',
-                                            (torch.zeros((height[0], width[0], 3), dtype=torch.uint8),))
+        pixels = pixels or (torch.zeros((height[0], width[0], 3), dtype=torch.uint8),)
 
         masks = []
         images = []
