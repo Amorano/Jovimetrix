@@ -17,6 +17,10 @@
 
 If you have [ComfyUI Manager](https://github.com/ltdrdata/ComfyUI-Manager) installed you can search for Jovimetrix and install from the manager's database.
 
+## FFMEPG
+
+The audio nodes require FFMPEG. You can find the [FFMPEG](https://ffmpeg.org "official FFMPEG binaries") here.
+
 ## MANUAL INSTALL
 To manually install, clone the repository into your ComfyUI custom_nodes directory. You can clone the repository with the command:
 ```
@@ -330,9 +334,18 @@ NODE | OVERVIEW | COMFY UI
   </ul>
 </details>
 
+
+## Acknowledgements
+
+ - [ComfyUI](https://github.com/comfyanonymous/ComfyUI) for existing
+ - [pythongosssss](https://github.com/pythongosssss) I "borrowed" so many magic tricks
+
+ - [MatisseTec](https://www.twitch.tv/matissetec) constantly doing free work on cutting edge tech
+ - [Purz](https://www.purz.xyz/) another great soul doing endless free work for your education
+
 ---
 
-## TODO:
+### TODO:
 
 - [⭕] specific single examples for all nodes
 - [⭕] hook GLSL context in litegraph
@@ -340,7 +353,7 @@ NODE | OVERVIEW | COMFY UI
 - [⭕] generalized section to explain common parameters (w/h/invert/mode)
 - [⭕] add flip/alternate? to tile node
 
-## TODO NODES:
+### TODO NODES:
 - [⭕] audio
 - [⭕] database
 - [⭕] shotgrid events

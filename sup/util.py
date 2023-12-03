@@ -26,20 +26,20 @@ JOV_LOG = 0
 try: JOV_LOG = int(os.getenv("JOV_LOG"))
 except: pass
 
-def logerr(msg: str) -> None:
-    print(f"\033[48;2;135;27;81;93m[JOV]\033[0m {msg}")
+def logerr(msg: str, *arg) -> None:
+    print(f"\033[48;2;135;27;81;93m[JOV]\033[0m {msg}", *arg)
 
-def logwarn(msg: str) -> None:
+def logwarn(msg: str, *arg) -> None:
     if JOV_LOG > 0:
-        print(f"\033[48;2;189;135;54;93m[JOV]\033[0m {msg}")
+        print(f"\033[48;2;189;135;54;93m[JOV]\033[0m {msg}", *arg)
 
-def loginfo(msg: str) -> None:
+def loginfo(msg: str, *arg) -> None:
     if JOV_LOG > 1:
-        print(f"\033[48;2;54;135;27;93m[JOV]\033[0m {msg}")
+        print(f"\033[48;2;54;135;27;93m[JOV]\033[0m {msg}", *arg)
 
-def logdebug(msg: str) -> None:
+def logdebug(msg: str, *arg) -> None:
     if JOV_LOG > 2:
-        print(f"\033[48;2;35;87;181;93m[JOV]\033[0m {msg}")
+        print(f"\033[48;2;35;87;181;93m[JOV]\033[0m {msg}", *arg)
 
 @contextmanager
 def suppress_std() -> Generator[None, Any, None]:

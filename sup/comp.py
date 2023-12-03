@@ -18,7 +18,7 @@ import cv2
 import torch
 import numpy as np
 from scipy.ndimage import rotate
-from PIL import Image, ImageDraw, ImageChops
+from PIL import Image, ImageDraw, ImageChops, ImageOps, ImageSequence
 
 try:
     from .util import loginfo, logwarn, logerr, logdebug
@@ -88,9 +88,19 @@ def tensor2cv(tensor: torch.Tensor) -> np.ndarray:
     tensor = np.clip(255 * tensor.cpu().numpy().squeeze(), 0, 255).astype(np.uint8)
     return cv2.cvtColor(tensor, cv2.COLOR_RGB2BGR)
 
+def tensor2mask(tensor: torch.Tensor) -> np.ndarray:
+    """Torch Tensor to CV2 Matrix."""
+    tensor = np.clip(255 * tensor.cpu().numpy().squeeze(), 0, 255).astype(np.uint8)
+    return cv2.cvtColor(tensor, cv2.COLOR_RGB2GRAY)
+
 def tensor2np(tensor: torch.Tensor) -> np.ndarray:
     """Torch Tensor to Numpy Array."""
     return np.clip(255 * tensor.cpu().numpy().squeeze(), 0, 255).astype(np.uint8)
+
+def mask2cv(tensor: torch.Tensor) -> np.ndarray:
+    """Torch Tensor (Mask) to CV2 Matrix."""
+    tensor = np.clip(255 * tensor.cpu().numpy().squeeze(), 0, 255).astype(np.uint8)
+    return cv2.cvtColor(tensor, cv2.COLOR_RGB2GRAY)
 
 def mask2pil(mask: torch.Tensor) -> Image:
     """Torch Tensor (Mask) to PIL."""
@@ -126,6 +136,124 @@ def cv2mask(image: np.ndarray) -> torch.Tensor:
     """CV2 to Torch Tensor (Mask)."""
     image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY).astype(np.float32)
     return torch.from_numpy(image / 255.0).unsqueeze(0)
+
+# =============================================================================
+# === IMAGE I/O ===
+# =============================================================================
+
+def load_psd(image) -> list:
+    layers=[]
+    logdebug(f"[load_psd] {image.format}")
+    if image.format=='PSD':
+        layers = [frame.copy() for frame in ImageSequence.Iterator(image)]
+        logdebug(f"[load_psd] #PSD {len(layers)}")
+    else:
+        image = ImageOps.exif_transpose(image)
+
+    layers.append(image)
+    return layers
+
+def load_image(fp,white_bg=False) -> list:
+    im = Image.open(fp)
+
+    #ims = load_psd(im)
+    im = ImageOps.exif_transpose(im)
+    ims=[im]
+
+    images=[]
+    for i in ims:
+        image = i.convert("RGB")
+        image = np.array(image).astype(np.float32) / 255.0
+        image = torch.from_numpy(image)[None,]
+        if 'A' in i.getbands():
+            mask = np.array(i.getchannel('A')).astype(np.float32) / 255.0
+            mask = 1. - torch.from_numpy(mask)
+            if white_bg==True:
+                nw = mask.unsqueeze(0).unsqueeze(-1).repeat(1, 1, 1, 3)
+                image[nw == 1] = 1.0
+        else:
+            mask = torch.zeros((64,64), dtype=torch.float32, device="cpu")
+
+        images.append({
+            "image":image,
+            "mask":mask
+        })
+
+    return images
+
+# =============================================================================
+# === UTILITY ===
+# =============================================================================
+
+def gray_sized(image: cv2.Mat, h:int, w:int, resample: int=0) -> cv2.Mat:
+    """Force an image into Grayscale at a specific width, height."""
+    if len(image.shape) > 2:
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    if image.shape[0] != h or image.shape[1] != w:
+        image = cv2.resize(image, (w, h), interpolation=resample)
+    return image
+
+def split(image: cv2.Mat) -> tuple[list[cv2.Mat], list[cv2.Mat]]:
+    w, h, c = image.shape
+
+    # Check if the image has an alpha channel
+    if c == 4:
+        b, g, r, _ = cv2.split(image)
+    else:
+        b, g, r = cv2.split(image)
+        # a = np.zeros_like(r)
+
+    e = np.zeros((w, h), dtype=np.uint8)
+
+    masks = []
+    images = []
+    f = cv2.merge([r, r, r])
+    masks.append(cv2mask(f))
+
+    f = cv2.merge([e, e, r])
+    images.append(cv2tensor(f))
+
+    f = cv2.merge([g, g, g])
+    masks.append(cv2mask(f))
+    f = cv2.merge([e, g, e])
+    images.append(cv2tensor(f))
+
+    f = cv2.merge([b, b, b])
+    masks.append(cv2mask(f))
+    f = cv2.merge([b, e, e])
+    images.append(cv2tensor(f))
+
+    return images, masks
+
+def merge_channel(channel, size, resample) -> cv2.Mat:
+    if channel is None:
+        return np.full(size, 0, dtype=np.uint8)
+    return gray_sized(channel, *size[::-1], resample)
+
+def merge(r: cv2.Mat, g: cv2.Mat, b: cv2.Mat, a: cv2.Mat, width: int,
+          height: int, mode:str, resample:int) -> cv2.Mat:
+
+    thr, twr = (r.shape[0], r.shape[1]) if r is not None else (height, width)
+    thg, twg = (g.shape[0], g.shape[1]) if g is not None else (height, width)
+    thb, twb = (b.shape[0], b.shape[1]) if b is not None else (height, width)
+    w = max(width, max(twb, max(twr, twg)))
+    h = max(height, max(thb, max(thr, thg)))
+
+    if a is None:
+        a = np.full((height, width), 255, dtype=np.uint8)
+    else:
+        w = max(w, a.shape[1])
+        h = max(h, a.shape[0])
+
+    target_size = (w, h)
+
+    r = merge_channel(r, target_size, resample)
+    g = merge_channel(g, target_size, resample)
+    b = merge_channel(b, target_size, resample)
+    a = merge_channel(a, target_size, resample)
+
+    image = cv2.merge((r, g, b))
+    return geo_scalefit(image, width, height, mode, resample)
 
 # =============================================================================
 # === SHAPE FUNCTIONS ===
@@ -255,10 +383,10 @@ def geo_rotate_array(image: np.ndarray, angle: float, clip: bool=True) -> np.nda
     # Clip the rotated image
     return rotated_image[start_height:start_height + height, start_width:start_width + width]
 
-def geo_scalefit(image: np.ndarray, width: int, height: int, mode: str,
+def geo_scalefit(image: np.ndarray, width: int, height: int, mode: str="NONE",
                  resample: Image.Resampling=Image.Resampling.LANCZOS) -> np.ndarray:
 
-    logdebug(f"[geo_scalefit] {mode} ({resample})")
+    logdebug(f"[geo_scalefit] {mode} [{width}x{height}] rs=({resample})")
 
     if mode == "ASPECT":
         h, w, _ = image.shape
@@ -310,7 +438,7 @@ def geo_transform(image: np.ndarray, offsetX: float=0., offsetY: float=0., angle
 
     # clip to original size first...
     image = geo_crop(image)
-    logdebug(f"[TRANSFORM] ({offsetX},{offsetY}), {angle}, ({sizeX},{sizeY}) [{width}x{height} - {mode} - {resample}]")
+    logdebug(f"[transform] ({offsetX},{offsetY}), {angle}, ({sizeX},{sizeY}) [{width}x{height} - {mode} - {resample}]")
     return geo_scalefit(image, widthT, heightT, mode, resample)
 
 def geo_extend(imageA: np.ndarray, imageB: np.ndarray, axis: int=0, flip: bool=False) -> np.ndarray:
@@ -405,7 +533,8 @@ def comp_lerp(imageA: np.ndarray, imageB: np.ndarray, mask: np.ndarray=None, alp
     return imageA.astype(np.uint8)
 
 def comp_blend(imageA: np.ndarray, imageB: np.ndarray, func: str, width: int, height: int,
-          mask: np.ndarray=None, alpha: float=1., resample:Image.Resampling=Image.Resampling.LANCZOS) -> np.ndarray:
+          mask: np.ndarray=None, alpha: float=1., mode:str='NONE',
+          resample:Image.Resampling=Image.Resampling.LANCZOS) -> np.ndarray:
 
     if (op := OP_BLEND.get(func, None)) is None:
         return imageA
@@ -415,12 +544,15 @@ def comp_blend(imageA: np.ndarray, imageB: np.ndarray, func: str, width: int, he
         height, width, _ = imageA.shape
         mask = cv2.empty((height, width, 1), dtype=cv2.uint8)
 
+    # get the largest sides of A, B and M
+    w = max(max(imageA.shape[1], imageB.shape[1]), mask.shape[1])
+    h = max(max(imageA.shape[0], imageB.shape[0]), mask.shape[0])
+
     # rescale images to match sourceA size...
-    def adjustSize(who: np.ndarray) -> np.ndarray:
-        h, w, _ = who.shape
-        if (w != width or h != height):
-            return geo_scalefit(who, width, height, 'FIT', resample)
-        return who
+    def adjustSize(x: np.ndarray) -> np.ndarray:
+        if (x.shape[1] != w or x.shape[0] != h):
+            return geo_scalefit(x, w, h, 'FIT', resample)
+        return x
 
     imageA = adjustSize(imageA)
     imageB = adjustSize(imageB)
@@ -626,71 +758,8 @@ def remap_fisheye(image: np.ndarray, distort: float) -> np.ndarray:
     return cv2.remap(image, map_x, map_y, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
 
 # =============================================================================
-# === WAVE FUNCTIONS SIMPLE ===
+# === ZE MAIN ===
 # =============================================================================
-
-def wave_sine(phase: float, amplitude: float, offset: float, timestep: float) -> float:
-    return amplitude * np.sin(TAU * timestep + phase) + offset
-
-def wave_inv_sine(phase: float, amplitude: float, offset: float, timestep: float) -> float:
-    return -amplitude * np.sin(TAU * timestep + phase) + offset
-
-def wave_abs_sine(phase: float, amplitude: float, offset: float, timestep: float) -> float:
-    return np.abs(amplitude * np.sin(TAU * timestep + phase)) + offset
-
-def wave_cosine(phase: float, amplitude: float, offset: float, timestep: float) -> float:
-    return amplitude * np.cos(TAU * timestep + phase) + offset
-
-def wave_inv_cosine(phase: float, amplitude: float, offset: float, timestep: float) -> float:
-    return -amplitude * np.cos(TAU * timestep + phase) + offset
-
-def wave_abs_cosine(phase: float, amplitude: float, offset: float, timestep: float) -> float:
-    return np.abs(amplitude * np.cos(TAU * timestep + phase)) + offset
-
-def wave_sawtooth(phase: float, amplitude: float, offset: float, timestep: float) -> float:
-    return amplitude * (2 * (timestep + phase) % 1 - 0.5) + offset
-
-def wave_triangle(phase: float, amplitude: float, offset: float, timestep: float) -> float:
-    return amplitude * (4 * np.abs((timestep + phase) % 1 - 0.5) - 1) + offset
-
-def wave_ramp(phase: float, amplitude: float, offset: float, timestep: float) -> float:
-    return amplitude * (timestep + phase % 1) + offset
-
-def wave_step_function(phase: float, amplitude: float, offset: float, timestep: float) -> float:
-    return amplitude * np.heaviside(timestep + phase, 1) + offset
-
-def wave_haversine(phase: float, amplitude: float, offset: float, timestep: float) -> float:
-    return amplitude * (1 - np.cos(TAU * (timestep + phase))) + offset
-
-def wave_noise(phase: float, amplitude: float, offset: float, timestep: float) -> float:
-    return amplitude * np.random.uniform(-1, 1) + offset
-
-# =============================================================================
-# === WAVE FUNCTIONS COMPLEX ===
-# =============================================================================
-
-def wave_square(phase: float, amplitude: float, offset: float, timestep: float, duty_cycle: float = 0.5) -> float:
-    return amplitude * np.sign(np.sin(TAU * timestep + phase) - duty_cycle) + offset
-
-def wave_pulse(phase: float, amplitude: float, offset: float, timestep: float, duty_cycle: float = 0.5) -> float:
-    return amplitude * np.sign(np.sin(TAU * timestep + phase) - duty_cycle) + offset
-
-def wave_exponential(phase: float, amplitude: float, offset: float, timestep: float, decay: float = 1.0) -> float:
-    return amplitude * np.exp(-decay * (timestep + phase)) + offset
-
-def wave_rectangular_pulse(phase: float, amplitude: float, offset: float, timestep: float, pulse_width: float = 0.1) -> float:
-    return amplitude * np.heaviside(timestep + phase, 1) * np.heaviside(-(timestep + phase) + pulse_width, 1) + offset
-
-####
-
-def wave_logarithmic(phase: float, amplitude: float, offset: float, timestep: float, base: float = 10) -> float:
-    return amplitude * np.log10(timestep + phase) / np.log10(base) + offset
-
-def wave_gaussian(phase: float, amplitude: float, offset: float, timestep: float, mean: float = 0, std_dev: float = 1) -> float:
-    return amplitude * np.exp(-0.5 * ((timestep + phase - mean) / std_dev)**2) + offset
-
-def wave_chirp_signal(phase: float, amplitude: float, offset: float, timestep: float, frequency_slope: float = 1.0) -> float:
-    return amplitude * np.sin(TAU * frequency_slope * (timestep + phase)**2) + offset
 
 if __name__ == "__main__":
     image = cv2.imread("./_res/img/alpha.png")
