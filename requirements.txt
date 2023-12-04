@@ -4,3 +4,5 @@ opencv-python-headless[ffmpeg]<=4.8.1.78
 Pillow
 scikit-image
 ffmpeg-python
+blendmodes
+mido[ports-rtmidi]
