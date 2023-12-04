@@ -9,10 +9,10 @@
                     http://www.github.com/amorano/jovimetrix
 """
 
-
 import os
 import sys
 import math
+from enum import Enum
 from contextlib import contextmanager
 from typing import Any, Generator
 
@@ -54,6 +54,12 @@ def suppress_std() -> Generator[None, Any, None]:
         finally:
             sys.stdout = old_stdout
             sys.stderr = old_stderr
+
+# =============================================================================
+# == CUSTOM ENUMERATION CLASS
+# =============================================================================
+
+class EnumJovian(Enum): pass
 
 # =============================================================================
 

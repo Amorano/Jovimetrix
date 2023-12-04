@@ -12,7 +12,7 @@
 """
 
 import math
-from enum import Enum
+from typing import Any, Optional
 
 import cv2
 import torch
@@ -21,41 +21,35 @@ from scipy.ndimage import rotate
 from PIL import Image, ImageDraw, ImageChops, ImageOps, ImageSequence
 
 try:
-    from .util import loginfo, logwarn, logerr, logdebug
+    from .util import EnumJovian, loginfo, logwarn, logerr, logdebug
 except:
-    from sup.util import loginfo, logwarn, logerr, logdebug
+    from sup.util import EnumJovian, loginfo, logwarn, logerr, logdebug
 
 TAU = 2 * np.pi
 
 # =============================================================================
 # === GLOBAL ENUMS ===
 # =============================================================================
+class EnumScaleMode(EnumJovian):
+    NONE = 0
+    FIT = 1
+    CROP = 2
+    ASPECT = 3
 
-class EnumThreshold(Enum):
+class EnumOrientation(EnumJovian):
+    HORIZONTAL = 0
+    VERTICAL = 1
+    GRID = 2
+
+class EnumThreshold(EnumJovian):
     BINARY = cv2.THRESH_BINARY
     TRUNC = cv2.THRESH_TRUNC
     TOZERO = cv2.THRESH_TOZERO
 
-class EnumAdaptThreshold(Enum):
+class EnumAdaptThreshold(EnumJovian):
     ADAPT_NONE = -1
     ADAPT_MEAN = cv2.ADAPTIVE_THRESH_MEAN_C
     ADAPT_GAUSS = cv2.ADAPTIVE_THRESH_GAUSSIAN_C
-
-class EnumOPBlend(Enum):
-    LERP = None
-    ADD = ImageChops.add
-    MINIMUM = ImageChops.darker
-    MAXIMUM = ImageChops.lighter
-    MULTIPLY = ImageChops.multiply
-    SOFT_LIGHT = ImageChops.soft_light
-    HARD_LIGHT = ImageChops.hard_light
-    OVERLAY = ImageChops.overlay
-    SCREEN = ImageChops.screen
-    SUBTRACT = ImageChops.subtract
-    DIFFERENCE = ImageChops.difference
-    LOGICAL_AND = np.bitwise_and
-    LOGICAL_OR = np.bitwise_or
-    LOGICAL_XOR = np.bitwise_xor
 
 OP_BLEND = {
     'LERP': "",
@@ -231,7 +225,7 @@ def merge_channel(channel, size, resample) -> cv2.Mat:
     return gray_sized(channel, *size[::-1], resample)
 
 def merge(r: cv2.Mat, g: cv2.Mat, b: cv2.Mat, a: cv2.Mat, width: int,
-          height: int, mode:str, resample:int) -> cv2.Mat:
+          height: int, mode:EnumScaleMode, resample:int) -> cv2.Mat:
 
     thr, twr = (r.shape[0], r.shape[1]) if r is not None else (height, width)
     thg, twg = (g.shape[0], g.shape[1]) if g is not None else (height, width)
@@ -288,6 +282,69 @@ def sh_polygon(width: int, height: int, size: float=1., sides: int=3, angle: flo
 # =============================================================================
 # === IMAGE FUNCTIONS ===
 # =============================================================================
+
+# IMAGE
+
+def image_stack(images: list[np.ndarray[np.uint8]],
+                axis:Optional[EnumOrientation]=EnumOrientation.HORIZONTAL,
+                stride:Optional[int]=None,
+                color:Optional[tuple[float, float, float]]=None,
+                mode:Optional[EnumScaleMode]=EnumScaleMode.NONE,
+                resample:Optional[Image.Resampling]=Image.Resampling.LANCZOS) -> np.ndarray[np.uint8]:
+
+    if color is None:
+        color = (0, 0, 0)
+    else:
+        color = (
+        (color[0] if color is not None else 1) * 255,
+        (color[1] if color is not None else 1) * 255,
+        (color[2] if color is not None else 1) * 255
+        )
+
+    count = len(images)
+
+    ## @TODO: CROP ALL THE IMAGES TO THE LARGEST ONE OF THE INPUT SET
+
+    match axis:
+        case EnumOrientation.GRID:
+            if not stride:
+                stride = int(np.ceil(np.sqrt(count)))
+
+            rows = []
+            for i in range(0, count, stride):
+                row = images[i:i + stride]
+                row_stacked = np.hstack(row)
+                rows.append(row_stacked)
+
+            height, width = images[0].shape[:2]
+            # Check if the last row needs padding
+            overhang = len(images) % stride
+
+            logdebug(overhang, width, height, )
+
+            if overhang != 0:
+                overhang = stride - overhang
+
+                chan = 1
+                if len(rows[0].shape) > 2:
+                    chan = 3
+
+                size = (height, overhang * width, chan)
+                filler = np.full(size, color, dtype=np.uint8)
+                rows[-1] = np.hstack([rows[-1], filler])
+
+            image = np.vstack(rows)
+
+        case EnumOrientation.HORIZONTAL:
+            image = np.hstack(images)
+
+        case EnumOrientation.VERTICAL:
+            image = np.vstack(images)
+
+        case _:
+               raise ValueError(f"[image_stack] invalid orientation - {axis}")
+
+    return image
 
 # GEOMETRY
 
@@ -383,29 +440,30 @@ def geo_rotate_array(image: np.ndarray, angle: float, clip: bool=True) -> np.nda
     # Clip the rotated image
     return rotated_image[start_height:start_height + height, start_width:start_width + width]
 
-def geo_scalefit(image: np.ndarray, width: int, height: int, mode: str="NONE",
-                 resample: Image.Resampling=Image.Resampling.LANCZOS) -> np.ndarray:
+def geo_scalefit(image: np.ndarray, width: int, height:int,
+                 mode:Optional[EnumScaleMode]=EnumScaleMode.NONE,
+                 resample:Optional[Image.Resampling]=Image.Resampling.LANCZOS) -> np.ndarray:
 
     logdebug(f"[geo_scalefit] {mode} [{width}x{height}] rs=({resample})")
 
-    if mode == "ASPECT":
+    if mode == EnumScaleMode.ASPECT:
         h, w, _ = image.shape
         scalar = max(width, height)
         scalar /= max(w, h)
         return cv2.resize(image, None, fx=scalar, fy=scalar, interpolation=resample)
 
-    elif mode == "CROP":
+    elif mode == EnumScaleMode.CROP:
         return geo_crop(image, widthT=width, heightT=height, pad=True)
 
-    elif mode == "FIT":
+    elif mode == EnumScaleMode.FIT:
         return cv2.resize(image, (width, height), interpolation=resample)
 
     return image
 
 def geo_transform(image: np.ndarray, offsetX: float=0., offsetY: float=0., angle: float=0.,
-              sizeX: float=1., sizeY: float=1., edge:str='CLIP', widthT: int=256,
-              heightT: int=256, mode: str='FIT',
-              resample: Image.Resampling=Image.Resampling.LANCZOS) -> np.ndarray:
+              sizeX: float=1., sizeY: float=1., edge:str='CLIP', widthT: int=256, heightT: int=256,
+              mode:Optional[EnumScaleMode]=EnumScaleMode.NONE,
+              resample:Optional[Image.Resampling]=Image.Resampling.LANCZOS) -> np.ndarray:
     """Transform, Rotate and Scale followed by Tiling and then Inversion, conforming to an input wT, hT,."""
     height, width, _ = image.shape
 
@@ -441,7 +499,7 @@ def geo_transform(image: np.ndarray, offsetX: float=0., offsetY: float=0., angle
     logdebug(f"[transform] ({offsetX},{offsetY}), {angle}, ({sizeX},{sizeY}) [{width}x{height} - {mode} - {resample}]")
     return geo_scalefit(image, widthT, heightT, mode, resample)
 
-def geo_extend(imageA: np.ndarray, imageB: np.ndarray, axis: int=0, flip: bool=False) -> np.ndarray:
+def geo_merge(imageA: np.ndarray, imageB: np.ndarray, axis: int=0, flip: bool=False) -> np.ndarray:
     if flip:
         imageA, imageB = imageB, imageA
     axis = 1 if axis == "HORIZONTAL" else 0
@@ -533,13 +591,13 @@ def comp_lerp(imageA: np.ndarray, imageB: np.ndarray, mask: np.ndarray=None, alp
     return imageA.astype(np.uint8)
 
 def comp_blend(imageA: np.ndarray, imageB: np.ndarray, func: str, width: int, height: int,
-          mask: np.ndarray=None, alpha: float=1., mode:str='NONE',
-          resample:Image.Resampling=Image.Resampling.LANCZOS) -> np.ndarray:
+          mask: np.ndarray=None, alpha: float=1.,
+          mode: Optional[EnumScaleMode]=EnumScaleMode.NONE,
+          resample: Optional[Image.Resampling]=Image.Resampling.LANCZOS) -> np.ndarray:
 
     if (op := OP_BLEND.get(func, None)) is None:
         return imageA
 
-    alpha = np.clip(alpha, 0, 1)
     if mask is None:
         height, width, _ = imageA.shape
         mask = cv2.empty((height, width, 1), dtype=cv2.uint8)
@@ -551,7 +609,7 @@ def comp_blend(imageA: np.ndarray, imageB: np.ndarray, func: str, width: int, he
     # rescale images to match sourceA size...
     def adjustSize(x: np.ndarray) -> np.ndarray:
         if (x.shape[1] != w or x.shape[0] != h):
-            return geo_scalefit(x, w, h, 'FIT', resample)
+            return geo_scalefit(x, w, h, EnumScaleMode.FIT, resample)
         return x
 
     imageA = adjustSize(imageA)
@@ -564,14 +622,59 @@ def comp_blend(imageA: np.ndarray, imageB: np.ndarray, func: str, width: int, he
         imageB = pil2cv(op(cv2pil(imageA), cv2pil(imageB)))
 
     # take the new B and mix with mask and alpha
+    alpha = np.clip(alpha, 0, 1)
     return comp_lerp(imageA, imageB, mask, alpha)
+
+def comp_blend(imageA: np.ndarray, imageB: np.ndarray, func: str,
+               mask: np.ndarray = None,
+               alpha: float = 1.,
+               mode: Optional[EnumScaleMode]=EnumScaleMode.NONE,
+               resample: Optional[Image.Resampling]=Image.Resampling.LANCZOS) -> np.ndarray:
+
+    if (op := OP_BLEND.get(func, None)) is None:
+        return imageA
+
+    # Determine the maximum sizes among imageA, imageB, and mask
+    max_width = max(imageA.shape[1], imageB.shape[1], mask.shape[1] if mask is not None else 0)
+    max_height = max(imageA.shape[0], imageB.shape[0], mask.shape[0] if mask is not None else 0)
+
+    # Create a new blank image
+    image = np.zeros((max_height, max_width, 3), dtype=np.uint8)
+
+    # Calculate the center positions for pasting images onto the blank image
+    center_A = (max_width // 2, max_height // 2)
+    center_B = (max_width // 2, max_height // 2)
+
+    # Paste images onto the blank image at the calculated centers
+    image[center_A[1] - imageA.shape[0] // 2:center_A[1] + (imageA.shape[0] + 1) // 2,
+    center_A[0] - imageA.shape[1] // 2:center_A[0] + (imageA.shape[1] + 1) // 2, :] = imageA
+
+    image[center_B[1] - imageB.shape[0] // 2:center_B[1] + (imageB.shape[0] + 1) // 2,
+    center_B[0] - imageB.shape[1] // 2:center_B[0] + (imageB.shape[1] + 1) // 2, :] = imageB
+
+    if mask is not None:
+        center_mask = (max_width // 2, max_height // 2)
+        image[center_mask[1] - mask.shape[0] // 2:center_mask[1] + (mask.shape[0] + 1) // 2,
+        center_mask[0] - mask.shape[1] // 2:center_mask[0] + (mask.shape[1] + 1) // 2, :] = mask
+
+    # Perform blending operations
+    if func.startswith("LOGICAL"):
+        image = op(image, image)  # You may need to adjust this line based on your logic
+    elif func != "LERP":
+        image = pil2cv(op(cv2pil(image), cv2pil(image)))
+
+    # Take the new result and mix with the mask and alpha
+    alpha = np.clip(alpha, 0, 1)
+    image = comp_lerp(imageA, image, mask, alpha)
+    image = geo_scalefit(image, imageA.shape[1], imageA.shape[0], EnumScaleMode.FIT, resample)
+    return image
 
 # ADJUST
 
 def adjust_threshold(image: np.ndarray, threshold: float=0.5,
-              mode: EnumThreshold=EnumThreshold.BINARY,
-              adapt: EnumAdaptThreshold=EnumAdaptThreshold.ADAPT_NONE,
-              block: int=3, const: float=0.) -> np.ndarray:
+              mode: Optional[EnumThreshold]=EnumThreshold.BINARY,
+              adapt: Optional[EnumAdaptThreshold]=EnumAdaptThreshold.ADAPT_NONE,
+              block: Optional[int]=3, const: Optional[float]=0.) -> np.ndarray:
 
     if adapt != EnumAdaptThreshold.ADAPT_NONE.value:
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -761,7 +864,7 @@ def remap_fisheye(image: np.ndarray, distort: float) -> np.ndarray:
 # === ZE MAIN ===
 # =============================================================================
 
-if __name__ == "__main__":
+def testTRS():
     image = cv2.imread("./_res/img/alpha.png")
 
     pts = [
@@ -789,3 +892,8 @@ if __name__ == "__main__":
         idx_remap = (idx_remap + 1) % len(remap)
 
     cv2.destroyAllWindows()
+
+if __name__ == "__main__":
+    for x in EnumScaleMode._member_names_:
+        print(x)
+    pass

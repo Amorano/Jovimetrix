@@ -13,16 +13,16 @@
 Audio Supports.
 """
 
-from math import e
-from re import X
 import ffmpeg
 import numpy as np
 from PIL import Image, ImageDraw
+
 
 try:
     from .util import loginfo, logwarn, logerr, logdebug
 except:
     from sup.util import loginfo, logwarn, logerr, logdebug
+    from sup.comp import pil2cv
 
 # =============================================================================
 # === LOADERS ===
@@ -51,7 +51,7 @@ def wave(data: np.ndarray) -> np.ndarray[np.float32]:
 
 def graph_sausage(data: np.ndarray, bar_count:int, width:int, height:int,
                     color_line:tuple[float, float, float]=(0.7,0.7,0.7),
-                    color_back:tuple[float, float, float]=(0.,0.,0.)) -> Image:
+                    color_back:tuple[float, float, float]=(0.,0.,0.)) -> np.ndarray[np.int8]:
 
     # Normalize audio data to the range [-1, 1]
     normalized_data = data.astype(np.float32) / 32767.0
@@ -93,8 +93,9 @@ def graph_sausage(data: np.ndarray, bar_count:int, width:int, height:int,
         draw.line((current_x, current_y, current_x, current_y + item_height), fill=color_line, width=4)
         current_x = current_x + line_width
 
+    image = image.resize((width, height))
     logdebug(f"[graph_sausage] {bar_count} [{width}x{height}]")
-    return image.resize((width, height))
+    return pil2cv(image)
 
 # =============================================================================
 # === TESTING! ===
