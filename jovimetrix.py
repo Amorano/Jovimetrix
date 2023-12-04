@@ -321,7 +321,7 @@ class PixelShaderNode(JovimetrixImageInOutBaseNode):
             images.append(comp.cv2tensor(image))
             masks.append(comp.cv2mask(image))
 
-        logdebug(f"[{self.NAME}] ({time.time() - run:.5})")
+        logdebug(self.NAME, {time.time() - run:.5})
         return (
             torch.stack(images),
             torch.stack(masks)
@@ -562,9 +562,10 @@ class ProjectionNode(JovimetrixImageInOutBaseNode):
         images = []
         for idx, image in enumerate(pixels):
             image = comp.tensor2cv(image)
-            str = strength[min(idx, len(strength)-1)]
+            s = strength[min(idx, len(strength)-1)]
             p = proj[min(idx, len(proj)-1)]
-            logdebug(f"[REMAP] {p} ({str})")
+            logdebug(self.NAME, p, s)
+
             match p:
                 case 'SPHERICAL':
                     image = comp.remap_sphere(image, str)
@@ -730,7 +731,7 @@ class AdjustNode(JovimetrixImageInOutBaseNode):
                 case 'CLOSE':
                     image = cv2.morphologyEx(image, cv2.MORPH_CLOSE, (rad, rad))
 
-            logdebug(f"[{self.NAME}] {op} {rad} {amt} {low} {hi} ({idx})")
+            logdebug(self.NAME, op, rad, amt, low, hi, idx)
 
             if (i := invert[min(idx, len(invert)-1)]) != 0:
                 image = comp.light_invert(image, i)
@@ -738,7 +739,7 @@ class AdjustNode(JovimetrixImageInOutBaseNode):
             images.append(comp.cv2tensor(image))
             masks.append(comp.cv2mask(image))
 
-        logdebug(f"[{self.NAME}] {time.time()-start:.5}")
+        logdebug(self.NAME, f"{time.time()-start:.5}")
         return (
             torch.stack(images),
             torch.stack(masks)
@@ -1155,7 +1156,7 @@ class CropNode(JovimetrixImageInOutBaseNode):
             h = height[min(idx, len(height)-1)]
             p = pad[min(idx, len(pad)-1)]
 
-            logdebug(l, t, r, b, w, h, p, color)
+            logdebug(self.NAME, l, t, r, b, w, h, p, color)
             image = comp.geo_crop(image, l, t, r, b, w, h, p, color)
 
             if (i := invert[min(idx, len(invert)-1)]) != 0:
@@ -1236,7 +1237,7 @@ class StreamReaderNode(JovimetrixImageBaseNode):
         rs = Image.Resampling[resample]
         if device.width != width or device.height != height:
             device.sizer(width, height)
-            logdebug(width, height)
+            logdebug(self.NAME, width, height)
             image = comp.geo_scalefit(image, width, height, mode, rs)
 
         if orient in ["FLIPX", "FLIPXY"]:
@@ -1303,7 +1304,7 @@ class StreamWriterNode(JovimetrixBaseNode):
 
         route = route[0]
         hold = hold[0]
-        logdebug(f"[StreamWriterNode] {route}")
+        logdebug(self.NAME, route)
 
         if route != self.__route:
             # close old, if any
@@ -1314,7 +1315,7 @@ class StreamWriterNode(JovimetrixBaseNode):
             self.__device = stream.STREAMMANAGER.capture(self.__unique, static=True)
             self.__ss.endpointAdd(route, self.__device)
             self.__route = route
-            logdebug(f"[StreamWriterNode] START {route}")
+            logdebug(self.NAME, "START", route)
 
         w = width[min(idx, len(width)-1)]
         h = height[min(idx, len(height)-1)]
@@ -1433,19 +1434,35 @@ class DelayNode(JovimetrixBaseNode):
         return {"required": {
                     "o": (WILDCARD, {"default": None}),
                     "delay": ("FLOAT", {"step": 0.01, "default" : 0}),
-                    "hold": ("BOOLEAN", {"default": True})
+                    "hold": ("BOOLEAN", {"default": False}),
+                    "reset": ("BOOLEAN", {"default": False})
                 }}
 
-    def run(self, o: Any, delay: float, hold: bool) -> dict:
+    def __init__(self) -> None:
+        self.__delay = 0
+
+    def run(self, o: Any, delay: float, hold: bool, reset: bool) -> dict:
         ''' @TODO
-        while hold:
-            print(self)
-            time.sleep(0.1)
-            return ([self], )
+        t = threading.Thread(target=self.__run, daemon=True)
+        t.start()
         '''
-        delay = max(0, min(delay, JOV_MAX_DELAY))
-        time.sleep(delay)
+        if reset:
+            self.__delay = 0
+            return (self, )
+
+        if hold:
+            return(None,)
+
+        if delay != self.__delay:
+            self.__delay = delay
+            self.__delay = max(0, min(self.__delay, JOV_MAX_DELAY))
+
+        time.sleep(self.__delay)
         return (o,)
+
+    def __run(self) -> None:
+        while self.__hold:
+            time.sleep(0.1)
 
 class WaveGeneratorNode(JovimetrixBaseNode):
     NAME = "🌊 Wave Generator (jov)"
@@ -1593,9 +1610,9 @@ class ClearCacheNode(JovimetrixBaseNode):
 
     def run(self, o: Any) -> [object, ]:
         f, t = torch.cuda.mem_get_info()
-        logdebug(f"[{self.NAME}] total: {t}")
-        logdebug("-"* 30)
-        logdebug(f"[{self.NAME}] free: {f}")
+        logdebug(self.NAME, f"total: {t}")
+        logdebug(self.NAME, "-"* 30)
+        logdebug(self.NAME, f"free: {f}")
 
         s = o
         if isinstance(o, dict):
@@ -1607,9 +1624,8 @@ class ClearCacheNode(JovimetrixBaseNode):
         comfy.model_management.soft_empty_cache()
 
         f, t = torch.cuda.mem_get_info()
-        logdebug(f"[{self.NAME}] free: {f}")
-        logdebug("-"* 30)
-
+        logdebug(self.NAME, f"free: {f}")
+        logdebug(self.NAME, "-"* 30)
         return (s, )
 
 class OptionsNode(JovimetrixBaseNode):

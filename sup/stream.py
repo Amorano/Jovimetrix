@@ -199,19 +199,22 @@ class MediaStreamDevice(MediaStreamBase):
         return ret, newframe
 
     def capture(self) -> None:
+        if self.captured:
+            return True
+
         timeout = time.time() + self.TIMEOUT
 
         while self.__source is None and time.time() < timeout:
             for x in self.__backend:
                 self.__source = cv2.VideoCapture(self.url, x)
                 if self.captured:
+                    time.sleep(1)
                     break
                 self.__source = None
 
         if not self.captured:
             return False
 
-        time.sleep(1)
         logdebug(f"[MediaStreamDevice] BACKEND {self.__source.getBackendName()}")
         return True
 
@@ -334,8 +337,8 @@ class StreamManager:
             # attempt to capture first time...
             stream = self.capture(url)
 
-        if not stream.captured:
-            stream.capture()
+        #if not stream.captured:
+        #    stream.capture()
 
         return stream.frame
 
