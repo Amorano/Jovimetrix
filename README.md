@@ -331,10 +331,11 @@ NODE | OVERVIEW | COMFY UI
 <!---------------------------------------------------------------------------->
 
 <details>
-  <summary><b>STREAM</b></summary>
+  <summary><b>DEVICE</b></summary>
   <ul>
     <li>Connect system media directly into ComfyUI workflows</li>
     <li>Broadcast ComfyUI media to mjpeg reader endpoints</li>
+    <li>Poll and react to MIDI events</li>
 
 NODE | OVERVIEW | COMFY UI
 ---|---|---

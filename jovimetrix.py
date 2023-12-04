@@ -18,14 +18,12 @@ import json
 import time
 import uuid
 from typing import Any, Optional
-from itertools import zip_longest
 
 import cv2
 import torch
 import ffmpeg
 import numpy as np
 from PIL import Image
-from skimage import exposure
 
 from .sup import util
 from .sup import stream
@@ -33,7 +31,7 @@ from .sup import comp
 from .sup import anim
 from .sup import audio
 from .sup.anim import ease, EaseOP
-from .sup.util import loginfo, logwarn, logerr, logdebug
+from .sup.util import zip_longest_fill, loginfo, logwarn, logerr, logdebug
 
 # =============================================================================
 
@@ -81,33 +79,6 @@ WILDCARD = AnyType("*")
 # =============================================================================
 # === GLOBAL SUPPORTS ===
 # =============================================================================
-
-def deep_merge_dict(*dicts: dict) -> dict:
-    """
-    Deep merge multiple dictionaries recursively.
-    """
-    def _deep_merge(d1, d2):
-        if not isinstance(d1, dict) or not isinstance(d2, dict):
-            return d2
-
-        merged_dict = d1.copy()
-
-        for key in d2:
-            if key in merged_dict:
-                if isinstance(merged_dict[key], dict) and isinstance(d2[key], dict):
-                    merged_dict[key] = _deep_merge(merged_dict[key], d2[key])
-                elif isinstance(merged_dict[key], list) and isinstance(d2[key], list):
-                    merged_dict[key].extend(d2[key])
-                else:
-                    merged_dict[key] = d2[key]
-            else:
-                merged_dict[key] = d2[key]
-        return merged_dict
-
-    merged = {}
-    for d in dicts:
-        merged = _deep_merge(merged, d)
-    return merged
 
 IT_REQUIRED = {
     "required": {}
@@ -196,9 +167,9 @@ IT_CAM = {
         "zoom": ("FLOAT", {"min": 0, "max": 1, "step": 0.01, "default": 0}),
     }}
 
-IT_TRS = deep_merge_dict(IT_TRANS, IT_ROT, IT_SCALE)
+IT_TRS = util.deep_merge_dict(IT_TRANS, IT_ROT, IT_SCALE)
 
-IT_WHMODEI = deep_merge_dict(IT_WH, IT_WHMODE, IT_INVERT, IT_SAMPLE)
+IT_WHMODEI = util.deep_merge_dict(IT_WH, IT_WHMODE, IT_INVERT, IT_SAMPLE)
 
 # =============================================================================
 # === CREATION NODES ===
@@ -212,7 +183,7 @@ class ConstantNode(JovimetrixImageBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        return deep_merge_dict(IT_REQUIRED, IT_WH, IT_COLOR)
+        return util.deep_merge_dict(IT_REQUIRED, IT_WH, IT_COLOR)
 
     def run(self, width: int, height: int, R: float, G: float, B: float) -> tuple[torch.Tensor, torch.Tensor]:
         image = Image.new("RGB", (width, height), (int(R * 255.), int(G * 255.), int(B * 255.)) )
@@ -232,7 +203,7 @@ class ShapeNode(JovimetrixImageBaseNode):
                 "sides": ("INT", {"default": 3, "min": 3, "max": 100, "step": 1}),
             },
         }
-        return deep_merge_dict(d, IT_WH, IT_COLOR, IT_ROT, IT_SCALE, IT_INVERT)
+        return util.deep_merge_dict(d, IT_WH, IT_COLOR, IT_ROT, IT_SCALE, IT_INVERT)
 
     def run(self, shape: str, sides: int, width: int, height: int, R: float, G: float, B: float,
             angle: float, sizeX: float, sizeY: float, invert: float) -> tuple[torch.Tensor, torch.Tensor]:
@@ -279,10 +250,10 @@ class PixelShaderNode(JovimetrixImageInOutBaseNode):
                 "B": ("STRING", {"multiline": True, "default": "1 - np.minimum(1, np.sqrt((($u-0.5)**2 + ($v-0.5)**2) * 3.5))"}),
             },
         }
-        return deep_merge_dict(IT_REQUIRED, IT_PIXELS, d, IT_WH, IT_SAMPLE)
+        return util.deep_merge_dict(IT_REQUIRED, IT_PIXELS, d, IT_WH, IT_SAMPLE)
 
     @staticmethod
-    def shader(image: np.ndarray, R: str, G: str, B: str, width: int, height: int,
+    def shader(image:np.ndarray, R: str, G: str, B: str, width: int, height: int,
                chunkX: int=64, chunkY:int=64) -> np.ndarray:
         import math
         from ast import literal_eval
@@ -423,7 +394,7 @@ class TransformNode(JovimetrixImageInOutBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        return deep_merge_dict(IT_REQUIRED, IT_PIXELS, IT_TRS, IT_EDGE, IT_WH, IT_WHMODE)
+        return util.deep_merge_dict(IT_REQUIRED, IT_PIXELS, IT_TRS, IT_EDGE, IT_WH, IT_WHMODE)
 
     def run(self, pixels: list[torch.tensor], offsetX: list[float],
             offsetY: list[float], angle: list[float], sizeX: list[float],
@@ -463,7 +434,7 @@ class TRSNode(JovimetrixImageInOutBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        return deep_merge_dict(IT_REQUIRED, IT_PIXELS, IT_TRS, IT_EDGE)
+        return util.deep_merge_dict(IT_REQUIRED, IT_PIXELS, IT_TRS, IT_EDGE)
 
     def run(self, pixels: list[torch.tensor], offsetX: list[float],
             offsetY: list[float], angle: list[float], sizeX: list[float],
@@ -499,7 +470,7 @@ class TileNode(JovimetrixImageInOutBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        return deep_merge_dict(IT_REQUIRED, IT_PIXELS, IT_TILE, IT_WH, IT_WHMODE)
+        return util.deep_merge_dict(IT_REQUIRED, IT_PIXELS, IT_TILE, IT_WH, IT_WHMODE)
 
     def run(self, pixels: list[torch.tensor], tileX: list[float], tileY: list[float],
             width: list[int], height: list[int], mode: list[str],
@@ -543,7 +514,7 @@ class MirrorNode(JovimetrixImageInOutBaseNode):
                 "mode": (["X", "Y", "XY", "YX"], {"default": "X"}),
             },
         }
-        return deep_merge_dict(IT_PIXELS, d, IT_INVERT)
+        return util.deep_merge_dict(IT_PIXELS, d, IT_INVERT)
 
     def run(self, pixels: list[torch.tensor], x: list[float], y: list[float],
             mode: list[str], invert: list[float]) -> tuple[torch.Tensor, torch.Tensor]:
@@ -581,7 +552,7 @@ class ProjectionNode(JovimetrixImageInOutBaseNode):
                 "proj": (["SPHERICAL", "FISHEYE"], {"default": "FISHEYE"}),
                 "strength": ("FLOAT", {"default": 1, "min": 0, "step": 0.01}),
             }}
-        return deep_merge_dict(IT_PIXELS, d, IT_WHMODEI, IT_SAMPLE)
+        return util.deep_merge_dict(IT_PIXELS, d, IT_WHMODEI, IT_SAMPLE)
 
     def run(self, pixels: list[torch.tensor], proj: list[str], strength: list[float],
             width: list[int], height: list[int], mode: list[str], invert: list[float],
@@ -639,7 +610,7 @@ class HSVNode(JovimetrixImageInOutBaseNode):
                 "contrast": ("FLOAT", {"default": 0, "min": 0, "max": 1, "step": 0.01}, ),
                 "gamma": ("FLOAT", {"default": 1, "min": 0, "max": 250, "step": 0.01}, ),
             }}
-        return deep_merge_dict(IT_PIXELS, d, IT_INVERT)
+        return util.deep_merge_dict(IT_PIXELS, d, IT_INVERT)
 
     def run(self, pixels: list[torch.tensor], hue: list[float], saturation: list[float],
             value: list[float], contrast: list[float], gamma: list[float],
@@ -701,7 +672,7 @@ class AdjustNode(JovimetrixImageInOutBaseNode):
                 "high": ("FLOAT", {"default": 0.72, "min": 0, "max": 1, "step": 0.01}),
 
             }}
-        return deep_merge_dict(IT_PIXELS, d, IT_INVERT)
+        return util.deep_merge_dict(IT_PIXELS, d, IT_INVERT)
 
     def run(self, pixels: list[torch.tensor], func: list[str], radius: list[float],
             amount: list[float], low: list[float], high: list[float],
@@ -789,7 +760,7 @@ class ThresholdNode(JovimetrixImageInOutBaseNode):
                 "block": ("INT", {"default": 3, "min": 1, "max": 101, "step": 1},),
                 "const": ("FLOAT", {"default": 0, "min": -1, "max": 1, "step": 0.01},),
             }}
-        return deep_merge_dict(IT_PIXELS, d, IT_INVERT)
+        return util.deep_merge_dict(IT_PIXELS, d, IT_INVERT)
 
     def run(self, pixels: list[torch.tensor], op: list[str], adapt: list[str],
             threshold: list[float], block: list[int], const: list[float],
@@ -803,11 +774,13 @@ class ThresholdNode(JovimetrixImageInOutBaseNode):
             if block % 2 == 0:
                 block += 1
 
-            op = comp.EnumThreshold[op[min(idx, len(op)-1)]].value
-            adapt = comp.EnumAdaptThreshold[adapt[min(idx, len(adapt)-1)]].value
-            img = comp.adjust_threshold(img, threshold[min(idx, len(threshold)-1)], op,
-                                 adapt, block[min(idx, len(block)-1)],
-                                 const[min(idx, len(const)-1)])
+            op = comp.EnumThreshold[op[min(idx, len(op)-1)]]
+            adapt = comp.EnumAdaptThreshold[adapt[min(idx, len(adapt)-1)]]
+            img = comp.adjust_threshold(img,
+                                        threshold[min(idx, len(threshold)-1)],
+                                        op, adapt,
+                                        block[min(idx, len(block)-1)],
+                                        const[min(idx, len(const)-1)])
 
             if (i := invert[min(idx, len(invert)-1)]):
                 img = comp.light_invert(img, i)
@@ -823,8 +796,7 @@ class ThresholdNode(JovimetrixImageInOutBaseNode):
 class LevelsNode(JovimetrixImageInOutBaseNode):
     NAME = "🛗 Level Adjust (jov)"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/ADJUST"
-    DESCRIPTION = "Clip an input based on a low, high and mid point value."
-    POST = True
+    DESCRIPTION = "Clip an input based on a low, high and mid point value"
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -834,7 +806,7 @@ class LevelsNode(JovimetrixImageInOutBaseNode):
                 "high": ("FLOAT", {"default": 1, "min": 0, "max": 1, "step": 0.01},),
                 "gamma": ("FLOAT", {"default": 1, "min": 0, "max": 1, "step": 0.01},),
             }}
-        return deep_merge_dict(IT_PIXELS, d, IT_WHMODEI)
+        return util.deep_merge_dict(IT_PIXELS, d, IT_WHMODEI)
 
     def run(self, pixels: list[torch.tensor], low: list[float], mid: list[float],
             high: list[float], gamma: list[float], invert: list[float])  -> tuple[torch.Tensor, torch.Tensor]:
@@ -866,6 +838,46 @@ class LevelsNode(JovimetrixImageInOutBaseNode):
             torch.stack(masks)
         )
 
+class ColorCNode(JovimetrixImageInOutBaseNode):
+    NAME = "💞 Color Match (jov)"
+    CATEGORY = "JOVIMETRIX 🔺🟩🔵/ADJUST"
+    DESCRIPTION = "Project the colors of one pixel block onto another"
+
+    @classmethod
+    def INPUT_TYPES(s) -> dict:
+        d = {"required": {
+                "flip": ("BOOLEAN", {"default": False}),
+            }}
+        return util.deep_merge_dict(IT_PIXEL2, d)
+
+    def run(self,
+            pixelA:Optional[list[torch.tensor]]=None,
+            pixelB:Optional[list[torch.tensor]]=None,
+            flip:Optional[list[bool]]=None) -> tuple[torch.Tensor, torch.Tensor]:
+
+        pixelA = pixelA or []
+        pixelB = pixelB or []
+        flip = flip or []
+
+        masks = []
+        images = []
+        for a, b, f in zip_longest_fill(pixelA, pixelB, flip):
+            a = comp.tensor2cv(a)
+            b = comp.tensor2cv(b)
+
+            if f:
+                a, b = b, a
+
+            image = comp.color_match(a, b)
+
+            images.append(comp.cv2tensor(image))
+            masks.append(comp.cv2mask(image))
+
+        return (
+            torch.stack(images),
+            torch.stack(masks)
+        )
+
 # =============================================================================
 # === COMPOSITION NODES ===
 # =============================================================================
@@ -879,47 +891,66 @@ class BlendNode(JovimetrixImageInOutBaseNode):
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"required": {
+                "func": (comp.EnumBlendType, {"default": comp.EnumBlendType[0]}),
                 "alpha": ("FLOAT", {"default": 1, "min": 0, "max": 1, "step": 0.01}),
             },
             "optional": {
-                "func": (list(comp.OP_BLEND.keys()), {"default": "LERP"}),
+                "flip": ("BOOLEAN", {"default": False}),
                 "mask": (WILDCARD, {})
         }}
-        return deep_merge_dict(IT_PIXEL2, d, IT_WHMODEI)
+        return util.deep_merge_dict(IT_PIXEL2, d, IT_WHMODEI)
 
-    def run(self, alpha: list[float], func: list[str], width: list[int],
-            height: list[int], mode: list[str], resample: list[str], invert: list[float],
+    def run(self,
             pixelA: Optional[list[torch.tensor]]=None,
             pixelB: Optional[list[torch.tensor]]=None,
-            mask: Optional[list[torch.tensor]]=None) -> tuple[torch.Tensor, torch.Tensor]:
+            mask: Optional[list[torch.tensor]]=None,
+            func: Optional[list[str]]=None,
+            alpha: Optional[list[float]]=None,
+            flip: Optional[list[bool]]=None,
+            width: Optional[list[int]]=None,
+            height: Optional[list[int]]=None,
+            mode: Optional[list[str]]=None,
+            resample: Optional[list[str]]=None,
+            invert: Optional[list[float]]=None,
+            ) -> tuple[torch.Tensor, torch.Tensor]:
 
-        pixelA = pixelA or (torch.zeros((height[0], width[0], 3), dtype=torch.uint8),)
-        pixelB = pixelB or (torch.zeros((height[0], width[0], 3), dtype=torch.uint8),)
-        mask = mask or (torch.ones((height[0], width[0], 3), dtype=torch.uint8),)
+        pixelA = pixelA or [None]
+        pixelB = pixelB or [None]
+        mask = mask or [None]
+        func = func or [None]
+        alpha = alpha or [None]
+        flip = flip or [None]
+        width = width or [None]
+        height = height or [None]
+        mode = mode or [None]
+        resample = resample or [None]
+        invert = invert or [None]
 
         masks = []
         images = []
-        for idx, image in enumerate(pixelA):
-            pa = comp.tensor2cv(image)
-            pb = comp.tensor2cv(pixelB[min(idx, len(pixelB)-1)])
-            m = comp.tensor2cv(mask[min(idx, len(mask)-1)])
-            w = width[min(idx, len(width)-1)]
-            h = height[min(idx, len(height)-1)]
-            rs = resample[min(idx, len(resample)-1)]
+        for data in zip_longest_fill(pixelA, pixelB, mask, func, alpha, flip, width, height, mode, resample, invert):
+
+            pa, pb, ma, f, a, fl, w, h, sm, rs, i = data
+            pa = pa if pa is not None else torch.zeros((h, w, 3), dtype=torch.uint8)
+            pb = pb if pb is not None else torch.zeros((h, w, 3), dtype=torch.uint8)
+            ma = ma if ma is not None else torch.zeros((h, w, 3), dtype=torch.uint8)
+
             rs = Image.Resampling[rs]
-            mood = mode[min(idx, len(mode)-1)]
+            ma = comp.tensor2cv(ma)
+            pa = comp.tensor2cv(pa)
+            pb = comp.tensor2cv(pb)
+            if fl:
+                pa, pb = pb, pa
 
-            pa = comp.comp_blend(pa, pb, func[min(idx, len(func)-1)], w, h,
-                                 m, alpha[min(idx, len(alpha)-1)], rs)
+            f = comp.BlendType[f]
+            image = comp.comp_blend(pa, pb, ma, f, a)
 
-            i = invert[min(idx, len(invert)-1)]
             if i != 0:
-                pa = comp.light_invert(pa, i)
+                image = comp.light_invert(image, i)
 
-            pa = comp.geo_scalefit(pa, w, h, mood, rs)
-
-            images.append(comp.cv2tensor(pa))
-            masks.append(comp.cv2mask(pa))
+            image = comp.geo_scalefit(image, w, h, sm, rs)
+            images.append(comp.cv2tensor(image))
+            masks.append(comp.cv2mask(image))
 
         return (
             torch.stack(images),
@@ -937,7 +968,7 @@ class PixelSplitNode(JovimetrixImageInOutBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        return deep_merge_dict(IT_REQUIRED, IT_PIXELS)
+        return util.deep_merge_dict(IT_REQUIRED, IT_PIXELS)
 
     def run(self, pixels: list[torch.tensor])  -> tuple[torch.Tensor, torch.Tensor]:
         ret = {
@@ -989,7 +1020,7 @@ class PixelMergeNode(JovimetrixImageInOutBaseNode):
                 "G": (WILDCARD, {}),
                 "B": (WILDCARD, {}),
             }}
-        return deep_merge_dict(IT_REQUIRED, d, IT_WHMODEI)
+        return util.deep_merge_dict(IT_REQUIRED, d, IT_WHMODEI)
 
     def run(self, width:int, height:int, mode:str, resample: list[str], invert:float,
             R: Optional[list[torch.tensor]]=None, G: Optional[list[torch.tensor]]=None,
@@ -1009,7 +1040,7 @@ class PixelMergeNode(JovimetrixImageInOutBaseNode):
         images = []
         masks = []
 
-        for idx, color in enumerate(zip_longest(R, G, B, fillvalue=None)):
+        for idx, color in enumerate(zip_longest_fill(R, G, B, fillvalue=None)):
             w = width[min(idx, len(width)-1)]
             h = height[min(idx, len(height)-1)]
             empty = np.full((h, w), 0, dtype=np.uint8)
@@ -1051,24 +1082,28 @@ class MergeNode(JovimetrixImageInOutBaseNode):
             "optional": {
                 "matte": (WILDCARD, {}),
             }}
-        return deep_merge_dict(IT_PIXEL2, d, IT_WH, IT_WHMODE)
+        return util.deep_merge_dict(IT_PIXEL2, d, IT_WH, IT_WHMODE)
 
-    def run(self, axis: list[str], stride: list[int],
-            width: list[int], height: list[int], mode: list[str], resample: list[str],
+    def run(self,
             pixelA: Optional[list[torch.tensor]]=None,
             pixelB: Optional[list[torch.tensor]]=None,
-            matte: Optional[list[torch.tensor]]=None) -> tuple[torch.Tensor, torch.Tensor]:
+            matte: Optional[list[torch.tensor]]=None,
+            axis: Optional[list[str]]=None, stride: Optional[list[int]]=None,
+            width: Optional[list[int]]=None, height: Optional[list[int]]=None,
+            mode: Optional[list[str]]=None, resample: Optional[list[str]]=None,
+            ) -> tuple[torch.Tensor, torch.Tensor]:
 
         pixelA = pixelA or (torch.zeros((height[0], width[0], 3), dtype=torch.uint8),)
         pixelB = pixelB or (torch.zeros((height[0], width[0], 3), dtype=torch.uint8),)
         pixels = pixelA + pixelB
         pixels = [comp.tensor2cv(image) for image in pixels]
 
-        color = matte[0] if matte is not None else torch.zeros((height[0], width[0], 3), dtype=torch.uint8)
-        color = comp.tensor2cv(color)
+        matte = matte[0] if matte is not None else torch.zeros((height[0], width[0], 3), dtype=torch.uint8)
+        matte = comp.tensor2cv(matte)
         rs = Image.Resampling[resample[0]]
+        axis = comp.EnumOrientation[axis[0]]
 
-        image = comp.image_stack(pixels, comp.EnumOrientation[axis[0]].value, stride[0], color, comp.EnumScaleMode.FIT, rs)
+        image = comp.image_stack(pixels, axis, stride[0], matte, comp.EnumScaleMode.FIT, rs)
 
         if mode != "NONE":
             image = comp.geo_scalefit(image, width[0], height[0], mode[0], rs)
@@ -1095,7 +1130,7 @@ class CropNode(JovimetrixImageInOutBaseNode):
             "optional": {
                 "pad":  ("BOOLEAN", {"default": False}),
             }}
-        return deep_merge_dict(IT_PIXELS, IT_WH, d, IT_COLOR,  IT_INVERT)
+        return util.deep_merge_dict(IT_PIXELS, IT_WH, d, IT_COLOR,  IT_INVERT)
 
     def run(self, pixels: list[torch.tensor], pad: list[bool], top: list[float],
             left: list[float], bottom: list[float], right: list[float],
@@ -1152,7 +1187,7 @@ class StreamReaderNode(JovimetrixImageBaseNode):
                 "fps": ("INT", {"min": 1, "max": 60, "step": 1, "default": 60}),
                 "hold": ("BOOLEAN", {"default": False}),
             }}
-        return deep_merge_dict(d, IT_WHMODEI, IT_SAMPLE, IT_ORIENT, IT_CAM)
+        return util.deep_merge_dict(d, IT_WHMODEI, IT_SAMPLE, IT_ORIENT, IT_CAM)
 
     NAME = "📺 StreamReader (jov)"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/DEVICE"
@@ -1229,7 +1264,7 @@ class StreamWriterNode(JovimetrixBaseNode):
             "optional": {
                 "hold": ("BOOLEAN", {"default": False}),
             }}
-        return deep_merge_dict(IT_PIXELS, d, IT_WHMODEI)
+        return util.deep_merge_dict(IT_PIXELS, d, IT_WHMODEI)
 
     NAME = "🎞️ StreamWriter (jov)"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/DEVICE"
@@ -1309,24 +1344,23 @@ class StreamWriterNode(JovimetrixBaseNode):
 class MIDIPortNode(JovimetrixBaseNode):
     NAME = "🎹 MIDI Port (jov)"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/DEVICE"
-    DESCRIPTION = ""
-    RETURN_TYPES = ('MASK',)
-    RETURN_NAMES = ("🦄",)
+    DESCRIPTION = "Reads input from a midi device"
+    OUTPUT_NODE = True
     OUTPUT_IS_LIST = (False,)
-    SORT = 0
-    POST = True
+    RETURN_TYPES = ('FLOAT',)
+    RETURN_NAMES = ("🎛️",)
 
     @classmethod
-    def INPUT_TYPES(s):
-        d = {"required": {
+    def INPUT_TYPES(s) -> dict:
+        d = {"optional": {
+            "channel" : ("INTEGER", {"default":0}),
+            "port" : ("INTEGER", {"default":0}),
         }}
-        return deep_merge_dict(IT_PIXELS, d)
+        return util.deep_merge_dict(IT_REQUIRED, d)
 
-    def run(self, image ) -> tuple[torch.Tensor, torch.Tensor]:
-        image = comp.tensor2cv(image)
-
-        return (comp.cv2tensor(image),
-                comp.cv2mask(image))
+    def run(self, channel:Optional[int]=0, port:Optional[int]=0) -> tuple[float]:
+        val = 0.
+        return (val, )
 
 # =============================================================================
 # === ANIMATE NODES ===
@@ -1666,70 +1700,13 @@ class AkashicNode(JovimetrixBaseNode):
     def INPUT_TYPES(s):
         d = {"required": {
         }}
-        return deep_merge_dict(IT_PIXELS, d)
+        return util.deep_merge_dict(IT_PIXELS, d)
 
     def run(self, image ) -> tuple[torch.Tensor, torch.Tensor]:
         image = comp.tensor2cv(image)
 
         return (comp.cv2tensor(image),
                 comp.cv2mask(image))
-
-class ColorCNode(JovimetrixBaseNode):
-    @classmethod
-    def INPUT_TYPES(s):
-        return {"required": {
-                    "TARGET_IMAGE": ("IMAGE",),
-                    "reference": ("IMAGE",),
-                    "inverse selection": (["False", "True"],),
-                }}
-
-    RETURN_TYPES = ("IMAGE",)
-
-    NAME = "📊 Color Correct (jov)"
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/ADJUST"
-    DESCRIPTION = ""
-    SORT = 100
-    POST = True
-
-    def tensor_to_pil(self, img):
-        if img is not None:
-            i = 255. * img.cpu().numpy().squeeze()
-            img = Image.fromarray(np.clip(i, 0, 255).astype(np.uint8))
-        return img
-
-    def apply_color_correction(self, correction, original_image):
-
-        # https://github.com/AUTOMATIC1111/stable-diffusion-webui/blob/22bcc7be428c94e9408f589966c2040187245d81/modules/processing.py#L44
-
-        correction_target = cv2.cvtColor(np.asarray(correction.copy()), cv2.COLOR_RGB2LAB)
-
-        image = Image.fromarray(cv2.cvtColor(exposure.match_histograms(
-            cv2.cvtColor(
-                np.asarray(original_image),
-                cv2.COLOR_RGB2LAB
-            ),
-            correction_target,
-            channel_axis=2
-        ), cv2.COLOR_LAB2RGB).astype("uint8"))
-
-        image = blendLayers(image, original_image, BlendType.LUMINOSITY)
-        return image
-
-    def run(self, original_image, target_image, inverse_selection="False"):
-        original_image = self.tensor_to_pil(original_image)
-        target_image = self.tensor_to_pil(target_image)
-
-        if inverse_selection == "False":
-            corrected_image = self.apply_color_correction(target_image, original_image)
-        else:
-            corrected_image = self.apply_color_correction(original_image, target_image)
-
-        # convert to tensor
-        corrected_image = corrected_image.convert('RGB')
-        out_image = np.array(corrected_image).astype(np.float32) / 255.0
-        out_image = torch.from_numpy(out_image).unsqueeze(0)
-
-        return (out_image,)
 
 # =============================================================================
 # === COMFYUI NODE MAP ===
@@ -1765,7 +1742,7 @@ CLASS_MAPPINGS = {x[0] : x[1] for x in sorted(CLASS_MAPPINGS.items(),
 NODE_CLASS_MAPPINGS = {}
 
 # now sort the categories...
-for c in ["CREATE", "ADJUST", "TRANSFORM", "COMPOSE", "ANIMATE", "AUDIO", "STREAM", "UTILITY", "💣☣️ WIP ☣️💣"]:
+for c in ["CREATE", "ADJUST", "TRANSFORM", "COMPOSE", "ANIMATE", "AUDIO", "DEVICE", "UTILITY", "💣☣️ WIP ☣️💣"]:
     for k, v in CLASS_MAPPINGS.items():
         if v.CATEGORY.endswith(c):
             NODE_CLASS_MAPPINGS[k] = v

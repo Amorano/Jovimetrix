@@ -63,6 +63,55 @@ class EnumJovian(Enum): pass
 
 # =============================================================================
 
+def zip_longest_fill(*iterables) -> Generator[tuple[Any | None, ...], Any, None]:
+    iterators = [iter(iterable) for iterable in iterables]
+
+    while True:
+        values = [next(iterator, None) for iterator in iterators]
+
+        # Check if all iterators are exhausted
+        if all(value is None for value in values):
+            break
+
+        # Fill in the last values of exhausted iterators with their own last values
+        for i, _ in enumerate(iterators):
+            if values[i] is None:
+                iterator_copy = iter(iterables[i])
+                while True:
+                    current_value = next(iterator_copy, None)
+                    if current_value is None:
+                        break
+                    values[i] = current_value
+
+        yield tuple(values)
+
+def deep_merge_dict(*dicts: dict) -> dict:
+    """
+    Deep merge multiple dictionaries recursively.
+    """
+    def _deep_merge(d1, d2) -> Any | dict:
+        if not isinstance(d1, dict) or not isinstance(d2, dict):
+            return d2
+
+        merged_dict = d1.copy()
+
+        for key in d2:
+            if key in merged_dict:
+                if isinstance(merged_dict[key], dict) and isinstance(d2[key], dict):
+                    merged_dict[key] = _deep_merge(merged_dict[key], d2[key])
+                elif isinstance(merged_dict[key], list) and isinstance(d2[key], list):
+                    merged_dict[key].extend(d2[key])
+                else:
+                    merged_dict[key] = d2[key]
+            else:
+                merged_dict[key] = d2[key]
+        return merged_dict
+
+    merged = {}
+    for d in dicts:
+        merged = _deep_merge(merged, d)
+    return merged
+
 def mergePNGMeta(root: str, target: str) -> None:
     for r, _, fs in os.walk(root):
         for f in fs:
