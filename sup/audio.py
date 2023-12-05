@@ -17,7 +17,6 @@ import ffmpeg
 import numpy as np
 from PIL import Image, ImageDraw
 
-
 try:
     from .util import loginfo, logwarn, logerr, logdebug
 except:

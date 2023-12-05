@@ -13,6 +13,7 @@ import os
 import sys
 import math
 from enum import Enum
+from datetime import datetime
 from contextlib import contextmanager
 from typing import Any, Generator
 
@@ -39,7 +40,14 @@ def loginfo(*arg) -> None:
 
 def logdebug(*arg) -> None:
     if JOV_LOG > 2:
-        print("\033[48;2;35;87;181;93m[JOV]\033[0m", *arg)
+        t = datetime.now().strftime('%H:%M:%S.%f')
+        print("\033[48;2;35;87;181;93m[JOV]\033[0m", t, *arg)
+
+def logspam(*arg) -> None:
+    if JOV_LOG > 3:
+        t = datetime.now().strftime('%H:%M:%S.%f')
+        print("\033[48;2;55;127;201;93m[JOV]\033[0m", t, *arg)
+
 
 @contextmanager
 def suppress_std() -> Generator[None, Any, None]:
