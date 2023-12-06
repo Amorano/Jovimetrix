@@ -40,11 +40,93 @@ GO NUTS; JUST TRY NOT TO DO IT IN YOUR HEAD.
             TransformNode, TileNode, MirrorNode, ExtendNode, HSVNode, AdjustNode,
             BlendNode, ThresholdNode, ProjectionNode, StreamReadNode, StreamWriteNode,
             RouteNode, TickNode, OptionsNode
-@version: 0.96
+@version: 0.98
 """
 
-from .jovimetrix import NODE_CLASS_MAPPINGS, NODE_DISPLAY_NAME_MAPPINGS
+import inspect
+import importlib
+from pathlib import Path
+from typing import Any
+
+__all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS", "WEB_DIRECTORY"]
 
 WEB_DIRECTORY = "web"
 
-__all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS", "WEB_DIRECTORY"]
+#
+#
+#
+
+class Singleton(type):
+    _instances = {}
+
+    def __call__(cls, *args, **kwargs) -> Any:
+        # If the instance does not exist, create and store it
+        if cls not in cls._instances:
+            instance = super().__call__(*args, **kwargs)
+            cls._instances[cls] = instance
+        return cls._instances[cls]
+
+# =============================================================================
+# === COMFYUI NODE MAP ===
+# =============================================================================
+NODE_CLASS_MAPPINGS = {}
+NODE_DISPLAY_NAME_MAPPINGS = {}
+
+class Session(metaclass=Singleton):
+    CLASS_MAPPINGS = {}
+    CLASS_MAPPINGS_WIP = {}
+
+    def __init__(self, *arg, **kw) -> None:
+        root = Path(__file__).parent.absolute() / 'nodes'
+        for f in root.iterdir():
+            if f.suffix != ".py" or f.stem.startswith('_'):
+                continue
+
+            module = importlib.import_module(f"Jovimetrix.nodes.{f.stem}")
+            classes = inspect.getmembers(module, inspect.isclass)
+            for class_name, class_object in classes:
+                # assume both attrs are good enough....
+                if not class_name.endswith('BaseNode') and hasattr(class_object, 'NAME') and hasattr(class_object, 'CATEGORY'):
+                    name = class_object.NAME
+                    if hasattr(class_object, 'POST'):
+                        class_object.CATEGORY = "JOVIMETRIX 🔺🟩🔵/💣☣️ WIP ☣️💣"
+                        Session.CLASS_MAPPINGS_WIP[name] = class_object
+                    else:
+                        Session.CLASS_MAPPINGS[name] = class_object
+
+            print("✅", module.__name__)
+
+        # 🔗 ⚓ 📀 🍿 🎪 🐘 🤯 😱 💀 ⛓️ 🔒 🔑 🪀 🪁 🔮 🧿 🧙🏽 🧙🏽‍♀️ 🧯 🦚
+
+        NODE_DISPLAY_NAME_MAPPINGS = {k: k for k, _ in Session.CLASS_MAPPINGS.items()}
+        Session.CLASS_MAPPINGS.update({k: v for k, v in Session.CLASS_MAPPINGS_WIP.items()})
+
+        NODE_DISPLAY_NAME_MAPPINGS.update({k: k for k, _ in Session.CLASS_MAPPINGS_WIP.items()})
+
+        Session.CLASS_MAPPINGS = {x[0] : x[1] for x in sorted(Session.CLASS_MAPPINGS.items(),
+                                                        key=lambda item: getattr(item[1], 'SORT', 0))}
+        # NODE_CLASS_MAPPINGS = {}
+
+        # now sort the categories...
+        for c in ["CREATE", "ADJUST", "TRANSFORM", "COMPOSE", "ANIMATE", "AUDIO", "DEVICE", "UTILITY", "💣☣️ WIP ☣️💣"]:
+
+            prime = Session.CLASS_MAPPINGS.copy()
+            for k, v in prime.items():
+                if v.CATEGORY.endswith(c):
+                    NODE_CLASS_MAPPINGS[k] = v
+                    Session.CLASS_MAPPINGS.pop(k)
+                    print('✅', k, v)
+
+        # anything we dont know about sort last...
+        for k, v in Session.CLASS_MAPPINGS.items():
+            NODE_CLASS_MAPPINGS[k] = v
+            print('⁉️', k, v)
+
+session = Session()
+
+# =============================================================================
+# === TESTING ===
+# =============================================================================
+
+if __name__ == "__main__":
+    pass

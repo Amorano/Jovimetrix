@@ -1,20 +1,10 @@
 """
-     ██  ██████  ██    ██ ██ ███    ███ ███████ ████████ ██████  ██ ██   ██ 
-     ██ ██    ██ ██    ██ ██ ████  ████ ██         ██    ██   ██ ██  ██ ██  
-     ██ ██    ██ ██    ██ ██ ██ ████ ██ █████      ██    ██████  ██   ███  
-██   ██ ██    ██  ██  ██  ██ ██  ██  ██ ██         ██    ██   ██ ██  ██ ██ 
- █████   ██████    ████   ██ ██      ██ ███████    ██    ██   ██ ██ ██   ██ 
-
-               Procedural & Compositing Image Manipulation Nodes
-                    http://www.github.com/amorano/jovimetrix
-
-                    Copyright 2023 Alexander Morano (Joviex)
-
-Test unit for webcam setup.
+Jovimetrix - http://www.github.com/amorano/jovimetrix
+Media Stream Support
 """
 
-import json
 import os
+import json
 import time
 import threading
 from typing import Any, Optional
@@ -23,16 +13,21 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import cv2
 import numpy as np
 
-try:
-    from .util import loginfo, logwarn, logerr, logdebug, gridMake
-    from ..sup import comp
-except:
-    from sup.util import loginfo, logwarn, logerr, logdebug, gridMake
-    from sup import comp
+from Jovimetrix.jovimetrix import Logger, Singleton
+from Jovimetrix.sup.comp import geo_scalefit, image_grid, EnumScaleMode, EnumInterpolation
 
 # =============================================================================
 
 class StreamMissingException(Exception): pass
+
+# =============================================================================
+# === GLOBAL CONFIG ===
+# =============================================================================
+
+STREAMHOST = os.getenv("JOV_STREAM_HOST", '')
+STREAMPORT = 7227
+try: STREAMPORT = int(os.getenv("JOV_STREAM_PORT", STREAMPORT))
+except: pass
 
 # =============================================================================
 # === MEDIA ===
@@ -48,8 +43,8 @@ class MediaStreamBase:
                  width:int=64,
                  height:int=64,
                  fps:float=60,
-                 mode:Optional[comp.EnumScaleMode]=comp.EnumScaleMode.FIT,
-                 resample:Optional[comp.EnumInterpolation]=comp.EnumInterpolation.LANCZOS4,
+                 mode:Optional[EnumScaleMode]=EnumScaleMode.FIT,
+                 resample:Optional[EnumInterpolation]=EnumInterpolation.LANCZOS4,
                  ) -> None:
 
         self.__quit = False
@@ -90,13 +85,13 @@ class MediaStreamBase:
                     self.__paused = True
 
                     if not self.capture():
-                        logerr(f"[MediaStream] CAPTURE FAIL [{self.url}]")
+                        Logger.err("MediaStream", f"CAPTURE FAIL [{self.url}]")
                         self.__quit = True
                         break
 
                     self.__paused = pause
                     self.__captured = True
-                    loginfo(f"[MediaStream] CAPTURED [{self.url}]")
+                    Logger.info("MediaStream", f"CAPTURED [{self.url}]")
 
                 # call the run capture frame command on subclasses
                 newframe = None
@@ -104,7 +99,7 @@ class MediaStreamBase:
                     self.__ret, newframe = self.__callback_frame()
 
                 if newframe is not None:
-                    newframe = comp.geo_scalefit(newframe, self.__width,
+                    newframe = geo_scalefit(newframe, self.__width,
                                      self.__height, self.__mode, self.__resample)
 
                     self.__frame = newframe
@@ -116,13 +111,13 @@ class MediaStreamBase:
             if self.__timeout is not None and time.perf_counter() > self.__timeout:
                 self.__timeout = None
                 self.__quit = True
-                logwarn(f"[MediaStream] TIMEOUT [{self.url}]")
+                Logger.warn("MediaStream", f"TIMEOUT [{self.url}]")
 
             waste = max(waste - time.perf_counter(), delta)
             # print(waste)
             time.sleep(waste)
 
-        loginfo(f"[MediaStream] STOPPED [{self.url}]")
+        Logger.info("MediaStream", f"STOPPED [{self.url}]")
         self.end()
 
     def __del__(self) -> None:
@@ -131,18 +126,18 @@ class MediaStreamBase:
     def end(self) -> None:
         self.release()
         self.__quit = True
-        logwarn(f"[MediaStream] END [{self.url}]")
+        Logger.warn("MediaStream", f"END [{self.url}]")
 
     def release(self) -> None:
         self.__captured = False
-        logwarn(f"[MediaStream] RELEASED [{self.url}]")
+        Logger.warn("MediaStream", f"RELEASED [{self.url}]")
 
     def play(self) -> None:
         self.__paused = False
 
     def pause(self) -> None:
         self.__paused = True
-        logwarn(f"[MediaStream] PAUSED [{self.__url}]")
+        Logger.warn("MediaStream", f"PAUSED [{self.__url}]")
 
     def sizer(self, width:int, height:int) -> None:
         self.width = width
@@ -177,19 +172,19 @@ class MediaStreamBase:
         self.__height = max(1, val)
 
     @property
-    def scalemode(self) -> comp.EnumScaleMode:
+    def scalemode(self) -> EnumScaleMode:
         return self.__scalemode
 
     @scalemode.setter
-    def scalemode(self, val: comp.EnumScaleMode) -> None:
+    def scalemode(self, val: EnumScaleMode) -> None:
         self.__scalemode = val
 
     @property
-    def resample(self) -> comp.EnumInterpolation:
+    def resample(self) -> EnumInterpolation:
         return self.__resample
 
     @resample.setter
-    def resample(self, val: comp.EnumInterpolation) -> None:
+    def resample(self, val: EnumInterpolation) -> None:
         self.__resample = val
 
     @property
@@ -199,7 +194,7 @@ class MediaStreamBase:
     @fps.setter
     def fps(self, val: float) -> None:
         self.__fps = max(1, val)
-        logdebug(f"[MediaStream] FPS ({val}) [{self.url}]")
+        Logger.debug("MediaStream", f"FPS ({val}) [{self.url}]")
 
 class MediaStreamDevice(MediaStreamBase):
     TIMEOUT = 3.
@@ -208,8 +203,8 @@ class MediaStreamDevice(MediaStreamBase):
                  width:int=64,
                  height:int=64,
                  fps:float=60,
-                 mode:Optional[comp.EnumScaleMode]=comp.EnumScaleMode.NONE,
-                 resample:Optional[comp.EnumInterpolation]=comp.EnumInterpolation.LANCZOS4,
+                 mode:Optional[EnumScaleMode]=EnumScaleMode.NONE,
+                 resample:Optional[EnumInterpolation]=EnumInterpolation.LANCZOS4,
                  backend:int=None) -> None:
 
         self.__source = None
@@ -261,7 +256,7 @@ class MediaStreamDevice(MediaStreamBase):
 
         time.sleep(1)
         try:
-            logdebug(f"[MediaStreamDevice] BACKEND {self.__source.getBackendName()}")
+            Logger.debug(self, f"CAPTURE {self.__source.getBackendName()}")
         except:
             return False
         return True
@@ -300,7 +295,7 @@ class MediaStreamDevice(MediaStreamBase):
         self.__zoom = np.clip(val, 0, 1)
         val = 100 + 300 * self.__zoom
         self.__source.set(cv2.CAP_PROP_ZOOM, val)
-        logdebug(f"[MediaStream] ZOOM ({self.__zoom})")
+        Logger.debug("MediaStream", f"ZOOM ({self.__zoom})")
 
     @property
     def exposure(self) -> float:
@@ -332,7 +327,7 @@ class MediaStreamComfyUI(MediaStreamBase):
     def capture(self) -> bool:
         return True
 
-class StreamManager:
+class StreamManager(metaclass=Singleton):
 
     STREAM = {}
 
@@ -354,11 +349,11 @@ class StreamManager:
         for i in range(5):
             stream = MediaStreamDevice(i, callback=(callback, i,) )
 
-        loginfo(f"[StreamManager] SCAN ({time.perf_counter()-start:.4})")
+        Logger.info(cls, f"SCAN ({time.perf_counter()-start:.4})")
 
     def __init__(self) -> None:
         #StreamManager.devicescan()
-        loginfo(f"[StreamManager] STREAM {self.streams}")
+        Logger.info(self, f"STREAM {self.streams}")
 
     def __del__(self) -> None:
         if StreamManager:
@@ -395,10 +390,10 @@ class StreamManager:
         if (stream := StreamManager.STREAM.get(url, None)) is None:
             if static:
                 stream = StreamManager.STREAM[url] = MediaStreamComfyUI(url, width, height, fps)
-                logdebug(f"[StreamManager] MediaStreamComfyUI")
+                Logger.debug(self, "MediaStreamComfyUI")
             else:
                 stream = StreamManager.STREAM[url] = MediaStreamDevice(url, width, height, fps, backend=backend)
-                logdebug(f"[StreamManager] MediaStream")
+                Logger.debug(self, "MediaStream")
 
             if endpoint is not None and stream.captured:
                 StreamingServer.endpointAdd(endpoint, stream)
@@ -410,6 +405,10 @@ class StreamManager:
         if (stream := StreamManager.STREAM.get(url, None)) is None:
             return
         stream.pause()
+
+# =============================================================================
+# === SERVER ===
+# =============================================================================
 
 class StreamingHandler(BaseHTTPRequestHandler):
     def __init__(self, outputs, *args, **kwargs) -> None:
@@ -438,7 +437,7 @@ class StreamingHandler(BaseHTTPRequestHandler):
                         self.wfile.write(jpeg.tobytes())
                         self.wfile.write(b'\r\n')
                 except Exception as e:
-                    logerr(f"Error: {e}")
+                    Logger.err(f"Error: {e}")
                     break
 
         elif key == 'jovimetrix':
@@ -452,13 +451,13 @@ class StreamingHandler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(b'Not Found')
 
-class StreamingServer:
+class StreamingServer(metaclass=Singleton):
     OUT = {}
 
     @classmethod
     def endpointAdd(cls, name: str, stream: MediaStreamDevice) -> None:
         StreamingServer.OUT[name] = {'_': stream, 'b': None}
-        logdebug(f"[StreamingServer] ENDPOINT_ADD ({name})")
+        Logger.debug(cls, f"ENDPOINT_ADD ({name})")
 
     def __init__(self, host: str='', port: int=7227) -> None:
         self.__host = host
@@ -468,7 +467,7 @@ class StreamingServer:
         self.__thread_server.start()
         self.__thread_capture = threading.Thread(target=self.__capture, daemon=True)
         self.__thread_capture.start()
-        loginfo("[StreamingServer] STARTED")
+        Logger.info(self, "STARTED")
 
     def __server(self) -> None:
         httpd = ThreadingHTTPServer(self.__address, lambda *args: StreamingHandler(StreamingServer.OUT, *args))
@@ -483,40 +482,12 @@ class StreamingServer:
                     _, frame = device.frame
                     StreamingServer.OUT[k]['b'] = frame
 
-# =============================================================================
-# === MEDIA ===
-# =============================================================================
-
-def gridImage(data: list[object], width: int, height: int) -> np.ndarray:
-    #@TODO: makes poor assumption all images are the same dimensions.
-    chunks, col, row = gridMake(data)
-    frame = np.zeros((height * row, width * col, 3), dtype=np.uint8)
-    i = 0
-    for y, strip in enumerate(chunks):
-        for x, item in enumerate(strip):
-            y1, y2 = y * height, (y+1) * height
-            x1, x2 = x * width, (x+1) * width
-            frame[y1:y2, x1:x2, ] = item
-            i += 1
-
-    return frame
-
-# =============================================================================
-# === GLOBAL CONFIG ===
-# =============================================================================
-
-# auto-scan the camera ports on startup?
-STREAMAUTOSCAN = os.getenv("JOV_STREAM_AUTO", '').lower() in ('true', '1', 't')
-STREAMMANAGER = StreamManager()
-
-STREAMSERVER:StreamingServer = None
-if (val := os.getenv("JOV_STREAM_SERVER", '').lower() in ('true', '1', 't')):
-    STREAMSERVER = StreamingServer()
-
-STREAMHOST = os.getenv("JOV_STREAM_HOST", '')
-STREAMPORT = 7227
-try: STREAMPORT = int(os.getenv("JOV_STREAM_PORT", STREAMPORT))
-except: pass
+def __getattr__(name: str) -> Any:
+    if name == "StreamManager":
+        return StreamManager()
+    elif name == "StreamingServer":
+        return StreamingServer()
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 # =============================================================================
 # === TESTING ===
@@ -558,12 +529,12 @@ def streamReadTest() -> None:
     heightT = 320
 
     empty = np.zeros((heightT, widthT, 3), dtype=np.uint8)
-    STREAMMANAGER.capture(urls[streamIdx % len(urls)], (widthT, heightT))
+    StreamManager().capture(urls[streamIdx % len(urls)], (widthT, heightT))
     streamIdx += 1
 
     while True:
         streams = []
-        for x in STREAMMANAGER.active:
+        for x in StreamManager().active:
             ret, chunk = x.frame
             if not ret or chunk is None:
                 e = np.zeros((heightT, widthT, 3), dtype=np.uint8)
@@ -574,14 +545,14 @@ def streamReadTest() -> None:
             streams.append(chunk)
 
         if len(streams) > 0:
-            frame = gridImage(streams, widthT, heightT)
+            frame = image_grid(streams, widthT, heightT)
         else:
             frame = empty
 
         cv2.imshow("Media", frame)
         val = cv2.waitKey(1) & 0xFF
         if val == ord('c'):
-            STREAMMANAGER.capture(urls[streamIdx % len(urls)], (widthT, heightT))
+            StreamManager().capture(urls[streamIdx % len(urls)], (widthT, heightT))
             streamIdx += 1
         elif val == ord('q'):
             break
@@ -593,12 +564,12 @@ def streamWriteTest() -> None:
     ss = StreamingServer()
 
     fpath = 'res/stream-video.mp4'
-    device = STREAMMANAGER.capture(fpath, 96, 54, endpoint=f'/media')
+    device = StreamManager().capture(fpath, 96, 54, endpoint=f'/media')
     device.fps = 30
     time.sleep(0.5)
 
-    device = STREAMMANAGER.capture(0, 72, 32, endpoint='/stream/0')
-    device = STREAMMANAGER.capture(1, endpoint='/stream/1')
+    device = StreamManager().capture(0, 72, 32, endpoint='/stream/0')
+    device = StreamManager().capture(1, endpoint='/stream/1')
 
     while 1:
         pass
