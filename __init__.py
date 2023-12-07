@@ -45,6 +45,8 @@ GO NUTS; JUST TRY NOT TO DO IT IN YOUR HEAD.
 
 import os
 import math
+import json
+import shutil
 import inspect
 import importlib
 from pathlib import Path
@@ -56,17 +58,22 @@ import torch
 import numpy as np
 from PIL import Image, ImageOps, ImageSequence
 
-__all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS", "WEB_DIRECTORY"]
+try:
+    from server import PromptServer
+    from aiohttp import web
+except:
+    pass
 
 WEB_DIRECTORY = "./web"
-
-JOV_MAX_DELAY = 60.
-try: JOV_MAX_DELAY = float(os.getenv("JOV_MAX_DELAY", 60.))
-except: pass
 
 NODE_CLASS_MAPPINGS = {}
 NODE_DISPLAY_NAME_MAPPINGS = {}
 
+__all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS", "WEB_DIRECTORY"]
+
+JOV_MAX_DELAY = 60.
+try: JOV_MAX_DELAY = float(os.getenv("JOV_MAX_DELAY", 60.))
+except: pass
 # =============================================================================
 # === CORE CLASSES ===
 # =============================================================================
@@ -128,9 +135,20 @@ class Session(metaclass=Singleton):
     def __init__(self, *arg, **kw) -> None:
         # stuff extension files into extension spot until I know how to get them from JS in place
 
+        root = Path(__file__).parent.absolute()
+        root_comfy = root.parent.parent
 
-        root = Path(__file__).parent.absolute() / 'nodes'
-        for f in root.iterdir():
+        root_web = root_comfy / "web" / "extensions" / "jovimetrix"
+        if not os.path.exists(root_web):
+            os.makedirs(root_web)
+
+        for f in (root / "web").iterdir():
+            print(root_web / f.name)
+            if f.is_file() and f.suffix in ['.js', '.css']:
+                if not (new := (root_web / f.name)).exists():
+                    shutil.copy(f, new)
+
+        for f in (root / 'nodes').iterdir():
             if f.suffix != ".py" or f.stem.startswith('_'):
                 continue
 
@@ -210,7 +228,47 @@ class AnyType(str):
         return False
 
 WILDCARD = AnyType("*")
+ROOT = Path(__file__).resolve().parent
+# =============================================================================
+# == CUSTOM API RESPONSES
+# =============================================================================
 
+try:
+    @PromptServer.instance.routes.get("/jovimetrix/config/color")
+    async def jovimetrix_config(request) -> Any:
+        f = ROOT / 'web' / 'jovi_sidecar.json'
+        ret = {}
+        try:
+            with open(f, 'r', encoding='utf-8') as fn:
+                data = json.load(fn)
+            ret.update(data)
+        except (IOError, FileNotFoundError) as e:
+            pass
+        except Exception as e:
+            print(e)
+
+        f = ROOT / 'web' / 'user_sidecar.json'
+        try:
+            with open(f, 'r', encoding='utf-8') as fn:
+                data = json.load(fn)
+            ret.update(data)
+        except (IOError, FileNotFoundError) as e:
+            pass
+        except Exception as e:
+            print(e)
+        return web.json_response(ret)
+
+    @PromptServer.instance.routes.get("/jovimetrix/config")
+    async def jovimetrix_config(request) -> Any:
+        # configuration page...
+        f = ROOT / 'web' / 'config.html'
+        with open(f, 'r', encoding='utf-8') as fn:
+            data = fn.read()
+        return web.Response(text=data, content_type='text/html')
+
+
+except Exception as e:
+    print(e)
 # =============================================================================
 # == SUPPORT FUNCTIONS
 # =============================================================================

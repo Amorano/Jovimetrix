@@ -1,0 +1,22 @@
+<!doctype html>
+<html>
+  <head>
+    <title>JOVIMETRIX CONFIGURATION</title>
+    <link rel="stylesheet" href="../../../extensions/Jovimetrix/style.css">
+    <link rel="stylesheet" href="../../../extensions/Jovimetrix/coloris.min.css">
+  </head>
+  <body>
+      <div class="box">
+        <h1>Jovimetrix Global Configuration Panel</h1>
+        <p>Adjust node colors, per node and per categorical path the node author has chosen.</p>
+        <p>This lets you color code entire groups of node "types" quickly.</p>
+        <div id="colorContainer"></div>
+      </div>
+
+      <script src="../../../extensions/Jovimetrix/coloris.min.js"></script>
+      <script type="module">
+        import {Jovimetrics} from '../../../extensions/Jovimetrix/config.js';
+        new Jovimetrics();
+    </script>
+  </body>
+</html>
