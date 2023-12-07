@@ -13,13 +13,13 @@ import torch
 import numpy as np
 from PIL import Image
 
-from Jovimetrix.jovimetrix import pil2tensor, pil2mask, pil2cv, cv2pil, cv2tensor, cv2mask, tensor2cv, \
+from Jovimetrix import pil2tensor, pil2mask, pil2cv, cv2pil, cv2tensor, cv2mask, tensor2cv, \
     deep_merge_dict, zip_longest_fill, \
     JOVImageBaseNode, JOVImageInOutBaseNode, Logger, \
     IT_PIXELS, IT_COLOR, IT_WH, IT_SCALE, IT_ROT, IT_INVERT, \
     IT_WHMODE, IT_REQUIRED, MIN_HEIGHT, MIN_WIDTH
 
-from Jovimetrix.sup.comp import shape_ellipse, shape_polygon, shape_quad, light_invert, \
+from Jovimetrix.sup.comp import EnumScaleMode, geo_scalefit, shape_ellipse, shape_polygon, shape_quad, light_invert, \
     EnumInterpolation, IT_SAMPLE
 
 # =============================================================================
@@ -157,6 +157,7 @@ class PixelShaderNode(JOVImageInOutBaseNode):
             B: Optional[list[str]]=None,
             width: Optional[list[int]]=None,
             height: Optional[list[int]]=None,
+            mode: Optional[list[str]]=None,
             resample: Optional[list[str]]=None) -> tuple[torch.Tensor, torch.Tensor]:
 
         run = time.perf_counter()
@@ -166,18 +167,24 @@ class PixelShaderNode(JOVImageInOutBaseNode):
         B = B or [None]
         width = width or [None]
         height = height or [None]
+        mode = mode or [None]
         resample = resample or [None]
 
         masks = []
         images = []
-        for data in zip_longest_fill(pixels, R, G, B, width, height, resample):
-            image, r, g, b, w, h, rs = data
+        for data in zip_longest_fill(pixels, R, G, B, width, height, mode, resample):
+            image, r, g, b, w, h, m, rs = data
 
             r = r if r is not None else ""
             g = g if g is not None else ""
             b = b if b is not None else ""
             w = w if w is not None else MIN_WIDTH
             h = h if h is not None else MIN_HEIGHT
+            m = m if m is not None else EnumScaleMode.FIT
+            m = EnumScaleMode.FIT if m == EnumScaleMode.NONE else m
+
+            # fix the image first -- must at least match for px, py indexes
+            image = geo_scalefit(image, w, h, m, rs)
 
             if image is None:
                 image = np.zeros((h, w, 3), dtype=np.uint8)

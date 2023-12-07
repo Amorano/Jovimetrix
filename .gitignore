@@ -4,6 +4,7 @@ __pycache__/
 *$py.class
 _lib/*
 _res/*
+_web/*
 *.code-workspace
 .vscode/
 

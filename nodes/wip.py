@@ -5,7 +5,7 @@ Work in Progress
 
 import torch
 
-from Jovimetrix.jovimetrix import deep_merge_dict, tensor2cv, cv2tensor, cv2mask, \
+from Jovimetrix import deep_merge_dict, tensor2cv, cv2tensor, cv2mask, \
     JOVBaseNode, Logger, IT_PIXELS
 
 # =============================================================================

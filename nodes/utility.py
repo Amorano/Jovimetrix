@@ -5,12 +5,12 @@ Utility
 
 import gc
 import json
-from typing import Any
+from pickle import TRUE
+from typing import Any, Optional
 
 import torch
 
-from Jovimetrix.jovimetrix import Logger, JOVBaseNode, WILDCARD
-from Jovimetrix.sup import stream
+from Jovimetrix import Logger, JOVBaseNode, WILDCARD
 
 # =============================================================================
 
@@ -79,15 +79,15 @@ class OptionsNode(JOVBaseNode):
             "optional": {
                 "o": (WILDCARD, {"default": None}),
                 "log": (["ERROR", "WARN", "INFO", "DEBUG"], {"default": "ERROR"}),
-                "host": ("STRING", {"default": ""}),
-                "port": ("INT", {"default": 7227}),
+                #"host": ("STRING", {"default": ""}),
+                #"port": ("INT", {"min": 0, "step": 1, "default": 7227}),
             }}
 
     @classmethod
     def IS_CHANGED(cls, **kw) -> float:
         return float("nan")
 
-    def run(self, log: str, host: str, port: int, **kw) -> Any:
+    def run(self, log: str,  **kw) -> Any:
         if log == "ERROR":
             Logger._LEVEL = 0
         elif log == "WARN":
@@ -97,8 +97,8 @@ class OptionsNode(JOVBaseNode):
         elif log == "DEBUG":
             Logger._LEVEL = 3
 
-        stream.STREAMPORT = port
-        stream.STREAMHOST = host
+        #stream.STREAMPORT = port
+        #stream.STREAMHOST = host
 
         o = kw.get('o', None)
         return (o, )
@@ -109,6 +109,7 @@ class DisplayDataNode(JOVBaseNode):
     NAME = "📊 Display Data (jov)"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/UTILITY"
     DESCRIPTION = "Display any data"
+    OUTPUT_NODE = True
     SORT = 100
     POST = True
 
@@ -118,21 +119,43 @@ class DisplayDataNode(JOVBaseNode):
                     "source": (WILDCARD, {}),
                 },
                 "optional": {
-
+                    "console": ("BOOLEAN", {"default": False})
                 }}
 
-    def run(self, source=None) -> dict:
-        value = 'None'
-        if source is not None:
-            try:
-                value = json.dumps(source, indent=2, sort_keys=True)
-            except Exception:
-                try:
-                    value = str(source)
-                except Exception:
-                    value = 'source could not be serialized.'
+    @classmethod
+    def IS_CHANGED(cls, **kw) -> float:
+        return float("nan")
 
-        return {"ui": {"text": (value,)}}
+    @classmethod
+    def parse_value(cls, s) -> dict[str, Any]:
+        def handle_dict(d) -> dict[str, Any]:
+            result = {"type": "Dictionary", "items": {}}
+            for key, value in d.items():
+                result["items"][key] = cls.parse_value(value)
+            return result
+
+        def handle_list(s) -> dict[str, Any]:
+            result = {"type": type(s), "items": []}
+            for item in s:
+                result["items"].append(cls.parse_value(item))
+            return result
+
+        if isinstance(s, dict):
+            return handle_dict(s)
+        elif isinstance(s, (tuple, set, list,)):
+            return handle_list(s)
+        elif isinstance(s, torch.Tensor):
+            return {"Tensor": f"{s.shape}"}
+        else:
+            return {"type": repr(type(s)), "value": s}
+
+    def run(self, console:bool, source:list[object]) -> dict:
+        # ret = [{"ui": {"text": self.parse_value(s)}} for s in source]
+        ret = [self.parse_value(s) for s in source]
+        if console:
+            value = f'# items: {len(ret)}\n' + json.dumps(ret, indent=2)
+            print(value)
+        return ret
 
 # =============================================================================
 # === TESTING ===

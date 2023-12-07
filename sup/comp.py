@@ -23,7 +23,7 @@ from scipy.ndimage import rotate
 from blendmodes.blend import blendLayers, BlendType
 from PIL import Image, ImageDraw
 
-from Jovimetrix.jovimetrix import Logger, grid_make, cv2mask, cv2tensor, cv2pil, pil2cv
+from Jovimetrix import Logger, grid_make, cv2mask, cv2tensor, cv2pil, pil2cv
 
 HALFPI = math.pi / 2
 TAU = math.pi * 2

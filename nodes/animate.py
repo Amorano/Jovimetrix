@@ -6,7 +6,7 @@ Animate
 import time
 from typing import Any
 
-from Jovimetrix.jovimetrix import Logger, JOVBaseNode, WILDCARD, JOV_MAX_DELAY
+from Jovimetrix import Logger, JOVBaseNode, WILDCARD, JOV_MAX_DELAY
 from Jovimetrix.sup.anim import EnumWaveSimple
 
 # =============================================================================

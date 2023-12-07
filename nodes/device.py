@@ -19,13 +19,13 @@ try:
 except:
     print("MISSING MIDI SUPPORT")
 
-from Jovimetrix.jovimetrix import deep_merge_dict, tensor2cv, cv2mask, cv2tensor, \
+from Jovimetrix import deep_merge_dict, tensor2cv, cv2mask, cv2tensor, \
         JOVBaseNode, JOVImageBaseNode, Logger, \
         IT_PIXELS, IT_ORIENT, IT_CAM, IT_REQUIRED, \
         IT_WHMODE, IT_REQUIRED, MIN_HEIGHT, MIN_WIDTH, IT_INVERT
 
-from Jovimetrix.sup.comp import light_invert, geo_scalefit, EnumInterpolation, IT_SAMPLE
-from Jovimetrix.sup import stream
+from Jovimetrix.sup.comp import image_grid, light_invert, geo_scalefit, EnumInterpolation, IT_SAMPLE
+from Jovimetrix.sup.stream import StreamingServer, StreamManager
 
 def save_midi():
     mid = MidiFile()
@@ -71,10 +71,8 @@ class StreamReaderNode(JOVImageBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        data = list(stream.StreamManager.STREAM.keys())
-        default = data[0] if len(data)-1 > 0 else ""
         d = {"required": {
-                "url": ("STRING", {"default": default}),
+                "url": ("STRING", {"default": 0}),
             },
             "optional": {
                 "fps": ("INT", {"min": 1, "max": 60, "step": 1, "default": 60}),
@@ -86,7 +84,7 @@ class StreamReaderNode(JOVImageBaseNode):
     def IS_CHANGED(cls, url: str, width: int, height: int, fps: float,
                    hold: bool, sample: str, zoom: float, **kw) -> float:
 
-        if (device := stream.StreamManager.capture(url)) is None:
+        if (device := StreamManager.capture(url)) is None:
             raise Exception(f"stream failed {url}")
 
         if device.width != width or device.height != height:
@@ -115,7 +113,7 @@ class StreamReaderNode(JOVImageBaseNode):
             zoom: float) -> tuple[torch.Tensor, torch.Tensor]:
 
         if self.__device is None or self.__device.captured or url != self.__url:
-            self.__device = stream.StreamManager.capture(url)
+            self.__device = StreamManager.capture(url)
             if self.__device is None or not self.__device.captured:
                 return (cv2tensor(self.__last),
                         cv2mask(self.__last),
@@ -164,7 +162,7 @@ class StreamWriterNode(JOVBaseNode):
     @classmethod
     def IS_CHANGED(cls, route: str, hold: bool, width: int, height: int, fps: float, **kw) -> float:
 
-        if (device := stream.StreamManager.capture(route, static=True)) is None:
+        if (device := StreamManager.capture(route, static=True)) is None:
             raise Exception(f"stream failed {route}")
 
         if device.size[0] != width or device.size[1] != height:
@@ -181,7 +179,7 @@ class StreamWriterNode(JOVBaseNode):
 
     def __init__(self, *arg, **kw) -> None:
         super(StreamWriterNode).__init__(self, *arg, **kw)
-        self.__ss = stream.StreamingServer()
+        self.__ss = StreamingServer()
         self.__route = ""
         self.__unique = uuid.uuid4()
         self.__device = None
@@ -203,7 +201,7 @@ class StreamWriterNode(JOVBaseNode):
                 self.__device.release()
 
             # startup server
-            self.__device = stream.StreamManager.capture(self.__unique, static=True)
+            self.__device = StreamManager.capture(self.__unique, static=True)
             self.__ss.endpointAdd(route, self.__device)
             self.__route = route
             Logger.debug(self.NAME, "START", route)
@@ -228,7 +226,7 @@ class StreamWriterNode(JOVBaseNode):
                 image = light_invert(image, i)
             out.append(image)
 
-        image = stream.gridImage(out, w, h)
+        image = image_grid(out, w, h)
         image = geo_scalefit(image, w, h, m, rs)
         self.__device.post(image)
 
@@ -244,8 +242,8 @@ class MIDIPortNode(JOVBaseNode):
     @classmethod
     def INPUT_TYPES(s) -> dict:
         d = {"optional": {
-            "channel" : ("INTEGER", {"default":0}),
-            "port" : ("INTEGER", {"default":0}),
+            "channel" : ("INT", {"default":0}),
+            "port" : ("INT", {"default":0}),
         }}
         return deep_merge_dict(IT_REQUIRED, d)
 

@@ -1,0 +1,78 @@
+{
+	"JOVIMETRIX 🔺🟩🔵/CREATE":
+	{
+		"title":[30,120,0],
+		"body":[10,50,0],
+		"shape":"round"
+	},
+	"JOVIMETRIX 🔺🟩🔵/ADJUST":
+	{
+		"title":[60,70,160],
+		"body":[25,30,75],
+		"shape":"round"
+	},
+	"JOVIMETRIX 🔺🟩🔵/TRANSFORM":
+	{
+		"title":[130,100,20],
+		"body":[60,45,0],
+		"shape":"round"
+	},
+	"JOVIMETRIX 🔺🟩🔵/COMPOSE":
+	{
+		"title":[120,50,150],
+		"body":[55,20,70],
+		"shape":"round"
+	},
+	"JOVIMETRIX 🔺🟩🔵/ANIMATE":
+	{
+		"title":[150,80,60],
+		"body":[70,35,25],
+		"shape":"round"
+	},
+	"JOVIMETRIX 🔺🟩🔵/AUDIO":{
+		"title":[160,60,100],
+		"body":[80,30,50],
+		"shape":"round"
+	},
+	"JOVIMETRIX 🔺🟩🔵/DEVICE":
+	{
+		"title":[70,120,100],
+		"body":[40,60,60],
+		"shape":"round"},
+	"JOVIMETRIX 🔺🟩🔵/UTILITY":
+	{
+		"title":[140,90,140],
+		"body":[70,45,70],
+		"shape":"round"
+	},
+	"JOVIMETRIX 🔺🟩🔵/💣☣️ WIP ☣️💣":
+	{
+		"title":[230,230,30],
+		"body":[0,0,0],
+		"shape":"box"
+	},
+	"JOVIMETRIX 🔺🟩🔵":
+	{
+		"title":[150,150,0],
+		"body":[0,150,150],
+		"shape":"box"
+	},
+	"latent":
+	{
+		"title":[250,85,0],
+		"body":[0,150,160],
+		"shape":"box"
+	},
+	"EmptyLatentImage":
+	{
+		"title":[200,65,0],
+		"body":[0,75,80],
+		"shape":"box"
+	},
+	"image":
+	{
+		"title":[95,15,15],
+		"body":[65,15,15],
+		"shape":"box"
+	}
+}

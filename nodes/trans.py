@@ -7,7 +7,7 @@ from typing import Optional
 
 import torch
 
-from Jovimetrix.jovimetrix import zip_longest_fill, deep_merge_dict, tensor2cv, cv2mask, cv2tensor, \
+from Jovimetrix import zip_longest_fill, deep_merge_dict, tensor2cv, cv2mask, cv2tensor, \
     JOVImageInOutBaseNode, Logger, \
     IT_PIXELS, IT_TRS, IT_WH, IT_REQUIRED, IT_EDGE, \
     IT_WHMODE, IT_REQUIRED, MIN_HEIGHT, MIN_WIDTH, IT_TILE, IT_INVERT

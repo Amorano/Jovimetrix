@@ -8,7 +8,7 @@ import ffmpeg
 import numpy as np
 from PIL import Image, ImageDraw
 
-from Jovimetrix.jovimetrix import Logger, cv2mask, pil2cv, cv2tensor, \
+from Jovimetrix import Logger, cv2mask, pil2cv, cv2tensor, \
     JOVImageBaseNode, MIN_HEIGHT
 
 # =============================================================================

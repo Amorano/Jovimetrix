@@ -8,7 +8,7 @@ from typing import Optional
 import torch
 import numpy as np
 
-from Jovimetrix.jovimetrix import tensor2cv, cv2tensor, cv2mask, \
+from Jovimetrix import tensor2cv, cv2tensor, cv2mask, \
     zip_longest_fill, deep_merge_dict, \
     JOVImageInOutBaseNode, Logger, \
     IT_PIXELS, IT_COLOR, IT_WH, IT_WHMODE, WILDCARD, IT_PIXEL2, IT_INVERT, \

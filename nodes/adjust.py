@@ -9,14 +9,13 @@ import cv2
 import torch
 import numpy as np
 
-from Jovimetrix.jovimetrix import Logger, tensor2cv, cv2tensor, cv2mask, \
+from Jovimetrix import Logger, tensor2cv, cv2tensor, cv2mask, \
     zip_longest_fill, deep_merge_dict, \
     JOVImageInOutBaseNode, \
     IT_PIXELS, IT_WHMODE, IT_PIXEL2, IT_INVERT, IT_WHMODE
 
 from Jovimetrix.sup.comp import light_contrast, light_gamma, light_exposure, light_invert, \
-    adjust_sharpen, adjust_threshold, morph_edge_detect, morph_emboss, color_colormap, \
-    color_heatmap, \
+    adjust_sharpen, adjust_threshold, morph_edge_detect, morph_emboss, color_colormap, color_heatmap, \
     EnumAdjustOP, EnumThresholdAdapt, EnumColorMap, EnumThreshold
 
 # =============================================================================
@@ -300,11 +299,11 @@ class ColorCNode(JOVImageInOutBaseNode):
 
     @classmethod
     def INPUT_TYPES(s) -> dict:
-        d = {"required": {
+        d = {"optional": {
                 "colormap": (EnumColorMap._member_names_, {"default": EnumColorMap.HSV.name}),
                 "usemap": ("BOOLEAN", {"default": False}),
                 "threshold": ("FLOAT", {"default": 0, "min": 0, "max": 1, "step": 0.01},),
-                "blur": ("INTEGER", {"default": 13, "min": 3, "step": 1},),
+                "blur": ("INT", {"default": 13, "min": 3, "step": 1},),
                 "flip": ("BOOLEAN", {"default": False}),
             }}
         return deep_merge_dict(IT_PIXEL2, d)

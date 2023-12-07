@@ -13,7 +13,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import cv2
 import numpy as np
 
-from Jovimetrix.jovimetrix import Logger, Singleton
+from Jovimetrix import Logger, Singleton
 from Jovimetrix.sup.comp import geo_scalefit, image_grid, EnumScaleMode, EnumInterpolation
 
 # =============================================================================
@@ -256,7 +256,7 @@ class MediaStreamDevice(MediaStreamBase):
 
         time.sleep(1)
         try:
-            Logger.debug(self, f"CAPTURE {self.__source.getBackendName()}")
+            Logger.debug(self.__class__.__name__, f"CAPTURE {self.__source.getBackendName()}")
         except:
             return False
         return True
@@ -349,11 +349,11 @@ class StreamManager(metaclass=Singleton):
         for i in range(5):
             stream = MediaStreamDevice(i, callback=(callback, i,) )
 
-        Logger.info(cls, f"SCAN ({time.perf_counter()-start:.4})")
+        Logger.info(cls.__class__.__name__, f"SCAN ({time.perf_counter()-start:.4})")
 
     def __init__(self) -> None:
         #StreamManager.devicescan()
-        Logger.info(self, f"STREAM {self.streams}")
+        Logger.info(self.__class__.__name__, f"STREAM {self.streams}")
 
     def __del__(self) -> None:
         if StreamManager:
@@ -390,10 +390,10 @@ class StreamManager(metaclass=Singleton):
         if (stream := StreamManager.STREAM.get(url, None)) is None:
             if static:
                 stream = StreamManager.STREAM[url] = MediaStreamComfyUI(url, width, height, fps)
-                Logger.debug(self, "MediaStreamComfyUI")
+                Logger.debug(self.__class__.__name__, "MediaStreamComfyUI")
             else:
                 stream = StreamManager.STREAM[url] = MediaStreamDevice(url, width, height, fps, backend=backend)
-                Logger.debug(self, "MediaStream")
+                Logger.debug(self.__class__.__name__, "MediaStream")
 
             if endpoint is not None and stream.captured:
                 StreamingServer.endpointAdd(endpoint, stream)
@@ -457,7 +457,7 @@ class StreamingServer(metaclass=Singleton):
     @classmethod
     def endpointAdd(cls, name: str, stream: MediaStreamDevice) -> None:
         StreamingServer.OUT[name] = {'_': stream, 'b': None}
-        Logger.debug(cls, f"ENDPOINT_ADD ({name})")
+        Logger.debug(cls.__class__.__name__, f"ENDPOINT_ADD ({name})")
 
     def __init__(self, host: str='', port: int=7227) -> None:
         self.__host = host
@@ -467,7 +467,7 @@ class StreamingServer(metaclass=Singleton):
         self.__thread_server.start()
         self.__thread_capture = threading.Thread(target=self.__capture, daemon=True)
         self.__thread_capture.start()
-        Logger.info(self, "STARTED")
+        Logger.info(self.__class__.__name__, "STARTED")
 
     def __server(self) -> None:
         httpd = ThreadingHTTPServer(self.__address, lambda *args: StreamingHandler(StreamingServer.OUT, *args))
