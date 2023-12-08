@@ -27,14 +27,14 @@ function box_color(root, name, title, body,) {
 export class Jovimetrics {
     async initialize() {
         var response = await api.fetchApi("/config/raw", { cache: "no-store" });
-	    const data = await response.json();
+	    const JOV_CONFIG = await response.json();
 
         const div = document.getElementById('configColor');
-        if (data.color === undefined) {
+        if (JOV_CONFIG.color === undefined) {
             return;
         }
 
-        const colors = Object.entries(data.color)
+        const colors = Object.entries(JOV_CONFIG.color)
         colors.forEach(entry => {
             box_color(div, entry[0], entry[1].title, entry[1].body);
         });
