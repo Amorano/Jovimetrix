@@ -58,7 +58,7 @@ app.registerExtension({
                     this['_shape'] = nodeData._shape ? nodeData._shape : found.shape ?
                     found.shape in ['default', 'box', 'round', 'card'] : 'round';
                 }*/
-                console.debug("jovi-colorized", this.title, this.color, this.bgcolor, this._shape);
+                // console.debug("jovi-colorized", this.title, this.color, this.bgcolor, this._shape);
                 // result.serialize_widgets = true
                 return result;
             }

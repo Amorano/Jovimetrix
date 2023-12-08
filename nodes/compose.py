@@ -101,8 +101,8 @@ class PixelSplitNode(JOVImageInOutBaseNode):
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/COMPOSE"
     DESCRIPTION = "SPLIT THE R-G-B from an image"
 
-    RETURN_TYPES = ("IMAGE", "MASK", "IMAGE", "MASK", "IMAGE", "MASK",)
-    RETURN_NAMES = ("❤️", "🟥", "💚", "🟩", "💙", "🟦")
+    RETURN_TYPES = ("IMAGE", "IMAGE", "IMAGE", "MASK", "MASK", "MASK",)
+    RETURN_NAMES = ("❤️", "💚", "💙", "🟥", "🟩", "🟦")
     OUTPUT_IS_LIST = (True, True, True, True, True, True, )
 
     @classmethod

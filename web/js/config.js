@@ -26,37 +26,49 @@ function box_color(root, name, title, body,) {
 
 export class Jovimetrics {
     async initialize() {
+
         var response = await api.fetchApi("/config/raw", { cache: "no-store" });
-	    const JOV_CONFIG = await response.json();
+        const JOV_CONFIG = await response.json();
+
+        response = await api.fetchApi("./../object_info", { cache: "no-store" });
+        const NODE_LIST = await response.json();
 
         const div = document.getElementById('configColor');
         if (JOV_CONFIG.color === undefined) {
             return;
         }
 
-        const colors = Object.entries(JOV_CONFIG.color)
-        colors.forEach(entry => {
+        var existing = [];
+        const COLORS = Object.entries(JOV_CONFIG.color)
+        COLORS.forEach(entry => {
             box_color(div, entry[0], entry[1].title, entry[1].body);
+            existing.push(entry[0])
         });
 
         // now the rest which are untracked....
-        var categories = [];
-        response = await api.fetchApi("./../object_info", { cache: "no-store" });
-	    const untracked = await response.json();
+        var nodes = Object.entries(NODE_LIST);
 
-        Object.entries(untracked).forEach(entry => {
+        var categories = [];
+        nodes.forEach(entry => {
             var name = entry[0];
-            if (colors.includes(name) == false) {
-                categories = [new Set([categories, entry[1].category])];
+            var cat = entry[1].category;
+            console.log(cat)
+            if (existing.includes(name) == false) {
                 box_color(div, entry[0], '#7F7F7F', '#7F7F7F');
+            }
+            if (categories.includes(cat) == false) {
+                // console.log(cat, categories)
+                categories.push(cat);
             }
         });
 
-        Object.entries(untracked).forEach(entry => {
-            var name = entry[0];
-            if (colors.includes(name) == false) {
-                categories = [new Set([categories, entry[1].category])];
-                box_color(div, entry[0], '#7F7F7F', '#7F7F7F');
+        categories.sort(function (a, b) {
+            return a.toLowerCase().localeCompare(b.toLowerCase());
+        });
+
+        Object.entries(categories).forEach(entry => {
+            if (existing.includes(entry[1]) == false) {
+                box_color(div, entry[1], '#3F3F3F', '#3F3F3F');
             }
         });
 
@@ -66,9 +78,9 @@ export class Jovimetrics {
             size: 2,
             multipleInstances: false,
             //mode: 'HEX',
-            init: function(elm, colors) {
+            init: function(elm, rgb) {
               elm.style.backgroundColor = elm.value;
-              elm.style.color = colors.rgbaMixCustom.luminance > 0.22 ? '#222' : '#ddd';
+              elm.style.color = rgb.rgbaMixCustom.luminance > 0.22 ? '#222' : '#ddd';
             },
             convertCallback: function(data, type) {
                 const name = this.patch.attributes.jovi.value;
@@ -82,7 +94,7 @@ export class Jovimetrics {
                     },
                     body: JSON.stringify(body),
                 });
-                colors[name] = data.HEX;
+                COLORS[name] = data.HEX;
             },
         });
     }
