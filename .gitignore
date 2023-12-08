@@ -7,6 +7,7 @@ _res/*
 _web/*
 *.code-workspace
 .vscode/
+config.json
 
 # C extensions
 *.so

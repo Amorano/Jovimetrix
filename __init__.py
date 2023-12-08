@@ -69,6 +69,15 @@ NODE_DISPLAY_NAME_MAPPINGS = {}
 
 __all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS"]
 
+ROOT = Path(__file__).resolve().parent
+ROOT_COMFY = ROOT.parent.parent
+ROOT_COMFY_WEB = ROOT_COMFY / "web" / "extensions" / "jovimetrix"
+
+JOV_CONFIG = {}
+JOV_WEB = ROOT / 'web'
+JOV_DEFAULT = JOV_WEB / 'default.json'
+JOV_CONFIG_FILE = JOV_WEB / 'config.json'
+
 JOV_MAX_DELAY = 60.
 try: JOV_MAX_DELAY = float(os.getenv("JOV_MAX_DELAY", 60.))
 except: pass
@@ -136,13 +145,15 @@ class Session(metaclass=Singleton):
 
     def __init__(self, *arg, **kw) -> None:
         # stuff extension files into extension spot until I know how to get them from JS in place
+        shutil.copytree(ROOT / "web", ROOT_COMFY_WEB, ignore=self.ignore_files, dirs_exist_ok=True)
+        if not JOV_CONFIG_FILE.exists():
+            try:
+                shutil.copy2(JOV_DEFAULT, JOV_CONFIG_FILE)
+                Logger.warn("---> DEFAULT CONFIGURATION <---")
+            except:
+                raise Exception("MAJOR 😿😰😬🥟 BLUNDERCATS 🥟😬😰😿")
 
-        root = Path(__file__).parent.absolute()
-        root_comfy = root.parent.parent
-        root_web = root_comfy / "web" / "extensions" / "jovimetrix"
-        shutil.copytree(root / "web", root_web, ignore=self.ignore_files, dirs_exist_ok=True)
-
-        for f in (root / 'nodes').iterdir():
+        for f in (ROOT / 'nodes').iterdir():
             if f.suffix != ".py" or f.stem.startswith('_'):
                 continue
 
@@ -222,7 +233,7 @@ class AnyType(str):
         return False
 
 WILDCARD = AnyType("*")
-ROOT = Path(__file__).resolve().parent
+
 # =============================================================================
 # == CUSTOM API RESPONSES
 # =============================================================================
@@ -230,21 +241,18 @@ ROOT = Path(__file__).resolve().parent
 try:
     @PromptServer.instance.routes.get("/jovimetrix/config/raw")
     async def jovimetrix_config(request) -> Any:
-        f = ROOT / 'web' / 'config.json'
-        ret = {}
+        global JOV_CONFIG
         try:
-            with open(f, 'r', encoding='utf-8') as fn:
-                data = json.load(fn)
-            ret.update(data)
+            with open(JOV_CONFIG_FILE, 'r', encoding='utf-8') as fn:
+                JOV_CONFIG = json.load(fn)
         except (IOError, FileNotFoundError) as e:
             pass
         except Exception as e:
             print(e)
-        return web.json_response(ret)
+        return web.json_response(JOV_CONFIG)
 
     @PromptServer.instance.routes.get("/jovimetrix/config")
     async def jovimetrix_config(request) -> Any:
-        # configuration page...
         f = ROOT / 'web' / 'config.html'
         with open(f, 'r', encoding='utf-8') as fn:
             data = fn.read()
@@ -253,7 +261,17 @@ try:
     @PromptServer.instance.routes.post("/jovimetrix/config")
     async def jovimetrix_config_post(request) -> Any:
         json_data = await request.json()
-        Logger.debug(json_data)
+        name = list(json_data.keys())[0]
+        data = json_data[name]
+        part = data['part']
+        color = f"#{data['color']}"
+        Logger.debug(name, part, color)
+        global JOV_CONFIG
+        entry = JOV_CONFIG['color'].get(name, {})
+        entry[part] = color
+        JOV_CONFIG['color'][name] = entry
+        with open(JOV_CONFIG_FILE, 'w', encoding='utf-8') as f:
+            json.dump(JOV_CONFIG, f)
         return web.json_response(json_data)
 
 except Exception as e:
