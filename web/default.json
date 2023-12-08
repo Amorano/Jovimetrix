@@ -2,26 +2,26 @@
 	"color" : {
 		"JOVIMETRIX 🔺🟩🔵/CREATE":
 		{
-			"title":"#1E7800",
-			"body": "#0A3200",
+			"title":"#1E78007F",
+			"body": "#0A32007F",
 			"shape":"round"
 		},
 		"JOVIMETRIX 🔺🟩🔵/ADJUST":
 		{
-			"title":"#3C46A0",
-			"body": "#19234B",
+			"title":"#3C46A07F",
+			"body": "#19234B7F",
 			"shape":"round"
 		},
 		"JOVIMETRIX 🔺🟩🔵/TRANSFORM":
 		{
-			"title":"#826414",
-			"body": "#3C2D00",
+			"title":"#8264147F",
+			"body": "#3C2D007F",
 			"shape":"round"
 		},
 		"JOVIMETRIX 🔺🟩🔵/COMPOSE":
 		{
-			"title":"#783296",
-			"body": "#371446",
+			"title":"#7832967F",
+			"body": "#3714467F",
 			"shape":"round"
 		},
 		"JOVIMETRIX 🔺🟩🔵/ANIMATE":
@@ -31,31 +31,31 @@
 			"shape":"round"
 		},
 		"JOVIMETRIX 🔺🟩🔵/AUDIO":{
-			"title":"#A03C64",
-			"body": "#501E32",
+			"title":"#A03C647F",
+			"body": "#501E327F",
 			"shape":"round"
 		},
 		"JOVIMETRIX 🔺🟩🔵/DEVICE":
 		{
-			"title":"#467864",
-			"body": "#283C3C",
+			"title":"#4678647F",
+			"body": "#283C3C7F",
 			"shape":"round"},
 		"JOVIMETRIX 🔺🟩🔵/UTILITY":
 		{
-			"title":"#8C5A8C",
-			"body": "#462D46",
+			"title":"#8C5A8C7F",
+			"body": "#462D467F",
 			"shape":"round"
 		},
 		"JOVIMETRIX 🔺🟩🔵/💣☣️ WIP ☣️💣":
 		{
-			"title":"#E6E61E",
-			"body": "#000000",
+			"title":"#E6E61E7F",
+			"body": "#0000007F",
 			"shape":"box"
 		},
 		"JOVIMETRIX 🔺🟩🔵":
 		{
-			"title":"#969600",
-			"body": "#009696",
+			"title":"#969600FF",
+			"body": "#009696FF",
 			"shape":"box"
 		}
 	}

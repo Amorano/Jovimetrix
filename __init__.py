@@ -264,7 +264,7 @@ try:
         name = list(json_data.keys())[0]
         data = json_data[name]
         part = data['part']
-        color = f"#{data['color']}"
+        color = f"#{data['color']}FF"
         Logger.debug(name, part, color)
         global JOV_CONFIG
         entry = JOV_CONFIG['color'].get(name, {})

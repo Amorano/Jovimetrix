@@ -17,7 +17,7 @@ app.registerExtension({
     name: "jovimetrix.colorize",
 
     async beforeRegisterNodeDef(nodeType, nodeData) {
-        console.log(JOV_CONFIG)
+        //console.log(JOV_CONFIG)
         if (JOV_CONFIG.color === undefined || JOV_CONFIG.color.length == 0) {
             return;
         }
@@ -45,18 +45,19 @@ app.registerExtension({
                 const result = onNodeCreated ? onNodeCreated.apply(this, arguments) : undefined;
 
                 if (nodeData.color === undefined) {
-                    this['color'] = (found.title || "#7F7F7F")
+                    this['color'] = (found.title || "#7F7F7FFF")
                 }
 
                 if (nodeData.bgcolor === undefined) {
-                    this['bgcolor'] = (found.body || "#7F7F7F")
+                    this['bgcolor'] = (found.body || "#7F7F7FFF")
                 }
 
+                /*
                 // default, box, round, card
                 if (nodeData.shape === undefined || nodeData.shape == false) {
                     this['_shape'] = nodeData._shape ? nodeData._shape : found.shape ?
-                    found.shape in ['default', 'box', 'round', 'card'] : 'default';
-                }
+                    found.shape in ['default', 'box', 'round', 'card'] : 'round';
+                }*/
                 console.debug("jovi-colorized", this.title, this.color, this.bgcolor, this._shape);
                 // result.serialize_widgets = true
                 return result;
