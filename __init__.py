@@ -64,12 +64,10 @@ try:
 except:
     pass
 
-WEB_DIRECTORY = "./web"
-
 NODE_CLASS_MAPPINGS = {}
 NODE_DISPLAY_NAME_MAPPINGS = {}
 
-__all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS", "WEB_DIRECTORY"]
+__all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS"]
 
 JOV_MAX_DELAY = 60.
 try: JOV_MAX_DELAY = float(os.getenv("JOV_MAX_DELAY", 60.))
@@ -132,21 +130,17 @@ class Session(metaclass=Singleton):
     CLASS_MAPPINGS = {}
     CLASS_MAPPINGS_WIP = {}
 
+    @classmethod
+    def ignore_files(cls, d, files) -> list[str]|None:
+        return [x for x in files if x.endswith('.json') or x.endswith('.html')]
+
     def __init__(self, *arg, **kw) -> None:
         # stuff extension files into extension spot until I know how to get them from JS in place
 
         root = Path(__file__).parent.absolute()
         root_comfy = root.parent.parent
-
         root_web = root_comfy / "web" / "extensions" / "jovimetrix"
-        if not os.path.exists(root_web):
-            os.makedirs(root_web)
-
-        for f in (root / "web").iterdir():
-            print(root_web / f.name)
-            if f.is_file() and f.suffix in ['.js', '.css']:
-                if not (new := (root_web / f.name)).exists():
-                    shutil.copy(f, new)
+        shutil.copytree(root / "web", root_web, ignore=self.ignore_files, dirs_exist_ok=True)
 
         for f in (root / 'nodes').iterdir():
             if f.suffix != ".py" or f.stem.startswith('_'):
@@ -234,20 +228,10 @@ ROOT = Path(__file__).resolve().parent
 # =============================================================================
 
 try:
-    @PromptServer.instance.routes.get("/jovimetrix/config/color")
+    @PromptServer.instance.routes.get("/jovimetrix/config/raw")
     async def jovimetrix_config(request) -> Any:
-        f = ROOT / 'web' / 'jovi_sidecar.json'
+        f = ROOT / 'web' / 'config.json'
         ret = {}
-        try:
-            with open(f, 'r', encoding='utf-8') as fn:
-                data = json.load(fn)
-            ret.update(data)
-        except (IOError, FileNotFoundError) as e:
-            pass
-        except Exception as e:
-            print(e)
-
-        f = ROOT / 'web' / 'user_sidecar.json'
         try:
             with open(f, 'r', encoding='utf-8') as fn:
                 data = json.load(fn)
@@ -266,6 +250,11 @@ try:
             data = fn.read()
         return web.Response(text=data, content_type='text/html')
 
+    @PromptServer.instance.routes.post("/jovimetrix/config")
+    async def jovimetrix_config_post(request) -> Any:
+        json_data = await request.json()
+        Logger.debug(json_data)
+        return web.json_response(json_data)
 
 except Exception as e:
     print(e)
