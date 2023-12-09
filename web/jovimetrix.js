@@ -37,42 +37,55 @@ const saveVal = (url, v) => {
     localStorage.setItem(url, v);
 };
 
-function col_color(name, data, attr) {
-    var col = document.createElement('td');
-    var box = document.createElement('input');
-    box.classList.add('color');
-    if (data === undefined) {
-        data = '#7F7F7F';
+const template_color_block = `
+<td>
+    <td rowspan="2">{{ name }}</td>
+    <td>
+        <input class="jov-color" value="{{value}}" name="{{name}}" part="{{part}}>
+            <thead id="configColor"></thead>
+        </input>
+    </td>
+    <td>
+        <input class="jov-color" value="{{value}}" name="{{name}}" part="{{part}}>
+            <thead id="configColor"></thead>
+        </input>
+    </td>
+</td>
+`
+
+const template_colors = `
+<div class="tg-wrap">
+    <table id="jov-tg-color">
+        <thead id="configColor"></thead>
+    </table>
+</div>
+`
+
+function renderTemplate(template, data) {
+    // Replace placeholders in the template with corresponding data values
+    for (const key in data) {
+        if (data.hasOwnProperty(key)) {
+            const regex = new RegExp(`{{\\s*${key}\\s*}}`, 'g');
+            template = template.replace(regex, data[key]);
+        }
     }
-    box.setAttribute("value", data)
-    box.setAttribute("jovi", name)
-    box.setAttribute("part", attr)
-    col.appendChild(box);
-    return col;
+    return template;
 }
 
-function box_color(root, name, title, body,) {
-    var row = document.createElement('tr');
-    var col = document.createElement('td');
-    col.innerHTML = name;
-    row.appendChild(col);
-    row.appendChild(col_color(name, title, 'title'));
-    row.appendChild(col_color(name, body, 'body'));
-    root.appendChild(row);
-}
+var headID = document.getElementsByTagName("head")[0];
+var cssNode = document.createElement('link');
+cssNode.rel = 'stylesheet';
+cssNode.type = 'text/css';
+cssNode.href = 'extensions/Jovimetrix/jovimetrix.css';
+headID.appendChild(cssNode);
 
 // -----------
 class JovimetrixConfigDialog extends ComfyDialog {
-    createControlsMid() {
-		let self = this;
-
-		var headID = document.getElementsByTagName("head")[0];
-        var cssNode = document.createElement('link');
-        cssNode.type = 'text/css';
-        cssNode.rel = 'stylesheet';
-        cssNode.href = './css/style.css';
-        cssNode.media = 'screen';
-        headID.appendChild(cssNode);
+    createElements() {
+		// Create the main content of the page
+        const mainContent = document.createElement('div');
+        mainContent.style.add(box);
+        mainContent.innerHTML = renderTemplate(templateString, templateData);
 
         const NODE_LIST = api_get("./../object_info");
 
@@ -146,7 +159,7 @@ class JovimetrixConfigDialog extends ComfyDialog {
 
 
 				$el("br", {}, []),
-				$el("button.cm-button", {
+				$el("button.jov-button", {
 					type: "button",
 					textContent: "Alternatives of A1111",
 					onclick:
@@ -161,13 +174,32 @@ class JovimetrixConfigDialog extends ComfyDialog {
 		return res;
 	}
 
-	createControlsLeft() {
-	}
-
-	createControlsRight() {
-	}
-
 	constructor() {
+		super();
+
+		const close_button = $el("button", { id: "cm-close-button", type: "button", textContent: "Close", onclick: () => this.close() });
+
+		const content =
+				$el("div.comfy-modal-content",
+					[
+						$el("tr.jov-title", {}, [
+								$el("font", {size:6, color:"white"}, [`JOVIMETRIX CONFIGURATION`])]
+							),
+						$el("br", {}, []),
+						$el("div.jov-menu-container",
+							[
+								$el("div.jov-menu-column", [...this.createElements()]),
+							]),
+
+						$el("br", {}, []),
+						close_button,
+					]
+				);
+
+		content.style.width = '100%';
+		content.style.height = '100%';
+
+		this.element = $el("div.comfy-modal", { id:'jov-manager-dialog', parent: document.body }, [ content ]);
 	}
 
 	show() {
