@@ -66,8 +66,9 @@ except:
 
 NODE_CLASS_MAPPINGS = {}
 NODE_DISPLAY_NAME_MAPPINGS = {}
+WEB_DIRECTORY = "./web"
 
-__all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS"]
+__all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS", "WEB_DIRECTORY"]
 
 ROOT = Path(__file__).resolve().parent
 ROOT_COMFY = ROOT.parent.parent
@@ -145,7 +146,7 @@ class Session(metaclass=Singleton):
 
     def __init__(self, *arg, **kw) -> None:
         # stuff extension files into extension spot until I know how to get them from JS in place
-        shutil.copytree(ROOT / "web", ROOT_COMFY_WEB, ignore=self.ignore_files, dirs_exist_ok=True)
+        # shutil.copytree(ROOT / "web", ROOT_COMFY_WEB, ignore=self.ignore_files, dirs_exist_ok=True)
         if not JOV_CONFIG_FILE.exists():
             try:
                 shutil.copy2(JOV_DEFAULT, JOV_CONFIG_FILE)

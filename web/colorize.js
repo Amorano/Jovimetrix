@@ -1,35 +1,50 @@
 /**
  * File: colorize.js
  * Project: Jovimetrix
- * Author: Alexander G. Morano
- *
- * Copyright (c) 2023 Alexander G. Morano
  *
  */
 
-import { api } from "../../../../scripts/api.js";
-import { app } from "../../../../scripts/app.js";
+import { app } from "../../../scripts/app.js";
+import { $el } from "../../scripts/ui.js";
+import { jovimetrix } from "./jovimetrix.js";
 
-var response = await api.fetchApi("/jovimetrix/config/raw", { cache: "no-store" });
-const JOV_CONFIG = await response.json();
-
-app.registerExtension({
+const ext = {
     name: "jovimetrix.colorize",
 
+    async init() {
+		//let visible = true;
+		const showButton = $el("button.comfy-settings-btn", {
+			textContent: "🎨",
+			style: {
+				left: "16px",
+				cursor: "pointer",
+				display: "unset",
+			},
+		});
+
+		showButton.onclick = () => {
+			// imageFeed.style.display = "block";
+			// showButton.style.display = "none";
+			// saveVal("Visible", 1);
+			//visible = true;
+		};
+		document.querySelector(".comfy-settings-btn").after(showButton);
+	},
+
     async beforeRegisterNodeDef(nodeType, nodeData) {
-        //console.log(JOV_CONFIG)
-        if (JOV_CONFIG.color === undefined || JOV_CONFIG.color.length == 0) {
+        // console.debug(jovimetrix.CONFIG)
+        if (jovimetrix.CONFIG.color === undefined || jovimetrix.CONFIG.color.length == 0) {
             return;
         }
 
-        let found = JOV_CONFIG.color[nodeData.type || nodeData.name];
+        let found = jovimetrix.CONFIG.color[nodeData.type || nodeData.name];
         if (found === undefined && nodeData.category) {
-            console.log(nodeData.type || nodeData.name)
+            // console.debug(nodeData.type || nodeData.name)
             const categorySegments = nodeData.category.split('/');
             let k = categorySegments.join('/');
 
             while (k) {
-                found = JOV_CONFIG.color[k];
+                found = jovimetrix.CONFIG.color[k];
                 if (found) {
                     break;
                 }
@@ -39,17 +54,17 @@ app.registerExtension({
         }
 
         if (found) {
-            // console.log(nodeData);
+            // console.debug(nodeData);
             const onNodeCreated = nodeType.prototype.onNodeCreated;
             nodeType.prototype.onNodeCreated = function () {
                 const result = onNodeCreated ? onNodeCreated.apply(this, arguments) : undefined;
 
                 if (nodeData.color === undefined) {
-                    this['color'] = (found.title || "#7F7F7FFF")
+                    this['color'] = (found.title || "#7F7F7FDD")
                 }
 
                 if (nodeData.bgcolor === undefined) {
-                    this['bgcolor'] = (found.body || "#7F7F7FFF")
+                    this['bgcolor'] = (found.body || "#7F7F7FDD")
                 }
 
                 /*
@@ -64,4 +79,6 @@ app.registerExtension({
             }
         }
     },
-})
+}
+
+app.registerExtension(ext);
