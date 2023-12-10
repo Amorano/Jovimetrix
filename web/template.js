@@ -1,8 +1,8 @@
 
 export const template_color_block = `
-<tr class="full">
+<tr>
     <td>{{ name }}</td>
-    <td><input id="jov-color" type="text" data-coloris class="circle" name="{{ name }}" value="{{title}}" part="title"></input></td>
-    <td><input id="jov-color type="text" data-coloris class="circle" name="{{ name }}" value="{{body}}" part="body"></input></td>
+    <td><input class="jov-color" type="text" name="{{ name }}" value="{{title}}" part="title"></input></td>
+    <td><input class="jov-color" type="text" name="{{ name }}" value="{{body}}" part="body"></input></td>
 </tr>
 `

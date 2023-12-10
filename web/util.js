@@ -1,5 +1,17 @@
 import { api } from "../../../scripts/api.js";
 
+export const local_get = (url, d) => {
+    const v = localStorage.getItem('jovi.' + url);
+    if (v && !isNaN(+v)) {
+        return v;
+    }
+    return d;
+};
+
+export const local_set = (url, v) => {
+    localStorage.setItem('jovi.' + url, v);
+};
+
 export async function CONFIG() {
     return await api_get("/jovimetrix/config");
 }
