@@ -1,9 +1,44 @@
 #jov-manager-dialog {
-	width: 1000px;
-	height: 410px;
+	width: 620px;
+	height: 620px;
 	box-sizing: content-box;
 	z-index: 10000;
 }
+
+.jov-menu-container {
+	column-gap: 20px;
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	align-content: center;
+	vertical-align: middle;
+}
+
+.jov-menu-column {
+	display: flex;
+	flex-direction: column;
+	flex: 1 1 auto;
+	box-sizing: content-box;
+}
+
+.jov-title {
+	background-color: black;
+	text-align: center;
+	height: 40px;
+	width: calc(100% - 10px);
+	font-weight: bold;
+	justify-content: center;
+	align-content: center;
+	vertical-align: middle;
+}
+
+#jov-close-button {
+	width: calc(100% - 65px);
+	bottom: 10px;
+	position: absolute;
+	overflow: hidden;
+}
+
 
 .jov-box {
   display: flex;

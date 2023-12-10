@@ -5,10 +5,8 @@
  */
 
 import { app } from "../../../scripts/app.js";
-import { $el } from "../../scripts/ui.js";
+import { $el } from "../../../scripts/ui.js";
 import { jovimetrix } from "./jovimetrix.js";
-
-
 
 const ext = {
     name: "jovimetrix.colorize",
@@ -25,10 +23,7 @@ const ext = {
 		});
 
 		showButton.onclick = () => {
-			// imageFeed.style.display = "block";
-			// showButton.style.display = "none";
-			// saveVal("Visible", 1);
-			//visible = true;
+            jovimetrix.settings.show();
 		};
 		document.querySelector(".comfy-settings-btn").after(showButton);
 	},

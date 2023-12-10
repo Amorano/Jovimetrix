@@ -6,9 +6,22 @@
 
 import { api } from "../../../scripts/api.js";
 import { ComfyDialog, $el } from "../../../scripts/ui.js";
-import "./extern/colors.js";
-import "./extern/colorPicker.data.js";
-import "./extern/colorPicker.js";
+import { template_colors } from './template.js'
+
+//import "./extern/colors.js";
+//import "./extern/colorPicker.data.js";
+//import "./extern/colorPicker.js";
+
+import "./extern/color.all.min.js";
+//import "./extern/jsColorPicker.min.js";
+import "./extern/jsColor.js";
+
+var headID = document.getElementsByTagName("head")[0];
+var cssNode = document.createElement('link');
+cssNode.rel = 'stylesheet';
+cssNode.type = 'text/css';
+cssNode.href = 'extensions/Jovimetrix/jovimetrix.css';
+headID.appendChild(cssNode);
 
 async function api_get(url) {
     var response = await api.fetchApi(url, { cache: "no-store" });
@@ -37,31 +50,7 @@ const saveVal = (url, v) => {
     localStorage.setItem(url, v);
 };
 
-const template_color_block = `
-<td>
-    <td rowspan="2">{{ name }}</td>
-    <td>
-        <input class="jov-color" value="{{value}}" name="{{name}}" part="{{part}}>
-            <thead id="configColor"></thead>
-        </input>
-    </td>
-    <td>
-        <input class="jov-color" value="{{value}}" name="{{name}}" part="{{part}}>
-            <thead id="configColor"></thead>
-        </input>
-    </td>
-</td>
-`
-
-const template_colors = `
-<div class="tg-wrap">
-    <table id="jov-tg-color">
-        <thead id="configColor"></thead>
-    </table>
-</div>
-`
-
-function renderTemplate(template, data) {
+export function renderTemplate(template, data) {
     // Replace placeholders in the template with corresponding data values
     for (const key in data) {
         if (data.hasOwnProperty(key)) {
@@ -72,33 +61,24 @@ function renderTemplate(template, data) {
     return template;
 }
 
-var headID = document.getElementsByTagName("head")[0];
-var cssNode = document.createElement('link');
-cssNode.rel = 'stylesheet';
-cssNode.type = 'text/css';
-cssNode.href = 'extensions/Jovimetrix/jovimetrix.css';
-headID.appendChild(cssNode);
-
-// -----------
 class JovimetrixConfigDialog extends ComfyDialog {
+
     createElements() {
-		// Create the main content of the page
-        const mainContent = document.createElement('div');
-        mainContent.style.add(box);
-        mainContent.innerHTML = renderTemplate(templateString, templateData);
+        let html = []
 
         const NODE_LIST = api_get("./../object_info");
 
         const div = document.getElementById('configColor');
-        if (this.CONFIG.color === undefined) {
+        if (jovimetrix.CONFIG.color === undefined) {
             console.debug("💀💀💀💀💀💀💀💀💀💀💀💀💀💀💀💀")
             return;
         }
 
         var existing = [];
-        const COLORS = Object.entries(this.CONFIG.color)
+        const COLORS = Object.entries(jovimetrix.CONFIG.color)
         COLORS.forEach(entry => {
-            box_color(div, entry[0], entry[1].title, entry[1].body);
+            renderTemplate(template_colors, entry)
+            // box_color(div, entry[0], entry[1].title, entry[1].body);
             existing.push(entry[0])
         });
 
@@ -129,7 +109,7 @@ class JovimetrixConfigDialog extends ComfyDialog {
             }
         });
 
-        jsColorPicker('input.color', {
+        window.jsColorPicker('input.color', {
             readOnly: true,
             size: 2,
             multipleInstances: false,
@@ -153,52 +133,41 @@ class JovimetrixConfigDialog extends ComfyDialog {
             },
         });
 
-        const res =
-			[
-				$el("br", {}, []),
-
-
-				$el("br", {}, []),
-				$el("button.jov-button", {
-					type: "button",
-					textContent: "Alternatives of A1111",
-					onclick:
-						() => {
-							if(!AlternativesInstaller.instance)
-								AlternativesInstaller.instance = new AlternativesInstaller(app, self);
-							AlternativesInstaller.instance.show();
-						}
-				})
-			];
-
-		return res;
+        var body = document.createElement("div");
+		html.push(body);
+		// init_notice(body);
+		return html;
 	}
 
-	constructor() {
-		super();
+    constructor() {
+        super();
 
-		const close_button = $el("button", { id: "cm-close-button", type: "button", textContent: "Close", onclick: () => this.close() });
+		const close_button = $el("button", {
+            id: "jov-close-button",
+            type: "button",
+            textContent: "Close",
+            onclick: () => this.close()
+        });
 
 		const content =
-				$el("div.comfy-modal-content",
-					[
-						$el("tr.jov-title", {}, [
-								$el("font", {size:6, color:"white"}, [`JOVIMETRIX CONFIGURATION`])]
-							),
-						$el("br", {}, []),
-						$el("div.jov-menu-container",
-							[
-								$el("div.jov-menu-column", [...this.createElements()]),
-							]),
+            $el("div.comfy-modal-content",
+                [
+                    $el("tr.jov-title", {}, [
+                            $el("font", {size:6, color:"white"}, [`JOVIMETRIX CONFIGURATION`])]
+                        ),
+                    $el("br", {}, []),
+                    $el("div.jov-menu-container",
+                        [
+                            $el("div.jov-menu-column", [...this.createElements()]),
+                        ]),
 
-						$el("br", {}, []),
-						close_button,
-					]
-				);
+                    $el("br", {}, []),
+                    close_button,
+                ]
+            );
 
 		content.style.width = '100%';
 		content.style.height = '100%';
-
 		this.element = $el("div.comfy-modal", { id:'jov-manager-dialog', parent: document.body }, [ content ]);
 	}
 
@@ -220,6 +189,7 @@ class Jovimetrix {
         if (!this.initialized) {
             try {
                 this.CONFIG = await api_get("/jovimetrix/config/raw");
+                this.settings = new JovimetrixConfigDialog();
                 this.initialized = true;
             } catch (error) {
                 console.error('Jovimetrix failed:', error);
