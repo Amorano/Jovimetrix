@@ -7,12 +7,12 @@
 import { app } from "../../../scripts/app.js";
 import { $el } from "../../../scripts/ui.js";
 import { jovimetrix } from "./jovimetrix.js";
+import * as util from './util.js';
 
 const ext = {
     name: "jovimetrix.colorize",
 
     async init() {
-		//let visible = true;
 		const showButton = $el("button.comfy-settings-btn", {
 			textContent: "🎨",
 			style: {
@@ -29,19 +29,15 @@ const ext = {
 	},
 
     async beforeRegisterNodeDef(nodeType, nodeData) {
-        // console.debug(jovimetrix.CONFIG)
-        if (jovimetrix.CONFIG.color === undefined || jovimetrix.CONFIG.color.length == 0) {
-            return;
-        }
 
-        let found = jovimetrix.CONFIG.color[nodeData.type || nodeData.name];
+        const CONFIG = await util.CONFIG();
+        let found = CONFIG.color[nodeData.type || nodeData.name];
         if (found === undefined && nodeData.category) {
-            // console.debug(nodeData.type || nodeData.name)
             const categorySegments = nodeData.category.split('/');
             let k = categorySegments.join('/');
 
             while (k) {
-                found = jovimetrix.CONFIG.color[k];
+                found = CONFIG.color[k];
                 if (found) {
                     break;
                 }
@@ -51,7 +47,6 @@ const ext = {
         }
 
         if (found) {
-            // console.debug(nodeData);
             const onNodeCreated = nodeType.prototype.onNodeCreated;
             nodeType.prototype.onNodeCreated = function () {
                 const result = onNodeCreated ? onNodeCreated.apply(this, arguments) : undefined;

@@ -145,8 +145,6 @@ class Session(metaclass=Singleton):
         return [x for x in files if x.endswith('.json') or x.endswith('.html')]
 
     def __init__(self, *arg, **kw) -> None:
-        # stuff extension files into extension spot until I know how to get them from JS in place
-        # shutil.copytree(ROOT / "web", ROOT_COMFY_WEB, ignore=self.ignore_files, dirs_exist_ok=True)
         if not JOV_CONFIG_FILE.exists():
             try:
                 shutil.copy2(JOV_DEFAULT, JOV_CONFIG_FILE)
@@ -181,8 +179,6 @@ class Session(metaclass=Singleton):
 
         Session.CLASS_MAPPINGS = {x[0] : x[1] for x in sorted(Session.CLASS_MAPPINGS.items(),
                                                         key=lambda item: getattr(item[1], 'SORT', 0))}
-        # NODE_CLASS_MAPPINGS = {}
-
         # now sort the categories...
         for c in ["CREATE", "ADJUST", "TRANSFORM", "COMPOSE", "ANIMATE", "AUDIO", "DEVICE", "UTILITY", "💣☣️ WIP ☣️💣"]:
 
@@ -240,7 +236,7 @@ WILDCARD = AnyType("*")
 # =============================================================================
 
 try:
-    @PromptServer.instance.routes.get("/jovimetrix/config/raw")
+    @PromptServer.instance.routes.get("/jovimetrix/config")
     async def jovimetrix_config(request) -> Any:
         global JOV_CONFIG
         try:
@@ -252,21 +248,13 @@ try:
             print(e)
         return web.json_response(JOV_CONFIG)
 
-    @PromptServer.instance.routes.get("/jovimetrix/config")
-    async def jovimetrix_config(request) -> Any:
-        f = ROOT / 'web' / 'config.html'
-        with open(f, 'r', encoding='utf-8') as fn:
-            data = fn.read()
-        return web.Response(text=data, content_type='text/html')
-
     @PromptServer.instance.routes.post("/jovimetrix/config")
     async def jovimetrix_config_post(request) -> Any:
         json_data = await request.json()
-        name = list(json_data.keys())[0]
-        data = json_data[name]
-        part = data['part']
-        color = f"#{data['color']}FF"
-        Logger.debug(name, part, color)
+        name = json_data['name']
+        part = json_data['part']
+        color = f"#{json_data['color']}"
+        Logger.spam(name, part, color)
         global JOV_CONFIG
         entry = JOV_CONFIG['color'].get(name, {})
         entry[part] = color
