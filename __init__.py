@@ -253,7 +253,7 @@ try:
         json_data = await request.json()
         name = json_data['name']
         part = json_data['part']
-        color = f"#{json_data['color']}"
+        color = json_data['color']
         Logger.spam(name, part, color)
         global JOV_CONFIG
         entry = JOV_CONFIG['color'].get(name, {})

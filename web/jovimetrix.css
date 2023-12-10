@@ -20,10 +20,10 @@
 	flex: 1 1 1 auto;
 }
 
-.jov-title {
+.jov-title tr {
 	background-color: black;
 	text-align: center;
-	height: 30px;
+	height: 340px;
 	width: calc(100% - 10px);
 	font-weight: bold;
 	justify-content: center;
@@ -38,50 +38,67 @@
 	overflow: hidden;
 }
 
-.jov-input:focus {
-	outline: none;
+input {
+	width: 150px;
+	height: 32px;
+	padding: 0 10px;
+	border: 1px solid #ccc;
+	border-radius: 5px;
+	font-family: inherit;
+	font-size: inherit;
+	font-weight: inherit;
+	box-sizing: border-box;
+}
+
+.circle .clr-field button {
+	width: 22px;
+	height: 22px;
+	left: 5px;
+	right: auto;
+	border-radius: 5px;
+}
+
+.circle .clr-field input {
+  	padding-left: 36px;
+}
+
+.circle .clr-field button {
+  	border-radius: 50%;
+}
+
+.full .clr-field button {
+	width: 100%;
+	height: 100%;
+	border-radius: 5px;
 }
 
 .jov-tg {
-  border-collapse:collapse;
-  border-spacing:0;
-  margin:0px auto;
+	border-collapse:collapse;
+	border-spacing:0;
+	margin:0px auto;
 }
 
 .jov-tg td {
-  border-color:black;
-  border-style:solid;
-  border-width:1px;
-  font-family:Arial, sans-serif;
-  font-size:12px;
-  overflow:hidden;
-  padding:3px 3px;
-  word-break:normal;
-  text-align: right;
-  color: aliceblue;
+	border-color:black;
+	border-style:solid;
+	border-width:1px;
+	font-family:Arial, sans-serif;
+	font-size:12px;
+	overflow:hidden;
+	padding:3px 3px;
+	word-break:normal;
+	text-align: right;
+	color: aliceblue;
 }
 
 .jov-tg th {
-  border-color:black;
-  border-style:solid;
-  border-width:1px;
-  font-family:Arial, sans-serif;
-  font-size:14px;
-  font-weight:normal;
-  overflow:hidden;
-  padding:5px 5px;
-  word-break:normal;
-}
-
-.jov-color {
-  border-color:inherit;
-  text-align:center;
-  vertical-align:middle;
-
-	padding: .1em;
-  width: 85px;
-  height: 15px;
-	border: 1px solid #aaa;
-	border-radius: 0px;
-  text-align: center;
+	border-color:black;
+	border-style:solid;
+	border-width:1px;
+	font-family:Arial, sans-serif;
+	font-size:14px;
+	font-weight:normal;
+	overflow:hidden;
+	padding:5px 5px;
+	word-break:normal;
 }

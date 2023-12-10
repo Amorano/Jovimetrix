@@ -4,11 +4,10 @@
  *
  */
 
-import { api } from "../../../scripts/api.js";
 import { ComfyDialog, $el } from "../../../scripts/ui.js";
 import { template_color_block } from './template.js'
 import * as util from './util.js';
-import * as coloris from './extern/coloris.min.js'
+import './extern/coloris.min.js'
 
 var headID = document.getElementsByTagName("head")[0];
 var cssNode = document.createElement('link');
@@ -57,9 +56,11 @@ class JovimetrixConfigDialog extends ComfyDialog {
             var data = {
                 name: entry[0],
                 title: entry[1].title,
-                body: entry[1].body,
+                body: entry[1].body
             };
-            colorTable.innerHTML += renderTemplate(template_color_block, data);
+            var html = renderTemplate(template_color_block, data);
+            colorTable.innerHTML += html;
+            //console.log(colorTable.innerHTML )
         });
 
         // now the rest which are untracked and their "categories"
@@ -113,10 +114,10 @@ class JovimetrixConfigDialog extends ComfyDialog {
             const NODE_LIST = await util.NODE_LIST();
 
             const content =
-                $el("div.comfy-modal-content",
+                $el("div.comfy-modal-content", {id: "jov-manager-dialog"},
                     [
-                        $el("tr.jov-title", {}, [
-                                $el("font", {size:5, color:"white"}, [`JOVIMETRIX COLOR CONFIGURATION`])]
+                        $el("tr", [
+                                $el("font", {size:7, color:"white"}, [`JOVIMETRIX COLOR CONFIGURATION`])]
                             ),
                         $el("br", {}, []),
                         $el("div.jov-menu-container",
@@ -142,30 +143,75 @@ class JovimetrixConfigDialog extends ComfyDialog {
 
 class Jovimetrix {
     constructor() {
-        if (!Jovimetrix.instance) {
-            Jovimetrix.instance = this;
-            this.initialized = false;
-        }
-        return Jovimetrix.instance;
-    }
-
-    async initialize() {
-        if (!this.initialized) {
-            try {
-                this.settings = new JovimetrixConfigDialog();
-                this.initialized = true;
-            } catch (error) {
-                console.error('Jovimetrix failed:', error);
-            }
-        }
+        this.settings = new JovimetrixConfigDialog();
     }
 }
 
-Jovimetrix.instance = null;
 jovimetrix = new Jovimetrix();
-await jovimetrix.initialize();
+
+const getVal = (url, d) => {
+    const v = localStorage.getItem(url);
+    if (v && !isNaN(+v)) {
+        return v;
+    }
+    return d;
+};
+
+const saveVal = (url, v) => {
+    localStorage.setItem(url, v);
+};
+
+let swatches_max = 16;
+let swatches = [
+    '#264653EE',
+    '#2a9d8f',
+    '#e9c46aCC',
+    '#e76f51',
+    '#d62828',
+    '#0096c7',
+    '#00b4d880',
+    '#264653EE',
+    '#2a9d8f',
+    '#e9c46aCC',
+    '#e76f51',
+    '#d62828',
+    '#0096c7',
+    '#00b4d880',
+    '#264653EE',
+    '#2a9d8f'
+  ]
 
 Coloris({
+    theme: 'large',
     themeMode: 'dark',
-    alpha: true
+    forceAlpha: true,
+    closeButton: true,
+    //formatToggle: true,
+    selectInput: true,
+    swatches: swatches,
+      onChange: (color, input) => {
+
+      }
   });
+
+
+const CONFIG = await util.CONFIG();
+
+document.addEventListener('coloris:pick', event => {
+    const name = event.detail.currentEl.name;
+    const part = event.detail.currentEl.part[0].toLowerCase();
+    const color = event.detail.color.toUpperCase();
+    const current = CONFIG.color[name];
+
+    if (current && current == color) {
+        return;
+    }
+
+    var body = {
+        "name": name,
+        "part": part,
+        "color": color
+    }
+    util.api_post("/jovimetrix/config", body);
+    CONFIG.color[name] = color;
+});

@@ -9,6 +9,8 @@ import { $el } from "../../../scripts/ui.js";
 import { jovimetrix } from "./jovimetrix.js";
 import * as util from './util.js';
 
+const CONFIG = await util.CONFIG();
+
 const ext = {
     name: "jovimetrix.colorize",
 
@@ -29,8 +31,6 @@ const ext = {
 	},
 
     async beforeRegisterNodeDef(nodeType, nodeData) {
-
-        const CONFIG = await util.CONFIG();
         let found = CONFIG.color[nodeData.type || nodeData.name];
         if (found === undefined && nodeData.category) {
             const categorySegments = nodeData.category.split('/');
