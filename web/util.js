@@ -3,13 +3,16 @@ import { api } from "../../../scripts/api.js";
 export const local_get = (url, d) => {
     const v = localStorage.getItem('jovi.' + url);
     if (v && !isNaN(+v)) {
+        //console.debug('get', 'jovi.' + url, v);
         return v;
     }
+    //console.debug('get', 'jovi.' + url, d);
     return d;
 };
 
 export const local_set = (url, v) => {
     localStorage.setItem('jovi.' + url, v);
+    //console.debug('set', 'jovi.' + url, v);
 };
 
 export async function CONFIG() {

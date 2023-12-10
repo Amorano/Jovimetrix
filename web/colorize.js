@@ -18,7 +18,7 @@ const ext = {
 		const showButton = $el("button.comfy-settings-btn", {
 			textContent: "🎨",
 			style: {
-				left: "16px",
+				left: "15px",
 				cursor: "pointer",
 				display: "unset",
 			},
@@ -47,9 +47,12 @@ const ext = {
         }
 
         if (found) {
+
             const onNodeCreated = nodeType.prototype.onNodeCreated;
             nodeType.prototype.onNodeCreated = function () {
                 const result = onNodeCreated ? onNodeCreated.apply(this, arguments) : undefined;
+
+                //console.debug(nodeData.name, found);
 
                 if (nodeData.color === undefined) {
                     this['color'] = (found.title || "#7F7F7FDD")

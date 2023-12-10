@@ -114,12 +114,10 @@ class JovimetrixConfigDialog extends ComfyDialog {
                         $el("tr.jov-title", [
                                 $el("font", {size:6, color:"white"}, [`JOVIMETRIX COLOR CONFIGURATION`])]
                             ),
-                        $el("br", {}, []),
                         $el("div.jov-menu-container",
                             [
                                 $el("div.jov-menu-column", [...this.createElements()]),
                             ]),
-                        $el("br", {}, []),
                         close_button,
                     ]
                 );
@@ -143,6 +141,14 @@ class Jovimetrix {
 }
 jovimetrix = new Jovimetrix();
 
+export function color_clear(name) {
+    var body = {
+        "name": name,
+    }
+    util.api_post("/jovimetrix/config/clear", body);
+    delete CONFIG.color[name];
+}
+
 (function (global) {
 	if (typeof global.ColorPicker === 'undefined') {
         global.ColorPicker = {};
@@ -153,11 +159,9 @@ jovimetrix = new Jovimetrix();
 		window.ColorPicker.docCookies = {
 			getItem: function (key, def) {
 				const data = util.local_get(key, def);
-                console.debug('get', key, def);
                 return data;
 			},
 			setItem: function (key, value, options) {
-				console.debug('set', key, value);
                 util.local_set(key, value);
 			}
 		};
@@ -165,38 +169,28 @@ jovimetrix = new Jovimetrix();
 
 	global.jsColorPicker = function(selectors, config) {
 		var renderCallback = function(colors, mode) {
+
+            // console.debug(colors);
+
             var options = this,
                 input = options.input,
                 patch = options.patch,
-                RGB = colors.RND.rgb,
-                HSL = colors.RND.hsl,
-                AHEX = options.isIE8 ? (colors.alpha < 0.16 ? '0' : '') +
-                    (Math.round(colors.alpha * 100)).toString(16).toUpperCase() + colors.HEX : '',
+                RGB = colors.RND.rgb;
 
-                RGBInnerText = RGB.r + ', ' + RGB.g + ', ' + RGB.b,
-                RGBAText = 'rgba(' + RGBInnerText + ', ' + colors.alpha + ')',
-                isAlpha = colors.alpha !== 1 && !options.isIE8,
-                colorMode = input.getAttribute('data-colorMode');
-
+            const AHEX = colors.HEX + ((colors.alpha * 255) | 1 << 8).toString(16).slice(1).toUpperCase();
             patch.style.cssText =
                 'color:' + (colors.rgbaMixCustom.luminance > 0.22 ? '#222' : '#ddd') + ';' + // Black...???
-                'background-color:' + RGBAText + ';' +
-                'filter:' + (options.isIE8 ? 'progid:DXImageTransform.Microsoft.gradient(' + // IE<9
-                    'startColorstr=#' + AHEX + ',' + 'endColorstr=#' + AHEX + ')' : '');
+                'background-color: #' + AHEX + ';' +
+                'filter:';
 
-            input.value = (colorMode === 'HEX' && !isAlpha ? '#' + (options.isIE8 ? AHEX : colors.HEX) :
-                colorMode === 'rgb' || (colorMode === 'HEX' && isAlpha) ?
-                (!isAlpha ? 'rgb(' + RGBInnerText + ')' : RGBAText) :
-                ('hsl' + (isAlpha ? 'a(' : '(') + HSL.h + ', ' + HSL.s + '%, ' + HSL.l + '%' +
-                    (isAlpha ? ', ' + colors.alpha : '') + ')')
-            );
+            input.setAttribute("color", "#" + AHEX);
 
             if (options.displayCallback) {
                 options.displayCallback(colors, mode, options);
             }
         },
         extractValue = function(elm) {
-            return elm.value || elm.getAttribute('value') || elm.style.backgroundColor || '#FFFFFF';
+            return elm.getAttribute('color') || elm.style.backgroundColor || '#FFFFFF';
         },
         actionCallback = function(event, action) {
             var options = this,
@@ -243,8 +237,7 @@ jovimetrix = new Jovimetrix();
                     initStyle: 'display: none',
                     mode: ColorPicker.docCookies('colorPickerMode') || 'hsv-h',
 
-                    memoryColors: ColorPicker.docCookies('colorPickerMemos' +
-                        ((config || {}).noAlpha ? 'NoAlpha' : '')),
+                    memoryColors: ColorPicker.docCookies('colorPickerMemos'),
                     size: ColorPicker.docCookies('colorPickerSize') || 1,
                     renderCallback: renderCallback,
                     actionCallback: actionCallback
@@ -263,12 +256,12 @@ jovimetrix = new Jovimetrix();
                         index = multiple ? Array.prototype.indexOf.call(elms, this) : 0,
                         colorPicker = colorPickers[index] ||
                             (colorPickers[index] = createInstance(this, config)),
-                        options = colorPicker.color.options,
-                        colorPickerUI = colorPicker.nodes.colorPicker,
-                        appendTo = (options.appendTo || document.body),
-                        isStatic = /static/.test(global.getComputedStyle(appendTo).position),
-                        atrect = isStatic ? {left: 0, top: 0} : appendTo.getBoundingClientRect(),
-                        waitTimer = 0;
+                            options = colorPicker.color.options,
+                            colorPickerUI = colorPicker.nodes.colorPicker,
+                            appendTo = (options.appendTo || document.body),
+                            isStatic = /static/.test(global.getComputedStyle(appendTo).position),
+                            atrect = isStatic ? {left: 0, top: 0} : appendTo.getBoundingClientRect(),
+                            waitTimer = 0;
 
                     options.color = extractValue(elm); // brings color to default on reset
                     colorPickerUI.style.cssText =
@@ -362,11 +355,9 @@ jovimetrix = new Jovimetrix();
     global.ColorPicker.docCookies = function(key, value, def) {
         if (value === undefined) {
 			const data = util.local_get(key, def);
-			console.debug('get', key, def);
             return data
         } else {
 			util.local_set(key, value);
-            console.debug('set', key, value);
         }
     };
 })(typeof window !== 'undefined' ? window : this);
@@ -380,21 +371,19 @@ var picker = jsColorPicker('input.jov-color', {
     //mode: 'HEX',
     noAlpha: false,
     init: function(elm, rgb) {
-      elm.style.backgroundColor = elm.value;
-      elm.style.color = rgb.RGBLuminance > 0.22 ? '#222' : '#ddd';
+        // const AHEX = '#' + rgb.HEX + ((rgb.alpha * 255) | 1 << 8).toString(16).slice(1).toUpperCase();
+        elm.style.backgroundColor = elm.getAttribute("color");
+        elm.style.color = rgb.RGBLuminance > 0.22 ? '#222' : '#ddd';
     },
     convertCallback: function(data, options) {
-
-        const AHEX = options.isIE8 ? (data.alpha < 0.16 ? '0' : '') +
-            (Math.round(data.alpha * 100)).toString(16).toUpperCase() + data.HEX : ''
-
+        const AHEX = '#' + data.HEX + ((data.alpha * 255) | 1 << 8).toString(16).slice(1).toUpperCase();
         var name = this.patch.attributes.name.value;
         var body = {
             "name": name,
             "part": this.patch.attributes.part.value,
-            "color": data.HEX + AHEX
+            "color": AHEX
         }
         util.api_post("/jovimetrix/config", body);
-        CONFIG.color[name] = data.HEX + data.HEX;
+        CONFIG.color[name] = AHEX;
     },
 });

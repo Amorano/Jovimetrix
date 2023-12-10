@@ -1,144 +1,41 @@
 #jov-manager-dialog {
-	width: 700px;
-	height: 720px;
-	box-sizing: content-box;
+
+	height: 740px;
+  font-size: 12;
+  box-shadow: none;
+  padding: 1px;
+  overflow: visible;
 	z-index: 10000;
 }
 
-.jov-menu-container {
-	column-gap: 20px;
+.jov-config-container {
 	display: flex;
-	flex-wrap: wrap;
 	justify-content: center;
-	align-content: center;
-	vertical-align: middle;
+  overflow: scroll;
 }
 
-.jov-menu-column {
+.jov-config-column {
 	display: flex;
-	flex-direction: column;
-	flex: 1 1 1 auto;
+	justify-content: center;
 }
 
-.jov-title tr {
+.jov-title {
 	background-color: black;
 	text-align: center;
-	height: 340px;
-	width: calc(100% - 10px);
 	font-weight: bold;
-	justify-content: center;
-	align-content: center;
-	vertical-align: middle;
 }
 
 #jov-close-button {
-	width: calc(100% - 65px);
-	bottom: 20px;
+  width: calc(100% - 4px);
+	bottom: 3px;
+  border: 1px solid #ccc;
+  border-radius: 0px;
 	position: absolute;
 	overflow: hidden;
 }
 
-input {
-	width: 150px;
-	height: 32px;
-	padding: 0 10px;
-	border: 1px solid #ccc;
-	border-radius: 5px;
-	font-family: inherit;
-	font-size: inherit;
-	font-weight: inherit;
-	box-sizing: border-box;
-}
-
-
-.jov-box {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin: 2px auto;
-  padding: 6px;
-  background: rgba(48, 48, 48, 0.97);
-  box-shadow: 0px 8px 8px rgba(0, 27, 0, 0.97);
-  border-radius: 4px;
-}
-
-.jov-header {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin: 2px auto;
-  margin-bottom: 30px;
-  padding: 12px;
-  background: rgba(38, 38, 38, 0.99);
-  box-shadow: 0px 8px 8px rgba(0, 0, 0, 0.95);
-}
-
-.jov-header p {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin: 2px;
-  margin-bottom: 2px;
-}
-
-.jov-h1 {
-  margin-top: 0;
-}
-
-.jov-input:focus {
-	outline: none;
-}
-
-.jov-pre {
-	display: inline;
-	background-color: rgba(255, 255, 255, .5);
-	padding: .5em;
-}
-
 .jov-color {
   text-align: center;
-	padding: .1em;
-  width: 95px;
-  height: 27px;
+  width: 45px;
 	border: 1px solid #aaa;
-	border-radius: 2px;
-}
-
-.jov-a {
-	color: #333;
-}
-
-.jov-tg  {
-  border-collapse:collapse;
-  border-spacing:0;
-  margin:0px auto;
-}
-
-.jov-tg td{
-  border-color:black;
-  border-style:solid;
-  border-width:1px;
-  font-family:Arial, sans-serif;
-  font-size:14px;
-  overflow:hidden;
-  padding:5px 5px;
-  word-break:normal;
-}
-
-.jov-tg th {
-  border-color:black;
-  border-style:solid;
-  border-width:1px;
-  font-family:Arial, sans-serif;
-  font-size:14px;
-  font-weight:normal;
-  overflow:hidden;
-  padding:5px 5px;
-  word-break:normal;
-}
-
-.jov-tg .tg-color {
-  border-color:inherit;
-  text-align:center;
-  vertical-align:middle
 }

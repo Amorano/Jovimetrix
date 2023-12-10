@@ -263,6 +263,20 @@ try:
             json.dump(JOV_CONFIG, f)
         return web.json_response(json_data)
 
+    @PromptServer.instance.routes.post("/jovimetrix/config/clear")
+    async def jovimetrix_config_post(request) -> Any:
+        json_data = await request.json()
+        name = json_data['name']
+        Logger.spam(name)
+        global JOV_CONFIG
+        try:
+            del JOV_CONFIG['color'][name]
+        except KeyError as _:
+            pass
+        with open(JOV_CONFIG_FILE, 'w', encoding='utf-8') as f:
+            json.dump(JOV_CONFIG, f)
+        return web.json_response(json_data)
+
 except Exception as e:
     print(e)
 # =============================================================================
