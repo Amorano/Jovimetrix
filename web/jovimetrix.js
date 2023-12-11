@@ -3,6 +3,7 @@
  * Project: Jovimetrix
  */
 
+import { app } from "../../../scripts/app.js";
 import { ComfyDialog, $el } from "../../../scripts/ui.js";
 import { template_color_block } from './template.js'
 import * as util from './util.js';
@@ -25,6 +26,7 @@ export function renderTemplate(template, data) {
     return template;
 }
 
+let config_overwrite = false;
 const CONFIG = await util.CONFIG();
 const NODE_LIST = await util.NODE_LIST();
 
@@ -50,9 +52,8 @@ class JovimetrixConfigDialog extends ComfyDialog {
                 title: entry[1].title,
                 body: entry[1].body
             };
-            var html = renderTemplate(template_color_block, data);
+            const html = renderTemplate(template_color_block, data);
             colorTable.innerHTML += html;
-            //console.log(colorTable.innerHTML )
         });
 
         // now the rest which are untracked and their "categories"
@@ -66,7 +67,8 @@ class JovimetrixConfigDialog extends ComfyDialog {
                     title: '#7F7F7FEE',
                     body: '#7F7F7FEE',
                 };
-                colorTable.innerHTML += renderTemplate(template_color_block, data);
+                const html = renderTemplate(template_color_block, data);
+                colorTable.innerHTML += html;
             }
 
             var cat = entry[1].category;
@@ -86,7 +88,8 @@ class JovimetrixConfigDialog extends ComfyDialog {
                     title: '#3F3F3FEE',
                     body: '#3F3F3FEE',
                 };
-                colorTable.innerHTML += renderTemplate(template_color_block, data);
+                const html = renderTemplate(template_color_block, data);
+                colorTable.innerHTML += html;
             }
         });
 		return [header];
@@ -94,24 +97,33 @@ class JovimetrixConfigDialog extends ComfyDialog {
 
     constructor() {
         super();
-        const close_button = $el("button", {
-            id: "jov-close-button",
-            type: "button",
-            textContent: "CLOSE",
-            onclick: () => this.close()
-        });
 
         const init = async () => {
             const content =
-                $el("div.comfy-modal-content",
-                    [
-                        $el("tr.jov-title", [
-                                $el("font", {size:6, color:"white"}, [`JOVIMETRIX COLOR CONFIGURATION`])]
-                            ),
-                        $el("div.jov-menu-container", [...this.createElements()]),
-                        close_button,
-                    ]
-                );
+                $el("div.comfy-modal-content", [
+                    $el("tr.jov-title", [
+                            $el("font", {size:6, color:"white"}, [`JOVIMETRIX COLOR CONFIGURATION`])]
+                        ),
+                    $el("div.jov-menu-container", [...this.createElements()]),
+                    $el("button", {
+                        id: "jov-close-button",
+                        type: "button",
+                        textContent: "CLOSE",
+                        onclick: () => this.close()
+                    }),
+                    $el("label", {
+                            id: "jov-apply-button"
+                        }, [
+                            $el("input", {
+                                type: "checkbox",
+                                checked: config_overwrite,
+                                onclick: (cb) => {
+                                    config_overwrite = cb.target.checked;
+                                }
+                            })
+                        ])
+                    ]);
+
 
             content.style.width = '100%';
             content.style.height = '100%';
@@ -126,25 +138,55 @@ class JovimetrixConfigDialog extends ComfyDialog {
 }
 
 class Jovimetrix {
+    // gets the CONFIG entry for this Node.type || Node.name
+    node_color_get(find_me) {
+        let node = CONFIG.color[find_me];
+        if (node) {
+            return node;
+        }
+        node = NODE_LIST[find_me];
+        //console.info(find_me, node);
 
-    color_node(node) {
-        const colorRef = Object.entries(NODE_LIST).find(([key]) => {
-            console.log(node);
-            return node.type.toLowerCase().includes(key);
-        });
-        if (colorRef) {
-            const [h, s, l] = colorRef[1];
-            const bgcolor = hslToHex(h / 360, s, l);
-            node.bgcolor = bgcolor;
-            node.color = shadeHexColor(node.bgcolor);
+        if (node && node.category) {
+            const segments = node.category.split('/');
+            let k = segments.join('/');
+            while (k) {
+                const found = CONFIG.color[k];
+                if (found) {
+                    // console.log(found, node.category);
+                    return found;
+                }
+                const last = k.lastIndexOf('/');
+                k = last !== -1 ? k.substring(0, last) : '';
+            }
         }
     }
 
-    color_all(app) {
-        app.graph._nodes.forEach((node) => {
-            colorNode(node);
-            node.setDirtyCanvas(true, true);
+    // refresh the color of a node
+    node_color_reset(node, refresh=true) {
+        const data = this.node_color_get(node.type || node.name);
+        if (data) {
+            node.bgcolor = data.body;
+            node.color = data.title;
+            // console.info(node, data);
+            if (refresh) {
+                node.setDirtyCanvas(true, true);
+            }
+        }
+    }
+
+    node_color_list(nodes) {
+        Object.entries(nodes).forEach((node) => {
+            this.node_color_reset(node, false);
         });
+        app.graph.setDirtyCanvas(true, true);
+    }
+
+    node_color_all() {
+        app.graph._nodes.forEach((node) => {
+            this.node_color_reset(node, false);
+        });
+        app.graph.setDirtyCanvas(true, true);
     }
 
     constructor() {
@@ -181,13 +223,13 @@ export function color_clear(name) {
 
 	global.jsColorPicker = function(selectors, config) {
 		var renderCallback = function(colors, mode) {
-            // console.debug(colors);
+            // console.info(colors);
             var options = this,
                 input = options.input,
                 patch = options.patch,
                 RGB = colors.RND.rgb;
 
-            // console.debug(colors);
+            // console.info(colors);
             const AHEX = util.convert_hex(colors);
             patch.style.cssText =
                 'color:' + (colors.rgbaMixCustom.luminance > 0.22 ? '#222' : '#ddd') + ';' + // Black...???
@@ -376,7 +418,7 @@ export function color_clear(name) {
     };
 })(typeof window !== 'undefined' ? window : this);
 
-var picker = jsColorPicker('input.jov-color', {
+jsColorPicker('input.jov-color', {
     readOnly: true,
     size: 2,
     multipleInstances: false,
@@ -389,12 +431,25 @@ var picker = jsColorPicker('input.jov-color', {
     convertCallback: function(data, options) {
         const AHEX = util.convert_hex(data);
         var name = this.patch.attributes.name.value;
-        var body = {
+        var part = this.patch.attributes.part.value;
+        // {title:'', body:'', shape: ''}
+        let color = CONFIG.color[name];
+        if (color === undefined){
+            CONFIG.color[name] = {}
+        }
+        CONFIG.color[name][part] = AHEX;
+
+        if (config_overwrite) {
+            // console.info(name, part, CONFIG.color[name][part])
+            jovimetrix.node_color_all();
+        }
+
+        // for the API
+        color = {
             "name": name,
-            "part": this.patch.attributes.part.value,
+            "part": part,
             "color": AHEX
         }
-        util.api_post("/jovimetrix/config", body);
-        CONFIG.color[name] = AHEX;
+        util.api_post("/jovimetrix/config", color);
     },
 });

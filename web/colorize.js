@@ -10,6 +10,7 @@ import { jovimetrix } from "./jovimetrix.js";
 import * as util from './util.js';
 
 const CONFIG = await util.CONFIG();
+const NODE_LIST = await util.NODE_LIST();
 
 const ext = {
     name: "jovimetrix.colorize",
@@ -31,49 +32,31 @@ const ext = {
 	},
 
     async beforeRegisterNodeDef(nodeType, nodeData) {
-        let found = CONFIG.color[nodeData.type || nodeData.name];
-        if (found === undefined && nodeData.category) {
-            const categorySegments = nodeData.category.split('/');
-            let k = categorySegments.join('/');
-
-            while (k) {
-                found = CONFIG.color[k];
-                if (found) {
-                    break;
-                }
-                const lastSlashIndex = k.lastIndexOf('/');
-                k = lastSlashIndex !== -1 ? k.substring(0, lastSlashIndex) : '';
-            }
-        }
-
-        if (found) {
-
+        const node = jovimetrix.node_color_get(nodeData);
+        if (node) {
             const onNodeCreated = nodeType.prototype.onNodeCreated;
             nodeType.prototype.onNodeCreated = function () {
                 const result = onNodeCreated ? onNodeCreated.apply(this, arguments) : undefined;
-
-                //console.debug(nodeData.name, found);
-
+                //console.info(nodeData.name, node);
                 if (nodeData.color === undefined) {
-                    this['color'] = (found.title || "#7F7F7FDD")
+                    this['color'] = (node.title || "#7F7F7FEE")
                 }
 
                 if (nodeData.bgcolor === undefined) {
-                    this['bgcolor'] = (found.body || "#7F7F7FDD")
+                    this['bgcolor'] = (node.body || "#7F7F7FEE")
                 }
-
                 /*
                 // default, box, round, card
                 if (nodeData.shape === undefined || nodeData.shape == false) {
                     this['_shape'] = nodeData._shape ? nodeData._shape : found.shape ?
                     found.shape in ['default', 'box', 'round', 'card'] : 'round';
                 }*/
-                // console.debug("jovi-colorized", this.title, this.color, this.bgcolor, this._shape);
+                // console.info("jovi-colorized", this.title, this.color, this.bgcolor, this._shape);
                 // result.serialize_widgets = true
                 return result;
             }
         }
-    },
+    }
 }
 
 app.registerExtension(ext);

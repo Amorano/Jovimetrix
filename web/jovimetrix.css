@@ -1,5 +1,5 @@
 #jov-manager-dialog {
-	height: 740px;
+	height: 640px;
   font-size: 12;
   box-shadow: none;
   padding: 1px;
@@ -8,7 +8,7 @@
 }
 
 .jov-config-column {
-  max-height: 700px;
+  max-height: 600px;
   overflow-y: auto;
 }
 
@@ -25,6 +25,10 @@
   border-radius: 0px;
 	position: absolute;
 	overflow: hidden;
+}
+
+#jov-apply-button {
+	position: absolute;
 }
 
 .jov-color {
