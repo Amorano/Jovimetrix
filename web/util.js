@@ -1,5 +1,12 @@
 import { api } from "../../../scripts/api.js";
 
+export function convert_hex(color) {
+    if (!color.HEX.includes("NAN")) {
+        return '#' + color.HEX + ((color.alpha * 255) | 1 << 8).toString(16).slice(1).toUpperCase();
+    }
+    return "#7F7F7FFF";
+}
+
 export const local_get = (url, d) => {
     const v = localStorage.getItem('jovi.' + url);
     if (v && !isNaN(+v)) {

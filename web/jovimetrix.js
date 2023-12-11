@@ -34,18 +34,12 @@ class JovimetrixConfigDialog extends ComfyDialog {
     createElements() {
         let colorTable = null;
         const header =
-            $el("div.tg-wrap", [
-                $el("div.jov-menu-column", {
-                    style: {
-                        maxHeight: '634px',
-                        overflowY: 'auto'
-                    }}, [
-                        $el("table", [
-                            colorTable = $el("thead", [
-                            ]),
-                        ]),
+            $el("div.jov-config-column", [
+                $el("table", [
+                    colorTable = $el("thead", [
                     ]),
-                ]);
+                ]),
+            ]);
 
         var existing = [];
         const COLORS = Object.entries(CONFIG.color);
@@ -69,8 +63,8 @@ class JovimetrixConfigDialog extends ComfyDialog {
             if (existing.includes(name) == false) {
                 var data = {
                     name: entry[0],
-                    title: '#7F7F7F',
-                    body: '#7F7F7F',
+                    title: '#7F7F7FEE',
+                    body: '#7F7F7FEE',
                 };
                 colorTable.innerHTML += renderTemplate(template_color_block, data);
             }
@@ -89,8 +83,8 @@ class JovimetrixConfigDialog extends ComfyDialog {
             if (existing.includes(entry[1]) == false) {
                 var data = {
                     name: entry[1],
-                    title: '#3F3F3F',
-                    body: '#3F3F3F',
+                    title: '#3F3F3FEE',
+                    body: '#3F3F3FEE',
                 };
                 colorTable.innerHTML += renderTemplate(template_color_block, data);
             }
@@ -114,10 +108,7 @@ class JovimetrixConfigDialog extends ComfyDialog {
                         $el("tr.jov-title", [
                                 $el("font", {size:6, color:"white"}, [`JOVIMETRIX COLOR CONFIGURATION`])]
                             ),
-                        $el("div.jov-menu-container",
-                            [
-                                $el("div.jov-menu-column", [...this.createElements()]),
-                            ]),
+                        $el("div.jov-menu-container", [...this.createElements()]),
                         close_button,
                     ]
                 );
@@ -135,6 +126,27 @@ class JovimetrixConfigDialog extends ComfyDialog {
 }
 
 class Jovimetrix {
+
+    color_node(node) {
+        const colorRef = Object.entries(NODE_LIST).find(([key]) => {
+            console.log(node);
+            return node.type.toLowerCase().includes(key);
+        });
+        if (colorRef) {
+            const [h, s, l] = colorRef[1];
+            const bgcolor = hslToHex(h / 360, s, l);
+            node.bgcolor = bgcolor;
+            node.color = shadeHexColor(node.bgcolor);
+        }
+    }
+
+    color_all(app) {
+        app.graph._nodes.forEach((node) => {
+            colorNode(node);
+            node.setDirtyCanvas(true, true);
+        });
+    }
+
     constructor() {
         this.settings = new JovimetrixConfigDialog();
     }
@@ -169,28 +181,30 @@ export function color_clear(name) {
 
 	global.jsColorPicker = function(selectors, config) {
 		var renderCallback = function(colors, mode) {
-
             // console.debug(colors);
-
             var options = this,
                 input = options.input,
                 patch = options.patch,
                 RGB = colors.RND.rgb;
 
-            const AHEX = colors.HEX + ((colors.alpha * 255) | 1 << 8).toString(16).slice(1).toUpperCase();
+            // console.debug(colors);
+            const AHEX = util.convert_hex(colors);
             patch.style.cssText =
                 'color:' + (colors.rgbaMixCustom.luminance > 0.22 ? '#222' : '#ddd') + ';' + // Black...???
-                'background-color: #' + AHEX + ';' +
+                'background-color: ' + AHEX + ';' +
                 'filter:';
 
-            input.setAttribute("color", "#" + AHEX);
-
+            input.setAttribute("color", AHEX);
             if (options.displayCallback) {
                 options.displayCallback(colors, mode, options);
             }
         },
         extractValue = function(elm) {
-            return elm.getAttribute('color') || elm.style.backgroundColor || '#FFFFFF';
+            const val = elm.getAttribute('color') || elm.style.backgroundColor || '#7F7F7FEE';
+            if (val.includes("NAN")) {
+                return "#7F7F7FEE";
+            }
+            return val;
         },
         actionCallback = function(event, action) {
             var options = this,
@@ -362,21 +376,18 @@ export function color_clear(name) {
     };
 })(typeof window !== 'undefined' ? window : this);
 
-
 var picker = jsColorPicker('input.jov-color', {
     readOnly: true,
     size: 2,
     multipleInstances: false,
     appendTo: jovimetrix.settings.element,
-    //mode: 'HEX',
     noAlpha: false,
     init: function(elm, rgb) {
-        // const AHEX = '#' + rgb.HEX + ((rgb.alpha * 255) | 1 << 8).toString(16).slice(1).toUpperCase();
         elm.style.backgroundColor = elm.getAttribute("color");
         elm.style.color = rgb.RGBLuminance > 0.22 ? '#222' : '#ddd';
     },
     convertCallback: function(data, options) {
-        const AHEX = '#' + data.HEX + ((data.alpha * 255) | 1 << 8).toString(16).slice(1).toUpperCase();
+        const AHEX = util.convert_hex(data);
         var name = this.patch.attributes.name.value;
         var body = {
             "name": name,

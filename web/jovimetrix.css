@@ -1,5 +1,4 @@
 #jov-manager-dialog {
-
 	height: 740px;
   font-size: 12;
   box-shadow: none;
@@ -8,15 +7,9 @@
 	z-index: 10000;
 }
 
-.jov-config-container {
-	display: flex;
-	justify-content: center;
-  overflow: scroll;
-}
-
 .jov-config-column {
-	display: flex;
-	justify-content: center;
+  max-height: 700px;
+  overflow-y: auto;
 }
 
 .jov-title {
