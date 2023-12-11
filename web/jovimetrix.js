@@ -4,195 +4,29 @@
  */
 
 import { app } from "../../../scripts/app.js";
-import { ComfyDialog, $el } from "../../../scripts/ui.js";
-import { template_color_block } from './template.js'
+import { JovimetrixConfigDialog } from "./config.js";
 import * as util from './util.js';
 import './extern/color.all.min.js'
 
-var headID = document.getElementsByTagName("head")[0];
-var cssNode = document.createElement('link');
-cssNode.rel = 'stylesheet';
-cssNode.type = 'text/css';
-cssNode.href = 'extensions/Jovimetrix/jovimetrix.css';
-headID.appendChild(cssNode);
-
-export function renderTemplate(template, data) {
-    for (const key in data) {
-        if (data.hasOwnProperty(key)) {
-            const regex = new RegExp(`{{\\s*${key}\\s*}}`, 'g');
-            template = template.replace(regex, data[key]);
-        }
-    }
-    return template;
-}
-
-const CONFIG = await util.CONFIG();
-const NODE_LIST = await util.NODE_LIST();
-
 export let jovimetrix = null;
-
-class JovimetrixConfigDialog extends ComfyDialog {
-
-    startDrag = (e) => {
-        this.dragData = {
-            startX: e.clientX,
-            startY: e.clientY,
-            offsetX: this.element.offsetLeft,
-            offsetY: this.element.offsetTop,
-        };
-
-        document.addEventListener('mousemove', this.dragMove);
-        document.addEventListener('mouseup', this.dragEnd);
-    }
-
-    dragMove = (e) => {
-        const { startX, startY, offsetX, offsetY } = this.dragData;
-        const newLeft = offsetX + e.clientX - startX;
-        const newTop = offsetY + e.clientY - startY;
-
-        // Get the dimensions of the parent element
-        const parentWidth = this.element.parentElement.clientWidth;
-        const parentHeight = this.element.parentElement.clientHeight;
-
-        // Ensure the new position is within the boundaries
-        const clampedLeft = Math.max(0, Math.min(newLeft, parentWidth - this.element.clientWidth / 2));
-        const clampedTop = Math.max(0, Math.min(newTop, parentHeight - this.element.clientHeight / 2));
-
-        this.element.style.left = `${clampedLeft}px`;
-        this.element.style.top = `${clampedTop}px`;
-    }
-
-    dragEnd = () => {
-        document.removeEventListener('mousemove', this.dragMove);
-        document.removeEventListener('mouseup', this.dragEnd);
-    }
-
-    createElements() {
-        let colorTable = null;
-        const header =
-            $el("div.jov-config-column", [
-                $el("table", [
-                    colorTable = $el("thead", [
-                    ]),
-                ]),
-            ]);
-
-        var existing = [];
-        const COLORS = Object.entries(CONFIG.color);
-        COLORS.forEach(entry => {
-            existing.push(entry[0]);
-            var data = {
-                name: entry[0],
-                title: entry[1].title,
-                body: entry[1].body
-            };
-            const html = renderTemplate(template_color_block, data);
-            colorTable.innerHTML += html;
-        });
-
-        // now the rest which are untracked and their "categories"
-        var categories = [];
-        const nodes = Object.entries(NODE_LIST);
-        nodes.forEach(entry => {
-            var name = entry[0];
-            if (existing.includes(name) == false) {
-                var data = {
-                    name: entry[0],
-                    title: '#7F7F7FEE',
-                    body: '#7F7F7FEE',
-                };
-                const html = renderTemplate(template_color_block, data);
-                colorTable.innerHTML += html;
-            }
-
-            var cat = entry[1].category;
-            if (categories.includes(cat) == false) {
-                categories.push(cat);
-            }
-        });
-
-        categories.sort(function (a, b) {
-            return a.toLowerCase().localeCompare(b.toLowerCase());
-        });
-
-        Object.entries(categories).forEach(entry => {
-            if (existing.includes(entry[1]) == false) {
-                var data = {
-                    name: entry[1],
-                    title: '#3F3F3FEE',
-                    body: '#3F3F3FEE',
-                };
-                const html = renderTemplate(template_color_block, data);
-                colorTable.innerHTML += html;
-            }
-        });
-		return [header];
-	}
-
-    constructor() {
-        super();
-
-        const init = async () => {
-
-            this.config_overwrite = false;
-
-
-            const content =
-                $el("div.comfy-modal-content", [
-                    $el("tr.jov-title", [
-                            $el("font", {size:6, color:"white"}, [`JOVIMETRIX COLOR CONFIGURATION`])],
-                            $el("label", {
-                                id: "jov-apply-button"
-                            }, [
-                                $el("input", {
-                                    type: "checkbox",
-                                    checked: this.config_overwrite,
-                                    onclick: (cb) => {
-                                        this.config_overwrite = cb.target.checked;
-                                    }
-                                })
-                            ])
-                        ),
-                    $el("div.jov-menu-container", [...this.createElements()]),
-                    $el("button", {
-                        id: "jov-close-button",
-                        type: "button",
-                        textContent: "CLOSE",
-                        onclick: () => this.close()
-                    })
-                ]);
-
-            content.style.width = '100%';
-            content.style.height = '100%';
-            // Add drag-and-drop behavior to the header for dragging the dialog
-            content.addEventListener('mousedown', this.startDrag);
-            this.element = $el("div.comfy-modal", { id:'jov-manager-dialog', parent: document.body }, [ content ]);
-        };
-        init();
-	}
-
-	show() {
-		this.element.style.display = "block";
-	}
-}
 
 class Jovimetrix {
     // gets the CONFIG entry for this Node.type || Node.name
     node_color_get(find_me) {
-        let node = CONFIG.color[find_me];
+        let node = util.CONFIG.color[find_me];
         if (node) {
             return node;
         }
-        node = NODE_LIST[find_me];
-        //console.info(find_me, node);
-
+        node = util.NODE_LIST[find_me];
+        //console.info(node);
         if (node && node.category) {
+            //console.info(util.CONFIG);
             const segments = node.category.split('/');
             let k = segments.join('/');
             while (k) {
-                const found = CONFIG.color[k];
+                const found = util.CONFIG.color[k];
                 if (found) {
-                    // console.log(found, node.category);
+                    //console.info(found, node.category);
                     return found;
                 }
                 const last = k.lastIndexOf('/');
@@ -233,7 +67,7 @@ class Jovimetrix {
     }
 
     constructor() {
-        this.settings = new JovimetrixConfigDialog();
+        this.config = new JovimetrixConfigDialog();
     }
 }
 jovimetrix = new Jovimetrix();
@@ -243,7 +77,7 @@ export function color_clear(name) {
         "name": name,
     }
     util.api_post("/jovimetrix/config/clear", body);
-    delete CONFIG.color[name];
+    delete util.CONFIG.color[name];
 }
 
 (function (global) {
@@ -465,7 +299,7 @@ jsColorPicker('input.jov-color', {
     readOnly: true,
     size: 2,
     multipleInstances: false,
-    appendTo: jovimetrix.settings.element,
+    appendTo: jovimetrix.config.element,
     noAlpha: false,
     init: function(elm, rgb) {
         elm.style.backgroundColor = elm.getAttribute("color");
@@ -476,14 +310,14 @@ jsColorPicker('input.jov-color', {
         var name = this.patch.attributes.name.value;
         var part = this.patch.attributes.part.value;
         // {title:'', body:'', shape: ''}
-        let color = CONFIG.color[name];
+        let color = util.CONFIG.color[name];
         if (color === undefined){
-            CONFIG.color[name] = {}
+            util.CONFIG.color[name] = {}
         }
-        CONFIG.color[name][part] = AHEX;
+        util.CONFIG.color[name][part] = AHEX;
 
-        if (jovimetrix.config_overwrite) {
-            // console.info(name, part, CONFIG.color[name][part])
+        if (jovimetrix.config.overwrite) {
+            console.info(name, part, util.CONFIG.color[name][part])
             jovimetrix.node_color_all();
         }
 

@@ -1,6 +1,11 @@
+/**
+ * File: jovimetrix.css
+ * Project: Jovimetrix
+ */
+
 #jov-manager-dialog {
-  height: 620px;
-  font-size: 1.1em;
+  height: 630px;
+  font-size: 1.0em;
   padding: 1px;
   z-index: 10000;
   overflow: visible;
@@ -9,10 +14,13 @@
 
 .jov-config-column {
   max-height: 550px;
+  overflow-x: hidden;
   overflow-y: auto;
+  flex: 1 1 auto;
 }
 
 .jov-title {
+
   background-color: black;
   text-align: center;
   font-weight: bold;
@@ -29,12 +37,12 @@
 
 #jov-apply-button {
   position: absolute;
-  width: 100;
+  width: 50px;
 }
 
 .jov-color {
   text-align: center;
-  width: 45px;
+  width: 35px;
   border: 1px solid #aaa;
 }
 

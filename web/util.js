@@ -1,5 +1,15 @@
 import { api } from "../../../scripts/api.js";
 
+export function renderTemplate(template, data) {
+    for (const key in data) {
+        if (data.hasOwnProperty(key)) {
+            const regex = new RegExp(`{{\\s*${key}\\s*}}`, 'g');
+            template = template.replace(regex, data[key]);
+        }
+    }
+    return template;
+}
+
 export function convert_hex(color) {
     if (!color.HEX.includes("NAN")) {
         return '#' + color.HEX + ((color.alpha * 255) | 1 << 8).toString(16).slice(1).toUpperCase();
@@ -22,11 +32,11 @@ export const local_set = (url, v) => {
     //console.info('set', 'jovi.' + url, v);
 };
 
-export async function CONFIG() {
+async function _CONFIG() {
     return await api_get("/jovimetrix/config");
 }
 
-export async function NODE_LIST() {
+async function _NODE_LIST() {
     return await api_get("./../object_info");
 }
 
@@ -44,3 +54,6 @@ export async function api_post(url, data) {
         body: JSON.stringify(data),
     });
 }
+
+export const CONFIG = await _CONFIG();
+export const NODE_LIST = await _NODE_LIST();

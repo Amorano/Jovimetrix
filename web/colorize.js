@@ -7,10 +7,6 @@
 import { app } from "../../../scripts/app.js";
 import { $el } from "../../../scripts/ui.js";
 import { jovimetrix } from "./jovimetrix.js";
-import * as util from './util.js';
-
-const CONFIG = await util.CONFIG();
-const NODE_LIST = await util.NODE_LIST();
 
 const ext = {
     name: "jovimetrix.colorize",
@@ -26,19 +22,19 @@ const ext = {
 		});
 
 		showButton.onclick = () => {
-            jovimetrix.settings.show();
+            jovimetrix.config.show();
 		};
 		document.querySelector(".comfy-settings-btn").after(showButton);
 	},
 
     async beforeRegisterNodeDef(nodeType, nodeData) {
-        const node = jovimetrix.node_color_get(nodeData);
+        const node = jovimetrix.node_color_get(nodeData.name);
         if (node) {
             const onNodeCreated = nodeType.prototype.onNodeCreated;
             nodeType.prototype.onNodeCreated = function () {
                 const result = onNodeCreated ? onNodeCreated.apply(this, arguments) : undefined;
                 //console.info(nodeData.name, node);
-                if (jovimetrix. nodeData.color === undefined) {
+                if (nodeData.color === undefined) {
                     this['color'] = (node.title || "#7F7F7FEE")
                 }
 
