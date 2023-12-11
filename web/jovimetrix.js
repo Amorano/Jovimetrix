@@ -33,6 +33,41 @@ const NODE_LIST = await util.NODE_LIST();
 export let jovimetrix = null;
 
 class JovimetrixConfigDialog extends ComfyDialog {
+
+    startDrag = (e) => {
+        this.dragData = {
+            startX: e.clientX,
+            startY: e.clientY,
+            offsetX: this.element.offsetLeft,
+            offsetY: this.element.offsetTop,
+        };
+
+        document.addEventListener('mousemove', this.dragMove);
+        document.addEventListener('mouseup', this.dragEnd);
+    }
+
+    dragMove = (e) => {
+        const { startX, startY, offsetX, offsetY } = this.dragData;
+        const newLeft = offsetX + e.clientX - startX;
+        const newTop = offsetY + e.clientY - startY;
+
+        // Get the dimensions of the parent element
+        const parentWidth = this.element.parentElement.clientWidth;
+        const parentHeight = this.element.parentElement.clientHeight;
+
+        // Ensure the new position is within the boundaries
+        const clampedLeft = Math.max(0, Math.min(newLeft, parentWidth - this.element.clientWidth / 2));
+        const clampedTop = Math.max(0, Math.min(newTop, parentHeight - this.element.clientHeight / 2));
+
+        this.element.style.left = `${clampedLeft}px`;
+        this.element.style.top = `${clampedTop}px`;
+    }
+
+    dragEnd = () => {
+        document.removeEventListener('mousemove', this.dragMove);
+        document.removeEventListener('mouseup', this.dragEnd);
+    }
+
     createElements() {
         let colorTable = null;
         const header =
@@ -102,7 +137,18 @@ class JovimetrixConfigDialog extends ComfyDialog {
             const content =
                 $el("div.comfy-modal-content", [
                     $el("tr.jov-title", [
-                            $el("font", {size:6, color:"white"}, [`JOVIMETRIX COLOR CONFIGURATION`])]
+                            $el("font", {size:6, color:"white"}, [`JOVIMETRIX COLOR CONFIGURATION`])],
+                            $el("label", {
+                                id: "jov-apply-button"
+                            }, [
+                                $el("input", {
+                                    type: "checkbox",
+                                    checked: config_overwrite,
+                                    onclick: (cb) => {
+                                        config_overwrite = cb.target.checked;
+                                    }
+                                })
+                            ])
                         ),
                     $el("div.jov-menu-container", [...this.createElements()]),
                     $el("button", {
@@ -110,23 +156,13 @@ class JovimetrixConfigDialog extends ComfyDialog {
                         type: "button",
                         textContent: "CLOSE",
                         onclick: () => this.close()
-                    }),
-                    $el("label", {
-                            id: "jov-apply-button"
-                        }, [
-                            $el("input", {
-                                type: "checkbox",
-                                checked: config_overwrite,
-                                onclick: (cb) => {
-                                    config_overwrite = cb.target.checked;
-                                }
-                            })
-                        ])
-                    ]);
-
+                    })
+                ]);
 
             content.style.width = '100%';
             content.style.height = '100%';
+            // Add drag-and-drop behavior to the header for dragging the dialog
+            content.addEventListener('mousedown', this.startDrag);
             this.element = $el("div.comfy-modal", { id:'jov-manager-dialog', parent: document.body }, [ content ]);
         };
         init();
@@ -187,6 +223,10 @@ class Jovimetrix {
             this.node_color_reset(node, false);
         });
         app.graph.setDirtyCanvas(true, true);
+    }
+
+    setup() {
+        jovimetrix.node_color_all();
     }
 
     constructor() {

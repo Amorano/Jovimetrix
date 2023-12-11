@@ -1,10 +1,10 @@
 #jov-manager-dialog {
-	height: 640px;
-  font-size: 12;
-  box-shadow: none;
+  height: 640px;
+  font-size: 12px;
   padding: 1px;
+  z-index: 10000;
   overflow: visible;
-	z-index: 10000;
+  box-shadow: 0 0 3px #66AA667F;
 }
 
 .jov-config-column {
@@ -13,26 +13,31 @@
 }
 
 .jov-title {
-	background-color: black;
-	text-align: center;
-	font-weight: bold;
+  background-color: black;
+  text-align: center;
+  font-weight: bold;
 }
 
 #jov-close-button {
   width: calc(100% - 4px);
-	bottom: 3px;
+  bottom: 3px;
   border: 1px solid #ccc;
   border-radius: 0px;
-	position: absolute;
-	overflow: hidden;
+  position: absolute;
+  overflow: hidden;
 }
 
 #jov-apply-button {
-	position: absolute;
+  position: absolute;
+  width: 100;
 }
 
 .jov-color {
   text-align: center;
   width: 45px;
-	border: 1px solid #aaa;
+  border: 1px solid #aaa;
+}
+
+tr, td {
+  user-select: none;
 }
