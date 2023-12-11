@@ -1,6 +1,6 @@
 #jov-manager-dialog {
-  height: 640px;
-  font-size: 12px;
+  height: 620px;
+  font-size: 1.1em;
   padding: 1px;
   z-index: 10000;
   overflow: visible;
@@ -8,7 +8,7 @@
 }
 
 .jov-config-column {
-  max-height: 600px;
+  max-height: 550px;
   overflow-y: auto;
 }
 

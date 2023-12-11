@@ -26,7 +26,6 @@ export function renderTemplate(template, data) {
     return template;
 }
 
-let config_overwrite = false;
 const CONFIG = await util.CONFIG();
 const NODE_LIST = await util.NODE_LIST();
 
@@ -134,6 +133,10 @@ class JovimetrixConfigDialog extends ComfyDialog {
         super();
 
         const init = async () => {
+
+            this.config_overwrite = false;
+
+
             const content =
                 $el("div.comfy-modal-content", [
                     $el("tr.jov-title", [
@@ -143,9 +146,9 @@ class JovimetrixConfigDialog extends ComfyDialog {
                             }, [
                                 $el("input", {
                                     type: "checkbox",
-                                    checked: config_overwrite,
+                                    checked: this.config_overwrite,
                                     onclick: (cb) => {
-                                        config_overwrite = cb.target.checked;
+                                        this.config_overwrite = cb.target.checked;
                                     }
                                 })
                             ])
@@ -479,7 +482,7 @@ jsColorPicker('input.jov-color', {
         }
         CONFIG.color[name][part] = AHEX;
 
-        if (config_overwrite) {
+        if (jovimetrix.config_overwrite) {
             // console.info(name, part, CONFIG.color[name][part])
             jovimetrix.node_color_all();
         }

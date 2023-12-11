@@ -38,7 +38,7 @@ const ext = {
             nodeType.prototype.onNodeCreated = function () {
                 const result = onNodeCreated ? onNodeCreated.apply(this, arguments) : undefined;
                 //console.info(nodeData.name, node);
-                if (nodeData.color === undefined) {
+                if (jovimetrix. nodeData.color === undefined) {
                     this['color'] = (node.title || "#7F7F7FEE")
                 }
 
