@@ -648,36 +648,57 @@ def color_theory_compound(color: TYPE_PIXEL) -> tuple[TYPE_PIXEL, TYPE_PIXEL, TY
         color_theory_complementary((color[0] + 210, color[1] + 210, color[2]))
     ]
 
-def color_theory(image: TYPE_IMAGE, scheme: EnumColorTheory=EnumColorTheory.COMPLIMENTARY) -> tuple[TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE]:
+def color_theory(image: TYPE_IMAGE, scheme: EnumColorTheory=EnumColorTheory.COMPLIMENTARY) -> tuple[TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE]:
 
     aR = aG = aB = bR = bG = bB = cR = cG = cB = 0
-    color = color_average(image)[0, 0]
+    image_avg = color_average(image)
+    color = image_avg[image_avg.shape[0] // 2, image_avg.shape[1] // 2]
     match scheme:
         case EnumColorTheory.COMPLIMENTARY:
             a = color_theory_complementary(color)
             aR, aG, aB = a
         case EnumColorTheory.MONOCHROMATIC:
             a, b = color_theory_monochromatic(color)
-            aR, aG, aB, bR, bG, bB = *a, *b
+            aR, aG, aB = a
+            bR, bG, bB = b
         case EnumColorTheory.SPLIT_COMPLIMENTARY:
-            aR, aG, aB, bR, bG, bB = color_theory_split_complementary(color)
+            a, b = color_theory_split_complementary(color)
+            aR, aG, aB = a
+            bR, bG, bB = b
         case EnumColorTheory.ANALOGOUS:
-            aR, aG, aB, bR, bG, bB = color_theory_analogous(color)
+            a, b = color_theory_analogous(color)
+            aR, aG, aB = a
+            bR, bG, bB = b
         case EnumColorTheory.TRIADIC:
-            aR, aG, aB, bR, bG, bB = color_theory_triadic(color)
+            a, b = color_theory_triadic(color)
+            aR, aG, aB = a
+            bR, bG, bB = b
         case EnumColorTheory.TETRADIC:
-            aR, aG, aB, bR, bG, bB, cR, cG, cB = color_theory_tetradic(color)
+            a, b, c = color_theory_tetradic(color)
+            aR, aG, aB = a
+            bR, bG, bB = b
+            cR, cG, cB = c
         case EnumColorTheory.SQUARE:
-            aR, aG, aB, bR, bG, bB, cR, cG, cB = color_theory_square(color)
+            a, b, c = color_theory_square(color)
+            aR, aG, aB = a
+            bR, bG, bB = b
+            cR, cG, cB = c
         case EnumColorTheory.RECTANGULAR:
-            aR, aG, aB, bR, bG, bB, cR, cG, cB = color_theory_rectangular(color)
+            a, b, c = color_theory_rectangular(color)
+            aR, aG, aB = a
+            bR, bG, bB = b
+            cR, cG, cB = c
         case EnumColorTheory.COMPOUND:
-            aR, aG, aB, bR, bG, bB, cR, cG, cB = color_theory_compound(color)
+            a, b, c = color_theory_compound(color)
+            aR, aG, aB = a
+            bR, bG, bB = b
+            cR, cG, cB = c
 
     return (
-        np.stack([aR, aG, aB], axis=-1),
-        np.stack([bR, bG, bB], axis=-1),
-        np.stack([cR, cG, cB], axis=-1)
+        np.full_like(image, [aR, aG, aB], dtype=np.uint8),
+        np.full_like(image, [bR, bG, bB], dtype=np.uint8),
+        np.full_like(image, [cR, cG, cB], dtype=np.uint8),
+        image_avg
     )
 
 # COMP

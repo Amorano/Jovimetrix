@@ -390,7 +390,7 @@ class ColorTheoryNode(JOVImageInOutBaseNode):
 
         for data in zip_longest_fill(pixels, scheme, invert):
             img, s, i = data
-            img = tensor2cv(d)
+            img = tensor2cv(img)
             s = EnumColorTheory[s] if s is not None else EnumColorTheory.COMPLIMENTARY
             Logger.debug(s, i)
 
@@ -401,6 +401,7 @@ class ColorTheoryNode(JOVImageInOutBaseNode):
                 c = comp.light_invert(c, i)
                 d = comp.light_invert(d, i)
 
+            print(a.shape, b.shape, c.shape, d.shape)
             imageA.append(cv2tensor(a))
             imageB.append(cv2tensor(b))
             imageC.append(cv2tensor(c))

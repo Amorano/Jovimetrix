@@ -56,7 +56,12 @@ export function node_color_list(nodes) {
 }
 
 export function node_color_all() {
-    return node_color_list(app.graph._nodes);
+    app.graph._nodes.forEach((node) => {
+        this.node_color_reset(node, false);
+    });
+    app.graph.setDirtyCanvas(true, true);
+
+    //node_color_list(app.graph._nodes);
 }
 
 export function renderTemplate(template, data) {
