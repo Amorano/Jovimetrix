@@ -4,7 +4,6 @@
  */
 
 import { ComfyDialog, $el } from "../../../scripts/ui.js";
-import { template_color_block } from './template.js'
 import * as util from './util.js';
 
 var headID = document.getElementsByTagName("head")[0];
@@ -13,6 +12,15 @@ cssNode.rel = 'stylesheet';
 cssNode.type = 'text/css';
 cssNode.href = 'extensions/Jovimetrix/jovimetrix.css';
 headID.appendChild(cssNode);
+
+const template_color_block = `
+<tr>
+    <td style="color: white; text-align: right">{{ name }}</td>
+    <td><input class="jov-color" type="text" name="{{ name }}" value="title" color="{{title}}" part="title"></input></td>
+    <td><input class="jov-color" type="text" name="{{ name }}" value="body" color="{{body}}" part="body"></input></td>
+    <td><button type="button" onclick="color_clear('{{name}}')"></button></td>
+</tr>
+`
 
 export class JovimetrixConfigDialog extends ComfyDialog {
 
@@ -54,43 +62,40 @@ export class JovimetrixConfigDialog extends ComfyDialog {
 
     createColorBlock(name, title, body) {
         return [
-            //$el("tr", [
-                $el("td", {
-                    style: {
-                        color: "white",
-                        align: "right"
-                    },
-                    textContent: name
-                }),
-                $el("td", [
-                    $el("input", {
-                        class: "jov-color",
-                        type: "text",
-                        name: name,
-                        value: "title",
-                        color: title,
-                        part: title
-                    })
-                ]),
-                $el("td", [
-                    $el("input", {
-                        class: "jov-color",
-                        type: "text",
-                        name: name,
-                        value: "body",
-                        color: body,
-                        part: body
-                    })
-                ]),
-                $el("td", [
-                    $el("button", {
-                        type: "button",
-                        onclick: () => {
-                            color_clear(name);
-                        }
-                    })
-                ])
-            //])
+            $el("td", {
+                style: {
+                    align: "right"
+                },
+                textContent: name
+            }),
+            $el("td", [
+                $el("input", {
+                    class: "jov-color",
+                    type: "text",
+                    name: name,
+                    value: "title",
+                    color: title,
+                    part: title
+                })
+            ]),
+            $el("td", [
+                $el("input", {
+                    class: "jov-color",
+                    type: "text",
+                    name: name,
+                    value: "body",
+                    color: body,
+                    part: body
+                })
+            ]),
+            $el("td", [
+                $el("button", {
+                    type: "button",
+                    onclick: () => {
+                        color_clear(name);
+                    }
+                })
+            ])
         ];
     }
 
@@ -239,23 +244,28 @@ export class JovimetrixConfigDialog extends ComfyDialog {
 
     createTitleElement() {
         return $el("table", [
-            $el("tr.jov-title", [
+            $el("tr", [
                 $el("td", [
-                    this.headerTitle = $el("font", { size: 5, color: "white" }, [this.title]),
-                ]),
-                $el("td", [
-                    $el("label", {
-                        id: "jov-apply-button"
-                    }, [
-                        $el("input", {
-                            type: "checkbox",
-                            checked: this.overwrite,
-                            value: "SYNCHRONIZE",
-                            onclick: (cb) => {
-                                this.overwrite = cb.target.checked;
-                            }
-                        })
-                    ])
+                    $el("div", [
+                        this.headerTitle = $el("div.jov-title", [this.title]),
+                        $el("div", [
+                            $el("label", {
+                                id: "jov-apply-button",
+                                textContent: "FORCE NODES TO SYNCHRONIZE WITH PANEL? ",
+                                style: {fontsize: "0.5em"}
+                            }, [
+                                $el("input", {
+                                    type: "checkbox",
+                                    checked: this.overwrite,
+
+                                    style: { color: "white" },
+                                    onclick: (cb) => {
+                                        this.overwrite = cb.target.checked;
+                                    }
+                                })
+                            ]),
+                        ]),
+                    ]),
                 ]),
             ])
         ]);
@@ -273,7 +283,7 @@ export class JovimetrixConfigDialog extends ComfyDialog {
     createContent() {
         const content = $el("div.comfy-modal-content", [
             this.createTitleElement(),
-            $el("div.jov-menu-container", [...this.createColorPalettes()]),
+            $el("div.jov-config-color", [...this.createColorPalettes()]),
             this.createCloseButton()
         ]);
 

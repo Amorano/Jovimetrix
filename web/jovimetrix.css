@@ -4,26 +4,36 @@
  */
 
 #jov-manager-dialog {
+  width: 460px;
   height: 630px;
-  font-size: 1.0em;
+  font-size: 15px;
   padding: 1px;
   z-index: 10000;
   overflow: visible;
-  box-shadow: 0 0 3px #66AA667F;
+  box-shadow: 0 0 8px #648064;
+  color: whitesmoke;
+  text-align: center;
+}
+
+.jov-config-color {
+  background-color: rgb(15, 15, 15);
+  max-height: 570px;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .jov-config-column {
-  max-height: 550px;
-  overflow-x: hidden;
-  overflow-y: auto;
-  flex: 1 1 auto;
+  flex: 1 auto 1;
 }
 
 .jov-title {
-
-  background-color: black;
-  text-align: center;
   font-weight: bold;
+  font-size: 1.5em;
+  background: linear-gradient(22deg, #ff0000 25%, #4c67dd 40%, #5ddd4c 50%, #dd4c4c 65%);
+  clip: text;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 #jov-close-button {
@@ -36,13 +46,14 @@
 }
 
 #jov-apply-button {
-  position: absolute;
-  width: 50px;
+  align-self: flex-end;
+  overflow: hidden;
 }
 
 .jov-color {
   text-align: center;
-  width: 35px;
+  font-size: 0.75em;
+  width: 50px;
   border: 1px solid #aaa;
 }
 

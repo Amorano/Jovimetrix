@@ -7,6 +7,7 @@
 import { app } from "../../../scripts/app.js";
 import { $el } from "../../../scripts/ui.js";
 import { jovimetrix } from "./jovimetrix.js";
+import * as util from './util.js';
 
 const ext = {
     name: "jovimetrix.colorize",
@@ -15,20 +16,22 @@ const ext = {
 		const showButton = $el("button.comfy-settings-btn", {
 			textContent: "🎨",
 			style: {
-				left: "15px",
 				cursor: "pointer",
-				display: "unset",
+				display: "contents",
 			},
 		});
 
 		showButton.onclick = () => {
             jovimetrix.config.show();
 		};
-		document.querySelector(".comfy-settings-btn").after(showButton);
+
+		const firstKid = document.querySelector(".comfy-settings-btn")
+        const parent = firstKid.parentElement;
+        parent.insertBefore(showButton, firstKid.nextSibling);
 	},
 
     async beforeRegisterNodeDef(nodeType, nodeData) {
-        const node = jovimetrix.node_color_get(nodeData.name);
+        const node = util.node_color_get(nodeData.name);
         if (node) {
             const onNodeCreated = nodeType.prototype.onNodeCreated;
             nodeType.prototype.onNodeCreated = function () {

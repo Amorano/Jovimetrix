@@ -23,7 +23,8 @@ from scipy.ndimage import rotate
 from blendmodes.blend import blendLayers, BlendType
 from PIL import Image, ImageDraw
 
-from Jovimetrix import Logger, grid_make, cv2mask, cv2tensor, cv2pil, pil2cv
+from Jovimetrix import Logger, grid_make, cv2mask, cv2tensor, cv2pil, pil2cv,\
+    TYPE_IMAGE, TYPE_PIXEL, TYPE_COORD
 
 HALFPI = math.pi / 2
 TAU = math.pi * 2
@@ -91,17 +92,31 @@ class EnumInterpolation(Enum):
 
 class EnumAdjustOP(Enum):
     BLUR = 0
-    STACK_BLUR = 1
-    GAUSSIAN_BLUR = 2
-    MEDIAN_BLUR = 3
-    SHARPEN = 4
-    EMBOSS = 5
-    FIND_EDGES = 6
-    OUTLINE = 7
-    DILATE = 8
-    ERODE = 9
-    OPEN = 10
-    CLOSE = 11
+    STACK_BLUR = 5
+    GAUSSIAN_BLUR = 10
+    MEDIAN_BLUR = 15
+    SHARPEN = 20
+    EMBOSS = 25
+    MEAN = 27
+    PIXELATE = 30
+    QUANTIZE = 35
+    POSTERIZE = 40
+    OUTLINE = 45
+    DILATE = 50
+    ERODE = 55
+    OPEN = 60
+    CLOSE = 65
+
+class EnumColorTheory(Enum):
+    COMPLIMENTARY = 0
+    MONOCHROMATIC = 1
+    SPLIT_COMPLIMENTARY = 2
+    ANALOGOUS = 3
+    TRIADIC = 4
+    TETRADIC = 5
+    SQUARE = 6
+    RECTANGULAR = 7
+    COMPOUND = 8
 
 EnumBlendType = [str(x).split('.')[-1] for x in BlendType]
 
@@ -118,7 +133,7 @@ IT_SAMPLE = {
 # === UTILITY ===
 # =============================================================================
 
-def gray_sized(image: cv2.Mat, h:int, w:int, resample: EnumInterpolation=EnumInterpolation.LANCZOS4) -> cv2.Mat:
+def gray_sized(image: TYPE_IMAGE, h:int, w:int, resample: EnumInterpolation=EnumInterpolation.LANCZOS4) -> TYPE_IMAGE:
     """Force an image into Grayscale at a specific width, height."""
     if len(image.shape) > 2:
         image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -126,7 +141,7 @@ def gray_sized(image: cv2.Mat, h:int, w:int, resample: EnumInterpolation=EnumInt
         image = cv2.resize(image, (w, h), interpolation=resample.value)
     return image
 
-def pixel_split(image: cv2.Mat) -> tuple[list[cv2.Mat], list[cv2.Mat]]:
+def pixel_split(image: TYPE_IMAGE) -> tuple[list[TYPE_IMAGE], list[TYPE_IMAGE]]:
     w, h, c = image.shape
 
     # Check if the image has an alpha channel
@@ -158,15 +173,15 @@ def pixel_split(image: cv2.Mat) -> tuple[list[cv2.Mat], list[cv2.Mat]]:
 
     return images, masks
 
-def merge_channel(channel, size, resample: EnumInterpolation=EnumInterpolation.LANCZOS4) -> cv2.Mat:
+def merge_channel(channel, size, resample: EnumInterpolation=EnumInterpolation.LANCZOS4) -> TYPE_IMAGE:
     if channel is None:
         return np.full(size, 0, dtype=np.uint8)
     return gray_sized(channel, *size[::-1], resample)
 
-def pixel_merge(r: cv2.Mat, g: cv2.Mat, b: cv2.Mat, a: cv2.Mat,
+def pixel_merge(r: TYPE_IMAGE, g: TYPE_IMAGE, b: TYPE_IMAGE, a: TYPE_IMAGE,
           width: int, height: int,
           mode:EnumScaleMode=EnumScaleMode.NONE,
-          resample:EnumInterpolation=EnumInterpolation.LANCZOS4) -> cv2.Mat:
+          resample:EnumInterpolation=EnumInterpolation.LANCZOS4) -> TYPE_IMAGE:
 
     thr, twr = (r.shape[0], r.shape[1]) if r is not None else (height, width)
     thg, twg = (g.shape[0], g.shape[1]) if g is not None else (height, width)
@@ -194,7 +209,7 @@ def pixel_merge(r: cv2.Mat, g: cv2.Mat, b: cv2.Mat, a: cv2.Mat,
 # === SHAPE FUNCTIONS ===
 # =============================================================================
 
-def shape_body(func: str, width: int, height: int, sizeX=1., sizeY=1., fill=(255, 255, 255)) -> Image:
+def shape_body(func: str, width: int, height: int, sizeX:float=1., sizeY:float=1., fill:TYPE_PIXEL=(255, 255, 255)) -> Image:
     sizeX = max(0.5, sizeX / 2 + 0.5)
     sizeY = max(0.5, sizeY / 2 + 0.5)
     xy = [(width * (1. - sizeX), height * (1. - sizeY)),(width * sizeX, height * sizeY)]
@@ -204,13 +219,13 @@ def shape_body(func: str, width: int, height: int, sizeX=1., sizeY=1., fill=(255
     func(xy, fill=fill)
     return image
 
-def shape_ellipse(width: int, height: int, sizeX=1., sizeY=1., fill=None) -> Image:
+def shape_ellipse(width: int, height: int, sizeX:float=1., sizeY:float=1., fill:TYPE_PIXEL=None) -> Image:
     return shape_body('ellipse', width, height, sizeX=sizeX, sizeY=sizeY, fill=fill)
 
-def shape_quad(width: int, height: int, sizeX=1., sizeY=1., fill=None) -> Image:
+def shape_quad(width: int, height: int, sizeX:float=1., sizeY:float=1., fill:TYPE_PIXEL=None) -> Image:
     return shape_body('rectangle', width, height, sizeX=sizeX, sizeY=sizeY, fill=fill)
 
-def shape_polygon(width: int, height: int, size: float=1., sides: int=3, angle: float=0., fill=None) -> Image:
+def shape_polygon(width: int, height: int, size: float=1., sides: int=3, angle: float=0., fill:TYPE_PIXEL=None) -> Image:
     fill=fill or (255, 255, 255)
     size = max(0.00001, size)
     r = min(width, height) * size * 0.5
@@ -226,12 +241,12 @@ def shape_polygon(width: int, height: int, size: float=1., sides: int=3, angle: 
 
 # IMAGE
 
-def image_stack(images: list[np.ndarray[np.uint8]],
+def image_stack(images: list[TYPE_IMAGE],
                 axis:Optional[EnumOrientation]=EnumOrientation.HORIZONTAL,
                 stride:Optional[int]=None,
                 color:Optional[tuple[float, float, float]]=(0,0,0),
                 mode:EnumScaleMode=EnumScaleMode.NONE,
-                resample:Optional[Image.Resampling]=Image.Resampling.LANCZOS) -> np.ndarray[np.uint8]:
+                resample:Optional[Image.Resampling]=Image.Resampling.LANCZOS) -> TYPE_IMAGE:
 
     color = (
         (color[0] if color is not None else 1) * 255,
@@ -292,7 +307,7 @@ def image_stack(images: list[np.ndarray[np.uint8]],
 
     return image
 
-def image_grid(data: list[np.ndarray[np.uint8]], width: int, height: int) -> np.ndarray:
+def image_grid(data: list[TYPE_IMAGE], width: int, height: int) -> TYPE_IMAGE:
     #@TODO: makes poor assumption all images are the same dimensions.
     chunks, col, row = grid_make(data)
     frame = np.zeros((height * row, width * col, 3), dtype=np.uint8)
@@ -308,13 +323,13 @@ def image_grid(data: list[np.ndarray[np.uint8]], width: int, height: int) -> np.
 
 # GEOMETRY
 
-def geo_crop(image: cv2.Mat, left=None, top=None, right=None, bottom=None,
+def geo_crop(image: TYPE_IMAGE, left=None, top=None, right=None, bottom=None,
              widthT: int=None, heightT: int=None, pad:bool=False,
-             color: tuple[float, float, float]=(0, 0, 0)) -> cv2.Mat:
+             color: tuple[float, float, float]=(0, 0, 0)) -> TYPE_IMAGE:
 
         height, width, _ = image.shape
-        left = float(np.clip(left or 0, 0, 1))
-        top = float(np.clip(top or 0, 0, 1))
+        left = float(np.clip(left, 0, 1))
+        top = float(np.clip(top, 0, 1))
         right = float(np.clip(right or 1, 0, 1))
         bottom = float(np.clip(bottom or 1, 0, 1))
 
@@ -355,7 +370,7 @@ def geo_crop(image: cv2.Mat, left=None, top=None, right=None, bottom=None,
         # Logger.debug("geo_crop", f"({x_start}, {y_start})-({x_end}, {y_end}) || ({x_start2}, {y_start2})-({x_end2}, {y_end2})")
         return img_padded
 
-def geo_edge_wrap(image: np.ndarray[np.uint8], tileX: float=1., tileY: float=1., edge: str='WRAP') -> np.ndarray[np.uint8]:
+def geo_edge_wrap(image: TYPE_IMAGE, tileX: float=1., tileY: float=1., edge: str='WRAP') -> TYPE_IMAGE:
     """TILING."""
     height, width, _ = image.shape
     tileX = int(tileX * width * 0.5) if edge in ["WRAP", "WRAPX"] else 0
@@ -363,14 +378,14 @@ def geo_edge_wrap(image: np.ndarray[np.uint8], tileX: float=1., tileY: float=1.,
     # Logger.debug("geo_edge_wrap", f"[{width}, {height}]  [{tileX}, {tileY}]")
     return cv2.copyMakeBorder(image, tileY, tileY, tileX, tileX, cv2.BORDER_WRAP)
 
-def geo_translate(image: np.ndarray[np.uint8], offsetX: float, offsetY: float) -> np.ndarray[np.uint8]:
+def geo_translate(image: TYPE_IMAGE, offsetX: float, offsetY: float) -> TYPE_IMAGE:
     """TRANSLATION."""
     height, width, _ = image.shape
     M = np.float32([[1, 0, offsetX * width], [0, 1, offsetY * height]])
     # Logger.debug("geo_translate", f"[{offsetX}, {offsetY}]")
     return cv2.warpAffine(image, M, (width, height), flags=cv2.INTER_LINEAR)
 
-def geo_rotate(image: np.ndarray[np.uint8], angle: float, center=(0.5 ,0.5)) -> np.ndarray[np.uint8]:
+def geo_rotate(image: TYPE_IMAGE, angle: float, center:TYPE_COORD=(0.5 ,0.5)) -> TYPE_IMAGE:
     """ROTATION."""
     height, width, _ = image.shape
     center = (int(width * center[0]), int(height * center[1]))
@@ -378,7 +393,7 @@ def geo_rotate(image: np.ndarray[np.uint8], angle: float, center=(0.5 ,0.5)) -> 
     # Logger.debug("geo_rotate", f"[{angle}]")
     return cv2.warpAffine(image, M, (width, height), flags=cv2.INTER_LINEAR)
 
-def geo_rotate_array(image: np.ndarray[np.uint8], angle: float, clip: bool=True) -> np.ndarray[np.uint8]:
+def geo_rotate_array(image: TYPE_IMAGE, angle: float, clip: bool=True) -> TYPE_IMAGE:
     """."""
     rotated_image = rotate(image, angle, reshape=not clip, mode='constant', cval=0)
 
@@ -400,9 +415,9 @@ def geo_rotate_array(image: np.ndarray[np.uint8], angle: float, clip: bool=True)
     # Clip the rotated image
     return rotated_image[start_height:start_height + height, start_width:start_width + width]
 
-def geo_scalefit(image: np.ndarray[np.uint8], width: int, height:int,
+def geo_scalefit(image: TYPE_IMAGE, width: int, height:int,
                  mode:EnumScaleMode=EnumScaleMode.NONE,
-                 resample:EnumInterpolation=EnumInterpolation.LANCZOS4) -> np.ndarray[np.uint8]:
+                 resample:EnumInterpolation=EnumInterpolation.LANCZOS4) -> TYPE_IMAGE:
 
     # logspam("geo_scalefit", mode, f"[{width}x{height}]", f"rs=({resample})")
 
@@ -421,10 +436,10 @@ def geo_scalefit(image: np.ndarray[np.uint8], width: int, height:int,
 
     return image
 
-def geo_transform(image: np.ndarray[np.uint8], offsetX: float=0., offsetY: float=0., angle: float=0.,
+def geo_transform(image: TYPE_IMAGE, offsetX: float=0., offsetY: float=0., angle: float=0.,
               sizeX: float=1., sizeY: float=1., edge:str='CLIP', widthT: int=256, heightT: int=256,
               mode:EnumScaleMode=EnumScaleMode.NONE,
-              resample:EnumInterpolation=EnumInterpolation.LANCZOS4) -> np.ndarray[np.uint8]:
+              resample:EnumInterpolation=EnumInterpolation.LANCZOS4) -> TYPE_IMAGE:
     """Transform, Rotate and Scale followed by Tiling and then Inversion, conforming to an input wT, hT,."""
 
     height, width, _ = image.shape
@@ -461,13 +476,13 @@ def geo_transform(image: np.ndarray[np.uint8], offsetX: float=0., offsetY: float
     # Logger.debug("geo_transform", f"({offsetX},{offsetY}), {angle}, ({sizeX},{sizeY}) [{width}x{height} - {mode} - {resample}]")
     return geo_scalefit(image, widthT, heightT, mode, resample)
 
-def geo_merge(imageA: np.ndarray[np.uint8], imageB: np.ndarray[np.uint8], axis: int=0, flip: bool=False) -> np.ndarray[np.uint8]:
+def geo_merge(imageA: TYPE_IMAGE, imageB: TYPE_IMAGE, axis: int=0, flip: bool=False) -> TYPE_IMAGE:
     if flip:
         imageA, imageB = imageB, imageA
     axis = 1 if axis == "HORIZONTAL" else 0
     return np.concatenate((imageA, imageB), axis=axis)
 
-def geo_mirror(image: np.ndarray[np.uint8], pX: float, axis: int, invert: bool=False) -> np.ndarray[np.uint8]:
+def geo_mirror(image: TYPE_IMAGE, pX: float, axis: int, invert: bool=False) -> TYPE_IMAGE:
     output =  np.zeros_like(image)
     flip = cv2.flip(image, axis)
     height, width, _ = image.shape
@@ -496,7 +511,7 @@ def geo_mirror(image: np.ndarray[np.uint8], pX: float, axis: int, invert: bool=F
 
 # LIGHT / COLOR
 
-def light_hsv(image: np.ndarray[np.uint8], hue: float, saturation: float, value: float) -> np.ndarray[np.uint8]:
+def light_hsv(image: TYPE_IMAGE, hue: float, saturation: float, value: float) -> TYPE_IMAGE:
     image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
     hue *= 255
     image[:, :, 0] = (image[:, :, 0] + hue) % 180
@@ -505,7 +520,7 @@ def light_hsv(image: np.ndarray[np.uint8], hue: float, saturation: float, value:
     # Logger.debug("light_hsv", f"{hue} {saturation} {value}")
     return cv2.cvtColor(image, cv2.COLOR_HSV2BGR)
 
-def light_gamma(image: np.ndarray[np.uint8], value: float) -> np.ndarray[np.uint8]:
+def light_gamma(image: TYPE_IMAGE, value: float) -> TYPE_IMAGE:
     # Logger.debug("light_gamma", f"({value})")
     if value == 0:
         return (image * 0).astype(np.uint8)
@@ -515,23 +530,21 @@ def light_gamma(image: np.ndarray[np.uint8], value: float) -> np.ndarray[np.uint
         for i in np.arange(0, 256)]).astype(np.uint8), 0, 255)
     return cv2.LUT(image, lookUpTable)
 
-def light_contrast(image: np.ndarray[np.uint8], value: float) -> np.ndarray[np.uint8]:
+def light_contrast(image: TYPE_IMAGE, value: float) -> TYPE_IMAGE:
     # Logger.debug("light_contrast", f"({value})")
     mean_value = np.mean(image)
     image = (image - mean_value) * value + mean_value
     return np.clip(image, 0, 255).astype(np.uint8)
 
-def light_exposure(image: np.ndarray[np.uint8], value: float) -> np.ndarray[np.uint8]:
+def light_exposure(image: TYPE_IMAGE, value: float) -> TYPE_IMAGE:
     # Logger.debug("light_exposure", f"({math.pow(2.0, value)})")
     return np.clip(image * value, 0, 255).astype(np.uint8)
 
-def light_invert(image: np.ndarray[np.uint8], value: float) -> np.ndarray[np.uint8]:
-    value = np.clip(value, 0, 255)
-    inverted = np.abs(255 - image)
-    return cv2.addWeighted(image, 1 - value, inverted, value, 0)
+def light_invert(image: TYPE_IMAGE, value: float) -> TYPE_IMAGE:
+    value = np.clip(value, 0, 1)
+    return cv2.addWeighted(image, 1 - value, 255 - image, value, 0)
 
-def color_match(image: np.ndarray[np.uint8],
-                usermap: np.ndarray[np.uint8]) -> np.ndarray[np.uint8]:
+def color_match(image: TYPE_IMAGE, usermap: TYPE_IMAGE) -> TYPE_IMAGE:
     """Colorize one input based on the histogram matches."""
 
     image = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
@@ -540,21 +553,27 @@ def color_match(image: np.ndarray[np.uint8],
     image = cv2.cvtColor(image, cv2.COLOR_LAB2BGR)
     return comp_blend(usermap, image, blendOp=BlendType.LUMINOSITY)
 
-def color_colormap(image: np.ndarray[np.uint8],
-                   usermap: Optional[np.ndarray[np.uint8]]=None,
-                   colormap: Optional[int]=cv2.COLORMAP_JET) -> np.ndarray[np.uint8]:
+def color_lut_from_image(image: TYPE_IMAGE, num_colors:int=256) -> TYPE_IMAGE:
+    """Create X sized LUT from an RGB image."""
+    image = cv2.resize(image, (num_colors, 1))
+    return image.reshape(-1, 3).astype(np.uint8)
+
+def color_colormap(image: TYPE_IMAGE,
+                   usermap: Optional[TYPE_IMAGE]=None,
+                   colormap: Optional[int]=cv2.COLORMAP_JET) -> TYPE_IMAGE:
     """Colorize one input based on custom GNU Octave/MATLAB map"""
 
     image = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
     image = image[:, :, 1]
     if usermap is not None:
+        usermap = color_lut_from_image(usermap)
         return cv2.applyColorMap(image, usermap)
     return cv2.applyColorMap(image, colormap)
 
-def color_heatmap(image: np.ndarray[np.uint8],
-                  colormap:int=cv2.COLORMAP_JET,
-                  threshold:float=0.55,
-                  sigma:int=13) -> np.ndarray[np.uint8]:
+def color_heatmap(image: TYPE_IMAGE,
+                  threshold:Optional[float]=0.55,
+                  colormap:Optional[int]=cv2.COLORMAP_JET,
+                  sigma:int=13) -> TYPE_IMAGE:
     """Colorize one input based on custom GNU Octave/MATLAB map"""
 
     threshold = min(1, max(0, threshold)) * 255
@@ -571,6 +590,96 @@ def color_heatmap(image: np.ndarray[np.uint8],
     image = cv2.applyColorMap(image, colormap)
     return cv2.addWeighted(image, 0.5, image, 0.5, 0)
 
+def color_average(image: TYPE_IMAGE) -> TYPE_IMAGE:
+    return adjust_pixelate(image, 256)
+
+def color_theory_complementary(color: TYPE_PIXEL) -> TYPE_PIXEL:
+    return tuple(max(0, min(255, 255 - c)) for c in color)
+
+def color_theory_monochromatic(color: TYPE_PIXEL) -> tuple[TYPE_PIXEL, TYPE_PIXEL]:
+    return [
+        color_theory_complementary((color[0] + 30, color[1] + 30, color[2] + 30)),
+        color_theory_complementary((color[0] - 30, color[1] - 30, color[2] - 30))
+    ]
+
+def color_theory_split_complementary(color: TYPE_PIXEL) -> tuple[TYPE_PIXEL, TYPE_PIXEL]:
+    return [
+        color_theory_complementary((color[0] + 30, color[1] - 30, color[2])),
+        color_theory_complementary((color[0] - 30, color[1] + 30, color[2]))
+    ]
+
+def color_theory_analogous(color: TYPE_PIXEL) -> tuple[TYPE_PIXEL, TYPE_PIXEL]:
+    return [
+        color_theory_complementary((color[0] + 20, color[1] + 20, color[2])),
+        color_theory_complementary((color[0] - 20, color[1] - 20, color[2]))
+    ]
+
+def color_theory_triadic(color: TYPE_PIXEL) -> tuple[TYPE_PIXEL, TYPE_PIXEL]:
+    return [
+        color_theory_complementary((color[0] + 120, color[1] + 120, color[2])),
+        color_theory_complementary((color[0] - 120, color[1] - 120, color[2]))
+    ]
+
+def color_theory_tetradic(color: TYPE_PIXEL) -> tuple[TYPE_PIXEL, TYPE_PIXEL, TYPE_PIXEL]:
+    return [
+        color_theory_complementary((color[0] + 60, color[1] + 60, color[2] + 60)),
+        color_theory_monochromatic(color)[0],
+        color_theory_monochromatic(color)[1]
+    ]
+
+def color_theory_square(color: TYPE_PIXEL) -> tuple[TYPE_PIXEL, TYPE_PIXEL, TYPE_PIXEL]:
+    return [
+        color_theory_complementary((color[0] + 90, color[1] + 90, color[2])),
+        color_theory_complementary((color[0] + 180, color[1] + 180, color[2])),
+        color_theory_complementary((color[0] + 270, color[1] + 270, color[2]))
+    ]
+
+def color_theory_rectangular(color: TYPE_PIXEL) -> tuple[TYPE_PIXEL, TYPE_PIXEL, TYPE_PIXEL]:
+    return [
+        color_theory_complementary((color[0] + 60, color[1] + 60, color[2])),
+        color_theory_complementary((color[0] + 180, color[1] + 180, color[2])),
+        color_theory_complementary((color[0] + 240, color[1] + 240, color[2]))
+    ]
+
+def color_theory_compound(color: TYPE_PIXEL) -> tuple[TYPE_PIXEL, TYPE_PIXEL, TYPE_PIXEL]:
+    return [
+        color_theory_complementary((color[0] + 180, color[1] + 180, color[2])),
+        color_theory_complementary((color[0] + 30, color[1] + 30, color[2])),
+        color_theory_complementary((color[0] + 210, color[1] + 210, color[2]))
+    ]
+
+def color_theory(image: TYPE_IMAGE, scheme: EnumColorTheory=EnumColorTheory.COMPLIMENTARY) -> tuple[TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE]:
+
+    aR = aG = aB = bR = bG = bB = cR = cG = cB = 0
+    color = color_average(image)[0, 0]
+    match scheme:
+        case EnumColorTheory.COMPLIMENTARY:
+            a = color_theory_complementary(color)
+            aR, aG, aB = a
+        case EnumColorTheory.MONOCHROMATIC:
+            a, b = color_theory_monochromatic(color)
+            aR, aG, aB, bR, bG, bB = *a, *b
+        case EnumColorTheory.SPLIT_COMPLIMENTARY:
+            aR, aG, aB, bR, bG, bB = color_theory_split_complementary(color)
+        case EnumColorTheory.ANALOGOUS:
+            aR, aG, aB, bR, bG, bB = color_theory_analogous(color)
+        case EnumColorTheory.TRIADIC:
+            aR, aG, aB, bR, bG, bB = color_theory_triadic(color)
+        case EnumColorTheory.TETRADIC:
+            aR, aG, aB, bR, bG, bB, cR, cG, cB = color_theory_tetradic(color)
+        case EnumColorTheory.SQUARE:
+            aR, aG, aB, bR, bG, bB, cR, cG, cB = color_theory_square(color)
+        case EnumColorTheory.RECTANGULAR:
+            aR, aG, aB, bR, bG, bB, cR, cG, cB = color_theory_rectangular(color)
+        case EnumColorTheory.COMPOUND:
+            aR, aG, aB, bR, bG, bB, cR, cG, cB = color_theory_compound(color)
+
+    return (
+        np.stack([aR, aG, aB], axis=-1),
+        np.stack([bR, bG, bB], axis=-1),
+        np.stack([cR, cG, cB], axis=-1)
+    )
+
 # COMP
 
 def channel_count(image) -> None:
@@ -582,7 +691,7 @@ def channel_count(image) -> None:
 
 def pixel_block(width:int, height:int,
                 color:tuple[float, float, float]=(0,0,0),
-                chan:int=1) -> np.ndarray[np.uint8]:
+                chan:int=1) -> TYPE_IMAGE:
 
     if chan == 3:
         image = np.zeros((height, width, chan), dtype=np.uint8)
@@ -595,12 +704,12 @@ def pixel_block(width:int, height:int,
     image[:, :] = max(*luma) * 255
     return image
 
-def comp_fill(image: np.ndarray[np.uint8],
-              center: tuple[int, int],
+def comp_fill(image:TYPE_IMAGE,
+              center:TYPE_COORD,
               width:int, height:int,
               fill:tuple[float, float, float]=(1,1,1),
               mode:EnumScaleMode=EnumScaleMode.NONE,
-              resample:EnumInterpolation=EnumInterpolation.LANCZOS4) -> np.ndarray[np.uint8]:
+              resample:EnumInterpolation=EnumInterpolation.LANCZOS4) -> TYPE_IMAGE:
     """
     Fills a block of pixels with a matte or stretched to width x height.
     """
@@ -626,10 +735,10 @@ def comp_fill(image: np.ndarray[np.uint8],
         blank[y1: y2, x1: x2, :3] = image
     return blank
 
-def comp_lerp(imageA:np.ndarray[np.uint8],
-              imageB:np.ndarray[np.uint8],
-              mask:np.ndarray=None,
-              alpha:float=1.) -> np.ndarray[np.uint8]:
+def comp_lerp(imageA:TYPE_IMAGE,
+              imageB:TYPE_IMAGE,
+              mask:TYPE_IMAGE=None,
+              alpha:float=1.) -> TYPE_IMAGE:
 
     imageA = imageA.astype(np.float32)
     imageB = imageB.astype(np.float32)
@@ -650,14 +759,14 @@ def comp_lerp(imageA:np.ndarray[np.uint8],
     imageA = cv2.add(imageA, imageB)
     return imageA.astype(np.uint8)
 
-def comp_blend(imageA:Optional[np.ndarray[np.uint8]]=None,
-               imageB:Optional[np.ndarray[np.uint8]]=None,
-               mask:Optional[np.ndarray[np.uint8]]=None,
+def comp_blend(imageA:Optional[TYPE_IMAGE]=None,
+               imageB:Optional[TYPE_IMAGE]=None,
+               mask:Optional[TYPE_IMAGE]=None,
                blendOp:BlendType=BlendType.NORMAL,
                alpha:float=1,
                fill:tuple[float, float, float]=(1,1,1),
                mode:EnumScaleMode=EnumScaleMode.NONE,
-               resample:EnumInterpolation=EnumInterpolation.LANCZOS4) -> np.ndarray[np.uint8]:
+               resample:EnumInterpolation=EnumInterpolation.LANCZOS4) -> TYPE_IMAGE:
 
     # Determine the maximum sizes among imageA, imageB
     max_width = max(
@@ -712,18 +821,21 @@ def comp_blend(imageA:Optional[np.ndarray[np.uint8]]=None,
 
 # ADJUST
 
-def adjust_threshold(image:np.ndarray[np.uint8],
+def adjust_threshold(image:TYPE_IMAGE,
                      threshold:float=0.5,
                      mode:EnumThreshold=EnumThreshold.BINARY,
                      adapt:EnumThresholdAdapt=EnumThresholdAdapt.ADAPT_NONE,
                      block:int=3,
-                     const:float=0.) -> np.ndarray[np.uint8]:
+                     const:float=0.) -> TYPE_IMAGE:
 
-    if adapt != EnumThresholdAdapt.ADAPT_NONE:
+    const = max(-100, min(100, const))
+    block = max(3, block if block % 2 == 1 else block + 1)
+    if adapt != EnumThresholdAdapt.ADAPT_NONE.value:
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        image = cv2.adaptiveThreshold(gray, 255, adapt, cv2.THRESH_BINARY, block, const)
-        image = cv2.multiply(gray, image)
-        image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
+        gray = cv2.adaptiveThreshold(gray, 255, adapt, cv2.THRESH_BINARY, block, const)
+        gray = cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
+        # gray = np.stack([gray, gray, gray], axis=-1)
+        image = cv2.bitwise_and(image, gray)
     else:
         threshold = int(threshold * 255)
         _, image = cv2.threshold(image, threshold, 255, mode)
@@ -759,8 +871,8 @@ def adjust_levels(image: torch.Tensor, black_point:int=0, white_point=255,
     # Scale back to the range [0, 1]
     return (image + 0.5) / white_point
 
-def adjust_sharpen(image: np.ndarray[np.uint8], kernel_size=None, sigma:float=1.0,
-                   amount:float=1.0, threshold:float=0) -> np.ndarray[np.uint8]:
+def adjust_sharpen(image: TYPE_IMAGE, kernel_size=None, sigma:float=1.0,
+                   amount:float=1.0, threshold:float=0) -> TYPE_IMAGE:
     """Return a sharpened version of the image, using an unsharp mask."""
 
     kernel_size = (kernel_size, kernel_size) if kernel_size else (5, 5)
@@ -774,26 +886,71 @@ def adjust_sharpen(image: np.ndarray[np.uint8], kernel_size=None, sigma:float=1.
         np.copyto(sharpened, image, where=low_contrast_mask)
     return sharpened
 
+def adjust_quantize(image: TYPE_IMAGE, levels:int=256, iterations:int=10, epsilon:float=0.2) -> TYPE_IMAGE:
+    levels = int(max(2, min(256, levels)))
+    pixels = np.float32(image)
+    criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, iterations, epsilon)
+    _, labels, centers = cv2.kmeans(pixels, levels, None, criteria, 5, cv2.KMEANS_RANDOM_CENTERS)
+    centers = np.uint8(centers)
+    return centers[labels.flatten()].reshape(image.shape)
+
+def adjust_posterize(image: TYPE_IMAGE, levels:int=256) -> TYPE_IMAGE:
+    divisor = 256 / max(2, min(256, levels))
+    return (np.floor(image / divisor) * int(divisor)).astype(np.uint8)
+
+def adjust_pixelate(image: TYPE_IMAGE, amount:float=1.)-> TYPE_IMAGE:
+
+    h, w = image.shape[:2]
+    amount = max(0, min(1, amount))
+    block_size_h = max(1, (h * amount))
+    block_size_w = max(1, (w * amount))
+    num_blocks_h = int(np.ceil(h / block_size_h))
+    num_blocks_w = int(np.ceil(w / block_size_w))
+    block_size_h = h // num_blocks_h
+    block_size_w = w // num_blocks_w
+    pixelated_image = image.copy()
+
+    for i in range(num_blocks_h):
+        for j in range(num_blocks_w):
+            # Calculate block boundaries
+            y_start = i * block_size_h
+            y_end = min((i + 1) * block_size_h, h)
+            x_start = j * block_size_w
+            x_end = min((j + 1) * block_size_w, w)
+
+            # Average color values within the block
+            block_average = np.mean(image[y_start:y_end, x_start:x_end], axis=(0, 1))
+
+            # Fill the block with the average color
+            pixelated_image[y_start:y_end, x_start:x_end] = block_average
+
+    return pixelated_image.astype(np.uint8)
+
 # MORPHOLOGY
 
-def morph_edge_detect(image: np.ndarray[np.uint8], low: float=0.27,
-                      high:float=0.6) -> np.ndarray[np.uint8]:
+def morph_edge_detect(image: TYPE_IMAGE,
+                      ksize: int=3,
+                      low: float=0.27,
+                      high:float=0.6) -> TYPE_IMAGE:
+
     image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    image = cv2.GaussianBlur(src=image, ksize=(3, 5), sigmaX=0.5)
+    ksize = max(3, ksize)
+    image = cv2.GaussianBlur(src=image, ksize=(ksize, ksize+2), sigmaX=0.5)
     # Perform Canny edge detection
     return cv2.Canny(image, int(low * 255), int(high * 255))
 
-def morph_emboss(image: np.ndarray[np.uint8], amount: float=1.) -> np.ndarray[np.uint8]:
+def morph_emboss(image: TYPE_IMAGE, amount: float=1., kernel: int=2) -> TYPE_IMAGE:
+    kernel = max(2, kernel)
     kernel = np.array([
-        [-2,    -1,     0],
-        [-1,    1,      1],
-        [0,     1,      2]
+        [-kernel,    -kernel+1,     0],
+        [-kernel+1,    kernel-1,      1],
+        [kernel-2,     kernel-1,      2]
     ]) * amount
     return cv2.filter2D(src=image, ddepth=-1, kernel=kernel)
 
 # KERNELS
 
-def MEDIAN3x3(image: np.ndarray) -> np.ndarray[np.uint8]:
+def MEDIAN3x3(image: TYPE_IMAGE) -> TYPE_IMAGE:
     height, width, _ = image.shape
     out = np.zeros([height, width])
     for i in range(1, height-1):
@@ -814,7 +971,7 @@ def MEDIAN3x3(image: np.ndarray) -> np.ndarray[np.uint8]:
             out[i, j]= temp[4]
     return out
 
-def kernel(stride: int) -> np.ndarray[np.uint8]:
+def kernel(stride: int) -> TYPE_IMAGE:
     """
     Generate a kernel matrix with a specific stride.
 
@@ -825,7 +982,7 @@ def kernel(stride: int) -> np.ndarray[np.uint8]:
     - stride (int): The size of the square kernel matrix.
 
     Returns:
-    - np.ndarray: The generated kernel matrix.
+    - TYPE_IMAGE: The generated kernel matrix.
 
     Example:
     >>> KERNEL(3)
@@ -850,7 +1007,7 @@ def kernel(stride: int) -> np.ndarray[np.uint8]:
 # === REMAPPING ===
 # =============================================================================
 
-def coord_sphere(width: int, height: int, radius: float) -> tuple[np.ndarray[np.uint8], np.ndarray]:
+def coord_sphere(width: int, height: int, radius: float) -> tuple[TYPE_IMAGE, TYPE_IMAGE]:
     theta, phi = np.meshgrid(np.linspace(0, TAU, width), np.linspace(0, np.pi, height))
 
     x = radius * np.sin(phi) * np.cos(theta)
@@ -862,19 +1019,19 @@ def coord_sphere(width: int, height: int, radius: float) -> tuple[np.ndarray[np.
 
     return x_image.astype(np.float32), y_image.astype(np.float32)
 
-def coord_polar(width: int, height: int) -> tuple[np.ndarray[np.uint8], np.ndarray]:
+def coord_polar(width: int, height: int) -> tuple[TYPE_IMAGE, TYPE_IMAGE]:
     map_x, map_y = np.meshgrid(np.arange(width), np.arange(height))
     rho = np.sqrt((map_x - width / 2)**2 + (map_y - height / 2)**2)
     phi = np.arctan2(map_y - height / 2, map_x - width / 2)
     return rho.astype(np.float32), phi.astype(np.float32)
 
-def coord_perspective(width: int, height: int, pts: list[tuple[int, int]]) -> np.ndarray[np.uint8]:
+def coord_perspective(width: int, height: int, pts: list[TYPE_COORD]) -> TYPE_IMAGE:
     object_pts = np.float32([[0, 0], [width, 0], [width, height], [0, height]])
     pts = np.float32(pts)
     pts = np.column_stack([pts[:, 0] * width, pts[:, 1] * height])
     return cv2.getPerspectiveTransform(object_pts, pts)
 
-def coord_fisheye(width: int, height: int, distortion: float) -> tuple[np.ndarray[np.uint8], np.ndarray]:
+def coord_fisheye(width: int, height: int, distortion: float) -> tuple[TYPE_IMAGE, TYPE_IMAGE]:
     map_x, map_y = np.meshgrid(np.linspace(0., 1., width), np.linspace(0., 1., height))
 
     # normalized
@@ -887,22 +1044,22 @@ def coord_fisheye(width: int, height: int, distortion: float) -> tuple[np.ndarra
     xu, yu = ((xdu + 1) * width) / 2, ((ydu + 1) * height) / 2
     return xu.astype(np.float32), yu.astype(np.float32)
 
-def remap_sphere(image: np.ndarray[np.uint8], radius: float) -> np.ndarray[np.uint8]:
+def remap_sphere(image: TYPE_IMAGE, radius: float) -> TYPE_IMAGE:
     height, width, _ = image.shape
     map_x, map_y = coord_sphere(width, height, radius)
     return cv2.remap(image, map_x, map_y, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
 
-def remap_polar(image: np.ndarray) -> np.ndarray[np.uint8]:
+def remap_polar(image: TYPE_IMAGE) -> TYPE_IMAGE:
     height, width, _ = image.shape
     map_x, map_y = coord_polar(width, height)
     return cv2.remap(image, map_x, map_y, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
 
-def remap_perspective(image: np.ndarray[np.uint8], pts: list) -> np.ndarray[np.uint8]:
+def remap_perspective(image: TYPE_IMAGE, pts: list) -> TYPE_IMAGE:
     height, width, _ = image.shape
-    matrix: np.ndarray = coord_perspective(width, height, pts)
+    matrix: TYPE_IMAGE = coord_perspective(width, height, pts)
     return cv2.warpPerspective(image, matrix, (width, height))
 
-def remap_fisheye(image: np.ndarray[np.uint8], distort: float) -> np.ndarray[np.uint8]:
+def remap_fisheye(image: TYPE_IMAGE, distort: float) -> TYPE_IMAGE:
     height, width, _ = image.shape
     map_x, map_y = coord_fisheye(width, height, distort)
     return cv2.remap(image, map_x, map_y, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)

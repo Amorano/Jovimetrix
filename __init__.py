@@ -82,6 +82,15 @@ JOV_CONFIG_FILE = JOV_WEB / 'config.json'
 JOV_MAX_DELAY = 60.
 try: JOV_MAX_DELAY = float(os.getenv("JOV_MAX_DELAY", 60.))
 except: pass
+
+# =============================================================================
+# === TYPE SHORTCUTS ===
+# =============================================================================
+
+TYPE_PIXEL = tuple[int, int, int]
+TYPE_IMAGE = np.ndarray[np.uint8]
+TYPE_COORD = tuple[int|float, int|float]
+
 # =============================================================================
 # === CORE CLASSES ===
 # =============================================================================
@@ -410,8 +419,8 @@ def tensor2cv(tensor: torch.Tensor) -> np.ndarray[np.uint8]:
     """Torch Tensor to CV2 Matrix."""
     tensor = np.clip(255 * tensor.cpu().numpy().squeeze(), 0, 255).astype(np.uint8)
     if len(tensor.shape) > 2 and tensor.shape[2] > 3:
-        return cv2.cvtColor(tensor, cv2.COLOR_RGB2BGR)
-    return cv2.cvtColor(tensor, cv2.COLOR_RGBA2BGRA)
+        return cv2.cvtColor(tensor, cv2.COLOR_RGB2BGRA)
+    return cv2.cvtColor(tensor, cv2.COLOR_RGBA2BGR)
 
 def tensor2mask(tensor: torch.Tensor) -> np.ndarray[np.uint8]:
     """Torch Tensor to CV2 Matrix."""
@@ -452,7 +461,7 @@ def pil2mask(image: Image) -> torch.Tensor:
     return torch.from_numpy(image)
 
 
-def cv2tensor(image: np.ndarray) -> torch.Tensor:
+def cv2tensor(image: np.ndarray[np.uint8]) -> torch.Tensor:
     """CV2 Matrix to Torch Tensor."""
     if len(image.shape) > 2 and image.shape[2] > 3:
         image = cv2.cvtColor(image, cv2.COLOR_BGRA2RGBA).astype(np.float32)
@@ -460,12 +469,13 @@ def cv2tensor(image: np.ndarray) -> torch.Tensor:
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB).astype(np.float32)
     return torch.from_numpy(image / 255.0).unsqueeze(0)
 
-def cv2mask(image: np.ndarray) -> torch.Tensor:
+def cv2mask(image: np.ndarray[np.uint8]) -> torch.Tensor:
     """CV2 to Torch Tensor (Mask)."""
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY).astype(np.float32)
+    if len(image.shape) > 2:
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY).astype(np.float32)
     return torch.from_numpy(image / 255.0).unsqueeze(0)
 
-def cv2pil(image: np.ndarray) -> Image:
+def cv2pil(image: np.ndarray[np.uint8]) -> Image:
     """CV2 Matrix to PIL."""
     if len(image.shape) > 2 and image.shape[2] > 3:
         return Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGRA2RGBA))
@@ -481,13 +491,13 @@ IT_REQUIRED = {
     "required": {}
 }
 
-IT_IMAGE = {
-    "required": {
-        "image": ("IMAGE", ),
-    }}
-
 IT_PIXELS = {
     "optional": {
+        "pixels": (WILDCARD, {}),
+    }}
+
+IT_PIXELS_REQUIRED = {
+    "required": {
         "pixels": (WILDCARD, {}),
     }}
 

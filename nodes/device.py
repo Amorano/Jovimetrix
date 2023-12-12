@@ -13,12 +13,6 @@ import cv2
 import torch
 import numpy as np
 
-try:
-    import mido
-    from mido import Message, MetaMessage, MidiFile, MidiTrack, bpm2tempo, second2tick
-except:
-    print("MISSING MIDI SUPPORT")
-
 from Jovimetrix import deep_merge_dict, tensor2cv, cv2mask, cv2tensor, \
         JOVBaseNode, JOVImageBaseNode, Logger, \
         IT_PIXELS, IT_ORIENT, IT_CAM, IT_REQUIRED, \
@@ -27,7 +21,13 @@ from Jovimetrix import deep_merge_dict, tensor2cv, cv2mask, cv2tensor, \
 from Jovimetrix.sup.comp import image_grid, light_invert, geo_scalefit, EnumInterpolation, IT_SAMPLE
 from Jovimetrix.sup.stream import StreamingServer, StreamManager
 
-def save_midi():
+try:
+    import mido
+    from mido import Message, MetaMessage, MidiFile, MidiTrack, bpm2tempo, second2tick
+except:
+    Logger.warn("MISSING MIDI SUPPORT")
+
+def save_midi() -> None:
     mid = MidiFile()
     track = MidiTrack()
     mid.tracks.append(track)
@@ -43,16 +43,16 @@ def save_midi():
     track.append(MetaMessage('end_of_track'))
     mid.save('new_song.mid')
 
-def load_midi(fn):
+def load_midi(fn) -> None:
     mid = MidiFile(fn, clip=True)
     print(mid)
     for msg in mid.tracks[0]:
         print(msg)
 
-def print_message(message):
+def print_message(message) -> None:
     print(message)
 
-def poll_midi():
+def poll_midi() -> None:
     while 1:
         with mido.open_input(callback=print_message) as inport:
             for msg in inport:

@@ -3,7 +3,6 @@
  * Project: Jovimetrix
  */
 
-import { app } from "../../../scripts/app.js";
 import { JovimetrixConfigDialog } from "./config.js";
 import * as util from './util.js';
 import './extern/color.all.min.js'
@@ -11,59 +10,8 @@ import './extern/color.all.min.js'
 export let jovimetrix = null;
 
 class Jovimetrix {
-    // gets the CONFIG entry for this Node.type || Node.name
-    node_color_get(find_me) {
-        let node = util.CONFIG.color[find_me];
-        if (node) {
-            return node;
-        }
-        node = util.NODE_LIST[find_me];
-        //console.info(node);
-        if (node && node.category) {
-            //console.info(util.CONFIG);
-            const segments = node.category.split('/');
-            let k = segments.join('/');
-            while (k) {
-                const found = util.CONFIG.color[k];
-                if (found) {
-                    //console.info(found, node.category);
-                    return found;
-                }
-                const last = k.lastIndexOf('/');
-                k = last !== -1 ? k.substring(0, last) : '';
-            }
-        }
-    }
-
-    // refresh the color of a node
-    node_color_reset(node, refresh=true) {
-        const data = this.node_color_get(node.type || node.name);
-        if (data) {
-            node.bgcolor = data.body;
-            node.color = data.title;
-            // console.info(node, data);
-            if (refresh) {
-                node.setDirtyCanvas(true, true);
-            }
-        }
-    }
-
-    node_color_list(nodes) {
-        Object.entries(nodes).forEach((node) => {
-            this.node_color_reset(node, false);
-        });
-        app.graph.setDirtyCanvas(true, true);
-    }
-
-    node_color_all() {
-        app.graph._nodes.forEach((node) => {
-            this.node_color_reset(node, false);
-        });
-        app.graph.setDirtyCanvas(true, true);
-    }
-
     setup() {
-        jovimetrix.node_color_all();
+        util.node_color_all();
     }
 
     constructor() {
@@ -317,8 +265,8 @@ jsColorPicker('input.jov-color', {
         util.CONFIG.color[name][part] = AHEX;
 
         if (jovimetrix.config.overwrite) {
-            console.info(name, part, util.CONFIG.color[name][part])
-            jovimetrix.node_color_all();
+            //console.info(name, part, util.CONFIG.color[name][part])
+            util.node_color_all();
         }
 
         // for the API
