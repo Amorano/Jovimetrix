@@ -1,6 +1,6 @@
 torch
 numpy
-opencv-python-headless[ffmpeg]<=4.8.1.78
+opencv-python-headless<=4.8.1.78
 Pillow
 scikit-image
 ffmpeg-python

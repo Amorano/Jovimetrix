@@ -1,12 +1,10 @@
-import { api } from "../../../scripts/api.js";
+/**
+ * File: util.js
+ * Project: Jovimetrix
+ *
+ */
 
-async function _CONFIG() {
-    return await api_get("/jovimetrix/config");
-}
-
-async function _NODE_LIST() {
-    return await api_get("./../object_info");
-}
+import { api } from "/scripts/api.js";
 
 export const CONFIG = await api_get("/jovimetrix/config");
 export const NODE_LIST = await api_get("./../object_info");
@@ -78,7 +76,7 @@ export function convert_hex(color) {
     if (!color.HEX.includes("NAN")) {
         return '#' + color.HEX + ((color.alpha * 255) | 1 << 8).toString(16).slice(1).toUpperCase();
     }
-    return "#7F7F7FFF";
+    return "#4D4D4DEE";
 }
 
 export const local_get = (url, d) => {

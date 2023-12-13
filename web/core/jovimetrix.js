@@ -1,11 +1,12 @@
 /**
  * File: jovimetrix.js
  * Project: Jovimetrix
+ *
  */
 
 import { JovimetrixConfigDialog } from "./config.js";
 import * as util from './util.js';
-import './extern/color.all.min.js'
+import '../extern/color.all.min.js'
 
 export let jovimetrix = null;
 
@@ -67,9 +68,9 @@ export function color_clear(name) {
             }
         },
         extractValue = function(elm) {
-            const val = elm.getAttribute('color') || elm.style.backgroundColor || '#7F7F7FEE';
+            const val = elm.getAttribute('color') || elm.style.backgroundColor || '#4D4D4DEE';
             if (val.includes("NAN")) {
-                return "#7F7F7FEE";
+                return "#4D4D4DEE";
             }
             return val;
         },

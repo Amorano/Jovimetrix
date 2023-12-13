@@ -4,8 +4,8 @@
  *
  */
 
-import { app } from "../../../scripts/app.js";
-import { $el } from "../../../scripts/ui.js";
+import { app } from "/scripts/app.js";
+import { $el } from "/scripts/ui.js";
 import { jovimetrix } from "./jovimetrix.js";
 import * as util from './util.js';
 
@@ -38,11 +38,11 @@ const ext = {
                 const result = onNodeCreated ? onNodeCreated.apply(this, arguments) : undefined;
                 //console.info(nodeData.name, node);
                 if (nodeData.color === undefined) {
-                    this['color'] = (node.title || "#7F7F7FEE")
+                    this['color'] = (node.title || "#4D4D4DEE")
                 }
 
                 if (nodeData.bgcolor === undefined) {
-                    this['bgcolor'] = (node.body || "#7F7F7FEE")
+                    this['bgcolor'] = (node.body || "#4D4D4DEE")
                 }
                 /*
                 // default, box, round, card

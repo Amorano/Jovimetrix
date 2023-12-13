@@ -1,9 +1,10 @@
 /**
  * File: config.js
  * Project: Jovimetrix
+ *
  */
 
-import { ComfyDialog, $el } from "../../../scripts/ui.js";
+import { ComfyDialog, $el } from "/scripts/ui.js";
 import * as util from './util.js';
 
 var headID = document.getElementsByTagName("head")[0];
@@ -130,8 +131,8 @@ export class JovimetrixConfigDialog extends ComfyDialog {
             if (existing.includes(name) == false) {
                 var data = {
                     name: entry[0],
-                    title: '#7F7F7FEE',
-                    body: '#7F7F7FEE',
+                    title: '#4D4D4DEE',
+                    body: '#4D4D4DEE',
                 };
                 const html = util.renderTemplate(template_color_block, data);
                 colorTable.innerHTML += html;
@@ -180,7 +181,7 @@ export class JovimetrixConfigDialog extends ComfyDialog {
         nodes.forEach(entry => {
             var name = entry[0];
             if (existing.includes(name) == false) {
-                color_node.push(this.createColorBlock(name, '#7F7F7FEE', '#7F7F7FEE'));
+                color_node.push(this.createColorBlock(name, '#4D4D4DEE', '#4D4D4DEE'));
             }
 
             var cat = entry[1].category;
