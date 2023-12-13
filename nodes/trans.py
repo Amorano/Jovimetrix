@@ -12,8 +12,8 @@ from Jovimetrix import zip_longest_fill, deep_merge_dict, tensor2cv, cv2mask, cv
     IT_PIXELS, IT_TRS, IT_WH, IT_REQUIRED, IT_EDGE, \
     IT_WHMODE, IT_REQUIRED, MIN_HEIGHT, MIN_WIDTH, IT_TILE, IT_INVERT
 
-from Jovimetrix.sup.comp import geo_transform, geo_edge_wrap, geo_scalefit, geo_mirror, \
-    remap_sphere, remap_fisheye, light_invert, EnumInterpolation, IT_SAMPLE
+from Jovimetrix.sup import comp
+from Jovimetrix.sup.comp import EnumInterpolation, IT_SAMPLE
 
 # =============================================================================
 
@@ -58,7 +58,7 @@ class TransformNode(JOVImageInOutBaseNode):
             image, oX, oY, a, sX, sY, e, w, h, m, rs = data
             image = tensor2cv(image)
             rs = EnumInterpolation[rs] if rs is not None else EnumInterpolation.LANCZOS4
-            image = geo_transform(image, oX, oY, a, sX, sY, e, w, h, m, rs)
+            image = comp.geo_transform(image, oX, oY, a, sX, sY, e, w, h, m, rs)
             images.append(cv2tensor(image))
             masks.append(cv2mask(image))
 
@@ -98,7 +98,7 @@ class TRSNode(JOVImageInOutBaseNode):
             image, oX, oY, a, sX, sY, e = data
 
             image = tensor2cv(image)
-            image = geo_transform(image, oX, oY, a, sX, sY, e)
+            image = comp.geo_transform(image, oX, oY, a, sX, sY, e)
             images.append(cv2tensor(image))
             masks.append(cv2mask(image))
 
@@ -141,9 +141,9 @@ class TileNode(JOVImageInOutBaseNode):
             h = h if h is not None else MIN_HEIGHT
 
             image = tensor2cv(image)
-            image = geo_edge_wrap(image, x, y)
+            image = comp.geo_edge_wrap(image, x, y)
             rs = EnumInterpolation[rs] if rs is not None else EnumInterpolation.LANCZOS4
-            image = geo_scalefit(image, w, h, m, rs)
+            image = comp.geo_scalefit(image, w, h, m, rs)
 
             images.append(cv2tensor(image))
             masks.append(cv2mask(image))
@@ -184,10 +184,10 @@ class MirrorNode(JOVImageInOutBaseNode):
             m = mode[min(idx, len(mode)-1)]
             i = invert[min(idx, len(invert)-1)]
             if 'X' in m:
-                image = geo_mirror(image, x, 1, invert=i)
+                image = comp.geo_mirror(image, x, 1, invert=i)
 
             if 'Y' in m:
-                image = geo_mirror(image, y, 0, invert=i)
+                image = comp.geo_mirror(image, y, 0, invert=i)
 
             images.append(cv2tensor(image))
             masks.append(cv2mask(image))
@@ -230,16 +230,16 @@ class ProjectionNode(JOVImageInOutBaseNode):
             image = tensor2cv(image)
             match pr:
                 case 'SPHERICAL':
-                    image = remap_sphere(image, st)
+                    image = comp.remap_sphere(image, st)
 
                 case 'FISHEYE':
-                    image = remap_fisheye(image, st)
+                    image = comp.remap_fisheye(image, st)
 
             rs = EnumInterpolation[rs] if rs is not None else EnumInterpolation.LANCZOS4
-            image = geo_scalefit(image, w, h, m, rs)
+            image = comp.geo_scalefit(image, w, h, m, rs)
 
             if i != 0:
-                image = light_invert(image, i)
+                image = comp.light_invert(image, i)
 
             images.append(cv2tensor(image))
             masks.append(cv2mask(image))

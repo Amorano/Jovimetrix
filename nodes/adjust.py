@@ -81,6 +81,9 @@ class AdjustNode(JOVImageInOutBaseNode):
                 case EnumAdjustOP.MEAN:
                     img = comp.color_average(img)
 
+                case EnumAdjustOP.EQUALIZE:
+                    img = cv2.equalizeHist(img)
+
                 case EnumAdjustOP.PIXELATE:
                     img = comp.adjust_pixelate(img, a / 255.)
 
@@ -326,27 +329,26 @@ class LevelsNode(JOVImageInOutBaseNode):
         masks = []
         images = []
         for data in zip_longest_fill(pixels, low, mid, high, gamma, invert):
-            image, l, m, h, g, i = data
+            img, l, m, h, g, i = data
 
+            # img = tensor2pil(img)
             l = l or 0
             m = m or 0.5
             h = h or 1
             g = g or 1
             i = i or 0
 
-            # image = tensor2pil(image)
-            image = torch.maximum(image - l, torch.tensor(0.0))
-            image = torch.minimum(image, (h - l))
-            image = (image + m) - 0.5
-            image = torch.sign(image) * torch.pow(torch.abs(image), 1.0 / g)
-            image = (image + 0.5) / h
+            img = torch.maximum(img - l, torch.tensor(0.0))
+            img = torch.minimum(img, (h - l))
+            img = (img + m) - 0.5
+            img = torch.sign(img) * torch.pow(torch.abs(img), 1.0 / g)
+            img = (img + 0.5) / h
 
             if i != 0:
-                image = 1 - i - image
-                # image = light_invert(image, i)
+                img = 1 - i - img
 
-            images.append(image)
-            masks.append(image)
+            images.append(img)
+            masks.append(img)
 
         return (
             torch.stack(images),

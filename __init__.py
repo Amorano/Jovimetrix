@@ -51,7 +51,7 @@ import inspect
 import importlib
 from pathlib import Path
 from datetime import datetime
-from typing import Any, Generator
+from typing import Any, Generator, Optional, Tuple, Union
 
 import cv2
 import torch
@@ -87,9 +87,21 @@ except: pass
 # === TYPE SHORTCUTS ===
 # =============================================================================
 
-TYPE_PIXEL = tuple[int, int, int]
+TYPE_COORD = Union[
+    tuple[int, int],
+    tuple[float, float]
+]
+
+TYPE_PIXEL = Union[
+    int,
+    float,
+    Tuple[float, float, float],
+    Tuple[float, float, float, Optional[float]],
+    Tuple[int, int, int],
+    Tuple[int, int, int, Optional[int]]
+]
+
 TYPE_IMAGE = np.ndarray[np.uint8]
-TYPE_COORD = tuple[int|float, int|float]
 
 # =============================================================================
 # === CORE CLASSES ===
