@@ -256,8 +256,10 @@ def shape_polygon(width: int, height: int, size: float=1., sides: int=3, angle: 
 # === CHANNEL FUNCTIONS ===
 # =============================================================================
 
-def channel_count(image: TYPE_IMAGE) -> int:
-    return image.shape[2] if len(image.shape) > 2 else 1
+def channel_count(image: TYPE_IMAGE) -> tuple[int, EnumImageType]:
+    size = image.shape[2] if len(image.shape) > 2 else 1
+    mode = EnumImageType.RGBA if size == 4 else EnumImageType.RGB if size == 3 else EnumImageType.GRAYSCALE
+    return size, mode
 
 def channel_add(image: TYPE_IMAGE, value: TYPE_PIXEL=1.) -> TYPE_IMAGE:
     new = channel_solid(color=value, image=image)
@@ -309,8 +311,8 @@ def image_stack(images: list[TYPE_IMAGE],
         width = max(width, w)
         height = max(height, h)
 
-    center = (width // 2, height // 2)
-    images = [comp_fill(i, center, width, height, color, mode, resample) for i in images]
+    # center = (width // 2, height // 2)
+    images = [comp_fill(i, width, height, color, mode, resample) for i in images]
 
     match axis:
         case EnumOrientation.GRID:
@@ -371,13 +373,14 @@ def image_grid(data: list[TYPE_IMAGE], width: int, height: int) -> TYPE_IMAGE:
 # === GEOMETRY FUNCTIONS ===
 # =============================================================================
 
-def geo_crop(image: TYPE_IMAGE, left=None, top=None, right=None, bottom=None,
+def geo_crop(image: TYPE_IMAGE,
+             left: int=None, top: int=None, right: int=None, bottom: int=None,
              widthT: int=None, heightT: int=None, pad:bool=False,
              color: TYPE_PIXEL=0) -> TYPE_IMAGE:
 
         height, width, _ = image.shape
-        left = float(np.clip(left, 0, 1))
-        top = float(np.clip(top, 0, 1))
+        left = float(np.clip(left or 0, 0, 1))
+        top = float(np.clip(top or 0, 0, 1))
         right = float(np.clip(right or 1, 0, 1))
         bottom = float(np.clip(bottom or 1, 0, 1))
 
@@ -399,7 +402,8 @@ def geo_crop(image: TYPE_IMAGE, left=None, top=None, right=None, bottom=None,
         if (widthT == width and heightT == height) or not pad:
             return crop_img
 
-        img_padded = np.full((heightT, widthT, 3), color, dtype=np.uint8)
+        cc, _ = channel_count(image)
+        img_padded = np.full((heightT, widthT, cc), color, dtype=np.uint8)
 
         crop_height, crop_width, _ = crop_img.shape
         h2 = heightT // 2
@@ -463,18 +467,18 @@ def geo_rotate_array(image: TYPE_IMAGE, angle: float, clip: bool=True) -> TYPE_I
     # Clip the rotated image
     return rotated_image[start_height:start_height + height, start_width:start_width + width]
 
-def geo_scalefit(image: TYPE_IMAGE, width: int, height:int,
+def geo_scalefit(image: TYPE_IMAGE,
+                 width: int, height:int,
                  mode:EnumScaleMode=EnumScaleMode.NONE,
                  resample:EnumInterpolation=EnumInterpolation.LANCZOS4) -> TYPE_IMAGE:
 
-    # logspam("geo_scalefit", mode, f"[{width}x{height}]", f"rs=({resample})")
+    Logger.debug(mode, width, height, resample)
 
     match mode:
         case EnumScaleMode.ASPECT:
-            h, w, _ = image.shape
-            scalar = max(width, height)
-            scalar /= max(w, h)
-            return cv2.resize(image, None, fx=scalar, fy=scalar, interpolation=resample.value)
+            h, w = image.shape[:2]
+            aspect = min(width / w, height / h)
+            return cv2.resize(image, None, fx=aspect, fy=aspect, interpolation=resample.value)
 
         case EnumScaleMode.CROP:
             return geo_crop(image, widthT=width, heightT=height, pad=True)
@@ -604,14 +608,15 @@ def color_eval(color: TYPE_PIXEL,
                crunch:EnumGrayscaleCrunch=EnumGrayscaleCrunch.MEAN) -> TYPE_PIXEL:
 
     def parse_single_color(c: TYPE_PIXEL) -> TYPE_PIXEL:
-        if isinstance(c, int):
-            c = max(0, min(255, c))
-            if target == EnumIntFloat.FLOAT:
-                c /= 255.
-        elif isinstance(c, float):
+        if isinstance(c, float) or c != int(c):
             c = max(0, min(1, c))
             if target == EnumIntFloat.INT:
                 c = int(c * 255)
+
+        elif isinstance(c, int):
+            c = max(0, min(255, c))
+            if target == EnumIntFloat.FLOAT:
+                c /= 255.
         return c
 
     if mode == EnumImageType.GRAYSCALE:
@@ -641,7 +646,11 @@ def color_eval(color: TYPE_PIXEL,
             return (c, c, c, 255) if target == EnumIntFloat.INT else (c, c, c, 1)
 
         elif isinstance(color, (set, tuple, list)):
-            return tuple(parse_single_color(x) for x in color)
+            val = tuple(parse_single_color(x) for x in color)
+            a = 255 if target == EnumIntFloat.INT else 1
+            if len(val) < 4:
+                val += (a,) * (4 - len(val))
+            return val
 
     return color
 
@@ -844,20 +853,14 @@ def comp_lerp(imageA:TYPE_IMAGE,
 def comp_fill(image: TYPE_IMAGE,
               width: int,
               height: int,
-              color: TYPE_PIXEL=1,
-              mode: EnumScaleMode = EnumScaleMode.NONE,
-              resample: EnumInterpolation = EnumInterpolation.LANCZOS4) -> TYPE_IMAGE:
+              color: TYPE_PIXEL=1) -> TYPE_IMAGE:
     """
     Fills a block of pixels with a matte or stretched to width x height.
     """
 
-    cc = channel_count(image)
-    if mode != EnumScaleMode.NONE:
-        return geo_scalefit(image, width, height, mode, resample)
-
+    cc, chan = channel_count(image)
     y, x = image.shape[:2]
-    canvas = channel_solid(width, height, color, chan=EnumImageType.RGBA if cc == 4 else EnumImageType.RGB)
-
+    canvas = channel_solid(width, height, color, chan=chan)
     y1 = max(0, (height - y) // 2)
     y2 = min(height, y1 + y)
     x1 = max(0, (width - x) // 2)
@@ -869,71 +872,73 @@ def comp_blend(imageA:Optional[TYPE_IMAGE]=None,
                imageB:Optional[TYPE_IMAGE]=None,
                mask:Optional[TYPE_IMAGE]=None,
                blendOp:BlendType=BlendType.NORMAL,
-               alpha:float=1,
-               color:TYPE_PIXEL=1,
+               alpha:float=1.,
+               color:TYPE_PIXEL=0.,
+               sourceA:bool=True,
                mode:EnumScaleMode=EnumScaleMode.NONE,
                resample:EnumInterpolation=EnumInterpolation.LANCZOS4) -> TYPE_IMAGE:
 
-    # Determine the maximum sizes among imageA, imageB
-    max_width = max(
-        imageA.shape[1] if imageA is not None else 0,
-        imageB.shape[1] if imageB is not None else 0,
-        mask.shape[1] if mask is not None else 0
-    )
+    targetW, targetH = 0, 0
+    if mode == EnumScaleMode.NONE:
+        targetW = max(
+            imageA.shape[1] if imageA is not None else 0,
+            imageB.shape[1] if imageB is not None else 0,
+            mask.shape[1] if mask is not None else 0
+        )
 
-    max_height = max(
-        imageA.shape[0] if imageA is not None else 0,
-        imageB.shape[0] if imageB is not None else 0,
-        mask.shape[0] if mask is not None else 0
-    )
+        targetH = max(
+            imageA.shape[0] if imageA is not None else 0,
+            imageB.shape[0] if imageB is not None else 0,
+            mask.shape[0] if mask is not None else 0
+        )
+    elif sourceA:
+        if imageA is not None:
+            targetH, targetW = imageA.shape[:2]
+    else:
+        if imageB is not None:
+            targetH, targetW = imageB.shape[:2]
 
-    center = (max_width // 2, max_height // 2)
-
-    Logger.debug(max_width, max_height, blendOp, alpha, mode, resample)
+    targetW, targetH = max(0, targetW), max(0, targetH)
+    Logger.debug(targetW, targetH, blendOp, alpha, mode, resample)
     Logger.debug(imageA.shape, imageB.shape)
+    if targetH == 0 or targetW == 0:
+        return channel_solid(targetW or 1, targetH or 1, )
 
-    hA, wA = imageA.shape[:2]
-
-    if max_width == 0 and max_height == 0:
-        return np.zeros((1, 1, 3), dtype=np.uint8)
+    center = (targetW // 2, targetH // 2)
 
     def resize_input(img: TYPE_IMAGE) -> TYPE_IMAGE:
+        if img is None:
+            return channel_solid(targetW, targetH, 0., )
+
         h, w = img.shape[:2]
-        if h != max_height or w != max_width:
-            cc = channel_count(img)
+        if h != targetH or w != targetW:
+            if mode != EnumScaleMode.NONE:
+                img = geo_scalefit(img, targetW, targetH, mode, resample)
+            img = comp_fill(img, targetW, targetH, color)
+
+            cc, _ = channel_count(img)
             if cc == 3:
                 img = channel_add(img)
-
-            if mode != EnumScaleMode.NONE:
-                img = comp_fill(img, center, wA, hA, color, mode, resample)
-            else:
-                img = geo_scalefit(img, wA, hA, mode, resample)
         return img
 
-    if mask is None:
-        if mode == EnumScaleMode.NONE:
-            mask = channel_solid(wA, hA)
+    imageA = resize_input(imageA)
+    imageB = resize_input(imageB)
+    cc, _ = channel_count(imageB)
+    if cc != 4:
+        if mask is None:
+            mask = channel_solid(targetW, targetH)
         else:
-            mask = channel_solid(max_width, max_height)
-    else:
-        w, h = max_width, max_height
-        if mode == EnumScaleMode.NONE:
-            w, h = imageB.shape[:2]
-
-        if (cc := channel_count(imageB)) != 4:
-            if cc == 1:
-                imageB = channel_solid(w, h, np.mean(imageB), chan=EnumImageType.RGB)
-
-        if channel_count(mask) != 1:
-            mask = channel_solid(w, h, color_average(mask))
+            cc, _ = channel_count(mask)
+            if cc != 1:
+                mask = channel_solid(targetW, targetH, color_average(mask))
 
         hM, wM = mask.shape[:2]
-        if hM != h or wM != w:
-            mask = geo_scalefit(mask, w, h, EnumScaleMode.FIT)
+        if hM != targetH or wM != targetW:
+            if mode != EnumScaleMode.NONE:
+                mask = geo_scalefit(mask, targetW, targetH, mode, resample)
+            mask = comp_fill(mask, targetW, targetH, 0)
 
-    imageB[:, :, 3] = mask[:, :, 0]
-    imageB = resize_input(imageB)
-    imageA = resize_input(imageA)
+        imageB[:, :, 3] = mask[:, :, 0]
 
     Logger.debug(imageA.shape, imageB.shape)
 
@@ -942,8 +947,8 @@ def comp_blend(imageA:Optional[TYPE_IMAGE]=None,
         def xyz(img: TYPE_IMAGE) -> TYPE_IMAGE:
             h, w = img.shape[:2]
             y, x = max(0, center[1] - h // 2), max(0, center[0] - w // 2)
-            canvas = channel_solid(max_width, max_height, 0, chan=EnumImageType.RGBA)
-            canvas[y: y + h, x: x + w, :cc] = img
+            canvas = channel_solid(targetW, targetH, 0, chan=EnumImageType.RGBA)
+            canvas[y: y + h, x: x + w, :4] = img
             return canvas
 
         imageA = xyz(imageA)
@@ -1243,12 +1248,19 @@ def testColorConvert() -> None:
     Logger.debug(color_eval(255))
 
 def testBlendModes() -> None:
-    # 200 x 200
-    back = cv2.imread('./_res/img/404.png', cv2.IMREAD_UNCHANGED)
-    front = cv2.imread('./_res/img/alpha.png', cv2.IMREAD_UNCHANGED)
-    mask = cv2.imread('./_res/img/beta.png', cv2.IMREAD_UNCHANGED)
-    a = comp_blend(back, front, mask, blendOp=BlendType.MULTIPLY, alpha=1., mode=EnumScaleMode.NONE)
-    cv2.imwrite('./_res/img/_ground.png', a)
+    # all sizes and scale modes should work
+    back = cv2.imread('./_res/img/test_back.png', cv2.IMREAD_UNCHANGED)
+    fore = cv2.imread('./_res/img/test_fore.png', cv2.IMREAD_UNCHANGED)
+    mask = cv2.imread('./_res/img/test_mask.png', cv2.IMREAD_UNCHANGED)
+    for op in BlendType:
+        for m in EnumScaleMode:
+            for switch in [True, False]:
+                a = comp_blend(back, fore, mask, blendOp=op, alpha=1., color=(227, 227, 0), mode=m, sourceA=switch)
+                cv2.imwrite(f'./_res/tst/blend-{op.name}-{m.name}-{switch}-0.png', a)
+                a = comp_blend(back, fore, mask, blendOp=op, alpha=0.5, color=(227, 227, 0), mode=m, sourceA=switch)
+                cv2.imwrite(f'./_res/tst/blend-{op.name}-{m.name}-{switch}-1.png', a)
+                a = comp_blend(back, fore, mask, blendOp=op, alpha=0, color=(227, 227, 0), mode=m, sourceA=switch)
+                cv2.imwrite(f'./_res/tst/blend-{op.name}-{m.name}-{switch}-2.png', a)
 
 if __name__ == "__main__":
     testBlendModes()

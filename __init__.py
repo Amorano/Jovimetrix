@@ -51,7 +51,7 @@ import inspect
 import importlib
 from pathlib import Path
 from datetime import datetime
-from typing import Any, Generator, Optional, Tuple, Union
+from typing import Any, List, Generator, Optional, Tuple, Union
 
 import cv2
 import torch
@@ -101,7 +101,7 @@ TYPE_PIXEL = Union[
     Tuple[int, int, int, Optional[int]]
 ]
 
-TYPE_IMAGE = np.ndarray[np.uint8]
+TYPE_IMAGE = Union[np.ndarray, torch.Tensor]
 
 # =============================================================================
 # === CORE CLASSES ===
@@ -304,7 +304,13 @@ except Exception as e:
 # == SUPPORT FUNCTIONS
 # =============================================================================
 
-def zip_longest_fill(*iterables) -> Generator[tuple[Any | None, ...], Any, None]:
+def zip_longest_fill(*iterables: Any) -> Generator[Tuple[Any, ...], None, None]:
+    """
+    Zip longest with fill value.
+
+    This function behaves like itertools.zip_longest, but it fills the values
+    of exhausted iterators with their own last values instead of None.
+    """
     iterators = [iter(iterable) for iterable in iterables]
 
     while True:
@@ -329,8 +335,14 @@ def zip_longest_fill(*iterables) -> Generator[tuple[Any | None, ...], Any, None]
 def deep_merge_dict(*dicts: dict) -> dict:
     """
     Deep merge multiple dictionaries recursively.
+
+    Args:
+        *dicts: Variable number of dictionaries to be merged.
+
+    Returns:
+        dict: Merged dictionary.
     """
-    def _deep_merge(d1, d2) -> Any | dict:
+    def _deep_merge(d1: Any, d2: Any) -> Any:
         if not isinstance(d1, dict) or not isinstance(d2, dict):
             return d2
 
@@ -353,7 +365,17 @@ def deep_merge_dict(*dicts: dict) -> dict:
         merged = _deep_merge(merged, d)
     return merged
 
-def grid_make(data: list[object]) -> list[object]:
+def grid_make(data: List[Any]) -> Tuple[List[List[Any]], int, int]:
+    """
+    Create a 2D grid from a 1D list.
+
+    Args:
+        data (List[Any]): Input data.
+
+    Returns:
+        Tuple[List[List[Any]], int, int]: A tuple containing the 2D grid, number of columns,
+        and number of rows.
+    """
     size = len(data)
     grid = int(math.sqrt(size))
     if grid * grid < size:
@@ -422,76 +444,110 @@ def load_psd(image) -> list:
 # === MATRIX SUPPORT ===
 # =============================================================================
 
-def tensor2pil(tensor: torch.Tensor) -> Image:
-    """Torch Tensor to PIL Image."""
+def tensor2pil(tensor: torch.Tensor) -> Image.Image:
+    """Convert a torch Tensor to a PIL Image."""
     tensor = np.clip(255 * tensor.cpu().numpy().squeeze(), 0, 255).astype(np.uint8)
-    return Image.fromarray(tensor)
+    if len(tensor.shape) == 2:
+        return Image.fromarray(tensor, mode='L')
+    elif len(tensor.shape) == 3 and tensor.shape[2] == 3:
+        return Image.fromarray(tensor, mode='RGB')
+    elif len(tensor.shape) == 3 and tensor.shape[2] == 4:
+        return Image.fromarray(tensor, mode='RGBA')
 
-def tensor2cv(tensor: torch.Tensor) -> np.ndarray[np.uint8]:
-    """Torch Tensor to CV2 Matrix."""
+def tensor2cv(tensor: torch.Tensor) -> TYPE_IMAGE:
+    """Convert a torch Tensor to a CV2 Matrix."""
     tensor = np.clip(255 * tensor.cpu().numpy().squeeze(), 0, 255).astype(np.uint8)
-    if len(tensor.shape) > 2 and tensor.shape[2] > 3:
-        return cv2.cvtColor(tensor, cv2.COLOR_RGB2BGRA)
-    return cv2.cvtColor(tensor, cv2.COLOR_RGBA2BGR)
+    if len(tensor.shape) == 2:
+        return cv2.cvtColor(tensor, cv2.COLOR_GRAY2BGR)
+    elif len(tensor.shape) == 3 and tensor.shape[2] == 3:
+        return cv2.cvtColor(tensor, cv2.COLOR_RGB2BGR)
+    elif len(tensor.shape) == 3 and tensor.shape[2] == 4:
+        return cv2.cvtColor(tensor, cv2.COLOR_RGBA2BGRA)
 
-def tensor2mask(tensor: torch.Tensor) -> np.ndarray[np.uint8]:
-    """Torch Tensor to CV2 Matrix."""
+def tensor2mask(tensor: torch.Tensor) -> TYPE_IMAGE:
+    """Convert a torch Tensor to a Mask as a CV2 Matrix."""
     tensor = np.clip(255 * tensor.cpu().numpy().squeeze(), 0, 255).astype(np.uint8)
-    return cv2.cvtColor(tensor, cv2.COLOR_RGB2GRAY)
+    return tensor
 
-def tensor2np(tensor: torch.Tensor) -> np.ndarray[np.uint8]:
-    """Torch Tensor to Numpy Array."""
-    return np.clip(255 * tensor.cpu().numpy().squeeze(), 0, 255).astype(np.uint8)
-
-
-def mask2cv(tensor: torch.Tensor) -> np.ndarray[np.uint8]:
-    """Torch Tensor (Mask) to CV2 Matrix."""
+def tensor2np(tensor: torch.Tensor) -> TYPE_IMAGE:
+    """Convert a torch Tensor to a Numpy Array."""
     tensor = np.clip(255 * tensor.cpu().numpy().squeeze(), 0, 255).astype(np.uint8)
-    return cv2.cvtColor(tensor, cv2.COLOR_RGB2GRAY)
+    return tensor
 
-def mask2pil(tensor: torch.Tensor) -> Image:
-    """Torch Tensor (Mask) to PIL."""
-    if len(tensor.shape) > 2 and tensor.shape[2] > 3:
-        tensor = tensor.squeeze(0)
-    tensor = np.clip(255 * tensor.cpu().numpy().squeeze(), 0, 255).astype(np.uint8)
+def mask2cv(mask: torch.Tensor) -> TYPE_IMAGE:
+    """Convert a torch Tensor (Mask) to a CV2 Matrix."""
+    tensor = np.clip(255 * mask.cpu().numpy().squeeze(), 0, 255).astype(np.uint8)
+    return cv2.cvtColor(tensor, cv2.COLOR_GRAY2BGR)
+
+def mask2pil(mask: torch.Tensor) -> Image.Image:
+    """Convert a torch Tensor (Mask) to a PIL Image."""
+    tensor = np.clip(255 * mask.cpu().numpy().squeeze(), 0, 255).astype(np.uint8)
     return Image.fromarray(tensor, mode='L')
 
-
-def pil2tensor(image: Image) -> torch.Tensor:
-    """PIL Image to Torch Tensor."""
+def pil2tensor(image: Image.Image) -> torch.Tensor:
+    """Convert a PIL Image to a Torch Tensor."""
     return torch.from_numpy(np.array(image).astype(np.float32) / 255.0).unsqueeze(0)
 
-def pil2cv(image: Image) -> np.ndarray[np.uint8]:
-    """PIL to CV2 Matrix."""
+def pil2cv(image: Image.Image) -> TYPE_IMAGE:
+    """Convert a PIL Image to a CV2 Matrix."""
     if image.mode == 'RGBA':
         return cv2.cvtColor(np.array(image), cv2.COLOR_RGBA2BGRA)
     return cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
 
-def pil2mask(image: Image) -> torch.Tensor:
-    """PIL Image to Torch Tensor (Mask)."""
-    image = np.array(image.convert("L")).astype(np.float32) / 255.0
-    return torch.from_numpy(image)
+def pil2mask(image: Image.Image) -> torch.Tensor:
+    """Convert a PIL Image to a Torch Tensor (Mask)."""
+    return torch.from_numpy(np.array(image.convert("L")).astype(np.float32) / 255.0).unsqueeze(0)
 
-
-def cv2tensor(image: np.ndarray[np.uint8]) -> torch.Tensor:
-    """CV2 Matrix to Torch Tensor."""
-    if len(image.shape) > 2 and image.shape[2] > 3:
+def cv2tensor(image: TYPE_IMAGE) -> torch.Tensor:
+    """Convert a CV2 Matrix to a Torch Tensor."""
+    if len(image.shape) == 2:
+        # Grayscale image
+        image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB).astype(np.float32)
+    elif len(image.shape) == 3 and image.shape[2] == 1:
+        # Grayscale image with an extra channel
+        image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB).astype(np.float32)
+    elif len(image.shape) > 2 and image.shape[2] > 3:
+        # RGBA image
         image = cv2.cvtColor(image, cv2.COLOR_BGRA2RGBA).astype(np.float32)
     else:
+        # RGB image
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB).astype(np.float32)
     return torch.from_numpy(image / 255.0).unsqueeze(0)
 
-def cv2mask(image: np.ndarray[np.uint8]) -> torch.Tensor:
-    """CV2 to Torch Tensor (Mask)."""
-    if len(image.shape) > 2:
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY).astype(np.float32)
-    return torch.from_numpy(image / 255.0).unsqueeze(0)
+def cv2mask(image: TYPE_IMAGE) -> torch.Tensor:
+    """Convert a CV2 Matrix to a Torch Tensor (Mask)."""
+    if len(image.shape) == 2:
+        # Grayscale image
+        return torch.from_numpy(image / 255.0).unsqueeze(0).unsqueeze(0)
+    elif len(image.shape) == 3 and image.shape[2] == 1:
+        # Grayscale image with an extra channel
+        return torch.from_numpy(image / 255.0).unsqueeze(0)
+    elif len(image.shape) == 3 and image.shape[2] == 3:
+        # RGB image
+        gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY).astype(np.float32)
+        return torch.from_numpy(gray_image / 255.0).unsqueeze(0).unsqueeze(0)
+    elif len(image.shape) == 3 and image.shape[2] == 4:
+        # RGBA image
+        gray_image = cv2.cvtColor(image, cv2.COLOR_BGRA2GRAY).astype(np.float32)
+        return torch.from_numpy(gray_image / 255.0).unsqueeze(0).unsqueeze(0)
+    else:
+        raise ValueError("Unsupported image format")
 
-def cv2pil(image: np.ndarray[np.uint8]) -> Image:
-    """CV2 Matrix to PIL."""
-    if len(image.shape) > 2 and image.shape[2] > 3:
-        return Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGRA2RGBA))
-    return Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+def cv2pil(image: TYPE_IMAGE) -> Image.Image:
+    """Convert a CV2 Matrix to a PIL Image."""
+    if len(image.shape) == 2:
+        # Grayscale image
+        return Image.fromarray(image, mode='L')
+    elif len(image.shape) == 3:
+        if image.shape[2] == 3:
+            # RGB image
+            return Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+        elif image.shape[2] == 4:
+            # RGBA image
+            return Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGRA2RGBA))
+
+    # Default: return as-is
+    return Image.fromarray(image)
 
 # =============================================================================
 # === GLOBALS ===
