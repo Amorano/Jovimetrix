@@ -31,7 +31,7 @@ class BlendNode(JOVImageInOutBaseNode):
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"required": {
-                "func": (EnumBlendType, {"default": EnumBlendType[0]}),
+                "func": (EnumBlendType._member_names_, {"default": EnumBlendType.NORMAL.name}),
                 "alpha": ("FLOAT", {"default": 1, "min": 0, "max": 1, "step": 0.01}),
             },
             "optional": {
@@ -79,11 +79,14 @@ class BlendNode(JOVImageInOutBaseNode):
             if fl:
                 pa, pb = pb, pa
 
-            f = BlendType[f] if f is not None else BlendType.NORMAL
+            f = EnumBlendType[f] if f is not None else EnumBlendType.NORMAL
             img = comp.comp_blend(pa, pb, ma, f, a)
 
+            nh, nw = img.shape[:2]
             rs = EnumInterpolation[rs] if rs is not None else EnumInterpolation.LANCZOS4
-            img = comp.geo_scalefit(img, w, h, sm, rs)
+            if h != nh or w != nw:
+                print(w, h, nw, nh)
+                img = comp.geo_scalefit(img, w, h, sm, rs)
 
             if i != 0:
                 img = comp.light_invert(img, i)

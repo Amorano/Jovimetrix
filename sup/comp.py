@@ -134,7 +134,38 @@ class EnumColorTheory(Enum):
     RECTANGULAR = 7
     COMPOUND = 8
 
-EnumBlendType = [str(x).split('.')[-1] for x in BlendType]
+class EnumBlendType(Enum):
+	"""Rename the blend type names."""
+	NORMAL = BlendType.NORMAL
+	ADDITIVE = BlendType.ADDITIVE
+	NEGATION = BlendType.NEGATION
+	DIFFERENCE = BlendType.DIFFERENCE
+	MULTIPLY = BlendType.MULTIPLY
+	DIVIDE = BlendType.DIVIDE
+	LIGHTEN = BlendType.LIGHTEN
+	DARKEN = BlendType.DARKEN
+	SCREEN = BlendType.SCREEN
+	BURN = BlendType.COLOURBURN
+	DODGE = BlendType.COLOURDODGE
+	OVERLAY = BlendType.OVERLAY
+	HUE = BlendType.HUE
+	SATURATION = BlendType.SATURATION
+	LUMINOSITY = BlendType.LUMINOSITY
+	COLOR = BlendType.COLOUR
+	SOFT = BlendType.SOFTLIGHT
+	HARD = BlendType.HARDLIGHT
+	PIN = BlendType.PINLIGHT
+	VIVID = BlendType.VIVIDLIGHT
+	EXCLUSION = BlendType.EXCLUSION
+	REFLECT = BlendType.REFLECT
+	GLOW = BlendType.GLOW
+	XOR = BlendType.XOR
+	EXTRACT = BlendType.GRAINEXTRACT
+	MERGE = BlendType.GRAINMERGE
+	DESTIN = BlendType.DESTIN
+	DESTOUT = BlendType.DESTOUT
+	SRCATOP = BlendType.SRCATOP
+	DESTATOP = BlendType.DESTATOP
 
 # =============================================================================
 # === NODE SUPPORT ===
@@ -274,7 +305,7 @@ def channel_solid(width: int=512,
     if image is not None:
         height, width = image.shape[:2]
 
-    color = color_eval(color, chan)
+    color = np.asarray(color_eval(color, chan))
     match chan:
         case EnumImageType.GRAYSCALE:
             return np.full((height, width, 1), color, dtype=np.uint8)
@@ -472,7 +503,7 @@ def geo_scalefit(image: TYPE_IMAGE,
                  mode:EnumScaleMode=EnumScaleMode.NONE,
                  resample:EnumInterpolation=EnumInterpolation.LANCZOS4) -> TYPE_IMAGE:
 
-    Logger.debug(mode, width, height, resample)
+    Logger.spam(mode, width, height, resample)
 
     match mode:
         case EnumScaleMode.ASPECT:
@@ -619,6 +650,7 @@ def color_eval(color: TYPE_PIXEL,
                 c /= 255.
         return c
 
+    Logger.spam(color, mode, target, crunch)
     if mode == EnumImageType.GRAYSCALE:
         if isinstance(color, (int, float)):
             return parse_single_color(color)
@@ -638,7 +670,10 @@ def color_eval(color: TYPE_PIXEL,
             return (c, c, c)
 
         elif isinstance(color, (set, tuple, list)):
-            return tuple(parse_single_color(x) for x in color)
+            if len(color) < 3:
+                a = 255 if target == EnumIntFloat.INT else 1
+                color += (a,) * (3 - len(color))
+            return color[::-1]
 
     elif mode == EnumImageType.RGBA:
         if isinstance(color, (int, float)):
@@ -646,13 +681,12 @@ def color_eval(color: TYPE_PIXEL,
             return (c, c, c, 255) if target == EnumIntFloat.INT else (c, c, c, 1)
 
         elif isinstance(color, (set, tuple, list)):
-            val = tuple(parse_single_color(x) for x in color)
-            a = 255 if target == EnumIntFloat.INT else 1
-            if len(val) < 4:
-                val += (a,) * (4 - len(val))
-            return val
+            if len(color) < 4:
+                a = 255 if target == EnumIntFloat.INT else 1
+                color += (a,) * (4 - len(color))
+            return (color[2], color[1], color[0], color[3])
 
-    return color
+    return color[::-1]
 
 def color_lut_from_image(image: TYPE_IMAGE, num_colors:int=256) -> TYPE_IMAGE:
     """Create X sized LUT from an RGB image."""
@@ -874,7 +908,6 @@ def comp_blend(imageA:Optional[TYPE_IMAGE]=None,
                blendOp:BlendType=BlendType.NORMAL,
                alpha:float=1.,
                color:TYPE_PIXEL=0.,
-               sourceA:bool=True,
                mode:EnumScaleMode=EnumScaleMode.NONE,
                resample:EnumInterpolation=EnumInterpolation.LANCZOS4) -> TYPE_IMAGE:
 
@@ -891,16 +924,14 @@ def comp_blend(imageA:Optional[TYPE_IMAGE]=None,
             imageB.shape[0] if imageB is not None else 0,
             mask.shape[0] if mask is not None else 0
         )
-    elif sourceA:
-        if imageA is not None:
-            targetH, targetW = imageA.shape[:2]
-    else:
-        if imageB is not None:
-            targetH, targetW = imageB.shape[:2]
+
+    elif imageA is not None:
+        targetH, targetW = imageA.shape[:2]
+    elif imageB is not None:
+        targetH, targetW = imageB.shape[:2]
 
     targetW, targetH = max(0, targetW), max(0, targetH)
-    Logger.debug(targetW, targetH, blendOp, alpha, mode, resample)
-    Logger.debug(imageA.shape, imageB.shape)
+    Logger.debug(targetW, targetH, imageA.shape, imageB.shape, blendOp, alpha, mode, resample)
     if targetH == 0 or targetW == 0:
         return channel_solid(targetW or 1, targetH or 1, )
 
@@ -915,32 +946,36 @@ def comp_blend(imageA:Optional[TYPE_IMAGE]=None,
             if mode != EnumScaleMode.NONE:
                 img = geo_scalefit(img, targetW, targetH, mode, resample)
             img = comp_fill(img, targetW, targetH, color)
-
-            cc, _ = channel_count(img)
-            if cc == 3:
-                img = channel_add(img)
         return img
 
     imageA = resize_input(imageA)
+    while channel_count(imageA)[0] < 3:
+        imageA = channel_add(imageA, 0)
+    if channel_count(imageA)[0] < 4:
+        imageA = channel_add(imageA, 255)
+
     imageB = resize_input(imageB)
-    cc, _ = channel_count(imageB)
-    if cc != 4:
+    while (cc := channel_count(imageB)[0]) < 3:
+        imageB = channel_add(imageB, 0)
+
+    if cc < 4:
+        imageB = channel_add(imageB, 0)
         if mask is None:
             mask = channel_solid(targetW, targetH)
-        else:
-            cc, _ = channel_count(mask)
-            if cc != 1:
+        elif mask is not None:
+            if channel_count(mask)[0] != 1:
+                # crunch the mask into an actual mask if RGB(A)
                 mask = channel_solid(targetW, targetH, color_average(mask))
 
-        hM, wM = mask.shape[:2]
-        if hM != targetH or wM != targetW:
-            if mode != EnumScaleMode.NONE:
-                mask = geo_scalefit(mask, targetW, targetH, mode, resample)
-            mask = comp_fill(mask, targetW, targetH, 0)
+            hM, wM = mask.shape[:2]
+            if hM != targetH or wM != targetW:
+                if mode != EnumScaleMode.NONE:
+                    mask = geo_scalefit(mask, targetW, targetH, mode, resample)
+                mask = comp_fill(mask, targetW, targetH, 0)
 
+
+    if cc < 4 or mask is not None:
         imageB[:, :, 3] = mask[:, :, 0]
-
-    Logger.debug(imageA.shape, imageB.shape)
 
     # make an image canvas to hold A and B that fits both on center
     if mode == EnumScaleMode.NONE:
@@ -953,6 +988,8 @@ def comp_blend(imageA:Optional[TYPE_IMAGE]=None,
 
         imageA = xyz(imageA)
         imageB = xyz(imageB)
+
+    Logger.spam('end', imageA.shape, imageB.shape, mask.shape if mask is not None else 'NONE')
 
     imageA = cv2pil(imageA)
     imageB = cv2pil(imageB)
@@ -1249,18 +1286,18 @@ def testColorConvert() -> None:
 
 def testBlendModes() -> None:
     # all sizes and scale modes should work
-    back = cv2.imread('./_res/img/test_back.png', cv2.IMREAD_UNCHANGED)
-    fore = cv2.imread('./_res/img/test_fore.png', cv2.IMREAD_UNCHANGED)
-    mask = cv2.imread('./_res/img/test_mask.png', cv2.IMREAD_UNCHANGED)
+    fore = cv2.imread('./_res/img/test_rainbow.png', cv2.IMREAD_UNCHANGED)
+    back = cv2.imread('./_res/img/test_fore.png', cv2.IMREAD_UNCHANGED)
+    # mask = cv2.imread('./_res/img/test_mask.png', cv2.IMREAD_UNCHANGED)
+    mask = None
     for op in BlendType:
         for m in EnumScaleMode:
-            for switch in [True, False]:
-                a = comp_blend(back, fore, mask, blendOp=op, alpha=1., color=(227, 227, 0), mode=m, sourceA=switch)
-                cv2.imwrite(f'./_res/tst/blend-{op.name}-{m.name}-{switch}-0.png', a)
-                a = comp_blend(back, fore, mask, blendOp=op, alpha=0.5, color=(227, 227, 0), mode=m, sourceA=switch)
-                cv2.imwrite(f'./_res/tst/blend-{op.name}-{m.name}-{switch}-1.png', a)
-                a = comp_blend(back, fore, mask, blendOp=op, alpha=0, color=(227, 227, 0), mode=m, sourceA=switch)
-                cv2.imwrite(f'./_res/tst/blend-{op.name}-{m.name}-{switch}-2.png', a)
+            a = comp_blend(back, fore, mask, blendOp=op, alpha=1., color=(255, 0, 0), mode=m)
+            cv2.imwrite(f'./_res/tst/blend-{op.name}-{m.name}-0.png', a)
+            a = comp_blend(back, fore, mask, blendOp=op, alpha=0.5, color=(0, 255, 0), mode=m)
+            cv2.imwrite(f'./_res/tst/blend-{op.name}-{m.name}-1.png', a)
+            a = comp_blend(back, fore, mask, blendOp=op, alpha=0, color=(0, 0, 255), mode=m)
+            cv2.imwrite(f'./_res/tst/blend-{op.name}-{m.name}-2.png', a)
 
 if __name__ == "__main__":
     testBlendModes()
