@@ -109,3 +109,15 @@ export function convert_hex(color) {
     return "#4D4D4DEE";
 }
 
+export function toggleFoldable(elementId, symbolId) {
+  const content = document.getElementById(elementId)
+  const symbol = document.getElementById(symbolId)
+  if (content.style.display === 'none' || content.style.display === '') {
+    content.style.display = 'flex'
+    symbol.innerHTML = '&#9661;' // Down arrow
+  } else {
+    content.style.display = 'none'
+    symbol.innerHTML = '&#9655;' // Right arrow
+  }
+}
+

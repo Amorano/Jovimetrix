@@ -37,18 +37,29 @@
   -webkit-text-fill-color: transparent;
 }
 
-#jov-close-button {
+#jov-manager-dialog button {
+  background-color: #300000;
+  color: #FFFFFF;
+  padding: 5px;
+  border-radius: 0px;
+  -moz-border-radius: 0px;
+  margin:0px
+}
+
+#jov-close-button button {
+  background-color: #202020;
   width: calc(100% - 2px);
-  bottom: 3px;
-  border: 1px solid #ccc;
+  bottom: 2px;
+  border: 2px solid #ccc;
   border-radius: 0px;
   position: absolute;
   overflow: hidden;
 }
 
-#jov-apply-button {
-  align-self: flex-end;
-  overflow: hidden;
+#jov-manager-dialog input {
+  border-style: none;
+  border-radius: 0px;
+  font-size: unset;
 }
 
 .jov-color {
@@ -59,6 +70,21 @@
 
 tr, td {
   padding: 0px;
-  margin: 0px;
   user-select: none;
+}
+
+.foldable-title {
+  cursor: pointer;
+  font-weight: bold;
+  user-select: none;
+}
+
+.foldable-symbol {
+  margin-right: 10px;
+}
+
+.foldable-content {
+  display: none;
+  flex-direction: column;
+  margin-left: 20px;
 }

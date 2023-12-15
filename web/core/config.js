@@ -17,8 +17,8 @@ headID.appendChild(cssNode);
 const template_color_block = `
 <tr>
     <td style="color: white; text-align: right; background: {{ background }}">{{ name }}</td>
-    <td><input class="jov-color" type="text" name="{{ name }}" value="title" color="{{title}}" part="title"></input></td>
-    <td><input class="jov-color" type="text" name="{{ name }}" value="body" color="{{body}}" part="body"></input></td>
+    <td><input class="jov-color" type="text" name="{{ name }}" value="title" color="{{title}}"></input></td>
+    <td><input class="jov-color" type="text" name="{{ name }}" value="body" color="{{body}}"></input></td>
     <td><button type="button" onclick="color_clear('{{name}}')"></button></td>
 </tr>
 `
@@ -237,7 +237,10 @@ export class JovimetrixConfigDialog extends ComfyDialog {
             id: "jov-close-button",
             type: "button",
             textContent: "CLOSE",
-            onclick: () => this.close()
+            onclick: () => {
+                this.close();
+                this.visible = false;
+            }
         });
     }
 

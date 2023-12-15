@@ -931,7 +931,8 @@ def comp_blend(imageA:Optional[TYPE_IMAGE]=None,
         targetH, targetW = imageB.shape[:2]
 
     targetW, targetH = max(0, targetW), max(0, targetH)
-    Logger.debug(targetW, targetH, imageA.shape, imageB.shape, blendOp, alpha, mode, resample)
+    Logger.debug(targetW, targetH, imageA.shape if imageA else None, imageB.shape if imageB else None, blendOp, alpha, mode, resample)
+
     if targetH == 0 or targetW == 0:
         return channel_solid(targetW or 1, targetH or 1, )
 
@@ -972,7 +973,6 @@ def comp_blend(imageA:Optional[TYPE_IMAGE]=None,
                 if mode != EnumScaleMode.NONE:
                     mask = geo_scalefit(mask, targetW, targetH, mode, resample)
                 mask = comp_fill(mask, targetW, targetH, 0)
-
 
     if cc < 4 or mask is not None:
         imageB[:, :, 3] = mask[:, :, 0]
@@ -1292,11 +1292,11 @@ def testBlendModes() -> None:
     mask = None
     for op in BlendType:
         for m in EnumScaleMode:
-            a = comp_blend(back, fore, mask, blendOp=op, alpha=1., color=(255, 0, 0), mode=m)
+            a = comp_blend(None, fore, mask, blendOp=op, alpha=1., color=(255, 0, 0), mode=m)
             cv2.imwrite(f'./_res/tst/blend-{op.name}-{m.name}-0.png', a)
-            a = comp_blend(back, fore, mask, blendOp=op, alpha=0.5, color=(0, 255, 0), mode=m)
+            a = comp_blend(back, None, mask, blendOp=op, alpha=0.5, color=(0, 255, 0), mode=m)
             cv2.imwrite(f'./_res/tst/blend-{op.name}-{m.name}-1.png', a)
-            a = comp_blend(back, fore, mask, blendOp=op, alpha=0, color=(0, 0, 255), mode=m)
+            a = comp_blend(back, fore, None, blendOp=op, alpha=0, color=(0, 0, 255), mode=m)
             cv2.imwrite(f'./_res/tst/blend-{op.name}-{m.name}-2.png', a)
 
 if __name__ == "__main__":

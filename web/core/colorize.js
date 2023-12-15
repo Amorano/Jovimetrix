@@ -351,7 +351,7 @@ jsColorPicker('input.jov-color', {
     convertCallback: function(data, options) {
         const AHEX = util.convert_hex(data);
         var name = this.patch.attributes.name.value;
-        var part = this.patch.attributes.part.value;
+        var part = this.patch.attributes.value.value;
 
         if (util.THEME[name] === undefined) {
             util.THEME[name] = {};
