@@ -43,6 +43,7 @@ GO NUTS; JUST TRY NOT TO DO IT IN YOUR HEAD.
 @version: 0.98
 """
 
+from ast import Global
 import os
 import math
 import json
@@ -166,7 +167,14 @@ class Session(metaclass=Singleton):
         return [x for x in files if x.endswith('.json') or x.endswith('.html')]
 
     def __init__(self, *arg, **kw) -> None:
-        if not JOV_CONFIG_FILE.exists():
+        global JOV_CONFIG
+        found = False
+        if JOV_CONFIG_FILE.exists():
+            configLoad()
+            # is this an old config, copy default (sorry, not sorry)
+            found = JOV_CONFIG.get('user', None) is not None
+
+        if not found:
             try:
                 shutil.copy2(JOV_DEFAULT, JOV_CONFIG_FILE)
                 Logger.warn("---> DEFAULT CONFIGURATION <---")
@@ -252,6 +260,20 @@ class AnyType(str):
 
 WILDCARD = AnyType("*")
 
+#
+#
+#
+
+def configLoad() -> None:
+    global JOV_CONFIG
+    try:
+        with open(JOV_CONFIG_FILE, 'r', encoding='utf-8') as fn:
+            JOV_CONFIG = json.load(fn)
+    except (IOError, FileNotFoundError) as e:
+        pass
+    except Exception as e:
+        print(e)
+
 # =============================================================================
 # == CUSTOM API RESPONSES
 # =============================================================================
@@ -260,28 +282,23 @@ try:
     @PromptServer.instance.routes.get("/jovimetrix/config")
     async def jovimetrix_config(request) -> Any:
         global JOV_CONFIG
-        try:
-            with open(JOV_CONFIG_FILE, 'r', encoding='utf-8') as fn:
-                JOV_CONFIG = json.load(fn)
-        except (IOError, FileNotFoundError) as e:
-            pass
-        except Exception as e:
-            print(e)
+        configLoad()
         return web.json_response(JOV_CONFIG)
 
     @PromptServer.instance.routes.post("/jovimetrix/config")
     async def jovimetrix_config_post(request) -> Any:
         json_data = await request.json()
-        name = json_data['name']
-        part = json_data['part']
-        color = json_data['color']
-        Logger.spam(name, part, color)
+        did = json_data.get("id", None)
+        value = json_data.get("v", None)
+        if did is None or value is None:
+            Logger.error("bad config", json_data)
+            return
+
         global JOV_CONFIG
-        entry = JOV_CONFIG['color'].get(name, {})
-        entry[part] = color
-        JOV_CONFIG['color'][name] = entry
+        update_nested_dict(JOV_CONFIG, did, value)
+        Logger.spam(did, value)
         with open(JOV_CONFIG_FILE, 'w', encoding='utf-8') as f:
-            json.dump(JOV_CONFIG, f)
+            json.dump(JOV_CONFIG, f, indent=4)
         return web.json_response(json_data)
 
     @PromptServer.instance.routes.post("/jovimetrix/config/clear")
@@ -303,6 +320,21 @@ except Exception as e:
 # =============================================================================
 # == SUPPORT FUNCTIONS
 # =============================================================================
+
+def update_nested_dict(d, path, value) -> None:
+    keys = path.split('.')
+    current = d
+
+    for key in keys[:-1]:
+        current = current.setdefault(key, {})
+
+    last_key = keys[-1]
+
+    # Check if the key already exists
+    if last_key in current and isinstance(current[last_key], dict):
+        current[last_key].update(value)
+    else:
+        current[last_key] = value
 
 def zip_longest_fill(*iterables: Any) -> Generator[Tuple[Any, ...], None, None]:
     """

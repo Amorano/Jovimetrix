@@ -4,10 +4,11 @@
  */
 
 #jov-manager-dialog {
-  width: 560px;
-  height: 630px;
+  min-width: 410px;
+  height: 620px;
   font-size: 15px;
-  padding: 1px;
+  padding: 0px;
+  margin: 0px;
   z-index: 10000;
   overflow: visible;
   box-shadow: 0 0 8px #648064;
@@ -17,7 +18,7 @@
 
 .jov-config-color {
   background-color: rgb(15, 15, 15);
-  max-height: 570px;
+  max-height: 550px;
   overflow-x: hidden;
   overflow-y: auto;
 }
@@ -37,7 +38,7 @@
 }
 
 #jov-close-button {
-  width: calc(100% - 4px);
+  width: calc(100% - 2px);
   bottom: 3px;
   border: 1px solid #ccc;
   border-radius: 0px;
@@ -52,11 +53,12 @@
 
 .jov-color {
   text-align: center;
-  font-size: 0.75em;
-  width: 50px;
-  border: 1px solid #aaa;
+  font-size: 0.72em;
+  width: 35px;
 }
 
 tr, td {
+  padding: 0px;
+  margin: 0px;
   user-select: none;
 }

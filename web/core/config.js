@@ -16,7 +16,7 @@ headID.appendChild(cssNode);
 
 const template_color_block = `
 <tr>
-    <td style="color: white; text-align: right">{{ name }}</td>
+    <td style="color: white; text-align: right; background: {{ background }}">{{ name }}</td>
     <td><input class="jov-color" type="text" name="{{ name }}" value="title" color="{{title}}" part="title"></input></td>
     <td><input class="jov-color" type="text" name="{{ name }}" value="body" color="{{body}}" part="body"></input></td>
     <td><button type="button" onclick="color_clear('{{name}}')"></button></td>
@@ -110,111 +110,67 @@ export class JovimetrixConfigDialog extends ComfyDialog {
                 ]),
             ]);
 
-        var existing = [];
-        const COLORS = Object.entries(util.CONFIG.color);
-        COLORS.forEach(entry => {
-            existing.push(entry[0]);
-            var data = {
-                name: entry[0],
-                title: entry[1].title,
-                body: entry[1].body
-            };
-            const html = util.renderTemplate(template_color_block, data);
-            colorTable.innerHTML += html;
+        // now the rest which are untracked and their "categories"
+
+        var category = [];
+        const all_nodes = Object.entries(util.NODE_LIST);
+
+        all_nodes.sort(function (a, b) {
+            return a[1].category.toLowerCase().localeCompare(b[1].category.toLowerCase());
         });
 
-        // now the rest which are untracked and their "categories"
-        var categories = [];
-        const nodes = Object.entries(util.NODE_LIST);
-        nodes.forEach(entry => {
+        var background = ["#1A1F1A", "#1D1A1A"];
+        var background_title = ["#1A271A", "#2A1A1A"];
+        var background_index = 0;
+
+        all_nodes.forEach(entry => {
             var name = entry[0];
-            if (existing.includes(name) == false) {
-                var data = {
+            var data = {};
+
+            var html = "";
+            var cat = entry[1].category
+
+            if(category.includes(cat) == false) {
+                background_index = (background_index + 1) % 2;
+                if (util.THEME.hasOwnProperty(cat)) {
+                    data = {
+                        name: cat,
+                        title: util.THEME[cat].title,
+                        body: util.THEME[cat].body,
+                        background: background[background_index]
+                    };
+                } else {
+                    data = {
+                        name: cat,
+                        title: '#4D4D4DEE',
+                        body: '#4D4D4DEE',
+                        background: background_title[background_index]
+                    };
+                }
+                html = util.renderTemplate(template_color_block, data);
+                colorTable.innerHTML += html;
+                category.push(cat);
+            }
+
+            if (util.THEME.hasOwnProperty(name)) {
+                data = {
+                    name: entry[0],
+                    title: util.THEME[name].title,
+                    body: util.THEME[name].body,
+                    background: background[background_index]
+                };
+            } else {
+                data = {
                     name: entry[0],
                     title: '#4D4D4DEE',
                     body: '#4D4D4DEE',
+                    background: background[background_index]
                 };
-                const html = util.renderTemplate(template_color_block, data);
-                colorTable.innerHTML += html;
             }
-
-            var cat = entry[1].category;
-            if (categories.includes(cat) == false) {
-                categories.push(cat);
-            }
+            html = util.renderTemplate(template_color_block, data);
+            colorTable.innerHTML += html;
         });
-
-        categories.sort(function (a, b) {
-            return a.toLowerCase().localeCompare(b.toLowerCase());
-        });
-
-        Object.entries(categories).forEach(entry => {
-            if (existing.includes(entry[1]) == false) {
-                var data = {
-                    name: entry[1],
-                    title: '#3F3F3FEE',
-                    body: '#3F3F3FEE',
-                };
-                const html = util.renderTemplate(template_color_block, data);
-                colorTable.innerHTML += html;
-            }
-        });
-		return [header];
-	}
-
-    // @TODO: re-write parser as straight $el
-    createColorPalettes2() {
-        var existing = [];
-        const color_user = [];
-        const color_node = [];
-        const color_group = [];
-        const COLORS = Object.entries(util.CONFIG.color);
-
-        COLORS.forEach(entry => {
-            existing.push(entry[0]);
-            color_user.push(this.createColorBlock(entry[0], entry[1].title, entry[1].body));
-        });
-
-        // now the rest which are untracked and their "categories"
-        var categories = [];
-        const nodes = Object.entries(util.NODE_LIST);
-        nodes.forEach(entry => {
-            var name = entry[0];
-            if (existing.includes(name) == false) {
-                color_node.push(this.createColorBlock(name, '#4D4D4DEE', '#4D4D4DEE'));
-            }
-
-            var cat = entry[1].category;
-            if (categories.includes(cat) == false) {
-                categories.push(cat);
-            }
-        });
-
-        categories.sort(function (a, b) {
-            return a.toLowerCase().localeCompare(b.toLowerCase());
-        });
-
-        Object.entries(categories).forEach(entry => {
-            if (existing.includes(entry[1]) == false) {
-                color_group.push(this.createColorBlock(entry[1], '#3F3F3FEE', '#3F3F3FEE'));
-            }
-        });
-
-        const colorUserElements = color_user.map(row => $el("tr", row));
-        const colorNodeElements = color_node.map(row => $el("tr", row));
-        const colorGroupElements = color_group.map(row => $el("tr", row));
-
-        return [
-            $el("div.jov-config-column", [
-                $el("table", [
-                    $el("thead", [
-                        $el("tr", [...colorUserElements]),
-                        $el("tr", [...colorNodeElements]),
-                        $el("tr", [...colorGroupElements]),
-                    ]),
-                ]),
-            ])
-        ];
+        return [header];
 	}
 
     createTitle() {
@@ -257,11 +213,15 @@ export class JovimetrixConfigDialog extends ComfyDialog {
                             }, [
                                 $el("input", {
                                     type: "checkbox",
-                                    checked: this.overwrite,
-
+                                    checked: util.CONFIG_USER.color.overwrite,
                                     style: { color: "white" },
                                     onclick: (cb) => {
-                                        this.overwrite = cb.target.checked;
+                                        util.CONFIG_USER.color.overwrite = cb.target.checked;
+                                        var data = {
+                                            id: util.USER + '.color.overwrite',
+                                            v: util.CONFIG_USER.color.overwrite
+                                        }
+                                        util.api_post('/jovimetrix/config', data);
                                     }
                                 })
                             ]),
@@ -294,16 +254,31 @@ export class JovimetrixConfigDialog extends ComfyDialog {
         return content;
     }
 
+    color_clear(name) {
+        var body = {
+            "name": name,
+        }
+        util.api_post("/jovimetrix/config/clear", body);
+        delete util.THEME[name];
+    }
+
     constructor() {
         super();
+        this.color_group_titleA = "#1A1F1A";
+        this.color_group_backA = "#1A1F1A";
+        this.color_group_titleB = "#1A271A";
+        this.color_group_backB = "#2A1A1A";
         this.headerTitle = null;
         this.overwrite = false;
+        this.visible = false;
         this.title = this.createTitle();
         this.element = $el("div.comfy-modal", { id:'jov-manager-dialog', parent: document.body }, [ this.createContent() ]);
     }
 
 	show() {
+        this.visible = !this.visible;
         this.headerTitle.innerText = this.createTitle();
-        this.element.style.display = "block";
+        this.element.style.display = this.visible ? "block" : "";
     }
 }
+

@@ -4,14 +4,45 @@
  *
  */
 
+import { app } from "/scripts/app.js";
 import { api } from "/scripts/api.js";
 
-export const CONFIG = await api_get("/jovimetrix/config");
-export const NODE_LIST = await api_get("./../object_info");
+export async function api_get(url) {
+    var response = await api.fetchApi(url, { cache: "no-store" });
+    return await response.json();
+}
+
+export async function api_post(url, data) {
+    return api.fetchApi(url, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+    });
+}
+
+export async function local_get(url, d) {
+    const v = localStorage.getItem(url);
+    if (v && !isNaN(+v)) {
+        return v;
+    }
+    return d;
+};
+
+export async function local_set(url, v) {
+    localStorage.setItem(url, v);
+};
+
+export let NODE_LIST = await api_get("./../object_info");
+export let CONFIG_CORE = await api_get("/jovimetrix/config");
+export let CONFIG_USER = CONFIG_CORE.user.default;
+export let THEME = CONFIG_USER.color.theme;
+export let USER = 'user.default';
 
 // gets the CONFIG entry for this Node.type || Node.name
 export function node_color_get(find_me) {
-    let node = CONFIG.color[find_me];
+    let node = THEME[find_me];
     if (node) {
         return node;
     }
@@ -22,7 +53,7 @@ export function node_color_get(find_me) {
         const segments = node.category.split('/');
         let k = segments.join('/');
         while (k) {
-            const found = CONFIG.color[k];
+            const found = THEME[k];
             if (found) {
                 //console.info(found, node.category);
                 return found;
@@ -58,8 +89,7 @@ export function node_color_all() {
         this.node_color_reset(node, false);
     });
     app.graph.setDirtyCanvas(true, true);
-
-    //node_color_list(app.graph._nodes);
+    // console.info("JOVI] all nodes color refreshed");
 }
 
 export function renderTemplate(template, data) {
@@ -79,32 +109,3 @@ export function convert_hex(color) {
     return "#4D4D4DEE";
 }
 
-export const local_get = (url, d) => {
-    const v = localStorage.getItem('jovi.' + url);
-    if (v && !isNaN(+v)) {
-        //console.info('get', 'jovi.' + url, v);
-        return v;
-    }
-    //console.info('get', 'jovi.' + url, d);
-    return d;
-};
-
-export const local_set = (url, v) => {
-    localStorage.setItem('jovi.' + url, v);
-    //console.info('set', 'jovi.' + url, v);
-};
-
-export async function api_get(url) {
-    var response = await api.fetchApi(url, { cache: "no-store" });
-    return await response.json();
-}
-
-export async function api_post(url, data) {
-    return api.fetchApi(url, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-    });
-}
