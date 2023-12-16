@@ -3,10 +3,10 @@
         "default": {
             "color": {
                 "overwrite": false,
-                "titleA": "#1A2A1A",
-                "backA": "#1A1A1A",
-                "titleB": "#2A1A1A",
-                "backB": "#1A1A1A",
+                "titleA": "#302020",
+                "backA": "#100303",
+                "titleB": "#203020",
+                "backB": "#031003",
                 "theme" : {
                     "JOVIMETRIX \ud83d\udd3a\ud83d\udfe9\ud83d\udd35/CREATE": {
                         "title": "#183F18FF",

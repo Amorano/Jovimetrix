@@ -217,51 +217,30 @@ class GLSLNode(JOVImageBaseNode):
 
     @classmethod
     def INPUT_TYPES(s) -> dict[str, dict]:
-        return {
+        d =  {
             "required": {
-                "vertex": ("STRING", {"default": """
-                                #version 330
+                "vertex": ("STRING", {"default":
+"""attribute vec4 a_position;
+void main() {
+    gl_Position = a_position;
+}
+""", "multiline": True}),
 
-                                in vec2 in_vert;
-                                void main() {
-                                    gl_Position = vec4(in_vert, 0.0, 1.0);
-                                    }
-                                """, "multiline": True}),
-                "fragment": ("STRING", {"default": """
-                                #version 330
+                "fragment": ("STRING", {"default":
+"""precision mediump float;
+void main() {
+    gl_FragColor = vec4(0.0, 0.0, 1.0, 1.0); // Blue color
+}
+""", "multiline": True}),
+}}
+        return deep_merge_dict(d, IT_WH)
 
-                                out vec4 fragColor;
-                                void main() {
-                                    fragColor = vec4(1.0, 0.0, 0.0, 1.0); // Red color
-                                }
-                                """, "multiline": True}),
-            }}
+    @classmethod
+    def IS_CHANGED(cls, *arg, **kw) -> Any:
+        return float("nan")
 
-    def run(self, vertex: str, fragment: str) -> tuple[torch.Tensor, torch.Tensor]:
-        import moderngl
-
-        # @TODO: GET ACTUAL LITEGRAPH CONTEXT?
-        ctx = moderngl.create_standalone_context(share=True)
-
-        prog = ctx.program(vertex_shader=vertex, fragment_shader=fragment)
-
-        # Create a simple quad
-        vertices = np.array([-1, -1, 1, -1, -1, 1, 1, 1], dtype=np.float32)
-        vbo = ctx.buffer(vertices)
-
-        # Create a vertex array
-        vao = ctx.simple_vertex_array(prog, vbo, 'in_vert')
-
-        # Render the quad
-        fbo = ctx.framebuffer(color_attachments=[ctx.texture((512, 512), 3)])
-        fbo.use()
-        vao.render(moderngl.TRIANGLE_STRIP)
-
-        # Read the pixel data
-        data = np.frombuffer(fbo.read(components=3, dtype='f1'), dtype=np.float32)
-        data = np.nan_to_num(data * 255., nan=0.)
-        data = np.clip(data, 0, 255).astype(np.uint8)
-        image = Image.frombytes('RGB', fbo.size, fbo.read(), 'raw', 'RGB', 0, -1)
+    def run(self, vertex: str, fragment: str, width: int, height: int) -> tuple[torch.Tensor, torch.Tensor]:
+        image = Image.new(mode="RGB", size=(200, 200))
         return (pil2tensor(image), pil2mask(image))
 
 # =============================================================================

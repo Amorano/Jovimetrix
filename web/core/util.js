@@ -37,7 +37,8 @@ export async function local_set(url, v) {
 export let NODE_LIST = await api_get("./../object_info");
 export let CONFIG_CORE = await api_get("/jovimetrix/config");
 export let CONFIG_USER = CONFIG_CORE.user.default;
-export let THEME = CONFIG_USER.color.theme;
+export let CONFIG_COLOR = CONFIG_USER.color;
+export let THEME = CONFIG_COLOR.theme;
 export let USER = 'user.default';
 
 // gets the CONFIG entry for this Node.type || Node.name

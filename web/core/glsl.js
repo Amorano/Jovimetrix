@@ -9,91 +9,128 @@ import { app } from "/scripts/app.js";
 const WIDTH = 512;
 const HEIGHT = 512;
 
-function createProgram(gl, vertex, fragment) {
-    const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertex);
-    const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragment);
+let GL;
+let CANVAS;
+let PROGRAM;
 
-    const program = gl.createProgram();
-    gl.attachShader(program, vertexShader);
-    gl.attachShader(program, fragmentShader);
-    gl.linkProgram(program);
+const CANVAS_TEMP = document.createElement('canvas');
 
-    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-        console.error('Unable to initialize the shader program: ' + gl.getProgramInfoLog(program));
+const vertexTestShader = `
+    attribute vec4 a_position;
+    void main() {
+        gl_Position = a_position;
+    }
+`;
+
+const fragmentTestShader = `
+    precision mediump float;
+    void main() {
+        gl_FragColor = vec4(0.0, 0.0, 1.0, 1.0); // Blue color
+    }
+`;
+
+function createShader(type, source) {
+    const shader = GL.createShader(type);
+
+    if (!shader) {
+        console.error('Unable to create shader of type ' + type);
         return null;
     }
-    return program;
-}
+    GL.shaderSource(shader, source);
+    GL.compileShader(shader);
 
-function createShader(gl, type, source) {
-    const shader = gl.createShader(type);
-    gl.shaderSource(shader, source);
-    gl.compileShader(shader);
-
-    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-        console.error('Shader compilation error: ' + this.gl.getShaderInfoLog(shader));
-        gl.deleteShader(shader);
+    if (!GL.getShaderParameter(shader, GL.COMPILE_STATUS)) {
+        console.error('Shader compilation error: ' + GL.getShaderInfoLog(shader));
+        GL.deleteShader(shader);
         return null;
     }
+    console.log('Shader compiled successfully');
     return shader;
 }
 
-function saveImageData(imageData) {
-    const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = imageData.width;
-    tempCanvas.height = imageData.height;
-    const tempContext = tempCanvas.getContext('2d');
-    tempContext.putImageData(imageData, 0, 0);
-    const dataURL = tempCanvas.toDataURL('image/png');
+function createProgram(vertex, fragment) {
+    const vertexShader = createShader(GL.VERTEX_SHADER, vertex);
+    const fragmentShader = createShader(GL.FRAGMENT_SHADER, fragment);
+
+    const program = GL.createProgram();
+    GL.attachShader(program, vertexShader);
+    GL.attachShader(program, fragmentShader);
+    GL.linkProgram(program);
+
+    if (!GL.getProgramParameter(program, GL.LINK_STATUS)) {
+        console.error('Unable to initialize the shader program: ' + GL.getProgramInfoLog(program));
+        return null;
+    }
+    console.log('Shader program linked successfully');
+    return program;
+}
+
+export async function render(program) {
+    const positionBuffer = GL.createBuffer();
+    GL.bindBuffer(GL.ARRAY_BUFFER, positionBuffer);
+    const positions = [
+        -1, -1,
+        -1, 1,
+        1, -1,
+        1, -1,
+        -1, 1,
+        1, 1,
+    ];
+    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(positions), GL.STATIC_DRAW);
+    GL.bindBuffer(GL.ARRAY_BUFFER, positionBuffer);
+    const positionAttribLocation = GL.getAttribLocation(program, 'a_position');
+    GL.vertexAttribPointer(positionAttribLocation, 2, GL.FLOAT, false, 0, 0);
+    GL.enableVertexAttribArray(positionAttribLocation);
+    GL.useProgram(program);
+    GL.drawArrays(GL.TRIANGLES, 0, 6);
+
+    const image = await CANVAS.transferToImageBitmap();
+
+    CANVAS_TEMP.width = image.width;
+    CANVAS_TEMP.height = image.height;
+    const tempContext = CANVAS_TEMP.getContext('2d');
+    tempContext.drawImage(image, 0, 0);
+    const dataURL = CANVAS_TEMP.toDataURL('image/png');
+
+    /*
     const link = document.createElement('a');
     link.href = dataURL;
     link.download = 'rendered_image.png';
     link.click();
+    */
+
+    const error = GL.getError();
+    if (error !== GL.NO_ERROR) {
+        console.error('WebGL error: ' + error);
+    }
 }
 
-function render(gl) {
-    gl.clearColor(0.0, 0.0, 0.0, 1.0);
-    gl.clear(gl.COLOR_BUFFER_BIT);
-    gl.useProgram(program);
-    gl.drawArrays(gl.POINTS, 0, 1);
-
-    const imageData = offscreenCanvas.getContext('2d').getImageData(0, 0, offscreenCanvas.width, offscreenCanvas.height);
-    saveImageData(imageData);
-}
-
+const _id = "🍩 GLSL (jov)"
+const _idjs = _id + ".js";
+//const _category = "JOVIMETRIX 🔺🟩🔵/CREATE";
+/*
+DESCRIPTION = ""
+OUTPUT_IS_LIST = (False, False, )
+POST = True
+*/
 const ext = {
-	name: "jovimetrix.glsl",
-    category: "JOVIMETRIX \ud83d\udd3a\ud83d\udfe9\ud83d\udd35/CREATE",
+	name: _idjs,
+    // category: _category,
 	async init(app) {
         // Any initial setup to run as soon as the page loads
-        this.vertexShader = `
-            attribute vec4 a_position;
-            void main() {
-                gl_Position = a_position;
-            }
-        `;
 
-        this.fragmentShader = `
-            precision mediump float;
-            void main() {
-                gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0); // Red color
-            }
-        `;
 	},
 	async setup(app) {
         // Any setup to run after the app is created
-        const offscreenCanvas = new OffscreenCanvas(WIDTH, HEIGHT);
-        this.gl = offscreenCanvas.getContext('webgl');
+        CANVAS = new OffscreenCanvas(WIDTH, HEIGHT);
 
-        if (this.gl === undefined) {
+        GL = CANVAS.getContext('webgl');
+        if (GL === undefined) {
             console.error('Unable to initialize WebGL. Your browser may not support it.');
             return;
         }
-
-        const program = createProgram(this.gl, this.vertexShader, this.fragmentShader);
-        if (!program) {
-            return;
-        }
+        PROGRAM = createProgram(vertexTestShader, fragmentTestShader);
+        await render(PROGRAM);
 	},
 	async addCustomNodeDefs(defs, app) {
 		// Object.keys(defs)
@@ -107,9 +144,50 @@ const ext = {
 	},
 	async beforeRegisterNodeDef(nodeType, nodeData, app) {
 		// Run custom logic before a node definition is registered with the graph
+        if (nodeData.name === _id) {
+            Object.keys(nodeType.prototype).forEach(key => {
+                console.log(nodeType.prototype)
+                const originalFunction = nodeType.prototype[key];
+                nodeType.prototype[key] = function () {
+                    console.info(`Function: ${key}`);
+                    return originalFunction.apply(this, arguments);
+                };
+            });
+            return
+
+            const onNodeCreated = nodeType.prototype.onNodeCreated
+            nodeType.prototype.onNodeCreated = function () {
+                const me = onNodeCreated?.apply(this);
+                console.info("MADE SHADER NODE");
+                return me
+            }
+
+            const onExecuted = nodeType.prototype.onExecuted
+            nodeType.prototype.onExecuted = function(message) {
+                onExecuted?.apply(this, message)
+                console.info("RAN SHADER NODE");
+                //render(PROGRAM);
+            }
+
+            const onAfterExecuteNode = nodeType.prototype.onAfterExecuteNode
+            nodeType.prototype.onExecuted = function(param, options) {
+                onAfterExecuteNode?.apply(this, param, options)
+                console.info("RAN SHADER");
+                //render(PROGRAM);
+            }
+
+            const onConfigure = nodeType.prototype.onConfigure;
+			nodeType.prototype.onConfigure = function () {
+				onConfigure?.apply(this, arguments);
+                console.info("hello")
+			};
+
+            console.info(nodeType.prototype)
+        }
 	},
 	async registerCustomNodes(app) {
 		// Register any custom node implementations here allowing for more flexibility than a custom node def
+
 
 	},
 	loadedGraphNode(node, app) {
@@ -120,8 +198,8 @@ const ext = {
 	nodeCreated(node, app) {
 		// Fires every time a node is constructed
 		// You can modify widgets/add handlers/etc here
-        render();
 	}
 };
 
 app.registerExtension(ext);
+

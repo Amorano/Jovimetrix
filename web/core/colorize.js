@@ -7,9 +7,7 @@
 import { app } from "/scripts/app.js";
 import { $el } from "/scripts/ui.js";
 import * as util from './util.js';
-import { JovimetrixConfigDialog } from "./config.js";
-
-export var config_dialog = null;
+import { CONFIG_DIALOG } from "./config.js";
 
 const ext = {
     name: "jovimetrix.colorize",
@@ -24,36 +22,39 @@ const ext = {
         });
 
         showButton.onclick = () => {
-            config_dialog.show();
+            CONFIG_DIALOG.show();
         };
 
         const firstKid = document.querySelector(".comfy-settings-btn")
         const parent = firstKid.parentElement;
         parent.insertBefore(showButton, firstKid.nextSibling);
     },
-    setup(app) {
+    async setup(app) {
 
-        function setting_make(id, pretty, tip, val) {
+        function setting_make(id, pretty, tip, key, junk) {
+            const local = localStorage["Comfy.Settings.jov." + id];
+            const val = local ? local : util.CONFIG_USER.color[key] ? util.CONFIG_USER.color[key] : junk;
             app.ui.settings.addSetting({
-                id: id,
+                id: 'jov.' + id,
                 name: pretty,
                 type: 'text',
                 tooltip: tip,
                 defaultValue: val,
-                onChange(value) {
-                    var data = { id: id, v: value }
+                onChange(v) {
+                    var data = { id: id, v: v }
                     util.api_post('/jovimetrix/config', data);
+                    util.CONFIG_USER.color[key] = v;
                 },
             });
         }
 
-        setting_make(util.USER + '.color.titleA', 'Group Title A 🎨🇯', 'Alternative title color for separating groups in the color configuration panel.', '#1A1A1A');
+        setting_make(util.USER + '.color.titleA', 'Group Title A 🎨🇯', 'Alternative title color for separating groups in the color configuration panel.', 'titleA', '#000');
 
-        setting_make(util.USER + '.color.backA', 'Group Back A 🎨🇯', 'Alternative color for separating groups in the color configuration panel.', '#1A1A1A');
+        setting_make(util.USER + '.color.backA', 'Group Back A 🎨🇯', 'Alternative color for separating groups in the color configuration panel.', 'backA', '#000');
 
-        setting_make(util.USER + '.color.titleB', 'Group Title B 🎨🇯', 'Alternative title color for separating groups in the color configuration panel.', '#1A1A1A');
+        setting_make(util.USER + '.color.titleB', 'Group Title B 🎨🇯', 'Alternative title color for separating groups in the color configuration panel.', 'titleB', '#000');
 
-        setting_make(util.USER + '.color.backB', 'Group Back A 🎨🇯', 'Alternative color for separating groups in the color configuration panel.', '#1A1A1A');
+        setting_make(util.USER + '.color.backB', 'Group Back A 🎨🇯', 'Alternative color for separating groups in the color configuration panel.', 'backB', '#000');
 
         if (util.CONFIG_USER.color.overwrite) {
             util.node_color_all();
@@ -88,8 +89,6 @@ const ext = {
 }
 
 app.registerExtension(ext);
-
-config_dialog = new JovimetrixConfigDialog();
 
 (function (global) {
 	if (typeof global.ColorPicker === 'undefined') {
@@ -342,7 +341,7 @@ jsColorPicker('input.jov-color', {
     readOnly: true,
     size: 2,
     multipleInstances: false,
-    appendTo: config_dialog.element,
+    appendTo: CONFIG_DIALOG.element,
     noAlpha: false,
     init: function(elm, rgb) {
         elm.style.backgroundColor = elm.getAttribute("color");

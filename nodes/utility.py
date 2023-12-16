@@ -8,6 +8,7 @@ import json
 from pickle import TRUE
 from typing import Any, Optional
 
+import comfy
 import torch
 
 from Jovimetrix import Logger, JOVBaseNode, WILDCARD
@@ -103,12 +104,12 @@ class OptionsNode(JOVBaseNode):
         o = kw.get('o', None)
         return (o, )
 
-class DisplayDataNode(JOVBaseNode):
+class DebugNode(JOVBaseNode):
     """Display any data."""
 
-    NAME = "📊 Display Data (jov)"
+    NAME = "🪲 Debug (jov)"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/UTILITY"
-    DESCRIPTION = "Display any data"
+    DESCRIPTION = "Debug data"
     OUTPUT_NODE = True
     SORT = 100
     POST = True

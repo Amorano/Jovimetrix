@@ -19,11 +19,19 @@ const template_color_block = `
     <td style="color: white; text-align: right; background: {{ background }}">{{ name }}</td>
     <td><input class="jov-color" type="text" name="{{ name }}" value="title" color="{{title}}"></input></td>
     <td><input class="jov-color" type="text" name="{{ name }}" value="body" color="{{body}}"></input></td>
-    <td><button type="button" onclick="color_clear('{{name}}')"></button></td>
 </tr>
 `
+// <td><button type="button">CLEAR!</button></td>
 
-export class JovimetrixConfigDialog extends ComfyDialog {
+function color_clear(name) {
+    util.api_post("/jovimetrix/config/clear", { "name": name });
+    delete util.THEME[name];
+    if (util.CONFIG_COLOR.overwrite) {
+        util.node_color_all();
+    }
+}
+
+class JovimetrixConfigDialog extends ComfyDialog {
 
     startDrag = (e) => {
         this.dragData = {
@@ -110,17 +118,15 @@ export class JovimetrixConfigDialog extends ComfyDialog {
                 ]),
             ]);
 
-        // now the rest which are untracked and their "categories"
-
         var category = [];
         const all_nodes = Object.entries(util.NODE_LIST);
-
         all_nodes.sort(function (a, b) {
             return a[1].category.toLowerCase().localeCompare(b[1].category.toLowerCase());
         });
 
-        var background = ["#1A1F1A", "#1D1A1A"];
-        var background_title = ["#1A271A", "#2A1A1A"];
+        const alts = util.CONFIG_COLOR
+        var background = [alts.backA, alts.backB];
+        var background_title = [alts.titleA, alts.titleB];
         var background_index = 0;
 
         all_nodes.forEach(entry => {
@@ -132,20 +138,15 @@ export class JovimetrixConfigDialog extends ComfyDialog {
 
             if(category.includes(cat) == false) {
                 background_index = (background_index + 1) % 2;
+                data = {
+                    name: cat,
+                    title: '#4D4D4DEE',
+                    body: '#4D4D4DEE',
+                    background: background_title[background_index]
+                };
                 if (util.THEME.hasOwnProperty(cat)) {
-                    data = {
-                        name: cat,
-                        title: util.THEME[cat].title,
-                        body: util.THEME[cat].body,
-                        background: background[background_index]
-                    };
-                } else {
-                    data = {
-                        name: cat,
-                        title: '#4D4D4DEE',
-                        body: '#4D4D4DEE',
-                        background: background_title[background_index]
-                    };
+                    data.title = util.THEME[cat].title,
+                    data.body = util.THEME[cat].body
                 }
                 html = util.renderTemplate(template_color_block, data);
                 colorTable.innerHTML += html;
@@ -205,26 +206,27 @@ export class JovimetrixConfigDialog extends ComfyDialog {
                 $el("td", [
                     $el("div", [
                         this.headerTitle = $el("div.jov-title", [this.title]),
-                        $el("div", [
-                            $el("label", {
-                                id: "jov-apply-button",
-                                textContent: "FORCE NODES TO SYNCHRONIZE WITH PANEL? ",
-                                style: {fontsize: "0.5em"}
-                            }, [
-                                $el("input", {
-                                    type: "checkbox",
-                                    checked: util.CONFIG_USER.color.overwrite,
-                                    style: { color: "white" },
-                                    onclick: (cb) => {
-                                        util.CONFIG_USER.color.overwrite = cb.target.checked;
-                                        var data = {
-                                            id: util.USER + '.color.overwrite',
-                                            v: util.CONFIG_USER.color.overwrite
-                                        }
-                                        util.api_post('/jovimetrix/config', data);
+                        $el("label", {
+                            id: "jov-apply-button",
+                            textContent: "FORCE NODES TO SYNCHRONIZE WITH PANEL? ",
+                            style: {fontsize: "0.5em"}
+                        }, [
+                            $el("input", {
+                                type: "checkbox",
+                                checked: util.CONFIG_USER.color.overwrite,
+                                style: { color: "white" },
+                                onclick: (cb) => {
+                                    util.CONFIG_USER.color.overwrite = cb.target.checked;
+                                    var data = {
+                                        id: util.USER + '.color.overwrite',
+                                        v: util.CONFIG_USER.color.overwrite
                                     }
-                                })
-                            ]),
+                                    util.api_post('/jovimetrix/config', data);
+                                    if (util.CONFIG_USER.color.overwrite) {
+                                        util.node_color_all();
+                                    }
+                                }
+                            })
                         ]),
                     ]),
                 ]),
@@ -232,23 +234,19 @@ export class JovimetrixConfigDialog extends ComfyDialog {
         ]);
     }
 
-    createCloseButton() {
-        return $el("button", {
-            id: "jov-close-button",
-            type: "button",
-            textContent: "CLOSE",
-            onclick: () => {
-                this.close();
-                this.visible = false;
-            }
-        });
-    }
-
     createContent() {
         const content = $el("div.comfy-modal-content", [
             this.createTitleElement(),
             $el("div.jov-config-color", [...this.createColorPalettes()]),
-            this.createCloseButton()
+            $el("button", {
+                id: "jov-close-button",
+                type: "button",
+                textContent: "CLOSE",
+                onclick: () => {
+                    this.close();
+                    this.visible = false;
+                }
+            })
         ]);
 
         content.style.width = '100%';
@@ -257,20 +255,8 @@ export class JovimetrixConfigDialog extends ComfyDialog {
         return content;
     }
 
-    color_clear(name) {
-        var body = {
-            "name": name,
-        }
-        util.api_post("/jovimetrix/config/clear", body);
-        delete util.THEME[name];
-    }
-
     constructor() {
         super();
-        this.color_group_titleA = "#1A1F1A";
-        this.color_group_backA = "#1A1F1A";
-        this.color_group_titleB = "#1A271A";
-        this.color_group_backB = "#2A1A1A";
         this.headerTitle = null;
         this.overwrite = false;
         this.visible = false;
@@ -284,4 +270,6 @@ export class JovimetrixConfigDialog extends ComfyDialog {
         this.element.style.display = this.visible ? "block" : "";
     }
 }
+
+export const CONFIG_DIALOG = new JovimetrixConfigDialog();
 

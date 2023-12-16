@@ -24,7 +24,7 @@
 }
 
 .jov-config-column {
-  flex: 1 auto 1;
+  flex: auto;
 }
 
 .jov-title {
