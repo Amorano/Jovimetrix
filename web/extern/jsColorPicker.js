@@ -1,3 +1,5 @@
+import * as util from '../core/util.js';
+
 (function (global) {
     if (typeof global.ColorPicker === 'undefined') {
         global.ColorPicker = {};

@@ -29,7 +29,7 @@ class AdjustNode(JOVImageInOutBaseNode):
         d = {"optional": {
                 "⚒️": (EnumAdjustOP._member_names_, {"default": EnumAdjustOP.BLUR.name}),
                 "radius": ("INT", {"default": 1, "min": 3,  "max": 8192, "step": 1}),
-                "amt": ("FLOAT", {"default": 1, "min": 0, "step": 0.1}),
+                "#️⃣": ("FLOAT", {"default": 1, "min": 0, "step": 0.1}),
             }}
         return deep_merge_dict(IT_PIXELS_REQUIRED, d, IT_INVERT)
 
@@ -41,7 +41,7 @@ class AdjustNode(JOVImageInOutBaseNode):
         pixels = kw.get('👾A', [None])
         op = kw.get('⚒️',[None])
         radius = radius or [None]
-        amt = amt or [None]
+        amt = kw.get('#️⃣',[None])
         invert = kw.get('🔳',[None])
 
         masks = []
@@ -190,16 +190,16 @@ class FindEdgeNode(JOVImageInOutBaseNode):
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
-                "🔻": ("FLOAT", {"default": 0.27, "min": 0, "max": 1, "step": 0.01}),
                 "🔺": ("FLOAT", {"default": 0.72, "min": 0, "max": 1, "step": 0.01}),
+                "🔻": ("FLOAT", {"default": 0.27, "min": 0, "max": 1, "step": 0.01}),
             }}
         return deep_merge_dict(IT_PIXELS_REQUIRED, d, IT_INVERT)
 
     def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor]:
 
         pixels = kw.get('👾', [None])
-        lo = kw.get('🔻', [None])
         hi = kw.get('🔺', [None])
+        lo = kw.get('🔻', [None])
         invert = kw.get('🔳', [None])
 
         masks = []
@@ -292,9 +292,9 @@ class LevelsNode(JOVImageInOutBaseNode):
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
-                "🔻": ("FLOAT", {"default": 0, "min": 0, "max": 1, "step": 0.01},),
-                "🔛": ("FLOAT", {"default": 0.5, "min": 0, "max": 1, "step": 0.01},),
                 "🔺": ("FLOAT", {"default": 1, "min": 0, "max": 1, "step": 0.01},),
+                "🔛": ("FLOAT", {"default": 0.5, "min": 0, "max": 1, "step": 0.01},),
+                "🔻": ("FLOAT", {"default": 0, "min": 0, "max": 1, "step": 0.01},),
                 "🔆": ("FLOAT", {"default": 1, "min": 0, "max": 1, "step": 0.01},),
             }}
         return deep_merge_dict(IT_REQUIRED, IT_PIXELS, d, IT_INVERT)
