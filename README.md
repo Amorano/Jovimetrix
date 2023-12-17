@@ -41,11 +41,11 @@ pip install -r requirements.txt
 
 <img
     style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
-    src="flow/overview.png"
+    src="https://github.com/Amorano/Jovimetrix-examples/blob/master/node/overview.png"
     alt="GENERAL NODE OVERVIEW">
 </img>
 
-<b><code>COPY</code> [EXAMPLE IMAGES](https://github.com/Amorano/Jovimetrix/tree/main/flow) <code>INTO COMFYUI TO LOAD SHOWN WORKFLOW</code></b>
+<b><code>COPY</code> [EXAMPLE IMAGES](https://github.com/Amorano/Jovimetrix-examples/blob/master/node) <code>INTO COMFYUI TO LOAD SHOWN WORKFLOW</code></b>
 
 <details>
   <summary><b>CREATE</b></summary>
@@ -69,17 +69,17 @@ pip install -r requirements.txt
 
 NODE | OVERVIEW | COMFY UI
 ---|---|---
-🟪 CONSTANT|Set a single RGB value. Useful for masks, overlays and general filtering|![🟪 CONSTANT](flow/node_create-constant.png "constant color node for when you need a block of color")
-✨ SHAPE GENERATOR|Generate polyhedra for masking or texture work|![✨ SHAPE GENERATOR](flow/node_create-shape.png "Generate images and masks in various polygonal shapes")
-🔆 PER PIXEL SHADER|Per Pixel user function for each R, G, B channel|![🔆 PER PIXEL SHADER](flow/node_create-pixel.png "Per Pixel shader")
-🍩 GLSL|GLSL Shader support NOT YET|![🍩 GLSL](flow/node_create-glsl.png "GLSL Shader support NOT YET")
+🟪 CONSTANT|Set a single RGB value. Useful for masks, overlays and general filtering|![🟪 CONSTANT](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/create/constant/node_create-constant.png "constant color node for when you need a block of color")
+✨ SHAPE GENERATOR|Generate polyhedra for masking or texture work|![✨ SHAPE GENERATOR](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/create/shape_generator/node_create-shape_generator.png "Generate images and masks in various polygonal shapes")
+🔆 PER PIXEL SHADER|Per Pixel user function for each R, G, B channel|![🔆 PER PIXEL SHADER](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/create/pixel_shader/node_create-pixel.png "Per Pixel shader")
+🍩 GLSL|GLSL Shader support NOT YET|![🍩 GLSL](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/create/glsl/node_create-glsl.png "GLSL Shader support NOT YET")
   </ul>
   <ul>
     <details>
       <summary><b>🟪 CONSTANT EXAMPLES</b></summary>
       <img
         style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
-        src="flow/node_create-constant-simple.png"
+        src="https://github.com/Amorano/Jovimetrix-examples/blob/master/node/create/constant/node_create-constant-simple.png"
         alt="constant color node for when you need a block of color">
       </img>
     </details>
@@ -87,7 +87,7 @@ NODE | OVERVIEW | COMFY UI
       <summary><b>✨ SHAPE GENERATOR EXAMPLES</b></summary>
       <img
         style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
-        src="flow/node_create-shape-simple.png"
+        src="https://github.com/Amorano/Jovimetrix-examples/blob/master/node/create/shape_generator/node_create-shape_generator-simple.png"
         alt="Generate images and masks in various polygonal shapes">
       </img>
     </details>
@@ -95,7 +95,7 @@ NODE | OVERVIEW | COMFY UI
       <summary><b>🔆 PER PIXEL SHADER EXAMPLES</b></summary>
       <img
         style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
-        src="flow/node_create-pixel-simple.png"
+        src="https://github.com/Amorano/Jovimetrix-examples/blob/master/node/create/pixel_shader/node_create-pixel_shader-simple.png"
         alt="Per Pixel shader">
       </img>
     </details>
@@ -103,7 +103,7 @@ NODE | OVERVIEW | COMFY UI
       <summary><b>🍩 GLSL EXAMPLES</b></summary>
       <img
         style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
-        src="flow/node_create-glsl-simple.png" alt="GLSL Shader support NOT YET">
+        src="https://github.com/Amorano/Jovimetrix-examples/blob/master/node/create/glsl/node_create-glsl-simple.png" alt="GLSL Shader support NOT YET">
       </img>
     </details>
   </ul>
@@ -119,38 +119,54 @@ NODE | OVERVIEW | COMFY UI
 
 NODE | OVERVIEW | COMFY UI
 --|---|---
-🌈 HSV|Adjust Hue, Saturation, Value, Gamma, Contrast and Exposure of an input|![🌈 HSV](flow/node_adjust-hsv.png "Adjust Hue, Saturation, Value, Gamma, Contrast and Exposure of an input")
-🕸️ ADJUST|Find Edges, Blur, Sharpen and Emboss an input|![🕸️ ADJUST](flow/node_adjust-adjust.png "Find Edges, Blur, Sharpen and Emboss an input")
-📉 THRESHOLD|Clip an input based on a mid point value|![📉 THRESHOLD](flow/node_adjust-threshold.png "Clip an input based on a mid point value")
-🛗 LEVELS|Low, Mid, High range clipping|![🛗 LEVELS](flow/node_adjust-threshold.png "Low, Mid, High range clipping")
+🕸️ ADJUST|Blur, Sharpen and Emboss an input|![🕸️ ADJUST](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/adjust/adjust/node_adjust-adjust.png "Blur, Sharpen and Emboss an input")
+💞 COLOR MATCH|Color match based on a B input or template color maps|![💞 COLOR MATCH](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/adjust/color_match/node_adjust-color_match.png "Color match based on a B input or template color maps")
+🔳 FIND EDGES|Find Edges of an input|![🔳 FIND EDGES](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/adjust/find_edges/node_adjust-find_edges.png "Find Edges of an input")
+🌈 HSV|Adjust Hue, Saturation, Value, Gamma, Contrast and Exposure of an input|![🌈 HSV](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/adjust/hsv/node_adjust-hsv.png "Adjust Hue, Saturation, Value, Gamma, Contrast and Exposure of an input")
+🛗 LEVELS|Low, Mid, High range clipping|![🛗 LEVELS](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/adjust/levels/node_adjust-levels.png "Low, Mid, High range clipping")
+📉 THRESHOLD|Clip an input based on a mid point value|![📉 THRESHOLD](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/adjust/threshold/node_adjust-threshold.png "Clip an input based on a mid point value")
   </ul>
   <ul>
-    <details>
-      <summary><b>🌈 HSV EXAMPLES</b></summary>
-      <img
-        style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
-        src="flow/node_adjust-hsv.png" alt="Adjust Hue, Saturation, Value, Gamma, Contrast and Exposure of an input">
-      </img>
-    </details>
     <details>
       <summary><b>🕸️ ADJUST EXAMPLES</b></summary>
       <img
         style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
-        src="flow/node_adjust-adjust.png" alt="Find Edges, Blur, Sharpen and Emboss an input">
+        src="https://github.com/Amorano/Jovimetrix-examples/blob/master/node/adjust/adjust/node_adjust-adjust-simple.png" alt="Blur, Sharpen and Emboss an input">
       </img>
     </details>
     <details>
-      <summary><b>📉 THRESHOLD EXAMPLES</b></summary>
+      <summary><b>💞 COLOR MATCH EXAMPLES</b></summary>
       <img
         style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
-        src="flow/node_adjust-threshold.png" alt="Clip an input based on a mid point value">
+        src="https://github.com/Amorano/Jovimetrix-examples/blob/master/node/adjust/color_match/node_adjust-color_match-simple.png" alt="Color match based on a B input or template color maps">
+      </img>
+    </details>
+    <details>
+      <summary><b>🔳 FIND EDGES EXAMPLES</b></summary>
+      <img
+        style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
+        src="https://github.com/Amorano/Jovimetrix-examples/blob/master/node/adjust/find_edges/node_adjust-find_edges-simple.png" alt="Find Edges of an input">
+      </img>
+    </details>
+    <details>
+      <summary><b>🌈 HSV EXAMPLES</b></summary>
+      <img
+        style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
+        src="https://github.com/Amorano/Jovimetrix-examples/blob/master/node/adjust/hsv/node_adjust-hsv-simple.png" alt="Adjust Hue, Saturation, Value, Gamma, Contrast and Exposure of an input">
       </img>
     </details>
     <details>
       <summary><b>🛗 LEVELS EXAMPLES</b></summary>
       <img
         style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
-        src="flow/node_adjust-threshold.png" alt="Low, Mid, High range clipping">
+        src="https://github.com/Amorano/Jovimetrix-examples/blob/master/node/adjust/levels/node_adjust-levels-simple.png" alt="Low, Mid, High range clipping">
+      </img>
+    </details>
+    <details>
+      <summary><b>📉 THRESHOLD EXAMPLES</b></summary>
+      <img
+        style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
+        src="https://github.com/Amorano/Jovimetrix-examples/blob/master/node/adjust/threshold/node_adjust-threshold-simple.png" alt="Clip an input based on a mid point value">
       </img>
     </details>
   </ul>
@@ -167,47 +183,47 @@ NODE | OVERVIEW | COMFY UI
 
 NODE | OVERVIEW | COMFY UI
 --|---|---
-🌱 TRS|Translate, Rotate, and Scale without extra options|![🌱 TRS](flow/node_trans-transform.png "Translate, Rotate, and Scale without extra options")
-🌱 TRANSFORM|Translate, Rotate, and Scale an input. Options allow for CROP or WRAPing of the edges|![🌱 TRANSFORM](flow/node_trans-transform.png "Translate, Rotate, and Scale an input. Options allow for CROP or WRAPing of the edges")
-🔳 TILE|Repeat an input along the X, Y or XY at irregular intervals|![🔳 TILE](flow/node_trans-tile.png "Repeat an input along the X, Y or XY at irregular intervals")
-🔰 MIRROR|Flip an input across the X axis, the Y Axis or both, with independent centers|![🔰 MIRROR](flow/node_trans-mirror.png "Flip an input across the X axis, the Y Axis or both, with independant centers")
-🗺️ PROJECTION|Project into various perspective transformaions|![🗺️ PROJECTION](flow/node_trans-projection.png "Project into various perspective transformaions")
+🌱 TRS|Translate, Rotate, and Scale without extra options|![🌱 TRS](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/trans/trs/node_trans-trs.png "Translate, Rotate, and Scale without extra options")
+🌱 TRANSFORM|Translate, Rotate, and Scale an input. Options allow for CROP or WRAPing of the edges|![🌱 TRANSFORM](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/trans/transform/node_trans-transform.png "Translate, Rotate, and Scale an input. Options allow for CROP or WRAPing of the edges")
+🔳 TILE|Repeat an input along the X, Y or XY at irregular intervals|![🔳 TILE](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/trans/tile/node_trans-tile.png "Repeat an input along the X, Y or XY at irregular intervals")
+🔰 MIRROR|Flip an input across the X axis, the Y Axis or both, with independent centers|![🔰 MIRROR](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/trans/mirror/node_trans-mirror.png "Flip an input across the X axis, the Y Axis or both, with independant centers")
+🗺️ PROJECTION|Project into various perspective transformations|![🗺️ PROJECTION](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/trans/projection/node_trans-projection.png "Project into various perspective transformations")
 
   <ul>
     <details>
       <summary><b>🌱 TRS EXAMPLES</b></summary>
       <img
         style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
-        src="flow/node_trans-transform-simple.png" alt="Translate, Rotate, and Scale without extra options">
+        src="https://github.com/Amorano/Jovimetrix-examples/blob/master/node/trans/trs/node_trans-trs-simple.png" alt="Translate, Rotate, and Scale without extra options">
       </img>
     </details>
     <details>
       <summary><b>🌱 TRANSFORM EXAMPLES</b></summary>
       <img
         style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
-        src="flow/node_trans-transform-simple.png" alt="Translate, Rotate, and Scale an input. Options allow for CROP or WRAPing of the edges">
+        src="https://github.com/Amorano/Jovimetrix-examples/blob/master/node/trans/transform/node_trans-transform-simple.png" alt="Translate, Rotate, and Scale an input. Options allow for CROP or WRAPing of the edges">
       </img>
     </details>
     <details>
       <summary><b>🔳 TILE EXAMPLES</b></summary>
       <img
         style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
-        src="flow/node_trans-tile-simple.png" alt="Repeat an input along the X, Y or XY at irregular intervals">
+        src="https://github.com/Amorano/Jovimetrix-examples/blob/master/node/trans/tile/node_trans-tile-simple.png" alt="Repeat an input along the X, Y or XY at irregular intervals">
       </img>
     </details>
     <details>
       <summary><b>🔰 MIRROR EXAMPLES</b></summary>
       <img
         style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
-        src="flow/node_trans-mirror-simple.png" alt="Flip an input across the X axis, the Y Axis or both, with independent centers">
+        src="https://github.com/Amorano/Jovimetrix-examples/blob/master/node/trans/mirror/node_trans-mirror-simple.png" alt="Flip an input across the X axis, the Y Axis or both, with independent centers">
       </img>
     </details>
     <details>
       <summary><b>🗺️ PROJECTION EXAMPLES</b></summary>
       <img
         style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
-        src="flow/node_trans-projection.png"
-        alt="Project into various perspective transformaions">
+        src="https://github.com/Amorano/Jovimetrix-examples/blob/master/node/trans/projection/node_trans-projection.png"
+        alt="Project into various perspective transformations">
       </img>
     </details>
   </ul>
@@ -223,46 +239,54 @@ NODE | OVERVIEW | COMFY UI
 
 NODE | OVERVIEW | COMFY UI
 --|---|---
-⚗️ BLEND|Compose 2 inputs together with optional alpha mask along a linear blend|![⚗️ BLEND](flow/node_comp-blend.png "Compose 2 inputs together an alpha mask and linear blend scalar")
-💔 PIXEL SPLIT|Splits pixel blocks into it's constituent R, G and B channels|![💔 PIXEL SPLIT](flow/node_comp-pixelsplit.png "Splits pixel blocks into it's constituent R, G and B channels")
-🫱🏿‍🫲🏼 Pixel Merge|Combines multiple inputs into a single block of pixels|![🫱🏿‍🫲🏼 Pixel Merge](flow/node_comp-pixelmerge.png "Combines multiple inputs into a single block of pixels")
-➕ MERGE|Combine two inputs into a new image, side by side, top-down or in a grid|![➕ MERGE](flow/node_trans-merge.png "Combine two inputs into a new image, side by side, top-down or in a grid")
-✂️ CROP|Clip away sections of an image and backfill the matte|![✂️ CROP](flow/node_trans-crop.png "Clip away sections of an image and backfill the matte")
+⚗️ BLEND|Compose 2 inputs together with optional alpha mask along a linear blend|![⚗️ BLEND](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/comp/blend/node_comp-blend.png "Compose 2 inputs together an alpha mask and linear blend scalar")
+💔 PIXEL SPLIT|Splits pixel blocks into it's constituent R, G and B channels|![💔 PIXEL SPLIT](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/comp/pixel_split/node_comp-pixel_split.png "Splits pixel blocks into it's constituent R, G and B channels")
+🫱🏿‍🫲🏼 Pixel Merge|Combines multiple inputs into a single block of pixels|![🫱🏿‍🫲🏼 Pixel Merge](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/comp/pixel_merge/node_comp-pixel_merge.png "Combines multiple inputs into a single block of pixels")
+➕ MERGE|Combine two inputs into a new image, side by side, top-down or in a grid|![➕ MERGE](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/comp/merge/node_comp-merge.png "Combine two inputs into a new image, side by side, top-down or in a grid")
+✂️ CROP|Clip away sections of an image and backfill the matte|![✂️ CROP](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/comp/crop/node_comp-crop.png "Clip away sections of an image and backfill the matte")
+🛞 COLOR THEORY|Generate Complimentary, Triadic and Tetradic color sets|![🛞 COLOR THEORY](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/comp/color_theory/node_comp-color_theory.png "Generate Complimentary, Triadic and Tetradic color sets")
   </ul>
   <ul>
     <details>
       <summary><b>⚗️ BLEND EXAMPLES</b></summary>
       <img
         style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
-        src="flow/node_comp-blend-simple.png" alt="Compose 2 inputs together an alpha mask and linear blend scalar">
+        src="https://github.com/Amorano/Jovimetrix-examples/blob/master/node/comp/blend/node_comp-blend-simple.png" alt="Compose 2 inputs together an alpha mask and linear blend scalar">
       </img>
     </details>
     <details>
       <summary><b>💔 PIXEL SPLIT EXAMPLES</b></summary>
       <img
         style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
-        src="flow/node_comp-pixelsplit-simple.png" alt="Splits pixel blocks into it's constituent R, G and B channels">
+        src="https://github.com/Amorano/Jovimetrix-examples/blob/master/node/comp/pixel_split/node_comp-pixel_split-simple.png" alt="Splits pixel blocks into it's constituent R, G and B channels">
       </img>
     </details>
     <details>
       <summary><b>🫱🏿‍🫲🏼 PIXEL MERGE EXAMPLES</b></summary>
       <img
         style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
-        src="flow/node_comp-pixelmerge-simple.png" alt="Combines multiple inputs into a single block of pixels">
+        src="https://github.com/Amorano/Jovimetrix-examples/blob/master/node/comp/pixel_merge/node_comp-pixel_merge-simple.png" alt="Combines multiple inputs into a single block of pixels">
       </img>
     </details>
     <details>
       <summary><b>➕ MERGE EXAMPLES</b></summary>
       <img
         style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
-        src="flow/node_trans-merge-simple.png" alt="Combine two inputs into a new image, side by side, top-down or in a grid">
+        src="https://github.com/Amorano/Jovimetrix-examples/blob/master/node/comp/merge/node_comp-merge-simple.png" alt="Combine two inputs into a new image, side by side, top-down or in a grid">
       </img>
     </details>
     <details>
       <summary><b>✂️ CROP EXAMPLES</b></summary>
       <img
         style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
-        src="flow/node_trans-crop-simple.png" alt="Flip an input across the X axis, the Y Axis or both, with independent centers">
+        src="https://github.com/Amorano/Jovimetrix-examples/blob/master/node/comp/crop/node_comp-crop-simple.png" alt="Flip an input across the X axis, the Y Axis or both, with independent centers">
+      </img>
+    </details>
+    <details>
+      <summary><b>🛞 COLOR THEORY EXAMPLES</b></summary>
+      <img
+        style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
+        src="https://github.com/Amorano/Jovimetrix-examples/blob/master/node/comp/color_theory/node_comp-color_theory-simple.png" alt="Generate Complimentary, Triadic and Tetradic color sets">
       </img>
     </details>
   </ul>
@@ -277,30 +301,22 @@ NODE | OVERVIEW | COMFY UI
 
 NODE | OVERVIEW | COMFY UI
 --|---|---
-🕛 TICK|Periodic pulse exporting normalized, delta since last pulse and count.|![🕛 TICK](flow/node_anim-tick.png "Periodic pulse exporting normalized, delta since last pulse and count")
-⏸️ DELAY|Pause processing the graph at this point for X seconds|![⏸️ DELAY](flow/node_anim-tick.png "Pause processing the graph at this point for X seconds")
-🌊 WAVE GENERATOR|Periodic and Non-Periodic Sinosodials|![🌊 WAVE GENERATOR](flow/node_anim-wavegen.png "Periodic and Non-Periodic Sinosodials")
+🕛 TICK|Periodic pulse exporting normalized, delta since last pulse and count.|![🕛 TICK](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/anim/tick/node_anim-tick.png "Periodic pulse exporting normalized, delta since last pulse and count")
+🌊 WAVE GENERATOR|Periodic and Non-Periodic Sinosodials|![🌊 WAVE GENERATOR](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/anim/wave_generator/node_anim-wave_generator.png "Periodic and Non-Periodic Sinosodials")
   </ul>
   <ul>
     <details>
       <summary><b>🕛 TICK EXAMPLES</b></summary>
       <img
         style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
-        src="flow/node_anim-tick-simple.png" alt="Periodic pulse exporting normalized, delta since last pulse and count">
-      </img>
-    </details>
-    <details>
-      <summary><b>⏸️ DELAY EXAMPLES</b></summary>
-      <img
-        style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
-        src="flow/node_anim-delay-simple.png" alt="Pause processing the graph at this point for X seconds">
+        src="https://github.com/Amorano/Jovimetrix-examples/blob/master/node/anim/tick/node_anim-tick-simple.png" alt="Periodic pulse exporting normalized, delta since last pulse and count">
       </img>
     </details>
     <details>
       <summary><b>🌊 WAVE GENERATOR EXAMPLES</b></summary>
       <img
         style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
-        src="flow/node_anim-wavegeneator-simple.png" alt="Periodic and Non-Periodic Sinosodials">
+        src="https://github.com/Amorano/Jovimetrix-examples/blob/master/node/anim/wave_generator/node_anim-wave_generator-simple.png" alt="Periodic and Non-Periodic Sinosodials">
       </img>
     </details>
   </ul>
@@ -309,20 +325,28 @@ NODE | OVERVIEW | COMFY UI
 <!---------------------------------------------------------------------------->
 
 <details>
-  <summary><b>AUDIO</b></summary>
+  <summary><b>FLOW</b></summary>
   <ul>
-    <li> </li>
+    <li></li>
 
 NODE | OVERVIEW | COMFY UI
 --|---|---
-🎶 GRAPH AUDIO|Export an audio file as a linear waveform along with the linear wave data|![🎶 GRAPH AUDIO](flow/node__audio-graphaudio.png "Export an audio file as a linear waveform along with the linear wave data")
+🕵🏽 COMPARISON|A=B, A!=B, A&gt;B, A>=B, A&lt;B, A<=B|![🕵🏽 COMPARISON](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/flow/comparison/node_flow-comparison.png "A=B, A!=B, A&gt;B, A>=B, A&lt;B, A<=B")
+🔀 IF-THEN-ELSE|IF A THEN B ELSE C|![🔀 IF-THEN-ELSE](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/flow/if-then-else/node_flow-if-then-else.png "IF A THEN B ELSE C")
   </ul>
   <ul>
     <details>
-      <summary><b>🎶 GRAPH AUDIO EXAMPLES</b></summary>
+      <summary><b>🕵🏽 COMPARISON EXAMPLES</b></summary>
       <img
         style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
-        src="flow/node_audio-graphaudio-simple.png" alt="Export an audio file as a linear waveform along with the linear wave data">
+        src="https://github.com/Amorano/Jovimetrix-examples/blob/master/node/flow/comparison/node_flow-comparison-simple.png" alt="A=B, A!=B, A&gt;B, A>=B, A&lt;B, A<=B">
+      </img>
+    </details>
+    <details>
+      <summary><b>🔀 IF-THEN-ELSE EXAMPLES</b></summary>
+      <img
+        style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
+        src="https://github.com/Amorano/Jovimetrix-examples/blob/master/node/flow/if-then-else/node_flow-if-then-else-simple.png" alt="IF A THEN B ELSE C">
       </img>
     </details>
   </ul>
@@ -339,26 +363,26 @@ NODE | OVERVIEW | COMFY UI
 
 NODE | OVERVIEW | COMFY UI
 ---|---|---
-📺 STREAM READER|Connect system media directly into ComfyUI workflows|![📺 STREAM READER](flow/node_device-stream-reader.png "Connect system media directly into ComfyUI workflows")
-🎞️ STREAM WRITER|Broadcast ComfyUI Node outputs to custom webserver endpoint|![🎞️ STREAM WRITER](flow/node_device-stream-writer.png "Broadcast ComfyUI Node outputs to custom webserver endpoint")
-🎹 MIDI PORT|Capture a MIDI port and pass controls through to Comfy|![🎹 MIDI PORT](flow/node_device-midiport.png "Capture a MIDI port and pass controls through to Comfy")
+📺 STREAM READER|Connect system media directly into ComfyUI workflows|![📺 STREAM READER](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/device/stream_reader/node_device-stream_reader.png "Connect system media directly into ComfyUI workflows")
+🎞️ STREAM WRITER|Broadcast ComfyUI Node outputs to custom webserver endpoint|![🎞️ STREAM WRITER](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/device/stream_writer/node_device-stream_writer.png "Broadcast ComfyUI Node outputs to custom webserver endpoint")
+🎹 MIDI PORT|Capture a MIDI port and pass controls through to Comfy|![🎹 MIDI PORT](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/device/midi_reader/node_device-midi_reader.png "Capture a MIDI port and pass controls through to Comfy")
  </ul>
   <ul>
     <details>
       <summary><b>📺 STREAM READER EXAMPLES</b></summary>
       <img
         style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
-        src="flow/node_device-stream-reader-simple.png"
+        src="https://github.com/Amorano/Jovimetrix-examples/blob/master/node/device/stream_reader/node_device-stream_reader-simple.png"
         alt="Simple webcam capture setup">
       </img>
       <img
         style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
-        src="flow/node_device-stream-reader-mask.png"
+        src="https://github.com/Amorano/Jovimetrix-examples/blob/master/node/device/stream_reader/node_device-stream_reader-mask.png"
         alt="Webcam with a simple shape mask for realtime overlay">
       </img>
       <img
         style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
-        src="flow/node_device-stream-reader-multiple.png"
+        src="https://github.com/Amorano/Jovimetrix-examples/blob/master/node/device/stream_reader/node_device-stream_reader-multiple.png"
         alt="Complex filtering with webcams">
       </img>
     </details>
@@ -366,16 +390,16 @@ NODE | OVERVIEW | COMFY UI
       <summary><b>🎞️ STREAM WRITER EXAMPLES</b></summary>
       <img
         style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
-        src="flow/node_device-stream-writer-simple.png"
-        alt="Simple webcam capture setup">
+        src="https://github.com/Amorano/Jovimetrix-examples/blob/master/node/device/stream_writer/node_device-stream_writer-simple.png"
+        alt="Write to a local server port">
       </img>
     </details>
     <details>
       <summary><b>🎹 MIDI PORT EXAMPLES</b></summary>
       <img
         style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
-        src="flow/node_device-midiport-simple.png"
-        alt="Simple webcam capture setup">
+        src="https://github.com/Amorano/Jovimetrix-examples/blob/master/node/device/midi_reader/node_device-midi_reader-simple.png"
+        alt="Read from a midi device">
       </img>
     </details>
   </ul>
@@ -385,35 +409,57 @@ NODE | OVERVIEW | COMFY UI
 
 
 <details>
+  <summary><b>AUDIO</b></summary>
+  <ul>
+    <li> </li>
+
+NODE | OVERVIEW | COMFY UI
+--|---|---
+🎶 GRAPH AUDIO|Export an audio file as a linear waveform along with the linear wave data|![🎶 GRAPH AUDIO](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/audio/graph_wave/node_audio-graph_wave.png "Export an audio file as a linear waveform along with the linear wave data")
+  </ul>
+  <ul>
+    <details>
+      <summary><b>🎶 GRAPH AUDIO EXAMPLES</b></summary>
+      <img
+        style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
+        src="https://github.com/Amorano/Jovimetrix-examples/blob/master/node/audio/graph_wave/node_audio-graph_wave-simple.png" alt="Export an audio file as a linear waveform along with the linear wave data">
+      </img>
+    </details>
+  </ul>
+</details>
+
+<!---------------------------------------------------------------------------->
+
+<details>
   <summary><b>UTILITY</b></summary>
   <ul>
 
 NODE | OVERVIEW | COMFY UI
 ---|---|---
-🚌 ROUTE|Send outputs of any type to any input|![🚌 ROUTE](flow/node_util-route.png "Send outputs of any type to any input")
-⚙️ OPTIONS|Change Jovimetrix Global Options|![⚙️ OPTIONS](flow/node_util-options.png "Change Jovimetrix Global Options")
-🧹 CLEAR CACHE|Forces a CUDA and Python Global Cache refresh|![🧹 CLEAR CACHE](flow/node_util-cache.png "Forces a CUDA and Python Global Cache refresh")
+🚌 ROUTE|Send outputs of any type to any input with pause or hold|![🚌 ROUTE](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/util/route/node_util-route.png "Send outputs of any type to any input")
+⚙️ OPTIONS|Change Jovimetrix Global Options|![⚙️ OPTIONS](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/util/options/node_util-options.png "Change Jovimetrix Global Options")
+🧹 CLEAR CACHE|Forces a CUDA and Python Global Cache refresh|![🧹 CLEAR CACHE](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/util/cache/node_util-cache.png "Forces a CUDA and Python Global Cache refresh")
   </ul>
   <ul>
     <details>
       <summary><b>🚌 ROUTE EXAMPLES</b></summary>
       <img
         style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
-        src="flow/node_util-route.png" alt="Send outputs of any type to any input">
+        src="https://github.com/Amorano/Jovimetrix-examples/blob/master/node/util/route/node_util-route-simple.png" alt="Send outputs of any type to any input">
       </img>
     </details>
     <details>
       <summary><b>⚙️ OPTIONS EXAMPLES</b></summary>
       <img
         style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
-        src="flow/node_util-options.png" alt="Change Jovimetrix Global Options">
+        src="https://github.com/Amorano/Jovimetrix-examples/blob/master/node/util/options/node_util-options-simple.png" alt="Change Jovimetrix Global Options">
       </img>
     </details>
     <details>
       <summary><b>🧹 CLEAR CACHE EXAMPLES</b></summary>
       <img
         style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
-        src="flow/node_util-cache.png" alt="Forces a CUDA and Python Global Cache refresh">
+        src="https://github.com/Amorano/Jovimetrix-examples/blob/master/node/util/cache/node_util-cache-simple.png" alt="Forces a CUDA and Python Global Cache refresh">
       </img>
     </details>
   </ul>
