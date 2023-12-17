@@ -600,24 +600,24 @@ IT_REQUIRED = {
 
 IT_PIXELS = {
     "optional": {
-        "pixels": (WILDCARD, {}),
+        "👾": (WILDCARD, {}),
     }}
 
 IT_PIXELS_REQUIRED = {
     "required": {
-        "pixels": (WILDCARD, {}),
+        "👾": (WILDCARD, {}),
     }}
 
 IT_PIXEL2 = {
     "optional": {
-        "pixelA": (WILDCARD, {}),
-        "pixelB": (WILDCARD, {}),
+        "👾A": (WILDCARD, {}),
+        "👾B": (WILDCARD, {}),
     }}
 
 IT_WH = {
     "optional": {
-        "width": ("INT", {"default": MIN_WIDTH, "min": 1, "max": 8192, "step": 1}),
-        "height": ("INT", {"default": MIN_HEIGHT, "min": 1, "max": 8192, "step": 1}),
+        "↔️": ("INT", {"default": MIN_WIDTH, "min": 1, "max": 8192, "step": 1}),
+        "↕️": ("INT", {"default": MIN_HEIGHT, "min": 1, "max": 8192, "step": 1}),
     }}
 
 IT_SCALEMODE = {
@@ -627,19 +627,19 @@ IT_SCALEMODE = {
 
 IT_TRANS = {
     "optional": {
-        "offsetX": ("FLOAT", {"default": 0, "min": -1, "max": 1, "step": 0.01}),
-        "offsetY": ("FLOAT", {"default": 0, "min": -1, "max": 1, "step": 0.01}),
+        "🇽": ("FLOAT", {"default": 0, "min": -1, "max": 1, "step": 0.01}),
+        "🇾": ("FLOAT", {"default": 0, "min": -1, "max": 1, "step": 0.01}),
     }}
 
 IT_ROT = {
     "optional": {
-        "angle": ("FLOAT", {"default": 0, "min": -180, "max": 180, "step": 1}),
+        "📐": ("FLOAT", {"default": 0, "min": -180, "max": 180, "step": 1}),
     }}
 
 IT_SCALE = {
     "optional": {
-        "sizeX": ("FLOAT", {"default": 1, "min": 0.01, "max": 2., "step": 0.01}),
-        "sizeY": ("FLOAT", {"default": 1, "min": 0.01, "max": 2., "step": 0.01}),
+        "➡️": ("FLOAT", {"default": 1, "min": 0.01, "max": 2., "step": 0.01}),
+        "⬆️": ("FLOAT", {"default": 1, "min": 0.01, "max": 2., "step": 0.01}),
     }}
 
 IT_TILE = {
@@ -653,26 +653,31 @@ IT_EDGE = {
         "edge": (["CLIP", "WRAP", "WRAPX", "WRAPY"], {"default": "CLIP"}),
     }}
 
+IT_FLIP = {
+    "optional": {
+        "↩️": ("BOOLEAN", {"default": False}),
+    }}
+
 IT_INVERT = {
     "optional": {
-        "invert": ("FLOAT", {"default": 0, "min": 0, "max": 1, "step": 0.01}),
+        "🔳": ("FLOAT", {"default": 0, "min": 0, "max": 1, "step": 0.01}),
     }}
 
 IT_COLOR = {
     "optional": {
-        "R": ("FLOAT", {"default": 1, "min": 0, "max": 1, "step": 0.01}),
-        "G": ("FLOAT", {"default": 1, "min": 0, "max": 1, "step": 0.01}),
-        "B": ("FLOAT", {"default": 1, "min": 0, "max": 1, "step": 0.01}),
+        "🟥": ("FLOAT", {"default": 1, "min": 0, "max": 1, "step": 0.01}),
+        "🟩": ("FLOAT", {"default": 1, "min": 0, "max": 1, "step": 0.01}),
+        "🟦": ("FLOAT", {"default": 1, "min": 0, "max": 1, "step": 0.01}),
     }}
 
 IT_ORIENT = {
     "optional": {
-        "orient": (["NORMAL", "FLIPX", "FLIPY", "FLIPXY"], {"default": "NORMAL"}),
+        "🔄": (["NORMAL", "FLIPX", "FLIPY", "FLIPXY"], {"default": "NORMAL"}),
     }}
 
 IT_CAM = {
     "optional": {
-        "zoom": ("FLOAT", {"min": 0, "max": 1, "step": 0.01, "default": 0}),
+        "⤴️": ("FLOAT", {"min": 0, "max": 1, "step": 0.01, "default": 0}),
     }}
 
 IT_TRS = deep_merge_dict(IT_TRANS, IT_ROT, IT_SCALE)

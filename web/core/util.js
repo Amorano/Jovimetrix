@@ -41,7 +41,7 @@ export let CONFIG_COLOR = CONFIG_USER.color;
 export let THEME = CONFIG_COLOR.theme;
 export let USER = 'user.default';
 
-// gets the CONFIG entry for this Node.type || Node.name
+// gets the CONFIG entry for name
 export function node_color_get(find_me) {
     let node = THEME[find_me];
     if (node) {

@@ -331,10 +331,18 @@ NODE | OVERVIEW | COMFY UI
 
 NODE | OVERVIEW | COMFY UI
 --|---|---
+🚌 ROUTE|Send outputs of any type to any input with pause or hold|![🚌 ROUTE](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/flow/route/node_flow-route.png "Send outputs of any type to any input")
 🕵🏽 COMPARISON|A=B, A!=B, A&gt;B, A>=B, A&lt;B, A<=B|![🕵🏽 COMPARISON](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/flow/comparison/node_flow-comparison.png "A=B, A!=B, A&gt;B, A>=B, A&lt;B, A<=B")
 🔀 IF-THEN-ELSE|IF A THEN B ELSE C|![🔀 IF-THEN-ELSE](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/flow/if-then-else/node_flow-if-then-else.png "IF A THEN B ELSE C")
   </ul>
   <ul>
+    <details>
+      <summary><b>🚌 ROUTE EXAMPLES</b></summary>
+      <img
+        style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
+        src="https://github.com/Amorano/Jovimetrix-examples/blob/master/node/flow/route/node_flow-route-simple.png" alt="Send outputs of any type to any input">
+      </img>
+    </details>
     <details>
       <summary><b>🕵🏽 COMPARISON EXAMPLES</b></summary>
       <img
@@ -433,21 +441,12 @@ NODE | OVERVIEW | COMFY UI
 <details>
   <summary><b>UTILITY</b></summary>
   <ul>
-
 NODE | OVERVIEW | COMFY UI
 ---|---|---
-🚌 ROUTE|Send outputs of any type to any input with pause or hold|![🚌 ROUTE](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/util/route/node_util-route.png "Send outputs of any type to any input")
 ⚙️ OPTIONS|Change Jovimetrix Global Options|![⚙️ OPTIONS](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/util/options/node_util-options.png "Change Jovimetrix Global Options")
 🧹 CLEAR CACHE|Forces a CUDA and Python Global Cache refresh|![🧹 CLEAR CACHE](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/util/cache/node_util-cache.png "Forces a CUDA and Python Global Cache refresh")
   </ul>
   <ul>
-    <details>
-      <summary><b>🚌 ROUTE EXAMPLES</b></summary>
-      <img
-        style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
-        src="https://github.com/Amorano/Jovimetrix-examples/blob/master/node/util/route/node_util-route-simple.png" alt="Send outputs of any type to any input">
-      </img>
-    </details>
     <details>
       <summary><b>⚙️ OPTIONS EXAMPLES</b></summary>
       <img

@@ -3,10 +3,14 @@ Jovimetrix - http://www.github.com/amorano/jovimetrix
 Logic and Code flow nodes
 """
 
+import time
+
 from enum import Enum
 from typing import Any
 
-from Jovimetrix import deep_merge_dict, Logger, JOVBaseNode, IT_REQUIRED, WILDCARD
+from Jovimetrix import deep_merge_dict, \
+    Logger, JOVBaseNode, \
+    JOV_MAX_DELAY, IT_REQUIRED, WILDCARD
 
 # =============================================================================
 
@@ -26,6 +30,49 @@ class EnumLogicGate(Enum):
     A_XOR_B = 10
     A_XNOR_B = 11
     A_NOT_B = 12
+
+class RouteNode(JOVBaseNode):
+    NAME = "ROUTE (JOV) 🚌"
+    CATEGORY = "JOVIMETRIX 🔺🟩🔵/FLOW"
+    DESCRIPTION = "Pass-thru, delay, or hold traffic. Electrons on the data bus go round."
+    RETURN_TYPES = (WILDCARD,)
+    RETURN_NAMES = ("🚌",)
+
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        d = {"optional": {
+            "o": (WILDCARD, {"default": None}),
+            "delay": ("FLOAT", {"step": 0.01, "default" : 0}),
+            "hold": ("BOOLEAN", {"default": False}),
+            "reset": ("BOOLEAN", {"default": False})
+        }}
+        return deep_merge_dict(IT_REQUIRED, d)
+
+    def __init__(self) -> None:
+        self.__delay = 0
+
+    def run(self, o: Any, delay: float, hold: bool, reset: bool) -> Any:
+        ''' @TODO
+        t = threading.Thread(target=self.__run, daemon=True)
+        t.start()
+        '''
+        if reset:
+            self.__delay = 0
+            return (self, )
+
+        if hold:
+            return(None,)
+
+        if delay != self.__delay:
+            self.__delay = delay
+            self.__delay = max(0, min(self.__delay, JOV_MAX_DELAY))
+
+        time.sleep(self.__delay)
+        return (o,)
+
+    def __run(self) -> None:
+        while self.__hold:
+            time.sleep(0.1)
 
 class ComparisonNode(JOVBaseNode):
     """Compare two inputs."""
@@ -63,7 +110,7 @@ class ComparisonNode(JOVBaseNode):
 
         return (False,)
 
-class IfThenElseNode:
+class IfThenElseNode(JOVBaseNode):
     NAME = "IF-THEN-ELSE (JOV) 🔀"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/FLOW"
     DESCRIPTION = "IF <valid> then A else B"
@@ -81,5 +128,9 @@ class IfThenElseNode:
             },
         }
 
-    def run(self, o:bool, T:object, F:object) -> tuple[bool]:
+    def run(self, o:bool, **kw) -> tuple[bool]:
+        T = kw.get('🇹', None)
+        F = kw.get('🇫', None)
+        if T is None or F is None:
+            return (None,)
         return (T if o else F,)

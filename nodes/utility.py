@@ -4,7 +4,6 @@ Utility
 """
 
 import gc
-import time
 from typing import Any, Optional
 
 try:
@@ -16,52 +15,9 @@ import torch
 
 from Jovimetrix import deep_merge_dict, \
     Logger, JOVBaseNode, \
-    WILDCARD, JOV_MAX_DELAY, IT_REQUIRED
+    WILDCARD, IT_REQUIRED
 
 # =============================================================================
-
-class RouteNode(JOVBaseNode):
-    NAME = "ROUTE (JOV) 🚌"
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/UTILITY"
-    DESCRIPTION = "Pass-thru, delay, or hold traffic. Electrons on the data bus go round."
-    RETURN_TYPES = (WILDCARD,)
-    RETURN_NAMES = ("🚌",)
-
-    @classmethod
-    def INPUT_TYPES(cls) -> dict:
-        d = {"optional": {
-            "o": (WILDCARD, {"default": None}),
-            "delay": ("FLOAT", {"step": 0.01, "default" : 0}),
-            "hold": ("BOOLEAN", {"default": False}),
-            "reset": ("BOOLEAN", {"default": False})
-        }}
-        return deep_merge_dict(IT_REQUIRED, d)
-
-    def __init__(self) -> None:
-        self.__delay = 0
-
-    def run(self, o: Any, delay: float, hold: bool, reset: bool) -> Any:
-        ''' @TODO
-        t = threading.Thread(target=self.__run, daemon=True)
-        t.start()
-        '''
-        if reset:
-            self.__delay = 0
-            return (self, )
-
-        if hold:
-            return(None,)
-
-        if delay != self.__delay:
-            self.__delay = delay
-            self.__delay = max(0, min(self.__delay, JOV_MAX_DELAY))
-
-        time.sleep(self.__delay)
-        return (o,)
-
-    def __run(self) -> None:
-        while self.__hold:
-            time.sleep(0.1)
 
 class ClearCacheNode(JOVBaseNode):
     NAME = "CACHE (JOV) 🧹"
