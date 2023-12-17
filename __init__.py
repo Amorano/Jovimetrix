@@ -129,6 +129,11 @@ class Logger(metaclass=Singleton):
             print(color, '[JOV]\033[0m', f'({who})', *arg)
 
     @classmethod
+    def dump(cls, *arg) -> None:
+        who = inspect.currentframe().f_back.f_code.co_name
+        cls._raw("\033[48;2;35;127;81;93m", who, None, *arg)
+
+    @classmethod
     def err(cls, *arg) -> None:
         who = inspect.currentframe().f_back.f_code.co_name
         cls._raw("\033[48;2;135;27;81;93m", who, None, *arg)
@@ -137,12 +142,12 @@ class Logger(metaclass=Singleton):
     def warn(cls, *arg) -> None:
         if Logger._LEVEL > 0:
             who = inspect.currentframe().f_back.f_code.co_name
-            cls._raw("\033[48;2;189;135;54;93m", None, *arg)
+            cls._raw("\033[48;2;159;155;44;93m", None, *arg)
 
     @classmethod
     def info(cls, *arg) -> None:
         if Logger._LEVEL > 1:
-            cls._raw("\033[48;2;54;135;27;93m", None, *arg)
+            cls._raw("\033[48;2;44;115;37;93m", None, *arg)
 
     @classmethod
     def debug(cls, *arg) -> None:
@@ -192,7 +197,7 @@ class Session(metaclass=Singleton):
                 if not class_name.endswith('BaseNode') and hasattr(class_object, 'NAME') and hasattr(class_object, 'CATEGORY'):
                     name = class_object.NAME
                     if hasattr(class_object, 'POST'):
-                        class_object.CATEGORY = "JOVIMETRIX 🔺🟩🔵/💣☣️ WIP ☣️💣"
+                        class_object.CATEGORY = "JOVIMETRIX 🔺🟩🔵/WIP ☣️💣"
                         Session.CLASS_MAPPINGS_WIP[name] = class_object
                     else:
                         Session.CLASS_MAPPINGS[name] = class_object
@@ -207,9 +212,11 @@ class Session(metaclass=Singleton):
         NODE_DISPLAY_NAME_MAPPINGS.update({k: k for k, _ in Session.CLASS_MAPPINGS_WIP.items()})
 
         Session.CLASS_MAPPINGS = {x[0] : x[1] for x in sorted(Session.CLASS_MAPPINGS.items(),
-                                                        key=lambda item: getattr(item[1], 'SORT', 0))}
+                                                              key=lambda item: getattr(item[1], 'SORT', 0))}
         # now sort the categories...
-        for c in ["CREATE", "ADJUST", "TRANSFORM", "COMPOSE", "ANIMATE", "AUDIO", "DEVICE", "UTILITY", "💣☣️ WIP ☣️💣"]:
+        for c in ["CREATE", "ADJUST", "TRANSFORM", "COMPOSE",
+                  "ANIMATE", "FLOW", "DEVICE", "AUDIO",
+                  "UTILITY", "WIP ☣️💣"]:
 
             prime = Session.CLASS_MAPPINGS.copy()
             for k, v in prime.items():

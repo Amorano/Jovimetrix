@@ -13,7 +13,7 @@ from Jovimetrix import deep_merge_dict, tensor2cv, cv2tensor, cv2mask, \
 # =============================================================================
 
 class AkashicNode(JOVBaseNode):
-    NAME = "📓 Akashic (jov)"
+    NAME = "AKASHIC (JOV) 📓"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/UTILITY"
     DESCRIPTION = ""
     RETURN_TYPES = ('MASK',)
@@ -23,7 +23,7 @@ class AkashicNode(JOVBaseNode):
     POST = True
 
     @classmethod
-    def INPUT_TYPES(s) -> dict:
+    def INPUT_TYPES(cls) -> dict:
         d = {"required": {
         }}
         return deep_merge_dict(IT_PIXELS, d)

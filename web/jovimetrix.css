@@ -4,7 +4,7 @@
  */
 
 #jov-manager-dialog {
-  min-width: 410px;
+  min-width: 400px;
   height: 620px;
   font-size: 15px;
   padding: 0px;
@@ -16,6 +16,16 @@
   text-align: center;
 }
 
+#jov-manager-dialog td {
+  color: white;
+  text-align: right;
+}
+
+.jov-config-color-header  {
+  color: white;
+  text-align: right;
+}
+
 .jov-config-color {
   background-color: rgb(15, 15, 15);
   max-height: 550px;
@@ -23,18 +33,23 @@
   overflow-y: auto;
 }
 
-.jov-config-column {
-  flex: auto;
+.jov-title {
+  text-align: center;
 }
 
-.jov-title {
+.jov-title-header {
   font-weight: bold;
   font-size: 1.5em;
+  text-align: center;
   background: linear-gradient(22deg, #ff0000 25%, #4c67dd 40%, #5ddd4c 50%, #dd4c4c 65%);
   clip: text;
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+}
+
+#jov-apply-button {
+  text-align: center;
 }
 
 #jov-manager-dialog button {
@@ -64,8 +79,14 @@
 
 .jov-color {
   text-align: center;
-  font-size: 0.72em;
-  width: 35px;
+  font-size: 1em;
+  width: 25px;
+  height: 25px;
+}
+
+tbody {
+  padding: 0px;
+  user-select: none;
 }
 
 tr, td {

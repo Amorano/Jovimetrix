@@ -114,7 +114,7 @@ class MediaStreamBase:
                 Logger.warn("MediaStream", f"TIMEOUT [{self.url}]")
 
             waste = max(waste - time.perf_counter(), delta)
-            # print(waste)
+            # Logger.debug(waste)
             time.sleep(waste)
 
         Logger.info("MediaStream", f"STOPPED [{self.url}]")
@@ -560,7 +560,7 @@ def streamReadTest() -> None:
     cv2.destroyAllWindows()
 
 def streamWriteTest() -> None:
-    print(cv2.getBuildInformation())
+    Logger.debug(cv2.getBuildInformation())
     ss = StreamingServer()
 
     fpath = 'res/stream-video.mp4'

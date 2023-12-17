@@ -10,7 +10,7 @@ import torch
 from Jovimetrix import zip_longest_fill, deep_merge_dict, tensor2cv, cv2mask, cv2tensor, \
     JOVImageInOutBaseNode, Logger, \
     IT_PIXELS, IT_TRS, IT_WH, IT_REQUIRED, IT_EDGE, \
-    IT_WHMODE, IT_REQUIRED, MIN_HEIGHT, MIN_WIDTH, IT_TILE, IT_INVERT
+    IT_WHMODE, MIN_HEIGHT, MIN_WIDTH, IT_TILE, IT_INVERT
 
 from Jovimetrix.sup import comp
 from Jovimetrix.sup.comp import EnumInterpolation, IT_SAMPLE
@@ -18,7 +18,7 @@ from Jovimetrix.sup.comp import EnumInterpolation, IT_SAMPLE
 # =============================================================================
 
 class TransformNode(JOVImageInOutBaseNode):
-    NAME = "🌱 Transform (jov)"
+    NAME = "TRANSFORM (JOV) 🏝️"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/TRANSFORM"
     DESCRIPTION = "Translate, Rotate, Scale, Tile and Invert an input. CROP or WRAP the edges."
 
@@ -68,7 +68,7 @@ class TransformNode(JOVImageInOutBaseNode):
         )
 
 class TRSNode(JOVImageInOutBaseNode):
-    NAME = "🌱 TRS (jov)"
+    NAME = "TRS (JOV) 🌱"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/TRANSFORM"
     DESCRIPTION = "Translate, Rotate, Scale."
 
@@ -108,7 +108,7 @@ class TRSNode(JOVImageInOutBaseNode):
         )
 
 class TileNode(JOVImageInOutBaseNode):
-    NAME = "🔳 Tile (jov)"
+    NAME = "TILE (JOV) 🀘"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/TRANSFORM"
     DESCRIPTION = "Tile an Image with optional crop to original image size."
     SORT = 5
@@ -154,7 +154,7 @@ class TileNode(JOVImageInOutBaseNode):
         )
 
 class MirrorNode(JOVImageInOutBaseNode):
-    NAME = "🔰 Mirror (jov)"
+    NAME = "MIRROR (JOV) 🔰"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/TRANSFORM"
     DESCRIPTION = "Flip an input across the X axis, the Y Axis or both, with independent centers."
     SORT = 25
@@ -198,7 +198,7 @@ class MirrorNode(JOVImageInOutBaseNode):
         )
 
 class ProjectionNode(JOVImageInOutBaseNode):
-    NAME = "🗺️ Projection (jov)"
+    NAME = "PROJECTION (JOV) 🗺️"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/TRANSFORM"
     DESCRIPTION = ""
     SORT = 55

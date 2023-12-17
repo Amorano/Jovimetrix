@@ -25,7 +25,7 @@ from Jovimetrix.sup.comp import EnumScaleMode, geo_scalefit, shape_ellipse, shap
 # =============================================================================
 
 class ConstantNode(JOVImageBaseNode):
-    NAME = "🟪 Constant (jov)"
+    NAME = "CONSTANT (JOV) 🟪"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
     DESCRIPTION = ""
     OUTPUT_IS_LIST = (False, False, )
@@ -39,7 +39,7 @@ class ConstantNode(JOVImageBaseNode):
         return (pil2tensor(image), pil2tensor(image.convert("L")),)
 
 class ShapeNode(JOVImageBaseNode):
-    NAME = "✨ Shape Generator (jov)"
+    NAME = "SHAPE GENERATOR (JOV) ✨"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
     DESCRIPTION = ""
     OUTPUT_IS_LIST = (False, False, )
@@ -87,7 +87,7 @@ class ShapeNode(JOVImageBaseNode):
         return (pil2tensor(image), pil2tensor(image.convert("L")), )
 
 class PixelShaderNode(JOVImageInOutBaseNode):
-    NAME = "🔆 Pixel Shader (jov)"
+    NAME = "PIXEL SHADER (JOV) 🔆"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
 
     @classmethod
@@ -209,14 +209,14 @@ class PixelShaderNode(JOVImageInOutBaseNode):
         )
 
 class GLSLNode(JOVImageBaseNode):
-    NAME = "🍩 GLSL (jov)"
+    NAME = "GLSL (JOV) 🍩"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
     DESCRIPTION = ""
     OUTPUT_IS_LIST = (False, False, )
     POST = True
 
     @classmethod
-    def INPUT_TYPES(s) -> dict[str, dict]:
+    def INPUT_TYPES(cls) -> dict[str, dict]:
         d =  {
             "required": {
                 "vertex": ("STRING", {"default":

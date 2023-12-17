@@ -4,6 +4,7 @@ Composition
 """
 
 from typing import Optional
+import cv2
 
 import torch
 import numpy as np
@@ -23,7 +24,7 @@ from Jovimetrix.sup.comp import \
 # =============================================================================
 
 class BlendNode(JOVImageInOutBaseNode):
-    NAME = "⚗️ Blend (jov)"
+    NAME = "BLEND (JOV) ⚗️"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/COMPOSE"
     DESCRIPTION = "Applies selected operation to 2 inputs with optional mask using a linear blend (alpha)."
     OUTPUT_NODE = False
@@ -41,31 +42,22 @@ class BlendNode(JOVImageInOutBaseNode):
         return deep_merge_dict(IT_PIXEL2, d, IT_WHMODE, IT_SAMPLE, IT_INVERT)
 
     def run(self,
+            func: list[str],
+            alpha: list[float],
+            flip: list[bool],
+            width: list[int],
+            height: list[int],
+            mode: list[str],
+            resample: list[str],
+            invert: list[float],
             pixelA: Optional[list[torch.tensor]]=None,
             pixelB: Optional[list[torch.tensor]]=None,
             mask: Optional[list[torch.tensor]]=None,
-            func: Optional[list[str]]=None,
-            alpha: Optional[list[float]]=None,
-            flip: Optional[list[bool]]=None,
-            width: Optional[list[int]]=None,
-            height: Optional[list[int]]=None,
-            mode: Optional[list[str]]=None,
-            resample: Optional[list[str]]=None,
-            invert: Optional[list[float]]=None,
             ) -> tuple[torch.Tensor, torch.Tensor]:
 
         pixelA = pixelA or [None]
         pixelB = pixelB or [None]
         mask = mask or [None]
-        func = func or [None]
-        alpha = alpha or [None]
-        flip = flip or [None]
-        width = width or [None]
-        height = height or [None]
-        mode = mode or [None]
-        resample = resample or [None]
-        invert = invert or [None]
-
         masks = []
         images = []
         for data in zip_longest_fill(pixelA, pixelB, mask, func, alpha, flip,
@@ -76,16 +68,16 @@ class BlendNode(JOVImageInOutBaseNode):
             pb = tensor2cv(pb) if pb is not None else np.zeros((h, w, 4), dtype=np.uint8)
             ma = tensor2cv(ma) if ma is not None else np.zeros((h, w), dtype=np.uint8)
 
-            if fl:
+            if (fl or False):
                 pa, pb = pb, pa
 
-            f = EnumBlendType[f] if f is not None else EnumBlendType.NORMAL
+            f = EnumBlendType.NORMAL if f is None else EnumBlendType[f]
             img = comp.comp_blend(pa, pb, ma, f, a)
 
             nh, nw = img.shape[:2]
-            rs = EnumInterpolation[rs] if rs is not None else EnumInterpolation.LANCZOS4
+            rs = EnumInterpolation.LANCZOS4 if rs is None else EnumInterpolation[rs]
             if h != nh or w != nw:
-                print(w, h, nw, nh)
+                Logger.debug(w, h, nw, nh)
                 img = comp.geo_scalefit(img, w, h, sm, rs)
 
             if i != 0:
@@ -100,13 +92,13 @@ class BlendNode(JOVImageInOutBaseNode):
         )
 
 class PixelSplitNode(JOVImageInOutBaseNode):
-    NAME = "💔 Pixel Split (jov)"
+    NAME = "PIXEL SPLIT (JOV) 💔"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/COMPOSE"
-    DESCRIPTION = "SPLIT THE R-G-B from an image"
+    DESCRIPTION = "SPLIT THE R-G-B-A from an image"
 
-    RETURN_TYPES = ("IMAGE", "IMAGE", "IMAGE", "MASK", "MASK", "MASK",)
-    RETURN_NAMES = ("❤️", "💚", "💙", "🟥", "🟩", "🟦")
-    OUTPUT_IS_LIST = (True, True, True, True, True, True, )
+    RETURN_TYPES = ("IMAGE", "IMAGE", "IMAGE", "IMAGE", "MASK", "MASK", "MASK", "MASK",)
+    RETURN_NAMES = ("❤️", "💚", "💙", "🖤", "🟥", "🟩", "🟦", "⬛")
+    OUTPUT_IS_LIST = (True, True, True, True, True, True, True, True, )
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -121,33 +113,29 @@ class PixelSplitNode(JOVImageInOutBaseNode):
             'rm': [],
             'gm': [],
             'bm': [],
-            'ba': [],
+            'am': [],
         }
 
         for img in pixels:
             img = tensor2cv(img)
-            img, mask = comp.pixel_split(img)
-            r, g, b = img
-            ret['r'].append(r)
-            ret['g'].append(g)
-            ret['b'].append(b)
+            h, w = img.shape[:2]
+            r, g, b, a = comp.image_split(img)
+            e = np.full((h, w), 0, dtype=np.uint8)
 
-            r, g, b = mask
-            ret['rm'].append(r)
-            ret['gm'].append(g)
-            ret['bm'].append(b)
+            for rgb, mask, color in (
+                ('r', 'rm', [e, e, r]),
+                ('g', 'gm', [e, g, e]),
+                ('b', 'bm', [b, e, e]),
+                ('a', 'am', [a, a, a])):
 
-        return (
-            torch.stack(ret['r']),
-            torch.stack(ret['rm']),
-            torch.stack(ret['g']),
-            torch.stack(ret['gm']),
-            torch.stack(ret['b']),
-            torch.stack(ret['bm']),
-        )
+                f = cv2.merge(color)
+                ret[rgb].append(cv2tensor(f))
+                ret[mask].append(cv2mask(f))
+
+        return tuple(torch.stack(ret[key]) for key in ['r', 'g', 'b', 'a', 'rm', 'gm', 'bm', 'am'])
 
 class PixelMergeNode(JOVImageInOutBaseNode):
-    NAME = "🫱🏿‍🫲🏼 Pixel Merge (jov)"
+    NAME = "PIXEL MERGE (JOV) 🫂"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/COMPOSE"
     DESCRIPTION = "Merge 3/4 single channel inputs to make an image."
 
@@ -161,24 +149,27 @@ class PixelMergeNode(JOVImageInOutBaseNode):
                 "R": (WILDCARD, {}),
                 "G": (WILDCARD, {}),
                 "B": (WILDCARD, {}),
+                "A": (WILDCARD, {}),
             }}
         return deep_merge_dict(IT_REQUIRED, d, IT_WHMODE, IT_SAMPLE, IT_INVERT)
 
     def run(self,
-            width:int,
-            height:int,
-            mode:str,
+            width: list[int],
+            height: list[int],
+            mode: list[str],
             resample: list[str],
-            invert:float,
+            invert: list[float],
             R: Optional[list[torch.tensor]]=None,
             G: Optional[list[torch.tensor]]=None,
-            B: Optional[list[torch.tensor]]=None)  -> tuple[torch.Tensor, torch.Tensor]:
+            B: Optional[list[torch.tensor]]=None,
+            A: Optional[list[torch.tensor]]=None)  -> tuple[torch.Tensor, torch.Tensor]:
 
         R = R or [None]
         G = G or [None]
         B = B or [None]
+        A = A or [None]
 
-        if len(R)+len(B)+len(G) == 0:
+        if len(R)+len(B)+len(G)+len(A) == 0:
             zero = cv2tensor(np.zeros([height[0], width[0], 3], dtype=np.uint8))
             return (
                 torch.stack([zero]),
@@ -187,28 +178,19 @@ class PixelMergeNode(JOVImageInOutBaseNode):
 
         masks = []
         images = []
-        for data in zip_longest_fill(R, G, B, width, height, mode, resample, invert):
-            r, g, b, w, h, m, rs, i = data
+        for data in zip_longest_fill(R, G, B, A, width, height, mode, resample, invert):
+            r, g, b, a, w, h, m, rs, i = data
 
-            x = b if b is not None else g if g is not None else r if r is not None else None
-            if x is None:
-                Logger.err("no images to process")
-                continue
-
-            _h, _w = x.shape[:2]
-            w = w or _w
-            h = h or _h
-            empty = np.full((h, w), 0, dtype=np.uint8)
-            r = tensor2cv(r) if r is not None else empty
-            g = tensor2cv(g) if g is not None else empty
-            b = tensor2cv(b) if b is not None else empty
+            w = w or 0
+            h = h or 0
+            r = tensor2cv(r) if r is not None else None
+            g = tensor2cv(g) if g is not None else None
+            b = tensor2cv(b) if b is not None else None
+            a = tensor2cv(a) if a is not None else None
             rs = EnumInterpolation[rs] if rs is not None else EnumInterpolation.LANCZOS4
-
-            img = comp.pixel_merge(b, g, r, None, w, h, m, rs)
-
-            if i != 0:
+            img = comp.image_merge(r, g, b, a, w, h, m, rs)
+            if (i or 0) != 0:
                 img = comp.light_invert(img, i)
-
             images.append(cv2tensor(img))
             masks.append(cv2mask(img))
 
@@ -218,7 +200,7 @@ class PixelMergeNode(JOVImageInOutBaseNode):
         )
 
 class MergeNode(JOVImageInOutBaseNode):
-    NAME = "➕ Merge (jov)"
+    NAME = "MERGE (JOV) ➕"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/COMPOSE"
     DESCRIPTION = "Union multiple latents horizontal, vertical or in a grid."
     SORT = 15
@@ -235,26 +217,20 @@ class MergeNode(JOVImageInOutBaseNode):
         return deep_merge_dict(IT_PIXEL2, d, IT_WHMODE, IT_SAMPLE)
 
     def run(self,
+            axis:list[str],
+            stride:list[int],
+            width:list[int],
+            height:list[int],
+            mode:list[str],
+            resample:list[str],
             pixelA:Optional[list[torch.tensor]]=None,
             pixelB:Optional[list[torch.tensor]]=None,
             matte:Optional[list[torch.tensor]]=None,
-            axis:Optional[list[str]]=None,
-            stride:Optional[list[int]]=None,
-            width:Optional[list[int]]=None,
-            height:Optional[list[int]]=None,
-            mode:Optional[list[str]]=None,
-            resample:Optional[list[str]]=None,
             ) -> tuple[torch.Tensor, torch.Tensor]:
 
         pixelA = pixelA or [None]
         pixelB = pixelB or [None]
         matte = matte or [None]
-        axis = axis or [None]
-        stride = stride or [None]
-        width = width or [None]
-        height = height or [None]
-        mode = mode or [None]
-        resample = resample or [None]
 
         masks = []
         images = []
@@ -266,16 +242,12 @@ class MergeNode(JOVImageInOutBaseNode):
             pixels = pa + pb
             pixels = [tensor2cv(img) for img in pixels]
 
-            if ma is None:
-                ma = np.zeros((h, w, 3), dtype=torch.uint8)
-            else:
-                ma = tensor2cv(ma)
-
+            ma = np.zeros((h, w, 3), dtype=torch.uint8) if ma is None else tensor2cv(ma)
             rs = EnumInterpolation[rs] if rs is not None else EnumInterpolation.LANCZOS4
             ax = EnumOrientation[ax] if ax is not None else EnumOrientation.HORIZONTAL
             img = comp.image_stack(pixels, ax, st, ma, EnumScaleMode.FIT, rs)
 
-            if m != EnumScaleMode.NONE:
+            if (m or EnumScaleMode.NONE) != EnumScaleMode.NONE:
                 img = comp.geo_scalefit(img, w, h, m, rs)
 
             images.append(cv2tensor(img))
@@ -287,7 +259,7 @@ class MergeNode(JOVImageInOutBaseNode):
         )
 
 class CropNode(JOVImageInOutBaseNode):
-    NAME = "✂️ Crop (jov)"
+    NAME = "CROP (JOV) ✂️"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/COMPOSE"
     DESCRIPTION = "Robust cropping with color fill"
     SORT = 55
@@ -307,29 +279,17 @@ class CropNode(JOVImageInOutBaseNode):
 
     def run(self,
             pixels: list[torch.tensor],
-            pad: Optional[list[bool]]=None,
-            top: Optional[list[float]]=None,
-            left: Optional[list[float]]=None,
-            bottom: Optional[list[float]]=None,
-            right: Optional[list[float]]=None,
-            R: Optional[list[float]]=None,
-            G: Optional[list[float]]=None,
-            B: Optional[list[float]]=None,
-            width: Optional[list[int]]=None,
-            height: Optional[list[int]]=None,
-            invert: Optional[list[float]]=None) -> tuple[list[torch.Tensor], list[torch.Tensor]]:
-
-        pad = pad or [None]
-        top = top or [None]
-        left = left or [None]
-        bottom = bottom or [None]
-        right = right or [None]
-        R = R or [None]
-        G = G or [None]
-        B = B or [None]
-        width = width or [None]
-        height = height or [None]
-        invert = invert or [None]
+            pad: list[bool]=None,
+            top: list[float]=None,
+            left: list[float]=None,
+            bottom: list[float]=None,
+            right: list[float]=None,
+            R: list[float]=None,
+            G: list[float]=None,
+            B: list[float]=None,
+            width: list[int]=None,
+            height: list[int]=None,
+            invert: list[float]=None) -> tuple[list[torch.Tensor], list[torch.Tensor]]:
 
         masks = []
         images = []
@@ -363,7 +323,7 @@ class CropNode(JOVImageInOutBaseNode):
         )
 
 class ColorTheoryNode(JOVImageInOutBaseNode):
-    NAME = "🛞 Color Theory (jov)"
+    NAME = "COLOR THEORY (JOV) 🛞"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/COMPOSE"
     DESCRIPTION = "Re-project an input into various color theory mappings"
     RETURN_TYPES = ("IMAGE", "IMAGE", "IMAGE", "IMAGE")
@@ -380,11 +340,8 @@ class ColorTheoryNode(JOVImageInOutBaseNode):
 
     def run(self,
             pixels: list[torch.tensor],
-            scheme: Optional[list[str]]=None,
-            invert: Optional[list[float]]=None) -> tuple[list[torch.Tensor], list[torch.Tensor]]:
-
-        scheme = scheme or [None]
-        invert = invert or [None]
+            scheme: list[str],
+            invert: list[float]) -> tuple[list[torch.Tensor], list[torch.Tensor]]:
 
         imageA = []
         imageB = []
@@ -394,17 +351,17 @@ class ColorTheoryNode(JOVImageInOutBaseNode):
         for data in zip_longest_fill(pixels, scheme, invert):
             img, s, i = data
             img = tensor2cv(img)
-            s = EnumColorTheory[s] if s is not None else EnumColorTheory.COMPLIMENTARY
+            s = EnumColorTheory.COMPLIMENTARY if s is None else EnumColorTheory[s]
             Logger.debug(s, i)
 
             a, b, c, d = comp.color_theory(img, s)
-            if i != 0:
+            if (i or 0) != 0:
                 a = comp.light_invert(a, i)
                 b = comp.light_invert(b, i)
                 c = comp.light_invert(c, i)
                 d = comp.light_invert(d, i)
 
-            print(a.shape, b.shape, c.shape, d.shape)
+            Logger.debug(a.shape, b.shape, c.shape, d.shape)
             imageA.append(cv2tensor(a))
             imageB.append(cv2tensor(b))
             imageC.append(cv2tensor(c))

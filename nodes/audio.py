@@ -86,15 +86,15 @@ def graph_sausage(data: np.ndarray, bar_count:int, width:int, height:int,
 
 # =============================================================================
 
-class GraphAudioNode(JOVImageBaseNode):
-    NAME = "🎶 Graph Audio Wave (jov)"
+class GraphWaveNode(JOVImageBaseNode):
+    NAME = "GRAPH WAVE (JOV) 🎶"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/AUDIO"
     RETURN_TYPES = ("IMAGE", "MASK", "WAVE")
     RETURN_NAMES = ("🖼️", "😷", "〰️" )
     OUTPUT_IS_LIST = (False, False, True)
 
     @classmethod
-    def INPUT_TYPES(s) -> dict:
+    def INPUT_TYPES(cls) -> dict:
         return {
             "required":{
                 "filen": ("STRING", {"default": ""})},

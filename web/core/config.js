@@ -14,24 +14,93 @@ cssNode.type = 'text/css';
 cssNode.href = 'extensions/Jovimetrix/jovimetrix.css';
 headID.appendChild(cssNode);
 
-const template_color_block = `
-<tr>
-    <td style="color: white; text-align: right; background: {{ background }}">{{ name }}</td>
-    <td><input class="jov-color" type="text" name="{{ name }}" value="title" color="{{title}}"></input></td>
-    <td><input class="jov-color" type="text" name="{{ name }}" value="body" color="{{body}}"></input></td>
-</tr>
-`
-// <td><button type="button">CLEAR!</button></td>
+const templateColorBlock = (data) => [
+    $el("tr", { style: {
+            background: data.background
+        }}, [
+            $el("td", {
+                textContent: data.name
+            }),
+            $el("td", [
+                $el("input.jov-color", {
+                    value: "T",
+                    name: data.name + '.title',
+                    color: data.title
+                })
+            ]),
+            $el("td", [
+                $el("input.jov-color", {
+                    value: "B",
+                    name: data.name + '.body',
+                    color: data.body
+                })
+            ])
+        ])
+];
 
-function color_clear(name) {
-    util.api_post("/jovimetrix/config/clear", { "name": name });
+const templateColorHeader = (data) => [
+    $el("tr", [
+        $el("td.jov-config-color-header", {
+            style: {
+                background: data.background
+            },
+            textContent: data.name
+        }),
+        $el("td", [
+            $el("input.jov-color", {
+                value: "T",
+                name: data.name + '.title',
+                color: data.title
+            })
+        ]),
+        $el("td", [
+            $el("input.jov-color", {
+                value: "B",
+                name: data.name + '.body',
+                color: data.body
+            })
+        ])
+    ])
+];
+
+const templateColorRegex = (data) => [
+    $el("tr", [
+        $el("td", {
+            style: {
+                background: data.background
+            }
+        }, [
+            $el("input", {
+                name: "regex." + data.idx,
+                value: data.name,
+            })
+        ]),
+        $el("td", [
+            $el("input.jov-color", {
+                value: "T",
+                name: "regex." + data.idx + ".title",
+                color: data.title
+            })
+        ]),
+        $el("td", [
+            $el("input.jov-color", {
+                value: "B",
+                name: "regex." + data.idx + ".body",
+                color: data.body
+            })
+        ])
+    ])
+];
+
+function colorClear(name) {
+    util.apiPost("/jovimetrix/config/clear", { "name": name });
     delete util.THEME[name];
     if (util.CONFIG_COLOR.overwrite) {
-        util.node_color_all();
+        util.nodeColorAll();
     }
 }
 
-class JovimetrixConfigDialog extends ComfyDialog {
+export class JovimetrixConfigDialog extends ComfyDialog {
 
     startDrag = (e) => {
         this.dragData = {
@@ -69,46 +138,8 @@ class JovimetrixConfigDialog extends ComfyDialog {
         document.removeEventListener('mouseup', this.dragEnd);
     }
 
-    createColorBlock(name, title, body) {
-        return [
-            $el("td", {
-                style: {
-                    align: "right"
-                },
-                textContent: name
-            }),
-            $el("td", [
-                $el("input", {
-                    class: "jov-color",
-                    type: "text",
-                    name: name,
-                    value: "title",
-                    color: title,
-                    part: title
-                })
-            ]),
-            $el("td", [
-                $el("input", {
-                    class: "jov-color",
-                    type: "text",
-                    name: name,
-                    value: "body",
-                    color: body,
-                    part: body
-                })
-            ]),
-            $el("td", [
-                $el("button", {
-                    type: "button",
-                    onclick: () => {
-                        color_clear(name);
-                    }
-                })
-            ])
-        ];
-    }
-
     createColorPalettes() {
+        var data = {};
         let colorTable = null;
         const header =
             $el("div.jov-config-column", [
@@ -118,58 +149,79 @@ class JovimetrixConfigDialog extends ComfyDialog {
                 ]),
             ]);
 
-        var category = [];
-        const all_nodes = Object.entries(util.NODE_LIST);
-        all_nodes.sort(function (a, b) {
-            return a[1].category.toLowerCase().localeCompare(b[1].category.toLowerCase());
+        // rule-sets first
+        var idx = 0;
+        const rules = util.CONFIG_COLOR.regex || [];
+        rules.forEach(entry => {
+            // console.info(entry);
+            const data = {
+                idx: idx,
+                name: entry.regex,
+                title: entry.title || '#4D4D4D',
+                body: entry.body || '#4D4D4D',
+                background: '#292930'
+            };
+            colorTable.appendChild($el("tbody", templateColorRegex(data)));
+            idx += 1;
         });
 
-        const alts = util.CONFIG_COLOR
-        var background = [alts.backA, alts.backB];
-        var background_title = [alts.titleA, alts.titleB];
-        var background_index = 0;
+        // get categories to generate on the fly
+        const category = [];
+        const all_nodes = Object.entries(util.NODE_LIST);
+        all_nodes.sort((a, b) => a[1].category.toLowerCase().localeCompare(b[1].category.toLowerCase()));
 
+        // groups + nodes
+        const alts = util.CONFIG_COLOR;
+        const background = [alts.backA, alts.backB];
+        const background_title = [alts.titleA, alts.titleB];
+        let background_index = 0;
         all_nodes.forEach(entry => {
             var name = entry[0];
-            var data = {};
-
-            var html = "";
             var cat = entry[1].category
+            var meow = cat.split('/')[0];
+
+            if (!category.includes(meow))
+            {
+                // major category first?
+                background_index = (background_index + 1) % 2;
+                data = {
+                    name: meow,
+                    title: '#6D6D6D',
+                    body: '#6D6D6D',
+                    background: '#292930'
+                };
+                if (util.THEME.hasOwnProperty(meow)) {
+                    data.title = util.THEME[meow].title,
+                    data.body = util.THEME[meow].body
+                }
+                colorTable.appendChild($el("tbody", templateColorHeader(data)));
+                category.push(meow);
+            }
 
             if(category.includes(cat) == false) {
                 background_index = (background_index + 1) % 2;
                 data = {
                     name: cat,
-                    title: '#4D4D4DEE',
-                    body: '#4D4D4DEE',
+                    title: '#6D6D6D',
+                    body: '#6D6D6D',
                     background: background_title[background_index]
                 };
                 if (util.THEME.hasOwnProperty(cat)) {
                     data.title = util.THEME[cat].title,
                     data.body = util.THEME[cat].body
                 }
-                html = util.renderTemplate(template_color_block, data);
-                colorTable.innerHTML += html;
+                colorTable.appendChild($el("tbody", templateColorHeader(data)));
                 category.push(cat);
             }
 
-            if (util.THEME.hasOwnProperty(name)) {
-                data = {
-                    name: entry[0],
-                    title: util.THEME[name].title,
-                    body: util.THEME[name].body,
-                    background: background[background_index]
-                };
-            } else {
-                data = {
-                    name: entry[0],
-                    title: '#4D4D4DEE',
-                    body: '#4D4D4DEE',
-                    background: background[background_index]
-                };
-            }
-            html = util.renderTemplate(template_color_block, data);
-            colorTable.innerHTML += html;
+            const who = util.THEME[name];
+            data = {
+                name: name,
+                title:  who ? who.title : '#6D6D6D',
+                body: who ? who.body :'#6D6D6D',
+                background: background[background_index]
+            };
+            colorTable.appendChild($el("tbody", templateColorBlock(data)));
         });
         return [header];
 	}
@@ -204,8 +256,8 @@ class JovimetrixConfigDialog extends ComfyDialog {
         return $el("table", [
             $el("tr", [
                 $el("td", [
-                    $el("div", [
-                        this.headerTitle = $el("div.jov-title", [this.title]),
+                    $el("div.jov-title", [
+                        this.headerTitle = $el("div.jov-title-header"),
                         $el("label", {
                             id: "jov-apply-button",
                             textContent: "FORCE NODES TO SYNCHRONIZE WITH PANEL? ",
@@ -260,7 +312,6 @@ class JovimetrixConfigDialog extends ComfyDialog {
         this.headerTitle = null;
         this.overwrite = false;
         this.visible = false;
-        this.title = this.createTitle();
         this.element = $el("div.comfy-modal", { id:'jov-manager-dialog', parent: document.body }, [ this.createContent() ]);
     }
 
@@ -271,5 +322,4 @@ class JovimetrixConfigDialog extends ComfyDialog {
     }
 }
 
-export const CONFIG_DIALOG = new JovimetrixConfigDialog();
-
+// export const CONFIG_DIALOG = new JovimetrixConfigDialog();

@@ -180,76 +180,55 @@ IT_SAMPLE = {
 # === UTILITY ===
 # =============================================================================
 
-def gray_sized(image: TYPE_IMAGE, h:int, w:int, resample: EnumInterpolation=EnumInterpolation.LANCZOS4) -> TYPE_IMAGE:
-    """Force an image into Grayscale at a specific width, height."""
-    if len(image.shape) > 2:
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    if image.shape[0] != h or image.shape[1] != w:
-        image = cv2.resize(image, (w, h), interpolation=resample.value)
+def image_grayscale(image: TYPE_IMAGE) -> TYPE_IMAGE:
+    if (cc := channel_count(image)[0]) == 1:
+        return image
+    elif cc > 2:
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+        return image[:, :, 2]
+    Logger.err("unknown image format", cc, image.shape)
     return image
 
-def pixel_split(image: TYPE_IMAGE) -> tuple[list[TYPE_IMAGE], list[TYPE_IMAGE]]:
-    w, h, c = image.shape
-
-    # Check if the image has an alpha channel
-    if c == 4:
-        b, g, r, _ = cv2.split(image)
-    else:
+def image_split(image: TYPE_IMAGE) -> tuple[TYPE_IMAGE]:
+    cc, _, w, h = channel_count(image)
+    if cc == 4:
+        b, g, r, a = cv2.split(image)
+    elif cc == 3:
         b, g, r = cv2.split(image)
-        # a = np.zeros_like(r)
-
-    e = np.zeros((h, w), dtype=np.uint8)
-
-    masks = []
-    images = []
-    f = cv2.merge([r, r, r])
-    masks.append(cv2mask(f))
-
-    f = cv2.merge([e, e, r])
-    images.append(cv2tensor(f))
-
-    f = cv2.merge([g, g, g])
-    masks.append(cv2mask(f))
-    f = cv2.merge([e, g, e])
-    images.append(cv2tensor(f))
-
-    f = cv2.merge([b, b, b])
-    masks.append(cv2mask(f))
-    f = cv2.merge([b, e, e])
-    images.append(cv2tensor(f))
-
-    return images, masks
-
-def merge_channel(channel, size, resample: EnumInterpolation=EnumInterpolation.LANCZOS4) -> TYPE_IMAGE:
-    if channel is None:
-        return np.full(size, 0, dtype=np.uint8)
-    return gray_sized(channel, *size[::-1], resample)
+        a = np.full((h, w), 255, dtype=np.uint8)
+    else:
+        r = g = b = image
+        a = np.full((h, w), 255, dtype=np.uint8)
+    return r, g, b, a
 
 def image_merge(r: TYPE_IMAGE, g: TYPE_IMAGE, b: TYPE_IMAGE, a: TYPE_IMAGE,
           width: int, height: int,
           mode:EnumScaleMode=EnumScaleMode.NONE,
           resample:EnumInterpolation=EnumInterpolation.LANCZOS4) -> TYPE_IMAGE:
 
-    thr, twr = (r.shape[0], r.shape[1]) if r is not None else (height, width)
-    thg, twg = (g.shape[0], g.shape[1]) if g is not None else (height, width)
-    thb, twb = (b.shape[0], b.shape[1]) if b is not None else (height, width)
-    w = max(width, max(twb, max(twr, twg)))
-    h = max(height, max(thb, max(thr, thg)))
+    thr, twr = r.shape[:2] if r is not None else (height, width)
+    thg, twg = g.shape[:2] if g is not None else (height, width)
+    thb, twb = b.shape[:2] if b is not None else (height, width)
 
-    if a is None:
-        a = np.full((height, width), 255, dtype=np.uint8)
+    full = a is not None
+    tha, twa = a.shape[:2] if full else (height, width)
+
+    w = max(width, max(twa, max(twb, max(twr, twg))))
+    h = max(height, max(tha, max(thb, max(thr, thg))))
+
+    r = np.full((h, w), 0, dtype=np.uint8) if r is None else image_grayscale(r)
+    g = np.full((h, w), 0, dtype=np.uint8) if g is None else image_grayscale(g)
+    b = np.full((h, w), 0, dtype=np.uint8) if b is None else image_grayscale(b)
+
+    #g = merge_channel(g, (h, w), resample)
+    #b = merge_channel(b, (h, w), resample)
+
+    if full:
+        a = np.full((h, w), 0, dtype=np.uint8) if r is None else image_grayscale(a)
+        # a = merge_channel(a,  (h, w), resample)
+        image = cv2.merge((b, g, r, a))
     else:
-        w = max(w, a.shape[1])
-        h = max(h, a.shape[0])
-
-    target_size = (w, h)
-
-    r = merge_channel(r, target_size, resample)
-    g = merge_channel(g, target_size, resample)
-    b = merge_channel(b, target_size, resample)
-    a = merge_channel(a, target_size, resample)
-
-    image = cv2.merge((r, g, b))
+        image = cv2.merge((b, g, r))
     return geo_scalefit(image, width, height, mode, resample)
 
 # =============================================================================
@@ -288,9 +267,10 @@ def shape_polygon(width: int, height: int, size: float=1., sides: int=3, angle: 
 # =============================================================================
 
 def channel_count(image: TYPE_IMAGE) -> tuple[int, EnumImageType]:
+    h, w = image.shape[:2]
     size = image.shape[2] if len(image.shape) > 2 else 1
     mode = EnumImageType.RGBA if size == 4 else EnumImageType.RGB if size == 3 else EnumImageType.GRAYSCALE
-    return size, mode
+    return size, mode, w, h
 
 def channel_add(image: TYPE_IMAGE, value: TYPE_PIXEL=1.) -> TYPE_IMAGE:
     new = channel_solid(color=value, image=image)
@@ -433,7 +413,7 @@ def geo_crop(image: TYPE_IMAGE,
         if (widthT == width and heightT == height) or not pad:
             return crop_img
 
-        cc, _ = channel_count(image)
+        cc = channel_count(image)[0]
         img_padded = np.full((heightT, widthT, cc), color, dtype=np.uint8)
 
         crop_height, crop_width, _ = crop_img.shape
@@ -627,7 +607,9 @@ def light_exposure(image: TYPE_IMAGE, value: float) -> TYPE_IMAGE:
 
 def light_invert(image: TYPE_IMAGE, value: float) -> TYPE_IMAGE:
     value = np.clip(value, 0, 1)
-    return cv2.addWeighted(image, 1 - value, 255 - image, value, 0)
+    image = cv2.addWeighted(image, 1 - value, 255 - image, value, 0)
+    Logger.debug(image.shape, value)
+    return image
 
 # =============================================================================
 # === COLOR FUNCTIONS ===
@@ -892,8 +874,8 @@ def comp_fill(image: TYPE_IMAGE,
     Fills a block of pixels with a matte or stretched to width x height.
     """
 
-    cc, chan = channel_count(image)
-    y, x = image.shape[:2]
+    cc, chan, x, y = channel_count(image)
+    # y, x = image.shape[:2]
     canvas = channel_solid(width, height, color, chan=chan)
     y1 = max(0, (height - y) // 2)
     y2 = min(height, y1 + y)
@@ -929,11 +911,17 @@ def comp_blend(imageA:Optional[TYPE_IMAGE]=None,
         targetH, targetW = imageA.shape[:2]
     elif imageB is not None:
         targetH, targetW = imageB.shape[:2]
+    elif mask is not None:
+        targetH, targetW = mask.shape[:2]
 
     targetW, targetH = max(0, targetW), max(0, targetH)
-    Logger.debug(targetW, targetH, imageA.shape if imageA else None, imageB.shape if imageB else None, blendOp, alpha, mode, resample)
+    a = imageA.shape if imageA is not None else None
+    b = imageB.shape if imageB is not None else None
+    m = mask.shape if imageB is not None else None
+    # Logger.debug(targetW, targetH, a, b, m, blendOp, alpha, mode, resample)
 
     if targetH == 0 or targetW == 0:
+        Logger.debug("bad dimensions", targetW, targetH)
         return channel_solid(targetW or 1, targetH or 1, )
 
     center = (targetW // 2, targetH // 2)
@@ -1269,7 +1257,7 @@ def testTRS() -> None:
     while True:
         title, image,  = remap[idx_remap]
         cv2.imshow("", image)
-        print(title)
+        Logger.debug(title)
         if cv2.waitKey() & 0xFF == ord('q'):
             break
         idx_remap = (idx_remap + 1) % len(remap)
@@ -1290,14 +1278,25 @@ def testBlendModes() -> None:
     back = cv2.imread('./_res/img/test_fore.png', cv2.IMREAD_UNCHANGED)
     # mask = cv2.imread('./_res/img/test_mask.png', cv2.IMREAD_UNCHANGED)
     mask = None
-    for op in BlendType:
+    for op in EnumBlendType:
         for m in EnumScaleMode:
-            a = comp_blend(None, fore, mask, blendOp=op, alpha=1., color=(255, 0, 0), mode=m)
-            cv2.imwrite(f'./_res/tst/blend-{op.name}-{m.name}-0.png', a)
-            a = comp_blend(back, None, mask, blendOp=op, alpha=0.5, color=(0, 255, 0), mode=m)
+            a = comp_blend(fore, None, None) #, blendOp=op, alpha=0.5, color=(255, 0, 0), mode=m)
             cv2.imwrite(f'./_res/tst/blend-{op.name}-{m.name}-1.png', a)
-            a = comp_blend(back, fore, None, blendOp=op, alpha=0, color=(0, 0, 255), mode=m)
-            cv2.imwrite(f'./_res/tst/blend-{op.name}-{m.name}-2.png', a)
+            #a = comp_blend(back, None, mask, blendOp=op, alpha=0.5, color=(0, 255, 0), mode=m)
+            #cv2.imwrite(f'./_res/tst/blend-{op.name}-{m.name}-0.5.png', a)
+            #a = comp_blend(back, fore, None, blendOp=op, alpha=0, color=(0, 0, 255), mode=m)
+            #cv2.imwrite(f'./_res/tst/blend-{op.name}-{m.name}-0.png', a)
+
+def testImageMerge() -> None:
+    img = cv2.imread('./_res/img/test_comfy.png', cv2.IMREAD_UNCHANGED)
+    r, g, b, a = image_split(img)
+    R = cv2.imread('./_res/img/test_R.png', cv2.IMREAD_UNCHANGED)
+    G = cv2.imread('./_res/img/test_G.png', cv2.IMREAD_UNCHANGED)
+    B = cv2.imread('./_res/img/test_B.png', cv2.IMREAD_UNCHANGED)
+    d = image_merge(R, G, B, None, 512, 512)
+    cv2.imwrite(f'./_res/tst/image-merge.png', d)
 
 if __name__ == "__main__":
-    testBlendModes()
+    # testBlendModes()
+    testImageMerge()
+

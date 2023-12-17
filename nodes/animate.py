@@ -6,13 +6,13 @@ Animate
 import time
 from typing import Any
 
-from Jovimetrix import Logger, JOVBaseNode, WILDCARD, JOV_MAX_DELAY
+from Jovimetrix import Logger, JOVBaseNode, WILDCARD
 from Jovimetrix.sup.anim import EnumWaveSimple
 
 # =============================================================================
 
 class TickNode(JOVBaseNode):
-    NAME = "🕛 Tick (jov)"
+    NAME = "TICK (JOV) 🕛"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/ANIMATE"
     DESCRIPTION = "Periodic pulse exporting normalized, delta since last pulse and count."
     RETURN_TYPES = ("INT", "FLOAT", "FLOAT", "FLOAT", )
@@ -63,53 +63,8 @@ class TickNode(JOVBaseNode):
 
         return (self.__count, lin, t, self.__delta,)
 
-class DelayNode(JOVBaseNode):
-    """Delay for some time."""
-
-    NAME = "⏸️ Delay (jov)"
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/ANIMATE"
-    DESCRIPTION = "Delay for some time"
-    RETURN_TYPES = (WILDCARD,)
-    RETURN_NAMES = ("🦄",)
-    SORT = 70
-
-    @classmethod
-    def INPUT_TYPES(cls) -> Any:
-        return {"required": {
-                    "o": (WILDCARD, {"default": None}),
-                    "delay": ("FLOAT", {"step": 0.01, "default" : 0}),
-                    "hold": ("BOOLEAN", {"default": False}),
-                    "reset": ("BOOLEAN", {"default": False})
-                }}
-
-    def __init__(self) -> None:
-        self.__delay = 0
-
-    def run(self, o: Any, delay: float, hold: bool, reset: bool) -> dict:
-        ''' @TODO
-        t = threading.Thread(target=self.__run, daemon=True)
-        t.start()
-        '''
-        if reset:
-            self.__delay = 0
-            return (self, )
-
-        if hold:
-            return(None,)
-
-        if delay != self.__delay:
-            self.__delay = delay
-            self.__delay = max(0, min(self.__delay, JOV_MAX_DELAY))
-
-        time.sleep(self.__delay)
-        return (o,)
-
-    def __run(self) -> None:
-        while self.__hold:
-            time.sleep(0.1)
-
 class WaveGeneratorNode(JOVBaseNode):
-    NAME = "🌊 Wave Generator (jov)"
+    NAME = "WAVE GENERATOR (JOV) 🌊"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/ANIMATE"
     DESCRIPTION = ""
     RETURN_TYPES = ("FLOAT", "INT", )

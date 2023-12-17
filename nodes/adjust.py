@@ -20,7 +20,7 @@ from Jovimetrix.sup.comp import EnumAdjustOP, EnumThresholdAdapt, EnumColorMap, 
 # =============================================================================
 
 class AdjustNode(JOVImageInOutBaseNode):
-    NAME = "🕸️ Adjust (jov)"
+    NAME = "ADJUST (JOV) 🕸️"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/ADJUST"
     DESCRIPTION = "Blur, Sharpen and Emboss an input"
 
@@ -120,12 +120,12 @@ class AdjustNode(JOVImageInOutBaseNode):
         )
 
 class ColorMatchNode(JOVImageInOutBaseNode):
-    NAME = "💞 Color Match (jov)"
+    NAME = "COLOR MATCH (JOV) 💞"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/ADJUST"
     DESCRIPTION = "Project the colors of one pixel block onto another"
 
     @classmethod
-    def INPUT_TYPES(s) -> dict:
+    def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
                 "colormap": (EnumColorMap._member_names_, {"default": EnumColorMap.HSV.name}),
                 "usemap": ("BOOLEAN", {"default": False}),
@@ -189,7 +189,7 @@ class ColorMatchNode(JOVImageInOutBaseNode):
         )
 
 class FindEdgeNode(JOVImageInOutBaseNode):
-    NAME = "🔳 Find Edges (jov)"
+    NAME = "FIND EDGES (JOV) 🔳"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/ADJUST"
     DESCRIPTION = "Find Edges on an input"
 
@@ -234,7 +234,7 @@ class FindEdgeNode(JOVImageInOutBaseNode):
         )
 
 class HSVNode(JOVImageInOutBaseNode):
-    NAME = "🌈 HSV (jov)"
+    NAME = "HSV (JOV) 🌈"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/ADJUST"
     DESCRIPTION = "Adjust the Hue, Saturation, Value, Contrast and Gamma of the input."
 
@@ -304,7 +304,7 @@ class HSVNode(JOVImageInOutBaseNode):
         )
 
 class LevelsNode(JOVImageInOutBaseNode):
-    NAME = "🛗 Level Adjust (jov)"
+    NAME = "LEVELS (JOV) 🛗"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/ADJUST"
     DESCRIPTION = "Clip an input based on a low, high and mid point value"
 
@@ -356,7 +356,7 @@ class LevelsNode(JOVImageInOutBaseNode):
         )
 
 class ThresholdNode(JOVImageInOutBaseNode):
-    NAME = "📉 Threshold (jov)"
+    NAME = "THRESHOLD (JOV) 📉"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/ADJUST"
     DESCRIPTION = "Clip an input to explicit 0 or 1"
 

@@ -44,7 +44,7 @@ function createShader(type, source) {
         GL.deleteShader(shader);
         return null;
     }
-    console.log('Shader compiled successfully');
+    //console.info('Shader compiled successfully');
     return shader;
 }
 
@@ -61,7 +61,7 @@ function createProgram(vertex, fragment) {
         console.error('Unable to initialize the shader program: ' + GL.getProgramInfoLog(program));
         return null;
     }
-    console.log('Shader program linked successfully');
+    //console.info('Shader program linked successfully');
     return program;
 }
 
@@ -105,7 +105,7 @@ export async function render(program) {
     }
 }
 
-const _id = "🍩 GLSL (jov)"
+const _id = "GLSL (JOV) 🍩"
 const _idjs = _id + ".js";
 //const _category = "JOVIMETRIX 🔺🟩🔵/CREATE";
 /*
@@ -145,16 +145,28 @@ const ext = {
 	async beforeRegisterNodeDef(nodeType, nodeData, app) {
 		// Run custom logic before a node definition is registered with the graph
         if (nodeData.name === _id) {
-            Object.keys(nodeType.prototype).forEach(key => {
-                console.log(nodeType.prototype)
-                const originalFunction = nodeType.prototype[key];
-                nodeType.prototype[key] = function () {
-                    console.info(`Function: ${key}`);
-                    return originalFunction.apply(this, arguments);
-                };
-            });
-            return
+            function hookFunctions(proto) {
+                if (proto === null) {
+                    return;
+                }
 
+                const data = Object.getOwnPropertyNames(proto);
+                //console.info(data);
+                data.forEach(key => {
+                    const value = proto[key];
+                    if (typeof value === 'function') {
+                        proto[key] = function () {
+                            // console.info(`Function: ${key}`);
+                            return value.apply(this, arguments);
+                        };
+                    }
+                });
+
+                hookFunctions(Object.getPrototypeOf(proto));
+            }
+            hookFunctions(nodeType.prototype)
+        }
+/*
             const onNodeCreated = nodeType.prototype.onNodeCreated
             nodeType.prototype.onNodeCreated = function () {
                 const me = onNodeCreated?.apply(this);
@@ -181,9 +193,9 @@ const ext = {
 				onConfigure?.apply(this, arguments);
                 console.info("hello")
 			};
-
             console.info(nodeType.prototype)
         }
+        */
 	},
 	async registerCustomNodes(app) {
 		// Register any custom node implementations here allowing for more flexibility than a custom node def

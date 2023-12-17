@@ -4,35 +4,67 @@ Utility
 """
 
 import gc
-import json
-from pickle import TRUE
+import time
 from typing import Any, Optional
 
-import comfy
+try:
+    import comfy
+except:
+    pass
+
 import torch
 
-from Jovimetrix import Logger, JOVBaseNode, WILDCARD
+from Jovimetrix import deep_merge_dict, \
+    Logger, JOVBaseNode, \
+    WILDCARD, JOV_MAX_DELAY, IT_REQUIRED
 
 # =============================================================================
 
 class RouteNode(JOVBaseNode):
-    NAME = "🚌 Route (jov)"
+    NAME = "ROUTE (JOV) 🚌"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/UTILITY"
-    DESCRIPTION = "Wheels on the BUS pass the data through, around and around."
+    DESCRIPTION = "Pass-thru, delay, or hold traffic. Electrons on the data bus go round."
     RETURN_TYPES = (WILDCARD,)
     RETURN_NAMES = ("🚌",)
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        return {"required": {
+        d = {"optional": {
             "o": (WILDCARD, {"default": None}),
+            "delay": ("FLOAT", {"step": 0.01, "default" : 0}),
+            "hold": ("BOOLEAN", {"default": False}),
+            "reset": ("BOOLEAN", {"default": False})
         }}
+        return deep_merge_dict(IT_REQUIRED, d)
 
-    def run(self, o: object) -> object:
+    def __init__(self) -> None:
+        self.__delay = 0
+
+    def run(self, o: Any, delay: float, hold: bool, reset: bool) -> Any:
+        ''' @TODO
+        t = threading.Thread(target=self.__run, daemon=True)
+        t.start()
+        '''
+        if reset:
+            self.__delay = 0
+            return (self, )
+
+        if hold:
+            return(None,)
+
+        if delay != self.__delay:
+            self.__delay = delay
+            self.__delay = max(0, min(self.__delay, JOV_MAX_DELAY))
+
+        time.sleep(self.__delay)
         return (o,)
 
+    def __run(self) -> None:
+        while self.__hold:
+            time.sleep(0.1)
+
 class ClearCacheNode(JOVBaseNode):
-    NAME = "🧹 Clear Cache (jov)"
+    NAME = "CACHE (JOV) 🧹"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/UTILITY"
     DESCRIPTION = "Clear the torch cache, and python caches - we need to pay the bills"
     RETURN_TYPES = (WILDCARD,)
@@ -41,9 +73,10 @@ class ClearCacheNode(JOVBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        return {"required": {
+        d = {"optional": {
             "o": (WILDCARD, {}),
         }}
+        return deep_merge_dict(IT_REQUIRED, d)
 
     def run(self, o: Any) -> [object, ]:
         f, t = torch.cuda.mem_get_info()
@@ -66,7 +99,7 @@ class ClearCacheNode(JOVBaseNode):
         return (s, )
 
 class OptionsNode(JOVBaseNode):
-    NAME = "⚙️ Options (jov)"
+    NAME = "OPTIONS (JOV) ⚙️"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/UTILITY"
     DESCRIPTION = "Change Jovimetrix Global Options"
     RETURN_TYPES = (WILDCARD, )
@@ -75,14 +108,14 @@ class OptionsNode(JOVBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        return {
-            "required" : {},
+        d = {
             "optional": {
                 "o": (WILDCARD, {"default": None}),
-                "log": (["ERROR", "WARN", "INFO", "DEBUG"], {"default": "ERROR"}),
+                "log": (["ERROR", "WARN", "INFO", "DEBUG", "SPAM"], {"default": "ERROR"}),
                 #"host": ("STRING", {"default": ""}),
                 #"port": ("INT", {"min": 0, "step": 1, "default": 7227}),
             }}
+        return deep_merge_dict(IT_REQUIRED, d)
 
     @classmethod
     def IS_CHANGED(cls, **kw) -> float:
@@ -97,6 +130,8 @@ class OptionsNode(JOVBaseNode):
             Logger._LEVEL = 2
         elif log == "DEBUG":
             Logger._LEVEL = 3
+        elif log == "SPAM":
+            Logger._LEVEL = 4
 
         #stream.STREAMPORT = port
         #stream.STREAMHOST = host
@@ -107,38 +142,33 @@ class OptionsNode(JOVBaseNode):
 class DebugNode(JOVBaseNode):
     """Display any data."""
 
-    NAME = "🪲 Debug (jov)"
+    NAME = "DEBUG (JOV) 🪲"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/UTILITY"
     DESCRIPTION = "Debug data"
+    RETURN_TYPES = (WILDCARD, WILDCARD, )
+    RETURN_NAMES = ("🦄", "💾")
     OUTPUT_NODE = True
     SORT = 100
-    POST = True
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        return {"required": {
-                    "source": (WILDCARD, {}),
-                },
-                "optional": {
-                    "console": ("BOOLEAN", {"default": False})
-                }}
+        d = {"optional": {
+            "o": (WILDCARD, {}),
+            "dump" : ("BOOLEAN", {"default": True}),
+        }}
+        return deep_merge_dict(IT_REQUIRED, d)
 
-    @classmethod
-    def IS_CHANGED(cls, **kw) -> float:
-        return float("nan")
-
-    @classmethod
-    def parse_value(cls, s) -> dict[str, Any]:
+    def __parse(self, s) -> dict[str, Any]:
         def handle_dict(d) -> dict[str, Any]:
-            result = {"type": "Dictionary", "items": {}}
+            result = {"type": "dict", "items": {}}
             for key, value in d.items():
-                result["items"][key] = cls.parse_value(value)
+                result["items"][key] = self.__parse(value)
             return result
 
-        def handle_list(s) -> dict[str, Any]:
-            result = {"type": type(s), "items": []}
+        def handle_list(cls) -> dict[str, Any]:
+            result = {"type": repr(type(cls)), "items": []}
             for item in s:
-                result["items"].append(cls.parse_value(item))
+                result["items"].append(self.__parse(item))
             return result
 
         if isinstance(s, dict):
@@ -148,15 +178,16 @@ class DebugNode(JOVBaseNode):
         elif isinstance(s, torch.Tensor):
             return {"Tensor": f"{s.shape}"}
         else:
-            return {"type": repr(type(s)), "value": s}
+            meh = ''.join(repr(type(s)).split("'")[1:2])
+            return {"type": meh, "value": s}
 
-    def run(self, console:bool, source:list[object]) -> dict:
-        # ret = [{"ui": {"text": self.parse_value(s)}} for s in source]
-        ret = [self.parse_value(s) for s in source]
-        if console:
-            value = f'# items: {len(ret)}\n' + json.dumps(ret, indent=2)
-            print(value)
-        return ret
+    def run(self, o:Optional[object]=None, dump:bool=False) -> object:
+        if o is None:
+            return (o, {})
+        value = self.__parse(o)
+        if dump:
+            Logger.dump(value)
+        return (o, value,)
 
 # =============================================================================
 # === TESTING ===

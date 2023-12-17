@@ -7,7 +7,10 @@ Device -- MIDI, WEBCAM
     type 2 (asynchronous): each track is independent of the others
 """
 
+import time
 import uuid
+import threading
+from queue import Queue, Empty
 
 import cv2
 import torch
@@ -16,7 +19,7 @@ import numpy as np
 from Jovimetrix import deep_merge_dict, tensor2cv, cv2mask, cv2tensor, \
         JOVBaseNode, JOVImageBaseNode, Logger, \
         IT_PIXELS, IT_ORIENT, IT_CAM, IT_REQUIRED, \
-        IT_WHMODE, IT_REQUIRED, MIN_HEIGHT, MIN_WIDTH, IT_INVERT
+        IT_WHMODE, MIN_HEIGHT, MIN_WIDTH, IT_INVERT
 
 from Jovimetrix.sup.comp import image_grid, light_invert, geo_scalefit, EnumInterpolation, IT_SAMPLE
 from Jovimetrix.sup.stream import StreamingServer, StreamManager
@@ -45,23 +48,43 @@ def save_midi() -> None:
 
 def load_midi(fn) -> None:
     mid = MidiFile(fn, clip=True)
-    print(mid)
+    Logger.debug(mid)
     for msg in mid.tracks[0]:
-        print(msg)
+        Logger.debug(msg)
 
-def print_message(message) -> None:
-    print(message)
+class MIDIServerThread(threading.Thread):
+    def __init__(self, q_in, device, callback, *arg, **kw) -> None:
+        super().__init__(*arg, **kw)
+        self.__q_in = q_in
+        # self.__q_out = q_out
+        self.__device = device
+        self.__callback = callback
 
-def poll_midi() -> None:
-    while 1:
-        with mido.open_input(callback=print_message) as inport:
-            for msg in inport:
-                print(msg)
+    def __run(self) -> None:
+        with mido.open_input(self.__device, callback=self.__callback) as inport:
+            while True:
+                try:
+                    cmd = self.__q_in.get_nowait()
+                    if (cmd):
+                        self.__device = cmd
+                        break
+                except Empty as _:
+                    time.sleep(0.01)
+                except Exception as e:
+                    Logger.debug(str(e))
+
+    def run(self) -> None:
+        while True:
+            Logger.debug(f"started device loop {self.__device}")
+            try:
+                self.__run()
+            except Exception as e:
+                Logger.err(str(e))
 
 # =============================================================================
 
 class StreamReaderNode(JOVImageBaseNode):
-    NAME = "📺 StreamReader (jov)"
+    NAME = "STREAM READER (JOV) 📺"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/DEVICE"
     DESCRIPTION = ""
     OUTPUT_NODE = True
@@ -142,6 +165,11 @@ class StreamReaderNode(JOVImageBaseNode):
         )
 
 class StreamWriterNode(JOVBaseNode):
+    NAME = "STREAM WRITER (JOV) 🎞️"
+    CATEGORY = "JOVIMETRIX 🔺🟩🔵/DEVICE"
+    DESCRIPTION = ""
+    OUTPUT_NODE = True
+    # OUTPUT_IS_LIST = (False, False,)
     OUT_MAP = {}
 
     @classmethod
@@ -153,11 +181,6 @@ class StreamWriterNode(JOVBaseNode):
                 "hold": ("BOOLEAN", {"default": False}),
             }}
         return deep_merge_dict(IT_PIXELS, d, IT_WHMODE, IT_INVERT)
-
-    NAME = "🎞️ StreamWriter (jov)"
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/DEVICE"
-    DESCRIPTION = ""
-    OUTPUT_IS_LIST = (None, None,)
 
     @classmethod
     def IS_CHANGED(cls, route: str, hold: bool, width: int, height: int, fps: float, **kw) -> float:
@@ -230,33 +253,114 @@ class StreamWriterNode(JOVBaseNode):
         image = geo_scalefit(image, w, h, m, rs)
         self.__device.post(image)
 
-class MIDIPortNode(JOVBaseNode):
-    NAME = "🎹 MIDI Port (jov)"
+class MIDIReaderNode(JOVBaseNode):
+    NAME = "MIDI READER (JOV) 🎹"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/DEVICE"
     DESCRIPTION = "Reads input from a midi device"
     OUTPUT_NODE = True
-    OUTPUT_IS_LIST = (False,)
-    RETURN_TYPES = ('FLOAT',)
-    RETURN_NAMES = ("🎛️",)
+    OUTPUT_IS_LIST = (False, False, False, False, False)
+    RETURN_TYPES = ('BOOLEAN', 'INT', 'INT', 'INT', 'FLOAT')
+    RETURN_NAMES = ("🔛", "📺", "🎚️", "🎶", "#️⃣",)
+
+    DEVICES = mido.get_input_names()
 
     @classmethod
-    def INPUT_TYPES(s) -> dict:
+    def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
-            "channel" : ("INT", {"default":0}),
-            "port" : ("INT", {"default":0}),
-        }}
+                "device" : (cls.DEVICES, {"default": cls.DEVICES[0] if len(cls.DEVICES) > 0 else None}),
+                "normalize" : ("BOOLEAN", {"default": True}),
+                "filter" : ("BOOLEAN", {"default": False}),
+                "channel" : ("INT", {"default": 0}),
+            }}
         return deep_merge_dict(IT_REQUIRED, d)
 
-    def run(self, channel:int=0,  port:int=0) -> tuple[float]:
-        val = 0.
-        return (val, )
+    @classmethod
+    def IS_CHANGED(cls) -> float:
+        return float("nan")
+
+    def __init__(self) -> None:
+        self.__q_in = Queue()
+        self.__q_out = Queue()
+        self.__device = None
+        self.__note = 0
+        self.__note_on = False
+        self.__channel = 0
+        self.__control = 0
+        self.__value = 0
+        self.__SERVER = MIDIServerThread(self.__q_in, self.__device, self.__process, daemon=True)
+        self.__SERVER.start()
+
+    def __process(self, data) -> None:
+        self.__channel = data.channel
+        self.__note = 0
+        self.__control = 0
+        self.__note_on = False
+        match data.type:
+            case "control_change":
+                # control=8 value=14 time=0
+                self.__control = data.control
+                self.__value = data.value
+            case "note_on":
+                self.__note = data.note
+                self.__note_on = True
+                self.__value = data.velocity
+                # note=59 velocity=0 time=0
+            case "note_off":
+                self.__note = data.note
+                self.__value = data.velocity
+                # note=59 velocity=0 time=0
+
+        # Logger.spam(self.__note_on, self.__channel, self.__control, self.__note, self.__value)
+
+    def run(self, device:str, normalize:bool, filter:bool, channel:int) -> tuple[bool, int, int, int]:
+        if device != self.__device:
+            self.__q_in.put(device)
+            self.__device = device
+
+        if filter and self.__channel != channel:
+            return (self.__channel, channel, False, 0, 0, 0)
+
+        if (value := self.__value) > 0 and normalize:
+            value /= 127.
+        Logger.spam(channel, self.__note_on, self.__channel, self.__control, self.__note, value)
+        return (self.__note_on, self.__channel, self.__control, self.__note, value)
 
 # =============================================================================
 # === TESTING ===
 # =============================================================================
 
 if __name__ == "__main__":
-   m = mido.get_output_names()
-   print(m)
 
-   poll_midi()
+    def process(data) -> None:
+        channel = data.channel
+        note = 0
+        control = 0
+        note_on = False
+        match data.type:
+            case "control_change":
+                # control=8 value=14 time=0
+                control = data.control
+                value = data.value
+            case "note_on":
+                note = data.note
+                note_on = True
+                value = data.velocity
+                # note=59 velocity=0 time=0
+            case "note_off":
+                note = data.note
+                value = data.velocity
+                # note=59 velocity=0 time=0
+
+        value /= 127.
+        Logger.debug(note_on, channel, control, note, value)
+
+    device= mido.get_input_names()[0]
+    Logger.debug(device)
+    q_in = Queue()
+    q_out = Queue()
+    server = MIDIServerThread(q_in, device, process, daemon=True)
+    server.start()
+    while True:
+        time.sleep(0.01)
+
+
