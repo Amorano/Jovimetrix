@@ -8,8 +8,9 @@ import torch
 import numpy as np
 from PIL import Image, ImageDraw
 
-from Jovimetrix import Logger, cv2mask, pil2cv, cv2tensor, \
-    JOVImageBaseNode, MIN_HEIGHT
+from Jovimetrix import deep_merge_dict, cv2mask, pil2cv, cv2tensor, \
+    Logger, JOVImageBaseNode, Lexicon, \
+    IT_REQUIRED, IT_WH, IT_RGB, IT_RGB_BACK
 
 # =============================================================================
 # === LOADERS ===
@@ -90,33 +91,29 @@ class GraphWaveNode(JOVImageBaseNode):
     NAME = "GRAPH WAVE (JOV) 🎶"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/AUDIO"
     RETURN_TYPES = ("IMAGE", "MASK", "WAVE")
-    RETURN_NAMES = ("🖼️", "😷", "〰️" )
+    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.MASK, Lexicon.WAVE )
     OUTPUT_IS_LIST = (False, False, True)
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        return {
-            "required":{
-                "filen": ("STRING", {"default": ""})},
-            "optional": {
-                "bars": ("INT", {"default": 100, "min": 32, "max": 8192, "step": 1}),
-                "width": ("INT", {"default": 1024, "min": 32, "max": 8192, "step": 1}),
-                "height": ("INT", {"default": MIN_HEIGHT, "min": 32, "max": 8192, "step": 1}),
-                "barR": ("FLOAT", {"default": 1, "min": 0, "max": 1, "step": 0.01}),
-                "barG": ("FLOAT", {"default": 1, "min": 0, "max": 1, "step": 0.01}),
-                "barB": ("FLOAT", {"default": 1, "min": 0, "max": 1, "step": 0.01}),
-                "backR": ("FLOAT", {"default": 0, "min": 0, "max": 1, "step": 0.01}),
-                "backG": ("FLOAT", {"default": 0, "min": 0, "max": 1, "step": 0.01}),
-                "backB": ("FLOAT", {"default": 0, "min": 0, "max": 1, "step": 0.01}),
-        }}
+        d = {"optional": {
+                Lexicon.FILEN: ("STRING", {"default": ""}),
+                Lexicon.AMT: ("INT", {"default": 100, "min": 32, "max": 8192, "step": 1})
+            }}
+        return deep_merge_dict(IT_REQUIRED, IT_WH, d, IT_RGB, IT_RGB_BACK)
 
+    # #️⃣ 🪄
     def __init__(self) -> None:
         self.__filen = None
         self.__data = None
 
-    def run(self, filen: str, bars:int, width: int, height: int,
-            barR: float, barG: float, barB: float,
-            backR: float, backG: float, backB: float ) -> tuple[torch.Tensor, torch.Tensor]:
+    def run(self, filen: str, **kw) -> tuple[torch.Tensor, torch.Tensor]:
+        width = kw.get(Lexicon.WIDTH, None)
+        height = kw.get(Lexicon.HEIGHT, None)
+        bars = kw.get(Lexicon.AMT, None)
+        rgb = kw.get(Lexicon.RGB, None)
+        back = kw.get(Lexicon.RGB_BACK, None)
+
 
         if self.__filen != filen:
             self.__data = None
@@ -130,7 +127,7 @@ class GraphWaveNode(JOVImageBaseNode):
 
         image = np.zeros((1, 1), dtype=np.int16)
         if self.__data is not None:
-            image = graph_sausage(self.__data, bars, width, height, (barR, barG, barB), (backR, backG, backB))
+            image = graph_sausage(self.__data, bars, width, height, rgb, back)
 
         image = cv2tensor(image)
         mask = cv2mask(image)

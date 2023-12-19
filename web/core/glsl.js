@@ -105,16 +105,9 @@ export async function render(program) {
     }
 }
 
-const _id = "GLSL (JOV) 🍩"
-const _idjs = _id + ".js";
-//const _category = "JOVIMETRIX 🔺🟩🔵/CREATE";
-/*
-DESCRIPTION = ""
-OUTPUT_IS_LIST = (False, False, )
-POST = True
-*/
+const _id = "GLSL (JOV) 🍩.js";
 const ext = {
-	name: _idjs,
+	name: _id,
     // category: _category,
 	async init(app) {
         // Any initial setup to run as soon as the page loads

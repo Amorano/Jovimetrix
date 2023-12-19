@@ -9,7 +9,7 @@ from enum import Enum
 from typing import Any
 
 from Jovimetrix import deep_merge_dict, \
-    Logger, JOVBaseNode, \
+    Logger, JOVBaseNode, Lexicon, \
     JOV_MAX_DELAY, IT_REQUIRED, WILDCARD
 
 # =============================================================================
@@ -36,26 +36,31 @@ class RouteNode(JOVBaseNode):
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/FLOW"
     DESCRIPTION = "Pass-thru, delay, or hold traffic. Electrons on the data bus go round."
     RETURN_TYPES = (WILDCARD,)
-    RETURN_NAMES = ("🚌",)
+    RETURN_NAMES = (Lexicon.ROUTE,)
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
-            "o": (WILDCARD, {"default": None}),
-            "delay": ("FLOAT", {"step": 0.01, "default" : 0}),
-            "hold": ("BOOLEAN", {"default": False}),
-            "reset": ("BOOLEAN", {"default": False})
+            Lexicon.PASS_THRU: (WILDCARD, {"default": None}),
+            Lexicon.DELAY: ("FLOAT", {"step": 0.01, "default" : 0}),
+            Lexicon.WAIT: ("BOOLEAN", {"default": False}),
+            Lexicon.RESET: ("BOOLEAN", {"default": False})
         }}
         return deep_merge_dict(IT_REQUIRED, d)
 
     def __init__(self) -> None:
         self.__delay = 0
 
-    def run(self, o: Any, delay: float, hold: bool, reset: bool) -> Any:
+    def run(self, **kw) -> tuple[Any]:
         ''' @TODO
         t = threading.Thread(target=self.__run, daemon=True)
         t.start()
         '''
+        o = kw.get(Lexicon.PASS_THRU, None)
+        delay = kw.get(Lexicon.DELAY, 0)
+        hold = kw.get(Lexicon.WAIT, False)
+        reset = kw.get(Lexicon.RESET, False)
+
         if reset:
             self.__delay = 0
             return (self, )
@@ -81,20 +86,25 @@ class ComparisonNode(JOVBaseNode):
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/FLOW"
     DESCRIPTION = "Compare two inputs"
     RETURN_TYPES = ("BOOLEAN",)
-    RETURN_NAMES = ("🅱️")
+    RETURN_NAMES = (Lexicon.BOOLEAN, )
     OUTPUT_NODE = True
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
-                "A": (WILDCARD, {"default": None}),
-                "B": (WILDCARD, {"default": None}),
-                "comparison": (EnumComparison._member_names_, {"default": EnumComparison.A_EQUALS_B.value}),
+                Lexicon.IN_A: (WILDCARD, {"default": None}),
+                Lexicon.IN_B: (WILDCARD, {"default": None}),
+                Lexicon.COMPARE: (EnumComparison._member_names_, {"default": EnumComparison.A_EQUALS_B.name}),
         }}
         return deep_merge_dict(IT_REQUIRED, d)
 
-    def run(self, A: Any, B: Any, comparison: EnumComparison) -> tuple[bool]:
-        match comparison:
+    def run(self, **kw) -> tuple[bool]:
+
+        compare = kw.get(Lexicon.COMPARE, EnumComparison.A_EQUALS_B)
+        A = kw.get(Lexicon.IN_A, None)
+        B = kw.get(Lexicon.IN_B, None)
+
+        match compare:
             case EnumComparison.A_EQUALS_B:
                 return (A == B,)
             case EnumComparison.A_GREATER_THAN_B:
@@ -115,22 +125,23 @@ class IfThenElseNode(JOVBaseNode):
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/FLOW"
     DESCRIPTION = "IF <valid> then A else B"
     RETURN_TYPES = (WILDCARD,)
-    RETURN_NAMES = "❔"
+    RETURN_NAMES = (Lexicon.RESULT, )
     OUTPUT_NODE = True
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         return {
             "required": {
-                "o": ("BOOLEAN", {"default": False}),
-                "🇹": (WILDCARD, {"default": None}),
-                "🇫": (WILDCARD, {"default": None}),
+                Lexicon.CONDITION: ("BOOLEAN", {"default": False}),
+                Lexicon.TRUE: (WILDCARD, {"default": None}),
+                Lexicon.FALSE: (WILDCARD, {"default": None}),
             },
         }
 
-    def run(self, o:bool, **kw) -> tuple[bool]:
-        T = kw.get('🇹', None)
-        F = kw.get('🇫', None)
+    def run(self, **kw) -> tuple[bool]:
+        o = kw.get(Lexicon.CONDITION, False)
+        T = kw.get(Lexicon.TRUE, None)
+        F = kw.get(Lexicon.FALSE, None)
         if T is None or F is None:
             return (None,)
         return (T if o else F,)

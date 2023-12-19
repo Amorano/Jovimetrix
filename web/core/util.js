@@ -107,7 +107,7 @@ export function convert_hex(color) {
     if (!color.HEX.includes("NAN")) {
         return '#' + color.HEX + ((color.alpha * 255) | 1 << 8).toString(16).slice(1).toUpperCase();
     }
-    return "#4D4D4DEE";
+    return "#13171DFF";
 }
 
 export function toggleFoldable(elementId, symbolId) {

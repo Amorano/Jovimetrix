@@ -10,65 +10,65 @@
                 "regex": [
                     {
                         "regex": "regex",
-                        "title": "#FF00EBFF",
+                        "title": "#00FF14FF",
                         "body": "#FFCB00FF",
                         "shape": "round"
                     }
                 ],
                 "theme": {
+                    "JOVIMETRIX \ud83d\udd3a\ud83d\udfe9\ud83d\udd35": {
+                        "title": "#A23DA2FF",
+                        "body": "#13171DFF",
+                        "shape": "box"
+                    },
                     "JOVIMETRIX \ud83d\udd3a\ud83d\udfe9\ud83d\udd35/CREATE": {
                         "title": "#1F991FFF",
-                        "body": "#001A00FF",
+                        "body": "#13171DFF",
                         "shape": "round"
                     },
                     "JOVIMETRIX \ud83d\udd3a\ud83d\udfe9\ud83d\udd35/ADJUST": {
                         "title": "#958100FF",
-                        "body": "#1A1100FF",
+                        "body": "#13171DFF",
                         "shape": "round"
                     },
                     "JOVIMETRIX \ud83d\udd3a\ud83d\udfe9\ud83d\udd35/TRANSFORM": {
                         "title": "#995D1FFF",
-                        "body": "#1A0100FF",
+                        "body": "#13171DFF",
                         "shape": "round"
                     },
                     "JOVIMETRIX \ud83d\udd3a\ud83d\udfe9\ud83d\udd35/COMPOSE": {
                         "title": "#5C1F9AFF",
-                        "body": "#09001AFF",
+                        "body": "#13171DFF",
                         "shape": "round"
                     },
                     "JOVIMETRIX \ud83d\udd3a\ud83d\udfe9\ud83d\udd35/ANIMATE": {
                         "title": "#1F1F98FF",
-                        "body": "#00001AFF",
+                        "body": "#13171DFF",
                         "shape": "round"
+                    },
+                    "JOVIMETRIX \ud83d\udd3a\ud83d\udfe9\ud83d\udd35/FLOW": {
+                        "title": "#991F1FFF",
+                        "body": "#13171DFF"
                     },
                     "JOVIMETRIX \ud83d\udd3a\ud83d\udfe9\ud83d\udd35/AUDIO": {
                         "title": "#991E5DFF",
-                        "body": "#1A0009FF",
+                        "body": "#13171DFF",
                         "shape": "round"
                     },
                     "JOVIMETRIX \ud83d\udd3a\ud83d\udfe9\ud83d\udd35/DEVICE": {
                         "title": "#1F9999FF",
-                        "body": "#001A1AFF",
+                        "body": "#13171DFF",
                         "shape": "round"
                     },
                     "JOVIMETRIX \ud83d\udd3a\ud83d\udfe9\ud83d\udd35/UTILITY": {
                         "title": "#0A0A0AFF",
-                        "body": "#1A0000FF",
+                        "body": "#13171DFF",
                         "shape": "round"
                     },
                     "JOVIMETRIX \ud83d\udd3a\ud83d\udfe9\ud83d\udd35/WIP \u2623\ufe0f\ud83d\udca3": {
                         "title": "#99851FFF",
-                        "body": "#1A1500FF",
+                        "body": "#13171DFF",
                         "shape": "box"
-                    },
-                    "JOVIMETRIX \ud83d\udd3a\ud83d\udfe9\ud83d\udd35": {
-                        "title": "#A23DA2FF",
-                        "body": "#1A001AFF",
-                        "shape": "box"
-                    },
-                    "JOVIMETRIX \ud83d\udd3a\ud83d\udfe9\ud83d\udd35/FLOW": {
-                        "title": "#991F1FFF",
-                        "body": "#1A0000FF"
                     }
                 }
             }

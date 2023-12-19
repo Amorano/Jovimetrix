@@ -157,8 +157,8 @@ export class JovimetrixConfigDialog extends ComfyDialog {
             const data = {
                 idx: idx,
                 name: entry.regex,
-                title: entry.title || '#4D4D4D',
-                body: entry.body || '#4D4D4D',
+                title: entry.title || '#13171DFF',
+                body: entry.body || '#13171DFF',
                 background: '#292930'
             };
             colorTable.appendChild($el("tbody", templateColorRegex(data)));
@@ -186,8 +186,8 @@ export class JovimetrixConfigDialog extends ComfyDialog {
                 background_index = (background_index + 1) % 2;
                 data = {
                     name: meow,
-                    title: '#6D6D6D',
-                    body: '#6D6D6D',
+                    title: '#13171DFF',
+                    body: '#13171DFF',
                     background: '#292930'
                 };
                 if (util.THEME.hasOwnProperty(meow)) {
@@ -202,8 +202,8 @@ export class JovimetrixConfigDialog extends ComfyDialog {
                 background_index = (background_index + 1) % 2;
                 data = {
                     name: cat,
-                    title: '#6D6D6D',
-                    body: '#6D6D6D',
+                    title: '#13171DFF',
+                    body: '#13171DFF',
                     background: background_title[background_index]
                 };
                 if (util.THEME.hasOwnProperty(cat)) {
@@ -217,8 +217,8 @@ export class JovimetrixConfigDialog extends ComfyDialog {
             const who = util.THEME[name];
             data = {
                 name: name,
-                title:  who ? who.title : '#6D6D6D',
-                body: who ? who.body :'#6D6D6D',
+                title:  who ? who.title : '#13171DFF',
+                body: who ? who.body :'#13171DFF',
                 background: background[background_index]
             };
             colorTable.appendChild($el("tbody", templateColorBlock(data)));

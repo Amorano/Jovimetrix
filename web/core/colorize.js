@@ -66,7 +66,7 @@ const ext = {
             appendTo: ext.config_dialog.element,
             noAlpha: false,
             init: function(elm, rgb) {
-                elm.style.backgroundColor = elm.color || "#4D4D4D";
+                elm.style.backgroundColor = elm.color || "#13171DFF";
                 elm.style.color = rgb.RGBLuminance > 0.22 ? '#222' : '#ddd';
             },
             convertCallback: function(data, options) {
@@ -143,11 +143,11 @@ const ext = {
                 const result = onNodeCreated ? onNodeCreated.apply(this, arguments) : undefined;
                 // console.info(nodeData.name, node);
                 if (nodeData.color === undefined) {
-                    this['color'] = (node.title || '#4D4D4D')
+                    this['color'] = (node.title || '#13171DFF')
                 }
 
                 if (nodeData.bgcolor === undefined) {
-                    this['bgcolor'] = (node.body || '#4D4D4D')
+                    this['bgcolor'] = (node.body || '#13171DFF')
                 }
                 /*
                 // default, box, round, card

@@ -5,6 +5,7 @@
 
 #jov-manager-dialog {
   min-width: 400px;
+  max-width: 1000px;
   height: 620px;
   font-size: 15px;
   padding: 0px;

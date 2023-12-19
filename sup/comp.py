@@ -1,14 +1,6 @@
 """
-     ██  ██████  ██    ██ ██ ███    ███ ███████ ████████ ██████  ██ ██   ██ 
-     ██ ██    ██ ██    ██ ██ ████  ████ ██         ██    ██   ██ ██  ██ ██  
-     ██ ██    ██ ██    ██ ██ ██ ████ ██ █████      ██    ██████  ██   ███  
-██   ██ ██    ██  ██  ██  ██ ██  ██  ██ ██         ██    ██   ██ ██  ██ ██ 
- █████   ██████    ████   ██ ██      ██ ███████    ██    ██   ██ ██ ██   ██ 
-
-               Procedural & Compositing Image Manipulation Nodes
-                    http://www.github.com/amorano/jovimetrix
-
-                    Copyright 2023 Alexander Morano (Joviex)
+Jovimetrix - http://www.github.com/amorano/jovimetrix
+Composition Support
 """
 
 import math
@@ -57,6 +49,10 @@ class EnumOrientation(Enum):
     HORIZONTAL = 0
     VERTICAL = 1
     GRID = 2
+
+class EnumProjection(Enum):
+    SPHERICAL = 0
+    FISHEYE = 5
 
 class EnumThreshold(Enum):
     BINARY = cv2.THRESH_BINARY
@@ -179,6 +175,17 @@ IT_SAMPLE = {
 # =============================================================================
 # === UTILITY ===
 # =============================================================================
+
+def pixel_convert(in_a: TYPE_IMAGE, in_b: TYPE_IMAGE) -> tuple[TYPE_IMAGE, TYPE_IMAGE]:
+    if in_a or in_b:
+        if in_a is None:
+            cc, _, w, h = channel_count(in_b)
+            in_a = np.zeros((h, w, cc), dtype=torch.uint8)
+        elif in_b is None:
+            cc, _, w, h = channel_count(in_a)
+            in_b = np.zeros((h, w, cc), dtype=torch.uint8)
+    return in_a, in_b
+
 
 def image_grayscale(image: TYPE_IMAGE) -> TYPE_IMAGE:
     if (cc := channel_count(image)[0]) == 1:
@@ -997,7 +1004,7 @@ def adjust_threshold(image:TYPE_IMAGE,
 
     const = max(-100, min(100, const))
     block = max(3, block if block % 2 == 1 else block + 1)
-    if adapt != EnumThresholdAdapt.ADAPT_NONE.value:
+    if adapt != EnumThresholdAdapt.ADAPT_NONE:
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         gray = cv2.adaptiveThreshold(gray, 255, adapt, cv2.THRESH_BINARY, block, const)
         gray = cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)

@@ -6,7 +6,9 @@ Animate
 import time
 from typing import Any
 
-from Jovimetrix import Logger, JOVBaseNode, WILDCARD
+from Jovimetrix import deep_merge_dict, \
+    Logger, JOVBaseNode, Lexicon, \
+    IT_REQUIRED
 from Jovimetrix.sup.anim import EnumWaveSimple
 
 # =============================================================================
@@ -16,25 +18,24 @@ class TickNode(JOVBaseNode):
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/ANIMATE"
     DESCRIPTION = "Periodic pulse exporting normalized, delta since last pulse and count."
     RETURN_TYPES = ("INT", "FLOAT", "FLOAT", "FLOAT", )
-    RETURN_NAMES = ("🧮", "🛟", "🕛", "🔺🕛",)
+    RETURN_NAMES = (Lexicon.COUNT, Lexicon.LINEAR, Lexicon.TIME, Lexicon.DELTA_TIME,)
     OUTPUT_NODE = True
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        return {
-            "required": {},
-            "optional": {
-                "total": ("INT", {"min": 0, "default": 0, "step": 1}),
+        d = {"optional": {
+                Lexicon.AMT: ("INT", {"min": 0, "default": 0, "step": 1}),
                 # forces a MOD on total
-                "loop": ("BOOLEAN", {"default": False}),
+                Lexicon.LOOP: ("BOOLEAN", {"default": False}),
                 # stick the current "count"
-                "hold": ("BOOLEAN", {"default": False}),
+                Lexicon.WAIT: ("BOOLEAN", {"default": False}),
                 # manual total = 0
-                "reset": ("BOOLEAN", {"default": False}),
+                Lexicon.RESET: ("BOOLEAN", {"default": False}),
             }}
+        return deep_merge_dict(IT_REQUIRED, d)
 
     @classmethod
-    def IS_CHANGED(cls, *arg, **kw) -> Any:
+    def IS_CHANGED(cls, *arg, **kw) -> float:
         return float("nan")
 
     def __init__(self, *arg, **kw) -> None:
@@ -44,11 +45,15 @@ class TickNode(JOVBaseNode):
         self.__time = time.perf_counter()
         self.__delta = 0
 
-    def run(self, total: int, loop: bool, hold: bool, reset: bool) -> None:
+    def run(self, **kw) -> tuple[int, float, float, float]:
+        total = kw.get(Lexicon.AMT, 0)
+        loop = kw.get(Lexicon.LOOP, 0)
+        hold = kw.get(Lexicon.WAIT, 0)
+        reset = kw.get(Lexicon.RESET, 0)
+
         if reset:
             self.__count = 0
 
-        # count = self.__count
         if loop and total > 0:
             self.__count %= total
         lin = (self.__count / total) if total != 0 else 1
@@ -68,25 +73,31 @@ class WaveGeneratorNode(JOVBaseNode):
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/ANIMATE"
     DESCRIPTION = ""
     RETURN_TYPES = ("FLOAT", "INT", )
-    RETURN_NAMES = ("🛟", "🔟", )
-    POST = True
+    RETURN_NAMES = (Lexicon.FLOAT, Lexicon.INT, )
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {"required":{
-                "wave": (EnumWaveSimple._member_names_, {"default": EnumWaveSimple.SIN.name}),
-                "phase": ("FLOAT", {"default": 1.0, "min": 0.0, "step": 1.0}),
-                "amp": ("FLOAT", {"default": 0.5, "min": 0.0, "step": 0.1}),
-                "offset": ("FLOAT", {"default": 0.0, "min": 0.0, "step": 1.0}),
-                "max": ("FLOAT", {"default": 0.5, "min": 0.0, "max": 9999.0, "step": 0.05}),
-                "frame": ("INT", {"default": 1.0, "min": 0.0, "step": 1.0}),
+        d = {"optional":{
+                Lexicon.WAVE: (EnumWaveSimple._member_names_, {"default": EnumWaveSimple.SIN.name}),
+                Lexicon.PHASE: ("FLOAT", {"default": 1, "min": 0.0, "step": 0.01}),
+                Lexicon.AMP: ("FLOAT", {"default": 1, "min": 0.0, "step": 0.1}),
+                Lexicon.OFFSET: ("FLOAT", {"default": 0.0, "min": 0.0, "step": 0.1}),
+                Lexicon.MAX: ("FLOAT", {"default": 0.5, "min": 0.0, "max": 9999.0, "step": 0.01}),
+                Lexicon.FRAME: ("INT", {"default": 1, "min": 0, "step": 1}),
             }}
-        return d
+        return deep_merge_dict(IT_REQUIRED, d)
 
-    def run(self, wave: str, phase: float, amp: float, offset: float, max: float, frame: int) -> tuple[float, int]:
+    def run(self, **kw) -> tuple[float, int]:
         val = 0.
+        wave = kw.get(Lexicon.WAVE, EnumWaveSimple.SIN)
+        phase = kw.get(Lexicon.PHASE, 1)
+        amp = kw.get(Lexicon.AMP, 1)
+        offset = kw.get(Lexicon.OFFSET, 0)
+        maximum = kw.get(Lexicon.MAX, 0.5)
+        frame = kw.get(Lexicon.FRAME, 1)
+
         if (op := WaveGeneratorNode.OP_WAVE.get(wave, None)):
-            val = op(phase, amp, offset, max, frame)
+            val = op(phase, amp, offset, maximum, frame)
         return (val, int(val))
 
 # =============================================================================
