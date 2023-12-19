@@ -10,7 +10,7 @@ from PIL import Image, ImageDraw
 
 from Jovimetrix import deep_merge_dict, cv2mask, pil2cv, cv2tensor, \
     Logger, JOVImageBaseNode, Lexicon, \
-    IT_REQUIRED, IT_WH, IT_RGB, IT_RGB_BACK
+    IT_REQUIRED, IT_WH, IT_RGBA, IT_RGBA_B
 
 # =============================================================================
 # === LOADERS ===
@@ -100,7 +100,7 @@ class GraphWaveNode(JOVImageBaseNode):
                 Lexicon.FILEN: ("STRING", {"default": ""}),
                 Lexicon.AMT: ("INT", {"default": 100, "min": 32, "max": 8192, "step": 1})
             }}
-        return deep_merge_dict(IT_REQUIRED, IT_WH, d, IT_RGB, IT_RGB_BACK)
+        return deep_merge_dict(IT_REQUIRED, d, IT_WH, IT_RGBA, IT_RGBA_B)
 
     # #️⃣ 🪄
     def __init__(self) -> None:

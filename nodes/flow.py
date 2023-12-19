@@ -41,7 +41,7 @@ class RouteNode(JOVBaseNode):
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
-            Lexicon.PASS_THRU: (WILDCARD, {"default": None}),
+            Lexicon.PASS_IN: (WILDCARD, {"default": None}),
             Lexicon.DELAY: ("FLOAT", {"step": 0.01, "default" : 0}),
             Lexicon.WAIT: ("BOOLEAN", {"default": False}),
             Lexicon.RESET: ("BOOLEAN", {"default": False})
@@ -56,7 +56,7 @@ class RouteNode(JOVBaseNode):
         t = threading.Thread(target=self.__run, daemon=True)
         t.start()
         '''
-        o = kw.get(Lexicon.PASS_THRU, None)
+        o = kw.get(Lexicon.PASS_IN, None)
         delay = kw.get(Lexicon.DELAY, 0)
         hold = kw.get(Lexicon.WAIT, False)
         reset = kw.get(Lexicon.RESET, False)

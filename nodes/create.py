@@ -17,7 +17,7 @@ from PIL import Image
 from Jovimetrix import pil2tensor, pil2mask, pil2cv, cv2pil, cv2tensor, cv2mask, \
     tensor2cv, deep_merge_dict, zip_longest_fill, \
     JOVImageBaseNode, JOVImageInOutBaseNode, Logger, Lexicon, \
-    TYPE_PIXEL, IT_PIXELS, IT_RGB, IT_WH, IT_SCALE, IT_ROT, IT_INVERT, \
+    TYPE_PIXEL, IT_PIXELS, IT_RGBA, IT_WH, IT_SCALE, IT_ROT, IT_INVERT, \
     IT_WHMODE, IT_REQUIRED, MIN_HEIGHT, MIN_WIDTH
 
 from Jovimetrix.sup.comp import EnumScaleMode, geo_scalefit, shape_ellipse, \
@@ -43,10 +43,10 @@ class ConstantNode(JOVImageBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        return deep_merge_dict(IT_REQUIRED, IT_RGB, IT_WH)
+        return deep_merge_dict(IT_REQUIRED, IT_RGBA, IT_WH)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        color = kw.get(Lexicon.RGB, (255, 255, 255))
+        color = kw.get(Lexicon.RGBA, (255, 255, 255))
         width = kw.get(Lexicon.WIDTH, 0)
         height = kw.get(Lexicon.HEIGHT, 0)
         image = Image.new("RGB", (width, height), color)
@@ -66,19 +66,19 @@ class ShapeNode(JOVImageBaseNode):
                 Lexicon.SIDES: ("INT", {"default": 3, "min": 3, "max": 100, "step": 1}),
             },
         }
-        return deep_merge_dict(d, IT_WH, IT_RGB, IT_ROT, IT_SCALE, IT_INVERT)
+        return deep_merge_dict(d, IT_WH, IT_RGBA, IT_ROT, IT_SCALE, IT_INVERT)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         i = kw.get(Lexicon.INVERT, 0)
         shape = kw.get(Lexicon.SHAPE, EnumShapes.CIRCLE)
         sides = kw.get(Lexicon.SIDES, 3)
         angle = kw.get(Lexicon.ANGLE, 0)
-        sizeX = kw.get(Lexicon.SIZE_X, 1)
-        sizeY = kw.get(Lexicon.SIZE_Y, 1)
-        width = kw.get(Lexicon.WIDTH, 0)
-        height = kw.get(Lexicon.HEIGHT, 0)
-        color = kw.get(Lexicon.RGB, (255, 255, 255))
-        R, G, B = color
+        size = kw.get(Lexicon.SIZE, (1,1))
+        sizeX, sizeY = size
+        wh = kw.get(Lexicon.WIDTH, (0,0))
+        width, height = wh
+        color = kw.get(Lexicon.RGBA, (255, 255, 255, 255))
+        R, G, B, A = color
         image = None
         fill = (int(R * 255.), int(G * 255.), int(B * 255.),)
 
@@ -175,18 +175,18 @@ class PixelShaderNode(JOVImageInOutBaseNode):
         R = kw.get(Lexicon.R, [None])
         G = kw.get(Lexicon.G, [None])
         B = kw.get(Lexicon.B, [None])
-        width = kw.get(Lexicon.WIDTH, [None])
-        height = kw.get(Lexicon.HEIGHT, [None])
+        wh = kw.get(Lexicon.WIDTH, [None])
         mode = kw.get(Lexicon.MODE, [None])
-        resample = kw.get(Lexicon.RESAMPLE, [None])
+        sample = kw.get(Lexicon.SAMPLE, [None])
         masks = []
         images = []
-        for data in zip_longest_fill(pixels, R, G, B, width, height, mode, resample):
-            image, r, g, b, w, h, m, rs = data
+        for data in zip_longest_fill(pixels, R, G, B, wh, mode, sample):
+            image, r, g, b, wh, m, rs = data
 
             r = r if r else ""
             g = g if g else ""
             b = b if b else ""
+            w, h = wh
             w = w if w else MIN_WIDTH
             h = h if h else MIN_HEIGHT
             m = m if m else EnumScaleMode.FIT
@@ -246,11 +246,10 @@ void main() {
         return float("nan")
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        width = kw.get(Lexicon.WIDTH, 0)
-        height = kw.get(Lexicon.HEIGHT, 0)
+        wh = kw.get(Lexicon.WIDTH, (0, 0))
         vertex = kw.get(Lexicon.VERTEX, '')
         fragment = kw.get(Lexicon.FRAGMENT, '')
-        image = Image.new(mode="RGB", size=(width, height))
+        image = Image.new(mode="RGB", size=wh)
         return (pil2tensor(image), pil2mask(image))
 
 # =============================================================================

@@ -10,7 +10,7 @@ import numpy as np
 
 from Jovimetrix import tensor2cv, cv2tensor, cv2mask, zip_longest_fill, deep_merge_dict, \
     JOVImageInOutBaseNode, Logger, Lexicon, \
-    IT_PIXELS, IT_RGB, IT_WH, IT_WHMODE, IT_PIXEL_MASK, IT_INVERT, IT_REQUIRED, IT_RGBA_IMAGE
+    IT_PIXELS, IT_RGBA, IT_WH, IT_WHMODE, IT_PIXEL_MASK, IT_BBOX, IT_INVERT, IT_REQUIRED, IT_RGBA_IMAGE
 
 from Jovimetrix.sup import comp
 from Jovimetrix.sup.comp import \
@@ -43,17 +43,16 @@ class BlendNode(JOVImageInOutBaseNode):
         alpha = kw.get(Lexicon.A, [None])
         flip = kw.get(Lexicon.FLIP, [None])
         mode = kw.get(Lexicon.MODE, [None])
-        resample = kw.get(Lexicon.RESAMPLE, [None])
-        width = kw.get(Lexicon.WIDTH, [None])
-        height = kw.get(Lexicon.HEIGHT, [None])
+        sample = kw.get(Lexicon.SAMPLE, [None])
+        wh = kw.get(Lexicon.WH, [None])
         invert = kw.get(Lexicon.INVERT, [None])
-
         masks = []
         images = []
         for data in zip_longest_fill(pixelA, pixelB, mask, func, alpha, flip,
-                                     width, height, mode, resample, invert):
+                                     wh, mode, sample, invert):
 
-            pa, pb, ma, f, a, fl, w, h, sm, rs, i = data
+            pa, pb, ma, f, a, fl, wh, sm, rs, i = data
+            w, h = wh
             pa = tensor2cv(pa) if pa else np.zeros((h, w, 4), dtype=np.uint8)
             pb = tensor2cv(pb) if pb else np.zeros((h, w, 4), dtype=np.uint8)
             ma = tensor2cv(ma) if ma else np.zeros((h, w), dtype=np.uint8)
@@ -140,9 +139,8 @@ class PixelMergeNode(JOVImageInOutBaseNode):
         B = kw.get(Lexicon.B, [None])
         A = kw.get(Lexicon.A, [None])
         mode = kw.get(Lexicon.MODE, [None])
-        resample = kw.get(Lexicon.RESAMPLE, [None])
-        width = kw.get(Lexicon.WIDTH, [None])
-        height = kw.get(Lexicon.HEIGHT, [None])
+        sample = kw.get(Lexicon.SAMPLE, [None])
+        wh = kw.get(Lexicon.WH, [None])
         invert = kw.get(Lexicon.INVERT, [None])
 
         if len(R)+len(B)+len(G)+len(A) == 0:
@@ -154,9 +152,9 @@ class PixelMergeNode(JOVImageInOutBaseNode):
 
         masks = []
         images = []
-        for data in zip_longest_fill(R, G, B, A, width, height, mode, resample, invert):
-            r, g, b, a, w, h, m, rs, i = data
-
+        for data in zip_longest_fill(R, G, B, A, wh, mode, sample, invert):
+            r, g, b, a, wh, m, rs, i = data
+            w, h = wh
             w = w or 0
             h = h or 0
             r = tensor2cv(r) if r else np.zeros((h, w, 3), dtype=np.uint8)
@@ -196,15 +194,14 @@ class MergeNode(JOVImageInOutBaseNode):
         mask = kw.get(Lexicon.MASK, [None])
         axis = kw.get(Lexicon.AXIS, [None])
         stride = kw.get(Lexicon.STRIDE, [None])
-        width = kw.get(Lexicon.WIDTH, [None])
-        height = kw.get(Lexicon.HEIGHT, [None])
+        wh = kw.get(Lexicon.WH, [None])
         mode = kw.get(Lexicon.MODE, [None])
-        resample = kw.get(Lexicon.RESAMPLE, [None])
+        sample = kw.get(Lexicon.SAMPLE, [None])
         masks = []
         images = []
-        for data in zip_longest_fill(pixelA, pixelB, mask, axis, stride, width, height, mode, resample):
-            a, b, ma, ax, st, w, h, m, rs = data
-
+        for data in zip_longest_fill(pixelA, pixelB, mask, axis, stride, wh, mode, sample):
+            a, b, ma, ax, st, wh, m, rs = data
+            w, h = wh
             a, b = comp.pixel_convert(a, b)
             if a is None and b is None:
                 zero = torch.zeros((0, 0, 3), dtype=torch.uint8)
@@ -238,33 +235,24 @@ class CropNode(JOVImageInOutBaseNode):
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
-                Lexicon.TOP: ("FLOAT", {"default": 0, "min": 0, "step": 0.01}),
-                Lexicon.LEFT: ("FLOAT", {"default": 0, "min": 0, "step": 0.01}),
-                Lexicon.BOTTOM: ("FLOAT", {"default": 1, "min": 0, "step": 0.01}),
-                Lexicon.RIGHT: ("FLOAT", {"default": 1, "min": 0, "step": 0.01}),
                 Lexicon.PAD:  ("BOOLEAN", {"default": False}),
             }}
-        return deep_merge_dict(IT_REQUIRED, IT_PIXELS, d, IT_RGB, IT_WH, IT_INVERT)
+        return deep_merge_dict(IT_REQUIRED, IT_PIXELS, IT_BBOX, d, IT_RGBA, IT_WH, IT_INVERT)
 
     def run(self, **kw) -> tuple[list[torch.Tensor], list[torch.Tensor]]:
 
         pixels = kw.get(Lexicon.PIXEL, [None])
-        top = kw.get(Lexicon.TOP, [None])
-        left = kw.get(Lexicon.LEFT, [None])
-        bottom = kw.get(Lexicon.BOTTOM, [None])
-        right = kw.get(Lexicon.RIGHT, [None])
+        bbox = kw.get(Lexicon.BBOX, [None])
         pad = kw.get(Lexicon.PAD, [None])
-        width = kw.get(Lexicon.WIDTH, [None])
-        height = kw.get(Lexicon.HEIGHT, [None])
-        rgb = kw.get(Lexicon.RGB, (255, 255, 255))
+        wh = kw.get(Lexicon.WH, [None])
+        rgba = kw.get(Lexicon.RGBA, (255, 255, 255))
         invert = kw.get(Lexicon.INVERT, [None])
         masks = []
         images = []
-        for data in zip_longest_fill(pixels, pad, top, left, bottom, right,
-                                     rgb, width, height, invert):
-
-            img, p, t, l, b, r, c, w, h, i = data
-
+        for data in zip_longest_fill(pixels, pad, bbox, rgba, wh, invert):
+            img, p, tlbr, c, wh, i = data
+            t, l, b, r = tlbr
+            w, h = wh
             if img is None:
                 zero = torch.zeros((0, 0, 3), dtype=torch.uint8)
                 images.append(zero)
@@ -303,7 +291,7 @@ class ColorTheoryNode(JOVImageInOutBaseNode):
             }}
         return deep_merge_dict(IT_REQUIRED, IT_PIXELS, d, IT_INVERT)
 
-    def run(self, scheme: list[str], **kw) -> tuple[list[torch.Tensor], list[torch.Tensor]]:
+    def run(self, **kw) -> tuple[list[torch.Tensor], list[torch.Tensor]]:
 
         imageA = []
         imageB = []
@@ -311,6 +299,7 @@ class ColorTheoryNode(JOVImageInOutBaseNode):
         imageD = []
 
         pixels = kw.get(Lexicon.PIXEL, [None])
+        scheme = kw.get(Lexicon.SCHEME, [None])
         invert = kw.get(Lexicon.INVERT, [None])
 
         for data in zip_longest_fill(pixels, scheme, invert):

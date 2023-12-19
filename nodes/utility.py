@@ -16,7 +16,7 @@ import torch
 
 from Jovimetrix import deep_merge_dict, tensor2cv, cv2tensor, cv2mask, \
     JOVBaseNode, Logger, Lexicon, \
-    IT_PIXELS, IT_REQUIRED, IT_PASS_THRU, WILDCARD
+    IT_PIXELS, IT_REQUIRED, IT_PASS_IN, WILDCARD
 
 # =============================================================================
 
@@ -30,10 +30,10 @@ class ClearCacheNode(JOVBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        return deep_merge_dict(IT_REQUIRED, IT_PASS_THRU)
+        return deep_merge_dict(IT_REQUIRED, IT_PASS_IN)
 
     def run(self, **kw) -> tuple[object,]:
-        o = kw.get(Lexicon.PASS_THRU, None)
+        o = kw.get(Lexicon.PASS_IN, None)
         f, t = torch.cuda.mem_get_info()
         Logger.debug(self.NAME, f"total: {t}")
         Logger.debug(self.NAME, "-"* 30)
@@ -58,14 +58,14 @@ class OptionsNode(JOVBaseNode):
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/UTILITY"
     DESCRIPTION = "Change Jovimetrix Global Options"
     RETURN_TYPES = (WILDCARD, )
-    RETURN_NAMES = (Lexicon.PASS_THRU, )
+    RETURN_NAMES = (Lexicon.PASS_OUT, )
     SORT = 1
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {
             "optional": {
-                Lexicon.PASS_THRU: (WILDCARD, {"default": None}),
+                Lexicon.PASS_IN: (WILDCARD, {"default": None}),
                 Lexicon.LOG: (["ERROR", "WARN", "INFO", "DEBUG", "SPAM"], {"default": "ERROR"}),
                 #"host": ("STRING", {"default": ""}),
                 #"port": ("INT", {"min": 0, "step": 1, "default": 7227}),
@@ -93,7 +93,7 @@ class OptionsNode(JOVBaseNode):
         #stream.STREAMPORT = port
         #stream.STREAMHOST = host
 
-        o = kw.get(Lexicon.PASS_THRU, None)
+        o = kw.get(Lexicon.PASS_IN, None)
         return (o, )
 
 class DebugNode(JOVBaseNode):
@@ -103,14 +103,14 @@ class DebugNode(JOVBaseNode):
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/UTILITY"
     DESCRIPTION = "Debug data"
     RETURN_TYPES = (WILDCARD, WILDCARD, )
-    RETURN_NAMES = (Lexicon.PASS_THRU, Lexicon.IO)
+    RETURN_NAMES = (Lexicon.PASS_OUT, Lexicon.IO)
     OUTPUT_NODE = True
     SORT = 100
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
-            Lexicon.PASS_THRU: (WILDCARD, {}),
+            Lexicon.PASS_IN: (WILDCARD, {}),
             Lexicon.OUTPUT : ("BOOLEAN", {"default": True}),
         }}
         return deep_merge_dict(IT_REQUIRED, d)
@@ -139,7 +139,7 @@ class DebugNode(JOVBaseNode):
             return {"type": meh, "value": s}
 
     def run(self, **kw) -> tuple[Any, Any]:
-        o = kw.get(Lexicon.PASS_THRU, None)
+        o = kw.get(Lexicon.PASS_IN, None)
         if o is None:
             return (o, {})
 
@@ -159,7 +159,7 @@ class AkashicNode(JOVBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        return deep_merge_dict(IT_REQUIRED, IT_PASS_THRU)
+        return deep_merge_dict(IT_REQUIRED, IT_PASS_IN)
 
     def run(self, **kw) -> tuple[dict]:
         data = {}

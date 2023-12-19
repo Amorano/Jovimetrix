@@ -15,7 +15,8 @@ from scipy.ndimage import rotate
 from blendmodes.blend import blendLayers, BlendType
 from PIL import Image, ImageDraw
 
-from Jovimetrix import Logger, grid_make, cv2mask, cv2tensor, cv2pil, pil2cv,\
+from Jovimetrix import grid_make, cv2pil, pil2cv,\
+    Logger, Lexicon, \
     TYPE_IMAGE, TYPE_PIXEL, TYPE_COORD
 
 HALFPI = math.pi / 2
@@ -163,14 +164,19 @@ class EnumBlendType(Enum):
 	SRCATOP = BlendType.SRCATOP
 	DESTATOP = BlendType.DESTATOP
 
+class EnumMirrorMode(Enum):
+    X = 0
+    Y = 1
+    XY = 2
+    YX = 3
+
 # =============================================================================
 # === NODE SUPPORT ===
 # =============================================================================
 
-IT_SAMPLE = {
-    "optional": {
-        "resample": (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
-    }}
+IT_SAMPLE = {"optional": {
+    Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
+}}
 
 # =============================================================================
 # === UTILITY ===
@@ -211,7 +217,7 @@ def image_split(image: TYPE_IMAGE) -> tuple[TYPE_IMAGE]:
 def image_merge(r: TYPE_IMAGE, g: TYPE_IMAGE, b: TYPE_IMAGE, a: TYPE_IMAGE,
           width: int, height: int,
           mode:EnumScaleMode=EnumScaleMode.NONE,
-          resample:EnumInterpolation=EnumInterpolation.LANCZOS4) -> TYPE_IMAGE:
+          sample:EnumInterpolation=EnumInterpolation.LANCZOS4) -> TYPE_IMAGE:
 
     thr, twr = r.shape[:2] if r is not None else (height, width)
     thg, twg = g.shape[:2] if g is not None else (height, width)
@@ -227,16 +233,16 @@ def image_merge(r: TYPE_IMAGE, g: TYPE_IMAGE, b: TYPE_IMAGE, a: TYPE_IMAGE,
     g = np.full((h, w), 0, dtype=np.uint8) if g is None else image_grayscale(g)
     b = np.full((h, w), 0, dtype=np.uint8) if b is None else image_grayscale(b)
 
-    #g = merge_channel(g, (h, w), resample)
-    #b = merge_channel(b, (h, w), resample)
+    #g = merge_channel(g, (h, w), sample)
+    #b = merge_channel(b, (h, w), sample)
 
     if full:
         a = np.full((h, w), 0, dtype=np.uint8) if r is None else image_grayscale(a)
-        # a = merge_channel(a,  (h, w), resample)
+        # a = merge_channel(a,  (h, w), sample)
         image = cv2.merge((b, g, r, a))
     else:
         image = cv2.merge((b, g, r))
-    return geo_scalefit(image, width, height, mode, resample)
+    return geo_scalefit(image, width, height, mode, sample)
 
 # =============================================================================
 # === SHAPE FUNCTIONS ===
@@ -312,7 +318,7 @@ def image_stack(images: list[TYPE_IMAGE],
                 stride:Optional[int]=None,
                 color:TYPE_PIXEL=0.,
                 mode:EnumScaleMode=EnumScaleMode.NONE,
-                resample:Image.Resampling=Image.Resampling.LANCZOS) -> TYPE_IMAGE:
+                sample:Image.Resampling=Image.Resampling.LANCZOS) -> TYPE_IMAGE:
 
     color = (
         (color[0] if color is not None else 1) * 255,
@@ -330,7 +336,7 @@ def image_stack(images: list[TYPE_IMAGE],
         height = max(height, h)
 
     # center = (width // 2, height // 2)
-    images = [comp_fill(i, width, height, color, mode, resample) for i in images]
+    images = [comp_fill(i, width, height, color, mode, sample) for i in images]
 
     match axis:
         case EnumOrientation.GRID:
@@ -488,28 +494,28 @@ def geo_rotate_array(image: TYPE_IMAGE, angle: float, clip: bool=True) -> TYPE_I
 def geo_scalefit(image: TYPE_IMAGE,
                  width: int, height:int,
                  mode:EnumScaleMode=EnumScaleMode.NONE,
-                 resample:EnumInterpolation=EnumInterpolation.LANCZOS4) -> TYPE_IMAGE:
+                 sample:EnumInterpolation=EnumInterpolation.LANCZOS4) -> TYPE_IMAGE:
 
-    Logger.spam(mode, width, height, resample)
+    Logger.spam(mode, width, height, sample)
 
     match mode:
         case EnumScaleMode.ASPECT:
             h, w = image.shape[:2]
             aspect = min(width / w, height / h)
-            return cv2.resize(image, None, fx=aspect, fy=aspect, interpolation=resample.value)
+            return cv2.resize(image, None, fx=aspect, fy=aspect, interpolation=sample.value)
 
         case EnumScaleMode.CROP:
             return geo_crop(image, widthT=width, heightT=height, pad=True)
 
         case EnumScaleMode.FIT:
-            return cv2.resize(image, (width, height), interpolation=resample.value)
+            return cv2.resize(image, (width, height), interpolation=sample.value)
 
     return image
 
 def geo_transform(image: TYPE_IMAGE, offsetX: float=0., offsetY: float=0., angle: float=0.,
               sizeX: float=1., sizeY: float=1., edge:str='CLIP', widthT: int=256, heightT: int=256,
               mode:EnumScaleMode=EnumScaleMode.NONE,
-              resample:EnumInterpolation=EnumInterpolation.LANCZOS4) -> TYPE_IMAGE:
+              sample:EnumInterpolation=EnumInterpolation.LANCZOS4) -> TYPE_IMAGE:
     """Transform, Rotate and Scale followed by Tiling and then Inversion, conforming to an input wT, hT,."""
 
     height, width, _ = image.shape
@@ -518,7 +524,7 @@ def geo_transform(image: TYPE_IMAGE, offsetX: float=0., offsetY: float=0., angle
     if sizeX != 1. or sizeY != 1.:
         wx = int(width * sizeX)
         hx = int(height * sizeY)
-        image = cv2.resize(image, (wx, hx), interpolation=resample.value)
+        image = cv2.resize(image, (wx, hx), interpolation=sample.value)
 
     # ROTATION
     if angle != 0:
@@ -543,8 +549,8 @@ def geo_transform(image: TYPE_IMAGE, offsetX: float=0., offsetY: float=0., angle
 
     # clip to original size first...
     image = geo_crop(image)
-    # Logger.debug("geo_transform", f"({offsetX},{offsetY}), {angle}, ({sizeX},{sizeY}) [{width}x{height} - {mode} - {resample}]")
-    return geo_scalefit(image, widthT, heightT, mode, resample)
+    # Logger.debug("geo_transform", f"({offsetX},{offsetY}), {angle}, ({sizeX},{sizeY}) [{width}x{height} - {mode} - {sample}]")
+    return geo_scalefit(image, widthT, heightT, mode, sample)
 
 def geo_merge(imageA: TYPE_IMAGE, imageB: TYPE_IMAGE, axis: int=0, flip: bool=False) -> TYPE_IMAGE:
     if flip:
@@ -898,7 +904,7 @@ def comp_blend(imageA:Optional[TYPE_IMAGE]=None,
                alpha:float=1.,
                color:TYPE_PIXEL=0.,
                mode:EnumScaleMode=EnumScaleMode.NONE,
-               resample:EnumInterpolation=EnumInterpolation.LANCZOS4) -> TYPE_IMAGE:
+               sample:EnumInterpolation=EnumInterpolation.LANCZOS4) -> TYPE_IMAGE:
 
     targetW, targetH = 0, 0
     if mode == EnumScaleMode.NONE:
@@ -925,7 +931,7 @@ def comp_blend(imageA:Optional[TYPE_IMAGE]=None,
     a = imageA.shape if imageA is not None else None
     b = imageB.shape if imageB is not None else None
     m = mask.shape if imageB is not None else None
-    # Logger.debug(targetW, targetH, a, b, m, blendOp, alpha, mode, resample)
+    # Logger.debug(targetW, targetH, a, b, m, blendOp, alpha, mode, sample)
 
     if targetH == 0 or targetW == 0:
         Logger.debug("bad dimensions", targetW, targetH)
@@ -940,7 +946,7 @@ def comp_blend(imageA:Optional[TYPE_IMAGE]=None,
         h, w = img.shape[:2]
         if h != targetH or w != targetW:
             if mode != EnumScaleMode.NONE:
-                img = geo_scalefit(img, targetW, targetH, mode, resample)
+                img = geo_scalefit(img, targetW, targetH, mode, sample)
             img = comp_fill(img, targetW, targetH, color)
         return img
 
@@ -966,7 +972,7 @@ def comp_blend(imageA:Optional[TYPE_IMAGE]=None,
             hM, wM = mask.shape[:2]
             if hM != targetH or wM != targetW:
                 if mode != EnumScaleMode.NONE:
-                    mask = geo_scalefit(mask, targetW, targetH, mode, resample)
+                    mask = geo_scalefit(mask, targetW, targetH, mode, sample)
                 mask = comp_fill(mask, targetW, targetH, 0)
 
     if cc < 4 or mask is not None:

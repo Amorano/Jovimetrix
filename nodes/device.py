@@ -112,7 +112,7 @@ class StreamReaderNode(JOVImageBaseNode):
         width = kw.get(Lexicon.WIDTH, 0)
         height = kw.get(Lexicon.HEIGHT, 0)
         zoom = kw.get(Lexicon.ZOOM, 1)
-        sample = kw.get(Lexicon.RESAMPLE, EnumInterpolation.LANCZOS4)
+        sample = kw.get(Lexicon.SAMPLE, EnumInterpolation.LANCZOS4)
 
         if device.width != width or device.height != height:
             device.sizer(width, height, sample)
@@ -197,7 +197,7 @@ class StreamWriterNode(JOVBaseNode):
         height = kw.get(Lexicon.HEIGHT, [None])
         wait = kw.get(Lexicon.WAIT, [None])
         fps = kw.get(Lexicon.FPS, [None])
-        resample = resample or [None]
+        sample = sample or [None]
 
         if (device := StreamManager.capture(route, static=True)) is None:
             raise Exception(f"stream failed {route}")
@@ -231,9 +231,9 @@ class StreamWriterNode(JOVBaseNode):
         width = kw.get(Lexicon.WIDTH, [None])
         height = kw.get(Lexicon.HEIGHT, [None])
         invert = kw.get(Lexicon.INVERT, [None])
-        resample = resample or [None]
+        sample = sample or [None]
 
-        for data in zip_longest_fill(pixels, route, wait, width, height, resample, invert):
+        for data in zip_longest_fill(pixels, route, wait, width, height, sample, invert):
             img, r, wait, w, h, rs, i = data
             h = h or 0
             w = w or 0

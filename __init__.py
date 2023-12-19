@@ -177,116 +177,114 @@ class Logger(metaclass=Singleton):
 # =============================================================================
 
 class Lexicon:
-    # ⤴️
+    # ⤴️ 🅱️ 🅾️🔻🔺➡️⬆️
     A = '⬜'
-    ADAPT = 'adapt'
+    ADAPT = 'ADAPT'
     AMP = '🔊'
     AMT = '#️⃣'
     ANGLE = '📐'
-    AXIS = 'axis'
+    AXIS = 'AXIS'
     B = '🟦'
+    BBOX = '☐'
     BI = '💙'
     BLACK = '⬛'
-    BLUR = 'blur'
-    BOOLEAN = '🅱️'
-    BOTTOM = 'bottom'
+    BLUR = 'BLUR'
+    BOOLEAN = '🇴'
     C1 = '🔵'
     C2 = '🟡'
     C3 = '🟣'
     C4 = '⚪'
     CHANNEL = '📺'
     CLEAR = '🧹'
-    COLORMAP = 'colormap'
+    COLORMAP = 'COLORMAP'
     COMPARE = '🕵🏽‍♀️'
     CONDITION = '❔'
     CONTRAST = '🌓'
     CONTROL = '🎚️'
     COUNT = '🧮'
     DATA = '📓'
-    DELAY = 'delay'
+    DELAY = 'DELAY'
     DELTA_TIME = '🔺🕛'
     DEVICE = '📟'
-    EDGE = 'edge'
+    EDGE = 'EDGE'
     FALSE = '🇫'
-    FILEN = 'filen'
-    FILTER = 'filter'
+    FILEN = 'FILEN'
+    FILTER = 'FILTER'
     FLIP = '↩️'
     FLOAT = '🛟'
-    FPS = 'fps'
-    FRAGMENT = 'fragment'
-    FRAME = 'frame'
+    FPS = 'FPS'
+    FRAGMENT = 'FRAGMENT'
+    FRAME = 'FRAME'
     FUNC = '⚒️'
     G = '🟩'
     GAMMA = '🔆'
     GI = '💚'
     HEIGHT = '↕️'
-    HI = '🔺'
-    HUE = '🇭'
+    HSV = u'🇭🇸\u200c🇻'
     IMAGE = '🖼️'
     IN_A = '🅰️'
     IN_B = '🅱️'
     INT = '🔟'
     INVERT = '🔳'
     IO = '💾'
-    LEFT = 'left'
     LINEAR = '🛟'
-    LO = '🔻'
+    LMH = '🔻Ⓜ️🔺'
     LOG = '🪵'
+    LOHI = '🔻🔺'
     LOOP = '🔄'
     M = '⬛'
     MAGIC = '🦄'
     MASK = '😷'
-    MAX = 'max'
+    MAX = 'MAX'
     MI = '🖤'
-    MID = '🔛'
-    MODE = 'mode'
-    NORMALIZE = 'normalize'
+    MODE = 'MODE'
+    NORMALIZE = 'NORMALIZE'
     NOTE = '🎶'
-    OFFSET = 'offset'
+    OFFSET = '🇽🇾'
     ON = '🔛'
     ORIENT = '🔄'
     OUTPUT = '🚮'
-    PAD = 'pad'
-    PASS_THRU = '🅾️'
-    PHASE = 'phase'
+    PAD = 'PAD'
+    PASS_IN = '📥'
+    PASS_OUT = '📤'
+    PHASE = 'PHASE'
     PIXEL = '👾'
     PIXEL_A = '👾A'
     PIXEL_B = '👾B'
-    PROJECTION = 'projection'
+    PROJECTION = 'PROJ'
     R = '🟥'
-    RADIUS = 'radius'
-    RESAMPLE = 'resample'
-    RESET = 'reset'
+    RADIUS = 'RADIUS'
+    RESET = 'RESET'
     RESULT = '⁉️'
     RGB = '🌈'
-    RGB_BACK = '🌈B'
+    RGB_B = '🌈B'
+    RGBA = '🌈'
+    RGBA_B = '🌈B'
     RI = '❤️'
-    RIGHT = 'right'
     ROUTE = '🚌'
-    SAT = '🇸'
-    SCHEME = 'scheme'
-    SHAPE = 'shape'
-    SIDES = 'sides'
-    SIZE = 'size'
-    SIZE_X = '➡️'
-    SIZE_Y = '⬆️'
-    STEP = 'step'
+    SAMPLE = 'SAMPLE'
+    SCHEME = 'SCHEME'
+    SHAPE = 'SHAPE'
+    SIDES = 'SIDES'
+    SIZE = '📏'
+    STEP = 'STEP'
     STRENGTH = '💪🏽'
-    STRIDE = 'stride'
+    STRIDE = 'STRIDE'
     THRESHOLD = '📉'
-    TILE = 'tilexy'
+    TILE = '🇽🇾'
     TIME = '🕛'
-    TOP = 'top'
     TRUE = '🇹'
     URL = '🌐'
-    VAL = '🇻'
     VERTEX = '✳️'
     WAIT = '✋🏽'
     WAVE = '〰️'
-    WH = 'width/height'
+    WH = '🇼🇭'
     WHITE = '⬜'
     WIDTH = '↔️'
     X = '🇽'
+    XY = '🇽🇾'
+    XYZ = '🇽🇾🇿'
+    XYZW = '🇽🇾🇿🇼'
     Y = '🇾'
     ZOOM = '🔎'
 
@@ -743,111 +741,131 @@ def cv2pil(image: TYPE_IMAGE) -> Image.Image:
 
 MIN_WIDTH = MIN_HEIGHT = 256
 
-IT_REQUIRED = {
-    "required": {}
-}
+IT_REQUIRED = { "required": {} }
 
-IT_PIXELS = {
-    "optional": {
-        Lexicon.PIXEL: (WILDCARD, {}),
-    }}
+IT_PIXELS = { "optional": {
+    Lexicon.PIXEL: (WILDCARD, {}),
+}}
 
-IT_PIXEL2 = {
-    "optional": {
-        Lexicon.PIXEL_A: (WILDCARD, {}),
-        Lexicon.PIXEL_B: (WILDCARD, {}),
-    }}
+IT_PIXEL2 = {"optional": {
+    Lexicon.PIXEL_A: (WILDCARD, {}),
+    Lexicon.PIXEL_B: (WILDCARD, {}),
+}}
 
-IT_PIXEL_MASK = {
-    "optional": {
-        Lexicon.PIXEL_A: (WILDCARD, {}),
-        Lexicon.PIXEL_B: (WILDCARD, {}),
-        Lexicon.MASK: (WILDCARD, {}),
-    }}
+IT_PIXEL_MASK = {"optional": {
+    Lexicon.PIXEL_A: (WILDCARD, {}),
+    Lexicon.PIXEL_B: (WILDCARD, {}),
+    Lexicon.MASK: (WILDCARD, {}),
+}}
 
-IT_PASS_THRU = {
-    "optional": {
-        Lexicon.PASS_THRU: (WILDCARD, {}),
-    }}
+IT_PASS_IN = {"optional": {
+    Lexicon.PASS_IN: (WILDCARD, {}),
+}}
 
-IT_WH = {
-    "optional": {
-        Lexicon.WH: ("INTEGER2", {"default": (0, 0)})
-    }}
+IT_WH = {"optional": {
+    Lexicon.WH: ("INTEGER2", {"default": (0, 0)})
+}}
 
-IT_SCALEMODE = {
-    "optional": {
-        Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
-    }}
+IT_SCALEMODE = {"optional": {
+    Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
+}}
 
-IT_TRANS = {
-    "optional": {
-        Lexicon.OFFSET: ("INTEGER2", {"default": (10, 20)}),
-    }}
+IT_TRANS = {"optional": {
+    Lexicon.OFFSET: ("INTEGER2", {"default": (0, 0)})
+}}
 
-IT_TRANS = {
-    "optional": {
-        Lexicon.OFFSET: ("INTEGER2", {"default": (10, 20)}),
-        Lexicon.OFFSET: ("INTEGER4", {"default": (10, 20, 30, 40)}),
-    }}
+IT_ROT = {"optional": {
+    Lexicon.ANGLE: ("FLOAT", {"default": 0, "min": -180, "max": 180, "step": 1}),
+}}
 
-IT_ROT = {
-    "optional": {
-        Lexicon.ANGLE: ("FLOAT", {"default": 0, "min": -180, "max": 180, "step": 1}),
-    }}
+IT_SCALE = {"optional": {
+    Lexicon.SIZE: ("INTEGER2", {"default": (0, 0)})
+}}
 
-IT_SCALE = {
-    "optional": {
-        Lexicon.SIZE: ("INTEGER2", {"default": (10, 20)}),
-    }}
+IT_TILE = {"optional": {
+    Lexicon.TILE: ("INTEGER2", {"default": (0, 0)})
+}}
 
-IT_TILE = {
-    "optional": {
-        Lexicon.TILE: ("INTEGER2", {"default": (10, 20)}),
-    }}
+IT_EDGE = {"optional": {
+    Lexicon.EDGE: (EnumEdge._member_names_, {"default": EnumEdge.CLIP.name}),
+}}
 
-IT_EDGE = {
-    "optional": {
-        Lexicon.EDGE: (EnumEdge._member_names_, {"default": EnumEdge.CLIP.name}),
-    }}
+IT_FLIP = {"optional": {
+    Lexicon.FLIP: ("BOOLEAN", {"default": False}),
+}}
 
-IT_FLIP = {
-    "optional": {
-        Lexicon.FLIP: ("BOOLEAN", {"default": False}),
-    }}
+IT_INVERT = {"optional": {
+    Lexicon.INVERT: ("FLOAT", {"default": 0, "min": 0, "max": 1, "step": 0.01}),
+}}
 
-IT_INVERT = {
-    "optional": {
-        Lexicon.INVERT: ("FLOAT", {"default": 0, "min": 0, "max": 1, "step": 0.01}),
-    }}
 
-IT_RGB = {
-    "optional": {
-        Lexicon.RGB: ("RGB", {}),
-    }}
 
-IT_RGB_BACK = {
-    "optional": {
-        Lexicon.RGB_BACK: ("RGB", {}),
-    }}
+IT_XYZW = {"optional": {
+    Lexicon.XYZW: ("INTEGER4", {"default": (0, 0, 0, 0)})
+}}
 
-IT_RGBA_IMAGE = {
-    "optional": {
-        Lexicon.R: (WILDCARD, {}),
-        Lexicon.G: (WILDCARD, {}),
-        Lexicon.B: (WILDCARD, {}),
-        Lexicon.A: (WILDCARD, {}),
-    }}
+IT_XYZ = {"optional": {
+    Lexicon.XYZ: ("INTEGER3", {"default": (0, 0, 0)})
+}}
 
-IT_ORIENT = {
-    "optional": {
-        Lexicon.ORIENT: (EnumCanvasOrientation._member_names_, {"default": EnumCanvasOrientation.NORMAL.name}),
-    }}
+IT_XY = { "optional": {
+    Lexicon.XY: ("INTEGER2", {"default": (0, 0)})
+}}
 
-IT_CAM = {
-    "optional": {
-        Lexicon.ZOOM: ("FLOAT", {"min": 0, "max": 1, "step": 0.01, "default": 0}),
-    }}
+IT_RGB = {"optional": {
+    Lexicon.RGB: ("INTEGER3", {"default": (0, 0, 0, 0)})
+}}
+
+IT_RGBA = {"optional": {
+    Lexicon.RGBA: ("INTEGER4", {"default": (0, 0, 0, 0)})
+}}
+
+IT_RGB_B = { "optional": {
+    Lexicon.RGB_B: ("INTEGER3", {}),
+}}
+
+IT_RGBA_B = { "optional": {
+    Lexicon.RGBA_B: ("INTEGER4", {}),
+}}
+
+IT_RGBA_IMAGE = { "optional": {
+    Lexicon.R: (WILDCARD, {}),
+    Lexicon.G: (WILDCARD, {}),
+    Lexicon.B: (WILDCARD, {}),
+    Lexicon.A: (WILDCARD, {}),
+}}
+
+IT_HSV = { "optional": {
+    Lexicon.HSV: ("FLOAT",{"default": 1, "min": 0, "max": 1, "step": 0.01})
+}}
+
+IT_GAMMA = {"optional": {
+    Lexicon.GAMMA: ("FLOAT", {"default": 1, "min": 0, "max": 1, "step": 0.01})
+}}
+
+IT_CONTRAST = {"optional": {
+    Lexicon.CONTRAST: ("FLOAT", {"default": 0, "min": 0, "max": 1, "step": 0.01})
+}}
+
+IT_BBOX = {"optional": {
+    Lexicon.BBOX: ("FLOAT4", {"default": (0,0,0,0), "min": 0, "step": 0.01})
+}}
+
+IT_LOHI = {"optional": {
+    Lexicon.LOHI: ("FLOAT2", {"default": (0, 1), "min": 0, "max": 1, "step": 0.01}),
+}}
+
+IT_LMH = {"optional": {
+    Lexicon.LMH: ("FLOAT3", {"default": (0, 0.5, 1), "min": 0, "max": 1, "step": 0.01},),
+}}
+
+IT_ORIENT = {"optional": {
+    Lexicon.ORIENT: (EnumCanvasOrientation._member_names_, {"default": EnumCanvasOrientation.NORMAL.name}),
+}}
+
+IT_CAM = {"optional": {
+    Lexicon.ZOOM: ("FLOAT", {"min": 0, "max": 1, "step": 0.01, "default": 0}),
+}}
 
 IT_TRS = deep_merge_dict(IT_TRANS, IT_ROT, IT_SCALE)
 IT_WHMODE = deep_merge_dict(IT_WH, IT_SCALEMODE)

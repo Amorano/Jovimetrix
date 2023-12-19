@@ -11,7 +11,8 @@ import numpy as np
 
 from Jovimetrix import tensor2cv, cv2tensor, cv2mask, zip_longest_fill, deep_merge_dict, \
     JOVImageInOutBaseNode, Lexicon, Logger, \
-    IT_PIXELS, IT_PIXEL2, IT_FLIP, IT_INVERT, IT_REQUIRED
+    IT_PIXELS, IT_PIXEL2, IT_HSV, IT_FLIP, IT_LOHI, IT_LMH, IT_INVERT, IT_CONTRAST, \
+    IT_GAMMA, IT_REQUIRED
 
 from Jovimetrix.sup import comp
 from Jovimetrix.sup.comp import EnumAdjustOP, EnumThresholdAdapt, EnumColorMap, EnumThreshold
@@ -193,11 +194,7 @@ class FindEdgeNode(JOVImageInOutBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {"optional": {
-                Lexicon.HI: ("FLOAT", {"default": 0.72, "min": 0, "max": 1, "step": 0.01}),
-                Lexicon.LO: ("FLOAT", {"default": 0.27, "min": 0, "max": 1, "step": 0.01}),
-            }}
-        return deep_merge_dict(IT_REQUIRED, IT_PIXELS, d, IT_INVERT)
+        return deep_merge_dict(IT_REQUIRED, IT_PIXELS, IT_LOHI, IT_INVERT)
 
     def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor]:
         pixels = kw.get(Lexicon.PIXEL, [None])
@@ -236,30 +233,22 @@ class HSVNode(JOVImageInOutBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {"optional": {
-                Lexicon.HUE: ("FLOAT",{"default": 0, "min": 0, "max": 1, "step": 0.01},),
-                Lexicon.SAT: ("FLOAT", {"default": 1, "min": 0, "max": 1, "step": 0.01}, ),
-                Lexicon.VAL: ("FLOAT", {"default": 1, "min": 0, "max": 250, "step": 0.01}, ),
-                Lexicon.CONTRAST: ("FLOAT", {"default": 0, "min": 0, "max": 1, "step": 0.01}, ),
-                Lexicon.GAMMA: ("FLOAT", {"default": 1, "min": 0, "max": 250, "step": 0.01}, ),
-            }}
-        return deep_merge_dict(IT_REQUIRED, IT_PIXELS, d, IT_INVERT)
+        return deep_merge_dict(IT_REQUIRED, IT_PIXELS, IT_HSV, IT_CONTRAST, IT_GAMMA, IT_INVERT)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
 
         pixels = kw.get(Lexicon.PIXEL, [None])
-        hue = kw.get(Lexicon.HUE, [None])
-        sat = kw.get(Lexicon.SAT, [None])
-        val = kw.get(Lexicon.VAL, [None])
+        hsv = kw.get(Lexicon.HSV, [None])
         contrast = kw.get(Lexicon.CONTRAST, [None])
         gamma = kw.get(Lexicon.GAMMA, [None])
         invert = kw.get(Lexicon.INVERT, [None])
 
         masks = []
         images = []
-        for data in zip_longest_fill(pixels, hue, sat, val, contrast, gamma, invert):
+        for data in zip_longest_fill(pixels, hsv, contrast, gamma, invert):
 
-            img, h, s, v, c, g, i = data
+            img, hsv, c, g, i = data
+            h, s, v = hsv
 
             if img is None:
                 zero = torch.zeros((0, 0, 3), dtype=torch.uint8)
@@ -308,13 +297,7 @@ class LevelsNode(JOVImageInOutBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {"optional": {
-                Lexicon.HI: ("FLOAT", {"default": 1, "min": 0, "max": 1, "step": 0.01},),
-                Lexicon.MID: ("FLOAT", {"default": 0.5, "min": 0, "max": 1, "step": 0.01},),
-                Lexicon.LO: ("FLOAT", {"default": 0, "min": 0, "max": 1, "step": 0.01},),
-                Lexicon.GAMMA: ("FLOAT", {"default": 1, "min": 0, "max": 1, "step": 0.01},),
-            }}
-        return deep_merge_dict(IT_REQUIRED, IT_PIXELS, d, IT_INVERT)
+        return deep_merge_dict(IT_REQUIRED, IT_PIXELS, IT_LMH, IT_GAMMA, IT_INVERT)
 
     def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor]:
 

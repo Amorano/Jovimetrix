@@ -71,8 +71,11 @@ const SpinnerWidget = (app, type, labels, key, val, round=false, step=1) => {
         ctx.fillStyle = LiteGraph.WIDGET_BGCOLOR;
         ctx.roundRect(widget_padding, Y, width - widget_padding2, height, 8);
         ctx.stroke();
-        ctx.fillStyle = LiteGraph.WIDGET_BGCOLOR;
-        ctx.fillText(key, widget_padding + offset, Y + height / 2 + offset);
+        // label
+        ctx.fillStyle = LiteGraph.WIDGET_SECONDARY_TEXT_COLOR;
+
+        const label_center = (offset + label_full) / 2 - (key.length * 1.5);
+        ctx.fillText(key, label_center, Y + height / 2 + offset);
         let x = label_full;
         regions = [];
         data.forEach(entry => {
@@ -80,10 +83,11 @@ const SpinnerWidget = (app, type, labels, key, val, round=false, step=1) => {
             ctx.beginPath();
             ctx.rect(x, Y, element_width, height);
             ctx.clip();
+            ctx.fillStyle = LiteGraph.WIDGET_OUTLINE_COLOR;
             ctx.fillRect(x - 1, Y, 2, height);
-            const size = entry.value.toString().length;
-            ctx.fillStyle = LiteGraph.WIDGET_BGCOLOR;
-            ctx.fillText(entry.value, x + element_width / 2 - (size * 3.2), Y + height / 2 + offset);
+            ctx.fillStyle = LiteGraph.WIDGET_SECONDARY_TEXT_COLOR;
+            const size = entry.value?.toString().length || 0;
+            ctx.fillText(entry.value, x + element_width / 2 - (size * 1.5), Y + height / 2 + offset);
             ctx.restore();
             regions.push([x + 1 - element_width, x - 1]);
             x += element_width;
@@ -125,33 +129,21 @@ const widgets = {
             }),
             INTEGER2: (node, inputName, data, app) => ({
                 widget: node.addCustomWidget(SpinnerWidget(app, "INTEGER2", ["x", "y"], inputName, data[1]?.default || [0, 0])),
-                minWidth: node.size[0],
-                minHeight: node.size[1],
             }),
             FLOAT2: (node, inputName, inputData, app) => ({
-                widget: node.addCustomWidget(SpinnerWidget(app, "FLOAT2", ["x", "y"], inputName, inputData[1]?.default || [0, 0])),
-                minWidth: node.size[0],
-                minHeight: node.size[1],
+                widget: node.addCustomWidget(SpinnerWidget(app, "FLOAT2", ["x", "y"], inputName, inputData[1]?.default || [0., 0.])),
             }),
             INTEGER3: (node, inputName, inputData, app) => ({
                 widget: node.addCustomWidget(SpinnerWidget(app, "INTEGER3", ["x", "y", "z"], inputName, inputData[1]?.default || [0, 0, 0])),
-                minWidth: node.size[0],
-                minHeight: node.size[1],
             }),
             FLOAT3: (node, inputName, inputData, app) => ({
-                widget: node.addCustomWidget(SpinnerWidget(app, "FLOAT3", ["x", "y", "z"], inputName, inputData[1]?.default || [0, 0, 0])),
-                minWidth: node.size[0],
-                minHeight: node.size[1],
+                widget: node.addCustomWidget(SpinnerWidget(app, "FLOAT3", ["x", "y", "z"], inputName, inputData[1]?.default || [0., 0., 0.])),
             }),
             INTEGER4: (node, inputName, inputData, app) => ({
                 widget: node.addCustomWidget(SpinnerWidget(app, "INTEGER4", ["x", "y", "z", "w"], inputName, inputData[1]?.default || [0, 0, 0, 0])),
-                minWidth: node.size[0],
-                minHeight: node.size[1],
             }),
             FLOAT4: (node, inputName, inputData, app) => ({
-                widget: node.addCustomWidget(SpinnerWidget(app, "FLOAT4", ["x", "y", "z", "w"], inputName, inputData[1]?.default || [0, 0, 0, 0])),
-                minWidth: node.size[0],
-                minHeight: node.size[1],
+                widget: node.addCustomWidget(SpinnerWidget(app, "FLOAT4", ["x", "y", "z", "w"], inputName, inputData[1]?.default || [0., 0., 0., 0.])),
             }),
         };
     }
