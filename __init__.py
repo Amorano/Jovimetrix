@@ -228,7 +228,7 @@ class Lexicon:
     INVERT = '🔳'
     IO = '💾'
     LINEAR = '🛟'
-    LMH = '🔻Ⓜ️🔺'
+    LMH = 'LMH'
     LOG = '🪵'
     LOHI = '🔻🔺'
     LOOP = '🔄'
@@ -400,12 +400,8 @@ class JOVImageBaseNode(JOVBaseNode):
     OUTPUT_NODE = True
     OUTPUT_IS_LIST = (True, True, )
 
-class JOVImageInOutBaseNode(JOVBaseNode):
+class JOVImageInOutBaseNode(JOVImageBaseNode):
     INPUT_IS_LIST = True
-    RETURN_TYPES = ("IMAGE", "MASK",)
-    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.MASK,)
-    OUTPUT_NODE = True
-    OUTPUT_IS_LIST = (True, True, )
 
 # wildcard trick is 100% stolen from pythongossss's
 class AnyType(str):
@@ -798,7 +794,10 @@ IT_INVERT = {"optional": {
     Lexicon.INVERT: ("FLOAT", {"default": 0, "min": 0, "max": 1, "step": 0.01}),
 }}
 
-
+IT_AB = {"optional": {
+    Lexicon.IN_A: (WILDCARD, {"default": None}),
+    Lexicon.IN_B: (WILDCARD, {"default": None})
+}}
 
 IT_XYZW = {"optional": {
     Lexicon.XYZW: ("INTEGER4", {"default": (0, 0, 0, 0)})

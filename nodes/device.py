@@ -16,10 +16,10 @@ import cv2
 import torch
 import numpy as np
 
-from Jovimetrix import deep_merge_dict, tensor2cv, cv2mask, cv2tensor, \
-        JOVBaseNode, JOVImageBaseNode, Logger, Lexicon, EnumCanvasOrientation, \
+from Jovimetrix import deep_merge_dict, tensor2cv, cv2mask, cv2tensor, zip_longest_fill, \
+        JOVBaseNode, JOVImageBaseNode, JOVImageInOutBaseNode, Logger, Lexicon, EnumCanvasOrientation, \
         IT_PIXELS, IT_ORIENT, IT_CAM, IT_REQUIRED, \
-        IT_WHMODE, MIN_HEIGHT, MIN_WIDTH, IT_INVERT, zip_longest_fill
+        IT_WHMODE, MIN_HEIGHT, MIN_WIDTH, IT_INVERT
 
 from Jovimetrix.sup.comp import image_grid, light_invert, geo_scalefit, \
     EnumInterpolation, \
@@ -89,7 +89,6 @@ class StreamReaderNode(JOVImageBaseNode):
     NAME = "STREAM READER (JOV) 📺"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/DEVICE"
     DESCRIPTION = ""
-    OUTPUT_NODE = True
     OUTPUT_IS_LIST = (False, False, )
     EMPTY = np.zeros((MIN_HEIGHT, MIN_WIDTH, 3), dtype=np.float32)
 
@@ -100,7 +99,7 @@ class StreamReaderNode(JOVImageBaseNode):
                 Lexicon.FPS: ("INT", {"min": 1, "max": 60, "step": 1, "default": 60}),
                 Lexicon.WAIT: ("BOOLEAN", {"default": False}),
             }}
-        return deep_merge_dict(d, IT_WHMODE, IT_SAMPLE, IT_INVERT, IT_ORIENT, IT_CAM)
+        return deep_merge_dict(IT_REQUIRED, d, IT_WHMODE, IT_SAMPLE, IT_INVERT, IT_ORIENT, IT_CAM)
 
     @classmethod
     def IS_CHANGED(cls, **kw) -> float:
@@ -109,11 +108,11 @@ class StreamReaderNode(JOVImageBaseNode):
             raise Exception(f"stream failed {url}")
         fps = kw.get(Lexicon.FPS, 60)
         wait = kw.get(Lexicon.WAIT, False)
-        width = kw.get(Lexicon.WIDTH, 0)
-        height = kw.get(Lexicon.HEIGHT, 0)
+        wh = kw.get(Lexicon.WIDTH, 0)
         zoom = kw.get(Lexicon.ZOOM, 1)
         sample = kw.get(Lexicon.SAMPLE, EnumInterpolation.LANCZOS4)
 
+        width, height = wh
         if device.width != width or device.height != height:
             device.sizer(width, height, sample)
 
@@ -136,8 +135,7 @@ class StreamReaderNode(JOVImageBaseNode):
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
 
-        width = kw.get(Lexicon.WIDTH, 0)
-        height = kw.get(Lexicon.HEIGHT, 0)
+        wh = kw.get(Lexicon.WIDTH, 0)
         orient = kw.get(Lexicon.ORIENT, EnumCanvasOrientation)
         invert = kw.get(Lexicon.INVERT, 0)
         url = kw.get(Lexicon.URL, "")
@@ -156,6 +154,7 @@ class StreamReaderNode(JOVImageBaseNode):
         self.__last = img = img if img else self.__last
         if ret:
             h, w = self.__last.shape[:2]
+            width, height = wh
             if width != w or height != h:
                 rs = EnumInterpolation[rs]
                 self.__device.sizer(width, height, rs)
@@ -174,12 +173,10 @@ class StreamReaderNode(JOVImageBaseNode):
             cv2mask(img)
         )
 
-class StreamWriterNode(JOVBaseNode):
+class StreamWriterNode(JOVImageInOutBaseNode):
     NAME = "STREAM WRITER (JOV) 🎞️"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/DEVICE"
     DESCRIPTION = ""
-    OUTPUT_NODE = True
-    # OUTPUT_IS_LIST = (False, False,)
     OUT_MAP = {}
 
     @classmethod
@@ -188,7 +185,7 @@ class StreamWriterNode(JOVBaseNode):
                 Lexicon.ROUTE: ("STRING", {"default": "/stream"}),
                 Lexicon.WAIT: ("BOOLEAN", {"default": False}),
             }}
-        return deep_merge_dict(IT_PIXELS, d, IT_WHMODE, IT_INVERT)
+        return deep_merge_dict(IT_REQUIRED, IT_PIXELS, d, IT_WHMODE, IT_INVERT)
 
     @classmethod
     def IS_CHANGED(cls, **kw) -> float:

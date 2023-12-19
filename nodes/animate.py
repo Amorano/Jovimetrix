@@ -81,7 +81,7 @@ class WaveGeneratorNode(JOVBaseNode):
                 Lexicon.WAVE: (EnumWaveSimple._member_names_, {"default": EnumWaveSimple.SIN.name}),
                 Lexicon.PHASE: ("FLOAT", {"default": 1, "min": 0.0, "step": 0.01}),
                 Lexicon.AMP: ("FLOAT", {"default": 1, "min": 0.0, "step": 0.1}),
-                Lexicon.OFFSET: ("FLOAT", {"default": 0.0, "min": 0.0, "step": 0.1}),
+                Lexicon.OFFSET: ("FLOAT2", {"default": (0, 0), "min": 0.0, "step": 0.1}),
                 Lexicon.MAX: ("FLOAT", {"default": 0.5, "min": 0.0, "max": 9999.0, "step": 0.01}),
                 Lexicon.FRAME: ("INT", {"default": 1, "min": 0, "step": 1}),
             }}

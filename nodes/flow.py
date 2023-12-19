@@ -10,7 +10,7 @@ from typing import Any
 
 from Jovimetrix import deep_merge_dict, \
     Logger, JOVBaseNode, Lexicon, \
-    JOV_MAX_DELAY, IT_REQUIRED, WILDCARD
+    JOV_MAX_DELAY, IT_REQUIRED, IT_AB, WILDCARD
 
 # =============================================================================
 
@@ -92,14 +92,11 @@ class ComparisonNode(JOVBaseNode):
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
-                Lexicon.IN_A: (WILDCARD, {"default": None}),
-                Lexicon.IN_B: (WILDCARD, {"default": None}),
-                Lexicon.COMPARE: (EnumComparison._member_names_, {"default": EnumComparison.A_EQUALS_B.name}),
+            Lexicon.COMPARE: (EnumComparison._member_names_, {"default": EnumComparison.A_EQUALS_B.name}),
         }}
-        return deep_merge_dict(IT_REQUIRED, d)
+        return deep_merge_dict(IT_REQUIRED, IT_AB, d)
 
     def run(self, **kw) -> tuple[bool]:
-
         compare = kw.get(Lexicon.COMPARE, EnumComparison.A_EQUALS_B)
         A = kw.get(Lexicon.IN_A, None)
         B = kw.get(Lexicon.IN_B, None)
@@ -117,7 +114,6 @@ class ComparisonNode(JOVBaseNode):
                 return (A <= B,)
             case EnumComparison.A_NOT_EQUAL_TO_B:
                 return (A != B,)
-
         return (False,)
 
 class IfThenElseNode(JOVBaseNode):
@@ -130,13 +126,12 @@ class IfThenElseNode(JOVBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        return {
-            "required": {
-                Lexicon.CONDITION: ("BOOLEAN", {"default": False}),
-                Lexicon.TRUE: (WILDCARD, {"default": None}),
-                Lexicon.FALSE: (WILDCARD, {"default": None}),
-            },
-        }
+        d = {"optional": {
+            Lexicon.TRUE: (WILDCARD, {"default": None}),
+            Lexicon.FALSE: (WILDCARD, {"default": None}),
+            Lexicon.CONDITION: ("BOOLEAN", {"default": False}),
+        }}
+        return deep_merge_dict(IT_REQUIRED, d)
 
     def run(self, **kw) -> tuple[bool]:
         o = kw.get(Lexicon.CONDITION, False)
