@@ -105,7 +105,7 @@ class DebugNode(JOVBaseNode):
     RETURN_TYPES = (WILDCARD, WILDCARD, )
     RETURN_NAMES = (Lexicon.PASS_OUT, Lexicon.IO)
     OUTPUT_NODE = True
-    SORT = 100
+    SORT = 50
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -155,6 +155,7 @@ class AkashicNode(JOVBaseNode):
     RETURN_TYPES = ('AKASHIC',)
     RETURN_NAMES = (Lexicon.DATA,)
     OUTPUT_IS_LIST = (True, )
+    OUTPUT_NODE = True
     SORT = 100
 
     @classmethod

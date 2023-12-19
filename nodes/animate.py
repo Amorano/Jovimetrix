@@ -19,7 +19,6 @@ class TickNode(JOVBaseNode):
     DESCRIPTION = "Periodic pulse exporting normalized, delta since last pulse and count."
     RETURN_TYPES = ("INT", "FLOAT", "FLOAT", "FLOAT", )
     RETURN_NAMES = (Lexicon.COUNT, Lexicon.LINEAR, Lexicon.TIME, Lexicon.DELTA_TIME,)
-    OUTPUT_NODE = True
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:

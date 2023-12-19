@@ -87,7 +87,6 @@ class ComparisonNode(JOVBaseNode):
     DESCRIPTION = "Compare two inputs"
     RETURN_TYPES = ("BOOLEAN",)
     RETURN_NAMES = (Lexicon.BOOLEAN, )
-    OUTPUT_NODE = True
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -122,7 +121,6 @@ class IfThenElseNode(JOVBaseNode):
     DESCRIPTION = "IF <valid> then A else B"
     RETURN_TYPES = (WILDCARD,)
     RETURN_NAMES = (Lexicon.RESULT, )
-    OUTPUT_NODE = True
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:

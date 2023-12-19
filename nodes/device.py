@@ -190,11 +190,11 @@ class StreamWriterNode(JOVImageInOutBaseNode):
     @classmethod
     def IS_CHANGED(cls, **kw) -> float:
         route = kw.get(Lexicon.ROUTE, [None])
-        width = kw.get(Lexicon.WIDTH, [None])
-        height = kw.get(Lexicon.HEIGHT, [None])
+        wh = kw.get(Lexicon.WIDTH, [None])
         wait = kw.get(Lexicon.WAIT, [None])
         fps = kw.get(Lexicon.FPS, [None])
-        sample = sample or [None]
+        sample = kw.get(Lexicon.SAMPLE, [None])
+        width, height = wh
 
         if (device := StreamManager.capture(route, static=True)) is None:
             raise Exception(f"stream failed {route}")
@@ -269,7 +269,6 @@ class MIDIReaderNode(JOVBaseNode):
     NAME = "MIDI READER (JOV) 🎹"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/DEVICE"
     DESCRIPTION = "Reads input from a midi device"
-    OUTPUT_NODE = True
     OUTPUT_IS_LIST = (False, False, False, False, False)
     RETURN_TYPES = ('BOOLEAN', 'INT', 'INT', 'INT', 'FLOAT')
     RETURN_NAMES = (Lexicon.ON, Lexicon.CHANNEL, Lexicon.CONTROL, Lexicon.NOTE, Lexicon.AMT,)

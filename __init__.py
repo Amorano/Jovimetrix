@@ -397,7 +397,6 @@ class JOVBaseNode:
 class JOVImageBaseNode(JOVBaseNode):
     RETURN_TYPES = ("IMAGE", "MASK",)
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.MASK,)
-    OUTPUT_NODE = True
     OUTPUT_IS_LIST = (True, True, )
 
 class JOVImageInOutBaseNode(JOVImageBaseNode):
