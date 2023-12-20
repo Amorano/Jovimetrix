@@ -4,15 +4,15 @@
  *
  */
 
-import { ComfyDialog, $el } from "/scripts/ui.js";
-import * as util from './util.js';
+import { ComfyDialog, $el } from "/scripts/ui.js"
+import * as util from './util.js'
 
-var headID = document.getElementsByTagName("head")[0];
-var cssNode = document.createElement('link');
-cssNode.rel = 'stylesheet';
-cssNode.type = 'text/css';
-cssNode.href = 'extensions/Jovimetrix/jovimetrix.css';
-headID.appendChild(cssNode);
+var headID = document.getElementsByTagName("head")[0]
+var cssNode = document.createElement('link')
+cssNode.rel = 'stylesheet'
+cssNode.type = 'text/css'
+cssNode.href = 'extensions/Jovimetrix/jovimetrix.css'
+headID.appendChild(cssNode)
 
 const templateColorBlock = (data) => [
     $el("tr", { style: {
@@ -36,7 +36,7 @@ const templateColorBlock = (data) => [
                 })
             ])
         ])
-];
+]
 
 const templateColorHeader = (data) => [
     $el("tr", [
@@ -61,7 +61,7 @@ const templateColorHeader = (data) => [
             })
         ])
     ])
-];
+]
 
 const templateColorRegex = (data) => [
     $el("tr", [
@@ -90,13 +90,13 @@ const templateColorRegex = (data) => [
             })
         ])
     ])
-];
+]
 
 function colorClear(name) {
-    util.apiPost("/jovimetrix/config/clear", { "name": name });
-    delete util.THEME[name];
+    util.apiPost("/jovimetrix/config/clear", { "name": name })
+    delete util.THEME[name]
     if (util.CONFIG_COLOR.overwrite) {
-        util.nodeColorAll();
+        util.nodeColorAll()
     }
 }
 
@@ -108,122 +108,122 @@ export class JovimetrixConfigDialog extends ComfyDialog {
             startY: e.clientY,
             offsetX: this.element.offsetLeft,
             offsetY: this.element.offsetTop,
-        };
+        }
 
-        document.addEventListener('mousemove', this.dragMove);
-        document.addEventListener('mouseup', this.dragEnd);
+        document.addEventListener('mousemove', this.dragMove)
+        document.addEventListener('mouseup', this.dragEnd)
     }
 
     dragMove = (e) => {
-        const { startX, startY, offsetX, offsetY } = this.dragData;
-        const newLeft = offsetX + e.clientX - startX;
-        const newTop = offsetY + e.clientY - startY;
+        const { startX, startY, offsetX, offsetY } = this.dragData
+        const newLeft = offsetX + e.clientX - startX
+        const newTop = offsetY + e.clientY - startY
 
         // Get the dimensions of the parent element
-        const parentWidth = this.element.parentElement.clientWidth;
-        const parentHeight = this.element.parentElement.clientHeight;
+        const parentWidth = this.element.parentElement.clientWidth
+        const parentHeight = this.element.parentElement.clientHeight
 
         // Ensure the new position is within the boundaries
-        const halfX = this.element.clientWidth / 2;
-        const halfY = this.element.clientHeight / 2;
-        const clampedLeft = Math.max(halfX, Math.min(newLeft, parentWidth - halfX));
-        const clampedTop = Math.max(halfY, Math.min(newTop, parentHeight - halfY));
+        const halfX = this.element.clientWidth / 2
+        const halfY = this.element.clientHeight / 2
+        const clampedLeft = Math.max(halfX, Math.min(newLeft, parentWidth - halfX))
+        const clampedTop = Math.max(halfY, Math.min(newTop, parentHeight - halfY))
 
-        this.element.style.left = `${clampedLeft}px`;
-        this.element.style.top = `${clampedTop}px`;
+        this.element.style.left = `${clampedLeft}px`
+        this.element.style.top = `${clampedTop}px`
     }
 
     dragEnd = () => {
-        document.removeEventListener('mousemove', this.dragMove);
-        document.removeEventListener('mouseup', this.dragEnd);
+        document.removeEventListener('mousemove', this.dragMove)
+        document.removeEventListener('mouseup', this.dragEnd)
     }
 
     createColorPalettes() {
-        var data = {};
-        let colorTable = null;
+        var data = {}
+        let colorTable = null
         const header =
             $el("div.jov-config-column", [
                 $el("table", [
                     colorTable = $el("thead", [
                     ]),
                 ]),
-            ]);
+            ])
 
         // rule-sets first
-        var idx = 0;
-        const rules = util.CONFIG_COLOR.regex || [];
+        var idx = 0
+        const rules = util.CONFIG_COLOR.regex || []
         rules.forEach(entry => {
-            // console.info(entry);
+            // console.info(entry)
             const data = {
                 idx: idx,
                 name: entry.regex,
                 title: entry.title || '#13171DFF',
                 body: entry.body || '#13171DFF',
                 background: '#292930'
-            };
-            colorTable.appendChild($el("tbody", templateColorRegex(data)));
-            idx += 1;
-        });
+            }
+            colorTable.appendChild($el("tbody", templateColorRegex(data)))
+            idx += 1
+        })
 
         // get categories to generate on the fly
-        const category = [];
-        const all_nodes = Object.entries(util.NODE_LIST);
-        all_nodes.sort((a, b) => a[1].category.toLowerCase().localeCompare(b[1].category.toLowerCase()));
+        const category = []
+        const all_nodes = Object.entries(util.NODE_LIST)
+        all_nodes.sort((a, b) => a[1].category.toLowerCase().localeCompare(b[1].category.toLowerCase()))
 
         // groups + nodes
-        const alts = util.CONFIG_COLOR;
-        const background = [alts.backA, alts.backB];
-        const background_title = [alts.titleA, alts.titleB];
-        let background_index = 0;
+        const alts = util.CONFIG_COLOR
+        const background = [alts.backA, alts.backB]
+        const background_title = [alts.titleA, alts.titleB]
+        let background_index = 0
         all_nodes.forEach(entry => {
-            var name = entry[0];
+            var name = entry[0]
             var cat = entry[1].category
-            var meow = cat.split('/')[0];
+            var meow = cat.split('/')[0]
 
             if (!category.includes(meow))
             {
                 // major category first?
-                background_index = (background_index + 1) % 2;
+                background_index = (background_index + 1) % 2
                 data = {
                     name: meow,
                     title: '#13171DFF',
                     body: '#13171DFF',
                     background: '#292930'
-                };
+                }
                 if (util.THEME.hasOwnProperty(meow)) {
                     data.title = util.THEME[meow].title,
                     data.body = util.THEME[meow].body
                 }
-                colorTable.appendChild($el("tbody", templateColorHeader(data)));
-                category.push(meow);
+                colorTable.appendChild($el("tbody", templateColorHeader(data)))
+                category.push(meow)
             }
 
             if(category.includes(cat) == false) {
-                background_index = (background_index + 1) % 2;
+                background_index = (background_index + 1) % 2
                 data = {
                     name: cat,
                     title: '#13171DFF',
                     body: '#13171DFF',
                     background: background_title[background_index]
-                };
+                }
                 if (util.THEME.hasOwnProperty(cat)) {
                     data.title = util.THEME[cat].title,
                     data.body = util.THEME[cat].body
                 }
-                colorTable.appendChild($el("tbody", templateColorHeader(data)));
-                category.push(cat);
+                colorTable.appendChild($el("tbody", templateColorHeader(data)))
+                category.push(cat)
             }
 
-            const who = util.THEME[name];
+            const who = util.THEME[name]
             data = {
                 name: name,
                 title:  who ? who.title : '#13171DFF',
                 body: who ? who.body :'#13171DFF',
                 background: background[background_index]
-            };
-            colorTable.appendChild($el("tbody", templateColorBlock(data)));
-        });
-        return [header];
+            }
+            colorTable.appendChild($el("tbody", templateColorBlock(data)))
+        })
+        return [header]
 	}
 
     createTitle() {
@@ -247,9 +247,9 @@ export class JovimetrixConfigDialog extends ComfyDialog {
             "SPECTRUM STYLING",
             "TINT TAILORING",
             "TINT TWEAKING"
-        ];
-        const randomIndex = Math.floor(Math.random() * title.length);
-        return title[randomIndex];
+        ]
+        const randomIndex = Math.floor(Math.random() * title.length)
+        return title[randomIndex]
     }
 
     createTitleElement() {
@@ -268,14 +268,14 @@ export class JovimetrixConfigDialog extends ComfyDialog {
                                 checked: util.CONFIG_USER.color.overwrite,
                                 style: { color: "white" },
                                 onclick: (cb) => {
-                                    util.CONFIG_USER.color.overwrite = cb.target.checked;
+                                    util.CONFIG_USER.color.overwrite = cb.target.checked
                                     var data = {
                                         id: util.USER + '.color.overwrite',
                                         v: util.CONFIG_USER.color.overwrite
                                     }
-                                    util.api_post('/jovimetrix/config', data);
+                                    util.api_post('/jovimetrix/config', data)
                                     if (util.CONFIG_USER.color.overwrite) {
-                                        util.node_color_all();
+                                        util.node_color_all()
                                     }
                                 }
                             })
@@ -283,7 +283,7 @@ export class JovimetrixConfigDialog extends ComfyDialog {
                     ]),
                 ]),
             ])
-        ]);
+        ])
     }
 
     createContent() {
@@ -295,31 +295,31 @@ export class JovimetrixConfigDialog extends ComfyDialog {
                 type: "button",
                 textContent: "CLOSE",
                 onclick: () => {
-                    this.close();
-                    this.visible = false;
+                    this.close()
+                    this.visible = false
                 }
             })
-        ]);
+        ])
 
-        content.style.width = '100%';
-        content.style.height = '100%';
-        content.addEventListener('mousedown', this.startDrag);
-        return content;
+        content.style.width = '100%'
+        content.style.height = '100%'
+        content.addEventListener('mousedown', this.startDrag)
+        return content
     }
 
     constructor() {
-        super();
-        this.headerTitle = null;
-        this.overwrite = false;
-        this.visible = false;
-        this.element = $el("div.comfy-modal", { id:'jov-manager-dialog', parent: document.body }, [ this.createContent() ]);
+        super()
+        this.headerTitle = null
+        this.overwrite = false
+        this.visible = false
+        this.element = $el("div.comfy-modal", { id:'jov-manager-dialog', parent: document.body }, [ this.createContent() ])
     }
 
 	show() {
-        this.visible = !this.visible;
-        this.headerTitle.innerText = this.createTitle();
-        this.element.style.display = this.visible ? "block" : "";
+        this.visible = !this.visible
+        this.headerTitle.innerText = this.createTitle()
+        this.element.style.display = this.visible ? "block" : ""
     }
 }
 
-// export const CONFIG_DIALOG = new JovimetrixConfigDialog();
+// export const CONFIG_DIALOG = new JovimetrixConfigDialog()

@@ -108,12 +108,10 @@ class GraphWaveNode(JOVImageBaseNode):
         self.__data = None
 
     def run(self, filen: str, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        width = kw.get(Lexicon.WIDTH, None)
-        height = kw.get(Lexicon.HEIGHT, None)
+        wh = kw.get(Lexicon.WH, None)
         bars = kw.get(Lexicon.AMT, None)
         rgb = kw.get(Lexicon.RGB, None)
-        back = kw.get(Lexicon.RGB_BACK, None)
-
+        back = kw.get(Lexicon.RGB_B, None)
 
         if self.__filen != filen:
             self.__data = None
@@ -127,6 +125,7 @@ class GraphWaveNode(JOVImageBaseNode):
 
         image = np.zeros((1, 1), dtype=np.int16)
         if self.__data is not None:
+            width, height = wh
             image = graph_sausage(self.__data, bars, width, height, rgb, back)
 
         image = cv2tensor(image)

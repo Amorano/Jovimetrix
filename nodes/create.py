@@ -39,16 +39,18 @@ class ConstantNode(JOVImageBaseNode):
     NAME = "CONSTANT (JOV) 🟪"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
     DESCRIPTION = ""
+    OUTPUT_NODE = True
     OUTPUT_IS_LIST = (False, False, )
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        return deep_merge_dict(IT_REQUIRED, IT_RGBA, IT_WH)
+        return deep_merge_dict(IT_REQUIRED, IT_INVERT, IT_WH, IT_RGBA)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        color = kw.get(Lexicon.RGBA, (255, 255, 255))
-        width = kw.get(Lexicon.WIDTH, 0)
-        height = kw.get(Lexicon.HEIGHT, 0)
+        color = kw.get(Lexicon.RGBA, (0, 0, 0, 255))
+        wh = kw.get(Lexicon.WH, (512, 512))
+        width, height = wh
+        Logger.debug(kw, color, width, height)
         image = Image.new("RGB", (width, height), color)
         return (pil2tensor(image), pil2tensor(image.convert("L")),)
 
@@ -75,7 +77,7 @@ class ShapeNode(JOVImageBaseNode):
         angle = kw.get(Lexicon.ANGLE, 0)
         size = kw.get(Lexicon.SIZE, (1,1))
         sizeX, sizeY = size
-        wh = kw.get(Lexicon.WIDTH, (0,0))
+        wh = kw.get(Lexicon.WH, (0,0))
         width, height = wh
         color = kw.get(Lexicon.RGBA, (255, 255, 255, 255))
         R, G, B, A = color
@@ -125,8 +127,8 @@ class PixelShaderNode(JOVImageInOutBaseNode):
     def shader(image: TYPE_PIXEL, R: str, G: str, B: str, chunkX: int=64, chunkY:int=64, **kw) -> np.ndarray:
 
         from ast import literal_eval
-        width = kw.get(Lexicon.WIDTH, 0)
-        height = kw.get(Lexicon.HEIGHT, 0)
+        wh = kw.get(Lexicon.WH, 0)
+        width, height = wh
         out = np.zeros((height, width, 3), dtype=np.float32)
         R = R.strip()
         G = G.strip()
@@ -169,18 +171,17 @@ class PixelShaderNode(JOVImageInOutBaseNode):
         return np.clip(out, 0, 255).astype(np.uint8)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-
         t = time.perf_counter()
         pixels = kw.get(Lexicon.PIXEL, [None])
         R = kw.get(Lexicon.R, [None])
         G = kw.get(Lexicon.G, [None])
         B = kw.get(Lexicon.B, [None])
-        wh = kw.get(Lexicon.WIDTH, [None])
+        wihi = kw.get(Lexicon.WH, [None])
         mode = kw.get(Lexicon.MODE, [None])
         sample = kw.get(Lexicon.SAMPLE, [None])
         masks = []
         images = []
-        for data in zip_longest_fill(pixels, R, G, B, wh, mode, sample):
+        for data in zip_longest_fill(pixels, R, G, B, wihi, mode, sample):
             image, r, g, b, wh, m, rs = data
 
             r = r if r else ""
@@ -246,7 +247,7 @@ void main() {
         return float("nan")
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        wh = kw.get(Lexicon.WIDTH, (0, 0))
+        wh = kw.get(Lexicon.WH, (0, 0))
         vertex = kw.get(Lexicon.VERTEX, '')
         fragment = kw.get(Lexicon.FRAGMENT, '')
         image = Image.new(mode="RGB", size=wh)

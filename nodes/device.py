@@ -108,7 +108,7 @@ class StreamReaderNode(JOVImageBaseNode):
             raise Exception(f"stream failed {url}")
         fps = kw.get(Lexicon.FPS, 60)
         wait = kw.get(Lexicon.WAIT, False)
-        wh = kw.get(Lexicon.WIDTH, 0)
+        wh = kw.get(Lexicon.WH, 0)
         zoom = kw.get(Lexicon.ZOOM, 1)
         sample = kw.get(Lexicon.SAMPLE, EnumInterpolation.LANCZOS4)
 
@@ -135,7 +135,7 @@ class StreamReaderNode(JOVImageBaseNode):
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
 
-        wh = kw.get(Lexicon.WIDTH, 0)
+        wh = kw.get(Lexicon.WH, 0)
         orient = kw.get(Lexicon.ORIENT, EnumCanvasOrientation)
         invert = kw.get(Lexicon.INVERT, 0)
         url = kw.get(Lexicon.URL, "")
@@ -190,7 +190,7 @@ class StreamWriterNode(JOVImageInOutBaseNode):
     @classmethod
     def IS_CHANGED(cls, **kw) -> float:
         route = kw.get(Lexicon.ROUTE, [None])
-        wh = kw.get(Lexicon.WIDTH, [None])
+        wh = kw.get(Lexicon.WH, [None])
         wait = kw.get(Lexicon.WAIT, [None])
         fps = kw.get(Lexicon.FPS, [None])
         sample = kw.get(Lexicon.SAMPLE, [None])
@@ -224,14 +224,13 @@ class StreamWriterNode(JOVImageInOutBaseNode):
         route = kw.get(Lexicon.ROUTE, [None])
         wait = kw.get(Lexicon.ROUTE, [None])
         mode = kw.get(Lexicon.MODE, [None])
-        Logger.debug(self.NAME, route)
-        width = kw.get(Lexicon.WIDTH, [None])
-        height = kw.get(Lexicon.HEIGHT, [None])
+        wihi = kw.get(Lexicon.WH, [None])
         invert = kw.get(Lexicon.INVERT, [None])
         sample = sample or [None]
 
-        for data in zip_longest_fill(pixels, route, wait, width, height, sample, invert):
-            img, r, wait, w, h, rs, i = data
+        for data in zip_longest_fill(pixels, route, wait, wihi, sample, invert):
+            img, r, wait, wh, rs, i = data
+            w, h = wh
             h = h or 0
             w = w or 0
             img = img if img else np.zeros((h, w, 3), dtype=np.uint8)

@@ -177,7 +177,7 @@ class Logger(metaclass=Singleton):
 # =============================================================================
 
 class Lexicon:
-    # ⤴️ 🅱️ 🅾️🔻🔺➡️⬆️
+    # ⤴️ 🅱️ 🅾️🔻🔺➡️⬆️ ↔️ ↕️
     A = '⬜'
     ADAPT = 'ADAPT'
     AMP = '🔊'
@@ -219,7 +219,6 @@ class Lexicon:
     G = '🟩'
     GAMMA = '🔆'
     GI = '💚'
-    HEIGHT = '↕️'
     HSV = u'🇭🇸\u200c🇻'
     IMAGE = '🖼️'
     IN_A = '🅰️'
@@ -280,7 +279,6 @@ class Lexicon:
     WAVE = '〰️'
     WH = '🇼🇭'
     WHITE = '⬜'
-    WIDTH = '↔️'
     X = '🇽'
     XY = '🇽🇾'
     XYZ = '🇽🇾🇿'
@@ -758,7 +756,7 @@ IT_PASS_IN = {"optional": {
 }}
 
 IT_WH = {"optional": {
-    Lexicon.WH: ("INTEGER2", {"default": (0, 0)})
+    Lexicon.WH: ("INTEGER2", {"default": (512, 512), "min": 64, "max": 8192})
 }}
 
 IT_SCALEMODE = {"optional": {
@@ -774,11 +772,11 @@ IT_ROT = {"optional": {
 }}
 
 IT_SCALE = {"optional": {
-    Lexicon.SIZE: ("INTEGER2", {"default": (0, 0)})
+    Lexicon.SIZE: ("INTEGER2", {"default": (1, 1)})
 }}
 
 IT_TILE = {"optional": {
-    Lexicon.TILE: ("INTEGER2", {"default": (0, 0)})
+    Lexicon.TILE: ("INTEGER2", {"default": (2, 2)})
 }}
 
 IT_EDGE = {"optional": {
@@ -798,32 +796,32 @@ IT_AB = {"optional": {
     Lexicon.IN_B: (WILDCARD, {"default": None})
 }}
 
-IT_XYZW = {"optional": {
-    Lexicon.XYZW: ("INTEGER4", {"default": (0, 0, 0, 0)})
+IT_XY = { "optional": {
+    Lexicon.XY: ("FLOAT2", {"default": (0, 0), "step": 0.01})
 }}
 
 IT_XYZ = {"optional": {
-    Lexicon.XYZ: ("INTEGER3", {"default": (0, 0, 0)})
+    Lexicon.XYZ: ("FLOAT3", {"default": (0, 0, 0), "step": 0.01})
 }}
 
-IT_XY = { "optional": {
-    Lexicon.XY: ("INTEGER2", {"default": (0, 0)})
+IT_XYZW = {"optional": {
+    Lexicon.XYZW: ("FLOAT4", {"default": (0, 0, 0, 1), "step": 0.01})
 }}
 
 IT_RGB = {"optional": {
-    Lexicon.RGB: ("INTEGER3", {"default": (0, 0, 0, 0)})
+    Lexicon.RGB: ("INTEGER3", {"default": (0, 0, 0), "min": 0, "max": 255, "step": 4})
 }}
 
 IT_RGBA = {"optional": {
-    Lexicon.RGBA: ("INTEGER4", {"default": (0, 0, 0, 0)})
+    Lexicon.RGBA: ("INTEGER4", {"default": (0, 0, 0, 255), "min": 0, "max": 255, "step": 4})
 }}
 
 IT_RGB_B = { "optional": {
-    Lexicon.RGB_B: ("INTEGER3", {}),
+    Lexicon.RGB_B: ("INTEGER3", {"default": (0, 0, 0), "min": 0, "max": 255, "step": 4})
 }}
 
 IT_RGBA_B = { "optional": {
-    Lexicon.RGBA_B: ("INTEGER4", {}),
+    Lexicon.RGBA_B: ("INTEGER4", {"default": (0, 0, 0, 255), "min": 0, "max": 255, "step": 4})
 }}
 
 IT_RGBA_IMAGE = { "optional": {
@@ -834,7 +832,7 @@ IT_RGBA_IMAGE = { "optional": {
 }}
 
 IT_HSV = { "optional": {
-    Lexicon.HSV: ("FLOAT",{"default": 1, "min": 0, "max": 1, "step": 0.01})
+    Lexicon.HSV: ("FLOAT3",{"default": (0, 1, 1), "min": 0, "max": 1, "step": 0.01})
 }}
 
 IT_GAMMA = {"optional": {
@@ -846,7 +844,7 @@ IT_CONTRAST = {"optional": {
 }}
 
 IT_BBOX = {"optional": {
-    Lexicon.BBOX: ("FLOAT4", {"default": (0,0,0,0), "min": 0, "step": 0.01})
+    Lexicon.BBOX: ("FLOAT4", {"default": (0, 0, 1, 1), "min": 0, "max": 1, "step": 0.01})
 }}
 
 IT_LOHI = {"optional": {

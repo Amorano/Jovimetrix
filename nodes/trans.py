@@ -69,7 +69,7 @@ class TileNode(JOVImageInOutBaseNode):
 
         pixels = kw.get(Lexicon.PIXEL, [None])
         tile = kw.get(Lexicon.XY, [None])
-        wh = kw.get(Lexicon.WIDTH, [None])
+        wh = kw.get(Lexicon.WH, [None])
         mode = kw.get(Lexicon.MODE, [None])
         sample = kw.get(Lexicon.SAMPLE, [None])
         masks = []
@@ -146,7 +146,7 @@ class ProjectionNode(JOVImageInOutBaseNode):
 
         pixels = kw.get(Lexicon.PIXEL, [None])
         invert = kw.get(Lexicon.INVERT, [None])
-        wh = kw.get(Lexicon.WIDTH, [None])
+        wh = kw.get(Lexicon.WH, [None])
         proj = kw.get(Lexicon.PROJECTION, [None])
         strength = kw.get(Lexicon.STRENGTH, [None])
         mode = kw.get(Lexicon.MODE, [None])
