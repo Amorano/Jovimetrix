@@ -15,10 +15,10 @@ import numpy as np
 from PIL import Image
 
 from Jovimetrix import pil2tensor, pil2mask, pil2cv, cv2pil, cv2tensor, cv2mask, \
-    tensor2cv, deep_merge_dict, zip_longest_fill, \
+    tensor2cv, deep_merge_dict, zip_longest_fill, comfy_to_tuple, \
     JOVImageBaseNode, JOVImageInOutBaseNode, Logger, Lexicon, \
     TYPE_PIXEL, IT_PIXELS, IT_RGBA, IT_WH, IT_SCALE, IT_ROT, IT_INVERT, \
-    IT_WHMODE, IT_REQUIRED, MIN_HEIGHT, MIN_WIDTH
+    IT_WHMODE, IT_REQUIRED, MIN_IMAGE_SIZE
 
 from Jovimetrix.sup.comp import EnumScaleMode, geo_scalefit, shape_ellipse, \
     shape_polygon, shape_quad, light_invert, \
@@ -44,13 +44,11 @@ class ConstantNode(JOVImageBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        return deep_merge_dict(IT_REQUIRED, IT_INVERT, IT_WH, IT_RGBA)
+        return deep_merge_dict(IT_REQUIRED, IT_WH, IT_RGBA)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        color = kw.get(Lexicon.RGBA, (0, 0, 0, 255))
-        wh = kw.get(Lexicon.WH, (512, 512))
-        width, height = wh
-        Logger.debug(kw, color, width, height)
+        width, height = comfy_to_tuple(Lexicon.WH, kw, [MIN_IMAGE_SIZE, MIN_IMAGE_SIZE])
+        color = comfy_to_tuple(Lexicon.RGBA, kw, (0, 0, 0, 255))
         image = Image.new("RGB", (width, height), color)
         return (pil2tensor(image), pil2tensor(image.convert("L")),)
 
@@ -62,22 +60,20 @@ class ShapeNode(JOVImageBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {
-            "required": {
+        d = {"required": {
                 Lexicon.SHAPE: (EnumShapes._member_names_, {"default": EnumShapes.CIRCLE.name}),
                 Lexicon.SIDES: ("INT", {"default": 3, "min": 3, "max": 100, "step": 1}),
-            },
-        }
-        return deep_merge_dict(d, IT_WH, IT_RGBA, IT_ROT, IT_SCALE, IT_INVERT)
+            }}
+        return deep_merge_dict(IT_REQUIRED, d, IT_WH, IT_RGBA, IT_ROT, IT_SCALE, IT_INVERT)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         i = kw.get(Lexicon.INVERT, 0)
         shape = kw.get(Lexicon.SHAPE, EnumShapes.CIRCLE)
         sides = kw.get(Lexicon.SIDES, 3)
         angle = kw.get(Lexicon.ANGLE, 0)
-        size = kw.get(Lexicon.SIZE, (1,1))
+        size = kw.get(Lexicon.SIZE, (1, 1))
         sizeX, sizeY = size
-        wh = kw.get(Lexicon.WH, (0,0))
+        wh = kw.get(Lexicon.WH, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE))
         width, height = wh
         color = kw.get(Lexicon.RGBA, (255, 255, 255, 255))
         R, G, B, A = color
@@ -114,13 +110,11 @@ class PixelShaderNode(JOVImageInOutBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {
-            "optional": {
+        d = {"optional": {
                 Lexicon.R: ("STRING", {"multiline": True, "default": "1 - np.minimum(1, np.sqrt((($u-0.5)**2 + ($v-0.5)**2) * 3.5))"}),
                 Lexicon.G: ("STRING", {"multiline": True, "default": "1 - np.minimum(1, np.sqrt((($u-0.5)**2 + ($v-0.5)**2) * 3.5))"}),
                 Lexicon.B: ("STRING", {"multiline": True, "default": "1 - np.minimum(1, np.sqrt((($u-0.5)**2 + ($v-0.5)**2) * 3.5))"}),
-            },
-        }
+            }}
         return deep_merge_dict(IT_REQUIRED, IT_PIXELS, d, IT_WHMODE, IT_SAMPLE)
 
     @staticmethod
@@ -184,13 +178,13 @@ class PixelShaderNode(JOVImageInOutBaseNode):
         for data in zip_longest_fill(pixels, R, G, B, wihi, mode, sample):
             image, r, g, b, wh, m, rs = data
 
-            r = r if r else ""
-            g = g if g else ""
-            b = b if b else ""
+            r = r if r is not None else ""
+            g = g if g is not None else ""
+            b = b if b is not None else ""
             w, h = wh
-            w = w if w else MIN_WIDTH
-            h = h if h else MIN_HEIGHT
-            m = m if m else EnumScaleMode.FIT
+            w = w if w is not None else MIN_IMAGE_SIZE
+            h = h if h is not None else MIN_IMAGE_SIZE
+            m = m if m is not None else EnumScaleMode.FIT
             m = EnumScaleMode.FIT if m == EnumScaleMode.NONE else m
 
             # fix the image first -- must at least match for px, py indexes
@@ -202,10 +196,10 @@ class PixelShaderNode(JOVImageInOutBaseNode):
                 image = tensor2cv(image)
                 if image.shape[0] != h or image.shape[1] != w:
                     s = EnumInterpolation.LANCZOS4
-                    rs = EnumInterpolation[rs] if rs else s
-                    image = cv2.resize(image, (w, h), interpolation=rs)
+                    s = EnumInterpolation[rs] if rs is not None else s
+                    image = cv2.resize(image, (w, h), interpolation=s)
 
-            rs = EnumInterpolation[rs] if rs else EnumInterpolation.LANCZOS4
+            rs = EnumInterpolation[rs] if rs is not None else EnumInterpolation.LANCZOS4
             image = PixelShaderNode.shader(image, r, g, b, w, h)
             images.append(cv2tensor(image))
             masks.append(cv2mask(image))

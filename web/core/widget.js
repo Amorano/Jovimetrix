@@ -48,23 +48,30 @@ const SpinnerWidget = (app, inputName, inputData, initial, desc='') => {
     const widget_padding = 15
     const widget_padding2 = 2 * widget_padding
     const label_full = widget_padding + label_width
-
-    let regions = []
     let isDragging
+    const values = inputData[1]?.default || initial;
 
-    console.info(inputData)
+    let val = {};
+    for (let i = 0; i < values.length; i++) {
+        val[i] = values[i];
+    }
 
     const widget = {
         name: inputName,
         type: inputData[0],
         y: 0,
-        value: inputData?.default || initial,
+        value: val,
         options: inputData[1]
     }
 
+    console.info('s', widget.value)
+    const precision = widget.options?.precision !== undefined ? widget.options.precision : 0;
+    let step = inputData[0].includes('FLOAT') ? 0.01 : 1;
+    widget.options.step = widget.options?.step || step;
+    console.info(step)
+
     widget.draw = function(ctx, node, width, Y, height) {
         if (this.type !== inputData[0] && app.canvas.ds.scale > 0.5) return
-        const element_width = (width - label_full - widget_padding2) / this.value.length
 
         ctx.save()
         ctx.beginPath()
@@ -77,8 +84,11 @@ const SpinnerWidget = (app, inputName, inputData, initial, desc='') => {
         const label_center = (offset + label_full) / 2 - (inputName.length * 1.5)
         ctx.fillText(inputName, label_center, Y + height / 2 + offset)
         let x = label_full
-        regions = []
-        for (let idx = 0; idx < this.value.length; idx++) {
+
+        const fields = Object.keys(this.value)
+        const element_width = (width - label_full - widget_padding2) / fields.length
+
+        for (const idx of fields) {
             ctx.save()
             ctx.beginPath()
             ctx.rect(x, Y, element_width, height)
@@ -86,84 +96,71 @@ const SpinnerWidget = (app, inputName, inputData, initial, desc='') => {
             ctx.fillStyle = LiteGraph.WIDGET_OUTLINE_COLOR
             ctx.fillRect(x - 1, Y, 2, height)
             ctx.fillStyle = LiteGraph.WIDGET_SECONDARY_TEXT_COLOR
-
-            // value
-            const precision = this.options?.precision !== undefined ? this.options.precision : 0;
-            const text = Number(this.value[idx]).toFixed(precision).toString()
+            const it = this.value[idx.toString()]
+            const text = Number(it).toFixed(precision).toString()
             ctx.fillText(text, x + element_width / 2 - text.length * 1.5, Y + height / 2 + offset)
             ctx.restore()
-            regions.push([x + 1 - element_width, x - 1])
             x += element_width
         }
         ctx.restore()
     }
 
+    function clamp(w, v, idx) {
+        if (w.options?.max !== undefined) {
+            v = Math.min(v, w.options.max)
+        }
+        if (w.options?.min !== undefined) {
+            v = Math.max(v, w.options.min)
+        }
+        w.value[idx] = (precision == 0) ? Number(v) : parseFloat(v).toFixed(precision)
+    }
+
     widget.mouse = function (e, pos, node) {
         let delta = 0;
+
         if (e.type === 'pointerdown' && isDragging === undefined) {
-            //console.info(node)
             const x = pos[0] - label_full
-            const element_width = (node.size[0] - label_full - widget_padding2) / regions.length
+            const size = Object.keys(this.value).length
+            const element_width = (node.size[0] - label_full - widget_padding2) / size
             const index = Math.floor(x / element_width)
-            if (index >= 0 && index < regions.length) {
+            if (index >= 0 && index < size) {
                 isDragging = { name: this.name, idx: index}
             }
         }
-        else if (isDragging !== undefined && isDragging.idx > -1 && isDragging.name === this.name) {
-            const idx = isDragging.idx;
-            let old_value = this.value.slice();
-            if (e.type === 'pointermove') {
-                let v = this.value[idx];
-                if (e.deltaX) {
-                    delta = e.deltaX
-                    v += ((this.options?.step || 8) * Math.sign(delta))
-                    if (this.options?.max !== undefined) {
-                        v = Math.min(v, this.options.max)
-                    }
-                    if (this.options?.min !== undefined) {
-                        v = Math.max(v, this.options.min)
-                    }
-                    this.value[idx] = v;
-                }
+        if (isDragging !== undefined && isDragging.idx > -1 && isDragging.name === this.name) {
+            const idx = isDragging.idx
+            const old_value = { ...this.value };
+            if (e.type === 'pointermove' && e.deltaX) {
+                let v = parseFloat(this.value[idx])
+                v += this.options.step * Math.sign(e.deltaX)
+                clamp(this, v, idx)
             } else if (e.type === 'pointerup') {
-                isDragging = undefined
                 if (e.click_time < 200 && delta == 0) {
                     const label = this.options?.label ? this.name + '➖' + this.options.label?.[idx] : this.name;
                     LGraphCanvas.active_canvas.prompt(label, this.value[idx], function(v) {
-                        // check if v is a valid equation or a number
                         if (/^[0-9+\-*/()\s]+|\d+\.\d+$/.test(v)) {
                             try {
                                 v = eval(v);
                             } catch (e) {}
                         }
-                        v = parseFloat(v) || 0;
-                        if (this.options?.max !== undefined) {
-                            v = Math.min(v, this.options.max)
-                        }
-                        if (this.options?.min !== undefined) {
-                            v = Math.max(v, this.options.min)
-                        }
-                        if (old_value[idx] != v)
-                        {
-                            this.value[idx] = v;
-                            util.inner_value_change(this, this.value, e);
-                            console.info(node)
+                        if (this.value[idx] != v) {
+                            setTimeout(
+                                function () {
+                                    clamp(this, v, idx)
+                                    util.inner_value_change(this, this.value, e)
+                                }.bind(this), 20)
                         }
                     }.bind(this), e);
                 }
-                else if (old_value[idx] != this.value[idx])
-                {
-                    //util.inner_value_change(this, this.value, e);
-                    console.info(node.onWidgetChanged)
-                    /*
-                    old_value[idx] = this.value[idx]
+
+                if (old_value != this.value) {
                     setTimeout(
                         function () {
-                            //console.info(this, this.value)
+                            //clamp(this, this.value[idx] || 0, idx)
                             util.inner_value_change(this, this.value, e)
-                        }.bind(this), 20
-                    )*/
+                        }.bind(this), 20)
                 }
+                isDragging = undefined
                 app.canvas.setDirty(true)
             }
         }
@@ -187,22 +184,22 @@ const widgets = {
                 minHeight: 35,
             }),
             INTEGER2: (node, inputName, inputData, app) => ({
-                widget: node.addCustomWidget(SpinnerWidget(app, inputName, inputData, [0, 0], 'Represents a Bounding Box with x, y, width, and height.')),
+                widget: node.addCustomWidget(SpinnerWidget(app, inputName, inputData, [0, 0])),
             }),
             FLOAT2: (node, inputName, inputData, app) => ({
-                widget: node.addCustomWidget(SpinnerWidget(app, inputName, inputData, [0., 0.])),
+                widget: node.addCustomWidget(SpinnerWidget(app, inputName, inputData, [0, 0])),
             }),
             INTEGER3: (node, inputName, inputData, app) => ({
                 widget: node.addCustomWidget(SpinnerWidget(app, inputName, inputData, [0, 0, 0])),
             }),
             FLOAT3: (node, inputName, inputData, app) => ({
-                widget: node.addCustomWidget(SpinnerWidget(app, inputName, inputData, [0., 0., 0.])),
+                widget: node.addCustomWidget(SpinnerWidget(app, inputName, inputData, [0, 0, 0])),
             }),
             INTEGER4: (node, inputName, inputData, app) => ({
                 widget: node.addCustomWidget(SpinnerWidget(app, inputName, inputData, [0, 0, 0, 255])),
             }),
             FLOAT4: (node, inputName, inputData, app) => ({
-                widget: node.addCustomWidget(SpinnerWidget(app, inputName, inputData, [0., 0., 0., 1.])),
+                widget: node.addCustomWidget(SpinnerWidget(app, inputName, inputData, [0, 0, 0, 1])),
             }),
         }
     },
@@ -231,14 +228,19 @@ const widgets = {
                 const origGetExtraMenuOptions = nodeType.prototype.getExtraMenuOptions;
                 nodeType.prototype.getExtraMenuOptions = function (_, options) {
                     const r = origGetExtraMenuOptions ? origGetExtraMenuOptions.apply(this, arguments) : undefined;
-                    const toInput = matchingTypes
-                        .map(w => Object.values(this.widgets).find(m => m.name === w[0]))
-                        .filter(widget => widget.type !== util.CONVERTED_TYPE && util.newTypes.includes(widget.type))
-                        .map(widget => ({
-                            content: `Convert ${widget.name} to input`,
-                            callback: () => util.convertToInput(this, widget, matchingTypes.find(w => w[0] === widget.name))
-                        }));
-
+                    const convertToInputArray = [];
+                    for (const w of matchingTypes) {
+                        const widget = Object.values(this.widgets).find(m => m.name === w[0]);
+                        if (widget.type !== util.CONVERTED_TYPE && util.newTypes.includes(widget.type)) {
+                            const who = matchingTypes.find(w => w[0] === widget.name)
+                            const convertToInputObject = {
+                                content: `Convert ${widget.name} to input`,
+                                callback: () => util.convertToInput(this, widget, who[1])
+                            };
+                            convertToInputArray.push(convertToInputObject);
+                        }
+                    }
+                    const toInput = convertToInputArray;
                     if (toInput.length) {
                         options.push(...toInput, null);
                     }

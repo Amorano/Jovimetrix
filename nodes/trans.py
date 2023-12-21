@@ -11,10 +11,12 @@ import torch
 from Jovimetrix import zip_longest_fill, deep_merge_dict, tensor2cv, cv2mask, cv2tensor, \
     JOVImageInOutBaseNode, Logger, Lexicon, \
     IT_PIXELS, IT_TRS, IT_WH, IT_REQUIRED, IT_EDGE, \
-    IT_WHMODE, MIN_HEIGHT, MIN_WIDTH, IT_TILE, IT_XY, IT_INVERT
+    IT_WHMODE, MIN_IMAGE_SIZE, IT_TILE, IT_XY, IT_INVERT
 
 from Jovimetrix.sup import comp
-from Jovimetrix.sup.comp import EnumMirrorMode, EnumInterpolation, IT_SAMPLE
+from Jovimetrix.sup.comp import geo_transform, geo_edge_wrap, geo_scalefit, geo_mirror, \
+    remap_fisheye, remap_sphere, light_invert, \
+    EnumScaleMode, EnumProjection, EnumMirrorMode, EnumInterpolation, IT_SAMPLE
 
 # =============================================================================
 
@@ -26,8 +28,8 @@ class ComposeVec2:
     def INPUT_TYPES(cls) -> dict:
         return {
             "required": {
-                "x": ("FLOAT", {"default": 0.0}),
-                "y": ("FLOAT", {"default": 0.0}),
+                "x": ("INT", {"default": 0}),
+                "y": ("INT", {"default": 0}),
             }
         }
 
@@ -46,7 +48,7 @@ class TransformNode(JOVImageInOutBaseNode):
     def INPUT_TYPES(cls) -> dict:
         return deep_merge_dict(IT_REQUIRED, IT_PIXELS, IT_TRS, IT_EDGE, IT_WH, IT_WHMODE, IT_SAMPLE)
 
-    def run(self, *arg, **kw) -> tuple[torch.Tensor, torch.Tensor]:
+    def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         pixels = kw.get(Lexicon.PIXEL, [None])
         offset = kw.get(Lexicon.OFFSET, [None])
         angle = kw.get(Lexicon.ANGLE, [None])
@@ -57,18 +59,19 @@ class TransformNode(JOVImageInOutBaseNode):
         sample = kw.get(Lexicon.SAMPLE, [None])
         masks = []
         images = []
-        print(arg, kw)
         for data in zip_longest_fill(pixels, offset, angle, size, edge, wh, mode, sample):
-
-            image, o, a, s, e, wh, m, rs = data
+            img, o, a, s, e, wh, m, rs = data
             oX, oY = o
             sX, sY = s
             w, h = wh
-            image = tensor2cv(image)
-            rs = EnumInterpolation[rs] if rs is not None else EnumInterpolation.LANCZOS4
-            image = comp.geo_transform(image, oX, oY, a, sX, sY, e, w, h, m, rs)
-            images.append(cv2tensor(image))
-            masks.append(cv2mask(image))
+            if img is not None:
+                img = tensor2cv(img)
+                rs = EnumInterpolation[rs] if rs is not None else EnumInterpolation.LANCZOS4
+                img = geo_transform(img, oX, oY, a, sX, sY, e, w, h, m, rs)
+            else:
+                img = np.zeros((h, w, 3), dtype=np.uint8)
+            images.append(cv2tensor(img))
+            masks.append(cv2mask(img))
 
         return (
             torch.stack(images),
@@ -94,17 +97,17 @@ class TileNode(JOVImageInOutBaseNode):
         sample = kw.get(Lexicon.SAMPLE, [None])
         masks = []
         images = []
-        for image, xy, wh, m, rs in zip_longest_fill(pixels, tile, wh, mode, sample):
+        for img, xy, wh, m, rs in zip_longest_fill(pixels, tile, wh, mode, sample):
             w, h = wh
             x, y = xy
-            w = w if w else MIN_WIDTH
-            h = h if h else MIN_HEIGHT
-            image = tensor2cv(image)
-            image = comp.geo_edge_wrap(image, min(1, x or 1), min(1, y or 1))
-            rs = EnumInterpolation[rs] if rs else EnumInterpolation.LANCZOS4
-            image = comp.geo_scalefit(image, w, h, m, rs)
-            images.append(cv2tensor(image))
-            masks.append(cv2mask(image))
+            w = w if w is not None else MIN_IMAGE_SIZE
+            h = h if h is not None else MIN_IMAGE_SIZE
+            img = tensor2cv(img)
+            img = geo_edge_wrap(img, min(1, x or 1), min(1, y or 1))
+            rs = EnumInterpolation[rs] if rs is not None else EnumInterpolation.LANCZOS4
+            img = geo_scalefit(img, w, h, m, rs)
+            images.append(cv2tensor(img))
+            masks.append(cv2mask(img))
 
         return (
             torch.stack(images),
@@ -134,11 +137,11 @@ class MirrorNode(JOVImageInOutBaseNode):
         images = []
         for img, xy, m, i in zip_longest_fill(pixels, offset, mode, invert):
             x, y = xy
-            img = tensor2cv(img) if img else np.zeros((0,0,3), dtype=np.uint8)
+            img = tensor2cv(img) if img is not None else np.zeros((0,0,3), dtype=np.uint8)
             if 'X' in m:
-                img = comp.geo_mirror(img, x or 0, 1, invert=i or 0)
+                img = geo_mirror(img, x or 0, 1, invert=i or 0)
             if 'Y' in m:
-                img = comp.geo_mirror(img, y or 0, 0, invert=i or 0)
+                img = geo_mirror(img, y or 0, 0, invert=i or 0)
 
             images.append(cv2tensor(img))
             masks.append(cv2mask(img))
@@ -157,7 +160,7 @@ class ProjectionNode(JOVImageInOutBaseNode):
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"required": {
-                Lexicon.PROJECTION: (comp.EnumProjection._member_names_, {"default": comp.EnumProjection.SPHERICAL.name}),
+                Lexicon.PROJECTION: (EnumProjection._member_names_, {"default": EnumProjection.SPHERICAL.name}),
                 Lexicon.STRENGTH: ("FLOAT", {"default": 1, "min": 0, "step": 0.01}),
             }}
         return deep_merge_dict(IT_PIXELS, d, IT_WHMODE, IT_SAMPLE, IT_INVERT)
@@ -176,22 +179,25 @@ class ProjectionNode(JOVImageInOutBaseNode):
         for data in zip_longest_fill(pixels, proj, strength, wh, mode, invert, sample):
             img, pr, st, wh, m, i, rs = data
             w, h = wh
-            w = w or 0
-            h = h or 0
-            img = tensor2cv(img) if img else np.zeros((h, w, 3), dtype=np.uint8)
+            w = w if w is not None else 0
+            h = h if h is not None else 0
+            st = st if st is not None else 1
+            pr = pr if pr is not None else EnumProjection.SPHERICAL
+            m = m if m is not None else EnumScaleMode.NONE
+            img = tensor2cv(img) if img is not None else np.zeros((h, w, 3), dtype=np.uint8)
             match pr:
-                case 'SPHERICAL':
-                    image = comp.remap_sphere(image, st)
-                case 'FISHEYE':
-                    image = comp.remap_fisheye(image, st)
+                case EnumProjection.SPHERICAL:
+                    img = remap_sphere(img, st)
+                case EnumProjection.FISHEYE:
+                    img = remap_fisheye(img, st)
 
-            rs = EnumInterpolation[rs] if rs else EnumInterpolation.LANCZOS4
-            image = comp.geo_scalefit(image, w, h, m, rs)
-            if (i or 0) != 0:
-                image = comp.light_invert(image, i)
+            rs = EnumInterpolation[rs] if rs is not None else EnumInterpolation.LANCZOS4
+            img = geo_scalefit(img, w, h, m, rs)
+            if (i if i is not None else 0) != 0:
+                img = light_invert(img, i)
 
-            images.append(cv2tensor(image))
-            masks.append(cv2mask(image))
+            images.append(cv2tensor(img))
+            masks.append(cv2mask(img))
 
         return (
             torch.stack(images),

@@ -18,8 +18,7 @@ import numpy as np
 
 from Jovimetrix import deep_merge_dict, tensor2cv, cv2mask, cv2tensor, zip_longest_fill, \
         JOVBaseNode, JOVImageBaseNode, JOVImageInOutBaseNode, Logger, Lexicon, EnumCanvasOrientation, \
-        IT_PIXELS, IT_ORIENT, IT_CAM, IT_REQUIRED, \
-        IT_WHMODE, MIN_HEIGHT, MIN_WIDTH, IT_INVERT
+        IT_PIXELS, IT_ORIENT, IT_CAM, IT_WHMODE, IT_REQUIRED, IT_INVERT
 
 from Jovimetrix.sup.comp import image_grid, light_invert, geo_scalefit, \
     EnumInterpolation, \
@@ -90,7 +89,7 @@ class StreamReaderNode(JOVImageBaseNode):
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/DEVICE"
     DESCRIPTION = ""
     OUTPUT_IS_LIST = (False, False, )
-    EMPTY = np.zeros((MIN_HEIGHT, MIN_WIDTH, 3), dtype=np.float32)
+    EMPTY = np.zeros((64, 64, 3), dtype=np.float32)
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:

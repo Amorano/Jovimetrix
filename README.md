@@ -441,6 +441,7 @@ NODE | OVERVIEW | COMFY UI
 <details>
   <summary><b>UTILITY</b></summary>
   <ul>
+
 NODE | OVERVIEW | COMFY UI
 ---|---|---
 ⚙️ OPTIONS|Change Jovimetrix Global Options|![⚙️ OPTIONS](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/util/options/node_util-options.png "Change Jovimetrix Global Options")
@@ -463,7 +464,6 @@ NODE | OVERVIEW | COMFY UI
     </details>
   </ul>
 </details>
-
 
 ## ACKNOWLEDGEMENTS
 WHO | WHAT

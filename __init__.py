@@ -48,6 +48,7 @@ GO NUTS; JUST TRY NOT TO DO IT IN YOUR HEAD.
 @version: 0.99
 """
 
+from collections import OrderedDict
 import os
 import math
 import json
@@ -235,7 +236,7 @@ class Lexicon:
     LMH = 'LMH'
     LO = 'LO'
     LOG = '🪵'
-    LOHI = '🔻🔺'
+    LOHI = 'LoHi'
     LOOP = '🔄'
     M = '⬛'
     MAGIC = '🦄'
@@ -481,6 +482,33 @@ except Exception as e:
 # =============================================================================
 # == SUPPORT FUNCTIONS
 # =============================================================================
+
+def comfy_to_tuple(key: str, data: Union[dict, List[dict]], default: List[Any] = None) -> Tuple[List[Any]]:
+    ret = OrderedDict()
+    unified = data.get(key, {})
+
+    if not (isList := isinstance(unified, (list,))):
+        unified = [unified]
+
+    for entry in unified:
+        size = len(entry)
+        for idx in range(size):
+            d = default[idx] if default is not None and len(default) < idx else None
+            v = entry.get(str(idx), d)
+            if isinstance(v, str):
+                parts = v.split('.', 1)
+                print(parts)
+                if len(parts) > 1:
+                    v = float('.'.join(parts[:2]))
+                else:
+                    v = int(parts[0])
+
+            plop = ret.get(idx, [])
+            plop.append(v)
+            ret[idx] = plop
+
+    values = ret.values()
+    return tuple(values) if isList else values[0]
 
 def update_nested_dict(d, path, value) -> None:
     keys = path.split('.')
@@ -746,7 +774,7 @@ def cv2pil(image: TYPE_IMAGE) -> Image.Image:
 # === GLOBALS ===
 # =============================================================================
 
-MIN_WIDTH = MIN_HEIGHT = 256
+MIN_IMAGE_SIZE = 32
 
 IT_REQUIRED = { "required": {} }
 
@@ -770,7 +798,7 @@ IT_PASS_IN = {"optional": {
 }}
 
 IT_WH = {"optional": {
-    Lexicon.WH: ("INTEGER2", {"default": (512, 512), "min": 64, "max": 8192, "label": [Lexicon.WIDTH, Lexicon.HEIGHT]})
+    Lexicon.WH: ("INTEGER2", {"default": (512, 512), "min": MIN_IMAGE_SIZE, "max": 8192, "step": 8, "label": [Lexicon.WIDTH, Lexicon.HEIGHT]})
 }}
 
 IT_SCALEMODE = {"optional": {
@@ -778,15 +806,15 @@ IT_SCALEMODE = {"optional": {
 }}
 
 IT_TRANS = {"optional": {
-    Lexicon.OFFSET: ("INTEGER2", {"default": (0, 0), "min": -1, "max": 1, "step": 0.01, "precision": 3, "label": [Lexicon.X, Lexicon.Y]})
+    Lexicon.OFFSET: ("FLOAT2", {"default": (0, 0), "min": -1, "max": 1, "step": 0.01, "precision": 3, "label": [Lexicon.X, Lexicon.Y]})
 }}
 
 IT_ROT = {"optional": {
-    Lexicon.ANGLE: ("FLOAT", {"default": 0, "min": -180, "max": 180, "step": 1}),
+    Lexicon.ANGLE: ("FLOAT", {"default": 0, "min": -180, "max": 180, "step": 0.1}),
 }}
 
 IT_SCALE = {"optional": {
-    Lexicon.SIZE: ("INTEGER2", {"default": (1, 1), "min": 0, "max": 1, "step": 0.01, "precision": 3, "label": [Lexicon.X, Lexicon.Y]})
+    Lexicon.SIZE: ("FLOAT2", {"default": (1, 1), "min": 0, "max": 1, "step": 0.01, "precision": 3, "label": [Lexicon.X, Lexicon.Y]})
 }}
 
 IT_TILE = {"optional": {

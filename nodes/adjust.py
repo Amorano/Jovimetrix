@@ -9,7 +9,8 @@ import cv2
 import torch
 import numpy as np
 
-from Jovimetrix import tensor2cv, cv2tensor, cv2mask, zip_longest_fill, deep_merge_dict, \
+from Jovimetrix import tensor2cv, cv2tensor, cv2mask, zip_longest_fill, \
+    deep_merge_dict, comfy_to_tuple, \
     JOVImageInOutBaseNode, Lexicon, Logger, \
     IT_PIXELS, IT_PIXEL2, IT_HSV, IT_FLIP, IT_LOHI, IT_LMH, IT_INVERT, IT_CONTRAST, \
     IT_GAMMA, IT_REQUIRED
@@ -34,13 +35,11 @@ class AdjustNode(JOVImageInOutBaseNode):
         return deep_merge_dict(IT_REQUIRED, IT_PIXELS, d, IT_INVERT)
 
     def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor]:
-
         pixels = kw.get(Lexicon.PIXEL, [None])
         op = kw.get(Lexicon.FUNC,[None])
         radius = kw.get(Lexicon.RADIUS,[None])
         amt = kw.get(Lexicon.AMT,[None])
         invert = kw.get(Lexicon.INVERT,[None])
-
         masks = []
         images = []
         for data in zip_longest_fill(pixels, op, radius, amt, invert):
@@ -198,10 +197,9 @@ class FindEdgeNode(JOVImageInOutBaseNode):
 
     def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor]:
         pixels = kw.get(Lexicon.PIXEL, [None])
-        hi = kw.get(Lexicon.HI, [None])
-        lo = kw.get(Lexicon.LO, [None])
+        lohi = comfy_to_tuple(Lexicon.LOHI, kw, [(0, 1)])
+        lo, hi = lohi
         invert = kw.get(Lexicon.INVERT, [None])
-
         masks = []
         images = []
         for data in zip_longest_fill(pixels, lo, hi, invert):
@@ -283,8 +281,6 @@ class HSVNode(JOVImageInOutBaseNode):
             images.append(cv2tensor(img))
             masks.append(cv2mask(img))
 
-        print(len(images))
-
         return (
             torch.stack(images),
             torch.stack(masks)
@@ -300,7 +296,6 @@ class LevelsNode(JOVImageInOutBaseNode):
         return deep_merge_dict(IT_REQUIRED, IT_PIXELS, IT_LMH, IT_GAMMA, IT_INVERT)
 
     def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor]:
-
         pixels = kw.get(Lexicon.PIXEL, [None])
         hi = kw.get(Lexicon.HI, [None])
         mid = kw.get(Lexicon.MID, [None])

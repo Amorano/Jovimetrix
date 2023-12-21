@@ -8,7 +8,7 @@ import { app } from "/scripts/app.js"
 import { api } from "/scripts/api.js"
 
 const CONVERTED_TYPE = "converted-widget";
-export const newTypes = ['RGB', 'FLOAT2', 'FLOAT3', 'FLOAT4', 'INTEGER2', 'INTEGER3', 'INTEGER4']
+export const newTypes = ['RGB', 'FLOAT2', 'FLOAT3', 'FLOAT4', 'INTEGER3', 'INTEGER4', 'INTEGER2']
 
 export async function api_get(url) {
     var response = await api.fetchApi(url, { cache: "no-store" })
@@ -125,37 +125,24 @@ export function toggleFoldable(elementId, symbolId) {
     }
 }
 
-// 100% stolen from MTB
-// https://github.com/melMass/comfy_mtb/blob/main/web/comfy_shared.js
-export function inner_value_change(widget, value, event = undefined) {
-
-    switch (widget.type) {
-        case "INTEGER2":
-            value = [Number(value[0]), Number(value[1])]
-            break
-        case "INTEGER3":
-            value = [Number(value[0]), Number(value[1]), Number(value[2])]
-            break
-        case "INTEGER4":
-            value = [Number(value[0]), Number(value[1]), Number(value[2]), Number(value[3])]
-            break
-        case "FLOAT2":
-            value = [parseFloat(value[0]), parseFloat(value[1])]
-            break
-        case "FLOAT3":
-            value = [parseFloat(value[0]), parseFloat(value[1]), parseFloat(value[2])]
-            break
-        case "FLOAT4":
-            value = [parseFloat(value[0]), parseFloat(value[1]), parseFloat(value[2]), parseFloat(value[3])]
-            break
+function convertArrayToObject(values, length, parseFn) {
+    const result = {};
+    for (let i = 0; i < length; i++) {
+        result[i] = parseFn(values[i]);
     }
-    widget.value = value
+    return result;
+}
+
+export function inner_value_change(widget, value, event = undefined) {
+    const type = widget.type.includes("INTEGER") ? Number : parseFloat
+    widget.value = convertArrayToObject(value, Object.keys(value).length, type);
+    console.info(widget.value)
     if (
         widget.options &&
         widget.options.property &&
         node.properties[widget.options.property] !== undefined
         ) {
-            node.setProperty(widget.options.property, value)
+            node.setProperty(widget.options.property, widget.value)
         }
     if (widget.callback) {
         widget.callback(widget.value, app.canvas, node, pos, event)
