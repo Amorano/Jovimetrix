@@ -43,7 +43,6 @@ const RGBWidget = (key, val = PICKER_DEFAULT, compute = false) => {
 }
 
 const SpinnerWidget = (app, inputName, inputData, initial, desc='') => {
-    console.info(inputName, inputData)
     const offset = 4
     const label_width = 50
     const widget_padding = 15
@@ -52,6 +51,9 @@ const SpinnerWidget = (app, inputName, inputData, initial, desc='') => {
 
     let regions = []
     let isDragging
+
+    console.info(inputData)
+
     const widget = {
         name: inputName,
         type: inputData[0],
@@ -97,49 +99,74 @@ const SpinnerWidget = (app, inputName, inputData, initial, desc='') => {
     }
 
     widget.mouse = function (e, pos, node) {
-        let old_value
-        let delta = 0
-        // console.info(node)
+        let delta = 0;
         if (e.type === 'pointerdown' && isDragging === undefined) {
+            //console.info(node)
             const x = pos[0] - label_full
             const element_width = (node.size[0] - label_full - widget_padding2) / regions.length
             const index = Math.floor(x / element_width)
             if (index >= 0 && index < regions.length) {
                 isDragging = { name: this.name, idx: index}
             }
-        } else if (e.type === 'pointermove' && isDragging !== undefined &&
-                isDragging.idx > -1 && isDragging.name === this.name) {
-                    if (e.deltaX) {
-                        delta = e.deltaX
-                        this.value[isDragging.idx] += ((this.options?.step || 8) * Math.sign(delta))
-                    }
+        }
+        else if (isDragging !== undefined && isDragging.idx > -1 && isDragging.name === this.name) {
+            const idx = isDragging.idx;
+            let old_value = this.value.slice();
+            if (e.type === 'pointermove') {
+                let v = this.value[idx];
+                if (e.deltaX) {
+                    delta = e.deltaX
+                    v += ((this.options?.step || 8) * Math.sign(delta))
                     if (this.options?.max !== undefined) {
-                        this.value[isDragging.idx] = Math.min(this.value[isDragging.idx], this.options.max)
+                        v = Math.min(v, this.options.max)
                     }
                     if (this.options?.min !== undefined) {
-                        console.info(this.options)
-                        this.value[isDragging.idx] = Math.max(this.value[isDragging.idx], this.options.min)
+                        v = Math.max(v, this.options.min)
                     }
-
-        } else if (e.type === 'pointerup' && isDragging !== undefined) {
-            if (isDragging.idx > -1 && isDragging.name === this.name) {
-                if (e.click_time < 200 && delta == 0) {
-                    // @TODO: SHOW THE VALUE BOX??
+                    this.value[idx] = v;
                 }
+            } else if (e.type === 'pointerup') {
+                isDragging = undefined
+                if (e.click_time < 200 && delta == 0) {
+                    const label = this.options?.label ? this.name + '➖' + this.options.label?.[idx] : this.name;
+                    LGraphCanvas.active_canvas.prompt(label, this.value[idx], function(v) {
+                        // check if v is a valid equation or a number
+                        if (/^[0-9+\-*/()\s]+|\d+\.\d+$/.test(v)) {
+                            try {
+                                v = eval(v);
+                            } catch (e) {}
+                        }
+                        v = parseFloat(v) || 0;
+                        if (this.options?.max !== undefined) {
+                            v = Math.min(v, this.options.max)
+                        }
+                        if (this.options?.min !== undefined) {
+                            v = Math.max(v, this.options.min)
+                        }
+                        if (old_value[idx] != v)
+                        {
+                            this.value[idx] = v;
+                            util.inner_value_change(this, this.value, e);
+                            console.info(node)
+                        }
+                    }.bind(this), e);
+                }
+                else if (old_value[idx] != this.value[idx])
+                {
+                    //util.inner_value_change(this, this.value, e);
+                    console.info(node.onWidgetChanged)
+                    /*
+                    old_value[idx] = this.value[idx]
+                    setTimeout(
+                        function () {
+                            //console.info(this, this.value)
+                            util.inner_value_change(this, this.value, e)
+                        }.bind(this), 20
+                    )*/
+                }
+                app.canvas.setDirty(true)
             }
-            if (old_value != this.value)
-            {
-                setTimeout(
-                    function () {
-                        //console.info(node, this.options)
-                        util.inner_value_change(this, this.value, e)
-                    }.bind(this), 20
-                )
-                old_value = this.value
-            }
-            isDragging = undefined
         }
-        app.canvas.setDirty(true)
     }
 
     widget.computeSize = function (width) {

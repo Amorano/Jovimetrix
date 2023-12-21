@@ -140,13 +140,13 @@ export function inner_value_change(widget, value, event = undefined) {
             value = [Number(value[0]), Number(value[1]), Number(value[2]), Number(value[3])]
             break
         case "FLOAT2":
-            value = [Number(value[0]), Number(value[1])]
+            value = [parseFloat(value[0]), parseFloat(value[1])]
             break
         case "FLOAT3":
-            value = [Number(value[0]), Number(value[1]), Number(value[2])]
+            value = [parseFloat(value[0]), parseFloat(value[1]), parseFloat(value[2])]
             break
         case "FLOAT4":
-            value = [Number(value[0]), Number(value[1]), Number(value[2]), Number(value[3])]
+            value = [parseFloat(value[0]), parseFloat(value[1]), parseFloat(value[2]), parseFloat(value[3])]
             break
     }
     widget.value = value

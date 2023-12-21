@@ -190,6 +190,7 @@ class Lexicon:
     BLACK = '⬛'
     BLUR = 'BLUR'
     BOOLEAN = '🇴'
+    BOTTOM = 'BOTTOM'
     C1 = '🔵'
     C2 = '🟡'
     C3 = '🟣'
@@ -219,6 +220,9 @@ class Lexicon:
     G = '🟩'
     GAMMA = '🔆'
     GI = '💚'
+    H = '🇭'
+    HEIGHT = '🇭'
+    HI = 'HI'
     HSV = u'🇭🇸\u200c🇻'
     IMAGE = '🖼️'
     IN_A = '🅰️'
@@ -226,8 +230,10 @@ class Lexicon:
     INT = '🔟'
     INVERT = '🔳'
     IO = '💾'
+    LEFT = 'LEFT'
     LINEAR = '🛟'
     LMH = 'LMH'
+    LO = 'LO'
     LOG = '🪵'
     LOHI = '🔻🔺'
     LOOP = '🔄'
@@ -236,6 +242,7 @@ class Lexicon:
     MASK = '😷'
     MAX = 'MAX'
     MI = '🖤'
+    MID = 'MID'
     MODE = 'MODE'
     NORMALIZE = 'NORMALIZE'
     NOTE = '🎶'
@@ -260,7 +267,9 @@ class Lexicon:
     RGBA = '🌈'
     RGBA_B = '🌈B'
     RI = '❤️'
+    RIGHT = 'RIGHT'
     ROUTE = '🚌'
+    S = '🇸'
     SAMPLE = 'SAMPLE'
     SCHEME = 'SCHEME'
     SHAPE = 'SHAPE'
@@ -272,18 +281,23 @@ class Lexicon:
     THRESHOLD = '📉'
     TILE = '🇽🇾'
     TIME = '🕛'
+    TOP = 'TOP'
     TRUE = '🇹'
     URL = '🌐'
+    V = '🇻'
     VERTEX = '✳️'
+    W = '🇼'
     WAIT = '✋🏽'
     WAVE = '〰️'
     WH = '🇼🇭'
     WHITE = '⬜'
+    WIDTH = '🇼'
     X = '🇽'
     XY = '🇽🇾'
     XYZ = '🇽🇾🇿'
     XYZW = '🇽🇾🇿🇼'
     Y = '🇾'
+    Z = '🇿'
     ZOOM = '🔎'
 
 class EnumCanvasOrientation(Enum):
@@ -756,7 +770,7 @@ IT_PASS_IN = {"optional": {
 }}
 
 IT_WH = {"optional": {
-    Lexicon.WH: ("INTEGER2", {"default": (512, 512), "min": 64, "max": 8192})
+    Lexicon.WH: ("INTEGER2", {"default": (512, 512), "min": 64, "max": 8192, "label": [Lexicon.WIDTH, Lexicon.HEIGHT]})
 }}
 
 IT_SCALEMODE = {"optional": {
@@ -764,7 +778,7 @@ IT_SCALEMODE = {"optional": {
 }}
 
 IT_TRANS = {"optional": {
-    Lexicon.OFFSET: ("INTEGER2", {"default": (0, 0)})
+    Lexicon.OFFSET: ("INTEGER2", {"default": (0, 0), "min": -1, "max": 1, "step": 0.01, "precision": 3, "label": [Lexicon.X, Lexicon.Y]})
 }}
 
 IT_ROT = {"optional": {
@@ -772,15 +786,15 @@ IT_ROT = {"optional": {
 }}
 
 IT_SCALE = {"optional": {
-    Lexicon.SIZE: ("INTEGER2", {"default": (1, 1)})
+    Lexicon.SIZE: ("INTEGER2", {"default": (1, 1), "min": 0, "max": 1, "step": 0.01, "precision": 3, "label": [Lexicon.X, Lexicon.Y]})
 }}
 
 IT_TILE = {"optional": {
-    Lexicon.TILE: ("INTEGER2", {"default": (2, 2)})
+    Lexicon.TILE: ("INTEGER2", {"default": (2, 2), "label": [Lexicon.X, Lexicon.Y]})
 }}
 
 IT_EDGE = {"optional": {
-    Lexicon.EDGE: (EnumEdge._member_names_, {"default": EnumEdge.CLIP.name}),
+    Lexicon.EDGE: (EnumEdge._member_names_, {"default": EnumEdge.CLIP.name})
 }}
 
 IT_FLIP = {"optional": {
@@ -788,7 +802,7 @@ IT_FLIP = {"optional": {
 }}
 
 IT_INVERT = {"optional": {
-    Lexicon.INVERT: ("FLOAT", {"default": 0, "min": 0, "max": 1, "step": 0.01}),
+    Lexicon.INVERT: ("FLOAT", {"default": 0, "min": 0, "max": 1, "step": 0.01, "precision": 3})
 }}
 
 IT_AB = {"optional": {
@@ -797,31 +811,31 @@ IT_AB = {"optional": {
 }}
 
 IT_XY = { "optional": {
-    Lexicon.XY: ("FLOAT2", {"default": (0, 0), "step": 0.01})
+    Lexicon.XY: ("FLOAT2", {"default": (0, 0), "step": 0.01, "precision": 3, "label": [Lexicon.X, Lexicon.Y]})
 }}
 
 IT_XYZ = {"optional": {
-    Lexicon.XYZ: ("FLOAT3", {"default": (0, 0, 0), "step": 0.01})
+    Lexicon.XYZ: ("FLOAT3", {"default": (0, 0, 0), "step": 0.01, "precision": 3, "label": [Lexicon.X, Lexicon.Y, Lexicon.Z]})
 }}
 
 IT_XYZW = {"optional": {
-    Lexicon.XYZW: ("FLOAT4", {"default": (0, 0, 0, 1), "step": 0.01})
+    Lexicon.XYZW: ("FLOAT4", {"default": (0, 0, 0, 1), "step": 0.01, "precision": 3, "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W]})
 }}
 
 IT_RGB = {"optional": {
-    Lexicon.RGB: ("INTEGER3", {"default": (0, 0, 0), "min": 0, "max": 255, "step": 4})
+    Lexicon.RGB: ("INTEGER3", {"default": (0, 0, 0), "min": 0, "max": 255, "step": 4, "label": [Lexicon.R, Lexicon.G, Lexicon.B]})
 }}
 
 IT_RGBA = {"optional": {
-    Lexicon.RGBA: ("INTEGER4", {"default": (0, 0, 0, 255), "min": 0, "max": 255, "step": 4})
+    Lexicon.RGBA: ("INTEGER4", {"default": (0, 0, 0, 255), "min": 0, "max": 255, "step": 4, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A]})
 }}
 
 IT_RGB_B = { "optional": {
-    Lexicon.RGB_B: ("INTEGER3", {"default": (0, 0, 0), "min": 0, "max": 255, "step": 4})
+    Lexicon.RGB_B: ("INTEGER3", {"default": (0, 0, 0), "min": 0, "max": 255, "step": 4, "label": [Lexicon.R, Lexicon.G, Lexicon.B]})
 }}
 
 IT_RGBA_B = { "optional": {
-    Lexicon.RGBA_B: ("INTEGER4", {"default": (0, 0, 0, 255), "min": 0, "max": 255, "step": 4})
+    Lexicon.RGBA_B: ("INTEGER4", {"default": (0, 0, 0, 255), "min": 0, "max": 255, "step": 4, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A]})
 }}
 
 IT_RGBA_IMAGE = { "optional": {
@@ -832,27 +846,27 @@ IT_RGBA_IMAGE = { "optional": {
 }}
 
 IT_HSV = { "optional": {
-    Lexicon.HSV: ("FLOAT3",{"default": (0, 1, 1), "min": 0, "max": 1, "step": 0.01})
+    Lexicon.HSV: ("FLOAT3",{"default": (0, 1, 1), "min": 0, "max": 1, "step": 0.01, "precision": 3, "label": [Lexicon.H, Lexicon.S, Lexicon.V]})
 }}
 
 IT_GAMMA = {"optional": {
-    Lexicon.GAMMA: ("FLOAT", {"default": 1, "min": 0, "max": 1, "step": 0.01})
+    Lexicon.GAMMA: ("FLOAT", {"default": 1, "min": 0, "max": 1, "step": 0.01, "precision": 3})
 }}
 
 IT_CONTRAST = {"optional": {
-    Lexicon.CONTRAST: ("FLOAT", {"default": 0, "min": 0, "max": 1, "step": 0.01})
+    Lexicon.CONTRAST: ("FLOAT", {"default": 0, "min": 0, "max": 1, "step": 0.01, "precision": 3})
 }}
 
 IT_BBOX = {"optional": {
-    Lexicon.BBOX: ("FLOAT4", {"default": (0, 0, 1, 1), "min": 0, "max": 1, "step": 0.01})
+    Lexicon.BBOX: ("FLOAT4", {"default": (0, 0, 1, 1), "min": 0, "max": 1, "step": 0.01, "precision": 3, "label": [Lexicon.TOP, Lexicon.LEFT, Lexicon.BOTTOM, Lexicon.RIGHT]})
 }}
 
 IT_LOHI = {"optional": {
-    Lexicon.LOHI: ("FLOAT2", {"default": (0, 1), "min": 0, "max": 1, "step": 0.01}),
+    Lexicon.LOHI: ("FLOAT2", {"default": (0, 1), "min": 0, "max": 1, "step": 0.01, "precision": 3, "label": [Lexicon.LO, Lexicon.HI]})
 }}
 
 IT_LMH = {"optional": {
-    Lexicon.LMH: ("FLOAT3", {"default": (0, 0.5, 1), "min": 0, "max": 1, "step": 0.01},),
+    Lexicon.LMH: ("FLOAT3", {"default": (0, 0.5, 1), "min": 0, "max": 1, "step": 0.01, "precision": 3, "label": [Lexicon.LO, Lexicon.MID, Lexicon.HI]})
 }}
 
 IT_ORIENT = {"optional": {

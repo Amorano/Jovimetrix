@@ -18,6 +18,25 @@ from Jovimetrix.sup.comp import EnumMirrorMode, EnumInterpolation, IT_SAMPLE
 
 # =============================================================================
 
+class ComposeVec2:
+    NAME = "VEC (JOV)"
+    CATEGORY = "JOVIMETRIX 🔺🟩🔵/TRANSFORM"
+
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        return {
+            "required": {
+                "x": ("FLOAT", {"default": 0.0}),
+                "y": ("FLOAT", {"default": 0.0}),
+            }
+        }
+
+    RETURN_TYPES = ("INTEGER2",)
+    FUNCTION = "op"
+
+    def op(self, x: float, y: float) -> tuple[(int, int)]:
+        return ((x, y),)
+
 class TransformNode(JOVImageInOutBaseNode):
     NAME = "TRANSFORM (JOV) 🏝️"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/TRANSFORM"
@@ -27,8 +46,7 @@ class TransformNode(JOVImageInOutBaseNode):
     def INPUT_TYPES(cls) -> dict:
         return deep_merge_dict(IT_REQUIRED, IT_PIXELS, IT_TRS, IT_EDGE, IT_WH, IT_WHMODE, IT_SAMPLE)
 
-    def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-
+    def run(self, *arg, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         pixels = kw.get(Lexicon.PIXEL, [None])
         offset = kw.get(Lexicon.OFFSET, [None])
         angle = kw.get(Lexicon.ANGLE, [None])
@@ -39,13 +57,15 @@ class TransformNode(JOVImageInOutBaseNode):
         sample = kw.get(Lexicon.SAMPLE, [None])
         masks = []
         images = []
+        print(arg, kw)
         for data in zip_longest_fill(pixels, offset, angle, size, edge, wh, mode, sample):
+
             image, o, a, s, e, wh, m, rs = data
+            oX, oY = o
             sX, sY = s
             w, h = wh
             image = tensor2cv(image)
             rs = EnumInterpolation[rs] if rs is not None else EnumInterpolation.LANCZOS4
-            oX, oY = o
             image = comp.geo_transform(image, oX, oY, a, sX, sY, e, w, h, m, rs)
             images.append(cv2tensor(image))
             masks.append(cv2mask(image))
