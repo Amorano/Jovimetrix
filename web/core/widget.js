@@ -64,11 +64,9 @@ const SpinnerWidget = (app, inputName, inputData, initial, desc='') => {
         options: inputData[1]
     }
 
-    console.info('s', widget.value)
     const precision = widget.options?.precision !== undefined ? widget.options.precision : 0;
-    let step = inputData[0].includes('FLOAT') ? 0.01 : 1;
+    let step = inputData[0].includes('VEC') ? 0.01 : 1;
     widget.options.step = widget.options?.step || step;
-    console.info(step)
 
     widget.draw = function(ctx, node, width, Y, height) {
         if (this.type !== inputData[0] && app.canvas.ds.scale > 0.5) return
@@ -97,7 +95,7 @@ const SpinnerWidget = (app, inputName, inputData, initial, desc='') => {
             ctx.fillRect(x - 1, Y, 2, height)
             ctx.fillStyle = LiteGraph.WIDGET_SECONDARY_TEXT_COLOR
             const it = this.value[idx.toString()]
-            const text = Number(it).toFixed(precision).toString()
+            const text = Number(it).toFixed(Math.min(2, precision)).toString()
             ctx.fillText(text, x + element_width / 2 - text.length * 1.5, Y + height / 2 + offset)
             ctx.restore()
             x += element_width
@@ -183,22 +181,13 @@ const widgets = {
                 minWidth: 35,
                 minHeight: 35,
             }),
-            INTEGER2: (node, inputName, inputData, app) => ({
+            VEC2: (node, inputName, inputData, app) => ({
                 widget: node.addCustomWidget(SpinnerWidget(app, inputName, inputData, [0, 0])),
             }),
-            FLOAT2: (node, inputName, inputData, app) => ({
-                widget: node.addCustomWidget(SpinnerWidget(app, inputName, inputData, [0, 0])),
-            }),
-            INTEGER3: (node, inputName, inputData, app) => ({
+            VEC3: (node, inputName, inputData, app) => ({
                 widget: node.addCustomWidget(SpinnerWidget(app, inputName, inputData, [0, 0, 0])),
             }),
-            FLOAT3: (node, inputName, inputData, app) => ({
-                widget: node.addCustomWidget(SpinnerWidget(app, inputName, inputData, [0, 0, 0])),
-            }),
-            INTEGER4: (node, inputName, inputData, app) => ({
-                widget: node.addCustomWidget(SpinnerWidget(app, inputName, inputData, [0, 0, 0, 255])),
-            }),
-            FLOAT4: (node, inputName, inputData, app) => ({
+            VEC4: (node, inputName, inputData, app) => ({
                 widget: node.addCustomWidget(SpinnerWidget(app, inputName, inputData, [0, 0, 0, 1])),
             }),
         }

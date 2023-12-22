@@ -599,13 +599,11 @@ def light_hsv(image: TYPE_IMAGE, hue: float, saturation: float, value: float) ->
     return cv2.cvtColor(image, cv2.COLOR_HSV2BGR)
 
 def light_gamma(image: TYPE_IMAGE, value: float) -> TYPE_IMAGE:
-    # Logger.debug("light_gamma", f"({value})")
-    if value == 0:
+    if value <= 0:
         return (image * 0).astype(np.uint8)
-
     invGamma = 1.0 / max(0.000001, value)
-    lookUpTable = np.clip(np.array([((i / 255.0) ** invGamma) * 255
-        for i in np.arange(0, 256)]).astype(np.uint8), 0, 255)
+    table = cv2.pow(np.arange(256) / 255.0, invGamma) * 255
+    lookUpTable = np.clip(table, 0, 255).astype(np.uint8)
     return cv2.LUT(image, lookUpTable)
 
 def light_contrast(image: TYPE_IMAGE, value: float) -> TYPE_IMAGE:

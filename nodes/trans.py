@@ -20,25 +20,6 @@ from Jovimetrix.sup.comp import geo_transform, geo_edge_wrap, geo_scalefit, geo_
 
 # =============================================================================
 
-class ComposeVec2:
-    NAME = "VEC (JOV)"
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/TRANSFORM"
-
-    @classmethod
-    def INPUT_TYPES(cls) -> dict:
-        return {
-            "required": {
-                "x": ("INT", {"default": 0}),
-                "y": ("INT", {"default": 0}),
-            }
-        }
-
-    RETURN_TYPES = ("INTEGER2",)
-    FUNCTION = "op"
-
-    def op(self, x: float, y: float) -> tuple[(int, int)]:
-        return ((x, y),)
-
 class TransformNode(JOVImageInOutBaseNode):
     NAME = "TRANSFORM (JOV) 🏝️"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/TRANSFORM"

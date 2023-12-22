@@ -20,13 +20,11 @@ import * as util from '../core/util.js';
 
     global.jsColorPicker = function(selectors, config) {
         var renderCallback = function(colors, mode) {
-                // console.info(colors);
                 var options = this,
                     input = options.input,
                     patch = options.patch,
                     RGB = colors.RND.rgb;
 
-                // console.info(colors);
                 const AHEX = util.convert_hex(colors);
                 patch.style.cssText =
                     'color:' + (colors.rgbaMixCustom.luminance > 0.22 ? '#222' : '#ddd') + ';' + // Black...???

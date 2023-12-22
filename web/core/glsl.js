@@ -5,203 +5,212 @@
  */
 
 import { app } from "/scripts/app.js"
+import { $el } from "/scripts/ui.js"
 
-const CANVAS_TEMP = document.createElement('canvas')
-
-const vertexTestShader = `
-    attribute vec4 aVertexPosition;
-    void main() {
-        // Pass through each vertex position without transforming:
-        gl_Position = aVertexPosition;
-    }
+const VERTEX_SHADER = `#version 300 es
+in vec2 position;
+out vec2 texCoord;
+void main() {
+    gl_Position = vec4(position, 0.0, 1.0);
+    texCoord = position * 0.5 + 0.5;
+}
 `
 
-const fragmentTestShader = `
-    precision mediump float;
-    // Require resolution (canvas size) as an input
-    uniform vec3 uResolution;
+const FRAGMENT_DEFAULT = `vec4 color = texture(textureSampler, texCoord);
+    color.r += sin(time);
+    FragColor = color;`;
 
-    void main() {
-        // Calculate relative coordinates (uv)
-        vec2 uv = gl_FragCoord.xy / uResolution.xy;
-        gl_FragColor = vec4(uv.x, uv.y, 0., 1.0);
-    }
-`
+const FRAGMENT_HEADER = (body) => {
+    return `#version 300 es
+precision highp float;
+in vec2 texCoord;
+uniform sampler2D textureSampler;
+uniform float time;
+out vec4 FragColor;
 
-function createShader(GL, type, source) {
-    const shader = GL.createShader(type)
-    const which = type === GL.VERTEX_SHADER ? 'vertex' : 'fragment'
-    if (!shader) {
-        console.error('Unable to create shader of type ' + twhichype)
-        return null
-    }
-    GL.shaderSource(shader, source)
-    GL.compileShader(shader)
-
-    if (!GL.getShaderParameter(shader, GL.COMPILE_STATUS)) {
-        console.error('Shader compilation error: ' + GL.getShaderInfoLog(shader))
-        GL.deleteShader(shader)
-        return null
-    }
-    console.info(which + ' shader compiled successfully')
-    return shader
+void main() {
+` + body + `}`
 }
 
-function createProgram(GL, vertex, fragment) {
-    const vertexShader = createShader(GL, GL.VERTEX_SHADER, vertex)
-    if (vertexShader === null){
-        return
-    }
-    const fragmentShader = createShader(GL, GL.FRAGMENT_SHADER, fragment)
-    if (fragmentShader === null){
-        return
-    }
 
-    const program = GL.createProgram()
-    GL.attachShader(program, vertexShader)
-    GL.attachShader(program, fragmentShader)
-    GL.linkProgram(program)
+function get_position_style(ctx, widget_width, y, node_height) {
+    const MARGIN = 4;
+    const elRect = ctx.canvas.getBoundingClientRect();
+    const transform = new DOMMatrix()
+        .scaleSelf(elRect.width / ctx.canvas.width, elRect.height / ctx.canvas.height)
+        .multiplySelf(ctx.getTransform())
+        .translateSelf(MARGIN, MARGIN + y);
 
-    if (!GL.getProgramParameter(program, GL.LINK_STATUS)) {
-        console.error('Unable to initialize the shader program: ' + GL.getProgramInfoLog(program))
-        return null
-    }
-    // gl.deleteShader(vertexShader);
-    // gl.deleteShader(fragmentShader);
-    console.info('Shader program linked successfully')
-    return program
-}
-
-export async function render(GL, CANVAS, program) {
-    const positionBuffer = GL.createBuffer()
-    GL.bindBuffer(GL.ARRAY_BUFFER, positionBuffer)
-    const positions = [
-        -1, -1,
-        -1, 1,
-        1, -1,
-        1, -1,
-        -1, 1,
-        1, 1,
-    ]
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(positions), GL.STATIC_DRAW)
-    GL.bindBuffer(GL.ARRAY_BUFFER, positionBuffer)
-    const positionAttribLocation = GL.getAttribLocation(program, 'aVertexPosition')
-    GL.vertexAttribPointer(positionAttribLocation, 2, GL.FLOAT, false, 0, 0)
-    GL.enableVertexAttribArray(positionAttribLocation)
-    GL.useProgram(program)
-    GL.drawArrays(GL.TRIANGLES, 0, 6)
-
-    const image = await CANVAS.transferToImageBitmap()
-
-    CANVAS_TEMP.width = image.width
-    CANVAS_TEMP.height = image.height
-    const tempContext = CANVAS_TEMP.getContext('2d')
-    tempContext.drawImage(image, 0, 0)
-    const dataURL = CANVAS_TEMP.toDataURL('image/png')
-    /*
-    const link = document.createElement('a')
-    link.href = dataURL
-    link.download = 'rendered_image.png'
-    link.click()*/
-
-    const error = GL.getError()
-    if (error !== GL.NO_ERROR) {
-        console.error('WebGL error: ' + error)
-    }
+    return {
+        transformOrigin: '0 0',
+        transform: transform,
+        left: `0px`,
+        top: `0px`,
+        position: "relative",
+        maxWidth: `${widget_width - MARGIN * 2}px`,
+        maxHeight: `${node_height - MARGIN * 2}px`,
+        width: `${ctx.canvas.width}px`,  // Set canvas width
+        height: `${ctx.canvas.height}px`,  // Set canvas height
+    };
 }
 
 const _id = "GLSL (JOV) 🍩"
-const ext = {
+
+const GLSLWidget = (app, inputData) => {
+
+    const canvas = $el("canvas")
+    canvas.style.backgroundColor = "rgba(0, 0, 0, 1)"
+    canvas.width = 512
+    canvas.height = 512
+
+    const widget = {
+        type: "GLSL",
+        name: "JOVIBALL",
+        y: 0,
+        inputEl: canvas,
+        GL: canvas.getContext('webgl2'),
+        FRAGMENT: inputData?.default?.fragment || FRAGMENT_DEFAULT,
+        PROGRAM: undefined,
+        WIDTH: 512,
+        HEIGHT: 512,
+        minWidth: 512,
+        minHeight: 512,
+    }
+
+    widget.setupPositionBuffer = function() {
+        const positionBuffer = this.GL.createBuffer();
+        this.GL.bindBuffer(this.GL.ARRAY_BUFFER, positionBuffer);
+        const positions = [
+            -1, -1,
+            -1, 1,
+            1, -1,
+            1, -1,
+            -1, 1,
+            1, 1,
+        ];
+        this.GL.bufferData(this.GL.ARRAY_BUFFER, new Float32Array(positions), this.GL.STATIC_DRAW);
+        this.GL.bindBuffer(this.GL.ARRAY_BUFFER, positionBuffer);
+        const positionAttr = this.GL.getAttribLocation(this.PROGRAM, 'vertexPosition');
+        this.GL.vertexAttribPointer(positionAttr, 2, this.GL.FLOAT, false, 0, 0);
+        this.GL.enableVertexAttribArray(positionAttr);
+    }
+
+    widget.updateParameters = function (texture, time) {
+        const textureSamplerLocation = this.GL.getUniformLocation(this.PROGRAM, "textureSampler");
+        this.GL.uniform1i(textureSamplerLocation, texture);
+        const timeLocation = this.GL.getUniformLocation(this.PROGRAM, "time");
+        this.GL.uniform1f(timeLocation, time);
+    };
+
+    widget.render = function() {
+        if (this.PROGRAM === undefined && this.FRAGMENT != undefined) {
+            //console.info(this.FRAGMENT)
+            this.initShaderProgram()
+            this.GL.useProgram(this.PROGRAM)
+            this.setupPositionBuffer()
+        }
+        this.GL.drawArrays(this.GL.TRIANGLES, 0, 6);
+    }
+
+    widget.draw = function(ctx, node, widget_width, y, widget_height) {
+        // assign the required style when we are drawn
+        Object.assign(this.inputEl.style, get_position_style(ctx, widget_width, y, node.size[1]));
+    }
+
+    widget.mouse = function (e, pos, node) {
+        if (e.type === 'pointermove') {
+            console.info(e.delta);
+        }
+    }
+
+    widget.computeSize = function (width) {
+        return [width, LiteGraph.NODE_WIDGET_HEIGHT]
+    }
+
+    widget.initShaderProgram = function() {
+        const vertex = this.compileShader(VERTEX_SHADER, this.GL.VERTEX_SHADER);
+
+        const fragment_full = FRAGMENT_HEADER(this.FRAGMENT)
+        const fragment = this.compileShader(fragment_full, this.GL.FRAGMENT_SHADER);
+
+        this.PROGRAM = this.GL.createProgram();
+        this.GL.attachShader(this.PROGRAM, vertex);
+        this.GL.attachShader(this.PROGRAM, fragment);
+        this.GL.linkProgram(this.PROGRAM);
+
+        if (!this.GL.getProgramParameter(this.PROGRAM, this.GL.LINK_STATUS)) {
+            console.error('Unable to initialize the shader program: ' + this.GL.getProgramInfoLog(this.PROGRAM));
+            return;
+        }
+
+        // console.info(this.GL.getShaderInfoLog(vertex));
+        // console.info(this.GL.getShaderInfoLog(fragment));
+        // console.info(this.GL.getProgramInfoLog(this.PROGRAM));
+        // console.info('SHADER LINKED');
+    }
+
+    widget.compileShader = function(source, type) {
+        const shader = this.GL.createShader(type);
+        this.GL.shaderSource(shader, source);
+        this.GL.compileShader(shader);
+
+        if (!this.GL.getShaderParameter(shader, this.GL.COMPILE_STATUS)) {
+            console.error('Shader compilation error: ' + this.GL.getShaderInfoLog(shader));
+            this.GL.deleteShader(shader);
+            return null;
+        }
+        return shader;
+    }
+
+    document.body.appendChild(widget.inputEl);
+    return widget
+};
+
+const glsl_node = {
 	name: _id + '.js',
-    // category: _category,
-	async init(app) {
-        // Any initial setup to run as soon as the page loads
-
-	},
-	async setup(app) {
-
-	},
-	async addCustomNodeDefs(defs, app) {
-		// Object.keys(defs)
-        // Add custom node definitions
-		// These definitions will be configured and registered automatically
-		// defs is a lookup core nodes, add yours into this
-	},
-	async getCustomWidgets(app) {
-		// Return custom widget types
-		// See ComfyWidgets for widget examples
-	},
+    async getCustomWidgets(app) {
+        return {
+            GLSL: (node, inputName, inputData, app) => ({
+                widget: node.addCustomWidget(GLSLWidget(app, inputData)),
+            }),
+        }
+    },
 	async beforeRegisterNodeDef(nodeType, nodeData, app) {
-		// Run custom logic before a node definition is registered with the graph
         if (nodeData.name === _id) {
-            //console.info(nodeData.name);
-            let GL = null;
-            let VERTEX = null;
-            let FRAGMENT = null;
-            let PROGRAM = null;
-            let WIDTH = 512
-            let HEIGHT = 512
             const onNodeCreated = nodeType.prototype.onNodeCreated
             nodeType.prototype.onNodeCreated = function () {
                 const me = onNodeCreated?.apply(this)
-                // console.info(this)
-                let CANVAS = new OffscreenCanvas(WIDTH, HEIGHT)
-                GL = CANVAS.getContext('webgl2')
-                if (GL === undefined) {
-                    console.error('Unable to initialize WebGL. Your browser may not support it.')
-                } else {
-                    console.info("MADE SHADER NODE")
-                    PROGRAM = createProgram(GL, vertexTestShader, fragmentTestShader)
-                    render(GL, CANVAS, PROGRAM)
+                const widget_glsl = this.addCustomWidget(GLSLWidget(app, nodeData))
+                this.addCustomWidget(widget_glsl);
+                widget_glsl.render();
+
+                let time = 0;
+
+                const onExecutionStart = nodeType.prototype.onExecutionStart;
+                nodeType.prototype.onExecutionStart = function (message) {
+                    onExecutionStart?.apply(this, arguments);
+                    // widget_glsl.updateParameters(texture, time)
+                    const timeLocation = widget_glsl.GL.getUniformLocation(widget_glsl.PROGRAM, "time");
+                    widget_glsl.GL.uniform1f(timeLocation, time);
+                    time += 0.001;
+
+                    widget_glsl.render()
+                    this.setOutputData('🖼️', 0)
+                    this.setOutputData('😷', 0)
                 }
-                this.onRemoved = function () {
-                    // util.cleanupNode(this);
 
+                const onRemoved = nodeType.prototype.onRemoved;
+                nodeType.prototype.onRemoved = function (message) {
+                    onRemoved?.apply(this, arguments);
+                    widget_glsl.inputEl.remove();
+                    util.cleanupNode(this);
                 };
-                return me
-            }
-
-            const onExecuted = nodeType.prototype.onExecuted
-            nodeType.prototype.onExecuted = function(message) {
-                const me = onExecuted?.apply(this, message)
-                render(GL, CANVAS, PROGRAM)
-                console.info("RAN SHADER NODE")
-                return me
-            }
+                return me;
+            };
         }
-    /*
-
-            const onAfterExecuteNode = nodeType.prototype.onAfterExecuteNode
-            nodeType.prototype.onExecuted = function(param, options) {
-                onAfterExecuteNode?.apply(this, param, options)
-                console.info("RAN SHADER")
-                //render(PROGRAM)
-            }
-
-            const onConfigure = nodeType.prototype.onConfigure
-            nodeType.prototype.onConfigure = function () {
-                onConfigure?.apply(this, arguments)
-                console.info("hello")
-            }
-            console.info(nodeType.prototype)
-        }
-    */
 	},
-	async registerCustomNodes(app) {
-		// Register any custom node implementations here allowing for more flexibility than a custom node def
 
-	},
-	loadedGraphNode(node, app) {
-		// Fires for each node when loading/dragging/etc a workflow json or png
-		// If you break something in the backend and want to patch workflows in the frontend
-		// This is the place to do this
-	},
-	nodeCreated(node, app) {
-		// Fires every time a node is constructed
-		// You can modify widgets/add handlers/etc here
-
-	}
 }
 
-app.registerExtension(ext)
+app.registerExtension(glsl_node)
 

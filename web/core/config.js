@@ -153,7 +153,6 @@ export class JovimetrixConfigDialog extends ComfyDialog {
         var idx = 0
         const rules = util.CONFIG_COLOR.regex || []
         rules.forEach(entry => {
-            // console.info(entry)
             const data = {
                 idx: idx,
                 name: entry.regex,

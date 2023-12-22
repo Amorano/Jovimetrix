@@ -4,11 +4,12 @@ Animate
 """
 
 import time
-from typing import Any
 
-from Jovimetrix import deep_merge_dict, \
-    Logger, JOVBaseNode, Lexicon, \
+from Jovimetrix import deep_merge_dict, parse_tuple, parse_number, \
+    Logger, EnumTupleType, JOVBaseNode, Lexicon, \
     IT_REQUIRED
+
+from Jovimetrix.sup import anim
 from Jovimetrix.sup.anim import EnumWaveSimple
 
 # =============================================================================
@@ -78,30 +79,20 @@ class WaveGeneratorNode(JOVBaseNode):
     def INPUT_TYPES(cls) -> dict:
         d = {"optional":{
                 Lexicon.WAVE: (EnumWaveSimple._member_names_, {"default": EnumWaveSimple.SIN.name}),
-                Lexicon.PHASE: ("FLOAT", {"default": 1, "min": 0.0, "step": 0.01}),
-                Lexicon.AMP: ("FLOAT", {"default": 1, "min": 0.0, "step": 0.1}),
-                Lexicon.OFFSET: ("FLOAT2", {"default": (0, 0), "min": 0.0, "step": 0.1}),
-                Lexicon.MAX: ("FLOAT", {"default": 0.5, "min": 0.0, "max": 9999.0, "step": 0.01}),
-                Lexicon.FRAME: ("INT", {"default": 1, "min": 0, "step": 1}),
+                Lexicon.PHASE: ("FLOAT", {"default": 0, "min": 0.0, "step": 0.001}),
+                Lexicon.AMP: ("FLOAT", {"default": 1, "min": 0.0, "step": 0.01}),
+                Lexicon.DELTA: ("FLOAT", {"default": 0, "min": 0.0, "step": 0.001}),
+                Lexicon.TIME: ("FLOAT", {"default": 0, "min": 0, "step": 0.000001}),
             }}
         return deep_merge_dict(IT_REQUIRED, d)
 
     def run(self, **kw) -> tuple[float, int]:
         val = 0.
         wave = kw.get(Lexicon.WAVE, EnumWaveSimple.SIN)
-        phase = kw.get(Lexicon.PHASE, 1)
+        phase = kw.get(Lexicon.PHASE, 0)
         amp = kw.get(Lexicon.AMP, 1)
-        offset = kw.get(Lexicon.OFFSET, 0)
-        maximum = kw.get(Lexicon.MAX, 0.5)
-        frame = kw.get(Lexicon.FRAME, 1)
-
-        if (op := WaveGeneratorNode.OP_WAVE.get(wave, None)):
-            val = op(phase, amp, offset, maximum, frame)
+        offset = kw.get(Lexicon.DELTA, 0)
+        delta = kw.get(Lexicon.TIME, 0)
+        if (op := getattr(anim.Wave, wave.lower(), None)) is not None:
+            val = op(phase, amp, offset, delta)
         return (val, int(val))
-
-# =============================================================================
-# === TESTING ===
-# =============================================================================
-
-if __name__ == "__main__":
-    pass

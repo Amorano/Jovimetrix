@@ -10,7 +10,7 @@ import numpy as np
 
 from Jovimetrix import tensor2cv, cv2tensor, cv2mask, zip_longest_fill, deep_merge_dict, \
     JOVImageInOutBaseNode, Logger, Lexicon, \
-    IT_PIXELS, IT_RGBA, IT_WH, IT_WHMODE, IT_PIXEL_MASK, IT_BBOX, IT_INVERT, IT_REQUIRED, IT_RGBA_IMAGE
+    IT_PIXELS, IT_RGBA, IT_WH, IT_WHMODE, IT_PIXEL_MASK, IT_BBOX, IT_INVERT, IT_REQUIRED, IT_RGBA_IMAGE, MIN_IMAGE_SIZE, MIN_IMAGE_SIZE
 
 from Jovimetrix.sup import comp
 from Jovimetrix.sup.comp import \
@@ -106,7 +106,7 @@ class PixelSplitNode(JOVImageInOutBaseNode):
 
         pixels = kw.get(Lexicon.PIXEL, [None])
         for img in pixels:
-            img = tensor2cv(img) if img else np.zeros((0, 0, 3), dtype=np.uint8)
+            img = tensor2cv(img) if img else np.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=np.uint8)
             h, w = img.shape[:2]
             r, g, b, a = comp.image_split(img)
             e = np.zeros((h, w), dtype=np.uint8)
@@ -144,7 +144,7 @@ class PixelMergeNode(JOVImageInOutBaseNode):
         invert = kw.get(Lexicon.INVERT, [None])
 
         if len(R)+len(B)+len(G)+len(A) == 0:
-            zero = torch.zeros((0, 0, 3), dtype=torch.uint8)
+            zero = torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8)
             return (
                 torch.stack([zero]),
                 torch.stack([zero]),
@@ -204,7 +204,7 @@ class MergeNode(JOVImageInOutBaseNode):
             w, h = wh
             a, b = comp.pixel_convert(a, b)
             if a is None and b is None:
-                zero = torch.zeros((0, 0, 3), dtype=torch.uint8)
+                zero = torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8)
                 images.append(zero)
                 masks.append(zero)
                 continue
@@ -254,7 +254,7 @@ class CropNode(JOVImageInOutBaseNode):
             t, l, b, r = tlbr
             w, h = wh
             if img is None:
-                zero = torch.zeros((0, 0, 3), dtype=torch.uint8)
+                zero = torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8)
                 images.append(zero)
                 masks.append(zero)
                 continue
@@ -304,7 +304,7 @@ class ColorTheoryNode(JOVImageInOutBaseNode):
 
         for data in zip_longest_fill(pixels, scheme, invert):
             img, s, i = data
-            img = tensor2cv(img) if img else np.zeros((0, 0, 3), dtype=np.uint8)
+            img = tensor2cv(img) if img else np.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=np.uint8)
             s = EnumColorTheory.COMPLIMENTARY if s is None else EnumColorTheory[s]
             a, b, c, d = comp.color_theory(img, s)
             if (i or 0) != 0:

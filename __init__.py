@@ -48,7 +48,6 @@ GO NUTS; JUST TRY NOT TO DO IT IN YOUR HEAD.
 @version: 0.99
 """
 
-from collections import OrderedDict
 import os
 import math
 import json
@@ -58,6 +57,7 @@ import importlib
 from enum import Enum
 from pathlib import Path
 from datetime import datetime
+from collections import OrderedDict
 from typing import Any, List, Generator, Optional, Tuple, Union
 
 import cv2
@@ -206,7 +206,8 @@ class Lexicon:
     COUNT = '🧮'
     DATA = '📓'
     DELAY = 'DELAY'
-    DELTA_TIME = '🔺🕛'
+    DELTA = '🔺'
+    DELTA_TIME = '🔺'
     DEVICE = '📟'
     EDGE = 'EDGE'
     FALSE = '🇫'
@@ -318,6 +319,13 @@ class EnumEdge(Enum):
     WRAP = 2
     WRAPX = 3
     WRAPY = 4
+
+class EnumTupleType(Enum):
+    INT = 0
+    FLOAT = 1
+    STRING = 2
+    LIST = 3
+    DICT = 4
 
 # =============================================================================
 # === CORE CLASSES ===
@@ -483,32 +491,78 @@ except Exception as e:
 # == SUPPORT FUNCTIONS
 # =============================================================================
 
-def comfy_to_tuple(key: str, data: Union[dict, List[dict]], default: List[Any] = None) -> Tuple[List[Any]]:
-    ret = OrderedDict()
+def parse_number(key: str, data: Union[dict, List[dict]], typ: EnumTupleType=EnumTupleType.INT, default: tuple[Any]=None, clip_min: Optional[int]=None, clip_max: Optional[int]=None) -> tuple[List[Any]]:
+    ret = []
     unified = data.get(key, {})
 
-    if not (isList := isinstance(unified, (list,))):
+    if not isinstance(unified, (set, tuple, list,)):
+        unified = list(unified)
+
+    for v in unified:
+        match typ:
+            case EnumTupleType.FLOAT:
+                if isinstance(v, str):
+                    parts = v.split('.', 1)
+                    if len(parts) > 1:
+                        v ='.'.join(parts[:2])
+                v = float(v if v is not None else 0)
+
+            case EnumTupleType.INT:
+                v = int(v if v is not None else 0)
+
+        if typ in [EnumTupleType.INT, EnumTupleType.FLOAT]:
+            if clip_min is not None:
+                v = max(v, clip_min)
+            if clip_max is not None:
+                v = min(v, clip_max)
+
+        ret.append(v)
+    return ret
+
+def parse_tuple(key: str, data: Union[dict, List[dict]], typ: EnumTupleType=EnumTupleType.INT, default: tuple[Any]=None, clip_min: Optional[int]=None, clip_max: Optional[int]=None) -> tuple[List[Any]]:
+
+    ret = []
+    unified = data.get(key, [])
+    if not isinstance(unified, (list,)):
         unified = [unified]
 
     for entry in unified:
         size = len(entry)
+        newboi = []
         for idx in range(size):
-            d = default[idx] if default is not None and len(default) < idx else None
-            v = entry.get(str(idx), d)
-            if isinstance(v, str):
-                parts = v.split('.', 1)
-                print(parts)
-                if len(parts) > 1:
-                    v = float('.'.join(parts[:2]))
-                else:
-                    v = int(parts[0])
+            d = default[idx] if default is not None and idx < len(default) else None
+            # entry could be a dict, list/tuple...
+            v = entry
+            if isinstance(entry, dict):
+                v = entry.get(str(idx), d)
+            elif isinstance(entry, (list, tuple, set)):
+                v = entry[idx] if idx < len(entry) else d
+                print('list', v)
 
-            plop = ret.get(idx, [])
-            plop.append(v)
-            ret[idx] = plop
+            match typ:
+                case EnumTupleType.FLOAT:
+                    if isinstance(v, str):
+                        parts = v.split('.', 1)
+                        if len(parts) > 1:
+                            v ='.'.join(parts[:2])
+                    v = float(v if v is not None else 0)
 
-    values = ret.values()
-    return tuple(values) if isList else values[0]
+                case EnumTupleType.LIST:
+                    if v is not None:
+                        v = v.split(',')
+
+                case EnumTupleType.INT:
+                    v = int(v if v is not None else 0)
+
+            if typ in [EnumTupleType.INT, EnumTupleType.FLOAT]:
+                if clip_min is not None:
+                    v = max(v, clip_min)
+                if clip_max is not None:
+                    v = min(v, clip_max)
+            newboi.append(v)
+
+        ret.append(tuple(newboi))
+    return ret
 
 def update_nested_dict(d, path, value) -> None:
     keys = path.split('.')
@@ -798,7 +852,7 @@ IT_PASS_IN = {"optional": {
 }}
 
 IT_WH = {"optional": {
-    Lexicon.WH: ("INTEGER2", {"default": (512, 512), "min": MIN_IMAGE_SIZE, "max": 8192, "step": 8, "label": [Lexicon.WIDTH, Lexicon.HEIGHT]})
+    Lexicon.WH: ("VEC2", {"default": (512, 512), "min": MIN_IMAGE_SIZE, "max": 8192, "step": 1, "label": [Lexicon.WIDTH, Lexicon.HEIGHT]})
 }}
 
 IT_SCALEMODE = {"optional": {
@@ -806,7 +860,7 @@ IT_SCALEMODE = {"optional": {
 }}
 
 IT_TRANS = {"optional": {
-    Lexicon.OFFSET: ("FLOAT2", {"default": (0, 0), "min": -1, "max": 1, "step": 0.01, "precision": 3, "label": [Lexicon.X, Lexicon.Y]})
+    Lexicon.OFFSET: ("VEC2", {"default": (0, 0), "min": -1, "max": 1, "step": 0.01, "precision": 4, "label": [Lexicon.X, Lexicon.Y]})
 }}
 
 IT_ROT = {"optional": {
@@ -814,11 +868,11 @@ IT_ROT = {"optional": {
 }}
 
 IT_SCALE = {"optional": {
-    Lexicon.SIZE: ("FLOAT2", {"default": (1, 1), "min": 0, "max": 1, "step": 0.01, "precision": 3, "label": [Lexicon.X, Lexicon.Y]})
+    Lexicon.SIZE: ("VEC2", {"default": (1, 1), "min": 0, "max": 1, "step": 0.01, "precision": 4, "label": [Lexicon.X, Lexicon.Y]})
 }}
 
 IT_TILE = {"optional": {
-    Lexicon.TILE: ("INTEGER2", {"default": (2, 2), "label": [Lexicon.X, Lexicon.Y]})
+    Lexicon.TILE: ("VEC2", {"default": (2, 2), "label": [Lexicon.X, Lexicon.Y]})
 }}
 
 IT_EDGE = {"optional": {
@@ -830,7 +884,7 @@ IT_FLIP = {"optional": {
 }}
 
 IT_INVERT = {"optional": {
-    Lexicon.INVERT: ("FLOAT", {"default": 0, "min": 0, "max": 1, "step": 0.01, "precision": 3})
+    Lexicon.INVERT: ("FLOAT", {"default": 0, "min": 0, "max": 1, "step": 0.01, "precision": 4})
 }}
 
 IT_AB = {"optional": {
@@ -839,31 +893,31 @@ IT_AB = {"optional": {
 }}
 
 IT_XY = { "optional": {
-    Lexicon.XY: ("FLOAT2", {"default": (0, 0), "step": 0.01, "precision": 3, "label": [Lexicon.X, Lexicon.Y]})
+    Lexicon.XY: ("VEC2", {"default": (0, 0), "step": 0.01, "precision": 4, "label": [Lexicon.X, Lexicon.Y]})
 }}
 
 IT_XYZ = {"optional": {
-    Lexicon.XYZ: ("FLOAT3", {"default": (0, 0, 0), "step": 0.01, "precision": 3, "label": [Lexicon.X, Lexicon.Y, Lexicon.Z]})
+    Lexicon.XYZ: ("VEC3", {"default": (0, 0, 0), "step": 0.01, "precision": 4, "label": [Lexicon.X, Lexicon.Y, Lexicon.Z]})
 }}
 
 IT_XYZW = {"optional": {
-    Lexicon.XYZW: ("FLOAT4", {"default": (0, 0, 0, 1), "step": 0.01, "precision": 3, "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W]})
+    Lexicon.XYZW: ("VEC4", {"default": (0, 0, 0, 1), "step": 0.01, "precision": 4, "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W]})
 }}
 
 IT_RGB = {"optional": {
-    Lexicon.RGB: ("INTEGER3", {"default": (0, 0, 0), "min": 0, "max": 255, "step": 4, "label": [Lexicon.R, Lexicon.G, Lexicon.B]})
+    Lexicon.RGB: ("VEC3", {"default": (0, 0, 0), "min": 0, "max": 255, "step": 4, "label": [Lexicon.R, Lexicon.G, Lexicon.B]})
 }}
 
 IT_RGBA = {"optional": {
-    Lexicon.RGBA: ("INTEGER4", {"default": (0, 0, 0, 255), "min": 0, "max": 255, "step": 4, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A]})
+    Lexicon.RGBA: ("VEC4", {"default": (0, 0, 0, 255), "min": 0, "max": 255, "step": 4, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A]})
 }}
 
 IT_RGB_B = { "optional": {
-    Lexicon.RGB_B: ("INTEGER3", {"default": (0, 0, 0), "min": 0, "max": 255, "step": 4, "label": [Lexicon.R, Lexicon.G, Lexicon.B]})
+    Lexicon.RGB_B: ("VEC3", {"default": (0, 0, 0), "min": 0, "max": 255, "step": 4, "label": [Lexicon.R, Lexicon.G, Lexicon.B]})
 }}
 
 IT_RGBA_B = { "optional": {
-    Lexicon.RGBA_B: ("INTEGER4", {"default": (0, 0, 0, 255), "min": 0, "max": 255, "step": 4, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A]})
+    Lexicon.RGBA_B: ("VEC4", {"default": (0, 0, 0, 255), "min": 0, "max": 255, "step": 4, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A]})
 }}
 
 IT_RGBA_IMAGE = { "optional": {
@@ -874,27 +928,31 @@ IT_RGBA_IMAGE = { "optional": {
 }}
 
 IT_HSV = { "optional": {
-    Lexicon.HSV: ("FLOAT3",{"default": (0, 1, 1), "min": 0, "max": 1, "step": 0.01, "precision": 3, "label": [Lexicon.H, Lexicon.S, Lexicon.V]})
+    Lexicon.HSV: ("VEC3",{"default": (0, 1, 1), "min": 0, "max": 1, "step": 0.01, "precision": 4, "label": [Lexicon.H, Lexicon.S, Lexicon.V]})
 }}
 
 IT_GAMMA = {"optional": {
-    Lexicon.GAMMA: ("FLOAT", {"default": 1, "min": 0, "max": 1, "step": 0.01, "precision": 3})
+    Lexicon.GAMMA: ("FLOAT", {"default": 1, "min": 0.00001, "max": 1, "step": 0.01, "precision": 6})
 }}
 
 IT_CONTRAST = {"optional": {
-    Lexicon.CONTRAST: ("FLOAT", {"default": 0, "min": 0, "max": 1, "step": 0.01, "precision": 3})
+    Lexicon.CONTRAST: ("FLOAT", {"default": 0, "min": 0, "max": 1, "step": 0.01, "precision": 4})
 }}
 
 IT_BBOX = {"optional": {
-    Lexicon.BBOX: ("FLOAT4", {"default": (0, 0, 1, 1), "min": 0, "max": 1, "step": 0.01, "precision": 3, "label": [Lexicon.TOP, Lexicon.LEFT, Lexicon.BOTTOM, Lexicon.RIGHT]})
+    Lexicon.BBOX: ("VEC4", {"default": (0, 0, 1, 1), "min": 0, "max": 1, "step": 0.01, "precision": 4, "label": [Lexicon.TOP, Lexicon.LEFT, Lexicon.BOTTOM, Lexicon.RIGHT]})
 }}
 
 IT_LOHI = {"optional": {
-    Lexicon.LOHI: ("FLOAT2", {"default": (0, 1), "min": 0, "max": 1, "step": 0.01, "precision": 3, "label": [Lexicon.LO, Lexicon.HI]})
+    Lexicon.LOHI: ("VEC2", {"default": (0, 1), "min": 0, "max": 1, "step": 0.01, "precision": 4, "label": [Lexicon.LO, Lexicon.HI]})
 }}
 
 IT_LMH = {"optional": {
-    Lexicon.LMH: ("FLOAT3", {"default": (0, 0.5, 1), "min": 0, "max": 1, "step": 0.01, "precision": 3, "label": [Lexicon.LO, Lexicon.MID, Lexicon.HI]})
+    Lexicon.LMH: ("VEC3", {"default": (0, 0.5, 1), "min": 0, "max": 1, "step": 0.01, "precision": 4, "label": [Lexicon.LO, Lexicon.MID, Lexicon.HI]})
+}}
+
+IT_TIME = {"optional": {
+    Lexicon.TIME: ("FLOAT", {"default": 0, "min": 0, "step": 0.000001, "precision": 6})
 }}
 
 IT_ORIENT = {"optional": {

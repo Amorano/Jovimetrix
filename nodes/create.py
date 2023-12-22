@@ -15,10 +15,11 @@ import numpy as np
 from PIL import Image
 
 from Jovimetrix import pil2tensor, pil2mask, pil2cv, cv2pil, cv2tensor, cv2mask, \
-    tensor2cv, deep_merge_dict, zip_longest_fill, comfy_to_tuple, \
+    tensor2cv, deep_merge_dict, zip_longest_fill, \
+    parse_tuple, \
     JOVImageBaseNode, JOVImageInOutBaseNode, Logger, Lexicon, \
     TYPE_PIXEL, IT_PIXELS, IT_RGBA, IT_WH, IT_SCALE, IT_ROT, IT_INVERT, \
-    IT_WHMODE, IT_REQUIRED, MIN_IMAGE_SIZE
+    IT_TIME, IT_WHMODE, IT_REQUIRED, MIN_IMAGE_SIZE
 
 from Jovimetrix.sup.comp import EnumScaleMode, geo_scalefit, shape_ellipse, \
     shape_polygon, shape_quad, light_invert, \
@@ -47,8 +48,8 @@ class ConstantNode(JOVImageBaseNode):
         return deep_merge_dict(IT_REQUIRED, IT_WH, IT_RGBA)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        width, height = comfy_to_tuple(Lexicon.WH, kw, [MIN_IMAGE_SIZE, MIN_IMAGE_SIZE])
-        color = comfy_to_tuple(Lexicon.RGBA, kw, (0, 0, 0, 255))
+        width, height = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)[0]
+        color = parse_tuple(Lexicon.RGBA, kw, default=(0, 0, 0, 255), clip_min=0, clip_max=255)[0]
         image = Image.new("RGB", (width, height), color)
         return (pil2tensor(image), pil2tensor(image.convert("L")),)
 
@@ -217,35 +218,26 @@ class GLSLNode(JOVImageBaseNode):
     OUTPUT_IS_LIST = (False, False, )
 
     @classmethod
-    def INPUT_TYPES(cls) -> dict[str, dict]:
-        d =  {
-            "required": {
-                Lexicon.VERTEX: ("STRING", {"default":
-"""attribute vec4 a_position;
-void main() {
-    gl_Position = a_position;
-}
-""", "multiline": True}),
-
-                Lexicon.FRAGMENT: ("STRING", {"default":
-"""precision mediump float;
-void main() {
-    gl_FragColor = vec4(0.0, 0.0, 1.0, 1.0); // Blue color
-}
-""", "multiline": True}),
-}}
-        return deep_merge_dict(d, IT_WH)
+    def INPUT_TYPES(cls) -> dict:
+        d =  {"optional": {
+            Lexicon.FRAGMENT: ("STRING", {"default":
+"""vec4 color = texture(textureSampler, texCoord);
+color.r += sin(time);
+FragColor = color;""",
+                "multiline": True})
+            }}
+        return deep_merge_dict(IT_REQUIRED, IT_PIXELS, IT_TIME, d, IT_WH)
 
     @classmethod
     def IS_CHANGED(cls, *arg, **kw) -> float:
         return float("nan")
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        wh = kw.get(Lexicon.WH, (0, 0))
-        vertex = kw.get(Lexicon.VERTEX, '')
-        fragment = kw.get(Lexicon.FRAGMENT, '')
-        image = Image.new(mode="RGB", size=wh)
-        return (pil2tensor(image), pil2mask(image))
+        pixels = kw.get(Lexicon.PIXEL, [None])
+        #wh = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE))
+        #image = Image.new(mode="RGB", size=wh[0])
+        #return (pil2tensor(image), pil2mask(image))
+        return (pixels, pixels, )
 
 # =============================================================================
 # === TESTING ===
