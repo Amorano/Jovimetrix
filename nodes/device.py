@@ -16,9 +16,11 @@ import cv2
 import torch
 import numpy as np
 
-from Jovimetrix import deep_merge_dict, tensor2cv, cv2mask, cv2tensor, zip_longest_fill, \
-        JOVBaseNode, JOVImageBaseNode, JOVImageInOutBaseNode, Logger, Lexicon, EnumCanvasOrientation, \
-        IT_PIXELS, IT_ORIENT, IT_CAM, IT_WHMODE, IT_REQUIRED, IT_INVERT
+from Jovimetrix import parse_tuple, parse_number, deep_merge_dict, tensor2cv, \
+    cv2mask, cv2tensor, zip_longest_fill, \
+    JOVBaseNode, JOVImageBaseNode, JOVImageInOutBaseNode, Logger, Lexicon, \
+    EnumTupleType, EnumCanvasOrientation, \
+    MIN_IMAGE_SIZE, IT_PIXELS, IT_ORIENT, IT_CAM, IT_WHMODE, IT_REQUIRED, IT_INVERT
 
 from Jovimetrix.sup.comp import image_grid, light_invert, geo_scalefit, \
     EnumInterpolation, \
@@ -133,13 +135,10 @@ class StreamReaderNode(JOVImageBaseNode):
         self.__last = StreamReaderNode.EMPTY
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-
-        wh = kw.get(Lexicon.WH, 0)
+        width, height = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)[0]
         orient = kw.get(Lexicon.ORIENT, EnumCanvasOrientation)
-        invert = kw.get(Lexicon.INVERT, 0)
+        i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)[0]
         url = kw.get(Lexicon.URL, "")
-        # fps = kw.get(Lexicon.FPS, 60)
-        # mode = kw.get(Lexicon.FPS, EnumInterpolation.LANCZOS4)
         rs = kw.get(Lexicon.FPS, EnumInterpolation.LANCZOS4)
 
         if self.__device is None or self.__device.captured or url != self.__url:
@@ -153,7 +152,6 @@ class StreamReaderNode(JOVImageBaseNode):
         self.__last = img = img if img else self.__last
         if ret:
             h, w = self.__last.shape[:2]
-            width, height = wh
             if width != w or height != h:
                 rs = EnumInterpolation[rs]
                 self.__device.sizer(width, height, rs)
@@ -164,8 +162,8 @@ class StreamReaderNode(JOVImageBaseNode):
             if orient in ["FLIPY", "FLIPXY"]:
                 img = cv2.flip(img, 0)
 
-            if (invert or 0) != 0.:
-                img = light_invert(img, invert)
+            if (i or 0) != 0.:
+                img = light_invert(img, i)
 
         return (
             cv2tensor(img),
@@ -181,19 +179,15 @@ class StreamWriterNode(JOVImageInOutBaseNode):
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
-                Lexicon.ROUTE: ("STRING", {"default": "/stream"}),
-                Lexicon.WAIT: ("BOOLEAN", {"default": False}),
+                Lexicon.ROUTE: ("STRING", {"default": "/stream"})
             }}
         return deep_merge_dict(IT_REQUIRED, IT_PIXELS, d, IT_WHMODE, IT_INVERT)
 
     @classmethod
     def IS_CHANGED(cls, **kw) -> float:
         route = kw.get(Lexicon.ROUTE, [None])
-        wh = kw.get(Lexicon.WH, [None])
+        width, height = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
         wait = kw.get(Lexicon.WAIT, [None])
-        fps = kw.get(Lexicon.FPS, [None])
-        sample = kw.get(Lexicon.SAMPLE, [None])
-        width, height = wh
 
         if (device := StreamManager.capture(route, static=True)) is None:
             raise Exception(f"stream failed {route}")
@@ -205,9 +199,6 @@ class StreamWriterNode(JOVImageInOutBaseNode):
             device.pause()
         else:
             device.play()
-
-        if device.fps != fps:
-            device.fps = fps
         return float("nan")
 
     def __init__(self, *arg, **kw) -> None:
@@ -221,17 +212,13 @@ class StreamWriterNode(JOVImageInOutBaseNode):
     def run(self, **kw) -> tuple[torch.Tensor]:
         pixels = kw.get(Lexicon.PIXEL, [None])
         route = kw.get(Lexicon.ROUTE, [None])
-        wait = kw.get(Lexicon.ROUTE, [None])
         mode = kw.get(Lexicon.MODE, [None])
-        wihi = kw.get(Lexicon.WH, [None])
-        invert = kw.get(Lexicon.INVERT, [None])
-        sample = sample or [None]
+        wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
+        i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)[0]
+        sample = kw.get(Lexicon.SAMPLE, [None])
 
-        for data in zip_longest_fill(pixels, route, wait, wihi, sample, invert):
-            img, r, wait, wh, rs, i = data
-            w, h = wh
-            h = h or 0
-            w = w or 0
+        for data in zip_longest_fill(pixels, route, *wait, wihi, sample, *i):
+            img, r, wait, w, h, rs, i = data
             img = img if img else np.zeros((h, w, 3), dtype=np.uint8)
             if r != self.__route:
                 # close old, if any
@@ -323,10 +310,10 @@ class MIDIReaderNode(JOVBaseNode):
 
     def run(self, **kw) -> tuple[bool, int, int, int]:
 
-        channel = kw.get(Lexicon.CHANNEL, [None])
-        normalize = kw.get(Lexicon.NORMALIZE, [None])
-        device = kw.get(Lexicon.DEVICE, [None])
-        filter = kw.get(Lexicon.FILTER, [None])
+        channel = kw.get(Lexicon.CHANNEL, None)
+        normalize = kw.get(Lexicon.NORMALIZE, None)
+        device = kw.get(Lexicon.DEVICE, None)
+        filter = kw.get(Lexicon.FILTER, None)
 
         if device != self.__device:
             self.__q_in.put(device)
@@ -337,6 +324,7 @@ class MIDIReaderNode(JOVBaseNode):
 
         if (value := self.__value) > 0 and normalize:
             value /= 127.
+
         Logger.spam(channel, self.__note_on, self.__channel, self.__control, self.__note, value)
         return (self.__note_on, self.__channel, self.__control, self.__note, value)
 
@@ -377,5 +365,3 @@ if __name__ == "__main__":
     server.start()
     while True:
         time.sleep(0.01)
-
-

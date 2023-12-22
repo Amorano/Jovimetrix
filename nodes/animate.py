@@ -81,7 +81,7 @@ class WaveGeneratorNode(JOVBaseNode):
                 Lexicon.WAVE: (EnumWaveSimple._member_names_, {"default": EnumWaveSimple.SIN.name}),
                 Lexicon.PHASE: ("FLOAT", {"default": 0, "min": 0.0, "step": 0.001}),
                 Lexicon.AMP: ("FLOAT", {"default": 1, "min": 0.0, "step": 0.01}),
-                Lexicon.DELTA: ("FLOAT", {"default": 0, "min": 0.0, "step": 0.001}),
+                Lexicon.SHIFT: ("FLOAT", {"default": 0, "min": 0.0, "step": 0.001}),
                 Lexicon.TIME: ("FLOAT", {"default": 0, "min": 0, "step": 0.000001}),
             }}
         return deep_merge_dict(IT_REQUIRED, d)
@@ -91,8 +91,8 @@ class WaveGeneratorNode(JOVBaseNode):
         wave = kw.get(Lexicon.WAVE, EnumWaveSimple.SIN)
         phase = kw.get(Lexicon.PHASE, 0)
         amp = kw.get(Lexicon.AMP, 1)
-        offset = kw.get(Lexicon.DELTA, 0)
-        delta = kw.get(Lexicon.TIME, 0)
+        shift = kw.get(Lexicon.SHIFT, 0)
+        delta_time = kw.get(Lexicon.TIME, 0)
         if (op := getattr(anim.Wave, wave.lower(), None)) is not None:
-            val = op(phase, amp, offset, delta)
+            val = op(phase, amp, shift, delta_time)
         return (val, int(val))

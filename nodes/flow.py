@@ -31,10 +31,10 @@ class EnumLogicGate(Enum):
     A_XNOR_B = 11
     A_NOT_B = 12
 
-class RouteNode(JOVBaseNode):
-    NAME = "ROUTE (JOV) 🚌"
+class DelayNode(JOVBaseNode):
+    NAME = "DELAY (JOV) ✋🏽"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/FLOW"
-    DESCRIPTION = "Pass-thru, delay, or hold traffic. Electrons on the data bus go round."
+    DESCRIPTION = "Delay traffic. Electrons on the data bus go round."
     RETURN_TYPES = (WILDCARD,)
     RETURN_NAMES = (Lexicon.ROUTE,)
 
@@ -42,8 +42,7 @@ class RouteNode(JOVBaseNode):
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
             Lexicon.PASS_IN: (WILDCARD, {"default": None}),
-            Lexicon.DELAY: ("FLOAT", {"step": 0.01, "default" : 0}),
-            Lexicon.WAIT: ("BOOLEAN", {"default": False}),
+            Lexicon.WAIT: ("FLOAT", {"step": 0.01, "default" : 0}),
             Lexicon.RESET: ("BOOLEAN", {"default": False})
         }}
         return deep_merge_dict(IT_REQUIRED, d)
@@ -52,21 +51,13 @@ class RouteNode(JOVBaseNode):
         self.__delay = 0
 
     def run(self, **kw) -> tuple[Any]:
-        ''' @TODO
-        t = threading.Thread(target=self.__run, daemon=True)
-        t.start()
-        '''
         o = kw.get(Lexicon.PASS_IN, None)
         delay = kw.get(Lexicon.DELAY, 0)
-        hold = kw.get(Lexicon.WAIT, False)
         reset = kw.get(Lexicon.RESET, False)
 
         if reset:
             self.__delay = 0
             return (self, )
-
-        if hold:
-            return(None,)
 
         if delay != self.__delay:
             self.__delay = delay
@@ -74,10 +65,6 @@ class RouteNode(JOVBaseNode):
 
         time.sleep(self.__delay)
         return (o,)
-
-    def __run(self) -> None:
-        while self.__hold:
-            time.sleep(0.1)
 
 class ComparisonNode(JOVBaseNode):
     """Compare two inputs."""

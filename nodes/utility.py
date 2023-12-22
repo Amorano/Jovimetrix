@@ -3,55 +3,15 @@ Jovimetrix - http://www.github.com/amorano/jovimetrix
 Utility
 """
 
-
-import gc
-from typing import Any, Optional
-
-try:
-    import comfy
-except:
-    pass
+from typing import Any
 
 import torch
 
-from Jovimetrix import deep_merge_dict, tensor2cv, cv2tensor, cv2mask, \
+from Jovimetrix import deep_merge_dict, \
     JOVBaseNode, Logger, Lexicon, \
-    IT_PIXELS, IT_REQUIRED, IT_PASS_IN, WILDCARD
+    IT_REQUIRED, IT_PASS_IN, WILDCARD
 
 # =============================================================================
-
-class ClearCacheNode(JOVBaseNode):
-    NAME = "CACHE (JOV) 🧹"
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/UTILITY"
-    DESCRIPTION = "Clear the torch cache, and python caches - we need to pay the bills"
-    RETURN_TYPES = (WILDCARD,)
-    RETURN_NAMES = (Lexicon.CLEAR,)
-    SORT = 10
-
-    @classmethod
-    def INPUT_TYPES(cls) -> dict:
-        return deep_merge_dict(IT_REQUIRED, IT_PASS_IN)
-
-    def run(self, **kw) -> tuple[object,]:
-        o = kw.get(Lexicon.PASS_IN, None)
-        f, t = torch.cuda.mem_get_info()
-        Logger.debug(self.NAME, f"total: {t}")
-        Logger.debug(self.NAME, "-"* 30)
-        Logger.debug(self.NAME, f"free: {f}")
-
-        s = o
-        if isinstance(o, dict):
-            s = o.copy()
-
-        torch.cuda.empty_cache()
-        torch.cuda.ipc_collect()
-        gc.collect()
-        comfy.model_management.soft_empty_cache()
-
-        f, t = torch.cuda.mem_get_info()
-        Logger.debug(self.NAME, f"free: {f}")
-        Logger.debug(self.NAME, "-"* 30)
-        return (s, )
 
 class OptionsNode(JOVBaseNode):
     NAME = "OPTIONS (JOV) ⚙️"
@@ -165,10 +125,3 @@ class AkashicNode(JOVBaseNode):
     def run(self, **kw) -> tuple[dict]:
         data = {}
         return (data, )
-
-# =============================================================================
-# === TESTING ===
-# =============================================================================
-
-if __name__ == "__main__":
-    pass

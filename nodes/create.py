@@ -7,17 +7,15 @@ import re
 import math
 import time
 from enum import Enum
-from typing import Any
 
 import cv2
 import torch
 import numpy as np
 from PIL import Image
 
-from Jovimetrix import pil2tensor, pil2mask, pil2cv, cv2pil, cv2tensor, cv2mask, \
-    tensor2cv, deep_merge_dict, zip_longest_fill, \
-    parse_tuple, \
-    JOVImageBaseNode, JOVImageInOutBaseNode, Logger, Lexicon, \
+from Jovimetrix import pil2tensor, pil2cv, cv2pil, cv2tensor, cv2mask, \
+    tensor2cv, deep_merge_dict, zip_longest_fill, parse_tuple, parse_number,\
+    EnumTupleType, JOVImageBaseNode, JOVImageInOutBaseNode, Logger, Lexicon, \
     TYPE_PIXEL, IT_PIXELS, IT_RGBA, IT_WH, IT_SCALE, IT_ROT, IT_INVERT, \
     IT_TIME, IT_WHMODE, IT_REQUIRED, MIN_IMAGE_SIZE
 
@@ -61,49 +59,44 @@ class ShapeNode(JOVImageBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {"required": {
+        d = {"optional": {
                 Lexicon.SHAPE: (EnumShapes._member_names_, {"default": EnumShapes.CIRCLE.name}),
                 Lexicon.SIDES: ("INT", {"default": 3, "min": 3, "max": 100, "step": 1}),
             }}
         return deep_merge_dict(IT_REQUIRED, d, IT_WH, IT_RGBA, IT_ROT, IT_SCALE, IT_INVERT)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        i = kw.get(Lexicon.INVERT, 0)
         shape = kw.get(Lexicon.SHAPE, EnumShapes.CIRCLE)
         sides = kw.get(Lexicon.SIDES, 3)
         angle = kw.get(Lexicon.ANGLE, 0)
-        size = kw.get(Lexicon.SIZE, (1, 1))
-        sizeX, sizeY = size
-        wh = kw.get(Lexicon.WH, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE))
-        width, height = wh
-        color = kw.get(Lexicon.RGBA, (255, 255, 255, 255))
-        R, G, B, A = color
-        image = None
-        fill = (int(R * 255.), int(G * 255.), int(B * 255.),)
-
+        sizeX, sizeY = parse_tuple(Lexicon.SIZE, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)[0]
+        width, height = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)[0]
+        color = parse_tuple(Lexicon.RGBA, kw, default=(255, 255, 255, 255), clip_min=1)[0]
+        i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)[0]
+        img = None
         match shape:
             case EnumShapes.SQUARE:
-                image = shape_quad(width, height, sizeX, sizeX, fill=fill)
+                img = shape_quad(width, height, sizeX, sizeX, fill=color)
 
             case EnumShapes.ELLIPSE:
-                image = shape_ellipse(width, height, sizeX, sizeY, fill=fill)
+                img = shape_ellipse(width, height, sizeX, sizeY, fill=color)
 
             case EnumShapes.RECTANGLE:
-                image = shape_quad(width, height, sizeX, sizeY, fill=fill)
+                img = shape_quad(width, height, sizeX, sizeY, fill=color)
 
             case EnumShapes.POLYGON:
-                image = shape_polygon(width, height, sizeX, sides, fill=fill)
+                img = shape_polygon(width, height, sizeX, sides, fill=color)
 
             case EnumShapes.CIRCLE:
-                image = shape_ellipse(width, height, sizeX, sizeX, fill=fill)
+                img = shape_ellipse(width, height, sizeX, sizeX, fill=color)
 
-        image = image.rotate(-angle)
+        img = img.rotate(-angle)
         if (i or 0) > 0.:
-            image = pil2cv(image)
-            image = light_invert(image, i)
-            image = cv2pil(image)
+            img = pil2cv(img)
+            img = light_invert(img, i)
+            img = cv2pil(img)
 
-        return (pil2tensor(image), pil2tensor(image.convert("L")), )
+        return (pil2tensor(img), pil2tensor(img.convert("L")), )
 
 class PixelShaderNode(JOVImageInOutBaseNode):
     NAME = "PIXEL SHADER (JOV) 🔆"
@@ -119,11 +112,10 @@ class PixelShaderNode(JOVImageInOutBaseNode):
         return deep_merge_dict(IT_REQUIRED, IT_PIXELS, d, IT_WHMODE, IT_SAMPLE)
 
     @staticmethod
-    def shader(image: TYPE_PIXEL, R: str, G: str, B: str, chunkX: int=64, chunkY:int=64, **kw) -> np.ndarray:
+    def shader(image: TYPE_PIXEL, R: str, G: str, B: str, **kw) -> np.ndarray:
 
         from ast import literal_eval
-        wh = kw.get(Lexicon.WH, 0)
-        width, height = wh
+        width, height = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)[0]
         out = np.zeros((height, width, 3), dtype=np.float32)
         R = R.strip()
         G = G.strip()
@@ -171,39 +163,36 @@ class PixelShaderNode(JOVImageInOutBaseNode):
         R = kw.get(Lexicon.R, [None])
         G = kw.get(Lexicon.G, [None])
         B = kw.get(Lexicon.B, [None])
-        wihi = kw.get(Lexicon.WH, [None])
+        width, height = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)[0]
         mode = kw.get(Lexicon.MODE, [None])
         sample = kw.get(Lexicon.SAMPLE, [None])
         masks = []
         images = []
-        for data in zip_longest_fill(pixels, R, G, B, wihi, mode, sample):
-            image, r, g, b, wh, m, rs = data
+        for data in zip_longest_fill(pixels, R, G, B, mode, sample):
+            img, r, g, b, m, rs = data
 
             r = r if r is not None else ""
             g = g if g is not None else ""
             b = b if b is not None else ""
-            w, h = wh
-            w = w if w is not None else MIN_IMAGE_SIZE
-            h = h if h is not None else MIN_IMAGE_SIZE
             m = m if m is not None else EnumScaleMode.FIT
             m = EnumScaleMode.FIT if m == EnumScaleMode.NONE else m
 
             # fix the image first -- must at least match for px, py indexes
-            image = geo_scalefit(image, w, h, m, rs)
+            img = geo_scalefit(img, width, height, m, rs)
 
-            if image is None:
-                image = np.zeros((h, w, 3), dtype=np.uint8)
+            if img is None:
+                img = np.zeros((height, width, 3), dtype=np.uint8)
             else:
-                image = tensor2cv(image)
-                if image.shape[0] != h or image.shape[1] != w:
+                img = tensor2cv(img)
+                if img.shape[0] != height or img.shape[1] != width:
                     s = EnumInterpolation.LANCZOS4
                     s = EnumInterpolation[rs] if rs is not None else s
-                    image = cv2.resize(image, (w, h), interpolation=s)
+                    img = cv2.resize(img, (width, height), interpolation=s)
 
             rs = EnumInterpolation[rs] if rs is not None else EnumInterpolation.LANCZOS4
-            image = PixelShaderNode.shader(image, r, g, b, w, h)
-            images.append(cv2tensor(image))
-            masks.append(cv2mask(image))
+            img = PixelShaderNode.shader(img, r, g, b)
+            images.append(cv2tensor(img))
+            masks.append(cv2mask(img))
 
         Logger.info(self.NAME, {time.perf_counter() - t:.5})
         return (
@@ -238,10 +227,3 @@ FragColor = color;""",
         #image = Image.new(mode="RGB", size=wh[0])
         #return (pil2tensor(image), pil2mask(image))
         return (pixels, pixels, )
-
-# =============================================================================
-# === TESTING ===
-# =============================================================================
-
-if __name__ == "__main__":
-    pass

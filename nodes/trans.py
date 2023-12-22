@@ -8,8 +8,9 @@ from typing import Optional
 import numpy as np
 import torch
 
-from Jovimetrix import zip_longest_fill, deep_merge_dict, tensor2cv, cv2mask, cv2tensor, \
-    JOVImageInOutBaseNode, Logger, Lexicon, \
+from Jovimetrix import parse_tuple, parse_number, zip_longest_fill, deep_merge_dict, \
+    tensor2cv, cv2mask, cv2tensor, \
+    EnumTupleType, JOVImageInOutBaseNode, Logger, Lexicon, \
     IT_PIXELS, IT_TRS, IT_WH, IT_REQUIRED, IT_EDGE, \
     IT_WHMODE, MIN_IMAGE_SIZE, IT_TILE, IT_XY, IT_INVERT
 
@@ -31,20 +32,17 @@ class TransformNode(JOVImageInOutBaseNode):
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         pixels = kw.get(Lexicon.PIXEL, [None])
-        offset = kw.get(Lexicon.OFFSET, [None])
+        offset = parse_tuple(Lexicon.OFFSET, kw, default=(0, 0,), clip_min=-1, clip_max=1)
         angle = kw.get(Lexicon.ANGLE, [None])
-        size = kw.get(Lexicon.SIZE, [None])
-        wh = kw.get(Lexicon.WH, [None])
+        size = parse_tuple(Lexicon.SIZE, kw, default=(1, 1,), clip_min=0, clip_max=1)
+        wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
         edge = kw.get(Lexicon.EDGE, [None])
         mode = kw.get(Lexicon.MODE, [None])
         sample = kw.get(Lexicon.SAMPLE, [None])
         masks = []
         images = []
-        for data in zip_longest_fill(pixels, offset, angle, size, edge, wh, mode, sample):
-            img, o, a, s, e, wh, m, rs = data
-            oX, oY = o
-            sX, sY = s
-            w, h = wh
+        for data in zip_longest_fill(pixels, *offset, angle, *size, edge, *wihi, mode, sample):
+            img, oX, oY, a, sX, sY, e, w, h, m, rs = data
             if img is not None:
                 img = tensor2cv(img)
                 rs = EnumInterpolation[rs] if rs is not None else EnumInterpolation.LANCZOS4
@@ -72,19 +70,16 @@ class TileNode(JOVImageInOutBaseNode):
     def run(self, **kw) -> tuple[list[torch.Tensor], list[torch.Tensor]]:
 
         pixels = kw.get(Lexicon.PIXEL, [None])
-        tile = kw.get(Lexicon.XY, [None])
-        wh = kw.get(Lexicon.WH, [None])
+        tile = parse_tuple(Lexicon.XY, kw, default=(2, 2,), clip_min=1)
+        wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
         mode = kw.get(Lexicon.MODE, [None])
         sample = kw.get(Lexicon.SAMPLE, [None])
         masks = []
         images = []
-        for img, xy, wh, m, rs in zip_longest_fill(pixels, tile, wh, mode, sample):
-            w, h = wh
-            x, y = xy
-            w = w if w is not None else MIN_IMAGE_SIZE
-            h = h if h is not None else MIN_IMAGE_SIZE
-            img = tensor2cv(img)
-            img = geo_edge_wrap(img, min(1, x or 1), min(1, y or 1))
+        for data in zip_longest_fill(pixels, *tile, *wihi, mode, sample):
+            img, x, y, w, h, m, rs = data
+            img = tensor2cv(img) if img is not None else np.zeros((h, w, 3), dtype=np.uint8)
+            img = geo_edge_wrap(img, x, y)
             rs = EnumInterpolation[rs] if rs is not None else EnumInterpolation.LANCZOS4
             img = geo_scalefit(img, w, h, m, rs)
             images.append(cv2tensor(img))
@@ -103,21 +98,20 @@ class MirrorNode(JOVImageInOutBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {"required": {
-                Lexicon.MODE: (EnumMirrorMode._member_names_, {"default": EnumMirrorMode.X.name}),
-            },
-        }
+        d = {"optional": {
+                Lexicon.MIRROR: (EnumMirrorMode._member_names_, {"default": EnumMirrorMode.X.name}),
+            }}
         return deep_merge_dict(IT_PIXELS, d, IT_XY, IT_INVERT)
 
     def run(self, **kw) -> tuple[list[torch.Tensor], list[torch.Tensor]]:
         pixels = kw.get(Lexicon.PIXEL, [None])
-        offset = kw.get(Lexicon.X, [None])
-        invert = kw.get(Lexicon.INVERT, [None])
+        offset = parse_tuple(Lexicon.XY, kw, default=(0, 0,), clip_min=-1, clip_max=1)
+        i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, default=[1], clip_min=0, clip_max=1)
         mode = kw.get(Lexicon.MODE, [None])
         masks = []
         images = []
-        for img, xy, m, i in zip_longest_fill(pixels, offset, mode, invert):
-            x, y = xy
+        for data in zip_longest_fill(pixels, *offset, mode, i):
+            img, x, y, m, i = data
             img = tensor2cv(img) if img is not None else np.zeros((0,0,3), dtype=np.uint8)
             if 'X' in m:
                 img = geo_mirror(img, x or 0, 1, invert=i or 0)
@@ -140,28 +134,24 @@ class ProjectionNode(JOVImageInOutBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {"required": {
+        d = {"optional": {
                 Lexicon.PROJECTION: (EnumProjection._member_names_, {"default": EnumProjection.SPHERICAL.name}),
                 Lexicon.STRENGTH: ("FLOAT", {"default": 1, "min": 0, "step": 0.01}),
             }}
         return deep_merge_dict(IT_PIXELS, d, IT_WHMODE, IT_SAMPLE, IT_INVERT)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-
         pixels = kw.get(Lexicon.PIXEL, [None])
-        invert = kw.get(Lexicon.INVERT, [None])
-        wh = kw.get(Lexicon.WH, [None])
+        wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
+        i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
         proj = kw.get(Lexicon.PROJECTION, [None])
         strength = kw.get(Lexicon.STRENGTH, [None])
         mode = kw.get(Lexicon.MODE, [None])
         sample = kw.get(Lexicon.SAMPLE, [None])
         masks = []
         images = []
-        for data in zip_longest_fill(pixels, proj, strength, wh, mode, invert, sample):
-            img, pr, st, wh, m, i, rs = data
-            w, h = wh
-            w = w if w is not None else 0
-            h = h if h is not None else 0
+        for data in zip_longest_fill(pixels, proj, strength, *wihi, mode, i, sample):
+            img, pr, st, w, h, m, i, rs = data
             st = st if st is not None else 1
             pr = pr if pr is not None else EnumProjection.SPHERICAL
             m = m if m is not None else EnumScaleMode.NONE
@@ -184,10 +174,3 @@ class ProjectionNode(JOVImageInOutBaseNode):
             torch.stack(images),
             torch.stack(masks)
         )
-
-# =============================================================================
-# === TESTING ===
-# =============================================================================
-
-if __name__ == "__main__":
-    pass

@@ -8,9 +8,11 @@ import cv2
 import torch
 import numpy as np
 
-from Jovimetrix import tensor2cv, cv2tensor, cv2mask, zip_longest_fill, deep_merge_dict, \
-    JOVImageInOutBaseNode, Logger, Lexicon, \
-    IT_PIXELS, IT_RGBA, IT_WH, IT_WHMODE, IT_PIXEL_MASK, IT_BBOX, IT_INVERT, IT_REQUIRED, IT_RGBA_IMAGE, MIN_IMAGE_SIZE, MIN_IMAGE_SIZE
+from Jovimetrix import parse_number, parse_tuple, tensor2cv, cv2tensor, cv2mask, \
+    zip_longest_fill, deep_merge_dict, \
+    EnumTupleType, JOVImageInOutBaseNode, Logger, Lexicon, \
+    IT_PIXELS, IT_RGBA, IT_WH, IT_WHMODE, IT_PIXEL_MASK, IT_BBOX, IT_INVERT, \
+    IT_REQUIRED, IT_RGBA_IMAGE, MIN_IMAGE_SIZE, MIN_IMAGE_SIZE
 
 from Jovimetrix.sup import comp
 from Jovimetrix.sup.comp import \
@@ -35,7 +37,6 @@ class BlendNode(JOVImageInOutBaseNode):
         return deep_merge_dict(IT_REQUIRED, IT_PIXEL_MASK, d, IT_WHMODE, IT_SAMPLE, IT_INVERT)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-
         pixelA = kw.get(Lexicon.PIXEL_A, [None])
         pixelB = kw.get(Lexicon.PIXEL_B, [None])
         mask = kw.get(Lexicon.MASK, [None])
@@ -44,15 +45,14 @@ class BlendNode(JOVImageInOutBaseNode):
         flip = kw.get(Lexicon.FLIP, [None])
         mode = kw.get(Lexicon.MODE, [None])
         sample = kw.get(Lexicon.SAMPLE, [None])
-        wh = kw.get(Lexicon.WH, [None])
-        invert = kw.get(Lexicon.INVERT, [None])
+        wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
+        i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
         masks = []
         images = []
         for data in zip_longest_fill(pixelA, pixelB, mask, func, alpha, flip,
-                                     wh, mode, sample, invert):
+                                     *wihi, mode, sample, i):
 
-            pa, pb, ma, f, a, fl, wh, sm, rs, i = data
-            w, h = wh
+            pa, pb, ma, f, a, fl, w, h, sm, rs, i = data
             pa = tensor2cv(pa) if pa else np.zeros((h, w, 4), dtype=np.uint8)
             pb = tensor2cv(pb) if pb else np.zeros((h, w, 4), dtype=np.uint8)
             ma = tensor2cv(ma) if ma else np.zeros((h, w), dtype=np.uint8)
@@ -133,15 +133,14 @@ class PixelMergeNode(JOVImageInOutBaseNode):
         return deep_merge_dict(IT_REQUIRED, IT_RGBA_IMAGE, IT_WHMODE, IT_SAMPLE, IT_INVERT)
 
     def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor]:
-
         R = kw.get(Lexicon.R, [None])
         G = kw.get(Lexicon.G, [None])
         B = kw.get(Lexicon.B, [None])
         A = kw.get(Lexicon.A, [None])
         mode = kw.get(Lexicon.MODE, [None])
         sample = kw.get(Lexicon.SAMPLE, [None])
-        wh = kw.get(Lexicon.WH, [None])
-        invert = kw.get(Lexicon.INVERT, [None])
+        wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
+        i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
 
         if len(R)+len(B)+len(G)+len(A) == 0:
             zero = torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8)
@@ -152,11 +151,8 @@ class PixelMergeNode(JOVImageInOutBaseNode):
 
         masks = []
         images = []
-        for data in zip_longest_fill(R, G, B, A, wh, mode, sample, invert):
-            r, g, b, a, wh, m, rs, i = data
-            w, h = wh
-            w = w or 0
-            h = h or 0
+        for data in zip_longest_fill(R, G, B, A, *wihi, mode, sample, i):
+            r, g, b, a, w, h, m, rs, i = data
             r = tensor2cv(r) if r else np.zeros((h, w, 3), dtype=np.uint8)
             g = tensor2cv(g) if g else np.zeros((h, w, 3), dtype=np.uint8)
             b = tensor2cv(b) if b else np.zeros((h, w, 3), dtype=np.uint8)
@@ -188,33 +184,30 @@ class MergeNode(JOVImageInOutBaseNode):
         return deep_merge_dict(IT_REQUIRED, IT_PIXEL_MASK, d, IT_WHMODE, IT_SAMPLE)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-
         pixelA = kw.get(Lexicon.PIXEL_A, [None])
         pixelB = kw.get(Lexicon.PIXEL_B, [None])
         mask = kw.get(Lexicon.MASK, [None])
         axis = kw.get(Lexicon.AXIS, [None])
         stride = kw.get(Lexicon.STRIDE, [None])
-        wh = kw.get(Lexicon.WH, [None])
+        wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
         mode = kw.get(Lexicon.MODE, [None])
         sample = kw.get(Lexicon.SAMPLE, [None])
         masks = []
         images = []
-        for data in zip_longest_fill(pixelA, pixelB, mask, axis, stride, wh, mode, sample):
-            a, b, ma, ax, st, wh, m, rs = data
-            w, h = wh
+        for data in zip_longest_fill(pixelA, pixelB, mask, axis, stride, *wihi, mode, sample):
+            a, b, ma, ax, st, w, h, m, rs = data
             a, b = comp.pixel_convert(a, b)
             if a is None and b is None:
                 zero = torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8)
                 images.append(zero)
                 masks.append(zero)
                 continue
+
             pixels = [tensor2cv(a), tensor2cv(b)]
-
-            ma = tensor2cv(ma) if ma else np.zeros((h, w, 3), dtype=np.uint8)
-            rs = EnumInterpolation[rs] if rs else EnumInterpolation.LANCZOS4
-            ax = EnumOrientation[ax] if ax else EnumOrientation.HORIZONTAL
+            ma = tensor2cv(ma) if ma is not None else np.zeros((h, w, 3), dtype=np.uint8)
+            rs = EnumInterpolation[rs] if rs is not None else EnumInterpolation.LANCZOS4
+            ax = EnumOrientation[ax] if ax is not None else EnumOrientation.HORIZONTAL
             img = comp.image_stack(pixels, ax, st, ma, EnumScaleMode.FIT, rs)
-
             if (m or EnumScaleMode.NONE) != EnumScaleMode.NONE:
                 img = comp.geo_scalefit(img, w, h, m, rs)
 
@@ -240,19 +233,16 @@ class CropNode(JOVImageInOutBaseNode):
         return deep_merge_dict(IT_REQUIRED, IT_PIXELS, IT_BBOX, d, IT_RGBA, IT_WH, IT_INVERT)
 
     def run(self, **kw) -> tuple[list[torch.Tensor], list[torch.Tensor]]:
-
         pixels = kw.get(Lexicon.PIXEL, [None])
-        bbox = kw.get(Lexicon.BBOX, [None])
+        bbox = parse_tuple(Lexicon.BBOX, kw, default=(0, 0, 1, 1,), clip_min=0, clip_max=1)
         pad = kw.get(Lexicon.PAD, [None])
-        wh = kw.get(Lexicon.WH, [None])
-        rgba = kw.get(Lexicon.RGBA, (255, 255, 255))
-        invert = kw.get(Lexicon.INVERT, [None])
+        rgba = parse_tuple(Lexicon.RGBA, kw, default=(0, 0, 0, 255,), clip_min=0, clip_max=255)
+        wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
+        i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
         masks = []
         images = []
-        for data in zip_longest_fill(pixels, pad, bbox, rgba, wh, invert):
-            img, p, tlbr, c, wh, i = data
-            t, l, b, r = tlbr
-            w, h = wh
+        for data in zip_longest_fill(pixels, pad, *bbox, *rgba, *wihi, i):
+            img, p, t, l, b, r, c, w, h, i = data
             if img is None:
                 zero = torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8)
                 images.append(zero)
@@ -300,9 +290,9 @@ class ColorTheoryNode(JOVImageInOutBaseNode):
 
         pixels = kw.get(Lexicon.PIXEL, [None])
         scheme = kw.get(Lexicon.SCHEME, [None])
-        invert = kw.get(Lexicon.INVERT, [None])
+        i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
 
-        for data in zip_longest_fill(pixels, scheme, invert):
+        for data in zip_longest_fill(pixels, scheme, i):
             img, s, i = data
             img = tensor2cv(img) if img else np.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=np.uint8)
             s = EnumColorTheory.COMPLIMENTARY if s is None else EnumColorTheory[s]
@@ -324,10 +314,3 @@ class ColorTheoryNode(JOVImageInOutBaseNode):
             torch.stack(imageC),
             torch.stack(imageD)
         )
-
-# =============================================================================
-# === TESTING ===
-# =============================================================================
-
-if __name__ == "__main__":
-    pass

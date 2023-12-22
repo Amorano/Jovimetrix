@@ -323,22 +323,22 @@ class ThresholdNode(JOVImageInOutBaseNode):
         adapt = kw.get(Lexicon.ADAPT, [None])
         threshold = kw.get(Lexicon.THRESHOLD, [None])
         size = kw.get(Lexicon.SIZE, [None])
-        invert = kw.get(Lexicon.INVERT, [None])
+        i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
         masks = []
         images = []
-        for data in zip_longest_fill(pixels, op, adapt, threshold, size, invert):
+        for data in zip_longest_fill(pixels, op, adapt, threshold, size, i):
             img, o, a, t, b, i = data
-
             if img is None:
                 zero = torch.zeros((1, 1, 3), dtype=torch.uint8)
                 images.append(zero)
                 masks.append(zero)
                 continue
+
             img = tensor2cv(img)
-            o = EnumThreshold[o] if o else EnumThreshold.BINARY
-            a = EnumThresholdAdapt[a] if a else EnumThresholdAdapt.ADAPT_NONE
-            t = t if t else 0.5
-            b = b if b else 3
+            o = EnumThreshold[o] if o is not None else EnumThreshold.BINARY
+            a = EnumThresholdAdapt[a] if a is not None else EnumThresholdAdapt.ADAPT_NONE
+            t = t if t is not None else 0.5
+            b = b if b is not None else 3
             img = comp.adjust_threshold(img, threshold=t, mode=o, adapt=a, block=b, const=t)
             if (i or 0) != 0:
                 img = comp.light_invert(img, i)

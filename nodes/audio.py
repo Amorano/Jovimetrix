@@ -8,9 +8,9 @@ import torch
 import numpy as np
 from PIL import Image, ImageDraw
 
-from Jovimetrix import deep_merge_dict, cv2mask, pil2cv, cv2tensor, \
+from Jovimetrix import parse_tuple, deep_merge_dict, cv2mask, pil2cv, cv2tensor, \
     Logger, JOVImageBaseNode, Lexicon, \
-    IT_REQUIRED, IT_WH, IT_RGBA, IT_RGBA_B
+    MIN_IMAGE_SIZE, IT_REQUIRED, IT_WH, IT_RGBA, IT_RGBA_B
 
 # =============================================================================
 # === LOADERS ===
@@ -108,10 +108,10 @@ class GraphWaveNode(JOVImageBaseNode):
         self.__data = None
 
     def run(self, filen: str, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        wh = kw.get(Lexicon.WH, None)
         bars = kw.get(Lexicon.AMT, None)
-        rgb = kw.get(Lexicon.RGB, None)
-        back = kw.get(Lexicon.RGB_B, None)
+        width, height = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)[0]
+        rgb_a = parse_tuple(Lexicon.RGB, kw, default=(128, 128, 0, 255), clip_min=1)[0]
+        rgb_b = parse_tuple(Lexicon.RGB_B, kw, default=(0, 128, 128, 255), clip_min=1)[0]
 
         if self.__filen != filen:
             self.__data = None
@@ -125,14 +125,10 @@ class GraphWaveNode(JOVImageBaseNode):
 
         image = np.zeros((1, 1), dtype=np.int16)
         if self.__data is not None:
-            width, height = wh
-            image = graph_sausage(self.__data, bars, width, height, rgb, back)
+            image = graph_sausage(self.__data, bars, width, height, rgb_a, rgb_b)
 
         image = cv2tensor(image)
         mask = cv2mask(image)
-        #mask = torch.from_numpy(np.array(image.convert("L")).astype(np.float32) / 255.0)
-        #image = torch.from_numpy(np.array(image).astype(np.float32) / 255.0).unsqueeze(0)
-
         data = extract_wave(self.__data)
         return (image, mask, data,)
 
