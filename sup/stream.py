@@ -44,7 +44,7 @@ class MediaStreamBase:
                  height:int=64,
                  fps:float=60,
                  mode:Optional[EnumScaleMode]=EnumScaleMode.FIT,
-                 resample:Optional[EnumInterpolation]=EnumInterpolation.LANCZOS4,
+                 sample:Optional[EnumInterpolation]=EnumInterpolation.LANCZOS4,
                  ) -> None:
 
         self.__quit = False
@@ -53,7 +53,7 @@ class MediaStreamBase:
         self.__ret = False
         self.__fps = fps
         self.__mode = mode
-        self.__resample = resample
+        self.__sample = sample
 
         try: self.__url = int(url)
         except: self.__url = url
@@ -185,7 +185,7 @@ class MediaStreamBase:
 
     @resample.setter
     def resample(self, val: EnumInterpolation) -> None:
-        self.__resample = val
+        self.__sample = val
 
     @property
     def fps(self) -> float:
@@ -204,7 +204,7 @@ class MediaStreamDevice(MediaStreamBase):
                  height:int=64,
                  fps:float=60,
                  mode:Optional[EnumScaleMode]=EnumScaleMode.NONE,
-                 resample:Optional[EnumInterpolation]=EnumInterpolation.LANCZOS4,
+                 sample:Optional[EnumInterpolation]=EnumInterpolation.LANCZOS4,
                  backend:int=None) -> None:
 
         self.__source = None
@@ -213,7 +213,7 @@ class MediaStreamDevice(MediaStreamBase):
         self.__focus = 0
         self.__exposure = 1
 
-        super().__init__(url, self.__run, width, height, fps, mode, resample)
+        super().__init__(url, self.__run, width, height, fps, mode, sample)
 
     def __run(self) -> tuple[bool, Any]:
         if self.__source is None:

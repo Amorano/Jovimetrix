@@ -3,71 +3,30 @@ Jovimetrix - http://www.github.com/amorano/jovimetrix
 Utility
 """
 
-import gc
-from typing import Any, Optional
-
-try:
-    import comfy
-except:
-    pass
+from typing import Any
 
 import torch
 
 from Jovimetrix import deep_merge_dict, \
-    Logger, JOVBaseNode, \
-    WILDCARD, IT_REQUIRED
+    JOVBaseNode, Logger, Lexicon, \
+    IT_REQUIRED, IT_PASS_IN, WILDCARD
 
 # =============================================================================
-
-class ClearCacheNode(JOVBaseNode):
-    NAME = "CACHE (JOV) 🧹"
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/UTILITY"
-    DESCRIPTION = "Clear the torch cache, and python caches - we need to pay the bills"
-    RETURN_TYPES = (WILDCARD,)
-    RETURN_NAMES = ("🧹",)
-    SORT = 10
-
-    @classmethod
-    def INPUT_TYPES(cls) -> dict:
-        d = {"optional": {
-            "o": (WILDCARD, {}),
-        }}
-        return deep_merge_dict(IT_REQUIRED, d)
-
-    def run(self, o: Any) -> [object, ]:
-        f, t = torch.cuda.mem_get_info()
-        Logger.debug(self.NAME, f"total: {t}")
-        Logger.debug(self.NAME, "-"* 30)
-        Logger.debug(self.NAME, f"free: {f}")
-
-        s = o
-        if isinstance(o, dict):
-            s = o.copy()
-
-        torch.cuda.empty_cache()
-        torch.cuda.ipc_collect()
-        gc.collect()
-        comfy.model_management.soft_empty_cache()
-
-        f, t = torch.cuda.mem_get_info()
-        Logger.debug(self.NAME, f"free: {f}")
-        Logger.debug(self.NAME, "-"* 30)
-        return (s, )
 
 class OptionsNode(JOVBaseNode):
     NAME = "OPTIONS (JOV) ⚙️"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/UTILITY"
     DESCRIPTION = "Change Jovimetrix Global Options"
     RETURN_TYPES = (WILDCARD, )
-    RETURN_NAMES = ("🦄", )
+    RETURN_NAMES = (Lexicon.PASS_OUT, )
     SORT = 1
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {
             "optional": {
-                "o": (WILDCARD, {"default": None}),
-                "log": (["ERROR", "WARN", "INFO", "DEBUG", "SPAM"], {"default": "ERROR"}),
+                Lexicon.PASS_IN: (WILDCARD, {"default": None}),
+                Lexicon.LOG: (["ERROR", "WARN", "INFO", "DEBUG", "SPAM"], {"default": "ERROR"}),
                 #"host": ("STRING", {"default": ""}),
                 #"port": ("INT", {"min": 0, "step": 1, "default": 7227}),
             }}
@@ -77,7 +36,9 @@ class OptionsNode(JOVBaseNode):
     def IS_CHANGED(cls, **kw) -> float:
         return float("nan")
 
-    def run(self, log: str,  **kw) -> Any:
+    def run(self, **kw) -> tuple[Any]:
+        log = kw.get(Lexicon.LOG, 0)
+
         if log == "ERROR":
             Logger._LEVEL = 0
         elif log == "WARN":
@@ -92,7 +53,7 @@ class OptionsNode(JOVBaseNode):
         #stream.STREAMPORT = port
         #stream.STREAMHOST = host
 
-        o = kw.get('o', None)
+        o = kw.get(Lexicon.PASS_IN, None)
         return (o, )
 
 class DebugNode(JOVBaseNode):
@@ -102,15 +63,15 @@ class DebugNode(JOVBaseNode):
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/UTILITY"
     DESCRIPTION = "Debug data"
     RETURN_TYPES = (WILDCARD, WILDCARD, )
-    RETURN_NAMES = ("🦄", "💾")
+    RETURN_NAMES = (Lexicon.PASS_OUT, Lexicon.IO)
     OUTPUT_NODE = True
-    SORT = 100
+    SORT = 50
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
-            "o": (WILDCARD, {}),
-            "dump" : ("BOOLEAN", {"default": True}),
+            Lexicon.PASS_IN: (WILDCARD, {}),
+            Lexicon.OUTPUT : ("BOOLEAN", {"default": True}),
         }}
         return deep_merge_dict(IT_REQUIRED, d)
 
@@ -137,17 +98,30 @@ class DebugNode(JOVBaseNode):
             meh = ''.join(repr(type(s)).split("'")[1:2])
             return {"type": meh, "value": s}
 
-    def run(self, o:Optional[object]=None, dump:bool=False) -> object:
+    def run(self, **kw) -> tuple[Any, Any]:
+        o = kw.get(Lexicon.PASS_IN, None)
         if o is None:
             return (o, {})
+
         value = self.__parse(o)
-        if dump:
+        if kw.get(Lexicon.OUTPUT, False):
             Logger.dump(value)
         return (o, value,)
 
-# =============================================================================
-# === TESTING ===
-# =============================================================================
+class AkashicNode(JOVBaseNode):
+    NAME = "AKASHIC (JOV) 📓"
+    CATEGORY = "JOVIMETRIX 🔺🟩🔵/UTILITY"
+    DESCRIPTION = "Display the top level attributes of an input"
+    RETURN_TYPES = ('AKASHIC',)
+    RETURN_NAMES = (Lexicon.DATA,)
+    OUTPUT_IS_LIST = (True, )
+    OUTPUT_NODE = True
+    SORT = 100
 
-if __name__ == "__main__":
-    pass
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        return deep_merge_dict(IT_REQUIRED, IT_PASS_IN)
+
+    def run(self, **kw) -> tuple[dict]:
+        data = {}
+        return (data, )

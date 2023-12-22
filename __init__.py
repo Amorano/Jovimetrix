@@ -36,22 +36,28 @@ GO NUTS; JUST TRY NOT TO DO IT IN YOUR HEAD.
 @description: Procedural & Compositing. Includes a Webcam node.
 @author: amorano
 @reference: https://github.com/Amorano/Jovimetrix
-@node list: ConstantNode, ShapeNode, PixelShaderNode, PixelShaderImageNode,
-            TransformNode, TileNode, MirrorNode, ExtendNode, HSVNode, AdjustNode,
-            BlendNode, ThresholdNode, ProjectionNode, StreamReadNode, StreamWriteNode,
-            RouteNode, TickNode, OptionsNode
-@version: 0.98
+@node list: ConstantNode, ShapeNode, PixelShaderNode, GLSLNode,
+    AdjustNode, ColorMatchNode, FindEdgeNode, HSVNode, LevelsNode, ThresholdNode,
+    TRSNode, TransformNode, TileNode, MirrorNode, ProjectionNode
+    BlendNode, PixelSplitNode, PixelMergeNode, MergeNode, CropNode, ColorTheoryNode,
+    TickNode, WaveGeneratorNode,
+    RouteNode, ComparisonNode, IfThenElseNode,
+    StreamReaderNode, StreamWriterNode, MIDIReaderNode,
+    GraphWaveNode,
+    ClearCacheNode, OptionsNode, DebugNode, AkashicNode
+@version: 0.99
 """
 
-from ast import Global
 import os
 import math
 import json
 import shutil
 import inspect
 import importlib
+from enum import Enum
 from pathlib import Path
 from datetime import datetime
+from collections import OrderedDict
 from typing import Any, List, Generator, Optional, Tuple, Union
 
 import cv2
@@ -105,7 +111,7 @@ TYPE_PIXEL = Union[
 TYPE_IMAGE = Union[np.ndarray, torch.Tensor]
 
 # =============================================================================
-# === CORE CLASSES ===
+# === THERE CAN BE ONLY ONE ===
 # =============================================================================
 
 class Singleton(type):
@@ -117,6 +123,10 @@ class Singleton(type):
             instance = super().__call__(*args, **kwargs)
             cls._instances[cls] = instance
         return cls._instances[cls]
+
+# =============================================================================
+# === LOGGER ===
+# =============================================================================
 
 class Logger(metaclass=Singleton):
     _LEVEL = int(os.getenv("JOV_LOG_LEVEL", 0))
@@ -162,6 +172,167 @@ class Logger(metaclass=Singleton):
             t = datetime.now().strftime('%H:%M:%S.%f')
             who = inspect.currentframe().f_back.f_code.co_name
             cls._raw("\033[48;2;35;87;181;93m", t, who, *arg)
+
+# =============================================================================
+# === EMOJI OCD ===
+# =============================================================================
+
+class Lexicon:
+    # ⤴️ ⚜️ 🅱️ 🅾️🔻🔺➡️⬆️ ↔️ ↕️
+    A = '⬜'
+    ADAPT = '🧬'
+    AMP = '🔊'
+    AMT = '#️⃣'
+    ANGLE = '📐'
+    AXIS = '➕'
+    B = '🟦'
+    BBOX = '☐'
+    BI = '💙'
+    BLACK = '⬛'
+    BLUR = 'BLUR'
+    BOOLEAN = '🇴'
+    BOTTOM = '🔽'
+    C1 = '🔵'
+    C2 = '🟡'
+    C3 = '🟣'
+    C4 = '⚪'
+    CHANNEL = '📺'
+    CLEAR = '🧹'
+    COLORMAP = '🇸🇨'
+    COMPARE = '🕵🏽‍♀️'
+    CONDITION = '❔'
+    CONTRAST = '🌓'
+    CONTROL = '🎚️'
+    COUNT = '🧮'
+    DATA = '📓'
+    DELAY = '✋🏽'
+    DELTA = '🔺'
+    DELTA_TIME = '🔺'
+    DEVICE = '📟'
+    EDGE = 'EDGE'
+    FALSE = '🇫'
+    FILEN = 'FILEN'
+    FILTER = '🇬🇫'
+    FLIP = '🙃'
+    FLOAT = '🛟'
+    FPS = '🏎️'
+    FRAGMENT = 'FRAGMENT'
+    FRAME = '⏹️'
+    FUNC = '⚒️'
+    G = '🟩'
+    GAMMA = '🔆'
+    GI = '💚'
+    GRADIENT = '🇲🇺'
+    H = '🇭'
+    HEIGHT = '🇭'
+    HI = 'HI'
+    HSV = u'🇭🇸\u200c🇻'
+    IMAGE = '🖼️'
+    IN_A = '🅰️'
+    IN_B = '🅱️'
+    INT = '🔟'
+    INVERT = '🔳'
+    IO = '💾'
+    LEFT = '◀️'
+    LINEAR = '🛟'
+    LMH = 'LMH'
+    LO = 'LO'
+    LOG = '🪵'
+    LOHI = 'LoHi'
+    LOOP = '🔄'
+    M = '⬛'
+    MAGIC = '🦄'
+    MASK = '😷'
+    MAX = '🔝'
+    MI = '🖤'
+    MID = 'MID'
+    MIRROR = '🇯🇲'
+    MODE = 'MODE'
+    NORMALIZE = '👌🏽'
+    NOTE = '🎶'
+    OFFSET = '🇽🇾'
+    ON = '🔛'
+    ORIENT = '🔄'
+    OUTPUT = '🚮'
+    PAD = 'PAD'
+    PASS_IN = '📥'
+    PASS_OUT = '📤'
+    PHASE = '🌙'
+    PIXEL = '👾'
+    PIXEL_A = '👾A'
+    PIXEL_B = '👾B'
+    PROJECTION = '📽️'
+    R = '🟥'
+    RADIUS = '®️'
+    RESET = '🎬'
+    RESULT = '⁉️'
+    RGB = '🌈'
+    RGB_B = '🌈B'
+    RGBA = '🌈'
+    RGBA_B = '🌈B'
+    RI = '❤️'
+    RIGHT = '▶️'
+    ROUTE = '🚌'
+    S = '🇸'
+    SAMPLE = '🎞️'
+    SCHEME = 'SCHEME'
+    SHAPE = '🇸🇴'
+    SHIFT = 'SHIFT'
+    SIDES = '♾️'
+    SIZE = '📏'
+    STEP = '🦶🏽'
+    STRENGTH = '💪🏽'
+    STRIDE = '🦶🏽'
+    THRESHOLD = '📉'
+    TILE = '🇽🇾'
+    TIME = '🕛'
+    TOP = '🔼'
+    TRUE = '🇹'
+    URL = '🌐'
+    V = '🇻'
+    VERTEX = '✳️'
+    W = '🇼'
+    WAIT = '✋🏽'
+    WAVE = '〰️'
+    WH = '🇼🇭'
+    WHITE = '⬜'
+    WIDTH = '🇼'
+    X = '🇽'
+    XY = '🇽🇾'
+    XYZ = '🇽🇾🇿'
+    XYZW = '🇽🇾🇿🇼'
+    Y = '🇾'
+    Z = '🇿'
+    ZOOM = '🔎'
+
+class EnumCanvasOrientation(Enum):
+    NORMAL = 0
+    FLIPX = 1
+    FLIPY = 2
+    FLIPXY = 3
+
+class EnumScaleMode(Enum):
+    NONE = 0
+    FIT = 1
+    CROP = 2
+    ASPECT = 3
+
+class EnumEdge(Enum):
+    CLIP = 1
+    WRAP = 2
+    WRAPX = 3
+    WRAPY = 4
+
+class EnumTupleType(Enum):
+    INT = 0
+    FLOAT = 1
+    STRING = 2
+    LIST = 3
+    DICT = 4
+
+# =============================================================================
+# === CORE CLASSES ===
+# =============================================================================
 
 class Session(metaclass=Singleton):
     CLASS_MAPPINGS = {}
@@ -249,16 +420,11 @@ class JOVBaseNode:
 
 class JOVImageBaseNode(JOVBaseNode):
     RETURN_TYPES = ("IMAGE", "MASK",)
-    RETURN_NAMES = ("🖼️", "😷",)
-    OUTPUT_NODE = True
+    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.MASK,)
     OUTPUT_IS_LIST = (True, True, )
 
-class JOVImageInOutBaseNode(JOVBaseNode):
+class JOVImageInOutBaseNode(JOVImageBaseNode):
     INPUT_IS_LIST = True
-    RETURN_TYPES = ("IMAGE", "MASK",)
-    RETURN_NAMES = ("🖼️", "😷",)
-    OUTPUT_NODE = True
-    OUTPUT_IS_LIST = (True, True, )
 
 # wildcard trick is 100% stolen from pythongossss's
 class AnyType(str):
@@ -327,6 +493,78 @@ except Exception as e:
 # =============================================================================
 # == SUPPORT FUNCTIONS
 # =============================================================================
+
+def parse_number(key: str, data: Union[dict, List[dict]], typ: EnumTupleType=EnumTupleType.INT, default: tuple[Any]=None, clip_min: Optional[int]=None, clip_max: Optional[int]=None) -> tuple[List[Any]]:
+    ret = []
+    unified = data.get(key, {})
+
+    if not isinstance(unified, (set, tuple, list,)):
+        unified = list(unified)
+
+    for v in unified:
+        match typ:
+            case EnumTupleType.FLOAT:
+                if isinstance(v, str):
+                    parts = v.split('.', 1)
+                    if len(parts) > 1:
+                        v ='.'.join(parts[:2])
+                v = float(v if v is not None else 0)
+
+            case EnumTupleType.INT:
+                v = int(v if v is not None else 0)
+
+        if typ in [EnumTupleType.INT, EnumTupleType.FLOAT]:
+            if clip_min is not None:
+                v = max(v, clip_min)
+            if clip_max is not None:
+                v = min(v, clip_max)
+
+        ret.append(v)
+    return ret
+
+def parse_tuple(key: str, data: Union[dict, List[dict]], typ: EnumTupleType=EnumTupleType.INT, default: tuple[Any]=None, clip_min: Optional[int]=None, clip_max: Optional[int]=None) -> tuple[List[Any]]:
+
+    ret = []
+    unified = data.get(key, [])
+    if not isinstance(unified, (list,)):
+        unified = [unified]
+
+    for entry in unified:
+        size = len(entry)
+        newboi = []
+        for idx in range(size):
+            d = default[idx] if default is not None and idx < len(default) else None
+            # entry could be a dict, list/tuple...
+            v = entry
+            if isinstance(entry, dict):
+                v = entry.get(str(idx), d)
+            elif isinstance(entry, (list, tuple, set)):
+                v = entry[idx] if idx < len(entry) else d
+
+            match typ:
+                case EnumTupleType.FLOAT:
+                    if isinstance(v, str):
+                        parts = v.split('.', 1)
+                        if len(parts) > 1:
+                            v ='.'.join(parts[:2])
+                    v = float(v if v is not None else 0)
+
+                case EnumTupleType.LIST:
+                    if v is not None:
+                        v = v.split(',')
+
+                case EnumTupleType.INT:
+                    v = int(v if v is not None else 0)
+
+            if typ in [EnumTupleType.INT, EnumTupleType.FLOAT]:
+                if clip_min is not None:
+                    v = max(v, clip_min)
+                if clip_max is not None:
+                    v = min(v, clip_max)
+            newboi.append(v)
+
+        ret.append(tuple(newboi))
+    return ret
 
 def update_nested_dict(d, path, value) -> None:
     keys = path.split('.')
@@ -592,93 +830,140 @@ def cv2pil(image: TYPE_IMAGE) -> Image.Image:
 # === GLOBALS ===
 # =============================================================================
 
-MIN_WIDTH = MIN_HEIGHT = 256
+MIN_IMAGE_SIZE = 32
 
-IT_REQUIRED = {
-    "required": {}
-}
+IT_REQUIRED = { "required": {} }
 
-IT_PIXELS = {
-    "optional": {
-        "👾": (WILDCARD, {}),
-    }}
+IT_PIXELS = { "optional": {
+    Lexicon.PIXEL: (WILDCARD, {}),
+}}
 
-IT_PIXELS_REQUIRED = {
-    "required": {
-        "👾": (WILDCARD, {}),
-    }}
+IT_PIXEL2 = {"optional": {
+    Lexicon.PIXEL_A: (WILDCARD, {}),
+    Lexicon.PIXEL_B: (WILDCARD, {}),
+}}
 
-IT_PIXEL2 = {
-    "optional": {
-        "👾A": (WILDCARD, {}),
-        "👾B": (WILDCARD, {}),
-    }}
+IT_PIXEL_MASK = {"optional": {
+    Lexicon.PIXEL_A: (WILDCARD, {}),
+    Lexicon.PIXEL_B: (WILDCARD, {}),
+    Lexicon.MASK: (WILDCARD, {}),
+}}
 
-IT_WH = {
-    "optional": {
-        "↔️": ("INT", {"default": MIN_WIDTH, "min": 1, "max": 8192, "step": 1}),
-        "↕️": ("INT", {"default": MIN_HEIGHT, "min": 1, "max": 8192, "step": 1}),
-    }}
+IT_PASS_IN = {"optional": {
+    Lexicon.PASS_IN: (WILDCARD, {}),
+}}
 
-IT_SCALEMODE = {
-    "optional": {
-        "mode": (["NONE", "FIT", "CROP", "ASPECT"], {"default": "NONE"}),
-    }}
+IT_WH = {"optional": {
+    Lexicon.WH: ("VEC2", {"default": (512, 512), "min": MIN_IMAGE_SIZE, "max": 8192, "step": 1, "label": [Lexicon.WIDTH, Lexicon.HEIGHT]})
+}}
 
-IT_TRANS = {
-    "optional": {
-        "🇽": ("FLOAT", {"default": 0, "min": -1, "max": 1, "step": 0.01}),
-        "🇾": ("FLOAT", {"default": 0, "min": -1, "max": 1, "step": 0.01}),
-    }}
+IT_SCALEMODE = {"optional": {
+    Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
+}}
 
-IT_ROT = {
-    "optional": {
-        "📐": ("FLOAT", {"default": 0, "min": -180, "max": 180, "step": 1}),
-    }}
+IT_TRANS = {"optional": {
+    Lexicon.OFFSET: ("VEC2", {"default": (0, 0), "min": -1, "max": 1, "step": 0.01, "precision": 4, "label": [Lexicon.X, Lexicon.Y]})
+}}
 
-IT_SCALE = {
-    "optional": {
-        "➡️": ("FLOAT", {"default": 1, "min": 0.01, "max": 2., "step": 0.01}),
-        "⬆️": ("FLOAT", {"default": 1, "min": 0.01, "max": 2., "step": 0.01}),
-    }}
+IT_ROT = {"optional": {
+    Lexicon.ANGLE: ("FLOAT", {"default": 0, "min": -180, "max": 180, "step": 0.1}),
+}}
 
-IT_TILE = {
-    "optional": {
-        "tileX": ("INT", {"default": 1, "min": 1, "step": 1}),
-        "tileY": ("INT", {"default": 1, "min": 1, "step": 1}),
-    }}
+IT_SCALE = {"optional": {
+    Lexicon.SIZE: ("VEC2", {"default": (1, 1), "min": 0, "max": 1, "step": 0.01, "precision": 4, "label": [Lexicon.X, Lexicon.Y]})
+}}
 
-IT_EDGE = {
-    "optional": {
-        "edge": (["CLIP", "WRAP", "WRAPX", "WRAPY"], {"default": "CLIP"}),
-    }}
+IT_TILE = {"optional": {
+    Lexicon.TILE: ("VEC2", {"default": (2, 2), "label": [Lexicon.X, Lexicon.Y]})
+}}
 
-IT_FLIP = {
-    "optional": {
-        "↩️": ("BOOLEAN", {"default": False}),
-    }}
+IT_EDGE = {"optional": {
+    Lexicon.EDGE: (EnumEdge._member_names_, {"default": EnumEdge.CLIP.name})
+}}
 
-IT_INVERT = {
-    "optional": {
-        "🔳": ("FLOAT", {"default": 0, "min": 0, "max": 1, "step": 0.01}),
-    }}
+IT_FLIP = {"optional": {
+    Lexicon.FLIP: ("BOOLEAN", {"default": False}),
+}}
 
-IT_COLOR = {
-    "optional": {
-        "🟥": ("FLOAT", {"default": 1, "min": 0, "max": 1, "step": 0.01}),
-        "🟩": ("FLOAT", {"default": 1, "min": 0, "max": 1, "step": 0.01}),
-        "🟦": ("FLOAT", {"default": 1, "min": 0, "max": 1, "step": 0.01}),
-    }}
+IT_INVERT = {"optional": {
+    Lexicon.INVERT: ("FLOAT", {"default": 0, "min": 0, "max": 1, "step": 0.01, "precision": 4})
+}}
 
-IT_ORIENT = {
-    "optional": {
-        "🔄": (["NORMAL", "FLIPX", "FLIPY", "FLIPXY"], {"default": "NORMAL"}),
-    }}
+IT_AB = {"optional": {
+    Lexicon.IN_A: (WILDCARD, {"default": None}),
+    Lexicon.IN_B: (WILDCARD, {"default": None})
+}}
 
-IT_CAM = {
-    "optional": {
-        "⤴️": ("FLOAT", {"min": 0, "max": 1, "step": 0.01, "default": 0}),
-    }}
+IT_XY = { "optional": {
+    Lexicon.XY: ("VEC2", {"default": (0, 0), "step": 0.01, "precision": 4, "label": [Lexicon.X, Lexicon.Y]})
+}}
+
+IT_XYZ = {"optional": {
+    Lexicon.XYZ: ("VEC3", {"default": (0, 0, 0), "step": 0.01, "precision": 4, "label": [Lexicon.X, Lexicon.Y, Lexicon.Z]})
+}}
+
+IT_XYZW = {"optional": {
+    Lexicon.XYZW: ("VEC4", {"default": (0, 0, 0, 1), "step": 0.01, "precision": 4, "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W]})
+}}
+
+IT_RGB = {"optional": {
+    Lexicon.RGB: ("VEC3", {"default": (0, 0, 0), "min": 0, "max": 255, "step": 4, "label": [Lexicon.R, Lexicon.G, Lexicon.B]})
+}}
+
+IT_RGBA = {"optional": {
+    Lexicon.RGBA: ("VEC4", {"default": (0, 0, 0, 255), "min": 0, "max": 255, "step": 4, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A]})
+}}
+
+IT_RGB_B = { "optional": {
+    Lexicon.RGB_B: ("VEC3", {"default": (0, 0, 0), "min": 0, "max": 255, "step": 4, "label": [Lexicon.R, Lexicon.G, Lexicon.B]})
+}}
+
+IT_RGBA_B = { "optional": {
+    Lexicon.RGBA_B: ("VEC4", {"default": (0, 0, 0, 255), "min": 0, "max": 255, "step": 4, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A]})
+}}
+
+IT_RGBA_IMAGE = { "optional": {
+    Lexicon.R: (WILDCARD, {}),
+    Lexicon.G: (WILDCARD, {}),
+    Lexicon.B: (WILDCARD, {}),
+    Lexicon.A: (WILDCARD, {}),
+}}
+
+IT_HSV = { "optional": {
+    Lexicon.HSV: ("VEC3",{"default": (0, 1, 1), "min": 0, "max": 1, "step": 0.01, "precision": 4, "label": [Lexicon.H, Lexicon.S, Lexicon.V]})
+}}
+
+IT_GAMMA = {"optional": {
+    Lexicon.GAMMA: ("FLOAT", {"default": 1, "min": 0.00001, "max": 1, "step": 0.01, "precision": 6})
+}}
+
+IT_CONTRAST = {"optional": {
+    Lexicon.CONTRAST: ("FLOAT", {"default": 0, "min": 0, "max": 1, "step": 0.01, "precision": 4})
+}}
+
+IT_BBOX = {"optional": {
+    Lexicon.BBOX: ("VEC4", {"default": (0, 0, 1, 1), "min": 0, "max": 1, "step": 0.01, "precision": 4, "label": [Lexicon.TOP, Lexicon.LEFT, Lexicon.BOTTOM, Lexicon.RIGHT]})
+}}
+
+IT_LOHI = {"optional": {
+    Lexicon.LOHI: ("VEC2", {"default": (0, 1), "min": 0, "max": 1, "step": 0.01, "precision": 4, "label": [Lexicon.LO, Lexicon.HI]})
+}}
+
+IT_LMH = {"optional": {
+    Lexicon.LMH: ("VEC3", {"default": (0, 0.5, 1), "min": 0, "max": 1, "step": 0.01, "precision": 4, "label": [Lexicon.LO, Lexicon.MID, Lexicon.HI]})
+}}
+
+IT_TIME = {"optional": {
+    Lexicon.TIME: ("FLOAT", {"default": 0, "min": 0, "step": 0.000001, "precision": 6})
+}}
+
+IT_ORIENT = {"optional": {
+    Lexicon.ORIENT: (EnumCanvasOrientation._member_names_, {"default": EnumCanvasOrientation.NORMAL.name}),
+}}
+
+IT_CAM = {"optional": {
+    Lexicon.ZOOM: ("FLOAT", {"min": 0, "max": 1, "step": 0.01, "default": 0}),
+}}
 
 IT_TRS = deep_merge_dict(IT_TRANS, IT_ROT, IT_SCALE)
 IT_WHMODE = deep_merge_dict(IT_WH, IT_SCALEMODE)

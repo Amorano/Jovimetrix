@@ -16,12 +16,15 @@ import cv2
 import torch
 import numpy as np
 
-from Jovimetrix import deep_merge_dict, tensor2cv, cv2mask, cv2tensor, \
-        JOVBaseNode, JOVImageBaseNode, Logger, \
-        IT_PIXELS, IT_ORIENT, IT_CAM, IT_REQUIRED, \
-        IT_WHMODE, MIN_HEIGHT, MIN_WIDTH, IT_INVERT
+from Jovimetrix import parse_tuple, parse_number, deep_merge_dict, tensor2cv, \
+    cv2mask, cv2tensor, zip_longest_fill, \
+    JOVBaseNode, JOVImageBaseNode, JOVImageInOutBaseNode, Logger, Lexicon, \
+    EnumTupleType, EnumCanvasOrientation, \
+    MIN_IMAGE_SIZE, IT_PIXELS, IT_ORIENT, IT_CAM, IT_WHMODE, IT_REQUIRED, IT_INVERT
 
-from Jovimetrix.sup.comp import image_grid, light_invert, geo_scalefit, EnumInterpolation, IT_SAMPLE
+from Jovimetrix.sup.comp import image_grid, light_invert, geo_scalefit, \
+    EnumInterpolation, \
+    IT_SAMPLE
 from Jovimetrix.sup.stream import StreamingServer, StreamManager
 
 try:
@@ -87,43 +90,43 @@ class StreamReaderNode(JOVImageBaseNode):
     NAME = "STREAM READER (JOV) 📺"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/DEVICE"
     DESCRIPTION = ""
-    OUTPUT_NODE = True
     OUTPUT_IS_LIST = (False, False, )
-
-    EMPTY = np.zeros((MIN_HEIGHT, MIN_WIDTH, 3), dtype=np.float32)
+    EMPTY = np.zeros((64, 64, 3), dtype=np.float32)
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {"required": {
-                "url": ("STRING", {"default": 0}),
-            },
-            "optional": {
-                "fps": ("INT", {"min": 1, "max": 60, "step": 1, "default": 60}),
-                "hold": ("BOOLEAN", {"default": False}),
+        d = {"optional": {
+                Lexicon.URL: ("STRING", {"default": 0}),
+                Lexicon.FPS: ("INT", {"min": 1, "max": 60, "step": 1, "default": 60}),
+                Lexicon.WAIT: ("BOOLEAN", {"default": False}),
             }}
-        return deep_merge_dict(d, IT_WHMODE, IT_SAMPLE, IT_INVERT, IT_ORIENT, IT_CAM)
+        return deep_merge_dict(IT_REQUIRED, d, IT_WHMODE, IT_SAMPLE, IT_INVERT, IT_ORIENT, IT_CAM)
 
     @classmethod
-    def IS_CHANGED(cls, url: str, width: int, height: int, fps: float,
-                   hold: bool, sample: str, zoom: float, **kw) -> float:
-
+    def IS_CHANGED(cls, **kw) -> float:
+        url = kw.get(Lexicon.URL, False)
         if (device := StreamManager.capture(url)) is None:
             raise Exception(f"stream failed {url}")
+        fps = kw.get(Lexicon.FPS, 60)
+        wait = kw.get(Lexicon.WAIT, False)
+        wh = kw.get(Lexicon.WH, 0)
+        zoom = kw.get(Lexicon.ZOOM, 1)
+        sample = kw.get(Lexicon.SAMPLE, EnumInterpolation.LANCZOS4)
 
+        width, height = wh
         if device.width != width or device.height != height:
             device.sizer(width, height, sample)
 
         if device.zoom != zoom:
             device.zoom = zoom
 
-        if hold:
+        if wait:
             device.pause()
         else:
             device.play()
 
         if device.fps != fps:
             device.fps = fps
-
         return float("nan")
 
     def __init__(self) -> None:
@@ -131,9 +134,12 @@ class StreamReaderNode(JOVImageBaseNode):
         self.__url = ""
         self.__last = StreamReaderNode.EMPTY
 
-    def run(self, url: str, fps: float, hold: bool, width: int,
-            height: int, mode: str, resample: str, invert: float, orient: str,
-            zoom: float) -> tuple[torch.Tensor, torch.Tensor]:
+    def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
+        width, height = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)[0]
+        orient = kw.get(Lexicon.ORIENT, EnumCanvasOrientation)
+        i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)[0]
+        url = kw.get(Lexicon.URL, "")
+        rs = kw.get(Lexicon.FPS, EnumInterpolation.LANCZOS4)
 
         if self.__device is None or self.__device.captured or url != self.__url:
             self.__device = StreamManager.capture(url)
@@ -142,48 +148,46 @@ class StreamReaderNode(JOVImageBaseNode):
                         cv2mask(self.__last),
                 )
 
-        ret, image = self.__device.frame
-        self.__last = image = image if image is not None else self.__last
+        ret, img = self.__device.frame
+        self.__last = img = img if img else self.__last
         if ret:
             h, w = self.__last.shape[:2]
             if width != w or height != h:
-                rs = EnumInterpolation[resample].value
+                rs = EnumInterpolation[rs]
                 self.__device.sizer(width, height, rs)
 
             if orient in ["FLIPX", "FLIPXY"]:
-                image = cv2.flip(image, 1)
+                img = cv2.flip(img, 1)
 
             if orient in ["FLIPY", "FLIPXY"]:
-                image = cv2.flip(image, 0)
+                img = cv2.flip(img, 0)
 
-            if invert != 0.:
-                image = light_invert(image, invert)
+            if (i or 0) != 0.:
+                img = light_invert(img, i)
 
         return (
-            cv2tensor(image),
-            cv2mask(image)
+            cv2tensor(img),
+            cv2mask(img)
         )
 
-class StreamWriterNode(JOVBaseNode):
+class StreamWriterNode(JOVImageInOutBaseNode):
     NAME = "STREAM WRITER (JOV) 🎞️"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/DEVICE"
     DESCRIPTION = ""
-    OUTPUT_NODE = True
-    # OUTPUT_IS_LIST = (False, False,)
     OUT_MAP = {}
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {"required": {
-                "route": ("STRING", {"default": "/stream"}),
-            },
-            "optional": {
-                "hold": ("BOOLEAN", {"default": False}),
+        d = {"optional": {
+                Lexicon.ROUTE: ("STRING", {"default": "/stream"})
             }}
-        return deep_merge_dict(IT_PIXELS, d, IT_WHMODE, IT_INVERT)
+        return deep_merge_dict(IT_REQUIRED, IT_PIXELS, d, IT_WHMODE, IT_INVERT)
 
     @classmethod
-    def IS_CHANGED(cls, route: str, hold: bool, width: int, height: int, fps: float, **kw) -> float:
+    def IS_CHANGED(cls, **kw) -> float:
+        route = kw.get(Lexicon.ROUTE, [None])
+        width, height = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
+        wait = kw.get(Lexicon.WAIT, [None])
 
         if (device := StreamManager.capture(route, static=True)) is None:
             raise Exception(f"stream failed {route}")
@@ -191,13 +195,10 @@ class StreamWriterNode(JOVBaseNode):
         if device.size[0] != width or device.size[1] != height:
             device.size = (width, height)
 
-        if hold:
+        if wait:
             device.pause()
         else:
             device.play()
-
-        if device.fps != fps:
-            device.fps = fps
         return float("nan")
 
     def __init__(self, *arg, **kw) -> None:
@@ -208,69 +209,64 @@ class StreamWriterNode(JOVBaseNode):
         self.__device = None
         StreamWriterNode.OUT_MAP[self.__unique] = None
 
-    def run(self, pixels: list[torch.Tensor], route: list[str],
-            hold: list[bool], width: list[int], height: list[int],
-            mode: list[str],
-            resample: list[str],
-            invert: list[float]) -> torch.Tensor:
+    def run(self, **kw) -> tuple[torch.Tensor]:
+        pixels = kw.get(Lexicon.PIXEL, [None])
+        route = kw.get(Lexicon.ROUTE, [None])
+        mode = kw.get(Lexicon.MODE, [None])
+        wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
+        i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)[0]
+        sample = kw.get(Lexicon.SAMPLE, [None])
 
-        route = route[0]
-        hold = hold[0]
-        Logger.debug(self.NAME, route)
+        for data in zip_longest_fill(pixels, route, *wait, wihi, sample, *i):
+            img, r, wait, w, h, rs, i = data
+            img = img if img else np.zeros((h, w, 3), dtype=np.uint8)
+            if r != self.__route:
+                # close old, if any
+                if self.__device:
+                    self.__device.release()
 
-        if route != self.__route:
-            # close old, if any
-            if self.__device:
-                self.__device.release()
+                # startup server
+                self.__device = StreamManager.capture(self.__unique, static=True)
+                self.__ss.endpointAdd(r, self.__device)
+                self.__route = r
+                Logger.debug(self.NAME, "START", r)
 
-            # startup server
-            self.__device = StreamManager.capture(self.__unique, static=True)
-            self.__ss.endpointAdd(route, self.__device)
-            self.__route = route
-            Logger.debug(self.NAME, "START", route)
+            rs = EnumInterpolation[rs] if rs else EnumInterpolation.LANCZOS4
+            out = []
 
-        w = width[min(idx, len(width)-1)]
-        h = height[min(idx, len(height)-1)]
-        m = mode[0]
-        rs = EnumInterpolation[rs] if rs is not None else EnumInterpolation.LANCZOS4
-        out = []
+            stride = len(img)
+            grid = int(np.sqrt(stride))
+            if grid * grid < stride:
+                grid += 1
+            sw, sh = w // stride, h // stride
 
-        stride = len(pixels)
-        grid = int(np.sqrt(stride))
-        if grid * grid < stride:
-            grid += 1
-        sw, sh = w // stride, h // stride
-
-        for idx, image in enumerate(pixels):
-            image = tensor2cv(image)
-            image = geo_scalefit(image, sw, sh, m, rs)
-            i = invert[min(idx, len(invert)-1)]
-            if i != 0:
-                image = light_invert(image, i)
-            out.append(image)
+            img = tensor2cv(img)
+            img = geo_scalefit(img, sw, sh, mode, rs)
+            if (i or 0) != 0:
+                img = light_invert(img, i)
+            out.append(img)
 
         image = image_grid(out, w, h)
-        image = geo_scalefit(image, w, h, m, rs)
+        image = geo_scalefit(image, w, h, mode, rs)
         self.__device.post(image)
 
 class MIDIReaderNode(JOVBaseNode):
     NAME = "MIDI READER (JOV) 🎹"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/DEVICE"
     DESCRIPTION = "Reads input from a midi device"
-    OUTPUT_NODE = True
     OUTPUT_IS_LIST = (False, False, False, False, False)
     RETURN_TYPES = ('BOOLEAN', 'INT', 'INT', 'INT', 'FLOAT')
-    RETURN_NAMES = ("🔛", "📺", "🎚️", "🎶", "#️⃣",)
+    RETURN_NAMES = (Lexicon.ON, Lexicon.CHANNEL, Lexicon.CONTROL, Lexicon.NOTE, Lexicon.AMT,)
 
     DEVICES = mido.get_input_names()
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
-                "device" : (cls.DEVICES, {"default": cls.DEVICES[0] if len(cls.DEVICES) > 0 else None}),
-                "normalize" : ("BOOLEAN", {"default": True}),
-                "filter" : ("BOOLEAN", {"default": False}),
-                "channel" : ("INT", {"default": 0}),
+                Lexicon.DEVICE : (cls.DEVICES, {"default": cls.DEVICES[0] if len(cls.DEVICES) > 0 else None}),
+                Lexicon.NORMALIZE : ("BOOLEAN", {"default": True}),
+                Lexicon.FILTER : ("BOOLEAN", {"default": False}),
+                Lexicon.CHANNEL : ("INT", {"default": 0}),
             }}
         return deep_merge_dict(IT_REQUIRED, d)
 
@@ -312,7 +308,13 @@ class MIDIReaderNode(JOVBaseNode):
 
         # Logger.spam(self.__note_on, self.__channel, self.__control, self.__note, self.__value)
 
-    def run(self, device:str, normalize:bool, filter:bool, channel:int) -> tuple[bool, int, int, int]:
+    def run(self, **kw) -> tuple[bool, int, int, int]:
+
+        channel = kw.get(Lexicon.CHANNEL, None)
+        normalize = kw.get(Lexicon.NORMALIZE, None)
+        device = kw.get(Lexicon.DEVICE, None)
+        filter = kw.get(Lexicon.FILTER, None)
+
         if device != self.__device:
             self.__q_in.put(device)
             self.__device = device
@@ -322,6 +324,7 @@ class MIDIReaderNode(JOVBaseNode):
 
         if (value := self.__value) > 0 and normalize:
             value /= 127.
+
         Logger.spam(channel, self.__note_on, self.__channel, self.__control, self.__note, value)
         return (self.__note_on, self.__channel, self.__control, self.__note, value)
 
@@ -362,5 +365,3 @@ if __name__ == "__main__":
     server.start()
     while True:
         time.sleep(0.01)
-
-

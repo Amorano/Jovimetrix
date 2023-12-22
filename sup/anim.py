@@ -280,51 +280,51 @@ class EnumWaveSimple(Enum):
 
 class Wave:
     @classmethod
-    def wave_sin(cls, phase: float, amplitude: float, offset: float, timestep: float) -> float:
+    def sin(cls, phase: float, amplitude: float, offset: float, timestep: float) -> float:
         return amplitude * np.sin(TAU * timestep + phase) + offset
 
     @classmethod
-    def wave_inv_sin(cls, phase: float, amplitude: float, offset: float, timestep: float) -> float:
+    def sin_inv(cls, phase: float, amplitude: float, offset: float, timestep: float) -> float:
         return -amplitude * np.sin(TAU * timestep + phase) + offset
 
     @classmethod
-    def wave_abs_sin(cls, phase: float, amplitude: float, offset: float, timestep: float) -> float:
+    def sin_abs(cls, phase: float, amplitude: float, offset: float, timestep: float) -> float:
         return np.abs(amplitude * np.sin(TAU * timestep + phase)) + offset
 
     @classmethod
-    def wave_cos(cls, phase: float, amplitude: float, offset: float, timestep: float) -> float:
+    def cos(cls, phase: float, amplitude: float, offset: float, timestep: float) -> float:
         return amplitude * np.cos(TAU * timestep + phase) + offset
 
     @classmethod
-    def wave_inv_cos(cls, phase: float, amplitude: float, offset: float, timestep: float) -> float:
+    def cos_inv(cls, phase: float, amplitude: float, offset: float, timestep: float) -> float:
         return -amplitude * np.cos(TAU * timestep + phase) + offset
 
     @classmethod
-    def wave_abs_cos(cls, phase: float, amplitude: float, offset: float, timestep: float) -> float:
+    def cos_abs(cls, phase: float, amplitude: float, offset: float, timestep: float) -> float:
         return np.abs(amplitude * np.cos(TAU * timestep + phase)) + offset
 
     @classmethod
-    def wave_sawtooth(cls, phase: float, amplitude: float, offset: float, timestep: float) -> float:
+    def sawtooth(cls, phase: float, amplitude: float, offset: float, timestep: float) -> float:
         return amplitude * (2 * (timestep + phase) % 1 - 0.5) + offset
 
     @classmethod
-    def wave_triangle(cls, phase: float, amplitude: float, offset: float, timestep: float) -> float:
+    def triangle(cls, phase: float, amplitude: float, offset: float, timestep: float) -> float:
         return amplitude * (4 * np.abs((timestep + phase) % 1 - 0.5) - 1) + offset
 
     @classmethod
-    def wave_ramp(cls, phase: float, amplitude: float, offset: float, timestep: float) -> float:
+    def ramp(cls, phase: float, amplitude: float, offset: float, timestep: float) -> float:
         return amplitude * (timestep + phase % 1) + offset
 
     @classmethod
-    def wave_step(cls, phase: float, amplitude: float, offset: float, timestep: float) -> float:
+    def step(cls, phase: float, amplitude: float, offset: float, timestep: float) -> float:
         return amplitude * np.heaviside(timestep + phase, 1) + offset
 
     @classmethod
-    def wave_haversine(cls, phase: float, amplitude: float, offset: float, timestep: float) -> float:
+    def haversine(cls, phase: float, amplitude: float, offset: float, timestep: float) -> float:
         return amplitude * (1 - np.cos(TAU * (timestep + phase))) + offset
 
     @classmethod
-    def wave_noise(cls, phase: float, amplitude: float, offset: float, timestep: float) -> float:
+    def noise(cls, phase: float, amplitude: float, offset: float, timestep: float) -> float:
         return amplitude * np.random.uniform(-1, 1) + offset
 
     # =============================================================================
@@ -332,33 +332,33 @@ class Wave:
     # =============================================================================
 
     @classmethod
-    def wave_square(cls, phase: float, amplitude: float, offset: float, timestep: float, duty_cycle: float = 0.5) -> float:
+    def square(cls, phase: float, amplitude: float, offset: float, timestep: float, duty_cycle: float = 0.5) -> float:
         return amplitude * np.sign(np.sin(TAU * timestep + phase) - duty_cycle) + offset
 
     @classmethod
-    def wave_pulse(cls, phase: float, amplitude: float, offset: float, timestep: float, duty_cycle: float = 0.5) -> float:
+    def pulse(cls, phase: float, amplitude: float, offset: float, timestep: float, duty_cycle: float = 0.5) -> float:
         return amplitude * np.sign(np.sin(TAU * timestep + phase) - duty_cycle) + offset
 
     @classmethod
-    def wave_exponential(cls, phase: float, amplitude: float, offset: float, timestep: float, decay: float = 1.0) -> float:
+    def exponential(cls, phase: float, amplitude: float, offset: float, timestep: float, decay: float = 1.0) -> float:
         return amplitude * np.exp(-decay * (timestep + phase)) + offset
 
     @classmethod
-    def wave_rectangular_pulse(cls, phase: float, amplitude: float, offset: float, timestep: float, pulse_width: float = 0.1) -> float:
+    def rectangular_pulse(cls, phase: float, amplitude: float, offset: float, timestep: float, pulse_width: float = 0.1) -> float:
         return amplitude * np.heaviside(timestep + phase, 1) * np.heaviside(-(timestep + phase) + pulse_width, 1) + offset
 
     ####
 
     @classmethod
-    def wave_logarithmic(cls, phase: float, amplitude: float, offset: float, timestep: float, base: float = 10) -> float:
+    def logarithmic(cls, phase: float, amplitude: float, offset: float, timestep: float, base: float = 10) -> float:
         return amplitude * np.log10(timestep + phase) / np.log10(base) + offset
 
     @classmethod
-    def wave_gaussian(cls, phase: float, amplitude: float, offset: float, timestep: float, mean: float = 0, std_dev: float = 1) -> float:
+    def gaussian(cls, phase: float, amplitude: float, offset: float, timestep: float, mean: float = 0, std_dev: float = 1) -> float:
         return amplitude * np.exp(-0.5 * ((timestep + phase - mean) / std_dev)**2) + offset
 
     @classmethod
-    def wave_chirp(cls, phase: float, amplitude: float, offset: float, timestep: float, frequency_slope: float = 1.0) -> float:
+    def chirp(cls, phase: float, amplitude: float, offset: float, timestep: float, frequency_slope: float = 1.0) -> float:
         return amplitude * np.sin(TAU * frequency_slope * (timestep + phase)**2) + offset
 
 # =============================================================================
@@ -370,4 +370,4 @@ if __name__ == "__main__":
     for op in EnumEase:
         # Logger.debug(op)
         result = Ease.ease(op, start=0, end=1, duration=1, alpha=alpha_values, clip=(0, 1))
-        Logger.debug(f"{op}: {result}")
+        print(f"{op}: {result}")
