@@ -6,7 +6,6 @@
 import { app } from "/scripts/app.js"
 import * as util from './util.js'
 
-const _id = "jov.widgets.js"
 const PICKER_DEFAULT = '#ff0000'
 
 const RGBWidget = (key, val = PICKER_DEFAULT, compute = false) => {
@@ -173,7 +172,7 @@ const SpinnerWidget = (app, inputName, inputData, initial, desc='') => {
 }
 
 const widgets = {
-    name: _id,
+    name: "jovimetrix.widgets",
     async getCustomWidgets(app) {
         return {
             RGB: (node, inputName, inputData, app) => ({

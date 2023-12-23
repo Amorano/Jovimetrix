@@ -5,7 +5,7 @@
 ██   ██ ██    ██  ██  ██  ██ ██  ██  ██ ██         ██    ██   ██ ██  ██ ██ 
  █████   ██████    ████   ██ ██      ██ ███████    ██    ██   ██ ██ ██   ██ 
 
-               Procedural & Compositing Image Manipulation Nodes
+              Animation, Image Compositing & Procedural Creation
                     http://www.github.com/amorano/jovimetrix
 
                     Copyright 2023 Alexander Morano (Joviex)
@@ -30,22 +30,25 @@ SOFTWARE.
 
 GO NUTS; JUST TRY NOT TO DO IT IN YOUR HEAD.
 
-@title: Jovimetrix Composition Pack
+@title: Jovimetrix
 @category: Compositing
-@tags: compositing, composition, video, mask, shape, webcam
-@description: Procedural & Compositing. Includes a Webcam node.
+@tags: adjust, animate, audio, compose, compositing, composition, device, flow,
+video, mask, shape, webcam, audio, animation, logic
+@description: Webcams, GLSL shader, Media Streaming, Tick animation, Image manipulation,
+Polygonal shapes, MIDI, MP3/WAVE, Flow Logic
 @author: amorano
 @reference: https://github.com/Amorano/Jovimetrix
-@node list: ConstantNode, ShapeNode, PixelShaderNode, GLSLNode,
+@node list:
     AdjustNode, ColorMatchNode, FindEdgeNode, HSVNode, LevelsNode, ThresholdNode,
-    TRSNode, TransformNode, TileNode, MirrorNode, ProjectionNode
-    BlendNode, PixelSplitNode, PixelMergeNode, MergeNode, CropNode, ColorTheoryNode,
     TickNode, WaveGeneratorNode,
-    RouteNode, ComparisonNode, IfThenElseNode,
-    StreamReaderNode, StreamWriterNode, MIDIReaderNode,
     GraphWaveNode,
-    ClearCacheNode, OptionsNode, DebugNode, AkashicNode
-@version: 0.99
+    BlendNode, PixelSplitNode, PixelMergeNode, MergeNode, CropNode, ColorTheoryNode,
+    ConstantNode, ShapeNode, PixelShaderNode, GLSLNode, TextNode,
+    StreamReaderNode, StreamWriterNode, MIDIReaderNode,
+    DelayNode, ComparisonNode, IfThenElseNode,
+    TransformNode, TileNode, MirrorNode, ProjectionNode,
+    OptionsNode, DebugNode, AkashicNode
+@version: 0.99999
 """
 
 import os
@@ -70,6 +73,8 @@ try:
     from aiohttp import web
 except:
     pass
+
+from Jovimetrix.lexicon import Lexicon
 
 NODE_CLASS_MAPPINGS = {}
 NODE_DISPLAY_NAME_MAPPINGS = {}
@@ -172,138 +177,6 @@ class Logger(metaclass=Singleton):
             t = datetime.now().strftime('%H:%M:%S.%f')
             who = inspect.currentframe().f_back.f_code.co_name
             cls._raw("\033[48;2;35;87;181;93m", t, who, *arg)
-
-# =============================================================================
-# === EMOJI OCD ===
-# =============================================================================
-
-class Lexicon:
-    # ⤴️ ⚜️ 🅱️ 🅾️🔻🔺➡️⬆️ ↔️ ↕️
-    A = '⬜'
-    ADAPT = '🧬'
-    AMP = '🔊'
-    AMT = '#️⃣'
-    ANGLE = '📐'
-    AXIS = '➕'
-    B = '🟦'
-    BBOX = '☐'
-    BI = '💙'
-    BLACK = '⬛'
-    BLUR = 'BLUR'
-    BOOLEAN = '🇴'
-    BOTTOM = '🔽'
-    C1 = '🔵'
-    C2 = '🟡'
-    C3 = '🟣'
-    C4 = '⚪'
-    CHANNEL = '📺'
-    CLEAR = '🧹'
-    COLORMAP = '🇸🇨'
-    COMPARE = '🕵🏽‍♀️'
-    CONDITION = '❔'
-    CONTRAST = '🌓'
-    CONTROL = '🎚️'
-    COUNT = '🧮'
-    DATA = '📓'
-    DELAY = '✋🏽'
-    DELTA = '🔺'
-    DELTA_TIME = '🔺'
-    DEVICE = '📟'
-    EDGE = 'EDGE'
-    FALSE = '🇫'
-    FILEN = 'FILEN'
-    FILTER = '🇬🇫'
-    FLIP = '🙃'
-    FLOAT = '🛟'
-    FPS = '🏎️'
-    FRAGMENT = 'FRAGMENT'
-    FRAME = '⏹️'
-    FUNC = '⚒️'
-    G = '🟩'
-    GAMMA = '🔆'
-    GI = '💚'
-    GRADIENT = '🇲🇺'
-    H = '🇭'
-    HEIGHT = '🇭'
-    HI = 'HI'
-    HSV = u'🇭🇸\u200c🇻'
-    IMAGE = '🖼️'
-    IN_A = '🅰️'
-    IN_B = '🅱️'
-    INT = '🔟'
-    INVERT = '🔳'
-    IO = '💾'
-    LEFT = '◀️'
-    LINEAR = '🛟'
-    LMH = 'LMH'
-    LO = 'LO'
-    LOG = '🪵'
-    LOHI = 'LoHi'
-    LOOP = '🔄'
-    M = '⬛'
-    MAGIC = '🦄'
-    MASK = '😷'
-    MAX = '🔝'
-    MI = '🖤'
-    MID = 'MID'
-    MIRROR = '🇯🇲'
-    MODE = 'MODE'
-    NORMALIZE = '👌🏽'
-    NOTE = '🎶'
-    OFFSET = '🇽🇾'
-    ON = '🔛'
-    ORIENT = '🔄'
-    OUTPUT = '🚮'
-    PAD = 'PAD'
-    PASS_IN = '📥'
-    PASS_OUT = '📤'
-    PHASE = '🌙'
-    PIXEL = '👾'
-    PIXEL_A = '👾A'
-    PIXEL_B = '👾B'
-    PROJECTION = '📽️'
-    R = '🟥'
-    RADIUS = '®️'
-    RESET = '🎬'
-    RESULT = '⁉️'
-    RGB = '🌈'
-    RGB_B = '🌈B'
-    RGBA = '🌈'
-    RGBA_B = '🌈B'
-    RI = '❤️'
-    RIGHT = '▶️'
-    ROUTE = '🚌'
-    S = '🇸'
-    SAMPLE = '🎞️'
-    SCHEME = 'SCHEME'
-    SHAPE = '🇸🇴'
-    SHIFT = 'SHIFT'
-    SIDES = '♾️'
-    SIZE = '📏'
-    STEP = '🦶🏽'
-    STRENGTH = '💪🏽'
-    STRIDE = '🦶🏽'
-    THRESHOLD = '📉'
-    TILE = '🇽🇾'
-    TIME = '🕛'
-    TOP = '🔼'
-    TRUE = '🇹'
-    URL = '🌐'
-    V = '🇻'
-    VERTEX = '✳️'
-    W = '🇼'
-    WAIT = '✋🏽'
-    WAVE = '〰️'
-    WH = '🇼🇭'
-    WHITE = '⬜'
-    WIDTH = '🇼'
-    X = '🇽'
-    XY = '🇽🇾'
-    XYZ = '🇽🇾🇿'
-    XYZW = '🇽🇾🇿🇼'
-    Y = '🇾'
-    Z = '🇿'
-    ZOOM = '🔎'
 
 class EnumCanvasOrientation(Enum):
     NORMAL = 0

@@ -209,20 +209,23 @@ class GLSLNode(JOVImageBaseNode):
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d =  {"optional": {
+            Lexicon.RESET: ("BOOLEAN", {"default": True}),
             Lexicon.FRAGMENT: ("STRING", {"default":
-"""vec4 color = texture(textureSampler, texCoord);
-color.r += sin(time);
-FragColor = color;""",
+"""void main() {
+    vec4 color = vec4(0.0, 0.0, 0.0, 1.0);
+    color.r += sin(iTime);
+    FragColor = color;
+}""",
                 "multiline": True})
             }}
         return deep_merge_dict(IT_REQUIRED, IT_PIXELS, IT_TIME, d, IT_WH)
 
     @classmethod
-    def IS_CHANGED(cls, *arg, **kw) -> float:
+    def IS_CHANGED(cls, **kw) -> float:
         return float("nan")
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        pixels = kw.get(Lexicon.PIXEL, [None])
+        pixels = kw.get(Lexicon.RESET, [None])
         #wh = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE))
         #image = Image.new(mode="RGB", size=wh[0])
         #return (pil2tensor(image), pil2mask(image))

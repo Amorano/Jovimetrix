@@ -8,30 +8,31 @@ import { app } from "/scripts/app.js"
 import { $el } from "/scripts/ui.js"
 
 const VERTEX_SHADER = `#version 300 es
-in vec2 position;
-out vec2 texCoord;
+in vec2 iResolution;
+in vec2 iPosition;
+out vec2 iCoord;
 void main() {
-    gl_Position = vec4(position, 0.0, 1.0);
-    texCoord = position * 0.5 + 0.5;
-}
-`
+    gl_Position = vec4(iPosition, 0.0, 1.0);
+    iCoord = iPosition * 0.5 + 0.5;
+}`
 
-const FRAGMENT_DEFAULT = `vec4 color = texture(textureSampler, texCoord);
-    color.r += sin(time);
-    FragColor = color;`;
+// vec4 color = texture(iChannel0, iCoord); color.r += sin(iTime);
+
+const FRAGMENT_DEFAULT = `void main() {
+    vec4 color = texture(iChannel0, iCoord);
+    color.r += sin(iTime);
+    FragColor = color;
+}`
 
 const FRAGMENT_HEADER = (body) => {
     return `#version 300 es
 precision highp float;
-in vec2 texCoord;
-uniform sampler2D textureSampler;
-uniform float time;
+in vec2 iCoord;
+uniform sampler2D iChannel0;
+uniform float iTime;
 out vec4 FragColor;
 
-void main() {
-` + body + `}`
-}
-
+` + body};
 
 function get_position_style(ctx, widget_width, y, node_height) {
     const MARGIN = 4;
@@ -46,7 +47,7 @@ function get_position_style(ctx, widget_width, y, node_height) {
         transform: transform,
         left: `0px`,
         top: `0px`,
-        position: "relative",
+        position: "absolute",
         maxWidth: `${widget_width - MARGIN * 2}px`,
         maxHeight: `${node_height - MARGIN * 2}px`,
         width: `${ctx.canvas.width}px`,  // Set canvas width
@@ -55,66 +56,111 @@ function get_position_style(ctx, widget_width, y, node_height) {
 }
 
 const _id = "GLSL (JOV) 🍩"
-
 const GLSLWidget = (app, inputData) => {
 
     const canvas = $el("canvas")
     canvas.style.backgroundColor = "rgba(0, 0, 0, 1)"
     canvas.width = 512
     canvas.height = 512
+    const GL = canvas.getContext('webgl2');
+    let PROGRAM;
+    // console.info(inputData.input.optional.FRAGMENT)
 
     const widget = {
         type: "GLSL",
         name: "JOVIBALL",
         y: 0,
         inputEl: canvas,
-        GL: canvas.getContext('webgl2'),
-        FRAGMENT: inputData?.default?.fragment || FRAGMENT_DEFAULT,
-        PROGRAM: undefined,
-        WIDTH: 512,
-        HEIGHT: 512,
-        minWidth: 512,
-        minHeight: 512,
+        FRAGMENT: inputData.input?.optional?.FRAGMENT[1].default || FRAGMENT_DEFAULT,
+        compiled: false,
     }
 
-    widget.setupPositionBuffer = function() {
-        const positionBuffer = this.GL.createBuffer();
-        this.GL.bindBuffer(this.GL.ARRAY_BUFFER, positionBuffer);
-        const positions = [
-            -1, -1,
-            -1, 1,
-            1, -1,
-            1, -1,
-            -1, 1,
-            1, 1,
-        ];
-        this.GL.bufferData(this.GL.ARRAY_BUFFER, new Float32Array(positions), this.GL.STATIC_DRAW);
-        this.GL.bindBuffer(this.GL.ARRAY_BUFFER, positionBuffer);
-        const positionAttr = this.GL.getAttribLocation(this.PROGRAM, 'vertexPosition');
-        this.GL.vertexAttribPointer(positionAttr, 2, this.GL.FLOAT, false, 0, 0);
-        this.GL.enableVertexAttribArray(positionAttr);
-    }
+    function compileShader (source, type) {
+        const shader = GL.createShader(type);
+        GL.shaderSource(shader, source);
+        GL.compileShader(shader);
 
-    widget.updateParameters = function (texture, time) {
-        const textureSamplerLocation = this.GL.getUniformLocation(this.PROGRAM, "textureSampler");
-        this.GL.uniform1i(textureSamplerLocation, texture);
-        const timeLocation = this.GL.getUniformLocation(this.PROGRAM, "time");
-        this.GL.uniform1f(timeLocation, time);
+        if (!GL.getShaderParameter(shader, GL.COMPILE_STATUS)) {
+            console.error('Shader compilation error: ' + GL.getShaderInfoLog(shader));
+            GL.deleteShader(shader);
+            return null;
+        }
+        return shader;
+    };
+
+    widget.initShaderProgram = function() {
+        const vertex = compileShader(VERTEX_SHADER, GL.VERTEX_SHADER);
+        const fragment_full = FRAGMENT_HEADER(this.FRAGMENT);
+        const fragment = compileShader(fragment_full, GL.FRAGMENT_SHADER);
+
+        if (!vertex || !fragment) {
+            console.info(GL.getShaderInfoLog(vertex));
+            console.info(GL.getShaderInfoLog(fragment));
+            this.compiled = false;
+            return null;
+        }
+
+        PROGRAM = GL.createProgram();
+        GL.attachShader(PROGRAM, vertex);
+        GL.attachShader(PROGRAM, fragment);
+        GL.linkProgram(PROGRAM);
+
+        if (!GL.getProgramParameter(PROGRAM, GL.LINK_STATUS)) {
+            console.error('Unable to initialize the shader program: ' + GL.getProgramInfoLog(PROGRAM));
+            console.info(GL.getShaderInfoLog(vertex));
+            console.info(GL.getShaderInfoLog(fragment));
+            console.info(GL.getProgramInfoLog(PROGRAM));
+            this.compiled = false;
+            return null;
+        }
+
+        GL.useProgram(PROGRAM);
+        this.compiled = true;
+        console.info(fragment_full)
+
+        const positionBuffer = GL.createBuffer();
+        GL.bindBuffer(GL.ARRAY_BUFFER, positionBuffer);
+        GL.bufferData(GL.ARRAY_BUFFER, new Float32Array([-1, -1, -1, 1, 1, -1, 1, -1, -1, 1, 1, 1]), GL.STATIC_DRAW);
+
+        const positionAttr = GL.getAttribLocation(PROGRAM, 'iPosition');
+        GL.vertexAttribPointer(positionAttr, 2, GL.FLOAT, false, 0, 0);
+        GL.enableVertexAttribArray(positionAttr);
+
+        // Set the initial resolution
+        this.update_resolution(this.inputEl.width, this.inputEl.height);
     };
 
     widget.render = function() {
-        if (this.PROGRAM === undefined && this.FRAGMENT != undefined) {
-            //console.info(this.FRAGMENT)
-            this.initShaderProgram()
-            this.GL.useProgram(this.PROGRAM)
-            this.setupPositionBuffer()
+        GL.clearColor(0, 0, 0, 1);
+        GL.clear(GL.COLOR_BUFFER_BIT);
+        if (PROGRAM === undefined && this.FRAGMENT != undefined) {
+            this.initShaderProgram();
         }
-        this.GL.drawArrays(this.GL.TRIANGLES, 0, 6);
-    }
+        GL.drawArrays(GL.TRIANGLES, 0, 6);
+    };
+
+    widget.update_texture = function(index, texture) {
+        GL.activeTexture(GL.TEXTURE0 + index);
+        GL.bindTexture(GL.TEXTURE_2D, texture);
+        const loc = GL.getUniformLocation(PROGRAM, "iChannel" + index);
+        GL.uniform1i(loc, index);
+    };
+
+    widget.update_time = function(time) {
+        const loc = GL.getUniformLocation(PROGRAM, "iTime");
+        GL.uniform1f(loc, time);
+    };
+
+    widget.update_resolution = function(width, height) {
+        const loc = GL.getUniformLocation(PROGRAM, "iResolution");
+        GL.uniform2f(loc, width, height);
+    };
 
     widget.draw = function(ctx, node, widget_width, y, widget_height) {
         // assign the required style when we are drawn
         Object.assign(this.inputEl.style, get_position_style(ctx, widget_width, y, node.size[1]));
+        // this.render();
+        //this.value = this.inputEl.innerHTML
     }
 
     widget.mouse = function (e, pos, node) {
@@ -127,47 +173,12 @@ const GLSLWidget = (app, inputData) => {
         return [width, LiteGraph.NODE_WIDGET_HEIGHT]
     }
 
-    widget.initShaderProgram = function() {
-        const vertex = this.compileShader(VERTEX_SHADER, this.GL.VERTEX_SHADER);
-
-        const fragment_full = FRAGMENT_HEADER(this.FRAGMENT)
-        const fragment = this.compileShader(fragment_full, this.GL.FRAGMENT_SHADER);
-
-        this.PROGRAM = this.GL.createProgram();
-        this.GL.attachShader(this.PROGRAM, vertex);
-        this.GL.attachShader(this.PROGRAM, fragment);
-        this.GL.linkProgram(this.PROGRAM);
-
-        if (!this.GL.getProgramParameter(this.PROGRAM, this.GL.LINK_STATUS)) {
-            console.error('Unable to initialize the shader program: ' + this.GL.getProgramInfoLog(this.PROGRAM));
-            return;
-        }
-
-        // console.info(this.GL.getShaderInfoLog(vertex));
-        // console.info(this.GL.getShaderInfoLog(fragment));
-        // console.info(this.GL.getProgramInfoLog(this.PROGRAM));
-        // console.info('SHADER LINKED');
-    }
-
-    widget.compileShader = function(source, type) {
-        const shader = this.GL.createShader(type);
-        this.GL.shaderSource(shader, source);
-        this.GL.compileShader(shader);
-
-        if (!this.GL.getShaderParameter(shader, this.GL.COMPILE_STATUS)) {
-            console.error('Shader compilation error: ' + this.GL.getShaderInfoLog(shader));
-            this.GL.deleteShader(shader);
-            return null;
-        }
-        return shader;
-    }
-
     document.body.appendChild(widget.inputEl);
     return widget
 };
 
 const glsl_node = {
-	name: _id + '.js',
+	name: 'jovimetrix.glsl',
     async getCustomWidgets(app) {
         return {
             GLSL: (node, inputName, inputData, app) => ({
@@ -181,22 +192,34 @@ const glsl_node = {
             nodeType.prototype.onNodeCreated = function () {
                 const me = onNodeCreated?.apply(this)
                 const widget_glsl = this.addCustomWidget(GLSLWidget(app, nodeData))
-                this.addCustomWidget(widget_glsl);
-                widget_glsl.render();
-
-                let time = 0;
-
+                widget_glsl.render()
+                //this.setSize([this.size[0], this.computeSize()[1] + widget_glsl.inputEl.offsetHeight])
+                // 🕛 🎬
+                let TIME = 0
                 const onExecutionStart = nodeType.prototype.onExecutionStart;
                 nodeType.prototype.onExecutionStart = function (message) {
                     onExecutionStart?.apply(this, arguments);
-                    // widget_glsl.updateParameters(texture, time)
-                    const timeLocation = widget_glsl.GL.getUniformLocation(widget_glsl.PROGRAM, "time");
-                    widget_glsl.GL.uniform1f(timeLocation, time);
-                    time += 0.001;
+                    // check if the fragment shader changed...
+                    if (!widget_glsl.compiled || this.widgets[1].value != widget_glsl.FRAGMENT) {
+                        TIME = 0;
+                        widget_glsl.FRAGMENT = this.widgets[1].value;
+                        widget_glsl.initShaderProgram()
+                    }
+                    if (TIME == 0) {
+                        this.widgets[1].value = 0
+                        TIME = performance.now();
+                    }
+                    this.widgets[1].value += (performance.now() - TIME)  / 1000;
+                    TIME = performance.now()
+                    // widget_glsl.update_texture(this.widgets[1].value, this.widgets[1].value);
+                    console.debug(this.widgets)
+                    widget_glsl.update_resolution(this.widgets[3].value, this.widgets[3].value);
+                    widget_glsl.update_time(this.widgets[1].value)
 
-                    widget_glsl.render()
+                    widget_glsl.render();
+                    /*
                     this.setOutputData('🖼️', 0)
-                    this.setOutputData('😷', 0)
+                    this.setOutputData('😷', 0)*/
                 }
 
                 const onRemoved = nodeType.prototype.onRemoved;
@@ -208,9 +231,7 @@ const glsl_node = {
                 return me;
             };
         }
-	},
-
+	}
 }
 
 app.registerExtension(glsl_node)
-
