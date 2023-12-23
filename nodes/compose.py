@@ -179,7 +179,7 @@ class MergeNode(JOVImageInOutBaseNode):
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
                 Lexicon.AXIS: (EnumOrientation._member_names_, {"default": EnumOrientation.GRID.name}),
-                Lexicon.STRIDE: ("INT", {"min": 1, "step": 1, "default": 5}),
+                Lexicon.STEP: ("INT", {"min": 1, "step": 1, "default": 5}),
             }}
         return deep_merge_dict(IT_REQUIRED, IT_PIXEL_MASK, d, IT_WHMODE, IT_SAMPLE)
 
@@ -188,7 +188,7 @@ class MergeNode(JOVImageInOutBaseNode):
         pixelB = kw.get(Lexicon.PIXEL_B, [None])
         mask = kw.get(Lexicon.MASK, [None])
         axis = kw.get(Lexicon.AXIS, [None])
-        stride = kw.get(Lexicon.STRIDE, [None])
+        stride = kw.get(Lexicon.STEP, [None])
         wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
         mode = kw.get(Lexicon.MODE, [None])
         sample = kw.get(Lexicon.SAMPLE, [None])

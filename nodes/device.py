@@ -10,6 +10,7 @@ Device -- MIDI, WEBCAM
 import time
 import uuid
 import threading
+from enum import Enum
 from queue import Queue, Empty
 
 import cv2
@@ -82,6 +83,16 @@ class MIDIServerThread(threading.Thread):
             try:
                 self.__run()
             except Exception as e:
+                if self.__device is None:
+                    try:
+                        cmd = self.__q_in.get_nowait()
+                        if (cmd):
+                            self.__device = cmd
+                            break
+                    except Empty as _:
+                        time.sleep(0.01)
+                    except Exception as e:
+                        Logger.debug(str(e))
                 Logger.err(str(e))
 
 # =============================================================================
@@ -91,7 +102,8 @@ class StreamReaderNode(JOVImageBaseNode):
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/DEVICE"
     DESCRIPTION = ""
     OUTPUT_IS_LIST = (False, False, )
-    EMPTY = np.zeros((64, 64, 3), dtype=np.float32)
+    EMPTY = np.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=np.float32)
+    SORT = 50
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -174,6 +186,7 @@ class StreamWriterNode(JOVImageInOutBaseNode):
     NAME = "STREAM WRITER (JOV) 🎞️"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/DEVICE"
     DESCRIPTION = ""
+    SORT = 70
     OUT_MAP = {}
 
     @classmethod
@@ -258,25 +271,52 @@ class MIDIMessage:
         self.control = control
         self.note = note
         self.value = value
+        self.normal = value / 127.
+
+    @property
+    def flat(self) -> tuple[bool, int, int, int, float, float]:
+        return (self.note_on, self.channel, self.control, self.note, self.value, self.normal,)
+
+    def __str__(self) -> str:
+        return f"{self.note_on}, {self.channel}, {self.control}, {self.note}, {self.value}, {self.normal}"
+
+class MIDIMessageNode(JOVBaseNode):
+    NAME = "MIDI MESSAGE (JOV) 🎹"
+    CATEGORY = "JOVIMETRIX 🔺🟩🔵/DEVICE"
+    DESCRIPTION = "Expands a MIDI message into its values."
+    OUTPUT_IS_LIST = (False, False, False, False, False, False, False,)
+    RETURN_TYPES = ('JMIDIMSG', 'BOOLEAN', 'INT', 'INT', 'INT', 'FLOAT', 'FLOAT', )
+    RETURN_NAMES = (Lexicon.MIDI, Lexicon.ON, Lexicon.CHANNEL, Lexicon.CONTROL, Lexicon.NOTE, Lexicon.AMT, Lexicon.NORMALIZE, )
+    SORT = 10
+
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        d = {"optional": {
+            Lexicon.MIDI: ('JMIDIMSG', {"default": None})
+        }}
+        return deep_merge_dict(IT_REQUIRED, d)
+
+    def run(self, **kw) -> tuple[object, bool, int, int, int, float, float]:
+        if (message := kw.get(Lexicon.MIDI, None)) is None:
+            return message, False, -1, -1, -1, -1, -1
+        return message, *message.flat
 
 class MIDIReaderNode(JOVBaseNode):
     NAME = "MIDI READER (JOV) 🎹"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/DEVICE"
     DESCRIPTION = "Reads input from a midi device"
-    OUTPUT_IS_LIST = (False, False, False, False, False, False)
-    RETURN_TYPES = ('BOOLEAN', 'INT', 'INT', 'INT', 'FLOAT', 'JMIDIMSG', )
-    RETURN_NAMES = (Lexicon.ON, Lexicon.CHANNEL, Lexicon.CONTROL, Lexicon.NOTE, Lexicon.AMT, Lexicon.MIDI,)
-
+    OUTPUT_IS_LIST = (False, False, False, False, False, False, False)
+    RETURN_TYPES = ('JMIDIMSG', 'BOOLEAN', 'INT', 'INT', 'INT', 'FLOAT', 'FLOAT',)
+    RETURN_NAMES = (Lexicon.MIDI, Lexicon.ON, Lexicon.CHANNEL, Lexicon.CONTROL, Lexicon.NOTE, Lexicon.AMT, Lexicon.NORMALIZE,)
+    SORT = 5
     DEVICES = mido.get_input_names()
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
+        data = mido.get_input_names()
         d = {"optional": {
-                Lexicon.DEVICE : (cls.DEVICES, {"default": cls.DEVICES[0] if len(cls.DEVICES) > 0 else None}),
-                Lexicon.NORMALIZE : ("BOOLEAN", {"default": True}),
-                Lexicon.FILTER : ("BOOLEAN", {"default": False}),
-                Lexicon.CHANNEL : ("INT", {"default": 0}),
-            }}
+            Lexicon.DEVICE : (cls.DEVICES, {"default": cls.DEVICES[0] if len(cls.DEVICES) > 0 else None})
+        }}
         return deep_merge_dict(IT_REQUIRED, d)
 
     @classmethod
@@ -319,44 +359,89 @@ class MIDIReaderNode(JOVBaseNode):
         # Logger.spam(self.__note_on, self.__channel, self.__control, self.__note, self.__value)
 
     def run(self, **kw) -> tuple[bool, int, int, int]:
-        channel = kw.get(Lexicon.CHANNEL, None)
-        normalize = kw.get(Lexicon.NORMALIZE, None)
         device = kw.get(Lexicon.DEVICE, None)
-        filter = kw.get(Lexicon.FILTER, None)
 
         if device != self.__device:
             self.__q_in.put(device)
             self.__device = device
 
-        if filter and self.__channel != channel:
-            return (self.__channel, channel, False, 0, 0, 0)
+        normalize = self.__value / 127.
+        Logger.spam(self.__note_on, self.__channel, self.__control, self.__note, self.__value, normalize)
+        msg = MIDIMessage(self.__note_on, self.__channel, self.__control, self.__note, self.__value)
+        return (msg, self.__note_on, self.__channel, self.__control, self.__note, self.__value, normalize,  )
 
-        if (value := self.__value) > 0 and normalize:
-            value /= 127.
+class MIDINoteOnFilter(Enum):
+    FALSE = 0
+    TRUE = 1
+    IGNORE = -1
 
-        Logger.spam(channel, self.__note_on, self.__channel, self.__control, self.__note, value)
-        msg = MIDIMessage(self.__note_on, self.__channel, self.__control, self.__note, value)
-        return (self.__note_on, self.__channel, self.__control, self.__note, value, msg, )
+class MIDIFilterSimple(JOVBaseNode):
+    NAME = "MIDI FILTER EZ 🔀"
+    CATEGORY = "JOVIMETRIX 🔺🟩🔵/DEVICE"
+    DESCRIPTION = "Filter MIDI messages by channel, message type or value."
+    OUTPUT_IS_LIST = (False, False, )
+    RETURN_TYPES = ('JMIDIMSG', 'BOOLEAN', )
+    RETURN_NAMES = (Lexicon.MIDI, Lexicon.TRIGGER,)
+    SORT = 25
+    EPSILON = 1 / 128.
+
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        d = {"optional": {
+            Lexicon.MIDI: ('JMIDIMSG', {"default": None}),
+            Lexicon.ON: (MIDINoteOnFilter._member_names_, {"default": MIDINoteOnFilter.IGNORE.name}),
+            Lexicon.CHANNEL: ("INT", {"default": -1, "min": -1, "max": 127, "step": 1}),
+            Lexicon.CONTROL: ("INT", {"default": -1, "min": -1, "max": 127, "step": 1}),
+            Lexicon.NOTE: ("INT", {"default": -1, "min": -1, "max": 127, "step": 1}),
+            Lexicon.VALUE: ("INT", {"default": -1, "min": -1, "max": 127, "step": 1}),
+            Lexicon.NORMALIZE: ("FLOAT", {"default": -1, "min": -1, "max": 1, "step": 0.01})
+        }}
+        return deep_merge_dict(IT_REQUIRED, d)
+
+    def run(self, **kw) -> tuple[bool]:
+        message = kw.get(Lexicon.MIDI, None)
+        if message is None:
+            Logger.debug('no midi message. connected?')
+            return (message, False, )
+
+        # empty values mean pass-thru (no filter)
+        if (val := kw[Lexicon.ON]) != MIDINoteOnFilter.IGNORE:
+            if val == "TRUE" and message.note_on != True:
+                return (message, False, )
+            if val == "FALSE" and message.note_on != False:
+                return (message, False, )
+        if (val := kw[Lexicon.CHANNEL]) != -1 and val != message.channel:
+            return (message, False, )
+        if (val := kw[Lexicon.CONTROL]) != -1 and val != message.control:
+            return (message, False, )
+        if (val := kw[Lexicon.NOTE]) != -1 and val != message.note:
+            return (message, False, )
+        if (val := kw[Lexicon.VALUE]) != -1 and val != message.value:
+            return (message, False, )
+        if (val := kw[Lexicon.NORMALIZE]) != -1 and abs(val - float(message.normal)) >= MIDIFilter.EPSILON:
+            return (message, False, )
+        return (message, True, )
 
 class MIDIFilter(JOVBaseNode):
     NAME = "MIDI FILTER 🔀"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/DEVICE"
     DESCRIPTION = "Filter MIDI messages by channel, message type or value."
-    OUTPUT_IS_LIST = (False, False, False, False, False, False)
+    OUTPUT_IS_LIST = (False, False, )
     RETURN_TYPES = ('JMIDIMSG', 'BOOLEAN', )
     RETURN_NAMES = (Lexicon.MIDI, Lexicon.TRIGGER,)
+    SORT = 20
     EPSILON = 1e-6
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
             Lexicon.MIDI: ('JMIDIMSG', {"default": None}),
-            Lexicon.ON: (["IGNORE", "TRUE", "FALSE"], {"default": "NONE"}),
-            Lexicon.CHANNEL: ("STRING", {"default": "", "multiline": True}),
-            Lexicon.CONTROL: ("STRING", {"default": "", "multiline": True}),
-            Lexicon.NOTE: ("STRING", {"default": "", "multiline": True}),
-            Lexicon.VALUE: ("STRING", {"default": "", "multiline": True}),
-            # MIDIMessage
+            Lexicon.ON: (MIDINoteOnFilter._member_names_, {"default": MIDINoteOnFilter.IGNORE.name}),
+            Lexicon.CHANNEL: ("STRING", {"default": ""}),
+            Lexicon.CONTROL: ("STRING", {"default": ""}),
+            Lexicon.NOTE: ("STRING", {"default": ""}),
+            Lexicon.VALUE: ("STRING", {"default": ""}),
+            Lexicon.NORMALIZE: ("STRING", {"default": ""})
         }}
         return deep_merge_dict(IT_REQUIRED, d)
 
@@ -373,17 +458,29 @@ class MIDIFilter(JOVBaseNode):
         Would check == 1, == 2 and 5 <= x <= 10
         """
         # can you use float for everything to compare?
-        value = float(value)
-        # parse_data_and_check_if_value_in_the_data....
-        for line in data.split('\n'):
-            # check if in range...
-            if '-' in line:
-                a, b = line.split('-')
-                if float(a) <= value <= float(b):
+
+        try:
+            value = float(value)
+        except Exception as e:
+            value = float("nan")
+            Logger.spam(str(e))
+
+        for line in data.split(','):
+            print(line)
+            if len(a_range := line.split('-')) > 1:
+                try:
+                    a, b = a_range[:2]
+                    if float(a) <= value <= float(b):
+                        return True
+                except Exception as e:
+                    Logger.spam(str(e))
+
+            try:
+                print(abs(value - float(line)))
+                if abs(value - float(line)) < MIDIFilter.EPSILON:
                     return True
-                continue
-            if abs(value - float(line)) < MIDIFilter.EPSILON:
-                return True
+            except Exception as e:
+                Logger.spam(str(e))
         return False
 
     def run(self, **kw) -> tuple[bool]:
@@ -393,20 +490,24 @@ class MIDIFilter(JOVBaseNode):
             return (message, False, )
 
         # empty values mean pass-thru (no filter)
-        # each line-break is how we build a "list" entry (skip comma use!)
-        if (val := kw[Lexicon.ON]) != "IGNORE":
-                if val == "TRUE" and message.note_on != True:
-                    return (message, False, )
-                if val == "FALSE" and message.note_on != False:
-                    return (message, False, )
+        if (val := kw[Lexicon.ON]) != MIDINoteOnFilter.IGNORE:
+            if val == "TRUE" and message.note_on != True:
+                return (message, False, )
+            if val == "FALSE" and message.note_on != False:
+                return (message, False, )
         if self.__filter(kw[Lexicon.CHANNEL], message.channel) == False:
             return (message, False, )
         if self.__filter(kw[Lexicon.CONTROL], message.control) == False:
             return (message, False, )
         if self.__filter(kw[Lexicon.NOTE], message.note) == False:
             return (message, False, )
+        print(3)
         if self.__filter(kw[Lexicon.VALUE], message.value) == False:
             return (message, False, )
+        print(4)
+        if self.__filter(kw[Lexicon.NORMALIZE], message.normal) == False:
+            return (message, False, )
+        print(5)
         return (message, True, )
 
 # =============================================================================

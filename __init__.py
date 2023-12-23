@@ -779,20 +779,12 @@ IT_XYZW = {"optional": {
     Lexicon.XYZW: ("VEC4", {"default": (0, 0, 0, 1), "step": 0.01, "precision": 4, "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W]})
 }}
 
-IT_RGB = {"optional": {
-    Lexicon.RGB: ("VEC3", {"default": (0, 0, 0), "min": 0, "max": 255, "step": 4, "label": [Lexicon.R, Lexicon.G, Lexicon.B]})
-}}
-
 IT_RGBA = {"optional": {
-    Lexicon.RGBA: ("VEC4", {"default": (0, 0, 0, 255), "min": 0, "max": 255, "step": 4, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A]})
-}}
-
-IT_RGB_B = { "optional": {
-    Lexicon.RGB_B: ("VEC3", {"default": (0, 0, 0), "min": 0, "max": 255, "step": 4, "label": [Lexicon.R, Lexicon.G, Lexicon.B]})
+    Lexicon.RGBA: ("VEC4", {"default": (0, 0, 0, 255), "min": 0, "max": 255, "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A]})
 }}
 
 IT_RGBA_B = { "optional": {
-    Lexicon.RGBA_B: ("VEC4", {"default": (0, 0, 0, 255), "min": 0, "max": 255, "step": 4, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A]})
+    Lexicon.RGBA_B: ("VEC4", {"default": (0, 0, 0, 255), "min": 0, "max": 255, "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A]})
 }}
 
 IT_RGBA_IMAGE = { "optional": {
