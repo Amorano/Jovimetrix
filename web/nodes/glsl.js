@@ -200,9 +200,11 @@ const glsl_node = {
                 nodeType.prototype.onExecutionStart = function (message) {
                     onExecutionStart?.apply(this, arguments);
                     // check if the fragment shader changed...
-                    if (!widget_glsl.compiled || this.widgets[1].value != widget_glsl.FRAGMENT) {
+                    const short = this.inputs.optional;
+                    console.debug(short)
+                    if (!widget_glsl.compiled || short.FRAGMENT != widget_glsl.FRAGMENT) {
                         TIME = 0;
-                        widget_glsl.FRAGMENT = this.widgets[1].value;
+                        widget_glsl.FRAGMENT = short.FRAGMENT[1].value;
                         widget_glsl.initShaderProgram()
                     }
                     if (TIME == 0) {

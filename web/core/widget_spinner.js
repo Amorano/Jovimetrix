@@ -1,45 +1,10 @@
 /**
- * File: widget.js
+ * File: widget_spinner.js
  * Project: Jovimetrix
  */
 
 import { app } from "/scripts/app.js"
 import * as util from './util.js'
-
-const PICKER_DEFAULT = '#ff0000'
-
-const RGBWidget = (key, val = PICKER_DEFAULT, compute = false) => {
-    const widget = {
-        name: key,
-        type: 'RGB',
-        value: val
-    }
-    widget.draw = function(ctx, node, widgetWidth, widgetY, height) {
-        const hide = this.type !== 'RGB' && app.canvas.ds.scale > 0.5
-        if (hide) return
-
-        const border = 3
-        ctx.fillStyle = LiteGraph.WIDGET_TEXT_COLOR
-        ctx.fillRect(0, widgetY, widgetWidth, height)
-        ctx.fillStyle = this.value
-        ctx.fillRect(border, widgetY + border, widgetWidth - border * 2, height - border * 2)
-
-        const color = this.value.default || this.value
-        if (!color) return
-    }
-    widget.mouse = function(e, pos, node) {
-        if (e.type === 'pointerdown') {
-            const widgets = node.widgets.filter((w) => w.type === 'COLOR')
-            for (const w of widgets) {
-                // color picker
-            }
-        }
-    }
-    widget.computeSize = function(width) {
-        return [width, 32]
-    }
-    return widget
-}
 
 const SpinnerWidget = (app, inputName, inputData, initial, desc='') => {
     const offset = 4
@@ -82,7 +47,7 @@ const SpinnerWidget = (app, inputName, inputData, initial, desc='') => {
         ctx.fillText(inputName, label_center, Y + height / 2 + offset)
         let x = label_full
 
-        const fields = Object.keys(this.value)
+        const fields = Object.keys(this?.value || [])
         const element_width = (width - label_full - widget_padding2) / fields.length
 
         for (const idx of fields) {
@@ -172,14 +137,9 @@ const SpinnerWidget = (app, inputName, inputData, initial, desc='') => {
 }
 
 const widgets = {
-    name: "jovimetrix.widgets",
+    name: "jovimetrix.widget.spinner",
     async getCustomWidgets(app) {
         return {
-            RGB: (node, inputName, inputData, app) => ({
-                widget: node.addCustomWidget(RGBWidget(inputName, inputData[1]?.default || PICKER_DEFAULT)),
-                minWidth: 35,
-                minHeight: 35,
-            }),
             VEC2: (node, inputName, inputData, app) => ({
                 widget: node.addCustomWidget(SpinnerWidget(app, inputName, inputData, [0, 0])),
             }),
@@ -188,15 +148,17 @@ const widgets = {
             }),
             VEC4: (node, inputName, inputData, app) => ({
                 widget: node.addCustomWidget(SpinnerWidget(app, inputName, inputData, [0, 0, 0, 1])),
-            }),
+            })
         }
     },
     async beforeRegisterNodeDef(nodeType, nodeData, app) {
+        // export const myTypes = ['RGB', 'VEC2', 'VEC2', 'VEC3', 'VEC4', 'INT3', 'INT4', 'INT2']
+        const myTypes = ['RGB', 'VEC2', 'VEC3', 'VEC4']
         const inputTypes = nodeData.input;
         if (inputTypes) {
             const matchingTypes = ['required', 'optional']
                 .flatMap(type => Object.entries(inputTypes[type] || [])
-                    .filter(([_, value]) => util.newTypes.includes(value[0]))
+                    .filter(([_, value]) => myTypes.includes(value[0]))
                 );
 
             // HAVE TO HOOK FOR CONNECTION CLEANUP ON REMOVE
@@ -219,7 +181,7 @@ const widgets = {
                     const convertToInputArray = [];
                     for (const w of matchingTypes) {
                         const widget = Object.values(this.widgets).find(m => m.name === w[0]);
-                        if (widget.type !== util.CONVERTED_TYPE && util.newTypes.includes(widget.type)) {
+                        if (widget.type !== util.CONVERTED_TYPE && myTypes.includes(widget.type)) {
                             const who = matchingTypes.find(w => w[0] === widget.name)
                             const convertToInputObject = {
                                 content: `Convert ${widget.name} to input`,

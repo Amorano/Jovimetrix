@@ -25,7 +25,7 @@ class TickNode(JOVBaseNode):
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
                 Lexicon.AMT: ("INT", {"min": 0, "default": 0, "step": 1}),
-                # forces a MOD on total
+                # forces a MOD on AMT
                 Lexicon.LOOP: ("BOOLEAN", {"default": False}),
                 # stick the current "count"
                 Lexicon.WAIT: ("BOOLEAN", {"default": False}),
@@ -47,9 +47,9 @@ class TickNode(JOVBaseNode):
 
     def run(self, **kw) -> tuple[int, float, float, float]:
         total = kw.get(Lexicon.AMT, 0)
-        loop = kw.get(Lexicon.LOOP, 0)
-        hold = kw.get(Lexicon.WAIT, 0)
-        reset = kw.get(Lexicon.RESET, 0)
+        loop = kw.get(Lexicon.LOOP, False)
+        hold = kw.get(Lexicon.WAIT, False)
+        reset = kw.get(Lexicon.RESET, False)
 
         if reset:
             self.__count = 0

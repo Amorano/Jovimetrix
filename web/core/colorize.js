@@ -128,7 +128,7 @@ const ext = {
             if (nodeData.color) {
                 data['title'] = nodeData.color
             }
-            if (nodeData.bgcolor === undefined) {
+            if (nodeData.bgcolor) {
                 data['body'] = nodeData.bgcolor
             }
             if (data.length > 0) {

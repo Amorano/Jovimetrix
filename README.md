@@ -331,16 +331,16 @@ NODE | OVERVIEW | COMFY UI
 
 NODE | OVERVIEW | COMFY UI
 --|---|---
-🚌 ROUTE|Send outputs of any type to any input with pause or hold|![🚌 ROUTE](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/flow/route/node_flow-route.png "Send outputs of any type to any input")
+✋ DELAY|Pause or hold outputs|![✋ ROUTE](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/flow/delay/delay_flow-route.png "Pause or hold outputs")
 🕵🏽 COMPARISON|A=B, A!=B, A&gt;B, A>=B, A&lt;B, A<=B|![🕵🏽 COMPARISON](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/flow/comparison/node_flow-comparison.png "A=B, A!=B, A&gt;B, A>=B, A&lt;B, A<=B")
 🔀 IF-THEN-ELSE|IF A THEN B ELSE C|![🔀 IF-THEN-ELSE](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/flow/if-then-else/node_flow-if-then-else.png "IF A THEN B ELSE C")
   </ul>
   <ul>
     <details>
-      <summary><b>🚌 ROUTE EXAMPLES</b></summary>
+      <summary><b>✋ DELAY EXAMPLES</b></summary>
       <img
         style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
-        src="https://github.com/Amorano/Jovimetrix-examples/blob/master/node/flow/route/node_flow-route-simple.png" alt="Send outputs of any type to any input">
+        src="https://github.com/Amorano/Jovimetrix-examples/blob/master/node/flow/route/node_flow-delay-simple.png" alt="Pause or hold outputs">
       </img>
     </details>
     <details>
@@ -445,7 +445,7 @@ NODE | OVERVIEW | COMFY UI
 NODE | OVERVIEW | COMFY UI
 ---|---|---
 ⚙️ OPTIONS|Change Jovimetrix Global Options|![⚙️ OPTIONS](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/util/options/node_util-options.png "Change Jovimetrix Global Options")
-🧹 CLEAR CACHE|Forces a CUDA and Python Global Cache refresh|![🧹 CLEAR CACHE](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/util/cache/node_util-cache.png "Forces a CUDA and Python Global Cache refresh")
+⚙️ OPTIONS|Change Jovimetrix Global Options|![⚙️ OPTIONS](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/util/options/node_util-options.png "Change Jovimetrix Global Options")
   </ul>
   <ul>
     <details>
@@ -456,10 +456,10 @@ NODE | OVERVIEW | COMFY UI
       </img>
     </details>
     <details>
-      <summary><b>🧹 CLEAR CACHE EXAMPLES</b></summary>
+      <summary><b>⚙️ OPTIONS EXAMPLES</b></summary>
       <img
         style="display: block; margin-left: auto; margin-right: auto; width: 100%;"
-        src="https://github.com/Amorano/Jovimetrix-examples/blob/master/node/util/cache/node_util-cache-simple.png" alt="Forces a CUDA and Python Global Cache refresh">
+        src="https://github.com/Amorano/Jovimetrix-examples/blob/master/node/util/options/node_util-options-simple.png" alt="Change Jovimetrix Global Options">
       </img>
     </details>
   </ul>

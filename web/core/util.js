@@ -8,8 +8,6 @@ import { app } from "/scripts/app.js"
 import { api } from "/scripts/api.js"
 
 const CONVERTED_TYPE = "converted-widget";
-// export const newTypes = ['RGB', 'VEC2', 'VEC2', 'VEC3', 'VEC4', 'INT3', 'INT4', 'INT2']
-export const newTypes = ['RGB', 'VEC2', 'VEC3', 'VEC4']
 
 export async function api_get(url) {
     var response = await api.fetchApi(url, { cache: "no-store" })
@@ -112,6 +110,39 @@ export function convert_hex(color) {
         return '#' + color.HEX + ((color.alpha * 255) | 1 << 8).toString(16).slice(1).toUpperCase()
     }
     return "#13171DFF"
+}
+
+export function hexToRgb(hex) {
+  //console.info(hex)
+  hex = hex.replace(/^#/, '');
+
+  // Parse the hex value into RGB components
+  const bigint = parseInt(hex, 16);
+  const r = (bigint >> 16) & 255;
+  const g = (bigint >> 8) & 255;
+  const b = bigint & 255;
+
+  return [r, g, b];
+}
+
+export function rgbToHex(rgb) {
+  // Convert RGB components to a hex color string
+  const [r, g, b] = rgb;
+  return `#${(1 << 24 | r << 16 | g << 8 | b).toString(16).slice(1)}`;
+}
+
+export function fade_lerp_color(colorStart, colorEnd, lerp) {
+  // Parse color strings into RGB arrays
+  const startRGB = hexToRgb(colorStart);
+  const endRGB = hexToRgb(colorEnd);
+
+  // Linearly interpolate each RGB component
+  const lerpedRGB = startRGB.map((component, index) => {
+      return Math.round(component + (endRGB[index] - component) * lerp);
+  });
+
+  // Convert the interpolated RGB values back to a hex color string
+  return rgbToHex(lerpedRGB);
 }
 
 export function toggleFoldable(elementId, symbolId) {

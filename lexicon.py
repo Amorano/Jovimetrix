@@ -4,7 +4,7 @@ EMOJI OCD Support
 """
 
 class Lexicon:
-    # ♻️ ⤴️ ⚜️ 🅱️ 🅾️🔻🔺➡️⬆️ ↔️ ↕️
+    # ♻️ ⤴️ ⚜️ 🅱️ 🅾️🔻🔺💾➡️⬆️ ↔️ ↕️ 〰️
     A = '⬜'
     ADAPT = '🧬'
     AMP = '🔊'
@@ -58,7 +58,7 @@ class Lexicon:
     IN_B = '🅱️'
     INT = '🔟'
     INVERT = '🔳'
-    IO = '💾'
+    IO = '📋'
     LEFT = '◀️'
     LINEAR = '🛟'
     LMH = 'LMH'
@@ -72,6 +72,7 @@ class Lexicon:
     MAX = '🔝'
     MI = '🖤'
     MID = 'MID'
+    MIDI = '🎹'
     MIRROR = '🇯🇲'
     MODE = 'MODE'
     NORMALIZE = '👌🏽'
@@ -103,7 +104,7 @@ class Lexicon:
     SAMPLE = '🎞️'
     SCHEME = 'SCHEME'
     SHAPE = '🇸🇴'
-    SHIFT = 'SHIFT'
+    SHIFT = '◀️▶️'
     SIDES = '♾️'
     SIZE = '📏'
     STEP = '🦶🏽'
@@ -113,13 +114,17 @@ class Lexicon:
     TILE = '🇽🇾'
     TIME = '🕛'
     TOP = '🔼'
+    TRIGGER = '⚡'
     TRUE = '🇹'
+    TYPE = '❓'
+    UNKNOWN = '❔'
     URL = '🌐'
     V = '🇻'
+    VALUE = '#️⃣'
     VERTEX = '✳️'
     W = '🇼'
     WAIT = '✋🏽'
-    WAVE = '〰️'
+    WAVE = '♒'
     WH = '🇼🇭'
     WHITE = '⬜'
     WIDTH = '🇼'
