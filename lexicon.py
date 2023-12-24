@@ -4,7 +4,7 @@ EMOJI OCD Support
 """
 
 class Lexicon:
-    # ♻️ ⤴️ ⚜️ 🅱️ 🅾️🔻🔺💾➡️⬆️ ↔️ ↕️ 〰️
+    # ♻️ ⤴️ ⚜️ 🅱️ 🅾️🔻🔺➡️⬆️ ↔️ ↕️ 〰️ ☐
     A = '⬜'
     ADAPT = '🧬'
     AMP = '🔊'
@@ -12,7 +12,7 @@ class Lexicon:
     ANGLE = '📐'
     AXIS = '➕'
     B = '🟦'
-    BBOX = '☐'
+    BBOX = '🔲'
     BI = '💙'
     BLACK = '⬛'
     BLUR = 'BLUR'
@@ -37,8 +37,8 @@ class Lexicon:
     DEVICE = '📟'
     EDGE = 'EDGE'
     FALSE = '🇫'
-    FILEN = 'FILEN'
-    FILTER = 'FILTER'
+    FILEN = '💾'
+    FILTER = '🔎'
     FLIP = '🙃'
     FLOAT = '🛟'
     FPS = '🏎️'
@@ -72,9 +72,9 @@ class Lexicon:
     MAX = '🔝'
     MI = '🖤'
     MID = 'MID'
-    MIDI = '🎹'
+    MIDI = '🎛️'
     MIRROR = '🇯🇲'
-    MODE = 'MODE'
+    MODE = '🚦'
     NORMALIZE = '0-1'
     NOTE = '🎶'
     OFFSET = '🇽🇾'

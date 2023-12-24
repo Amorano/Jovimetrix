@@ -281,7 +281,7 @@ class MIDIMessage:
         return f"{self.note_on}, {self.channel}, {self.control}, {self.note}, {self.value}, {self.normal}"
 
 class MIDIMessageNode(JOVBaseNode):
-    NAME = "MIDI MESSAGE (JOV) 🎹"
+    NAME = "MIDI MESSAGE (JOV) 🎛️"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/DEVICE"
     DESCRIPTION = "Expands a MIDI message into its values."
     OUTPUT_IS_LIST = (False, False, False, False, False, False, False,)
@@ -376,7 +376,7 @@ class MIDINoteOnFilter(Enum):
     IGNORE = -1
 
 class MIDIFilterSimple(JOVBaseNode):
-    NAME = "MIDI FILTER EZ 🔀"
+    NAME = "MIDI FILTER EZ ❇️"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/DEVICE"
     DESCRIPTION = "Filter MIDI messages by channel, message type or value."
     OUTPUT_IS_LIST = (False, False, )
@@ -389,7 +389,7 @@ class MIDIFilterSimple(JOVBaseNode):
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
             Lexicon.MIDI: ('JMIDIMSG', {"default": None}),
-            Lexicon.ON: (MIDINoteOnFilter._member_names_, {"default": MIDINoteOnFilter.IGNORE.name}),
+            Lexicon.MODE: (MIDINoteOnFilter._member_names_, {"default": MIDINoteOnFilter.IGNORE.name}),
             Lexicon.CHANNEL: ("INT", {"default": -1, "min": -1, "max": 127, "step": 1}),
             Lexicon.CONTROL: ("INT", {"default": -1, "min": -1, "max": 127, "step": 1}),
             Lexicon.NOTE: ("INT", {"default": -1, "min": -1, "max": 127, "step": 1}),
@@ -405,7 +405,7 @@ class MIDIFilterSimple(JOVBaseNode):
             return (message, False, )
 
         # empty values mean pass-thru (no filter)
-        if (val := kw[Lexicon.ON]) != MIDINoteOnFilter.IGNORE:
+        if (val := kw[Lexicon.MODE]) != MIDINoteOnFilter.IGNORE:
             if val == "TRUE" and message.note_on != True:
                 return (message, False, )
             if val == "FALSE" and message.note_on != False:
@@ -423,7 +423,7 @@ class MIDIFilterSimple(JOVBaseNode):
         return (message, True, )
 
 class MIDIFilter(JOVBaseNode):
-    NAME = "MIDI FILTER 🔀"
+    NAME = "MIDI FILTER ✳️"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/DEVICE"
     DESCRIPTION = "Filter MIDI messages by channel, message type or value."
     OUTPUT_IS_LIST = (False, False, )
@@ -466,7 +466,6 @@ class MIDIFilter(JOVBaseNode):
             Logger.spam(str(e))
 
         for line in data.split(','):
-            print(line)
             if len(a_range := line.split('-')) > 1:
                 try:
                     a, b = a_range[:2]
@@ -476,7 +475,6 @@ class MIDIFilter(JOVBaseNode):
                     Logger.spam(str(e))
 
             try:
-                print(abs(value - float(line)))
                 if abs(value - float(line)) < MIDIFilter.EPSILON:
                     return True
             except Exception as e:
@@ -501,13 +499,10 @@ class MIDIFilter(JOVBaseNode):
             return (message, False, )
         if self.__filter(kw[Lexicon.NOTE], message.note) == False:
             return (message, False, )
-        print(3)
         if self.__filter(kw[Lexicon.VALUE], message.value) == False:
             return (message, False, )
-        print(4)
         if self.__filter(kw[Lexicon.NORMALIZE], message.normal) == False:
             return (message, False, )
-        print(5)
         return (message, True, )
 
 # =============================================================================

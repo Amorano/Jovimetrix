@@ -3,14 +3,13 @@ Jovimetrix - http://www.github.com/amorano/jovimetrix
 Utility
 """
 
-from enum import Enum
 from typing import Any
 
 import torch
 
 from Jovimetrix import deep_merge_dict, \
     JOVBaseNode, Logger, Lexicon, \
-    IT_REQUIRED, IT_AB, WILDCARD
+    IT_REQUIRED, WILDCARD
 
 # =============================================================================
 
@@ -67,6 +66,7 @@ class AkashicNode(JOVBaseNode):
     RETURN_TYPES = (WILDCARD, 'AKASHIC', )
     RETURN_NAMES = (Lexicon.PASS_OUT, Lexicon.IO)
     OUTPUT_IS_LIST = (True, False )
+    SORT = 50
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -108,33 +108,50 @@ class AkashicNode(JOVBaseNode):
             Logger.dump(value)
         return (o, value,)
 
-class EnumConvertType(Enum):
-    BOOLEAN = 0
-    INTEGER = 1
-    FLOAT   = 2
-    VEC2 = 3
-    VEC3 = 4
-    VEC4 = 5
-    STRING = 6
-    TUPLE = 7
-
-class ConversionNode(JOVBaseNode):
-    """Convert A to B."""
-
-    NAME = "CONVERT (JOV) 🕵🏽"
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/Utility"
-    DESCRIPTION = "Convert A to B."
-    RETURN_TYPES = (WILDCARD,)
-    RETURN_NAMES = (Lexicon.UNKNOWN, )
+class ValueGraphNode(JOVBaseNode):
+    NAME = "VALUE GRAPH (JOV) 📈"
+    CATEGORY = "JOVIMETRIX 🔺🟩🔵/UTILITY"
+    DESCRIPTION = "Graphs historical execution run values"
+    RETURN_TYPES = ()
+    RETURN_NAMES = ()
+    SORT = 100
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
-            Lexicon.IN_A: (WILDCARD, {"default": None}),
-            # Lexicon.TYPE: (EnumConvertType._member_names_, {"default": EnumConvertType.INT.name})
+            Lexicon.PASS_IN: (WILDCARD, {})
         }}
-        return deep_merge_dict(IT_REQUIRED, IT_AB, d)
+        return deep_merge_dict(IT_REQUIRED, d)
 
-    def run(self, **kw) -> tuple[bool]:
-        A = kw.get(Lexicon.IN_A, None)
-        typ = kw.get("JTYPE", None)
+    def __parse(self, s) -> dict[str, Any]:
+        def handle_dict(d) -> dict[str, Any]:
+            result = {"t": "dict", "items": {}}
+            for key, value in d.items():
+                result["items"][key] = self.__parse(value)
+            return result
+
+        def handle_list(cls) -> dict[str, Any]:
+            result = {"t": repr(type(cls)), "items": []}
+            for item in s:
+                result["items"].append(self.__parse(item))
+            return result
+
+        if isinstance(s, dict):
+            return handle_dict(s)
+        elif isinstance(s, (tuple, set, list,)):
+            return handle_list(s)
+        elif isinstance(s, torch.Tensor):
+            return {"Tensor": f"{s.shape}"}
+        else:
+            meh = ''.join(repr(type(s)).split("'")[1:2])
+            return {"t": meh, "value": s}
+
+    def run(self, **kw) -> tuple[Any, Any]:
+        o = kw.get(Lexicon.PASS_IN, None)
+        if o is None:
+            return (o, {})
+
+        value = self.__parse(o)
+        if kw.get(Lexicon.OUTPUT, False):
+            Logger.dump(value)
+        return (o, value,)

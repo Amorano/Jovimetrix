@@ -259,7 +259,7 @@ class Session(metaclass=Singleton):
                                                               key=lambda item: getattr(item[1], 'SORT', 0))}
         # now sort the categories...
         for c in ["CREATE", "ADJUST", "TRANSFORM", "COMPOSE",
-                  "ANIMATE", "FLOW", "DEVICE", "AUDIO",
+                  "ANIMATE", "FLOW", "CALC", "DEVICE", "AUDIO",
                   "UTILITY", "WIP ☣️💣"]:
 
             prime = Session.CLASS_MAPPINGS.copy()

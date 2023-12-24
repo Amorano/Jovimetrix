@@ -15,21 +15,12 @@ from Jovimetrix import deep_merge_dict, \
 # =============================================================================
 
 class EnumComparison(Enum):
-    A_EQUALS_B = 0
-    A_NOT_EQUAL_TO_B = 1
-    A_LESS_THAN_B = 2
-    A_LESS_THAN_OR_EQUAL_TO_B = 3
-    A_GREATER_THAN_B = 4
-    A_GREATER_THAN_OR_EQUAL_TO_B = 5
-
-class EnumLogicGate(Enum):
-    A_AND_B = 6
-    A_NAND_B = 7
-    A_OR_B = 8
-    A_NOR_B = 9
-    A_XOR_B = 10
-    A_XNOR_B = 11
-    A_NOT_B = 12
+    EQUAL = 0
+    NOT_EQUAL = 1
+    LESS_THAN = 2
+    LESS_THAN_OR_EQUAL = 3
+    GREATER_THAN = 4
+    GREATER_THAN_OR_EQUAL = 5
 
 class DelayNode(JOVBaseNode):
     NAME = "DELAY (JOV) ✋🏽"
@@ -78,9 +69,11 @@ class ComparisonNode(JOVBaseNode):
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
-            Lexicon.COMPARE: (EnumComparison._member_names_, {"default": EnumComparison.A_EQUALS_B.name}),
+            Lexicon.IN_A: (WILDCARD, {"default": None}),
+            Lexicon.COMPARE: (EnumComparison._member_names_, {"default": EnumComparison.EQUAL.name}),
+            Lexicon.IN_B: (WILDCARD, {"default": None})
         }}
-        return deep_merge_dict(IT_REQUIRED, IT_AB, d)
+        return deep_merge_dict(IT_REQUIRED, d)
 
     def run(self, **kw) -> tuple[bool]:
         compare = kw.get(Lexicon.COMPARE, EnumComparison.A_EQUALS_B)
