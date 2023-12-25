@@ -275,7 +275,7 @@ export function getWidgetType(config) {
     return { type, linkType }
   }
 
-  export function convertToInput(node, widget, config) {
+export function convertToInput(node, widget, config) {
     //console.log(node, widget)
     hideWidget(node, widget)
 
@@ -293,9 +293,9 @@ export function getWidgetType(config) {
 
     // Restore original size but grow if needed
     node.setSize([Math.max(sz[0], node.size[0]), Math.max(sz[1], node.size[1])])
-  }
+}
 
-  export const setupDynamicConnections = (nodeType, prefix, inputType) => {
+export const setupDynamicConnections = (nodeType, prefix, inputType) => {
     const onNodeCreated = nodeType.prototype.onNodeCreated
     nodeType.prototype.onNodeCreated = function () {
       const r = onNodeCreated ? onNodeCreated.apply(this, arguments) : undefined
@@ -315,50 +315,50 @@ export function getWidgetType(config) {
         : undefined
       dynamic_connection(this, index, connected, `${prefix}_`, inputType)
     }
-  }
+}
 
-  export const dynamic_connection = (
-    node,
-    index,
-    connected,
-    connectionPrefix = 'in_',
-    connectionType = '*',
-    nameArray = []
-  ) => {
-    if (!node.inputs[index].name.startsWith(connectionPrefix)) {
-      return
-    }
-    // remove all non connected inputs
-    if (!connected && node.inputs.length > 1) {
-      log(`Removing input ${index} (${node.inputs[index].name})`)
-      if (node.widgets) {
-        const w = node.widgets.find((w) => w.name === node.inputs[index].name)
-        if (w) {
-          w.onRemoved?.()
-          node.widgets.length = node.widgets.length - 1
+export const dynamic_connection = (node, index, connected, prefix='in_', type='*', names = []
+    ) => {
+        if (!node.inputs[index].name.startsWith(prefix)) {
+            return
         }
-      }
-      node.removeInput(index)
+        // remove all non connected inputs
+        if (!connected && node.inputs.length > 1) {
+            console.info(`Removing input ${index} (${node.inputs[index].name})`)
+            if (node.widgets) {
+                const w = node.widgets.find((w) => w.name === node.inputs[index].name)
+                if (w) {
+                    w.onRemoved?.()
+                    node.widgets.length = node.widgets.length - 1
+                }
+            }
+            node.removeInput(index)
 
-      // make inputs sequential again
-      for (let i = 0; i < node.inputs.length; i++) {
-        const name =
-          i < nameArray.length ? nameArray[i] : `${connectionPrefix}${i + 1}`
-        node.inputs[i].label = name
-        node.inputs[i].name = name
-      }
+            // make inputs sequential again
+            for (let i = 0; i < node.inputs.length; i++) {
+                const name = i < names.length ? names[i] : `${prefix}${i + 1}`
+                node.inputs[i].label = name
+                node.inputs[i].name = name
+            }
+        }
+
+        // add an extra input
+        if (node.inputs[node.inputs.length - 1].link != undefined) {
+            const nextIndex = node.inputs.length
+            const name = nextIndex < names.length
+                ? names[nextIndex]
+                : `${prefix}${nextIndex + 1}`
+
+            console.info(`Adding input ${nextIndex + 1} (${name})`)
+            node.addInput(name, type)
+        }
+}
+
+export function escapeHtml(unsafe) {
+    return unsafe
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;')
     }
-
-    // add an extra input
-    if (node.inputs[node.inputs.length - 1].link != undefined) {
-      const nextIndex = node.inputs.length
-      const name =
-        nextIndex < nameArray.length
-          ? nameArray[nextIndex]
-          : `${connectionPrefix}${nextIndex + 1}`
-
-      log(`Adding input ${nextIndex + 1} (${name})`)
-
-      node.addInput(name, connectionType)
-    }
-  }

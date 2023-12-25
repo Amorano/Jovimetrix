@@ -2,9 +2,7 @@
 __pycache__/
 *.py[cod]
 *$py.class
-_lib/*
-_res/*
-_web/*
+_*/*
 *.code-workspace
 .vscode/
 config.json

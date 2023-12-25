@@ -4,9 +4,9 @@
  */
 
 import { app } from "/scripts/app.js"
-import * as util from './util.js'
+import * as util from '../core/util.js'
 
-const TypePickerWidget = (app, inputName, inputData) => {
+export const TypePickerWidget = (app, inputName, inputData) => {
     const widget = {
         name: inputName,
         type: inputData[0],

@@ -10,6 +10,7 @@ Device -- MIDI, WEBCAM
 import time
 import uuid
 import threading
+from math import isclose
 from enum import Enum
 from queue import Queue, Empty
 
@@ -383,7 +384,7 @@ class MIDIFilterSimple(JOVBaseNode):
     RETURN_TYPES = ('JMIDIMSG', 'BOOLEAN', )
     RETURN_NAMES = (Lexicon.MIDI, Lexicon.TRIGGER,)
     SORT = 25
-    EPSILON = 1 / 128.
+    # EPSILON = 1 / 128.
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -418,7 +419,7 @@ class MIDIFilterSimple(JOVBaseNode):
             return (message, False, )
         if (val := kw[Lexicon.VALUE]) != -1 and val != message.value:
             return (message, False, )
-        if (val := kw[Lexicon.NORMALIZE]) != -1 and abs(val - float(message.normal)) >= MIDIFilter.EPSILON:
+        if (val := kw[Lexicon.NORMALIZE]) != -1 and isclose(val, message.normal):
             return (message, False, )
         return (message, True, )
 
@@ -475,7 +476,7 @@ class MIDIFilter(JOVBaseNode):
                     Logger.spam(str(e))
 
             try:
-                if abs(value - float(line)) < MIDIFilter.EPSILON:
+                if isclose(value, float(line)):
                     return True
             except Exception as e:
                 Logger.spam(str(e))

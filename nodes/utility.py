@@ -3,11 +3,13 @@ Jovimetrix - http://www.github.com/amorano/jovimetrix
 Utility
 """
 
+import io
+import base64
 from typing import Any
 
 import torch
 
-from Jovimetrix import deep_merge_dict, \
+from Jovimetrix import tensor2pil, deep_merge_dict, \
     JOVBaseNode, Logger, Lexicon, \
     IT_REQUIRED, WILDCARD
 
@@ -56,16 +58,21 @@ class OptionsNode(JOVBaseNode):
         o = kw.get(Lexicon.PASS_IN, None)
         return (o, )
 
+class AkashicData:
+    def __init__(self, *arg, **kw) -> None:
+        for k, v in kw.items():
+            setattr(self, k, v)
+
+    def __str__(self) -> str:
+        return {k: v for k, v in dir(self)}
+
 class AkashicNode(JOVBaseNode):
     NAME = "AKASHIC (JOV) 📓"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/UTILITY"
     DESCRIPTION = "Display the top level attributes of an output"
-    INPUT_IS_LIST = True
-    RETURN_TYPES = ('AKASHIC',)
-    RETURN_NAMES = (Lexicon.DATA,)
     RETURN_TYPES = (WILDCARD, 'AKASHIC', )
     RETURN_NAMES = (Lexicon.PASS_OUT, Lexicon.IO)
-    OUTPUT_IS_LIST = (True, False )
+    OUTPUT_NODE = True
     SORT = 50
 
     @classmethod
@@ -75,38 +82,53 @@ class AkashicNode(JOVBaseNode):
         }}
         return deep_merge_dict(IT_REQUIRED, d)
 
-    def __parse(self, s) -> dict[str, Any]:
-        def handle_dict(d) -> dict[str, Any]:
-            result = {"t": "dict", "items": {}}
-            for key, value in d.items():
-                result["items"][key] = self.__parse(value)
-            return result
-
-        def handle_list(cls) -> dict[str, Any]:
-            result = {"t": repr(type(cls)), "items": []}
-            for item in s:
-                result["items"].append(self.__parse(item))
-            return result
-
-        if isinstance(s, dict):
-            return handle_dict(s)
-        elif isinstance(s, (tuple, set, list,)):
-            return handle_list(s)
-        elif isinstance(s, torch.Tensor):
-            return {"Tensor": f"{s.shape}"}
+    def __parse(self, val) -> dict[str, list[Any]]:
+        if isinstance(val, dict):
+            result = "{"
+            for k, v in val.items():
+                result["text"] += f"{k}:{self.__parse(v)}, "
+            return "text", [result[:-2] + "}"]
+        elif isinstance(val, (tuple, set, list,)):
+            result = "("
+            for v in val.items():
+                result += f"{self.__parse(v)}, "
+            return "text", [result[:-2] + ")"]
+        elif isinstance(val, str):
+             return "text", [val]
+        elif isinstance(val, bool):
+            return "text", ["True" if val else "False"]
+        elif isinstance(val, torch.Tensor):
+            # Logger.debug(f"Tensor: {val.shape}")
+            ret = []
+            if not isinstance(val, (list, tuple, set,)):
+                val = [val]
+            for img in val:
+                img = tensor2pil(img)
+                buffered = io.BytesIO()
+                img.save(buffered, format="PNG")
+                img = base64.b64encode(buffered.getvalue())
+                img = "data:image/png;base64," + img.decode("utf-8")
+                ret.append(img)
+            return "b64_images", ret
         else:
-            meh = ''.join(repr(type(s)).split("'")[1:2])
-            return {"t": meh, "value": s}
+            # no clue what I am....
+            meh = ''.join(repr(type(val)).split("'")[1:2])
+            return {"text": meh}
 
     def run(self, **kw) -> tuple[Any, Any]:
         o = kw.get(Lexicon.PASS_IN, None)
+        output = {"ui": {"b64_images": [], "text": []}}
         if o is None:
-            return (o, {})
+            output["ui"]["result"] = (o, {}, )
+            return output
 
-        value = self.__parse(o)
-        if kw.get(Lexicon.OUTPUT, False):
-            Logger.dump(value)
-        return (o, value,)
+        for v in kw.values():
+            who, data = self.__parse(v)
+            output["ui"][who].extend(data)
+
+        ak = AkashicData(image=output["ui"]["b64_images"], text=output["ui"]["text"] )
+        output["result"] = (o, ak)
+        return output
 
 class ValueGraphNode(JOVBaseNode):
     NAME = "VALUE GRAPH (JOV) 📈"
@@ -123,35 +145,8 @@ class ValueGraphNode(JOVBaseNode):
         }}
         return deep_merge_dict(IT_REQUIRED, d)
 
-    def __parse(self, s) -> dict[str, Any]:
-        def handle_dict(d) -> dict[str, Any]:
-            result = {"t": "dict", "items": {}}
-            for key, value in d.items():
-                result["items"][key] = self.__parse(value)
-            return result
-
-        def handle_list(cls) -> dict[str, Any]:
-            result = {"t": repr(type(cls)), "items": []}
-            for item in s:
-                result["items"].append(self.__parse(item))
-            return result
-
-        if isinstance(s, dict):
-            return handle_dict(s)
-        elif isinstance(s, (tuple, set, list,)):
-            return handle_list(s)
-        elif isinstance(s, torch.Tensor):
-            return {"Tensor": f"{s.shape}"}
-        else:
-            meh = ''.join(repr(type(s)).split("'")[1:2])
-            return {"t": meh, "value": s}
-
     def run(self, **kw) -> tuple[Any, Any]:
         o = kw.get(Lexicon.PASS_IN, None)
         if o is None:
             return (o, {})
-
-        value = self.__parse(o)
-        if kw.get(Lexicon.OUTPUT, False):
-            Logger.dump(value)
-        return (o, value,)
+        return (o, {})

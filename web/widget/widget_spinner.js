@@ -4,9 +4,9 @@
  */
 
 import { app } from "/scripts/app.js"
-import * as util from './util.js'
+import * as util from '../core/util.js'
 
-const SpinnerWidget = (app, inputName, inputData, initial, desc='') => {
+export const SpinnerWidget = (app, inputName, inputData, initial, desc='') => {
     const offset = 4
     const label_width = 50
     const widget_padding = 15

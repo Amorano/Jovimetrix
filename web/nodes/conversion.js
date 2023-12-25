@@ -30,7 +30,7 @@ function get_position_style(ctx, widget_width, y, node_height) {
     };
 }
 
-const convert_node = {
+const ext = {
 	name: 'jovimetrix.convert',
 	async beforeRegisterNodeDef(nodeType, nodeData, app) {
         if (nodeData.name === _id) {
@@ -44,4 +44,4 @@ const convert_node = {
 	}
 }
 
-app.registerExtension(convert_node)
+app.registerExtension(ext)

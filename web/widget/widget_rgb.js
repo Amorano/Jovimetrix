@@ -4,11 +4,11 @@
  */
 
 import { app } from "/scripts/app.js"
-import * as util from './util.js'
+import * as util from '../core/util.js'
 
 const PICKER_DEFAULT = '#ff0000'
 
-const RGBWidget = (key, val = PICKER_DEFAULT, compute = false) => {
+export const RGBWidget = (key, val = PICKER_DEFAULT, compute = false) => {
     const widget = {
         name: key,
         type: 'RGB',

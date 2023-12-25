@@ -56,7 +56,7 @@ function get_position_style(ctx, widget_width, y, node_height) {
 }
 
 const _id = "GLSL (JOV) 🍩"
-const GLSLWidget = (app, inputData) => {
+const GLSLWidget = (app, inputName, inputData) => {
 
     const canvas = $el("canvas")
     canvas.style.backgroundColor = "rgba(0, 0, 0, 1)"
@@ -67,8 +67,8 @@ const GLSLWidget = (app, inputData) => {
     // console.info(inputData.input.optional.FRAGMENT)
 
     const widget = {
-        type: "GLSL",
-        name: "JOVIBALL",
+        type: inputData[0],
+        name: inputName,
         y: 0,
         inputEl: canvas,
         FRAGMENT: inputData.input?.optional?.FRAGMENT[1].default || FRAGMENT_DEFAULT,
@@ -177,12 +177,12 @@ const GLSLWidget = (app, inputData) => {
     return widget
 };
 
-const glsl_node = {
+const ext = {
 	name: 'jovimetrix.glsl',
     async getCustomWidgets(app) {
         return {
             GLSL: (node, inputName, inputData, app) => ({
-                widget: node.addCustomWidget(GLSLWidget(app, inputData)),
+                widget: node.addCustomWidget(GLSLWidget(app, inputName, inputData)),
             }),
         }
     },
@@ -191,7 +191,7 @@ const glsl_node = {
             const onNodeCreated = nodeType.prototype.onNodeCreated
             nodeType.prototype.onNodeCreated = function () {
                 const me = onNodeCreated?.apply(this)
-                const widget_glsl = this.addCustomWidget(GLSLWidget(app, nodeData))
+                const widget_glsl = this.addCustomWidget(GLSLWidget(app, inputName, nodeData))
                 widget_glsl.render()
                 //this.setSize([this.size[0], this.computeSize()[1] + widget_glsl.inputEl.offsetHeight])
                 // 🕛 🎬
@@ -217,7 +217,6 @@ const glsl_node = {
                     console.debug(this.widgets)
                     widget_glsl.update_resolution(this.widgets[3].value, this.widgets[3].value);
                     widget_glsl.update_time(this.widgets[1].value)
-
                     widget_glsl.render();
                     /*
                     this.setOutputData('🖼️', 0)
@@ -236,4 +235,4 @@ const glsl_node = {
 	}
 }
 
-app.registerExtension(glsl_node)
+app.registerExtension(ext)

@@ -2,9 +2,8 @@
 Jovimetrix - http://www.github.com/amorano/jovimetrix
 EMOJI OCD Support
 """
-
+# 🔗 ⚓ 📀 🍿 🎪 🐘 🤯 😱 💀 ⛓️ 🔒 🔑 🪀 🪁 🔮 🧿 🧙🏽 🧙🏽‍♀️ 🧯 🦚 ♻️ ⤴️ ⚜️ 🅱️ 🅾️⬆️ ↔️ ↕️ 〰️ ☐
 class Lexicon:
-    # ♻️ ⤴️ ⚜️ 🅱️ 🅾️🔻🔺➡️⬆️ ↔️ ↕️ 〰️ ☐
     A = '⬜'
     ADAPT = '🧬'
     AMP = '🔊'
