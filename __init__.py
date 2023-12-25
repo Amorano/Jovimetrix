@@ -372,7 +372,7 @@ def parse_number(key: str, data: Union[dict, List[dict]], typ: EnumTupleType=Enu
     unified = data.get(key, {})
 
     if not isinstance(unified, (set, tuple, list,)):
-        unified = list(unified)
+        unified = [unified]
 
     for v in unified:
         match typ:

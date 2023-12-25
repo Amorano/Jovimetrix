@@ -67,7 +67,7 @@ const GLSLWidget = (app, inputName, inputData) => {
     // console.info(inputData.input.optional.FRAGMENT)
 
     const widget = {
-        type: inputData[0],
+        type: 'GLSL',
         name: inputName,
         y: 0,
         inputEl: canvas,
@@ -191,7 +191,8 @@ const ext = {
             const onNodeCreated = nodeType.prototype.onNodeCreated
             nodeType.prototype.onNodeCreated = function () {
                 const me = onNodeCreated?.apply(this)
-                const widget_glsl = this.addCustomWidget(GLSLWidget(app, inputName, nodeData))
+                console.info(nodeType, nodeData)
+                const widget_glsl = this.addCustomWidget(GLSLWidget(app, 'GLSL', nodeData))
                 widget_glsl.render()
                 //this.setSize([this.size[0], this.computeSize()[1] + widget_glsl.inputEl.offsetHeight])
                 // 🕛 🎬
