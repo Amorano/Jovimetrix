@@ -171,7 +171,7 @@ export class JovimetrixConfigDialog extends ComfyDialog {
                 name: entry.regex,
                 title: entry.title || '#353535FF',
                 body: entry.body || '#353535FF',
-                background: '#292930'
+                background: '#292930FF'
             }
             const row = templateColorRegex(data);
             colorTable.appendChild($el("tbody", row))

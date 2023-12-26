@@ -50,14 +50,19 @@ export function node_color_get(node) {
     if (find_me === undefined) {
         return
     }
-    // first look to regex.....
-    const regex = new RegExp(CONFIG_REGEX[0].regex, 'i');
-    const found = find_me.match(regex);
-    if (found != null && found[0].length > 0) {
-        const data = CONFIG_REGEX[0];
-        data["jov_set_color"] = 1;
-        data["jov_set_bgcolor"] = 1;
-        return data;
+    // First look to regex....
+    for (const colors of CONFIG_REGEX) {
+        if (colors.regex == "") {
+            continue
+        }
+        const regex = new RegExp(colors.regex, 'i');
+        const found = find_me.match(regex);
+        if (found !== null && found[0].length > 0) {
+            console.info(colors, found, node)
+            colors.jov_set_color = 1;
+            colors.jov_set_bgcolor = 1;
+            return colors;
+        }
     }
     // now look to theme
     let color = CONFIG_THEME[find_me]
@@ -78,25 +83,15 @@ export function node_color_get(node) {
             k = last !== -1 ? k.substring(0, last) : ''
         }
     }
-
-    if (find_me.includes("LoadLatent")){
-        console.info(node)
-        // console.info(node?.jov_set_color)
-    }
     // if we made it here, we could have "temp" colors. reset.
     if (node?.jov_set_color == 1)
     {
-        // delete node.jov_set_color;
         node.color = ""
-        console.info(node)
     }
     if (node?.jov_set_bgcolor == 1)
     {
-        // delete node.jov_set_bgcolor
         node.bgcolor = ""
-        console.info(node)
     }
-
     return null;
 }
 
