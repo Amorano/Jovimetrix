@@ -40,36 +40,69 @@ export let NODE_LIST = await api_get("./../object_info")
 export let CONFIG_CORE = await api_get("/jovimetrix/config")
 export let CONFIG_USER = CONFIG_CORE.user.default
 export let CONFIG_COLOR = CONFIG_USER.color
-export let THEME = CONFIG_COLOR.theme
+export let CONFIG_REGEX = CONFIG_COLOR.regex
+export let CONFIG_THEME = CONFIG_COLOR.theme
 export let USER = 'user.default'
 
 // gets the CONFIG entry for name
-export function node_color_get(find_me) {
-    let node = THEME[find_me]
-    if (node) {
-        return node
+export function node_color_get(node) {
+    const find_me = node.type || node.name;
+    if (find_me === undefined) {
+        return
     }
-    node = NODE_LIST[find_me]
-    //console.info(node)
-    if (node && node.category) {
-        //console.info(CONFIG)
-        const segments = node.category.split('/')
+    // first look to regex.....
+    const regex = new RegExp(CONFIG_REGEX[0].regex, 'i');
+    const found = find_me.match(regex);
+    if (found != null && found[0].length > 0) {
+        const data = CONFIG_REGEX[0];
+        data["jov_set_color"] = 1;
+        data["jov_set_bgcolor"] = 1;
+        return data;
+    }
+    // now look to theme
+    let color = CONFIG_THEME[find_me]
+    if (color) {
+        return color
+    }
+    color = NODE_LIST[find_me]
+    // now look to category theme
+    if (color && color.category) {
+        const segments = color.category.split('/')
         let k = segments.join('/')
         while (k) {
-            const found = THEME[k]
+            const found = CONFIG_THEME[k]
             if (found) {
-                //console.info(found, node.category)
                 return found
             }
             const last = k.lastIndexOf('/')
             k = last !== -1 ? k.substring(0, last) : ''
         }
     }
+
+    if (find_me.includes("LoadLatent")){
+        console.info(node)
+        // console.info(node?.jov_set_color)
+    }
+    // if we made it here, we could have "temp" colors. reset.
+    if (node?.jov_set_color == 1)
+    {
+        // delete node.jov_set_color;
+        node.color = ""
+        console.info(node)
+    }
+    if (node?.jov_set_bgcolor == 1)
+    {
+        // delete node.jov_set_bgcolor
+        node.bgcolor = ""
+        console.info(node)
+    }
+
+    return null;
 }
 
 // refresh the color of a node
 export function node_color_reset(node, refresh=true) {
-    const data = node_color_get(node.type || node.name)
+    const data = node_color_get(node)
     if (data) {
         node.bgcolor = data.body
         node.color = data.title
@@ -109,7 +142,7 @@ export function convert_hex(color) {
     if (!color.HEX.includes("NAN")) {
         return '#' + color.HEX + ((color.alpha * 255) | 1 << 8).toString(16).slice(1).toUpperCase()
     }
-    return "#13171DFF"
+    return "#353535FF"
 }
 
 export function hexToRgb(hex) {

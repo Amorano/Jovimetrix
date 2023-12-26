@@ -63,6 +63,16 @@ const templateColorHeader = (data) => [
     ])
 ]
 
+function updateRegexColor(index, key, value) {
+    util.CONFIG_REGEX[index][key] = value
+    let api_packet = {
+        id: util.USER + '.color.regex',
+        v: util.CONFIG_REGEX
+    }
+    util.api_post("/jovimetrix/config", api_packet)
+    util.node_color_all()
+};
+
 const templateColorRegex = (data) => [
     $el("tr", [
         $el("td", {
@@ -73,6 +83,9 @@ const templateColorRegex = (data) => [
             $el("input", {
                 name: "regex." + data.idx,
                 value: data.name,
+                onchange: function() {
+                    updateRegexColor(data.idx, "regex", this.value)
+                }
             })
         ]),
         $el("td", [
@@ -94,14 +107,14 @@ const templateColorRegex = (data) => [
 
 function colorClear(name) {
     util.apiPost("/jovimetrix/config/clear", { "name": name })
-    delete util.THEME[name]
+    delete util.CONFIG_THEME[name]
     if (util.CONFIG_COLOR.overwrite) {
         util.nodeColorAll()
     }
 }
 
-export class JovimetrixConfigDialog extends ComfyDialog {
 
+export class JovimetrixConfigDialog extends ComfyDialog {
     startDrag = (e) => {
         this.dragData = {
             startX: e.clientX,
@@ -156,11 +169,12 @@ export class JovimetrixConfigDialog extends ComfyDialog {
             const data = {
                 idx: idx,
                 name: entry.regex,
-                title: entry.title || '#13171DFF',
-                body: entry.body || '#13171DFF',
+                title: entry.title || '#353535FF',
+                body: entry.body || '#353535FF',
                 background: '#292930'
             }
-            colorTable.appendChild($el("tbody", templateColorRegex(data)))
+            const row = templateColorRegex(data);
+            colorTable.appendChild($el("tbody", row))
             idx += 1
         })
 
@@ -185,13 +199,13 @@ export class JovimetrixConfigDialog extends ComfyDialog {
                 background_index = (background_index + 1) % 2
                 data = {
                     name: meow,
-                    title: '#13171DFF',
-                    body: '#13171DFF',
+                    title: '#353535FF',
+                    body: '#353535FF',
                     background: '#292930'
                 }
-                if (util.THEME.hasOwnProperty(meow)) {
-                    data.title = util.THEME[meow].title,
-                    data.body = util.THEME[meow].body
+                if (util.CONFIG_THEME.hasOwnProperty(meow)) {
+                    data.title = util.CONFIG_THEME[meow].title,
+                    data.body = util.CONFIG_THEME[meow].body
                 }
                 colorTable.appendChild($el("tbody", templateColorHeader(data)))
                 category.push(meow)
@@ -201,23 +215,23 @@ export class JovimetrixConfigDialog extends ComfyDialog {
                 background_index = (background_index + 1) % 2
                 data = {
                     name: cat,
-                    title: '#13171DFF',
-                    body: '#13171DFF',
+                    title: '#353535FF',
+                    body: '#353535FF',
                     background: background_title[background_index]
                 }
-                if (util.THEME.hasOwnProperty(cat)) {
-                    data.title = util.THEME[cat].title,
-                    data.body = util.THEME[cat].body
+                if (util.CONFIG_THEME.hasOwnProperty(cat)) {
+                    data.title = util.CONFIG_THEME[cat].title,
+                    data.body = util.CONFIG_THEME[cat].body
                 }
                 colorTable.appendChild($el("tbody", templateColorHeader(data)))
                 category.push(cat)
             }
 
-            const who = util.THEME[name]
+            const who = util.CONFIG_THEME[name]
             data = {
                 name: name,
-                title:  who ? who.title : '#13171DFF',
-                body: who ? who.body :'#13171DFF',
+                title:  who ? who.title : '#353535FF',
+                body: who ? who.body :'#353535FF',
                 background: background[background_index]
             }
             colorTable.appendChild($el("tbody", templateColorBlock(data)))

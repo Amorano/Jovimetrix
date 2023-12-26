@@ -24,7 +24,7 @@ const core = {
                 this.bgcolor = util.fade_lerp_color("#FFFFFF", bgcolor, lerp);
                 this.graph.setDirtyCanvas(true, false);
                 if (lerp >= 1 || elapsed > fadeDuration) {
-                    console.info(this.bgcolor)
+                    // console.info(this.bgcolor)
                     clearInterval(this._fadeIntervalId);
                     this.bgcolor = bgcolor;
                     return;

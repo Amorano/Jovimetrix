@@ -109,24 +109,31 @@ class StreamReaderNode(JOVImageBaseNode):
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
-                Lexicon.URL: ("STRING", {"default": 0}),
-                Lexicon.FPS: ("INT", {"min": 1, "max": 60, "step": 1, "default": 60}),
-                Lexicon.WAIT: ("BOOLEAN", {"default": False}),
-            }}
+            Lexicon.URL: ("STRING", {"default": 0}),
+            Lexicon.FPS: ("INT", {"min": 1, "max": 60, "step": 1, "default": 30}),
+            Lexicon.WAIT: ("BOOLEAN", {"default": False}),
+        }}
         return deep_merge_dict(IT_REQUIRED, d, IT_WHMODE, IT_SAMPLE, IT_INVERT, IT_ORIENT, IT_CAM)
 
     @classmethod
-    def IS_CHANGED(cls, **kw) -> float:
+    def IS_CHANgbGED(cls, **kw) -> float:
+        width, height = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)[0]
         url = kw.get(Lexicon.URL, False)
-        if (device := StreamManager.capture(url)) is None:
-            raise Exception(f"stream failed {url}")
-        fps = kw.get(Lexicon.FPS, 60)
+        try:
+            if (device := StreamManager().capture(url, width, height)) is None:
+                raise Exception(f"stream failed {url}")
+        except:
+            pass
+
+        if device is None:
+            return float("nan")
+
+        fps = kw.get(Lexicon.FPS, 30)
         wait = kw.get(Lexicon.WAIT, False)
-        wh = kw.get(Lexicon.WH, 0)
         zoom = kw.get(Lexicon.ZOOM, 1)
         sample = kw.get(Lexicon.SAMPLE, EnumInterpolation.LANCZOS4)
 
-        width, height = wh
+        print(width, height)
         if device.width != width or device.height != height:
             device.sizer(width, height, sample)
 
@@ -152,17 +159,19 @@ class StreamReaderNode(JOVImageBaseNode):
         orient = kw.get(Lexicon.ORIENT, EnumCanvasOrientation)
         i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)[0]
         url = kw.get(Lexicon.URL, "")
-        rs = kw.get(Lexicon.FPS, EnumInterpolation.LANCZOS4)
+        rs = kw.get(Lexicon.SAMPLE, EnumInterpolation.LANCZOS4)
 
         if self.__device is None or self.__device.captured or url != self.__url:
-            self.__device = StreamManager.capture(url)
-            if self.__device is None or not self.__device.captured:
-                return (cv2tensor(self.__last),
-                        cv2mask(self.__last),
-                )
+            try:
+                self.__device = StreamManager().capture(url, width, height)
+                if self.__device is None or not self.__device.captured:
+                    return (cv2tensor(self.__last), cv2mask(self.__last), )
+                self.__url = url
+            except:
+                pass
 
         ret, img = self.__device.frame
-        self.__last = img = img if img else self.__last
+        self.__last = img if img is not None else self.__last
         if ret:
             h, w = self.__last.shape[:2]
             if width != w or height != h:
@@ -178,10 +187,7 @@ class StreamReaderNode(JOVImageBaseNode):
             if (i or 0) != 0.:
                 img = light_invert(img, i)
 
-        return (
-            cv2tensor(img),
-            cv2mask(img)
-        )
+        return ( cv2tensor(img), cv2mask(img) )
 
 class StreamWriterNode(JOVImageInOutBaseNode):
     NAME = "STREAM WRITER (JOV) 🎞️"
@@ -203,7 +209,7 @@ class StreamWriterNode(JOVImageInOutBaseNode):
         width, height = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
         wait = kw.get(Lexicon.WAIT, [None])
 
-        if (device := StreamManager.capture(route, static=True)) is None:
+        if (device := StreamManager().capture(route, static=True)) is None:
             raise Exception(f"stream failed {route}")
 
         if device.size[0] != width or device.size[1] != height:
@@ -240,7 +246,7 @@ class StreamWriterNode(JOVImageInOutBaseNode):
                     self.__device.release()
 
                 # startup server
-                self.__device = StreamManager.capture(self.__unique, static=True)
+                self.__device = StreamManager().capture(self.__unique, static=True)
                 self.__ss.endpointAdd(r, self.__device)
                 self.__route = r
                 Logger.debug(self.NAME, "START", r)

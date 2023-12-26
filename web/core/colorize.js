@@ -51,13 +51,13 @@ const ext = {
             })
         }
 
-        setting_make(util.USER + '.color.titleA', 'Group Title A 🎨🇯', 'Alternative title color for separating groups in the color configuration panel.', 'titleA', '#000')
+        setting_make(util.USER + '.color.titleA', 'Group Title A 🎨🇯', 'Alternative title color for separating groups in the color configuration panel.', 'titleA', '#302929')
 
-        setting_make(util.USER + '.color.backA', 'Group Back A 🎨🇯', 'Alternative color for separating groups in the color configuration panel.', 'backA', '#000')
+        setting_make(util.USER + '.color.backA', 'Group Back A 🎨🇯', 'Alternative color for separating groups in the color configuration panel.', 'backA', '#050303')
 
-        setting_make(util.USER + '.color.titleB', 'Group Title B 🎨🇯', 'Alternative title color for separating groups in the color configuration panel.', 'titleB', '#000')
+        setting_make(util.USER + '.color.titleB', 'Group Title B 🎨🇯', 'Alternative title color for separating groups in the color configuration panel.', 'titleB', '#293029')
 
-        setting_make(util.USER + '.color.backB', 'Group Back A 🎨🇯', 'Alternative color for separating groups in the color configuration panel.', 'backB', '#000')
+        setting_make(util.USER + '.color.backB', 'Group Back B 🎨🇯', 'Alternative color for separating groups in the color configuration panel.', 'backB', '#030503')
 
         jsColorPicker('input.jov-color', {
             readOnly: true,
@@ -66,49 +66,37 @@ const ext = {
             appendTo: ext.config_dialog.element,
             noAlpha: false,
             init: function(elm, rgb) {
-                elm.style.backgroundColor = elm.color || "#13171DFF"
+                elm.style.backgroundColor = elm.color || "#353535FF"
                 elm.style.color = rgb.RGBLuminance > 0.22 ? '#222' : '#ddd'
             },
             convertCallback: function(data, options) {
                 var AHEX = this.patch.attributes.color
                 if (AHEX === undefined) return
-                AHEX = AHEX.value
                 var name = this.patch.attributes.name.value
                 const parts = name.split('.')
                 const part = parts.slice(-1)[0]
                 name = parts[0]
                 let api_packet = {}
-
                 if (parts.length > 2) {
-                    const idx = parts[1]
-                    var regex = util.CONFIG_COLOR.regex || []
-                    if (idx > regex.length) {
-                        var data = {
-                            "regex": name,
-                            [part]: AHEX,
-                        }
-                        util.CONFIG_COLOR.regex.push(data)
-                    } else {
-                        var data = regex[idx] || {}
-                        data["regex"] = name
-                        data[part] = AHEX
-                        util.CONFIG_COLOR.regex[idx] = data
-                    }
-
+                    const idx = parts[1];
+                    data = util.CONFIG_REGEX[idx];
+                    console.info(part, data, AHEX.value)
+                    data[part] = AHEX.value
+                    util.CONFIG_REGEX[idx] = data
                     api_packet = {
                         id: util.USER + '.color.regex',
-                        v: util.CONFIG_COLOR.regex
+                        v: util.CONFIG_REGEX
                     }
                 } else {
-                    if (util.THEME[name] === undefined) {
-                        util.THEME[name] = {}
+                    if (util.CONFIG_THEME[name] === undefined) {
+                        util.CONFIG_THEME[name] = {}
                     }
-                    util.THEME[name][part] = AHEX
+                    util.CONFIG_THEME[name][part] = AHEX.value
                     api_packet = {
                         id: util.USER + '.color.theme.' + name,
-                        v: { [part]: AHEX }
+                        v: util.CONFIG_THEME[name]
                     }
-                    // console.info(api_packet)
+
                 }
                 util.api_post("/jovimetrix/config", api_packet)
                 if (util.CONFIG_COLOR.overwrite) {
@@ -118,47 +106,29 @@ const ext = {
         })
 
         if (util.CONFIG_USER.color.overwrite) {
+            // console.info("COLORIZED")
             util.node_color_all()
         }
     },
     async beforeRegisterNodeDef(nodeType, nodeData) {
-        let node = util.node_color_get(nodeData.name)
-        if (node === undefined) {
-            var data = {}
-            if (nodeData.color) {
-                data['title'] = nodeData.color
+        const onNodeCreated = nodeType.prototype.onNodeCreated
+        nodeType.prototype.onNodeCreated = function () {
+            const result = onNodeCreated ? onNodeCreated.apply(this, arguments) : undefined
+            let colors = util.node_color_get(nodeData);
+            //this['color'] = colors?.title || "#353535";
+            if (colors?.jov_set_color) {
+                delete colors.jov_set_color
+                this['jov_set_color'] = 1;
             }
-            if (nodeData.bgcolor) {
-                data['body'] = nodeData.bgcolor
+            //this['color'] = colors?.color || "#353535";
+            if (colors?.jov_set_bgcolor) {
+                delete colors.jov_set_bgcolor
+                this['jov_set_bgcolor'] = 1;
             }
-            if (data.length > 0) {
-                util.THEME[nodeData.name]
-                node = util.node_color_get(nodeData.name)
+            if (result) {
+                result.serialize_widgets = true
             }
-        }
-
-        if (node) {
-            const onNodeCreated = nodeType.prototype.onNodeCreated
-            nodeType.prototype.onNodeCreated = function () {
-                const result = onNodeCreated ? onNodeCreated.apply(this, arguments) : undefined
-                // console.info(nodeData.name, node)
-                if (nodeData.color === undefined) {
-                    this['color'] = (node.title || '#13171DFF')
-                }
-
-                if (nodeData.bgcolor === undefined) {
-                    this['bgcolor'] = (node.body || '#13171DFF')
-                }
-                /*
-                // default, box, round, card
-                if (nodeData.shape === undefined || nodeData.shape == false) {
-                    this['_shape'] = nodeData._shape ? nodeData._shape : found.shape ?
-                    found.shape in ['default', 'box', 'round', 'card'] : 'round'
-                }*/
-                // console.info('jovi-colorized', this.title, this.color, this.bgcolor, this._shape)
-                // result.serialize_widgets = true
-                return result
-            }
+            return result
         }
     }
 }

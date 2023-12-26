@@ -37,9 +37,9 @@ import * as util from '../core/util.js';
                 }
             },
             extractValue = function(elm) {
-                const val = elm.getAttribute('color') || elm.style.backgroundColor || '#13171DFF';
+                const val = elm.getAttribute('color') || elm.style.backgroundColor || '#353535FF';
                 if (val.includes("NAN")) {
-                    return "#13171DFF";
+                    return "#353535FF";
                 }
                 return val;
             },
