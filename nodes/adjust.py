@@ -33,9 +33,9 @@ class AdjustNode(JOVImageInOutBaseNode):
 
     def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor]:
         pixels = kw.get(Lexicon.PIXEL, [None])
-        op = kw.get(Lexicon.FUNC,[None])
-        radius = kw.get(Lexicon.RADIUS,[None])
-        amt = kw.get(Lexicon.AMT,[None])
+        op = kw.get(Lexicon.FUNC,[EnumAdjustOP.BLUR])
+        radius = kw.get(Lexicon.RADIUS,[3])
+        amt = kw.get(Lexicon.AMT,[1])
         i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
         masks = []
         images = []
@@ -49,10 +49,7 @@ class AdjustNode(JOVImageInOutBaseNode):
                 continue
 
             img = tensor2cv(img)
-            o = EnumAdjustOP[o] if o else EnumAdjustOP.BLUR
-            r = r if r else 3
-            r = r if r % 2 == 1 else r + 1
-            a = a if a else 0
+            o = EnumAdjustOP[o]
 
             match o:
                 case EnumAdjustOP.BLUR:
@@ -77,11 +74,11 @@ class AdjustNode(JOVImageInOutBaseNode):
                 case EnumAdjustOP.EMBOSS:
                     img = comp.morph_emboss(img, a, r)
 
-                case EnumAdjustOP.MEAN:
-                    img = comp.color_average(img)
+                #case EnumAdjustOP.MEAN:
+                #    img = comp.color_average(img)
 
                 case EnumAdjustOP.EQUALIZE:
-                    img = cv2.equalizeHist(img)
+                    img = comp.adjust_equalize(img)
 
                 case EnumAdjustOP.PIXELATE:
                     img = comp.adjust_pixelate(img, a / 255.)
@@ -107,7 +104,7 @@ class AdjustNode(JOVImageInOutBaseNode):
                 case EnumAdjustOP.CLOSE:
                     img = cv2.morphologyEx(img, cv2.MORPH_CLOSE, (r, r), iterations=int(a))
 
-            if (i or 0) != 0:
+            if i != 0:
                 img = comp.light_invert(img, i)
 
             images.append(cv2tensor(img))
@@ -135,12 +132,12 @@ class ColorMatchNode(JOVImageInOutBaseNode):
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         pixelA = kw.get(Lexicon.PIXEL_A, [None])
         pixelB = kw.get(Lexicon.PIXEL_B, [None])
-        colormap = kw.get(Lexicon.COLORMAP, [None])
+        colormap = kw.get(Lexicon.COLORMAP, ['NONE'])
         # if the colormap is not "none" entry...use it.
         # usemap = usemap or [None]
         threshold = parse_number(Lexicon.THRESHOLD, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
-        blur = kw.get(Lexicon.BLUR, [None])
-        flip = kw.get(Lexicon.FLIP, [None])
+        blur = kw.get(Lexicon.BLUR, [3])
+        flip = kw.get(Lexicon.FLIP, [False])
         i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
         masks = []
         images = []
@@ -158,16 +155,17 @@ class ColorMatchNode(JOVImageInOutBaseNode):
             if f is not None and f:
                 a, b = b, a
 
-            if (c := EnumColorMap[c] if c else None) is None:
+            if c == 'NONE':
                 a = comp.color_match(a, b)
             else:
-                if t is not None and t != 0:
+                c = EnumColorMap[c].value
+                if t != 0:
                     bl = bl if bl is not None else 13
                     a = comp.color_match_heat_map(a, t, c, bl)
                 else:
                     a = comp.color_match_custom_map(a, colormap=c)
 
-            if (i or 0) != 0:
+            if i != 0:
                 img = comp.light_invert(img, i)
 
             images.append(cv2tensor(img))
@@ -193,19 +191,20 @@ class FindEdgeNode(JOVImageInOutBaseNode):
         i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
         masks = []
         images = []
-        for data in zip_longest_fill(pixels, *lohi, i):
-            img, lo, hi, i = data
+        for img, lohi, i in zip_longest_fill(pixels, lohi, i):
+            lo, hi = lohi
             if img is None:
                 zero = torch.zeros((1, 1, 3), dtype=torch.uint8)
                 images.append(zero)
                 masks.append(zero)
                 continue
+
             img = tensor2cv(img)
-            lo = lo if lo is not None else 0
-            hi = hi if hi is not None else 1
             img = comp.morph_edge_detect(img, low=lo, high=hi)
-            if (i if i is not None else 0) != 0:
+
+            if i != 0:
                 img = comp.light_invert(img, i)
+
             images.append(cv2tensor(img))
             masks.append(cv2mask(img))
 
@@ -239,6 +238,7 @@ class HSVNode(JOVImageInOutBaseNode):
                 images.append(zero)
                 masks.append(zero)
                 continue
+
             img = tensor2cv(img)
             img = comp.light_hsv(img, h, s, v)
             if c != 0:
@@ -283,14 +283,13 @@ class LevelsNode(JOVImageInOutBaseNode):
                 masks.append(zero)
                 continue
 
-            l = l or 0
-            h = h or 1
             img = torch.maximum(img - l, torch.tensor(0.0))
             img = torch.minimum(img, (h - l))
             img = (img + (m or 0.5)) - 0.5
             img = torch.sign(img) * torch.pow(torch.abs(img), 1.0 / (g or 1))
             img = (img + 0.5) / h
-            if (i or 0) != 0:
+
+            if i != 0:
                 img = 1 - i - img
 
             images.append(img)
@@ -319,10 +318,10 @@ class ThresholdNode(JOVImageInOutBaseNode):
     def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor]:
 
         pixels = kw.get(Lexicon.PIXEL, [None])
-        op = kw.get(Lexicon.FUNC, [None])
-        adapt = kw.get(Lexicon.ADAPT, [None])
-        threshold = kw.get(Lexicon.THRESHOLD, [None])
-        size = kw.get(Lexicon.SIZE, [None])
+        op = kw.get(Lexicon.FUNC, [EnumThreshold.BINARY])
+        adapt = kw.get(Lexicon.ADAPT, [EnumThresholdAdapt.ADAPT_NONE])
+        threshold = kw.get(Lexicon.THRESHOLD, [0.5])
+        size = kw.get(Lexicon.SIZE, [3])
         i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
         masks = []
         images = []
@@ -335,12 +334,10 @@ class ThresholdNode(JOVImageInOutBaseNode):
                 continue
 
             img = tensor2cv(img)
-            o = EnumThreshold[o] if o is not None else EnumThreshold.BINARY
-            a = EnumThresholdAdapt[a] if a is not None else EnumThresholdAdapt.ADAPT_NONE
-            t = t if t is not None else 0.5
-            b = b if b is not None else 3
+            o = EnumThreshold[o]
+            a = EnumThresholdAdapt[a]
             img = comp.adjust_threshold(img, threshold=t, mode=o, adapt=a, block=b, const=t)
-            if (i or 0) != 0:
+            if i != 0:
                 img = comp.light_invert(img, i)
 
             images.append(cv2tensor(img))

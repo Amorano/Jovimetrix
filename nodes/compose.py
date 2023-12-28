@@ -40,31 +40,32 @@ class BlendNode(JOVImageInOutBaseNode):
         pixelA = kw.get(Lexicon.PIXEL_A, [None])
         pixelB = kw.get(Lexicon.PIXEL_B, [None])
         mask = kw.get(Lexicon.MASK, [None])
-        func = kw.get(Lexicon.FUNC, [None])
-        alpha = kw.get(Lexicon.A, [None])
-        flip = kw.get(Lexicon.FLIP, [None])
-        mode = kw.get(Lexicon.MODE, [None])
-        sample = kw.get(Lexicon.SAMPLE, [None])
+        func = kw.get(Lexicon.FUNC, [EnumBlendType.NORMAL])
+        alpha = kw.get(Lexicon.A, [1])
+        flip = kw.get(Lexicon.FLIP, [False])
+        mode = kw.get(Lexicon.MODE, [EnumScaleMode.NONE])
+        sample = kw.get(Lexicon.SAMPLE, [EnumInterpolation.LANCZOS4])
         wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
         i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
         masks = []
         images = []
         for data in zip_longest_fill(pixelA, pixelB, mask, func, alpha, flip,
-                                     *wihi, mode, sample, i):
+                                     wihi, mode, sample, i):
 
-            pa, pb, ma, f, a, fl, w, h, sm, rs, i = data
-            pa = tensor2cv(pa) if pa else np.zeros((h, w, 4), dtype=np.uint8)
-            pb = tensor2cv(pb) if pb else np.zeros((h, w, 4), dtype=np.uint8)
-            ma = tensor2cv(ma) if ma else np.zeros((h, w), dtype=np.uint8)
+            pa, pb, ma, op, a, fl, wihi, sm, rs, i = data
+            w, h = wihi
+            pa = tensor2cv(pa) if pa is not None else np.zeros((h, w, 3), dtype=np.uint8)
+            pb = tensor2cv(pb) if pb is not None else np.zeros((h, w, 3), dtype=np.uint8)
+            ma = tensor2cv(ma) if ma is not None else np.zeros((h, w), dtype=np.uint8)
 
-            if (fl or False):
+            if fl:
                 pa, pb = pb, pa
 
-            f = EnumBlendType[f] if f else EnumBlendType.NORMAL
-            img = comp.comp_blend(pa, pb, ma, f, a)
-
+            op = EnumBlendType[op]
+            img = comp.comp_blend(pa, pb, ma, op, a)
             nh, nw = img.shape[:2]
-            rs = EnumInterpolation[rs] if rs else EnumInterpolation.LANCZOS4
+
+            rs = EnumInterpolation[rs]
             if h != nh or w != nw:
                 Logger.debug(w, h, nw, nh)
                 img = comp.geo_scalefit(img, w, h, sm, rs)
@@ -106,7 +107,7 @@ class PixelSplitNode(JOVImageInOutBaseNode):
 
         pixels = kw.get(Lexicon.PIXEL, [None])
         for img in pixels:
-            img = tensor2cv(img) if img else np.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=np.uint8)
+            img = tensor2cv(img) if img  is not None else np.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=np.uint8)
             h, w = img.shape[:2]
             r, g, b, a = comp.image_split(img)
             e = np.zeros((h, w), dtype=np.uint8)
@@ -137,8 +138,8 @@ class PixelMergeNode(JOVImageInOutBaseNode):
         G = kw.get(Lexicon.G, [None])
         B = kw.get(Lexicon.B, [None])
         A = kw.get(Lexicon.A, [None])
-        mode = kw.get(Lexicon.MODE, [None])
-        sample = kw.get(Lexicon.SAMPLE, [None])
+        mode = kw.get(Lexicon.MODE, [EnumScaleMode.NONE])
+        sample = kw.get(Lexicon.SAMPLE, [EnumInterpolation.LANCZOS4])
         wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
         i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
 
@@ -151,13 +152,14 @@ class PixelMergeNode(JOVImageInOutBaseNode):
 
         masks = []
         images = []
-        for data in zip_longest_fill(R, G, B, A, *wihi, mode, sample, i):
-            r, g, b, a, w, h, m, rs, i = data
-            r = tensor2cv(r) if r else np.zeros((h, w, 3), dtype=np.uint8)
-            g = tensor2cv(g) if g else np.zeros((h, w, 3), dtype=np.uint8)
-            b = tensor2cv(b) if b else np.zeros((h, w, 3), dtype=np.uint8)
-            a = tensor2cv(a) if a else np.zeros((h, w, 3), dtype=np.uint8)
-            rs = EnumInterpolation[rs] if rs else EnumInterpolation.LANCZOS4
+        for data in zip_longest_fill(R, G, B, A, wihi, mode, sample, i):
+            r, g, b, a, wihi, m, rs, i = data
+            w, h = wihi
+            r = tensor2cv(r) if r is not None else np.zeros((h, w, 3), dtype=np.uint8)
+            g = tensor2cv(g) if g is not None else np.zeros((h, w, 3), dtype=np.uint8)
+            b = tensor2cv(b) if b is not None else np.zeros((h, w, 3), dtype=np.uint8)
+            a = tensor2cv(a) if a is not None else np.zeros((h, w, 3), dtype=np.uint8)
+            rs = EnumInterpolation[rs]
             img = comp.image_merge(r, g, b, a, w, h, m, rs)
             if (i or 0) != 0:
                 img = comp.light_invert(img, i)
@@ -187,15 +189,16 @@ class MergeNode(JOVImageInOutBaseNode):
         pixelA = kw.get(Lexicon.PIXEL_A, [None])
         pixelB = kw.get(Lexicon.PIXEL_B, [None])
         mask = kw.get(Lexicon.MASK, [None])
-        axis = kw.get(Lexicon.AXIS, [None])
-        stride = kw.get(Lexicon.STEP, [None])
+        axis = kw.get(Lexicon.AXIS, [EnumOrientation.GRID])
+        stride = kw.get(Lexicon.STEP, [5])
         wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
-        mode = kw.get(Lexicon.MODE, [None])
-        sample = kw.get(Lexicon.SAMPLE, [None])
+        mode = kw.get(Lexicon.MODE, [EnumScaleMode.NONE])
+        sample = kw.get(Lexicon.SAMPLE, [EnumInterpolation.LANCZOS4])
         masks = []
         images = []
-        for data in zip_longest_fill(pixelA, pixelB, mask, axis, stride, *wihi, mode, sample):
-            a, b, ma, ax, st, w, h, m, rs = data
+        for data in zip_longest_fill(pixelA, pixelB, mask, axis, stride, wihi, mode, sample):
+            a, b, ma, ax, st, wihi, m, rs = data
+            w, h = wihi
             a, b = comp.pixel_convert(a, b)
             if a is None and b is None:
                 zero = torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8)
@@ -205,10 +208,10 @@ class MergeNode(JOVImageInOutBaseNode):
 
             pixels = [tensor2cv(a), tensor2cv(b)]
             ma = tensor2cv(ma) if ma is not None else np.zeros((h, w, 3), dtype=np.uint8)
-            rs = EnumInterpolation[rs] if rs is not None else EnumInterpolation.LANCZOS4
-            ax = EnumOrientation[ax] if ax is not None else EnumOrientation.HORIZONTAL
+            rs = EnumInterpolation[rs]
+            ax = EnumOrientation[ax]
             img = comp.image_stack(pixels, ax, st, ma, EnumScaleMode.FIT, rs)
-            if (m or EnumScaleMode.NONE) != EnumScaleMode.NONE:
+            if m != EnumScaleMode.NONE:
                 img = comp.geo_scalefit(img, w, h, m, rs)
 
             images.append(cv2tensor(img))
@@ -235,14 +238,16 @@ class CropNode(JOVImageInOutBaseNode):
     def run(self, **kw) -> tuple[list[torch.Tensor], list[torch.Tensor]]:
         pixels = kw.get(Lexicon.PIXEL, [None])
         bbox = parse_tuple(Lexicon.BBOX, kw, default=(0, 0, 1, 1,), clip_min=0, clip_max=1)
-        pad = kw.get(Lexicon.PAD, [None])
+        pad = kw.get(Lexicon.PAD, [0])
         rgba = parse_tuple(Lexicon.RGBA, kw, default=(0, 0, 0, 255,), clip_min=0, clip_max=255)
         wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
         i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
         masks = []
         images = []
-        for data in zip_longest_fill(pixels, pad, *bbox, *rgba, *wihi, i):
-            img, p, t, l, b, r, c, w, h, i = data
+        for img, p, bbox, rgba, wihi, i in zip_longest_fill(pixels, pad, bbox, rgba, wihi, i):
+            t, l, b, r = bbox
+            w, h = wihi
+
             if img is None:
                 zero = torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8)
                 images.append(zero)
@@ -253,7 +258,7 @@ class CropNode(JOVImageInOutBaseNode):
             w = w or img.shape[1]
             h = h or img.shape[0]
             # Logger.debug(l, t, r, b, w, h, p, c)
-            img = comp.geo_crop(img, l or 0, t or 0, r or 1, b or 1, w, h, p or False, c)
+            img = comp.geo_crop(img, l or 0, t or 0, r or 1, b or 1, w, h, p or False, rgba)
             if (i or 0) != 0:
                 img = comp.light_invert(img, i)
 
@@ -294,8 +299,8 @@ class ColorTheoryNode(JOVImageInOutBaseNode):
 
         for data in zip_longest_fill(pixels, scheme, i):
             img, s, i = data
-            img = tensor2cv(img) if img else np.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=np.uint8)
-            s = EnumColorTheory.COMPLIMENTARY if s is None else EnumColorTheory[s]
+            img = tensor2cv(img) if img is not None else np.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=np.uint8)
+            s = EnumColorTheory[s] if s is not None else EnumColorTheory.COMPLIMENTARY
             a, b, c, d = comp.color_theory(img, s)
             if (i or 0) != 0:
                 a = comp.light_invert(a, i)

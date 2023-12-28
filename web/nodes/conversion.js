@@ -31,7 +31,7 @@ function get_position_style(ctx, widget_width, y, node_height) {
 }
 
 const ext = {
-	name: 'jovimetrix.convert',
+	name: 'jovimetrix.node.convert',
 	async beforeRegisterNodeDef(nodeType, nodeData, app) {
         if (nodeData.name === _id) {
             const onNodeCreated = nodeType.prototype.onNodeCreated

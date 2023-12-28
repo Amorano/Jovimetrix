@@ -122,10 +122,10 @@ TYPE_IMAGE = Union[np.ndarray, torch.Tensor]
 class Singleton(type):
     _instances = {}
 
-    def __call__(cls, *args, **kwargs) -> Any:
+    def __call__(cls, *arg, **kw) -> Any:
         # If the instance does not exist, create and store it
         if cls not in cls._instances:
-            instance = super().__call__(*args, **kwargs)
+            instance = super().__call__(*arg, **kw)
             cls._instances[cls] = instance
         return cls._instances[cls]
 
@@ -366,6 +366,30 @@ except Exception as e:
 # =============================================================================
 # == SUPPORT FUNCTIONS
 # =============================================================================
+
+def convert_parameter(data: Any) -> Any:
+    if data is None:
+        return [int], [0]
+
+    if not isinstance(data, (list, tuple, set,)):
+        data = [data]
+
+    typ = []
+    val = []
+    for v in data:
+        # print(v, type(v), type(v) == float, type(v) == int)
+        t = type(v)
+        if t == int:
+            t = float
+        try:
+            v = float(v)
+        except Exception as e:
+            Logger.debug(str(e))
+            v = 0
+        typ.append(t)
+        val.append(v)
+
+    return typ, val
 
 def parse_number(key: str, data: Union[dict, List[dict]], typ: EnumTupleType=EnumTupleType.INT, default: tuple[Any]=None, clip_min: Optional[int]=None, clip_max: Optional[int]=None) -> tuple[List[Any]]:
     ret = []

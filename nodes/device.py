@@ -25,7 +25,7 @@ from Jovimetrix import parse_tuple, parse_number, deep_merge_dict, tensor2cv, \
     MIN_IMAGE_SIZE, IT_PIXELS, IT_ORIENT, IT_CAM, IT_WHMODE, IT_REQUIRED, IT_INVERT
 
 from Jovimetrix.sup.comp import image_grid, light_invert, geo_scalefit, \
-    EnumInterpolation, \
+    EnumInterpolation, EnumScaleMode, \
     IT_SAMPLE
 from Jovimetrix.sup.stream import StreamingServer, StreamManager
 
@@ -231,15 +231,16 @@ class StreamWriterNode(JOVImageInOutBaseNode):
 
     def run(self, **kw) -> tuple[torch.Tensor]:
         pixels = kw.get(Lexicon.PIXEL, [None])
-        route = kw.get(Lexicon.ROUTE, [None])
-        mode = kw.get(Lexicon.MODE, [None])
+        route = kw.get(Lexicon.ROUTE, [""])
+        mode = kw.get(Lexicon.MODE, [EnumScaleMode.NONE])
         wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
         i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)[0]
-        sample = kw.get(Lexicon.SAMPLE, [None])
+        sample = kw.get(Lexicon.SAMPLE, [EnumInterpolation.LANCZOS4])
 
-        for data in zip_longest_fill(pixels, route, *wait, wihi, sample, *i):
-            img, r, wait, w, h, rs, i = data
-            img = img if img else np.zeros((h, w, 3), dtype=np.uint8)
+        for data in zip_longest_fill(pixels, route, wait, wihi, sample, i):
+            img, r, wait, wihi, rs, i = data
+            w, h = wihi
+            img = img if img is not None else np.zeros((h, w, 3), dtype=np.uint8)
             if r != self.__route:
                 # close old, if any
                 if self.__device:
@@ -251,7 +252,7 @@ class StreamWriterNode(JOVImageInOutBaseNode):
                 self.__route = r
                 Logger.debug(self.NAME, "START", r)
 
-            rs = EnumInterpolation[rs] if rs else EnumInterpolation.LANCZOS4
+            rs = EnumInterpolation[rs]
             out = []
 
             stride = len(img)

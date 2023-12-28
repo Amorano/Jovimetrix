@@ -35,7 +35,7 @@ function get_position_style(ctx, width, y, height) {
 }
 
 const ext = {
-	name: 'jovimetrix.akashic',
+	name: 'jovimetrix.node.akashic',
 	async beforeRegisterNodeDef(nodeType, nodeData, app) {
         if (nodeData.name === _id) {
             const onExecuted = nodeType.prototype.onExecuted

@@ -4,6 +4,7 @@ Composition Support
 """
 
 import math
+import urllib
 from enum import Enum
 from typing import Any, Optional
 
@@ -108,7 +109,7 @@ class EnumAdjustOP(Enum):
     MEDIAN_BLUR = 3
     SHARPEN = 10
     EMBOSS = 20
-    MEAN = 30
+    # MEAN = 30 -- returns scalar... do what with?
     ADAPTIVE_HISTOGRAM = 35
     EQUALIZE = 40
     PIXELATE = 50
@@ -192,63 +193,11 @@ def pixel_convert(in_a: TYPE_IMAGE, in_b: TYPE_IMAGE) -> tuple[TYPE_IMAGE, TYPE_
             in_b = np.zeros((h, w, cc), dtype=torch.uint8)
     return in_a, in_b
 
-
-def image_grayscale(image: TYPE_IMAGE) -> TYPE_IMAGE:
-    if (cc := channel_count(image)[0]) == 1:
-        return image
-    elif cc > 2:
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-        return image[:, :, 2]
-    Logger.err("unknown image format", cc, image.shape)
-    return image
-
-def image_split(image: TYPE_IMAGE) -> tuple[TYPE_IMAGE]:
-    cc, _, w, h = channel_count(image)
-    if cc == 4:
-        b, g, r, a = cv2.split(image)
-    elif cc == 3:
-        b, g, r = cv2.split(image)
-        a = np.full((h, w), 255, dtype=np.uint8)
-    else:
-        r = g = b = image
-        a = np.full((h, w), 255, dtype=np.uint8)
-    return r, g, b, a
-
-def image_merge(r: TYPE_IMAGE, g: TYPE_IMAGE, b: TYPE_IMAGE, a: TYPE_IMAGE,
-          width: int, height: int,
-          mode:EnumScaleMode=EnumScaleMode.NONE,
-          sample:EnumInterpolation=EnumInterpolation.LANCZOS4) -> TYPE_IMAGE:
-
-    thr, twr = r.shape[:2] if r is not None else (height, width)
-    thg, twg = g.shape[:2] if g is not None else (height, width)
-    thb, twb = b.shape[:2] if b is not None else (height, width)
-
-    full = a is not None
-    tha, twa = a.shape[:2] if full else (height, width)
-
-    w = max(width, max(twa, max(twb, max(twr, twg))))
-    h = max(height, max(tha, max(thb, max(thr, thg))))
-
-    r = np.full((h, w), 0, dtype=np.uint8) if r is None else image_grayscale(r)
-    g = np.full((h, w), 0, dtype=np.uint8) if g is None else image_grayscale(g)
-    b = np.full((h, w), 0, dtype=np.uint8) if b is None else image_grayscale(b)
-
-    #g = merge_channel(g, (h, w), sample)
-    #b = merge_channel(b, (h, w), sample)
-
-    if full:
-        a = np.full((h, w), 0, dtype=np.uint8) if r is None else image_grayscale(a)
-        # a = merge_channel(a,  (h, w), sample)
-        image = cv2.merge((b, g, r, a))
-    else:
-        image = cv2.merge((b, g, r))
-    return geo_scalefit(image, width, height, mode, sample)
-
 # =============================================================================
 # === SHAPE FUNCTIONS ===
 # =============================================================================
 
-def shape_body(func: str, width: int, height: int, sizeX:float=1., sizeY:float=1., fill:TYPE_PIXEL=1.) -> Image:
+def shape_body(func: str, width: int, height: int, sizeX:float=1., sizeY:float=1., fill:TYPE_PIXEL=255) -> Image:
     sizeX = max(0.5, sizeX / 2 + 0.5)
     sizeY = max(0.5, sizeY / 2 + 0.5)
     xy = [(width * (1. - sizeX), height * (1. - sizeY)),(width * sizeX, height * sizeY)]
@@ -258,13 +207,13 @@ def shape_body(func: str, width: int, height: int, sizeX:float=1., sizeY:float=1
     func(xy, fill=color_eval(fill))
     return image
 
-def shape_ellipse(width: int, height: int, sizeX:float=1., sizeY:float=1., fill:TYPE_PIXEL=1.) -> Image:
+def shape_ellipse(width: int, height: int, sizeX:float=1., sizeY:float=1., fill:TYPE_PIXEL=255) -> Image:
     return shape_body('ellipse', width, height, sizeX=sizeX, sizeY=sizeY, fill=fill)
 
-def shape_quad(width: int, height: int, sizeX:float=1., sizeY:float=1., fill:TYPE_PIXEL=1.) -> Image:
+def shape_quad(width: int, height: int, sizeX:float=1., sizeY:float=1., fill:TYPE_PIXEL=255) -> Image:
     return shape_body('rectangle', width, height, sizeX=sizeX, sizeY=sizeY, fill=fill)
 
-def shape_polygon(width: int, height: int, size: float=1., sides: int=3, angle: float=0., fill:TYPE_PIXEL=1.) -> Image:
+def shape_polygon(width: int, height: int, size: float=1., sides: int=3, angle: float=0., fill:TYPE_PIXEL=255) -> Image:
 
     fill = color_eval(fill)
     size = max(0.00001, size)
@@ -279,21 +228,18 @@ def shape_polygon(width: int, height: int, size: float=1., sides: int=3, angle: 
 # === CHANNEL FUNCTIONS ===
 # =============================================================================
 
-def channel_count(image: TYPE_IMAGE) -> tuple[int, EnumImageType]:
+def channel_count(image:TYPE_IMAGE) -> tuple[int, EnumImageType]:
     h, w = image.shape[:2]
     size = image.shape[2] if len(image.shape) > 2 else 1
     mode = EnumImageType.RGBA if size == 4 else EnumImageType.RGB if size == 3 else EnumImageType.GRAYSCALE
     return size, mode, w, h
 
-def channel_add(image: TYPE_IMAGE, value: TYPE_PIXEL=1.) -> TYPE_IMAGE:
+def channel_add(image:TYPE_IMAGE, value: TYPE_PIXEL=255) -> TYPE_IMAGE:
     new = channel_solid(color=value, image=image)
     return np.concatenate([image, new], axis=-1)
 
-def channel_solid(width: int=512,
-                  height:int=512,
-                  color:TYPE_PIXEL=1.,
-                  image:Optional[TYPE_IMAGE]=None,
-                  chan:EnumImageType=EnumImageType.GRAYSCALE) -> TYPE_IMAGE:
+def channel_solid(width:int=512, height:int=512, color:TYPE_PIXEL=255,
+                  image:Optional[TYPE_IMAGE]=None, chan:EnumImageType=EnumImageType.GRAYSCALE) -> TYPE_IMAGE:
 
     if image is not None:
         height, width = image.shape[:2]
@@ -312,6 +258,36 @@ def channel_solid(width: int=512,
 # =============================================================================
 # === IMAGE FUNCTIONS ===
 # =============================================================================
+
+def image_rgb_clean(image: TYPE_IMAGE) -> tuple[int, TYPE_IMAGE, TYPE_IMAGE]:
+    """Store channel, RGB, ALPHA split since most functions work with RGB."""
+    alpha = None
+    if (cc := channel_count(image)[0]) == 1:
+        image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
+    elif cc == 4:
+        alpha = image[:, :, 3]
+        image = image[:, :, :3]  # Use slicing for consistency
+    return cc, image, alpha
+
+def image_rgb_restore(image: TYPE_IMAGE, alpha: TYPE_IMAGE, gray: bool=False) -> TYPE_IMAGE:
+    if gray:
+        return cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    if alpha is not None:
+        cc = channel_count(image)[0]
+        while cc < 4:
+            image = channel_add(image, 0)
+            cc += 1
+        image[:, :, 3] = alpha
+    return image
+
+def image_load_from_url(url:str) -> TYPE_IMAGE:
+    """Creates a CV2 BGR image from a url."""
+    try:
+        image  = urllib.request.urlopen(url)
+        image = np.asarray(bytearray(image.read()), dtype=np.uint8)
+        return cv2.imdecode(image, cv2.IMREAD_COLOR)
+    except:
+        pass
 
 def image_stack(images: list[TYPE_IMAGE],
                 axis:EnumOrientation=EnumOrientation.HORIZONTAL,
@@ -392,6 +368,57 @@ def image_grid(data: list[TYPE_IMAGE], width: int, height: int) -> TYPE_IMAGE:
             i += 1
 
     return frame
+
+def image_grayscale(image: TYPE_IMAGE) -> TYPE_IMAGE:
+    if (cc := channel_count(image)[0]) == 1:
+        return image
+    elif cc > 2:
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+        return image[:, :, 2]
+    Logger.err("unknown image format", cc, image.shape)
+    return image
+
+def image_split(image: TYPE_IMAGE) -> tuple[TYPE_IMAGE]:
+    cc, _, w, h = channel_count(image)
+    if cc == 4:
+        b, g, r, a = cv2.split(image)
+    elif cc == 3:
+        b, g, r = cv2.split(image)
+        a = np.full((h, w), 255, dtype=np.uint8)
+    else:
+        r = g = b = image
+        a = np.full((h, w), 255, dtype=np.uint8)
+    return r, g, b, a
+
+def image_merge(r: TYPE_IMAGE, g: TYPE_IMAGE, b: TYPE_IMAGE, a: TYPE_IMAGE,
+          width: int, height: int,
+          mode:EnumScaleMode=EnumScaleMode.NONE,
+          sample:EnumInterpolation=EnumInterpolation.LANCZOS4) -> TYPE_IMAGE:
+
+    thr, twr = r.shape[:2] if r is not None else (height, width)
+    thg, twg = g.shape[:2] if g is not None else (height, width)
+    thb, twb = b.shape[:2] if b is not None else (height, width)
+
+    full = a is not None
+    tha, twa = a.shape[:2] if full else (height, width)
+
+    w = max(width, max(twa, max(twb, max(twr, twg))))
+    h = max(height, max(tha, max(thb, max(thr, thg))))
+
+    r = np.full((h, w), 0, dtype=np.uint8) if r is None else image_grayscale(r)
+    g = np.full((h, w), 0, dtype=np.uint8) if g is None else image_grayscale(g)
+    b = np.full((h, w), 0, dtype=np.uint8) if b is None else image_grayscale(b)
+
+    #g = merge_channel(g, (h, w), sample)
+    #b = merge_channel(b, (h, w), sample)
+
+    if full:
+        a = np.full((h, w), 0, dtype=np.uint8) if r is None else image_grayscale(a)
+        # a = merge_channel(a,  (h, w), sample)
+        image = cv2.merge((b, g, r, a))
+    else:
+        image = cv2.merge((b, g, r))
+    return geo_scalefit(image, width, height, mode, sample)
 
 # =============================================================================
 # === GEOMETRY FUNCTIONS ===
@@ -491,8 +518,7 @@ def geo_rotate_array(image: TYPE_IMAGE, angle: float, clip: bool=True) -> TYPE_I
     # Clip the rotated image
     return rotated_image[start_height:start_height + height, start_width:start_width + width]
 
-def geo_scalefit(image: TYPE_IMAGE,
-                 width: int, height:int,
+def geo_scalefit(image: TYPE_IMAGE, width: int, height:int,
                  mode:EnumScaleMode=EnumScaleMode.NONE,
                  sample:EnumInterpolation=EnumInterpolation.LANCZOS4) -> TYPE_IMAGE:
 
@@ -508,6 +534,7 @@ def geo_scalefit(image: TYPE_IMAGE,
             return geo_crop(image, widthT=width, heightT=height, pad=True)
 
         case EnumScaleMode.FIT:
+            print(sample, sample.value)
             return cv2.resize(image, (width, height), interpolation=sample.value)
 
     return image
@@ -590,37 +617,48 @@ def geo_mirror(image: TYPE_IMAGE, pX: float, axis: int, invert: bool=False) -> T
 # =============================================================================
 
 def light_hsv(image: TYPE_IMAGE, hue: float, saturation: float, value: float) -> TYPE_IMAGE:
+    # preserve original format
+    cc, image, alpha = image_rgb_clean(image)
+    # work in RGB ==> HSV
     image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
     hue *= 255
     image[:, :, 0] = (image[:, :, 0] + hue) % 180
     image[:, :, 1] = np.clip(image[:, :, 1] * saturation, 0, 255)
     image[:, :, 2] = np.clip(image[:, :, 2] * value, 0, 255)
-    # Logger.debug("light_hsv", f"{hue} {saturation} {value}")
-    return cv2.cvtColor(image, cv2.COLOR_HSV2BGR)
+    image = cv2.cvtColor(image, cv2.COLOR_HSV2BGR)
+    # now back to the original "format"
+    return image_rgb_restore(image, alpha, cc == 1)
 
 def light_gamma(image: TYPE_IMAGE, value: float) -> TYPE_IMAGE:
+    # preserve original format
+    cc, image, alpha = image_rgb_clean(image)
     if value <= 0:
-        return (image * 0).astype(np.uint8)
-    invGamma = 1.0 / max(0.000001, value)
-    table = cv2.pow(np.arange(256) / 255.0, invGamma) * 255
-    lookUpTable = np.clip(table, 0, 255).astype(np.uint8)
-    return cv2.LUT(image, lookUpTable)
+        image = (image * 0).astype(np.uint8)
+    else:
+        invGamma = 1.0 / max(0.000001, value)
+        table = cv2.pow(np.arange(256) / 255.0, invGamma) * 255
+        lookUpTable = np.clip(table, 0, 255).astype(np.uint8)
+        image = cv2.LUT(image, lookUpTable)
+        # now back to the original "format"
+    return image_rgb_restore(image, alpha, cc == 1)
 
 def light_contrast(image: TYPE_IMAGE, value: float) -> TYPE_IMAGE:
-    # Logger.debug("light_contrast", f"({value})")
+    cc, image, alpha = image_rgb_clean(image)
     mean_value = np.mean(image)
     image = (image - mean_value) * value + mean_value
-    return np.clip(image, 0, 255).astype(np.uint8)
+    image = np.clip(image, 0, 255).astype(np.uint8)
+    return image_rgb_restore(image, alpha, cc == 1)
 
 def light_exposure(image: TYPE_IMAGE, value: float) -> TYPE_IMAGE:
-    # Logger.debug("light_exposure", f"({math.pow(2.0, value)})")
-    return np.clip(image * value, 0, 255).astype(np.uint8)
+    cc, image, alpha = image_rgb_clean(image)
+    image = np.clip(image * value, 0, 255).astype(np.uint8)
+    return image_rgb_restore(image, alpha, cc == 1)
 
 def light_invert(image: TYPE_IMAGE, value: float) -> TYPE_IMAGE:
     value = np.clip(value, 0, 1)
+    cc, image, alpha = image_rgb_clean(image)
     image = cv2.addWeighted(image, 1 - value, 255 - image, value, 0)
-    Logger.debug(image.shape, value)
-    return image
+    return image_rgb_restore(image, alpha, cc == 1)
 
 # =============================================================================
 # === COLOR FUNCTIONS ===
@@ -631,6 +669,7 @@ def color_eval(color: TYPE_PIXEL,
                target:EnumIntFloat=EnumIntFloat.INT,
                crunch:EnumGrayscaleCrunch=EnumGrayscaleCrunch.MEAN) -> TYPE_PIXEL:
 
+    """Create a color by R(GB) and a target pixel type."""
     def parse_single_color(c: TYPE_PIXEL) -> TYPE_PIXEL:
         if isinstance(c, float) or c != int(c):
             c = max(0, min(1, c))
@@ -738,23 +777,49 @@ def color_match_heat_map(image: TYPE_IMAGE,
     return cv2.addWeighted(image, 0.5, image, 0.5, 0)
 
 def color_average(image: TYPE_IMAGE) -> TYPE_IMAGE:
-    return np.mean(image)
-    return adjust_pixelate(image, 256)
+    color = [0, 0, 0]
+    if channel_count(image)[0] == 1:
+        raw = int(np.mean(image))
+        color = [raw] * 3
+    else:
+        # each channel....
+        color = [
+            int(np.mean(image[:,:,0])),
+            int(np.mean(image[:,:,1])),
+            int(np.mean(image[:,:,2])) ]
+    return color
 
 def color_theory_complementary(color: TYPE_PIXEL) -> TYPE_PIXEL:
-    return tuple(max(0, min(255, 255 - c)) for c in color)
+    color = cv2.cvtColor(np.uint8([[color]]), cv2.COLOR_BGR2HSV)[0, 0]
+    color[0] = (color[0] + 180) % 360
+    return cv2.cvtColor(np.uint8([[color]]), cv2.COLOR_HSV2BGR)[0, 0]
 
 def color_theory_monochromatic(color: TYPE_PIXEL) -> tuple[TYPE_PIXEL, TYPE_PIXEL]:
-    return [
-        color_theory_complementary((color[0] + 30, color[1] + 30, color[2] + 30)),
-        color_theory_complementary((color[0] - 30, color[1] - 30, color[2] - 30))
-    ]
+    color = cv2.cvtColor(np.uint8([[color]]), cv2.COLOR_RGB2HSV)[0, 0]
+
+    hsl_color_plus = np.array(color)
+    hsl_color_plus[1] = min(255, hsl_color_plus[1] + 30)  # Increase saturation
+    rgb_color_plus = cv2.cvtColor(np.uint8([[hsl_color_plus]]), cv2.COLOR_HSV2RGB)[0, 0]
+
+    hsl_color_minus = np.array(color)
+    hsl_color_minus[1] = max(0, hsl_color_minus[1] - 30)  # Decrease saturation
+    rgb_color_minus = cv2.cvtColor(np.uint8([[hsl_color_minus]]), cv2.COLOR_HSV2RGB)[0, 0]
+
+    return rgb_color_plus, rgb_color_minus
 
 def color_theory_split_complementary(color: TYPE_PIXEL) -> tuple[TYPE_PIXEL, TYPE_PIXEL]:
-    return [
-        color_theory_complementary((color[0] + 30, color[1] - 30, color[2])),
-        color_theory_complementary((color[0] - 30, color[1] + 30, color[2]))
-    ]
+    hsl_color = cv2.cvtColor(np.uint8([[color]]), cv2.COLOR_RGB2HSV)[0, 0]
+
+    hsl_color_plus = np.array(color)
+    hsl_color_plus[1] = min(255, hsl_color_plus[1] + 30)  # Increase saturation
+    rgb_color_plus = cv2.cvtColor(np.uint8([[hsl_color_plus]]), cv2.COLOR_HSV2RGB)[0, 0]
+
+    hsl_color_minus = np.array(color)
+    hsl_color_minus[1] = max(0, hsl_color_minus[1] - 30)  # Decrease saturation
+    hsl_color_minus[2] = min(255, hsl_color_minus[2] + 30)  # Increase lightness
+    rgb_color_minus = cv2.cvtColor(np.uint8([[hsl_color_minus]]), cv2.COLOR_HSV2RGB)[0, 0]
+
+    return rgb_color_plus, rgb_color_minus
 
 def color_theory_analogous(color: TYPE_PIXEL) -> tuple[TYPE_PIXEL, TYPE_PIXEL]:
     return [
@@ -796,15 +861,14 @@ def color_theory_compound(color: TYPE_PIXEL) -> tuple[TYPE_PIXEL, TYPE_PIXEL, TY
         color_theory_complementary((color[0] + 210, color[1] + 210, color[2]))
     ]
 
-def color_theory(image: TYPE_IMAGE, scheme: EnumColorTheory=EnumColorTheory.COMPLIMENTARY) -> tuple[TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE]:
+def color_theory(image: TYPE_IMAGE, scheme: EnumColorTheory=EnumColorTheory.COMPLIMENTARY) -> tuple[TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE, TYPE_PIXEL]:
 
     aR = aG = aB = bR = bG = bB = cR = cG = cB = 0
-    image_avg = color_average(image)
-    color = image_avg[image_avg.shape[0] // 2, image_avg.shape[1] // 2]
+    color = color_average(image)
     match scheme:
         case EnumColorTheory.COMPLIMENTARY:
             a = color_theory_complementary(color)
-            aR, aG, aB = a
+            aB, aG, aR = a
         case EnumColorTheory.MONOCHROMATIC:
             a, b = color_theory_monochromatic(color)
             aR, aG, aB = a
@@ -842,11 +906,14 @@ def color_theory(image: TYPE_IMAGE, scheme: EnumColorTheory=EnumColorTheory.COMP
             bR, bG, bB = b
             cR, cG, cB = c
 
+    h, w = image.shape[:2]
+
     return (
-        np.full_like(image, [aR, aG, aB], dtype=np.uint8),
-        np.full_like(image, [bR, bG, bB], dtype=np.uint8),
-        np.full_like(image, [cR, cG, cB], dtype=np.uint8),
-        image_avg
+        np.full((h, w, 4), [aR, aG, aB, 255], dtype=np.uint8),
+        np.full((h, w, 4), [bR, bG, bB, 255], dtype=np.uint8),
+        np.full((h, w, 4), [cR, cG, cB, 255], dtype=np.uint8),
+        np.full((h, w, 4), [color[0], color[1], color[2], 255], dtype=np.uint8),
+
     )
 
 # =============================================================================
@@ -877,22 +944,27 @@ def comp_lerp(imageA:TYPE_IMAGE,
     imageA = cv2.add(imageA, imageB)
     return imageA.astype(np.uint8)
 
-def comp_fill(image: TYPE_IMAGE,
-              width: int,
-              height: int,
-              color: TYPE_PIXEL=1) -> TYPE_IMAGE:
+def comp_fill(image:TYPE_IMAGE, width:int, height:int, color:TYPE_PIXEL=255) -> TYPE_IMAGE:
     """
     Fills a block of pixels with a matte or stretched to width x height.
     """
 
     cc, chan, x, y = channel_count(image)
-    # y, x = image.shape[:2]
     canvas = channel_solid(width, height, color, chan=chan)
     y1 = max(0, (height - y) // 2)
     y2 = min(height, y1 + y)
     x1 = max(0, (width - x) // 2)
     x2 = min(width, x1 + x)
-    canvas[y1: y2, x1: x2, :cc] = image
+
+    # crop/clip
+    if y > height:
+        y1 = 0
+        y2 = height
+    if x > width:
+        x1 = 0
+        x2 = width
+
+    canvas[y1: y2, x1: x2, :cc] = image[:y2-y1, :x2-x1, :cc]
     return canvas
 
 def comp_blend(imageA:Optional[TYPE_IMAGE]=None,
@@ -909,78 +981,67 @@ def comp_blend(imageA:Optional[TYPE_IMAGE]=None,
         targetW = max(
             imageA.shape[1] if imageA is not None else 0,
             imageB.shape[1] if imageB is not None else 0,
-            mask.shape[1] if mask is not None else 0
+            #mask.shape[1] if mask is not None else 0
         )
 
         targetH = max(
             imageA.shape[0] if imageA is not None else 0,
             imageB.shape[0] if imageB is not None else 0,
-            mask.shape[0] if mask is not None else 0
+            #mask.shape[0] if mask is not None else 0
         )
 
     elif imageA is not None:
         targetH, targetW = imageA.shape[:2]
     elif imageB is not None:
         targetH, targetW = imageB.shape[:2]
-    elif mask is not None:
-        targetH, targetW = mask.shape[:2]
+
+    imageB_maskColor = 0 if imageB is None else 255
 
     targetW, targetH = max(0, targetW), max(0, targetH)
-    a = imageA.shape if imageA is not None else None
-    b = imageB.shape if imageB is not None else None
-    m = mask.shape if imageB is not None else None
-    # Logger.debug(targetW, targetH, a, b, m, blendOp, alpha, mode, sample)
-
     if targetH == 0 or targetW == 0:
         Logger.debug("bad dimensions", targetW, targetH)
         return channel_solid(targetW or 1, targetH or 1, )
 
-    center = (targetW // 2, targetH // 2)
-
-    def resize_input(img: TYPE_IMAGE) -> TYPE_IMAGE:
-        if img is None:
-            return channel_solid(targetW, targetH, 0., )
-
+    def scale(img:TYPE_IMAGE) -> TYPE_IMAGE:
         h, w = img.shape[:2]
         if h != targetH or w != targetW:
             if mode != EnumScaleMode.NONE:
                 img = geo_scalefit(img, targetW, targetH, mode, sample)
+            print(img.shape[:2], targetW, targetH)
             img = comp_fill(img, targetW, targetH, color)
+            # print(img.shape[:2], targetW, targetH)
         return img
 
-    imageA = resize_input(imageA)
-    while channel_count(imageA)[0] < 3:
-        imageA = channel_add(imageA, 0)
-    if channel_count(imageA)[0] < 4:
-        imageA = channel_add(imageA, 255)
+    def process(img:TYPE_IMAGE, alpha:bool=True) -> TYPE_IMAGE:
+        img = img if img is not None else channel_solid(targetW, targetH, 0)
+        img = scale(img)
+        cc = channel_count(img)[0]
+        while cc < 3:
+            # @TODO: copy first channel to all missing? make grayscale RGB to process?
+            img = channel_add(img, 0)
+            cc += 1
+        if alpha and cc < 4:
+            img = channel_add(img, 255)
+        return img
 
-    imageB = resize_input(imageB)
-    while (cc := channel_count(imageB)[0]) < 3:
+    imageA = process(imageA)
+    imageB = process(imageB, False)
+    # use the alpha in the imageB, if any
+    if channel_count(imageB)[0] < 4:
+        mask = mask if mask is not None else np.full((targetH, targetW, 1), imageB_maskColor, dtype=np.uint8)
+        if channel_count(mask)[0] != 1:
+            mask = image_grayscale(mask)
+        if len(mask.shape) == 2:
+            mask = np.expand_dims(mask, axis=-1)
+        mask = scale(mask)
         imageB = channel_add(imageB, 0)
-
-    if cc < 4:
-        imageB = channel_add(imageB, 0)
-        if mask is None:
-            mask = channel_solid(targetW, targetH)
-        elif mask is not None:
-            if channel_count(mask)[0] != 1:
-                # crunch the mask into an actual mask if RGB(A)
-                mask = channel_solid(targetW, targetH, color_average(mask))
-
-            hM, wM = mask.shape[:2]
-            if hM != targetH or wM != targetW:
-                if mode != EnumScaleMode.NONE:
-                    mask = geo_scalefit(mask, targetW, targetH, mode, sample)
-                mask = comp_fill(mask, targetW, targetH, 0)
-
-    if cc < 4 or mask is not None:
         imageB[:, :, 3] = mask[:, :, 0]
 
     # make an image canvas to hold A and B that fits both on center
     if mode == EnumScaleMode.NONE:
         def xyz(img: TYPE_IMAGE) -> TYPE_IMAGE:
             h, w = img.shape[:2]
-            y, x = max(0, center[1] - h // 2), max(0, center[0] - w // 2)
+            y, x = max(0, targetH // 2 - h // 2), max(0, targetW // 2 - w // 2)
             canvas = channel_solid(targetW, targetH, 0, chan=EnumImageType.RGBA)
             canvas[y: y + h, x: x + w, :4] = img
             return canvas
@@ -988,16 +1049,21 @@ def comp_blend(imageA:Optional[TYPE_IMAGE]=None,
         imageA = xyz(imageA)
         imageB = xyz(imageB)
 
-    Logger.spam('end', imageA.shape, imageB.shape, mask.shape if mask is not None else 'NONE')
-
+    print(imageA.shape, imageB.shape, blendOp.value, alpha, imageB_maskColor)
     imageA = cv2pil(imageA)
     imageB = cv2pil(imageB)
-    image = blendLayers(imageA, imageB, blendOp, np.clip(alpha, 0, 1))
+    image = blendLayers(imageA, imageB, blendOp.value, np.clip(alpha, 0, 1))
     return pil2cv(image)
 
 # =============================================================================
 # === ADJUST FUNCTIONS ===
 # =============================================================================
+
+def adjust_equalize(image:TYPE_IMAGE) -> TYPE_IMAGE:
+    cc, image, alpha = image_rgb_clean(image)
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    image = cv2.equalizeHist(image)
+    return image_rgb_restore(image, alpha, cc == 1)
 
 def adjust_threshold(image:TYPE_IMAGE,
                      threshold:float=0.5,
@@ -1008,6 +1074,7 @@ def adjust_threshold(image:TYPE_IMAGE,
 
     const = max(-100, min(100, const))
     block = max(3, block if block % 2 == 1 else block + 1)
+    cc, image, alpha = image_rgb_clean(image)
     if adapt != EnumThresholdAdapt.ADAPT_NONE:
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         gray = cv2.adaptiveThreshold(gray, 255, adapt, cv2.THRESH_BINARY, block, const)
@@ -1017,9 +1084,9 @@ def adjust_threshold(image:TYPE_IMAGE,
     else:
         threshold = int(threshold * 255)
         _, image = cv2.threshold(image, threshold, 255, mode)
-    return image
+    return image_rgb_restore(image, alpha, cc == 1)
 
-def adjust_levels(image: torch.Tensor, black_point:int=0, white_point=255,
+def adjust_levels(image:torch.Tensor, black_point:int=0, white_point=255,
                   mid_point=0.5, gamma=1.0) -> torch.Tensor:
     """
     Perform levels adjustment on a torch.tensor representing an image.
@@ -1049,7 +1116,7 @@ def adjust_levels(image: torch.Tensor, black_point:int=0, white_point=255,
     # Scale back to the range [0, 1]
     return (image + 0.5) / white_point
 
-def adjust_sharpen(image: TYPE_IMAGE, kernel_size=None, sigma:float=1.0,
+def adjust_sharpen(image:TYPE_IMAGE, kernel_size=None, sigma:float=1.0,
                    amount:float=1.0, threshold:float=0) -> TYPE_IMAGE:
     """Return a sharpened version of the image, using an unsharp mask."""
 
@@ -1064,7 +1131,7 @@ def adjust_sharpen(image: TYPE_IMAGE, kernel_size=None, sigma:float=1.0,
         np.copyto(sharpened, image, where=low_contrast_mask)
     return sharpened
 
-def adjust_quantize(image: TYPE_IMAGE, levels:int=256, iterations:int=10, epsilon:float=0.2) -> TYPE_IMAGE:
+def adjust_quantize(image:TYPE_IMAGE, levels:int=256, iterations:int=10, epsilon:float=0.2) -> TYPE_IMAGE:
     levels = int(max(2, min(256, levels)))
     pixels = np.float32(image)
     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, iterations, epsilon)
@@ -1286,12 +1353,13 @@ def testColorConvert() -> None:
 def testBlendModes() -> None:
     # all sizes and scale modes should work
     fore = cv2.imread('./_res/img/test_rainbow.png', cv2.IMREAD_UNCHANGED)
+    fore = cv2.imread('./_res/img/test_fore2.png', cv2.IMREAD_UNCHANGED)
     back = cv2.imread('./_res/img/test_fore.png', cv2.IMREAD_UNCHANGED)
     # mask = cv2.imread('./_res/img/test_mask.png', cv2.IMREAD_UNCHANGED)
     mask = None
     for op in EnumBlendType:
         for m in EnumScaleMode:
-            a = comp_blend(fore, None, None) #, blendOp=op, alpha=0.5, color=(255, 0, 0), mode=m)
+            a = comp_blend(fore, fore, None, blendOp=op, mode=m, color=(255, 0, 0))
             cv2.imwrite(f'./_res/tst/blend-{op.name}-{m.name}-1.png', a)
             #a = comp_blend(back, None, mask, blendOp=op, alpha=0.5, color=(0, 255, 0), mode=m)
             #cv2.imwrite(f'./_res/tst/blend-{op.name}-{m.name}-0.5.png', a)
@@ -1308,6 +1376,5 @@ def testImageMerge() -> None:
     cv2.imwrite(f'./_res/tst/image-merge.png', d)
 
 if __name__ == "__main__":
-    # testBlendModes()
-    testImageMerge()
-
+    testBlendModes()
+    # testImageMerge()

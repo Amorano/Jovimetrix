@@ -37,12 +37,15 @@ class TransformNode(JOVImageInOutBaseNode):
         size = parse_tuple(Lexicon.SIZE, kw, default=(1, 1,), clip_min=0, clip_max=1)
         wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
         edge = kw.get(Lexicon.EDGE, [None])
-        mode = kw.get(Lexicon.MODE, [None])
-        sample = kw.get(Lexicon.SAMPLE, [None])
+        mode = kw.get(Lexicon.MODE, [EnumScaleMode.NONE])
+        sample = kw.get(Lexicon.SAMPLE, [EnumInterpolation.LANCZOS4])
         masks = []
         images = []
-        for data in zip_longest_fill(pixels, *offset, angle, *size, edge, *wihi, mode, sample):
-            img, oX, oY, a, sX, sY, e, w, h, m, rs = data
+        for data in zip_longest_fill(pixels, offset, angle, size, edge, wihi, mode, sample):
+            img, offset, a, size, e, wihi, m, rs = data
+            oX, oY = offset
+            sX, sY = size
+            w, h = wihi
             if img is not None:
                 img = tensor2cv(img)
                 rs = EnumInterpolation[rs] if rs is not None else EnumInterpolation.LANCZOS4
@@ -72,12 +75,13 @@ class TileNode(JOVImageInOutBaseNode):
         pixels = kw.get(Lexicon.PIXEL, [None])
         tile = parse_tuple(Lexicon.XY, kw, default=(2, 2,), clip_min=1)
         wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
-        mode = kw.get(Lexicon.MODE, [None])
-        sample = kw.get(Lexicon.SAMPLE, [None])
+        mode = kw.get(Lexicon.MODE, [EnumScaleMode.NONE])
+        sample = kw.get(Lexicon.SAMPLE, [EnumInterpolation.LANCZOS4])
         masks = []
         images = []
-        for data in zip_longest_fill(pixels, *tile, *wihi, mode, sample):
-            img, x, y, w, h, m, rs = data
+        for img, tile, wihi, mode, sample in zip_longest_fill(pixels, tile, wihi, mode, sample):
+            x, y =  tile
+            w, h = wihi
             img = tensor2cv(img) if img is not None else np.zeros((h, w, 3), dtype=np.uint8)
             img = geo_edge_wrap(img, x, y)
             rs = EnumInterpolation[rs] if rs is not None else EnumInterpolation.LANCZOS4
@@ -107,11 +111,12 @@ class MirrorNode(JOVImageInOutBaseNode):
         pixels = kw.get(Lexicon.PIXEL, [None])
         offset = parse_tuple(Lexicon.XY, kw, default=(0, 0,), clip_min=-1, clip_max=1)
         i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, default=[1], clip_min=0, clip_max=1)
-        mode = kw.get(Lexicon.MODE, [None])
+        mode = kw.get(Lexicon.MODE, [EnumScaleMode.NONE])
         masks = []
         images = []
-        for data in zip_longest_fill(pixels, *offset, mode, i):
-            img, x, y, m, i = data
+        for data in zip_longest_fill(pixels, offset, mode, i):
+            img, offset, m, i = data
+            x, y = offset
             img = tensor2cv(img) if img is not None else np.zeros((0,0,3), dtype=np.uint8)
             if 'X' in m:
                 img = geo_mirror(img, x or 0, 1, invert=i or 0)
@@ -144,17 +149,15 @@ class ProjectionNode(JOVImageInOutBaseNode):
         pixels = kw.get(Lexicon.PIXEL, [None])
         wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
         i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
-        proj = kw.get(Lexicon.PROJECTION, [None])
-        strength = kw.get(Lexicon.STRENGTH, [None])
-        mode = kw.get(Lexicon.MODE, [None])
-        sample = kw.get(Lexicon.SAMPLE, [None])
+        proj = kw.get(Lexicon.PROJECTION, [EnumProjection.SPHERICAL])
+        strength = kw.get(Lexicon.STRENGTH, [1])
+        mode = kw.get(Lexicon.MODE, [EnumScaleMode.NONE])
+        sample = kw.get(Lexicon.SAMPLE, [EnumInterpolation.LANCZOS4])
         masks = []
         images = []
-        for data in zip_longest_fill(pixels, proj, strength, *wihi, mode, i, sample):
-            img, pr, st, w, h, m, i, rs = data
-            st = st if st is not None else 1
-            pr = pr if pr is not None else EnumProjection.SPHERICAL
-            m = m if m is not None else EnumScaleMode.NONE
+        for data in zip_longest_fill(pixels, proj, strength, wihi, mode, i, sample):
+            img, pr, st, wihi, m, i, rs = data
+            w, h = wihi
             img = tensor2cv(img) if img is not None else np.zeros((h, w, 3), dtype=np.uint8)
             match pr:
                 case EnumProjection.SPHERICAL:
@@ -162,9 +165,8 @@ class ProjectionNode(JOVImageInOutBaseNode):
                 case EnumProjection.FISHEYE:
                     img = remap_fisheye(img, st)
 
-            rs = EnumInterpolation[rs] if rs is not None else EnumInterpolation.LANCZOS4
             img = geo_scalefit(img, w, h, m, rs)
-            if (i if i is not None else 0) != 0:
+            if i != 0:
                 img = light_invert(img, i)
 
             images.append(cv2tensor(img))

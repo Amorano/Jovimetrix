@@ -400,9 +400,9 @@ class StreamManager(metaclass=Singleton):
 # =============================================================================
 
 class StreamingHandler(BaseHTTPRequestHandler):
-    def __init__(self, outputs, *args, **kwargs) -> None:
+    def __init__(self, outputs, *arg, **kw) -> None:
         self.__outputs = outputs
-        super().__init__(*args, **kwargs)
+        super().__init__(*arg, **kw)
 
     def do_GET(self) -> None:
         key = self.path.lower()

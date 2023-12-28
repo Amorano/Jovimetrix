@@ -4,13 +4,12 @@ Logic and Code flow nodes
 """
 
 import time
-
 from enum import Enum
 from typing import Any
 
-from Jovimetrix import deep_merge_dict, \
+from Jovimetrix import deep_merge_dict, zip_longest_fill, convert_parameter, \
     Logger, JOVBaseNode, Lexicon, \
-    JOV_MAX_DELAY, IT_REQUIRED, IT_AB, WILDCARD
+    JOV_MAX_DELAY, IT_REQUIRED, IT_FLIP, WILDCARD
 
 # =============================================================================
 
@@ -18,9 +17,23 @@ class EnumComparison(Enum):
     EQUAL = 0
     NOT_EQUAL = 1
     LESS_THAN = 2
-    LESS_THAN_OR_EQUAL = 3
+    LESS_THAN_EQUAL = 3
     GREATER_THAN = 4
-    GREATER_THAN_OR_EQUAL = 5
+    GREATER_THAN_EQUAL = 5
+    # LOGIC
+    # NOT = 10
+    AND = 20
+    NAND = 21
+    OR = 22
+    NOR = 23
+    XOR = 24
+    XNOR = 25
+    # TYPE
+    IS = 80
+    IS_NOT = 81
+    # GROUPS
+    IN = 82
+    NOT_IN = 83
 
 class DelayNode(JOVBaseNode):
     NAME = "DELAY (JOV) ✋🏽"
@@ -73,27 +86,63 @@ class ComparisonNode(JOVBaseNode):
             Lexicon.COMPARE: (EnumComparison._member_names_, {"default": EnumComparison.EQUAL.name}),
             Lexicon.IN_B: (WILDCARD, {"default": None})
         }}
-        return deep_merge_dict(IT_REQUIRED, d)
+        return deep_merge_dict(IT_REQUIRED, d, IT_FLIP)
 
     def run(self, **kw) -> tuple[bool]:
-        compare = kw.get(Lexicon.COMPARE, EnumComparison.A_EQUALS_B)
-        A = kw.get(Lexicon.IN_A, None)
-        B = kw.get(Lexicon.IN_B, None)
+        result = []
+        A = kw.get(Lexicon.IN_A, [0])
+        B = kw.get(Lexicon.IN_B, [0])
+        flip = kw.get(Lexicon.FLIP, [False])
+        op = kw.get(Lexicon.COMPARE, [EnumComparison.EQUAL])
+        for a, b, op, flip in zip_longest_fill(A, B, op, flip):
+            if (short := len(a) - len(b)) > 0:
+                b = list(b) + [0] * short
+            typ_a, val_a = convert_parameter(a)
+            _, val_b = convert_parameter(b)
+            if flip:
+                a, b = b, a
+            op = EnumComparison[op]
+            match op:
+                case EnumComparison.EQUAL:
+                    val = [a == b for a, b in zip(val_a, val_b)]
+                case EnumComparison.GREATER_THAN:
+                    val = [a > b for a, b in zip(val_a, val_b)]
+                case EnumComparison.GREATER_THAN_EQUAL:
+                    val = [a >= b for a, b in zip(val_a, val_b)]
+                case EnumComparison.LESS_THAN:
+                    val = [a < b for a, b in zip(val_a, val_b)]
+                case EnumComparison.LESS_THAN_EQUAL:
+                    val = [a <= b for a, b in zip(val_a, val_b)]
+                case EnumComparison.NOT_EQUAL:
+                    val = [a != b for a, b in zip(val_a, val_b)]
+                # LOGIC
+                # case EnumBinaryOperation.NOT = 10
+                case EnumComparison.AND:
+                    val = [a and b for a, b in zip(val_a, val_b)]
+                case EnumComparison.NAND:
+                    val = [not(a and b) for a, b in zip(val_a, val_b)]
+                case EnumComparison.OR:
+                    val = [a or b for a, b in zip(val_a, val_b)]
+                case EnumComparison.NOR:
+                    val = [not(a or b) for a, b in zip(val_a, val_b)]
+                # IDENTITY
+                case EnumComparison.IS:
+                    val = [a is b for a, b in zip(val_a, val_b)]
+                case EnumComparison.IS_NOT:
+                    val = [a is not b for a, b in zip(val_a, val_b)]
+                # GROUP
+                case EnumComparison.IN:
+                    val = [a in val_b for a in val_a]
+                case EnumComparison.NOT_IN:
+                    val = [a not in val_b for a in val_a]
 
-        match compare:
-            case EnumComparison.A_EQUALS_B:
-                return (A == B,)
-            case EnumComparison.A_GREATER_THAN_B:
-                return (A > B,)
-            case EnumComparison.A_GREATER_THAN_OR_EQUAL_TO_B:
-                return (A >= B,)
-            case EnumComparison.A_LESS_THAN_B:
-                return (A < B,)
-            case EnumComparison.A_LESS_THAN_OR_EQUAL_TO_B:
-                return (A <= B,)
-            case EnumComparison.A_NOT_EQUAL_TO_B:
-                return (A != B,)
-        return (False,)
+            val = [typ_a[i](v) for i, v in enumerate(val)]
+            if len(val) == 1:
+                result.append(val[0])
+            else:
+                result.append(tuple(val))
+            # print(result, val)
+        return (result, )
 
 class IfThenElseNode(JOVBaseNode):
     NAME = "IF-THEN-ELSE (JOV) 🔀"

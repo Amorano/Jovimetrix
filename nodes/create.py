@@ -3,25 +3,20 @@ Jovimetrix - http://www.github.com/amorano/jovimetrix
 Creation
 """
 
-import re
-import math
-import time
 from enum import Enum
 
-import cv2
 import torch
-import numpy as np
 from PIL import Image
 
 from Jovimetrix import pil2tensor, pil2cv, cv2pil, cv2tensor, cv2mask, \
-    tensor2cv, deep_merge_dict, zip_longest_fill, parse_tuple, parse_number,\
-    EnumTupleType, JOVImageBaseNode, JOVImageInOutBaseNode, Logger, Lexicon, \
-    TYPE_PIXEL, IT_PIXELS, IT_RGBA, IT_WH, IT_SCALE, IT_ROT, IT_INVERT, \
+    deep_merge_dict, parse_tuple, parse_number,\
+    EnumTupleType, JOVImageBaseNode, Logger, Lexicon, \
+    IT_PIXELS, IT_RGBA, IT_WH, IT_SCALE, IT_ROT, IT_INVERT, \
     IT_TIME, IT_WHMODE, IT_REQUIRED, MIN_IMAGE_SIZE
 
-from Jovimetrix.sup.comp import EnumScaleMode, geo_scalefit, shape_ellipse, \
-    shape_polygon, shape_quad, light_invert, \
-    EnumInterpolation, IT_SAMPLE
+from Jovimetrix.sup.comp import geo_scalefit, shape_ellipse, channel_solid, \
+    shape_polygon, shape_quad, light_invert, image_load_from_url, \
+    EnumInterpolation, EnumScaleMode, IT_SAMPLE
 
 # =============================================================================
 
@@ -38,7 +33,6 @@ class ConstantNode(JOVImageBaseNode):
     NAME = "CONSTANT (JOV) 🟪"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
     DESCRIPTION = ""
-    OUTPUT_NODE = True
     OUTPUT_IS_LIST = (False, False, )
 
     @classmethod
@@ -98,6 +92,7 @@ class ShapeNode(JOVImageBaseNode):
 
         return (pil2tensor(img), pil2tensor(img.convert("L")), )
 
+"""
 class PixelShaderNode(JOVImageInOutBaseNode):
     NAME = "PIXEL SHADER (JOV) 🔆"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
@@ -164,8 +159,8 @@ class PixelShaderNode(JOVImageInOutBaseNode):
         G = kw.get(Lexicon.G, [None])
         B = kw.get(Lexicon.B, [None])
         width, height = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)[0]
-        mode = kw.get(Lexicon.MODE, [None])
-        sample = kw.get(Lexicon.SAMPLE, [None])
+        mode = kw.get(Lexicon.MODE, [EnumScaleMode.NONE])
+        sample = kw.get(Lexicon.SAMPLE, [EnumInterpolation.LANCZOS4])
         masks = []
         images = []
         for data in zip_longest_fill(pixels, R, G, B, mode, sample):
@@ -199,6 +194,7 @@ class PixelShaderNode(JOVImageInOutBaseNode):
             torch.stack(images),
             torch.stack(masks)
         )
+"""
 
 class GLSLNode(JOVImageBaseNode):
     NAME = "GLSL (JOV) 🍩"
@@ -230,3 +226,37 @@ class GLSLNode(JOVImageBaseNode):
         #image = Image.new(mode="RGB", size=wh[0])
         #return (pil2tensor(image), pil2mask(image))
         return (pixels, pixels, )
+
+class ImageFromURLNode(JOVImageBaseNode):
+    NAME = "IMAGE FROM URL (JOV) 📥"
+    CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
+    DESCRIPTION = ""
+    OUTPUT_IS_LIST = (False, False, )
+
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        d =  {"optional": {
+            Lexicon.URL: ("STRING", {"default": "https://upload.wikimedia.org/wikipedia/en/c/c0/Les_Horribles_Cernettes_in_1992.jpg"}),
+        }}
+        return deep_merge_dict(IT_REQUIRED, d, IT_WHMODE, IT_SAMPLE)
+
+    def __init__(self) -> None:
+        self.__url = None
+        self.__image = None
+
+    def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
+        url = kw[Lexicon.URL]
+        default = (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,)
+        width, height = parse_tuple(Lexicon.WH, kw, default=default, clip_min=1)[0]
+        if self.__url != url:
+            self.__url = url
+            self.__image = image_load_from_url(url)
+
+        if self.__image is None:
+            self.__image = channel_solid(width, height, 0, chan=3)
+        else:
+            mode = EnumScaleMode[kw[Lexicon.MODE]]
+            sample = EnumInterpolation[kw[Lexicon.SAMPLE]]
+            self.__image = geo_scalefit(self.__image, width, height, mode, sample)
+            print(width, height, self.__image.shape[:2], mode, sample)
+        return (cv2tensor(self.__image), cv2mask(self.__image),)

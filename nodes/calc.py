@@ -12,9 +12,9 @@ from collections import Counter
 import numpy as np
 from scipy.special import gamma
 
-from Jovimetrix import zip_longest_fill, deep_merge_dict, \
+from Jovimetrix import zip_longest_fill, convert_parameter, deep_merge_dict, \
     JOVBaseNode, Logger, Lexicon, \
-    IT_REQUIRED, IT_AB, WILDCARD
+    IT_REQUIRED, IT_AB, WILDCARD, IT_FLIP
 
 # =============================================================================
 
@@ -64,8 +64,10 @@ class EnumUnaryOperation(Enum):
     NEGATE = 10
     RECIPROCAL = 12
     FACTORIAL = 14
-    EXP = 20
+    EXP = 16
     # COMPOUND
+    MINIMUM = 20
+    MAXIMUM = 21
     MEAN = 22
     MEDIAN = 24
     MODE = 26
@@ -81,6 +83,9 @@ class EnumUnaryOperation(Enum):
     RADIANS = 70
     DEGREES = 72
     GAMMA = 80
+    # IS_EVEN
+    IS_EVEN = 90
+    IS_ODD = 91
 
 # Dictionary to map each operation to its corresponding function
 OP_UNARY = {
@@ -100,6 +105,8 @@ OP_UNARY = {
     EnumUnaryOperation.EXP: lambda x: math.exp(x),
     EnumUnaryOperation.NOT: lambda x: not x,
     EnumUnaryOperation.BIT_NOT: lambda x: ~int(x),
+    EnumUnaryOperation.IS_EVEN: lambda x: x % 2 == 0,
+    EnumUnaryOperation.IS_ODD: lambda x: x % 2 == 1,
     EnumUnaryOperation.COS_H: lambda x: math.cosh(x),
     EnumUnaryOperation.SIN_H: lambda x: math.sinh(x),
     EnumUnaryOperation.TAN_H: lambda x: math.tanh(x),
@@ -107,30 +114,6 @@ OP_UNARY = {
     EnumUnaryOperation.DEGREES: lambda x: math.degrees(x),
     EnumUnaryOperation.GAMMA: lambda x: gamma(x)
 }
-
-def convert_parameter(data: Any) -> Any:
-    if data is None:
-        return [int], [0]
-
-    if not isinstance(data, (list, tuple, set,)):
-        data = [data]
-
-    typ = []
-    val = []
-    for v in data:
-        # print(v, type(v), type(v) == float, type(v) == int)
-        t = type(v)
-        if t == int:
-            t = float
-        try:
-            v = float(v)
-        except Exception as e:
-            Logger.debug(str(e))
-            v = 0
-        typ.append(t)
-        val.append(v)
-
-    return typ, val
 
 class CalcUnaryOPNode(JOVBaseNode):
     """Perform a Unary Operation on an input."""
@@ -148,14 +131,14 @@ class CalcUnaryOPNode(JOVBaseNode):
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
             Lexicon.IN_A: (WILDCARD, {"default": None}),
-            Lexicon.TYPE: (EnumUnaryOperation._member_names_, {"default": EnumUnaryOperation.ABS.name})
+            Lexicon.FUNC: (EnumUnaryOperation._member_names_, {"default": EnumUnaryOperation.ABS.name})
         }}
         return deep_merge_dict(IT_REQUIRED, d)
 
     def run(self, **kw) -> tuple[bool]:
         result = []
         data = kw.get(Lexicon.IN_A, [0])
-        op = kw.get(Lexicon.TYPE, [EnumUnaryOperation.ABS.value])
+        op = kw.get(Lexicon.FUNC, [EnumUnaryOperation.ABS])
         for data, op in zip_longest_fill(data, op):
             typ, val = convert_parameter(data)
             op = EnumUnaryOperation[op]
@@ -178,6 +161,18 @@ class CalcUnaryOPNode(JOVBaseNode):
                     else:
                         m = math.sqrt(sum(x ** 2 for x in val))
                         val = [v / m for v in val]
+                case EnumUnaryOperation.MAXIMUM:
+                    if len(val) == 1:
+                        val = [val]
+                    else:
+                        val = [max(val)]
+
+                case EnumUnaryOperation.MINIMUM:
+                    if len(val) == 1:
+                        val = [val]
+                    else:
+                        val = [min(val)]
+
                 case _:
                     # Apply unary operation to each item in the list
                     ret = []
@@ -207,34 +202,28 @@ class EnumBinaryOperation(Enum):
     DIVIDE_FLOOR = 4
     MODULUS = 5
     POWER = 6
-    # LOGIC
-    # NOT = 10
-    AND = 20
-    NAND = 21
-    OR = 22
-    NOR = 23
-    #XOR = 24
-    #XNOR = 25
-    # BITS
-    # BIT_NOT = 20
-    BIT_AND = 40
-    BIT_NAND = 41
-    BIT_OR = 42
-    BIT_NOR = 43
-    BIT_XOR = 44
-    BIT_XNOR = 45
-    BIT_LSHIFT = 46
-    BIT_RSHIFT = 47
+    # TERNARY WITHOUT THE NEED
+    MAXIMUM = 20
+    MINIMUM = 21
     # VECTOR
-    DOT_PRODUCT = 60
-    CROSS_PRODUCT = 61
+    DOT_PRODUCT = 30
+    CROSS_PRODUCT = 31
     # MATRIX
 
-    # GROUPS
-    IS = 80
-    IS_NOT = 81
-    IN = 82
-    NOT_IN = 83
+    # BITS
+    # BIT_NOT = 39
+    BIT_AND = 60
+    BIT_NAND = 61
+    BIT_OR = 62
+    BIT_NOR = 63
+    BIT_XOR = 64
+    BIT_XNOR = 65
+    BIT_LSHIFT = 66
+    BIT_RSHIFT = 67
+    # GROUP
+    UNION = 80
+    INTERSECTION = 81
+    DIFFERENCE = 82
 
 class CalcBinaryOPNode(JOVBaseNode):
     """Perform a Binary Operation on two inputs."""
@@ -252,21 +241,24 @@ class CalcBinaryOPNode(JOVBaseNode):
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
             Lexicon.IN_A: (WILDCARD, {"default": None}),
-            Lexicon.TYPE: (EnumBinaryOperation._member_names_, {"default": EnumBinaryOperation.ADD.name}),
-            Lexicon.IN_B: (WILDCARD, {"default": None}),
+            Lexicon.FUNC: (EnumBinaryOperation._member_names_, {"default": EnumBinaryOperation.ADD.name}),
+            Lexicon.IN_B: (WILDCARD, {"default": None})
         }}
-        return deep_merge_dict(IT_REQUIRED, d)
+        return deep_merge_dict(IT_REQUIRED, d, IT_FLIP)
 
     def run(self, **kw) -> tuple[bool]:
         result = []
         A = kw.get(Lexicon.IN_A, [0])
         B = kw.get(Lexicon.IN_B, [0])
-        op = kw.get(Lexicon.TYPE, [EnumBinaryOperation.ADD.value])
-        for a, b, op in zip_longest_fill(A, B, op):
+        flip = kw.get(Lexicon.FLIP, [False])
+        op = kw.get(Lexicon.FUNC, [EnumBinaryOperation.ADD])
+        for a, b, op, flip in zip_longest_fill(A, B, op, flip):
             if (short := len(a) - len(b)) > 0:
                 b = list(b) + [0] * short
             typ_a, val_a = convert_parameter(a)
             _, val_b = convert_parameter(b)
+            if flip:
+                a, b = b, a
             op = EnumBinaryOperation[op]
             match op:
                 # VECTOR
@@ -290,55 +282,40 @@ class CalcBinaryOPNode(JOVBaseNode):
                 case EnumBinaryOperation.MULTIPLY:
                     val = [a * b for a, b in zip(val_a, val_b)]
                 case EnumBinaryOperation.DIVIDE:
-                    ret = [a / b if b != 0 else 0 for a, b in zip(val_a, val_b)]
+                    val = [a / b if b != 0 else 0 for a, b in zip(val_a, val_b)]
                 case EnumBinaryOperation.DIVIDE_FLOOR:
-                    ret = [a // b if b != 0 else 0 for a, b in zip(val_a, val_b)]
+                    val = [a // b if b != 0 else 0 for a, b in zip(val_a, val_b)]
                 case EnumBinaryOperation.MODULUS:
-                    ret = [a % b if b != 0 else 0 for a, b in zip(val_a, val_b)]
+                    val = [a % b if b != 0 else 0 for a, b in zip(val_a, val_b)]
                 case EnumBinaryOperation.POWER:
-                    ret = [a ** b for a, b in zip(val_a, val_b)]
-
-                # LOGIC
-                # case EnumBinaryOperation.NOT = 10
-                case EnumBinaryOperation.AND:
-                    val = [a and b for a, b in zip(val_a, val_b)]
-                case EnumBinaryOperation.NAND:
-                    val = [not(a and b) for a, b in zip(val_a, val_b)]
-                case EnumBinaryOperation.OR:
-                    val = [a or b for a, b in zip(val_a, val_b)]
-                case EnumBinaryOperation.NOR:
-                    val = [not(a or b) for a, b in zip(val_a, val_b)]
+                    val = [a ** b for a, b in zip(val_a, val_b)]
 
                 # BITS
                 # case EnumBinaryOperation.BIT_NOT:
                 case EnumBinaryOperation.BIT_AND:
-                    val = [a & b for a, b in zip(val_a, val_b)]
+                    val = [int(a) & int(b) for a, b in zip(val_a, val_b)]
                 case EnumBinaryOperation.BIT_NAND:
-                    val = [not(a & b) for a, b in zip(val_a, val_b)]
+                    val = [not(int(a) & int(b)) for a, b in zip(val_a, val_b)]
                 case EnumBinaryOperation.BIT_OR:
-                    val = [a | b for a, b in zip(val_a, val_b)]
+                    val = [int(a) | int(b) for a, b in zip(val_a, val_b)]
                 case EnumBinaryOperation.BIT_NOR:
-                    val = [not(a | b) for a, b in zip(val_a, val_b)]
+                    val = [not(int(a) | int(b)) for a, b in zip(val_a, val_b)]
                 case EnumBinaryOperation.BIT_XOR:
-                    val = [a ^ b for a, b in zip(val_a, val_b)]
+                    val = [int(a) ^ int(b) for a, b in zip(val_a, val_b)]
                 case EnumBinaryOperation.BIT_XNOR:
-                    val = [not(a ^ b) for a, b in zip(val_a, val_b)]
+                    val = [not(int(a) ^ int(b)) for a, b in zip(val_a, val_b)]
                 case EnumBinaryOperation.BIT_LSHIFT:
-                    val = [a << b for a, b in zip(val_a, val_b)]
+                    val = [int(a) << int(b) for a, b in zip(val_a, val_b)]
                 case EnumBinaryOperation.BIT_RSHIFT:
-                    val = [a >> b for a, b in zip(val_a, val_b)]
-
-                # IDENTITY
-                case EnumBinaryOperation.IS:
-                    val = [a is b for a, b in zip(val_a, val_b)]
-                case EnumBinaryOperation.IS_NOT:
-                    val = [a is not b for a, b in zip(val_a, val_b)]
+                    val = [int(a) >> int(b) for a, b in zip(val_a, val_b)]
 
                 # GROUP
-                case EnumBinaryOperation.IN:
-                    val = [a in val_b for a in val_a]
-                case EnumBinaryOperation.NOT_IN:
-                    val = [a not in val_b for a in val_a]
+                case EnumBinaryOperation.UNION:
+                    val = list(set(val_a) | set(val_b))
+                case EnumBinaryOperation.INTERSECTION:
+                    val = list(set(val_a) & set(val_b))
+                case EnumBinaryOperation.DIFFERENCE:
+                    val = list(set(val_a) - set(val_b))
 
             val = [typ_a[i](v) for i, v in enumerate(val)]
             if len(val) == 1:
@@ -347,3 +324,23 @@ class CalcBinaryOPNode(JOVBaseNode):
                 result.append(tuple(val))
             # print(result, val)
         return (result, )
+
+class ValueNode(JOVBaseNode):
+    """Create a value for most types."""
+
+    NAME = "VALUE (JOV) #️⃣"
+    CATEGORY = "JOVIMETRIX 🔺🟩🔵/CALC"
+    DESCRIPTION = "Create a value for most types; also universal constants."
+    INPUT_IS_LIST = False
+    RETURN_TYPES = ()
+    RETURN_NAMES = ()
+    OUTPUT_IS_LIST = (False, )
+    SORT = 1
+
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        return deep_merge_dict(IT_REQUIRED)
+
+    def run(self, **kw) -> tuple[bool]:
+        # typ = kw.get(Lexicon.TYPE, 'INT')
+        return ()

@@ -178,7 +178,7 @@ const GLSLWidget = (app, inputName, inputData) => {
 };
 
 const ext = {
-	name: 'jovimetrix.glsl',
+	name: 'jovimetrix.node.glsl',
     async getCustomWidgets(app) {
         return {
             GLSL: (node, inputName, inputData, app) => ({

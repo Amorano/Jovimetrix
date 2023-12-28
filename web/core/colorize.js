@@ -96,7 +96,6 @@ const ext = {
                         id: util.USER + '.color.theme.' + name,
                         v: util.CONFIG_THEME[name]
                     }
-
                 }
                 util.api_post("/jovimetrix/config", api_packet)
                 if (util.CONFIG_COLOR.overwrite) {
@@ -115,12 +114,17 @@ const ext = {
         nodeType.prototype.onNodeCreated = function () {
             const result = onNodeCreated ? onNodeCreated.apply(this, arguments) : undefined
             let colors = util.node_color_get(nodeData);
-            //this['color'] = colors?.title || "#353535";
+
+            if (colors?.title) {
+                this['color'] = colors.title
+            }
+            if (colors?.body) {
+                this['bgcolor'] = colors.body
+            }
             if (colors?.jov_set_color) {
                 delete colors.jov_set_color
                 this['jov_set_color'] = 1;
             }
-            //this['color'] = colors?.color || "#353535";
             if (colors?.jov_set_bgcolor) {
                 delete colors.jov_set_bgcolor
                 this['jov_set_bgcolor'] = 1;
@@ -130,7 +134,8 @@ const ext = {
             }
             return result
         }
-    }
+    },
+
 }
 
 app.registerExtension(ext)

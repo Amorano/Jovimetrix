@@ -231,31 +231,65 @@ export const cleanupNode = (node) => {
     }
 }
 
+export function removeWidget(node, widgetOrSlot) {
+    if (typeof widgetOrSlot === 'number') {
+        node.widgets.splice(widgetOrSlot, 1);
+    }
+    else if (widgetOrSlot) {
+        const index = node.widgets.indexOf(widgetOrSlot);
+        if (index > -1) {
+            node.widgets.splice(index, 1);
+        }
+    }
+}
+
+export function removeWidgets(who) {
+    if (who.widgets) {
+        for (const w of who.widgets) {
+            w.onRemove();
+        }
+        who.widgets.length = 0;
+    }
+}
+
+export function hideWidgetForGood(node, widget, suffix = '') {
+    widget.origType = widget.type
+    widget.origComputeSize = widget.computeSize
+    widget.origSerializeValue = widget.serializeValue
+    widget.computeSize = () => [0, -4]
+    widget.type = CONVERTED_TYPE + suffix
+    if (widget.linkedWidgets) {
+      for (const w of widget.linkedWidgets) {
+        hideWidgetForGood(node, w, ':' + widget.name)
+      }
+    }
+  }
+
 export function hideWidget(node, widget, suffix = '') {
     widget.origType = widget.type
     widget.hidden = true
     widget.origComputeSize = widget.computeSize
     widget.origSerializeValue = widget.serializeValue
-    widget.computeSize = () => [0, -4] // -4 is due to the gap litegraph adds between widgets automatically
+    widget.computeSize = () => [0, -4]
     widget.type = CONVERTED_TYPE + suffix
     widget.serializeValue = () => {
-      // Prevent serializing the widget if we have no input linked
-      const { link } = node.inputs.find((i) => i.widget?.name === widget.name)
-      if (link == null) {
-        return undefined
-      }
-      return widget.origSerializeValue
-        ? widget.origSerializeValue()
-        : widget.value
+        // Prevent serializing the widget if we have no input linked
+        const { link } = node.inputs.find((i) => i.widget?.name === widget.name)
+        if (link == null) {
+            return undefined
+        }
+        return widget.origSerializeValue
+            ? widget.origSerializeValue()
+            : widget.value
     }
 
     // Hide any linked widgets, e.g. seed+seedControl
     if (widget.linkedWidgets) {
-      for (const w of widget.linkedWidgets) {
-        hideWidget(node, w, ':' + widget.name)
-      }
+        for (const w of widget.linkedWidgets) {
+                hideWidget(node, w, ':' + widget.name)
+        }
     }
-  }
+}
 
   export function showWidget(widget) {
     widget.type = widget.origType
