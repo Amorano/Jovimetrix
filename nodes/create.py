@@ -85,7 +85,7 @@ class ShapeNode(JOVImageBaseNode):
                 img = shape_ellipse(width, height, sizeX, sizeX, fill=color)
 
         img = img.rotate(-angle)
-        if (i or 0) > 0.:
+        if i != 0:
             img = pil2cv(img)
             img = light_invert(img, i)
             img = cv2pil(img)
@@ -103,12 +103,13 @@ class TextNode(JOVImageBaseNode):
         d = {"optional": {
                 Lexicon.SHAPE: (EnumShapes._member_names_, {"default": EnumShapes.CIRCLE.name}),
                 Lexicon.SIDES: ("INT", {"default": 3, "min": 3, "max": 100, "step": 1}),
+
             }}
         return deep_merge_dict(IT_REQUIRED, d, IT_WH, IT_RGBA, IT_ROT, IT_SCALE, IT_INVERT)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
 
-        return (pil2tensor(img), pil2tensor(img.convert("L")), )
+        return (None, None, )
 
 """
 class PixelShaderNode(JOVImageInOutBaseNode):
@@ -173,36 +174,27 @@ class PixelShaderNode(JOVImageInOutBaseNode):
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         t = time.perf_counter()
         pixels = kw.get(Lexicon.PIXEL, [None])
-        R = kw.get(Lexicon.R, [None])
-        G = kw.get(Lexicon.G, [None])
-        B = kw.get(Lexicon.B, [None])
+        R = kw.get(Lexicon.R, [""])
+        G = kw.get(Lexicon.G, [""])
+        B = kw.get(Lexicon.B, [""])
         width, height = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)[0]
-        mode = kw.get(Lexicon.MODE, [EnumScaleMode.NONE])
+        mode = kw.get(Lexicon.MODE, [EnumScaleMode.FIT])
         sample = kw.get(Lexicon.SAMPLE, [EnumInterpolation.LANCZOS4])
         masks = []
         images = []
         for data in zip_longest_fill(pixels, R, G, B, mode, sample):
             img, r, g, b, m, rs = data
 
-            r = r if r is not None else ""
-            g = g if g is not None else ""
-            b = b if b is not None else ""
-            m = m if m is not None else EnumScaleMode.FIT
             m = EnumScaleMode.FIT if m == EnumScaleMode.NONE else m
-
             # fix the image first -- must at least match for px, py indexes
             img = geo_scalefit(img, width, height, m, rs)
-
             if img is None:
                 img = np.zeros((height, width, 3), dtype=np.uint8)
             else:
                 img = tensor2cv(img)
                 if img.shape[0] != height or img.shape[1] != width:
-                    s = EnumInterpolation.LANCZOS4
-                    s = EnumInterpolation[rs] if rs is not None else s
-                    img = cv2.resize(img, (width, height), interpolation=s)
+                    img = cv2.resize(img, (width, height), interpolation=EnumInterpolation[rs])
 
-            rs = EnumInterpolation[rs] if rs is not None else EnumInterpolation.LANCZOS4
             img = PixelShaderNode.shader(img, r, g, b)
             images.append(cv2tensor(img))
             masks.append(cv2mask(img))
@@ -239,7 +231,7 @@ class GLSLNode(JOVImageBaseNode):
         return float("nan")
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        pixels = kw.get(Lexicon.RESET, [None])
+        pixels = kw.get(Lexicon.PIXEL, [None])
         #wh = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE))
         #image = Image.new(mode="RGB", size=wh[0])
         #return (pil2tensor(image), pil2mask(image))

@@ -184,7 +184,7 @@ class StreamReaderNode(JOVImageBaseNode):
             if orient in ["FLIPY", "FLIPXY"]:
                 img = cv2.flip(img, 0)
 
-            if (i or 0) != 0.:
+            if i != 0:
                 img = light_invert(img, i)
 
         return ( cv2tensor(img), cv2mask(img) )
@@ -205,9 +205,9 @@ class StreamWriterNode(JOVImageInOutBaseNode):
 
     @classmethod
     def IS_CHANGED(cls, **kw) -> float:
-        route = kw.get(Lexicon.ROUTE, [None])
+        route = kw.get(Lexicon.ROUTE, ["/stream"])
         width, height = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
-        wait = kw.get(Lexicon.WAIT, [None])
+        wait = kw.get(Lexicon.WAIT, [False])
 
         if (device := StreamManager().capture(route, static=True)) is None:
             raise Exception(f"stream failed {route}")
@@ -263,7 +263,7 @@ class StreamWriterNode(JOVImageInOutBaseNode):
 
             img = tensor2cv(img)
             img = geo_scalefit(img, sw, sh, mode, rs)
-            if (i or 0) != 0:
+            if i != 0:
                 img = light_invert(img, i)
             out.append(img)
 

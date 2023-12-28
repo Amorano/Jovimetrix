@@ -136,7 +136,7 @@ class ColorMatchNode(JOVImageInOutBaseNode):
         # if the colormap is not "none" entry...use it.
         # usemap = usemap or [None]
         threshold = parse_number(Lexicon.THRESHOLD, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
-        blur = kw.get(Lexicon.BLUR, [3])
+        blur = kw.get(Lexicon.BLUR, [13])
         flip = kw.get(Lexicon.FLIP, [False])
         i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
         masks = []
@@ -160,7 +160,6 @@ class ColorMatchNode(JOVImageInOutBaseNode):
             else:
                 c = EnumColorMap[c].value
                 if t != 0:
-                    bl = bl if bl is not None else 13
                     a = comp.color_match_heat_map(a, t, c, bl)
                 else:
                     a = comp.color_match_custom_map(a, colormap=c)

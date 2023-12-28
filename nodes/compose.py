@@ -161,7 +161,7 @@ class PixelMergeNode(JOVImageInOutBaseNode):
             a = tensor2cv(a) if a is not None else np.zeros((h, w, 3), dtype=np.uint8)
             rs = EnumInterpolation[rs]
             img = comp.image_merge(r, g, b, a, w, h, m, rs)
-            if (i or 0) != 0:
+            if i != 0:
                 img = comp.light_invert(img, i)
             images.append(cv2tensor(img))
             masks.append(cv2mask(img))
@@ -259,7 +259,7 @@ class CropNode(JOVImageInOutBaseNode):
             h = h or img.shape[0]
             # Logger.debug(l, t, r, b, w, h, p, c)
             img = comp.geo_crop(img, l or 0, t or 0, r or 1, b or 1, w, h, p or False, rgba)
-            if (i or 0) != 0:
+            if i != 0:
                 img = comp.light_invert(img, i)
 
             images.append(cv2tensor(img))
@@ -274,9 +274,9 @@ class ColorTheoryNode(JOVImageInOutBaseNode):
     NAME = "COLOR THEORY (JOV) 🛞"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/COMPOSE"
     DESCRIPTION = "Re-project an input into various color theory mappings"
-    RETURN_TYPES = ("IMAGE", "IMAGE", "IMAGE", "IMAGE")
-    RETURN_NAMES = (Lexicon.C1, Lexicon.C2, Lexicon.C3, Lexicon.C4)
-    OUTPUT_IS_LIST = (True, True, True, True, )
+    RETURN_TYPES = ("IMAGE", "IMAGE", "IMAGE", "IMAGE", "IMAGE")
+    RETURN_NAMES = (Lexicon.C1, Lexicon.C2, Lexicon.C3, Lexicon.C4, Lexicon.C5)
+    OUTPUT_IS_LIST = (True, True, True, True, True)
     SORT = 65
 
     @classmethod
@@ -292,30 +292,32 @@ class ColorTheoryNode(JOVImageInOutBaseNode):
         imageB = []
         imageC = []
         imageD = []
+        imageE = []
 
         pixels = kw.get(Lexicon.PIXEL, [None])
-        scheme = kw.get(Lexicon.SCHEME, [None])
+        scheme = kw.get(Lexicon.SCHEME, [EnumColorTheory.COMPLIMENTARY])
         i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
 
-        for data in zip_longest_fill(pixels, scheme, i):
-            img, s, i = data
+        for img, s, i in zip_longest_fill(pixels, scheme, i):
             img = tensor2cv(img) if img is not None else np.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=np.uint8)
-            s = EnumColorTheory[s] if s is not None else EnumColorTheory.COMPLIMENTARY
-            a, b, c, d = comp.color_theory(img, s)
-            if (i or 0) != 0:
+            a, b, c, d, e = comp.color_theory(img, EnumColorTheory[s])
+            if i != 0:
                 a = comp.light_invert(a, i)
                 b = comp.light_invert(b, i)
                 c = comp.light_invert(c, i)
                 d = comp.light_invert(d, i)
+                e = comp.light_invert(e, i)
 
             imageA.append(cv2tensor(a))
             imageB.append(cv2tensor(b))
             imageC.append(cv2tensor(c))
             imageD.append(cv2tensor(d))
+            imageE.append(cv2tensor(e))
 
         return (
             torch.stack(imageA),
             torch.stack(imageB),
             torch.stack(imageC),
-            torch.stack(imageD)
+            torch.stack(imageD),
+            torch.stack(imageE)
         )
