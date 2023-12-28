@@ -92,6 +92,24 @@ class ShapeNode(JOVImageBaseNode):
 
         return (pil2tensor(img), pil2tensor(img.convert("L")), )
 
+class TextNode(JOVImageBaseNode):
+    NAME = "SHAPE GENERATOR (JOV) ✨"
+    CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
+    DESCRIPTION = ""
+    OUTPUT_IS_LIST = (False, False, )
+
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        d = {"optional": {
+                Lexicon.SHAPE: (EnumShapes._member_names_, {"default": EnumShapes.CIRCLE.name}),
+                Lexicon.SIDES: ("INT", {"default": 3, "min": 3, "max": 100, "step": 1}),
+            }}
+        return deep_merge_dict(IT_REQUIRED, d, IT_WH, IT_RGBA, IT_ROT, IT_SCALE, IT_INVERT)
+
+    def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
+
+        return (pil2tensor(img), pil2tensor(img.convert("L")), )
+
 """
 class PixelShaderNode(JOVImageInOutBaseNode):
     NAME = "PIXEL SHADER (JOV) 🔆"

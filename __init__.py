@@ -42,12 +42,13 @@ Polygonal shapes, MIDI, MP3/WAVE, Flow Logic
     AdjustNode, ColorMatchNode, FindEdgeNode, HSVNode, LevelsNode, ThresholdNode,
     TickNode, WaveGeneratorNode,
     GraphWaveNode,
+    ConversionNode, CalcUnaryOPNode, CalcBinaryOPNode, ValueNode
     BlendNode, PixelSplitNode, PixelMergeNode, MergeNode, CropNode, ColorTheoryNode,
-    ConstantNode, ShapeNode, PixelShaderNode, GLSLNode, TextNode,
-    StreamReaderNode, StreamWriterNode, MIDIReaderNode,
+    ConstantNode, ShapeNode, TextNode, GLSLNode, ImageFromURLNode
+    StreamReaderNode, StreamWriterNode, MIDIMessageNode, MIDIReaderNode, MIDIFilterEZNode, MIDIFilterNode
     DelayNode, ComparisonNode, IfThenElseNode,
     TransformNode, TileNode, MirrorNode, ProjectionNode,
-    OptionsNode, DebugNode, AkashicNode
+    OptionsNode, AkashicNode, ValueGraphNode
 @version: 0.99999
 """
 

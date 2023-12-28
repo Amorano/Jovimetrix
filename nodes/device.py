@@ -383,7 +383,7 @@ class MIDINoteOnFilter(Enum):
     TRUE = 1
     IGNORE = -1
 
-class MIDIFilterSimple(JOVBaseNode):
+class MIDIFilterEZNode(JOVBaseNode):
     NAME = "MIDI FILTER EZ ❇️"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/DEVICE"
     DESCRIPTION = "Filter MIDI messages by channel, message type or value."
@@ -430,7 +430,7 @@ class MIDIFilterSimple(JOVBaseNode):
             return (message, False, )
         return (message, True, )
 
-class MIDIFilter(JOVBaseNode):
+class MIDIFilterNode(JOVBaseNode):
     NAME = "MIDI FILTER ✳️"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/DEVICE"
     DESCRIPTION = "Filter MIDI messages by channel, message type or value."
