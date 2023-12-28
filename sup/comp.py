@@ -193,6 +193,20 @@ def pixel_convert(in_a: TYPE_IMAGE, in_b: TYPE_IMAGE) -> tuple[TYPE_IMAGE, TYPE_
             in_b = np.zeros((h, w, cc), dtype=torch.uint8)
     return in_a, in_b
 
+def pixel_rgb2hsl(rgb_color: TYPE_PIXEL) -> TYPE_PIXEL:
+    return cv2.cvtColor(np.uint8([[rgb_color]]), cv2.COLOR_RGB2HSV)[0, 0]
+
+def pixel_hsl2rgb(hsl_color: np.ndarray) -> TYPE_PIXEL:
+    return cv2.cvtColor(np.uint8([[hsl_color]]), cv2.COLOR_HSV2RGB)[0, 0]
+
+def pixel_hsv_adjust(color: TYPE_PIXEL, hue: float=0, saturation: float=0, value: float=0,
+              mod_color:bool=True, mod_sat:bool=False, mod_value:bool=False) -> TYPE_PIXEL:
+    """Adjust an HSV type pixel"""
+    color[0] = (color[0] + hue) % 360 if mod_color else (color[0] + hue)
+    color[1] = (color[1] + saturation) % 255 if mod_sat else np.clip(color[1] + saturation, 0, 255)
+    color[2] = (color[1] + saturation) % 255 if mod_value else np.clip(color[2] + value, 0, 255)
+    return color
+
 # =============================================================================
 # === SHAPE FUNCTIONS ===
 # =============================================================================
@@ -790,89 +804,122 @@ def color_average(image: TYPE_IMAGE) -> TYPE_IMAGE:
     return color
 
 def color_theory_complementary(color: TYPE_PIXEL) -> TYPE_PIXEL:
-    color = cv2.cvtColor(np.uint8([[color]]), cv2.COLOR_BGR2HSV)[0, 0]
-    color[0] = (color[0] + 180) % 360
-    return cv2.cvtColor(np.uint8([[color]]), cv2.COLOR_HSV2BGR)[0, 0]
+    return tuple(255 - c for c in color)
 
 def color_theory_monochromatic(color: TYPE_PIXEL) -> tuple[TYPE_PIXEL, TYPE_PIXEL]:
-    color = cv2.cvtColor(np.uint8([[color]]), cv2.COLOR_RGB2HSV)[0, 0]
+    color = pixel_rgb2hsl(color)
+    sat = color[1] / 16.
+    print(-4 * sat)
 
-    hsl_color_plus = np.array(color)
-    hsl_color_plus[1] = min(255, hsl_color_plus[1] + 30)  # Increase saturation
-    rgb_color_plus = cv2.cvtColor(np.uint8([[hsl_color_plus]]), cv2.COLOR_HSV2RGB)[0, 0]
+    color_a = pixel_hsv_adjust(color, 0, - sat, 0)
+    color_a = pixel_hsl2rgb(color_a)
 
-    hsl_color_minus = np.array(color)
-    hsl_color_minus[1] = max(0, hsl_color_minus[1] - 30)  # Decrease saturation
-    rgb_color_minus = cv2.cvtColor(np.uint8([[hsl_color_minus]]), cv2.COLOR_HSV2RGB)[0, 0]
+    color_b = pixel_hsv_adjust(color, 0, - 2 * sat, 0)
+    color_b = pixel_hsl2rgb(color_b)
 
-    return rgb_color_plus, rgb_color_minus
+    color_c = pixel_hsv_adjust(color, 0, - 4 * sat, 0)
+    color_c = pixel_hsl2rgb(color_c)
+
+    color_d = pixel_hsv_adjust(color, 0, - 8 * sat, 0)
+    color_d = pixel_hsl2rgb(color_d)
+
+    return color_a, color_b, color_c, color_d
 
 def color_theory_split_complementary(color: TYPE_PIXEL) -> tuple[TYPE_PIXEL, TYPE_PIXEL]:
-    hsl_color = cv2.cvtColor(np.uint8([[color]]), cv2.COLOR_RGB2HSV)[0, 0]
+    color = pixel_rgb2hsl(color)
 
-    hsl_color_plus = np.array(color)
-    hsl_color_plus[1] = min(255, hsl_color_plus[1] + 30)  # Increase saturation
-    rgb_color_plus = cv2.cvtColor(np.uint8([[hsl_color_plus]]), cv2.COLOR_HSV2RGB)[0, 0]
+    color_a = pixel_hsv_adjust(color, 60, 0, 0)
+    color_a = pixel_hsl2rgb(color_a)
 
-    hsl_color_minus = np.array(color)
-    hsl_color_minus[1] = max(0, hsl_color_minus[1] - 30)  # Decrease saturation
-    hsl_color_minus[2] = min(255, hsl_color_minus[2] + 30)  # Increase lightness
-    rgb_color_minus = cv2.cvtColor(np.uint8([[hsl_color_minus]]), cv2.COLOR_HSV2RGB)[0, 0]
-
-    return rgb_color_plus, rgb_color_minus
+    color_b = pixel_hsv_adjust(color, -60, 0, 0)
+    color_b = pixel_hsl2rgb(color_b)
+    return color_a, color_b
 
 def color_theory_analogous(color: TYPE_PIXEL) -> tuple[TYPE_PIXEL, TYPE_PIXEL]:
-    return [
-        color_theory_complementary((color[0] + 20, color[1] + 20, color[2])),
-        color_theory_complementary((color[0] - 20, color[1] - 20, color[2]))
-    ]
+    color = pixel_rgb2hsl(color)
+
+    color_a = pixel_hsv_adjust(color, 20, 20, 0)
+    color_a = pixel_hsl2rgb(color_a)
+
+    color_b = pixel_hsv_adjust(color, -20, -20, 0)
+    color_b = pixel_hsl2rgb(color_b)
+    return color_a, color_b
 
 def color_theory_triadic(color: TYPE_PIXEL) -> tuple[TYPE_PIXEL, TYPE_PIXEL]:
-    return [
-        color_theory_complementary((color[0] + 120, color[1] + 120, color[2])),
-        color_theory_complementary((color[0] - 120, color[1] - 120, color[2]))
-    ]
+    color = pixel_rgb2hsl(color)
+
+    color_a = pixel_hsv_adjust(color, 120, 0, 0)
+    color_a = pixel_hsl2rgb(color_a)
+
+    color_b = pixel_hsv_adjust(color, -120, 0, 0)
+    color_b = pixel_hsl2rgb(color_b)
+    return color_a, color_b
 
 def color_theory_tetradic(color: TYPE_PIXEL) -> tuple[TYPE_PIXEL, TYPE_PIXEL, TYPE_PIXEL]:
-    return [
-        color_theory_complementary((color[0] + 60, color[1] + 60, color[2] + 60)),
-        color_theory_monochromatic(color)[0],
-        color_theory_monochromatic(color)[1]
-    ]
+    color = pixel_rgb2hsl(color)
+
+    color_a = pixel_hsv_adjust(color, 90, 0, 0)
+    color_a = pixel_hsl2rgb(color_a)
+
+    color_b = pixel_hsv_adjust(color, 180, 0, 0)
+    color_b = pixel_hsl2rgb(color_b)
+
+    color_c = pixel_hsv_adjust(color, -90, 0, 0)
+    color_c = pixel_hsl2rgb(color_c)
+    return color_a, color_b, color_c
 
 def color_theory_square(color: TYPE_PIXEL) -> tuple[TYPE_PIXEL, TYPE_PIXEL, TYPE_PIXEL]:
-    return [
-        color_theory_complementary((color[0] + 90, color[1] + 90, color[2])),
-        color_theory_complementary((color[0] + 180, color[1] + 180, color[2])),
-        color_theory_complementary((color[0] + 270, color[1] + 270, color[2]))
-    ]
+    color = pixel_rgb2hsl(color)
+
+    color_a = pixel_hsv_adjust(color, 90, 0, 0)
+    color_a = pixel_hsl2rgb(color_a)
+
+    color_b = pixel_hsv_adjust(color, 180, 0, 0)
+    color_b = pixel_hsl2rgb(color_b)
+
+    color_c = pixel_hsv_adjust(color, 270, 0, 0)
+    color_c = pixel_hsl2rgb(color_c)
+    return color_a, color_b, color_c
 
 def color_theory_rectangular(color: TYPE_PIXEL) -> tuple[TYPE_PIXEL, TYPE_PIXEL, TYPE_PIXEL]:
-    return [
-        color_theory_complementary((color[0] + 60, color[1] + 60, color[2])),
-        color_theory_complementary((color[0] + 180, color[1] + 180, color[2])),
-        color_theory_complementary((color[0] + 240, color[1] + 240, color[2]))
-    ]
+    color = pixel_rgb2hsl(color)
+
+    color_a = pixel_hsv_adjust(color, 60, 0, 0)
+    color_a = pixel_hsl2rgb(color_a)
+
+    color_b = pixel_hsv_adjust(color, 180, 0, 0)
+    color_b = pixel_hsl2rgb(color_b)
+
+    color_c = pixel_hsv_adjust(color, 240, 0, 0)
+    color_c = pixel_hsl2rgb(color_c)
+    return color_a, color_b, color_c
 
 def color_theory_compound(color: TYPE_PIXEL) -> tuple[TYPE_PIXEL, TYPE_PIXEL, TYPE_PIXEL]:
-    return [
-        color_theory_complementary((color[0] + 180, color[1] + 180, color[2])),
-        color_theory_complementary((color[0] + 30, color[1] + 30, color[2])),
-        color_theory_complementary((color[0] + 210, color[1] + 210, color[2]))
-    ]
+    color = pixel_rgb2hsl(color)
+    color_a = pixel_hsv_adjust(color, 180, 0, 0)
+    color_a = pixel_hsl2rgb(color_a)
 
-def color_theory(image: TYPE_IMAGE, scheme: EnumColorTheory=EnumColorTheory.COMPLIMENTARY) -> tuple[TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE, TYPE_PIXEL]:
+    color_b = pixel_hsv_adjust(color, 30, 0, 0)
+    color_b = pixel_hsl2rgb(color_b)
 
-    aR = aG = aB = bR = bG = bB = cR = cG = cB = 0
+    color_c = pixel_hsv_adjust(color, 210, 0, 0)
+    color_c = pixel_hsl2rgb(color_c)
+    return color_a, color_b, color_c
+
+def color_theory(image: TYPE_IMAGE, scheme: EnumColorTheory=EnumColorTheory.COMPLIMENTARY) -> tuple[TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE]:
+
+    aR = aG = aB = bR = bG = bB = cR = cG = cB = dR = dG = dB = 0
     color = color_average(image)
     match scheme:
         case EnumColorTheory.COMPLIMENTARY:
             a = color_theory_complementary(color)
-            aB, aG, aR = a
+            aR, aB, aG = a
         case EnumColorTheory.MONOCHROMATIC:
-            a, b = color_theory_monochromatic(color)
+            a, b, c, d = color_theory_monochromatic(color)
             aR, aG, aB = a
             bR, bG, bB = b
+            cR, cG, cB = c
+            dR, dG, dB = d
         case EnumColorTheory.SPLIT_COMPLIMENTARY:
             a, b = color_theory_split_complementary(color)
             aR, aG, aB = a
@@ -912,8 +959,8 @@ def color_theory(image: TYPE_IMAGE, scheme: EnumColorTheory=EnumColorTheory.COMP
         np.full((h, w, 4), [aR, aG, aB, 255], dtype=np.uint8),
         np.full((h, w, 4), [bR, bG, bB, 255], dtype=np.uint8),
         np.full((h, w, 4), [cR, cG, cB, 255], dtype=np.uint8),
+        np.full((h, w, 4), [dR, dG, dB, 255], dtype=np.uint8),
         np.full((h, w, 4), [color[0], color[1], color[2], 255], dtype=np.uint8),
-
     )
 
 # =============================================================================
