@@ -127,10 +127,11 @@ class EnumColorTheory(Enum):
     SPLIT_COMPLIMENTARY = 2
     ANALOGOUS = 3
     TRIADIC = 4
-    TETRADIC = 5
+    # TETRADIC = 5
     SQUARE = 6
-    RECTANGULAR = 7
     COMPOUND = 8
+    # DOUBLE_COMPLIMENTARY = 9
+    CUSTOM_TETRAD = 9
 
 class EnumBlendType(Enum):
 	"""Rename the blend type names."""
@@ -193,47 +194,49 @@ def pixel_convert(in_a: TYPE_IMAGE, in_b: TYPE_IMAGE) -> tuple[TYPE_IMAGE, TYPE_
             in_b = np.zeros((h, w, cc), dtype=torch.uint8)
     return in_a, in_b
 
-def pixel_rgb2hsl(rgb_color: TYPE_PIXEL) -> TYPE_PIXEL:
-    return cv2.cvtColor(np.uint8([[rgb_color]]), cv2.COLOR_RGB2HSV)[0, 0]
+def pixel_bgr2hsv(bgr_color: TYPE_PIXEL) -> TYPE_PIXEL:
+    return cv2.cvtColor(np.uint8([[bgr_color]]), cv2.COLOR_BGR2HSV)[0, 0]
 
-def pixel_hsl2rgb(hsl_color: np.ndarray) -> TYPE_PIXEL:
-    return cv2.cvtColor(np.uint8([[hsl_color]]), cv2.COLOR_HSV2RGB)[0, 0]
+def pixel_hsv2bgr(hsl_color: TYPE_PIXEL) -> TYPE_PIXEL:
+    return cv2.cvtColor(np.uint8([[hsl_color]]), cv2.COLOR_HSV2BGR)[0, 0]
 
-def pixel_hsv_adjust(color: TYPE_PIXEL, hue: float=0, saturation: float=0, value: float=0,
+def pixel_hsv_adjust(color:TYPE_PIXEL, hue:int=0, saturation:int=0, value:int=0,
               mod_color:bool=True, mod_sat:bool=False, mod_value:bool=False) -> TYPE_PIXEL:
-    """Adjust an HSV type pixel"""
-    color[0] = (color[0] + hue) % 360 if mod_color else (color[0] + hue)
-    color[1] = (color[1] + saturation) % 255 if mod_sat else np.clip(color[1] + saturation, 0, 255)
-    color[2] = (color[1] + saturation) % 255 if mod_value else np.clip(color[2] + value, 0, 255)
-    return color
+    """Adjust an HSV type pixel.
+    OpenCV uses... H: 0-179, S: 0-255, V: 0-255"""
+    hsv = [0, 0, 0]
+    hsv[0] = (color[0] + hue) % 180 if mod_color else np.clip(color[0] + hue, 0, 180)
+    hsv[1] = (color[1] + saturation) % 255 if mod_sat else np.clip(color[1] + saturation, 0, 255)
+    hsv[2] = (color[2] + value) % 255 if mod_value else np.clip(color[2] + value, 0, 255)
+    return hsv
 
 # =============================================================================
 # === SHAPE FUNCTIONS ===
 # =============================================================================
 
-def shape_body(func: str, width: int, height: int, sizeX:float=1., sizeY:float=1., fill:TYPE_PIXEL=255) -> Image:
+def shape_body(func: str, width: int, height: int, sizeX:float=1., sizeY:float=1., fill:TYPE_PIXEL=(0,0,0), back:TYPE_PIXEL=(0,0,0)) -> Image:
     sizeX = max(0.5, sizeX / 2 + 0.5)
     sizeY = max(0.5, sizeY / 2 + 0.5)
     xy = [(width * (1. - sizeX), height * (1. - sizeY)),(width * sizeX, height * sizeY)]
-    image = Image.new("RGB", (width, height), 'black')
+    image = Image.new("RGB", (width, height), back)
     d = ImageDraw.Draw(image)
     func = getattr(d, func)
     func(xy, fill=color_eval(fill))
     return image
 
-def shape_ellipse(width: int, height: int, sizeX:float=1., sizeY:float=1., fill:TYPE_PIXEL=255) -> Image:
-    return shape_body('ellipse', width, height, sizeX=sizeX, sizeY=sizeY, fill=fill)
+def shape_ellipse(width: int, height: int, sizeX:float=1., sizeY:float=1., fill:TYPE_PIXEL=(0,0,0), back:TYPE_PIXEL=(0,0,0)) -> Image:
+    return shape_body('ellipse', width, height, sizeX=sizeX, sizeY=sizeY, fill=fill, back=back)
 
-def shape_quad(width: int, height: int, sizeX:float=1., sizeY:float=1., fill:TYPE_PIXEL=255) -> Image:
-    return shape_body('rectangle', width, height, sizeX=sizeX, sizeY=sizeY, fill=fill)
+def shape_quad(width: int, height: int, sizeX:float=1., sizeY:float=1., fill:TYPE_PIXEL=(0,0,0), back:TYPE_PIXEL=(0,0,0)) -> Image:
+    return shape_body('rectangle', width, height, sizeX=sizeX, sizeY=sizeY, fill=fill, back=back)
 
-def shape_polygon(width: int, height: int, size: float=1., sides: int=3, angle: float=0., fill:TYPE_PIXEL=255) -> Image:
+def shape_polygon(width: int, height: int, size: float=1., sides: int=3, angle: float=0., fill:TYPE_PIXEL=(0,0,0), back:TYPE_PIXEL=(0,0,0)) -> Image:
 
     fill = color_eval(fill)
     size = max(0.00001, size)
     r = min(width, height) * size * 0.5
     xy = (width * 0.5, height * 0.5, r)
-    image = Image.new("RGB", (width, height), 'black')
+    image = Image.new("RGB", (width, height), back)
     d = ImageDraw.Draw(image)
     d.regular_polygon(xy, sides, fill=fill)
     return image
@@ -548,7 +551,6 @@ def geo_scalefit(image: TYPE_IMAGE, width: int, height:int,
             return geo_crop(image, widthT=width, heightT=height, pad=True)
 
         case EnumScaleMode.FIT:
-            print(sample, sample.value)
             return cv2.resize(image, (width, height), interpolation=sample.value)
 
     return image
@@ -804,163 +806,124 @@ def color_average(image: TYPE_IMAGE) -> TYPE_IMAGE:
     return color
 
 def color_theory_complementary(color: TYPE_PIXEL) -> TYPE_PIXEL:
-    return tuple(255 - c for c in color)
+    color = pixel_bgr2hsv(color)
+    color_a = pixel_hsv_adjust(color, 90, 0, 0)
+    return pixel_hsv2bgr(color_a)
 
 def color_theory_monochromatic(color: TYPE_PIXEL) -> tuple[TYPE_PIXEL, TYPE_PIXEL]:
-    color = pixel_rgb2hsl(color)
-    sat = color[1] / 16.
-    print(-4 * sat)
-
-    color_a = pixel_hsv_adjust(color, 0, - sat, 0)
-    color_a = pixel_hsl2rgb(color_a)
-
-    color_b = pixel_hsv_adjust(color, 0, - 2 * sat, 0)
-    color_b = pixel_hsl2rgb(color_b)
-
-    color_c = pixel_hsv_adjust(color, 0, - 4 * sat, 0)
-    color_c = pixel_hsl2rgb(color_c)
-
-    color_d = pixel_hsv_adjust(color, 0, - 8 * sat, 0)
-    color_d = pixel_hsl2rgb(color_d)
-
-    return color_a, color_b, color_c, color_d
+    color = pixel_bgr2hsv(color)
+    sat = color[1] / 11.
+    val = color[2] / 7.
+    color_a = pixel_hsv_adjust(color, 0, -2 * sat, -1 * val)
+    color_b = pixel_hsv_adjust(color, 0, -3 * sat, -2 * val)
+    color_c = pixel_hsv_adjust(color, 0, -5 * sat, -3 * val)
+    color_d = pixel_hsv_adjust(color, 0, -7 * sat, -5 * val)
+    return pixel_hsv2bgr(color_a), pixel_hsv2bgr(color_b), pixel_hsv2bgr(color_c), pixel_hsv2bgr(color_d)
 
 def color_theory_split_complementary(color: TYPE_PIXEL) -> tuple[TYPE_PIXEL, TYPE_PIXEL]:
-    color = pixel_rgb2hsl(color)
+    color = pixel_bgr2hsv(color)
+    color_a = pixel_hsv_adjust(color, 75, 0, 0)
+    color_b = pixel_hsv_adjust(color, 105, 0, 0)
+    return pixel_hsv2bgr(color_a), pixel_hsv2bgr(color_b)
 
-    color_a = pixel_hsv_adjust(color, 60, 0, 0)
-    color_a = pixel_hsl2rgb(color_a)
-
-    color_b = pixel_hsv_adjust(color, -60, 0, 0)
-    color_b = pixel_hsl2rgb(color_b)
-    return color_a, color_b
-
-def color_theory_analogous(color: TYPE_PIXEL) -> tuple[TYPE_PIXEL, TYPE_PIXEL]:
-    color = pixel_rgb2hsl(color)
-
-    color_a = pixel_hsv_adjust(color, 20, 20, 0)
-    color_a = pixel_hsl2rgb(color_a)
-
-    color_b = pixel_hsv_adjust(color, -20, -20, 0)
-    color_b = pixel_hsl2rgb(color_b)
-    return color_a, color_b
+def color_theory_analogous(color: TYPE_PIXEL) -> tuple[TYPE_PIXEL, TYPE_PIXEL, TYPE_PIXEL, TYPE_PIXEL]:
+    color = pixel_bgr2hsv(color)
+    color_a = pixel_hsv_adjust(color, 30, 0, 0)
+    color_b = pixel_hsv_adjust(color, 15, 0, 0)
+    color_c = pixel_hsv_adjust(color, 165, 0, 0)
+    color_d = pixel_hsv_adjust(color, 150, 0, 0)
+    return pixel_hsv2bgr(color_a), pixel_hsv2bgr(color_b), pixel_hsv2bgr(color_c), pixel_hsv2bgr(color_d)
 
 def color_theory_triadic(color: TYPE_PIXEL) -> tuple[TYPE_PIXEL, TYPE_PIXEL]:
-    color = pixel_rgb2hsl(color)
-
-    color_a = pixel_hsv_adjust(color, 120, 0, 0)
-    color_a = pixel_hsl2rgb(color_a)
-
-    color_b = pixel_hsv_adjust(color, -120, 0, 0)
-    color_b = pixel_hsl2rgb(color_b)
-    return color_a, color_b
-
-def color_theory_tetradic(color: TYPE_PIXEL) -> tuple[TYPE_PIXEL, TYPE_PIXEL, TYPE_PIXEL]:
-    color = pixel_rgb2hsl(color)
-
-    color_a = pixel_hsv_adjust(color, 90, 0, 0)
-    color_a = pixel_hsl2rgb(color_a)
-
-    color_b = pixel_hsv_adjust(color, 180, 0, 0)
-    color_b = pixel_hsl2rgb(color_b)
-
-    color_c = pixel_hsv_adjust(color, -90, 0, 0)
-    color_c = pixel_hsl2rgb(color_c)
-    return color_a, color_b, color_c
-
-def color_theory_square(color: TYPE_PIXEL) -> tuple[TYPE_PIXEL, TYPE_PIXEL, TYPE_PIXEL]:
-    color = pixel_rgb2hsl(color)
-
-    color_a = pixel_hsv_adjust(color, 90, 0, 0)
-    color_a = pixel_hsl2rgb(color_a)
-
-    color_b = pixel_hsv_adjust(color, 180, 0, 0)
-    color_b = pixel_hsl2rgb(color_b)
-
-    color_c = pixel_hsv_adjust(color, 270, 0, 0)
-    color_c = pixel_hsl2rgb(color_c)
-    return color_a, color_b, color_c
-
-def color_theory_rectangular(color: TYPE_PIXEL) -> tuple[TYPE_PIXEL, TYPE_PIXEL, TYPE_PIXEL]:
-    color = pixel_rgb2hsl(color)
-
+    color = pixel_bgr2hsv(color)
     color_a = pixel_hsv_adjust(color, 60, 0, 0)
-    color_a = pixel_hsl2rgb(color_a)
-
-    color_b = pixel_hsv_adjust(color, 180, 0, 0)
-    color_b = pixel_hsl2rgb(color_b)
-
-    color_c = pixel_hsv_adjust(color, 240, 0, 0)
-    color_c = pixel_hsl2rgb(color_c)
-    return color_a, color_b, color_c
+    color_b = pixel_hsv_adjust(color, 120, 0, 0)
+    return pixel_hsv2bgr(color_a), pixel_hsv2bgr(color_b)
 
 def color_theory_compound(color: TYPE_PIXEL) -> tuple[TYPE_PIXEL, TYPE_PIXEL, TYPE_PIXEL]:
-    color = pixel_rgb2hsl(color)
-    color_a = pixel_hsv_adjust(color, 180, 0, 0)
-    color_a = pixel_hsl2rgb(color_a)
+    color = pixel_bgr2hsv(color)
+    color_a = pixel_hsv_adjust(color, 90, 0, 0)
+    color_b = pixel_hsv_adjust(color, 120, 0, 0)
+    color_c = pixel_hsv_adjust(color, 150, 0, 0)
+    return pixel_hsv2bgr(color_a), pixel_hsv2bgr(color_b), pixel_hsv2bgr(color_c)
 
-    color_b = pixel_hsv_adjust(color, 30, 0, 0)
-    color_b = pixel_hsl2rgb(color_b)
+def color_theory_square(color: TYPE_PIXEL) -> tuple[TYPE_PIXEL, TYPE_PIXEL, TYPE_PIXEL]:
+    color = pixel_bgr2hsv(color)
+    color_a = pixel_hsv_adjust(color, 45, 0, 0)
+    color_b = pixel_hsv_adjust(color, 90, 0, 0)
+    color_c = pixel_hsv_adjust(color, 135, 0, 0)
+    return pixel_hsv2bgr(color_a), pixel_hsv2bgr(color_b), pixel_hsv2bgr(color_c)
 
-    color_c = pixel_hsv_adjust(color, 210, 0, 0)
-    color_c = pixel_hsl2rgb(color_c)
-    return color_a, color_b, color_c
+def color_theory_tetrad_custom(color: TYPE_PIXEL, delta:int=0) -> tuple[TYPE_PIXEL, TYPE_PIXEL, TYPE_PIXEL]:
+    color = pixel_bgr2hsv(color)
 
-def color_theory(image: TYPE_IMAGE, scheme: EnumColorTheory=EnumColorTheory.COMPLIMENTARY) -> tuple[TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE]:
+    # modulus on neg and pos
+    while delta < 0:
+        delta += 90
+
+    if delta > 90:
+        delta = delta % 90
+
+    color_a = pixel_hsv_adjust(color, -delta, 0, 0)
+    color_b = pixel_hsv_adjust(color, delta, 0, 0)
+    # just gimme a compliment
+    color_c = pixel_hsv_adjust(color, 90 - delta, 0, 0)
+    color_d = pixel_hsv_adjust(color, 90 + delta, 0, 0)
+    return pixel_hsv2bgr(color_a), pixel_hsv2bgr(color_b), pixel_hsv2bgr(color_c), pixel_hsv2bgr(color_d)
+
+def color_theory(image: TYPE_IMAGE, custom:int=0, scheme: EnumColorTheory=EnumColorTheory.COMPLIMENTARY) -> tuple[TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE]:
 
     aR = aG = aB = bR = bG = bB = cR = cG = cB = dR = dG = dB = 0
     color = color_average(image)
     match scheme:
         case EnumColorTheory.COMPLIMENTARY:
             a = color_theory_complementary(color)
-            aR, aB, aG = a
+            aB, aG, aR = a
         case EnumColorTheory.MONOCHROMATIC:
             a, b, c, d = color_theory_monochromatic(color)
-            aR, aG, aB = a
-            bR, bG, bB = b
-            cR, cG, cB = c
-            dR, dG, dB = d
+            aB, aG, aR = a
+            bB, bG, bR = b
+            cB, cG, cR = c
+            dB, dG, dR = d
         case EnumColorTheory.SPLIT_COMPLIMENTARY:
             a, b = color_theory_split_complementary(color)
-            aR, aG, aB = a
-            bR, bG, bB = b
+            aB, aG, aR = a
+            bB, bG, bR = b
         case EnumColorTheory.ANALOGOUS:
-            a, b = color_theory_analogous(color)
-            aR, aG, aB = a
-            bR, bG, bB = b
+            a, b, c, d = color_theory_analogous(color)
+            aB, aG, aR = a
+            bB, bG, bR = b
+            cB, cG, cR = c
+            dB, dG, dR = d
         case EnumColorTheory.TRIADIC:
             a, b = color_theory_triadic(color)
-            aR, aG, aB = a
-            bR, bG, bB = b
-        case EnumColorTheory.TETRADIC:
-            a, b, c = color_theory_tetradic(color)
-            aR, aG, aB = a
-            bR, bG, bB = b
-            cR, cG, cB = c
+            aB, aG, aR = a
+            bB, bG, bR = b
         case EnumColorTheory.SQUARE:
             a, b, c = color_theory_square(color)
-            aR, aG, aB = a
-            bR, bG, bB = b
-            cR, cG, cB = c
-        case EnumColorTheory.RECTANGULAR:
-            a, b, c = color_theory_rectangular(color)
-            aR, aG, aB = a
-            bR, bG, bB = b
-            cR, cG, cB = c
+            aB, aG, aR = a
+            bB, bG, bR = b
+            cB, cG, cR = c
         case EnumColorTheory.COMPOUND:
             a, b, c = color_theory_compound(color)
-            aR, aG, aB = a
-            bR, bG, bB = b
-            cR, cG, cB = c
+            aB, aG, aR = a
+            bB, bG, bR = b
+            cB, cG, cR = c
+        case EnumColorTheory.CUSTOM_TETRAD:
+            a, b, c, d = color_theory_tetrad_custom(color, custom)
+            aB, aG, aR = a
+            bB, bG, bR = b
+            cB, cG, cR = c
+            dB, dG, dR = d
 
     h, w = image.shape[:2]
 
     return (
-        np.full((h, w, 4), [aR, aG, aB, 255], dtype=np.uint8),
-        np.full((h, w, 4), [bR, bG, bB, 255], dtype=np.uint8),
-        np.full((h, w, 4), [cR, cG, cB, 255], dtype=np.uint8),
-        np.full((h, w, 4), [dR, dG, dB, 255], dtype=np.uint8),
-        np.full((h, w, 4), [color[0], color[1], color[2], 255], dtype=np.uint8),
+        np.full((h, w, 4), [aB, aG, aR, 255], dtype=np.uint8),
+        np.full((h, w, 4), [bB, bG, bR, 255], dtype=np.uint8),
+        np.full((h, w, 4), [cB, cG, cR, 255], dtype=np.uint8),
+        np.full((h, w, 4), [dB, dG, dR, 255], dtype=np.uint8),
+        np.full((h, w, 4), color + [255], dtype=np.uint8),
     )
 
 # =============================================================================
@@ -1054,9 +1017,9 @@ def comp_blend(imageA:Optional[TYPE_IMAGE]=None,
         if h != targetH or w != targetW:
             if mode != EnumScaleMode.NONE:
                 img = geo_scalefit(img, targetW, targetH, mode, sample)
-            print(img.shape[:2], targetW, targetH)
+            # Logger.debug(img.shape[:2], targetW, targetH)
             img = comp_fill(img, targetW, targetH, color)
-            # print(img.shape[:2], targetW, targetH)
+            # Logger.debug(img.shape[:2], targetW, targetH)
         return img
 
     def process(img:TYPE_IMAGE, alpha:bool=True) -> TYPE_IMAGE:
@@ -1096,7 +1059,7 @@ def comp_blend(imageA:Optional[TYPE_IMAGE]=None,
         imageA = xyz(imageA)
         imageB = xyz(imageB)
 
-    print(imageA.shape, imageB.shape, blendOp.value, alpha, imageB_maskColor)
+    # Logger.debug(imageA.shape, imageB.shape, blendOp.value, alpha, imageB_maskColor)
     imageA = cv2pil(imageA)
     imageB = cv2pil(imageB)
     image = blendLayers(imageA, imageB, blendOp.value, np.clip(alpha, 0, 1))

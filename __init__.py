@@ -157,7 +157,7 @@ class Logger(metaclass=Singleton):
     @classmethod
     def warn(cls, *arg) -> None:
         if Logger._LEVEL > 0:
-            who = inspect.currentframe().f_back.f_code.co_name
+           # who = inspect.currentframe().f_back.f_code.co_name
             cls._raw("\033[48;2;159;155;44;93m", None, *arg)
 
     @classmethod
@@ -319,7 +319,7 @@ def configLoad() -> None:
     except (IOError, FileNotFoundError) as e:
         pass
     except Exception as e:
-        print(e)
+        Logger.err(e)
 
 # =============================================================================
 # == CUSTOM API RESPONSES
@@ -363,7 +363,7 @@ try:
         return web.json_response(json_data)
 
 except Exception as e:
-    print(e)
+    Logger.err(e)
 # =============================================================================
 # == SUPPORT FUNCTIONS
 # =============================================================================
@@ -378,7 +378,7 @@ def convert_parameter(data: Any) -> Any:
     typ = []
     val = []
     for v in data:
-        # print(v, type(v), type(v) == float, type(v) == int)
+        # Logger.debug(v, type(v), type(v) == float, type(v) == int)
         t = type(v)
         if t == int:
             t = float

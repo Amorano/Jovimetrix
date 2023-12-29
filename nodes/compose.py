@@ -283,6 +283,7 @@ class ColorTheoryNode(JOVImageInOutBaseNode):
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
                 Lexicon.SCHEME: (EnumColorTheory._member_names_, {"default": EnumColorTheory.COMPLIMENTARY.name}),
+                Lexicon.VALUE: ("INT", {"default": 45, "min": -90, "max": 90, "step": 1})
             }}
         return deep_merge_dict(IT_REQUIRED, IT_PIXELS, d, IT_INVERT)
 
@@ -293,14 +294,15 @@ class ColorTheoryNode(JOVImageInOutBaseNode):
         imageC = []
         imageD = []
         imageE = []
-
         pixels = kw.get(Lexicon.PIXEL, [None])
         scheme = kw.get(Lexicon.SCHEME, [EnumColorTheory.COMPLIMENTARY])
+        user = parse_number(Lexicon.VALUE, kw, EnumTupleType.INT, [0], clip_min=-180, clip_max=180)
+        # kw.get(Lexicon.VALUE, [0])
         i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
 
-        for img, s, i in zip_longest_fill(pixels, scheme, i):
+        for img, s, user, i in zip_longest_fill(pixels, scheme, user, i):
             img = tensor2cv(img) if img is not None else np.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=np.uint8)
-            a, b, c, d, e = comp.color_theory(img, EnumColorTheory[s])
+            a, b, c, d, e = comp.color_theory(img, user, EnumColorTheory[s])
             if i != 0:
                 a = comp.light_invert(a, i)
                 b = comp.light_invert(b, i)
