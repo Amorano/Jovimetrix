@@ -141,7 +141,7 @@ class ComparisonNode(JOVBaseNode):
                 result.append(val[0])
             else:
                 result.append(tuple(val))
-            # print(result, val)
+            # Logger.debug(result, val)
         return (result, )
 
 class IfThenElseNode(JOVBaseNode):

@@ -370,4 +370,4 @@ if __name__ == "__main__":
     for op in EnumEase:
         # Logger.debug(op)
         result = Ease.ease(op, start=0, end=1, duration=1, alpha=alpha_values, clip=(0, 1))
-        print(f"{op}: {result}")
+        # Logger.debug(f"{op}: {result}")

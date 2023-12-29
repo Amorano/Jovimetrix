@@ -191,7 +191,7 @@ class CalcUnaryOPNode(JOVBaseNode):
                 result.append(val[0])
             else:
                 result.append(tuple(val))
-            # print(result, val)
+            # Logger.debug(result, val)
         return (result, )
 
 class EnumBinaryOperation(Enum):
@@ -322,7 +322,7 @@ class CalcBinaryOPNode(JOVBaseNode):
                 result.append(val[0])
             else:
                 result.append(tuple(val))
-            # print(result, val)
+            # Logger.debug(result, val)
         return (result, )
 
 class ValueNode(JOVBaseNode):

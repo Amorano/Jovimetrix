@@ -70,7 +70,7 @@ class MediaStreamBase:
         return True, self.__frame
 
     def capture(self) -> None:
-        time.sleep(0.5)
+        time.sleep(0.1)
         return True
 
     def __run(self) -> None:
@@ -96,6 +96,7 @@ class MediaStreamBase:
                 # call the run capture frame command on subclasses
                 newframe = None
                 if self.__callback_frame:
+                    # Logger.spam('callback')
                     self.__ret, newframe = self.__callback_frame()
 
                 if newframe is not None:
@@ -208,9 +209,9 @@ class MediaStreamDevice(MediaStreamBase):
         self.__zoom = 0
         self.__focus = 0
         self.__exposure = 1
-        super().__init__(url, self.__run, width, height, fps, mode, sample)
+        super().__init__(url, self.__callback, width, height, fps, mode, sample)
 
-    def __run(self) -> tuple[bool, Any]:
+    def __callback(self) -> tuple[bool, Any]:
         if self.__source is None:
             return False, None
 
@@ -237,20 +238,15 @@ class MediaStreamDevice(MediaStreamBase):
         if self.captured:
             return True
 
-        # timeout = time.perf_counter() + self.TIMEOUT
-        # while self.__source is None: #and time.perf_counter() < timeout:
-        self.__source = None
-        for x in self.__backend:
-            Logger.debug(x)
-            source = cv2.VideoCapture(self.url, x)
-            time.sleep(0.4)
-            if self.captured:
-                Logger.debug(f"CAPTURED {self.__source.getBackendName()}")
-                time.sleep(0.4)
-                self.__source = source
-                return True
-
-        self.__source = None
+        timeout = time.perf_counter() + self.TIMEOUT
+        while self.__source is None and time.perf_counter() < timeout:
+            self.__source = None
+            for x in self.__backend:
+                self.__source = cv2.VideoCapture(self.url, x)
+                if self.captured:
+                    Logger.debug(f"CAPTURED {self.__source.getBackendName()}")
+                    time.sleep(0.4)
+                    return True
         return False
 
     def end(self) -> None:
@@ -368,26 +364,21 @@ class StreamManager(metaclass=Singleton):
 
         return stream.frame
 
-    def capture(self, url: str,
-                width:int=320,
-                height:int=240,
-                fps:float=30,
-                backend:int=None,
-                static:bool=False,
-                endpoint:str=None) -> MediaStreamBase:
+    def capture(self, url: str, width:int=320, height:int=240, fps:float=30,
+                backend:int=None, static:bool=False, endpoint:str=None) -> MediaStreamBase:
 
         if (stream := StreamManager.STREAM.get(url, None)) is None:
             if static:
                 stream = StreamManager.STREAM[url] = MediaStreamComfyUI(url, width, height, fps)
-                Logger.debug(url, "MediaStreamComfyUI")
+                # Logger.debug(url, "MediaStreamComfyUI")
             else:
                 stream = StreamManager.STREAM[url] = MediaStreamDevice(url, width, height, fps, backend=backend)
-                Logger.debug(url, "MediaStream")
+                # Logger.debug(url, "MediaStream")
 
             if endpoint is not None and stream.captured:
                 StreamingServer.endpointAdd(endpoint, stream)
 
-        stream.capture()
+        # stream.capture()
         return stream
 
     def pause(self, url: str) -> None:
@@ -485,7 +476,6 @@ def __getattr__(name: str) -> Any:
 def streamReadTest() -> None:
     urls = [
         0,1,
-        "http://188.113.160.155:47544/mjpg/video.mjpg",
         "http://63.142.183.154:6103/mjpg/video.mjpg",
         "http://104.207.27.126:8080/mjpg/video.mjpg",
         "http://185.133.99.214:8011/mjpg/video.mjpg",
@@ -493,26 +483,17 @@ def streamReadTest() -> None:
         "http://63.142.190.238:6106/mjpg/video.mjpg",
         "http://77.222.181.11:8080/mjpg/video.mjpg",
         "http://195.196.36.242/mjpg/video.mjpg",
-        # "http://158.58.130.148/mjpg/video.mjpg",
-
         "http://honjin1.miemasu.net/nphMotionJpeg?Resolution=320x240&Quality=Standard",
         "http://clausenrc5.viewnetcam.com:50003/nphMotionJpeg?Resolution=320x240&Quality=Standard",
         "http://takemotopiano.aa1.netvolante.jp:8190/nphMotionJpeg?Resolution=320x240&Quality=Standard",
         "http://tamperehacklab.tunk.org:38001/nphMotionJpeg?Resolution=320x240&Quality=Standard",
         "http://vetter.viewnetcam.com:50000/nphMotionJpeg?Resolution=320x240&Quality=Standard",
         "http://61.211.241.239/nphMotionJpeg?Resolution=320x240&Quality=Standard",
-
-        # "http://camera.sissiboo.com:86/mjpg/video.mjpg",
-        # "http://brandts.mine.nu:84/mjpg/video.mjpg",
         "http://webcam.mchcares.com/mjpg/video.mjpg",
         "http://htadmcam01.larimer.org/mjpg/video.mjpg",
         "http://pendelcam.kip.uni-heidelberg.de/mjpg/video.mjpg",
         "https://gbpvcam01.taferresorts.com/mjpg/video.mjpg",
-
         "http://217.147.30.197:8087/mjpg/video.mjpg",
-        # "http://173.162.200.86:3123/mjpg/video.mjpg",
-
-
     ]
     streamIdx = 0
 
@@ -523,7 +504,7 @@ def streamReadTest() -> None:
     try:
         StreamManager().capture(urls[streamIdx % len(urls)], widthT, heightT)
     except Exception as e:
-        print(e)
+        Logger.err(e)
     streamIdx += 1
 
     while True:
@@ -544,13 +525,13 @@ def streamReadTest() -> None:
         try:
             cv2.imshow("Media", frame)
         except Exception as e:
-            print(e)
+            Logger.err(e)
         val = cv2.waitKey(1) & 0xFF
         if val == ord('c'):
             try:
                 StreamManager().capture(urls[streamIdx % len(urls)], widthT, heightT)
             except Exception as e:
-                print(e)
+                Logger.err(e)
             streamIdx += 1
         elif val == ord('q'):
             break

@@ -133,7 +133,7 @@ class StreamReaderNode(JOVImageBaseNode):
         zoom = kw.get(Lexicon.ZOOM, 1)
         sample = kw.get(Lexicon.SAMPLE, EnumInterpolation.LANCZOS4)
 
-        print(width, height)
+        # Logger.debug(width, height)
         if device.width != width or device.height != height:
             device.sizer(width, height, sample)
 
