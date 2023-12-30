@@ -33,15 +33,13 @@ class AdjustNode(JOVImageInOutBaseNode):
 
     def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor]:
         pixels = kw.get(Lexicon.PIXEL, [None])
-        op = kw.get(Lexicon.FUNC,[EnumAdjustOP.BLUR])
-        radius = kw.get(Lexicon.RADIUS,[3])
-        amt = kw.get(Lexicon.AMT,[1])
+        op = kw[Lexicon.FUNC]
+        radius = kw[Lexicon.RADIUS]
+        amt = kw[Lexicon.AMT]
         i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
         masks = []
         images = []
-        for data in zip_longest_fill(pixels, op, radius, amt, i):
-            img, o, r, a, i = data
-
+        for img, o, r, a, i in zip_longest_fill(pixels, op, radius, amt, i):
             if img is None:
                 zero = torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8)
                 images.append(zero)
@@ -49,26 +47,32 @@ class AdjustNode(JOVImageInOutBaseNode):
                 continue
 
             img = tensor2cv(img)
-            o = EnumAdjustOP[o]
-
-            match o:
+            match EnumAdjustOP[o]:
                 case EnumAdjustOP.BLUR:
                     img = cv2.blur(img, (r, r))
 
                 case EnumAdjustOP.STACK_BLUR:
                     r = min(r, 1399)
+                    if r % 2 == 0:
+                        r += 1
                     img = cv2.stackBlur(img, (r, r))
 
                 case EnumAdjustOP.GAUSSIAN_BLUR:
                     r = min(r, 999)
+                    if r % 2 == 0:
+                        r += 1
                     img = cv2.GaussianBlur(img, (r, r), sigmaX=float(a))
 
                 case EnumAdjustOP.MEDIAN_BLUR:
                     r = min(r, 357)
+                    if r % 2 == 0:
+                        r += 1
                     img = cv2.medianBlur(img, r)
 
                 case EnumAdjustOP.SHARPEN:
                     r = min(r, 511)
+                    if r % 2 == 0:
+                        r += 1
                     img = comp.adjust_sharpen(img, kernel_size=r, amount=a)
 
                 case EnumAdjustOP.EMBOSS:
