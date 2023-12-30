@@ -98,9 +98,9 @@ class EnumInterpolation(Enum):
     LANCZOS4 = cv2.INTER_LANCZOS4
     LINEAR_EXACT = cv2.INTER_LINEAR_EXACT
     NEAREST_EXACT = cv2.INTER_NEAREST_EXACT
-    INTER_MAX = cv2.INTER_MAX
-    WARP_FILL_OUTLIERS = cv2.WARP_FILL_OUTLIERS
-    WARP_INVERSE_MAP = cv2.WARP_INVERSE_MAP
+    # INTER_MAX = cv2.INTER_MAX
+    # WARP_FILL_OUTLIERS = cv2.WARP_FILL_OUTLIERS
+    # WARP_INVERSE_MAP = cv2.WARP_INVERSE_MAP
 
 class EnumAdjustOP(Enum):
     BLUR = 0
@@ -185,13 +185,13 @@ IT_SAMPLE = {"optional": {
 # =============================================================================
 
 def pixel_convert(in_a: TYPE_IMAGE, in_b: TYPE_IMAGE) -> tuple[TYPE_IMAGE, TYPE_IMAGE]:
-    if in_a or in_b:
+    if in_a is not None or in_b is not None:
         if in_a is None:
             cc, _, w, h = channel_count(in_b)
-            in_a = np.zeros((h, w, cc), dtype=torch.uint8)
-        elif in_b is None:
+            in_a = np.zeros((h, w, cc), dtype=np.uint8)
+        if in_b is None:
             cc, _, w, h = channel_count(in_a)
-            in_b = np.zeros((h, w, cc), dtype=torch.uint8)
+            in_b = np.zeros((h, w, cc), dtype=np.uint8)
     return in_a, in_b
 
 def pixel_bgr2hsv(bgr_color: TYPE_PIXEL) -> TYPE_PIXEL:
@@ -245,7 +245,7 @@ def shape_polygon(width: int, height: int, size: float=1., sides: int=3, angle: 
 # === CHANNEL FUNCTIONS ===
 # =============================================================================
 
-def channel_count(image:TYPE_IMAGE) -> tuple[int, EnumImageType]:
+def channel_count(image:TYPE_IMAGE) -> tuple[int, EnumImageType, int, int]:
     h, w = image.shape[:2]
     size = image.shape[2] if len(image.shape) > 2 else 1
     mode = EnumImageType.RGBA if size == 4 else EnumImageType.RGB if size == 3 else EnumImageType.GRAYSCALE
@@ -446,7 +446,7 @@ def geo_crop(image: TYPE_IMAGE,
              widthT: int=None, heightT: int=None, pad:bool=False,
              color: TYPE_PIXEL=0) -> TYPE_IMAGE:
 
-        height, width, _ = image.shape
+        height, width = image.shape[:2]
         left = float(np.clip(left or 0, 0, 1))
         top = float(np.clip(top or 0, 0, 1))
         right = float(np.clip(right or 1, 0, 1))
@@ -461,10 +461,15 @@ def geo_crop(image: TYPE_IMAGE,
         mid_x, mid_y = int(width / 2), int(height / 2)
         cw2 = width * (right - left)
         ch2 = height * (bottom - top)
-
-        crop_img = image[max(0, mid_y - ch2):min(mid_y + ch2, height),
-                         max(0, mid_x - cw2):min(mid_x + cw2, width)]
-
+        # have to have a non-zero crop box.
+        y1, y2 = max(0, mid_y - ch2), min(mid_y + ch2, height)
+        if y2 - y1 == 0:
+            y2 = y1 + 1
+        x1, x2 = max(0, mid_x - cw2), min(mid_x + cw2, width)
+        if x2 - x1 == 0:
+            x2 = x1 + 1
+        print(y1,y2, x1,x2)
+        crop_img = image[y1:y2, x1:x2]
         widthT = (widthT if widthT is not None else width)
         heightT = (heightT if heightT is not None else height)
         if (widthT == width and heightT == height) or not pad:
@@ -539,7 +544,7 @@ def geo_scalefit(image: TYPE_IMAGE, width: int, height:int,
                  mode:EnumScaleMode=EnumScaleMode.NONE,
                  sample:EnumInterpolation=EnumInterpolation.LANCZOS4) -> TYPE_IMAGE:
 
-    Logger.spam(mode, width, height, sample)
+    Logger.debug(mode, width, height, sample)
 
     match mode:
         case EnumScaleMode.ASPECT:
@@ -561,7 +566,15 @@ def geo_transform(image: TYPE_IMAGE, offsetX: float=0., offsetY: float=0., angle
               sample:EnumInterpolation=EnumInterpolation.LANCZOS4) -> TYPE_IMAGE:
     """Transform, Rotate and Scale followed by Tiling and then Inversion, conforming to an input wT, hT,."""
 
-    height, width, _ = image.shape
+    height, width = image.shape[:2]
+    if sizeX < 0:
+        # flip the X
+        image = cv2.flip(image, 1)
+        sizeX = -sizeX
+    if sizeY < 0:
+        # flip the Y
+        image = cv2.flip(image, 0)
+        sizeY = -sizeY
 
     # SCALE
     if sizeX != 1. or sizeY != 1.:
@@ -588,7 +601,7 @@ def geo_transform(image: TYPE_IMAGE, offsetX: float=0., offsetY: float=0., angle
             sizeY = 1.
 
         image = geo_edge_wrap(image, tx, ty)
-        h, w, _ = image.shape
+        # h, w = image.shape[:2]
 
     # clip to original size first...
     image = geo_crop(image)
@@ -604,7 +617,11 @@ def geo_merge(imageA: TYPE_IMAGE, imageB: TYPE_IMAGE, axis: int=0, flip: bool=Fa
 def geo_mirror(image: TYPE_IMAGE, pX: float, axis: int, invert: bool=False) -> TYPE_IMAGE:
     output =  np.zeros_like(image)
     flip = cv2.flip(image, axis)
-    height, width, _ = image.shape
+    height, width = image.shape[:2]
+    cc = channel_count(image)[0]
+    if cc > 3:
+        alpha = image[:,:,3]
+        image = image[:,:,:3]
 
     pX = np.clip(pX, 0, 1)
     if invert:
@@ -625,6 +642,10 @@ def geo_mirror(image: TYPE_IMAGE, pX: float, axis: int, invert: bool=False) -> T
 
     if invert:
         output = cv2.flip(output, axis)
+
+    if cc == 4:
+        output = channel_add(output)
+        output[:,:,3] = alpha
 
     return output
 
@@ -1075,25 +1096,23 @@ def adjust_equalize(image:TYPE_IMAGE) -> TYPE_IMAGE:
     image = cv2.equalizeHist(image)
     return image_rgb_restore(image, alpha, cc == 1)
 
-def adjust_threshold(image:TYPE_IMAGE,
-                     threshold:float=0.5,
+def adjust_threshold(image:TYPE_IMAGE, threshold:float=0.5,
                      mode:EnumThreshold=EnumThreshold.BINARY,
                      adapt:EnumThresholdAdapt=EnumThresholdAdapt.ADAPT_NONE,
-                     block:int=3,
-                     const:float=0.) -> TYPE_IMAGE:
+                     block:int=3, const:float=0.) -> TYPE_IMAGE:
 
     const = max(-100, min(100, const))
     block = max(3, block if block % 2 == 1 else block + 1)
     cc, image, alpha = image_rgb_clean(image)
     if adapt != EnumThresholdAdapt.ADAPT_NONE:
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        gray = cv2.adaptiveThreshold(gray, 255, adapt, cv2.THRESH_BINARY, block, const)
+        gray = cv2.adaptiveThreshold(gray, 255, adapt.value, cv2.THRESH_BINARY, block, const)
         gray = cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
         # gray = np.stack([gray, gray, gray], axis=-1)
         image = cv2.bitwise_and(image, gray)
     else:
         threshold = int(threshold * 255)
-        _, image = cv2.threshold(image, threshold, 255, mode)
+        _, image = cv2.threshold(image, threshold, 255, mode.value)
     return image_rgb_restore(image, alpha, cc == 1)
 
 def adjust_levels(image:torch.Tensor, black_point:int=0, white_point=255,

@@ -27,26 +27,26 @@ class TransformNode(JOVImageInOutBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        return deep_merge_dict(IT_REQUIRED, IT_PIXELS, IT_TRS, IT_EDGE, IT_WH, IT_WHMODE, IT_SAMPLE)
+        return deep_merge_dict(IT_REQUIRED, IT_PIXELS, IT_TRS, IT_EDGE, IT_WHMODE, IT_SAMPLE)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         pixels = kw.get(Lexicon.PIXEL, [None])
-        offset = parse_tuple(Lexicon.OFFSET, kw, default=(0, 0,), clip_min=-1, clip_max=1)
-        angle = kw.get(Lexicon.ANGLE, [0])
-        size = parse_tuple(Lexicon.SIZE, kw, default=(1, 1,), clip_min=0, clip_max=1)
+        offset = parse_tuple(Lexicon.OFFSET, kw, typ=EnumTupleType.FLOAT, default=(0., 0.,), clip_min=-1, clip_max=1)
+        angle = kw[Lexicon.ANGLE]
+        size = parse_tuple(Lexicon.SIZE, kw, typ=EnumTupleType.FLOAT, default=(1., 1.,), zero=0.001)
         wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
-        edge = kw.get(Lexicon.EDGE, [EnumEdge.CLIP])
-        mode = kw.get(Lexicon.MODE, [EnumScaleMode.NONE])
-        sample = kw.get(Lexicon.SAMPLE, [EnumInterpolation.LANCZOS4])
+        edge = kw[Lexicon.EDGE]
+        mode = kw[Lexicon.MODE]
+        sample = kw[Lexicon.SAMPLE]
         masks = []
         images = []
         for data in zip_longest_fill(pixels, offset, angle, size, edge, wihi, mode, sample):
             img, offset, a, size, e, wihi, m, rs = data
-            oX, oY = offset
-            sX, sY = size
             w, h = wihi
             if img is not None:
                 img = tensor2cv(img)
+                oX, oY = offset
+                sX, sY = size
                 img = geo_transform(img, oX, oY, a, sX, sY, e, w, h, m, EnumInterpolation[rs])
             else:
                 img = np.zeros((h, w, 3), dtype=np.uint8)
@@ -102,24 +102,23 @@ class MirrorNode(JOVImageInOutBaseNode):
         d = {"optional": {
                 Lexicon.MIRROR: (EnumMirrorMode._member_names_, {"default": EnumMirrorMode.X.name}),
             }}
-        return deep_merge_dict(IT_PIXELS, d, IT_XY, IT_INVERT)
+        return deep_merge_dict(IT_REQUIRED, IT_PIXELS, d, IT_XY, IT_INVERT)
 
     def run(self, **kw) -> tuple[list[torch.Tensor], list[torch.Tensor]]:
         pixels = kw.get(Lexicon.PIXEL, [None])
-        offset = parse_tuple(Lexicon.XY, kw, default=(0, 0,), clip_min=-1, clip_max=1)
-        i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, default=[1], clip_min=0, clip_max=1)
-        mode = kw.get(Lexicon.MODE, [EnumScaleMode.NONE])
+        mirror = kw[Lexicon.MIRROR]
+        offset = parse_tuple(Lexicon.XY, kw, typ=EnumTupleType.FLOAT, default=(0., 0.,), clip_min=-1, clip_max=1)
+        i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, default=[1.], clip_min=0, clip_max=1)
         masks = []
         images = []
-        for data in zip_longest_fill(pixels, offset, mode, i):
-            img, offset, m, i = data
+        for data in zip_longest_fill(pixels, mirror, offset, i):
+            img, mirror, offset, i = data
             x, y = offset
             img = tensor2cv(img) if img is not None else np.zeros((0,0,3), dtype=np.uint8)
-            if 'X' in m:
-                img = geo_mirror(img, x or 0, 1, invert=i)
-            if 'Y' in m:
-                img = geo_mirror(img, y or 0, 0, invert=i)
-
+            if 'X' in mirror:
+                img = geo_mirror(img, x, 1, invert=i)
+            if 'Y' in mirror:
+                img = geo_mirror(img, y, 0, invert=i)
             images.append(cv2tensor(img))
             masks.append(cv2mask(img))
 
@@ -140,7 +139,7 @@ class ProjectionNode(JOVImageInOutBaseNode):
                 Lexicon.PROJECTION: (EnumProjection._member_names_, {"default": EnumProjection.SPHERICAL.name}),
                 Lexicon.STRENGTH: ("FLOAT", {"default": 1, "min": 0, "step": 0.01}),
             }}
-        return deep_merge_dict(IT_PIXELS, d, IT_WHMODE, IT_SAMPLE, IT_INVERT)
+        return deep_merge_dict(IT_REQUIRED, IT_PIXELS, d, IT_WHMODE, IT_SAMPLE, IT_INVERT)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         pixels = kw.get(Lexicon.PIXEL, [None])

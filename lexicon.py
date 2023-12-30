@@ -76,7 +76,7 @@ class Lexicon:
     MI = '🖤'
     MID = 'MID'
     MIDI = '🎛️'
-    MIRROR = '🇯🇲'
+    MIRROR = '🪞'
     MODE = '🚦'
     NORMALIZE = '0-1'
     NOTE = '🎶'

@@ -13,7 +13,7 @@ from Jovimetrix import MIN_IMAGE_SIZE, tensor2cv, cv2tensor, cv2mask, zip_longes
     IT_GAMMA, IT_REQUIRED
 
 from Jovimetrix.sup import comp
-from Jovimetrix.sup.comp import EnumAdjustOP, EnumThresholdAdapt, EnumColorMap, EnumThreshold
+from Jovimetrix.sup.comp import EnumAdjustOP, EnumThresholdAdapt, EnumColorMap, EnumThreshold, light_invert
 
 # =============================================================================
 
@@ -132,37 +132,38 @@ class ColorMatchNode(JOVImageInOutBaseNode):
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         pixelA = kw.get(Lexicon.PIXEL_A, [None])
         pixelB = kw.get(Lexicon.PIXEL_B, [None])
-        colormap = kw.get(Lexicon.COLORMAP, ['NONE'])
+        colormap = kw[Lexicon.COLORMAP]
         # if the colormap is not "none" entry...use it.
         # usemap = usemap or [None]
         threshold = parse_number(Lexicon.THRESHOLD, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
-        blur = kw.get(Lexicon.BLUR, [13])
-        flip = kw.get(Lexicon.FLIP, [False])
+        blur = kw[Lexicon.BLUR]
+        flip = kw[Lexicon.FLIP]
         i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
         masks = []
         images = []
         for data in zip_longest_fill(pixelA, pixelB, colormap, threshold, blur, flip, i):
             a, b, c, t, bl, f, i = data
-            a, b = comp.pixel_convert(a, b)
             if a is None and b is None:
                 zero = torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8)
                 images.append(zero)
                 masks.append(zero)
                 continue
 
-            a = tensor2cv(a)
-            b = tensor2cv(b)
+            a = tensor2cv(a) if a is not None else None
+            b = tensor2cv(b) if b is not None else None
+            img, b = comp.pixel_convert(a, b)
+
             if f is not None and f:
-                a, b = b, a
+                img, b = b, img
 
             if c == 'NONE':
-                a = comp.color_match(a, b)
+                img = comp.color_match(img, b)
             else:
                 c = EnumColorMap[c].value
                 if t != 0:
-                    a = comp.color_match_heat_map(a, t, c, bl)
+                    img = comp.color_match_heat_map(img, t, c, bl)
                 else:
-                    a = comp.color_match_custom_map(a, colormap=c)
+                    img = comp.color_match_custom_map(img, colormap=c)
 
             if i != 0:
                 img = comp.light_invert(img, i)
@@ -273,8 +274,8 @@ class LevelsNode(JOVImageInOutBaseNode):
         i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
         masks = []
         images = []
-        for data in zip_longest_fill(pixels, lmh, gamma, i):
-            img, l, m, h, g, i = data
+        for img, lmh, g, i in zip_longest_fill(pixels, lmh, gamma, i):
+            l, m, h = lmh
 
             if img is None:
                 zero = torch.zeros((1, 1, 3), dtype=torch.uint8)
@@ -283,21 +284,19 @@ class LevelsNode(JOVImageInOutBaseNode):
                 continue
 
             img = torch.maximum(img - l, torch.tensor(0.0))
-            img = torch.minimum(img, (h - l))
+            img = torch.minimum(img, torch.tensor(h - l))
             img = (img + (m or 0.5)) - 0.5
-            img = torch.sign(img) * torch.pow(torch.abs(img), 1.0 / (g or 1))
+            img = torch.sign(img) * torch.pow(torch.abs(img), 1.0 / g)
             img = (img + 0.5) / h
+            img = tensor2cv(img)
 
             if i != 0:
-                img = 1 - i - img
+                img = light_invert(img, i)
 
-            images.append(img)
-            masks.append(img)
+            images.append(cv2tensor(img))
+            masks.append(cv2mask(img))
 
-        return (
-            torch.stack(images),
-            torch.stack(masks)
-        )
+        return ( torch.stack(images), torch.stack(masks) )
 
 class ThresholdNode(JOVImageInOutBaseNode):
     NAME = "THRESHOLD (JOV) 📉"
@@ -317,10 +316,10 @@ class ThresholdNode(JOVImageInOutBaseNode):
     def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor]:
 
         pixels = kw.get(Lexicon.PIXEL, [None])
-        op = kw.get(Lexicon.FUNC, [EnumThreshold.BINARY])
-        adapt = kw.get(Lexicon.ADAPT, [EnumThresholdAdapt.ADAPT_NONE])
-        threshold = kw.get(Lexicon.THRESHOLD, [0.5])
-        size = kw.get(Lexicon.SIZE, [3])
+        op = kw[Lexicon.FUNC]
+        adapt = kw[Lexicon.ADAPT]
+        threshold = kw[Lexicon.THRESHOLD]
+        size = kw[Lexicon.SIZE]
         i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
         masks = []
         images = []

@@ -420,7 +420,7 @@ def parse_number(key: str, data: Union[dict, List[dict]], typ: EnumTupleType=Enu
         ret.append(v)
     return ret
 
-def parse_tuple(key: str, data: Union[dict, List[dict]], typ: EnumTupleType=EnumTupleType.INT, default: tuple[Any]=None, clip_min: Optional[int]=None, clip_max: Optional[int]=None) -> tuple[List[Any]]:
+def parse_tuple(key: str, data: Union[dict, List[dict]], typ: EnumTupleType=EnumTupleType.INT, default: tuple[Any]=None, clip_min: Optional[int]=None, clip_max: Optional[int]=None, zero=0) -> tuple[List[Any]]:
 
     ret = []
     unified = data.get(key, [])
@@ -445,20 +445,23 @@ def parse_tuple(key: str, data: Union[dict, List[dict]], typ: EnumTupleType=Enum
                         parts = v.split('.', 1)
                         if len(parts) > 1:
                             v ='.'.join(parts[:2])
-                    v = float(v if v is not None else 0)
+                    v = float(v if v is not None else zero)
 
                 case EnumTupleType.LIST:
                     if v is not None:
                         v = v.split(',')
 
                 case EnumTupleType.INT:
-                    v = int(v if v is not None else 0)
+                    v = int(v if v is not None else zero)
 
             if typ in [EnumTupleType.INT, EnumTupleType.FLOAT]:
                 if clip_min is not None:
                     v = max(v, clip_min)
                 if clip_max is not None:
                     v = min(v, clip_max)
+
+            if v == 0:
+                v = zero
             newboi.append(v)
 
         ret.append(tuple(newboi))
@@ -760,7 +763,7 @@ IT_SCALEMODE = {"optional": {
 }}
 
 IT_TRANS = {"optional": {
-    Lexicon.OFFSET: ("VEC2", {"default": (0, 0), "min": -1, "max": 1, "step": 0.01, "precision": 4, "label": [Lexicon.X, Lexicon.Y]})
+    Lexicon.OFFSET: ("VEC2", {"default": (0., 0.,), "min": -1, "max": 1, "step": 0.01, "precision": 4, "label": [Lexicon.X, Lexicon.Y]})
 }}
 
 IT_ROT = {"optional": {
@@ -768,7 +771,7 @@ IT_ROT = {"optional": {
 }}
 
 IT_SCALE = {"optional": {
-    Lexicon.SIZE: ("VEC2", {"default": (1, 1), "min": 0, "max": 1, "step": 0.01, "precision": 4, "label": [Lexicon.X, Lexicon.Y]})
+    Lexicon.SIZE: ("VEC2", {"default": (1., 1.), "min": -1., "max": 1., "step": 0.01, "precision": 4, "label": [Lexicon.X, Lexicon.Y]})
 }}
 
 IT_TILE = {"optional": {
