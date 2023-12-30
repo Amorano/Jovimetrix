@@ -238,9 +238,6 @@ class StreamWriterNode(JOVImageInOutBaseNode):
         out = []
         for img, r, wihi, mode, rs, i in zip_longest_fill(pixels, route, wihi, mode, sample, i):
             w, h = wihi
-
-            StreamManager().
-
             img = tensor2cv(img) if img is not None else np.zeros((h, w, 3), dtype=np.uint8)
             if r != self.__route:
                 # close old, if any
