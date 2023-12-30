@@ -812,12 +812,12 @@ def color_theory_complementary(color: TYPE_PIXEL) -> TYPE_PIXEL:
 
 def color_theory_monochromatic(color: TYPE_PIXEL) -> tuple[TYPE_PIXEL, TYPE_PIXEL]:
     color = pixel_bgr2hsv(color)
-    sat = color[1] / 11.
-    val = color[2] / 7.
-    color_a = pixel_hsv_adjust(color, 0, -2 * sat, -1 * val)
-    color_b = pixel_hsv_adjust(color, 0, -3 * sat, -2 * val)
-    color_c = pixel_hsv_adjust(color, 0, -5 * sat, -3 * val)
-    color_d = pixel_hsv_adjust(color, 0, -7 * sat, -5 * val)
+    sat = 255 / 5.
+    val = 255 / 5.
+    color_a = pixel_hsv_adjust(color, 0, -1 * sat, -1 * val, mod_sat=True, mod_value=True)
+    color_b = pixel_hsv_adjust(color, 0, -2 * sat, -2 * val, mod_sat=True, mod_value=True)
+    color_c = pixel_hsv_adjust(color, 0, -3 * sat, -3 * val, mod_sat=True, mod_value=True)
+    color_d = pixel_hsv_adjust(color, 0, -4 * sat, -4 * val, mod_sat=True, mod_value=True)
     return pixel_hsv2bgr(color_a), pixel_hsv2bgr(color_b), pixel_hsv2bgr(color_c), pixel_hsv2bgr(color_d)
 
 def color_theory_split_complementary(color: TYPE_PIXEL) -> tuple[TYPE_PIXEL, TYPE_PIXEL]:

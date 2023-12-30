@@ -21,13 +21,13 @@ import numpy as np
 from Jovimetrix import parse_tuple, parse_number, deep_merge_dict, tensor2cv, \
     cv2mask, cv2tensor, zip_longest_fill, \
     JOVBaseNode, JOVImageBaseNode, JOVImageInOutBaseNode, Logger, Lexicon, \
-    EnumTupleType, EnumCanvasOrientation, \
+    EnumTupleType, IT_SCALEMODE, \
     MIN_IMAGE_SIZE, IT_PIXELS, IT_ORIENT, IT_CAM, IT_WHMODE, IT_REQUIRED, IT_INVERT
 
 from Jovimetrix.sup.comp import image_grid, light_invert, geo_scalefit, \
     EnumInterpolation, EnumScaleMode, \
     IT_SAMPLE
-from Jovimetrix.sup.stream import StreamingServer, StreamManager
+from Jovimetrix.sup.stream import MediaStreamBase, MediaStreamDevice, StreamingServer, StreamManager
 
 try:
     import mido
@@ -109,84 +109,81 @@ class StreamReaderNode(JOVImageBaseNode):
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
-            Lexicon.URL: ("STRING", {"default": 0}),
+            Lexicon.URL: ("STRING", {"default": "0"}),
             Lexicon.FPS: ("INT", {"min": 1, "max": 60, "step": 1, "default": 30}),
             Lexicon.WAIT: ("BOOLEAN", {"default": False}),
+            Lexicon.WH: ("VEC2", {"default": (320, 240), "min": MIN_IMAGE_SIZE, "max": 8192, "step": 1, "label": [Lexicon.WIDTH, Lexicon.HEIGHT]})
+
         }}
-        return deep_merge_dict(IT_REQUIRED, d, IT_WHMODE, IT_SAMPLE, IT_INVERT, IT_ORIENT, IT_CAM)
+        return deep_merge_dict(IT_REQUIRED, d, IT_SCALEMODE, IT_SAMPLE, IT_INVERT, IT_ORIENT, IT_CAM)
 
     @classmethod
-    def IS_CHANgbGED(cls, **kw) -> float:
-        width, height = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)[0]
-        url = kw.get(Lexicon.URL, False)
-        try:
-            if (device := StreamManager().capture(url, width, height)) is None:
-                raise Exception(f"stream failed {url}")
-        except:
-            pass
-
-        if device is None:
-            return float("nan")
-
-        fps = kw.get(Lexicon.FPS, 30)
-        wait = kw.get(Lexicon.WAIT, False)
-        zoom = kw.get(Lexicon.ZOOM, 1)
-        sample = kw.get(Lexicon.SAMPLE, EnumInterpolation.LANCZOS4)
-
-        # Logger.debug(width, height)
-        if device.width != width or device.height != height:
-            device.sizer(width, height, sample)
-
-        if device.zoom != zoom:
-            device.zoom = zoom
-
-        if wait:
-            device.pause()
-        else:
-            device.play()
-
-        if device.fps != fps:
-            device.fps = fps
+    def IS_CHANGED(cls, **kw) -> float:
         return float("nan")
 
     def __init__(self) -> None:
-        self.__device = None
+        self.__device:[MediaStreamBase|MediaStreamDevice] = None
         self.__url = ""
         self.__last = StreamReaderNode.EMPTY
+        self.__capturing = 0
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        width, height = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)[0]
-        orient = kw.get(Lexicon.ORIENT, EnumCanvasOrientation)
-        i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)[0]
-        url = kw.get(Lexicon.URL, "")
-        rs = kw.get(Lexicon.SAMPLE, EnumInterpolation.LANCZOS4)
+        url = kw[Lexicon.URL]
+        i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1])[0]
+        width, height = parse_tuple(Lexicon.WH, kw)[0]
 
-        if self.__device is None or self.__device.captured or url != self.__url:
+        if self.__capturing == 0 and (self.__device is None or url != self.__url): #or not self.__device.captured:
+            self.__capturing = time.perf_counter()
+            Logger.debug('capturing', self.__device, self.__capturing, self.__url, url)
+            self.__url = url
             try:
                 self.__device = StreamManager().capture(url, width, height)
-                if self.__device is None or not self.__device.captured:
-                    return (cv2tensor(self.__last), cv2mask(self.__last), )
-                self.__url = url
-            except:
-                pass
+            except Exception as e:
+                Logger.err(str(e))
 
-        ret, img = self.__device.frame
-        self.__last = img if img is not None else self.__last
-        if ret:
-            h, w = self.__last.shape[:2]
-            if width != w or height != h:
-                rs = EnumInterpolation[rs]
-                self.__device.sizer(width, height, rs)
+        if self.__capturing > 0:
+            # timeout and try again?
+            if time.perf_counter() - self.__capturing > 5000:
+                Logger.err(f'timed out trying to access route or device {self.__url}')
+                self.__capturing = 0
+                self.__url = ""
 
-            if orient in ["FLIPX", "FLIPXY"]:
-                img = cv2.flip(img, 1)
+        img = None
+        if self.__device:
+            self.__capturing = 0
+            ret, img = self.__device.frame
+            self.__last = img if img is not None else self.__last
+            if ret:
+                h, w = self.__last.shape[:2]
+                if width != w or height != h:
+                    self.__device.sizer(width, height)
+                    mode = kw[Lexicon.MODE]
+                    rs = kw[Lexicon.SAMPLE]
+                    img = geo_scalefit(img, width, height, mode, EnumInterpolation[rs])
 
-            if orient in ["FLIPY", "FLIPXY"]:
-                img = cv2.flip(img, 0)
+                orient = kw[Lexicon.ORIENT]
+                if orient in ["FLIPX", "FLIPXY"]:
+                    img = cv2.flip(img, 1)
 
-            if i != 0:
-                img = light_invert(img, i)
+                if orient in ["FLIPY", "FLIPXY"]:
+                    img = cv2.flip(img, 0)
 
+                if i != 0:
+                    img = light_invert(img, i)
+
+                if self.__device.fps != (fps := kw[Lexicon.FPS]):
+                    self.__device.fps = fps
+
+                if self.__device.zoom != kw[Lexicon.ZOOM]:
+                    self.__device.zoom = kw[Lexicon.ZOOM]
+
+                if kw[Lexicon.WAIT]:
+                    self.__device.pause()
+                else:
+                    self.__device.play()
+
+        if img is None:
+            self.__last = img = StreamReaderNode.EMPTY
         return ( cv2tensor(img), cv2mask(img) )
 
 class StreamWriterNode(JOVImageInOutBaseNode):
@@ -199,30 +196,28 @@ class StreamWriterNode(JOVImageInOutBaseNode):
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
-                Lexicon.ROUTE: ("STRING", {"default": "/stream"})
+                Lexicon.ROUTE: ("STRING", {"default": "/stream"}),
+                Lexicon.WH: ("VEC2", {"default": (640, 480), "min": MIN_IMAGE_SIZE, "max": 8192, "step": 1, "label": [Lexicon.WIDTH, Lexicon.HEIGHT]})
             }}
-        return deep_merge_dict(IT_REQUIRED, IT_PIXELS, d, IT_WHMODE, IT_INVERT)
+        return deep_merge_dict(IT_REQUIRED, IT_PIXELS, d, IT_SCALEMODE, IT_SAMPLE, IT_INVERT)
 
     @classmethod
     def IS_CHANGED(cls, **kw) -> float:
+        return float("nan")
+
         route = kw.get(Lexicon.ROUTE, ["/stream"])
-        width, height = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
-        wait = kw.get(Lexicon.WAIT, [False])
+        # width, height = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
 
-        if (device := StreamManager().capture(route, static=True)) is None:
-            raise Exception(f"stream failed {route}")
+        if (StreamManager().capture(route, static=True)) is None:
+            Logger.err(f"stream failed {route}")
 
-        if device.size[0] != width or device.size[1] != height:
-            device.size = (width, height)
+        # if device.size[0] != width or device.size[1] != height:
+        #     device.size = (width, height)
 
-        if wait:
-            device.pause()
-        else:
-            device.play()
         return float("nan")
 
     def __init__(self, *arg, **kw) -> None:
-        super(StreamWriterNode).__init__(self, *arg, **kw)
+        super().__init__(*arg, **kw)
         self.__ss = StreamingServer()
         self.__route = ""
         self.__unique = uuid.uuid4()
@@ -231,16 +226,22 @@ class StreamWriterNode(JOVImageInOutBaseNode):
 
     def run(self, **kw) -> tuple[torch.Tensor]:
         pixels = kw.get(Lexicon.PIXEL, [None])
-        route = kw.get(Lexicon.ROUTE, [""])
-        mode = kw.get(Lexicon.MODE, [EnumScaleMode.NONE])
+        route = kw[Lexicon.ROUTE]
         wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
-        i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)[0]
-        sample = kw.get(Lexicon.SAMPLE, [EnumInterpolation.LANCZOS4])
-
-        for data in zip_longest_fill(pixels, route, wait, wihi, sample, i):
-            img, r, wait, wihi, rs, i = data
+        mode = kw[Lexicon.MODE]
+        sample = kw[Lexicon.SAMPLE]
+        i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
+        stride = len(pixels)
+        grid = int(np.sqrt(stride))
+        if grid * grid < stride:
+            grid += 1
+        out = []
+        for img, r, wihi, mode, rs, i in zip_longest_fill(pixels, route, wihi, mode, sample, i):
             w, h = wihi
-            img = img if img is not None else np.zeros((h, w, 3), dtype=np.uint8)
+
+            StreamManager().
+
+            img = tensor2cv(img) if img is not None else np.zeros((h, w, 3), dtype=np.uint8)
             if r != self.__route:
                 # close old, if any
                 if self.__device:
@@ -250,26 +251,26 @@ class StreamWriterNode(JOVImageInOutBaseNode):
                 self.__device = StreamManager().capture(self.__unique, static=True)
                 self.__ss.endpointAdd(r, self.__device)
                 self.__route = r
-                Logger.debug(self.NAME, "START", r)
+                Logger.debug(self, "START", r)
 
-            rs = EnumInterpolation[rs]
-            out = []
-
-            stride = len(img)
-            grid = int(np.sqrt(stride))
-            if grid * grid < stride:
-                grid += 1
             sw, sh = w // stride, h // stride
+            if self.__device:
+                try:
+                    img = geo_scalefit(img, sw, sh, EnumScaleMode.NONE)
+                except Exception as e:
+                    Logger.err(str(e))
 
-            img = tensor2cv(img)
-            img = geo_scalefit(img, sw, sh, mode, rs)
             if i != 0:
                 img = light_invert(img, i)
             out.append(img)
 
-        image = image_grid(out, w, h)
-        image = geo_scalefit(image, w, h, mode, rs)
-        self.__device.post(image)
+        if len(out) > 1:
+            img = image_grid(out, w, h)
+        else:
+            img = out[0]
+        img = geo_scalefit(img, w, h, mode, EnumInterpolation[rs])
+        # self.__device.post(img)
+        return (cv2tensor(img), cv2mask(img),)
 
 class MIDIMessage:
     """Snap shot of a message from Midi device."""

@@ -37,15 +37,10 @@ class MediaStreamBase:
 
     TIMEOUT = 1.
 
-    def __init__(self,
-                 url:int|str,
-                 callback_frame:object,
-                 width:int=320,
-                 height:int=240,
-                 fps:float=30,
+    def __init__(self, url:int|str, callback_frame:object,
+                 width:int=320, height:int=240, fps:float=30,
                  mode:Optional[EnumScaleMode]=EnumScaleMode.FIT,
-                 sample:Optional[EnumInterpolation]=EnumInterpolation.LANCZOS4,
-                 ) -> None:
+                 sample:Optional[EnumInterpolation]=EnumInterpolation.LANCZOS4) -> None:
 
         self.__quit = False
         self.__paused = False
@@ -66,8 +61,8 @@ class MediaStreamBase:
         self.__thread = threading.Thread(target=self.__run, daemon=True)
         self.__thread.start()
 
-    def run(self) -> tuple[bool, Any]:
-        return True, self.__frame
+    #def run(self) -> tuple[bool, Any]:
+    #    return True, self.__frame
 
     def capture(self) -> None:
         time.sleep(0.1)
@@ -95,7 +90,7 @@ class MediaStreamBase:
 
                 # call the run capture frame command on subclasses
                 newframe = None
-                if self.__callback_frame:
+                if self.__callback_frame is not None:
                     # Logger.spam('callback')
                     self.__ret, newframe = self.__callback_frame()
 
@@ -244,7 +239,8 @@ class MediaStreamDevice(MediaStreamBase):
             for x in self.__backend:
                 self.__source = cv2.VideoCapture(self.url, x)
                 if self.captured:
-                    Logger.debug(f"CAPTURED {self.__source.getBackendName()}")
+                    # __source.getBackendName()
+                    Logger.debug(f"CAPTURED {self.url}")
                     time.sleep(0.4)
                     return True
         return False
@@ -308,39 +304,21 @@ class MediaStreamDevice(MediaStreamBase):
 
 class MediaStreamComfyUI(MediaStreamBase):
     """A stream coming from a comfyui node."""
+    def __init__(self, url:int|str, *arg, **kw) -> None:
+        self.__image = None
+        super().__init__(url, self.__callback, *arg, **kw)
 
-    def run(self, image: cv2.Mat) -> tuple[bool, cv2.Mat]:
-        return True, image
+    def __callback(self) -> tuple[bool, Any]:
+        return True, self.__image
+
+    #def run(self, image: cv2.Mat) -> tuple[bool, cv2.Mat]:
+    #    return True, image
 
     def capture(self) -> bool:
         return True
 
 class StreamManager(metaclass=Singleton):
     STREAM = {}
-    @classmethod
-    def devicescan(cls) -> None:
-        """Indexes all devices that responded and if they are read-only."""
-
-        def callback(stream, *arg) -> None:
-            i = arg[0]
-            StreamManager.STREAM[i] = stream
-
-        for stream in StreamManager.STREAM.values():
-            if stream:
-                del stream
-        StreamManager.STREAM = {}
-
-        start = time.perf_counter()
-
-        for i in range(5):
-            stream = MediaStreamDevice(i, callback=(callback, i,) )
-
-        Logger.info(f"SCAN ({time.perf_counter()-start:.4})")
-
-    def __init__(self) -> None:
-        #StreamManager.devicescan()
-        Logger.info(f"STREAM {self.streams}")
-
     def __del__(self) -> None:
         if StreamManager:
             for c in StreamManager.STREAM.values():
@@ -358,10 +336,6 @@ class StreamManager(metaclass=Singleton):
         if (stream := StreamManager.STREAM.get(url, None)) is None:
             # attempt to capture first time...
             stream = self.capture(url)
-
-        #if not stream.captured:
-        #    stream.capture()
-
         return stream.frame
 
     def capture(self, url: str, width:int=320, height:int=240, fps:float=30,
@@ -369,11 +343,11 @@ class StreamManager(metaclass=Singleton):
 
         if (stream := StreamManager.STREAM.get(url, None)) is None:
             if static:
-                stream = StreamManager.STREAM[url] = MediaStreamComfyUI(url, width, height, fps)
-                # Logger.debug(url, "MediaStreamComfyUI")
+                stream = StreamManager.STREAM[url] = MediaStreamComfyUI(url, None, width, height, fps)
+                Logger.debug(f"MediaStreamComfyUI {url}")
             else:
                 stream = StreamManager.STREAM[url] = MediaStreamDevice(url, width, height, fps, backend=backend)
-                # Logger.debug(url, "MediaStream")
+                Logger.debug(f"MediaStream {url}")
 
             if endpoint is not None and stream.captured:
                 StreamingServer.endpointAdd(endpoint, stream)
@@ -549,19 +523,12 @@ def streamWriteTest() -> None:
     except:
         pass
 
-    try:
-        StreamManager().capture(0, 72, 32, endpoint='/stream/0')
-    except:
-        pass
-
-    try:
-        StreamManager().capture(1, endpoint='/stream/1')
-    except:
-        pass
+    StreamManager().capture(0, endpoint='/stream/0')
+    StreamManager().capture(1, endpoint='/stream/1')
 
     while 1:
         pass
 
 if __name__ == "__main__":
-    streamReadTest()
-    # streamWriteTest()
+    # streamReadTest()
+    streamWriteTest()
