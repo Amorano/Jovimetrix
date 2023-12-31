@@ -63,7 +63,7 @@ class ConversionNode(JOVBaseNode):
             case "VEC2":
                 Logger.debug(typ)
             case "VEC3":
-                print(typ)
+                Logger.debug(typ)
             case "VEC4":
                 Logger.debug(typ)
         return (0, )

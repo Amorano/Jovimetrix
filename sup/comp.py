@@ -468,7 +468,7 @@ def geo_crop(image: TYPE_IMAGE,
         x1, x2 = max(0, mid_x - cw2), min(mid_x + cw2, width)
         if x2 - x1 == 0:
             x2 = x1 + 1
-        print(y1,y2, x1,x2)
+        # Logger.debug(y1,y2, x1,x2)
         crop_img = image[y1:y2, x1:x2]
         widthT = (widthT if widthT is not None else width)
         heightT = (heightT if heightT is not None else height)

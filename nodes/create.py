@@ -307,17 +307,16 @@ class ImageFromURLNode(JOVImageBaseNode):
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         url = kw[Lexicon.URL]
-        default = (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,)
-        width, height = parse_tuple(Lexicon.WH, kw, default=default, clip_min=1)[0]
+        width, height = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)[0]
         if self.__url != url:
             self.__url = url
             self.__image = image_load_from_url(url)
 
-        if self.__image is None:
-            self.__image = channel_solid(width, height, 0, chan=EnumImageType.RGB)
+        image = self.__image
+        if image is None:
+            image = channel_solid(width, height, 0, chan=EnumImageType.RGB)
         else:
             mode = EnumScaleMode[kw[Lexicon.MODE]]
             sample = EnumInterpolation[kw[Lexicon.SAMPLE]]
-            self.__image = geo_scalefit(self.__image, width, height, mode, sample)
-            # Logger.debug(width, height, self.__image.shape[:2], mode, sample)
-        return (cv2tensor(self.__image), cv2mask(self.__image),)
+            image = geo_scalefit(image, width, height, mode, sample)
+        return (cv2tensor(image), cv2mask(image),)
