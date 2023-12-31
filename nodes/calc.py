@@ -47,26 +47,52 @@ class ConversionNode(JOVBaseNode):
         return deep_merge_dict(IT_REQUIRED, d)
 
     def run(self, **kw) -> tuple[bool]:
-        A = kw[Lexicon.IN_A]
+        a = kw[Lexicon.IN_A]
+        size = len(a) if type(a) == tuple else 0
+        print(size, a)
         typ = kw[Lexicon.TYPE]
-        Logger.debug(4, kw)
-        typ = kw[Lexicon.TYPE]
-        match typ:
-            case "STRING":
-                Logger.debug(typ)
-            case "BOOLEAN":
-                Logger.debug(typ)
-            case "INT":
-                Logger.debug(typ)
-            case "FLOAT":
-                Logger.debug(typ)
-            case "VEC2":
-                Logger.debug(typ)
-            case "VEC3":
-                Logger.debug(typ)
-            case "VEC4":
-                Logger.debug(typ)
-        return (0, )
+
+        if typ in ["STRING", "FLOAT"]:
+            if size > 0:
+                return ((a[0]), )
+            return ((a), )
+        elif typ == "BOOLEAN":
+            if size > 0:
+                return (bool(a[0]), )
+            return (bool(a), )
+        elif typ == "INT":
+            if size > 0:
+                return (int(a[0]), )
+            return (int(a), )
+
+        if typ == "VEC2":
+            if size > 1:
+                return ((a[0], a[1]), )
+            elif size > 0:
+                return ((a[0], a[0]), )
+            return ((a, a), )
+
+        if typ == "VEC3":
+            if size > 2:
+                return ((a[0], a[1], a[2]), )
+            elif size > 1:
+                return ((a[0], a[1], a[1]), )
+            elif size > 0:
+                return ((a[0], a[0], a[0]), )
+            return ((a, a, a), )
+
+        if typ == "VEC4":
+            if size > 3:
+                return ((a[0], a[1], a[2], a[3]), )
+            elif size > 2:
+                return ((a[0], a[1], a[2], a[2]), )
+            elif size > 1:
+                return ((a[0], a[1], a[1], a[1]), )
+            elif size > 0:
+                return ((a[0], a[0], a[0], a[0]), )
+            return ((a, a, a, a), )
+
+        return (("nan"), )
 
 class EnumUnaryOperation(Enum):
     ABS = 0
