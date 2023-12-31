@@ -5,9 +5,7 @@ Creation
 
 from enum import Enum
 
-import cv2
 import torch
-import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 import matplotlib.font_manager
 
@@ -19,7 +17,8 @@ from Jovimetrix import pil2tensor, pil2cv, cv2pil, cv2tensor, cv2mask, \
 
 from Jovimetrix.sup.comp import geo_scalefit, shape_ellipse, channel_solid, \
     shape_polygon, shape_quad, light_invert, image_load_from_url, \
-    EnumInterpolation, EnumScaleMode, IT_SAMPLE
+    EnumImageType, EnumInterpolation, EnumScaleMode, \
+    IT_SAMPLE
 
 FONT_MANAGER = matplotlib.font_manager.FontManager()
 FONTS = {font.name: font.fname for font in FONT_MANAGER.ttflist}
@@ -315,7 +314,7 @@ class ImageFromURLNode(JOVImageBaseNode):
             self.__image = image_load_from_url(url)
 
         if self.__image is None:
-            self.__image = channel_solid(width, height, 0, chan=3)
+            self.__image = channel_solid(width, height, 0, chan=EnumImageType.RGB)
         else:
             mode = EnumScaleMode[kw[Lexicon.MODE]]
             sample = EnumInterpolation[kw[Lexicon.SAMPLE]]

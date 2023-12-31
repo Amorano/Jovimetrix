@@ -187,53 +187,55 @@ const ext = {
         }
     },
 	async beforeRegisterNodeDef(nodeType, nodeData, app) {
-        if (nodeData.name === _id) {
-            const onNodeCreated = nodeType.prototype.onNodeCreated
-            nodeType.prototype.onNodeCreated = function () {
-                const me = onNodeCreated?.apply(this)
-                console.info(nodeType, nodeData)
-                const widget_glsl = this.addCustomWidget(GLSLWidget(app, 'GLSL', nodeData))
-                widget_glsl.render()
-                //this.setSize([this.size[0], this.computeSize()[1] + widget_glsl.inputEl.offsetHeight])
-                // 🕛 🎬
-                let TIME = 0
-                const onExecutionStart = nodeType.prototype.onExecutionStart;
-                nodeType.prototype.onExecutionStart = function (message) {
-                    onExecutionStart?.apply(this, arguments);
-                    // check if the fragment shader changed...
-                    const short = this.inputs.optional;
-                    console.debug(short)
-                    if (!widget_glsl.compiled || short.FRAGMENT != widget_glsl.FRAGMENT) {
-                        TIME = 0;
-                        widget_glsl.FRAGMENT = short.FRAGMENT[1].value;
-                        widget_glsl.initShaderProgram()
-                    }
-                    if (TIME == 0) {
-                        this.widgets[1].value = 0
-                        TIME = performance.now();
-                    }
-                    this.widgets[1].value += (performance.now() - TIME)  / 1000;
-                    TIME = performance.now()
-                    // widget_glsl.update_texture(this.widgets[1].value, this.widgets[1].value);
-                    console.debug(this.widgets)
-                    widget_glsl.update_resolution(this.widgets[3].value, this.widgets[3].value);
-                    widget_glsl.update_time(this.widgets[1].value)
-                    widget_glsl.render();
-                    /*
-                    this.setOutputData('🖼️', 0)
-                    this.setOutputData('😷', 0)*/
-                }
-
-                const onRemoved = nodeType.prototype.onRemoved;
-                nodeType.prototype.onRemoved = function (message) {
-                    onRemoved?.apply(this, arguments);
-                    widget_glsl.inputEl.remove();
-                    util.cleanupNode(this);
-                };
-                return me;
-            };
+        if (nodeData.name !== _id) {
+            return
         }
-	}
+
+        const onNodeCreated = nodeType.prototype.onNodeCreated
+        nodeType.prototype.onNodeCreated = function () {
+            const me = onNodeCreated?.apply(this)
+            console.info(nodeType, nodeData)
+            const widget_glsl = this.addCustomWidget(GLSLWidget(app, 'GLSL', nodeData))
+            widget_glsl.render()
+            //this.setSize([this.size[0], this.computeSize()[1] + widget_glsl.inputEl.offsetHeight])
+            // 🕛 🎬
+            let TIME = 0
+            const onExecutionStart = nodeType.prototype.onExecutionStart;
+            nodeType.prototype.onExecutionStart = function (message) {
+                onExecutionStart?.apply(this, arguments);
+                // check if the fragment shader changed...
+                const short = this.inputs.optional;
+                console.debug(short)
+                if (!widget_glsl.compiled || short.FRAGMENT != widget_glsl.FRAGMENT) {
+                    TIME = 0;
+                    widget_glsl.FRAGMENT = short.FRAGMENT[1].value;
+                    widget_glsl.initShaderProgram()
+                }
+                if (TIME == 0) {
+                    this.widgets[1].value = 0
+                    TIME = performance.now();
+                }
+                this.widgets[1].value += (performance.now() - TIME)  / 1000;
+                TIME = performance.now()
+                // widget_glsl.update_texture(this.widgets[1].value, this.widgets[1].value);
+                console.debug(this.widgets)
+                widget_glsl.update_resolution(this.widgets[3].value, this.widgets[3].value);
+                widget_glsl.update_time(this.widgets[1].value)
+                widget_glsl.render();
+                /*
+                this.setOutputData('🖼️', 0)
+                this.setOutputData('😷', 0)*/
+            }
+
+            const onRemoved = nodeType.prototype.onRemoved;
+            nodeType.prototype.onRemoved = function (message) {
+                onRemoved?.apply(this, arguments);
+                widget_glsl.inputEl.remove();
+                util.cleanupNode(this);
+            };
+            return me;
+        }
+    }
 }
 
 app.registerExtension(ext)

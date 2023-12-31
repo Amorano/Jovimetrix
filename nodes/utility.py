@@ -90,7 +90,7 @@ class AkashicNode(JOVBaseNode):
             return "text", [result[:-2] + "}"]
         elif isinstance(val, (tuple, set, list,)):
             result = "("
-            for v in val.items():
+            for v in val:
                 result += f"{self.__parse(v)}, "
             return "text", [result[:-2] + ")"]
         elif isinstance(val, str):

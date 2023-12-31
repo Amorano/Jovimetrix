@@ -13,7 +13,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import cv2
 import numpy as np
 
-from Jovimetrix import Logger, Singleton
+from Jovimetrix import MIN_IMAGE_SIZE, Logger, Singleton
 from Jovimetrix.sup.comp import geo_scalefit, image_grid, EnumScaleMode, EnumInterpolation
 
 # =============================================================================
@@ -35,7 +35,7 @@ except: pass
 
 class MediaStreamBase:
 
-    TIMEOUT = 1.
+    TIMEOUT = 5.
 
     def __init__(self, url:int|str, callback_frame:object,
                  width:int=320, height:int=240, fps:float=30,
@@ -157,7 +157,7 @@ class MediaStreamBase:
 
     @width.setter
     def width(self, val) -> None:
-        self.__width = max(1, val)
+        self.__width = max(1, val if val is not None else MIN_IMAGE_SIZE)
 
     @property
     def height(self) -> int:
@@ -165,7 +165,7 @@ class MediaStreamBase:
 
     @height.setter
     def height(self, val) -> None:
-        self.__height = max(1, val)
+        self.__height = max(1, val if val is not None else MIN_IMAGE_SIZE)
 
     @property
     def scalemode(self) -> EnumScaleMode:
@@ -305,11 +305,11 @@ class MediaStreamDevice(MediaStreamBase):
 class MediaStreamComfyUI(MediaStreamBase):
     """A stream coming from a comfyui node."""
     def __init__(self, url:int|str, *arg, **kw) -> None:
-        self.__image = None
+        self.image = None
         super().__init__(url, self.__callback, *arg, **kw)
 
     def __callback(self) -> tuple[bool, Any]:
-        return True, self.__image
+        return True, self.image
 
     #def run(self, image: cv2.Mat) -> tuple[bool, cv2.Mat]:
     #    return True, image

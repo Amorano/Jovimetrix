@@ -186,10 +186,11 @@ class StreamReaderNode(JOVImageBaseNode):
             self.__last = img = StreamReaderNode.EMPTY
         return ( cv2tensor(img), cv2mask(img) )
 
-class StreamWriterNode(JOVImageInOutBaseNode):
+class StreamWriterNode(JOVBaseNode):
     NAME = "STREAM WRITER (JOV) 🎞️"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/DEVICE"
     DESCRIPTION = ""
+    OUTPUT_NODE = True
     SORT = 70
     OUT_MAP = {}
 
@@ -201,73 +202,49 @@ class StreamWriterNode(JOVImageInOutBaseNode):
             }}
         return deep_merge_dict(IT_REQUIRED, IT_PIXELS, d, IT_SCALEMODE, IT_SAMPLE, IT_INVERT)
 
-    @classmethod
-    def IS_CHANGED(cls, **kw) -> float:
-        return float("nan")
-
-        route = kw.get(Lexicon.ROUTE, ["/stream"])
-        # width, height = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
-
-        if (StreamManager().capture(route, static=True)) is None:
-            Logger.err(f"stream failed {route}")
-
-        # if device.size[0] != width or device.size[1] != height:
-        #     device.size = (width, height)
-
-        return float("nan")
+    #@classmethod
+    #def IS_CHANGED(cls, **kw) -> float:
+    #    return float("nan")
 
     def __init__(self, *arg, **kw) -> None:
         super().__init__(*arg, **kw)
-        self.__ss = StreamingServer()
         self.__route = ""
         self.__unique = uuid.uuid4()
         self.__device = None
-        StreamWriterNode.OUT_MAP[self.__unique] = None
+        self.__starting = False
 
     def run(self, **kw) -> tuple[torch.Tensor]:
-        pixels = kw.get(Lexicon.PIXEL, [None])
+        if self.__starting:
+            return
+
+        wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)[0]
+        w, h = wihi
+        img = kw.get(Lexicon.PIXEL, None)
+        img = tensor2cv(img) if img is not None else np.zeros((h, w, 3), dtype=np.uint8)
         route = kw[Lexicon.ROUTE]
-        wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
-        mode = kw[Lexicon.MODE]
-        sample = kw[Lexicon.SAMPLE]
-        i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
-        stride = len(pixels)
-        grid = int(np.sqrt(stride))
-        if grid * grid < stride:
-            grid += 1
-        out = []
-        for img, r, wihi, mode, rs, i in zip_longest_fill(pixels, route, wihi, mode, sample, i):
-            w, h = wihi
-            img = tensor2cv(img) if img is not None else np.zeros((h, w, 3), dtype=np.uint8)
-            if r != self.__route:
-                # close old, if any
-                if self.__device:
-                    self.__device.release()
-
-                # startup server
-                self.__device = StreamManager().capture(self.__unique, static=True)
-                self.__ss.endpointAdd(r, self.__device)
-                self.__route = r
-                Logger.debug(self, "START", r)
-
-            sw, sh = w // stride, h // stride
+        if route != self.__route:
+            self.__starting = True
+            # close old, if any
             if self.__device:
-                try:
-                    img = geo_scalefit(img, sw, sh, EnumScaleMode.NONE)
-                except Exception as e:
-                    Logger.err(str(e))
+                self.__device.release()
+            # startup server
+            self.__device = StreamManager().capture(self.__unique, static=True)
+            StreamingServer().endpointAdd(route, self.__device)
+            StreamWriterNode.OUT_MAP[route] = self.__device
+            self.__route = route
+            Logger.debug(self, "START", route)
 
+        self.__starting = False
+        if self.__device is not None:
+            mode = kw[Lexicon.MODE]
+            sample = kw[Lexicon.SAMPLE]
+            i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)[0]
+            img = geo_scalefit(img, w, h, EnumScaleMode.NONE)
             if i != 0:
                 img = light_invert(img, i)
-            out.append(img)
-
-        if len(out) > 1:
-            img = image_grid(out, w, h)
-        else:
-            img = out[0]
-        img = geo_scalefit(img, w, h, mode, EnumInterpolation[rs])
-        # self.__device.post(img)
-        return (cv2tensor(img), cv2mask(img),)
+            img = geo_scalefit(img, w, h, mode, EnumInterpolation[sample])
+            self.__device.image = img
+        return ()
 
 class MIDIMessage:
     """Snap shot of a message from Midi device."""

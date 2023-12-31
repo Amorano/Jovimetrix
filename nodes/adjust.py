@@ -78,9 +78,6 @@ class AdjustNode(JOVImageInOutBaseNode):
                 case EnumAdjustOP.EMBOSS:
                     img = comp.morph_emboss(img, a, r)
 
-                #case EnumAdjustOP.MEAN:
-                #    img = comp.color_average(img)
-
                 case EnumAdjustOP.EQUALIZE:
                     img = comp.adjust_equalize(img)
 
@@ -114,10 +111,7 @@ class AdjustNode(JOVImageInOutBaseNode):
             images.append(cv2tensor(img))
             masks.append(cv2mask(img))
 
-        return (
-            torch.stack(images),
-            torch.stack(masks)
-        )
+        return ( torch.stack(images), torch.stack(masks) )
 
 class ColorMatchNode(JOVImageInOutBaseNode):
     NAME = "COLOR MATCH (JOV) 💞"

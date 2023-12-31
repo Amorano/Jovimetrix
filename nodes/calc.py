@@ -35,20 +35,38 @@ class ConversionNode(JOVBaseNode):
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/CALC"
     DESCRIPTION = "Convert A to B."
     RETURN_TYPES = (WILDCARD,)
-    RETURN_NAMES = (Lexicon.UNKNOWN, )
+    # RETURN_NAMES = (Lexicon.UNKNOWN, )
     SORT = 0
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
             Lexicon.IN_A: (WILDCARD, {"default": None}),
-            # Lexicon.TYPE: (EnumConvertType._member_names_, {"default": EnumConvertType.INT.name})
+            Lexicon.TYPE: (["STRING", "BOOLEAN", "INT", "FLOAT", "VEC2", "VEC3", "VEC4"], {"default": "BOOLEAN"})
         }}
-        return deep_merge_dict(IT_REQUIRED, IT_AB, d)
+        return deep_merge_dict(IT_REQUIRED, d)
 
     def run(self, **kw) -> tuple[bool]:
-        A = kw.get(Lexicon.IN_A, None)
-        typ = kw.get("JTYPE", None)
+        A = kw[Lexicon.IN_A]
+        typ = kw[Lexicon.TYPE]
+        Logger.debug(4, kw)
+        typ = kw[Lexicon.TYPE]
+        match typ:
+            case "STRING":
+                Logger.debug(typ)
+            case "BOOLEAN":
+                Logger.debug(typ)
+            case "INT":
+                Logger.debug(typ)
+            case "FLOAT":
+                Logger.debug(typ)
+            case "VEC2":
+                Logger.debug(typ)
+            case "VEC3":
+                print(typ)
+            case "VEC4":
+                Logger.debug(typ)
+        return (0, )
 
 class EnumUnaryOperation(Enum):
     ABS = 0
@@ -332,15 +350,37 @@ class ValueNode(JOVBaseNode):
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/CALC"
     DESCRIPTION = "Create a value for most types; also universal constants."
     INPUT_IS_LIST = False
-    RETURN_TYPES = ()
-    RETURN_NAMES = ()
+    RETURN_TYPES = (WILDCARD, )
+    # RETURN_NAMES = ()
     OUTPUT_IS_LIST = (False, )
     SORT = 1
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        return deep_merge_dict(IT_REQUIRED)
+        d = {"optional": {
+                Lexicon.TYPE: (["STRING", "BOOLEAN", "INT", "FLOAT", "VEC2", "VEC3", "VEC4"], {"default": "BOOLEAN"}),
+                Lexicon.X: ("FLOAT", {"default": 0}),
+                Lexicon.Y: ("FLOAT", {"default": 0}),
+                Lexicon.Z: ("FLOAT", {"default": 0}),
+                Lexicon.W: ("FLOAT", {"default": 0})
+            },
+            "hidden": {
+
+            }}
+        return deep_merge_dict(IT_REQUIRED, d)
 
     def run(self, **kw) -> tuple[bool]:
-        # typ = kw.get(Lexicon.TYPE, 'INT')
-        return ()
+        typ = kw[Lexicon.TYPE]
+        # should always have an X value
+        x = kw[Lexicon.X]
+        y = kw.get(Lexicon.Y, 0)
+        z = kw.get(Lexicon.Z, 0)
+        w = kw.get(Lexicon.W, 0)
+        match typ:
+            case "VEC2":
+                return((x, y,), )
+            case "VEC3":
+                return((x, y, z, ), )
+            case "VEC4":
+                return((x, y, z, w, ), )
+        return (x, )

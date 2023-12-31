@@ -109,7 +109,7 @@ class EnumAdjustOP(Enum):
     MEDIAN_BLUR = 3
     SHARPEN = 10
     EMBOSS = 20
-    # MEAN = 30 -- returns scalar... do what with?
+    # MEAN = 30 -- in UNARY
     ADAPTIVE_HISTOGRAM = 35
     EQUALIZE = 40
     PIXELATE = 50
@@ -544,7 +544,7 @@ def geo_scalefit(image: TYPE_IMAGE, width: int, height:int,
                  mode:EnumScaleMode=EnumScaleMode.NONE,
                  sample:EnumInterpolation=EnumInterpolation.LANCZOS4) -> TYPE_IMAGE:
 
-    Logger.debug(mode, width, height, sample)
+    # Logger.spam(mode, width, height, sample)
 
     match mode:
         case EnumScaleMode.ASPECT:
@@ -813,7 +813,7 @@ def color_match_heat_map(image: TYPE_IMAGE,
     image = cv2.applyColorMap(image, colormap)
     return cv2.addWeighted(image, 0.5, image, 0.5, 0)
 
-def color_average(image: TYPE_IMAGE) -> TYPE_IMAGE:
+def color_mean(image: TYPE_IMAGE) -> TYPE_IMAGE:
     color = [0, 0, 0]
     if channel_count(image)[0] == 1:
         raw = int(np.mean(image))
@@ -895,7 +895,7 @@ def color_theory_tetrad_custom(color: TYPE_PIXEL, delta:int=0) -> tuple[TYPE_PIX
 def color_theory(image: TYPE_IMAGE, custom:int=0, scheme: EnumColorTheory=EnumColorTheory.COMPLIMENTARY) -> tuple[TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE]:
 
     aR = aG = aB = bR = bG = bB = cR = cG = cB = dR = dG = dB = 0
-    color = color_average(image)
+    color = color_mean(image)
     match scheme:
         case EnumColorTheory.COMPLIMENTARY:
             a = color_theory_complementary(color)

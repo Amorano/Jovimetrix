@@ -37,50 +37,52 @@ function get_position_style(ctx, width, y, height) {
 const ext = {
 	name: 'jovimetrix.node.akashic',
 	async beforeRegisterNodeDef(nodeType, nodeData, app) {
-        if (nodeData.name === _id) {
-            const onExecuted = nodeType.prototype.onExecuted
-            nodeType.prototype.onExecuted = function (message) {
-                onExecuted?.apply(this, arguments)
-                if (this.widgets) {
-                    for (let i = 0; i < this.widgets.length; i++) {
-                        this.widgets[i].onRemoved?.()
-                    }
-                    this.widgets.length = 1
-                }
+        if (nodeData.name !== _id) {
+            return
+        }
 
-                let index = 0
-                if (message.text) {
-                    for (const txt of message.text) {
-                        const w = this.addCustomWidget(
-                            JStringWidget(app, `${_prefix}_${index}`, util.escapeHtml(txt))
-                        )
-                        w.parent = this
-                        index++
-                    }
+        const onExecuted = nodeType.prototype.onExecuted
+        nodeType.prototype.onExecuted = function (message) {
+            onExecuted?.apply(this, arguments)
+            if (this.widgets) {
+                for (let i = 0; i < this.widgets.length; i++) {
+                    this.widgets[i].onRemoved?.()
                 }
+                this.widgets.length = 1
+            }
 
-                if (message.b64_images) {
-                    for (const img of message.b64_images) {
-                        const w = this.addCustomWidget(
-                            JImageWidget(app, `${_prefix}_${index}`, img)
-                        )
-                        w.parent = this
-                        index++
-                    }
-                }
-
-            this.setSize(this.computeSize())
-            this.onRemoved = function () {
-                for (let y in this.widgets) {
-                    if (this.widgets[y].canvas) {
-                        this.widgets[y].canvas.remove()
-                    }
-                    shared.cleanupNode(this)
-                    this.widgets[y].onRemoved?.()
+            let index = 0
+            if (message.text) {
+                for (const txt of message.text) {
+                    const w = this.addCustomWidget(
+                        JStringWidget(app, `${_prefix}_${index}`, util.escapeHtml(txt))
+                    )
+                    w.parent = this
+                    index++
                 }
             }
+
+            if (message.b64_images) {
+                for (const img of message.b64_images) {
+                    const w = this.addCustomWidget(
+                        JImageWidget(app, `${_prefix}_${index}`, img)
+                    )
+                    w.parent = this
+                    index++
+                }
             }
-	    }
+
+        this.setSize(this.computeSize())
+        this.onRemoved = function () {
+            for (let y in this.widgets) {
+                if (this.widgets[y].canvas) {
+                    this.widgets[y].canvas.remove()
+                }
+                shared.cleanupNode(this)
+                this.widgets[y].onRemoved?.()
+            }
+        }
+        }
     }
 }
 
