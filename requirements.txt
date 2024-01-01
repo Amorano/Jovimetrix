@@ -2,6 +2,7 @@ torch
 numpy
 matplotlib
 opencv-python<=4.8.1.78
+ffmpeg-python
 Pillow
 scikit-image
 blendmodes
