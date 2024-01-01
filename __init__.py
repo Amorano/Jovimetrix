@@ -52,6 +52,8 @@ Polygonal shapes, MIDI, MP3/WAVE, Flow Logic
 @version: 0.99999
 """
 
+import base64
+from io import BytesIO
 import os
 import math
 import json
@@ -580,8 +582,6 @@ def grid_make(data: List[Any]) -> Tuple[List[List[Any]], int, int]:
 
 def load_image(fp, white_bg=False) -> list:
     im = Image.open(fp)
-
-    #ims = load_psd(im)
     im = ImageOps.exif_transpose(im)
     ims=[im]
 
@@ -605,6 +605,23 @@ def load_image(fp, white_bg=False) -> list:
         })
 
     return images
+
+def b64_2_tensor(image_base64: str) -> tuple[torch.Tensor, torch.Tensor]:
+    image = base64.b64decode(image_base64)
+    i = Image.open(BytesIO(image))
+    i = ImageOps.exif_transpose(i)
+    image = i.convert("RGB")
+    image = np.array(image).astype(np.float32) / 255.0
+    image = torch.from_numpy(image)[None,]
+    if "A" in i.getbands():
+        mask = np.array(i.getchannel("A")).astype(np.float32) / 255.0
+        mask = 1.0 - torch.from_numpy(mask)
+    else:
+        mask = torch.zeros((64, 64), dtype=torch.float32, device="cpu")
+    return (image, mask)
+
+def b64_2_image(image_base64: str) -> Image:
+    return Image.open(BytesIO(base64.b64decode(image_base64.split(",", 1)[0])))
 
 def load_psd(image) -> list:
     layers=[]

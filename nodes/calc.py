@@ -47,11 +47,10 @@ class ConversionNode(JOVBaseNode):
         return deep_merge_dict(IT_REQUIRED, d)
 
     def run(self, **kw) -> tuple[bool]:
-        a = kw[Lexicon.IN_A]
+        typ = kw.pop(Lexicon.TYPE)
+        a = next(iter(kw.values()))
         size = len(a) if type(a) == tuple else 0
         Logger.debug(self, size, a)
-        typ = kw[Lexicon.TYPE]
-
         if typ in ["STRING", "FLOAT"]:
             if size > 0:
                 return ((a[0]), )

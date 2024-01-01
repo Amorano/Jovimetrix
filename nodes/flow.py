@@ -56,9 +56,9 @@ class DelayNode(JOVBaseNode):
         self.__delay = 0
 
     def run(self, **kw) -> tuple[Any]:
-        o = kw.get(Lexicon.PASS_IN, None)
-        delay = kw.get(Lexicon.DELAY, 0)
-        reset = kw.get(Lexicon.RESET, False)
+        o = kw[Lexicon.PASS_IN]
+        delay = kw[Lexicon.DELAY]
+        reset = kw[Lexicon.RESET]
 
         if reset:
             self.__delay = 0
@@ -91,13 +91,14 @@ class ComparisonNode(JOVBaseNode):
 
     def run(self, **kw) -> tuple[bool]:
         result = []
-        A = kw.get(Lexicon.IN_A, [0])
-        B = kw.get(Lexicon.IN_B, [0])
-        flip = kw.get(Lexicon.FLIP, [False])
-        op = kw.get(Lexicon.COMPARE, [EnumComparison.EQUAL])
+        A = kw[Lexicon.IN_A]
+        B = kw[Lexicon.IN_B]
+        flip = kw[Lexicon.FLIP]
+        op = kw[Lexicon.COMPARE]
         for a, b, op, flip in zip_longest_fill(A, B, op, flip):
-            if (short := len(a) - len(b)) > 0:
-                b = list(b) + [0] * short
+            if type(a) == tuple and type(b) == tuple:
+                if (short := len(a) - len(b)) > 0:
+                    b = list(b) + [0] * short
             typ_a, val_a = convert_parameter(a)
             _, val_b = convert_parameter(b)
             if flip:
@@ -162,9 +163,44 @@ class IfThenElseNode(JOVBaseNode):
         return deep_merge_dict(IT_REQUIRED, d)
 
     def run(self, **kw) -> tuple[bool]:
-        o = kw.get(Lexicon.CONDITION, False)
-        T = kw.get(Lexicon.TRUE, None)
-        F = kw.get(Lexicon.FALSE, None)
+        o = kw[Lexicon.CONDITION]
+        T = kw[Lexicon.TRUE]
+        F = kw[Lexicon.FALSE]
         if T is None or F is None:
             return (None,)
         return (T if o else F,)
+
+class SetGetNode(JOVBaseNode):
+    NAME = "SET-GET2 (JOV) 🟰"
+    CATEGORY = "JOVIMETRIX 🔺🟩🔵/FLOW"
+    DESCRIPTION = "Set a value; Get a value"
+    RETURN_TYPES = (WILDCARD,)
+    RETURN_NAMES = (Lexicon.RESULT, )
+
+    # HOW TO MAKE COMFY HAVE A MEMORY BETWEEN AUTO-Q
+    DATA = {}
+    DEFAULT = '🔺🟩🔵'
+
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        d = {"optional": {
+            Lexicon.SETGET: (["SET", "GET"], {"default": "SET"}),
+            Lexicon.KEY: ("STRING", {"default": ""}),
+            Lexicon.VALUE: (WILDCARD, {"default": None}),
+        }}
+        return deep_merge_dict(IT_REQUIRED, d)
+
+    @classmethod
+    def IS_CHANGED(cls, *arg, **kw) -> float:
+        return float("nan")
+
+    def run(self, **kw) -> tuple[bool]:
+        setget = kw[Lexicon.SETGET]
+        key = kw[Lexicon.KEY]
+        val = kw.get(Lexicon.VALUE, None)
+        if setget == "SET":
+            SetGetNode.DATA[key] = val
+            return (val, )
+        if SetGetNode.DATA.get(key, SetGetNode.DEFAULT) == SetGetNode.DEFAULT:
+            SetGetNode.DATA[key] = val
+        return (SetGetNode.DATA[key], )

@@ -2,7 +2,7 @@
 Jovimetrix - http://www.github.com/amorano/jovimetrix
 EMOJI OCD Support
 """
-# 🔗 ⚓ 📀 🍿 🎪 🐘 🤯 😱 💀 ⛓️ 🔒 🔑 🪀 🪁 🔮 🧿 🧙🏽 🧙🏽‍♀️ 🧯 🦚 ♻️ ⤴️ ⚜️ 🅱️ 🅾️⬆️ ↔️ ↕️ 〰️ ☐
+# 🔗 ⚓ 📀 🍿 🎪 🐘 🤯 😱 💀 ⛓️ 🔒 🪀 🪁 🔮 🧿 🧙🏽 🧙🏽‍♀️ 🧯 🦚 ♻️ ⤴️ ⚜️ 🅱️ 🅾️⬆️ ↔️ ↕️ 〰️ ☐
 class Lexicon:
     A = '⬜'
     ADAPT = '🧬'
@@ -63,6 +63,7 @@ class Lexicon:
     INVERT = '🔳'
     IO = '📋'
     JOUT = '🦄'
+    KEY = '🔑'
     LEFT = '◀️'
     LINEAR = '🛟'
     LMH = 'LMH'
@@ -105,6 +106,7 @@ class Lexicon:
     S = '🇸'
     SAMPLE = '🎞️'
     SCHEME = 'SCHEME'
+    SETGET = '🤲🏽'
     SHAPE = '🇸🇴'
     SHIFT = '◀️▶️'
     SIDES = '♾️'

@@ -6,6 +6,9 @@
 
 import { app } from "/scripts/app.js"
 import { $el } from "/scripts/ui.js"
+import * as util from '../core/util.js'
+import { ComfyWidgets } from "/scripts/widgets.js"
+import { SpinnerWidget } from "../widget/widget_spinner.js"
 
 const VERTEX_SHADER = `#version 300 es
 in vec2 iResolution;
@@ -17,12 +20,23 @@ void main() {
 }`
 
 // vec4 color = texture(iChannel0, iCoord); color.r += sin(iTime);
+// vec4(clamp(color - colorShift, 0.0, 1.0), 1.0);
 
-const FRAGMENT_DEFAULT = `void main() {
+const FRAGMENT_DEFAULT2 = `void main() {
     vec4 color = texture(iChannel0, iCoord);
     color.r += sin(iTime);
     FragColor = color;
 }`
+
+const FRAGMENT_DEFAULT = `void main() {
+    vec4 color = texture(iChannel0, iCoord);
+    color.r += cos(iTime / 5.0);
+    color.g += sin(iTime / 4.0);
+    color.b += cos(iTime / 3.0) + sin(iTime / 2.0);
+    FragColor = color;
+}`
+
+
 
 const FRAGMENT_HEADER = (body) => {
     return `#version 300 es
@@ -56,7 +70,7 @@ function get_position_style(ctx, widget_width, y, node_height) {
 }
 
 const _id = "GLSL (JOV) 🍩"
-const GLSLWidget = (app, inputName, inputData) => {
+const GLSLWidget = (app, inputName, fragment) => {
 
     const canvas = $el("canvas")
     canvas.style.backgroundColor = "rgba(0, 0, 0, 1)"
@@ -83,7 +97,7 @@ const GLSLWidget = (app, inputName, inputData) => {
         name: inputName,
         y: 0,
         inputEl: canvas,
-        FRAGMENT: inputData.input?.optional?.FRAGMENT[1].default || FRAGMENT_DEFAULT,
+        FRAGMENT: fragment,
         compiled: false,
         initShaderProgram() {
             const vertex = compileShader(VERTEX_SHADER, GL.VERTEX_SHADER);
@@ -186,6 +200,7 @@ const GLSLWidget = (app, inputName, inputData) => {
                     tempCanvas.height = img.height;
                     tempCtx.drawImage(img, 0, 0);
                     const base64String = tempCanvas.toDataURL('image/png').split(',')[1];
+                    console.info(base64String)
                     resolve(base64String);
                 };
             });
@@ -196,7 +211,7 @@ const GLSLWidget = (app, inputName, inputData) => {
 };
 
 const ext = {
-	name: 'jovimetrix.node.glsl',
+	name: _id,
     async getCustomWidgets(app) {
         return {
             GLSL: (node, inputName, inputData, app) => ({
@@ -208,46 +223,40 @@ const ext = {
         if (nodeData.name !== _id) {
             return
         }
-
         const onNodeCreated = nodeType.prototype.onNodeCreated
         nodeType.prototype.onNodeCreated = function () {
             const me = onNodeCreated?.apply(this)
-            const widget_glsl = this.addCustomWidget(GLSLWidget(app, 'GLSL', nodeData))
+
+            this.widget_time = ComfyWidgets.FLOAT(this, '🕛', ["FLOAT", {"default": 0, "step": 0.01, "min": 0}], app).widget
+            this.widget_fixed = ComfyWidgets.FLOAT(this, 'FIXED', ["FLOAT", {"default": 0, "step": 0.01, "min": 0}], app).widget
+            this.widget_reset = ComfyWidgets.BOOLEAN(this, 'RESET', ["BOOLEAN", {"default": false}], app).widget
+            this.widget_wh = this.addCustomWidget(SpinnerWidget(app, "WH", ["VEC2", {"default": [512, 512], "step": 1, "min": 1}], [512, 512]))
+            this.widget_fragment = ComfyWidgets.STRING(this, FRAGMENT_DEFAULT, ["STRING", {multiline: true}], app).widget
+            const widget_glsl = this.addCustomWidget(GLSLWidget(app, 'GLSL', FRAGMENT_DEFAULT))
             widget_glsl.render()
-            //this.setSize([this.size[0], this.computeSize()[1] + widget_glsl.inputEl.offsetHeight])
-            // 🕛 🎬
+
             let TIME = 0
             const onExecutionStart = nodeType.prototype.onExecutionStart;
             nodeType.prototype.onExecutionStart = function (message) {
                 onExecutionStart?.apply(this, arguments);
-                // check if the fragment shader changed...
-                /*
-                const short = this.inputs.optional;
-                console.debug(this.inputs)
-                if (!widget_glsl.compiled || short.FRAGMENT != widget_glsl.FRAGMENT) {
-                    TIME = 0;
-                    widget_glsl.FRAGMENT = short.FRAGMENT[1].value;
-                    widget_glsl.initShaderProgram()
-                }
-                */
                 if (TIME == 0) {
-                    this.widgets[1].value = 0
-                    TIME = performance.now();
+                    this.widget_time.value = 0
                 }
-                this.widgets[1].value += (performance.now() - TIME)  / 1000;
+                if (this.widget_reset.value == false) {
+                    this.widget_time.value += (performance.now() - TIME)  / 1000;
+                } else {
+                    TIME = 0;
+                    this.widget_time.value = 0;
+                }
                 TIME = performance.now()
-                console.debug(this)
-                if (this.inputs[0].value !== undefined) {
+                if (this.inputs && this.inputs[0].value !== undefined) {
                     console.debug("GLSL", this.inputs[0].value, this.inputs)
-                    widget_glsl.update_texture(0, this.widgets[1].value);
+                    widget_glsl.update_texture(0, this.inputs[0].value);
                 }
-                widget_glsl.update_resolution(this.widgets[3].value[0], this.widgets[3].value[1]);
-                widget_glsl.update_time(this.widgets[1].value)
+                widget_glsl.update_resolution(this.widget_wh.value[0], this.widget_wh.value[1]);
+                widget_glsl.update_time(this.widget_time.value)
                 widget_glsl.render();
-                /*
-                this.setOutputData('🖼️', 0)
-                this.setOutputData('😷', 0)*/
-            }
+            };
 
             const onRemoved = nodeType.prototype.onRemoved;
             nodeType.prototype.onRemoved = function (message) {
@@ -255,6 +264,11 @@ const ext = {
                 widget_glsl.inputEl.remove();
                 util.cleanupNode(this);
             };
+
+            //this.setOutputData('🖼️', 0)
+            this.widget_image = this.addOutput("🖼️", 'IMAGE');
+            this.widget_mask = this.addOutput("😷", 'MASK');
+
             return me;
         }
     }

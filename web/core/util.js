@@ -193,6 +193,16 @@ function convertArrayToObject(values, length, parseFn) {
     return result;
 }
 
+export const SlotType = {
+    Input: 1,
+    Output: 2,
+};
+
+export const ChangeType = {
+    Connect: true,
+    Disconnect: false,
+};
+
 export function inner_value_change(widget, value, event = undefined) {
     const type = widget.type.includes("INT") ? Number : parseFloat
     widget.value = convertArrayToObject(value, Object.keys(value).length, type);

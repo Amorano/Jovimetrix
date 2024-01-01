@@ -10,8 +10,8 @@ from PIL import Image, ImageDraw, ImageFont
 import matplotlib.font_manager
 
 from Jovimetrix import pil2tensor, pil2cv, cv2pil, cv2tensor, cv2mask, \
-    deep_merge_dict, parse_tuple, parse_number,\
-    EnumTupleType, JOVImageBaseNode, Logger, Lexicon, \
+    deep_merge_dict, parse_tuple, parse_number, b64_2_image, b64_2_tensor, \
+    EnumTupleType, JOVBaseNode, JOVImageBaseNode, Logger, Lexicon, \
     IT_PIXELS, IT_RGBA, IT_WH, IT_SCALE, IT_ROT, IT_INVERT, \
     IT_TIME, IT_WHMODE, IT_REQUIRED, MIN_IMAGE_SIZE
 
@@ -257,26 +257,17 @@ class PixelShaderNode(JOVImageInOutBaseNode):
         )
 """
 
-class GLSLNode(JOVImageBaseNode):
+
+class GLSLNode(JOVBaseNode):
     NAME = "GLSL (JOV) 🍩"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
     DESCRIPTION = ""
-    OUTPUT_IS_LIST = (False, False, )
+    # OUTPUT_IS_LIST = (False, False, )
     POST = True
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d =  {"optional": {
-            Lexicon.RESET: ("BOOLEAN", {"default": True}),
-            Lexicon.FRAGMENT: ("STRING", {"default":
-"""void main() {
-    vec4 color = vec4(0.0, 0.0, 0.0, 1.0);
-    color.r += sin(iTime);
-    FragColor = color;
-}""",
-                "multiline": True})
-            }}
-        return deep_merge_dict(IT_REQUIRED, IT_PIXELS, IT_TIME, d, IT_WH)
+        return deep_merge_dict(IT_REQUIRED) #, IT_PIXELS, IT_TIME, d, IT_WH)
 
     @classmethod
     def IS_CHANGED(cls, **kw) -> float:
@@ -285,6 +276,7 @@ class GLSLNode(JOVImageBaseNode):
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         Logger.debug(self, kw)
         pixels = kw.get(Lexicon.PIXEL, [None])
+        # load_base64
         #wh = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE))
         #image = Image.new(mode="RGB", size=wh[0])
         #return (pil2tensor(image), pil2mask(image))

@@ -6,8 +6,10 @@
 
 import { app } from "/scripts/app.js"
 import { $el } from "/scripts/ui.js"
+import * as util from '../core/util.js'
 
 const _id = "CONVERT (JOV) 🧬"
+const _cat = "JOVIMETRIX 🔺🟩🔵/CALC"
 
 function get_position_style(ctx, widget_width, y, node_height) {
     const MARGIN = 4;
@@ -63,6 +65,21 @@ const ext = {
                 this.onResize?.(this.size);
             }
             setTimeout(() => { combo.callback(); }, 15);
+
+            this.onConnectionsChange = function(slotType, slot, isChangeConnect, link_info, output) {
+                if (slotType === util.SlotType.Input && isChangeConnect === util.ChangeType.Disconnect) {
+                    this.inputs[slot].type = '*';
+                    this.inputs[slot].name = '*';
+                }
+
+                if (slotType === util.SlotType.Input && isChangeConnect === util.ChangeType.Connect) {
+                    const fromNode = this.graph._nodes.find((otherNode) => otherNode.id == link_info.origin_id);
+                    const type = fromNode.outputs[link_info.origin_slot].type;
+                    this.inputs[0].type = type;
+                    this.inputs[0].name = type;
+                }
+            }
+
             return me;
         }
     }
