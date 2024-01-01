@@ -113,7 +113,7 @@ class AkashicNode(JOVBaseNode):
         else:
             # no clue what I am....
             meh = ''.join(repr(type(val)).split("'")[1:2])
-            return {"text": meh}
+            return "text", [meh]
 
     def run(self, **kw) -> tuple[Any, Any]:
         o = kw.get(Lexicon.PASS_IN, None)

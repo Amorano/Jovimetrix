@@ -58,7 +58,7 @@ export function node_color_get(node) {
         const regex = new RegExp(colors.regex, 'i');
         const found = find_me.match(regex);
         if (found !== null && found[0].length > 0) {
-            console.info(colors, found, node)
+            console.debug("node_color_get", colors, found, node)
             colors.jov_set_color = 1;
             colors.jov_set_bgcolor = 1;
             return colors;

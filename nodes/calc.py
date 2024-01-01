@@ -49,7 +49,7 @@ class ConversionNode(JOVBaseNode):
     def run(self, **kw) -> tuple[bool]:
         a = kw[Lexicon.IN_A]
         size = len(a) if type(a) == tuple else 0
-        print(size, a)
+        Logger.debug(self, size, a)
         typ = kw[Lexicon.TYPE]
 
         if typ in ["STRING", "FLOAT"]:
@@ -292,19 +292,21 @@ class CalcBinaryOPNode(JOVBaseNode):
 
     def run(self, **kw) -> tuple[bool]:
         result = []
-        A = kw.get(Lexicon.IN_A, [0])
-        B = kw.get(Lexicon.IN_B, [0])
-        flip = kw.get(Lexicon.FLIP, [False])
-        op = kw.get(Lexicon.FUNC, [EnumBinaryOperation.ADD])
+        A = kw[Lexicon.IN_A]
+        B = kw[Lexicon.IN_B]
+        flip = kw[Lexicon.FLIP]
+        op = kw[Lexicon.FUNC]
         for a, b, op, flip in zip_longest_fill(A, B, op, flip):
-            if (short := len(a) - len(b)) > 0:
-                b = list(b) + [0] * short
+            if type(a) == tuple and type(b) == tuple:
+                if (short := len(a) - len(b)) > 0:
+                    b = [i for i in b] + [0] * short
+
             typ_a, val_a = convert_parameter(a)
             _, val_b = convert_parameter(b)
             if flip:
                 a, b = b, a
-            op = EnumBinaryOperation[op]
-            match op:
+
+            match EnumBinaryOperation[op]:
                 # VECTOR
                 case EnumBinaryOperation.DOT_PRODUCT:
                     val = [sum(a * b for a, b in zip(a, b))]

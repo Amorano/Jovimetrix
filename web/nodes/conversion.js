@@ -41,7 +41,7 @@ const ext = {
         nodeType.prototype.onNodeCreated = function () {
             const me = onNodeCreated?.apply(this)
             let combo_current = "NONE";
-            console.info(this)
+            console.debug("jovimetrix.node.convert.onNodeCreated", this)
             let combo = this.widgets[0]
             combo.callback = () => {
                 if (combo_current != combo.value)  {

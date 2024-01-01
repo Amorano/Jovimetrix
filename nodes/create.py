@@ -262,6 +262,7 @@ class GLSLNode(JOVImageBaseNode):
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
     DESCRIPTION = ""
     OUTPUT_IS_LIST = (False, False, )
+    POST = True
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -282,6 +283,7 @@ class GLSLNode(JOVImageBaseNode):
         return float("nan")
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
+        Logger.debug(self, kw)
         pixels = kw.get(Lexicon.PIXEL, [None])
         #wh = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE))
         #image = Image.new(mode="RGB", size=wh[0])

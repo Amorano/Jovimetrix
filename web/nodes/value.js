@@ -42,7 +42,7 @@ const ext = {
         nodeType.prototype.onNodeCreated = function () {
             const me = onNodeCreated?.apply(this)
             let combo_current = "NONE";
-            console.info(this)
+            console.debug(this)
             let combo = this.widgets[0];
             let old_x = this.widgets[1]?.value || 0;
             let old_y = this.widgets[2]?.value || 0;
@@ -68,7 +68,7 @@ const ext = {
                     } else if (combo_current == 'STRING') {
                         old_x_str = this.widgets[1]?.value || old_x_str;
                     }
-                    console.info(old_x_bool, old_x_int, old_x_str, old_x, old_y, old_z, old_w);
+                    console.debug(old_x_bool, old_x_int, old_x_str, old_x, old_y, old_z, old_w);
 
                     while ((this.widgets || [])[1]) {
                         util.removeWidget(this, 1);
@@ -122,8 +122,8 @@ const ext = {
         const onConnectionsChange = nodeType.prototype.onConnectionsChange;
         nodeType.prototype.onConnectionsChange = function (side, slot, connect, link_info, output) {
             // Logger.trace("onConnectionsChange", arguments, this);
-            console.info(side, slot, connect, link_info, output)
-            console.info(output.links)
+            console.debug(side, slot, connect, link_info, output)
+            console.debug(output.links)
             if(!link_info || side == 2)
                 return;
             onConnectionsChange?.apply(this, arguments);
