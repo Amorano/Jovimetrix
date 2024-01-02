@@ -111,8 +111,8 @@ class StreamReaderNode(JOVImageBaseNode):
             Lexicon.URL: ("STRING", {"default": "0"}),
             Lexicon.FPS: ("INT", {"min": 1, "max": 60, "default": 30}),
             Lexicon.WAIT: ("BOOLEAN", {"default": False}),
-            Lexicon.WH: ("VEC2", {"default": (320, 240), "min": MIN_IMAGE_SIZE, "max": 8192, "label": [Lexicon.WIDTH, Lexicon.HEIGHT]}),
-            Lexicon.BATCH: ("INT", {"min": 1, "default": 1}),
+            Lexicon.WH: ("VEC2", {"default": (320, 240), "min": MIN_IMAGE_SIZE, "max": 8192, "step": 1, "label": [Lexicon.WIDTH, Lexicon.HEIGHT]}),
+            Lexicon.BATCH: ("VEC2", {"default": (1, 30), "min": 1, "step": 1, "label": ["BATCH", ""]}),
         }}
         return deep_merge_dict(IT_REQUIRED, d, IT_SCALEMODE, IT_SAMPLE, IT_INVERT, IT_ORIENT, IT_CAM)
 
@@ -127,7 +127,7 @@ class StreamReaderNode(JOVImageBaseNode):
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         url = kw.get(Lexicon.URL, "")
-        width, height = parse_tuple(Lexicon.WH, kw)[0]
+        width, height = parse_tuple(Lexicon.WH, kw, default=(320, 240,), clip_min=MIN_IMAGE_SIZE)[0]
 
         if self.__capturing == 0 and (self.__device is None or url != self.__url):
             self.__capturing = time.perf_counter()
@@ -164,11 +164,10 @@ class StreamReaderNode(JOVImageBaseNode):
             mode = kw[Lexicon.MODE]
             rs = kw[Lexicon.SAMPLE]
             orient = kw[Lexicon.ORIENT]
-            batch_size = kw.get(Lexicon.BATCH, 1)
+            batch_size, rate = parse_tuple(Lexicon.BATCH, kw, default=(1, 30), clip_min=1)[0]
             images = []
             masks = []
-            fps = 1. / kw[Lexicon.FPS]
-
+            rate = 1. / rate
             for idx in range(batch_size):
                 ret, img = self.__device.frame
                 if img is None:
@@ -192,8 +191,8 @@ class StreamReaderNode(JOVImageBaseNode):
                 images.append(cv2tensor(img))
                 masks.append(cv2mask(img))
                 if batch_size > 1:
-                    time.sleep(fps)
-                    Logger.debug(idx, fps)
+                    time.sleep(rate)
+                    Logger.debug(idx, rate)
 
         try:
             return (torch.stack(images),torch.stack(masks))
