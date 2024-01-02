@@ -145,7 +145,7 @@ class ValueGraphNode(JOVBaseNode):
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
-            Lexicon.UNKNOWN: (WILDCARD, {"default": None}),
+            # Lexicon.UNKNOWN: (WILDCARD, {"default": None}),
             Lexicon.WAIT: ("BOOLEAN", {"default": False}),
             Lexicon.RESET: ("BOOLEAN", {"default": False}),
             Lexicon.VALUE: ("INT", {"default": 500, "min": 0})

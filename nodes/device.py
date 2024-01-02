@@ -102,18 +102,17 @@ class StreamReaderNode(JOVImageBaseNode):
     NAME = "STREAM READER (JOV) 📺"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/DEVICE"
     DESCRIPTION = ""
-    OUTPUT_IS_LIST = (False, False, )
-    EMPTY = np.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=np.float32)
+    OUTPUT_IS_LIST = (True, True, )
     SORT = 50
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
             Lexicon.URL: ("STRING", {"default": "0"}),
-            Lexicon.FPS: ("INT", {"min": 1, "max": 60, "step": 1, "default": 30}),
+            Lexicon.FPS: ("INT", {"min": 1, "max": 60, "default": 30}),
             Lexicon.WAIT: ("BOOLEAN", {"default": False}),
-            Lexicon.WH: ("VEC2", {"default": (320, 240), "min": MIN_IMAGE_SIZE, "max": 8192, "step": 1, "label": [Lexicon.WIDTH, Lexicon.HEIGHT]})
-
+            Lexicon.WH: ("VEC2", {"default": (320, 240), "min": MIN_IMAGE_SIZE, "max": 8192, "label": [Lexicon.WIDTH, Lexicon.HEIGHT]}),
+            Lexicon.BATCH: ("INT", {"min": 1, "default": 1}),
         }}
         return deep_merge_dict(IT_REQUIRED, d, IT_SCALEMODE, IT_SAMPLE, IT_INVERT, IT_ORIENT, IT_CAM)
 
@@ -124,17 +123,15 @@ class StreamReaderNode(JOVImageBaseNode):
     def __init__(self) -> None:
         self.__device:[MediaStreamBase|MediaStreamDevice] = None
         self.__url = ""
-        self.__last = StreamReaderNode.EMPTY
         self.__capturing = 0
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        url = kw[Lexicon.URL]
-        i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1])[0]
+        url = kw.get(Lexicon.URL, "")
         width, height = parse_tuple(Lexicon.WH, kw)[0]
 
-        if self.__capturing == 0 and (self.__device is None or url != self.__url): #or not self.__device.captured:
+        if self.__capturing == 0 and (self.__device is None or url != self.__url):
             self.__capturing = time.perf_counter()
-            Logger.debug('capturing', self.__device, self.__capturing, self.__url, url)
+            # Logger.debug('capturing', self.__capturing, self.__url, url)
             self.__url = url
             try:
                 self.__device = StreamManager().capture(url, width, height)
@@ -148,43 +145,61 @@ class StreamReaderNode(JOVImageBaseNode):
                 self.__capturing = 0
                 self.__url = ""
 
-        img = None
+        # img = None
+        i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1])[0]
         if self.__device:
             self.__capturing = 0
-            ret, img = self.__device.frame
-            self.__last = img if img is not None else self.__last
-            if ret:
-                h, w = self.__last.shape[:2]
+
+            if self.__device.fps != kw[Lexicon.FPS]:
+                self.__device.fps = kw[Lexicon.FPS]
+
+            if self.__device.zoom != kw[Lexicon.ZOOM]:
+                self.__device.zoom = kw[Lexicon.ZOOM]
+
+            if kw[Lexicon.WAIT]:
+                self.__device.pause()
+            else:
+                self.__device.play()
+
+            mode = kw[Lexicon.MODE]
+            rs = kw[Lexicon.SAMPLE]
+            orient = kw[Lexicon.ORIENT]
+            batch_size = kw.get(Lexicon.BATCH, 1)
+            images = []
+            masks = []
+            fps = 1. / kw[Lexicon.FPS]
+
+            for idx in range(batch_size):
+                ret, img = self.__device.frame
+                if img is None:
+                    img = np.zeros((height, width, 3), dtype=np.uint8)
+
+                h, w = img.shape[:2]
                 if width != w or height != h:
                     self.__device.sizer(width, height)
-                    mode = kw[Lexicon.MODE]
-                    rs = kw[Lexicon.SAMPLE]
                     img = geo_scalefit(img, width, height, mode, EnumInterpolation[rs])
 
-                orient = kw[Lexicon.ORIENT]
-                if orient in ["FLIPX", "FLIPXY"]:
-                    img = cv2.flip(img, 1)
+                if ret:
+                    if orient in ["FLIPX", "FLIPXY"]:
+                        img = cv2.flip(img, 1)
 
-                if orient in ["FLIPY", "FLIPXY"]:
-                    img = cv2.flip(img, 0)
+                    if orient in ["FLIPY", "FLIPXY"]:
+                        img = cv2.flip(img, 0)
 
-                if i != 0:
-                    img = light_invert(img, i)
+                    if i != 0:
+                        img = light_invert(img, i)
 
-                if self.__device.fps != (fps := kw[Lexicon.FPS]):
-                    self.__device.fps = fps
+                images.append(cv2tensor(img))
+                masks.append(cv2mask(img))
+                if batch_size > 1:
+                    time.sleep(fps)
+                    Logger.debug(idx, fps)
 
-                if self.__device.zoom != kw[Lexicon.ZOOM]:
-                    self.__device.zoom = kw[Lexicon.ZOOM]
-
-                if kw[Lexicon.WAIT]:
-                    self.__device.pause()
-                else:
-                    self.__device.play()
-
-        if img is None:
-            self.__last = img = StreamReaderNode.EMPTY
-        return ( cv2tensor(img), cv2mask(img) )
+        try:
+            return (torch.stack(images),torch.stack(masks))
+        except:
+            img = torch.zeros((h, w, 3), dtype=torch.uint8)
+            return (torch.stack([img]), torch.stack([img]))
 
 class StreamWriterNode(JOVBaseNode):
     NAME = "STREAM WRITER (JOV) 🎞️"

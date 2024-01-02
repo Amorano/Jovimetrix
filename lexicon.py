@@ -11,6 +11,7 @@ class Lexicon:
     ANGLE = '📐'
     AXIS = '➕'
     B = '🟦'
+    BATCH = 'BATCH'
     BBOX = '🔲'
     BI = '💙'
     BLACK = '⬛'
