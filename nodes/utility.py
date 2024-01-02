@@ -6,10 +6,13 @@ Utility
 import io
 import base64
 from typing import Any
+import matplotlib.pyplot as plt
 
 import torch
+import numpy as np
+from PIL import Image
 
-from Jovimetrix import tensor2pil, deep_merge_dict, \
+from Jovimetrix import pil2tensor, tensor2pil, deep_merge_dict, \
     JOVBaseNode, Logger, Lexicon, \
     IT_REQUIRED, WILDCARD
 
@@ -134,19 +137,57 @@ class ValueGraphNode(JOVBaseNode):
     NAME = "VALUE GRAPH (JOV) 📈"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/UTILITY"
     DESCRIPTION = "Graphs historical execution run values"
-    RETURN_TYPES = ()
-    RETURN_NAMES = ()
+    RETURN_TYPES = ("IMAGE", )
+    RETURN_NAMES = (Lexicon.IMAGE, )
+    OUTPUT_NODE = True
     SORT = 100
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
-            Lexicon.PASS_IN: (WILDCARD, {})
+            Lexicon.UNKNOWN: (WILDCARD, {"default": None}),
+            Lexicon.WAIT: ("BOOLEAN", {"default": False}),
+            Lexicon.RESET: ("BOOLEAN", {"default": False}),
+            Lexicon.VALUE: ("INT", {"default": 500, "min": 0})
         }}
         return deep_merge_dict(IT_REQUIRED, d)
 
-    def run(self, **kw) -> tuple[Any, Any]:
-        o = kw.get(Lexicon.PASS_IN, None)
-        if o is None:
-            return (o, {})
-        return (o, {})
+    @classmethod
+    def IS_CHANGED(cls) -> float:
+        return float("nan")
+
+    def __init__(self, *arg, **kw) -> None:
+        super().__init__(*arg, **kw)
+        self.__history = []
+        self.__index = 0
+        self.__fig, self.__ax = plt.subplots(figsize=(10, 6))
+        self.__ax.set_xlabel("Iteration")
+        self.__ax.set_ylabel("Values")
+        self.__ax.set_title("History of Values")
+
+    def run(self, **kw) -> tuple[torch.Tensor]:
+
+        if kw.get(Lexicon.RESET, False):
+            self.__history = []
+            self.__index = 0
+
+        elif not kw.get(Lexicon.WAIT, False):
+            val = kw.get(Lexicon.UNKNOWN, 0)
+            # Logger.debug(val, type(val))
+            if type(val) not in [bool, int, float, np.float16, np.float32, np.float64]:
+                val = 0
+            self.__history.append(val)
+
+            self.__index += 1
+
+        slice = kw.get(Lexicon.VALUE, 0)
+
+        self.__ax.clear()
+        self.__ax.plot(self.__history[-slice + self.__index:])
+        self.__fig.canvas.draw_idle()
+
+        buffer = io.BytesIO()
+        self.__fig.savefig(buffer, format="png")
+        buffer.seek(0)
+        image = Image.open(buffer)
+        return (pil2tensor(image),)
