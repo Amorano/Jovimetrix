@@ -67,7 +67,7 @@ class BlendNode(JOVImageInOutBaseNode):
 
             rs = EnumInterpolation[rs]
             if h != nh or w != nw:
-                Logger.debug(w, h, nw, nh)
+                Logger.debug(self, w, h, nw, nh)
                 img = comp.geo_scalefit(img, w, h, sm, rs)
 
             if i != 0:

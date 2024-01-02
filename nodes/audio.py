@@ -88,7 +88,7 @@ def graph_sausage(data: np.ndarray, bar_count:int, width:int, height:int,
 # =============================================================================
 
 class GraphWaveNode(JOVImageBaseNode):
-    NAME = "GRAPH WAVE (JOV) 🎶"
+    NAME = "GRAPH WAVE (JOV) ▶ ılıılıılılılılılı. "
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/AUDIO"
     RETURN_TYPES = ("IMAGE", "MASK", "WAVE")
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.MASK, Lexicon.WAVE )
@@ -107,7 +107,8 @@ class GraphWaveNode(JOVImageBaseNode):
         self.__filen = None
         self.__data = None
 
-    def run(self, filen: str, **kw) -> tuple[torch.Tensor, torch.Tensor]:
+    def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
+        filen = kw.get(Lexicon.FILEN)
         bars = kw.get(Lexicon.AMT, None)
         width, height = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)[0]
         rgb_a = parse_tuple(Lexicon.RGBA, kw, default=(128, 128, 0, 255), clip_min=1)[0]

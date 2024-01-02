@@ -4,7 +4,6 @@ Calculation
 """
 
 import math
-from math import isclose
 from enum import Enum
 from typing import Any
 from collections import Counter
@@ -50,7 +49,7 @@ class ConversionNode(JOVBaseNode):
         typ = kw.pop(Lexicon.TYPE)
         a = next(iter(kw.values()))
         size = len(a) if type(a) == tuple else 0
-        Logger.debug(self, size, a)
+        # Logger.debug(self, size, a)
         if typ in ["STRING", "FLOAT"]:
             if size > 0:
                 return ((a[0]), )

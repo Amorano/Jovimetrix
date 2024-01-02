@@ -115,17 +115,17 @@ const ext = {
                     combo_current = combo.value;
                 }
             }
-            setTimeout(() => { combo.callback(); }, 15);
+            // setTimeout(() => { combo.callback(); }, 15);
             return me;
         }
 
         const onConnectionsChange = nodeType.prototype.onConnectionsChange;
         nodeType.prototype.onConnectionsChange = function (side, slot, connect, link_info, output) {
             // Logger.trace("onConnectionsChange", arguments, this);
-            console.debug(side, slot, connect, link_info, output)
-            console.debug(output.links)
-            if(!link_info || side == 2)
-                return;
+            //console.debug(side, slot, connect, link_info, output)
+            //console.debug(output.links)
+            //if(!link_info || side == 2)
+            //    return;
             onConnectionsChange?.apply(this, arguments);
             this.onResize?.(this.size);
         };

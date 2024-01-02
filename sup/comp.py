@@ -11,12 +11,13 @@ from typing import Any, Optional
 import cv2
 import torch
 import numpy as np
+import requests
 from skimage import exposure
 from scipy.ndimage import rotate
 from blendmodes.blend import blendLayers, BlendType
 from PIL import Image, ImageDraw
 
-from Jovimetrix import grid_make, cv2pil, pil2cv,\
+from Jovimetrix import grid_make, cv2pil, pil2cv, pil2tensor, \
     Logger, Lexicon, \
     TYPE_IMAGE, TYPE_PIXEL, TYPE_COORD
 
@@ -304,7 +305,11 @@ def image_load_from_url(url:str) -> TYPE_IMAGE:
         image = np.asarray(bytearray(image.read()), dtype=np.uint8)
         return cv2.imdecode(image, cv2.IMREAD_COLOR)
     except:
-        pass
+        try:
+            image = Image.open(requests.get(url, stream=True).raw)
+            return pil2cv(image)
+        except Exception as e:
+            Logger.err(str(e))
 
 def image_stack(images: list[TYPE_IMAGE],
                 axis:EnumOrientation=EnumOrientation.HORIZONTAL,
@@ -462,13 +467,13 @@ def geo_crop(image: TYPE_IMAGE,
         cw2 = width * (right - left)
         ch2 = height * (bottom - top)
         # have to have a non-zero crop box.
-        y1, y2 = max(0, mid_y - ch2), min(mid_y + ch2, height)
+        y1, y2 = int(max(0, mid_y - ch2)), int(min(mid_y + ch2, height))
         if y2 - y1 == 0:
             y2 = y1 + 1
-        x1, x2 = max(0, mid_x - cw2), min(mid_x + cw2, width)
+        x1, x2 = int(max(0, mid_x - cw2)), int(min(mid_x + cw2, width))
         if x2 - x1 == 0:
             x2 = x1 + 1
-        # Logger.debug(y1,y2, x1,x2)
+
         crop_img = image[y1:y2, x1:x2]
         widthT = (widthT if widthT is not None else width)
         heightT = (heightT if heightT is not None else height)
@@ -488,8 +493,8 @@ def geo_crop(image: TYPE_IMAGE,
 
         y_delta = (y_end - y_start) // 2
         x_delta = (x_end - x_start) // 2
-        y_start2, y_end2 = max(0, ch - y_delta), min(ch + y_delta, crop_height)
-        x_start2, x_end2 = max(0, cw - x_delta), min(cw + x_delta, crop_width)
+        y_start2, y_end2 = int(max(0, ch - y_delta)), int(min(ch + y_delta, crop_height))
+        x_start2, x_end2 = int(max(0, cw - x_delta)), int(min(cw + x_delta, crop_width))
 
         img_padded[y_start:y_end, x_start:x_end] = crop_img[y_start2:y_end2, x_start2:x_end2]
         # Logger.debug("geo_crop", f"({x_start}, {y_start})-({x_end}, {y_end}) || ({x_start2}, {y_start2})-({x_end2}, {y_end2})")
@@ -578,8 +583,8 @@ def geo_transform(image: TYPE_IMAGE, offsetX: float=0., offsetY: float=0., angle
 
     # SCALE
     if sizeX != 1. or sizeY != 1.:
-        wx = int(width * sizeX)
-        hx = int(height * sizeY)
+        wx =  int(max(1, width * sizeX))
+        hx =  int(max(1, height * sizeY))
         image = cv2.resize(image, (wx, hx), interpolation=sample.value)
 
     # ROTATION
