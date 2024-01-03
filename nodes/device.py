@@ -18,7 +18,7 @@ import cv2
 import torch
 import numpy as np
 
-from Jovimetrix import parse_tuple, parse_number, deep_merge_dict, tensor2cv, \
+from Jovimetrix import EnumCanvasOrientation, parse_tuple, parse_number, deep_merge_dict, tensor2cv, \
     cv2mask, cv2tensor, zip_longest_fill, \
     JOVBaseNode, JOVImageBaseNode, JOVImageInOutBaseNode, Logger, Lexicon, \
     EnumTupleType, IT_SCALEMODE, \
@@ -111,7 +111,7 @@ class StreamReaderNode(JOVImageBaseNode):
             Lexicon.URL: ("STRING", {"default": "0"}),
             Lexicon.FPS: ("INT", {"min": 1, "max": 60, "default": 30}),
             Lexicon.WAIT: ("BOOLEAN", {"default": False}),
-            Lexicon.WH: ("VEC2", {"default": (320, 240), "min": MIN_IMAGE_SIZE, "max": 8192, "step": 1, "label": [Lexicon.WIDTH, Lexicon.HEIGHT]}),
+            Lexicon.WH: ("VEC2", {"default": (320, 240), "min": MIN_IMAGE_SIZE, "max": 8192, "step": 1, "label": [Lexicon.W, Lexicon.H]}),
             Lexicon.BATCH: ("VEC2", {"default": (1, 30), "min": 1, "step": 1, "label": ["BATCH", ""]}),
         }}
         return deep_merge_dict(IT_REQUIRED, d, IT_SCALEMODE, IT_SAMPLE, IT_INVERT, IT_ORIENT, IT_CAM)
@@ -150,20 +150,25 @@ class StreamReaderNode(JOVImageBaseNode):
         if self.__device:
             self.__capturing = 0
 
-            if self.__device.fps != kw[Lexicon.FPS]:
-                self.__device.fps = kw[Lexicon.FPS]
+            fps = kw.get(Lexicon.FPS, 30)
+            if self.__device.fps != fps:
+                self.__device.fps = fps
 
-            if self.__device.zoom != kw[Lexicon.ZOOM]:
-                self.__device.zoom = kw[Lexicon.ZOOM]
+            zoom = kw.get(Lexicon.ZOOM, 0)
+            if self.__device.zoom != zoom:
+                self.__device.zoom = zoom
 
-            if kw[Lexicon.WAIT]:
+            if kw.get(Lexicon.WAIT, False):
                 self.__device.pause()
             else:
                 self.__device.play()
 
-            mode = kw[Lexicon.MODE]
-            rs = kw[Lexicon.SAMPLE]
-            orient = kw[Lexicon.ORIENT]
+            mode = kw.get(Lexicon.MODE, EnumScaleMode.NONE)
+            mode = EnumScaleMode[mode]
+            rs = kw.get(Lexicon.SAMPLE, EnumInterpolation.LANCZOS4)
+            rs = EnumInterpolation[rs]
+            orient = kw.get(Lexicon.ORIENT, EnumCanvasOrientation.NORMAL)
+            orient = EnumCanvasOrientation[orient]
             batch_size, rate = parse_tuple(Lexicon.BATCH, kw, default=(1, 30), clip_min=1)[0]
             images = []
             masks = []
@@ -176,7 +181,7 @@ class StreamReaderNode(JOVImageBaseNode):
                 h, w = img.shape[:2]
                 if width != w or height != h:
                     self.__device.sizer(width, height)
-                    img = geo_scalefit(img, width, height, mode, EnumInterpolation[rs])
+                    img = geo_scalefit(img, width, height, mode, rs)
 
                 if ret:
                     if orient in ["FLIPX", "FLIPXY"]:
@@ -212,7 +217,7 @@ class StreamWriterNode(JOVBaseNode):
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
                 Lexicon.ROUTE: ("STRING", {"default": "/stream"}),
-                Lexicon.WH: ("VEC2", {"default": (640, 480), "min": MIN_IMAGE_SIZE, "max": 8192, "step": 1, "label": [Lexicon.WIDTH, Lexicon.HEIGHT]})
+                Lexicon.WH: ("VEC2", {"default": (640, 480), "min": MIN_IMAGE_SIZE, "max": 8192, "step": 1, "label": [Lexicon.W, Lexicon.H]})
             }}
         return deep_merge_dict(IT_REQUIRED, IT_PIXELS, d, IT_SCALEMODE, IT_SAMPLE, IT_INVERT)
 
@@ -235,7 +240,7 @@ class StreamWriterNode(JOVBaseNode):
         w, h = wihi
         img = kw.get(Lexicon.PIXEL, None)
         img = tensor2cv(img) if img is not None else np.zeros((h, w, 3), dtype=np.uint8)
-        route = kw[Lexicon.ROUTE]
+        route = kw.get(Lexicon.ROUTE, "/stream")
         if route != self.__route:
             self.__starting = True
             # close old, if any
@@ -250,13 +255,15 @@ class StreamWriterNode(JOVBaseNode):
 
         self.__starting = False
         if self.__device is not None:
-            mode = kw[Lexicon.MODE]
-            sample = kw[Lexicon.SAMPLE]
+            mode = kw.get(Lexicon.MODE, EnumScaleMode.NONE)
+            mode = EnumScaleMode[mode]
+            rs = kw.get(Lexicon.SAMPLE, EnumInterpolation.LANCZOS4)
+            rs = EnumInterpolation[rs]
             i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)[0]
             img = geo_scalefit(img, w, h, EnumScaleMode.NONE)
             if i != 0:
                 img = light_invert(img, i)
-            img = geo_scalefit(img, w, h, mode, EnumInterpolation[sample])
+            img = geo_scalefit(img, w, h, mode, rs)
             self.__device.image = img
         return ()
 

@@ -156,14 +156,22 @@ class ValueGraphNode(JOVBaseNode):
     def IS_CHANGED(cls) -> float:
         return float("nan")
 
+    def __plot_parameter(self, data) -> None:
+        ys = [data[x] for x in xs]
+        #line = plt.plot(xs, ys, *args, **kargs)
+        line = plt.plot(xs, ys, label=data.label)
+        kfx = data.keyframes
+        kfy = [data[x] for x in kfx]
+        plt.scatter(kfx, kfy, color=line[0].get_color())
+
     def __init__(self, *arg, **kw) -> None:
         super().__init__(*arg, **kw)
         self.__history = []
         self.__index = 0
-        self.__fig, self.__ax = plt.subplots(figsize=(10, 6))
-        self.__ax.set_xlabel("Iteration")
-        self.__ax.set_ylabel("Values")
-        self.__ax.set_title("History of Values")
+        self.__fig, self.__ax = plt.subplots(figsize=(11, 8))
+        self.__ax.set_xlabel("FRAME")
+        self.__ax.set_ylabel("VALUE")
+        self.__ax.set_title("VALUE HISTORY")
 
     def run(self, **kw) -> tuple[torch.Tensor]:
 
@@ -177,13 +185,15 @@ class ValueGraphNode(JOVBaseNode):
             if type(val) not in [bool, int, float, np.float16, np.float32, np.float64]:
                 val = 0
             self.__history.append(val)
-
             self.__index += 1
 
         slice = kw.get(Lexicon.VALUE, 0)
 
         self.__ax.clear()
-        self.__ax.plot(self.__history[-slice + self.__index:])
+
+        print(kw)
+        self.__ax.plot(self.__history[-slice + self.__index:], label=curve.label)
+
         self.__fig.canvas.draw_idle()
 
         buffer = io.BytesIO()

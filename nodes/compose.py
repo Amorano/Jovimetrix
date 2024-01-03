@@ -237,11 +237,11 @@ class CropNode(JOVImageInOutBaseNode):
 
     def run(self, **kw) -> tuple[list[torch.Tensor], list[torch.Tensor]]:
         pixels = kw.get(Lexicon.PIXEL, [None])
-        bbox = parse_tuple(Lexicon.BBOX, kw, default=(0, 0, 1, 1,), clip_min=0, clip_max=1)
+        bbox = parse_tuple(Lexicon.BBOX, kw, EnumTupleType.FLOAT, (0, 0, 1, 1,), 0, 1)
         pad = kw.get(Lexicon.PAD, [0])
         rgba = parse_tuple(Lexicon.RGBA, kw, default=(0, 0, 0, 255,), clip_min=0, clip_max=255)
         wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
-        i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
+        i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], 0, 1)
         masks = []
         images = []
         for img, p, bbox, rgba, wihi, i in zip_longest_fill(pixels, pad, bbox, rgba, wihi, i):

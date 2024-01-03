@@ -33,9 +33,9 @@ class AdjustNode(JOVImageInOutBaseNode):
 
     def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor]:
         pixels = kw.get(Lexicon.PIXEL, [None])
-        op = kw[Lexicon.FUNC]
-        radius = kw[Lexicon.RADIUS]
-        amt = kw[Lexicon.AMT]
+        op = kw.get(Lexicon.FUNC, [EnumAdjustOP.BLUR])
+        radius = kw.get(Lexicon.RADIUS, [3])
+        amt = kw.get(Lexicon.AMT, [0])
         i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
         masks = []
         images = []
@@ -130,12 +130,12 @@ class ColorMatchNode(JOVImageInOutBaseNode):
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         pixelA = kw.get(Lexicon.PIXEL_A, [None])
         pixelB = kw.get(Lexicon.PIXEL_B, [None])
-        colormap = kw[Lexicon.COLORMAP]
+        colormap = kw.get(Lexicon.COLORMAP, [EnumColorMap.HSV])
         # if the colormap is not "none" entry...use it.
         # usemap = usemap or [None]
         threshold = parse_number(Lexicon.THRESHOLD, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
-        blur = kw[Lexicon.BLUR]
-        flip = kw[Lexicon.FLIP]
+        blur = kw.get(Lexicon.BLUR, [3])
+        flip = kw.get(Lexicon.FLIP, [False])
         i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
         masks = []
         images = []
@@ -314,10 +314,10 @@ class ThresholdNode(JOVImageInOutBaseNode):
     def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor]:
 
         pixels = kw.get(Lexicon.PIXEL, [None])
-        op = kw[Lexicon.FUNC]
-        adapt = kw[Lexicon.ADAPT]
-        threshold = kw[Lexicon.THRESHOLD]
-        size = kw[Lexicon.SIZE]
+        op = kw.get(Lexicon.FUNC, [EnumThreshold.BINARY])
+        adapt = kw.get(Lexicon.ADAPT, [EnumThresholdAdapt.ADAPT_NONE])
+        threshold = parse_number(Lexicon.THRESHOLD, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
+        size = kw.get(Lexicon.SIZE, [3])
         i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
         masks = []
         images = []

@@ -145,7 +145,7 @@ class TextNode(JOVImageBaseNode):
         return img
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        text = kw[Lexicon.STRING]
+        text = kw.get(Lexicon.STRING, "")
         font = FONTS[kw[Lexicon.FONT]]
         font_size = kw[Lexicon.FONT_SIZE]
         mode = EnumScaleMode[kw[Lexicon.MODE]]
@@ -162,112 +162,18 @@ class TextNode(JOVImageBaseNode):
             img = light_invert(img, i)
         return (cv2tensor(img), cv2mask(img),)
 
-"""
-class PixelShaderNode(JOVImageInOutBaseNode):
-    NAME = "PIXEL SHADER (JOV) 🔆"
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
-
-    @classmethod
-    def INPUT_TYPES(cls) -> dict:
-        d = {"optional": {
-                Lexicon.R: ("STRING", {"multiline": True, "default": "1 - np.minimum(1, np.sqrt((($u-0.5)**2 + ($v-0.5)**2) * 3.5))"}),
-                Lexicon.G: ("STRING", {"multiline": True, "default": "1 - np.minimum(1, np.sqrt((($u-0.5)**2 + ($v-0.5)**2) * 3.5))"}),
-                Lexicon.B: ("STRING", {"multiline": True, "default": "1 - np.minimum(1, np.sqrt((($u-0.5)**2 + ($v-0.5)**2) * 3.5))"}),
-            }}
-        return deep_merge_dict(IT_REQUIRED, IT_PIXELS, d, IT_WHMODE, IT_SAMPLE)
-
-    @staticmethod
-    def shader(image: TYPE_PIXEL, R: str, G: str, B: str, **kw) -> np.ndarray:
-
-        from ast import literal_eval
-        width, height = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)[0]
-        out = np.zeros((height, width, 3), dtype=np.float32)
-        R = R.strip()
-        G = G.strip()
-        B = B.strip()
-        err = False
-
-        for y in range(height):
-            for x in range(width):
-                variables = {
-                    "$x": x,
-                    "$y": y,
-                    "$u": x / width if width > 0 else 0,
-                    "$v": y / height if height > 0 else 0,
-                    "$w": width,
-                    "$h": height,
-                    "$r": image[y, x, 2] / 255.,
-                    "$g": image[y, x, 1] / 255.,
-                    "$b": image[y, x, 0] / 255.,
-                }
-
-                parseR = re.sub(r'\$(\w+)', lambda match: str(variables.get(match.group(0), match.group(0))), R)
-                parseG = re.sub(r'\$(\w+)', lambda match: str(variables.get(match.group(0), match.group(0))), G)
-                parseB = re.sub(r'\$(\w+)', lambda match: str(variables.get(match.group(0), match.group(0))), B)
-
-                for i, rgb in enumerate([parseB, parseG, parseR]):
-                    if rgb == "":
-                        out[y, x, i] = image[y, x, i]
-                        continue
-
-                    try:
-                        out[y, x, i]  = literal_eval(rgb) * 255
-                    except:
-                        try:
-                            out[y, x, i] = eval(rgb.replace("^", "**")) * 255
-                        except Exception as e:
-                            if not err:
-                                err = True
-                                Logger.err(f'eval failed {str(e)}\n{parseR}\n{parseG}\n{parseB}')
-
-        return np.clip(out, 0, 255).astype(np.uint8)
-
-    def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        t = time.perf_counter()
-        pixels = kw.get(Lexicon.PIXEL, [None])
-        R = kw.get(Lexicon.R, [""])
-        G = kw.get(Lexicon.G, [""])
-        B = kw.get(Lexicon.B, [""])
-        width, height = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)[0]
-        mode = kw.get(Lexicon.MODE, [EnumScaleMode.FIT])
-        sample = kw.get(Lexicon.SAMPLE, [EnumInterpolation.LANCZOS4])
-        masks = []
-        images = []
-        for data in zip_longest_fill(pixels, R, G, B, mode, sample):
-            img, r, g, b, m, rs = data
-
-            m = EnumScaleMode.FIT if m == EnumScaleMode.NONE else m
-            # fix the image first -- must at least match for px, py indexes
-            img = geo_scalefit(img, width, height, m, rs)
-            if img is None:
-                img = np.zeros((height, width, 3), dtype=np.uint8)
-            else:
-                img = tensor2cv(img)
-                if img.shape[0] != height or img.shape[1] != width:
-                    img = cv2.resize(img, (width, height), interpolation=EnumInterpolation[rs])
-
-            img = PixelShaderNode.shader(img, r, g, b)
-            images.append(cv2tensor(img))
-            masks.append(cv2mask(img))
-
-        Logger.info(self.NAME, {time.perf_counter() - t:.5})
-        return (
-            torch.stack(images),
-            torch.stack(masks)
-        )
-"""
-
-
 class GLSLNode(JOVBaseNode):
     NAME = "GLSL (JOV) 🍩"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
     DESCRIPTION = ""
+    RETURN_TYPES = ("IMAGE", )
+    RETURN_NAMES = (Lexicon.IMAGE, )
     # OUTPUT_IS_LIST = (False, False, )
     POST = True
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        return deep_merge_dict(IT_REQUIRED) #, IT_PIXELS, IT_TIME, d, IT_WH)
+        return deep_merge_dict(IT_REQUIRED, IT_PIXELS) #, IT_TIME, d, IT_WH)
 
     @classmethod
     def IS_CHANGED(cls, **kw) -> float:
@@ -282,7 +188,7 @@ class GLSLNode(JOVBaseNode):
         #return (pil2tensor(image), pil2mask(image))
         return (pixels, pixels, )
 
-class ImageFromURLNode(JOVImageBaseNode):
+class LoadImageNode(JOVImageBaseNode):
     NAME = "IMAGE FROM URL (JOV) 📥"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
     DESCRIPTION = ""
@@ -291,7 +197,7 @@ class ImageFromURLNode(JOVImageBaseNode):
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d =  {"optional": {
-            Lexicon.URL: ("STRING", {"default": "https://upload.wikimedia.org/wikipedia/en/c/c0/Les_Horribles_Cernettes_in_1992.jpg"}),
+            Lexicon.URL: ("STRING", {"default": "https://images.squarespace-cdn.com/content/v1/600743194a20ea052ee04fbb/9e868816-2c5b-4ba2-b157-9a0911dfc4c2/SNAILS_square3.jpg"}),
         }}
         return deep_merge_dict(IT_REQUIRED, d, IT_WHMODE, IT_SAMPLE)
 
@@ -310,7 +216,9 @@ class ImageFromURLNode(JOVImageBaseNode):
         if image is None:
             image = channel_solid(width, height, 0, chan=EnumImageType.RGB)
         else:
-            mode = EnumScaleMode[kw[Lexicon.MODE]]
-            sample = EnumInterpolation[kw[Lexicon.SAMPLE]]
+            mode = kw.get(Lexicon.MODE, EnumScaleMode.NONE)
+            mode = EnumScaleMode[mode]
+            sample = kw.get(Lexicon.SAMPLE, EnumInterpolation.LANCZOS4)
+            sample = EnumInterpolation[sample]
             image = geo_scalefit(image, width, height, mode, sample)
         return (cv2tensor(image), cv2mask(image),)

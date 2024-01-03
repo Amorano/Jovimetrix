@@ -44,12 +44,12 @@ Polygonal shapes, MIDI, MP3/WAVE, Flow Logic
     GraphWaveNode,
     ConversionNode, CalcUnaryOPNode, CalcBinaryOPNode, ValueNode
     BlendNode, PixelSplitNode, PixelMergeNode, MergeNode, CropNode, ColorTheoryNode,
-    ConstantNode, ShapeNode, TextNode, GLSLNode, ImageFromURLNode
-    StreamReaderNode, StreamWriterNode, MIDIMessageNode, MIDIReaderNode, MIDIFilterEZNode, MIDIFilterNode
-    DelayNode, ComparisonNode, IfThenElseNode,
-    TransformNode, TileNode, MirrorNode, ProjectionNode,
+    ConstantNode, ShapeNode, TextNode, GLSLNode, LoadImageNode,
+    StreamReaderNode, StreamWriterNode, MIDIMessageNode, MIDIReaderNode, MIDIFilterEZNode, MIDIFilterNode,
+    ComparisonNode, IfThenElseNode, GetNode, SetNode,
+    TransformNode,
     OptionsNode, AkashicNode, ValueGraphNode
-@version: 0.99999
+@version: 0.999999999
 """
 
 import base64
@@ -772,7 +772,7 @@ IT_PASS_IN = {"optional": {
 }}
 
 IT_WH = {"optional": {
-    Lexicon.WH: ("VEC2", {"default": (512, 512), "min": MIN_IMAGE_SIZE, "max": 8192, "step": 1, "label": [Lexicon.WIDTH, Lexicon.HEIGHT]})
+    Lexicon.WH: ("VEC2", {"default": (512, 512), "min": MIN_IMAGE_SIZE, "max": 8192, "step": 0.005, "label": [Lexicon.W, Lexicon.H]})
 }}
 
 IT_SCALEMODE = {"optional": {
@@ -780,23 +780,15 @@ IT_SCALEMODE = {"optional": {
 }}
 
 IT_TRANS = {"optional": {
-    Lexicon.OFFSET: ("VEC2", {"default": (0., 0.,), "min": -1, "max": 1, "step": 0.01, "precision": 4, "label": [Lexicon.X, Lexicon.Y]})
+    Lexicon.OFFSET: ("VEC2", {"default": (0., 0.,), "min": -1, "max": 1, "step": 0.005, "precision": 4, "label": [Lexicon.X, Lexicon.Y]})
 }}
 
 IT_ROT = {"optional": {
-    Lexicon.ANGLE: ("FLOAT", {"default": 0, "min": -180, "max": 180, "step": 0.1}),
+    Lexicon.ANGLE: ("FLOAT", {"default": 0, "min": -180, "max": 180, "step": 0.005, "precision": 4}),
 }}
 
 IT_SCALE = {"optional": {
-    Lexicon.SIZE: ("VEC2", {"default": (1., 1.), "min": -1., "max": 1., "step": 0.01, "precision": 4, "label": [Lexicon.X, Lexicon.Y]})
-}}
-
-IT_TILE = {"optional": {
-    Lexicon.TILE: ("VEC2", {"default": (2, 2), "label": [Lexicon.X, Lexicon.Y]})
-}}
-
-IT_EDGE = {"optional": {
-    Lexicon.EDGE: (EnumEdge._member_names_, {"default": EnumEdge.CLIP.name})
+    Lexicon.SIZE: ("VEC2", {"default": (1., 1.), "min": -1., "max": 1., "step": 0.005, "precision": 4, "label": [Lexicon.X, Lexicon.Y]})
 }}
 
 IT_FLIP = {"optional": {
@@ -804,7 +796,7 @@ IT_FLIP = {"optional": {
 }}
 
 IT_INVERT = {"optional": {
-    Lexicon.INVERT: ("FLOAT", {"default": 0, "min": 0, "max": 1, "step": 0.01, "precision": 4})
+    Lexicon.INVERT: ("FLOAT", {"default": 0, "min": 0, "max": 1, "step": 0.005, "precision": 4})
 }}
 
 IT_AB = {"optional": {
@@ -813,7 +805,7 @@ IT_AB = {"optional": {
 }}
 
 IT_XY = { "optional": {
-    Lexicon.XY: ("VEC2", {"default": (0, 0), "step": 0.01, "precision": 4, "label": [Lexicon.X, Lexicon.Y]})
+    Lexicon.XY: ("VEC2", {"default": (0, 0), "step": 0.005, "precision": 4, "label": [Lexicon.X, Lexicon.Y]})
 }}
 
 IT_XYZ = {"optional": {
@@ -821,15 +813,15 @@ IT_XYZ = {"optional": {
 }}
 
 IT_XYZW = {"optional": {
-    Lexicon.XYZW: ("VEC4", {"default": (0, 0, 0, 1), "step": 0.01, "precision": 4, "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W]})
+    Lexicon.XYZW: ("VEC4", {"default": (0, 0, 0, 1), "step": 0.005, "precision": 4, "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W]})
 }}
 
 IT_RGBA = {"optional": {
-    Lexicon.RGBA: ("VEC4", {"default": (0, 0, 0, 255), "min": 0, "max": 255, "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A]})
+    Lexicon.RGBA: ("VEC4", {"default": (0, 0, 0, 255), "min": 0, "max": 255, "step": 0.0625, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A]})
 }}
 
 IT_RGBA_B = { "optional": {
-    Lexicon.RGBA_B: ("VEC4", {"default": (0, 0, 0, 255), "min": 0, "max": 255, "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A]})
+    Lexicon.RGBA_B: ("VEC4", {"default": (0, 0, 0, 255), "min": 0, "max": 255, "step": 0.0625, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A]})
 }}
 
 IT_RGBA_IMAGE = { "optional": {
@@ -840,23 +832,28 @@ IT_RGBA_IMAGE = { "optional": {
 }}
 
 IT_HSV = { "optional": {
-    Lexicon.HSV: ("VEC3",{"default": (0, 1, 1), "min": 0, "max": 1, "step": 0.01, "precision": 4, "label": [Lexicon.H, Lexicon.S, Lexicon.V]})
+    Lexicon.HSV: ("VEC3",{"default": (0, 1, 1), "min": 0, "max": 1, "step": 0.005, "precision": 4, "label": [Lexicon.H, Lexicon.S, Lexicon.V]})
 }}
 
 IT_GAMMA = {"optional": {
-    Lexicon.GAMMA: ("FLOAT", {"default": 1, "min": 0.00001, "max": 1, "step": 0.01, "precision": 6})
+    Lexicon.GAMMA: ("FLOAT", {"default": 1, "min": 0.00001, "max": 1, "step": 0.005, "precision": 4})
 }}
 
 IT_CONTRAST = {"optional": {
-    Lexicon.CONTRAST: ("FLOAT", {"default": 0, "min": 0, "max": 1, "step": 0.01, "precision": 4})
+    Lexicon.CONTRAST: ("FLOAT", {"default": 0, "min": 0, "max": 1, "step": 0.005, "precision": 4})
 }}
 
 IT_BBOX = {"optional": {
-    Lexicon.BBOX: ("VEC4", {"default": (0, 0, 1, 1), "min": 0, "max": 1, "step": 0.01, "precision": 4, "label": [Lexicon.TOP, Lexicon.LEFT, Lexicon.BOTTOM, Lexicon.RIGHT]})
+    Lexicon.BBOX: ("VEC4", {"default": (0, 0, 1, 1), "min": 0, "max": 1, "step": 0.005, "precision": 4, "label": [Lexicon.TOP, Lexicon.LEFT, Lexicon.BOTTOM, Lexicon.RIGHT]})
+}}
+
+IT_BBOX_FULL = {"optional": {
+    Lexicon.TLTR: ("VEC4", {"default": (0, 0, 1, 0), "min": 0, "max": 1, "step": 0.005, "precision": 4, "label": [Lexicon.TOP, Lexicon.LEFT, Lexicon.TOP, Lexicon.RIGHT]}),
+    Lexicon.BLBR: ("VEC4", {"default": (0, 1, 1, 1), "min": 0, "max": 1, "step": 0.005, "precision": 4, "label": [Lexicon.BOTTOM, Lexicon.LEFT, Lexicon.BOTTOM, Lexicon.RIGHT]})
 }}
 
 IT_LOHI = {"optional": {
-    Lexicon.LOHI: ("VEC2", {"default": (0, 1), "min": 0, "max": 1, "step": 0.01, "precision": 4, "label": [Lexicon.LO, Lexicon.HI]})
+    Lexicon.LOHI: ("VEC2", {"default": (0, 1), "min": 0, "max": 1, "step": 0.005, "precision": 4, "label": [Lexicon.LO, Lexicon.HI]})
 }}
 
 IT_LMH = {"optional": {
@@ -872,7 +869,7 @@ IT_ORIENT = {"optional": {
 }}
 
 IT_CAM = {"optional": {
-    Lexicon.ZOOM: ("FLOAT", {"min": 0, "max": 1, "step": 0.01, "default": 0}),
+    Lexicon.ZOOM: ("FLOAT", {"min": 0, "max": 1, "step": 0.005, "default": 0}),
 }}
 
 IT_TRS = deep_merge_dict(IT_TRANS, IT_ROT, IT_SCALE)

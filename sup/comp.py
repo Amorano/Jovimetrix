@@ -6,7 +6,7 @@ Composition Support
 import math
 import urllib
 from enum import Enum
-from typing import Any, Optional
+from typing import Optional
 
 import cv2
 import torch
@@ -17,7 +17,7 @@ from scipy.ndimage import rotate
 from blendmodes.blend import blendLayers, BlendType
 from PIL import Image, ImageDraw
 
-from Jovimetrix import grid_make, cv2pil, pil2cv, pil2tensor, \
+from Jovimetrix import grid_make, cv2pil, pil2cv, \
     Logger, Lexicon, \
     TYPE_IMAGE, TYPE_PIXEL, TYPE_COORD
 
@@ -52,10 +52,6 @@ class EnumOrientation(Enum):
     HORIZONTAL = 0
     VERTICAL = 1
     GRID = 2
-
-class EnumProjection(Enum):
-    SPHERICAL = 0
-    FISHEYE = 5
 
 class EnumThreshold(Enum):
     BINARY = cv2.THRESH_BINARY
@@ -168,6 +164,7 @@ class EnumBlendType(Enum):
 	DESTATOP = BlendType.DESTATOP
 
 class EnumMirrorMode(Enum):
+    NONE = -1
     X = 0
     Y = 1
     XY = 2
@@ -620,13 +617,17 @@ def geo_merge(imageA: TYPE_IMAGE, imageB: TYPE_IMAGE, axis: int=0, flip: bool=Fa
     return np.concatenate((imageA, imageB), axis=axis)
 
 def geo_mirror(image: TYPE_IMAGE, pX: float, axis: int, invert: bool=False) -> TYPE_IMAGE:
-    output =  np.zeros_like(image)
-    flip = cv2.flip(image, axis)
-    height, width = image.shape[:2]
-    cc = channel_count(image)[0]
+    cc, _, width, height = channel_count(image)
+    output =  np.zeros((height, width, 3), dtype=np.uint8)
+
+    axis = 1 if axis == 0 else 0
+
     if cc > 3:
         alpha = image[:,:,3]
+        alpha = cv2.flip(alpha, axis)
         image = image[:,:,:3]
+
+    flip = cv2.flip(image, axis)
 
     pX = np.clip(pX, 0, 1)
     if invert:
@@ -1283,98 +1284,8 @@ def kernel(stride: int) -> TYPE_IMAGE:
     return kernel
 
 # =============================================================================
-# === REMAPPING ===
-# =============================================================================
-
-def coord_sphere(width: int, height: int, radius: float) -> tuple[TYPE_IMAGE, TYPE_IMAGE]:
-    theta, phi = np.meshgrid(np.linspace(0, TAU, width), np.linspace(0, np.pi, height))
-
-    x = radius * np.sin(phi) * np.cos(theta)
-    y = radius * np.sin(phi) * np.sin(theta)
-    # z = radius * np.cos(phi)
-
-    x_image = (x + 1) * (width - 1) / 2
-    y_image = (y + 1) * (height - 1) / 2
-
-    return x_image.astype(np.float32), y_image.astype(np.float32)
-
-def coord_polar(width: int, height: int) -> tuple[TYPE_IMAGE, TYPE_IMAGE]:
-    map_x, map_y = np.meshgrid(np.arange(width), np.arange(height))
-    rho = np.sqrt((map_x - width / 2)**2 + (map_y - height / 2)**2)
-    phi = np.arctan2(map_y - height / 2, map_x - width / 2)
-    return rho.astype(np.float32), phi.astype(np.float32)
-
-def coord_perspective(width: int, height: int, pts: list[TYPE_COORD]) -> TYPE_IMAGE:
-    object_pts = np.float32([[0, 0], [width, 0], [width, height], [0, height]])
-    pts = np.float32(pts)
-    pts = np.column_stack([pts[:, 0] * width, pts[:, 1] * height])
-    return cv2.getPerspectiveTransform(object_pts, pts)
-
-def coord_fisheye(width: int, height: int, distortion: float) -> tuple[TYPE_IMAGE, TYPE_IMAGE]:
-    map_x, map_y = np.meshgrid(np.linspace(0., 1., width), np.linspace(0., 1., height))
-
-    # normalized
-    xnd, ynd = (2 * map_x - 1), (2 * map_y - 1)
-    rd = np.sqrt(xnd**2 + ynd**2)
-
-    # fish-eye distortion
-    condition = (dist := 1 - distortion * (rd**2)) == 0
-    xdu, ydu = np.where(condition, xnd, xnd / dist), np.where(condition, ynd, ynd / dist)
-    xu, yu = ((xdu + 1) * width) / 2, ((ydu + 1) * height) / 2
-    return xu.astype(np.float32), yu.astype(np.float32)
-
-def remap_sphere(image: TYPE_IMAGE, radius: float) -> TYPE_IMAGE:
-    height, width, _ = image.shape
-    map_x, map_y = coord_sphere(width, height, radius)
-    return cv2.remap(image, map_x, map_y, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
-
-def remap_polar(image: TYPE_IMAGE) -> TYPE_IMAGE:
-    height, width, _ = image.shape
-    map_x, map_y = coord_polar(width, height)
-    return cv2.remap(image, map_x, map_y, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
-
-def remap_perspective(image: TYPE_IMAGE, pts: list) -> TYPE_IMAGE:
-    height, width, _ = image.shape
-    matrix: TYPE_IMAGE = coord_perspective(width, height, pts)
-    return cv2.warpPerspective(image, matrix, (width, height))
-
-def remap_fisheye(image: TYPE_IMAGE, distort: float) -> TYPE_IMAGE:
-    height, width, _ = image.shape
-    map_x, map_y = coord_fisheye(width, height, distort)
-    return cv2.remap(image, map_x, map_y, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
-
-# =============================================================================
 # === ZE MAIN ===
 # =============================================================================
-
-def testTRS() -> None:
-    image = cv2.imread("./_res/img/alpha.png")
-
-    pts = [
-        [0.1, 0.1],
-        [0.7, 0.3],
-        [0.9, 0.9],
-        [0.1, 0.9]
-    ]
-    remap = [
-        ('perspective', remap_perspective(image, pts)),
-        ('fisheye', remap_fisheye(image, 2)),
-        ('sphere', remap_sphere(image, 0.1)),
-        ('sphere', remap_sphere(image, 0.5)),
-        ('sphere', remap_sphere(image, 1)),
-        ('sphere', remap_sphere(image, 2)),
-        ('polar', remap_polar(image)),
-    ]
-    idx_remap = 0
-    while True:
-        title, image,  = remap[idx_remap]
-        cv2.imshow("", image)
-        Logger.debug(title)
-        if cv2.waitKey() & 0xFF == ord('q'):
-            break
-        idx_remap = (idx_remap + 1) % len(remap)
-
-    cv2.destroyAllWindows()
 
 def testColorConvert() -> None:
     Logger.debug(color_eval(1., EnumImageType.RGBA))
@@ -1410,5 +1321,10 @@ def testImageMerge() -> None:
     cv2.imwrite(f'./_res/tst/image-merge.png', d)
 
 if __name__ == "__main__":
-    testBlendModes()
+    img = cv2.imread('./_res/img/test_fore2.png', cv2.IMREAD_UNCHANGED)
+    img = geo_mirror(img, 0.75, 0)
+    img = geo_mirror(img, 0.25, 1)
+
+    cv2.imwrite(f'./_res/tst/image-mirror.png', img)
+    # testBlendModes()
     # testImageMerge()

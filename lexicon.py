@@ -2,7 +2,7 @@
 Jovimetrix - http://www.github.com/amorano/jovimetrix
 EMOJI OCD Support
 """
-# 🔗 ⚓ 📀 🍿 🎪 🐘 🤯 😱 💀 ⛓️ 🔒 🪀 🪁 🔮 🧿 🧙🏽 🧙🏽‍♀️ 🧯 🦚 ♻️ ⤴️ ⚜️ 🅱️ 🅾️⬆️ ↔️ ↕️ 〰️ ☐
+# 🔗 ⚓ 📀 🍿 🎪 🐘 🤯 😱 💀 ⛓️ 🔒 🪀 🪁 🔮 🧿 🧙🏽 🧙🏽‍♀️ 🧯 🦚 ♻️ ⤴️ ⚜️ 🅱️ 🅾️ ⬆️ ↔️ ↕️ 〰️ ☐
 class Lexicon:
     A = '⬜'
     ADAPT = '🧬'
@@ -15,6 +15,7 @@ class Lexicon:
     BBOX = '🔲'
     BI = '💙'
     BLACK = '⬛'
+    BLBR = 'BL-BR'
     BLUR = 'BLUR'
     BOOLEAN = '🇴'
     BOTTOM = '🔽'
@@ -28,7 +29,7 @@ class Lexicon:
     CLEAR = '🧹'
     COLORMAP = '🇸🇨'
     COMPARE = '🕵🏽‍♀️'
-    CONDITION = '❔'
+    CONDITION = '⁉️'
     CONTRAST = '🌓'
     CONTROL = '🎚️'
     COUNT = '🧮'
@@ -55,7 +56,6 @@ class Lexicon:
     GI = '💚'
     GRADIENT = '🇲🇺'
     H = '🇭'
-    HEIGHT = '🇭'
     HI = 'HI'
     HSV = u'🇭🇸\u200c🇻'
     IMAGE = '🖼️'
@@ -89,7 +89,9 @@ class Lexicon:
     PAD = 'PAD'
     PASS_IN = '📥'
     PASS_OUT = '📤'
+    PERSPECTIVE = 'POINT'
     PHASE = '🌙'
+    PIVOT = 'PIVOT'
     PIXEL = '👾'
     PIXEL_A = '👾A'
     PIXEL_B = '👾B'
@@ -97,7 +99,7 @@ class Lexicon:
     R = '🟥'
     RADIUS = '🅡'
     RESET = 'RESET'
-    RESULT = '⁉️'
+    RESULT = '👍'
     RGB = '🌈'
     RGB_B = '🌈B'
     RGBA = '🌈'
@@ -119,8 +121,9 @@ class Lexicon:
     STYLE = 'STYLE'
     THICK = 'THICK'
     THRESHOLD = '📉'
-    TILE = '🇽🇾'
+    TILE = 'TILE'
     TIME = '🕛'
+    TLTR = 'TL-TR'
     TOP = '🔼'
     TRIGGER = '⚡'
     TRUE = '🇹'
@@ -135,7 +138,6 @@ class Lexicon:
     WAVE = '♒'
     WH = '🇼🇭'
     WHITE = '⬜'
-    WIDTH = '🇼'
     X = '🇽'
     XY = '🇽🇾'
     XYZ = '🇽🇾\u200c🇿'

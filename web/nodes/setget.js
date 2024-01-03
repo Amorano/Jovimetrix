@@ -8,12 +8,13 @@ import { app } from "/scripts/app.js";
 import * as util from '../core/util.js'
 
 const NodeType = {
-    SET: "jovimetrix.node.set",
-    GET: "jovimetrix.node.get",
+    SET: "SET (JOV) 🟰",
+    GET: "GET (JOV) 🟰",
 };
 
-let Memory = {};
-// "SET-GET (JOV) 🟰"
+let Memory = {
+
+};
 
 app.registerExtension({
 	name: NodeType.SET,

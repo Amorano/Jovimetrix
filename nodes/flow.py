@@ -170,10 +170,46 @@ class IfThenElseNode(JOVBaseNode):
             return (None,)
         return (T if o else F,)
 
-class SetGetNode(JOVBaseNode):
-    NAME = "SET-GET2 (JOV) 🟰"
+# HOW TO MAKE COMFY HAVE A MEMORY BETWEEN AUTO-Q?
+class SetGetData:
+    DATA = {}
+    DEFAULT = '🔺🟩🔵'
+
+class SetNode(JOVBaseNode):
+    NAME = "SET (JOV) 🟰"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/FLOW"
-    DESCRIPTION = "Set a value; Get a value"
+    DESCRIPTION = "Set a value"
+    RETURN_TYPES = (WILDCARD,)
+    RETURN_NAMES = (Lexicon.RESULT, )
+
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        d = {"optional": {
+            Lexicon.SETGET: (["SET", "GET"], {"default": "SET"}),
+            Lexicon.KEY: ("STRING", {"default": ""}),
+            Lexicon.VALUE: (WILDCARD, {"default": None}),
+        }}
+        return deep_merge_dict(IT_REQUIRED, d)
+
+    @classmethod
+    def IS_CHANGED(cls, *arg, **kw) -> float:
+        return float("nan")
+
+    def run(self, **kw) -> tuple[bool]:
+        setget = kw[Lexicon.SETGET]
+        key = kw[Lexicon.KEY]
+        val = kw.get(Lexicon.VALUE, None)
+        if setget == "SET":
+            SetGetNode.DATA[key] = val
+            return (val, )
+        if SetGetNode.DATA.get(key, SetGetNode.DEFAULT) == SetGetNode.DEFAULT:
+            SetGetNode.DATA[key] = val
+        return (SetGetNode.DATA[key], )
+
+class GetNode(JOVBaseNode):
+    NAME = "GET (JOV) 🟰"
+    CATEGORY = "JOVIMETRIX 🔺🟩🔵/FLOW"
+    DESCRIPTION = "Get a value"
     RETURN_TYPES = (WILDCARD,)
     RETURN_NAMES = (Lexicon.RESULT, )
 
@@ -204,3 +240,4 @@ class SetGetNode(JOVBaseNode):
         if SetGetNode.DATA.get(key, SetGetNode.DEFAULT) == SetGetNode.DEFAULT:
             SetGetNode.DATA[key] = val
         return (SetGetNode.DATA[key], )
+

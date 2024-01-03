@@ -8,8 +8,8 @@ import * as util from '../core/util.js'
 
 export const SpinnerWidget = (app, inputName, inputData, initial, desc='') => {
     const offset = 4
-    const label_width = 50
-    const widget_padding = 15
+    const label_width = 56
+    const widget_padding = 16
     const widget_padding2 = 2 * widget_padding
     const label_full = widget_padding + label_width
     let isDragging
@@ -38,12 +38,12 @@ export const SpinnerWidget = (app, inputName, inputData, initial, desc='') => {
         ctx.save()
         ctx.beginPath()
         ctx.fillStyle = LiteGraph.WIDGET_BGCOLOR
-        ctx.roundRect(widget_padding, Y, width - widget_padding2, height, 8)
+        ctx.roundRect(widget_padding, Y, width - widget_padding2, height, 4)
         ctx.stroke()
 
         // label
         ctx.fillStyle = LiteGraph.WIDGET_SECONDARY_TEXT_COLOR
-        const label_center = (offset + label_full) / 2 - (inputName.length * 1.5)
+        const label_center = (offset + label_full) / 2 - (inputName.length * 2.5)
         ctx.fillText(inputName, label_center, Y + height / 2 + offset)
         let x = label_full
 
@@ -60,7 +60,7 @@ export const SpinnerWidget = (app, inputName, inputData, initial, desc='') => {
             ctx.fillStyle = LiteGraph.WIDGET_SECONDARY_TEXT_COLOR
             const it = this.value[idx.toString()]
             const text = Number(it).toFixed(Math.min(2, precision)).toString()
-            ctx.fillText(text, x + element_width / 2 - text.length * 1.5, Y + height / 2 + offset)
+            ctx.fillText(text, x + element_width / 2 - text.length * 2.5, Y + height / 2 + offset)
             ctx.restore()
             x += element_width
         }
