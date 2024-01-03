@@ -21,11 +21,10 @@ TAU = math.pi * 2
 # =============================================================================
 
 class EnumProjection(Enum):
-    NORMAL = -1
-    SPHERICAL = 0
-    FISHEYE = 5
-    POLAR = 10
-    PERSPECTIVE = 15
+    PERSPECTIVE = 0
+    POLAR = 5
+    SPHERICAL = 10
+    FISHEYE = 15
 
 # =============================================================================
 

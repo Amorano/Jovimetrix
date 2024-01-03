@@ -772,7 +772,7 @@ IT_PASS_IN = {"optional": {
 }}
 
 IT_WH = {"optional": {
-    Lexicon.WH: ("VEC2", {"default": (512, 512), "min": MIN_IMAGE_SIZE, "max": 8192, "step": 0.005, "label": [Lexicon.W, Lexicon.H]})
+    Lexicon.WH: ("VEC2", {"default": (512, 512), "min": MIN_IMAGE_SIZE, "max": 8192, "step": 1, "label": [Lexicon.W, Lexicon.H]})
 }}
 
 IT_SCALEMODE = {"optional": {

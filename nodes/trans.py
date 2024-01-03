@@ -32,8 +32,8 @@ class TransformNode(JOVImageInOutBaseNode):
                 Lexicon.EDGE: (EnumEdge._member_names_, {"default": EnumEdge.CLIP.name}),
                 Lexicon.MIRROR: (EnumMirrorMode._member_names_, {"default": EnumMirrorMode.NONE.name}),
                 Lexicon.PIVOT: ("VEC2", {"default": (0.5, 0.5), "max": 1, "min": "0", "step": 0.005, "precision": 4, "label": [Lexicon.X, Lexicon.Y]}),
-                Lexicon.TILE: ("VEC2", {"default": (1, 1), "step": 0.125, "min": 1, "label": [Lexicon.X, Lexicon.Y]}),
-                Lexicon.PROJECTION: (EnumProjection._member_names_, {"default": EnumProjection.NORMAL.name}),
+                Lexicon.TILE: ("VEC2", {"default": (1, 1), "step": 1, "min": 1, "label": [Lexicon.X, Lexicon.Y]}),
+                Lexicon.PROJECTION: (EnumProjection._member_names_, {"default": EnumProjection.PERSPECTIVE.name}),
                 Lexicon.TLTR: ("VEC4", {"default": (0, 0, 1, 0), "min": 0, "max": 1, "step": 0.005, "precision": 4, "label": [Lexicon.TOP, Lexicon.LEFT, Lexicon.TOP, Lexicon.RIGHT]}),
                 Lexicon.BLBR: ("VEC4", {"default": (0, 1, 1, 1), "min": 0, "max": 1, "step": 0.005, "precision": 4, "label": [Lexicon.BOTTOM, Lexicon.LEFT, Lexicon.BOTTOM, Lexicon.RIGHT]}),
                 Lexicon.STRENGTH: ("FLOAT", {"default": 1, "min": 0, "precision": 4, "step": 0.005})
@@ -114,7 +114,7 @@ class TransformNode(JOVImageInOutBaseNode):
 
                 # TILE
                 tx, ty = tile_xy
-                if tx > 1 or ty > 1:
+                if (tx := int(tx)) > 1 or (ty := int(ty)) > 1:
                     img = geo_edge_wrap(img, tx - 1, ty - 1)
                     img = geo_scalefit(img, w, h, EnumScaleMode.FIT)
 
