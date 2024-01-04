@@ -12,10 +12,12 @@ from Jovimetrix import MIN_IMAGE_SIZE, zip_longest_fill, \
     IT_PIXELS, IT_PIXEL2, IT_HSV, IT_FLIP, IT_LOHI, IT_LMH, IT_INVERT, IT_CONTRAST, \
     IT_GAMMA, IT_REQUIRED
 
-from Jovimetrix.sup import comp
-from Jovimetrix.sup.image import tensor2cv, cv2tensor, cv2mask
-from Jovimetrix.sup.comp import EnumAdjustOP, EnumThresholdAdapt, EnumThreshold, light_invert
-from Jovimetrix.sup.color import EnumColorMap
+from Jovimetrix.sup.image import tensor2cv, cv2tensor, cv2mask, pixel_convert
+from Jovimetrix.sup.comp import adjust_sharpen, light_invert, morph_edge_detect, morph_emboss,\
+    adjust_posterize, adjust_equalize, adjust_levels, adjust_pixelate, adjust_quantize, adjust_threshold,\
+    light_contrast, light_hsv, light_gamma, \
+    EnumAdjustOP, EnumThresholdAdapt, EnumThreshold
+from Jovimetrix.sup.color import color_match, color_match_custom_map, color_match_heat_map, EnumColorMap
 
 # =============================================================================
 
@@ -75,22 +77,22 @@ class AdjustNode(JOVImageInOutBaseNode):
                     r = min(r, 511)
                     if r % 2 == 0:
                         r += 1
-                    img = comp.adjust_sharpen(img, kernel_size=r, amount=a)
+                    img = adjust_sharpen(img, kernel_size=r, amount=a)
 
                 case EnumAdjustOP.EMBOSS:
-                    img = comp.morph_emboss(img, a, r)
+                    img = morph_emboss(img, a, r)
 
                 case EnumAdjustOP.EQUALIZE:
-                    img = comp.adjust_equalize(img)
+                    img = adjust_equalize(img)
 
                 case EnumAdjustOP.PIXELATE:
-                    img = comp.adjust_pixelate(img, a / 255.)
+                    img = adjust_pixelate(img, a / 255.)
 
                 case EnumAdjustOP.QUANTIZE:
-                    img = comp.adjust_quantize(img, int(a))
+                    img = adjust_quantize(img, int(a))
 
                 case EnumAdjustOP.POSTERIZE:
-                    img = comp.adjust_posterize(img, int(a))
+                    img = adjust_posterize(img, int(a))
 
                 case EnumAdjustOP.OUTLINE:
                     img = cv2.morphologyEx(img, cv2.MORPH_GRADIENT, (r, r))
@@ -108,7 +110,7 @@ class AdjustNode(JOVImageInOutBaseNode):
                     img = cv2.morphologyEx(img, cv2.MORPH_CLOSE, (r, r), iterations=int(a))
 
             if i != 0:
-                img = comp.light_invert(img, i)
+                img = light_invert(img, i)
 
             images.append(cv2tensor(img))
             masks.append(cv2mask(img))
@@ -151,22 +153,22 @@ class ColorMatchNode(JOVImageInOutBaseNode):
 
             a = tensor2cv(a) if a is not None else None
             b = tensor2cv(b) if b is not None else None
-            img, b = comp.pixel_convert(a, b)
+            img, b = pixel_convert(a, b)
 
             if f is not None and f:
                 img, b = b, img
 
             if c == 'NONE':
-                img = comp.color_match(img, b)
+                img = color_match(img, b)
             else:
                 c = EnumColorMap[c].value
                 if t != 0:
-                    img = comp.color_match_heat_map(img, t, c, bl)
+                    img = color_match_heat_map(img, t, c, bl)
                 else:
-                    img = comp.color_match_custom_map(img, colormap=c)
+                    img = color_match_custom_map(img, colormap=c)
 
             if i != 0:
-                img = comp.light_invert(img, i)
+                img = light_invert(img, i)
 
             images.append(cv2tensor(img))
             masks.append(cv2mask(img))
@@ -200,10 +202,10 @@ class FindEdgeNode(JOVImageInOutBaseNode):
                 continue
 
             img = tensor2cv(img)
-            img = comp.morph_edge_detect(img, low=lo, high=hi)
+            img = morph_edge_detect(img, low=lo, high=hi)
 
             if i != 0:
-                img = comp.light_invert(img, i)
+                img = light_invert(img, i)
 
             images.append(cv2tensor(img))
             masks.append(cv2mask(img))
@@ -240,15 +242,15 @@ class HSVNode(JOVImageInOutBaseNode):
                 continue
 
             img = tensor2cv(img)
-            img = comp.light_hsv(img, h, s, v)
+            img = light_hsv(img, h, s, v)
             if c != 0:
-                img = comp.light_contrast(img, 1 - c)
+                img = light_contrast(img, 1 - c)
 
             if g != 0:
-                img = comp.light_gamma(img, g)
+                img = light_gamma(img, g)
 
             if i != 0:
-                img = comp.light_invert(img, i)
+                img = light_invert(img, i)
 
             images.append(cv2tensor(img))
             masks.append(cv2mask(img))
@@ -308,7 +310,7 @@ class ThresholdNode(JOVImageInOutBaseNode):
         d = {"optional": {
                 Lexicon.ADAPT: ( EnumThresholdAdapt._member_names_, {"default": EnumThresholdAdapt.ADAPT_NONE.name}),
                 Lexicon.FUNC: ( EnumThreshold._member_names_, {"default": EnumThreshold.BINARY.name}),
-                Lexicon.THRESHOLD: ("FLOAT", {"default": 0.5, "min": -100, "max": 100, "step": 0.01},),
+                Lexicon.THRESHOLD: ("FLOAT", {"default": 0.5, "min": 0, "max": 1, "step": 0.005},),
                 Lexicon.SIZE: ("INT", {"default": 3, "min": 3, "max": 103, "step": 1},),
             }}
         return deep_merge_dict(IT_REQUIRED, IT_PIXELS, d, IT_INVERT)
@@ -334,9 +336,9 @@ class ThresholdNode(JOVImageInOutBaseNode):
             img = tensor2cv(img)
             o = EnumThreshold[o]
             a = EnumThresholdAdapt[a]
-            img = comp.adjust_threshold(img, threshold=t, mode=o, adapt=a, block=b, const=t)
+            img = adjust_threshold(img, threshold=t, mode=o, adapt=a, block=b, const=t)
             if i != 0:
-                img = comp.light_invert(img, i)
+                img = light_invert(img, i)
 
             images.append(cv2tensor(img))
             masks.append(cv2mask(img))

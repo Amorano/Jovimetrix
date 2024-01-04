@@ -72,7 +72,7 @@ const ext = {
                     this.inputs[slot].name = '*';
                 }
 
-                if (slotType === util.SlotType.Input && isChangeConnect === util.ChangeType.Connect) {
+                if (link_info && slotType === util.SlotType.Input && isChangeConnect === util.ChangeType.Connect) {
                     const fromNode = this.graph._nodes.find((otherNode) => otherNode.id == link_info.origin_id);
                     const type = fromNode.outputs[link_info.origin_slot].type;
                     this.inputs[0].type = type;
