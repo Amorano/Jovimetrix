@@ -122,57 +122,56 @@ def shape_polygon(width: int, height: int, size: float=1., sides: int=3, angle: 
 # =============================================================================
 
 def geo_crop(image: TYPE_IMAGE,
-             left: int=None, top: int=None, right: int=None, bottom: int=None,
+             pnt_a: TYPE_COORD, pnt_b: TYPE_COORD,
+             pnt_c: TYPE_COORD, pnt_d: TYPE_COORD,
              widthT: int=None, heightT: int=None, pad:bool=False,
              color: TYPE_PIXEL=0) -> TYPE_IMAGE:
 
         height, width = image.shape[:2]
-        left = float(np.clip(left or 0, 0, 1))
-        top = float(np.clip(top or 0, 0, 1))
-        right = float(np.clip(right or 1, 0, 1))
-        bottom = float(np.clip(bottom or 1, 0, 1))
 
-        if top > bottom:
-             bottom, top = top, bottom
+        def process_point(pnt) -> TYPE_COORD:
+            x, y = pnt
+            x = np.clip(x, 0, 1) * width
+            y = np.clip(y, 0, 1) * height
+            return x, y
 
-        if left > right:
-             right, left = left, right
+        x1, y1 = process_point(pnt_a)
+        x2, y2 = process_point(pnt_b)
+        x3, y3 = process_point(pnt_c)
+        x4, y4 = process_point(pnt_d)
 
-        mid_x, mid_y = int(width / 2), int(height / 2)
-        cw2 = width * (right - left)
-        ch2 = height * (bottom - top)
-        # have to have a non-zero crop box.
-        y1, y2 = int(max(0, mid_y - ch2)), int(min(mid_y + ch2, height))
-        if y2 - y1 == 0:
-            y2 = y1 + 1
-        x1, x2 = int(max(0, mid_x - cw2)), int(min(mid_x + cw2, width))
-        if x2 - x1 == 0:
-            x2 = x1 + 1
+        x_max = max(x1, x2, x3, x4)
+        x_min = min(x1, x2, x3, x4)
+        y_max = max(y1, y2, y3, y4)
+        y_min = min(y1, y2, y3, y4)
 
-        crop_img = image[y1:y2, x1:x2]
-        widthT = (widthT if widthT is not None else width)
-        heightT = (heightT if heightT is not None else height)
-        if (widthT == width and heightT == height) or not pad:
+        x_start, x_end = int(max(0, x_min)), int(min(width, x_max))
+        y_start, y_end = int(max(0, y_min)), int(min(height, y_max))
+
+        crop_img = image[y_start:y_end, x_start:x_end]
+        widthT = (widthT if widthT is not None else x_end - x_start)
+        heightT = (heightT if heightT is not None else y_end - y_start)
+
+        if not pad or (widthT == x_end - x_start and heightT == y_end - y_start):
             return crop_img
 
         cc = channel_count(image)[0]
+        color = [c for c in color]
+        while len(color) > cc:
+            color.pop(-1)
         img_padded = np.full((heightT, widthT, cc), color, dtype=np.uint8)
-
-        crop_height, crop_width, _ = crop_img.shape
+        crop_height, crop_width = crop_img.shape[:2]
         h2 = heightT // 2
         w2 = widthT // 2
         ch = crop_height // 2
         cw = crop_width // 2
         y_start, y_end = max(0, h2 - ch), min(h2 + ch, heightT)
         x_start, x_end = max(0, w2 - cw), min(w2 + cw, widthT)
-
         y_delta = (y_end - y_start) // 2
         x_delta = (x_end - x_start) // 2
         y_start2, y_end2 = int(max(0, ch - y_delta)), int(min(ch + y_delta, crop_height))
         x_start2, x_end2 = int(max(0, cw - x_delta)), int(min(cw + x_delta, crop_width))
-
         img_padded[y_start:y_end, x_start:x_end] = crop_img[y_start2:y_end2, x_start2:x_end2]
-        # Logger.debug("geo_crop", f"({x_start}, {y_start})-({x_end}, {y_end}) || ({x_start2}, {y_start2})-({x_end2}, {y_end2})")
         return img_padded
 
 def geo_edge_wrap(image: TYPE_IMAGE, tileX: float=1., tileY: float=1., edge: str='WRAP') -> TYPE_IMAGE:

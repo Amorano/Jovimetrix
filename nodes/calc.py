@@ -5,10 +5,8 @@ Calculation
 
 import math
 from enum import Enum
-from typing import Any
 from collections import Counter
 
-import numpy as np
 from scipy.special import gamma
 
 from Jovimetrix import zip_longest_fill, convert_parameter, deep_merge_dict, \

@@ -4,10 +4,9 @@ Animate
 """
 
 import time
-from math import isclose
 
-from Jovimetrix import deep_merge_dict, parse_tuple, parse_number, \
-    Logger, EnumTupleType, JOVBaseNode, Lexicon, \
+from Jovimetrix import deep_merge_dict, \
+    JOVBaseNode, Lexicon, \
     IT_REQUIRED
 
 from Jovimetrix.sup import anim

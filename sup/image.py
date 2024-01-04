@@ -229,7 +229,7 @@ def pixel_eval(color: TYPE_PIXEL,
                 c /= 255.
         return c
 
-    Logger.spam(color, mode, target, crunch)
+    # Logger.debug(color, mode, target, crunch)
 
     # make sure we are an RGBA value already
     if isinstance(color, (float, int)):
@@ -251,7 +251,7 @@ def pixel_eval(color: TYPE_PIXEL,
             return color * 3
         if len(color) < 3:
             color += (255,) * (3 - len(color))
-        return color[::-1]
+        return tuple(color)
 
     elif mode == EnumImageType.RGBA:
         if len(color) == 1:
@@ -409,15 +409,9 @@ def image_rgb_restore(image: TYPE_IMAGE, alpha: TYPE_IMAGE, gray: bool=False) ->
 def image_stack(images: list[TYPE_IMAGE],
                 axis:EnumOrientation=EnumOrientation.HORIZONTAL,
                 stride:Optional[int]=None,
-                color:TYPE_PIXEL=0.,
+                color:TYPE_PIXEL=0,
                 mode:EnumScaleMode=EnumScaleMode.NONE,
                 sample:Image.Resampling=Image.Resampling.LANCZOS) -> TYPE_IMAGE:
-
-    color = (
-        (color[0] if color is not None else 1) * 255,
-        (color[1] if color is not None else 1) * 255,
-        (color[2] if color is not None else 1) * 255
-    )
 
     count = len(images)
 
@@ -428,8 +422,7 @@ def image_stack(images: list[TYPE_IMAGE],
         width = max(width, w)
         height = max(height, h)
 
-    # center = (width // 2, height // 2)
-    images = [channel_fill(i, width, height, color, mode, sample) for i in images]
+    images = [channel_fill(i, width, height, color) for i in images]
 
     match axis:
         case EnumOrientation.GRID:
