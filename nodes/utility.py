@@ -12,10 +12,10 @@ import torch
 import numpy as np
 from PIL import Image
 
-from Jovimetrix import deep_merge_dict, \
-    JOVBaseNode, Logger, Lexicon, \
-    IT_REQUIRED, WILDCARD
-
+from Jovimetrix import Logger
+from Jovimetrix.sup.lexicon import Lexicon
+from Jovimetrix.sup.util import deep_merge_dict
+from Jovimetrix.sup.comfy import JOVBaseNode, IT_REQUIRED, WILDCARD
 from Jovimetrix.sup.image import tensor2pil, pil2tensor
 
 # =============================================================================

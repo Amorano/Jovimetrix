@@ -6,9 +6,13 @@ Adjustment
 import cv2
 import torch
 
-from Jovimetrix import zip_longest_fill, \
-    deep_merge_dict, parse_tuple, parse_number, \
-    JOVImageInOutBaseNode, Lexicon, EnumTupleType, \
+from Jovimetrix import Logger
+from Jovimetrix.sup.lexicon import Lexicon
+
+from Jovimetrix.sup.util import zip_longest_fill, deep_merge_dict, parse_tuple, \
+    parse_number, EnumTupleType
+
+from Jovimetrix.sup.comfy import JOVImageInOutBaseNode, \
     IT_PIXELS, IT_PIXEL2, IT_HSV, IT_FLIP, IT_LOHI, IT_LMH, \
     IT_INVERT, IT_CONTRAST, IT_GAMMA, IT_REQUIRED, MIN_IMAGE_SIZE
 

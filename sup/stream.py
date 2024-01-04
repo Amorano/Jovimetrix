@@ -13,8 +13,9 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import cv2
 import numpy as np
 
-from Jovimetrix import MIN_IMAGE_SIZE, Logger, Singleton
-from Jovimetrix.sup.image import channel_add, image_grid, image_load, tensor2cv
+from Jovimetrix import Logger, Singleton
+from Jovimetrix.sup.comfy import MIN_IMAGE_SIZE
+from Jovimetrix.sup.image import image_grid, image_load
 from Jovimetrix.sup.comp import geo_scalefit, EnumScaleMode, EnumInterpolation
 
 # =============================================================================

@@ -9,6 +9,7 @@ from typing import Optional
 
 import numpy as np
 
+
 __all__ = ["Ease", "Wave"]
 
 HALFPI = math.pi / 2

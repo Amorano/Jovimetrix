@@ -17,9 +17,14 @@ import cv2
 import torch
 import numpy as np
 
-from Jovimetrix import parse_tuple, parse_number, deep_merge_dict, \
-    JOVBaseNode, JOVImageBaseNode, Logger, Lexicon, EnumTupleType, \
-    MIN_IMAGE_SIZE, IT_PIXELS, IT_CAM, IT_REQUIRED, IT_INVERT
+from Jovimetrix import Logger
+from Jovimetrix.sup.lexicon import Lexicon
+
+from Jovimetrix.sup.util import deep_merge_dict, parse_tuple, parse_number, \
+    EnumTupleType
+
+from Jovimetrix.sup.comfy import JOVBaseNode, JOVImageBaseNode, \
+    IT_PIXELS, IT_INVERT, IT_REQUIRED, MIN_IMAGE_SIZE
 
 from Jovimetrix.sup.comp import light_invert, geo_scalefit, \
     EnumInterpolation, EnumScaleMode
@@ -43,6 +48,10 @@ class EnumCanvasOrientation(Enum):
 
 IT_ORIENT = {"optional": {
     Lexicon.ORIENT: (EnumCanvasOrientation._member_names_, {"default": EnumCanvasOrientation.NORMAL.name}),
+}}
+
+IT_CAM = {"optional": {
+    Lexicon.ZOOM: ("FLOAT", {"min": 0, "max": 1, "step": 0.005, "default": 0}),
 }}
 
 # =============================================================================

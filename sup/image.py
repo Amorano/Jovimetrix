@@ -15,8 +15,10 @@ import numpy as np
 import requests
 from PIL import Image, ImageOps, ImageSequence
 
-from Jovimetrix import MIN_IMAGE_SIZE, grid_make, deep_merge_dict, Logger, Lexicon, \
-    IT_WH, TYPE_IMAGE, TYPE_PIXEL
+from Jovimetrix import TYPE_IMAGE, TYPE_PIXEL, Logger
+from Jovimetrix.sup.lexicon import Lexicon
+from Jovimetrix.sup.util import grid_make, deep_merge_dict
+from Jovimetrix.sup.comfy import IT_WH, MIN_IMAGE_SIZE
 
 # =============================================================================
 # === ENUM GLOBALS ===

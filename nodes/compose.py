@@ -7,10 +7,15 @@ import cv2
 import torch
 import numpy as np
 
-from Jovimetrix import IT_PIXEL2, parse_number, parse_tuple, zip_longest_fill, deep_merge_dict, \
-    EnumTupleType, JOVImageInOutBaseNode, Logger, Lexicon, \
-    IT_PIXELS, IT_RGBA, IT_WH, IT_PIXEL_MASK, IT_BBOX, IT_INVERT, \
-    IT_REQUIRED, IT_RGBA_IMAGE, MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, IT_TRS
+from Jovimetrix import Logger
+from Jovimetrix.sup.lexicon import Lexicon
+
+from Jovimetrix.sup.util import parse_number, parse_tuple, zip_longest_fill, deep_merge_dict,\
+    EnumTupleType
+
+from Jovimetrix.sup.comfy import JOVImageInOutBaseNode, \
+    IT_PIXELS, IT_RGBA, IT_WH, IT_PIXEL_MASK, IT_INVERT, \
+    IT_REQUIRED, IT_RGBA_IMAGE, MIN_IMAGE_SIZE, IT_TRS, IT_PIXEL2
 
 from Jovimetrix.sup.comp import geo_rotate, geo_translate, comp_blend, geo_crop, \
     geo_edge_wrap, geo_scalefit, geo_mirror, light_invert, \

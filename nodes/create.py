@@ -9,8 +9,13 @@ import torch
 from PIL import Image, ImageDraw, ImageFont
 import matplotlib.font_manager
 
-from Jovimetrix import deep_merge_dict, parse_tuple, parse_number, \
-    EnumTupleType, JOVBaseNode, JOVImageBaseNode, Logger, Lexicon, \
+from Jovimetrix import Logger
+from Jovimetrix.sup.lexicon import Lexicon
+
+from Jovimetrix.sup.util import deep_merge_dict, parse_tuple, parse_number, \
+    EnumTupleType
+
+from Jovimetrix.sup.comfy import JOVBaseNode, JOVImageBaseNode, \
     IT_PIXELS, IT_RGBA, IT_WH, IT_SCALE, IT_ROT, IT_INVERT, \
     IT_REQUIRED, MIN_IMAGE_SIZE
 
