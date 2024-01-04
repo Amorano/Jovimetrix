@@ -14,7 +14,7 @@ import cv2
 import numpy as np
 
 from Jovimetrix import MIN_IMAGE_SIZE, Logger, Singleton
-from Jovimetrix.sup.image import image_grid, image_load
+from Jovimetrix.sup.image import channel_add, image_grid, image_load, tensor2cv
 from Jovimetrix.sup.comp import geo_scalefit, EnumScaleMode, EnumInterpolation
 
 # =============================================================================
@@ -77,11 +77,7 @@ class MediaStreamBase:
         self.__thread = threading.Thread(target=self.__run, daemon=True)
         self.__thread.start()
 
-    #def run(self) -> tuple[bool, Any]:
-    #    return True, self.__frame
-
     def capture(self) -> None:
-        time.sleep(0.1)
         return True
 
     def __run(self) -> None:
@@ -321,7 +317,7 @@ class MediaStreamDevice(MediaStreamBase):
         val = 255 * self.__focus
         self.__source.set(cv2.CAP_PROP_FOCUS, val)
 
-class MediaStreamComfyUI(MediaStreamBase):
+class MediaStreamStatic(MediaStreamBase):
     """A stream coming from a comfyui node."""
     def __init__(self, url:int|str, width:int=320, height:int=240, fps:float=30,
                  mode:Optional[EnumScaleMode]=EnumScaleMode.FIT,
@@ -333,21 +329,15 @@ class MediaStreamComfyUI(MediaStreamBase):
     def __callback(self) -> tuple[bool, Any]:
         return True, self.image
 
-    def capture(self) -> bool:
-        return True
-
 class MediaStreamFile(MediaStreamBase):
     """A stream coming from a comfyui node."""
     def __init__(self, url:int|str) -> None:
-        self.image = image_load(url)
-        height, width = self.image.shape[:2]
+        self.__image = image_load(url)[0]
+        height, width = self.__image.shape[:2]
         super().__init__(url, self.__callback, width, height)
 
     def __callback(self) -> tuple[bool, Any]:
-        return True, self.image
-
-    def capture(self) -> bool:
-        return True
+        return True, self.__image
 
 class StreamManager(metaclass=Singleton):
     STREAM = {}
@@ -374,18 +364,21 @@ class StreamManager(metaclass=Singleton):
                 backend:int=None, static:bool=False, endpoint:str=None) -> MediaStreamBase:
 
         if (stream := StreamManager.STREAM.get(url, None)) is None:
-            if url.lower().startswith("file://"):
-                Logger.info(f"MediaStreamFile {url}")
-                stream = StreamManager.STREAM[url] = MediaStreamFile(url[7:])
-            elif static:
-                Logger.info(f"MediaStreamComfyUI {url}")
-                stream = StreamManager.STREAM[url] = MediaStreamComfyUI(url, width, height, fps)
-            else:
-                Logger.info(f"MediaStreamDevice {url}")
-                stream = StreamManager.STREAM[url] = MediaStreamDevice(url, width, height, fps, backend=backend)
+            try:
+                if isinstance(url, str) and url.lower().startswith("file://"):
+                    Logger.info(f"MediaStreamFile {url}")
+                    stream = StreamManager.STREAM[url] = MediaStreamFile(url[7:])
+                elif static:
+                    Logger.info(f"MediaStreamStatic {url}")
+                    stream = StreamManager.STREAM[url] = MediaStreamStatic(url, width, height, fps)
+                else:
+                    Logger.info(f"MediaStreamDevice {url}")
+                    stream = StreamManager.STREAM[url] = MediaStreamDevice(url, width, height, fps, backend=backend)
 
-            if endpoint is not None and stream.captured:
-                StreamingServer.endpointAdd(endpoint, stream)
+                if endpoint is not None and stream.captured:
+                    StreamingServer.endpointAdd(endpoint, stream)
+            except Exception as e:
+                Logger.err(str(e))
 
         return stream
 
@@ -483,7 +476,7 @@ def __getattr__(name: str) -> Any:
 
 def streamReadTest() -> None:
     urls = [
-        "file://chiggins.png",
+        "file://z:\chiggins.png",
         0,1,
         "http://63.142.183.154:6103/mjpg/video.mjpg",
         "http://104.207.27.126:8080/mjpg/video.mjpg",
@@ -506,8 +499,8 @@ def streamReadTest() -> None:
     ]
     streamIdx = 0
 
-    widthT = 240
-    heightT = 160
+    widthT = 540
+    heightT = 480
 
     empty = np.zeros((heightT, widthT, 3), dtype=np.uint8)
     try:
@@ -565,6 +558,6 @@ def streamWriteTest() -> None:
         pass
 
 if __name__ == "__main__":
-    # streamReadTest()
+    streamReadTest()
     # streamWriteTest()
     pass

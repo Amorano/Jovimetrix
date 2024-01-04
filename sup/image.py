@@ -347,30 +347,30 @@ def channel_fill(image:TYPE_IMAGE, width:int, height:int, color:TYPE_PIXEL=255) 
 # === IMAGE ===
 # =============================================================================
 
-def image_load_data(data: str) -> tuple[torch.Tensor, torch.Tensor]:
+def image_load_data(data: str) -> TYPE_IMAGE:
     img = ImageOps.exif_transpose(data)
     img = pil2cv(img)
     cc, _, w, h = channel_count(img)
     if cc == 4:
-        alpha = 1. - img[:, :, 3]
-    elif alpha is not None:
-        alpha = np.zeros((h, w), dtype=np.uint8, device="cpu")
-    return img, alpha
+        img[:, :, 3] = 1. - img[:, :, 3]
+    elif cc == 3:
+        img[:, :, 3] = np.zeros((h, w), dtype=np.uint8, device="cpu")
+    return img
 
-def image_load(url: str) -> tuple[list[torch.Tensor], list[torch.Tensor]]:
+def image_load(url: str) -> list[TYPE_IMAGE]:
     images = []
-    masks = []
-    img = Image.open(url)
+    try:
+        img = Image.open(url)
+    except Exception as e:
+        Logger.err(str(e))
+        return images
+
     if img.format == 'PSD':
-        images = [pil2tensor(frame.copy()) for frame in ImageSequence.Iterator(img)]
-        h, w = img.size[:2]
-        masks = [torch.zeros((h, w), dtype=torch.uint8, device="cpu") for _ in range(len(images))]
+        images = [pil2cv(frame.copy()) for frame in ImageSequence.Iterator(img)]
         Logger.debug("load_psd", f"#PSD {len(images)}")
     else:
-        img, alpha = image_load_data(img)
-        images = [pil2tensor(img)]
-        masks = [pil2tensor(alpha)]
-    return (torch.stack(images), torch.stack(masks),)
+        images = [image_load_data(img)]
+    return images
 
 def image_load_from_url(url:str) -> TYPE_IMAGE:
     """Creates a CV2 BGR image from a url."""
@@ -475,10 +475,12 @@ def image_stack(images: list[TYPE_IMAGE],
 def image_grid(data: list[TYPE_IMAGE], width: int, height: int) -> TYPE_IMAGE:
     #@TODO: makes poor assumption all images are the same dimensions.
     chunks, col, row = grid_make(data)
-    frame = np.zeros((height * row, width * col, 3), dtype=np.uint8)
+    frame = np.zeros((height * row, width * col, 4), dtype=np.uint8)
     i = 0
     for y, strip in enumerate(chunks):
         for x, item in enumerate(strip):
+            if channel_count(item)[0] == 3:
+                item = channel_add(item)
             y1, y2 = y * height, (y+1) * height
             x1, x2 = x * width, (x+1) * width
             frame[y1:y2, x1:x2, ] = item
