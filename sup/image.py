@@ -15,7 +15,7 @@ import numpy as np
 import requests
 from PIL import Image, ImageOps, ImageSequence
 
-from Jovimetrix import grid_make, deep_merge_dict, Logger, Lexicon, \
+from Jovimetrix import MIN_IMAGE_SIZE, grid_make, deep_merge_dict, Logger, Lexicon, \
     IT_WH, TYPE_IMAGE, TYPE_PIXEL
 
 # =============================================================================
@@ -350,11 +350,11 @@ def channel_fill(image:TYPE_IMAGE, width:int, height:int, color:TYPE_PIXEL=255) 
 def image_load_data(data: str) -> TYPE_IMAGE:
     img = ImageOps.exif_transpose(data)
     img = pil2cv(img)
-    cc, _, w, h = channel_count(img)
+    cc = channel_count(img)[0]
     if cc == 4:
         img[:, :, 3] = 1. - img[:, :, 3]
     elif cc == 3:
-        img[:, :, 3] = np.zeros((h, w), dtype=np.uint8, device="cpu")
+        img = channel_add(img, 0)
     return img
 
 def image_load(url: str) -> list[TYPE_IMAGE]:
@@ -363,7 +363,7 @@ def image_load(url: str) -> list[TYPE_IMAGE]:
         img = Image.open(url)
     except Exception as e:
         Logger.err(str(e))
-        return images
+        return [np.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 4), dtype=np.uint8)]
 
     if img.format == 'PSD':
         images = [pil2cv(frame.copy()) for frame in ImageSequence.Iterator(img)]

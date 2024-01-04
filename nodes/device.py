@@ -29,7 +29,7 @@ from Jovimetrix.sup.stream import camera_list, StreamingServer, StreamManager
 from Jovimetrix.sup.midi import midi_device_names, \
     MIDIMessage, MIDINoteOnFilter, MIDIServerThread
 
-from Jovimetrix.sup.image import tensor2cv, cv2mask, cv2tensor, IT_SAMPLE, IT_SCALEMODE
+from Jovimetrix.sup.image import channel_count, tensor2cv, cv2mask, cv2tensor, IT_SAMPLE, IT_SCALEMODE
 
 # =============================================================================
 
@@ -106,7 +106,8 @@ class StreamReaderNode(JOVImageBaseNode):
                 self.__capturing = 0
                 self.__url = ""
 
-        # img = None
+        images = []
+        masks = []
         i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1])[0]
         if self.__device:
             self.__capturing = 0
@@ -131,20 +132,24 @@ class StreamReaderNode(JOVImageBaseNode):
             orient = kw.get(Lexicon.ORIENT, EnumCanvasOrientation.NORMAL)
             orient = EnumCanvasOrientation[orient]
             batch_size, rate = parse_tuple(Lexicon.BATCH, kw, default=(1, 30), clip_min=1)[0]
-            images = []
-            masks = []
             rate = 1. / rate
             for idx in range(batch_size):
+                mask = None
                 ret, img = self.__device.frame
                 if img is None:
                     img = np.zeros((height, width, 3), dtype=np.uint8)
 
-                h, w = img.shape[:2]
-                if width != w or height != h:
-                    self.__device.sizer(width, height)
-                    img = geo_scalefit(img, width, height, mode, rs)
-
                 if ret:
+                    cc, _, w, h = channel_count(img)
+                    # drop the alpha?
+                    if cc == 4:
+                        mask = img[:, :, 3]
+                        img = img[:, :, :3]
+
+                    if width != w or height != h:
+                        self.__device.sizer(width, height)
+                        img = geo_scalefit(img, width, height, mode, rs)
+
                     if orient in [EnumCanvasOrientation.FLIPX, EnumCanvasOrientation.FLIPXY]:
                         img = cv2.flip(img, 1)
 
@@ -155,16 +160,19 @@ class StreamReaderNode(JOVImageBaseNode):
                         img = light_invert(img, i)
 
                 images.append(cv2tensor(img))
-                masks.append(cv2mask(img))
+                if mask is None:
+                    mask = np.full((height, width), 255, dtype=np.uint8)
+                masks.append(cv2mask(mask))
+
                 if batch_size > 1:
                     time.sleep(rate)
                     # Logger.debug(idx, rate)
 
-        try:
-            return (torch.stack(images),torch.stack(masks))
-        except:
-            img = torch.zeros((height, width, 3), dtype=torch.uint8, device="cpu")
-            return (torch.stack([img]), torch.stack([img]))
+        if len(images) == 0:
+            images = [torch.zeros((height, width, 3), dtype=torch.uint8, device="cpu")]
+            masks = [torch.full((height, width), 1, dtype=torch.uint8, device="cpu")]
+
+        return (torch.stack(images), torch.stack(masks))
 
 class StreamWriterNode(JOVBaseNode):
     NAME = "STREAM WRITER (JOV) 🎞️"

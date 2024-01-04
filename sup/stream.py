@@ -134,18 +134,15 @@ class MediaStreamBase:
     def end(self) -> None:
         self.release()
         self.__quit = True
-        Logger.warn("MediaStream", f"END [{self.__url}]")
 
     def release(self) -> None:
         self.__captured = False
-        Logger.warn("MediaStream", f"RELEASED [{self.__url}]")
 
     def play(self) -> None:
         self.__paused = False
 
     def pause(self) -> None:
         self.__paused = True
-        Logger.warn("MediaStream", f"PAUSED [{self.__url}]")
 
     def sizer(self, width:int, height:int) -> None:
         self.width = width
@@ -366,19 +363,17 @@ class StreamManager(metaclass=Singleton):
         if (stream := StreamManager.STREAM.get(url, None)) is None:
             try:
                 if isinstance(url, str) and url.lower().startswith("file://"):
-                    Logger.info(f"MediaStreamFile {url}")
                     stream = StreamManager.STREAM[url] = MediaStreamFile(url[7:])
                 elif static:
-                    Logger.info(f"MediaStreamStatic {url}")
                     stream = StreamManager.STREAM[url] = MediaStreamStatic(url, width, height, fps)
                 else:
-                    Logger.info(f"MediaStreamDevice {url}")
                     stream = StreamManager.STREAM[url] = MediaStreamDevice(url, width, height, fps, backend=backend)
 
                 if endpoint is not None and stream.captured:
                     StreamingServer.endpointAdd(endpoint, stream)
+                Logger.info(self, stream, url)
             except Exception as e:
-                Logger.err(str(e))
+                Logger.err(self, str(e))
 
         return stream
 
