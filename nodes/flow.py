@@ -200,11 +200,12 @@ class SetNode(JOVBaseNode):
         key = kw[Lexicon.KEY]
         val = kw.get(Lexicon.VALUE, None)
         if setget == "SET":
-            SetGetNode.DATA[key] = val
+            SetGetData.DATA[key] = val
             return (val, )
-        if SetGetNode.DATA.get(key, SetGetNode.DEFAULT) == SetGetNode.DEFAULT:
-            SetGetNode.DATA[key] = val
-        return (SetGetNode.DATA[key], )
+
+        if SetGetData.DATA.get(key, SetGetData.DEFAULT) == SetGetData.DEFAULT:
+            SetGetData.DATA[key] = val
+        return (SetGetData.DATA[key], )
 
 class GetNode(JOVBaseNode):
     NAME = "GET (JOV) 🟰"
@@ -235,9 +236,8 @@ class GetNode(JOVBaseNode):
         key = kw[Lexicon.KEY]
         val = kw.get(Lexicon.VALUE, None)
         if setget == "SET":
-            SetGetNode.DATA[key] = val
+            SetGetData.DATA[key] = val
             return (val, )
-        if SetGetNode.DATA.get(key, SetGetNode.DEFAULT) == SetGetNode.DEFAULT:
-            SetGetNode.DATA[key] = val
-        return (SetGetNode.DATA[key], )
-
+        if SetGetData.DATA.get(key, SetGetData.DEFAULT) == SetGetData.DEFAULT:
+            SetGetData.DATA[key] = val
+        return (SetGetData.DATA[key], )

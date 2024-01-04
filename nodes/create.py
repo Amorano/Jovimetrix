@@ -9,16 +9,14 @@ import torch
 from PIL import Image, ImageDraw, ImageFont
 import matplotlib.font_manager
 
-from Jovimetrix import pil2tensor, pil2cv, cv2pil, cv2tensor, cv2mask, \
-    deep_merge_dict, parse_tuple, parse_number, b64_2_image, b64_2_tensor, \
+from Jovimetrix import deep_merge_dict, parse_tuple, parse_number, \
     EnumTupleType, JOVBaseNode, JOVImageBaseNode, Logger, Lexicon, \
     IT_PIXELS, IT_RGBA, IT_WH, IT_SCALE, IT_ROT, IT_INVERT, \
-    IT_TIME, IT_WHMODE, IT_REQUIRED, MIN_IMAGE_SIZE
+    IT_REQUIRED, MIN_IMAGE_SIZE
 
-from Jovimetrix.sup.comp import geo_scalefit, shape_ellipse, channel_solid, \
-    shape_polygon, shape_quad, light_invert, image_load_from_url, \
-    EnumImageType, EnumInterpolation, EnumScaleMode, \
-    IT_SAMPLE
+from Jovimetrix.sup.image import pil2tensor, pil2cv, cv2pil, cv2tensor, cv2mask, IT_WHMODE
+from Jovimetrix.sup.comp import shape_ellipse, shape_polygon, shape_quad, \
+    light_invert, EnumScaleMode
 
 FONT_MANAGER = matplotlib.font_manager.FontManager()
 FONTS = {font.name: font.fname for font in FONT_MANAGER.ttflist}
@@ -187,38 +185,3 @@ class GLSLNode(JOVBaseNode):
         #image = Image.new(mode="RGB", size=wh[0])
         #return (pil2tensor(image), pil2mask(image))
         return (pixels, pixels, )
-
-class LoadImageNode(JOVImageBaseNode):
-    NAME = "IMAGE FROM URL (JOV) 📥"
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
-    DESCRIPTION = ""
-    OUTPUT_IS_LIST = (False, False, )
-
-    @classmethod
-    def INPUT_TYPES(cls) -> dict:
-        d =  {"optional": {
-            Lexicon.URL: ("STRING", {"default": "https://images.squarespace-cdn.com/content/v1/600743194a20ea052ee04fbb/9e868816-2c5b-4ba2-b157-9a0911dfc4c2/SNAILS_square3.jpg"}),
-        }}
-        return deep_merge_dict(IT_REQUIRED, d, IT_WHMODE, IT_SAMPLE)
-
-    def __init__(self) -> None:
-        self.__url = None
-        self.__image = None
-
-    def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        url = kw[Lexicon.URL]
-        width, height = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)[0]
-        if self.__url != url:
-            self.__url = url
-            self.__image = image_load_from_url(url)
-
-        image = self.__image
-        if image is None:
-            image = channel_solid(width, height, 0, chan=EnumImageType.RGB)
-        else:
-            mode = kw.get(Lexicon.MODE, EnumScaleMode.NONE)
-            mode = EnumScaleMode[mode]
-            sample = kw.get(Lexicon.SAMPLE, EnumInterpolation.LANCZOS4)
-            sample = EnumInterpolation[sample]
-            image = geo_scalefit(image, width, height, mode, sample)
-        return (cv2tensor(image), cv2mask(image),)

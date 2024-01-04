@@ -12,9 +12,11 @@ import torch
 import numpy as np
 from PIL import Image
 
-from Jovimetrix import pil2tensor, tensor2pil, deep_merge_dict, \
+from Jovimetrix import deep_merge_dict, \
     JOVBaseNode, Logger, Lexicon, \
     IT_REQUIRED, WILDCARD
+
+from Jovimetrix.sup.image import tensor2pil, pil2tensor
 
 # =============================================================================
 
@@ -158,7 +160,7 @@ class ValueGraphNode(JOVBaseNode):
 
     def __plot_parameter(self, data) -> None:
         ys = [data[x] for x in xs]
-        #line = plt.plot(xs, ys, *args, **kargs)
+        #line = plt.plot(xs, ys, *args, **kw)
         line = plt.plot(xs, ys, label=data.label)
         kfx = data.keyframes
         kfy = [data[x] for x in kfx]

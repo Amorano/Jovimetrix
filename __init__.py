@@ -43,17 +43,14 @@ Polygonal shapes, MIDI, MP3/WAVE, Flow Logic
     TickNode, WaveGeneratorNode,
     GraphWaveNode,
     ConversionNode, CalcUnaryOPNode, CalcBinaryOPNode, ValueNode
-    BlendNode, PixelSplitNode, PixelMergeNode, MergeNode, CropNode, ColorTheoryNode,
-    ConstantNode, ShapeNode, TextNode, GLSLNode, LoadImageNode,
+    TransformNode, BlendNode, PixelSplitNode, PixelMergeNode, MergeNode, CropNode, ColorTheoryNode,
+    ConstantNode, ShapeNode, TextNode, GLSLNode,
     StreamReaderNode, StreamWriterNode, MIDIMessageNode, MIDIReaderNode, MIDIFilterEZNode, MIDIFilterNode,
     ComparisonNode, IfThenElseNode, GetNode, SetNode,
-    TransformNode,
     OptionsNode, AkashicNode, ValueGraphNode
 @version: 0.999999999
 """
 
-import base64
-from io import BytesIO
 import os
 import math
 import json
@@ -63,13 +60,10 @@ import importlib
 from enum import Enum
 from pathlib import Path
 from datetime import datetime
-from collections import OrderedDict
 from typing import Any, List, Generator, Optional, Tuple, Union
 
-import cv2
 import torch
 import numpy as np
-from PIL import Image, ImageOps, ImageSequence
 
 try:
     from server import PromptServer
@@ -180,24 +174,6 @@ class Logger(metaclass=Singleton):
             t = datetime.now().strftime('%H:%M:%S.%f')
             who = inspect.currentframe().f_back.f_code.co_name
             cls._raw("\033[48;2;35;87;181;93m", t, who, *arg)
-
-class EnumCanvasOrientation(Enum):
-    NORMAL = 0
-    FLIPX = 1
-    FLIPY = 2
-    FLIPXY = 3
-
-class EnumScaleMode(Enum):
-    NONE = 0
-    FIT = 1
-    CROP = 2
-    ASPECT = 3
-
-class EnumEdge(Enum):
-    CLIP = 1
-    WRAP = 2
-    WRAPX = 3
-    WRAPY = 4
 
 class EnumTupleType(Enum):
     INT = 0
@@ -366,6 +342,7 @@ try:
 
 except Exception as e:
     Logger.err(e)
+
 # =============================================================================
 # == SUPPORT FUNCTIONS
 # =============================================================================
@@ -387,7 +364,7 @@ def convert_parameter(data: Any) -> Any:
         try:
             v = float(v)
         except Exception as e:
-            Logger.debug(str(e))
+            Logger.err(str(e))
             v = 0
         typ.append(t)
         val.append(v)
@@ -577,174 +554,6 @@ def grid_make(data: List[Any]) -> Tuple[List[List[Any]], int, int]:
     return ret, cols, rows
 
 # =============================================================================
-# === IMAGE I/O ===
-# =============================================================================
-
-def load_image(fp, white_bg=False) -> list:
-    im = Image.open(fp)
-    im = ImageOps.exif_transpose(im)
-    ims=[im]
-
-    images=[]
-    for i in ims:
-        image = i.convert("RGB")
-        image = np.array(image).astype(np.float32) / 255.0
-        image = torch.from_numpy(image)[None,]
-        if 'A' in i.getbands():
-            mask = np.array(i.getchannel('A')).astype(np.float32) / 255.0
-            mask = 1. - torch.from_numpy(mask)
-            if white_bg==True:
-                nw = mask.unsqueeze(0).unsqueeze(-1).repeat(1, 1, 1, 3)
-                image[nw == 1] = 1.0
-        else:
-            mask = torch.zeros((64,64), dtype=torch.float32, device="cpu")
-
-        images.append({
-            "image":image,
-            "mask":mask
-        })
-
-    return images
-
-def b64_2_tensor(image_base64: str) -> tuple[torch.Tensor, torch.Tensor]:
-    image = base64.b64decode(image_base64)
-    i = Image.open(BytesIO(image))
-    i = ImageOps.exif_transpose(i)
-    image = i.convert("RGB")
-    image = np.array(image).astype(np.float32) / 255.0
-    image = torch.from_numpy(image)[None,]
-    if "A" in i.getbands():
-        mask = np.array(i.getchannel("A")).astype(np.float32) / 255.0
-        mask = 1.0 - torch.from_numpy(mask)
-    else:
-        mask = torch.zeros((64, 64), dtype=torch.float32, device="cpu")
-    return (image, mask)
-
-def b64_2_image(image_base64: str) -> Image:
-    return Image.open(BytesIO(base64.b64decode(image_base64.split(",", 1)[0])))
-
-def load_psd(image) -> list:
-    layers=[]
-    Logger.debug("load_psd", f"{image.format}")
-    if image.format=='PSD':
-        layers = [frame.copy() for frame in ImageSequence.Iterator(image)]
-        Logger.debug("load_psd", f"#PSD {len(layers)}")
-    else:
-        image = ImageOps.exif_transpose(image)
-
-    layers.append(image)
-    return layers
-
-# =============================================================================
-# === MATRIX SUPPORT ===
-# =============================================================================
-
-def tensor2pil(tensor: torch.Tensor) -> Image.Image:
-    """Convert a torch Tensor to a PIL Image."""
-    tensor = np.clip(255 * tensor.cpu().numpy().squeeze(), 0, 255).astype(np.uint8)
-    if len(tensor.shape) == 2:
-        return Image.fromarray(tensor, mode='L')
-    elif len(tensor.shape) == 3 and tensor.shape[2] == 3:
-        return Image.fromarray(tensor, mode='RGB')
-    elif len(tensor.shape) == 3 and tensor.shape[2] == 4:
-        return Image.fromarray(tensor, mode='RGBA')
-
-def tensor2cv(tensor: torch.Tensor) -> TYPE_IMAGE:
-    """Convert a torch Tensor to a CV2 Matrix."""
-    tensor = np.clip(255 * tensor.cpu().numpy().squeeze(), 0, 255).astype(np.uint8)
-    if len(tensor.shape) == 2:
-        return cv2.cvtColor(tensor, cv2.COLOR_GRAY2BGR)
-    elif len(tensor.shape) == 3 and tensor.shape[2] == 3:
-        return cv2.cvtColor(tensor, cv2.COLOR_RGB2BGR)
-    elif len(tensor.shape) == 3 and tensor.shape[2] == 4:
-        return cv2.cvtColor(tensor, cv2.COLOR_RGBA2BGRA)
-
-def tensor2mask(tensor: torch.Tensor) -> TYPE_IMAGE:
-    """Convert a torch Tensor to a Mask as a CV2 Matrix."""
-    tensor = np.clip(255 * tensor.cpu().numpy().squeeze(), 0, 255).astype(np.uint8)
-    return tensor
-
-def tensor2np(tensor: torch.Tensor) -> TYPE_IMAGE:
-    """Convert a torch Tensor to a Numpy Array."""
-    tensor = np.clip(255 * tensor.cpu().numpy().squeeze(), 0, 255).astype(np.uint8)
-    return tensor
-
-def mask2cv(mask: torch.Tensor) -> TYPE_IMAGE:
-    """Convert a torch Tensor (Mask) to a CV2 Matrix."""
-    tensor = np.clip(255 * mask.cpu().numpy().squeeze(), 0, 255).astype(np.uint8)
-    return cv2.cvtColor(tensor, cv2.COLOR_GRAY2BGR)
-
-def mask2pil(mask: torch.Tensor) -> Image.Image:
-    """Convert a torch Tensor (Mask) to a PIL Image."""
-    tensor = np.clip(255 * mask.cpu().numpy().squeeze(), 0, 255).astype(np.uint8)
-    return Image.fromarray(tensor, mode='L')
-
-def pil2tensor(image: Image.Image) -> torch.Tensor:
-    """Convert a PIL Image to a Torch Tensor."""
-    return torch.from_numpy(np.array(image).astype(np.float32) / 255.0).unsqueeze(0)
-
-def pil2cv(image: Image.Image) -> TYPE_IMAGE:
-    """Convert a PIL Image to a CV2 Matrix."""
-    if image.mode == 'RGBA':
-        return cv2.cvtColor(np.array(image), cv2.COLOR_RGBA2BGRA)
-    return cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
-
-def pil2mask(image: Image.Image) -> torch.Tensor:
-    """Convert a PIL Image to a Torch Tensor (Mask)."""
-    return torch.from_numpy(np.array(image.convert("L")).astype(np.float32) / 255.0).unsqueeze(0)
-
-def cv2tensor(image: TYPE_IMAGE) -> torch.Tensor:
-    """Convert a CV2 Matrix to a Torch Tensor."""
-    if len(image.shape) == 2:
-        # Grayscale image
-        image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB).astype(np.float32)
-    elif len(image.shape) == 3 and image.shape[2] == 1:
-        # Grayscale image with an extra channel
-        image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB).astype(np.float32)
-    elif len(image.shape) > 2 and image.shape[2] > 3:
-        # RGBA image
-        image = cv2.cvtColor(image, cv2.COLOR_BGRA2RGBA).astype(np.float32)
-    else:
-        # RGB image
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB).astype(np.float32)
-    return torch.from_numpy(image / 255.0).unsqueeze(0)
-
-def cv2mask(image: TYPE_IMAGE) -> torch.Tensor:
-    """Convert a CV2 Matrix to a Torch Tensor (Mask)."""
-    if len(image.shape) == 2:
-        # Grayscale image
-        return torch.from_numpy(image / 255.0).unsqueeze(0).unsqueeze(0)
-    elif len(image.shape) == 3 and image.shape[2] == 1:
-        # Grayscale image with an extra channel
-        return torch.from_numpy(image / 255.0).unsqueeze(0)
-    elif len(image.shape) == 3 and image.shape[2] == 3:
-        # RGB image
-        gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY).astype(np.float32)
-        return torch.from_numpy(gray_image / 255.0).unsqueeze(0).unsqueeze(0)
-    elif len(image.shape) == 3 and image.shape[2] == 4:
-        # RGBA image
-        gray_image = cv2.cvtColor(image, cv2.COLOR_BGRA2GRAY).astype(np.float32)
-        return torch.from_numpy(gray_image / 255.0).unsqueeze(0).unsqueeze(0)
-    else:
-        raise ValueError("Unsupported image format")
-
-def cv2pil(image: TYPE_IMAGE) -> Image.Image:
-    """Convert a CV2 Matrix to a PIL Image."""
-    if len(image.shape) == 2:
-        # Grayscale image
-        return Image.fromarray(image, mode='L')
-    elif len(image.shape) == 3:
-        if image.shape[2] == 3:
-            # RGB image
-            return Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
-        elif image.shape[2] == 4:
-            # RGBA image
-            return Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGRA2RGBA))
-
-    # Default: return as-is
-    return Image.fromarray(image)
-
-# =============================================================================
 # === GLOBALS ===
 # =============================================================================
 
@@ -773,10 +582,6 @@ IT_PASS_IN = {"optional": {
 
 IT_WH = {"optional": {
     Lexicon.WH: ("VEC2", {"default": (512, 512), "min": MIN_IMAGE_SIZE, "max": 8192, "step": 1, "label": [Lexicon.W, Lexicon.H]})
-}}
-
-IT_SCALEMODE = {"optional": {
-    Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
 }}
 
 IT_TRANS = {"optional": {
@@ -864,16 +669,11 @@ IT_TIME = {"optional": {
     Lexicon.TIME: ("FLOAT", {"default": 0, "min": 0, "step": 0.000001, "precision": 6})
 }}
 
-IT_ORIENT = {"optional": {
-    Lexicon.ORIENT: (EnumCanvasOrientation._member_names_, {"default": EnumCanvasOrientation.NORMAL.name}),
-}}
-
 IT_CAM = {"optional": {
     Lexicon.ZOOM: ("FLOAT", {"min": 0, "max": 1, "step": 0.005, "default": 0}),
 }}
 
 IT_TRS = deep_merge_dict(IT_TRANS, IT_ROT, IT_SCALE)
-IT_WHMODE = deep_merge_dict(IT_WH, IT_SCALEMODE)
 
 session = Session()
 

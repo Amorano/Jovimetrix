@@ -14,7 +14,8 @@ import cv2
 import numpy as np
 
 from Jovimetrix import MIN_IMAGE_SIZE, Logger, Singleton
-from Jovimetrix.sup.comp import geo_scalefit, image_grid, EnumScaleMode, EnumInterpolation
+from Jovimetrix.sup.image import image_grid, image_load
+from Jovimetrix.sup.comp import geo_scalefit, EnumScaleMode, EnumInterpolation
 
 # =============================================================================
 
@@ -32,6 +33,20 @@ except: pass
 # =============================================================================
 # === MEDIA ===
 # =============================================================================
+
+def camera_list() -> list:
+    camera_list = []
+    failed = 0
+    idx = 0
+    while failed < 2:
+        cap = cv2.VideoCapture(idx)
+        if cap.isOpened():
+            camera_list.append(idx)
+            cap.release()
+        else:
+            failed += 1
+        idx += 1
+    return camera_list
 
 class MediaStreamBase:
 
@@ -52,6 +67,7 @@ class MediaStreamBase:
         self.__url = url
         try: self.__url = int(url)
         except: pass
+        self.__zoom = 0
 
         self.width = width
         self.height = height
@@ -190,7 +206,15 @@ class MediaStreamBase:
     @fps.setter
     def fps(self, val: float) -> None:
         self.__fps = max(1, val)
-        Logger.debug("MediaStream", f"FPS ({val}) [{self.url}]")
+        # Logger.debug("MediaStream", f"FPS ({val}) [{self.url}]")
+
+    @property
+    def zoom(self) -> float:
+        return self.__zoom
+
+    @zoom.setter
+    def zoom(self, val: float) -> None:
+        self.__zoom = val
 
 class MediaStreamDevice(MediaStreamBase):
     TIMEOUT = 5.
@@ -201,7 +225,6 @@ class MediaStreamDevice(MediaStreamBase):
 
         self.__source = None
         self.__backend = [backend] if backend else [cv2.CAP_ANY]
-        self.__zoom = 0
         self.__focus = 0
         self.__exposure = 1
         super().__init__(url, self.__callback, width, height, fps, mode, sample)
@@ -240,7 +263,7 @@ class MediaStreamDevice(MediaStreamBase):
                 self.__source = cv2.VideoCapture(self.url, x)
                 if self.captured:
                     # __source.getBackendName()
-                    Logger.debug(f"CAPTURED {self.url}")
+                    Logger.info(f"CAPTURED {self.url}")
                     time.sleep(0.4)
                     return True
         return False
@@ -270,16 +293,12 @@ class MediaStreamDevice(MediaStreamBase):
             self.__source.release()
         super().release()
 
-    @property
-    def zoom(self) -> float:
-        return self.__zoom
-
-    @zoom.setter
+    @MediaStreamBase.zoom.setter
     def zoom(self, val: float) -> None:
         self.__zoom = np.clip(val, 0, 1)
         val = 100 + 300 * self.__zoom
         self.__source.set(cv2.CAP_PROP_ZOOM, val)
-        Logger.debug("MediaStream", f"ZOOM ({self.__zoom})")
+        # Logger.debug("MediaStream", f"ZOOM ({self.__zoom})")
 
     @property
     def exposure(self) -> float:
@@ -304,15 +323,28 @@ class MediaStreamDevice(MediaStreamBase):
 
 class MediaStreamComfyUI(MediaStreamBase):
     """A stream coming from a comfyui node."""
-    def __init__(self, url:int|str, *arg, **kw) -> None:
+    def __init__(self, url:int|str, width:int=320, height:int=240, fps:float=30,
+                 mode:Optional[EnumScaleMode]=EnumScaleMode.FIT,
+                 sample:Optional[EnumInterpolation]=EnumInterpolation.LANCZOS4) -> None:
+
         self.image = None
-        super().__init__(url, self.__callback, *arg, **kw)
+        super().__init__(url, self.__callback, width, height, fps, mode, sample)
 
     def __callback(self) -> tuple[bool, Any]:
         return True, self.image
 
-    #def run(self, image: cv2.Mat) -> tuple[bool, cv2.Mat]:
-    #    return True, image
+    def capture(self) -> bool:
+        return True
+
+class MediaStreamFile(MediaStreamBase):
+    """A stream coming from a comfyui node."""
+    def __init__(self, url:int|str) -> None:
+        self.image = image_load(url)
+        height, width = self.image.shape[:2]
+        super().__init__(url, self.__callback, width, height)
+
+    def __callback(self) -> tuple[bool, Any]:
+        return True, self.image
 
     def capture(self) -> bool:
         return True
@@ -342,17 +374,19 @@ class StreamManager(metaclass=Singleton):
                 backend:int=None, static:bool=False, endpoint:str=None) -> MediaStreamBase:
 
         if (stream := StreamManager.STREAM.get(url, None)) is None:
-            if static:
-                stream = StreamManager.STREAM[url] = MediaStreamComfyUI(url, None, width, height, fps)
-                Logger.debug(f"MediaStreamComfyUI {url}")
+            if url.lower().startswith("file://"):
+                Logger.info(f"MediaStreamFile {url}")
+                stream = StreamManager.STREAM[url] = MediaStreamFile(url[7:])
+            elif static:
+                Logger.info(f"MediaStreamComfyUI {url}")
+                stream = StreamManager.STREAM[url] = MediaStreamComfyUI(url, width, height, fps)
             else:
+                Logger.info(f"MediaStreamDevice {url}")
                 stream = StreamManager.STREAM[url] = MediaStreamDevice(url, width, height, fps, backend=backend)
-                Logger.debug(f"MediaStream {url}")
 
             if endpoint is not None and stream.captured:
                 StreamingServer.endpointAdd(endpoint, stream)
 
-        # stream.capture()
         return stream
 
     def pause(self, url: str) -> None:
@@ -411,7 +445,7 @@ class StreamingServer(metaclass=Singleton):
     @classmethod
     def endpointAdd(cls, name: str, stream: MediaStreamDevice) -> None:
         StreamingServer.OUT[name] = {'_': stream, 'b': None}
-        Logger.debug(f"ENDPOINT_ADD ({name})")
+        Logger.info(f"ENDPOINT_ADD ({name})")
 
     def __init__(self, host: str='', port: int=7227) -> None:
         self.__host = host
@@ -449,6 +483,7 @@ def __getattr__(name: str) -> Any:
 
 def streamReadTest() -> None:
     urls = [
+        "file://chiggins.png",
         0,1,
         "http://63.142.183.154:6103/mjpg/video.mjpg",
         "http://104.207.27.126:8080/mjpg/video.mjpg",
@@ -531,4 +566,5 @@ def streamWriteTest() -> None:
 
 if __name__ == "__main__":
     # streamReadTest()
-    streamWriteTest()
+    # streamWriteTest()
+    pass

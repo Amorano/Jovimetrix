@@ -25,6 +25,7 @@ class Lexicon:
     C3 = '🟣'
     C4 = '⚫️'
     C5 = '⚪'
+    CAMERA = '📹'
     CHANNEL = '📺'
     CLEAR = '🧹'
     COLORMAP = '🇸🇨'

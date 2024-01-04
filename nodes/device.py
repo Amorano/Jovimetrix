@@ -9,92 +9,41 @@ Device -- MIDI, WEBCAM
 
 import time
 import uuid
-import threading
 from math import isclose
+from queue import Queue
 from enum import Enum
-from queue import Queue, Empty
 
 import cv2
 import torch
 import numpy as np
 
-from Jovimetrix import EnumCanvasOrientation, parse_tuple, parse_number, deep_merge_dict, tensor2cv, \
-    cv2mask, cv2tensor, zip_longest_fill, \
-    JOVBaseNode, JOVImageBaseNode, JOVImageInOutBaseNode, Logger, Lexicon, \
-    EnumTupleType, IT_SCALEMODE, \
-    MIN_IMAGE_SIZE, IT_PIXELS, IT_ORIENT, IT_CAM, IT_WHMODE, IT_REQUIRED, IT_INVERT
+from Jovimetrix import parse_tuple, parse_number, deep_merge_dict, \
+    JOVBaseNode, JOVImageBaseNode, Logger, Lexicon, EnumTupleType, \
+    MIN_IMAGE_SIZE, IT_PIXELS, IT_CAM, IT_REQUIRED, IT_INVERT
 
-from Jovimetrix.sup.comp import image_grid, light_invert, geo_scalefit, \
-    EnumInterpolation, EnumScaleMode, \
-    IT_SAMPLE
-from Jovimetrix.sup.stream import MediaStreamBase, MediaStreamDevice, StreamingServer, StreamManager
+from Jovimetrix.sup.comp import light_invert, geo_scalefit, \
+    EnumInterpolation, EnumScaleMode
 
-try:
-    import mido
-    from mido import Message, MetaMessage, MidiFile, MidiTrack, bpm2tempo, second2tick
-except:
-    Logger.warn("MISSING MIDI SUPPORT")
+from Jovimetrix.sup.stream import camera_list, StreamingServer, StreamManager
 
-def save_midi() -> None:
-    mid = MidiFile()
-    track = MidiTrack()
-    mid.tracks.append(track)
+from Jovimetrix.sup.midi import midi_device_names, \
+    MIDIMessage, MIDINoteOnFilter, MIDIServerThread
 
-    track.append(MetaMessage('key_signature', key='Dm'))
-    track.append(MetaMessage('set_tempo', tempo=bpm2tempo(120)))
-    track.append(MetaMessage('time_signature', numerator=6, denominator=8))
+from Jovimetrix.sup.image import tensor2cv, cv2mask, cv2tensor, IT_SAMPLE, IT_SCALEMODE
 
-    track.append(Message('program_change', program=12, time=10))
-    track.append(Message('note_on', channel=2, note=60, velocity=64, time=1))
-    track.append(Message('note_off', channel=2, note=60, velocity=100, time=2))
+# =============================================================================
 
-    track.append(MetaMessage('end_of_track'))
-    mid.save('new_song.mid')
+class EnumCanvasOrientation(Enum):
+    NORMAL = 0
+    FLIPX = 1
+    FLIPY = 2
+    FLIPXY = 3
 
-def load_midi(fn) -> None:
-    mid = MidiFile(fn, clip=True)
-    Logger.debug(mid)
-    for msg in mid.tracks[0]:
-        Logger.debug(msg)
+# =============================================================================
 
-class MIDIServerThread(threading.Thread):
-    def __init__(self, q_in, device, callback, *arg, **kw) -> None:
-        super().__init__(*arg, **kw)
-        self.__q_in = q_in
-        # self.__q_out = q_out
-        self.__device = device
-        self.__callback = callback
-
-    def __run(self) -> None:
-        with mido.open_input(self.__device, callback=self.__callback) as inport:
-            while True:
-                try:
-                    cmd = self.__q_in.get_nowait()
-                    if (cmd):
-                        self.__device = cmd
-                        break
-                except Empty as _:
-                    time.sleep(0.01)
-                except Exception as e:
-                    Logger.debug(str(e))
-
-    def run(self) -> None:
-        while True:
-            Logger.debug(f"started device loop {self.__device}")
-            try:
-                self.__run()
-            except Exception as e:
-                if self.__device is None:
-                    try:
-                        cmd = self.__q_in.get_nowait()
-                        if (cmd):
-                            self.__device = cmd
-                            break
-                    except Empty as _:
-                        time.sleep(0.01)
-                    except Exception as e:
-                        Logger.debug(str(e))
-                Logger.err(str(e))
+IT_ORIENT = {"optional": {
+    Lexicon.ORIENT: (EnumCanvasOrientation._member_names_, {"default": EnumCanvasOrientation.NORMAL.name}),
+}}
 
 # =============================================================================
 
@@ -104,11 +53,16 @@ class StreamReaderNode(JOVImageBaseNode):
     DESCRIPTION = ""
     OUTPUT_IS_LIST = (True, True, )
     SORT = 50
+    CAMERA_LIST = None
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
+        if cls.CAMERA_LIST is None:
+            cls.CAMERA_LIST = camera_list()
+        default = cls.CAMERA_LIST[0] if len(cls.CAMERA_LIST) > 0 else "NONE"
         d = {"optional": {
-            Lexicon.URL: ("STRING", {"default": "0"}),
+            Lexicon.URL: ("STRING", {"default": ""}),
+            Lexicon.CAMERA: (cls.CAMERA_LIST, {"default": default}),
             Lexicon.FPS: ("INT", {"min": 1, "max": 60, "default": 30}),
             Lexicon.WAIT: ("BOOLEAN", {"default": False}),
             Lexicon.WH: ("VEC2", {"default": (320, 240), "min": MIN_IMAGE_SIZE, "max": 8192, "step": 1, "label": [Lexicon.W, Lexicon.H]}),
@@ -121,12 +75,19 @@ class StreamReaderNode(JOVImageBaseNode):
         return float("nan")
 
     def __init__(self) -> None:
-        self.__device:[MediaStreamBase|MediaStreamDevice] = None
+        self.__device = None
         self.__url = ""
         self.__capturing = 0
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         url = kw.get(Lexicon.URL, "")
+        if url == "":
+            url = kw.get(Lexicon.CAMERA, None)
+            try:
+                _ = int(url)
+                url = str(url)
+            except: url = ""
+
         width, height = parse_tuple(Lexicon.WH, kw, default=(320, 240,), clip_min=MIN_IMAGE_SIZE)[0]
 
         if self.__capturing == 0 and (self.__device is None or url != self.__url):
@@ -140,7 +101,7 @@ class StreamReaderNode(JOVImageBaseNode):
 
         if self.__capturing > 0:
             # timeout and try again?
-            if time.perf_counter() - self.__capturing > 5000:
+            if time.perf_counter() - self.__capturing > 3000:
                 Logger.err(f'timed out trying to access route or device {self.__url}')
                 self.__capturing = 0
                 self.__url = ""
@@ -184,10 +145,10 @@ class StreamReaderNode(JOVImageBaseNode):
                     img = geo_scalefit(img, width, height, mode, rs)
 
                 if ret:
-                    if orient in ["FLIPX", "FLIPXY"]:
+                    if orient in [EnumCanvasOrientation.FLIPX, EnumCanvasOrientation.FLIPXY]:
                         img = cv2.flip(img, 1)
 
-                    if orient in ["FLIPY", "FLIPXY"]:
+                    if orient in [EnumCanvasOrientation.FLIPY, EnumCanvasOrientation.FLIPXY]:
                         img = cv2.flip(img, 0)
 
                     if i != 0:
@@ -197,12 +158,12 @@ class StreamReaderNode(JOVImageBaseNode):
                 masks.append(cv2mask(img))
                 if batch_size > 1:
                     time.sleep(rate)
-                    Logger.debug(idx, rate)
+                    # Logger.debug(idx, rate)
 
         try:
             return (torch.stack(images),torch.stack(masks))
         except:
-            img = torch.zeros((h, w, 3), dtype=torch.uint8)
+            img = torch.zeros((height, width, 3), dtype=torch.uint8, device="cpu")
             return (torch.stack([img]), torch.stack([img]))
 
 class StreamWriterNode(JOVBaseNode):
@@ -251,7 +212,7 @@ class StreamWriterNode(JOVBaseNode):
             StreamingServer().endpointAdd(route, self.__device)
             StreamWriterNode.OUT_MAP[route] = self.__device
             self.__route = route
-            Logger.debug(self, "START", route)
+            # Logger.debug(self, "START", route)
 
         self.__starting = False
         if self.__device is not None:
@@ -266,23 +227,6 @@ class StreamWriterNode(JOVBaseNode):
             img = geo_scalefit(img, w, h, mode, rs)
             self.__device.image = img
         return ()
-
-class MIDIMessage:
-    """Snap shot of a message from Midi device."""
-    def __init__(self, note_on, channel, control, note, value) -> None:
-        self.note_on = note_on
-        self.channel = channel
-        self.control = control
-        self.note = note
-        self.value = value
-        self.normal = value / 127.
-
-    @property
-    def flat(self) -> tuple[bool, int, int, int, float, float]:
-        return (self.note_on, self.channel, self.control, self.note, self.value, self.normal,)
-
-    def __str__(self) -> str:
-        return f"{self.note_on}, {self.channel}, {self.control}, {self.note}, {self.value}, {self.normal}"
 
 class MIDIMessageNode(JOVBaseNode):
     NAME = "MIDI MESSAGE (JOV) 🎛️"
@@ -313,11 +257,10 @@ class MIDIReaderNode(JOVBaseNode):
     RETURN_TYPES = ('JMIDIMSG', 'BOOLEAN', 'INT', 'INT', 'INT', 'FLOAT', 'FLOAT',)
     RETURN_NAMES = (Lexicon.MIDI, Lexicon.ON, Lexicon.CHANNEL, Lexicon.CONTROL, Lexicon.NOTE, Lexicon.AMT, Lexicon.NORMALIZE,)
     SORT = 5
-    DEVICES = mido.get_input_names()
+    DEVICES = midi_device_names()
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        data = mido.get_input_names()
         d = {"optional": {
             Lexicon.DEVICE : (cls.DEVICES, {"default": cls.DEVICES[0] if len(cls.DEVICES) > 0 else None})
         }}
@@ -336,7 +279,7 @@ class MIDIReaderNode(JOVBaseNode):
         self.__channel = 0
         self.__control = 0
         self.__value = 0
-        MIDIReaderNode.DEVICES = mido.get_input_names()
+        MIDIReaderNode.DEVICES = midi_device_names()
         self.__SERVER = MIDIServerThread(self.__q_in, self.__device, self.__process, daemon=True)
         self.__SERVER.start()
 
@@ -374,11 +317,6 @@ class MIDIReaderNode(JOVBaseNode):
         msg = MIDIMessage(self.__note_on, self.__channel, self.__control, self.__note, self.__value)
         return (msg, self.__note_on, self.__channel, self.__control, self.__note, self.__value, normalize,  )
 
-class MIDINoteOnFilter(Enum):
-    FALSE = 0
-    TRUE = 1
-    IGNORE = -1
-
 class MIDIFilterEZNode(JOVBaseNode):
     NAME = "MIDI FILTER EZ ❇️"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/DEVICE"
@@ -405,7 +343,7 @@ class MIDIFilterEZNode(JOVBaseNode):
     def run(self, **kw) -> tuple[bool]:
         message = kw.get(Lexicon.MIDI, None)
         if message is None:
-            Logger.debug('no midi message. connected?')
+            Logger.warn('no midi message. connected?')
             return (message, False, )
 
         # empty values mean pass-thru (no filter)
@@ -488,7 +426,7 @@ class MIDIFilterNode(JOVBaseNode):
     def run(self, **kw) -> tuple[bool]:
         message = kw.get(Lexicon.MIDI, None)
         if message is None:
-            Logger.debug('no midi message. connected?')
+            Logger.warn('no midi message. connected?')
             return (message, False, )
 
         # empty values mean pass-thru (no filter)
@@ -508,41 +446,3 @@ class MIDIFilterNode(JOVBaseNode):
         if self.__filter(kw[Lexicon.NORMALIZE], message.normal) == False:
             return (message, False, )
         return (message, True, )
-
-# =============================================================================
-# === TESTING ===
-# =============================================================================
-
-if __name__ == "__main__":
-
-    def process(data) -> None:
-        channel = data.channel
-        note = 0
-        control = 0
-        note_on = False
-        match data.type:
-            case "control_change":
-                # control=8 value=14 time=0
-                control = data.control
-                value = data.value
-            case "note_on":
-                note = data.note
-                note_on = True
-                value = data.velocity
-                # note=59 velocity=0 time=0
-            case "note_off":
-                note = data.note
-                value = data.velocity
-                # note=59 velocity=0 time=0
-
-        value /= 127.
-        Logger.debug(note_on, channel, control, note, value)
-
-    device= mido.get_input_names()[0]
-    Logger.debug(device)
-    q_in = Queue()
-    q_out = Queue()
-    server = MIDIServerThread(q_in, device, process, daemon=True)
-    server.start()
-    while True:
-        time.sleep(0.01)

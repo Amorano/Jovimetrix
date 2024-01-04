@@ -3,6 +3,7 @@ numpy
 matplotlib
 opencv-python<=4.8.1.78
 ffmpeg-python
+librosa
 requests
 Pillow
 scikit-image

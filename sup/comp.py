@@ -3,55 +3,26 @@ Jovimetrix - http://www.github.com/amorano/jovimetrix
 Composition Support
 """
 
-import math
-import urllib
 from enum import Enum
 from typing import Optional
 
 import cv2
 import torch
 import numpy as np
-import requests
-from skimage import exposure
 from scipy.ndimage import rotate
 from blendmodes.blend import blendLayers, BlendType
 from PIL import Image, ImageDraw
 
-from Jovimetrix import grid_make, cv2pil, pil2cv, \
-    Logger, Lexicon, \
-    TYPE_IMAGE, TYPE_PIXEL, TYPE_COORD
+from Jovimetrix import Logger, TYPE_IMAGE, TYPE_PIXEL, TYPE_COORD
 
-HALFPI = math.pi / 2
-TAU = math.pi * 2
+from Jovimetrix.sup.image import image_rgb_clean, image_rgb_restore, \
+    image_grayscale, image_split, image_merge, channel_count, channel_add, \
+    channel_solid, cv2pil, pil2cv, channel_fill, pixel_eval, \
+    EnumImageType, EnumScaleMode, EnumInterpolation
 
 # =============================================================================
 # === ENUM GLOBALS ===
 # =============================================================================
-
-class EnumGrayscaleCrunch(Enum):
-    LOW = 0
-    HIGH = 1
-    MEAN = 2
-
-class EnumIntFloat(Enum):
-    FLOAT = 0
-    INT = 1
-
-class EnumImageType(Enum):
-    GRAYSCALE = 0
-    RGB = 1
-    RGBA = 2
-
-class EnumScaleMode(Enum):
-    NONE = 0
-    FIT = 1
-    CROP = 2
-    ASPECT = 3
-
-class EnumOrientation(Enum):
-    HORIZONTAL = 0
-    VERTICAL = 1
-    GRID = 2
 
 class EnumThreshold(Enum):
     BINARY = cv2.THRESH_BINARY
@@ -62,42 +33,6 @@ class EnumThresholdAdapt(Enum):
     ADAPT_NONE = -1
     ADAPT_MEAN = cv2.ADAPTIVE_THRESH_MEAN_C
     ADAPT_GAUSS = cv2.ADAPTIVE_THRESH_GAUSSIAN_C
-
-class EnumColorMap(Enum):
-    AUTUMN = cv2.COLORMAP_AUTUMN
-    BONE = cv2.COLORMAP_BONE
-    JET = cv2.COLORMAP_JET
-    WINTER = cv2.COLORMAP_WINTER
-    RAINBOW = cv2.COLORMAP_RAINBOW
-    OCEAN = cv2.COLORMAP_OCEAN
-    SUMMER = cv2.COLORMAP_SUMMER
-    SPRING = cv2.COLORMAP_SPRING
-    COOL = cv2.COLORMAP_COOL
-    HSV = cv2.COLORMAP_HSV
-    PINK = cv2.COLORMAP_PINK
-    HOT = cv2.COLORMAP_HOT
-    PARULA = cv2.COLORMAP_PARULA
-    MAGMA = cv2.COLORMAP_MAGMA
-    INFERNO = cv2.COLORMAP_INFERNO
-    PLASMA = cv2.COLORMAP_PLASMA
-    VIRIDIS = cv2.COLORMAP_VIRIDIS
-    CIVIDIS = cv2.COLORMAP_CIVIDIS
-    TWILIGHT = cv2.COLORMAP_TWILIGHT
-    TWILIGHT_SHIFTED = cv2.COLORMAP_TWILIGHT_SHIFTED
-    TURBO = cv2.COLORMAP_TURBO
-    DEEPGREEN = cv2.COLORMAP_DEEPGREEN
-
-class EnumInterpolation(Enum):
-    NEAREST = cv2.INTER_NEAREST
-    LINEAR = cv2.INTER_LINEAR
-    CUBIC = cv2.INTER_CUBIC
-    AREA = cv2.INTER_AREA
-    LANCZOS4 = cv2.INTER_LANCZOS4
-    LINEAR_EXACT = cv2.INTER_LINEAR_EXACT
-    NEAREST_EXACT = cv2.INTER_NEAREST_EXACT
-    # INTER_MAX = cv2.INTER_MAX
-    # WARP_FILL_OUTLIERS = cv2.WARP_FILL_OUTLIERS
-    # WARP_INVERSE_MAP = cv2.WARP_INVERSE_MAP
 
 class EnumAdjustOP(Enum):
     BLUR = 0
@@ -117,18 +52,6 @@ class EnumAdjustOP(Enum):
     ERODE = 72
     OPEN = 73
     CLOSE = 74
-
-class EnumColorTheory(Enum):
-    COMPLIMENTARY = 0
-    MONOCHROMATIC = 1
-    SPLIT_COMPLIMENTARY = 2
-    ANALOGOUS = 3
-    TRIADIC = 4
-    # TETRADIC = 5
-    SQUARE = 6
-    COMPOUND = 8
-    # DOUBLE_COMPLIMENTARY = 9
-    CUSTOM_TETRAD = 9
 
 class EnumBlendType(Enum):
 	"""Rename the blend type names."""
@@ -163,51 +86,6 @@ class EnumBlendType(Enum):
 	SRCATOP = BlendType.SRCATOP
 	DESTATOP = BlendType.DESTATOP
 
-class EnumMirrorMode(Enum):
-    NONE = -1
-    X = 0
-    Y = 1
-    XY = 2
-    YX = 3
-
-# =============================================================================
-# === NODE SUPPORT ===
-# =============================================================================
-
-IT_SAMPLE = {"optional": {
-    Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
-}}
-
-# =============================================================================
-# === UTILITY ===
-# =============================================================================
-
-def pixel_convert(in_a: TYPE_IMAGE, in_b: TYPE_IMAGE) -> tuple[TYPE_IMAGE, TYPE_IMAGE]:
-    if in_a is not None or in_b is not None:
-        if in_a is None:
-            cc, _, w, h = channel_count(in_b)
-            in_a = np.zeros((h, w, cc), dtype=np.uint8)
-        if in_b is None:
-            cc, _, w, h = channel_count(in_a)
-            in_b = np.zeros((h, w, cc), dtype=np.uint8)
-    return in_a, in_b
-
-def pixel_bgr2hsv(bgr_color: TYPE_PIXEL) -> TYPE_PIXEL:
-    return cv2.cvtColor(np.uint8([[bgr_color]]), cv2.COLOR_BGR2HSV)[0, 0]
-
-def pixel_hsv2bgr(hsl_color: TYPE_PIXEL) -> TYPE_PIXEL:
-    return cv2.cvtColor(np.uint8([[hsl_color]]), cv2.COLOR_HSV2BGR)[0, 0]
-
-def pixel_hsv_adjust(color:TYPE_PIXEL, hue:int=0, saturation:int=0, value:int=0,
-              mod_color:bool=True, mod_sat:bool=False, mod_value:bool=False) -> TYPE_PIXEL:
-    """Adjust an HSV type pixel.
-    OpenCV uses... H: 0-179, S: 0-255, V: 0-255"""
-    hsv = [0, 0, 0]
-    hsv[0] = (color[0] + hue) % 180 if mod_color else np.clip(color[0] + hue, 0, 180)
-    hsv[1] = (color[1] + saturation) % 255 if mod_sat else np.clip(color[1] + saturation, 0, 255)
-    hsv[2] = (color[2] + value) % 255 if mod_value else np.clip(color[2] + value, 0, 255)
-    return hsv
-
 # =============================================================================
 # === SHAPE FUNCTIONS ===
 # =============================================================================
@@ -219,7 +97,7 @@ def shape_body(func: str, width: int, height: int, sizeX:float=1., sizeY:float=1
     image = Image.new("RGB", (width, height), back)
     d = ImageDraw.Draw(image)
     func = getattr(d, func)
-    func(xy, fill=color_eval(fill))
+    func(xy, fill=pixel_eval(fill))
     return image
 
 def shape_ellipse(width: int, height: int, sizeX:float=1., sizeY:float=1., fill:TYPE_PIXEL=(0,0,0), back:TYPE_PIXEL=(0,0,0)) -> Image:
@@ -230,7 +108,7 @@ def shape_quad(width: int, height: int, sizeX:float=1., sizeY:float=1., fill:TYP
 
 def shape_polygon(width: int, height: int, size: float=1., sides: int=3, angle: float=0., fill:TYPE_PIXEL=(0,0,0), back:TYPE_PIXEL=(0,0,0)) -> Image:
 
-    fill = color_eval(fill)
+    fill = pixel_eval(fill)
     size = max(0.00001, size)
     r = min(width, height) * size * 0.5
     xy = (width * 0.5, height * 0.5, r)
@@ -238,206 +116,6 @@ def shape_polygon(width: int, height: int, size: float=1., sides: int=3, angle: 
     d = ImageDraw.Draw(image)
     d.regular_polygon(xy, sides, fill=fill)
     return image
-
-# =============================================================================
-# === CHANNEL FUNCTIONS ===
-# =============================================================================
-
-def channel_count(image:TYPE_IMAGE) -> tuple[int, EnumImageType, int, int]:
-    h, w = image.shape[:2]
-    size = image.shape[2] if len(image.shape) > 2 else 1
-    mode = EnumImageType.RGBA if size == 4 else EnumImageType.RGB if size == 3 else EnumImageType.GRAYSCALE
-    return size, mode, w, h
-
-def channel_add(image:TYPE_IMAGE, value: TYPE_PIXEL=255) -> TYPE_IMAGE:
-    new = channel_solid(color=value, image=image)
-    return np.concatenate([image, new], axis=-1)
-
-def channel_solid(width:int=512, height:int=512, color:TYPE_PIXEL=255,
-                  image:Optional[TYPE_IMAGE]=None, chan:EnumImageType=EnumImageType.GRAYSCALE) -> TYPE_IMAGE:
-
-    if image is not None:
-        height, width = image.shape[:2]
-
-    color = np.asarray(color_eval(color, chan))
-    match chan:
-        case EnumImageType.GRAYSCALE:
-            return np.full((height, width, 1), color, dtype=np.uint8)
-
-        case EnumImageType.RGB:
-            return np.full((height, width, 3), color, dtype=np.uint8)
-
-        case EnumImageType.RGBA:
-            return np.full((height, width, 4), color, dtype=np.uint8)
-
-# =============================================================================
-# === IMAGE FUNCTIONS ===
-# =============================================================================
-
-def image_rgb_clean(image: TYPE_IMAGE) -> tuple[int, TYPE_IMAGE, TYPE_IMAGE]:
-    """Store channel, RGB, ALPHA split since most functions work with RGB."""
-    alpha = None
-    if (cc := channel_count(image)[0]) == 1:
-        image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
-    elif cc == 4:
-        alpha = image[:, :, 3]
-        image = image[:, :, :3]  # Use slicing for consistency
-    return cc, image, alpha
-
-def image_rgb_restore(image: TYPE_IMAGE, alpha: TYPE_IMAGE, gray: bool=False) -> TYPE_IMAGE:
-    if gray:
-        return cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    if alpha is not None:
-        cc = channel_count(image)[0]
-        while cc < 4:
-            image = channel_add(image, 0)
-            cc += 1
-        image[:, :, 3] = alpha
-    return image
-
-def image_load_from_url(url:str) -> TYPE_IMAGE:
-    """Creates a CV2 BGR image from a url."""
-    try:
-        image  = urllib.request.urlopen(url)
-        image = np.asarray(bytearray(image.read()), dtype=np.uint8)
-        return cv2.imdecode(image, cv2.IMREAD_COLOR)
-    except:
-        try:
-            image = Image.open(requests.get(url, stream=True).raw)
-            return pil2cv(image)
-        except Exception as e:
-            Logger.err(str(e))
-
-def image_stack(images: list[TYPE_IMAGE],
-                axis:EnumOrientation=EnumOrientation.HORIZONTAL,
-                stride:Optional[int]=None,
-                color:TYPE_PIXEL=0.,
-                mode:EnumScaleMode=EnumScaleMode.NONE,
-                sample:Image.Resampling=Image.Resampling.LANCZOS) -> TYPE_IMAGE:
-
-    color = (
-        (color[0] if color is not None else 1) * 255,
-        (color[1] if color is not None else 1) * 255,
-        (color[2] if color is not None else 1) * 255
-    )
-
-    count = len(images)
-
-    # CROP ALL THE IMAGES TO THE LARGEST ONE OF THE INPUT SET
-    width, height = 0, 0
-    for i in images:
-        w, h = i.shape[:2]
-        width = max(width, w)
-        height = max(height, h)
-
-    # center = (width // 2, height // 2)
-    images = [comp_fill(i, width, height, color, mode, sample) for i in images]
-
-    match axis:
-        case EnumOrientation.GRID:
-            if not stride:
-                stride = int(np.ceil(np.sqrt(count)))
-
-            rows = []
-            for i in range(0, count, stride):
-                row = images[i:i + stride]
-                row_stacked = np.hstack(row)
-                rows.append(row_stacked)
-
-            height, width = images[0].shape[:2]
-            # Check if the last row needs padding
-            overhang = len(images) % stride
-
-            Logger.debug('image_stack', overhang, width, height, )
-
-            if overhang != 0:
-                overhang = stride - overhang
-
-                chan = 1
-                if len(rows[0].shape) > 2:
-                    chan = 3
-
-                size = (height, overhang * width, chan)
-                filler = np.full(size, color, dtype=np.uint8)
-                rows[-1] = np.hstack([rows[-1], filler])
-
-            image = np.vstack(rows)
-
-        case EnumOrientation.HORIZONTAL:
-            image = np.hstack(images)
-
-        case EnumOrientation.VERTICAL:
-            image = np.vstack(images)
-
-        case _:
-               raise ValueError("image_stack", f"invalid orientation - {axis}")
-
-    return image
-
-def image_grid(data: list[TYPE_IMAGE], width: int, height: int) -> TYPE_IMAGE:
-    #@TODO: makes poor assumption all images are the same dimensions.
-    chunks, col, row = grid_make(data)
-    frame = np.zeros((height * row, width * col, 3), dtype=np.uint8)
-    i = 0
-    for y, strip in enumerate(chunks):
-        for x, item in enumerate(strip):
-            y1, y2 = y * height, (y+1) * height
-            x1, x2 = x * width, (x+1) * width
-            frame[y1:y2, x1:x2, ] = item
-            i += 1
-
-    return frame
-
-def image_grayscale(image: TYPE_IMAGE) -> TYPE_IMAGE:
-    if (cc := channel_count(image)[0]) == 1:
-        return image
-    elif cc > 2:
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-        return image[:, :, 2]
-    Logger.err("unknown image format", cc, image.shape)
-    return image
-
-def image_split(image: TYPE_IMAGE) -> tuple[TYPE_IMAGE]:
-    cc, _, w, h = channel_count(image)
-    if cc == 4:
-        b, g, r, a = cv2.split(image)
-    elif cc == 3:
-        b, g, r = cv2.split(image)
-        a = np.full((h, w), 255, dtype=np.uint8)
-    else:
-        r = g = b = image
-        a = np.full((h, w), 255, dtype=np.uint8)
-    return r, g, b, a
-
-def image_merge(r: TYPE_IMAGE, g: TYPE_IMAGE, b: TYPE_IMAGE, a: TYPE_IMAGE,
-          width: int, height: int,
-          mode:EnumScaleMode=EnumScaleMode.NONE,
-          sample:EnumInterpolation=EnumInterpolation.LANCZOS4) -> TYPE_IMAGE:
-
-    thr, twr = r.shape[:2] if r is not None else (height, width)
-    thg, twg = g.shape[:2] if g is not None else (height, width)
-    thb, twb = b.shape[:2] if b is not None else (height, width)
-
-    full = a is not None
-    tha, twa = a.shape[:2] if full else (height, width)
-
-    w = max(width, max(twa, max(twb, max(twr, twg))))
-    h = max(height, max(tha, max(thb, max(thr, thg))))
-
-    r = np.full((h, w), 0, dtype=np.uint8) if r is None else image_grayscale(r)
-    g = np.full((h, w), 0, dtype=np.uint8) if g is None else image_grayscale(g)
-    b = np.full((h, w), 0, dtype=np.uint8) if b is None else image_grayscale(b)
-
-    #g = merge_channel(g, (h, w), sample)
-    #b = merge_channel(b, (h, w), sample)
-
-    if full:
-        a = np.full((h, w), 0, dtype=np.uint8) if r is None else image_grayscale(a)
-        # a = merge_channel(a,  (h, w), sample)
-        image = cv2.merge((b, g, r, a))
-    else:
-        image = cv2.merge((b, g, r))
-    return geo_scalefit(image, width, height, mode, sample)
 
 # =============================================================================
 # === GEOMETRY FUNCTIONS ===
@@ -704,256 +382,6 @@ def light_invert(image: TYPE_IMAGE, value: float) -> TYPE_IMAGE:
     return image_rgb_restore(image, alpha, cc == 1)
 
 # =============================================================================
-# === COLOR FUNCTIONS ===
-# =============================================================================
-
-def color_eval(color: TYPE_PIXEL,
-               mode: EnumImageType=EnumImageType.RGB,
-               target:EnumIntFloat=EnumIntFloat.INT,
-               crunch:EnumGrayscaleCrunch=EnumGrayscaleCrunch.MEAN) -> TYPE_PIXEL:
-
-    """Create a color by R(GB) and a target pixel type."""
-    def parse_single_color(c: TYPE_PIXEL) -> TYPE_PIXEL:
-        if isinstance(c, float) or c != int(c):
-            c = max(0, min(1, c))
-            if target == EnumIntFloat.INT:
-                c = int(c * 255)
-
-        elif isinstance(c, int):
-            c = max(0, min(255, c))
-            if target == EnumIntFloat.FLOAT:
-                c /= 255.
-        return c
-
-    Logger.spam(color, mode, target, crunch)
-    if mode == EnumImageType.GRAYSCALE:
-        if isinstance(color, (int, float)):
-            return parse_single_color(color)
-        elif isinstance(color, (set, tuple, list)):
-            data = [parse_single_color(x) for x in color]
-            match crunch:
-                case EnumGrayscaleCrunch.LOW:
-                    return min(data)
-                case EnumGrayscaleCrunch.HIGH:
-                    return max(data)
-                case EnumGrayscaleCrunch.MEAN:
-                    return int(np.mean(data))
-
-    elif mode == EnumImageType.RGB:
-        if isinstance(color, (int, float)):
-            c = parse_single_color(color)
-            return (c, c, c)
-
-        elif isinstance(color, (set, tuple, list)):
-            if len(color) < 3:
-                a = 255 if target == EnumIntFloat.INT else 1
-                color += (a,) * (3 - len(color))
-            return color[::-1]
-
-    elif mode == EnumImageType.RGBA:
-        if isinstance(color, (int, float)):
-            c = parse_single_color(color)
-            return (c, c, c, 255) if target == EnumIntFloat.INT else (c, c, c, 1)
-
-        elif isinstance(color, (set, tuple, list)):
-            if len(color) < 4:
-                a = 255 if target == EnumIntFloat.INT else 1
-                color += (a,) * (4 - len(color))
-            return (color[2], color[1], color[0], color[3])
-
-    return color[::-1]
-
-def color_lut_from_image(image: TYPE_IMAGE, num_colors:int=256) -> TYPE_IMAGE:
-    """Create X sized LUT from an RGB image."""
-    image = cv2.resize(image, (num_colors, 1))
-    return image.reshape(-1, 3).astype(np.uint8)
-
-def color_match(image: TYPE_IMAGE, usermap: TYPE_IMAGE) -> TYPE_IMAGE:
-    """Colorize one input based on the histogram matches."""
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
-    beta = cv2.cvtColor(usermap, cv2.COLOR_BGR2LAB)
-    image = exposure.match_histograms(image, beta, channel_axis=2)
-    image = cv2.cvtColor(image, cv2.COLOR_LAB2BGR)
-    return comp_blend(usermap, image, blendOp=BlendType.LUMINOSITY)
-
-def color_match_reinhard(image: TYPE_IMAGE, target: TYPE_IMAGE) -> TYPE_IMAGE:
-    """Reinhard Color matching based on https://www.cs.tau.ac.il/~turkel/imagepapers/ColorTransfer."""
-    lab_tar = cv2.cvtColor(target, cv2.COLOR_BGR2Lab)
-    lab_ori = cv2.cvtColor(image, cv2.COLOR_BGR2Lab)
-    mean_tar, std_tar = cv2.meanStdDev(lab_tar)
-    mean_ori, std_ori = cv2.meanStdDev(lab_ori)
-    ratio = (std_tar/std_ori).reshape(-1)
-    offset = (mean_tar - mean_ori*std_tar/std_ori).reshape(-1)
-    lab_tar = cv2.convertScaleAbs(lab_ori*ratio + offset)
-    return cv2.cvtColor(lab_tar, cv2.COLOR_Lab2BGR)
-
-def color_match_custom_map(image: TYPE_IMAGE,
-                   usermap: Optional[TYPE_IMAGE]=None,
-                   colormap: int=cv2.COLORMAP_JET) -> TYPE_IMAGE:
-    """Colorize one input based on custom GNU Octave/MATLAB map"""
-
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
-    image = image[:, :, 1]
-    if usermap is not None:
-        usermap = color_lut_from_image(usermap)
-        return cv2.applyColorMap(image, usermap)
-    return cv2.applyColorMap(image, colormap)
-
-def color_match_heat_map(image: TYPE_IMAGE,
-                  threshold:float=0.55,
-                  colormap:int=cv2.COLORMAP_JET,
-                  sigma:int=13) -> TYPE_IMAGE:
-    """Colorize one input based on custom GNU Octave/MATLAB map"""
-
-    threshold = min(1, max(0, threshold)) * 255
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
-    image = image[:, :, 1]
-    image = cv2.threshold(image, threshold, 255, cv2.THRESH_BINARY)[1]
-
-    sigma = max(3, sigma)
-    if sigma % 2 == 0:
-        sigma += 1
-    sigmaY = sigma - 2
-
-    image = cv2.GaussianBlur(image, (sigma, sigma), sigmaY)
-    image = cv2.applyColorMap(image, colormap)
-    return cv2.addWeighted(image, 0.5, image, 0.5, 0)
-
-def color_mean(image: TYPE_IMAGE) -> TYPE_IMAGE:
-    color = [0, 0, 0]
-    if channel_count(image)[0] == 1:
-        raw = int(np.mean(image))
-        color = [raw] * 3
-    else:
-        # each channel....
-        color = [
-            int(np.mean(image[:,:,0])),
-            int(np.mean(image[:,:,1])),
-            int(np.mean(image[:,:,2])) ]
-    return color
-
-def color_theory_complementary(color: TYPE_PIXEL) -> TYPE_PIXEL:
-    color = pixel_bgr2hsv(color)
-    color_a = pixel_hsv_adjust(color, 90, 0, 0)
-    return pixel_hsv2bgr(color_a)
-
-def color_theory_monochromatic(color: TYPE_PIXEL) -> tuple[TYPE_PIXEL, TYPE_PIXEL]:
-    color = pixel_bgr2hsv(color)
-    sat = 255 / 5.
-    val = 255 / 5.
-    color_a = pixel_hsv_adjust(color, 0, -1 * sat, -1 * val, mod_sat=True, mod_value=True)
-    color_b = pixel_hsv_adjust(color, 0, -2 * sat, -2 * val, mod_sat=True, mod_value=True)
-    color_c = pixel_hsv_adjust(color, 0, -3 * sat, -3 * val, mod_sat=True, mod_value=True)
-    color_d = pixel_hsv_adjust(color, 0, -4 * sat, -4 * val, mod_sat=True, mod_value=True)
-    return pixel_hsv2bgr(color_a), pixel_hsv2bgr(color_b), pixel_hsv2bgr(color_c), pixel_hsv2bgr(color_d)
-
-def color_theory_split_complementary(color: TYPE_PIXEL) -> tuple[TYPE_PIXEL, TYPE_PIXEL]:
-    color = pixel_bgr2hsv(color)
-    color_a = pixel_hsv_adjust(color, 75, 0, 0)
-    color_b = pixel_hsv_adjust(color, 105, 0, 0)
-    return pixel_hsv2bgr(color_a), pixel_hsv2bgr(color_b)
-
-def color_theory_analogous(color: TYPE_PIXEL) -> tuple[TYPE_PIXEL, TYPE_PIXEL, TYPE_PIXEL, TYPE_PIXEL]:
-    color = pixel_bgr2hsv(color)
-    color_a = pixel_hsv_adjust(color, 30, 0, 0)
-    color_b = pixel_hsv_adjust(color, 15, 0, 0)
-    color_c = pixel_hsv_adjust(color, 165, 0, 0)
-    color_d = pixel_hsv_adjust(color, 150, 0, 0)
-    return pixel_hsv2bgr(color_a), pixel_hsv2bgr(color_b), pixel_hsv2bgr(color_c), pixel_hsv2bgr(color_d)
-
-def color_theory_triadic(color: TYPE_PIXEL) -> tuple[TYPE_PIXEL, TYPE_PIXEL]:
-    color = pixel_bgr2hsv(color)
-    color_a = pixel_hsv_adjust(color, 60, 0, 0)
-    color_b = pixel_hsv_adjust(color, 120, 0, 0)
-    return pixel_hsv2bgr(color_a), pixel_hsv2bgr(color_b)
-
-def color_theory_compound(color: TYPE_PIXEL) -> tuple[TYPE_PIXEL, TYPE_PIXEL, TYPE_PIXEL]:
-    color = pixel_bgr2hsv(color)
-    color_a = pixel_hsv_adjust(color, 90, 0, 0)
-    color_b = pixel_hsv_adjust(color, 120, 0, 0)
-    color_c = pixel_hsv_adjust(color, 150, 0, 0)
-    return pixel_hsv2bgr(color_a), pixel_hsv2bgr(color_b), pixel_hsv2bgr(color_c)
-
-def color_theory_square(color: TYPE_PIXEL) -> tuple[TYPE_PIXEL, TYPE_PIXEL, TYPE_PIXEL]:
-    color = pixel_bgr2hsv(color)
-    color_a = pixel_hsv_adjust(color, 45, 0, 0)
-    color_b = pixel_hsv_adjust(color, 90, 0, 0)
-    color_c = pixel_hsv_adjust(color, 135, 0, 0)
-    return pixel_hsv2bgr(color_a), pixel_hsv2bgr(color_b), pixel_hsv2bgr(color_c)
-
-def color_theory_tetrad_custom(color: TYPE_PIXEL, delta:int=0) -> tuple[TYPE_PIXEL, TYPE_PIXEL, TYPE_PIXEL]:
-    color = pixel_bgr2hsv(color)
-
-    # modulus on neg and pos
-    while delta < 0:
-        delta += 90
-
-    if delta > 90:
-        delta = delta % 90
-
-    color_a = pixel_hsv_adjust(color, -delta, 0, 0)
-    color_b = pixel_hsv_adjust(color, delta, 0, 0)
-    # just gimme a compliment
-    color_c = pixel_hsv_adjust(color, 90 - delta, 0, 0)
-    color_d = pixel_hsv_adjust(color, 90 + delta, 0, 0)
-    return pixel_hsv2bgr(color_a), pixel_hsv2bgr(color_b), pixel_hsv2bgr(color_c), pixel_hsv2bgr(color_d)
-
-def color_theory(image: TYPE_IMAGE, custom:int=0, scheme: EnumColorTheory=EnumColorTheory.COMPLIMENTARY) -> tuple[TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE]:
-
-    aR = aG = aB = bR = bG = bB = cR = cG = cB = dR = dG = dB = 0
-    color = color_mean(image)
-    match scheme:
-        case EnumColorTheory.COMPLIMENTARY:
-            a = color_theory_complementary(color)
-            aB, aG, aR = a
-        case EnumColorTheory.MONOCHROMATIC:
-            a, b, c, d = color_theory_monochromatic(color)
-            aB, aG, aR = a
-            bB, bG, bR = b
-            cB, cG, cR = c
-            dB, dG, dR = d
-        case EnumColorTheory.SPLIT_COMPLIMENTARY:
-            a, b = color_theory_split_complementary(color)
-            aB, aG, aR = a
-            bB, bG, bR = b
-        case EnumColorTheory.ANALOGOUS:
-            a, b, c, d = color_theory_analogous(color)
-            aB, aG, aR = a
-            bB, bG, bR = b
-            cB, cG, cR = c
-            dB, dG, dR = d
-        case EnumColorTheory.TRIADIC:
-            a, b = color_theory_triadic(color)
-            aB, aG, aR = a
-            bB, bG, bR = b
-        case EnumColorTheory.SQUARE:
-            a, b, c = color_theory_square(color)
-            aB, aG, aR = a
-            bB, bG, bR = b
-            cB, cG, cR = c
-        case EnumColorTheory.COMPOUND:
-            a, b, c = color_theory_compound(color)
-            aB, aG, aR = a
-            bB, bG, bR = b
-            cB, cG, cR = c
-        case EnumColorTheory.CUSTOM_TETRAD:
-            a, b, c, d = color_theory_tetrad_custom(color, custom)
-            aB, aG, aR = a
-            bB, bG, bR = b
-            cB, cG, cR = c
-            dB, dG, dR = d
-
-    h, w = image.shape[:2]
-
-    return (
-        np.full((h, w, 4), [aB, aG, aR, 255], dtype=np.uint8),
-        np.full((h, w, 4), [bB, bG, bR, 255], dtype=np.uint8),
-        np.full((h, w, 4), [cB, cG, cR, 255], dtype=np.uint8),
-        np.full((h, w, 4), [dB, dG, dR, 255], dtype=np.uint8),
-        np.full((h, w, 4), color + [255], dtype=np.uint8),
-    )
-
-# =============================================================================
 # === COMP FUNCTIONS ===
 # =============================================================================
 
@@ -980,29 +408,6 @@ def comp_lerp(imageA:TYPE_IMAGE,
     imageB = cv2.multiply(mask, imageB)
     imageA = cv2.add(imageA, imageB)
     return imageA.astype(np.uint8)
-
-def comp_fill(image:TYPE_IMAGE, width:int, height:int, color:TYPE_PIXEL=255) -> TYPE_IMAGE:
-    """
-    Fills a block of pixels with a matte or stretched to width x height.
-    """
-
-    cc, chan, x, y = channel_count(image)
-    canvas = channel_solid(width, height, color, chan=chan)
-    y1 = max(0, (height - y) // 2)
-    y2 = min(height, y1 + y)
-    x1 = max(0, (width - x) // 2)
-    x2 = min(width, x1 + x)
-
-    # crop/clip
-    if y > height:
-        y1 = 0
-        y2 = height
-    if x > width:
-        x1 = 0
-        x2 = width
-
-    canvas[y1: y2, x1: x2, :cc] = image[:y2-y1, :x2-x1, :cc]
-    return canvas
 
 def comp_blend(imageA:Optional[TYPE_IMAGE]=None,
                imageB:Optional[TYPE_IMAGE]=None,
@@ -1036,7 +441,7 @@ def comp_blend(imageA:Optional[TYPE_IMAGE]=None,
 
     targetW, targetH = max(0, targetW), max(0, targetH)
     if targetH == 0 or targetW == 0:
-        Logger.debug("bad dimensions", targetW, targetH)
+        Logger.warn("bad dimensions", targetW, targetH)
         return channel_solid(targetW or 1, targetH or 1, )
 
     def scale(img:TYPE_IMAGE) -> TYPE_IMAGE:
@@ -1045,7 +450,7 @@ def comp_blend(imageA:Optional[TYPE_IMAGE]=None,
             if mode != EnumScaleMode.NONE:
                 img = geo_scalefit(img, targetW, targetH, mode, sample)
             # Logger.debug(img.shape[:2], targetW, targetH)
-            img = comp_fill(img, targetW, targetH, color)
+            img = channel_fill(img, targetW, targetH, color)
             # Logger.debug(img.shape[:2], targetW, targetH)
         return img
 
@@ -1284,16 +689,8 @@ def kernel(stride: int) -> TYPE_IMAGE:
     return kernel
 
 # =============================================================================
-# === ZE MAIN ===
+# === TEST ===
 # =============================================================================
-
-def testColorConvert() -> None:
-    Logger.debug(color_eval(1., EnumImageType.RGBA))
-    Logger.debug(color_eval((1., 1.), EnumImageType.RGBA))
-    Logger.debug(color_eval((1., 1., 1., 1.), EnumImageType.GRAYSCALE))
-    Logger.debug(color_eval((255, 128, 100), EnumImageType.GRAYSCALE))
-    Logger.debug(color_eval((255, 128, 100), EnumImageType.GRAYSCALE))
-    Logger.debug(color_eval(255))
 
 def testBlendModes() -> None:
     # all sizes and scale modes should work
@@ -1318,13 +715,13 @@ def testImageMerge() -> None:
     G = cv2.imread('./_res/img/test_G.png', cv2.IMREAD_UNCHANGED)
     B = cv2.imread('./_res/img/test_B.png', cv2.IMREAD_UNCHANGED)
     d = image_merge(R, G, B, None, 512, 512)
+    d = geo_scalefit(d, 512, 512)
     cv2.imwrite(f'./_res/tst/image-merge.png', d)
 
 if __name__ == "__main__":
     img = cv2.imread('./_res/img/test_fore2.png', cv2.IMREAD_UNCHANGED)
     img = geo_mirror(img, 0.75, 0)
     img = geo_mirror(img, 0.25, 1)
-
     cv2.imwrite(f'./_res/tst/image-mirror.png', img)
     # testBlendModes()
     # testImageMerge()
