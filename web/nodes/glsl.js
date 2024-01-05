@@ -182,11 +182,7 @@ const GLSLWidget = (app, inputName, fragment) => {
         computeSize(width) {
             return [width, LiteGraph.NODE_WIDGET_HEIGHT]
         },
-        async serializeValue(nodeId, widgetIndex) {
-            if (widgetIndex !== 4) {
-                return;
-            }
-
+        frame() {
             const pixels = new Uint8Array(canvas.width * canvas.height * 4);
             GL.readPixels(0, 0, canvas.width, canvas.height, GL.RGBA, GL.UNSIGNED_BYTE, pixels);
 
@@ -201,10 +197,17 @@ const GLSLWidget = (app, inputName, fragment) => {
                     tempCanvas.height = img.height;
                     tempCtx.drawImage(img, 0, 0);
                     const base64String = tempCanvas.toDataURL('image/png').split(',')[1];
-                    console.info(base64String)
+                    // console.info(base64String)
                     resolve(base64String);
                 };
             });
+        },
+        async serializeValue(nodeId, widgetIndex) {
+            // console.info(widgetIndex)
+            if (widgetIndex !== 5) {
+                return;
+            }
+            return this.frame();
         }
     }
     document.body.appendChild(widget.inputEl);
@@ -259,8 +262,10 @@ const ext = {
                 widget_glsl.render();
             };
 
-            function python_grab_image(event) {
-                console.info(event)
+            async function python_grab_image(event) {
+                const frame = await widget_glsl.frame();
+                var data = { id: event.detail.id, frame: frame }
+                util.api_post('/jovimetrix/node/glsl', data);
             }
             api.addEventListener("jovi-glsl-image", python_grab_image);
 
@@ -270,11 +275,6 @@ const ext = {
                 widget_glsl.inputEl.remove();
                 util.cleanupNode(this);
             };
-
-            //this.setOutputData('🖼️', 0)
-            this.widget_image = this.addOutput("🖼️", 'IMAGE');
-            this.widget_mask = this.addOutput("😷", 'MASK');
-
             return me;
         }
     }

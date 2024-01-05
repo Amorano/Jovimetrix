@@ -130,8 +130,8 @@ def tensor2np(tensor: torch.Tensor) -> TYPE_IMAGE:
 def b64_2_tensor(base64str: str) -> torch.Tensor:
     img = base64.b64decode(base64str)
     img = Image.open(BytesIO(img))
-    img = image_load_data(img)
-    return cv2tensor(img)
+    img = ImageOps.exif_transpose(img)
+    return pil2tensor(img)
 
 def mask2cv(mask: torch.Tensor) -> TYPE_IMAGE:
     """Convert a torch Tensor (Mask) to a CV2 Matrix."""
@@ -352,11 +352,12 @@ def channel_fill(image:TYPE_IMAGE, width:int, height:int, color:TYPE_PIXEL=255) 
 def image_load_data(data: str) -> TYPE_IMAGE:
     img = ImageOps.exif_transpose(data)
     img = pil2cv(img)
-    cc = channel_count(img)[0]
-    if cc == 4:
-        img[:, :, 3] = 1. - img[:, :, 3]
-    elif cc == 3:
-        img = channel_add(img, 0)
+    #cc = channel_count(img)[0]
+    #print(cc)
+    #if cc == 4:
+    #    img[:, :, 3] = 1. - img[:, :, 3]
+    #if cc == 3:
+    #    img = channel_add(img)
     return img
 
 def image_load(url: str) -> list[TYPE_IMAGE]:

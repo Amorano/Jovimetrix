@@ -211,7 +211,35 @@ WILDCARD = AnyType("*")
 # == API RESPONSE
 # =============================================================================
 
+class TimedOutException(Exception): pass
+
+class ComfyAPIMessage:
+    # STASH = {}
+    MESSAGE = {}
+
+    #@classmethod
+    #def send(cls, id, message) -> None:
+        #cls.MESSAGE[str(id)] = message
+
+    @classmethod
+    def poll(cls, _id, period=0.1, timeout=3) -> Any:
+        _t = time.monotonic()
+        sid = str(_id)
+        while not (sid in cls.MESSAGE) and time.monotonic() - _t < timeout:
+            time.sleep(period)
+        if not (sid in cls.MESSAGE):
+            raise TimedOutException
+        message = cls.MESSAGE.pop(sid)
+        return message.strip()
+
 try:
+    @PromptServer.instance.routes.post("/jovimetrix/node/glsl")
+    async def jovimetrix_glsl_post(request) -> Any:
+        json_data = await request.json()
+        did = json_data.get("id", None)
+        ComfyAPIMessage.MESSAGE[did] = json_data.get("frame", "")
+        return web.json_response()
+
     @PromptServer.instance.routes.get("/jovimetrix/config")
     async def jovimetrix_config(request) -> Any:
         global JOV_CONFIG
@@ -250,23 +278,6 @@ try:
 
 except Exception as e:
     Logger.err(e)
-
-class ComfyAPIMessage:
-    STASH = {}
-    MESSAGE = {}
-
-    @classmethod
-    def send(cls, id, message) -> None:
-        cls.MESSAGE[str(id)] = message
-
-    @classmethod
-    def poll(cls, _id, period=0.02, timeout=1.) -> Any:
-        _t = time.monotonic()
-        sid = str(_id)
-        while not (sid in cls.MESSAGE) and time.monotonic() - _t < timeout:
-            time.sleep(period)
-        message = cls.MESSAGE.pop(str(_id))
-        return message.strip()
 
 # =============================================================================
 # == SUPPORT FUNCTIONS

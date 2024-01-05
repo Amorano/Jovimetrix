@@ -201,14 +201,14 @@ class GLSLNode(JOVBaseNode):
     def IS_CHANGED(cls, **kw) -> float:
         return float("nan")
 
-    def run(self, id, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        if id not in ComfyAPIMessage.STASH:
-            ComfyAPIMessage.STASH[id] = {}
+    def __init__(self, *arg, **kw) -> None:
+        self.__last = torch.ones((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8)
 
+    def run(self, id, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         PromptServer.instance.send_sync("jovi-glsl-image", {"id": id})
         try:
             img = ComfyAPIMessage.poll(id)
-            img = b64_2_tensor(img)
+            self.__last = b64_2_tensor(img)
         except Exception as e:
-            Logger.err(e)
-        return (img, )
+            Logger.err(str(e))
+        return (self.__last, )
