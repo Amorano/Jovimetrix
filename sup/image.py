@@ -15,10 +15,9 @@ import numpy as np
 import requests
 from PIL import Image, ImageOps, ImageSequence
 
-from Jovimetrix import TYPE_IMAGE, TYPE_PIXEL, Logger
+from Jovimetrix import Logger, TYPE_IMAGE, TYPE_PIXEL, IT_WH, MIN_IMAGE_SIZE
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import grid_make, deep_merge_dict
-from Jovimetrix.sup.comfy import IT_WH, MIN_IMAGE_SIZE
 
 # =============================================================================
 # === ENUM GLOBALS ===
@@ -128,10 +127,11 @@ def tensor2np(tensor: torch.Tensor) -> TYPE_IMAGE:
     tensor = np.clip(255 * tensor.cpu().numpy().squeeze(), 0, 255).astype(np.uint8)
     return tensor
 
-def b64_2_tensor(base64str: str) -> tuple[torch.Tensor, torch.Tensor]:
+def b64_2_tensor(base64str: str) -> torch.Tensor:
     img = base64.b64decode(base64str)
     img = Image.open(BytesIO(img))
-    return image_load_data(img)
+    img = image_load_data(img)
+    return cv2tensor(img)
 
 def mask2cv(mask: torch.Tensor) -> TYPE_IMAGE:
     """Convert a torch Tensor (Mask) to a CV2 Matrix."""

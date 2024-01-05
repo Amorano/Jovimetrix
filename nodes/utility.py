@@ -12,10 +12,9 @@ import torch
 import numpy as np
 from PIL import Image
 
-from Jovimetrix import Logger
+from Jovimetrix import Logger, JOVBaseNode, IT_REQUIRED, WILDCARD
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import deep_merge_dict
-from Jovimetrix.sup.comfy import JOVBaseNode, IT_REQUIRED, WILDCARD
 from Jovimetrix.sup.image import tensor2pil, pil2tensor
 
 # =============================================================================
@@ -203,3 +202,24 @@ class ValueGraphNode(JOVBaseNode):
         buffer.seek(0)
         image = Image.open(buffer)
         return (pil2tensor(image),)
+
+class RerouteNode(JOVBaseNode):
+    NAME = "RE-ROUTE (JOV) 🚌"
+    CATEGORY = "JOVIMETRIX 🔺🟩🔵/UTILITY"
+    DESCRIPTION = "Pass all data because the default is broken on connection"
+    INPUT_IS_LIST = True
+    OUTPUT_IS_LIST = (True, )
+    RETURN_TYPES = (WILDCARD, )
+    RETURN_NAMES = (Lexicon.PASS_OUT, )
+    SORT = 70
+
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        d = {"optional": {
+            Lexicon.PASS_IN: (WILDCARD, {})
+        }}
+        return deep_merge_dict(IT_REQUIRED, d)
+
+    def run(self, **kw) -> tuple[Any, Any]:
+        o = kw.get(Lexicon.PASS_IN, None)
+        return (o, )

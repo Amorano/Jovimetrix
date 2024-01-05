@@ -4,6 +4,7 @@
  *
  */
 
+import { api } from "/scripts/api.js"
 import { app } from "/scripts/app.js"
 import { $el } from "/scripts/ui.js"
 import * as util from '../core/util.js'
@@ -257,6 +258,11 @@ const ext = {
                 widget_glsl.update_time(this.widget_time.value)
                 widget_glsl.render();
             };
+
+            function python_grab_image(event) {
+                console.info(event)
+            }
+            api.addEventListener("jovi-glsl-image", python_grab_image);
 
             const onRemoved = nodeType.prototype.onRemoved;
             nodeType.prototype.onRemoved = function (message) {

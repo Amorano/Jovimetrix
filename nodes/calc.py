@@ -9,10 +9,9 @@ from collections import Counter
 
 from scipy.special import gamma
 
-from Jovimetrix import Logger
+from Jovimetrix import Logger, JOVBaseNode, IT_REQUIRED, IT_AB, WILDCARD, IT_FLIP
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import zip_longest_fill, convert_parameter, deep_merge_dict
-from Jovimetrix.sup.comfy import JOVBaseNode, IT_REQUIRED, IT_AB, WILDCARD, IT_FLIP
 
 # =============================================================================
 

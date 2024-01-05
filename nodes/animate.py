@@ -5,10 +5,9 @@ Animate
 
 import time
 
-from Jovimetrix import Logger
+from Jovimetrix import Logger, JOVBaseNode, IT_REQUIRED
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import deep_merge_dict
-from Jovimetrix.sup.comfy import JOVBaseNode, IT_REQUIRED
 from Jovimetrix.sup import anim
 from Jovimetrix.sup.anim import EnumWaveSimple
 

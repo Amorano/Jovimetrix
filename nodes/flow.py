@@ -7,10 +7,9 @@ import time
 from enum import Enum
 from typing import Any
 
-from Jovimetrix import Logger, JOV_MAX_DELAY
+from Jovimetrix import Logger, JOV_MAX_DELAY, JOVBaseNode, IT_REQUIRED, IT_FLIP, WILDCARD
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import deep_merge_dict, zip_longest_fill, convert_parameter
-from Jovimetrix.sup.comfy import JOVBaseNode, IT_REQUIRED, IT_FLIP, WILDCARD
 
 # =============================================================================
 

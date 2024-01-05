@@ -7,22 +7,22 @@ import cv2
 import torch
 import numpy as np
 
-from Jovimetrix import Logger
-from Jovimetrix.sup.lexicon import Lexicon
-
-from Jovimetrix.sup.util import parse_number, parse_tuple, zip_longest_fill, deep_merge_dict,\
-    EnumTupleType
-
-from Jovimetrix.sup.comfy import JOVImageInOutBaseNode, \
-    IT_PIXELS, IT_RGBA, IT_WH, IT_PIXEL_MASK, IT_INVERT, \
+from Jovimetrix import Logger, JOVImageInOutBaseNode, \
+    IT_PIXELS, IT_RGB, IT_PIXEL_MASK, IT_INVERT, \
     IT_REQUIRED, IT_RGBA_IMAGE, MIN_IMAGE_SIZE, IT_TRS, IT_PIXEL2
 
-from Jovimetrix.sup.comp import geo_rotate, geo_translate, comp_blend, geo_crop, \
+from Jovimetrix.sup.lexicon import Lexicon
+
+from Jovimetrix.sup.util import parse_number, parse_tuple, zip_longest_fill, \
+    deep_merge_dict,\
+    EnumTupleType
+
+from Jovimetrix.sup.comp import geo_rotate, geo_translate, comp_blend, geo_crop_polygonal, \
     geo_edge_wrap, geo_scalefit, geo_mirror, light_invert, \
     EnumScaleMode, EnumInterpolation, EnumBlendType
 
-from Jovimetrix.sup.image import image_merge, image_split, tensor2cv, cv2tensor, cv2mask, \
-    pixel_convert, image_stack, \
+from Jovimetrix.sup.image import image_merge, image_split, tensor2cv, cv2tensor, \
+    cv2mask, pixel_convert, image_stack, \
     EnumEdge, EnumMirrorMode, EnumOrientation, \
     IT_WHMODE, IT_SAMPLE
 
@@ -286,10 +286,9 @@ class PixelMergeNode(JOVImageInOutBaseNode):
         i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
 
         if len(R)+len(B)+len(G)+len(A) == 0:
-            zero = torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8, device="cpu")
             return (
-                torch.stack([zero]),
-                torch.stack([zero]),
+                torch.stack([torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8, device="cpu")]),
+                torch.stack([torch.ones((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), dtype=torch.uint8, device="cpu")]),
             )
 
         masks = []
@@ -347,7 +346,7 @@ class MergeNode(JOVImageInOutBaseNode):
             a, b = pixel_convert(a, b)
             if a is None and b is None:
                 images.append(torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8, device="cpu"))
-                masks.append(torch.full((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), 1, dtype=torch.uint8, device="cpu"))
+                masks.append(torch.ones((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), dtype=torch.uint8, device="cpu"))
                 continue
 
             pixels = [a, b]
@@ -378,42 +377,34 @@ class CropNode(JOVImageInOutBaseNode):
         d = {"optional": {
                 Lexicon.TLTR: ("VEC4", {"default": (0, 0, 1, 0), "min": 0, "max": 1, "step": 0.005, "precision": 4, "label": [Lexicon.TOP, Lexicon.LEFT, Lexicon.TOP, Lexicon.RIGHT]}),
                 Lexicon.BLBR: ("VEC4", {"default": (0, 1, 1, 1), "min": 0, "max": 1, "step": 0.005, "precision": 4, "label": [Lexicon.BOTTOM, Lexicon.LEFT, Lexicon.BOTTOM, Lexicon.RIGHT]}),
-                Lexicon.PAD:  ("BOOLEAN", {"default": False}),
             }}
-        return deep_merge_dict(IT_REQUIRED, IT_PIXELS, d, IT_RGBA, IT_WH, IT_INVERT)
+        return deep_merge_dict(IT_REQUIRED, IT_PIXELS, d, IT_RGB, IT_INVERT)
 
     def run(self, **kw) -> tuple[list[torch.Tensor], list[torch.Tensor]]:
         pixels = kw.get(Lexicon.PIXEL, [None])
         tltr = parse_tuple(Lexicon.TLTR, kw, EnumTupleType.FLOAT, (0, 0, 1, 1,), 0, 1)
         blbr = parse_tuple(Lexicon.BLBR, kw, EnumTupleType.FLOAT, (0, 0, 1, 1,), 0, 1)
-        pad = kw.get(Lexicon.PAD, [0])
-        rgba = parse_tuple(Lexicon.RGBA, kw, default=(0, 0, 0, 255,), clip_min=0, clip_max=255)
-        wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
+        rgb = parse_tuple(Lexicon.RGB, kw, default=(0, 0, 0,), clip_min=0, clip_max=255)
         i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], 0, 1)
         masks = []
         images = []
-        for img, p, tltr, blbr, rgba, wihi, i in zip_longest_fill(pixels, pad, tltr, blbr, rgba, wihi, i):
-            w, h = wihi
+        for img, tltr, blbr, rgb, i in zip_longest_fill(pixels, tltr, blbr, rgb, i):
             if img is None:
-                zero = torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8, device="cpu")
-                images.append(zero)
-                masks.append(zero)
+                images.append(torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8, device="cpu"))
+                masks.append(torch.ones((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), dtype=torch.uint8, device="cpu"))
                 continue
 
             img = tensor2cv(img)
-            # rgb = (_r * 255, _g * 255, _b * 255)
-            w = w or img.shape[1]
-            h = h or img.shape[0]
-            # Logger.debug(l, t, r, b, w, h, p, c)
             x1, y1, x2, y2 = tltr
             x4, y4, x3, y3 = blbr
-            img = geo_crop(img, (x1, y1), (x2, y2), (x3, y3), (x4, y4), w, h, p, rgba)
+            img, mask = geo_crop_polygonal(img, (x1, y1), (x2, y2), (x3, y3), (x4, y4), rgb)
 
             if i != 0:
                 img = light_invert(img, i)
+                mask = light_invert(mask, i)
 
             images.append(cv2tensor(img))
-            masks.append(cv2mask(img))
+            masks.append(cv2mask(mask))
 
         return (
             torch.stack(images),

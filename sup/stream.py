@@ -7,16 +7,14 @@ import os
 import json
 import time
 import threading
-from typing import Any, Optional
+from typing import Any
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import cv2
 import numpy as np
 
-from Jovimetrix import Logger, Singleton
-from Jovimetrix.sup.comfy import MIN_IMAGE_SIZE
+from Jovimetrix import Logger, Singleton, MIN_IMAGE_SIZE
 from Jovimetrix.sup.image import image_grid, image_load
-from Jovimetrix.sup.comp import geo_scalefit, EnumScaleMode, EnumInterpolation
 
 # =============================================================================
 
@@ -53,33 +51,21 @@ class MediaStreamBase:
 
     TIMEOUT = 5.
 
-    def __init__(self, url:int|str, callback_frame:object,
-                 width:int=320, height:int=240, fps:float=30,
-                 mode:Optional[EnumScaleMode]=EnumScaleMode.FIT,
-                 sample:Optional[EnumInterpolation]=EnumInterpolation.LANCZOS4) -> None:
-
+    def __init__(self, url:int|str, callback:object, fps:float=30) -> None:
         self.__quit = False
         self.__paused = False
         self.__captured = False
         self.__ret = False
         self.__fps = fps
-        self.__mode = mode
-        self.__sample = sample
         self.__url = url
         try: self.__url = int(url)
         except: pass
-        self.__zoom = 0
-
-        self.width = width
-        self.height = height
+        self.__size = (0, 0)
         self.__timeout = None
-        self.__callback_frame = callback_frame
-        self.__frame = np.zeros((self.__height, self.__width, 3), dtype=np.uint8)
+        self.__callback = callback
+        self.__frame = None
         self.__thread = threading.Thread(target=self.__run, daemon=True)
         self.__thread.start()
-
-    def capture(self) -> None:
-        return True
 
     def __run(self) -> None:
         while not self.__quit:
@@ -93,26 +79,21 @@ class MediaStreamBase:
                     self.__paused = True
 
                     if not self.capture():
-                        Logger.err("MediaStream", f"CAPTURE FAIL [{self.__url}]")
+                        Logger.err(self, f"CAPTURE FAIL [{self.__url}]")
                         self.__quit = True
                         break
 
                     self.__paused = pause
                     self.__captured = True
-                    Logger.info("MediaStream", f"CAPTURED [{self.__url}]")
+                    Logger.info(self, f"CAPTURED [{self.__url}]")
 
                 # call the run capture frame command on subclasses
                 newframe = None
-                if self.__callback_frame is not None:
-                    # Logger.spam('callback')
-                    self.__ret, newframe = self.__callback_frame()
-
-                if newframe is not None:
-                    newframe = geo_scalefit(newframe, self.__width,
-                                     self.__height, self.__mode, self.__sample)
-
-                    self.__frame = newframe
-                    self.__timeout = None
+                if self.__callback is not None:
+                    self.__ret, newframe = self.__callback()
+                    if newframe is not None:
+                        self.__frame = newframe
+                        self.__timeout = None
 
                 if self.__timeout is None and (not self.__ret or newframe is None):
                     self.__timeout = time.perf_counter() + self.TIMEOUT
@@ -120,17 +101,23 @@ class MediaStreamBase:
             if self.__timeout is not None and time.perf_counter() > self.__timeout:
                 self.__timeout = None
                 self.__quit = True
-                Logger.warn("MediaStream", f"TIMEOUT [{self.__url}]")
+                Logger.warn(self, f"TIMEOUT [{self.__url}]")
 
             waste = max(waste - time.perf_counter(), delta)
-            # Logger.debug(waste)
             time.sleep(waste)
 
-        Logger.info("MediaStream", f"STOPPED [{self.__url}]")
+        Logger.info(self, f"STOPPED [{self.__url}]")
         self.end()
 
     def __del__(self) -> None:
         self.end()
+
+    def __repr__(self) -> str:
+        return self.__class__.__name__
+
+    def capture(self) -> None:
+        self.__captured = True
+        return self.__captured
 
     def end(self) -> None:
         self.release()
@@ -145,10 +132,6 @@ class MediaStreamBase:
     def pause(self) -> None:
         self.__paused = True
 
-    def sizer(self, width:int, height:int) -> None:
-        self.width = width
-        self.height = height
-
     @property
     def captured(self) -> bool:
         return self.__captured
@@ -162,119 +145,59 @@ class MediaStreamBase:
         return self.__ret, self.__frame
 
     @property
-    def width(self) -> int:
-        return self.__width
-
-    @width.setter
-    def width(self, val) -> None:
-        self.__width = max(1, val if val is not None else MIN_IMAGE_SIZE)
-
-    @property
-    def height(self) -> int:
-        return self.__height
-
-    @height.setter
-    def height(self, val) -> None:
-        self.__height = max(1, val if val is not None else MIN_IMAGE_SIZE)
-
-    @property
-    def scalemode(self) -> EnumScaleMode:
-        return self.__scalemode
-
-    @scalemode.setter
-    def scalemode(self, val: EnumScaleMode) -> None:
-        self.__scalemode = val
-
-    @property
-    def sample(self) -> EnumInterpolation:
-        return self.__sample
-
-    @sample.setter
-    def sample(self, val: EnumInterpolation) -> None:
-        self.__sample = val
-
-    @property
     def fps(self) -> float:
         return self.__fps
 
     @fps.setter
     def fps(self, val: float) -> None:
         self.__fps = max(1, val)
-        # Logger.debug("MediaStream", f"FPS ({val}) [{self.url}]")
 
     @property
-    def zoom(self) -> float:
-        return self.__zoom
+    def size(self) -> tuple[int, int]:
+        return self.__size
 
-    @zoom.setter
-    def zoom(self, val: float) -> None:
-        self.__zoom = val
+    @size.setter
+    def size(self, val: tuple[int, int]) -> None:
+        self.__size = val
 
-class MediaStreamDevice(MediaStreamBase):
-    TIMEOUT = 5.
-    def __init__(self, url:int|str, width:int=320, height:int=240, fps:float=30,
-                 mode:Optional[EnumScaleMode]=EnumScaleMode.NONE,
-                 sample:Optional[EnumInterpolation]=EnumInterpolation.LANCZOS4,
-                 backend:int=None) -> None:
-
+class MediaStreamURL(MediaStreamBase):
+    """A media point (could be a camera index)."""
+    def __init__(self, url:int|str, fps:float=30) -> None:
+        self.__single = None
         self.__source = None
-        self.__backend = [backend] if backend else [cv2.CAP_ANY]
-        self.__focus = 0
-        self.__exposure = 1
-        super().__init__(url, self.__callback, width, height, fps, mode, sample)
+        super().__init__(url, self.__callback, fps)
 
     def __callback(self) -> tuple[bool, Any]:
         if self.__source is None:
             return False, None
 
         ret = False
-        newframe = None
         try:
-            ret, newframe = self.__source.read()
+            ret, result = self.__source.read()
         except:
             pass
 
-        if not ret:
-            try:
-                # for cameras will just ignore; reached the end of the source
+        if self.__single is not None:
+            result = self.__single
+            ret = True
+        else:
+            if result is not None:
+                self.__single = result
+            elif not ret:
                 count = self.__source.get(cv2.CAP_PROP_FRAME_COUNT)
                 pos = self.__source.get(cv2.CAP_PROP_POS_FRAMES)
                 if pos >= count:
                     self.__source.set(cv2.CAP_PROP_POS_FRAMES, 0)
-            except:
-                pass
 
-        return ret, newframe
+        return ret, result
 
     def capture(self) -> bool:
         if self.captured:
             return True
-
-        timeout = time.perf_counter() + self.TIMEOUT
-        while self.__source is None and time.perf_counter() < timeout:
-            self.__source = None
-            for x in self.__backend:
-                self.__source = cv2.VideoCapture(self.url, x)
-                if self.captured:
-                    # __source.getBackendName()
-                    Logger.info(f"CAPTURED {self.url}")
-                    time.sleep(0.4)
-                    return True
+        self.__source = cv2.VideoCapture(self.url, cv2.CAP_ANY)
+        if self.captured:
+            return True
         return False
-
-    def end(self) -> None:
-        super().end()
-        try:
-            if self.__thread:
-                self.__thread.join()
-                del self.__thread
-        except AttributeError as _:
-            pass
-
-    def sizer(self, width:int, height:int) -> None:
-        self.__source.set(cv2.CAP_PROP_FRAME_WIDTH, width)
-        self.__source.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
-        super().sizer(width, height)
 
     @property
     def captured(self) -> bool:
@@ -283,16 +206,65 @@ class MediaStreamDevice(MediaStreamBase):
         return self.__source.isOpened()
 
     def release(self) -> None:
-        if self.__source:
+        if hasattr(self, "__source") and self.__source is not None:
             self.__source.release()
         super().release()
 
-    @MediaStreamBase.zoom.setter
+class MediaStreamDevice(MediaStreamBase):
+    """A system device like a web camera."""
+    def __init__(self, url:int|str, fps:float=30) -> None:
+        self.__focus = 0
+        self.__exposure = 1
+        self.__zoom = 0
+        self.__source = None
+        super().__init__(url, self.__callback, fps)
+
+    def __callback(self) -> tuple[bool, Any]:
+        try:
+            return self.__source.read()
+        except:
+            pass
+        return False, None
+
+    def capture(self) -> bool:
+        if self.captured:
+            return True
+        self.__source = cv2.VideoCapture(self.url, cv2.CAP_ANY)
+        if self.captured:
+            time.sleep(0.2)
+            width = self.__source.get(cv2.CAP_PROP_FRAME_WIDTH)
+            height = self.__source.get(cv2.CAP_PROP_FRAME_HEIGHT)
+            self.size = (width, height)
+            return True
+        return False
+
+    @property
+    def captured(self) -> bool:
+        if self.__source is None:
+            return False
+        return self.__source.isOpened()
+
+    def release(self) -> None:
+        if hasattr(self, "__source") and self.__source is not None:
+            self.__source.release()
+        super().release()
+
+    @MediaStreamBase.size.setter
+    def size(self, val) -> None:
+        width = max(MIN_IMAGE_SIZE, val[0] if val is not None else MIN_IMAGE_SIZE)
+        height = max(MIN_IMAGE_SIZE, val[1] if val is not None else MIN_IMAGE_SIZE)
+        self.__source.set(cv2.CAP_PROP_FRAME_WIDTH, width)
+        self.__source.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
+
+    @property
+    def zoom(self) -> float:
+        return self.__zoom
+
+    @zoom.setter
     def zoom(self, val: float) -> None:
         self.__zoom = np.clip(val, 0, 1)
         val = 100 + 300 * self.__zoom
         self.__source.set(cv2.CAP_PROP_ZOOM, val)
-        # Logger.debug("MediaStream", f"ZOOM ({self.__zoom})")
 
     @property
     def exposure(self) -> float:
@@ -316,23 +288,19 @@ class MediaStreamDevice(MediaStreamBase):
         self.__source.set(cv2.CAP_PROP_FOCUS, val)
 
 class MediaStreamStatic(MediaStreamBase):
-    """A stream coming from a comfyui node."""
-    def __init__(self, url:int|str, width:int=320, height:int=240, fps:float=30,
-                 mode:Optional[EnumScaleMode]=EnumScaleMode.FIT,
-                 sample:Optional[EnumInterpolation]=EnumInterpolation.LANCZOS4) -> None:
-
+    """A stream coming from ComfyUI."""
+    def __init__(self, url:str) -> None:
         self.image = None
-        super().__init__(url, self.__callback, width, height, fps, mode, sample)
+        super().__init__(url, self.__callback)
 
     def __callback(self) -> tuple[bool, Any]:
         return True, self.image
 
 class MediaStreamFile(MediaStreamBase):
-    """A stream coming from a comfyui node."""
-    def __init__(self, url:int|str) -> None:
+    """A file served from a local file using file:// as the 'uri'."""
+    def __init__(self, url:str) -> None:
         self.__image = image_load(url)[0]
-        height, width = self.__image.shape[:2]
-        super().__init__(url, self.__callback, width, height)
+        super().__init__(url, self.__callback)
 
     def __callback(self) -> tuple[bool, Any]:
         return True, self.__image
@@ -358,21 +326,25 @@ class StreamManager(metaclass=Singleton):
             stream = self.capture(url)
         return stream.frame
 
-    def capture(self, url: str, width:int=320, height:int=240, fps:float=30,
-                backend:int=None, static:bool=False, endpoint:str=None) -> MediaStreamBase:
-
+    def capture(self, url: str, fps:float=30, static:bool=False, endpoint:str=None) -> MediaStreamBase:
         if (stream := StreamManager.STREAM.get(url, None)) is None:
             try:
-                if isinstance(url, str) and url.lower().startswith("file://"):
-                    stream = StreamManager.STREAM[url] = MediaStreamFile(url[7:])
-                elif static:
-                    stream = StreamManager.STREAM[url] = MediaStreamStatic(url, width, height, fps)
+                if static:
+                    StreamManager.STREAM[url] = MediaStreamStatic(url)
+                elif isinstance(url, str) and url.lower().startswith("file://"):
+                    StreamManager.STREAM[url] = MediaStreamFile(url[7:])
                 else:
-                    stream = StreamManager.STREAM[url] = MediaStreamDevice(url, width, height, fps, backend=backend)
+                    try:
+                        StreamManager.STREAM[url] = MediaStreamDevice(url, fps)
+                    except Exception as e:
+                        Logger.err(e)
+                        StreamManager.STREAM[url] = MediaStreamURL(url, fps)
+
+                stream = StreamManager.STREAM[url]
 
                 if endpoint is not None and stream.captured:
                     StreamingServer.endpointAdd(endpoint, stream)
-                Logger.info(self, stream, url)
+                # Logger.info(self, stream, url)
             except Exception as e:
                 Logger.err(self, str(e))
 
@@ -414,7 +386,7 @@ class StreamingHandler(BaseHTTPRequestHandler):
                         self.wfile.write(jpeg.tobytes())
                         self.wfile.write(b'\r\n')
                 except Exception as e:
-                    Logger.err(f"Error: {e}")
+                    Logger.err(self, f"Error: {e}")
                     break
 
         elif key == 'jovimetrix':
@@ -444,7 +416,7 @@ class StreamingServer(metaclass=Singleton):
         self.__thread_server.start()
         self.__thread_capture = threading.Thread(target=self.__capture, daemon=True)
         self.__thread_capture.start()
-        Logger.info("STARTED")
+        Logger.info(self, "STARTED")
 
     def __server(self) -> None:
         httpd = ThreadingHTTPServer(self.__address, lambda *args: StreamingHandler(StreamingServer.OUT, *args))
@@ -472,9 +444,11 @@ def __getattr__(name: str) -> Any:
 
 def streamReadTest() -> None:
     urls = [
-        "file://z:\chiggins.png",
-        0,1,
         "http://63.142.183.154:6103/mjpg/video.mjpg",
+        "https://images.squarespace-cdn.com/content/v1/600743194a20ea052ee04fbb/a1415a46-a24d-4efb-afe2-9ef896d2da62/CircleUnderBerry2.jpg",
+        "0", 1,
+        "https://images.squarespace-cdn.com/content/v1/600743194a20ea052ee04fbb/1611094440833-JRYTH6W6ODHF0F66FSTI/CD876BD2-EDF9-4FE0-9E85-4D05EEFE9513.jpeg",
+        "file://z:\chiggins.png",
         "http://104.207.27.126:8080/mjpg/video.mjpg",
         "http://185.133.99.214:8011/mjpg/video.mjpg",
         "http://tapioles.eu:85/mjpg/video.mjpg",
@@ -495,12 +469,12 @@ def streamReadTest() -> None:
     ]
     streamIdx = 0
 
-    widthT = 540
-    heightT = 480
+    widthT = 160
+    heightT = 120
 
     empty = np.zeros((heightT, widthT, 3), dtype=np.uint8)
     try:
-        StreamManager().capture(urls[streamIdx % len(urls)], widthT, heightT)
+        StreamManager().capture(urls[streamIdx % len(urls)])
     except Exception as e:
         Logger.err(e)
     streamIdx += 1
@@ -508,8 +482,8 @@ def streamReadTest() -> None:
     while True:
         streams = []
         for x in StreamManager().active:
-            ret, chunk = x.frame
-            if not ret or chunk is None:
+            _, chunk = x.frame
+            if chunk is None:
                 chunk = np.zeros((heightT, widthT, 3), dtype=np.uint8)
             else:
                 chunk = cv2.resize(chunk, (widthT, heightT))
@@ -527,7 +501,7 @@ def streamReadTest() -> None:
         val = cv2.waitKey(1) & 0xFF
         if val == ord('c'):
             try:
-                StreamManager().capture(urls[streamIdx % len(urls)], widthT, heightT)
+                StreamManager().capture(urls[streamIdx % len(urls)])
             except Exception as e:
                 Logger.err(e)
             streamIdx += 1
@@ -542,7 +516,7 @@ def streamWriteTest() -> None:
 
     fpath = 'res/stream-video.mp4'
     try:
-        device = StreamManager().capture(fpath, 96, 54, endpoint=f'/media')
+        device = StreamManager().capture(fpath, endpoint=f'/media')
         device.fps = 30
     except:
         pass

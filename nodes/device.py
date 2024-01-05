@@ -17,14 +17,13 @@ import cv2
 import torch
 import numpy as np
 
-from Jovimetrix import Logger
+from Jovimetrix import Logger, JOVBaseNode, JOVImageBaseNode, \
+    IT_PIXELS, IT_INVERT, IT_REQUIRED, MIN_IMAGE_SIZE
+
 from Jovimetrix.sup.lexicon import Lexicon
 
 from Jovimetrix.sup.util import deep_merge_dict, parse_tuple, parse_number, \
     EnumTupleType
-
-from Jovimetrix.sup.comfy import JOVBaseNode, JOVImageBaseNode, \
-    IT_PIXELS, IT_INVERT, IT_REQUIRED, MIN_IMAGE_SIZE
 
 from Jovimetrix.sup.comp import light_invert, geo_scalefit, \
     EnumInterpolation, EnumScaleMode
@@ -46,16 +45,6 @@ class EnumCanvasOrientation(Enum):
 
 # =============================================================================
 
-IT_ORIENT = {"optional": {
-    Lexicon.ORIENT: (EnumCanvasOrientation._member_names_, {"default": EnumCanvasOrientation.NORMAL.name}),
-}}
-
-IT_CAM = {"optional": {
-    Lexicon.ZOOM: ("FLOAT", {"min": 0, "max": 1, "step": 0.005, "default": 0}),
-}}
-
-# =============================================================================
-
 class StreamReaderNode(JOVImageBaseNode):
     NAME = "STREAM READER (JOV) 📺"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/DEVICE"
@@ -74,10 +63,12 @@ class StreamReaderNode(JOVImageBaseNode):
             Lexicon.CAMERA: (cls.CAMERA_LIST, {"default": default}),
             Lexicon.FPS: ("INT", {"min": 1, "max": 60, "default": 30}),
             Lexicon.WAIT: ("BOOLEAN", {"default": False}),
-            Lexicon.WH: ("VEC2", {"default": (320, 240), "min": MIN_IMAGE_SIZE, "max": 8192, "step": 1, "label": [Lexicon.W, Lexicon.H]}),
+            # Lexicon.WH: ("VEC2", {"default": (320, 240), "min": MIN_IMAGE_SIZE, "max": 8192, "step": 1, "label": [Lexicon.W, Lexicon.H]}),
             Lexicon.BATCH: ("VEC2", {"default": (1, 30), "min": 1, "step": 1, "label": ["BATCH", ""]}),
+            Lexicon.ORIENT: (EnumCanvasOrientation._member_names_, {"default": EnumCanvasOrientation.NORMAL.name}),
+            Lexicon.ZOOM: ("FLOAT", {"min": 0, "max": 1, "step": 0.005, "default": 0}),
         }}
-        return deep_merge_dict(IT_REQUIRED, d, IT_SCALEMODE, IT_SAMPLE, IT_INVERT, IT_ORIENT, IT_CAM)
+        return deep_merge_dict(IT_REQUIRED, d, IT_INVERT)
 
     @classmethod
     def IS_CHANGED(cls, **kw) -> float:
@@ -97,14 +88,13 @@ class StreamReaderNode(JOVImageBaseNode):
                 url = str(url)
             except: url = ""
 
-        width, height = parse_tuple(Lexicon.WH, kw, default=(320, 240,), clip_min=MIN_IMAGE_SIZE)[0]
+        # width, height = parse_tuple(Lexicon.WH, kw, default=(320, 240,), clip_min=MIN_IMAGE_SIZE)[0]
 
         if self.__capturing == 0 and (self.__device is None or url != self.__url):
             self.__capturing = time.perf_counter()
-            # Logger.debug('capturing', self.__capturing, self.__url, url)
             self.__url = url
             try:
-                self.__device = StreamManager().capture(url, width, height)
+                self.__device = StreamManager().capture(url)
             except Exception as e:
                 Logger.err(str(e))
 
@@ -125,19 +115,21 @@ class StreamReaderNode(JOVImageBaseNode):
             if self.__device.fps != fps:
                 self.__device.fps = fps
 
-            zoom = kw.get(Lexicon.ZOOM, 0)
-            if self.__device.zoom != zoom:
-                self.__device.zoom = zoom
+            # only cameras have a zoom
+            try:
+                self.__device.zoom = kw.get(Lexicon.ZOOM, 0)
+            except Exception as e:
+                Logger.err(e)
 
             if kw.get(Lexicon.WAIT, False):
                 self.__device.pause()
             else:
                 self.__device.play()
 
-            mode = kw.get(Lexicon.MODE, EnumScaleMode.NONE)
-            mode = EnumScaleMode[mode]
-            rs = kw.get(Lexicon.SAMPLE, EnumInterpolation.LANCZOS4)
-            rs = EnumInterpolation[rs]
+            #mode = kw.get(Lexicon.MODE, EnumScaleMode.NONE)
+            #mode = EnumScaleMode[mode]
+            ##rs = kw.get(Lexicon.SAMPLE, EnumInterpolation.LANCZOS4)
+            #rs = EnumInterpolation[rs]
             orient = kw.get(Lexicon.ORIENT, EnumCanvasOrientation.NORMAL)
             orient = EnumCanvasOrientation[orient]
             batch_size, rate = parse_tuple(Lexicon.BATCH, kw, default=(1, 30), clip_min=1)[0]
@@ -146,7 +138,7 @@ class StreamReaderNode(JOVImageBaseNode):
                 mask = None
                 ret, img = self.__device.frame
                 if img is None:
-                    img = np.zeros((height, width, 3), dtype=np.uint8)
+                    img = np.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=np.uint8)
 
                 if ret:
                     cc, _, w, h = channel_count(img)
@@ -155,10 +147,11 @@ class StreamReaderNode(JOVImageBaseNode):
                         mask = img[:, :, 3]
                         img = img[:, :, :3]
 
-                    if width != w or height != h:
-                        self.__device.sizer(width, height)
-                        img = geo_scalefit(img, width, height, mode, rs)
+                    #if mode != EnumScaleMode.NONE and (width != w or height != h):
+                        #self.__device.size = (width, height)
+                        # img = geo_scalefit(img, width, height, mode, rs)
 
+                    # print(orient, [EnumCanvasOrientation.FLIPX, EnumCanvasOrientation.FLIPXY])
                     if orient in [EnumCanvasOrientation.FLIPX, EnumCanvasOrientation.FLIPXY]:
                         img = cv2.flip(img, 1)
 
@@ -170,16 +163,16 @@ class StreamReaderNode(JOVImageBaseNode):
 
                 images.append(cv2tensor(img))
                 if mask is None:
-                    mask = np.full((height, width), 255, dtype=np.uint8)
+                    h, w = img.shape[:2]
+                    mask = np.full((h, w), 255, dtype=np.uint8)
                 masks.append(cv2mask(mask))
 
                 if batch_size > 1:
                     time.sleep(rate)
-                    # Logger.debug(idx, rate)
 
         if len(images) == 0:
-            images = [torch.zeros((height, width, 3), dtype=torch.uint8, device="cpu")]
-            masks = [torch.full((height, width), 1, dtype=torch.uint8, device="cpu")]
+            images = [torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8, device="cpu")]
+            masks = [torch.ones((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), dtype=torch.uint8, device="cpu")]
 
         return (torch.stack(images), torch.stack(masks))
 

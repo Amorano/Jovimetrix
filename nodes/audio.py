@@ -7,12 +7,11 @@ import torch
 import ffmpeg
 import numpy as np
 
-from Jovimetrix import Logger
+from Jovimetrix import Logger, JOVImageBaseNode, \
+    MIN_IMAGE_SIZE, IT_REQUIRED, IT_WH, IT_RGBA, IT_RGBA_B
+
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import deep_merge_dict, parse_tuple
-
-from Jovimetrix.sup.comfy import JOVImageBaseNode, \
-    MIN_IMAGE_SIZE, IT_REQUIRED, IT_WH, IT_RGBA, IT_RGBA_B
 
 from Jovimetrix.sup.image import cv2mask, cv2tensor
 from Jovimetrix.sup.audio import load_audio, wave_extract, graph_sausage

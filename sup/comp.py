@@ -90,7 +90,7 @@ class EnumBlendType(Enum):
 # === SHAPE FUNCTIONS ===
 # =============================================================================
 
-def shape_body(func: str, width: int, height: int, sizeX:float=1., sizeY:float=1., fill:TYPE_PIXEL=(0,0,0), back:TYPE_PIXEL=(0,0,0)) -> Image:
+def shape_body(func: str, width: int, height: int, sizeX:float=1., sizeY:float=1., fill:TYPE_PIXEL=(255,255,255), back:TYPE_PIXEL=(0,0,0)) -> Image:
     sizeX = max(0.5, sizeX / 2 + 0.5)
     sizeY = max(0.5, sizeY / 2 + 0.5)
     xy = [(width * (1. - sizeX), height * (1. - sizeY)),(width * sizeX, height * sizeY)]
@@ -100,13 +100,13 @@ def shape_body(func: str, width: int, height: int, sizeX:float=1., sizeY:float=1
     func(xy, fill=pixel_eval(fill))
     return image
 
-def shape_ellipse(width: int, height: int, sizeX:float=1., sizeY:float=1., fill:TYPE_PIXEL=(0,0,0), back:TYPE_PIXEL=(0,0,0)) -> Image:
+def shape_ellipse(width: int, height: int, sizeX:float=1., sizeY:float=1., fill:TYPE_PIXEL=(255,255,255), back:TYPE_PIXEL=(0,0,0)) -> Image:
     return shape_body('ellipse', width, height, sizeX=sizeX, sizeY=sizeY, fill=fill, back=back)
 
-def shape_quad(width: int, height: int, sizeX:float=1., sizeY:float=1., fill:TYPE_PIXEL=(0,0,0), back:TYPE_PIXEL=(0,0,0)) -> Image:
+def shape_quad(width: int, height: int, sizeX:float=1., sizeY:float=1., fill:TYPE_PIXEL=(255,255,255), back:TYPE_PIXEL=(0,0,0)) -> Image:
     return shape_body('rectangle', width, height, sizeX=sizeX, sizeY=sizeY, fill=fill, back=back)
 
-def shape_polygon(width: int, height: int, size: float=1., sides: int=3, angle: float=0., fill:TYPE_PIXEL=(0,0,0), back:TYPE_PIXEL=(0,0,0)) -> Image:
+def shape_polygon(width: int, height: int, size: float=1., sides: int=3, angle: float=0., fill:TYPE_PIXEL=(255,255,255), back:TYPE_PIXEL=(0,0,0)) -> Image:
 
     fill = pixel_eval(fill)
     size = max(0.00001, size)
@@ -124,7 +124,7 @@ def shape_polygon(width: int, height: int, size: float=1., sides: int=3, angle: 
 def geo_crop(image: TYPE_IMAGE,
              pnt_a: TYPE_COORD, pnt_b: TYPE_COORD,
              pnt_c: TYPE_COORD, pnt_d: TYPE_COORD,
-             widthT: int=None, heightT: int=None, pad:bool=False,
+             widthT: int=None, heightT: int=None,
              color: TYPE_PIXEL=0) -> TYPE_IMAGE:
 
         height, width = image.shape[:2]
@@ -152,13 +152,14 @@ def geo_crop(image: TYPE_IMAGE,
         widthT = (widthT if widthT is not None else x_end - x_start)
         heightT = (heightT if heightT is not None else y_end - y_start)
 
-        if not pad or (widthT == x_end - x_start and heightT == y_end - y_start):
+        if (widthT == x_end - x_start and heightT == y_end - y_start):
             return crop_img
 
         cc = channel_count(image)[0]
         color = [c for c in color]
         while len(color) > cc:
             color.pop(-1)
+
         img_padded = np.full((heightT, widthT, cc), color, dtype=np.uint8)
         crop_height, crop_width = crop_img.shape[:2]
         h2 = heightT // 2
@@ -173,6 +174,29 @@ def geo_crop(image: TYPE_IMAGE,
         x_start2, x_end2 = int(max(0, cw - x_delta)), int(min(cw + x_delta, crop_width))
         img_padded[y_start:y_end, x_start:x_end] = crop_img[y_start2:y_end2, x_start2:x_end2]
         return img_padded
+
+def geo_crop_polygonal(image: TYPE_IMAGE,
+                       pnt_a: TYPE_COORD, pnt_b: TYPE_COORD,
+                       pnt_c: TYPE_COORD, pnt_d: TYPE_COORD,
+                       color: TYPE_PIXEL=0) -> tuple[TYPE_IMAGE, TYPE_IMAGE]:
+
+    h, w = image.shape[:2]
+    pnt_a = (int(pnt_a[0] * w), int(pnt_a[1] * h))
+    pnt_b = (int(pnt_b[0] * w), int(pnt_b[1] * h))
+    pnt_c = (int(pnt_c[0] * w), int(pnt_c[1] * h))
+    pnt_d = (int(pnt_d[0] * w), int(pnt_d[1] * h))
+
+    mask = np.zeros((h, w), dtype=np.uint8)
+    pts = np.array([pnt_a, pnt_b, pnt_c, pnt_d], np.int32)
+    pts = pts.reshape((-1, 1, 2))
+    cv2.fillPoly(mask, [pts], 255)
+
+    canvas = np.full_like(image, color, dtype=image.dtype)
+    canvas = cv2.bitwise_and(canvas, canvas, mask=~mask)
+    roi = cv2.bitwise_and(image, image, mask=mask)
+    img = cv2.addWeighted(canvas, 1, roi, 1, 0)
+    img = img.astype(np.uint8)
+    return img, mask
 
 def geo_edge_wrap(image: TYPE_IMAGE, tileX: float=1., tileY: float=1., edge: str='WRAP') -> TYPE_IMAGE:
     """TILING."""
@@ -719,8 +743,8 @@ def testImageMerge() -> None:
 
 if __name__ == "__main__":
     img = cv2.imread('./_res/img/test_fore2.png', cv2.IMREAD_UNCHANGED)
-    img = geo_mirror(img, 0.75, 0)
-    img = geo_mirror(img, 0.25, 1)
-    cv2.imwrite(f'./_res/tst/image-mirror.png', img)
+    h, w = img.shape[:2]
+    img = geo_scalefit(img, 320, 240, EnumScaleMode.FIT)
+    cv2.imwrite(f'./_res/tst/image-scalefit.png', img)
     # testBlendModes()
     # testImageMerge()

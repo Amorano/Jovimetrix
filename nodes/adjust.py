@@ -6,21 +6,22 @@ Adjustment
 import cv2
 import torch
 
-from Jovimetrix import Logger
+from Jovimetrix import Logger, JOVImageInOutBaseNode, \
+    IT_PIXELS, IT_PIXEL2, IT_HSV, IT_FLIP, IT_LOHI, IT_LMH, \
+    IT_INVERT, IT_CONTRAST, IT_GAMMA, IT_REQUIRED, MIN_IMAGE_SIZE
+
 from Jovimetrix.sup.lexicon import Lexicon
 
 from Jovimetrix.sup.util import zip_longest_fill, deep_merge_dict, parse_tuple, \
     parse_number, EnumTupleType
 
-from Jovimetrix.sup.comfy import JOVImageInOutBaseNode, \
-    IT_PIXELS, IT_PIXEL2, IT_HSV, IT_FLIP, IT_LOHI, IT_LMH, \
-    IT_INVERT, IT_CONTRAST, IT_GAMMA, IT_REQUIRED, MIN_IMAGE_SIZE
-
 from Jovimetrix.sup.image import tensor2cv, cv2tensor, cv2mask, pixel_convert
-from Jovimetrix.sup.color import color_match, color_match_custom_map, color_match_heat_map, EnumColorMap
-from Jovimetrix.sup.comp import adjust_sharpen, light_invert, morph_edge_detect, morph_emboss,\
-    adjust_posterize, adjust_equalize, adjust_levels, adjust_pixelate, adjust_quantize, adjust_threshold,\
-    light_contrast, light_hsv, light_gamma, \
+from Jovimetrix.sup.color import color_match, color_match_custom_map, color_match_heat_map, \
+    EnumColorMap
+
+from Jovimetrix.sup.comp import adjust_sharpen, light_invert, morph_edge_detect, \
+    morph_emboss, adjust_posterize, adjust_equalize, adjust_levels, adjust_pixelate, \
+    adjust_quantize, adjust_threshold, light_contrast, light_hsv, light_gamma, \
     EnumAdjustOP, EnumThresholdAdapt, EnumThreshold
 
 # =============================================================================
@@ -49,9 +50,8 @@ class AdjustNode(JOVImageInOutBaseNode):
         images = []
         for img, o, r, a, i in zip_longest_fill(pixels, op, radius, amt, i):
             if img is None:
-                zero = torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8, device="cpu")
-                images.append(zero)
-                masks.append(zero)
+                images.append(torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8, device="cpu"))
+                masks.append(torch.ones((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), dtype=torch.uint8, device="cpu"))
                 continue
 
             img = tensor2cv(img)
@@ -150,9 +150,8 @@ class ColorMatchNode(JOVImageInOutBaseNode):
         for data in zip_longest_fill(pixelA, pixelB, colormap, threshold, blur, flip, i):
             a, b, c, t, bl, f, i = data
             if a is None and b is None:
-                zero = torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8, device="cpu")
-                images.append(zero)
-                masks.append(zero)
+                images.append(torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8, device="cpu"))
+                masks.append(torch.ones((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), dtype=torch.uint8, device="cpu"))
                 continue
 
             a = tensor2cv(a) if a is not None else None
@@ -200,9 +199,8 @@ class FindEdgeNode(JOVImageInOutBaseNode):
         for img, lohi, i in zip_longest_fill(pixels, lohi, i):
             lo, hi = lohi
             if img is None:
-                zero = torch.zeros((1, 1, 3), dtype=torch.uint8, device="cpu")
-                images.append(zero)
-                masks.append(zero)
+                images.append(torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8, device="cpu"))
+                masks.append(torch.ones((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), dtype=torch.uint8, device="cpu"))
                 continue
 
             img = tensor2cv(img)
@@ -240,9 +238,8 @@ class HSVNode(JOVImageInOutBaseNode):
             img, hsv, c, g, i = data
             h, s, v = hsv
             if img is None:
-                zero = torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8, device="cpu")
-                images.append(zero)
-                masks.append(zero)
+                images.append(torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8, device="cpu"))
+                masks.append(torch.ones((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), dtype=torch.uint8, device="cpu"))
                 continue
 
             img = tensor2cv(img)
@@ -284,9 +281,8 @@ class LevelsNode(JOVImageInOutBaseNode):
             l, m, h = lmh
 
             if img is None:
-                zero = torch.zeros((1, 1, 3), dtype=torch.uint8, device="cpu")
-                images.append(zero)
-                masks.append(zero)
+                images.append(torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8, device="cpu"))
+                masks.append(torch.ones((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), dtype=torch.uint8, device="cpu"))
                 continue
 
             img = torch.maximum(img - l, torch.tensor(0.0))
@@ -332,9 +328,8 @@ class ThresholdNode(JOVImageInOutBaseNode):
         for data in zip_longest_fill(pixels, op, adapt, threshold, size, i):
             img, o, a, t, b, i = data
             if img is None:
-                zero = torch.zeros((1, 1, 3), dtype=torch.uint8, device="cpu")
-                images.append(zero)
-                masks.append(zero)
+                images.append(torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8, device="cpu"))
+                masks.append(torch.ones((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), dtype=torch.uint8, device="cpu"))
                 continue
 
             img = tensor2cv(img)
