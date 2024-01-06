@@ -183,18 +183,48 @@ class TextNode(JOVImageBaseNode):
             img = light_invert(img, i)
         return (cv2tensor(img), cv2mask(img),)
 
+GLSL_FRAGMENT_DEFAULT = '''vec3 palette( in float t, in vec3 a, in vec3 b, in vec3 c, in vec3 d )
+{
+    return a + b*cos( 6.28318*(c*t+d) );
+}
+
+void main() {
+    float aspect = iResolution.y / iResolution.x;
+    vec2 center = vec2(0.5, aspect * 0.5);
+    float dist = length(iCoord - center) ;
+    vec3 music = texture(iChannel0, vec2(dist * 0.1, 0.0)).rgb ;
+    float a = smoothstep(0.0, 1.0, pow(length(music), 2.0) );
+
+    vec3 c1 = vec3(255.0 / 255.0, 0.0 / 255.0, 0.0 / 255.0);
+    vec3 c2 = vec3(255.0 / 255.0, 255.0 / 255.0, 255.0 / 255.0);
+    vec3 c3 = vec3(255.0 / 255.0, 0.0 / 255.0, 255.0 / 255.0);
+    vec3 c4 = vec3(0.0 / 255.0, 0.0 / 255.0, 255.0 / 255.0);
+
+    vec3 col = a * palette(length(music) * 2.0, c1, c4, c2, c2 );
+    FragColor = vec4(col,1.0);
+}'''
+
 class GLSLNode(JOVBaseNode):
     NAME = "GLSL (JOV) 🍩"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
     DESCRIPTION = ""
     RETURN_TYPES = ("IMAGE", )
     RETURN_NAMES = (Lexicon.IMAGE, )
-    # OUTPUT_IS_LIST = (False, False, )
-    POST = True
+    OUTPUT_NODE = True
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {"hidden": {"id":"UNIQUE_ID"}}
+        d = {"optional": {
+                Lexicon.TIME: ("FLOAT", {"default": 0, "step": 0.01, "min": 0}),
+                Lexicon.FIXED: ("FLOAT", {"default": 0, "step": 0.01, "min": 0}),
+                Lexicon.RESET: ("BOOLEAN", {"default": False}),
+                Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), "step": 1, "min": 1}),
+                Lexicon.FRAGMENT: ("STRING", {"multiline": True, "default": GLSL_FRAGMENT_DEFAULT}),
+            },
+            "hidden": {
+                "id": "UNIQUE_ID"
+            }}
+
         return deep_merge_dict(IT_REQUIRED, IT_PIXELS, d)
 
     @classmethod
@@ -205,6 +235,7 @@ class GLSLNode(JOVBaseNode):
         self.__last = torch.ones((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8)
 
     def run(self, id, **kw) -> tuple[torch.Tensor, torch.Tensor]:
+        # ask for this "id"'s image
         PromptServer.instance.send_sync("jovi-glsl-image", {"id": id})
         try:
             img = ComfyAPIMessage.poll(id)

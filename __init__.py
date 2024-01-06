@@ -233,8 +233,8 @@ class ComfyAPIMessage:
         return message.strip()
 
 try:
-    @PromptServer.instance.routes.post("/jovimetrix/node/glsl")
-    async def jovimetrix_glsl_post(request) -> Any:
+    @PromptServer.instance.routes.post("/jovimetrix/message")
+    async def jovimetrix_message(request) -> Any:
         json_data = await request.json()
         did = json_data.get("id", None)
         ComfyAPIMessage.MESSAGE[did] = json_data.get("frame", "")
@@ -519,7 +519,7 @@ class Session(metaclass=Singleton):
         Session.CLASS_MAPPINGS = {x[0] : x[1] for x in sorted(Session.CLASS_MAPPINGS.items(),
                                                               key=lambda item: getattr(item[1], 'SORT', 0))}
         # now sort the categories...
-        for c in ["CREATE", "ADJUST", "TRANSFORM", "COMPOSE",
+        for c in ["CREATE", "ADJUST", "COMPOSE",
                   "ANIMATE", "FLOW", "CALC", "DEVICE", "AUDIO",
                   "UTILITY", "WIP ☣️💣"]:
 

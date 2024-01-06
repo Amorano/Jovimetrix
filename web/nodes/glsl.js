@@ -8,8 +8,6 @@ import { api } from "/scripts/api.js"
 import { app } from "/scripts/app.js"
 import { $el } from "/scripts/ui.js"
 import * as util from '../core/util.js'
-import { ComfyWidgets } from "/scripts/widgets.js"
-import { SpinnerWidget } from "../widget/widget_spinner.js"
 
 const VERTEX_SHADER = `#version 300 es
 in vec2 iResolution;
@@ -20,34 +18,97 @@ void main() {
     iCoord = iPosition * 0.5 + 0.5;
 }`
 
-// vec4 color = texture(iChannel0, iCoord); color.r += sin(iTime);
-// vec4(clamp(color - colorShift, 0.0, 1.0), 1.0);
-
-const FRAGMENT_DEFAULT2 = `void main() {
-    vec4 color = texture(iChannel0, iCoord);
-    color.r += sin(iTime);
-    FragColor = color;
-}`
-
-const FRAGMENT_DEFAULT = `void main() {
-    vec4 color = texture(iChannel0, iCoord);
-    color.r += cos(iTime / 5.0);
-    color.g += sin(iTime / 4.0);
-    color.b += cos(iTime / 3.0) + sin(iTime / 2.0);
-    FragColor = color;
-}`
-
-
-
 const FRAGMENT_HEADER = (body) => {
     return `#version 300 es
+#ifdef GL_ES
+precision mediump float;
+#endif
+
+#define PI 3.14159265359
+
 precision highp float;
 in vec2 iCoord;
+uniform vec2 iResolution;
 uniform sampler2D iChannel0;
 uniform float iTime;
 out vec4 FragColor;
 
 ` + body};
+
+const FRAGMENT_DEFAULT3 = `
+float plot(vec2 st) {
+    return smoothstep(0.02, 0.0, abs(st.y - st.x));
+}
+
+void main() {
+    float y = iCoord.x;
+    vec3 color = vec3(y);
+    float pct = plot(iCoord);
+    color = (1.0 - pct) * color + pct * vec3(0.0, 1.0, 0.0);
+    FragColor = vec4(color, 1.0);
+}`
+
+const FRAGMENT_DEFAULT2 = `void main() {
+    vec4 color = texture(iChannel0, iCoord);
+    FragColor = vec4(iCoord.x, iCoord.y, 0.0, 1.0);
+}`
+
+const FRAGMENT_DEFAULT4 = `void main() {
+	vec3 c;
+	float l, z = iTime;
+	for(int i=0; i < 3; i++) {
+        vec2 uv, p = iCoord;
+		p -= .5;
+		p.x *= iResolution.x / iResolution.y;
+		z += .07;
+		l = length(p);
+		uv += p / l * (sin(z) + 1.) * abs(sin(l * 9. - z - z));
+		c[i] = .01 / length(mod(uv, 1.) - .5);
+	}
+	FragColor = vec4(c / l, iTime);
+}`
+
+const FRAGMENT_DEFAULT12 = `void main() {
+    // the sound texture is 512x2
+    int tx = int(iCoord.x * 512.0);
+
+	// first row is frequency data (48Khz/4 in 512 texels, meaning 23 Hz per texel)
+	float fft  = texelFetch( iChannel0, ivec2(tx,0), 0 ).x;
+
+    // second row is the sound wave, one texel is one mono sample
+    float wave = texelFetch( iChannel0, ivec2(tx,1), 0 ).x;
+
+	// convert frequency to colors
+	vec3 col = vec3( fft, 4.0*fft*(1.0-fft), 1.0-fft ) * fft;
+
+    // add wave form on top
+	col += 1.0 -  smoothstep( 0.0, 0.15, abs(wave - iCoord.y) );
+
+	// output final color
+	FragColor = vec4(col,1.0);
+}`
+
+const FRAGMENT_DEFAULT = `vec3 palette( in float t, in vec3 a, in vec3 b, in vec3 c, in vec3 d )
+{
+    return a + b*cos( 6.28318*(c*t+d) );
+}
+
+void main() {
+    float aspect = iResolution.y / iResolution.x;
+    vec2 center = vec2(0.5, aspect * 0.5);
+    float dist = length(iCoord - center) ;
+    vec3 music = texture(iChannel0, vec2(dist * 0.1, 0.0)).rgb ;
+    float a = smoothstep(0.0, 1.0, pow(length(music), 2.0) );
+
+    vec3 c1 = vec3(255.0 / 255.0, 0.0 / 255.0, 0.0 / 255.0);
+    vec3 c2 = vec3(255.0 / 255.0, 255.0 / 255.0, 255.0 / 255.0);
+    vec3 c3 = vec3(255.0 / 255.0, 0.0 / 255.0, 255.0 / 255.0);
+    vec3 c4 = vec3(0.0 / 255.0, 0.0 / 255.0, 255.0 / 255.0);
+
+    vec3 col = a * palette(length(music) * 2.0, c1, c4, c2, c2 );
+    FragColor = vec4(col,1.0);
+}`
+
 
 function get_position_style(ctx, widget_width, y, node_height) {
     const MARGIN = 4;
@@ -100,26 +161,24 @@ const GLSLWidget = (app, inputName, fragment) => {
         inputEl: canvas,
         FRAGMENT: fragment,
         compiled: false,
+        vertex_shader: compileShader(VERTEX_SHADER, GL.VERTEX_SHADER),
         initShaderProgram() {
-            const vertex = compileShader(VERTEX_SHADER, GL.VERTEX_SHADER);
             const fragment_full = FRAGMENT_HEADER(this.FRAGMENT);
             const fragment = compileShader(fragment_full, GL.FRAGMENT_SHADER);
 
-            if (!vertex || !fragment) {
-                console.error(GL.getShaderInfoLog(vertex));
+            if (!fragment) {
                 console.error(GL.getShaderInfoLog(fragment));
                 this.compiled = false;
                 return null;
             }
 
             PROGRAM = GL.createProgram();
-            GL.attachShader(PROGRAM, vertex);
+            GL.attachShader(PROGRAM, widget.vertex_shader);
             GL.attachShader(PROGRAM, fragment);
             GL.linkProgram(PROGRAM);
 
             if (!GL.getProgramParameter(PROGRAM, GL.LINK_STATUS)) {
                 console.error('Unable to initialize the shader program: ' + GL.getProgramInfoLog(PROGRAM));
-                console.error(GL.getShaderInfoLog(vertex));
                 console.error(GL.getShaderInfoLog(fragment));
                 console.error(GL.getProgramInfoLog(PROGRAM));
                 this.compiled = false;
@@ -128,7 +187,6 @@ const GLSLWidget = (app, inputName, fragment) => {
 
             GL.useProgram(PROGRAM);
             this.compiled = true;
-            // console.debug(fragment_full)
 
             const positionBuffer = GL.createBuffer();
             GL.bindBuffer(GL.ARRAY_BUFFER, positionBuffer);
@@ -185,10 +243,8 @@ const GLSLWidget = (app, inputName, fragment) => {
         frame() {
             const pixels = new Uint8Array(canvas.width * canvas.height * 4);
             GL.readPixels(0, 0, canvas.width, canvas.height, GL.RGBA, GL.UNSIGNED_BYTE, pixels);
-
             const img = new Image();
-            img.src = canvas.toDataURL(); // Convert canvas to data URL
-
+            img.src = canvas.toDataURL();
             return new Promise((resolve) => {
                 img.onload = function () {
                     const tempCanvas = document.createElement('canvas');
@@ -197,13 +253,11 @@ const GLSLWidget = (app, inputName, fragment) => {
                     tempCanvas.height = img.height;
                     tempCtx.drawImage(img, 0, 0);
                     const base64String = tempCanvas.toDataURL('image/png').split(',')[1];
-                    // console.info(base64String)
                     resolve(base64String);
                 };
             });
         },
         async serializeValue(nodeId, widgetIndex) {
-            // console.info(widgetIndex)
             if (widgetIndex !== 5) {
                 return;
             }
@@ -230,42 +284,54 @@ const ext = {
         const onNodeCreated = nodeType.prototype.onNodeCreated
         nodeType.prototype.onNodeCreated = function () {
             const me = onNodeCreated?.apply(this)
-
-            this.widget_time = ComfyWidgets.FLOAT(this, '🕛', ["FLOAT", {"default": 0, "step": 0.01, "min": 0}], app).widget
-            this.widget_fixed = ComfyWidgets.FLOAT(this, 'FIXED', ["FLOAT", {"default": 0, "step": 0.01, "min": 0}], app).widget
-            this.widget_reset = ComfyWidgets.BOOLEAN(this, 'RESET', ["BOOLEAN", {"default": false}], app).widget
-            this.widget_wh = this.addCustomWidget(SpinnerWidget(app, "WH", ["VEC2", {"default": [512, 512], "step": 1, "min": 1}], [512, 512]))
-            this.widget_fragment = ComfyWidgets.STRING(this, FRAGMENT_DEFAULT, ["STRING", {multiline: true}], app).widget
+            this.serialize_widgets = true;
+            const widget_time = this.widgets[0];
+            const widget_fixed = this.widgets[1];
+            const widget_reset = this.widgets[2];
+            const widget_wh = this.widgets[3];
             const widget_glsl = this.addCustomWidget(GLSLWidget(app, 'GLSL', FRAGMENT_DEFAULT))
             widget_glsl.render()
+
+            const widget_fragment = this.widgets[4];
+            widget_fragment.inputEl.addEventListener('input', function (event) {
+                // console.log('Textarea content changed:', event.target.value);
+                widget_glsl.FRAGMENT = event.target.value;
+                widget_glsl.initShaderProgram();
+            });
 
             let TIME = 0
             const onExecutionStart = nodeType.prototype.onExecutionStart;
             nodeType.prototype.onExecutionStart = function (message) {
                 onExecutionStart?.apply(this, arguments);
                 if (TIME == 0) {
-                    this.widget_time.value = 0
+                    widget_time.value = 0
                 }
-                if (this.widget_reset.value == false) {
-                    this.widget_time.value += (performance.now() - TIME)  / 1000;
+                if (widget_reset.value == false) {
+                    if (widget_fixed.value > 0) {
+                        widget_time.value += widget.fixed.value;
+                    } else {
+                        widget_time.value += (performance.now() - TIME)  / 1000;
+                    }
                 } else {
                     TIME = 0;
-                    this.widget_time.value = 0;
+                    widget_time.value = 0;
                 }
                 TIME = performance.now()
+                // console.info(this)
                 if (this.inputs && this.inputs[0].value !== undefined) {
-                    console.debug("GLSL", this.inputs[0].value, this.inputs)
+                    // console.debug("GLSL", this.inputs[0].value, this.inputs)
                     widget_glsl.update_texture(0, this.inputs[0].value);
+                    // console.info(this.inputs[0].value)
                 }
-                widget_glsl.update_resolution(this.widget_wh.value[0], this.widget_wh.value[1]);
-                widget_glsl.update_time(this.widget_time.value)
+                widget_glsl.update_resolution(widget_wh.value[0], widget_wh.value[1]);
+                widget_glsl.update_time(widget_time.value)
                 widget_glsl.render();
             };
 
             async function python_grab_image(event) {
                 const frame = await widget_glsl.frame();
                 var data = { id: event.detail.id, frame: frame }
-                util.api_post('/jovimetrix/node/glsl', data);
+                util.api_post('/jovimetrix/message', data);
             }
             api.addEventListener("jovi-glsl-image", python_grab_image);
 

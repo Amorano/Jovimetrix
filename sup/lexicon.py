@@ -44,6 +44,7 @@ class Lexicon:
     FALSE = '🇫'
     FILEN = '💾'
     FILTER = '🔎'
+    FIXED = 'FIXED'
     FLIP = '🙃'
     FLOAT = '🛟'
     FONT = 'FONT'

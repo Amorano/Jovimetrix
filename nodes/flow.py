@@ -41,7 +41,6 @@ class DelayNode(JOVBaseNode):
     DESCRIPTION = "Delay traffic. Electrons on the data bus go round."
     RETURN_TYPES = (WILDCARD,)
     RETURN_NAMES = (Lexicon.ROUTE,)
-    POST = True
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
