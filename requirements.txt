@@ -4,6 +4,7 @@ matplotlib
 opencv-python<=4.8.1.78
 ffmpeg-python
 librosa
+loguru
 requests
 Pillow
 scikit-image

@@ -369,6 +369,6 @@ class Wave:
 if __name__ == "__main__":
     alpha_values = np.linspace(0, 1, 5)
     for op in EnumEase:
-        # Logger.debug(op)
+        # logger.debug(op)
         result = Ease.ease(op, start=0, end=1, duration=1, alpha=alpha_values, clip=(0, 1))
-        # Logger.debug(f"{op}: {result}")
+        # logger.debug(f"{op}: {result}")

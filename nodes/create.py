@@ -8,8 +8,9 @@ from enum import Enum
 import torch
 from PIL import Image, ImageDraw, ImageFont
 import matplotlib.font_manager
+from loguru import logger
 
-from Jovimetrix import ComfyAPIMessage, Logger, JOVBaseNode, JOVImageBaseNode, \
+from Jovimetrix import ComfyAPIMessage, JOVBaseNode, JOVImageBaseNode, \
     IT_PIXELS, IT_RGBA, IT_WH, IT_SCALE, IT_ROT, IT_INVERT, \
     IT_REQUIRED, MIN_IMAGE_SIZE
 
@@ -27,12 +28,13 @@ from Jovimetrix.sup.comp import shape_ellipse, shape_polygon, shape_quad, \
 try:
     from server import PromptServer
 except:
-    Logger.warn("no comfy server services")
+    logger.warning("no comfy server services")
     pass
 
 FONT_MANAGER = matplotlib.font_manager.FontManager()
 FONTS = {font.name: font.fname for font in FONT_MANAGER.ttflist}
 FONT_NAMES = sorted(FONTS.keys())
+
 # =============================================================================
 
 class EnumShapes(Enum):
@@ -183,25 +185,10 @@ class TextNode(JOVImageBaseNode):
             img = light_invert(img, i)
         return (cv2tensor(img), cv2mask(img),)
 
-GLSL_FRAGMENT_DEFAULT = '''vec3 palette( in float t, in vec3 a, in vec3 b, in vec3 c, in vec3 d )
-{
-    return a + b*cos( 6.28318*(c*t+d) );
-}
-
-void main() {
-    float aspect = iResolution.y / iResolution.x;
-    vec2 center = vec2(0.5, aspect * 0.5);
-    float dist = length(iCoord - center) ;
-    vec3 music = texture(iChannel0, vec2(dist * 0.1, 0.0)).rgb ;
-    float a = smoothstep(0.0, 1.0, pow(length(music), 2.0) );
-
-    vec3 c1 = vec3(255.0 / 255.0, 0.0 / 255.0, 0.0 / 255.0);
-    vec3 c2 = vec3(255.0 / 255.0, 255.0 / 255.0, 255.0 / 255.0);
-    vec3 c3 = vec3(255.0 / 255.0, 0.0 / 255.0, 255.0 / 255.0);
-    vec3 c4 = vec3(0.0 / 255.0, 0.0 / 255.0, 255.0 / 255.0);
-
-    vec3 col = a * palette(length(music) * 2.0, c1, c4, c2, c2 );
-    FragColor = vec4(col,1.0);
+GLSL_FRAGMENT_DEFAULT = '''void main() {
+    float d = length(iCoord);
+    d -= 0.5;
+    FragColor = vec4(d, d, d,1.0);
 }'''
 
 class GLSLNode(JOVBaseNode):
@@ -215,11 +202,13 @@ class GLSLNode(JOVBaseNode):
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
-                Lexicon.TIME: ("FLOAT", {"default": 0, "step": 0.01, "min": 0}),
-                Lexicon.FIXED: ("FLOAT", {"default": 0, "step": 0.01, "min": 0}),
+                Lexicon.TIME: ("FLOAT", {"default": 0, "step": 0.0001, "min": 0, "precision": 6}),
+                Lexicon.FIXED: ("FLOAT", {"default": 0, "step": 0.0001, "min": 0, "precision": 6}),
                 Lexicon.RESET: ("BOOLEAN", {"default": False}),
                 Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), "step": 1, "min": 1}),
                 Lexicon.FRAGMENT: ("STRING", {"multiline": True, "default": GLSL_FRAGMENT_DEFAULT}),
+                Lexicon.USER1: ("FLOAT", {"default": 0, "step": 0.01, "precision": 6}),
+                Lexicon.USER2: ("FLOAT", {"default": 0, "step": 0.01, "precision": 6}),
             },
             "hidden": {
                 "id": "UNIQUE_ID"
@@ -241,5 +230,5 @@ class GLSLNode(JOVBaseNode):
             img = ComfyAPIMessage.poll(id)
             self.__last = b64_2_tensor(img)
         except Exception as e:
-            Logger.err(str(e))
+            logger.error(str(e))
         return (self.__last, )

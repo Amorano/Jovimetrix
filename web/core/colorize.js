@@ -34,21 +34,15 @@ const ext = {
     },
     async setup(app) {
 
-        function setting_make(id, pretty, tip, key, junk) {
+        function setting_make(id, pretty, tip, key, base) {
             const local = localStorage["Comfy.Settings.jov." + id]
-            const val = local ? local : util.CONFIG_USER.color[key] ? util.CONFIG_USER.color[key] : junk
-            app.ui.settings.addSetting({
-                id: 'jov.' + id,
-                name: pretty,
-                type: 'text',
-                tooltip: tip,
-                defaultValue: val,
-                onChange(v) {
-                    var data = { id: id, v: v }
-                    util.api_post('/jovimetrix/config', data)
-                    util.CONFIG_USER.color[key] = v
-                },
-            })
+            const val = local ? local : util.CONFIG_USER.color[key] ? util.CONFIG_USER.color[key] : base;
+            const _id = 'jov.' + id;
+            util.setting_make(_id, pretty, 'text', tip, val, (value) => {
+                var data = { id: _id, v: value }
+                util.api_post('/jovimetrix/config', data);
+                util.CONFIG_USER.color[key] = value;
+            });
         }
 
         setting_make(util.USER + '.color.titleA', 'Group Title A 🎨🇯', 'Alternative title color for separating groups in the color configuration panel.', 'titleA', '#302929')

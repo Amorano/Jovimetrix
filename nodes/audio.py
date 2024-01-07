@@ -6,8 +6,9 @@ Audio
 import torch
 import ffmpeg
 import numpy as np
+from loguru import logger
 
-from Jovimetrix import Logger, JOVImageBaseNode, \
+from Jovimetrix import JOVImageBaseNode, \
     MIN_IMAGE_SIZE, IT_REQUIRED, IT_WH, IT_RGBA, IT_RGBA_B
 
 from Jovimetrix.sup.lexicon import Lexicon
@@ -51,7 +52,7 @@ class GraphWaveNode(JOVImageBaseNode):
             except ffmpeg._run.Error as _:
                 pass
             except Exception as e:
-                Logger.err(str(e))
+                logger.error(str(e))
 
         image = np.zeros((1, 1), dtype=np.int16)
         if self.__data is not None:

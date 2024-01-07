@@ -6,7 +6,7 @@ Adjustment
 import cv2
 import torch
 
-from Jovimetrix import Logger, JOVImageInOutBaseNode, \
+from Jovimetrix import JOVImageInOutBaseNode, \
     IT_PIXELS, IT_PIXEL2, IT_HSV, IT_FLIP, IT_LOHI, IT_LMH, \
     IT_INVERT, IT_CONTRAST, IT_GAMMA, IT_REQUIRED, MIN_IMAGE_SIZE
 

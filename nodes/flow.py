@@ -7,7 +7,9 @@ import time
 from enum import Enum
 from typing import Any
 
-from Jovimetrix import Logger, JOV_MAX_DELAY, JOVBaseNode, IT_REQUIRED, IT_FLIP, WILDCARD
+from loguru import logger
+
+from Jovimetrix import JOV_MAX_DELAY, JOVBaseNode, IT_REQUIRED, IT_FLIP, WILDCARD
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import deep_merge_dict, zip_longest_fill, convert_parameter
 
@@ -142,7 +144,7 @@ class ComparisonNode(JOVBaseNode):
                 result.append(val[0])
             else:
                 result.append(tuple(val))
-            # Logger.debug(result, val)
+            # logger.debug("{} {}", result, val)
         return (result, )
 
 class IfThenElseNode(JOVBaseNode):

@@ -10,8 +10,9 @@ from typing import Any
 import cv2
 import numpy as np
 import scipy as sp
+from loguru import logger
 
-from Jovimetrix import TYPE_IMAGE, TYPE_COORD, Logger
+from Jovimetrix import TYPE_IMAGE, TYPE_COORD
 
 HALFPI = math.pi / 2
 TAU = math.pi * 2
@@ -157,7 +158,7 @@ def testTRS() -> None:
     while True:
         title, image,  = remap[idx_remap]
         cv2.imshow("", image)
-        Logger.debug(title)
+        logger.debug(title)
         if cv2.waitKey() & 0xFF == ord('q'):
             break
         idx_remap = (idx_remap + 1) % len(remap)

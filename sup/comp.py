@@ -12,8 +12,9 @@ import numpy as np
 from scipy.ndimage import rotate
 from blendmodes.blend import blendLayers, BlendType
 from PIL import Image, ImageDraw
+from loguru import logger
 
-from Jovimetrix import Logger, TYPE_IMAGE, TYPE_PIXEL, TYPE_COORD
+from Jovimetrix import TYPE_IMAGE, TYPE_PIXEL, TYPE_COORD
 
 from Jovimetrix.sup.image import image_rgb_clean, image_rgb_restore, \
     image_grayscale, image_split, image_merge, channel_count, channel_add, \
@@ -203,14 +204,14 @@ def geo_edge_wrap(image: TYPE_IMAGE, tileX: float=1., tileY: float=1., edge: str
     height, width, _ = image.shape
     tileX = int(tileX * width * 0.5) if edge in ["WRAP", "WRAPX"] else 0
     tileY = int(tileY * height * 0.5) if edge in ["WRAP", "WRAPY"] else 0
-    # Logger.debug("geo_edge_wrap", f"[{width}, {height}]  [{tileX}, {tileY}]")
+    # logger.debug(f"[{width}, {height}]  [{tileX}, {tileY}]")
     return cv2.copyMakeBorder(image, tileY, tileY, tileX, tileX, cv2.BORDER_WRAP)
 
 def geo_translate(image: TYPE_IMAGE, offsetX: float, offsetY: float) -> TYPE_IMAGE:
     """TRANSLATION."""
     height, width, _ = image.shape
     M = np.float32([[1, 0, offsetX * width], [0, 1, offsetY * height]])
-    # Logger.debug("geo_translate", f"[{offsetX}, {offsetY}]")
+    # logger.debug(f"[{offsetX}, {offsetY}]")
     return cv2.warpAffine(image, M, (width, height), flags=cv2.INTER_LINEAR)
 
 def geo_rotate(image: TYPE_IMAGE, angle: float, center:TYPE_COORD=(0.5 ,0.5)) -> TYPE_IMAGE:
@@ -218,7 +219,7 @@ def geo_rotate(image: TYPE_IMAGE, angle: float, center:TYPE_COORD=(0.5 ,0.5)) ->
     height, width, _ = image.shape
     center = (int(width * center[0]), int(height * center[1]))
     M = cv2.getRotationMatrix2D(center, -angle, 1.0)
-    # Logger.debug("geo_rotate", f"[{angle}]")
+    # logger.debug(f"[{angle}]")
     return cv2.warpAffine(image, M, (width, height), flags=cv2.INTER_LINEAR)
 
 def geo_rotate_array(image: TYPE_IMAGE, angle: float, clip: bool=True) -> TYPE_IMAGE:
@@ -247,7 +248,7 @@ def geo_scalefit(image: TYPE_IMAGE, width: int, height:int,
                  mode:EnumScaleMode=EnumScaleMode.NONE,
                  sample:EnumInterpolation=EnumInterpolation.LANCZOS4) -> TYPE_IMAGE:
 
-    # Logger.spam(mode, width, height, sample)
+    # logger.debug("{} {} {} {}", mode, width, height, sample)
 
     match mode:
         case EnumScaleMode.ASPECT:
@@ -308,7 +309,7 @@ def geo_transform(image: TYPE_IMAGE, offsetX: float=0., offsetY: float=0., angle
 
     # clip to original size first...
     image = geo_crop(image)
-    # Logger.debug("geo_transform", f"({offsetX},{offsetY}), {angle}, ({sizeX},{sizeY}) [{width}x{height} - {mode} - {sample}]")
+    # logger.debug(f"({offsetX},{offsetY}), {angle}, ({sizeX},{sizeY}) [{width}x{height} - {mode} - {sample}]")
     return geo_scalefit(image, widthT, heightT, mode, sample)
 
 def geo_merge(imageA: TYPE_IMAGE, imageB: TYPE_IMAGE, axis: int=0, flip: bool=False) -> TYPE_IMAGE:
@@ -464,7 +465,7 @@ def comp_blend(imageA:Optional[TYPE_IMAGE]=None,
 
     targetW, targetH = max(0, targetW), max(0, targetH)
     if targetH == 0 or targetW == 0:
-        Logger.warn("bad dimensions", targetW, targetH)
+        logger.warning("bad dimensions {} {}", targetW, targetH)
         return channel_solid(targetW or 1, targetH or 1, )
 
     def scale(img:TYPE_IMAGE) -> TYPE_IMAGE:
@@ -472,9 +473,9 @@ def comp_blend(imageA:Optional[TYPE_IMAGE]=None,
         if h != targetH or w != targetW:
             if mode != EnumScaleMode.NONE:
                 img = geo_scalefit(img, targetW, targetH, mode, sample)
-            # Logger.debug(img.shape[:2], targetW, targetH)
+            # logger.debug("{} {} {}", img.shape[:2], targetW, targetH)
             img = channel_fill(img, targetW, targetH, color)
-            # Logger.debug(img.shape[:2], targetW, targetH)
+            # logger.debug("{} {} {}", img.shape[:2], targetW, targetH)
         return img
 
     def process(img:TYPE_IMAGE, alpha:bool=True) -> TYPE_IMAGE:
@@ -514,7 +515,7 @@ def comp_blend(imageA:Optional[TYPE_IMAGE]=None,
         imageA = xyz(imageA)
         imageB = xyz(imageB)
 
-    # Logger.debug(imageA.shape, imageB.shape, blendOp.value, alpha, imageB_maskColor)
+    # logger.debug("{} {} {} {} {}", imageA.shape, imageB.shape, blendOp.value, alpha, imageB_maskColor)
     imageA = cv2pil(imageA)
     imageB = cv2pil(imageB)
     image = blendLayers(imageA, imageB, blendOp.value, np.clip(alpha, 0, 1))

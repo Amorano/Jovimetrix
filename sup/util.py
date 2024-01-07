@@ -7,6 +7,8 @@ import math
 from enum import Enum
 from typing import Any, List, Generator, Optional, Tuple, Union
 
+from loguru import logger
+
 # =============================================================================
 # === ENUMERATION ===
 # =============================================================================
@@ -32,14 +34,14 @@ def convert_parameter(data: Any) -> Any:
     typ = []
     val = []
     for v in data:
-        # Logger.debug(v, type(v), type(v) == float, type(v) == int)
+        # logger.debug("{} {} {} {}", v, type(v), type(v) == float, type(v) == int)
         t = type(v)
         if t == int:
             t = float
         try:
             v = float(v)
         except Exception as e:
-            Logger.err(str(e))
+            logger.error(str(e))
             v = 0
         typ.append(t)
         val.append(v)

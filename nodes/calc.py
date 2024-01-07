@@ -8,8 +8,9 @@ from enum import Enum
 from collections import Counter
 
 from scipy.special import gamma
+from loguru import logger
 
-from Jovimetrix import Logger, JOVBaseNode, IT_REQUIRED, IT_AB, WILDCARD, IT_FLIP
+from Jovimetrix import JOVBaseNode, IT_REQUIRED, WILDCARD, IT_FLIP
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import zip_longest_fill, convert_parameter, deep_merge_dict
 
@@ -47,7 +48,7 @@ class ConversionNode(JOVBaseNode):
         typ = kw.pop(Lexicon.TYPE)
         a = next(iter(kw.values()))
         size = len(a) if type(a) == tuple else 0
-        # Logger.debug(self, size, a)
+        # logger.debug("{} {}", size, a)
         if typ in ["STRING", "FLOAT"]:
             if size > 0:
                 return ((a[0]), )
@@ -220,7 +221,7 @@ class CalcUnaryOPNode(JOVBaseNode):
                         try:
                             v = OP_UNARY[op](v)
                         except Exception as e:
-                            Logger.spam(str(e))
+                            logger.error(str(e))
                             v = 0
                         ret.append(v)
                     val = ret
@@ -231,7 +232,7 @@ class CalcUnaryOPNode(JOVBaseNode):
                 result.append(val[0])
             else:
                 result.append(tuple(val))
-            # Logger.debug(result, val)
+            # logger.debug("{} {}", result, val)
         return (result, )
 
 class EnumBinaryOperation(Enum):
@@ -308,7 +309,7 @@ class CalcBinaryOPNode(JOVBaseNode):
                     val = [sum(a * b for a, b in zip(a, b))]
                 case EnumBinaryOperation.CROSS_PRODUCT:
                     if len(a) != 3 or len(b) != 3:
-                        Logger.warn("Cross product only defined for 3D vectors")
+                        logger.warning("Cross product only defined for 3D vectors")
                         return [0, 0, 0]
                     return [
                         a[1] * b[2] - a[2] * b[1],
@@ -364,7 +365,7 @@ class CalcBinaryOPNode(JOVBaseNode):
                 result.append(val[0])
             else:
                 result.append(tuple(val))
-            # Logger.debug(result, val)
+            # logger.debug("{} {}", result, val)
         return (result, )
 
 class ValueNode(JOVBaseNode):

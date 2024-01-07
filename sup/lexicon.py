@@ -133,6 +133,8 @@ class Lexicon:
     TYPE = '❓'
     UNKNOWN = '❔'
     URL = '🌐'
+    USER1 = '☝🏽'
+    USER2 = '✌🏽'
     V = '🇻'
     VALUE = '#️⃣'
     VERTEX = '✳️'

@@ -6,8 +6,9 @@ Composition
 import cv2
 import torch
 import numpy as np
+from loguru import logger
 
-from Jovimetrix import Logger, JOVImageInOutBaseNode, \
+from Jovimetrix import JOVImageInOutBaseNode, \
     IT_PIXELS, IT_RGB, IT_PIXEL_MASK, IT_INVERT, \
     IT_REQUIRED, IT_RGBA_IMAGE, MIN_IMAGE_SIZE, IT_TRS, IT_PIXEL2
 
@@ -209,7 +210,7 @@ class BlendNode(JOVImageInOutBaseNode):
 
             rs = EnumInterpolation[rs]
             if h != nh or w != nw:
-                # Logger.debug(self, w, h, nw, nh)
+                # logger.debug("{} {} {} {}", w, h, nw, nh)
                 img = geo_scalefit(img, w, h, sm, rs)
 
             if i != 0:

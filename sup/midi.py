@@ -8,13 +8,13 @@ import threading
 from enum import Enum
 from queue import Queue, Empty
 
-from Jovimetrix import Logger
+from loguru import logger
 
 try:
     import mido
     from mido import Message, MetaMessage, MidiFile, MidiTrack, bpm2tempo, second2tick
 except:
-    Logger.warn("MISSING MIDI SUPPORT")
+    logger.warning("MISSING MIDI SUPPORT")
 
 # =============================================================================
 
@@ -36,9 +36,9 @@ def midi_save() -> None:
 
 def midi_load(fn) -> None:
     mid = MidiFile(fn, clip=True)
-    Logger.debug(mid)
+    logger.debug(mid)
     for msg in mid.tracks[0]:
-        Logger.debug(msg)
+        logger.debug(msg)
 
 def midi_device_names() -> list[str]:
     return mido.get_input_names()
@@ -71,11 +71,11 @@ class MIDIServerThread(threading.Thread):
                 except Empty as _:
                     time.sleep(0.01)
                 except Exception as e:
-                    Logger.err(str(e))
+                    logger.error(str(e))
 
     def run(self) -> None:
         while True:
-            Logger.debug(f"started device loop {self.__device}")
+            logger.debug(f"started device loop {self.__device}")
             try:
                 self.__run()
             except Exception as e:
@@ -88,8 +88,8 @@ class MIDIServerThread(threading.Thread):
                     except Empty as _:
                         time.sleep(0.01)
                     except Exception as e:
-                        Logger.err(str(e))
-                Logger.err(str(e))
+                        logger.error(str(e))
+                logger.error(str(e))
 
 class MIDIMessage:
     """Snap shot of a message from Midi device."""
@@ -135,10 +135,10 @@ if __name__ == "__main__":
                 # note=59 velocity=0 time=0
 
         value /= 127.
-        Logger.debug(note_on, channel, control, note, value)
+        logger.debug("{} {} {} {} {}", note_on, channel, control, note, value)
 
     device= mido.get_input_names()[0]
-    Logger.debug(device)
+    logger.debug(device)
     q_in = Queue()
     q_out = Queue()
     server = MIDIServerThread(q_in, device, process, daemon=True)

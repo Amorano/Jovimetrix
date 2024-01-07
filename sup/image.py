@@ -14,8 +14,9 @@ import torch
 import numpy as np
 import requests
 from PIL import Image, ImageOps, ImageSequence
+from loguru import logger
 
-from Jovimetrix import Logger, TYPE_IMAGE, TYPE_PIXEL, IT_WH, MIN_IMAGE_SIZE
+from Jovimetrix import TYPE_IMAGE, TYPE_PIXEL, IT_WH, MIN_IMAGE_SIZE
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import grid_make, deep_merge_dict
 
@@ -231,7 +232,7 @@ def pixel_eval(color: TYPE_PIXEL,
                 c /= 255.
         return c
 
-    # Logger.debug(color, mode, target, crunch)
+    # logger.debug("{} {} {} {}", color, mode, target, crunch)
 
     # make sure we are an RGBA value already
     if isinstance(color, (float, int)):
@@ -365,12 +366,12 @@ def image_load(url: str) -> list[TYPE_IMAGE]:
     try:
         img = Image.open(url)
     except Exception as e:
-        Logger.err(str(e))
+        logger.error(str(e))
         return [np.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 4), dtype=np.uint8)]
 
     if img.format == 'PSD':
         images = [pil2cv(frame.copy()) for frame in ImageSequence.Iterator(img)]
-        Logger.debug("load_psd", f"#PSD {len(images)}")
+        logger.debug(f"#PSD {len(images)}")
     else:
         images = [image_load_data(img)]
     return images
@@ -386,7 +387,7 @@ def image_load_from_url(url:str) -> TYPE_IMAGE:
             image = Image.open(requests.get(url, stream=True).raw)
             return pil2cv(image)
         except Exception as e:
-            Logger.err(str(e))
+            logger.error(str(e))
 
 def image_rgb_clean(image: TYPE_IMAGE) -> tuple[int, TYPE_IMAGE, TYPE_IMAGE]:
     """Store channel, RGB, ALPHA split since most functions work with RGB."""
@@ -442,7 +443,7 @@ def image_stack(images: list[TYPE_IMAGE],
             # Check if the last row needs padding
             overhang = len(images) % stride
 
-            # Logger.debug('image_stack', overhang, width, height, )
+            # logger.debug("{} {} {}", overhang, width, height, )
 
             if overhang != 0:
                 overhang = stride - overhang
@@ -490,7 +491,7 @@ def image_grayscale(image: TYPE_IMAGE) -> TYPE_IMAGE:
     elif cc > 2:
         image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
         return image[:, :, 2]
-    Logger.err("unknown image format", cc, image.shape)
+    logger.error("{} {} {}", "unknown image format", cc, image.shape)
     return image
 
 def image_split(image: TYPE_IMAGE) -> tuple[TYPE_IMAGE]:
@@ -538,12 +539,12 @@ def image_merge(r: TYPE_IMAGE, g: TYPE_IMAGE, b: TYPE_IMAGE, a: TYPE_IMAGE,
 # =============================================================================
 
 def testColorConvert() -> None:
-    Logger.debug(1, pixel_eval(1., EnumImageType.RGBA))
-    Logger.debug("1, 1", pixel_eval((1., 1.), EnumImageType.RGBA))
-    Logger.debug("1., 1., 1., 1.", pixel_eval((1., 1., 1., 1.), EnumImageType.GRAYSCALE))
-    Logger.debug(pixel_eval((255, 128, 100), EnumImageType.GRAYSCALE))
-    Logger.debug(pixel_eval((255, 128, 0), EnumImageType.GRAYSCALE))
-    Logger.debug(pixel_eval(255))
+    logger.debug("{} {}", 1, pixel_eval(1., EnumImageType.RGBA))
+    logger.debug("{} {}", "1, 1", pixel_eval((1., 1.), EnumImageType.RGBA))
+    logger.debug("{} {}", "1., 1., 1., 1.", pixel_eval((1., 1., 1., 1.), EnumImageType.GRAYSCALE))
+    logger.debug("{} {}", "255, 128, 100", pixel_eval((255, 128, 100), EnumImageType.GRAYSCALE))
+    logger.debug("{} {}", "255, 128, 0", pixel_eval((255, 128, 0), EnumImageType.GRAYSCALE))
+    logger.debug("{} {}", "255", pixel_eval(255))
 
 if __name__ == "__main__":
     testColorConvert()

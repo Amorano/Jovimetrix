@@ -36,6 +36,21 @@ export async function local_set(url, v) {
     localStorage.setItem(url, v)
 }
 
+export function setting_make(id, name, type, tip, value, callback=undefined) {
+    app.ui.settings.addSetting({
+        id: id,
+        name: name,
+        type: type,
+        tooltip: tip,
+        defaultValue: value,
+        onChange(v) {
+            if (callback !== undefined) {
+                callback(v)
+            }
+        },
+    })
+}
+
 export let NODE_LIST = await api_get("./../object_info")
 export let CONFIG_CORE = await api_get("/jovimetrix/config")
 export let CONFIG_USER = CONFIG_CORE.user.default

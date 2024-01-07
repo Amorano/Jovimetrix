@@ -16,8 +16,9 @@ from enum import Enum
 import cv2
 import torch
 import numpy as np
+from loguru import logger
 
-from Jovimetrix import Logger, JOVBaseNode, JOVImageBaseNode, \
+from Jovimetrix import JOVBaseNode, JOVImageBaseNode, \
     IT_PIXELS, IT_INVERT, IT_REQUIRED, MIN_IMAGE_SIZE
 
 from Jovimetrix.sup.lexicon import Lexicon
@@ -96,12 +97,12 @@ class StreamReaderNode(JOVImageBaseNode):
             try:
                 self.__device = StreamManager().capture(url)
             except Exception as e:
-                Logger.err(str(e))
+                logger.error(str(e))
 
         if self.__capturing > 0:
             # timeout and try again?
             if time.perf_counter() - self.__capturing > 3000:
-                Logger.err(f'timed out trying to access route or device {self.__url}')
+                logger.error(f'timed out {self.__url}')
                 self.__capturing = 0
                 self.__url = ""
 
@@ -119,7 +120,7 @@ class StreamReaderNode(JOVImageBaseNode):
             try:
                 self.__device.zoom = kw.get(Lexicon.ZOOM, 0)
             except Exception as e:
-                Logger.err(e)
+                logger.error(e)
 
             if kw.get(Lexicon.WAIT, False):
                 self.__device.pause()
@@ -222,7 +223,7 @@ class StreamWriterNode(JOVBaseNode):
             StreamingServer().endpointAdd(route, self.__device)
             StreamWriterNode.OUT_MAP[route] = self.__device
             self.__route = route
-            # Logger.debug(self, "START", route)
+            # logger.debug("{} {}", "START", route)
 
         self.__starting = False
         if self.__device is not None:
@@ -313,7 +314,7 @@ class MIDIReaderNode(JOVBaseNode):
                 self.__value = data.velocity
                 # note=59 velocity=0 time=0
 
-        # Logger.spam(self.__note_on, self.__channel, self.__control, self.__note, self.__value)
+        # logger.debug("{} {} {} {} {}", self.__note_on, self.__channel, self.__control, self.__note, self.__value)
 
     def run(self, **kw) -> tuple[bool, int, int, int]:
         device = kw.get(Lexicon.DEVICE, None)
@@ -323,7 +324,7 @@ class MIDIReaderNode(JOVBaseNode):
             self.__device = device
 
         normalize = self.__value / 127.
-        Logger.spam(self.__note_on, self.__channel, self.__control, self.__note, self.__value, normalize)
+        logger.debug("{} {} {} {} {} {}", self.__note_on, self.__channel, self.__control, self.__note, self.__value, normalize)
         msg = MIDIMessage(self.__note_on, self.__channel, self.__control, self.__note, self.__value)
         return (msg, self.__note_on, self.__channel, self.__control, self.__note, self.__value, normalize,  )
 
@@ -353,7 +354,7 @@ class MIDIFilterEZNode(JOVBaseNode):
     def run(self, **kw) -> tuple[bool]:
         message = kw.get(Lexicon.MIDI, None)
         if message is None:
-            Logger.warn('no midi message. connected?')
+            logger.warning('no midi message. connected?')
             return (message, False, )
 
         # empty values mean pass-thru (no filter)
@@ -415,7 +416,7 @@ class MIDIFilterNode(JOVBaseNode):
             value = float(value)
         except Exception as e:
             value = float("nan")
-            Logger.spam(str(e))
+            logger.error(str(e))
 
         for line in data.split(','):
             if len(a_range := line.split('-')) > 1:
@@ -424,19 +425,19 @@ class MIDIFilterNode(JOVBaseNode):
                     if float(a) <= value <= float(b):
                         return True
                 except Exception as e:
-                    Logger.spam(str(e))
+                    logger.error(str(e))
 
             try:
                 if isclose(value, float(line)):
                     return True
             except Exception as e:
-                Logger.spam(str(e))
+                logger.error(str(e))
         return False
 
     def run(self, **kw) -> tuple[bool]:
         message = kw.get(Lexicon.MIDI, None)
         if message is None:
-            Logger.warn('no midi message. connected?')
+            logger.warning('no midi message. connected?')
             return (message, False, )
 
         # empty values mean pass-thru (no filter)

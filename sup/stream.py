@@ -12,8 +12,9 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import cv2
 import numpy as np
+from loguru import logger
 
-from Jovimetrix import Logger, Singleton, MIN_IMAGE_SIZE
+from Jovimetrix import Singleton, MIN_IMAGE_SIZE
 from Jovimetrix.sup.image import image_grid, image_load
 
 # =============================================================================
@@ -79,13 +80,13 @@ class MediaStreamBase:
                     self.__paused = True
 
                     if not self.capture():
-                        Logger.err(self, f"CAPTURE FAIL [{self.__url}]")
+                        logger.error(f"CAPTURE FAIL [{self.__url}]")
                         self.__quit = True
                         break
 
                     self.__paused = pause
                     self.__captured = True
-                    Logger.info(self, f"CAPTURED [{self.__url}]")
+                    logger.info(f"CAPTURED [{self.__url}]")
 
                 # call the run capture frame command on subclasses
                 newframe = None
@@ -101,12 +102,12 @@ class MediaStreamBase:
             if self.__timeout is not None and time.perf_counter() > self.__timeout:
                 self.__timeout = None
                 self.__quit = True
-                Logger.warn(self, f"TIMEOUT [{self.__url}]")
+                logger.warning(f"TIMEOUT [{self.__url}]")
 
             waste = max(waste - time.perf_counter(), delta)
             time.sleep(waste)
 
-        Logger.info(self, f"STOPPED [{self.__url}]")
+        logger.info(f"STOPPED [{self.__url}]")
         self.end()
 
     def __del__(self) -> None:
@@ -337,16 +338,16 @@ class StreamManager(metaclass=Singleton):
                     try:
                         StreamManager.STREAM[url] = MediaStreamDevice(url, fps)
                     except Exception as e:
-                        Logger.err(e)
+                        logger.error(e)
                         StreamManager.STREAM[url] = MediaStreamURL(url, fps)
 
                 stream = StreamManager.STREAM[url]
 
                 if endpoint is not None and stream.captured:
                     StreamingServer.endpointAdd(endpoint, stream)
-                # Logger.info(self, stream, url)
+                # logger.info("{} {}", stream, url)
             except Exception as e:
-                Logger.err(self, str(e))
+                logger.error(str(e))
 
         return stream
 
@@ -386,7 +387,7 @@ class StreamingHandler(BaseHTTPRequestHandler):
                         self.wfile.write(jpeg.tobytes())
                         self.wfile.write(b'\r\n')
                 except Exception as e:
-                    Logger.err(self, f"Error: {e}")
+                    logger.error(str(e))
                     break
 
         elif key == 'jovimetrix':
@@ -406,7 +407,7 @@ class StreamingServer(metaclass=Singleton):
     @classmethod
     def endpointAdd(cls, name: str, stream: MediaStreamDevice) -> None:
         StreamingServer.OUT[name] = {'_': stream, 'b': None}
-        Logger.info(f"ENDPOINT_ADD ({name})")
+        logger.info(f"ENDPOINT_ADD ({name})")
 
     def __init__(self, host: str='', port: int=7227) -> None:
         self.__host = host
@@ -416,7 +417,7 @@ class StreamingServer(metaclass=Singleton):
         self.__thread_server.start()
         self.__thread_capture = threading.Thread(target=self.__capture, daemon=True)
         self.__thread_capture.start()
-        Logger.info(self, "STARTED")
+        logger.info("STARTED")
 
     def __server(self) -> None:
         httpd = ThreadingHTTPServer(self.__address, lambda *args: StreamingHandler(StreamingServer.OUT, *args))
@@ -476,7 +477,7 @@ def streamReadTest() -> None:
     try:
         StreamManager().capture(urls[streamIdx % len(urls)])
     except Exception as e:
-        Logger.err(e)
+        logger.error(e)
     streamIdx += 1
 
     while True:
@@ -497,13 +498,13 @@ def streamReadTest() -> None:
         try:
             cv2.imshow("Media", frame)
         except Exception as e:
-            Logger.err(e)
+            logger.error(e)
         val = cv2.waitKey(1) & 0xFF
         if val == ord('c'):
             try:
                 StreamManager().capture(urls[streamIdx % len(urls)])
             except Exception as e:
-                Logger.err(e)
+                logger.error(e)
             streamIdx += 1
         elif val == ord('q'):
             break
@@ -511,7 +512,7 @@ def streamReadTest() -> None:
     cv2.destroyAllWindows()
 
 def streamWriteTest() -> None:
-    Logger.debug(cv2.getBuildInformation())
+    logger.debug(cv2.getBuildInformation())
     ss = StreamingServer()
 
     fpath = 'res/stream-video.mp4'

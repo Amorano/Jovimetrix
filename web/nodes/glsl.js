@@ -15,7 +15,7 @@ in vec2 iPosition;
 out vec2 iCoord;
 void main() {
     gl_Position = vec4(iPosition, 0.0, 1.0);
-    iCoord = iPosition * 0.5 + 0.5;
+    iCoord = iPosition;
 }`
 
 const FRAGMENT_HEADER = (body) => {
@@ -31,84 +31,11 @@ in vec2 iCoord;
 uniform vec2 iResolution;
 uniform sampler2D iChannel0;
 uniform float iTime;
+uniform float iUser1;
+uniform float iUser2;
 out vec4 FragColor;
 
 ` + body};
-
-const FRAGMENT_DEFAULT3 = `
-float plot(vec2 st) {
-    return smoothstep(0.02, 0.0, abs(st.y - st.x));
-}
-
-void main() {
-    float y = iCoord.x;
-    vec3 color = vec3(y);
-    float pct = plot(iCoord);
-    color = (1.0 - pct) * color + pct * vec3(0.0, 1.0, 0.0);
-    FragColor = vec4(color, 1.0);
-}`
-
-const FRAGMENT_DEFAULT2 = `void main() {
-    vec4 color = texture(iChannel0, iCoord);
-    FragColor = vec4(iCoord.x, iCoord.y, 0.0, 1.0);
-}`
-
-const FRAGMENT_DEFAULT4 = `void main() {
-	vec3 c;
-	float l, z = iTime;
-	for(int i=0; i < 3; i++) {
-        vec2 uv, p = iCoord;
-		p -= .5;
-		p.x *= iResolution.x / iResolution.y;
-		z += .07;
-		l = length(p);
-		uv += p / l * (sin(z) + 1.) * abs(sin(l * 9. - z - z));
-		c[i] = .01 / length(mod(uv, 1.) - .5);
-	}
-	FragColor = vec4(c / l, iTime);
-}`
-
-const FRAGMENT_DEFAULT12 = `void main() {
-    // the sound texture is 512x2
-    int tx = int(iCoord.x * 512.0);
-
-	// first row is frequency data (48Khz/4 in 512 texels, meaning 23 Hz per texel)
-	float fft  = texelFetch( iChannel0, ivec2(tx,0), 0 ).x;
-
-    // second row is the sound wave, one texel is one mono sample
-    float wave = texelFetch( iChannel0, ivec2(tx,1), 0 ).x;
-
-	// convert frequency to colors
-	vec3 col = vec3( fft, 4.0*fft*(1.0-fft), 1.0-fft ) * fft;
-
-    // add wave form on top
-	col += 1.0 -  smoothstep( 0.0, 0.15, abs(wave - iCoord.y) );
-
-	// output final color
-	FragColor = vec4(col,1.0);
-}`
-
-const FRAGMENT_DEFAULT = `vec3 palette( in float t, in vec3 a, in vec3 b, in vec3 c, in vec3 d )
-{
-    return a + b*cos( 6.28318*(c*t+d) );
-}
-
-void main() {
-    float aspect = iResolution.y / iResolution.x;
-    vec2 center = vec2(0.5, aspect * 0.5);
-    float dist = length(iCoord - center) ;
-    vec3 music = texture(iChannel0, vec2(dist * 0.1, 0.0)).rgb ;
-    float a = smoothstep(0.0, 1.0, pow(length(music), 2.0) );
-
-    vec3 c1 = vec3(255.0 / 255.0, 0.0 / 255.0, 0.0 / 255.0);
-    vec3 c2 = vec3(255.0 / 255.0, 255.0 / 255.0, 255.0 / 255.0);
-    vec3 c3 = vec3(255.0 / 255.0, 0.0 / 255.0, 255.0 / 255.0);
-    vec3 c4 = vec3(0.0 / 255.0, 0.0 / 255.0, 255.0 / 255.0);
-
-    vec3 col = a * palette(length(music) * 2.0, c1, c4, c2, c2 );
-    FragColor = vec4(col,1.0);
-}`
-
 
 function get_position_style(ctx, widget_width, y, node_height) {
     const MARGIN = 4;
@@ -197,7 +124,7 @@ const GLSLWidget = (app, inputName, fragment) => {
             GL.enableVertexAttribArray(positionAttr);
 
             // Set the initial resolution
-            this.update_resolution(this.inputEl.width, this.inputEl.height);
+            //this.update_resolution(this.inputEl.width, this.inputEl.height);
         },
 
         render() {
@@ -224,6 +151,17 @@ const GLSLWidget = (app, inputName, fragment) => {
         update_resolution(width, height) {
             const loc = GL.getUniformLocation(PROGRAM, "iResolution");
             GL.uniform2f(loc, width, height);
+            //console.info(width, height)
+        },
+
+        update_user1(user) {
+            const loc = GL.getUniformLocation(PROGRAM, "iUser1");
+            GL.uniform1f(loc, user);
+        },
+
+        update_user2(user) {
+            const loc = GL.getUniformLocation(PROGRAM, "iUser2");
+            GL.uniform1f(loc, user);
         },
 
         draw(ctx, node, widget_width, y, widget_height) {
@@ -289,15 +227,17 @@ const ext = {
             const widget_fixed = this.widgets[1];
             const widget_reset = this.widgets[2];
             const widget_wh = this.widgets[3];
-            const widget_glsl = this.addCustomWidget(GLSLWidget(app, 'GLSL', FRAGMENT_DEFAULT))
-            widget_glsl.render()
-
             const widget_fragment = this.widgets[4];
             widget_fragment.inputEl.addEventListener('input', function (event) {
                 // console.log('Textarea content changed:', event.target.value);
                 widget_glsl.FRAGMENT = event.target.value;
                 widget_glsl.initShaderProgram();
             });
+            const widget_user1 = this.widgets[5];
+            const widget_user2 = this.widgets[6];
+
+            const widget_glsl = this.addCustomWidget(GLSLWidget(app, 'GLSL', widget_fragment.value))
+            widget_glsl.render()
 
             let TIME = 0
             const onExecutionStart = nodeType.prototype.onExecutionStart;
@@ -308,7 +248,7 @@ const ext = {
                 }
                 if (widget_reset.value == false) {
                     if (widget_fixed.value > 0) {
-                        widget_time.value += widget.fixed.value;
+                        widget_time.value += widget_fixed.value;
                     } else {
                         widget_time.value += (performance.now() - TIME)  / 1000;
                     }
@@ -324,7 +264,9 @@ const ext = {
                     // console.info(this.inputs[0].value)
                 }
                 widget_glsl.update_resolution(widget_wh.value[0], widget_wh.value[1]);
-                widget_glsl.update_time(widget_time.value)
+                widget_glsl.update_time(widget_time.value);
+                widget_glsl.update_user1(widget_user1.value);
+                widget_glsl.update_user2(widget_user2.value);
                 widget_glsl.render();
             };
 

@@ -121,7 +121,7 @@ const ext = {
 
         const onConnectionsChange = nodeType.prototype.onConnectionsChange;
         nodeType.prototype.onConnectionsChange = function (side, slot, connect, link_info, output) {
-            // Logger.trace("onConnectionsChange", arguments, this);
+            // logger.trace("onConnectionsChange", arguments, this);
             //console.debug(side, slot, connect, link_info, output)
             //console.debug(output.links)
             //if(!link_info || side == 2)

@@ -31,7 +31,7 @@ def load_audio(file_path) -> np.ndarray[np.int16]:
         .output('-', format='s16le', acodec='pcm_s16le', ac=1)
         .run(input=None, capture_stdout=False, capture_stderr=False)
     )
-    # Logger.debug("load_audio", file_path)
+    # logger.debug(file_path)
     return np.frombuffer(cmd[0], dtype=np.int16)
 
 def load_audio(url: str) -> tuple[np.ndarray[np.int16], float]:

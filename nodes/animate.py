@@ -4,8 +4,9 @@ Animate
 """
 
 import time
+from loguru import logger
 
-from Jovimetrix import Logger, JOVBaseNode, IT_REQUIRED
+from Jovimetrix import JOVBaseNode, IT_REQUIRED
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import deep_merge_dict
 from Jovimetrix.sup import anim

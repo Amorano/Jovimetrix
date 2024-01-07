@@ -53,13 +53,13 @@ Polygonal shapes, MIDI, MP3/WAVE, Flow Logic
 
 
 import os
+import sys
 import time
 import json
 import shutil
 import inspect
 import importlib
 from pathlib import Path
-from datetime import datetime
 from typing import Any, Optional, Tuple, Union
 
 try:
@@ -70,6 +70,7 @@ except:
 
 import torch
 import numpy as np
+from loguru import logger
 
 from Jovimetrix.sup.lexicon import Lexicon
 
@@ -87,6 +88,9 @@ JOV_CONFIG = {}
 JOV_WEB = ROOT / 'web'
 JOV_DEFAULT = JOV_WEB / 'default.json'
 JOV_CONFIG_FILE = JOV_WEB / 'config.json'
+
+JOV_LOG_LEVEL = os.getenv("JOV_LOG_LEVEL", "WARNING")
+logger.configure(handlers=[{"sink": sys.stdout, "level": JOV_LOG_LEVEL}])
 
 JOV_MAX_DELAY = 60.
 try: JOV_MAX_DELAY = float(os.getenv("JOV_MAX_DELAY", 60.))
@@ -125,55 +129,6 @@ class Singleton(type):
             instance = super().__call__(*arg, **kw)
             cls._instances[cls] = instance
         return cls._instances[cls]
-
-# =============================================================================
-# === LOGGER ===
-# =============================================================================
-
-class Logger(metaclass=Singleton):
-    _LEVEL = int(os.getenv("JOV_LOG_LEVEL", 0))
-
-    @classmethod
-    def _raw(cls, color, who, *arg) -> None:
-        if who is None:
-            print(color, '[JOV]\033[0m', *arg)
-        else:
-            print(color, '[JOV]\033[0m', f'({who})', *arg)
-
-    @classmethod
-    def dump(cls, *arg) -> None:
-        who = inspect.currentframe().f_back.f_code.co_name
-        cls._raw("\033[48;2;35;127;81;93m", who, None, *arg)
-
-    @classmethod
-    def err(cls, *arg) -> None:
-        who = inspect.currentframe().f_back.f_code.co_name
-        cls._raw("\033[48;2;135;27;81;93m", who, None, *arg)
-
-    @classmethod
-    def warn(cls, *arg) -> None:
-        if Logger._LEVEL > 0:
-           # who = inspect.currentframe().f_back.f_code.co_name
-            cls._raw("\033[48;2;159;155;44;93m", None, *arg)
-
-    @classmethod
-    def info(cls, *arg) -> None:
-        if Logger._LEVEL > 1:
-            cls._raw("\033[48;2;44;115;37;93m", None, *arg)
-
-    @classmethod
-    def debug(cls, *arg) -> None:
-        if Logger._LEVEL > 2:
-            t = datetime.now().strftime('%H:%M:%S.%f')
-            who = inspect.currentframe().f_back.f_code.co_name
-            cls._raw("\033[48;2;35;87;181;93m", t, who, *arg)
-
-    @classmethod
-    def spam(cls, *arg) -> None:
-        if Logger._LEVEL > 3:
-            t = datetime.now().strftime('%H:%M:%S.%f')
-            who = inspect.currentframe().f_back.f_code.co_name
-            cls._raw("\033[48;2;35;87;181;93m", t, who, *arg)
 
 # =============================================================================
 # === CORE NODES ===
@@ -252,12 +207,12 @@ try:
         did = json_data.get("id", None)
         value = json_data.get("v", None)
         if did is None or value is None:
-            Logger.error("bad config", json_data)
+            logger.error("bad config {}", json_data)
             return
 
         global JOV_CONFIG
         update_nested_dict(JOV_CONFIG, did, value)
-        Logger.spam(did, value)
+        # logger.debug("{} {}", did, value)
         with open(JOV_CONFIG_FILE, 'w', encoding='utf-8') as f:
             json.dump(JOV_CONFIG, f, indent=4)
         return web.json_response(json_data)
@@ -266,7 +221,7 @@ try:
     async def jovimetrix_config_post(request) -> Any:
         json_data = await request.json()
         name = json_data['name']
-        Logger.spam(name)
+        # logger.debug(name)
         global JOV_CONFIG
         try:
             del JOV_CONFIG['color'][name]
@@ -277,7 +232,7 @@ try:
         return web.json_response(json_data)
 
 except Exception as e:
-    Logger.err(e)
+    logger.error(e)
 
 # =============================================================================
 # == SUPPORT FUNCTIONS
@@ -453,7 +408,6 @@ IT_TIME = {"optional": {
 
 IT_TRS = deep_merge_dict(IT_TRANS, IT_ROT, IT_SCALE)
 
-
 # =============================================================================
 # === SESSION ===
 # =============================================================================
@@ -466,7 +420,7 @@ def configLoad() -> None:
     except (IOError, FileNotFoundError) as e:
         pass
     except Exception as e:
-        Logger.err(e)
+        logger.error(e)
 
 class Session(metaclass=Singleton):
     CLASS_MAPPINGS = {}
@@ -487,7 +441,7 @@ class Session(metaclass=Singleton):
         if not found:
             try:
                 shutil.copy2(JOV_DEFAULT, JOV_CONFIG_FILE)
-                Logger.warn("---> DEFAULT CONFIGURATION <---")
+                logger.warning("---> DEFAULT CONFIGURATION <---")
             except:
                 raise Exception("MAJOR 😿😰😬🥟 BLUNDERCATS 🥟😬😰😿")
 
@@ -507,7 +461,7 @@ class Session(metaclass=Singleton):
                     else:
                         Session.CLASS_MAPPINGS[name] = class_object
 
-            Logger.info("✅", module.__name__)
+            logger.info("✅ {}", module.__name__)
 
         # 🔗 ⚓ 📀 🍿 🎪 🐘 🤯 😱 💀 ⛓️ 🔒 🔑 🪀 🪁 🔮 🧿 🧙🏽 🧙🏽‍♀️ 🧯 🦚
 
@@ -528,11 +482,11 @@ class Session(metaclass=Singleton):
                 if v.CATEGORY.endswith(c):
                     NODE_CLASS_MAPPINGS[k] = v
                     Session.CLASS_MAPPINGS.pop(k)
-                    Logger.debug("✅", k)
+                    logger.debug("✅ {}", k)
 
         # anything we dont know about sort last...
         for k, v in Session.CLASS_MAPPINGS.items():
             NODE_CLASS_MAPPINGS[k] = v
-            Logger.debug('⁉️', k, v)
+            logger.debug('⁉️ {} {}', k, v)
 
 session = Session()

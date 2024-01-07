@@ -11,8 +11,9 @@ import matplotlib.pyplot as plt
 import torch
 import numpy as np
 from PIL import Image
+from loguru import logger
 
-from Jovimetrix import Logger, JOVBaseNode, IT_REQUIRED, WILDCARD
+from Jovimetrix import JOVBaseNode, IT_REQUIRED, WILDCARD
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import deep_merge_dict
 from Jovimetrix.sup.image import tensor2pil, pil2tensor
@@ -46,15 +47,15 @@ class OptionsNode(JOVBaseNode):
         log = kw.get(Lexicon.LOG, 0)
 
         if log == "ERROR":
-            Logger._LEVEL = 0
+            logger._LEVEL = 0
         elif log == "WARN":
-            Logger._LEVEL = 1
+            logger._LEVEL = 1
         elif log == "INFO":
-            Logger._LEVEL = 2
+            logger._LEVEL = 2
         elif log == "DEBUG":
-            Logger._LEVEL = 3
+            logger._LEVEL = 3
         elif log == "SPAM":
-            Logger._LEVEL = 4
+            logger._LEVEL = 4
 
         #stream.STREAMPORT = port
         #stream.STREAMHOST = host
@@ -102,7 +103,7 @@ class AkashicNode(JOVBaseNode):
         elif isinstance(val, bool):
             return "text", ["True" if val else "False"]
         elif isinstance(val, torch.Tensor):
-            # Logger.debug(f"Tensor: {val.shape}")
+            # logger.debug(f"Tensor: {val.shape}")
             ret = []
             if not isinstance(val, (list, tuple, set,)):
                 val = [val]
@@ -182,7 +183,7 @@ class ValueGraphNode(JOVBaseNode):
 
         elif not kw.get(Lexicon.WAIT, False):
             val = kw.get(Lexicon.UNKNOWN, 0)
-            # Logger.debug(val, type(val))
+            # logger.debug(val, type(val))
             if type(val) not in [bool, int, float, np.float16, np.float32, np.float64]:
                 val = 0
             self.__history.append(val)
