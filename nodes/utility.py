@@ -13,55 +13,14 @@ import numpy as np
 from PIL import Image
 from loguru import logger
 
+import comfy
+
 from Jovimetrix import JOVBaseNode, IT_REQUIRED, WILDCARD
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import deep_merge_dict
 from Jovimetrix.sup.image import tensor2pil, pil2tensor
 
 # =============================================================================
-
-class OptionsNode(JOVBaseNode):
-    NAME = "OPTIONS (JOV) ⚙️"
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/UTILITY"
-    DESCRIPTION = "Change Jovimetrix Global Options"
-    RETURN_TYPES = (WILDCARD, )
-    RETURN_NAMES = (Lexicon.PASS_OUT, )
-    SORT = 1
-
-    @classmethod
-    def INPUT_TYPES(cls) -> dict:
-        d = {
-            "optional": {
-                Lexicon.PASS_IN: (WILDCARD, {"default": None}),
-                Lexicon.LOG: (["ERROR", "WARN", "INFO", "DEBUG", "SPAM"], {"default": "ERROR"}),
-                #"host": ("STRING", {"default": ""}),
-                #"port": ("INT", {"min": 0, "step": 1, "default": 7227}),
-            }}
-        return deep_merge_dict(IT_REQUIRED, d)
-
-    @classmethod
-    def IS_CHANGED(cls, **kw) -> float:
-        return float("nan")
-
-    def run(self, **kw) -> tuple[Any]:
-        log = kw.get(Lexicon.LOG, 0)
-
-        if log == "ERROR":
-            logger._LEVEL = 0
-        elif log == "WARN":
-            logger._LEVEL = 1
-        elif log == "INFO":
-            logger._LEVEL = 2
-        elif log == "DEBUG":
-            logger._LEVEL = 3
-        elif log == "SPAM":
-            logger._LEVEL = 4
-
-        #stream.STREAMPORT = port
-        #stream.STREAMHOST = host
-
-        o = kw.get(Lexicon.PASS_IN, None)
-        return (o, )
 
 class AkashicData:
     def __init__(self, *arg, **kw) -> None:

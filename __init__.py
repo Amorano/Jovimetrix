@@ -47,7 +47,7 @@ Polygonal shapes, MIDI, MP3/WAVE, Flow Logic
     ConstantNode, ShapeNode, TextNode, GLSLNode,
     StreamReaderNode, StreamWriterNode, MIDIMessageNode, MIDIReaderNode, MIDIFilterEZNode, MIDIFilterNode,
     ComparisonNode, IfThenElseNode, GetNode, SetNode,
-    OptionsNode, AkashicNode, ValueGraphNode
+    AkashicNode, ValueGraphNode, RerouteNode
 @version: 0.999999999
 """
 
@@ -184,8 +184,7 @@ class ComfyAPIMessage:
             time.sleep(period)
         if not (sid in cls.MESSAGE):
             raise TimedOutException
-        message = cls.MESSAGE.pop(sid)
-        return message.strip()
+        return cls.MESSAGE.pop(sid)
 
 try:
     @PromptServer.instance.routes.post("/jovimetrix/message")

@@ -6,14 +6,14 @@
 import { app } from "/scripts/app.js"
 import * as util from '../core/util.js'
 
-export const JStringWidget = (app, inputName, inputData) => {
+export const JStringWidget = (app, name, value) => {
     const fontSize = 16
     const w = {
-        name: inputName,
-        type: inputData[0],
-
+        name: name,
+        type: "JSTRING",
+        value: value,
         draw: function (ctx, node, widgetWidth, widgetY, height) {
-            shared.offsetDOMWidget(this, ctx, node, widgetWidth, widgetY, height)
+            util.offsetDOMWidget(this, ctx, node, widgetWidth, widgetY, height)
         },
         computeSize(width) {
             if (!this.value) {
@@ -52,7 +52,7 @@ export const JStringWidget = (app, inputName, inputData) => {
         line-height: 0;
         font-family: monospace;
     `
-    w.value = val
+    // w.value = val
     document.body.appendChild(w.inputEl)
     return w
 }
@@ -62,7 +62,7 @@ const widgets = {
     async getCustomWidgets(app) {
         return {
             JSTRING: (node, inputName, inputData, app) => ({
-                widget: node.addCustomWidget(JStringWidget(app, inputName, inputData)),
+                widget: node.addCustomWidget(JStringWidget(app, inputName, inputData[0])),
             })
         }
     }

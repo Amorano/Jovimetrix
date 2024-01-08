@@ -3,11 +3,14 @@ Jovimetrix - http://www.github.com/amorano/jovimetrix
 Logic and Code flow nodes
 """
 
+import math
 import time
 from enum import Enum
 from typing import Any
 
 from loguru import logger
+
+import comfy
 
 from Jovimetrix import JOV_MAX_DELAY, JOVBaseNode, IT_REQUIRED, IT_FLIP, WILDCARD
 from Jovimetrix.sup.lexicon import Lexicon
@@ -69,7 +72,16 @@ class DelayNode(JOVBaseNode):
             self.__delay = delay
             self.__delay = max(0, min(self.__delay, JOV_MAX_DELAY))
 
-        time.sleep(self.__delay)
+        loops = int(self.__delay)
+        if (remainder := self.__delay - loops) > 0:
+            time.sleep(remainder)
+
+        if loops > 0:
+            step = 0
+            pbar = comfy.utils.ProgressBar(loops)
+            while (step := step + 1) <= loops:
+                time.sleep(1)
+                pbar.update_absolute(step)
         return (o,)
 
 class ComparisonNode(JOVBaseNode):
@@ -96,7 +108,9 @@ class ComparisonNode(JOVBaseNode):
         B = kw[Lexicon.IN_B]
         flip = kw[Lexicon.FLIP]
         op = kw[Lexicon.COMPARE]
-        for a, b, op, flip in zip_longest_fill(A, B, op, flip):
+        params = [tuple(x) for x in zip_longest_fill(A, B, op, flip)]
+        pbar = comfy.utils.ProgressBar(len(params))
+        for idx, (a, b, op, flip) in enumerate(params):
             if type(a) == tuple and type(b) == tuple:
                 if (short := len(a) - len(b)) > 0:
                     b = list(b) + [0] * short
@@ -145,6 +159,8 @@ class ComparisonNode(JOVBaseNode):
             else:
                 result.append(tuple(val))
             # logger.debug("{} {}", result, val)
+            pbar.update_absolute(idx)
+
         return (result, )
 
 class IfThenElseNode(JOVBaseNode):

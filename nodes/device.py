@@ -18,6 +18,8 @@ import torch
 import numpy as np
 from loguru import logger
 
+import comfy
+
 from Jovimetrix import JOVBaseNode, JOVImageBaseNode, \
     IT_PIXELS, IT_INVERT, IT_REQUIRED, MIN_IMAGE_SIZE
 
@@ -135,6 +137,7 @@ class StreamReaderNode(JOVImageBaseNode):
             orient = EnumCanvasOrientation[orient]
             batch_size, rate = parse_tuple(Lexicon.BATCH, kw, default=(1, 30), clip_min=1)[0]
             rate = 1. / rate
+            pbar = comfy.utils.ProgressBar(batch_size)
             for idx in range(batch_size):
                 mask = None
                 ret, img = self.__device.frame
@@ -168,6 +171,7 @@ class StreamReaderNode(JOVImageBaseNode):
                     mask = np.full((h, w), 255, dtype=np.uint8)
                 masks.append(cv2mask(mask))
 
+                pbar.update_absolute(idx)
                 if batch_size > 1:
                     time.sleep(rate)
 

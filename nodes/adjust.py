@@ -6,6 +6,8 @@ Adjustment
 import cv2
 import torch
 
+import comfy
+
 from Jovimetrix import JOVImageInOutBaseNode, \
     IT_PIXELS, IT_PIXEL2, IT_HSV, IT_FLIP, IT_LOHI, IT_LMH, \
     IT_INVERT, IT_CONTRAST, IT_GAMMA, IT_REQUIRED, MIN_IMAGE_SIZE
@@ -41,14 +43,16 @@ class AdjustNode(JOVImageInOutBaseNode):
         return deep_merge_dict(IT_REQUIRED, IT_PIXELS, d, IT_INVERT)
 
     def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor]:
-        pixels = kw.get(Lexicon.PIXEL, [None])
+        img = kw.get(Lexicon.PIXEL, [None])
         op = kw.get(Lexicon.FUNC, [EnumAdjustOP.BLUR])
         radius = kw.get(Lexicon.RADIUS, [3])
         amt = kw.get(Lexicon.AMT, [0])
         i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
+        params = [tuple(x) for x in zip_longest_fill(img, op, radius, amt, i)]
         masks = []
         images = []
-        for img, o, r, a, i in zip_longest_fill(pixels, op, radius, amt, i):
+        pbar = comfy.utils.ProgressBar(len(params))
+        for idx, (img, o, r, a, i) in enumerate(params):
             if img is None:
                 images.append(torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8, device="cpu"))
                 masks.append(torch.ones((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), dtype=torch.uint8, device="cpu"))
@@ -118,6 +122,7 @@ class AdjustNode(JOVImageInOutBaseNode):
 
             images.append(cv2tensor(img))
             masks.append(cv2mask(img))
+            pbar.update_absolute(idx)
 
         return ( torch.stack(images), torch.stack(masks) )
 
@@ -145,10 +150,11 @@ class ColorMatchNode(JOVImageInOutBaseNode):
         blur = kw.get(Lexicon.BLUR, [3])
         flip = kw.get(Lexicon.FLIP, [False])
         i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
+        params = [tuple(x) for x in zip_longest_fill(pixelA, pixelB, colormap, threshold, blur, flip, i)]
         masks = []
         images = []
-        for data in zip_longest_fill(pixelA, pixelB, colormap, threshold, blur, flip, i):
-            a, b, c, t, bl, f, i = data
+        pbar = comfy.utils.ProgressBar(len(params))
+        for idx, (a, b, c, t, bl, f, i) in enumerate(params):
             if a is None and b is None:
                 images.append(torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8, device="cpu"))
                 masks.append(torch.ones((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), dtype=torch.uint8, device="cpu"))
@@ -175,6 +181,7 @@ class ColorMatchNode(JOVImageInOutBaseNode):
 
             images.append(cv2tensor(img))
             masks.append(cv2mask(img))
+            pbar.update_absolute(idx)
 
         return (
             torch.stack(images),
@@ -191,12 +198,14 @@ class FindEdgeNode(JOVImageInOutBaseNode):
         return deep_merge_dict(IT_REQUIRED, IT_PIXELS, IT_LOHI, IT_INVERT)
 
     def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor]:
-        pixels = kw.get(Lexicon.PIXEL, [None])
+        img = kw.get(Lexicon.PIXEL, [None])
         lohi = parse_tuple(Lexicon.LOHI, kw, EnumTupleType.FLOAT, (0, 1), clip_min=0, clip_max=1)
         i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
+        params = [tuple(x) for x in zip_longest_fill(img, lohi, i)]
         masks = []
         images = []
-        for img, lohi, i in zip_longest_fill(pixels, lohi, i):
+        pbar = comfy.utils.ProgressBar(len(params))
+        for idx, (img, lohi, i) in enumerate(params):
             lo, hi = lohi
             if img is None:
                 images.append(torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8, device="cpu"))
@@ -211,6 +220,7 @@ class FindEdgeNode(JOVImageInOutBaseNode):
 
             images.append(cv2tensor(img))
             masks.append(cv2mask(img))
+            pbar.update_absolute(idx)
 
         return (
             torch.stack(images),
@@ -227,15 +237,16 @@ class HSVNode(JOVImageInOutBaseNode):
         return deep_merge_dict(IT_REQUIRED, IT_PIXELS, IT_HSV, IT_CONTRAST, IT_GAMMA, IT_INVERT)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        pixels = kw.get(Lexicon.PIXEL, [None])
+        img = kw.get(Lexicon.PIXEL, [None])
         hsv = parse_tuple(Lexicon.HSV, kw, EnumTupleType.FLOAT, (0, 1, 1), clip_min=0, clip_max=1)
         contrast = parse_number(Lexicon.CONTRAST, kw, EnumTupleType.FLOAT, [0], clip_min=0, clip_max=1)
         gamma = parse_number(Lexicon.GAMMA, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
         i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [0], clip_min=0, clip_max=1)
+        params = [tuple(x) for x in zip_longest_fill(img, hsv, contrast, gamma, i)]
         masks = []
         images = []
-        for data in zip_longest_fill(pixels, hsv, contrast, gamma, i):
-            img, hsv, c, g, i = data
+        pbar = comfy.utils.ProgressBar(len(params))
+        for idx, (img, hsv, c, g, i) in enumerate(params):
             h, s, v = hsv
             if img is None:
                 images.append(torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8, device="cpu"))
@@ -255,6 +266,7 @@ class HSVNode(JOVImageInOutBaseNode):
 
             images.append(cv2tensor(img))
             masks.append(cv2mask(img))
+            pbar.update_absolute(idx)
 
         return (
             torch.stack(images),
@@ -271,13 +283,15 @@ class LevelsNode(JOVImageInOutBaseNode):
         return deep_merge_dict(IT_REQUIRED, IT_PIXELS, IT_LMH, IT_GAMMA, IT_INVERT)
 
     def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor]:
-        pixels = kw.get(Lexicon.PIXEL, [None])
+        img = kw.get(Lexicon.PIXEL, [None])
         lmh = parse_tuple(Lexicon.LMH, kw, EnumTupleType.FLOAT, (0, 0.5, 1), clip_min=0, clip_max=1)
         gamma = parse_number(Lexicon.GAMMA, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
         i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
+        params = [tuple(x) for x in zip_longest_fill(img, lmh, gamma, i)]
         masks = []
         images = []
-        for img, lmh, g, i in zip_longest_fill(pixels, lmh, gamma, i):
+        pbar = comfy.utils.ProgressBar(len(params))
+        for idx, (img, lmh, g, i) in enumerate(params):
             l, m, h = lmh
 
             if img is None:
@@ -297,6 +311,7 @@ class LevelsNode(JOVImageInOutBaseNode):
 
             images.append(cv2tensor(img))
             masks.append(cv2mask(img))
+            pbar.update_absolute(idx)
 
         return ( torch.stack(images), torch.stack(masks) )
 
@@ -316,17 +331,17 @@ class ThresholdNode(JOVImageInOutBaseNode):
         return deep_merge_dict(IT_REQUIRED, IT_PIXELS, d, IT_INVERT)
 
     def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor]:
-
-        pixels = kw.get(Lexicon.PIXEL, [None])
+        img = kw.get(Lexicon.PIXEL, [None])
         op = kw.get(Lexicon.FUNC, [EnumThreshold.BINARY])
         adapt = kw.get(Lexicon.ADAPT, [EnumThresholdAdapt.ADAPT_NONE])
         threshold = parse_number(Lexicon.THRESHOLD, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
         size = kw.get(Lexicon.SIZE, [3])
         i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
+        params = [tuple(x) for x in zip_longest_fill(img, op, adapt, threshold, size, i)]
         masks = []
         images = []
-        for data in zip_longest_fill(pixels, op, adapt, threshold, size, i):
-            img, o, a, t, b, i = data
+        pbar = comfy.utils.ProgressBar(len(params))
+        for idx, (img, o, a, t, b, i) in enumerate(params):
             if img is None:
                 images.append(torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8, device="cpu"))
                 masks.append(torch.ones((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), dtype=torch.uint8, device="cpu"))
@@ -341,6 +356,7 @@ class ThresholdNode(JOVImageInOutBaseNode):
 
             images.append(cv2tensor(img))
             masks.append(cv2mask(img))
+            pbar.update_absolute(idx)
 
         return (
             torch.stack(images),

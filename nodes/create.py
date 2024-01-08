@@ -10,6 +10,8 @@ from PIL import Image, ImageDraw, ImageFont
 import matplotlib.font_manager
 from loguru import logger
 
+import comfy
+
 from Jovimetrix import ComfyAPIMessage, JOVBaseNode, JOVImageBaseNode, \
     IT_PIXELS, IT_RGBA, IT_WH, IT_SCALE, IT_ROT, IT_INVERT, \
     IT_REQUIRED, MIN_IMAGE_SIZE
@@ -186,9 +188,9 @@ class TextNode(JOVImageBaseNode):
         return (cv2tensor(img), cv2mask(img),)
 
 GLSL_FRAGMENT_DEFAULT = '''void main() {
-    float d = length(iCoord);
+    float d = length(iUV);
     d -= 0.5;
-    FragColor = vec4(d, d, d,1.0);
+    fragColor = vec4(d, d, d,1.0);
 }'''
 
 class GLSLNode(JOVBaseNode):
@@ -207,8 +209,8 @@ class GLSLNode(JOVBaseNode):
                 Lexicon.RESET: ("BOOLEAN", {"default": False}),
                 Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), "step": 1, "min": 1}),
                 Lexicon.FRAGMENT: ("STRING", {"multiline": True, "default": GLSL_FRAGMENT_DEFAULT}),
-                Lexicon.USER1: ("FLOAT", {"default": 0, "step": 0.01, "precision": 6}),
-                Lexicon.USER2: ("FLOAT", {"default": 0, "step": 0.01, "precision": 6}),
+                Lexicon.USER1: ("FLOAT", {"default": 0, "step": 0.0001, "precision": 6}),
+                Lexicon.USER2: ("FLOAT", {"default": 0, "step": 0.0001, "precision": 6}),
             },
             "hidden": {
                 "id": "UNIQUE_ID"

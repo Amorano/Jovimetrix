@@ -78,7 +78,7 @@ const ext = {
                 if (this.widgets[y].canvas) {
                     this.widgets[y].canvas.remove()
                 }
-                shared.cleanupNode(this)
+                util.cleanupNode(this)
                 this.widgets[y].onRemoved?.()
             }
         }

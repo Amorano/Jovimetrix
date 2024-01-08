@@ -10,6 +10,8 @@ from collections import Counter
 from scipy.special import gamma
 from loguru import logger
 
+import comfy
+
 from Jovimetrix import JOVBaseNode, IT_REQUIRED, WILDCARD, IT_FLIP
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import zip_longest_fill, convert_parameter, deep_merge_dict
@@ -180,7 +182,9 @@ class CalcUnaryOPNode(JOVBaseNode):
         result = []
         data = kw.get(Lexicon.IN_A, [0])
         op = kw.get(Lexicon.FUNC, [EnumUnaryOperation.ABS])
-        for data, op in zip_longest_fill(data, op):
+        params = [tuple(x) for x in zip_longest_fill(data, op)]
+        pbar = comfy.utils.ProgressBar(len(params))
+        for idx, (data, op) in enumerate(params):
             typ, val = convert_parameter(data)
             op = EnumUnaryOperation[op]
             match op:
@@ -233,6 +237,8 @@ class CalcUnaryOPNode(JOVBaseNode):
             else:
                 result.append(tuple(val))
             # logger.debug("{} {}", result, val)
+            pbar.update_absolute(idx)
+
         return (result, )
 
 class EnumBinaryOperation(Enum):
@@ -293,7 +299,9 @@ class CalcBinaryOPNode(JOVBaseNode):
         B = kw[Lexicon.IN_B]
         flip = kw[Lexicon.FLIP]
         op = kw[Lexicon.FUNC]
-        for a, b, op, flip in zip_longest_fill(A, B, op, flip):
+        params = [tuple(x) for x in zip_longest_fill(A, B, op, flip)]
+        pbar = comfy.utils.ProgressBar(len(params))
+        for idx, (a, b, op, flip) in enumerate(params):
             if type(a) == tuple and type(b) == tuple:
                 if (short := len(a) - len(b)) > 0:
                     b = [i for i in b] + [0] * short
@@ -366,6 +374,8 @@ class CalcBinaryOPNode(JOVBaseNode):
             else:
                 result.append(tuple(val))
             # logger.debug("{} {}", result, val)
+            pbar.update_absolute(idx)
+
         return (result, )
 
 class ValueNode(JOVBaseNode):

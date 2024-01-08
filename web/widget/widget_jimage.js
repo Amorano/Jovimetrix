@@ -6,14 +6,14 @@
 import { app } from "/scripts/app.js"
 import * as util from '../core/util.js'
 
-export const JImageWidget = (app, inputName, inputData) => {
+export const JImageWidget = (app, name, value) => {
     const w = {
-        name: inputName,
-        type: inputData[0],
-        value: val,
+        name: name,
+        type: "JIMAGE",
+        value: value,
         draw: function (ctx, node, widgetWidth, widgetY, height) {
             const [cw, ch] = this.computeSize(widgetWidth)
-            shared.offsetDOMWidget(this, ctx, node, widgetWidth, widgetY, ch)
+            util.offsetDOMWidget(this, ctx, node, widgetWidth, widgetY, ch)
         },
         computeSize: function (width) {
             const ratio = this.inputRatio || 1
@@ -43,7 +43,7 @@ const widgets = {
     async getCustomWidgets(app) {
         return {
             JIMAGE: (node, inputName, inputData, app) => ({
-                widget: node.addCustomWidget(JImageWidget(app, inputName, inputData)),
+                widget: node.addCustomWidget(JImageWidget(app, inputName, inputData[0])),
             })
         }
     }

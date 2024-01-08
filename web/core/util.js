@@ -234,6 +234,39 @@ export function inner_value_change(widget, value, event = undefined) {
     }
 }
 
+export function offsetDOMWidget(
+    widget,
+    ctx,
+    node,
+    widgetWidth,
+    widgetY,
+    height
+  ) {
+    const margin = 10
+    const elRect = ctx.canvas.getBoundingClientRect()
+    const transform = new DOMMatrix()
+      .scaleSelf(
+        elRect.width / ctx.canvas.width,
+        elRect.height / ctx.canvas.height
+      )
+      .multiplySelf(ctx.getTransform())
+      .translateSelf(0, widgetY + margin)
+
+    const scale = new DOMMatrix().scaleSelf(transform.a, transform.d)
+    Object.assign(widget.inputEl.style, {
+      transformOrigin: '0 0',
+      transform: scale,
+      left: `${transform.e}px`,
+      top: `${transform.d + transform.f}px`,
+      width: `${widgetWidth}px`,
+      height: `${(height || widget.parent?.inputHeight || 32) - margin}px`,
+      position: 'absolute',
+      background: !node.color ? '' : node.color,
+      color: !node.color ? '' : 'white',
+      zIndex: 5, //app.graph._nodes.indexOf(node),
+    })
+  }
+
 export const hasWidgets = (node) => {
     if (!node.widgets || !node.widgets?.[Symbol.iterator]) {
       return false

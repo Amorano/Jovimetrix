@@ -8,6 +8,8 @@ import ffmpeg
 import numpy as np
 from loguru import logger
 
+import comfy
+
 from Jovimetrix import JOVImageBaseNode, \
     MIN_IMAGE_SIZE, IT_REQUIRED, IT_WH, IT_RGBA, IT_RGBA_B
 
