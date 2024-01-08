@@ -12,8 +12,11 @@ import torch
 import numpy as np
 from PIL import Image
 from loguru import logger
+from uuid import uuid4
+from pathlib import Path
 
 import comfy
+from folder_paths import get_output_directory
 
 from Jovimetrix import JOVBaseNode, IT_REQUIRED, WILDCARD
 from Jovimetrix.sup.lexicon import Lexicon
@@ -183,3 +186,51 @@ class RerouteNode(JOVBaseNode):
     def run(self, **kw) -> tuple[Any, Any]:
         o = kw.get(Lexicon.PASS_IN, None)
         return (o, )
+
+class ExportNode(JOVBaseNode):
+    NAME = "EXPORT (JOV) 📽"
+    CATEGORY = "JOVIMETRIX 🔺🟩🔵/ANIMATE"
+    DESCRIPTION = ""
+    INPUT_IS_LIST = True
+    OUTPUT_NODE = True
+
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        d = {"optional": {
+                Lexicon.PIXEL: ("IMAGE", ),
+                Lexicon.PASS_OUT: ("STRING", {"default": get_output_directory()}),
+                Lexicon.FORMAT: (["gif", "jpg", "png"], {"default": "png"}),
+                Lexicon.OPTIMIZE: ("BOOLEAN", {"default": False}),
+                Lexicon.FPS: ("INT", {"default": 0, "min": 0, "max": 120}),
+        }}
+        return deep_merge_dict(IT_REQUIRED, d)
+
+    def run(self, **kw) -> None:
+        img = kw.get(Lexicon.PIXEL, [])
+        output_dir = kw.get(Lexicon.PASS_OUT, [])[0]
+        format = kw.get(Lexicon.FORMAT, ["gif"])[0]
+        optimize = kw.get(Lexicon.OPTIMIZE, [False])[0]
+        fps = kw.get(Lexicon.FPS, [0])[0]
+
+        output_dir = Path(output_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        def output(extension) -> Path:
+            return output_dir / f"{uuid4().hex[:16]}.{extension}"
+
+        images = [tensor2pil(i).convert("RGB") for i in img]
+        if format == "gif":
+            images[0].save(
+                output(format),
+                append_images=images[1:],
+                disposal=2,
+                duration=1 / fps * 1000 if fps else 0,
+                loop=0,
+                optimize=optimize,
+                save_all=True,
+            )
+        else:
+            for img in images:
+                img.save(output(format), optimize=optimize)
+
+        return ()

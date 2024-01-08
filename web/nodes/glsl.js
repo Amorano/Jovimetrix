@@ -10,32 +10,37 @@ import { $el } from "/scripts/ui.js"
 import * as util from '../core/util.js'
 
 const VERTEX_SHADER = `#version 300 es
-in vec2 iResolution;
 in vec2 iPosition;
 out vec2 iUV;
-void main() {
-    gl_Position = vec4(iPosition, 0.0, 1.0);
+void main()
+{
+    vec2 verts[6] = vec2[](
+        vec2(-1, -1), vec2(1, -1), vec2(-1, 1),
+        vec2(1, -1), vec2(1, 1), vec2(-1, 1)
+    );
+    gl_Position = vec4(verts[gl_VertexID], 0, 1);
     iUV = iPosition;
 }`
 
 const FRAGMENT_HEADER = (body) => {
     return `#version 300 es
-#ifdef GL_ES
-precision mediump float;
-#endif
-
-#define PI 3.14159265359
-
 precision highp float;
 in vec2 iUV;
-uniform vec2 iResolution;
-uniform sampler2D iChannel0;
-uniform float iTime;
-uniform float iUser1;
-uniform float iUser2;
-out vec4 fragColor;
+uniform vec2	iResolution;
+uniform float	iTime;
+uniform float	iDelta;
+uniform float	iFrameRate;
+uniform int	    iFrame;
 
-` + body};
+uniform sampler2D iChannel0;
+uniform sampler2D iChannel1;
+
+uniform float iUser0;
+uniform float iUser1;
+
+#define texture2D texture
+out vec4 fragColor;`
+ + body};
 
 function get_position_style(ctx, width, y, height) {
     const MARGIN = 4;
@@ -66,10 +71,13 @@ const GLSLWidget = (inputName, fragment, width=512, height=512) => {
     // const CANVAS_TEMP = new OffscreenCanvas(width, height);
     const CANVAS_TEMP_CTX = CANVAS_TEMP.getContext('2d');
 
-    let CANVAS = new OffscreenCanvas(width, height);
-    let GL = CANVAS.getContext('webgl2');
+    const CANVAS = new OffscreenCanvas(width, height);
+    const GL = CANVAS.getContext('webgl2');
     let PROGRAM;
     let BUFFER_POSITION;
+    let FBO;
+    let TEXTURE;
+    let TEXTURES;
 
     function compileShader (source, type) {
         const shader = GL.createShader(type);
@@ -90,6 +98,7 @@ const GLSLWidget = (inputName, fragment, width=512, height=512) => {
         y: 0,
         FRAGMENT: fragment,
         compiled: false,
+        canvas: CANVAS,
         initShaderProgram() {
             const vertex_shader = compileShader(VERTEX_SHADER, GL.VERTEX_SHADER);
             const fragment_full = FRAGMENT_HEADER(this.FRAGMENT);
@@ -131,62 +140,91 @@ const GLSLWidget = (inputName, fragment, width=512, height=512) => {
             GL.vertexAttribPointer(positionAttr, 2, GL.FLOAT, false, 0, 0);
             GL.enableVertexAttribArray(positionAttr);
 
-            GL.viewport(0, 0, CANVAS.width, CANVAS.height);
-            GL.scissor(0, 0, CANVAS.width, CANVAS.height);
+
+            TEXTURE = GL.createTexture();
+            GL.bindTexture(GL.TEXTURE_2D, TEXTURE);
+            GL.texImage2D(GL.TEXTURE_2D, 0, GL.RGB, width, height, 0, GL.RGB, GL.UNSIGNED_BYTE, null);
+            GL.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_MIN_FILTER, GL.LINEAR);
+            GL.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_MAG_FILTER, GL.LINEAR);
+
+            /*
+            FBO = GL.createFramebuffer();
+            GL.bindFramebuffer(GL.FRAMEBUFFER, FBO);
+            GL.framebufferTexture2D(GL.FRAMEBUFFER, GL.COLOR_ATTACHMENT0, GL.TEXTURE_2D, TEXTURE, 0);
+            if (GL.checkFramebufferStatus(GL.FRAMEBUFFER) != GL.FRAMEBUFFER_COMPLETE) {
+                console.error("Framebuffer is not complete");
+            }*/
+
+            TEXTURES = [];
+            for (let i = 0; i < 4; i++) {
+                const texture = GL.createTexture();
+                GL.bindTexture(GL.TEXTURE_2D, texture);
+                // Set texture parameters and data if needed
+                TEXTURES.push(texture);
+            }
+
             GL.useProgram(PROGRAM);
             this.compiled = true;
         },
 
         render() {
+            GL.bindFramebuffer(GL.GL_FRAMEBUFFER, FBO)
             GL.clearColor(0, 0, 0, 1);
             GL.clear(GL.COLOR_BUFFER_BIT);
             if (PROGRAM === undefined) {
                 if (this.FRAGMENT != undefined) {
-                    // console.info('init')
                     this.initShaderProgram();
                 }
             }
-            //GL.viewport(0, 0, CANVAS.width, CANVAS.height);
-            //GL.scissor(0, 0, CANVAS.width, CANVAS.height);
             GL.drawArrays(GL.TRIANGLES, 0, 6);
         },
+/*
+        uniform vec3	iResolution;
+        uniform float	iTime;
+        uniform float	iDelta;
+        uniform float	iFrameRate;
+        uniform int	    iFrame;
 
-        update_texture(index, texture) {
+        uniform sampler2D iChannel0;
+        uniform sampler2D iChannel1;
+
+        uniform float iUser0;
+        uniform float iUser1;
+*/
+        update_resolution(width, height) {
+            CANVAS.width = width;
+            CANVAS.height = height;
+            GL.viewport(0, 0, CANVAS.width, CANVAS.height);
+            const loc = GL.getUniformLocation(PROGRAM, "iResolution");
+            GL.uniform2f(loc, width, height);
+            // console.log("resolution updated", width, height)
+        },
+
+        update_texture(texture, index) {
             GL.activeTexture(GL.TEXTURE0 + index);
             GL.bindTexture(GL.TEXTURE_2D, texture);
-            const loc = GL.getUniformLocation(PROGRAM, "iChannel" + index);
+            loc = GL.getUniformLocation(PROGRAM, "iChannel" + index);
             GL.uniform1i(loc, index);
+            console.log("texture updated", index)
         },
 
-        update_time(time) {
-            const loc = GL.getUniformLocation(PROGRAM, "iTime");
+        async frame(time, delta, frame, user1, user2) {
+            let loc;
+            loc = GL.getUniformLocation(PROGRAM, "iTime");
             GL.uniform1f(loc, time);
-        },
 
-        update_resolution(width, height) {
-            if (width != CANVAS.width || height != CANVAS.height) {
-                CANVAS.width = width;
-                CANVAS.height = height;
-                GL.viewport(0, 0, CANVAS.width, CANVAS.height);
-                GL.scissor(0, 0, CANVAS.width, CANVAS.height);
-                const loc = GL.getUniformLocation(PROGRAM, "iResolution");
-                GL.uniform2f(loc, width, height);
-            }
-        },
+            loc = GL.getUniformLocation(PROGRAM, "iDelta");
+            GL.uniform1f(loc, delta);
 
-        update_user1(user) {
-            const loc = GL.getUniformLocation(PROGRAM, "iUser1");
-            GL.uniform1f(loc, user);
-            // console.info(1, user);
-        },
+            loc = GL.getUniformLocation(PROGRAM, "iFrame");
+            GL.uniform1i(loc, frame);
 
-        update_user2(user) {
-            const loc = GL.getUniformLocation(PROGRAM, "iUser2");
-            GL.uniform1f(loc, user);
-            //console.info(2, user);
-        },
+            loc = GL.getUniformLocation(PROGRAM, "iUser1");
+            GL.uniform1f(loc, user1);
 
-        async frame() {
+            loc = GL.getUniformLocation(PROGRAM, "iUser2");
+            GL.uniform1f(loc, user2);
+
             const pixels = new Uint8Array(CANVAS.width * CANVAS.height * 4);
             GL.readPixels(0, 0, CANVAS.width, CANVAS.height, GL.RGBA, GL.UNSIGNED_BYTE, pixels);
             const imageData = new ImageData(new Uint8ClampedArray(pixels), CANVAS.width, CANVAS.height);
@@ -194,24 +232,8 @@ const GLSLWidget = (inputName, fragment, width=512, height=512) => {
             CANVAS_TEMP.width = CANVAS.width;
             CANVAS_TEMP.height = CANVAS.height;
             CANVAS_TEMP_CTX.drawImage(imageBitmap, 0, 0);
-            const data = CANVAS_TEMP.toDataURL('image/png').split(',')[1];
-            //console.info(data)
-            return data;
+            return CANVAS_TEMP.toDataURL('image/png').split(',')[1];
         },
-
-        async serializeValue(nodeId, widgetIndex) {
-            if (widgetIndex !== 7) {
-                return;
-            }
-            // console.info(nodeId);
-            return await this.frame();
-        },
-
-        /*
-        draw(ctx, node, widget_width, y, widget_height) {
-            Object.assign(CANVAS_TEMP.style, get_position_style(ctx, widget_width, y, CANVAS.height));
-        },
-        */
 
         cleanup() {
             this.compiled = false;
@@ -249,58 +271,58 @@ const ext = {
         nodeType.prototype.onNodeCreated = function () {
             const me = onNodeCreated?.apply(this)
             const widget_time = this.widgets[0];
-            const widget_fixed = this.widgets[1];
-            const widget_reset = this.widgets[2];
-            const widget_wh = this.widgets[3];
-            const widget_fragment = this.widgets[4];
-            const widget_user1 = this.widgets[5];
-            const widget_user2 = this.widgets[6];
+            const widget_fps = this.widgets[1];
+            const widget_batch = this.widgets[2];
+            const widget_reset = this.widgets[3];
+            const widget_wh = this.widgets[4];
+            const widget_fragment = this.widgets[5];
+            const widget_user1 = this.widgets[6];
+            const widget_user2 = this.widgets[7];
             widget_fragment.inputEl.addEventListener('input', function (event) {
-                // console.log('Textarea content changed:', event.target.value);
                 widget_glsl.FRAGMENT = event.target.value;
                 widget_glsl.initShaderProgram();
             });
             const widget_glsl = this.addCustomWidget(GLSLWidget('GLSL', widget_fragment.value, widget_wh.value[0], widget_wh.value[1]))
-            widget_glsl.render()
+            let frame_count = 0;
 
             let TIME = 0;
-            const onExecutionStart = nodeType.prototype.onExecutionStart;
-            nodeType.prototype.onExecutionStart = function (message) {
-                onExecutionStart?.apply(this, arguments);
-
-                if (TIME == 0) {
-                    widget_time.value = 0
-                }
-
-                if (widget_reset.value == false) {
-                    if (widget_fixed.value > 0) {
-                        widget_time.value += widget_fixed.value;
-                    } else {
-                        widget_time.value += (performance.now() - TIME)  / 1000;
-                    }
-                } else {
-                    TIME = 0;
-                    widget_time.value = 0;
-                }
-
-                TIME = performance.now()
-                // console.info(this)
-                if (this.inputs && this.inputs[0].value !== undefined) {
-                    // console.debug("GLSL", this.inputs[0].value, this.inputs)
-                    widget_glsl.update_texture(0, this.inputs[0].value);
-                    // console.info(this.inputs[0].value)
-                }
-                widget_glsl.update_time(widget_time.value);
-                widget_glsl.update_resolution(widget_wh.value[0], widget_wh.value[1]);
-                widget_glsl.update_user1(widget_user1.value);
-                widget_glsl.update_user2(widget_user2.value);
-                widget_glsl.render();
-                app.canvas.setDirty(true)
-            };
-
             async function python_grab_image(event) {
-                const frame = await widget_glsl.frame();
-                var data = { id: event.detail.id, frame: frame }
+                let frames = [];
+                for (let i = 0; i < widget_batch.value; i++) {
+                    widget_glsl.render();
+                    let delta = 0;
+                    if (widget_reset.value == false) {
+                        if (widget_fps.value > 0) {
+                            widget_time.value += (1.0 / widget_fps.value);
+                        } else {
+                            delta = (performance.now() - TIME)  / 1000.0;
+                            widget_time.value += delta;
+                        }
+                    } else {
+                        TIME = 0;
+                        widget_time.value = 0;
+                        frame_count = 0;
+                    }
+                    TIME = performance.now();
+                    if (this.inputs && this.inputs[0].value !== undefined) {
+                        widget_glsl.update_texture(this.inputs[0].value, 0)
+                    }
+                    if (this.inputs && this.inputs[1].value !== undefined) {
+                        widget_glsl.update_texture(this.inputs[1].value, 1)
+                    }
+
+                    widget_glsl.update_resolution(widget_wh.value[0], widget_wh.value[1]);
+                    const frame = await widget_glsl.frame(widget_time.value, delta, frame_count, widget_user1.value, widget_user2.value);
+
+                    if (widget_reset.value == false) {
+                        frames.push(frame);
+                        frame_count++;
+                    } else {
+                        frames = frames.concat(Array(widget_batch.value).fill(frame))
+                        break;
+                    }
+                };
+                var data = { id: event.detail.id, frame: frames }
                 util.api_post('/jovimetrix/message', data);
             }
             api.addEventListener("jovi-glsl-image", python_grab_image);

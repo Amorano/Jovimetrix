@@ -190,7 +190,8 @@ class TextNode(JOVImageBaseNode):
 GLSL_FRAGMENT_DEFAULT = '''void main() {
     float d = length(iUV);
     d -= 0.5;
-    fragColor = vec4(d, d, d,1.0);
+    d += sin(iTime) * 0.1;
+    fragColor = vec4(abs(cos(iTime)), abs(tan(iTime / d / 313.0)), abs(sin(iTime)), 1.0);
 }'''
 
 class GLSLNode(JOVBaseNode):
@@ -200,12 +201,14 @@ class GLSLNode(JOVBaseNode):
     RETURN_TYPES = ("IMAGE", )
     RETURN_NAMES = (Lexicon.IMAGE, )
     OUTPUT_NODE = True
+    OUTPUT_IS_LIST = (True, )
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
                 Lexicon.TIME: ("FLOAT", {"default": 0, "step": 0.0001, "min": 0, "precision": 6}),
-                Lexicon.FIXED: ("FLOAT", {"default": 0, "step": 0.0001, "min": 0, "precision": 6}),
+                Lexicon.FPS: ("INT", {"default": 0, "step": 1, "min": 0, "max": 120}),
+                Lexicon.BATCH: ("INT", {"default": 1, "step": 1, "min": 1, "max": 36000}),
                 Lexicon.RESET: ("BOOLEAN", {"default": False}),
                 Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), "step": 1, "min": 1}),
                 Lexicon.FRAGMENT: ("STRING", {"multiline": True, "default": GLSL_FRAGMENT_DEFAULT}),
@@ -228,9 +231,11 @@ class GLSLNode(JOVBaseNode):
     def run(self, id, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         # ask for this "id"'s image
         PromptServer.instance.send_sync("jovi-glsl-image", {"id": id})
-        try:
-            img = ComfyAPIMessage.poll(id)
-            self.__last = b64_2_tensor(img)
-        except Exception as e:
-            logger.error(str(e))
+        self.__last = []
+        batch = kw.get(Lexicon.BATCH, 1)
+        imgs = ComfyAPIMessage.poll(id, timeout=(batch / 10) + 3)
+        pbar = comfy.utils.ProgressBar(len(imgs))
+        for idx, img in enumerate(imgs):
+            self.__last.append(b64_2_tensor(img))
+            pbar.update_absolute(idx)
         return (self.__last, )
