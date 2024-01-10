@@ -2,8 +2,8 @@
 > <h3><p align="center">⚠️ SUBJECT TO CHANGE PRIOR TO VERSION 1.0. USE AT YOUR OWN RISK ⚠️</p></h3>
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="res/logo-jovimetrix.png">
-  <source media="(prefers-color-scheme: light)" srcset="res/logo-jovimetrix-light.png">
+  <source media="(prefers-color-scheme: dark)" srcset="https://github.com/Amorano/Jovimetrix-examples/blob/master/res/logo-jovimetrix.png">
+  <source media="(prefers-color-scheme: light)" srcset="https://github.com/Amorano/Jovimetrix-examples/blob/master/res/logo-jovimetrix-light.png">
   <img alt="ComfyUI Nodes for procedural masking, live composition and video manipulation">
 </picture>
 
