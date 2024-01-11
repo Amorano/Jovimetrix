@@ -350,6 +350,19 @@ def channel_fill(image:TYPE_IMAGE, width:int, height:int, color:TYPE_PIXEL=255) 
 # === IMAGE ===
 # =============================================================================
 
+def image_save_gif(fpath:str, images: list[Image.Image], fps: int=0,
+                   loop:int=0, optimize:bool=False) -> None:
+
+    fps = min(50, max(1, fps))
+    images[0].save(
+        fpath,
+        append_images=images[1:],
+        duration=3,  # int(100.0 / fps),
+        loop=loop,
+        optimize=optimize,
+        save_all=True
+    )
+
 def image_load_data(data: str) -> TYPE_IMAGE:
     img = ImageOps.exif_transpose(data)
     img = pil2cv(img)

@@ -3,6 +3,7 @@ Jovimetrix - http://www.github.com/amorano/jovimetrix
 Creation
 """
 
+import json
 from enum import Enum
 
 import torch
@@ -11,9 +12,10 @@ import matplotlib.font_manager
 from loguru import logger
 
 import comfy
+from server import PromptServer
 
 from Jovimetrix import ComfyAPIMessage, JOVBaseNode, JOVImageBaseNode, \
-    IT_PIXELS, IT_RGBA, IT_WH, IT_SCALE, IT_ROT, IT_INVERT, \
+    ROOT, IT_PIXELS, IT_RGBA, IT_WH, IT_SCALE, IT_ROT, IT_INVERT, \
     IT_REQUIRED, MIN_IMAGE_SIZE
 
 from Jovimetrix.sup.lexicon import Lexicon
@@ -27,11 +29,9 @@ from Jovimetrix.sup.image import b64_2_tensor, channel_add, pil2tensor, pil2cv, 
 from Jovimetrix.sup.comp import shape_ellipse, shape_polygon, shape_quad, \
     light_invert, EnumScaleMode
 
-try:
-    from server import PromptServer
-except:
-    logger.warning("no comfy server services")
-    pass
+from Jovimetrix.sup.shader import GLSL
+
+JOV_CONFIG_GLSL = ROOT / 'glsl'
 
 FONT_MANAGER = matplotlib.font_manager.FontManager()
 FONTS = {font.name: font.fname for font in FONT_MANAGER.ttflist}
@@ -187,13 +187,6 @@ class TextNode(JOVImageBaseNode):
             img = light_invert(img, i)
         return (cv2tensor(img), cv2mask(img),)
 
-GLSL_FRAGMENT_DEFAULT = '''void main() {
-    float d = length(iUV);
-    d -= 0.5;
-    d += sin(iTime) * 0.1;
-    fragColor = vec4(abs(cos(iTime)), abs(tan(iTime / d / 313.0)), abs(sin(iTime)), 1.0);
-}'''
-
 class GLSLNode(JOVBaseNode):
     NAME = "GLSL (JOV) 🍩"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
@@ -205,13 +198,16 @@ class GLSLNode(JOVBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
+        # PRESETS = list_shaders(JOV_CONFIG_GLSL)
+        # PRESET = next(iter(PRESETS)) if len(PRESETS) else ""
         d = {"optional": {
                 Lexicon.TIME: ("FLOAT", {"default": 0, "step": 0.0001, "min": 0, "precision": 6}),
                 Lexicon.FPS: ("INT", {"default": 0, "step": 1, "min": 0, "max": 120}),
                 Lexicon.BATCH: ("INT", {"default": 1, "step": 1, "min": 1, "max": 36000}),
                 Lexicon.RESET: ("BOOLEAN", {"default": False}),
                 Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), "step": 1, "min": 1}),
-                Lexicon.FRAGMENT: ("STRING", {"multiline": True, "default": GLSL_FRAGMENT_DEFAULT}),
+                # Lexicon.PRESET: ([""], {"default": ""}),
+                Lexicon.FRAGMENT: ("STRING", {"multiline": True, "default": "void main() {\n\tfragColor = vec4(iUV, 0, 1.0);\n}"}),
                 Lexicon.USER1: ("FLOAT", {"default": 0, "step": 0.0001, "precision": 6}),
                 Lexicon.USER2: ("FLOAT", {"default": 0, "step": 0.0001, "precision": 6}),
             },

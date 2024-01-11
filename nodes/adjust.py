@@ -5,6 +5,7 @@ Adjustment
 
 import cv2
 import torch
+from loguru import logger
 
 import comfy
 

@@ -47,10 +47,9 @@ Polygonal shapes, MIDI, MP3/WAVE, Flow Logic
     ConstantNode, ShapeNode, TextNode, GLSLNode,
     StreamReaderNode, StreamWriterNode, MIDIMessageNode, MIDIReaderNode, MIDIFilterEZNode, MIDIFilterNode,
     ComparisonNode, IfThenElseNode, GetNode, SetNode,
-    AkashicNode, ValueGraphNode, RerouteNode
-@version: 0.999999999
+    AkashicNode, ValueGraphNode, RerouteNode, ExportNode
+@version: 0.9999999999999
 """
-
 
 import os
 import sys
@@ -88,13 +87,10 @@ JOV_CONFIG = {}
 JOV_WEB = ROOT / 'web'
 JOV_DEFAULT = JOV_WEB / 'default.json'
 JOV_CONFIG_FILE = JOV_WEB / 'config.json'
+JOV_GLSL = ROOT / 'glsl'
 
 JOV_LOG_LEVEL = os.getenv("JOV_LOG_LEVEL", "WARNING")
 logger.configure(handlers=[{"sink": sys.stdout, "level": JOV_LOG_LEVEL}])
-
-JOV_MAX_DELAY = 60.
-try: JOV_MAX_DELAY = float(os.getenv("JOV_MAX_DELAY", 60.))
-except: pass
 
 # =============================================================================
 # === TYPE SHORTCUTS ===
@@ -191,7 +187,31 @@ try:
     async def jovimetrix_message(request) -> Any:
         json_data = await request.json()
         did = json_data.get("id", None)
-        ComfyAPIMessage.MESSAGE[did] = json_data.get("frame", "")
+        ComfyAPIMessage.MESSAGE[did] = json_data
+        return web.json_response()
+
+    @PromptServer.instance.routes.get("/jovimetrix/glsl")
+    async def jovimetrix_config(request) -> Any:
+        ret = {}
+        for file_path in JOV_GLSL.glob('*.glsl'):
+            filename = file_path.stem
+            with open(file_path, 'r') as f:
+                ret[filename] = f.read()
+        return web.json_response(ret)
+
+    @PromptServer.instance.routes.post("/jovimetrix/glsl")
+    async def jovimetrix_config(request) -> Any:
+        json_data = await request.json()
+        # name and file contents...
+        name = json_data.get("name", None)
+        data = json_data.get("data", None)
+        if name is None or data is None:
+            logger.warning(f"glsl shader not saved {name}")
+            return web.json_response()
+
+        with open(JOV_GLSL / (name + ".glsl"), "w") as f:
+            f.write(data)
+        logger.info(f"shader saved: {name}")
         return web.json_response()
 
     @PromptServer.instance.routes.get("/jovimetrix/config")
@@ -448,7 +468,13 @@ class Session(metaclass=Singleton):
             if f.suffix != ".py" or f.stem.startswith('_'):
                 continue
 
-            module = importlib.import_module(f"Jovimetrix.nodes.{f.stem}")
+            try:
+                module = importlib.import_module(f"Jovimetrix.nodes.{f.stem}")
+            except Exception as e:
+                logger.warning(f"module failed {f}")
+                logger.warning(str(e))
+                continue
+
             classes = inspect.getmembers(module, inspect.isclass)
             for class_name, class_object in classes:
                 # assume both attrs are good enough....

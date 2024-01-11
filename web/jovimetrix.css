@@ -22,6 +22,42 @@
   text-align: right;
 }
 
+.jov-modal-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: #111;
+  padding: 25px;
+  border-radius: 15px;
+  border: 3px solid #AAA;
+}
+
+#jov-submit-cancel {
+  width: 100%;
+  padding: 10px;
+  margin: 5px;
+  background-color: #C43E3E;
+  color: #222;
+  border: none;
+  border-radius: 5px;
+}
+
+#jov-submit-continue {
+  width: 100%;
+  padding: 10px;
+  margin: 5px;
+  background-color: #3EC43E;
+  color: #222;
+  border: none;
+  border-radius: 5px;
+}
+
+.jov-modal-content h3, h4 {
+  padding: 2px;
+  margin: 2px;
+}
+
 .jov-config-color-header  {
   color: white;
   text-align: right;

@@ -3,7 +3,7 @@ Jovimetrix - http://www.github.com/amorano/jovimetrix
 Logic and Code flow nodes
 """
 
-import math
+import os
 import time
 from enum import Enum
 from typing import Any
@@ -11,10 +11,24 @@ from typing import Any
 from loguru import logger
 
 import comfy
+from server import PromptServer
+import nodes
 
-from Jovimetrix import JOV_MAX_DELAY, JOVBaseNode, IT_REQUIRED, IT_FLIP, WILDCARD
+from Jovimetrix import ComfyAPIMessage, JOVBaseNode, \
+    IT_REQUIRED, IT_FLIP, WILDCARD, TimedOutException
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import deep_merge_dict, zip_longest_fill, convert_parameter
+
+# min amount of time before showing the cancel dialog
+JOV_DELAY_MIN = 1
+try: JOV_DELAY_MIN = int(os.getenv("JOV_DELAY_MIN", JOV_DELAY_MIN))
+except: pass
+JOV_DELAY_MIN = max(1, JOV_DELAY_MIN)
+
+# max 10 minutes to start
+JOVI_DELAY_MAX = 600
+try: JOVI_DELAY_MAX = int(os.getenv("JOVI_DELAY_MAX", JOVI_DELAY_MAX))
+except: pass
 
 # =============================================================================
 
@@ -51,37 +65,73 @@ class DelayNode(JOVBaseNode):
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
             Lexicon.PASS_IN: (WILDCARD, {"default": None}),
-            Lexicon.WAIT: ("FLOAT", {"step": 0.01, "default" : 0}),
-            Lexicon.RESET: ("BOOLEAN", {"default": False})
+            Lexicon.WAIT: ("INT", {"step": 1, "default" : 0}),
+            Lexicon.HOLD: ("BOOLEAN", {"default": False}),
+        },
+        "hidden": {
+            "id": "UNIQUE_ID"
         }}
         return deep_merge_dict(IT_REQUIRED, d)
+
+    @classmethod
+    def IS_CHANGED(cls) -> float:
+        return float("nan")
+
+    @staticmethod
+    def parse_q(id, delay: int, forced:bool=False)-> bool:
+        step = 0
+        pbar = comfy.utils.ProgressBar(delay)
+        # if the delay is longer than X seconds, pop up the "cancel continue"
+        if delay > JOV_DELAY_MIN or forced:
+            PromptServer.instance.send_sync("jovi-delay-user", {"id": id, "timeout": delay})
+
+        while (step := step + 1) <= delay:
+            try:
+                if delay > JOV_DELAY_MIN or forced:
+                    data = ComfyAPIMessage.poll(id, timeout=1)
+                    if data.get('cancel', False):
+                        nodes.interrupt_processing(True)
+                        logger.warning(f"render cancelled delay: {id}")
+                    else:
+                        logger.info(f"render continued delay: {id}")
+                    return True
+                else:
+                    time.sleep(1)
+                    raise TimedOutException()
+            except TimedOutException as e:
+                pbar.update_absolute(step)
+            except Exception as e:
+                logger.error(str(e))
+                return True
+        return False
 
     def __init__(self) -> None:
         self.__delay = 0
 
-    def run(self, **kw) -> tuple[Any]:
+    def run(self, id, **kw) -> tuple[Any]:
         o = kw[Lexicon.PASS_IN]
-        delay = kw[Lexicon.DELAY]
-        reset = kw[Lexicon.RESET]
-
-        if reset:
-            self.__delay = 0
-            return (self, )
+        hold = kw[Lexicon.HOLD]
+        delay = min(kw[Lexicon.WAIT], JOVI_DELAY_MAX)
+        if hold:
+            cancel = False
+            while not cancel:
+                loop_delay = delay
+                if loop_delay == 0:
+                    loop_delay = JOVI_DELAY_MAX
+                cancel = DelayNode.parse_q(id, loop_delay, True)
+                print(cancel)
+            return (o, )
 
         if delay != self.__delay:
             self.__delay = delay
-            self.__delay = max(0, min(self.__delay, JOV_MAX_DELAY))
+            self.__delay = max(0, min(self.__delay, JOVI_DELAY_MAX))
 
         loops = int(self.__delay)
         if (remainder := self.__delay - loops) > 0:
             time.sleep(remainder)
 
         if loops > 0:
-            step = 0
-            pbar = comfy.utils.ProgressBar(loops)
-            while (step := step + 1) <= loops:
-                time.sleep(1)
-                pbar.update_absolute(step)
+            cancel = DelayNode.parse_q(id, loops)
         return (o,)
 
 class ComparisonNode(JOVBaseNode):

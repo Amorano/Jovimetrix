@@ -189,7 +189,7 @@ class RerouteNode(JOVBaseNode):
 
 class ExportNode(JOVBaseNode):
     NAME = "EXPORT (JOV) 📽"
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/ANIMATE"
+    CATEGORY = "JOVIMETRIX 🔺🟩🔵/UTILITY"
     DESCRIPTION = ""
     INPUT_IS_LIST = True
     OUTPUT_NODE = True

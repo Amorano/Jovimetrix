@@ -3,7 +3,7 @@ Jovimetrix - http://www.github.com/amorano/jovimetrix
 EMOJI OCD Support
 """
 
-# 🔗 ⚓ 📀 🍿 🎪 🐘 🤯 😱 💀 ⛓️ 🔒 🪀 🪁 🔮 🧿 🧙🏽 🧙🏽‍♀️ 🧯 🦚 ♻️ ⤴️ ⚜️ 🅱️ 🅾️ ⬆️ ↔️ ↕️ 〰️ ☐
+# 🔗 ⚓ 📀 🍿 🎪 🐘 🤯 😱 💀 ⛓️ 🔒 🪀 🪁 🔮 🧿 🧙🏽 🧙🏽‍♀️ 🧯 🦚 ♻️ ✋🏽 ⤴️ ⚜️ 🅱️ 🅾️ ⬆️ ↔️ ↕️ 〰️ ☐
 class Lexicon:
     A = '⬜'
     ADAPT = '🧬'
@@ -62,6 +62,7 @@ class Lexicon:
     H = '🇭'
     HI = 'HI'
     HSV = u'🇭🇸\u200c🇻'
+    HOLD = '⚠️'
     IMAGE = '🖼️'
     IN_A = '🅰️'
     IN_B = '🅱️'
@@ -100,6 +101,7 @@ class Lexicon:
     PIXEL = '👾'
     PIXEL_A = '👾A'
     PIXEL_B = '👾B'
+    PRESET = 'PRESET'
     PROJECTION = '📽️'
     R = '🟥'
     RADIUS = '🅡'
@@ -141,7 +143,7 @@ class Lexicon:
     VALUE = '#️⃣'
     VERTEX = '✳️'
     W = '🇼'
-    WAIT = '✋🏽'
+    WAIT = '⏱'
     WAVE = '♒'
     WH = '🇼🇭'
     WHITE = '⬜'

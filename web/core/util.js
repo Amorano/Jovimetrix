@@ -51,6 +51,45 @@ export function setting_make(id, name, type, tip, value, callback=undefined) {
     })
 }
 
+export function showModal(innerHTML, eventCallback, timeout = null) {
+    return new Promise((resolve, reject) => {
+        const modal = document.createElement("div");
+        modal.className = "modal";
+        modal.innerHTML = innerHTML;
+        document.body.appendChild(modal);
+
+        // center
+        const modalContent = modal.querySelector(".jov-modal-content");
+        modalContent.style.position = "absolute";
+        modalContent.style.left = "50%";
+        modalContent.style.top = "50%";
+        modalContent.style.transform = "translate(-50%, -50%)";
+
+        let timeoutId;
+
+        const handleEvent = (event) => {
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+                timeoutId = null;
+            }
+
+            const targetId = event.target.id;
+            const result = eventCallback(targetId);
+            modal.remove();
+            resolve(result);
+        };
+        modalContent.addEventListener("click", handleEvent);
+
+        if (timeout) {
+            timeout *= 1002;
+            timeoutId = setTimeout(() => {
+                modal.remove();
+                reject(new Error("TIMEOUT"));
+            }, timeout);
+        }
+    });
+}
+
 export let NODE_LIST = await api_get("./../object_info")
 export let CONFIG_CORE = await api_get("/jovimetrix/config")
 export let CONFIG_USER = CONFIG_CORE.user.default
