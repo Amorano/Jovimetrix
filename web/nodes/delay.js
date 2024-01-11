@@ -9,7 +9,6 @@ import { app } from "/scripts/app.js";
 import * as util from '../core/util.js'
 
 const _id = "DELAY (JOV) ✋🏽"
-let total_timeout = 0;
 
 const ext = {
 	name: _id,
@@ -21,44 +20,55 @@ const ext = {
         const onNodeCreated = nodeType.prototype.onNodeCreated;
         nodeType.prototype.onNodeCreated = async function () {
             const me = onNodeCreated?.apply(this);
+            const self = this;
+            this.total_timeout = 0;
+
             async function python_delay_user(event) {
-                const timeout = event.detail?.timeout;
+                if (event.detail.id != self.id) {
+                    return;
+                }
+                const timeout = event.detail.timeout;
                 try {
                     const value = await util.showModal(`
                         <div class="jov-modal-content">
-                            <h3 id="jov-delay-header">DELAY NODE #${event.detail?.title || event.detail.id}</h3>
+                            <h3 id="jov-delay-header">DELAY NODE #${event.detail?.title || event.detail.id} (${self.total_timeout})</h3>
                             <h4>CANCEL OR CONTINUE RENDER?</h4>
                             <div>
-                                <button id="jov-submit-cancel">CANCEL</button>
                                 <button id="jov-submit-continue">CONTINUE</button>
+                                <button id="jov-submit-cancel">CANCEL</button>
                             </div>
                         </div>`,
-                    (id) => {
-                        console.info(id)
-                        if (id === "jov-submit-cancel") {
-                            return true;
-                        } else if (id === "jov-submit-continue") {
-                            return false;
-                        }
-                    }, timeout);
+                        (button) => {
+                            if (button === "jov-submit-cancel") {
+                                return true;
+                            } else if (button === "jov-submit-continue") {
+                                return false;
+                            }
+                        }, timeout);
 
-                    total_timeout = 0;
-                    var data = { id: event.detail.id, cancel: value }
+                    self.total_timeout = 0;
+                    var data = { id: event.detail.id, cancel: value };
                     util.api_post('/jovimetrix/message', data);
-                }
-                catch(e)
-                {
-                    if (e.message == "TIMEOUT") {
-                        total_timeout += timeout;
-                        console.info(total_timeout);
-                    } else {
+                } catch (e) {
+                    if (e.message !== "TIMEOUT") {
                         console.error(e);
+                    } else {
+                        self.total_timeout += timeout;
+                        app.graph.setDirtyCanvas(true);
                     }
                 }
-            };
+            }
+
             api.addEventListener("jovi-delay-user", python_delay_user);
             return me;
         }
+
+        const onExecuted = nodeType.prototype.onExecuted
+        nodeType.prototype.onExecuted = function (message) {
+            onExecuted?.apply(this, arguments);
+            this.total_timeout = 0;
+        }
+
     }
 }
 app.registerExtension(ext)

@@ -71,7 +71,7 @@ export function showModal(innerHTML, eventCallback, timeout = null) {
             const targetId = event.target.id;
             const result = eventCallback(targetId);
 
-            if (result) {
+            if (result != null) {
                 if (timeoutId) {
                     clearTimeout(timeoutId);
                     timeoutId = null;
@@ -83,7 +83,7 @@ export function showModal(innerHTML, eventCallback, timeout = null) {
         modalContent.addEventListener("click", handleEvent);
 
         if (timeout) {
-            timeout *= 1002;
+            timeout *= 1000;
             timeoutId = setTimeout(() => {
                 modal.remove();
                 reject(new Error("TIMEOUT"));

@@ -79,20 +79,20 @@ class DelayNode(JOVBaseNode):
 
     @staticmethod
     def parse_q(id, delay: int, forced:bool=False)-> bool:
-        step = 0
         pbar = comfy.utils.ProgressBar(delay)
-        # if the delay is longer than X seconds, pop up the "cancel continue"
+        # if longer than X seconds, pop up the "cancel continue"
         if delay > JOV_DELAY_MIN or forced:
             PromptServer.instance.send_sync("jovi-delay-user", {"id": id, "timeout": delay})
 
+        step = 0
         while (step := step + 1) <= delay:
             try:
                 if delay > JOV_DELAY_MIN or forced:
                     data = ComfyAPIMessage.poll(id, timeout=1)
-                    if (val := data.get('cancel', None)) is True:
+                    if data.get('cancel', None):
                         nodes.interrupt_processing(True)
                         logger.warning(f"render cancelled delay: {id}")
-                    elif not val:
+                    else:
                         logger.info(f"render continued delay: {id}")
                     return True
                 else:
@@ -119,7 +119,6 @@ class DelayNode(JOVBaseNode):
                 if loop_delay == 0:
                     loop_delay = JOVI_DELAY_MAX
                 cancel = DelayNode.parse_q(id, loop_delay, True)
-                print(cancel)
             return (o, )
 
         if delay != self.__delay:
