@@ -89,10 +89,10 @@ class DelayNode(JOVBaseNode):
             try:
                 if delay > JOV_DELAY_MIN or forced:
                     data = ComfyAPIMessage.poll(id, timeout=1)
-                    if data.get('cancel', False):
+                    if (val := data.get('cancel', None)) is True:
                         nodes.interrupt_processing(True)
                         logger.warning(f"render cancelled delay: {id}")
-                    else:
+                    elif not val:
                         logger.info(f"render continued delay: {id}")
                     return True
                 else:

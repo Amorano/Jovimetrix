@@ -22,24 +22,24 @@ const ext = {
         nodeType.prototype.onNodeCreated = async function () {
             const me = onNodeCreated?.apply(this);
             async function python_delay_user(event) {
-                total_timeout = 0;
                 const timeout = event.detail?.timeout;
-                const runtime = total_timeout > 0 ? "(" + total_timeout + ")" : "";
                 try {
                     const value = await util.showModal(`
                         <div class="jov-modal-content">
-                            <h3>DELAY NODE #${event.detail?.title || event.detail.id} ${runtime}</h3>
+                            <h3 id="jov-delay-header">DELAY NODE #${event.detail?.title || event.detail.id}</h3>
                             <h4>CANCEL OR CONTINUE RENDER?</h4>
                             <div>
                                 <button id="jov-submit-cancel">CANCEL</button>
                                 <button id="jov-submit-continue">CONTINUE</button>
                             </div>
-                        </div>
-                    `, (id) => {
+                        </div>`,
+                    (id) => {
+                        console.info(id)
                         if (id === "jov-submit-cancel") {
                             return true;
+                        } else if (id === "jov-submit-continue") {
+                            return false;
                         }
-                        return false;
                     }, timeout);
 
                     total_timeout = 0;
@@ -50,8 +50,7 @@ const ext = {
                 {
                     if (e.message == "TIMEOUT") {
                         total_timeout += timeout;
-                        console.info(total_timeout)
-                        app.canvas.setDirty(true);
+                        console.info(total_timeout);
                     } else {
                         console.error(e);
                     }

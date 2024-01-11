@@ -68,15 +68,17 @@ export function showModal(innerHTML, eventCallback, timeout = null) {
         let timeoutId;
 
         const handleEvent = (event) => {
-            if (timeoutId) {
-                clearTimeout(timeoutId);
-                timeoutId = null;
-            }
-
             const targetId = event.target.id;
             const result = eventCallback(targetId);
-            modal.remove();
-            resolve(result);
+
+            if (result) {
+                if (timeoutId) {
+                    clearTimeout(timeoutId);
+                    timeoutId = null;
+                }
+                modal.remove();
+                resolve(result);
+            }
         };
         modalContent.addEventListener("click", handleEvent);
 
@@ -225,6 +227,29 @@ export function fade_lerp_color(colorStart, colorEnd, lerp) {
 
   // Convert the interpolated RGB values back to a hex color string
   return rgbToHex(lerpedRGB);
+}
+
+export function color_contrast(hexColor) {
+    // Remove the # symbol if it exists
+    if (hexColor.startsWith("#")) {
+        hexColor = hexColor.slice(1);
+    }
+
+    // Expand short hex code to full hex code
+    if (hexColor.length === 3) {
+        hexColor = hexColor.split('').map(char => char + char).join('');
+    }
+
+    // Convert the hex values to decimal (base 10) integers
+    const r = parseInt(hexColor.slice(0, 2), 16) / 255;
+    const g = parseInt(hexColor.slice(2, 4), 16) / 255;
+    const b = parseInt(hexColor.slice(4, 6), 16) / 255;
+
+    // Calculate the relative luminance
+    const L = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+
+    // Use the contrast ratio to determine the text color
+    return L > 0.210 ? "#000000" : "#999999";
 }
 
 export function toggleFoldable(elementId, symbolId) {
