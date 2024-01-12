@@ -27,6 +27,7 @@ from Jovimetrix.sup.image import tensor2pil, pil2tensor
 
 class AkashicData:
     def __init__(self, *arg, **kw) -> None:
+        super().__init__(*arg, **kw)
         for k, v in kw.items():
             setattr(self, k, v)
 

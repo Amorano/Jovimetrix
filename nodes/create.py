@@ -3,7 +3,6 @@ Jovimetrix - http://www.github.com/amorano/jovimetrix
 Creation
 """
 
-import json
 from enum import Enum
 
 import torch
@@ -12,9 +11,9 @@ import matplotlib.font_manager
 from loguru import logger
 
 import comfy
-from server import PromptServer
+# from server import PromptServer
 
-from Jovimetrix import ComfyAPIMessage, JOVBaseNode, JOVImageBaseNode, \
+from Jovimetrix import JOVBaseNode, JOVImageBaseNode, \
     ROOT, IT_PIXELS, IT_RGBA, IT_WH, IT_SCALE, IT_ROT, IT_INVERT, \
     IT_REQUIRED, MIN_IMAGE_SIZE
 
@@ -23,7 +22,7 @@ from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import deep_merge_dict, parse_tuple, parse_number, \
     EnumTupleType
 
-from Jovimetrix.sup.image import b64_2_tensor, channel_add, pil2tensor, pil2cv, \
+from Jovimetrix.sup.image import channel_add, pil2tensor, pil2cv, \
     cv2tensor, cv2mask, IT_WHMODE
 
 from Jovimetrix.sup.comp import shape_ellipse, shape_polygon, shape_quad, \
@@ -198,23 +197,17 @@ class GLSLNode(JOVBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        # PRESETS = list_shaders(JOV_CONFIG_GLSL)
-        # PRESET = next(iter(PRESETS)) if len(PRESETS) else ""
         d = {"optional": {
                 Lexicon.TIME: ("FLOAT", {"default": 0, "step": 0.0001, "min": 0, "precision": 6}),
-                Lexicon.FPS: ("INT", {"default": 0, "step": 1, "min": 0, "max": 120}),
+                Lexicon.FPS: ("INT", {"default": 0, "step": 1, "min": 0, "max": 1000}),
                 Lexicon.BATCH: ("INT", {"default": 1, "step": 1, "min": 1, "max": 36000}),
                 Lexicon.RESET: ("BOOLEAN", {"default": False}),
                 Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), "step": 1, "min": 1}),
-                # Lexicon.PRESET: ([""], {"default": ""}),
                 Lexicon.FRAGMENT: ("STRING", {"multiline": True, "default": "void main() {\n\tfragColor = vec4(iUV, 0, 1.0);\n}"}),
                 Lexicon.USER1: ("FLOAT", {"default": 0, "step": 0.0001, "precision": 6}),
                 Lexicon.USER2: ("FLOAT", {"default": 0, "step": 0.0001, "precision": 6}),
-            },
-            "hidden": {
-                "id": "UNIQUE_ID"
+                Lexicon.PRESET: ([""], {"default": ""}),
             }}
-
         return deep_merge_dict(IT_REQUIRED, IT_PIXELS, d)
 
     @classmethod
@@ -222,16 +215,33 @@ class GLSLNode(JOVBaseNode):
         return float("nan")
 
     def __init__(self, *arg, **kw) -> None:
-        self.__last = torch.ones((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8)
+        super().__init__(*arg, **kw)
+        self.__glsl = None
+        self.__fragment = ""
 
-    def run(self, id, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        # ask for this "id"'s image
-        PromptServer.instance.send_sync("jovi-glsl-image", {"id": id})
-        self.__last = []
-        batch = kw.get(Lexicon.BATCH, 1)
-        imgs = ComfyAPIMessage.poll(id, timeout=(batch / 10) + 3)
-        pbar = comfy.utils.ProgressBar(len(imgs))
-        for idx, img in enumerate(imgs):
-            self.__last.append(b64_2_tensor(img))
+    def run(self, **kw) -> list[torch.Tensor]:
+        fragment = kw[Lexicon.FRAGMENT]
+        with open("test.txt", "w") as f:
+            f.write(fragment)
+        fragment = "void main() {\n\tfragColor = vec4(iUV, 0, 1.0);\n}"
+
+
+        width, height = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)[0]
+        if self.__fragment != fragment or self.__glsl is None:
+            self.__glsl = GLSL(fragment, width, height)
+            self.__fragment = fragment
+
+        if width != self.__glsl.width:
+            self.__glsl.width = width
+
+        if height != self.__glsl.height:
+            self.__glsl.height = height
+
+        frames = []
+        batch = kw[Lexicon.BATCH]
+        pbar = comfy.utils.ProgressBar(batch)
+        for idx in range(batch):
+            img = self.__glsl.render()
+            frames.append(pil2tensor(img))
             pbar.update_absolute(idx)
-        return (self.__last, )
+        return (frames, )

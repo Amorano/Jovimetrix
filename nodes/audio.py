@@ -35,7 +35,8 @@ class GraphWaveNode(JOVImageBaseNode):
         return deep_merge_dict(IT_REQUIRED, d, IT_WH, IT_RGBA, IT_RGBA_B)
 
     # #️⃣ 🪄
-    def __init__(self) -> None:
+    def __init__(self, *arg, **kw) -> None:
+        super().__init__(*arg, **kw)
         self.__filen = None
         self.__data = None
 

@@ -77,7 +77,8 @@ class StreamReaderNode(JOVImageBaseNode):
     def IS_CHANGED(cls, **kw) -> float:
         return float("nan")
 
-    def __init__(self) -> None:
+    def __init__(self, *arg, **kw) -> None:
+        super().__init__(*arg, **kw)
         self.__device = None
         self.__url = ""
         self.__capturing = 0
@@ -285,7 +286,8 @@ class MIDIReaderNode(JOVBaseNode):
     def IS_CHANGED(cls) -> float:
         return float("nan")
 
-    def __init__(self) -> None:
+    def __init__(self, *arg, **kw) -> None:
+        super().__init__(*arg, **kw)
         self.__q_in = Queue()
         self.__q_out = Queue()
         self.__device = None

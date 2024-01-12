@@ -73,10 +73,6 @@ class DelayNode(JOVBaseNode):
         }}
         return deep_merge_dict(IT_REQUIRED, d)
 
-    @classmethod
-    def IS_CHANGED(cls) -> float:
-        return float("nan")
-
     @staticmethod
     def parse_q(id, delay: int, forced:bool=False)-> bool:
         pbar = comfy.utils.ProgressBar(delay)
@@ -105,7 +101,8 @@ class DelayNode(JOVBaseNode):
                 return True
         return False
 
-    def __init__(self) -> None:
+    def __init__(self, *arg, **kw) -> None:
+        super().__init__(*arg, **kw)
         self.__delay = 0
 
     def run(self, id, **kw) -> tuple[Any]:
