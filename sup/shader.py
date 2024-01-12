@@ -48,6 +48,12 @@ uniform float iUser1;
 layout(location = 0) out vec4 fragColor;
 """
 
+# =============================================================================
+
+class CompileException(Exception): pass
+
+# =============================================================================
+
 class GLSL:
     def __init__(self, fragment:str, width:int=128, height:int=128) -> None:
         self.__fragment = FRAGMENT_HEADER + fragment
@@ -57,12 +63,12 @@ class GLSL:
                 vertex_shader=VERTEX,
                 fragment_shader=self.__fragment,
             )
-        except:
-            raise Exception(self.__fragment)
+        except Exception as e:
+            raise CompileException(e)
 
         self.__iResolution = self.__prog.get('iResolution', None)
         self.__iTime = self.__prog.get('iTime', None)
-        self.__iDelta = self.__prog.get('iDelta', None)
+        self.__iTimeDelta = self.__prog.get('iTimeDelta', None)
         self.__iFrameRate = self.__prog.get('iFrameRate', None)
         self.__iFrame = self.__prog.get('iFrame', None)
 
@@ -168,8 +174,8 @@ class GLSL:
         if self.__iTime is not None:
             self.__iTime.value = self.__runtime
 
-        if self.__iDelta is not None:
-            self.__iDelta.value = self.__delta
+        if self.__iTimeDelta is not None:
+            self.__iTimeDelta.value = self.__delta
 
         if self.__iFrameRate is not None:
             self.__iFrameRate.value = self.__fps_rate

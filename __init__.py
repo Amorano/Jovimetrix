@@ -190,30 +190,6 @@ try:
         ComfyAPIMessage.MESSAGE[did] = json_data
         return web.json_response()
 
-    @PromptServer.instance.routes.get("/jovimetrix/glsl")
-    async def jovimetrix_config(request) -> Any:
-        ret = {}
-        for file_path in JOV_GLSL.glob('*.glsl'):
-            filename = file_path.stem
-            with open(file_path, 'r') as f:
-                ret[filename] = f.read()
-        return web.json_response(ret)
-
-    @PromptServer.instance.routes.post("/jovimetrix/glsl")
-    async def jovimetrix_config(request) -> Any:
-        json_data = await request.json()
-        # name and file contents...
-        name = json_data.get("name", None)
-        data = json_data.get("data", None)
-        if name is None or data is None:
-            logger.warning(f"glsl shader not saved {name}")
-            return web.json_response()
-
-        with open(JOV_GLSL / (name + ".glsl"), "w") as f:
-            f.write(data)
-        logger.info(f"shader saved: {name}")
-        return web.json_response()
-
     @PromptServer.instance.routes.get("/jovimetrix/config")
     async def jovimetrix_config(request) -> Any:
         global JOV_CONFIG

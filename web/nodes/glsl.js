@@ -4,6 +4,7 @@
  *
  */
 
+import { api } from "/scripts/api.js";
 import { app } from "/scripts/app.js";
 import * as util from '../core/util.js'
 
@@ -19,62 +20,33 @@ const ext = {
         const onNodeCreated = nodeType.prototype.onNodeCreated;
         nodeType.prototype.onNodeCreated = async function () {
             const me = onNodeCreated?.apply(this);
-
-            const shaders = await util.api_get("/jovimetrix/glsl");
             const widget_fragment = this.widgets[5];
-            const widget_preset = this.widgets[8];
-            widget_preset.callback = (e) => {
-                widget_fragment.value = shaders[e];
-            }
-            widget_preset.options.values = () => {
-                return Object.keys(shaders).sort();
-            }
-            widget_preset.serialize = false;
+            widget_fragment.dynamicPrompts = false;
+            const self = this;
 
-            async function saveProgram() {
-                try {
-                    const value = await util.showModal(
-                        `<div class="jov-modal-content">
-                            <h2>SAVE GLSL PROGRAM</h2>
-                            <input type="text" id="filename" placeholder="filename">
-                            <button id="jov-submit-continue">SAVE</button>
-                            <button id="jov-submit-cancel">CANCEL</button>
-                        </div>`,
-                        (button) => {
-                            if (button === "jov-submit-continue") {
-                                return document.getElementById("filename").value;
-                            } else if (button === "jov-submit-cancel") {
-                                return "";
-                            }
-                        }
-                    );
-
-                    if (value) {
-                        const data = {
-                            name: value,
-                            data: widget_fragment.value
-                        };
-                        util.api_post("/jovimetrix/glsl", data);
-                    }
-                } catch (error) {
-                    console.error(error);
+            async function python_glsl_error(event) {
+                if (event.detail.id != self.id) {
+                    return;
                 }
+                console.error(event.detail.e);
+                await util.flashBackgroundColor(widget_fragment.inputEl, 250, 3, "#FF2222AA");
             }
-
-            this.addWidget("button", "SAVE PROGRAM", null, (e) => {
-                saveProgram();
-            });
+            api.addEventListener("jovi-glsl-error", python_glsl_error);
             return me;
         }
 
         const onExecuted = nodeType.prototype.onExecuted
-        nodeType.prototype.onExecuted = function (message) {
+        nodeType.prototype.onExecuted = async function () {
+            console.info('hi')
             onExecuted?.apply(this, arguments);
+
             const widget_time = this.widgets[0];
             const widget_fps = this.widgets[1];
             const widget_batch = this.widgets[2];
             const offset = widget_fps.value / 1000 * widget_batch.value;
+
             widget_time.value += offset;
+            app.graph.setDirtyCanvas(true);
         }
     }
 }

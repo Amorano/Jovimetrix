@@ -11,7 +11,7 @@ import matplotlib.font_manager
 from loguru import logger
 
 import comfy
-# from server import PromptServer
+from server import PromptServer
 
 from Jovimetrix import JOVBaseNode, JOVImageBaseNode, \
     ROOT, IT_PIXELS, IT_RGBA, IT_WH, IT_SCALE, IT_ROT, IT_INVERT, \
@@ -28,7 +28,7 @@ from Jovimetrix.sup.image import channel_add, pil2tensor, pil2cv, \
 from Jovimetrix.sup.comp import shape_ellipse, shape_polygon, shape_quad, \
     light_invert, EnumScaleMode
 
-from Jovimetrix.sup.shader import GLSL
+from Jovimetrix.sup.shader import GLSL, CompileException
 
 JOV_CONFIG_GLSL = ROOT / 'glsl'
 
@@ -203,10 +203,12 @@ class GLSLNode(JOVBaseNode):
                 Lexicon.BATCH: ("INT", {"default": 1, "step": 1, "min": 1, "max": 36000}),
                 Lexicon.RESET: ("BOOLEAN", {"default": False}),
                 Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), "step": 1, "min": 1}),
-                Lexicon.FRAGMENT: ("STRING", {"multiline": True, "default": "void main() {\n\tfragColor = vec4(iUV, 0, 1.0);\n}"}),
+                Lexicon.FRAGMENT: ("STRING", {"multiline": True, "default": "void main() {\n\tfragColor = vec4(iUV, 0, 1.0);\n}", "dynamicPrompts": False}),
                 Lexicon.USER1: ("FLOAT", {"default": 0, "step": 0.0001, "precision": 6}),
                 Lexicon.USER2: ("FLOAT", {"default": 0, "step": 0.0001, "precision": 6}),
-                Lexicon.PRESET: ([""], {"default": ""}),
+            },
+            "hidden": {
+                "id": "UNIQUE_ID"
             }}
         return deep_merge_dict(IT_REQUIRED, IT_PIXELS, d)
 
@@ -218,17 +220,19 @@ class GLSLNode(JOVBaseNode):
         super().__init__(*arg, **kw)
         self.__glsl = None
         self.__fragment = ""
+        self.__last_good = [torch.zeros((256, 256, 3), dtype=torch.uint8)]
 
-    def run(self, **kw) -> list[torch.Tensor]:
+    def run(self, id, **kw) -> list[torch.Tensor]:
+        batch = kw[Lexicon.BATCH]
         fragment = kw[Lexicon.FRAGMENT]
-        with open("test.txt", "w") as f:
-            f.write(fragment)
-        fragment = "void main() {\n\tfragColor = vec4(iUV, 0, 1.0);\n}"
-
-
-        width, height = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)[0]
+        width, height = parse_tuple(Lexicon.WH, kw, default=(256, 256,), clip_min=1)[0]
         if self.__fragment != fragment or self.__glsl is None:
-            self.__glsl = GLSL(fragment, width, height)
+            try:
+                self.__glsl = GLSL(fragment, width, height)
+            except CompileException as e:
+                PromptServer.instance.send_sync("jovi-glsl-error", {"id": id, "e": str(e)})
+                logger.error(e)
+                return (self.__last_good, )
             self.__fragment = fragment
 
         if width != self.__glsl.width:
@@ -238,10 +242,10 @@ class GLSLNode(JOVBaseNode):
             self.__glsl.height = height
 
         frames = []
-        batch = kw[Lexicon.BATCH]
         pbar = comfy.utils.ProgressBar(batch)
         for idx in range(batch):
             img = self.__glsl.render()
             frames.append(pil2tensor(img))
             pbar.update_absolute(idx)
-        return (frames, )
+        self.__last_good = frames
+        return (self.__last_good, )
