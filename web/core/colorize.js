@@ -39,21 +39,21 @@ const ext = {
             const local = localStorage["Comfy.Settings.jov." + id]
             value = local ? local : util.CONFIG_USER.color[key] ? util.CONFIG_USER.color[key] : value;
             util.setting_make(_id, pretty, type, tip, value, (val) => {
-                var data = { id: _id, v: val }
+                var data = { id: id, v: val }
                 util.api_post('/jovimetrix/config', data);
                 util.CONFIG_USER.color[key] = val;
             });
         }
 
-        setting_make(util.USER + '.color.titleA', 'Group Title A 🎨🇯', 'text', 'Alternative title color for separating groups in the color configuration panel', 'titleA', '#302929')
+        setting_make(util.USER + '.color.titleA', '🇯 🎨 Group Title A ', 'text', 'Alternative title color for separating groups in the color configuration panel', 'titleA', '#302929')
 
-        setting_make(util.USER + '.color.backA', 'Group Back A 🎨🇯', 'text', 'Alternative color for separating groups in the color configuration panel', 'backA', '#050303');
+        setting_make(util.USER + '.color.backA', '🇯 🎨 Group Back A ', 'text', 'Alternative color for separating groups in the color configuration panel', 'backA', '#050303');
 
-        setting_make(util.USER + '.color.titleB', 'Group Title B 🎨🇯', 'text', 'Alternative title color for separating groups in the color configuration panel', 'titleB', '#293029');
+        setting_make(util.USER + '.color.titleB', '🇯 🎨 Group Title B', 'text', 'Alternative title color for separating groups in the color configuration panel', 'titleB', '#293029');
 
-        setting_make(util.USER + '.color.backB', 'Group Back B 🎨🇯', 'text', 'Alternative color for separating groups in the color configuration panel', 'backB', '#030503');
+        setting_make(util.USER + '.color.backB', '🇯 🎨 Group Back B', 'text', 'Alternative color for separating groups in the color configuration panel', 'backB', '#030503');
 
-        setting_make(util.USER + '.color.contrast', 'Auto-Contrast Text 🎨🇯', 'boolean', 'Auto-contrast the title text for all nodes for better readability', 'contrast', true);
+        setting_make(util.USER + '.color.contrast', '🇯 🎨 Auto-Contrast Text', 'boolean', 'Auto-contrast the title text for all nodes for better readability', 'contrast', true);
 
         // Option for user to contrast text for better readability
         const drawNodeShape = LGraphCanvas.prototype.drawNodeShape;

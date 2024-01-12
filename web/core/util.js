@@ -51,7 +51,7 @@ export function setting_make(id, name, type, tip, value, callback=undefined) {
     })
 }
 
-export function showModal(innerHTML, eventCallback, timeout = null) {
+export function showModal(innerHTML, eventCallback, timeout=null) {
     return new Promise((resolve, reject) => {
         const modal = document.createElement("div");
         modal.className = "modal";

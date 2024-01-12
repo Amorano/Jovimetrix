@@ -6,6 +6,7 @@ GLSL Support
 import os
 import time
 from pathlib import Path
+from typing import Any
 
 import moderngl
 import numpy as np
@@ -23,7 +24,7 @@ out vec2 iUV;
 
 void main() {
     gl_Position = vec4(iPosition, 0.0, 1.0);
-    iUV = iPosition;
+    iUV = iPosition / 2.0 + 0.5;
 }"""
 
 FRAGMENT_HEADER = """
@@ -49,16 +50,15 @@ layout(location = 0) out vec4 fragColor;
 
 class GLSL:
     def __init__(self, fragment:str, width:int=128, height:int=128) -> None:
-        self.__fragment_file = fragment
-        with open(self.__fragment_file, 'r') as f:
-            self.__fragment = f.read()
-
+        self.__fragment = FRAGMENT_HEADER + fragment
         self.__ctx = moderngl.create_standalone_context()
-        fragment = FRAGMENT_HEADER + self.__fragment
-        self.__prog = self.__ctx.program(
-            vertex_shader=VERTEX,
-            fragment_shader=fragment,
-        )
+        try:
+            self.__prog = self.__ctx.program(
+                vertex_shader=VERTEX,
+                fragment_shader=self.__fragment,
+            )
+        except:
+            raise Exception(self.__fragment)
 
         self.__iResolution = self.__prog.get('iResolution', None)
         self.__iTime = self.__prog.get('iTime', None)
@@ -88,7 +88,7 @@ class GLSL:
             color_attachments=[self.__ctx.texture((width, height), 3)]
         )
 
-        self.__time: float = 0
+        self.__runtime: float = 0
         self.__delta: float = 0
         self.__frame_count: int = 0
         # FPS > 0 will act as a step (per frame step)
@@ -103,7 +103,7 @@ class GLSL:
         if self.__iFrame is not None:
             self.__iFrame = 0
 
-        self.__time = 0
+        self.__runtime = 0
         self.__delta = 0
         self.__frame_count = 0
         self.__time_last = time.perf_counter()
@@ -122,6 +122,14 @@ class GLSL:
         self.__fps = max(0, min(1000, val))
         if self.__fps > 0:
             self.__fps_rate = 1 / self.__fps
+
+    @property
+    def fps(self) -> int:
+        return self.__fps
+
+    @fps.setter
+    def runtime(self, val:int) -> None:
+        self.__runtime = max(0, val)
 
     @property
     def hold(self) -> bool:
@@ -153,18 +161,12 @@ class GLSL:
             color_attachments=[self.__ctx.texture((self.__width, self.__height), 3)]
         )
 
-    def render(self) -> None:
-        if self.__hold:
-            return self.__frame
-
-        self.__fbo.clear(0.0, 0.0, 0.0)
-        self.__fbo.use()
-
+    def __set_uniforms(self, user0: Any = None, user1: Any = None) -> None:
         if self.__iResolution is not None:
             self.__iResolution.value = (self.__width, self.__height)
 
         if self.__iTime is not None:
-            self.__iTime.value = self.__time
+            self.__iTime.value = self.__runtime
 
         if self.__iDelta is not None:
             self.__iDelta.value = self.__delta
@@ -175,19 +177,27 @@ class GLSL:
         if self.__iFrame is not None:
             self.__iFrame.value = self.__frame_count
 
+        if user0 is not None:
+            self.__iUser0.value = user0
+
+        if user1 is not None:
+            self.__iUser1.value = user1
+
+    def render(self, user0: Any = None, user1: Any = None) -> None:
+        if self.__hold:
+            return self.__frame
+
+        self.__fbo.clear(0.0, 0.0, 0.0)
+        self.__fbo.use()
+        self.__set_uniforms(user0, user1)
         self.__vao.render()
         self.__frame = Image.frombytes(
             "RGB", self.__fbo.size, self.__fbo.color_attachments[0].read(),
             "raw", "RGB", 0, -1
         )
         self.__frame_count += 1
-        if self.__fps > 0:
-            self.__delta = self.__fps_rate
-            self.__time += self.__fps_rate
-            print(self.__time)
-        else:
-            self.__delta = time.perf_counter() - self.__time_last
-            self.__time += self.__delta
+        self.__delta = max(0, self.__fps_rate) if self.__fps > 0 else time.perf_counter() - self.__time_last
+        self.__runtime += self.__delta
         self.__time_last = time.perf_counter()
         return self.__frame
 
