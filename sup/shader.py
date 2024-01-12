@@ -38,11 +38,11 @@ uniform float iTimeDelta;
 uniform float iFrameRate;
 uniform int iFrame;
 
-uniform sampler2D iChannel0;
-uniform sampler2D iChannel1;
+uniform sampler2D iTexture1;
+uniform sampler2D iTexture2;
 
-uniform float iUser0;
 uniform float iUser1;
+uniform float iUser2;
 
 #define texture2D texture
 layout(location = 0) out vec4 fragColor;
@@ -58,6 +58,7 @@ class GLSL:
     def __init__(self, fragment:str, width:int=128, height:int=128) -> None:
         self.__fragment = FRAGMENT_HEADER + fragment
         self.__ctx = moderngl.create_standalone_context()
+
         try:
             self.__prog = self.__ctx.program(
                 vertex_shader=VERTEX,
@@ -66,16 +67,28 @@ class GLSL:
         except Exception as e:
             raise CompileException(e)
 
+
+
         self.__iResolution = self.__prog.get('iResolution', None)
         self.__iTime = self.__prog.get('iTime', None)
         self.__iTimeDelta = self.__prog.get('iTimeDelta', None)
         self.__iFrameRate = self.__prog.get('iFrameRate', None)
         self.__iFrame = self.__prog.get('iFrame', None)
 
-        self.__iChannel0 = self.__prog.get('iChannel0', None)
-        self.__iChannel1 = self.__prog.get('iChannel1', None)
-        self.__iUser0 = self.__prog.get('iUser0', None)
+        try:
+            self.__prog['iTexture1'].value = 0
+        except:
+            pass
+        self.__iTexture1 = self.__prog.get('iTexture1', None)
+
+        try:
+            self.__prog['iTexture2'].value = 0
+        except:
+            pass
+        self.__iTexture2 = self.__prog.get('iTexture2', None)
+
         self.__iUser1 = self.__prog.get('iUser1', None)
+        self.__iUser2 = self.__prog.get('iUser2', None)
 
         vertices = np.array([
             -1.0, -1.0,
@@ -167,7 +180,7 @@ class GLSL:
             color_attachments=[self.__ctx.texture((self.__width, self.__height), 3)]
         )
 
-    def __set_uniforms(self, user0: Any = None, user1: Any = None) -> None:
+    def __set_uniforms(self, texture1: Image=None, texture2: Image=None, user1: Any = None, user2: Any = None) -> None:
         if self.__iResolution is not None:
             self.__iResolution.value = (self.__width, self.__height)
 
@@ -183,24 +196,37 @@ class GLSL:
         if self.__iFrame is not None:
             self.__iFrame.value = self.__frame_count
 
-        if user0 is not None:
-            self.__iUser0.value = user0
+        if self.__iTexture1 is not None and texture1 is not None:
+            if (size := len(texture1.mode)) == 4:
+                texture1 = texture1.convert("RGB")
+            texture: Image = self.__ctx.texture(texture1.size, components=size, data=texture1.tobytes())
+            texture.use(location=0)
 
-        if user1 is not None:
+        if self.__iTexture2 is not None and texture2 is not None:
+            if (size := len(texture2.mode)) == 4:
+                texture2 = texture2.convert("RGB")
+            texture: Image = self.__ctx.texture(texture2.size, components=size, data=texture2.tobytes())
+            texture.use(location=1)
+
+        if self.__iUser1 is not None and user1 is not None:
             self.__iUser1.value = user1
 
-    def render(self, user0: Any = None, user1: Any = None) -> None:
+        if self.__iUser2 is not None and user2 is not None:
+            self.__iUser2.value = user2
+
+    def render(self, texture1:Image=None, texture2:Image=None, user1:float=None, user2:float=None) -> None:
         if self.__hold:
             return self.__frame
 
         self.__fbo.clear(0.0, 0.0, 0.0)
         self.__fbo.use()
-        self.__set_uniforms(user0, user1)
+        self.__set_uniforms(texture1, texture2, user1, user2)
         self.__vao.render()
         self.__frame = Image.frombytes(
             "RGB", self.__fbo.size, self.__fbo.color_attachments[0].read(),
             "raw", "RGB", 0, -1
         )
+        self.__frame = self.__frame.transpose(Image.FLIP_TOP_BOTTOM)
         self.__frame_count += 1
         self.__delta = max(0, self.__fps_rate) if self.__fps > 0 else time.perf_counter() - self.__time_last
         self.__runtime += self.__delta

@@ -23,7 +23,7 @@ from Jovimetrix.sup.util import deep_merge_dict, parse_tuple, parse_number, \
     EnumTupleType
 
 from Jovimetrix.sup.image import channel_add, pil2tensor, pil2cv, \
-    cv2tensor, cv2mask, IT_WHMODE
+    cv2tensor, cv2mask, IT_WHMODE, tensor2pil
 
 from Jovimetrix.sup.comp import shape_ellipse, shape_polygon, shape_quad, \
     light_invert, EnumScaleMode
@@ -242,9 +242,15 @@ class GLSLNode(JOVBaseNode):
             self.__glsl.height = height
 
         frames = []
+        user1 = kw.get(Lexicon.USER1, None)
+        user2 = kw.get(Lexicon.USER2, None)
+        if (texture1 := kw.get(Lexicon.PIXEL, None)) is not None:
+            texture1 = tensor2pil(texture1)
+        if (texture2 := kw.get(Lexicon.PIXEL, None)) is not None:
+            texture2 = tensor2pil(texture2)
         pbar = comfy.utils.ProgressBar(batch)
         for idx in range(batch):
-            img = self.__glsl.render()
+            img = self.__glsl.render(texture1, texture2, user1, user2)
             frames.append(pil2tensor(img))
             pbar.update_absolute(idx)
         self.__last_good = frames
