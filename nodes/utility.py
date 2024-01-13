@@ -250,15 +250,7 @@ class QueueNode(JOVBaseNode):
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
-            Lexicon.QUEUE: ("STRING", {"multiline": True, "default": """
-z:\\alex.png,*.jpg,5
-z:\\alex,*.jpg,2
-Z:\IMAGE\_ALPHA\Hardsurface\Bolts\Inserted,*.png,4
-Z:\IMAGE\_ALPHA\Hardsurface\Bolts\Inserted,*.jpg,4
-Z:\IMAGE\_ALPHA\Hardsurface\Bolts\Inserted,,3
-Z:\IMAGE\_ALPHA\Hardsurface\Bolts\Inserted,2
-Z:\IMAGE\_ALPHA\Hardsurface\Bolts\Insered,2
-"""}),
+            Lexicon.QUEUE: ("STRING", {"multiline": True, "default": ""}),
             # Lexicon.VALUE: ("INT", {"default": 0}),
             # -1 == HALT (send NONE), 0 = FOREVER, N-> COUNT TIMES THROUGH LIST
             Lexicon.LOOP: ("INT", {"default": 1, "min": 0}),
