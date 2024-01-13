@@ -30,7 +30,7 @@ class GraphWaveNode(JOVImageBaseNode):
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
                 Lexicon.FILEN: ("STRING", {"default": ""}),
-                Lexicon.AMT: ("INT", {"default": 100, "min": 32, "max": 8192, "step": 1})
+                Lexicon.VALUE: ("INT", {"default": 100, "min": 32, "max": 8192, "step": 1})
             }}
         return deep_merge_dict(IT_REQUIRED, d, IT_WH, IT_RGBA, IT_RGBA_B)
 
@@ -42,7 +42,7 @@ class GraphWaveNode(JOVImageBaseNode):
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         filen = kw.get(Lexicon.FILEN)
-        bars = kw.get(Lexicon.AMT, None)
+        bars = kw.get(Lexicon.VALUE, None)
         width, height = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)[0]
         rgb_a = parse_tuple(Lexicon.RGBA, kw, default=(128, 128, 0, 255), clip_min=1)[0]
         rgb_b = parse_tuple(Lexicon.RGBA_B, kw, default=(0, 128, 128, 255), clip_min=1)[0]

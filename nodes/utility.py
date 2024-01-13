@@ -4,7 +4,10 @@ Utility
 """
 
 import io
+import os
+import time
 import base64
+import fnmatch
 from typing import Any
 import matplotlib.pyplot as plt
 
@@ -17,11 +20,13 @@ from pathlib import Path
 
 import comfy
 from folder_paths import get_output_directory
+from server import PromptServer
+import nodes
 
 from Jovimetrix import JOVBaseNode, IT_REQUIRED, WILDCARD
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import deep_merge_dict
-from Jovimetrix.sup.image import tensor2pil, pil2tensor
+from Jovimetrix.sup.image import cv2tensor, image_load, tensor2pil, pil2tensor
 
 # =============================================================================
 
@@ -156,7 +161,7 @@ class ValueGraphNode(JOVBaseNode):
 
         self.__ax.clear()
 
-        print(kw)
+        logger.debug(kw)
         self.__ax.plot(self.__history[-slice + self.__index:], label=curve.label)
 
         self.__fig.canvas.draw_idle()
@@ -198,11 +203,11 @@ class ExportNode(JOVBaseNode):
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
-                Lexicon.PIXEL: ("IMAGE", ),
-                Lexicon.PASS_OUT: ("STRING", {"default": get_output_directory()}),
-                Lexicon.FORMAT: (["gif", "jpg", "png"], {"default": "png"}),
-                Lexicon.OPTIMIZE: ("BOOLEAN", {"default": False}),
-                Lexicon.FPS: ("INT", {"default": 0, "min": 0, "max": 120}),
+            Lexicon.PIXEL: ("IMAGE", ),
+            Lexicon.PASS_OUT: ("STRING", {"default": get_output_directory()}),
+            Lexicon.FORMAT: (["gif", "jpg", "png"], {"default": "png"}),
+            Lexicon.OPTIMIZE: ("BOOLEAN", {"default": False}),
+            Lexicon.FPS: ("INT", {"default": 0, "min": 0, "max": 120}),
         }}
         return deep_merge_dict(IT_REQUIRED, d)
 
@@ -235,3 +240,99 @@ class ExportNode(JOVBaseNode):
                 img.save(output(format), optimize=optimize)
 
         return ()
+
+class QueueNode(JOVBaseNode):
+    NAME = "QUEUE (JOV) 🗃"
+    CATEGORY = "JOVIMETRIX 🔺🟩🔵/UTILITY"
+    DESCRIPTION = "Cycle lists of images files or strings for node inputs."
+    RETURN_TYPES = (WILDCARD, )
+
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        d = {"optional": {
+            Lexicon.QUEUE: ("STRING", {"multiline": True, "default": """
+z:\\alex.png,*.jpg,5
+z:\\alex,*.jpg,2
+Z:\IMAGE\_ALPHA\Hardsurface\Bolts\Inserted,*.png,4
+Z:\IMAGE\_ALPHA\Hardsurface\Bolts\Inserted,*.jpg,4
+Z:\IMAGE\_ALPHA\Hardsurface\Bolts\Inserted,,3
+Z:\IMAGE\_ALPHA\Hardsurface\Bolts\Inserted,2
+Z:\IMAGE\_ALPHA\Hardsurface\Bolts\Insered,2
+"""}),
+            # Lexicon.VALUE: ("INT", {"default": 0}),
+            # -1 == HALT (send NONE), 0 = FOREVER, N-> COUNT TIMES THROUGH LIST
+            Lexicon.LOOP: ("INT", {"default": 1, "min": 0}),
+            Lexicon.RESET: ("BOOLEAN", {"default": False}),
+        },
+        "hidden": {
+            "id": "UNIQUE_ID"
+        }}
+        return deep_merge_dict(IT_REQUIRED, d)
+
+    @classmethod
+    def IS_CHANGED(cls) -> float:
+        return float("nan")
+
+    def __init__(self, *arg, **kw) -> None:
+        super().__init__(*arg, **kw)
+        self.__loops = 0
+        self.__index = 0
+        self.__q = None
+
+    def __parse(self, data) -> list:
+        entries = []
+        for line in data.strip().split('\n'):
+            parts = [part.strip() for part in line.split(',')]
+
+            count = 1
+            try: count = int(parts[-1])
+            except: pass
+
+            path = Path(parts[0])
+            data = [parts[0]]
+            if path.is_dir():
+                philter = parts[1] if len(parts) > 1 and isinstance(parts[1], str) else '*.png;*.jpg;*.webp'
+                file_names = [file.name for file in path.iterdir() if file.is_file()]
+                new_data = [path / fname for fname in file_names if any(fnmatch.fnmatch(fname, pat) for pat in philter.split(';'))]
+                if len(new_data):
+                    data = new_data
+            if len(data) and count > 0:
+                entries.extend(data * count)
+        return entries
+
+    def run(self, id, **kw) -> None:
+        reset = kw.get(Lexicon.RESET, False)
+        if reset:
+            self.__q = None
+
+        if self.__q is None:
+            # process Q into ...
+            # check if folder first, file, then string.
+            # entry is: data, <filter if folder:*.png,*.jpg>, <repeats:1+>
+            q = kw.get(Lexicon.QUEUE, "")
+            self.__q = self.__parse(q)
+            self.__loops = 0
+            self.__index = 0
+            self.__time = time.perf_counter()
+
+        if self.__index >= len(self.__q):
+            loop = kw.get(Lexicon.LOOP, 0)
+            # we are done with X loops
+            self.__loops += 1
+            if loop > 0 and self.__loops >= loop:
+                # hard halt?
+                PromptServer.instance.send_sync("jovi-queue-done", {"id": id})
+                nodes.interrupt_processing(True)
+                t = time.perf_counter() - self.__time
+                logger.warning(f"queue completed: {id} [{t}]")
+                self.__q = None
+                return ()
+            self.__index = 0
+
+        data = self.__q[self.__index]
+        logger.info(f"QUEUE #{id} [{data}] ({self.__index}) |{self.__loops}|")
+        PromptServer.instance.send_sync("jovi-queue-ping", {"id": id})
+        self.__index += 1
+        if os.path.isfile(data):
+            data = cv2tensor(image_load(data)[0])
+        return (data, )

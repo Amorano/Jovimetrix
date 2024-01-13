@@ -39,7 +39,7 @@ class AdjustNode(JOVImageInOutBaseNode):
         d = {"optional": {
                 Lexicon.FUNC: (EnumAdjustOP._member_names_, {"default": EnumAdjustOP.BLUR.name}),
                 Lexicon.RADIUS: ("INT", {"default": 3, "min": 3, "step": 1}),
-                Lexicon.AMT: ("FLOAT", {"default": 1, "min": 0, "step": 0.1}),
+                Lexicon.VALUE: ("FLOAT", {"default": 1, "min": 0, "step": 0.1}),
             }}
         return deep_merge_dict(IT_REQUIRED, IT_PIXELS, d, IT_INVERT)
 
@@ -47,7 +47,7 @@ class AdjustNode(JOVImageInOutBaseNode):
         img = kw.get(Lexicon.PIXEL, [None])
         op = kw.get(Lexicon.FUNC, [EnumAdjustOP.BLUR])
         radius = kw.get(Lexicon.RADIUS, [3])
-        amt = kw.get(Lexicon.AMT, [0])
+        amt = kw.get(Lexicon.VALUE, [0])
         i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
         params = [tuple(x) for x in zip_longest_fill(img, op, radius, amt, i)]
         masks = []

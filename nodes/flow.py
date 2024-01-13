@@ -131,7 +131,7 @@ class DelayNode(JOVBaseNode):
         return (o,)
 
 class HoldValueNode(JOVBaseNode):
-    NAME = "HOLD VALUE (JOV) ✋🏽"
+    NAME = "HOLD VALUE (JOV) 🫴🏽"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/FLOW"
     DESCRIPTION = "When engaged will send the last value it had even with new values arriving."
     RETURN_TYPES = (WILDCARD,)

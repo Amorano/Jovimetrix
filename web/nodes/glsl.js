@@ -17,8 +17,6 @@ const ext = {
             return
         }
 
-        let time_last;
-
         const onNodeCreated = nodeType.prototype.onNodeCreated;
         nodeType.prototype.onNodeCreated = async function () {
             const me = onNodeCreated?.apply(this);
