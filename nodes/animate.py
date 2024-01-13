@@ -31,9 +31,8 @@ class TickNode(JOVBaseNode):
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
                 Lexicon.BPM: ("FLOAT", {"min": 1, "max": 60000, "default": 120, "step": 1}),
-                Lexicon.AMT: ("INT", {"min": 0, "default": 0, "step": 1}),
-                # forces a MOD on AMT
-                Lexicon.LOOP: ("BOOLEAN", {"default": False}),
+                # forces a MOD on CYCLE
+                Lexicon.LOOP: ("INT", {"min": 0, "default": 0, "step": 1}),
                 # stick the current "count"
                 Lexicon.WAIT: ("BOOLEAN", {"default": False}),
                 # manual total = 0
@@ -54,17 +53,16 @@ class TickNode(JOVBaseNode):
 
     def run(self, **kw) -> tuple[int, float, float, float, float, float, float, float, float, float, float, float, float]:
         bpm = kw.get(Lexicon.BPM, 1.)
-        loop_point = kw.get(Lexicon.AMT, 0)
-        loop = kw.get(Lexicon.LOOP, False)
+        loop = kw.get(Lexicon.LOOP, 0)
         hold = kw.get(Lexicon.WAIT, False)
         reset = kw.get(Lexicon.RESET, False)
 
         if reset:
             self.__count = 0
 
-        if loop and loop_point > 0:
-            self.__count %= loop_point
-        lin = self.__count / loop_point if loop_point != 0 else 1
+        if loop > 0:
+            self.__count %= loop
+        lin = self.__count / (loop if loop != 0 else 1)
 
         beat_04 = 60000. / float(bpm)
         beat_loop = float(self.__count)

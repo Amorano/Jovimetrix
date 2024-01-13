@@ -11,8 +11,8 @@ from loguru import logger
 import comfy
 
 from Jovimetrix import JOVImageInOutBaseNode, \
-    IT_PIXELS, IT_RGB, IT_PIXEL_MASK, IT_INVERT, \
-    IT_REQUIRED, IT_RGBA_IMAGE, MIN_IMAGE_SIZE, IT_TRS, IT_PIXEL2
+    IT_PIXELS, IT_RGB, IT_PIXEL_MASK, IT_INVERT, IT_REQUIRED, IT_RGBA_IMAGE, \
+    MIN_IMAGE_SIZE, IT_TRANS, IT_ROT, IT_SCALE, IT_PIXEL2
 
 from Jovimetrix.sup.lexicon import Lexicon
 
@@ -53,8 +53,7 @@ class TransformNode(JOVImageInOutBaseNode):
                 Lexicon.PROJECTION: (EnumProjection._member_names_, {"default": EnumProjection.NORMAL.name}),
                 Lexicon.STRENGTH: ("FLOAT", {"default": 1, "min": 0, "precision": 4, "step": 0.005})
             }}
-        return deep_merge_dict(IT_REQUIRED, IT_PIXELS, IT_TRS, d, IT_WHMODE, IT_SAMPLE, IT_INVERT)
-
+        return deep_merge_dict(IT_REQUIRED, IT_PIXELS, IT_TRANS, IT_ROT, IT_SCALE, d, IT_WHMODE, IT_SAMPLE, IT_INVERT)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         pixels = kw.get(Lexicon.PIXEL, [None])

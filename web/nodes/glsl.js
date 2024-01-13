@@ -17,9 +17,12 @@ const ext = {
             return
         }
 
+        let time_last;
+
         const onNodeCreated = nodeType.prototype.onNodeCreated;
         nodeType.prototype.onNodeCreated = async function () {
             const me = onNodeCreated?.apply(this);
+            const widget_time = this.widgets[0];
             const widget_fragment = this.widgets[5];
             widget_fragment.dynamicPrompts = false;
             const self = this;
@@ -31,22 +34,19 @@ const ext = {
                 console.error(event.detail.e);
                 await util.flashBackgroundColor(widget_fragment.inputEl, 250, 3, "#FF2222AA");
             }
+
+            async function python_glsl_time(event) {
+                if (event.detail.id != self.id) {
+                    return;
+                }
+                if (widget_time.type != "converted-widget") {
+                    widget_time.value = event.detail.t;
+                    app.graph.setDirtyCanvas(true);
+                }
+            }
             api.addEventListener("jovi-glsl-error", python_glsl_error);
+            api.addEventListener("jovi-glsl-time", python_glsl_time);
             return me;
-        }
-
-        const onExecuted = nodeType.prototype.onExecuted
-        nodeType.prototype.onExecuted = async function () {
-            console.info('hi')
-            onExecuted?.apply(this, arguments);
-
-            const widget_time = this.widgets[0];
-            const widget_fps = this.widgets[1];
-            const widget_batch = this.widgets[2];
-            const offset = widget_fps.value / 1000 * widget_batch.value;
-
-            widget_time.value += offset;
-            app.graph.setDirtyCanvas(true);
         }
     }
 }

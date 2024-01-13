@@ -36,6 +36,11 @@ FONT_MANAGER = matplotlib.font_manager.FontManager()
 FONTS = {font.name: font.fname for font in FONT_MANAGER.ttflist}
 FONT_NAMES = sorted(FONTS.keys())
 
+DEFAULT_FRAGMENT = """void main() {
+    vec4 texColor = texture(iChannel0, iUV);
+    vec4 color = vec4(iUV, iUser1, 1.0);
+    fragColor = vec4((texColor.xyz + color.xyz) / 2.0, 1.0);
+}"""
 # =============================================================================
 
 class EnumShapes(Enum):
@@ -194,6 +199,8 @@ class GLSLNode(JOVBaseNode):
     RETURN_NAMES = (Lexicon.IMAGE, )
     OUTPUT_NODE = True
     OUTPUT_IS_LIST = (True, )
+    WIDTH = 512
+    HEIGHT = 512
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -202,8 +209,9 @@ class GLSLNode(JOVBaseNode):
                 Lexicon.FPS: ("INT", {"default": 0, "step": 1, "min": 0, "max": 1000}),
                 Lexicon.BATCH: ("INT", {"default": 1, "step": 1, "min": 1, "max": 36000}),
                 Lexicon.RESET: ("BOOLEAN", {"default": False}),
-                Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), "step": 1, "min": 1}),
-                Lexicon.FRAGMENT: ("STRING", {"multiline": True, "default": "void main() {\n\tfragColor = vec4(iUV, 0, 1.0);\n}", "dynamicPrompts": False}),
+                Lexicon.WAIT: ("BOOLEAN", {"default": False}),
+                Lexicon.WH: ("VEC2", {"default": (cls.WIDTH, cls.HEIGHT,), "step": 1, "min": 1}),
+                Lexicon.FRAGMENT: ("STRING", {"multiline": True, "default": DEFAULT_FRAGMENT, "dynamicPrompts": False}),
                 Lexicon.USER1: ("FLOAT", {"default": 0, "step": 0.0001, "precision": 6}),
                 Lexicon.USER2: ("FLOAT", {"default": 0, "step": 0.0001, "precision": 6}),
             },
@@ -220,12 +228,12 @@ class GLSLNode(JOVBaseNode):
         super().__init__(*arg, **kw)
         self.__glsl = None
         self.__fragment = ""
-        self.__last_good = [torch.zeros((256, 256, 3), dtype=torch.uint8)]
+        self.__last_good = [torch.zeros((self.WIDTH, self.HEIGHT, 3), dtype=torch.uint8)]
 
     def run(self, id, **kw) -> list[torch.Tensor]:
-        batch = kw[Lexicon.BATCH]
-        fragment = kw[Lexicon.FRAGMENT]
-        width, height = parse_tuple(Lexicon.WH, kw, default=(256, 256,), clip_min=1)[0]
+        batch = kw.get(Lexicon.BATCH, 1)
+        fragment = kw.get(Lexicon.FRAGMENT, DEFAULT_FRAGMENT)
+        width, height = parse_tuple(Lexicon.WH, kw, default=(self.WIDTH, self.HEIGHT,), clip_min=1)[0]
         if self.__fragment != fragment or self.__glsl is None:
             try:
                 self.__glsl = GLSL(fragment, width, height)
@@ -244,14 +252,26 @@ class GLSLNode(JOVBaseNode):
         frames = []
         user1 = kw.get(Lexicon.USER1, None)
         user2 = kw.get(Lexicon.USER2, None)
+
         if (texture1 := kw.get(Lexicon.PIXEL, None)) is not None:
             texture1 = tensor2pil(texture1)
+
         if (texture2 := kw.get(Lexicon.PIXEL, None)) is not None:
             texture2 = tensor2pil(texture2)
+
+        self.__glsl.hold = kw.get(Lexicon.WAIT, False)
+        if (reset := kw.get(Lexicon.RESET, False)):
+            self.__glsl.reset()
+            PromptServer.instance.send_sync("jovi-glsl-time", {"id": id, "t": 0})
+
         pbar = comfy.utils.ProgressBar(batch)
         for idx in range(batch):
             img = self.__glsl.render(texture1, texture2, user1, user2)
             frames.append(pil2tensor(img))
             pbar.update_absolute(idx)
+
+        runtime = self.__glsl.runtime if not reset else 0
+        PromptServer.instance.send_sync("jovi-glsl-time", {"id": id, "t": runtime})
+
         self.__last_good = frames
         return (self.__last_good, )

@@ -3,7 +3,7 @@ Jovimetrix - http://www.github.com/amorano/jovimetrix
 EMOJI OCD Support
 """
 
-# 🔗 ⚓ 📀 🍿 🎪 🐘 🤯 😱 💀 ⛓️ 🔒 🪀 🪁 🔮 🧿 🧙🏽 🧙🏽‍♀️ 🧯 🦚 ♻️ ✋🏽 ⤴️ ⚜️ 🅱️ 🅾️ ⬆️ ↔️ ↕️ 〰️ ☐
+# 🔗 ⚓ 📀 🍿 🎪 🐘 🤯 😱 💀 ⛓️ 🔒 🪀 🪁 🔮 🧿 🧙🏽 🧙🏽‍♀️ 🧯 🦚 ♻️  ⤴️ ⚜️ 🅱️ 🅾️ ⬆️ ↔️ ↕️ 〰️ ☐
 class Lexicon:
     A = '⬜'
     ADAPT = '🧬'
@@ -130,6 +130,7 @@ class Lexicon:
     THRESHOLD = '📉'
     TILE = 'TILE'
     TIME = '🕛'
+    TIMER = '⏱'
     TLTR = 'TL-TR'
     TOP = '🔼'
     TRIGGER = '⚡'
@@ -143,7 +144,7 @@ class Lexicon:
     VALUE = '#️⃣'
     VERTEX = '✳️'
     W = '🇼'
-    WAIT = '⏱'
+    WAIT = '✋🏽'
     WAVE = '♒'
     WH = '🇼🇭'
     WHITE = '⬜'

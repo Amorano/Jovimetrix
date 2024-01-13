@@ -65,8 +65,8 @@ class DelayNode(JOVBaseNode):
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
             Lexicon.PASS_IN: (WILDCARD, {"default": None}),
-            Lexicon.WAIT: ("INT", {"step": 1, "default" : 0}),
-            Lexicon.HOLD: ("BOOLEAN", {"default": False}),
+            Lexicon.TIMER: ("INT", {"step": 1, "default" : 0}),
+            Lexicon.WAIT: ("BOOLEAN", {"default": False}),
         },
         "hidden": {
             "id": "UNIQUE_ID"
@@ -106,10 +106,10 @@ class DelayNode(JOVBaseNode):
         self.__delay = 0
 
     def run(self, id, **kw) -> tuple[Any]:
-        o = kw[Lexicon.PASS_IN]
-        hold = kw[Lexicon.HOLD]
-        delay = min(kw[Lexicon.WAIT], JOVI_DELAY_MAX)
-        if hold:
+        o = kw.get(Lexicon.PASS_IN, None)
+        wait = kw.get(Lexicon.WAIT, False)
+        delay = min(kw.get(Lexicon.TIMER, 0), JOVI_DELAY_MAX)
+        if wait:
             cancel = False
             while not cancel:
                 loop_delay = delay
@@ -129,6 +129,31 @@ class DelayNode(JOVBaseNode):
         if loops > 0:
             cancel = DelayNode.parse_q(id, loops)
         return (o,)
+
+class HoldValueNode(JOVBaseNode):
+    NAME = "HOLD VALUE (JOV) ✋🏽"
+    CATEGORY = "JOVIMETRIX 🔺🟩🔵/FLOW"
+    DESCRIPTION = "When engaged will send the last value it had even with new values arriving."
+    RETURN_TYPES = (WILDCARD,)
+    RETURN_NAMES = (Lexicon.ROUTE,)
+
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        d = {"optional": {
+            Lexicon.PASS_IN: (WILDCARD, {"default": None}),
+            Lexicon.WAIT: ("BOOLEAN", {"default": False}),
+        }}
+        return deep_merge_dict(IT_REQUIRED, d)
+
+    def __init__(self, *arg, **kw) -> None:
+        super().__init__(*arg, **kw)
+        self.__last_value = None
+
+    def run(self, **kw) -> tuple[Any]:
+        o = kw.get(Lexicon.PASS_IN, None)
+        if self.__last_value is None or not kw.get(Lexicon.WAIT, False):
+            self.__last_value = o
+        return (self.__last_value,)
 
 class ComparisonNode(JOVBaseNode):
     """Compare two inputs."""

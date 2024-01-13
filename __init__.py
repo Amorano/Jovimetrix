@@ -46,7 +46,7 @@ Polygonal shapes, MIDI, MP3/WAVE, Flow Logic
     TransformNode, BlendNode, PixelSplitNode, PixelMergeNode, MergeNode, CropNode, ColorTheoryNode,
     ConstantNode, ShapeNode, TextNode, GLSLNode,
     StreamReaderNode, StreamWriterNode, MIDIMessageNode, MIDIReaderNode, MIDIFilterEZNode, MIDIFilterNode,
-    ComparisonNode, IfThenElseNode, GetNode, SetNode,
+    DelayNode, HoldValueNode, ComparisonNode, IfThenElseNode, GetNode, SetNode,
     AkashicNode, ValueGraphNode, RerouteNode, ExportNode
 @version: 0.9999999999999
 """
@@ -321,7 +321,7 @@ IT_ROT = {"optional": {
 }}
 
 IT_SCALE = {"optional": {
-    Lexicon.SIZE: ("VEC2", {"default": (1., 1.), "min": -1., "max": 1., "step": 0.005, "precision": 4, "label": [Lexicon.X, Lexicon.Y]})
+    Lexicon.SIZE: ("VEC2", {"default": (1., 1.), "step": 0.005, "precision": 4, "label": [Lexicon.X, Lexicon.Y]})
 }}
 
 IT_FLIP = {"optional": {
@@ -400,8 +400,6 @@ IT_LMH = {"optional": {
 IT_TIME = {"optional": {
     Lexicon.TIME: ("FLOAT", {"default": 0, "min": 0, "step": 0.000001, "precision": 6})
 }}
-
-IT_TRS = deep_merge_dict(IT_TRANS, IT_ROT, IT_SCALE)
 
 # =============================================================================
 # === SESSION ===

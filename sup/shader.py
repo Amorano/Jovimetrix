@@ -5,8 +5,6 @@ GLSL Support
 
 import os
 import time
-from pathlib import Path
-from typing import Any
 
 import moderngl
 import numpy as np
@@ -16,6 +14,9 @@ from loguru import logger
 from Jovimetrix.sup.image import image_save_gif
 
 # =============================================================================
+
+MAX_WIDTH = 8192
+MAX_HEIGHT = 8192
 
 VERTEX = """
 #version 330
@@ -38,8 +39,8 @@ uniform float iTimeDelta;
 uniform float iFrameRate;
 uniform int iFrame;
 
-uniform sampler2D iTexture1;
-uniform sampler2D iTexture2;
+uniform sampler2D iChannel0;
+uniform sampler2D iChannel1;
 
 uniform float iUser1;
 uniform float iUser2;
@@ -67,8 +68,6 @@ class GLSL:
         except Exception as e:
             raise CompileException(e)
 
-
-
         self.__iResolution = self.__prog.get('iResolution', None)
         self.__iTime = self.__prog.get('iTime', None)
         self.__iTimeDelta = self.__prog.get('iTimeDelta', None)
@@ -76,16 +75,16 @@ class GLSL:
         self.__iFrame = self.__prog.get('iFrame', None)
 
         try:
-            self.__prog['iTexture1'].value = 0
+            self.__prog['iChannel0'].value = 0
         except:
             pass
-        self.__iTexture1 = self.__prog.get('iTexture1', None)
+        self.__iChannel0 = self.__prog.get('iChannel0', None)
 
         try:
-            self.__prog['iTexture2'].value = 0
+            self.__prog['iChannel1'].value = 0
         except:
             pass
-        self.__iTexture2 = self.__prog.get('iTexture2', None)
+        self.__iChannel1 = self.__prog.get('iChannel1', None)
 
         self.__iUser1 = self.__prog.get('iUser1', None)
         self.__iUser2 = self.__prog.get('iUser2', None)
@@ -107,21 +106,19 @@ class GLSL:
             color_attachments=[self.__ctx.texture((width, height), 3)]
         )
 
-        self.__runtime: float = 0
-        self.__delta: float = 0
-        self.__frame_count: int = 0
         # FPS > 0 will act as a step (per frame step)
         self.__fps: float = 0
         self.__fps_rate: float = 0
         # the last frame rendered
-        self.__frame: Image = Image.new("RGB", (0, 0))
+        self.__frame: Image = Image.new("RGB", (1, 1))
         self.__hold: bool = False
+
+        self.__runtime: float = 0
+        self.__delta: float = 0
+        self.__frame_count: int = 0
         self.__time_last: float = time.perf_counter()
 
     def reset(self) -> None:
-        if self.__iFrame is not None:
-            self.__iFrame = 0
-
         self.__runtime = 0
         self.__delta = 0
         self.__frame_count = 0
@@ -143,11 +140,11 @@ class GLSL:
             self.__fps_rate = 1 / self.__fps
 
     @property
-    def fps(self) -> int:
-        return self.__fps
+    def runtime(self) -> float:
+        return self.__runtime
 
-    @fps.setter
-    def runtime(self, val:int) -> None:
+    @runtime.setter
+    def runtime(self, val:float) -> None:
         self.__runtime = max(0, val)
 
     @property
@@ -164,7 +161,7 @@ class GLSL:
 
     @width.setter
     def width(self, val: int) -> None:
-        self.__width = max(0, min(val, 4096))
+        self.__width = max(0, min(val, MAX_WIDTH))
         self.__fbo = self.__ctx.framebuffer(
             color_attachments=[self.__ctx.texture((self.__width, self.__height), 3)]
         )
@@ -175,12 +172,12 @@ class GLSL:
 
     @height.setter
     def height(self, val: int) -> None:
-        self.__height = max(0, min(val, 4096))
+        self.__height = max(0, min(val, MAX_HEIGHT))
         self.__fbo = self.__ctx.framebuffer(
             color_attachments=[self.__ctx.texture((self.__width, self.__height), 3)]
         )
 
-    def __set_uniforms(self, texture1: Image=None, texture2: Image=None, user1: Any = None, user2: Any = None) -> None:
+    def __set_uniforms(self, channel0: Image=None, channel1: Image=None, user1:float=None, user2:float=None) -> None:
         if self.__iResolution is not None:
             self.__iResolution.value = (self.__width, self.__height)
 
@@ -196,16 +193,16 @@ class GLSL:
         if self.__iFrame is not None:
             self.__iFrame.value = self.__frame_count
 
-        if self.__iTexture1 is not None and texture1 is not None:
-            if (size := len(texture1.mode)) == 4:
-                texture1 = texture1.convert("RGB")
-            texture: Image = self.__ctx.texture(texture1.size, components=size, data=texture1.tobytes())
+        if self.__iChannel0 is not None and channel0 is not None:
+            if (size := len(channel0.mode)) == 4:
+                channel0 = channel0.convert("RGB")
+            texture: Image = self.__ctx.texture(channel0.size, components=size, data=channel0.tobytes())
             texture.use(location=0)
 
-        if self.__iTexture2 is not None and texture2 is not None:
-            if (size := len(texture2.mode)) == 4:
-                texture2 = texture2.convert("RGB")
-            texture: Image = self.__ctx.texture(texture2.size, components=size, data=texture2.tobytes())
+        if self.__iChannel1 is not None and channel1 is not None:
+            if (size := len(channel1.mode)) == 4:
+                channel1 = channel1.convert("RGB")
+            texture: Image = self.__ctx.texture(channel1.size, components=size, data=channel1.tobytes())
             texture.use(location=1)
 
         if self.__iUser1 is not None and user1 is not None:
@@ -214,23 +211,26 @@ class GLSL:
         if self.__iUser2 is not None and user2 is not None:
             self.__iUser2.value = user2
 
-    def render(self, texture1:Image=None, texture2:Image=None, user1:float=None, user2:float=None) -> None:
-        if self.__hold:
-            return self.__frame
-
+    def render(self, channel0:Image=None, channel1:Image=None, user1:float=None, user2:float=None) -> None:
         self.__fbo.clear(0.0, 0.0, 0.0)
         self.__fbo.use()
-        self.__set_uniforms(texture1, texture2, user1, user2)
+        if not self.__hold:
+            self.__set_uniforms(channel0, channel1, user1, user2)
+
         self.__vao.render()
         self.__frame = Image.frombytes(
             "RGB", self.__fbo.size, self.__fbo.color_attachments[0].read(),
             "raw", "RGB", 0, -1
         )
         self.__frame = self.__frame.transpose(Image.FLIP_TOP_BOTTOM)
-        self.__frame_count += 1
-        self.__delta = max(0, self.__fps_rate) if self.__fps > 0 else time.perf_counter() - self.__time_last
-        self.__runtime += self.__delta
-        self.__time_last = time.perf_counter()
+
+        # step frame
+        if not self.__hold:
+            self.__frame_count += 1
+            self.__delta = max(0, self.__fps_rate) if self.__fps > 0 else time.perf_counter() - self.__time_last
+            self.__runtime += self.__delta
+            self.__time_last = time.perf_counter()
+
         return self.__frame
 
 # =============================================================================

@@ -6,6 +6,7 @@ Calculation
 import math
 from enum import Enum
 from collections import Counter
+from typing import Any, Literal
 
 from scipy.special import gamma
 from loguru import logger
@@ -36,6 +37,7 @@ class ConversionNode(JOVBaseNode):
     DESCRIPTION = "Convert A to B."
     RETURN_TYPES = (WILDCARD,)
     # RETURN_NAMES = (Lexicon.UNKNOWN, )
+    OUTPUT_IS_LIST = (True, )
     SORT = 0
 
     @classmethod
@@ -46,52 +48,64 @@ class ConversionNode(JOVBaseNode):
         }}
         return deep_merge_dict(IT_REQUIRED, d)
 
-    def run(self, **kw) -> tuple[bool]:
-        typ = kw.pop(Lexicon.TYPE)
-        a = next(iter(kw.values()))
-        size = len(a) if type(a) == tuple else 0
-        # logger.debug("{} {}", size, a)
+    @staticmethod
+    def convert(typ, val) -> tuple | tuple[Any]:
+        size = len(val) if type(val) == tuple else 0
         if typ in ["STRING", "FLOAT"]:
             if size > 0:
-                return ((a[0]), )
-            return ((a), )
+                return ((val[0]), )
+            return ((val), )
         elif typ == "BOOLEAN":
             if size > 0:
-                return (bool(a[0]), )
-            return (bool(a), )
+                return (bool(val[0]), )
+            return (bool(val), )
         elif typ == "INT":
             if size > 0:
-                return (int(a[0]), )
-            return (int(a), )
-
-        if typ == "VEC2":
+                return (int(val[0]), )
+            return (int(val), )
+        elif typ == "VEC2":
             if size > 1:
-                return ((a[0], a[1]), )
+                return ((val[0], val[1]), )
             elif size > 0:
-                return ((a[0], a[0]), )
-            return ((a, a), )
-
-        if typ == "VEC3":
+                return ((val[0], val[0]), )
+            return ((val, val), )
+        elif typ == "VEC3":
             if size > 2:
-                return ((a[0], a[1], a[2]), )
+                return ((val[0], val[1], val[2]), )
             elif size > 1:
-                return ((a[0], a[1], a[1]), )
+                return ((val[0], val[1], val[1]), )
             elif size > 0:
-                return ((a[0], a[0], a[0]), )
-            return ((a, a, a), )
-
-        if typ == "VEC4":
+                return ((val[0], val[0], val[0]), )
+            return ((val, val, val), )
+        elif typ == "VEC4":
             if size > 3:
-                return ((a[0], a[1], a[2], a[3]), )
+                return ((val[0], val[1], val[2], val[3]), )
             elif size > 2:
-                return ((a[0], a[1], a[2], a[2]), )
+                return ((val[0], val[1], val[2], val[2]), )
             elif size > 1:
-                return ((a[0], a[1], a[1], a[1]), )
+                return ((val[0], val[1], val[1], val[1]), )
             elif size > 0:
-                return ((a[0], a[0], a[0], a[0]), )
-            return ((a, a, a, a), )
+                return ((val[0], val[0], val[0], val[0]), )
+            return ((val, val, val, val), )
+        else:
+            return (("nan"), )
 
-        return (("nan"), )
+    def run(self, **kw) -> tuple[bool]:
+        result = []
+        typ = kw.pop(Lexicon.TYPE, ["STRING"])
+        values = next(iter(kw.values()))
+        if not isinstance(values, (list, set, tuple)):
+            values = values.split(' ')
+            if not isinstance(values, (list, set, tuple)):
+                values = [values]
+
+        pbar = comfy.utils.ProgressBar(len(values))
+        for idx, val in enumerate(values):
+            val_new = ConversionNode.convert(typ, val)
+            print(typ, val, val_new)
+            result.append(val_new)
+            pbar.update_absolute(idx)
+        return (result, )
 
 class EnumUnaryOperation(Enum):
     ABS = 0

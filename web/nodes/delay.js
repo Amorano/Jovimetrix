@@ -46,7 +46,6 @@ const ext = {
                             }
                         }, timeout);
 
-                    self.total_timeout = 0;
                     var data = { id: event.detail.id, cancel: value };
                     util.api_post('/jovimetrix/message', data);
                 } catch (e) {
@@ -58,14 +57,13 @@ const ext = {
                     }
                 }
             }
-
             api.addEventListener("jovi-delay-user", python_delay_user);
             return me;
         }
 
-        const onExecuted = nodeType.prototype.onExecuted
-        nodeType.prototype.onExecuted = function (message) {
-            onExecuted?.apply(this, arguments);
+        const onExecutionStart = nodeType.prototype.onExecutionStart
+        nodeType.prototype.onExecutionStart = function (message) {
+            onExecutionStart?.apply(this, arguments);
             this.total_timeout = 0;
         }
 
