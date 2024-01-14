@@ -47,7 +47,7 @@ Polygonal shapes, MIDI, MP3/WAVE, Flow Logic
     ConstantNode, ShapeNode, TextNode, GLSLNode,
     StreamReaderNode, StreamWriterNode, MIDIMessageNode, MIDIReaderNode, MIDIFilterEZNode, MIDIFilterNode,
     DelayNode, HoldValueNode, ComparisonNode, IfThenElseNode, GetNode, SetNode,
-    AkashicNode, ValueGraphNode, RerouteNode, ExportNode
+    AkashicNode, ValueGraphNode, RerouteNode, ExportNode, QueueNode, FileSelectNode
 @version: 0.9999999999999
 """
 

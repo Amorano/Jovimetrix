@@ -68,6 +68,7 @@ class StreamReaderNode(JOVImageBaseNode):
             Lexicon.WAIT: ("BOOLEAN", {"default": False}),
             # Lexicon.WH: ("VEC2", {"default": (320, 240), "min": MIN_IMAGE_SIZE, "max": 8192, "step": 1, "label": [Lexicon.W, Lexicon.H]}),
             Lexicon.BATCH: ("VEC2", {"default": (1, 30), "min": 1, "step": 1, "label": ["BATCH", ""]}),
+            # Lexicon.SEL: ("VEC3", {"default": (0, -1, 0), "min": 1, "step": 1, "label": [""]}),
             Lexicon.ORIENT: (EnumCanvasOrientation._member_names_, {"default": EnumCanvasOrientation.NORMAL.name}),
             Lexicon.ZOOM: ("FLOAT", {"min": 0, "max": 1, "step": 0.005, "default": 0}),
         }}

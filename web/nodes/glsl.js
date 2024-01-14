@@ -21,7 +21,7 @@ const ext = {
         nodeType.prototype.onNodeCreated = async function () {
             const me = onNodeCreated?.apply(this);
             const widget_time = this.widgets[0];
-            const widget_fragment = this.widgets[5];
+            const widget_fragment = this.widgets[6];
             widget_fragment.dynamicPrompts = false;
             const self = this;
 
@@ -31,6 +31,7 @@ const ext = {
                 }
                 console.error(event.detail.e);
                 await util.flashBackgroundColor(widget_fragment.inputEl, 250, 3, "#FF2222AA");
+                await util.flashBackgroundColor(widget_fragment.inputEl, 750, 5, "#FF2222AA");
             }
 
             async function python_glsl_time(event) {
