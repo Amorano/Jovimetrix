@@ -46,48 +46,37 @@
                 ],
                 "theme": {
                     "JOVIMETRIX \ud83d\udd3a\ud83d\udfe9\ud83d\udd35": {
-                        "title": "#A23DA2FF",
-                        "body": "#13171DFF"
+                        "title": "#A23DA2FF"
                     },
                     "JOVIMETRIX \ud83d\udd3a\ud83d\udfe9\ud83d\udd35/CREATE": {
-                        "title": "#1F991FFF",
-                        "body": "#13171DFF"
+                        "title": "#1F991FFF"
                     },
                     "JOVIMETRIX \ud83d\udd3a\ud83d\udfe9\ud83d\udd35/ADJUST": {
-                        "title": "#958100FF",
-                        "body": "#13171DFF"
+                        "title": "#958100FF"
                     },
                     "JOVIMETRIX \ud83d\udd3a\ud83d\udfe9\ud83d\udd35/COMPOSE": {
-                        "title": "#5C1F9AFF",
-                        "body": "#13171DFF"
+                        "title": "#5C1F9AFF"
                     },
                     "JOVIMETRIX \ud83d\udd3a\ud83d\udfe9\ud83d\udd35/ANIMATE": {
-                        "title": "#1F1F98FF",
-                        "body": "#13171DFF"
+                        "title": "#1F1F98FF"
                     },
                     "JOVIMETRIX \ud83d\udd3a\ud83d\udfe9\ud83d\udd35/FLOW": {
-                        "title": "#991F1FFF",
-                        "body": "#13171DFF"
+                        "title": "#991F1FFF"
                     },
                     "JOVIMETRIX \ud83d\udd3a\ud83d\udfe9\ud83d\udd35/CALC": {
-                        "title": "#993838FF",
-                        "body": "#13171DFF"
+                        "title": "#993838FF"
                     },
                     "JOVIMETRIX \ud83d\udd3a\ud83d\udfe9\ud83d\udd35/AUDIO": {
-                        "title": "#991E5DFF",
-                        "body": "#13171DFF"
+                        "title": "#991E5DFF"
                     },
                     "JOVIMETRIX \ud83d\udd3a\ud83d\udfe9\ud83d\udd35/DEVICE": {
-                        "title": "#1F9999FF",
-                        "body": "#13171DFF"
+                        "title": "#1F9999FF"
                     },
                     "JOVIMETRIX \ud83d\udd3a\ud83d\udfe9\ud83d\udd35/UTILITY": {
-                        "title": "#0A0A0AFF",
-                        "body": "#13171DFF"
+                        "title": "#0A0A0AFF"
                     },
                     "JOVIMETRIX \ud83d\udd3a\ud83d\udfe9\ud83d\udd35/WIP \u2623\ufe0f\ud83d\udca3": {
-                        "title": "#99851FFF",
-                        "body": "#13171DFF"
+                        "title": "#99851FFF"
                     }
                 }
             }

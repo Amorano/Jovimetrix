@@ -8,7 +8,6 @@ import json
 import os
 import time
 import base64
-import fnmatch
 from typing import Any
 import matplotlib.pyplot as plt
 
@@ -248,6 +247,8 @@ class QueueNode(JOVBaseNode):
     DESCRIPTION = "Cycle lists of images files or strings for node inputs."
     RETURN_TYPES = (WILDCARD, )
 
+    VIDEO_FORMATS = ['.mp4', '.avi', '.wmv', '.mkv']
+
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
@@ -284,9 +285,13 @@ class QueueNode(JOVBaseNode):
             path = Path(parts[0])
             data = [parts[0]]
             if path.is_dir():
-                philter = parts[1] if len(parts) > 1 and isinstance(parts[1], str) else image_formats()
+                philter = parts[1].split(';') if len(parts) > 1 and isinstance(parts[1], str) else image_formats()
+                philter.extend(self.VIDEO_FORMATS)
                 file_names = [file.name for file in path.iterdir() if file.is_file()]
-                new_data = [path / fname for fname in file_names if any(fnmatch.fnmatch(fname, pat) for pat in philter.split(';'))]
+                new_data = [str(path / fname) for fname in file_names if any(fname.endswith(pat) for pat in philter)]
+
+                # print(philter, file_names, new_data)
+
                 if len(new_data):
                     data = new_data
             if len(data) and count > 0:
@@ -331,13 +336,10 @@ class QueueNode(JOVBaseNode):
             if ext in image_formats():
                 return (cv2tensor(image_load(data)[0]), )
 
-            # @TODO: PARSE OTHER TYPES OR A CALLBACK MECHANISM FOR CUSTOM TYPES?
-            # return file contents to whatever is looking for stuff atm
-            with open(data, 'r', encoding='utf-8') as f:
-                data = f.read()
-
             if ext == '.json':
-                data = json.loads(data)
+                with open(data, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                # return (data, )
         return (data, )
 
 class FileSelectNode(JOVBaseNode):
