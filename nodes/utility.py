@@ -4,6 +4,7 @@ Utility
 """
 
 import io
+import json
 import os
 import time
 import base64
@@ -26,7 +27,7 @@ import nodes
 from Jovimetrix import JOVBaseNode, IT_REQUIRED, WILDCARD
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import deep_merge_dict
-from Jovimetrix.sup.image import cv2tensor, image_load, tensor2pil, pil2tensor
+from Jovimetrix.sup.image import cv2tensor, image_load, tensor2pil, pil2tensor, image_formats
 
 # =============================================================================
 
@@ -283,7 +284,7 @@ class QueueNode(JOVBaseNode):
             path = Path(parts[0])
             data = [parts[0]]
             if path.is_dir():
-                philter = parts[1] if len(parts) > 1 and isinstance(parts[1], str) else '*.png;*.jpg;*.webp'
+                philter = parts[1] if len(parts) > 1 and isinstance(parts[1], str) else image_formats()
                 file_names = [file.name for file in path.iterdir() if file.is_file()]
                 new_data = [path / fname for fname in file_names if any(fnmatch.fnmatch(fname, pat) for pat in philter.split(';'))]
                 if len(new_data):
@@ -326,5 +327,39 @@ class QueueNode(JOVBaseNode):
         PromptServer.instance.send_sync("jovi-queue-ping", {"id": id})
         self.__index += 1
         if os.path.isfile(data):
-            data = cv2tensor(image_load(data)[0])
+            _, ext = os.path.splitext(data)
+            if ext in image_formats():
+                return (cv2tensor(image_load(data)[0]), )
+
+            # @TODO: PARSE OTHER TYPES OR A CALLBACK MECHANISM FOR CUSTOM TYPES?
+            # return file contents to whatever is looking for stuff atm
+            with open(data, 'r') as f:
+                data = f.read()
+
+            if ext == '.json':
+                data = json.loads(data)
         return (data, )
+
+class FileSelectNode(JOVBaseNode):
+    NAME = "FILE SELECT (JOV) 📑"
+    CATEGORY = "JOVIMETRIX 🔺🟩🔵/UTILITY"
+    DESCRIPTION = "Select a file from a folder root"
+    RETURN_TYPES = ("STRING", )
+    RETURN_NAMES = (Lexicon.STRING, )
+
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        d = {"optional": {
+            Lexicon.FOLDER: ("STRING", {"default": ""}),
+            Lexicon.FILEN: ("STRING", {"default": ""}),
+        },
+        "hidden": {
+            "id": "UNIQUE_ID"
+        }}
+        return deep_merge_dict(IT_REQUIRED, d)
+
+    def run(self, id, **kw) -> None:
+        root = kw.get(Lexicon.FOLDER, "")
+        if (filen := kw.get(Lexicon.FILEN, None)) is None:
+            filen = ""
+        return (filen, )

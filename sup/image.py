@@ -374,6 +374,10 @@ def image_load_data(data: str) -> TYPE_IMAGE:
     #    img = channel_add(img)
     return img
 
+def image_formats() -> list[str]:
+    exts = Image.registered_extensions()
+    return [ex for ex, f in exts.items() if f in Image.OPEN]
+
 def image_load(url: str) -> list[TYPE_IMAGE]:
     images = []
     try:

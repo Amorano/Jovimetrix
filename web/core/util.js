@@ -168,7 +168,7 @@ export function node_color_list(nodes) {
     Object.entries(nodes).forEach((node) => {
         node_color_reset(node, false)
     })
-    app.graph.setDirtyCanvas(true, true)
+    app.graph.setDirtyCanvas(true, true);
 }
 
 export function node_color_all() {

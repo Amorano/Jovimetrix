@@ -6,6 +6,7 @@
 
 import { api } from "/scripts/api.js";
 import { app } from "/scripts/app.js";
+import * as fun from '../core/fun.js'
 import * as util from '../core/util.js'
 
 const _id = "DELAY (JOV) ✋🏽"
@@ -20,6 +21,8 @@ const ext = {
         const onNodeCreated = nodeType.prototype.onNodeCreated;
         nodeType.prototype.onNodeCreated = async function () {
             const me = onNodeCreated?.apply(this);
+            const widget_timeout = this.widgets[0];
+            const widget_wait = this.widgets[1];
             const self = this;
             this.total_timeout = 0;
 
@@ -29,6 +32,9 @@ const ext = {
                 }
                 const timeout = event.detail.timeout;
                 try {
+                    if (widget_wait.value) {
+                        fun.bubbles();
+                    }
                     const value = await util.showModal(`
                         <div class="jov-modal-content">
                             <h3 id="jov-delay-header">DELAY NODE #${event.detail?.title || event.detail.id} (${self.total_timeout})</h3>
@@ -46,6 +52,7 @@ const ext = {
                             }
                         }, timeout);
 
+                    window.bubbles_alive = false;
                     var data = { id: event.detail.id, cancel: value };
                     util.api_post('/jovimetrix/message', data);
                 } catch (e) {

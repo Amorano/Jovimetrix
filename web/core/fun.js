@@ -4,6 +4,8 @@
  *
  */
 
+import { app } from "/scripts/app.js";
+
 export const bewm = function(ex, ey) {
     //- adapted from "Anchor Click Canvas Animation" by Nick Sheffield
     //- https://codepen.io/nicksheffield/pen/NNEoLg/
@@ -74,4 +76,104 @@ export const bewm = function(ex, ey) {
 
     const r = (a, b, c) => parseFloat((Math.random() * ((a ? a : 1) - (b ? b : 0)) + (b ? b : 0)).toFixed(c ? c : 0));
     explode(ex, ey);
+}
+
+export const bubbles = function() {
+    const canvas = document.getElementById("graph-canvas");
+    const context = canvas.getContext("2d");
+    window.bubbles_alive = true;
+    let mouseX;
+    let mouseY;
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const particleArray = [];
+    class Particle {
+        constructor(mx = 0, my = 0) {
+            this.x = Math.random() * canvas.width;
+            this.y = canvas.height;
+            this.radius = (3 + 11 * (my/canvas.height)) + Math.random() * (3 + 11 * (my/canvas.height));
+            this.dx = ((mx / canvas.width) - 0.5) * 1.27;
+            this.dx += Math.sign(this.dx) * 1.27;
+            this.dy = 4 + Math.random() * 2;
+            this.hue = 110 + my * 50;
+            this.sat = 75 + Math.random() * 25;
+            this.val = 30 + Math.random() * 25;
+        }
+
+        draw() {
+            context.beginPath();
+            context.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);
+            context.strokeStyle = `hsl(${this.hue} ${this.sat}% ${this.val}%)`;
+            context.stroke();
+
+            const gradient = context.createRadialGradient(
+                this.x,
+                this.y,
+                1,
+                this.x + 0.5,
+                this.y + 0.5,
+                this.radius
+            );
+
+            gradient.addColorStop(0.3, "rgba(255, 255, 255, 0.3)");
+            gradient.addColorStop(0.95, "#E7FEFF7F");
+            context.fillStyle = gradient;
+            context.fill();
+        }
+
+        move() {
+            this.x = this.x + this.dx;
+            this.y = this.y - this.dy;
+
+            // Check if the particle is outside the canvas boundaries
+            if (
+                this.x < -this.radius ||
+                this.x > canvas.width + this.radius ||
+                this.y < -this.radius ||
+                this.y > canvas.height + this.radius
+            ) {
+                // Remove the particle from the array
+                particleArray.splice(particleArray.indexOf(this), 1);
+            }
+        }
+    }
+
+    const animate = () => {
+        //context.clearRect(0, 0, canvas.width, canvas.height);
+        app.graph.setDirtyCanvas(true, true);
+
+        particleArray.forEach((particle) => {
+            particle?.move();
+            particle?.draw();
+        });
+
+        if (window.bubbles_alive) {
+            requestAnimationFrame(animate);
+            if (Math.random() > 0.92) {
+                const particle = new Particle(mouseX, mouseY);
+                particleArray.push(particle);
+            }
+        } else {
+            canvas.removeEventListener("resize", handleResize);
+            canvas.removeEventListener("mousemove", handleMouseMove);
+            particleArray.length = 0; // Clear the particleArray
+            return;
+        }
+    };
+
+    const handleResize = () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    };
+
+    const handleMouseMove = (event) => {
+        mouseX = event.clientX;
+        mouseY = event.clientY;
+    };
+
+    canvas.addEventListener("resize", handleResize);
+    canvas.addEventListener("mousemove", handleMouseMove);
+    animate();
 }

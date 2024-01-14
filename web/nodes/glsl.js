@@ -31,7 +31,6 @@ const ext = {
                 }
                 console.error(event.detail.e);
                 await util.flashBackgroundColor(widget_fragment.inputEl, 250, 3, "#FF2222AA");
-                await util.flashBackgroundColor(widget_fragment.inputEl, 750, 5, "#FF2222AA");
             }
 
             async function python_glsl_time(event) {
