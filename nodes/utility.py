@@ -333,7 +333,7 @@ class QueueNode(JOVBaseNode):
 
             # @TODO: PARSE OTHER TYPES OR A CALLBACK MECHANISM FOR CUSTOM TYPES?
             # return file contents to whatever is looking for stuff atm
-            with open(data, 'r') as f:
+            with open(data, 'r', encoding='utf-8') as f:
                 data = f.read()
 
             if ext == '.json':
