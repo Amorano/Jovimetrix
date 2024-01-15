@@ -23,7 +23,7 @@ from folder_paths import get_output_directory
 from server import PromptServer
 import nodes
 
-from Jovimetrix import JOVBaseNode, IT_REQUIRED, WILDCARD
+from Jovimetrix import ComfyAPIMessage, JOVBaseNode, IT_REQUIRED, WILDCARD, ROOT, TimedOutException
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import deep_merge_dict
 from Jovimetrix.sup.image import cv2tensor, image_load, tensor2pil, pil2tensor, image_formats
@@ -247,15 +247,13 @@ class QueueNode(JOVBaseNode):
     DESCRIPTION = "Cycle lists of images files or strings for node inputs."
     RETURN_TYPES = (WILDCARD, )
 
-    VIDEO_FORMATS = ['.mp4', '.avi', '.wmv', '.mkv']
+    VIDEO_FORMATS = ['.webm', '.mp4', '.avi', '.wmv', '.mkv', '.mov', '.mxf']
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
             Lexicon.QUEUE: ("STRING", {"multiline": True, "default": ""}),
-            # Lexicon.VALUE: ("INT", {"default": 0}),
-            # -1 == HALT (send NONE), 0 = FOREVER, N-> COUNT TIMES THROUGH LIST
-            Lexicon.LOOP: ("INT", {"default": 1, "min": 0}),
+            Lexicon.LOOP: ("INT", {"default": 0, "min": 0}),
             Lexicon.RESET: ("BOOLEAN", {"default": False}),
         },
         "hidden": {
@@ -284,22 +282,35 @@ class QueueNode(JOVBaseNode):
 
             path = Path(parts[0])
             data = [parts[0]]
-            if path.is_dir():
+            if path.is_dir() or (path2 := Path(ROOT / parts[0])).is_dir():
                 philter = parts[1].split(';') if len(parts) > 1 and isinstance(parts[1], str) else image_formats()
                 philter.extend(self.VIDEO_FORMATS)
+                path = path if path.is_dir() else path2
                 file_names = [file.name for file in path.iterdir() if file.is_file()]
                 new_data = [str(path / fname) for fname in file_names if any(fname.endswith(pat) for pat in philter)]
-
-                # print(philter, file_names, new_data)
-
                 if len(new_data):
                     data = new_data
+            elif path.is_file() or (path := Path(ROOT / parts[0])).is_file():
+                data = [str(path.resolve())]
             if len(data) and count > 0:
                 entries.extend(data * count)
         return entries
 
     def run(self, id, **kw) -> None:
         reset = kw.get(Lexicon.RESET, False)
+        # clear the queue of msgs...
+        # better resets? check if reset message
+        try:
+            data = ComfyAPIMessage.poll(id, timeout=0)
+            # logger.debug(data)
+            if (cmd := data.get('cmd', None)) is not None:
+                if cmd == 'reset':
+                    reset = True
+        except TimedOutException as e:
+            pass
+        except Exception as e:
+            logger.error(str(e))
+
         if reset:
             self.__q = None
 
@@ -309,6 +320,7 @@ class QueueNode(JOVBaseNode):
             # entry is: data, <filter if folder:*.png,*.jpg>, <repeats:1+>
             q = kw.get(Lexicon.QUEUE, "")
             self.__q = self.__parse(q)
+            PromptServer.instance.send_sync("jovi-queue-list", {"id": id, "data": self.__q})
             self.__loops = 0
             self.__index = 0
             self.__time = time.perf_counter()

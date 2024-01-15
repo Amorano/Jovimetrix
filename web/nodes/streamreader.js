@@ -5,11 +5,7 @@
  */
 
 import { app } from "/scripts/app.js"
-import { $el } from "/scripts/ui.js"
-import * as fun from '../core/fun.js'
-import * as util from '../core/util.js'
 
-const _prefix = 'jovi'
 const _id = "STREAM READER (JOV) 📺"
 
 const ext = {

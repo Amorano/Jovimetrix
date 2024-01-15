@@ -173,21 +173,29 @@ class ComfyAPIMessage:
         #cls.MESSAGE[str(id)] = message
 
     @classmethod
-    def poll(cls, _id, period=0.1, timeout=3) -> Any:
+    def poll(cls, _id, period=0.01, timeout=3) -> Any:
         _t = time.monotonic()
         sid = str(_id)
         while not (sid in cls.MESSAGE) and time.monotonic() - _t < timeout:
             time.sleep(period)
+
+        # logger.debug(sid)
+        # logger.debug(cls.MESSAGE)
+
         if not (sid in cls.MESSAGE):
             raise TimedOutException
-        return cls.MESSAGE.pop(sid)
+
+        dat = cls.MESSAGE.pop(sid)
+        # logger.debug(dat)
+        return dat
 
 try:
     @PromptServer.instance.routes.post("/jovimetrix/message")
     async def jovimetrix_message(request) -> Any:
         json_data = await request.json()
         did = json_data.get("id", None)
-        ComfyAPIMessage.MESSAGE[did] = json_data
+        ComfyAPIMessage.MESSAGE[str(did)] = json_data
+        # logger.debug(ComfyAPIMessage.MESSAGE[did])
         return web.json_response()
 
     @PromptServer.instance.routes.get("/jovimetrix/config")

@@ -23,11 +23,31 @@ const ext = {
             const me = onNodeCreated?.apply(this);
             const self = this;
             const widget_queue = this.widgets[0];
+            const widget_reset = this.widgets[2];
+            const old_callback = widget_reset?.callback;
+            widget_reset.callback = async (e) => {
+                if (old_callback) {
+                    old_callback(this, arguments);
+                }
+
+                const data = {
+                    id: self.id,
+                    cmd: "reset"
+                };
+                util.api_post('/jovimetrix/message', data);
+            }
+
+            async function python_queue_list(event) {
+                if (event.detail.id != self.id) {
+                    return;
+                }
+                console.info(event.detail.data);
+            }
+
             async function python_queue_ping(event) {
                 if (event.detail.id != self.id) {
                     return;
                 }
-
                 // fun.bewm(self.pos[0], self.pos[1]);
             }
 
@@ -38,14 +58,10 @@ const ext = {
                 let centerX = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
                 let centerY = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
 
-
                 fun.bewm(centerX / 2, centerY / 3);
-                await util.flashBackgroundColor(widget_queue.inputEl, 250, 5,  "#449262AA");
-                await util.flashBackgroundColor(widget_queue.inputEl, 450, 4,  "#667252BB");
-                await util.flashBackgroundColor(widget_queue.inputEl, 850, 3,  "#995242CC");
-                await util.flashBackgroundColor(widget_queue.inputEl, 1650, 2, "#BB3232DD");
-                await util.flashBackgroundColor(widget_queue.inputEl, 3500, 1, "#FF2222EE");
+                await util.flashBackgroundColor(widget_queue.inputEl, 650, 4,  "#995242CC");
             }
+            api.addEventListener("jovi-queue-list", python_queue_list);
             api.addEventListener("jovi-queue-ping", python_queue_ping);
             api.addEventListener("jovi-queue-done", python_queue_done);
             return me;

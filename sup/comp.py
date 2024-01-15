@@ -493,14 +493,17 @@ def comp_blend(imageA:Optional[TYPE_IMAGE]=None,
     imageA = process(imageA)
     imageB = process(imageB, False)
     # use the alpha in the imageB, if any
-    if channel_count(imageB)[0] < 4:
+    if (cc := channel_count(imageB)[0]) < 4 or mask is not None:
         mask = mask if mask is not None else np.full((targetH, targetW, 1), imageB_maskColor, dtype=np.uint8)
         if channel_count(mask)[0] != 1:
             mask = image_grayscale(mask)
+
         if len(mask.shape) == 2:
             mask = np.expand_dims(mask, axis=-1)
+
         mask = scale(mask)
-        imageB = channel_add(imageB, 0)
+        if cc < 4:
+            imageB = channel_add(imageB, 0)
         imageB[:, :, 3] = mask[:, :, 0]
 
     # make an image canvas to hold A and B that fits both on center

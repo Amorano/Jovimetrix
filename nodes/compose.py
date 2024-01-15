@@ -201,7 +201,7 @@ class BlendNode(JOVImageInOutBaseNode):
             w, h = wihi
             pa = tensor2cv(pa) if pa is not None else np.zeros((h, w, 3), dtype=np.uint8)
             pb = tensor2cv(pb) if pb is not None else np.zeros((h, w, 3), dtype=np.uint8)
-            ma = tensor2cv(ma) if ma is not None else np.zeros((h, w), dtype=np.uint8)
+            ma = tensor2cv(ma) if ma is not None else None
 
             if fl:
                 pa, pb = pb, pa
