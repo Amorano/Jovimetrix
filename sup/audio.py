@@ -7,6 +7,7 @@ import io
 from enum import Enum
 from urllib.request import urlopen
 
+import torch
 import librosa
 import ffmpeg
 import numpy as np
@@ -25,21 +26,27 @@ class EnumGraphType(Enum):
 # === LOADERS ===
 # =============================================================================
 
-def load_audio(file_path) -> np.ndarray[np.int16]:
+# FFMPEG... dont love
+def load_audio(url) -> np.ndarray[np.int16]:
     cmd = (
-        ffmpeg.input(file_path)
+        ffmpeg.input(url)
         .output('-', format='s16le', acodec='pcm_s16le', ac=1)
         .run(input=None, capture_stdout=False, capture_stderr=False)
     )
-    # logger.debug(file_path)
+    # logger.debug(url)
     return np.frombuffer(cmd[0], dtype=np.int16)
 
-def load_audio(url: str) -> tuple[np.ndarray[np.int16], float]:
+def load_audio(url: str, sample_rate: int=22050, offset: float=0, mono:bool=True,
+               duration: float=None) -> tuple[np.ndarray[np.int16], float]:
+
+    if duration == 0.0:
+        duration = None
+
     if url.startswith("http"):
         url = io.BytesIO(urlopen(url).read())
-    # data, rate = sf.read(url, dtype='float32')
-    data, rate = librosa.load(url)
-    # data = librosa.resample(data.T, orig_sr=rate, target_sr=22050)
+
+    audio, rate = librosa.load(url, sr=sample_rate, offset=offset, duration=duration)
+    # audio = torch.from_numpy(audio)[None, :, None]
     return data, rate
 
 # =============================================================================

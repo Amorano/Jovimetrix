@@ -245,7 +245,8 @@ class QueueNode(JOVBaseNode):
     NAME = "QUEUE (JOV) 🗃"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/UTILITY"
     DESCRIPTION = "Cycle lists of images files or strings for node inputs."
-    RETURN_TYPES = (WILDCARD, )
+    RETURN_TYPES = (WILDCARD, "INT", WILDCARD,)
+    RETURN_NAMES = (Lexicon.ANY, Lexicon.COUNT, Lexicon.QUEUE,)
 
     VIDEO_FORMATS = ['.webm', '.mp4', '.avi', '.wmv', '.mkv', '.mov', '.mxf']
 

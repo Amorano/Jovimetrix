@@ -9,7 +9,12 @@ import { app } from "/scripts/app.js";
 import * as util from '../core/util.js'
 
 const _id = "GLSL (JOV) 🍩"
-const var_regex = "uniform\s*(bool|int|float|vec[2-4])\s*([A-Za-z_]+)\s*=\s*(.*);"
+// uniform vec3 conversion; // 114)
+// uniform ivec3 conversion2;// 0.299, 0.587, 0.114
+// uniform bvec3 conversion3;//099
+// uniform bvec2 conversion3;//true,false,099
+
+const var_regex = "^uniform\s*(bool|int|float|[i|b]?vec[2-4]|mat[2-4])\s*([A-Za-z][A-Za-z0-9_]+)\s*;\s*\/\/\s*\(?([0-9\.\s,]+|(?:(?:true|false)\s*,?)+)"
 
 const ext = {
 	name: _id,
