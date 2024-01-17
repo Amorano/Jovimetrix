@@ -4,9 +4,10 @@ Utility
 """
 
 import io
-import json
 import os
+import json
 import time
+import glob
 import base64
 from typing import Any
 import matplotlib.pyplot as plt
@@ -245,8 +246,8 @@ class QueueNode(JOVBaseNode):
     NAME = "QUEUE (JOV) 🗃"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/UTILITY"
     DESCRIPTION = "Cycle lists of images files or strings for node inputs."
-    RETURN_TYPES = (WILDCARD, "INT", WILDCARD,)
-    RETURN_NAMES = (Lexicon.ANY, Lexicon.COUNT, Lexicon.QUEUE,)
+    RETURN_TYPES = (WILDCARD, WILDCARD, "INT", "STRING", "INT", )
+    RETURN_NAMES = (Lexicon.ANY, Lexicon.QUEUE, Lexicon.COUNT, Lexicon.CURRENT, Lexicon.INDEX, )
 
     VIDEO_FORMATS = ['.webm', '.mp4', '.avi', '.wmv', '.mkv', '.mov', '.mxf']
 
@@ -255,6 +256,8 @@ class QueueNode(JOVBaseNode):
         d = {"optional": {
             Lexicon.QUEUE: ("STRING", {"multiline": True, "default": ""}),
             Lexicon.LOOP: ("INT", {"default": 0, "min": 0}),
+            Lexicon.BATCH: ("INT", {"default": 0, "min": 0}),
+            Lexicon.WAIT: ("BOOLEAN", {"default": False}),
             Lexicon.RESET: ("BOOLEAN", {"default": False}),
         },
         "hidden": {
@@ -271,6 +274,7 @@ class QueueNode(JOVBaseNode):
         self.__loops = 0
         self.__index = 0
         self.__q = None
+        self.__last = None
 
     def __parse(self, data) -> list:
         entries = []
@@ -281,9 +285,10 @@ class QueueNode(JOVBaseNode):
             try: count = int(parts[-1])
             except: pass
 
-            path = Path(parts[0])
             data = [parts[0]]
-            if path.is_dir() or (path2 := Path(ROOT / parts[0])).is_dir():
+            path = Path(parts[0])
+            path2 = Path(ROOT / parts[0])
+            if path.is_dir() or path2.is_dir():
                 philter = parts[1].split(';') if len(parts) > 1 and isinstance(parts[1], str) else image_formats()
                 philter.extend(self.VIDEO_FORMATS)
                 path = path if path.is_dir() else path2
@@ -291,13 +296,28 @@ class QueueNode(JOVBaseNode):
                 new_data = [str(path / fname) for fname in file_names if any(fname.endswith(pat) for pat in philter)]
                 if len(new_data):
                     data = new_data
-            elif path.is_file() or (path := Path(ROOT / parts[0])).is_file():
+            elif path.is_file() or path2.is_file():
+                path = path if path.is_file() else path2
                 data = [str(path.resolve())]
+            elif len(results := glob.glob(str(path2))) > 0:
+                data = [x.replace('\\\\', '/') for x in results]
+
             if len(data) and count > 0:
                 entries.extend(data * count)
         return entries
 
     def run(self, id, **kw) -> None:
+
+        def process(data: str) -> torch.Tensor | Any:
+            if os.path.isfile(data):
+                _, ext = os.path.splitext(data)
+                if ext in image_formats():
+                    data = cv2tensor(image_load(data)[0])
+                elif ext == '.json':
+                    with open(data, 'r', encoding='utf-8') as f:
+                        data = json.load(f)
+            return data
+
         reset = kw.get(Lexicon.RESET, False)
         # clear the queue of msgs...
         # better resets? check if reset message
@@ -324,7 +344,13 @@ class QueueNode(JOVBaseNode):
             PromptServer.instance.send_sync("jovi-queue-list", {"id": id, "data": self.__q})
             self.__loops = 0
             self.__index = 0
-            self.__time = time.perf_counter()
+            self.__last = 0
+            self.__previous = self.__q[0] if len(self.__q) else None
+            if self.__previous:
+                self.__previous = process(self.__previous)
+
+        if (wait := kw.get(Lexicon.WAIT, False)):
+            self.__index = self.__last
 
         if self.__index >= len(self.__q):
             loop = kw.get(Lexicon.LOOP, 0)
@@ -334,26 +360,38 @@ class QueueNode(JOVBaseNode):
                 # hard halt?
                 PromptServer.instance.send_sync("jovi-queue-done", {"id": id})
                 nodes.interrupt_processing(True)
-                t = time.perf_counter() - self.__time
-                logger.warning(f"queue completed: {id} [{t}]")
+                logger.warning(f"Q Complete [{id}]")
                 self.__q = None
                 return ()
             self.__index = 0
 
-        data = self.__q[self.__index]
-        logger.info(f"QUEUE #{id} [{data}] ({self.__index}) |{self.__loops}|")
-        PromptServer.instance.send_sync("jovi-queue-ping", {"id": id})
-        self.__index += 1
-        if os.path.isfile(data):
-            _, ext = os.path.splitext(data)
-            if ext in image_formats():
-                return (cv2tensor(image_load(data)[0]), )
+        if (batch := kw.get(Lexicon.BATCH, 0)) == 0:
+            current = self.__q[self.__index]
+        else:
+            current = f"BATCH {batch}"
+        info = f"QUEUE #{id} [{current}] ({self.__index})"
 
-            if ext == '.json':
-                with open(data, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-                # return (data, )
-        return (data, )
+        if self.__loops:
+            info += f" |{self.__loops}|"
+
+        if wait:
+            info += f" PAUSED"
+
+        logger.debug(info)
+        PromptServer.instance.send_sync("jovi-queue-ping", {"id": id})
+        data = self.__previous
+        if not wait:
+            if batch == 0:
+                self.__index += 1
+                data = process(current)
+            else:
+                size = min(self.__index + batch, len(self.__q) - 1)
+                data = [process(self.__q[self.__index + x]) for x in range(size)]
+                self.__index += size
+
+        self.__last = self.__index
+        self.__previous = data
+        return (data, self.__q, len(self.__q), current, self.__index, )
 
 class FileSelectNode(JOVBaseNode):
     NAME = "FILE SELECT (JOV) 📑"

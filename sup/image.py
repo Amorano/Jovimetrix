@@ -505,7 +505,7 @@ def image_grid(data: list[TYPE_IMAGE], width: int, height: int) -> TYPE_IMAGE:
 def image_grayscale(image: TYPE_IMAGE) -> TYPE_IMAGE:
     if (cc := channel_count(image)[0]) == 1:
         return image
-    elif cc > 2:
+    if cc > 2:
         image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
         return image[:, :, 2]
     logger.error("{} {} {}", "unknown image format", cc, image.shape)

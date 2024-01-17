@@ -35,6 +35,7 @@ class Lexicon:
     CONTRAST = '🌓'
     CONTROL = '🎚️'
     COUNT = '🧮'
+    CURRENT = 'ℹ️'
     DATA = '📓'
     DELAY = '✋🏽'
     DELTA = '🔺'

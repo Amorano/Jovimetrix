@@ -24,7 +24,7 @@ from Jovimetrix.sup.comp import geo_rotate, geo_translate, comp_blend, geo_crop_
     geo_edge_wrap, geo_scalefit, geo_mirror, light_invert, \
     EnumScaleMode, EnumInterpolation, EnumBlendType
 
-from Jovimetrix.sup.image import image_merge, image_split, tensor2cv, cv2tensor, \
+from Jovimetrix.sup.image import IT_SCALEMODE, image_merge, image_split, tensor2cv, cv2tensor, \
     cv2mask, pixel_convert, image_stack, \
     EnumEdge, EnumMirrorMode, EnumOrientation, \
     IT_WHMODE, IT_SAMPLE
@@ -180,7 +180,7 @@ class BlendNode(JOVImageInOutBaseNode):
                 Lexicon.A: ("FLOAT", {"default": 1, "min": 0, "max": 1, "step": 0.01}),
                 Lexicon.FLIP: ("BOOLEAN", {"default": False}),
             }}
-        return deep_merge_dict(IT_REQUIRED, IT_PIXEL_MASK, d, IT_WHMODE, IT_SAMPLE, IT_INVERT)
+        return deep_merge_dict(IT_REQUIRED, IT_PIXEL_MASK, d, IT_SCALEMODE, IT_SAMPLE, IT_INVERT)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         pixelA = kw.get(Lexicon.PIXEL_A, [None])
@@ -191,30 +191,24 @@ class BlendNode(JOVImageInOutBaseNode):
         flip = kw.get(Lexicon.FLIP, [False])
         mode = kw.get(Lexicon.MODE, [EnumScaleMode.NONE])
         sample = kw.get(Lexicon.SAMPLE, [EnumInterpolation.LANCZOS4])
-        wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
+
         i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
-        params = [tuple(x) for x in zip_longest_fill(pixelA, pixelB, mask, func, alpha, flip, wihi, mode, sample, i)]
+        params = [tuple(x) for x in zip_longest_fill(pixelA, pixelB, mask, func, alpha, flip, mode, sample, i)]
         masks = []
         images = []
         pbar = comfy.utils.ProgressBar(len(params))
-        for idx, (pa, pb, ma, op, a, fl, wihi, sm, rs, i) in enumerate(params):
-            w, h = wihi
-            pa = tensor2cv(pa) if pa is not None else np.zeros((h, w, 3), dtype=np.uint8)
-            pb = tensor2cv(pb) if pb is not None else np.zeros((h, w, 3), dtype=np.uint8)
+        for idx, (pa, pb, ma, op, a, fl, sm, rs, i) in enumerate(params):
+            pa = tensor2cv(pa) if pa is not None else None
+            pb = tensor2cv(pb) if pb is not None else None
             ma = tensor2cv(ma) if ma is not None else None
 
             if fl:
                 pa, pb = pb, pa
 
-            op = EnumBlendType[op]
-            img = comp_blend(pa, pb, ma, op, a)
-            nh, nw = img.shape[:2]
-
             rs = EnumInterpolation[rs]
-            if h != nh or w != nw:
-                # logger.debug("{} {} {} {}", w, h, nw, nh)
-                img = geo_scalefit(img, w, h, sm, rs)
-
+            sm = EnumScaleMode[sm]
+            op = EnumBlendType[op]
+            img = comp_blend(pa, pb, ma, op, a, mode=sm, sample=rs)
             if i != 0:
                 img = light_invert(img, i)
 

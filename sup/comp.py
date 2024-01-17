@@ -245,6 +245,7 @@ def geo_rotate_array(image: TYPE_IMAGE, angle: float, clip: bool=True) -> TYPE_I
     return rotated_image[start_height:start_height + height, start_width:start_width + width]
 
 def geo_scalefit(image: TYPE_IMAGE, width: int, height:int,
+                 color:TYPE_PIXEL=0.,
                  mode:EnumScaleMode=EnumScaleMode.NONE,
                  sample:EnumInterpolation=EnumInterpolation.LANCZOS4) -> TYPE_IMAGE:
 
@@ -257,60 +258,12 @@ def geo_scalefit(image: TYPE_IMAGE, width: int, height:int,
             return cv2.resize(image, None, fx=aspect, fy=aspect, interpolation=sample.value)
 
         case EnumScaleMode.CROP:
-            return geo_crop(image, widthT=width, heightT=height, pad=True)
+            return geo_crop(image, (0, 0), (0, 1), (1, 1), (1, 0), width, height, color)
 
         case EnumScaleMode.FIT:
             return cv2.resize(image, (width, height), interpolation=sample.value)
 
     return image
-
-def geo_transform(image: TYPE_IMAGE, offsetX: float=0., offsetY: float=0., angle: float=0.,
-              sizeX: float=1., sizeY: float=1., edge:str='CLIP', widthT: int=256, heightT: int=256,
-              mode:EnumScaleMode=EnumScaleMode.NONE,
-              sample:EnumInterpolation=EnumInterpolation.LANCZOS4) -> TYPE_IMAGE:
-    """Transform, Rotate and Scale followed by Tiling and then Inversion, conforming to an input wT, hT,."""
-
-    height, width = image.shape[:2]
-    if sizeX < 0:
-        # flip the X
-        image = cv2.flip(image, 1)
-        sizeX = -sizeX
-    if sizeY < 0:
-        # flip the Y
-        image = cv2.flip(image, 0)
-        sizeY = -sizeY
-
-    # SCALE
-    if sizeX != 1. or sizeY != 1.:
-        wx =  int(max(1, width * sizeX))
-        hx =  int(max(1, height * sizeY))
-        image = cv2.resize(image, (wx, hx), interpolation=sample.value)
-
-    # ROTATION
-    if angle != 0:
-        image = geo_rotate(image, angle)
-
-    # TRANSLATION
-    if offsetX != 0. or offsetY != 0.:
-        image = geo_translate(image, offsetX, offsetY)
-
-    if edge != "CLIP":
-        tx = ty = 0
-        if edge in ["WRAP", "WRAPX"] and sizeX < 1.:
-            tx = 1. / sizeX - 1
-            sizeX = 1.
-
-        if edge in ["WRAP", "WRAPY"] and sizeY < 1.:
-            ty = 1. / sizeY - 1
-            sizeY = 1.
-
-        image = geo_edge_wrap(image, tx, ty)
-        # h, w = image.shape[:2]
-
-    # clip to original size first...
-    image = geo_crop(image)
-    # logger.debug(f"({offsetX},{offsetY}), {angle}, ({sizeX},{sizeY}) [{width}x{height} - {mode} - {sample}]")
-    return geo_scalefit(image, widthT, heightT, mode, sample)
 
 def geo_merge(imageA: TYPE_IMAGE, imageB: TYPE_IMAGE, axis: int=0, flip: bool=False) -> TYPE_IMAGE:
     if flip:
@@ -442,25 +395,17 @@ def comp_blend(imageA:Optional[TYPE_IMAGE]=None,
                mode:EnumScaleMode=EnumScaleMode.NONE,
                sample:EnumInterpolation=EnumInterpolation.LANCZOS4) -> TYPE_IMAGE:
 
-    targetW, targetH = 0, 0
+    targetW = targetH = 0
     if mode == EnumScaleMode.NONE:
-        targetW = max(
-            imageA.shape[1] if imageA is not None else 0,
-            imageB.shape[1] if imageB is not None else 0,
-            #mask.shape[1] if mask is not None else 0
-        )
-
-        targetH = max(
-            imageA.shape[0] if imageA is not None else 0,
-            imageB.shape[0] if imageB is not None else 0,
-            #mask.shape[0] if mask is not None else 0
-        )
-
-    elif imageA is not None:
-        targetH, targetW = imageA.shape[:2]
-    elif imageB is not None:
-        targetH, targetW = imageB.shape[:2]
-
+        targetW = max(imageA.shape[1] if imageA is not None else 0,
+                      imageB.shape[1] if imageB is not None else 0)
+        targetH = max(imageA.shape[0] if imageA is not None else 0,
+                      imageB.shape[0] if imageB is not None else 0)
+    else:
+        targetW = imageA.shape[1] if imageA is not None else imageB.shape[1] \
+            if imageB is not None else mask.shape[1] if mask is not None else 0
+        targetH = imageA.shape[0] if imageA is not None else imageB.shape[0] \
+            if imageB is not None else mask.shape[1] if mask is not None else 0
     imageB_maskColor = 0 if imageB is None else 255
 
     targetW, targetH = max(0, targetW), max(0, targetH)
@@ -468,57 +413,51 @@ def comp_blend(imageA:Optional[TYPE_IMAGE]=None,
         logger.warning("bad dimensions {} {}", targetW, targetH)
         return channel_solid(targetW or 1, targetH or 1, )
 
-    def scale(img:TYPE_IMAGE) -> TYPE_IMAGE:
-        h, w = img.shape[:2]
-        if h != targetH or w != targetW:
-            if mode != EnumScaleMode.NONE:
-                img = geo_scalefit(img, targetW, targetH, mode, sample)
-            # logger.debug("{} {} {}", img.shape[:2], targetW, targetH)
-            img = channel_fill(img, targetW, targetH, color)
-            # logger.debug("{} {} {}", img.shape[:2], targetW, targetH)
-        return img
-
-    def process(img:TYPE_IMAGE, alpha:bool=True) -> TYPE_IMAGE:
+    def process(img:TYPE_IMAGE) -> TYPE_IMAGE:
         img = img if img is not None else channel_solid(targetW, targetH, 0)
-        img = scale(img)
-        cc = channel_count(img)[0]
+
         while cc < 3:
             # @TODO: copy first channel to all missing? make grayscale RGB to process?
             img = channel_add(img, 0)
             cc += 1
-        if alpha and cc < 4:
+
+        if cc < 4:
             img = channel_add(img, 255)
+
+        if h != targetH or w != targetW:
+            img = channel_fill(img, targetW, targetH, color)
         return img
 
     imageA = process(imageA)
-    imageB = process(imageB, False)
-    # use the alpha in the imageB, if any
-    if (cc := channel_count(imageB)[0]) < 4 or mask is not None:
-        mask = mask if mask is not None else np.full((targetH, targetW, 1), imageB_maskColor, dtype=np.uint8)
-        if channel_count(mask)[0] != 1:
-            mask = image_grayscale(mask)
+    imageB = process(imageB)
+    if mask is None:
+        mask = np.full((targetH, targetW), imageB_maskColor, dtype=np.uint8)
+    elif channel_count(mask)[0] != 1:
+        mask = image_grayscale(mask)
 
-        if len(mask.shape) == 2:
-            mask = np.expand_dims(mask, axis=-1)
-
-        mask = scale(mask)
-        if cc < 4:
-            imageB = channel_add(imageB, 0)
-        imageB[:, :, 3] = mask[:, :, 0]
+    h, w = imageB.shape[:2]
+    mH, mW = mask.shape[:2]
+    if h != mH or w != mW:
+        mask = geo_scalefit(mask, w, h, mode=mode, sample=sample)
+    imageB[:, :, 3] = mask[:, :]
 
     # make an image canvas to hold A and B that fits both on center
     if mode == EnumScaleMode.NONE:
-        def xyz(img: TYPE_IMAGE) -> TYPE_IMAGE:
-            h, w = img.shape[:2]
-            y, x = max(0, targetH // 2 - h // 2), max(0, targetW // 2 - w // 2)
-            canvas = channel_solid(targetW, targetH, 0, chan=EnumImageType.RGBA)
-            canvas[y: y + h, x: x + w, :4] = img
-            return canvas
+        h, w = imageA.shape[:2]
+        y, x = max(0, targetH // 2 - h // 2), max(0, targetW // 2 - w // 2)
+        canvas = channel_solid(targetW, targetH, 0, chan=EnumImageType.RGBA)
+        canvas[y: y + h, x: x + w, :4] = imageA
+        imageA = canvas
 
-        imageA = xyz(imageA)
-        imageB = xyz(imageB)
+        h, w = imageB.shape[:2]
+        y, x = max(0, targetH // 2 - h // 2), max(0, targetW // 2 - w // 2)
+        canvas = channel_solid(targetW, targetH, 0, chan=EnumImageType.RGBA)
+        canvas[y: y + h, x: x + w, :4] = imageB
+        imageB = canvas
+    else:
+        imageA = geo_scalefit(imageA, targetW, targetH, mode=mode, sample=sample)
+        imageB = geo_scalefit(imageB, targetW, targetH, mode=mode, sample=sample)
 
-    # logger.debug("{} {} {} {} {}", imageA.shape, imageB.shape, blendOp.value, alpha, imageB_maskColor)
     imageA = cv2pil(imageA)
     imageB = cv2pil(imageB)
     image = blendLayers(imageA, imageB, blendOp.value, np.clip(alpha, 0, 1))
@@ -746,9 +685,10 @@ def testImageMerge() -> None:
     cv2.imwrite(f'./_res/tst/image-merge.png', d)
 
 if __name__ == "__main__":
-    img = cv2.imread('./_res/img/test_fore2.png', cv2.IMREAD_UNCHANGED)
-    h, w = img.shape[:2]
-    img = geo_scalefit(img, 320, 240, EnumScaleMode.FIT)
-    cv2.imwrite(f'./_res/tst/image-scalefit.png', img)
+    a = cv2.imread('./res/img/color-a.png', cv2.IMREAD_UNCHANGED)
+    b = cv2.imread('./res/img/test-a.png', cv2.IMREAD_UNCHANGED)
+    mask = cv2.imread('./res/img/mask-a.png', cv2.IMREAD_UNCHANGED)
+    img = comp_blend(a, b, mask, mode=EnumScaleMode.FIT)
+    cv2.imwrite(f'./_res/tst/image-blend.png', img)
     # testBlendModes()
     # testImageMerge()
