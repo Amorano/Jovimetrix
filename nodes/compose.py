@@ -20,12 +20,12 @@ from Jovimetrix.sup.util import parse_number, parse_tuple, zip_longest_fill, \
     deep_merge_dict,\
     EnumTupleType
 
-from Jovimetrix.sup.comp import geo_rotate, geo_translate, comp_blend, geo_crop_polygonal, \
-    geo_edge_wrap, geo_scalefit, geo_mirror, light_invert, \
+from Jovimetrix.sup.comp import geo_rotate, geo_translate, comp_blend, \
+    geo_crop_polygonal, geo_edge_wrap, geo_scalefit, geo_mirror, light_invert, \
     EnumScaleMode, EnumInterpolation, EnumBlendType
 
-from Jovimetrix.sup.image import IT_SCALEMODE, image_merge, image_split, tensor2cv, cv2tensor, \
-    cv2mask, pixel_convert, image_stack, \
+from Jovimetrix.sup.image import IT_SCALEMODE, image_merge, image_split, tensor2cv, \
+    cv2tensor, cv2mask, pixel_convert, image_stack, \
     EnumEdge, EnumMirrorMode, EnumOrientation, \
     IT_WHMODE, IT_SAMPLE
 

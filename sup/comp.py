@@ -19,7 +19,7 @@ from Jovimetrix import TYPE_IMAGE, TYPE_PIXEL, TYPE_COORD
 from Jovimetrix.sup.image import image_rgb_clean, image_rgb_restore, \
     image_grayscale, image_split, image_merge, channel_count, channel_add, \
     channel_solid, cv2pil, pil2cv, channel_fill, pixel_eval, \
-    EnumImageType, EnumScaleMode, EnumInterpolation
+    EnumScaleMode, EnumInterpolation
 
 # =============================================================================
 # === ENUM GLOBALS ===
@@ -157,11 +157,16 @@ def geo_crop(image: TYPE_IMAGE,
             return crop_img
 
         cc = channel_count(image)[0]
-        color = [c for c in color]
+        if isinstance(color, (float, int)):
+            color = [color] * cc
         while len(color) > cc:
             color.pop(-1)
 
-        img_padded = np.full((heightT, widthT, cc), color, dtype=np.uint8)
+        if cc > 1:
+            img_padded = np.full((heightT, widthT, cc), color, dtype=np.uint8)
+        else:
+            img_padded = np.full((heightT, widthT), color, dtype=np.uint8)
+
         crop_height, crop_width = crop_img.shape[:2]
         h2 = heightT // 2
         w2 = widthT // 2
@@ -415,7 +420,7 @@ def comp_blend(imageA:Optional[TYPE_IMAGE]=None,
 
     def process(img:TYPE_IMAGE) -> TYPE_IMAGE:
         img = img if img is not None else channel_solid(targetW, targetH, 0)
-
+        cc = channel_count(img)[0]
         while cc < 3:
             # @TODO: copy first channel to all missing? make grayscale RGB to process?
             img = channel_add(img, 0)
@@ -424,40 +429,27 @@ def comp_blend(imageA:Optional[TYPE_IMAGE]=None,
         if cc < 4:
             img = channel_add(img, 255)
 
+        img = geo_scalefit(img, targetW, targetH, color, mode, sample)
+        h, w = img.shape[:2]
         if h != targetH or w != targetW:
             img = channel_fill(img, targetW, targetH, color)
         return img
 
     imageA = process(imageA)
     imageB = process(imageB)
+    h, w = imageB.shape[:2]
     if mask is None:
-        mask = np.full((targetH, targetW), imageB_maskColor, dtype=np.uint8)
+        mask = np.full((h, w), imageB_maskColor, dtype=np.uint8)
     elif channel_count(mask)[0] != 1:
         mask = image_grayscale(mask)
 
-    h, w = imageB.shape[:2]
     mH, mW = mask.shape[:2]
     if h != mH or w != mW:
-        mask = geo_scalefit(mask, w, h, mode=mode, sample=sample)
+        mask = geo_scalefit(mask, w, h, color, mode, sample)
+        mask = channel_fill(mask, targetW, targetH, color)
+        mask = np.squeeze(mask)
+
     imageB[:, :, 3] = mask[:, :]
-
-    # make an image canvas to hold A and B that fits both on center
-    if mode == EnumScaleMode.NONE:
-        h, w = imageA.shape[:2]
-        y, x = max(0, targetH // 2 - h // 2), max(0, targetW // 2 - w // 2)
-        canvas = channel_solid(targetW, targetH, 0, chan=EnumImageType.RGBA)
-        canvas[y: y + h, x: x + w, :4] = imageA
-        imageA = canvas
-
-        h, w = imageB.shape[:2]
-        y, x = max(0, targetH // 2 - h // 2), max(0, targetW // 2 - w // 2)
-        canvas = channel_solid(targetW, targetH, 0, chan=EnumImageType.RGBA)
-        canvas[y: y + h, x: x + w, :4] = imageB
-        imageB = canvas
-    else:
-        imageA = geo_scalefit(imageA, targetW, targetH, mode=mode, sample=sample)
-        imageB = geo_scalefit(imageB, targetW, targetH, mode=mode, sample=sample)
-
     imageA = cv2pil(imageA)
     imageB = cv2pil(imageB)
     image = blendLayers(imageA, imageB, blendOp.value, np.clip(alpha, 0, 1))
@@ -687,8 +679,8 @@ def testImageMerge() -> None:
 if __name__ == "__main__":
     a = cv2.imread('./res/img/color-a.png', cv2.IMREAD_UNCHANGED)
     b = cv2.imread('./res/img/test-a.png', cv2.IMREAD_UNCHANGED)
-    mask = cv2.imread('./res/img/mask-a.png', cv2.IMREAD_UNCHANGED)
-    img = comp_blend(a, b, mask, mode=EnumScaleMode.FIT)
+    mask = cv2.imread('./res/img/mask-c.png', cv2.IMREAD_UNCHANGED)
+    img = comp_blend(a, b, mask, mode=EnumScaleMode.CROP)
     cv2.imwrite(f'./_res/tst/image-blend.png', img)
     # testBlendModes()
     # testImageMerge()

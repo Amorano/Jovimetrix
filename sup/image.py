@@ -329,7 +329,6 @@ def channel_fill(image:TYPE_IMAGE, width:int, height:int, color:TYPE_PIXEL=255) 
     """
 
     cc, chan, x, y = channel_count(image)
-    canvas = channel_solid(width, height, color, chan=chan)
     y1 = max(0, (height - y) // 2)
     y2 = min(height, y1 + y)
     x1 = max(0, (width - x) // 2)
@@ -343,7 +342,11 @@ def channel_fill(image:TYPE_IMAGE, width:int, height:int, color:TYPE_PIXEL=255) 
         x1 = 0
         x2 = width
 
-    canvas[y1: y2, x1: x2, :cc] = image[:y2-y1, :x2-x1, :cc]
+    canvas = channel_solid(width, height, color, chan=chan)
+    if cc > 1:
+        canvas[y1: y2, x1: x2, :cc] = image[:y2-y1, :x2-x1, :cc]
+    else:
+        canvas[y1: y2, x1: x2, 0] = image[:y2-y1, :x2-x1]
     return canvas
 
 # =============================================================================
@@ -506,6 +509,8 @@ def image_grayscale(image: TYPE_IMAGE) -> TYPE_IMAGE:
     if (cc := channel_count(image)[0]) == 1:
         return image
     if cc > 2:
+        if image.dtype in [np.float16, np.float32, np.float64]:
+            image = np.clip(image * 255, 0, 255).astype(np.uint8)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
         return image[:, :, 2]
     logger.error("{} {} {}", "unknown image format", cc, image.shape)
