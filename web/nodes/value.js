@@ -71,7 +71,7 @@ const ext = {
                     console.debug(old_x_bool, old_x_int, old_x_str, old_x, old_y, old_z, old_w);
 
                     while ((this.widgets || [])[1]) {
-                        util.removeWidget(this, 1);
+                        util.widget_remove(this, 1);
                     }
 
                     if (this.outputs && this.outputs.length > 0) {

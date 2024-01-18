@@ -1,10 +1,10 @@
 /**
- * File: widget_spinner.js
+ * File: widget_jstring.js
  * Project: Jovimetrix
  */
 
 import { app } from "/scripts/app.js"
-import * as util from '../core/util.js'
+import * as util_dom from '../core/util_dom.js'
 
 export const JStringWidget = (app, name, value) => {
     const fontSize = 16
@@ -13,7 +13,7 @@ export const JStringWidget = (app, name, value) => {
         type: "JSTRING",
         value: value,
         draw: function (ctx, node, widgetWidth, widgetY, height) {
-            util.offsetDOMWidget(this, ctx, node, widgetWidth, widgetY, height)
+            util_dom.offsetDOMWidget(this, ctx, node, widgetWidth, widgetY, height)
         },
         computeSize(width) {
             if (!this.value) {

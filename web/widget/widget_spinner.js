@@ -5,6 +5,7 @@
 
 import { app } from "/scripts/app.js"
 import * as util from '../core/util.js'
+import * as util_dom from '../core/util_dom.js'
 
 export const SpinnerWidget = (app, inputName, inputData, initial, desc='') => {
     const offset = 4
@@ -109,7 +110,7 @@ export const SpinnerWidget = (app, inputName, inputData, initial, desc='') => {
                             setTimeout(
                                 function () {
                                     clamp(this, v, idx)
-                                    util.inner_value_change(this, this.value, e)
+                                    util_dom.inner_value_change(this, this.value, e)
                                 }.bind(this), 20)
                         }
                     }.bind(this), e);
@@ -119,7 +120,7 @@ export const SpinnerWidget = (app, inputName, inputData, initial, desc='') => {
                     setTimeout(
                         function () {
                             //clamp(this, this.value[idx] || 0, idx)
-                            util.inner_value_change(this, this.value, e)
+                            util_dom.inner_value_change(this, this.value, e)
                         }.bind(this), 20)
                 }
                 isDragging = undefined
@@ -169,7 +170,7 @@ const widgets = {
                     this.serialize_widgets = true;
                     this.setSize?.(this.computeSize());
                     this.onRemoved = function () {
-                        util.cleanupNode(this);
+                        util.node_cleanup(this);
                     };
                     return r;
                 };

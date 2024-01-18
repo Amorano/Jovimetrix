@@ -6,6 +6,8 @@
 
 import { ComfyDialog, $el } from "/scripts/ui.js"
 import * as util from './util.js'
+import * as util_color from './util_color.js'
+import * as util_config from './util_config.js'
 
 var headID = document.getElementsByTagName("head")[0]
 var cssNode = document.createElement('link')
@@ -64,13 +66,13 @@ const templateColorHeader = (data) => [
 ]
 
 function updateRegexColor(index, key, value) {
-    util.CONFIG_REGEX[index][key] = value
+    util_config.CONFIG_REGEX[index][key] = value
     let api_packet = {
-        id: util.USER + '.color.regex',
-        v: util.CONFIG_REGEX
+        id: util_config.USER + '.color.regex',
+        v: util_config.CONFIG_REGEX
     }
     util.api_post("/jovimetrix/config", api_packet)
-    util.node_color_all()
+    util_color.node_color_all()
 };
 
 const templateColorRegex = (data) => [
@@ -106,13 +108,12 @@ const templateColorRegex = (data) => [
 ]
 
 function colorClear(name) {
-    util.apiPost("/jovimetrix/config/clear", { "name": name })
-    delete util.CONFIG_THEME[name]
-    if (util.CONFIG_COLOR.overwrite) {
-        util.nodeColorAll()
+    util.api_post("/jovimetrix/config/clear", { "name": name })
+    delete util_config.CONFIG_THEME[name]
+    if (util_config.CONFIG_COLOR.overwrite) {
+        util_color.node_color_all()
     }
 }
-
 
 export class JovimetrixConfigDialog extends ComfyDialog {
     startDrag = (e) => {
@@ -164,7 +165,7 @@ export class JovimetrixConfigDialog extends ComfyDialog {
 
         // rule-sets first
         var idx = 0
-        const rules = util.CONFIG_COLOR.regex || []
+        const rules = util_config.CONFIG_COLOR.regex || []
         rules.forEach(entry => {
             const data = {
                 idx: idx,
@@ -180,11 +181,11 @@ export class JovimetrixConfigDialog extends ComfyDialog {
 
         // get categories to generate on the fly
         const category = []
-        const all_nodes = Object.entries(util.NODE_LIST)
+        const all_nodes = Object.entries(util_config.NODE_LIST)
         all_nodes.sort((a, b) => a[1].category.toLowerCase().localeCompare(b[1].category.toLowerCase()))
 
         // groups + nodes
-        const alts = util.CONFIG_COLOR
+        const alts = util_config.CONFIG_COLOR
         const background = [alts.backA, alts.backB]
         const background_title = [alts.titleA, alts.titleB]
         let background_index = 0
@@ -203,9 +204,9 @@ export class JovimetrixConfigDialog extends ComfyDialog {
                     body: '#353535FF',
                     background: '#292930'
                 }
-                if (util.CONFIG_THEME.hasOwnProperty(meow)) {
-                    data.title = util.CONFIG_THEME[meow].title,
-                    data.body = util.CONFIG_THEME[meow].body
+                if (util_config.CONFIG_THEME.hasOwnProperty(meow)) {
+                    data.title = util_config.CONFIG_THEME[meow].title,
+                    data.body = util_config.CONFIG_THEME[meow].body
                 }
                 colorTable.appendChild($el("tbody", templateColorHeader(data)))
                 category.push(meow)
@@ -219,15 +220,15 @@ export class JovimetrixConfigDialog extends ComfyDialog {
                     body: '#353535FF',
                     background: background_title[background_index]
                 }
-                if (util.CONFIG_THEME.hasOwnProperty(cat)) {
-                    data.title = util.CONFIG_THEME[cat].title,
-                    data.body = util.CONFIG_THEME[cat].body
+                if (util_config.CONFIG_THEME.hasOwnProperty(cat)) {
+                    data.title = util_config.CONFIG_THEME[cat].title,
+                    data.body = util_config.CONFIG_THEME[cat].body
                 }
                 colorTable.appendChild($el("tbody", templateColorHeader(data)))
                 category.push(cat)
             }
 
-            const who = util.CONFIG_THEME[name]
+            const who = util_config.CONFIG_THEME[name]
             data = {
                 name: name,
                 title:  who ? who.title : '#353535FF',
@@ -278,17 +279,17 @@ export class JovimetrixConfigDialog extends ComfyDialog {
                         }, [
                             $el("input", {
                                 type: "checkbox",
-                                checked: util.CONFIG_USER.color.overwrite,
+                                checked: util_config.CONFIG_USER.color.overwrite,
                                 style: { color: "white" },
                                 onclick: (cb) => {
-                                    util.CONFIG_USER.color.overwrite = cb.target.checked
+                                    util_config.CONFIG_USER.color.overwrite = cb.target.checked
                                     var data = {
-                                        id: util.USER + '.color.overwrite',
-                                        v: util.CONFIG_USER.color.overwrite
+                                        id: util_config.USER + '.color.overwrite',
+                                        v: util_config.CONFIG_USER.color.overwrite
                                     }
                                     util.api_post('/jovimetrix/config', data)
-                                    if (util.CONFIG_USER.color.overwrite) {
-                                        util.node_color_all()
+                                    if (util_config.CONFIG_USER.color.overwrite) {
+                                        util_color.node_color_all()
                                     }
                                 }
                             })

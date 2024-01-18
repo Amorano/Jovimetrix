@@ -1,5 +1,5 @@
 /**
- * File: fun.js
+ * File: util_fun.js
  * Project: Jovimetrix
  *
  */
@@ -176,4 +176,24 @@ export const bubbles = function() {
     canvas.addEventListener("resize", handleResize);
     canvas.addEventListener("mousemove", handleMouseMove);
     animate();
+}
+
+// flash status for each element
+const flashStatusMap = new Map();
+
+export async function flashBackgroundColor(element, duration, flashCount, color="red") {
+    if (flashStatusMap.get(element)) {
+        return;
+    }
+
+    flashStatusMap.set(element, true);
+    const originalColor = element.style.backgroundColor;
+
+    for (let i = 0; i < flashCount; i++) {
+        element.style.backgroundColor = color;
+        await new Promise(resolve => setTimeout(resolve, duration / 2));
+        element.style.backgroundColor = originalColor;
+        await new Promise(resolve => setTimeout(resolve, duration / 2));
+    }
+    flashStatusMap.set(element, false);
 }

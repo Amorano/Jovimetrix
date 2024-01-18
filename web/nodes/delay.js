@@ -6,8 +6,8 @@
 
 import { api } from "/scripts/api.js";
 import { app } from "/scripts/app.js";
-import * as fun from '../core/fun.js'
 import * as util from '../core/util.js'
+import * as util_fun from '../core/util_fun.js'
 
 const _id = "DELAY (JOV) ✋🏽"
 
@@ -33,7 +33,7 @@ const ext = {
                 const timeout = event.detail.timeout;
                 try {
                     if (widget_wait.value) {
-                        fun.bubbles();
+                        util_fun.bubbles();
                     }
                     const value = await util.showModal(`
                         <div class="jov-modal-content">

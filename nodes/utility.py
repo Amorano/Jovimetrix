@@ -6,7 +6,6 @@ Utility
 import io
 import os
 import json
-import time
 import glob
 import base64
 from typing import Any
@@ -24,10 +23,12 @@ from folder_paths import get_output_directory
 from server import PromptServer
 import nodes
 
-from Jovimetrix import ComfyAPIMessage, JOVBaseNode, IT_REQUIRED, WILDCARD, ROOT, TimedOutException
+from Jovimetrix import ComfyAPIMessage, JOVBaseNode, TimedOutException, \
+    IT_REQUIRED, WILDCARD, ROOT
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import deep_merge_dict
-from Jovimetrix.sup.image import cv2tensor, image_load, tensor2pil, pil2tensor, image_formats
+from Jovimetrix.sup.image import cv2tensor, image_load, tensor2pil, pil2tensor, \
+    image_formats
 
 # =============================================================================
 
@@ -248,21 +249,21 @@ class QueueNode(JOVBaseNode):
     DESCRIPTION = "Cycle lists of images files or strings for node inputs."
     RETURN_TYPES = (WILDCARD, WILDCARD, "INT", "STRING", "INT", )
     RETURN_NAMES = (Lexicon.ANY, Lexicon.QUEUE, Lexicon.COUNT, Lexicon.CURRENT, Lexicon.INDEX, )
-
+    OUTPUT_IS_LIST = (False, True, False, False, False, )
     VIDEO_FORMATS = ['.webm', '.mp4', '.avi', '.wmv', '.mkv', '.mov', '.mxf']
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
-            Lexicon.QUEUE: ("STRING", {"multiline": True, "default": ""}),
-            Lexicon.LOOP: ("INT", {"default": 0, "min": 0}),
-            Lexicon.BATCH: ("INT", {"default": 0, "min": 0}),
-            Lexicon.WAIT: ("BOOLEAN", {"default": False}),
-            Lexicon.RESET: ("BOOLEAN", {"default": False}),
-        },
-        "hidden": {
-            "id": "UNIQUE_ID"
-        }}
+                Lexicon.QUEUE: ("STRING", {"multiline": True, "default": ""}),
+                Lexicon.LOOP: ("INT", {"default": 0, "min": 0}),
+                Lexicon.BATCH: ("INT", {"default": 0, "min": 0}),
+                Lexicon.WAIT: ("BOOLEAN", {"default": False}),
+                Lexicon.RESET: ("BOOLEAN", {"default": False}),
+            },
+            "hidden": {
+                "id": "UNIQUE_ID"
+            }}
         return deep_merge_dict(IT_REQUIRED, d)
 
     @classmethod
@@ -275,6 +276,7 @@ class QueueNode(JOVBaseNode):
         self.__index = 0
         self.__q = None
         self.__last = None
+        self.__len = 0
 
     def __parse(self, data) -> list:
         entries = []
@@ -341,7 +343,7 @@ class QueueNode(JOVBaseNode):
             # entry is: data, <filter if folder:*.png,*.jpg>, <repeats:1+>
             q = kw.get(Lexicon.QUEUE, "")
             self.__q = self.__parse(q)
-            PromptServer.instance.send_sync("jovi-queue-list", {"id": id, "data": self.__q})
+            self.__len = len(self.__q) - 1
             self.__loops = 0
             self.__index = 0
             self.__last = 0
@@ -377,42 +379,19 @@ class QueueNode(JOVBaseNode):
         if wait:
             info += f" PAUSED"
 
-        logger.debug(info)
-        PromptServer.instance.send_sync("jovi-queue-ping", {"id": id})
         data = self.__previous
         if not wait:
             if batch == 0:
                 self.__index += 1
                 data = process(current)
             else:
-                size = min(self.__index + batch, len(self.__q) - 1)
+                size = min(self.__index + batch, self.__len)
                 data = [process(self.__q[self.__index + x]) for x in range(size)]
                 self.__index += size
 
         self.__last = self.__index
         self.__previous = data
-        return (data, self.__q, len(self.__q), current, self.__index, )
+        # logger.debug(info)
+        PromptServer.instance.send_sync("jovi-queue-ping", {"id": id, "c": current, "i": self.__index, "s": self.__len, "l": self.__q})
+        return (data, self.__q, self.__len, current, self.__index, )
 
-class FileSelectNode(JOVBaseNode):
-    NAME = "FILE SELECT (JOV) 📑"
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/UTILITY"
-    DESCRIPTION = "Select a file from a folder root"
-    RETURN_TYPES = ("STRING", )
-    RETURN_NAMES = (Lexicon.STRING, )
-
-    @classmethod
-    def INPUT_TYPES(cls) -> dict:
-        d = {"optional": {
-            Lexicon.FOLDER: ("STRING", {"default": ""}),
-            Lexicon.FILEN: ("STRING", {"default": ""}),
-        },
-        "hidden": {
-            "id": "UNIQUE_ID"
-        }}
-        return deep_merge_dict(IT_REQUIRED, d)
-
-    def run(self, id, **kw) -> None:
-        root = kw.get(Lexicon.FOLDER, "")
-        if (filen := kw.get(Lexicon.FILEN, None)) is None:
-            filen = ""
-        return (filen, )

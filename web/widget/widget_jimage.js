@@ -1,10 +1,10 @@
 /**
- * File: widget_spinner.js
+ * File: widget_jimage.js
  * Project: Jovimetrix
  */
 
 import { app } from "/scripts/app.js"
-import * as util from '../core/util.js'
+import * as util_dom from '../core/util_dom.js'
 
 export const JImageWidget = (app, name, value) => {
     const w = {
@@ -13,7 +13,7 @@ export const JImageWidget = (app, name, value) => {
         value: value,
         draw: function (ctx, node, widgetWidth, widgetY, height) {
             const [cw, ch] = this.computeSize(widgetWidth)
-            util.offsetDOMWidget(this, ctx, node, widgetWidth, widgetY, ch)
+            util_dom.offsetDOMWidget(this, ctx, node, widgetWidth, widgetY, ch)
         },
         computeSize: function (width) {
             const ratio = this.inputRatio || 1

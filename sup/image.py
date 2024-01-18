@@ -150,9 +150,8 @@ def pil2tensor(image: Image.Image) -> torch.Tensor:
 
 def pil2cv(image: Image.Image) -> TYPE_IMAGE:
     """Convert a PIL Image to a CV2 Matrix."""
-    if image.mode == 'RGBA':
-        return cv2.cvtColor(np.array(image), cv2.COLOR_RGBA2BGRA)
-    return cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
+    mode = cv2.COLOR_RGB2BGR if image.mode == 'RGBA' else cv2.COLOR_RGBA2BGRA
+    return cv2.cvtColor(np.array(image), mode).astype(np.uint8)
 
 def pil2mask(image: Image.Image) -> torch.Tensor:
     """Convert a PIL Image to a Torch Tensor (Mask)."""
@@ -197,17 +196,18 @@ def cv2pil(image: TYPE_IMAGE) -> Image.Image:
     """Convert a CV2 Matrix to a PIL Image."""
     if len(image.shape) == 2:
         # Grayscale image
-        return Image.fromarray(image, mode='L')
+        return Image.fromarray(image.astype(np.uint8), mode='L')
     elif len(image.shape) == 3:
         if image.shape[2] == 3:
             # RGB image
-            return Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+            rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            return Image.fromarray(rgb_image.astype(np.uint8))
         elif image.shape[2] == 4:
             # RGBA image
-            return Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGRA2RGBA))
+            rgba_image = cv2.cvtColor(image, cv2.COLOR_BGRA2RGBA)
+            return Image.fromarray(rgba_image.astype(np.uint8))
 
-    # Default: return as-is
-    return Image.fromarray(image)
+    return Image.fromarray(image.astype(np.uint8))
 
 # =============================================================================
 # === PIXEL ===

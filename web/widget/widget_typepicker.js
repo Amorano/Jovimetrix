@@ -54,7 +54,7 @@ const widgets = {
                     /*
                     this.setSize?.(this.computeSize());
                     this.onRemoved = function () {
-                        util.cleanupNode(this);
+                        util.node_cleanup(this);
                     };
                     */
                     print(this)

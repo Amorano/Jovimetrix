@@ -69,7 +69,7 @@ const widgets = {
                     this.serialize_widgets = true;
                     this.setSize?.(this.computeSize());
                     this.onRemoved = function () {
-                        util.cleanupNode(this);
+                        util.node_cleanup(this);
                     };
                     return r;
                 };

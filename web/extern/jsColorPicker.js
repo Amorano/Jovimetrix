@@ -1,4 +1,7 @@
-import * as util from '../core/util.js';
+// jsColorpicker.js
+
+import * as util_color from '../core/util_color.js';
+import * as util_config from '../core/util_config.js';
 
 (function (global) {
     if (typeof global.ColorPicker === 'undefined') {
@@ -9,11 +12,11 @@ import * as util from '../core/util.js';
     if (typeof window.ColorPicker.docCookies === 'undefined') {
         window.ColorPicker.docCookies = {
             getItem: function (key, def) {
-                const data = util.local_get(key, def);
+                const data = util_config.local_get(key, def);
                 return data;
             },
             setItem: function (key, value, options) {
-                util.local_set(key, value);
+                util_config.local_set(key, value);
             }
         };
     }
@@ -25,7 +28,7 @@ import * as util from '../core/util.js';
                     patch = options.patch,
                     RGB = colors.RND.rgb;
 
-                const AHEX = util.convert_hex(colors);
+                const AHEX = util_color.convert_hex(colors);
                 patch.style.cssText =
                     'color:' + (colors.rgbaMixCustom.luminance > 0.22 ? '#222' : '#ddd') + ';' + // Black...???
                     'background-color: ' + AHEX + ';' +

@@ -42,9 +42,6 @@ uniform int iFrame;
 uniform sampler2D iChannel0;
 uniform sampler2D iChannel1;
 
-uniform float iUser1;
-uniform float iUser2;
-
 #define texture2D texture
 layout(location = 0) out vec4 fragColor;
 """
@@ -177,7 +174,7 @@ class GLSL:
             color_attachments=[self.__ctx.texture((self.__width, self.__height), 3)]
         )
 
-    def __set_uniforms(self, channel0: Image=None, channel1: Image=None, user1:float=None, user2:float=None) -> None:
+    def __set_uniforms(self, channel0: Image=None, channel1: Image=None) -> None:
         if self.__iResolution is not None:
             self.__iResolution.value = (self.__width, self.__height)
 
@@ -205,17 +202,11 @@ class GLSL:
             texture: Image = self.__ctx.texture(channel1.size, components=size, data=channel1.tobytes())
             texture.use(location=1)
 
-        if self.__iUser1 is not None and user1 is not None:
-            self.__iUser1.value = user1
-
-        if self.__iUser2 is not None and user2 is not None:
-            self.__iUser2.value = user2
-
-    def render(self, channel0:Image=None, channel1:Image=None, user1:float=None, user2:float=None) -> None:
+    def render(self, channel0:Image=None, channel1:Image=None) -> None:
         self.__fbo.clear(0.0, 0.0, 0.0)
         self.__fbo.use()
         if not self.__hold:
-            self.__set_uniforms(channel0, channel1, user1, user2)
+            self.__set_uniforms(channel0, channel1)
 
         self.__vao.render()
         self.__frame = Image.frombytes(

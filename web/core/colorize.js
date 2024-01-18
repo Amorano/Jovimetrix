@@ -7,6 +7,8 @@
 import { app } from "/scripts/app.js"
 import { $el } from "/scripts/ui.js"
 import * as util from './util.js'
+import * as util_color from './util_color.js'
+import * as util_config from './util_config.js'
 import { JovimetrixConfigDialog } from "./config.js"
 import "../extern/jsColorPicker.js"
 
@@ -37,33 +39,33 @@ const ext = {
         function setting_make(id, pretty, type, tip, key, value,) {
             const _id = 'jov.' + id;
             const local = localStorage["Comfy.Settings.jov." + id]
-            value = local ? local : util.CONFIG_USER.color[key] ? util.CONFIG_USER.color[key] : value;
-            util.setting_make(_id, pretty, type, tip, value, (val) => {
+            value = local ? local : util_config.CONFIG_USER.color[key] ? util_config.CONFIG_USER.color[key] : value;
+            util_config.setting_make(_id, pretty, type, tip, value, (val) => {
                 var data = { id: id, v: val }
                 util.api_post('/jovimetrix/config', data);
-                util.CONFIG_USER.color[key] = val;
+                util_config.CONFIG_USER.color[key] = val;
             });
         }
 
-        setting_make(util.USER + '.color.titleA', '🇯 🎨 Group Title A ', 'text', 'Alternative title color for separating groups in the color configuration panel', 'titleA', '#302929')
+        setting_make(util_config.USER + '.color.titleA', '🇯 🎨 Group Title A ', 'text', 'Alternative title color for separating groups in the color configuration panel', 'titleA', '#302929')
 
-        setting_make(util.USER + '.color.backA', '🇯 🎨 Group Back A ', 'text', 'Alternative color for separating groups in the color configuration panel', 'backA', '#050303');
+        setting_make(util_config.USER + '.color.backA', '🇯 🎨 Group Back A ', 'text', 'Alternative color for separating groups in the color configuration panel', 'backA', '#050303');
 
-        setting_make(util.USER + '.color.titleB', '🇯 🎨 Group Title B', 'text', 'Alternative title color for separating groups in the color configuration panel', 'titleB', '#293029');
+        setting_make(util_config.USER + '.color.titleB', '🇯 🎨 Group Title B', 'text', 'Alternative title color for separating groups in the color configuration panel', 'titleB', '#293029');
 
-        setting_make(util.USER + '.color.backB', '🇯 🎨 Group Back B', 'text', 'Alternative color for separating groups in the color configuration panel', 'backB', '#030503');
+        setting_make(util_config.USER + '.color.backB', '🇯 🎨 Group Back B', 'text', 'Alternative color for separating groups in the color configuration panel', 'backB', '#030503');
 
-        setting_make(util.USER + '.color.contrast', '🇯 🎨 Auto-Contrast Text', 'boolean', 'Auto-contrast the title text for all nodes for better readability', 'contrast', true);
+        setting_make(util_config.USER + '.color.contrast', '🇯 🎨 Auto-Contrast Text', 'boolean', 'Auto-contrast the title text for all nodes for better readability', 'contrast', true);
 
         // Option for user to contrast text for better readability
         const drawNodeShape = LGraphCanvas.prototype.drawNodeShape;
         LGraphCanvas.prototype.drawNodeShape = function() {
 
-            const contrast = localStorage["Comfy.Settings.jov." + util.USER + '.color.contrast'] || false;
+            const contrast = localStorage["Comfy.Settings.jov." + util_config.USER + '.color.contrast'] || false;
             if (contrast) {
                 var color = this.current_node.color || "#222";
-                this.node_title_color = util.color_contrast(color);
-                LiteGraph.NODE_TEXT_COLOR = util.color_contrast(color);
+                this.node_title_color = util_color.color_contrast(color);
+                LiteGraph.NODE_TEXT_COLOR = util_color.color_contrast(color);
             }
             drawNodeShape.apply(this, arguments);
         };
@@ -88,41 +90,41 @@ const ext = {
                 let api_packet = {}
                 if (parts.length > 2) {
                     const idx = parts[1];
-                    data = util.CONFIG_REGEX[idx];
+                    data = util_config.CONFIG_REGEX[idx];
                     // console.info(part, data, AHEX.value)
                     data[part] = AHEX.value
-                    util.CONFIG_REGEX[idx] = data
+                    util_config.CONFIG_REGEX[idx] = data
                     api_packet = {
-                        id: util.USER + '.color.regex',
-                        v: util.CONFIG_REGEX
+                        id: util_config.USER + '.color.regex',
+                        v: util_config.CONFIG_REGEX
                     }
                 } else {
-                    if (util.CONFIG_THEME[name] === undefined) {
-                        util.CONFIG_THEME[name] = {}
+                    if (util_config.CONFIG_THEME[name] === undefined) {
+                        util_config.CONFIG_THEME[name] = {}
                     }
-                    util.CONFIG_THEME[name][part] = AHEX.value
+                    util_config.CONFIG_THEME[name][part] = AHEX.value
                     api_packet = {
-                        id: util.USER + '.color.theme.' + name,
-                        v: util.CONFIG_THEME[name]
+                        id: util_config.USER + '.color.theme.' + name,
+                        v: util_config.CONFIG_THEME[name]
                     }
                 }
                 util.api_post("/jovimetrix/config", api_packet)
-                if (util.CONFIG_COLOR.overwrite) {
-                    util.node_color_all()
+                if (util_config.CONFIG_COLOR.overwrite) {
+                    util_color.node_color_all()
                 }
             }
         })
 
-        if (util.CONFIG_USER.color.overwrite) {
+        if (util_config.CONFIG_USER.color.overwrite) {
             // console.info("COLORIZED")
-            util.node_color_all()
+            util_color.node_color_all()
         }
     },
     async beforeRegisterNodeDef(nodeType, nodeData) {
         const onNodeCreated = nodeType.prototype.onNodeCreated
         nodeType.prototype.onNodeCreated = function () {
             const result = onNodeCreated ? onNodeCreated.apply(this, arguments) : undefined
-            let colors = util.node_color_get(nodeData);
+            let colors = util_color.node_color_get(nodeData);
 
             if (colors?.title) {
                 this['color'] = colors.title

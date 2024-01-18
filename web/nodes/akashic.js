@@ -7,6 +7,7 @@
 import { app } from "/scripts/app.js"
 import { $el } from "/scripts/ui.js"
 import * as util from '../core/util.js'
+import * as util_dom from '../core/util_dom.js'
 import { JImageWidget } from '../widget/widget_jimage.js'
 import { JStringWidget } from '../widget/widget_jstring.js'
 
@@ -55,7 +56,7 @@ const ext = {
             if (message.text) {
                 for (const txt of message.text) {
                     const w = this.addCustomWidget(
-                        JStringWidget(app, `${_prefix}_${index}`, util.escapeHtml(txt))
+                        JStringWidget(app, `${_prefix}_${index}`, util_dom.escapeHtml(txt))
                     )
                     w.parent = this
                     index++
@@ -78,7 +79,7 @@ const ext = {
                 if (this.widgets[y].canvas) {
                     this.widgets[y].canvas.remove()
                 }
-                util.cleanupNode(this)
+                util.node_cleanup(this)
                 this.widgets[y].onRemoved?.()
             }
         }

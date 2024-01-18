@@ -6,8 +6,9 @@
 
 import { api } from "/scripts/api.js";
 import { app } from "/scripts/app.js";
+import { ComfyWidgets } from "/scripts/widgets.js"
 import * as util from '../core/util.js'
-import * as fun from '../core/fun.js'
+import * as util_fun from '../core/util_fun.js'
 
 const _id = "QUEUE (JOV) 🗃"
 
@@ -18,32 +19,33 @@ const ext = {
             return;
         }
 
-        let output_data;
-        let widget_queue;
-        let widget_current;
-        let widget_index = 1;
-        let widget_count = 0;
-        let widget_label;
+        function update_report(self) {
+            self.widget_report.value = `[${self.data_index} / ${self.data_all.length}] ${self.data_current}`;
+            app.graph.setDirtyCanvas(true);
+        }
 
-        function update_list() {
-            const data = widget_queue.value.split('\n');
-            widget_count = data.length;
-            widget_index = 1;
-            widget_current = data[0];
+        function update_list(self) {
+            const value = self.widget_queue.value.split('\n');
+            self.data_count = value.length;
+            self.data_index = 1;
+            self.data_current = "";
+            update_report(self);
+            util.api_cmd_jovian(self.id, "reset");
         }
 
         const onNodeCreated = nodeType.prototype.onNodeCreated;
         nodeType.prototype.onNodeCreated = async function () {
             const me = onNodeCreated?.apply(this);
             const self = this;
-            widget_queue = this.widgets[0];
-            widget_queue.inputEl.addEventListener('input', function (event) {
-                update_list();
-                const data = {
-                    id: self.id,
-                    cmd: "reset"
-                };
-                util.api_post('/jovimetrix/message', data);
+
+            let output_data;
+            self.data_index = 1;
+            self.data_current = "";
+            self.data_all = [];
+
+            self.widget_queue = this.widgets[0];
+            self.widget_queue.inputEl.addEventListener('input', function (event) {
+                update_list(self);
             });
 
             output_data = this.outputs[0];
@@ -54,13 +56,40 @@ const ext = {
                 if (old_callback) {
                     old_callback(this, arguments);
                 }
-
-                const data = {
-                    id: self.id,
-                    cmd: "reset"
-                };
-                util.api_post('/jovimetrix/message', data);
+                util.api_cmd_jovian(self.id, "reset");
             }
+
+            self.widget_report = ComfyWidgets.STRING(this, 'QUEUE IS EMPTY 🔜', [
+                'STRING', {
+                    multiline: true,
+                },
+            ], app).widget;
+            self.widget_report.inputEl.readOnly = true;
+            self.widget_report.serializeValue = async () => { };
+
+            async function python_queue_ping(event) {
+                if (event.detail.id != self.id) {
+                    return;
+                }
+                self.data_index = event.detail.i;
+                self.data_all  = event.detail.l;
+                self.data_current = event.detail.c;
+                update_report(self);
+            }
+
+            // Add names to list control that collapses. And counter to see where we are in the overall
+            async function python_queue_done(event) {
+                if (event.detail.id != self.id) {
+                    return;
+                }
+                let centerX = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
+                let centerY = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
+                // util_fun.bewm(centerX / 2, centerY / 3);
+                await util.flashBackgroundColor(self.widget_queue.inputEl, 650, 4,  "#995242CC");
+            }
+
+            api.addEventListener("jovi-queue-ping", python_queue_ping);
+            api.addEventListener("jovi-queue-done", python_queue_done);
             return me;
         }
 
@@ -70,7 +99,7 @@ const ext = {
                 if (inputType == "COMBO") {
                     // can link the "same" list -- user breaks it past that, their problem atm.
                     const widget = inputNode.widgets.find(w => w.name === inputSlot.name);
-                    if (this.outputs[0].name != '*' && widget_queue.value != widget.options.values.join('\n')) {
+                    if (this.outputs[0].name != '*' && this.widget_queue.value != widget.options.values.join('\n')) {
                         return false;
                     }
                 }
@@ -96,12 +125,12 @@ const ext = {
                     if (this.outputs[0].name == '*') {
                         this.outputs[0].name = widget.name;
                     }
-                    console.info(widget);
+                    // console.info(widget);
                     if (widget?.origType == "combo" || widget.type == "COMBO") {
                         const values = widget.options.values;
                         // remove all connections that don't match the list?
-                        widget_queue.value = values.join('\n');
-                        update_list();
+                        this.widget_queue.value = values.join('\n');
+                        update_list(this);
                     }
                 } else {
                     this.outputs[0].name = '*';
@@ -110,35 +139,7 @@ const ext = {
             return onConnectionsChange?.apply(this, arguments);
         };
 
-        async function python_queue_list(event) {
-            if (event.detail.id != self.id) {
-                return;
-            }
-            console.info(event.detail.data);
-        }
 
-        async function python_queue_ping(event) {
-            if (event.detail.id != self.id) {
-                return;
-            }
-            // fun.bewm(self.pos[0], self.pos[1]);
-        }
-
-        // Add names to list control that collapses. And counter to see where we are in the overall
-
-        async function python_queue_done(event) {
-            if (event.detail.id != self.id) {
-                return;
-            }
-            let centerX = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
-            let centerY = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
-
-            fun.bewm(centerX / 2, centerY / 3);
-            await util.flashBackgroundColor(widget_queue.inputEl, 650, 4,  "#995242CC");
-        }
-        api.addEventListener("jovi-queue-list", python_queue_list);
-        api.addEventListener("jovi-queue-ping", python_queue_ping);
-        api.addEventListener("jovi-queue-done", python_queue_done);
     }
 }
 app.registerExtension(ext)

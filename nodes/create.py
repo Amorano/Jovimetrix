@@ -13,9 +13,9 @@ from loguru import logger
 import comfy
 from server import PromptServer
 
-from Jovimetrix import JOVBaseNode, JOVImageBaseNode, \
+from Jovimetrix import ComfyAPIMessage, JOVBaseNode, JOVImageBaseNode, \
     ROOT, IT_PIXELS, IT_RGBA, IT_WH, IT_SCALE, IT_ROT, IT_INVERT, \
-    IT_REQUIRED, MIN_IMAGE_SIZE
+    IT_REQUIRED, MIN_IMAGE_SIZE, TimedOutException
 
 from Jovimetrix.sup.lexicon import Lexicon
 
@@ -38,7 +38,7 @@ FONT_NAMES = sorted(FONTS.keys())
 
 DEFAULT_FRAGMENT = """void main() {
     vec4 texColor = texture(iChannel0, iUV);
-    vec4 color = vec4(iUV, iUser1, 1.0);
+    vec4 color = vec4(iUV, abs(sin(iTime)), 1.0);
     fragColor = vec4((texColor.xyz + color.xyz) / 2.0, 1.0);
 }"""
 # =============================================================================
@@ -208,12 +208,12 @@ class GLSLNode(JOVBaseNode):
                 Lexicon.TIME: ("FLOAT", {"default": 0, "step": 0.0001, "min": 0, "precision": 6}),
                 Lexicon.FPS: ("INT", {"default": 0, "step": 1, "min": 0, "max": 1000}),
                 Lexicon.BATCH: ("INT", {"default": 1, "step": 1, "min": 1, "max": 36000}),
-                Lexicon.RESET: ("BOOLEAN", {"default": False}),
                 Lexicon.WAIT: ("BOOLEAN", {"default": False}),
+                Lexicon.RESET: ("BOOLEAN", {"default": False}),
                 Lexicon.WH: ("VEC2", {"default": (cls.WIDTH, cls.HEIGHT,), "step": 1, "min": 1}),
                 Lexicon.FRAGMENT: ("STRING", {"multiline": True, "default": DEFAULT_FRAGMENT, "dynamicPrompts": False}),
-                Lexicon.USER1: ("FLOAT", {"default": 0, "step": 0.0001, "precision": 6}),
-                Lexicon.USER2: ("FLOAT", {"default": 0, "step": 0.0001, "precision": 6}),
+                #Lexicon.USER1: ("FLOAT", {"default": 0, "step": 0.0001, "precision": 6}),
+                #Lexicon.USER2: ("FLOAT", {"default": 0, "step": 0.0001, "precision": 6}),
             },
             "hidden": {
                 "id": "UNIQUE_ID"
@@ -250,9 +250,6 @@ class GLSLNode(JOVBaseNode):
             self.__glsl.height = height
 
         frames = []
-        user1 = kw.get(Lexicon.USER1, None)
-        user2 = kw.get(Lexicon.USER2, None)
-
         if (texture1 := kw.get(Lexicon.PIXEL, None)) is not None:
             texture1 = tensor2pil(texture1)
 
@@ -260,13 +257,30 @@ class GLSLNode(JOVBaseNode):
             texture2 = tensor2pil(texture2)
 
         self.__glsl.hold = kw.get(Lexicon.WAIT, False)
-        if (reset := kw.get(Lexicon.RESET, False)):
+
+        reset = kw.get(Lexicon.RESET, False)
+        # clear the queue of msgs...
+        # better resets? check if reset message
+        try:
+            data = ComfyAPIMessage.poll(id, timeout=0)
+            # logger.debug(data)
+            if (cmd := data.get('cmd', None)) is not None:
+                if cmd == 'reset':
+                    reset = True
+        except TimedOutException as e:
+            pass
+        except Exception as e:
+            logger.error(str(e))
+
+        if reset:
             self.__glsl.reset()
-            PromptServer.instance.send_sync("jovi-glsl-time", {"id": id, "t": 0})
+            # PromptServer.instance.send_sync("jovi-glsl-time", {"id": id, "t": 0})
+
+        self.__glsl.fps = kw.get(Lexicon.FPS, 0)
 
         pbar = comfy.utils.ProgressBar(batch)
         for idx in range(batch):
-            img = self.__glsl.render(texture1, texture2, user1, user2)
+            img = self.__glsl.render(texture1, texture2)
             frames.append(pil2tensor(img))
             pbar.update_absolute(idx)
 

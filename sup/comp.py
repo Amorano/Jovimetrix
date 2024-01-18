@@ -453,6 +453,8 @@ def comp_blend(imageA:Optional[TYPE_IMAGE]=None,
     imageA = cv2pil(imageA)
     imageB = cv2pil(imageB)
     image = blendLayers(imageA, imageB, blendOp.value, np.clip(alpha, 0, 1))
+    # make sure to force the type back to uint8
+
     return pil2cv(image)
 
 # =============================================================================
