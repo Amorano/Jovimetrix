@@ -258,6 +258,7 @@ class IfThenElseNode(JOVBaseNode):
             return (None,)
         return (T if o else F,)
 
+"""
 # HOW TO MAKE COMFY HAVE A MEMORY BETWEEN AUTO-Q?
 class SetGetData:
     DATA = {}
@@ -329,3 +330,4 @@ class GetNode(JOVBaseNode):
         if SetGetData.DATA.get(key, SetGetData.DEFAULT) == SetGetData.DEFAULT:
             SetGetData.DATA[key] = val
         return (SetGetData.DATA[key], )
+"""
