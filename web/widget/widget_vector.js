@@ -1,5 +1,5 @@
 /**
- * File: widget_spinner.js
+ * File: widget_vector.js
  * Project: Jovimetrix
  */
 
@@ -7,15 +7,14 @@ import { app } from "/scripts/app.js"
 import * as util from '../core/util.js'
 import * as util_dom from '../core/util_dom.js'
 
-export const SpinnerWidget = (app, inputName, inputData, initial, desc='') => {
+export const VectorWidget = (app, inputName, options, initial, desc='') => {
+    let isDragging;
     const offset = 4
     const label_width = 56
     const widget_padding = 16
     const widget_padding2 = 2 * widget_padding
     const label_full = widget_padding + label_width
-    let isDragging
-    const values = inputData[1]?.default || initial;
-
+    const values = options[1]?.default || initial;
     let val = {};
     for (let i = 0; i < values.length; i++) {
         val[i] = values[i];
@@ -23,18 +22,18 @@ export const SpinnerWidget = (app, inputName, inputData, initial, desc='') => {
 
     const widget = {
         name: inputName,
-        type: inputData[0],
+        type: options[0],
         y: 0,
         value: val,
-        options: inputData[1]
+        options: options[1]
     }
 
     const precision = widget.options?.precision !== undefined ? widget.options.precision : 0;
-    let step = inputData[0].includes('VEC') ? 0.01 : 1;
+    let step = options[0].includes('VEC') ? 0.01 : 1;
     widget.options.step = widget.options?.step || step;
 
     widget.draw = function(ctx, node, width, Y, height) {
-        if (this.type !== inputData[0] && app.canvas.ds.scale > 0.5) return
+        if (this.type !== options[0] && app.canvas.ds.scale > 0.5) return
 
         ctx.save()
         ctx.beginPath()
@@ -142,13 +141,13 @@ const widgets = {
     async getCustomWidgets(app) {
         return {
             VEC2: (node, inputName, inputData, app) => ({
-                widget: node.addCustomWidget(SpinnerWidget(app, inputName, inputData, [0, 0])),
+                widget: node.addCustomWidget(VectorWidget(app, inputName, inputData, [0, 0])),
             }),
             VEC3: (node, inputName, inputData, app) => ({
-                widget: node.addCustomWidget(SpinnerWidget(app, inputName, inputData, [0, 0, 0])),
+                widget: node.addCustomWidget(VectorWidget(app, inputName, inputData, [0, 0, 0])),
             }),
             VEC4: (node, inputName, inputData, app) => ({
-                widget: node.addCustomWidget(SpinnerWidget(app, inputName, inputData, [0, 0, 0, 1])),
+                widget: node.addCustomWidget(VectorWidget(app, inputName, inputData, [0, 0, 0, 1])),
             })
         }
     },

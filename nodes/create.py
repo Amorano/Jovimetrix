@@ -212,8 +212,7 @@ class GLSLNode(JOVBaseNode):
                 Lexicon.RESET: ("BOOLEAN", {"default": False}),
                 Lexicon.WH: ("VEC2", {"default": (cls.WIDTH, cls.HEIGHT,), "step": 1, "min": 1}),
                 Lexicon.FRAGMENT: ("STRING", {"multiline": True, "default": DEFAULT_FRAGMENT, "dynamicPrompts": False}),
-                #Lexicon.USER1: ("FLOAT", {"default": 0, "step": 0.0001, "precision": 6}),
-                #Lexicon.USER2: ("FLOAT", {"default": 0, "step": 0.0001, "precision": 6}),
+                Lexicon.PARAM: ("STRING", {"default": ""})
             },
             "hidden": {
                 "id": "UNIQUE_ID"

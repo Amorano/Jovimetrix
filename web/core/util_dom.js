@@ -5,6 +5,7 @@
  */
 
 import { app } from "/scripts/app.js"
+import * as util from './util.js'
 
 export function renderTemplate(template, data) {
     for (const key in data) {
@@ -30,7 +31,7 @@ export function foldableToggle(elementId, symbolId) {
 
 export function inner_value_change(widget, value, event = undefined) {
     const type = widget.type.includes("INT") ? Number : parseFloat
-    widget.value = convertArrayToObject(value, Object.keys(value).length, type);
+    widget.value = util.convertArrayToObject(value, Object.keys(value).length, type);
     //console.info(widget.value)
     if (
         widget.options &&

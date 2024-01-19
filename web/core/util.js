@@ -139,9 +139,13 @@ export function widget_hide(node, widget, suffix = '') {
     widget.type = CONVERTED_TYPE + suffix
     widget.serializeValue = () => {
         // Prevent serializing the widget if we have no input linked
-        const { link } = node.inputs.find((i) => i.widget?.name === widget.name)
-        if (link == null) {
-            return undefined
+        try {
+            const { link } = node.inputs.find((i) => i.widget?.name === widget.name)
+            if (link == null || link == undefined) {
+                return undefined
+            }
+        } catch(Exception) {
+
         }
         return widget.origSerializeValue
             ? widget.origSerializeValue()

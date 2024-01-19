@@ -142,7 +142,7 @@ export const bubbles = function() {
 
     const animate = () => {
         //context.clearRect(0, 0, canvas.width, canvas.height);
-        app.graph.setDirtyCanvas(true, true);
+        app.canvas.setDirty(true);
 
         particleArray.forEach((particle) => {
             particle?.move();

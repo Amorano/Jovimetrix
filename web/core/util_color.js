@@ -75,14 +75,14 @@ export function node_color_list(nodes) {
     Object.entries(nodes).forEach((node) => {
         node_color_reset(node, false);
     })
-    app.graph.setDirtyCanvas(true, true);
+    app.canvas.setDirty(true);
 }
 
 export function node_color_all() {
     app.graph._nodes.forEach((node) => {
         this.node_color_reset(node, false);
     })
-    app.graph.setDirtyCanvas(true, true);
+    app.canvas.setDirty(true);
     // console.info("JOVI] all nodes color refreshed")
 }
 

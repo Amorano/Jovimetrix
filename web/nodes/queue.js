@@ -21,7 +21,7 @@ const ext = {
 
         function update_report(self) {
             self.widget_report.value = `[${self.data_index} / ${self.data_all.length}] ${self.data_current}`;
-            app.graph.setDirtyCanvas(true);
+            app.canvas.setDirty(true);
         }
 
         function update_list(self) {

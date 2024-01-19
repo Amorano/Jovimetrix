@@ -97,6 +97,7 @@ class Lexicon:
     OPTIMIZE = 'OPTIMIZE'
     ORIENT = '🧭'
     PAD = 'PAD'
+    PARAM = 'PARAM'
     PASS_IN = '📥'
     PASS_OUT = '📤'
     PERSPECTIVE = 'POINT'

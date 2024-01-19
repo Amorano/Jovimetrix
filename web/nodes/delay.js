@@ -60,7 +60,7 @@ const ext = {
                         console.error(e);
                     } else {
                         self.total_timeout += timeout;
-                        app.graph.setDirtyCanvas(true);
+                        app.canvas.setDirty(true);
                     }
                 }
             }
