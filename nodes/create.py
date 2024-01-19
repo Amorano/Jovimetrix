@@ -41,6 +41,9 @@ DEFAULT_FRAGMENT = """void main() {
     vec4 color = vec4(iUV, abs(sin(iTime)), 1.0);
     fragColor = vec4((texColor.xyz + color.xyz) / 2.0, 1.0);
 }"""
+
+DEFAULT_FRAGMENT = """uniform vec3 alex; // 1.0"""
+
 # =============================================================================
 
 class EnumShapes(Enum):
@@ -232,10 +235,11 @@ class GLSLNode(JOVBaseNode):
     def run(self, id, **kw) -> list[torch.Tensor]:
         batch = kw.get(Lexicon.BATCH, 1)
         fragment = kw.get(Lexicon.FRAGMENT, DEFAULT_FRAGMENT)
+        param = kw.get(Lexicon.PARAM, {})
         width, height = parse_tuple(Lexicon.WH, kw, default=(self.WIDTH, self.HEIGHT,), clip_min=1)[0]
         if self.__fragment != fragment or self.__glsl is None:
             try:
-                self.__glsl = GLSL(fragment, width, height)
+                self.__glsl = GLSL(fragment, width, height, param)
             except CompileException as e:
                 PromptServer.instance.send_sync("jovi-glsl-error", {"id": id, "e": str(e)})
                 logger.error(e)
@@ -276,10 +280,9 @@ class GLSLNode(JOVBaseNode):
             # PromptServer.instance.send_sync("jovi-glsl-time", {"id": id, "t": 0})
 
         self.__glsl.fps = kw.get(Lexicon.FPS, 0)
-
         pbar = comfy.utils.ProgressBar(batch)
         for idx in range(batch):
-            img = self.__glsl.render(texture1, texture2)
+            img = self.__glsl.render(texture1, texture2, param)
             frames.append(pil2tensor(img))
             pbar.update_absolute(idx)
 

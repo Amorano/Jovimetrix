@@ -36,6 +36,8 @@ const ext = {
     },
     async setup(app) {
 
+        const original_color = LiteGraph.NODE_TEXT_COLOR;
+
         function setting_make(id, pretty, type, tip, key, value,) {
             const _id = 'jov.' + id;
             const local = localStorage["Comfy.Settings.jov." + id]
@@ -60,12 +62,15 @@ const ext = {
         // Option for user to contrast text for better readability
         const drawNodeShape = LGraphCanvas.prototype.drawNodeShape;
         LGraphCanvas.prototype.drawNodeShape = function() {
-
             const contrast = localStorage["Comfy.Settings.jov." + util_config.USER + '.color.contrast'] || false;
             if (contrast) {
-                var color = this.current_node.color || "#222";
+                var color = this.current_node.color || LiteGraph.NODE_TITLE_COLOR;
+                var bgcolor = this.current_node.bgcolor || LiteGraph.NODE_DEFAULT_BGCOLOR;
                 this.node_title_color = util_color.color_contrast(color);
-                LiteGraph.NODE_TEXT_COLOR = util_color.color_contrast(color);
+                LiteGraph.NODE_TEXT_COLOR = util_color.color_contrast(bgcolor);
+            } else {
+                this.node_title_color = original_color
+                LiteGraph.NODE_TEXT_COLOR = original_color;
             }
             drawNodeShape.apply(this, arguments);
         };

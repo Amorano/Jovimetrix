@@ -53,7 +53,7 @@ class CompileException(Exception): pass
 # =============================================================================
 
 class GLSL:
-    def __init__(self, fragment:str, width:int=128, height:int=128) -> None:
+    def __init__(self, fragment:str, width:int=128, height:int=128, param:dict=None) -> None:
         self.__fragment = FRAGMENT_HEADER + fragment
         self.__ctx = moderngl.create_standalone_context()
 
@@ -83,8 +83,9 @@ class GLSL:
             pass
         self.__iChannel1 = self.__prog.get('iChannel1', None)
 
-        self.__iUser1 = self.__prog.get('iUser1', None)
-        self.__iUser2 = self.__prog.get('iUser2', None)
+        self.__param = {}
+        for k in (param or {}).keys():
+            self.__param[k] = self.__prog.get(k, None)
 
         vertices = np.array([
             -1.0, -1.0,
@@ -202,11 +203,14 @@ class GLSL:
             texture: Image = self.__ctx.texture(channel1.size, components=size, data=channel1.tobytes())
             texture.use(location=1)
 
-    def render(self, channel0:Image=None, channel1:Image=None) -> None:
+    def render(self, channel0:Image=None, channel1:Image=None, param:dict=None) -> None:
         self.__fbo.clear(0.0, 0.0, 0.0)
         self.__fbo.use()
         if not self.__hold:
             self.__set_uniforms(channel0, channel1)
+            # logger.debug(param)
+            for k, v in (param or {}).items():
+                self.__param[k].value = v
 
         self.__vao.render()
         self.__frame = Image.frombytes(

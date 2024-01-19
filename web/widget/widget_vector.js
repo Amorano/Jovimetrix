@@ -15,16 +15,12 @@ export const VectorWidget = (app, inputName, options, initial, desc='') => {
     const widget_padding2 = 2 * widget_padding
     const label_full = widget_padding + label_width
     const values = options[1]?.default || initial;
-    let val = {};
-    for (let i = 0; i < values.length; i++) {
-        val[i] = values[i];
-    }
 
     const widget = {
         name: inputName,
         type: options[0],
         y: 0,
-        value: val,
+        value: values,
         options: options[1]
     }
 
@@ -131,6 +127,11 @@ export const VectorWidget = (app, inputName, options, initial, desc='') => {
     widget.computeSize = function (width) {
         return [width, LiteGraph.NODE_WIDGET_HEIGHT]
     }
+
+    widget.serializeValue = async () => {
+        return widget.value.reduce((acc, tuple, index) => ({ ...acc, [index]: tuple }), {});
+    }
+
 
     widget.desc = desc
     return widget

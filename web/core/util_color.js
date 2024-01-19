@@ -21,7 +21,7 @@ export function node_color_get(node) {
         const regex = new RegExp(colors.regex, 'i');
         const found = find_me.match(regex);
         if (found !== null && found[0].length > 0) {
-            console.debug("node_color_get", colors, found, node)
+            // console.debug("node_color_get", colors, found, node)
             colors.jov_set_color = 1;
             colors.jov_set_bgcolor = 1;
             return colors;
@@ -102,7 +102,6 @@ export function hexToRgb(hex) {
   const r = (bigint >> 16) & 255;
   const g = (bigint >> 8) & 255;
   const b = bigint & 255;
-
   return [r, g, b];
 }
 
@@ -127,24 +126,8 @@ export function fade_lerp_color(colorStart, colorEnd, lerp) {
 }
 
 export function color_contrast(hexColor) {
-    // Remove the # symbol if it exists
-    if (hexColor.startsWith("#")) {
-        hexColor = hexColor.slice(1);
-    }
-
-    // Expand short hex code to full hex code
-    if (hexColor.length === 3) {
-        hexColor = hexColor.split('').map(char => char + char).join('');
-    }
-
-    // Convert the hex values to decimal (base 10) integers
-    const r = parseInt(hexColor.slice(0, 2), 16) / 255;
-    const g = parseInt(hexColor.slice(2, 4), 16) / 255;
-    const b = parseInt(hexColor.slice(4, 6), 16) / 255;
-
-    // Calculate the relative luminance
-    const L = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-
-    // Use the contrast ratio to determine the text color
-    return L > 0.210 ? "#000000" : "#999999";
+    const rgb = hexToRgb(hexColor);
+    const L = 0.2126 * rgb[0] / 255. + 0.7152 * rgb[1] / 255. + 0.0722 * rgb[2] / 255.;
+    console.info(L)
+    return L > 0.790 ? "#000" : "#CCC";
 }

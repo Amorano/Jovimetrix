@@ -43,7 +43,7 @@ const ext = {
         nodeType.prototype.onNodeCreated = function () {
             const me = onNodeCreated?.apply(this)
             let combo_current = "NONE";
-            console.debug("jovimetrix.node.convert.onNodeCreated", this)
+            // console.debug("jovimetrix.node.convert.onNodeCreated", this)
             let combo = this.widgets[0]
             combo.callback = () => {
                 if (combo_current != combo.value)  {
@@ -67,12 +67,12 @@ const ext = {
             setTimeout(() => { combo.callback(); }, 15);
 
             this.onConnectionsChange = function(slotType, slot, isChangeConnect, link_info, output) {
-                if (slotType === util.SlotType.Input && isChangeConnect === util.ChangeType.Disconnect) {
+                if (slotType === util.TypeSlot.Input && isChangeConnect === util.TypeSlotEvent.Disconnect) {
                     this.inputs[slot].type = '*';
                     this.inputs[slot].name = '*';
                 }
 
-                if (link_info && slotType === util.SlotType.Input && isChangeConnect === util.ChangeType.Connect) {
+                if (link_info && slotType === util.TypeSlot.Input && isChangeConnect === util.TypeSlotEvent.Connect) {
                     const fromNode = this.graph._nodes.find((otherNode) => otherNode.id == link_info.origin_id);
                     const type = fromNode.outputs[link_info.origin_slot].type;
                     this.inputs[0].type = type;
