@@ -87,7 +87,7 @@ JOV_CONFIG = {}
 JOV_WEB = ROOT / 'web'
 JOV_DEFAULT = JOV_WEB / 'default.json'
 JOV_CONFIG_FILE = JOV_WEB / 'config.json'
-JOV_GLSL = ROOT / 'glsl'
+JOV_GLSL = ROOT / 'res' / 'glsl'
 
 JOV_LOG_LEVEL = os.getenv("JOV_LOG_LEVEL", "WARNING")
 logger.configure(handlers=[{"sink": sys.stdout, "level": JOV_LOG_LEVEL}])
@@ -321,15 +321,15 @@ IT_WH = {"optional": {
 }}
 
 IT_TRANS = {"optional": {
-    Lexicon.OFFSET: ("VEC2", {"default": (0., 0.,), "min": -1, "max": 1, "step": 0.005, "precision": 4, "label": [Lexicon.X, Lexicon.Y]})
+    Lexicon.OFFSET: ("VEC2", {"default": (0., 0.,), "min": -1, "max": 1, "step": 0.01, "precision": 4, "round": 0.00001, "label": [Lexicon.X, Lexicon.Y]})
 }}
 
 IT_ROT = {"optional": {
-    Lexicon.ANGLE: ("FLOAT", {"default": 0, "min": -180, "max": 180, "step": 0.005, "precision": 4}),
+    Lexicon.ANGLE: ("FLOAT", {"default": 0, "min": -180, "max": 180, "step": 0.01, "precision": 4}),
 }}
 
 IT_SCALE = {"optional": {
-    Lexicon.SIZE: ("VEC2", {"default": (1., 1.), "step": 0.005, "precision": 4, "label": [Lexicon.X, Lexicon.Y]})
+    Lexicon.SIZE: ("VEC2", {"default": (1., 1.), "step": 0.01, "precision": 4, "round": 0.00001, "label": [Lexicon.X, Lexicon.Y]})
 }}
 
 IT_FLIP = {"optional": {
@@ -337,7 +337,7 @@ IT_FLIP = {"optional": {
 }}
 
 IT_INVERT = {"optional": {
-    Lexicon.INVERT: ("FLOAT", {"default": 0, "min": 0, "max": 1, "step": 0.005, "precision": 4})
+    Lexicon.INVERT: ("FLOAT", {"default": 0, "min": 0, "max": 1, "step": 0.01, "round": 0.00001, "precision": 4})
 }}
 
 IT_AB = {"optional": {
@@ -346,15 +346,15 @@ IT_AB = {"optional": {
 }}
 
 IT_XY = { "optional": {
-    Lexicon.XY: ("VEC2", {"default": (0, 0), "step": 0.005, "precision": 4, "label": [Lexicon.X, Lexicon.Y]})
+    Lexicon.XY: ("VEC2", {"default": (0, 0), "step": 0.01, "precision": 4, "round": 0.00001, "label": [Lexicon.X, Lexicon.Y]})
 }}
 
 IT_XYZ = {"optional": {
-    Lexicon.XYZ: ("VEC3", {"default": (0, 0, 0), "step": 0.01, "precision": 4, "label": [Lexicon.X, Lexicon.Y, Lexicon.Z]})
+    Lexicon.XYZ: ("VEC3", {"default": (0, 0, 0), "step": 0.01, "precision": 4, "round": 0.00001, "label": [Lexicon.X, Lexicon.Y, Lexicon.Z]})
 }}
 
 IT_XYZW = {"optional": {
-    Lexicon.XYZW: ("VEC4", {"default": (0, 0, 0, 1), "step": 0.005, "precision": 4, "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W]})
+    Lexicon.XYZW: ("VEC4", {"default": (0, 0, 0, 1), "step": 0.01, "precision": 4, "round": 0.00001, "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W]})
 }}
 
 IT_RGB = {"optional": {
@@ -377,36 +377,36 @@ IT_RGBA_IMAGE = { "optional": {
 }}
 
 IT_HSV = { "optional": {
-    Lexicon.HSV: ("VEC3",{"default": (0, 1, 1), "min": 0, "max": 1, "step": 0.005, "precision": 4, "label": [Lexicon.H, Lexicon.S, Lexicon.V]})
+    Lexicon.HSV: ("VEC3",{"default": (0, 1, 1), "min": 0, "max": 1, "step": 0.01, "precision": 4, "round": 0.00001, "label": [Lexicon.H, Lexicon.S, Lexicon.V]})
 }}
 
 IT_GAMMA = {"optional": {
-    Lexicon.GAMMA: ("FLOAT", {"default": 1, "min": 0.00001, "max": 1, "step": 0.005, "precision": 4})
+    Lexicon.GAMMA: ("FLOAT", {"default": 1, "min": 0.00001, "max": 1, "step": 0.01, "precision": 4, "round": 0.00001})
 }}
 
 IT_CONTRAST = {"optional": {
-    Lexicon.CONTRAST: ("FLOAT", {"default": 0, "min": 0, "max": 1, "step": 0.005, "precision": 4})
+    Lexicon.CONTRAST: ("FLOAT", {"default": 0, "min": 0, "max": 1, "step": 0.01, "precision": 4, "round": 0.00001})
 }}
 
 IT_BBOX = {"optional": {
-    Lexicon.BBOX: ("VEC4", {"default": (0, 0, 1, 1), "min": 0, "max": 1, "step": 0.005, "precision": 4, "label": [Lexicon.TOP, Lexicon.LEFT, Lexicon.BOTTOM, Lexicon.RIGHT]})
+    Lexicon.BBOX: ("VEC4", {"default": (0, 0, 1, 1), "min": 0, "max": 1, "step": 0.01, "precision": 4, "round": 0.00001, "label": [Lexicon.TOP, Lexicon.LEFT, Lexicon.BOTTOM, Lexicon.RIGHT]})
 }}
 
 IT_BBOX_FULL = {"optional": {
-    Lexicon.TLTR: ("VEC4", {"default": (0, 0, 1, 0), "min": 0, "max": 1, "step": 0.005, "precision": 4, "label": [Lexicon.TOP, Lexicon.LEFT, Lexicon.TOP, Lexicon.RIGHT]}),
-    Lexicon.BLBR: ("VEC4", {"default": (0, 1, 1, 1), "min": 0, "max": 1, "step": 0.005, "precision": 4, "label": [Lexicon.BOTTOM, Lexicon.LEFT, Lexicon.BOTTOM, Lexicon.RIGHT]})
+    Lexicon.TLTR: ("VEC4", {"default": (0, 0, 1, 0), "min": 0, "max": 1, "step": 0.01, "precision": 4, "round": 0.00001, "label": [Lexicon.TOP, Lexicon.LEFT, Lexicon.TOP, Lexicon.RIGHT]}),
+    Lexicon.BLBR: ("VEC4", {"default": (0, 1, 1, 1), "min": 0, "max": 1, "step": 0.01, "precision": 4, "round": 0.00001, "label": [Lexicon.BOTTOM, Lexicon.LEFT, Lexicon.BOTTOM, Lexicon.RIGHT]})
 }}
 
 IT_LOHI = {"optional": {
-    Lexicon.LOHI: ("VEC2", {"default": (0, 1), "min": 0, "max": 1, "step": 0.005, "precision": 4, "label": [Lexicon.LO, Lexicon.HI]})
+    Lexicon.LOHI: ("VEC2", {"default": (0, 1), "min": 0, "max": 1, "step": 0.01, "precision": 4, "round": 0.00001, "label": [Lexicon.LO, Lexicon.HI]})
 }}
 
 IT_LMH = {"optional": {
-    Lexicon.LMH: ("VEC3", {"default": (0, 0.5, 1), "min": 0, "max": 1, "step": 0.01, "precision": 4, "label": [Lexicon.LO, Lexicon.MID, Lexicon.HI]})
+    Lexicon.LMH: ("VEC3", {"default": (0, 0.5, 1), "min": 0, "max": 1, "step": 0.01, "precision": 4, "round": 0.00001, "label": [Lexicon.LO, Lexicon.MID, Lexicon.HI]})
 }}
 
 IT_TIME = {"optional": {
-    Lexicon.TIME: ("FLOAT", {"default": 0, "min": 0, "step": 0.000001, "precision": 6})
+    Lexicon.TIME: ("FLOAT", {"default": 0, "min": 0, "step": 0.0001, "precision": 6, "round": 0.0000001})
 }}
 
 # =============================================================================
@@ -480,7 +480,7 @@ class Session(metaclass=Singleton):
         Session.CLASS_MAPPINGS = {x[0] : x[1] for x in sorted(Session.CLASS_MAPPINGS.items(),
                                                               key=lambda item: getattr(item[1], 'SORT', 0))}
         # now sort the categories...
-        for c in ["CREATE", "ADJUST", "COMPOSE",
+        for c in ["CREATE", "GLSL", "ADJUST", "COMPOSE",
                   "ANIMATE", "FLOW", "CALC", "DEVICE", "AUDIO",
                   "UTILITY", "WIP ☣️💣"]:
 

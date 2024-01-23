@@ -30,7 +30,11 @@ void main() {
 
 FRAGMENT_HEADER = """
 #version 330
+#ifdef GL_ES
+precision mediump float;
+#else
 precision highp float;
+#endif
 
 in vec2 iUV;
 uniform vec2 iResolution;
@@ -41,10 +45,13 @@ uniform int iFrame;
 
 uniform sampler2D iChannel0;
 uniform sampler2D iChannel1;
+uniform sampler2D iChannel2;
 
-#define texture2D texture
+//#define texture2D texture
 layout(location = 0) out vec4 fragColor;
 """
+
+MIN_IMAGE_SIZE = 128
 
 # =============================================================================
 
@@ -53,8 +60,20 @@ class CompileException(Exception): pass
 # =============================================================================
 
 class GLSL:
+    @classmethod
+    def instant(cls, fpath: str, texture1:Image=None, param:dict=None) -> Image:
+        width, height = MIN_IMAGE_SIZE, MIN_IMAGE_SIZE
+        if texture1 is not None:
+            width, height = texture1.size
+
+        with open(fpath, 'r') as f:
+            program = f.read()
+
+        # fire and forget
+        return GLSL(program, width, height, param=param).render(texture1)
+
     def __init__(self, fragment:str, width:int=128, height:int=128, param:dict=None) -> None:
-        self.__fragment = FRAGMENT_HEADER + fragment
+        self.__fragment: str = FRAGMENT_HEADER + fragment
         self.__ctx = moderngl.create_standalone_context()
 
         try:
@@ -65,11 +84,11 @@ class GLSL:
         except Exception as e:
             raise CompileException(e)
 
-        self.__iResolution = self.__prog.get('iResolution', None)
-        self.__iTime = self.__prog.get('iTime', None)
-        self.__iTimeDelta = self.__prog.get('iTimeDelta', None)
-        self.__iFrameRate = self.__prog.get('iFrameRate', None)
-        self.__iFrame = self.__prog.get('iFrame', None)
+        self.__iResolution: tuple[int, int] = self.__prog.get('iResolution', None)
+        self.__iTime: float = self.__prog.get('iTime', None)
+        self.__iTimeDelta: float = self.__prog.get('iTimeDelta', None)
+        self.__iFrameRate: float = self.__prog.get('iFrameRate', None)
+        self.__iFrame: int = self.__prog.get('iFrame', None)
 
         try:
             self.__prog['iChannel0'].value = 0
@@ -77,15 +96,13 @@ class GLSL:
             pass
         self.__iChannel0 = self.__prog.get('iChannel0', None)
 
-        try:
-            self.__prog['iChannel1'].value = 0
-        except:
-            pass
-        self.__iChannel1 = self.__prog.get('iChannel1', None)
-
         self.__param = {}
-        for k in (param or {}).keys():
+        for k, v in (param or {}).items():
             self.__param[k] = self.__prog.get(k, None)
+            if self.__param[k] is not None:
+                if isinstance(v, dict):
+                    v = [v[str(k)] for k in range(len(v))]
+                self.__param[k].value = v
 
         vertices = np.array([
             -1.0, -1.0,
@@ -175,7 +192,7 @@ class GLSL:
             color_attachments=[self.__ctx.texture((self.__width, self.__height), 3)]
         )
 
-    def __set_uniforms(self, channel0: Image=None, channel1: Image=None) -> None:
+    def __set_uniforms(self, channel0: Image=None) -> None:
         if self.__iResolution is not None:
             self.__iResolution.value = (self.__width, self.__height)
 
@@ -197,20 +214,18 @@ class GLSL:
             texture: Image = self.__ctx.texture(channel0.size, components=size, data=channel0.tobytes())
             texture.use(location=0)
 
-        if self.__iChannel1 is not None and channel1 is not None:
-            if (size := len(channel1.mode)) == 4:
-                channel1 = channel1.convert("RGB")
-            texture: Image = self.__ctx.texture(channel1.size, components=size, data=channel1.tobytes())
-            texture.use(location=1)
-
-    def render(self, channel0:Image=None, channel1:Image=None, param:dict=None) -> None:
+    def render(self, channel0:Image=None, param:dict=None) -> Image:
         self.__fbo.clear(0.0, 0.0, 0.0)
         self.__fbo.use()
         if not self.__hold:
-            self.__set_uniforms(channel0, channel1)
-            # logger.debug(param)
+            self.__set_uniforms(channel0)
+            logger.debug(self.__param)
+            logger.debug(param)
             for k, v in (param or {}).items():
-                self.__param[k].value = v
+                try:
+                    self.__param[k].value = v
+                except KeyError as _:
+                    pass
 
         self.__vao.render()
         self.__frame = Image.frombytes(
@@ -232,9 +247,7 @@ class GLSL:
 # === TESTING ===
 # =============================================================================
 
-if __name__ == "__main__":
-    fragment = r"C:\dev\ComfyUI\ComfyUI\custom_nodes\Jovimetrix\glsl\gradient.glsl"
-    glsl = GLSL(fragment, 256, 256)
+def old():
     glsl.fps = 60
     images = [glsl.render() for _ in range(120)]
     root = os.path.dirname(__file__)
@@ -242,3 +255,15 @@ if __name__ == "__main__":
     for i, x in enumerate(images):
         x.save( root + f"/../_res/tst/glsl-{i}.gif")
     print(Image.open(root + f"/../_res/tst/glsl.gif").n_frames)
+
+if __name__ == "__main__":
+    root = os.path.dirname(__file__)
+    fragment = fr"{root}\..\res\glsl\color-grayscale.glsl"
+    param = {
+        "conversion" : (0.299, 0.587, 0.114)
+    }
+    texture1 = Image.open(root + f"/../res/img/color-a.png")
+    glsl = GLSL.instant(fragment, texture1=texture1, param=param)
+    glsl.save(fr"{root}\..\_res\tst\glsl-color-grayscale.png")
+
+

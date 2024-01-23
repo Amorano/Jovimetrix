@@ -139,11 +139,9 @@ const ext = {
             }
             if (colors?.jov_set_color) {
                 delete colors.jov_set_color
-                this['jov_set_color'] = 1;
             }
             if (colors?.jov_set_bgcolor) {
                 delete colors.jov_set_bgcolor
-                this['jov_set_bgcolor'] = 1;
             }
             if (result) {
                 result.serialize_widgets = true

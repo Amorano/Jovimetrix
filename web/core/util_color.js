@@ -21,9 +21,6 @@ export function node_color_get(node) {
         const regex = new RegExp(colors.regex, 'i');
         const found = find_me.match(regex);
         if (found !== null && found[0].length > 0) {
-            // console.debug("node_color_get", colors, found, node)
-            colors.jov_set_color = 1;
-            colors.jov_set_bgcolor = 1;
             return colors;
         }
     }
@@ -45,15 +42,6 @@ export function node_color_get(node) {
             const last = k.lastIndexOf('/')
             k = last !== -1 ? k.substring(0, last) : ''
         }
-    }
-    // if we made it here, we could have "temp" colors. reset.
-    if (node?.jov_set_color == 1)
-    {
-        node.color = ""
-    }
-    if (node?.jov_set_bgcolor == 1)
-    {
-        node.bgcolor = ""
     }
     return null;
 }
@@ -128,6 +116,6 @@ export function fade_lerp_color(colorStart, colorEnd, lerp) {
 export function color_contrast(hexColor) {
     const rgb = hexToRgb(hexColor);
     const L = 0.2126 * rgb[0] / 255. + 0.7152 * rgb[1] / 255. + 0.0722 * rgb[2] / 255.;
-    console.info(L)
+    // console.info(L)
     return L > 0.790 ? "#000" : "#CCC";
 }

@@ -129,9 +129,12 @@ export const VectorWidget = (app, inputName, options, initial, desc='') => {
     }
 
     widget.serializeValue = async () => {
+        if (typeof widget.value === 'object' && widget.value !== null && !Array.isArray(widget.value)) {
+            // Check if widget.value is a dictionary
+            return widget.value;
+        }
         return widget.value.reduce((acc, tuple, index) => ({ ...acc, [index]: tuple }), {});
     }
-
 
     widget.desc = desc
     return widget
