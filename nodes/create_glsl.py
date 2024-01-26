@@ -9,7 +9,7 @@ from loguru import logger
 import comfy
 from server import PromptServer
 
-from Jovimetrix import JOV_GLSL, ComfyAPIMessage, JOVBaseNode, \
+from Jovimetrix import IT_WH, JOV_GLSL, ComfyAPIMessage, JOVBaseNode, \
     ROOT, IT_PIXELS, IT_REQUIRED, MIN_IMAGE_SIZE, TimedOutException
 
 from Jovimetrix.sup.lexicon import Lexicon
@@ -25,7 +25,11 @@ DEFAULT_FRAGMENT = """void main() {
     fragColor = vec4((texColor.xyz + color.xyz) / 2.0, 1.0);
 }"""
 
-DEFAULT_FRAGMENT = """uniform vec3 alex; // 1.0"""
+DEFAULT_FRAGMENT = """void main() {
+    vec4 texColor = texture(iChannel0, iUV);
+    vec4 color = vec4(iUV, abs(sin(iTime)), 1.0);
+    fragColor = vec4((texColor.xyz + color.xyz) / 2.0, 1.0);
+}"""
 
 # =============================================================================
 
@@ -114,7 +118,7 @@ class GLSLNode(JOVBaseNode):
         self.__glsl.fps = kw.get(Lexicon.FPS, 0)
         pbar = comfy.utils.ProgressBar(batch)
         for idx in range(batch):
-            img = self.__glsl.render(texture1, texture2, param)
+            img = self.__glsl.render(texture1, param)
             frames.append(pil2tensor(img))
             pbar.update_absolute(idx)
 
@@ -134,21 +138,18 @@ class GLSLBaseNode(JOVBaseNode):
     def INPUT_TYPES(cls) -> dict:
         return deep_merge_dict(IT_REQUIRED, IT_PIXELS)
 
-    def run(self, param:dict=None, width:int=None, height:int=None, **kw) -> list[torch.Tensor]:
+    def run(self, param:dict=None, **kw) -> list[torch.Tensor]:
         if (texture1 := kw.get(Lexicon.PIXEL, None)) is not None:
             texture1 = tensor2pil(texture1)
-            width, height = texture1.size
 
-        if width is None:
-            width = MIN_IMAGE_SIZE
-        if height is None:
-            height = MIN_IMAGE_SIZE
-
-        img = GLSL.instant(str(self.FRAGMENT), texture1=texture1, param=param)
+        wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)[0]
+        width, height = wihi
+        img = GLSL.instant(str(self.FRAGMENT), texture1=texture1, width=width, height=height, param=param)
         return (pil2tensor(img),)
 
 class GLSLGrayscale(GLSLBaseNode):
-    NAME = "GRAYSCALE (JOV)"
+    NAME = "GRAYSCALE GLSL (JOV)"
+    CATEGORY = "JOVIMETRIX GLSL/COLOR"
     FRAGMENT = JOV_GLSL / "color-grayscale.glsl"
     DEFAULT = (0.299, 0.587, 0.114)
 
@@ -165,18 +166,52 @@ class GLSLGrayscale(GLSLBaseNode):
         param = {"conversion": rgb}
         return super().run(param, **kw)
 
+class GLSLNoise1D(GLSLBaseNode):
+    NAME = "NOISE 1D GLSL (JOV)"
+    CATEGORY = "JOVIMETRIX GLSL/NOISE"
+    FRAGMENT = JOV_GLSL / "noise-1D.glsl"
+
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        e = {"optional": {
+            Lexicon.VALUE: ("INT", {"default": 0, "step": 1}),
+        }}
+        return deep_merge_dict(IT_REQUIRED, e, IT_WH)
+
+    def run(self, **kw) -> list[torch.Tensor]:
+        seed = kw.pop(Lexicon.VALUE, 0)
+        param = {"seed": seed}
+        return super().run(param, **kw)
+
+class GLSLNoise2DSimplex(GLSLBaseNode):
+    NAME = "NOISE 2D SIMPLEX GLSL (JOV)"
+    CATEGORY = "JOVIMETRIX GLSL/NOISE"
+    FRAGMENT = JOV_GLSL / "noise-2D-simplex.glsl"
+
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        e = {"optional": {
+            Lexicon.VALUE: ("INT", {"default": 0, "step": 1}),
+        }}
+        return deep_merge_dict(IT_REQUIRED, e, IT_WH)
+
+    def run(self, **kw) -> list[torch.Tensor]:
+        seed = kw.pop(Lexicon.VALUE, 0)
+        param = {"seed": seed}
+        return super().run(param, **kw)
+
 class GLSLPolygon(GLSLBaseNode):
-    NAME = "POLYGON (JOV)"
+    NAME = "POLYGON GLSL (JOV)"
+    CATEGORY = "JOVIMETRIX GLSL/CREATE"
     FRAGMENT = JOV_GLSL / "shape-polygon.glsl"
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = super().INPUT_TYPES()
         e = {"optional": {
             Lexicon.VALUE: ("INT", {"default": 3, "step": 1, "min": 3}),
             Lexicon.RADIUS: ("FLOAT", {"default": 1, "min": 0.01, "max": 4, "step": 0.01}),
         }}
-        return deep_merge_dict(d, e)
+        return deep_merge_dict(IT_REQUIRED, e, IT_WH)
 
     def run(self, **kw) -> list[torch.Tensor]:
         sides = kw.pop(Lexicon.VALUE, 3)
@@ -185,7 +220,8 @@ class GLSLPolygon(GLSLBaseNode):
         return super().run(param, **kw)
 
 class GLSLTransRotate(GLSLBaseNode):
-    NAME = "TRANS ROTATE (JOV)"
+    NAME = "ROTATE GLSL (JOV)"
+    CATEGORY = "JOVIMETRIX GLSL/ADJUST"
     FRAGMENT = JOV_GLSL / "trans-rotate.glsl"
 
     @classmethod
@@ -200,5 +236,25 @@ class GLSLTransRotate(GLSLBaseNode):
     def run(self, **kw) -> list[torch.Tensor]:
         angle = kw.pop(Lexicon.ANGLE, 0)
         center = parse_tuple(Lexicon.PIVOT, kw, typ=EnumTupleType.FLOAT, default=(0.5, 0.5,), clip_min=0, clip_max=1)[0]
-        param = {"angle": angle, "center": center}
+        param = {"angle": -angle, "center": center}
+        return super().run(param, **kw)
+
+class GLSLUtilTiler(GLSLBaseNode):
+    NAME = "TILER GLSL (JOV)"
+    CATEGORY = "JOVIMETRIX GLSL/UTIL"
+    FRAGMENT = JOV_GLSL / "util-tiler.glsl"
+
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        d = super().INPUT_TYPES()
+        e = {"optional": {
+            "uTime": ("FLOAT", {"default": 0, "step": 0.01}),
+            "uTile": ("VEC2", {"default": (1., 1., ), "min": 1., "step": 0.01, "precision": 4, "label": [Lexicon.X, Lexicon.Y]}),
+        }}
+        return deep_merge_dict(d, e)
+
+    def run(self, **kw) -> list[torch.Tensor]:
+        uTime = kw.pop("uTime", 0.)
+        uTile = parse_tuple("uTile", kw, typ=EnumTupleType.FLOAT, default=(1., 1.,), clip_min=1)[0]
+        param = {"uTime": uTime, "uTile": uTile}
         return super().run(param, **kw)

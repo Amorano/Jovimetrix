@@ -21,9 +21,9 @@ const ext = {
         const onNodeCreated = nodeType.prototype.onNodeCreated;
         nodeType.prototype.onNodeCreated = async function () {
             const me = onNodeCreated?.apply(this);
+            const self = this;
             const widget_timeout = this.widgets[0];
             const widget_wait = this.widgets[1];
-            const self = this;
             this.total_timeout = 0;
 
             async function python_delay_user(event) {

@@ -61,8 +61,9 @@ class CompileException(Exception): pass
 
 class GLSL:
     @classmethod
-    def instant(cls, fpath: str, texture1:Image=None, param:dict=None) -> Image:
-        width, height = MIN_IMAGE_SIZE, MIN_IMAGE_SIZE
+    def instant(cls, fpath: str, texture1:Image=None, width:int=None, height:int=None, param:dict=None) -> Image:
+        width = width or MIN_IMAGE_SIZE
+        height = height or MIN_IMAGE_SIZE
         if texture1 is not None:
             width, height = texture1.size
 
@@ -219,8 +220,8 @@ class GLSL:
         self.__fbo.use()
         if not self.__hold:
             self.__set_uniforms(channel0)
-            logger.debug(self.__param)
-            logger.debug(param)
+            # logger.debug(self.__param)
+            # logger.debug(param)
             for k, v in (param or {}).items():
                 try:
                     self.__param[k].value = v

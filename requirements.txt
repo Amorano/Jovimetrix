@@ -6,8 +6,10 @@ ffmpeg-python
 librosa
 loguru
 moderngl
+mss
 requests
 Pillow
+pywin32==306; platform_system=="Windows"
 scikit-image
 blendmodes
 mido[ports-rtmidi]

@@ -41,8 +41,10 @@ const ext = {
         const onNodeCreated = nodeType.prototype.onNodeCreated
         nodeType.prototype.onNodeCreated = function () {
             const me = onNodeCreated?.apply(this)
+            const self = this;
+
             let combo_current = "NONE";
-            console.debug(this)
+            console.debug(self)
             let combo = this.widgets[0];
             let old_x = this.widgets[1]?.value || 0;
             let old_y = this.widgets[2]?.value || 0;

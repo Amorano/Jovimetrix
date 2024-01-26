@@ -4,6 +4,7 @@ Media Stream Support
 """
 
 import os
+import sys
 import json
 import time
 import threading
@@ -11,11 +12,14 @@ from typing import Any
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import cv2
+import mss
+import mss.tools
 import numpy as np
+from PIL import Image, ImageGrab
 from loguru import logger
 
 from Jovimetrix import Singleton, MIN_IMAGE_SIZE
-from Jovimetrix.sup.image import image_grid, image_load
+from Jovimetrix.sup.image import image_grid, image_load, pil2cv
 
 # =============================================================================
 
@@ -31,17 +35,118 @@ try: STREAMPORT = int(os.getenv("JOV_STREAM_PORT", STREAMPORT))
 except: pass
 
 # =============================================================================
+# === SCREEN / WINDOW CAPTURE ===
+# =============================================================================
+
+def monitor_capture_all(width:int=None, height:int=None) -> cv2.Mat:
+    img = ImageGrab.grab(all_screens=True)
+    img = np.array(img, dtype='uint8')
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    if height is not None and width is not None:
+        return cv2.resize(img, (width, height))
+    return img
+
+def monitor_capture(monitor:int=0, tlwh:tuple[int, int, int, int]=None, width:int=None, height:int=None) -> cv2.Mat:
+    with mss.mss() as sct:
+        if tlwh is not None:
+            region = {'top': tlwh[0], 'left': tlwh[1], 'width': tlwh[2], 'height': tlwh[3]}
+            img = sct.grab(region)
+        else:
+            monitor = sct.monitors[monitor]
+            img = sct.grab(monitor)
+
+        img = np.array(img, dtype=np.uint8)
+        if height is not None and width is not None:
+            img = cv2.resize(img, (width, height))
+        return img
+
+def monitor_list() -> dict:
+    ret = {}
+    with mss.mss() as sct:
+        ret = {i:v for i, v in enumerate(sct.monitors)}
+    return ret
+
+if sys.platform.startswith('win'):
+
+    import win32gui
+    import win32ui
+    from ctypes import windll
+
+    def window_list() -> dict:
+        _windows = {}
+        def window_enum_handler(hwnd, ctx) -> None:
+            if win32gui.IsWindowVisible(hwnd):
+                name = win32gui.GetWindowText(hwnd).strip()
+                if name != "" and name not in ['Calculator', 'Program Manager', 'Settings', 'Microsoft Text Input Application']:
+                    _windows[hwnd] = name
+
+        win32gui.EnumWindows(window_enum_handler, None)
+        return _windows
+
+    def window_capture(hwnd:int, dpi:bool=True, clientOnly:bool=True) -> cv2.Mat:
+        # hwnd = win32gui.FindWindow(None, 'Calculator')
+        if dpi:
+            windll.user32.SetProcessDPIAware()
+
+        try:
+            if clientOnly:
+                left, top, right, bot = win32gui.GetClientRect(hwnd)
+            else:
+                left, top, right, bot = win32gui.GetWindowRect(hwnd)
+        except:
+            return
+
+        w = right - left
+        h = bot - top
+
+        hwndDC = win32gui.GetWindowDC(hwnd)
+        mfcDC  = win32ui.CreateDCFromHandle(hwndDC)
+        saveDC = mfcDC.CreateCompatibleDC()
+
+        saveBitMap = win32ui.CreateBitmap()
+        saveBitMap.CreateCompatibleBitmap(mfcDC, w, h)
+        saveDC.SelectObject(saveBitMap)
+
+        result = windll.user32.PrintWindow(hwnd, saveDC.GetSafeHdc(), 1)
+        bmpinfo = saveBitMap.GetInfo()
+        bmpstr = saveBitMap.GetBitmapBits(True)
+
+        im = Image.frombuffer(
+            'RGB',
+            (bmpinfo['bmWidth'], bmpinfo['bmHeight']),
+            bmpstr, 'raw', 'BGRX', 0, 1)
+        im = pil2cv(im)
+
+        win32gui.DeleteObject(saveBitMap.GetHandle())
+        try:
+            saveDC.DeleteDC()
+        except:
+            pass
+
+        try:
+            mfcDC.DeleteDC()
+        except:
+            pass
+
+        win32gui.ReleaseDC(hwnd, hwndDC)
+        return im
+
+# =============================================================================
 # === MEDIA ===
 # =============================================================================
 
 def camera_list() -> list:
-    camera_list = []
+    camera_list = {}
     failed = 0
     idx = 0
     while failed < 2:
         cap = cv2.VideoCapture(idx)
         if cap.isOpened():
-            camera_list.append(idx)
+            camera_list[idx] = {
+                'w': int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
+                'h': int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),
+                'fps': int(cap.get(cv2.CAP_PROP_FPS))
+            }
             cap.release()
         else:
             failed += 1
@@ -52,18 +157,13 @@ class MediaStreamBase:
 
     TIMEOUT = 5.
 
-    def __init__(self, url:int|str, callback:object, fps:float=30) -> None:
+    def __init__(self, fps:float=30) -> None:
         self.__quit = False
         self.__paused = False
         self.__captured = False
         self.__ret = False
         self.__fps = fps
-        self.__url = url
-        try: self.__url = int(url)
-        except: pass
-        self.__size = (0, 0)
         self.__timeout = None
-        self.__callback = callback
         self.__frame = None
         self.__thread = threading.Thread(target=self.__run, daemon=True)
         self.__thread.start()
@@ -80,34 +180,31 @@ class MediaStreamBase:
                     self.__paused = True
 
                     if not self.capture():
-                        logger.error(f"CAPTURE FAIL [{self.__url}]")
                         self.__quit = True
                         break
 
                     self.__paused = pause
                     self.__captured = True
-                    logger.info(f"CAPTURED [{self.__url}]")
+                    logger.info(f"CAPTURED")
+
+                if self.__timeout is None:
+                    self.__timeout = time.perf_counter() + self.TIMEOUT
 
                 # call the run capture frame command on subclasses
-                newframe = None
-                if self.__callback is not None:
-                    self.__ret, newframe = self.__callback()
-                    if newframe is not None:
-                        self.__frame = newframe
-                        self.__timeout = None
-
-                if self.__timeout is None and (not self.__ret or newframe is None):
-                    self.__timeout = time.perf_counter() + self.TIMEOUT
+                self.__ret, newframe = self.callback()
+                if newframe is not None:
+                    self.__frame = newframe
+                    self.__timeout = None
 
             if self.__timeout is not None and time.perf_counter() > self.__timeout:
                 self.__timeout = None
                 self.__quit = True
-                logger.warning(f"TIMEOUT [{self.__url}]")
+                logger.warning(f"TIMEOUT")
 
-            waste = max(waste - time.perf_counter(), delta)
+            waste = max(waste - time.perf_counter(), 0)
             time.sleep(waste)
 
-        logger.info(f"STOPPED [{self.__url}]")
+        logger.info(f"STOPPED")
         self.end()
 
     def __del__(self) -> None:
@@ -115,6 +212,9 @@ class MediaStreamBase:
 
     def __repr__(self) -> str:
         return self.__class__.__name__
+
+    def callback(self) -> tuple[bool, Any]:
+        return True, None
 
     def capture(self) -> None:
         self.__captured = True
@@ -138,10 +238,6 @@ class MediaStreamBase:
         return self.__captured
 
     @property
-    def url(self) -> str:
-        return self.__url
-
-    @property
     def frame(self) -> tuple[bool, Any]:
         return self.__ret, self.__frame
 
@@ -153,50 +249,72 @@ class MediaStreamBase:
     def fps(self, val: float) -> None:
         self.__fps = max(1, val)
 
-    @property
-    def size(self) -> tuple[int, int]:
-        return self.__size
+class MediaStreamStatic(MediaStreamBase):
+    """A stream coming from ComfyUI."""
+    def __init__(self) -> None:
+        self.image = None
+        super().__init__()
 
-    @size.setter
-    def size(self, val: tuple[int, int]) -> None:
-        self.__size = val
+    def callback(self) -> tuple[bool, Any]:
+        return True, self.image
+
+class MediaStreamDesktop(MediaStreamBase):
+    """Desktop, specific monitor, specific window or cropped region."""
+    def __init__(self, area:int|str=None, region:tuple[int, int, int, int]=None) -> None:
+        try: area = int(area)
+        except: pass
+        super().__init__()
+
+    def callback(self) -> tuple[bool, Any]:
+        return True, None
 
 class MediaStreamURL(MediaStreamBase):
     """A media point (could be a camera index)."""
     def __init__(self, url:int|str, fps:float=30) -> None:
-        self.__single = None
+        self.__url = url
+        try: self.__url = int(url)
+        except: pass
         self.__source = None
-        super().__init__(url, self.__callback, fps)
+        self.__last = None
+        super().__init__(fps)
 
-    def __callback(self) -> tuple[bool, Any]:
-        if self.__source is None:
-            return False, None
-
+    def callback(self) -> tuple[bool, Any]:
         ret = False
         try:
             ret, result = self.__source.read()
         except:
             pass
 
-        if self.__single is not None:
-            result = self.__single
-            ret = True
-        else:
-            if result is not None:
-                self.__single = result
-            elif not ret:
-                count = self.__source.get(cv2.CAP_PROP_FRAME_COUNT)
-                pos = self.__source.get(cv2.CAP_PROP_POS_FRAMES)
-                if pos >= count:
-                    self.__source.set(cv2.CAP_PROP_POS_FRAMES, 0)
+        if ret:
+            self.__last = result
+            return ret, result
+
+        count = int(self.source.get(cv2.CAP_PROP_FRAME_COUNT))
+        pos = int(self.source.get(cv2.CAP_PROP_POS_FRAMES))
+        if pos >= count:
+            self.source.set(cv2.CAP_PROP_POS_FRAMES, 0)
+            ret, result = self.__source.read()
+
+        # maybe its a single frame -- if we ever got one.
+        if not ret and self.__last is not None:
+            return True, self.__last
 
         return ret, result
+
+    @property
+    def url(self) -> str:
+        return self.__url
+
+    @property
+    def source(self) -> cv2.VideoCapture:
+        return self.__source
 
     def capture(self) -> bool:
         if self.captured:
             return True
-        self.__source = cv2.VideoCapture(self.url, cv2.CAP_ANY)
+        self.__source = cv2.VideoCapture(self.__url, cv2.CAP_ANY)
         if self.captured:
+            time.sleep(0.3)
             return True
         return False
 
@@ -207,55 +325,17 @@ class MediaStreamURL(MediaStreamBase):
         return self.__source.isOpened()
 
     def release(self) -> None:
-        if hasattr(self, "__source") and self.__source is not None:
+        if self.__source is not None:
             self.__source.release()
         super().release()
 
-class MediaStreamDevice(MediaStreamBase):
+class MediaStreamDevice(MediaStreamURL):
     """A system device like a web camera."""
     def __init__(self, url:int|str, fps:float=30) -> None:
         self.__focus = 0
         self.__exposure = 1
         self.__zoom = 0
-        self.__source = None
-        super().__init__(url, self.__callback, fps)
-
-    def __callback(self) -> tuple[bool, Any]:
-        try:
-            return self.__source.read()
-        except:
-            pass
-        return False, None
-
-    def capture(self) -> bool:
-        if self.captured:
-            return True
-        self.__source = cv2.VideoCapture(self.url, cv2.CAP_ANY)
-        if self.captured:
-            time.sleep(0.2)
-            width = self.__source.get(cv2.CAP_PROP_FRAME_WIDTH)
-            height = self.__source.get(cv2.CAP_PROP_FRAME_HEIGHT)
-            self.size = (width, height)
-            return True
-        return False
-
-    @property
-    def captured(self) -> bool:
-        if self.__source is None:
-            return False
-        return self.__source.isOpened()
-
-    def release(self) -> None:
-        if hasattr(self, "__source") and self.__source is not None:
-            self.__source.release()
-        super().release()
-
-    @MediaStreamBase.size.setter
-    def size(self, val) -> None:
-        width = max(MIN_IMAGE_SIZE, val[0] if val is not None else MIN_IMAGE_SIZE)
-        height = max(MIN_IMAGE_SIZE, val[1] if val is not None else MIN_IMAGE_SIZE)
-        self.__source.set(cv2.CAP_PROP_FRAME_WIDTH, width)
-        self.__source.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
+        super().__init__(url, fps=fps)
 
     @property
     def zoom(self) -> float:
@@ -265,7 +345,7 @@ class MediaStreamDevice(MediaStreamBase):
     def zoom(self, val: float) -> None:
         self.__zoom = np.clip(val, 0, 1)
         val = 100 + 300 * self.__zoom
-        self.__source.set(cv2.CAP_PROP_ZOOM, val)
+        self.source.set(cv2.CAP_PROP_ZOOM, val)
 
     @property
     def exposure(self) -> float:
@@ -276,7 +356,7 @@ class MediaStreamDevice(MediaStreamBase):
         # -10 to -1 range
         self.__exposure = np.clip(val, 0, 1)
         val = -10 + 9 * self.__exposure
-        self.__source.set(cv2.CAP_PROP_EXPOSURE, val)
+        self.source.set(cv2.CAP_PROP_EXPOSURE, val)
 
     @property
     def focus(self) -> float:
@@ -286,24 +366,15 @@ class MediaStreamDevice(MediaStreamBase):
     def focus(self, val: float) -> None:
         self.__focus = np.clip(val, 0, 1)
         val = 255 * self.__focus
-        self.__source.set(cv2.CAP_PROP_FOCUS, val)
-
-class MediaStreamStatic(MediaStreamBase):
-    """A stream coming from ComfyUI."""
-    def __init__(self, url:str) -> None:
-        self.image = None
-        super().__init__(url, self.__callback)
-
-    def __callback(self) -> tuple[bool, Any]:
-        return True, self.image
+        self.source.set(cv2.CAP_PROP_FOCUS, val)
 
 class MediaStreamFile(MediaStreamBase):
     """A file served from a local file using file:// as the 'uri'."""
     def __init__(self, url:str) -> None:
         self.__image = image_load(url)[0]
-        super().__init__(url, self.__callback)
+        super().__init__()
 
-    def __callback(self) -> tuple[bool, Any]:
+    def callback(self) -> tuple[bool, Any]:
         return True, self.__image
 
 class StreamManager(metaclass=Singleton):
@@ -331,15 +402,16 @@ class StreamManager(metaclass=Singleton):
         if (stream := StreamManager.STREAM.get(url, None)) is None:
             try:
                 if static:
-                    StreamManager.STREAM[url] = MediaStreamStatic(url)
+                    StreamManager.STREAM[url] = MediaStreamStatic()
                 elif isinstance(url, str) and url.lower().startswith("file://"):
                     StreamManager.STREAM[url] = MediaStreamFile(url[7:])
+
                 else:
                     try:
-                        StreamManager.STREAM[url] = MediaStreamDevice(url, fps)
-                    except Exception as e:
-                        logger.error(e)
-                        StreamManager.STREAM[url] = MediaStreamURL(url, fps)
+                        url = int(url)
+                        StreamManager.STREAM[url] = MediaStreamDevice(url, fps=fps)
+                    except Exception as _:
+                        StreamManager.STREAM[url] = MediaStreamURL(url, fps=fps)
 
                 stream = StreamManager.STREAM[url]
 
@@ -445,11 +517,13 @@ def __getattr__(name: str) -> Any:
 
 def streamReadTest() -> None:
     urls = [
-        "http://63.142.183.154:6103/mjpg/video.mjpg",
         "https://images.squarespace-cdn.com/content/v1/600743194a20ea052ee04fbb/a1415a46-a24d-4efb-afe2-9ef896d2da62/CircleUnderBerry2.jpg",
+        "https://www.learningcontainer.com/wp-content/uploads/2020/05/sample-mp4-file.mp4",
+        "https://images.squarespace-cdn.com/content/v1/600743194a20ea052ee04fbb/a1415a46-a24d-4efb-afe2-9ef896d2da62/CircleUnderBerry2.jpg",
+        "file://z:\\alex.png",
         "0", 1,
         "https://images.squarespace-cdn.com/content/v1/600743194a20ea052ee04fbb/1611094440833-JRYTH6W6ODHF0F66FSTI/CD876BD2-EDF9-4FE0-9E85-4D05EEFE9513.jpeg",
-        "file://z:\chiggins.png",
+        "http://63.142.183.154:6103/mjpg/video.mjpg",
         "http://104.207.27.126:8080/mjpg/video.mjpg",
         "http://185.133.99.214:8011/mjpg/video.mjpg",
         "http://tapioles.eu:85/mjpg/video.mjpg",
@@ -528,7 +602,19 @@ def streamWriteTest() -> None:
     while 1:
         pass
 
+def capture_screen_test() -> None:
+    while(True):
+        img = window_capture(monitor=33, width=960, height=540)
+        cv2.imshow('window', img)
+        if cv2.waitKey(25) & 0xFF == ord('q'):
+            cv2.destroyAllWindows()
+            break
+
 if __name__ == "__main__":
     streamReadTest()
     # streamWriteTest()
+    for m, v in camera_list().items():
+        print(m, v)
+    exit()
+    capture_screen_test()
     pass

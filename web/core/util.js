@@ -131,6 +131,9 @@ export function widget_hideForce(node, widget, suffix = '') {
 }
 
 export function widget_hide(node, widget, suffix = '') {
+    if (widget.hidden) {
+        return
+    }
     widget.origType = widget.type
     widget.hidden = true
     widget.origComputeSize = widget.computeSize
@@ -163,11 +166,14 @@ export function widget_hide(node, widget, suffix = '') {
 export function widget_show(widget) {
     widget.type = widget.origType
     widget.computeSize = widget.origComputeSize
+    widget.computeSize = (target_width) => [target_width, 20]
     widget.serializeValue = widget.origSerializeValue
 
     delete widget.origType
     delete widget.origComputeSize
     delete widget.origSerializeValue
+
+    widget.hidden = false;
 
     // Hide any linked widgets, e.g. seed+seedControl
     if (widget.linkedWidgets) {

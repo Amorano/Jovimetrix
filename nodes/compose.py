@@ -127,7 +127,7 @@ class TransformNode(JOVImageInOutBaseNode):
                 tx, ty = tile_xy
                 if (tx := int(tx)) > 1 or (ty := int(ty)) > 1:
                     img = geo_edge_wrap(img, tx - 1, ty - 1)
-                    img = geo_scalefit(img, w, h, EnumScaleMode.FIT)
+                    img = geo_scalefit(img, w, h, mode=EnumScaleMode.FIT)
 
                 # RE-PROJECTION
                 x1, y1, x2, y2 = tltr
@@ -153,7 +153,7 @@ class TransformNode(JOVImageInOutBaseNode):
                     img = light_invert(img, i)
 
                 #img = geo_crop(img)
-                img = geo_scalefit(img, w, h, mode, res)
+                img = geo_scalefit(img, w, h, mode=mode, sample=res)
 
             else:
                 img = np.zeros((h, w, 3), dtype=np.uint8)
@@ -301,7 +301,7 @@ class PixelMergeNode(JOVImageInOutBaseNode):
             a = tensor2cv(a) if a is not None else np.zeros((h, w, 3), dtype=np.uint8)
             rs = EnumInterpolation[rs]
             img = image_merge(r, g, b, a, w, h)
-            img = geo_scalefit(img, w, h, m, rs)
+            img = geo_scalefit(img, w, h, mode=m, sample=rs)
 
             if i != 0:
                 img = light_invert(img, i)
@@ -357,7 +357,7 @@ class MergeNode(JOVImageInOutBaseNode):
             # color = 255
             img = image_stack(pixels, ax, st, mode=EnumScaleMode.FIT, sample=rs)
             if m != EnumScaleMode.NONE:
-                img = geo_scalefit(img, w, h, m, rs)
+                img = geo_scalefit(img, w, h, mode=m, sample=rs)
 
             images.append(cv2tensor(img))
             masks.append(cv2mask(img))

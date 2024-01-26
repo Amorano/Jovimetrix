@@ -675,7 +675,7 @@ def testImageMerge() -> None:
     G = cv2.imread('./_res/img/test_G.png', cv2.IMREAD_UNCHANGED)
     B = cv2.imread('./_res/img/test_B.png', cv2.IMREAD_UNCHANGED)
     d = image_merge(R, G, B, None, 512, 512)
-    d = geo_scalefit(d, 512, 512)
+    d = geo_scalefit(d, 512, 512, mode=EnumScaleMode.FIT, sample=EnumInterpolation.AREA)
     cv2.imwrite(f'./_res/tst/image-merge.png', d)
 
 if __name__ == "__main__":
@@ -683,6 +683,7 @@ if __name__ == "__main__":
     b = cv2.imread('./res/img/test-a.png', cv2.IMREAD_UNCHANGED)
     mask = cv2.imread('./res/img/mask-c.png', cv2.IMREAD_UNCHANGED)
     img = comp_blend(a, b, mask, mode=EnumScaleMode.CROP)
+    img = geo_scalefit(img, 512, 512, mode=EnumScaleMode.ASPECT, sample=EnumInterpolation.AREA)
     cv2.imwrite(f'./_res/tst/image-blend.png', img)
     # testBlendModes()
     # testImageMerge()

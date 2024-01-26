@@ -42,6 +42,8 @@ const ext = {
         const onNodeCreated = nodeType.prototype.onNodeCreated
         nodeType.prototype.onNodeCreated = function () {
             const me = onNodeCreated?.apply(this)
+            const self = this;
+
             let combo_current = "NONE";
             // console.debug("jovimetrix.node.convert.onNodeCreated", this)
             let combo = this.widgets[0]
@@ -79,7 +81,6 @@ const ext = {
                     this.inputs[0].name = type;
                 }
             }
-
             return me;
         }
     }

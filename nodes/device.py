@@ -31,12 +31,15 @@ from Jovimetrix.sup.util import deep_merge_dict, parse_tuple, parse_number, \
 from Jovimetrix.sup.comp import light_invert, geo_scalefit, \
     EnumInterpolation, EnumScaleMode
 
-from Jovimetrix.sup.stream import camera_list, StreamingServer, StreamManager
+from Jovimetrix.sup.stream import camera_list, monitor_list, window_list, \
+    monitor_capture, window_capture, \
+    StreamingServer, StreamManager
 
 from Jovimetrix.sup.midi import midi_device_names, \
     MIDIMessage, MIDINoteOnFilter, MIDIServerThread
 
-from Jovimetrix.sup.image import channel_count, tensor2cv, cv2mask, cv2tensor, IT_SAMPLE, IT_SCALEMODE
+from Jovimetrix.sup.image import IT_WHMODE, channel_count, tensor2cv, cv2tensor, \
+    IT_SAMPLE, IT_SCALEMODE
 
 # =============================================================================
 
@@ -48,31 +51,47 @@ class EnumCanvasOrientation(Enum):
 
 # =============================================================================
 
-class StreamReaderNode(JOVImageBaseNode):
+class StreamReaderNode(JOVBaseNode):
     NAME = "STREAM READER (JOV) 📺"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/DEVICE"
     DESCRIPTION = ""
-    OUTPUT_IS_LIST = (True, True, )
+    RETURN_TYPES = ("IMAGE", )
+    RETURN_NAMES = (Lexicon.IMAGE,)
+    OUTPUT_IS_LIST = (True, )
     SORT = 50
-    CAMERA_LIST = None
+    CAMERAS = None
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        if cls.CAMERA_LIST is None:
-            cls.CAMERA_LIST = camera_list()
-        default = cls.CAMERA_LIST[0] if len(cls.CAMERA_LIST) > 0 else "NONE"
+        if cls.CAMERAS is None:
+            cls.CAMERAS = [f"{i} - {v['w']}x{v['h']}" for i, v in enumerate(camera_list().values())]
+        camera_default = cls.CAMERAS[0] if len(cls.CAMERAS) else "NONE"
+
+        monitors = monitor_list()
+        monitors.pop(0)
+        monitor = [f"{i} - {v['width']}x{v['height']}" for i, v in enumerate(monitors.values())]
+
+        window = [f"{v} - {k}" for k, v in window_list().items()]
+        window_default = window[0] if len(window) else "NONE"
         d = {"optional": {
-            Lexicon.URL: ("STRING", {"default": ""}),
-            Lexicon.CAMERA: (cls.CAMERA_LIST, {"default": default}),
+            Lexicon.SOURCE: (["URL", "CAMERA", "MONITOR", "WINDOW"], {"default": "URL"}),
+
+            Lexicon.URL: ("STRING", {"default": "", "dynamicPrompts": False}),
+            Lexicon.CAMERA: (cls.CAMERAS, {"default": camera_default}),
+            Lexicon.MONITOR: (monitor, {"default": monitor[0]}),
+            Lexicon.WINDOW: (window, {"default": window_default}),
+            Lexicon.DPI: ("BOOLEAN", {"default": True}),
+            Lexicon.BBOX: ("VEC4", {"default": (0, 0, 1, 1), "min": 0, "max": 1, "step": 0.01, "precision": 4, "round": 0.00001, "label": [Lexicon.TOP, Lexicon.LEFT, Lexicon.BOTTOM, Lexicon.RIGHT]}),
             Lexicon.FPS: ("INT", {"min": 1, "max": 60, "default": 30}),
             Lexicon.WAIT: ("BOOLEAN", {"default": False}),
-            # Lexicon.WH: ("VEC2", {"default": (320, 240), "min": MIN_IMAGE_SIZE, "max": 8192, "step": 1, "label": [Lexicon.W, Lexicon.H]}),
-            Lexicon.BATCH: ("VEC2", {"default": (1, 30), "min": 1, "step": 1, "label": ["BATCH", ""]}),
-            # Lexicon.SEL: ("VEC3", {"default": (0, -1, 0), "min": 1, "step": 1, "label": [""]}),
+            Lexicon.BATCH: ("VEC2", {"default": (1, 30), "min": 1, "step": 1, "label": ["COUNT", "FPS"]}),
+        }}
+
+        e = {"optional": {
             Lexicon.ORIENT: (EnumCanvasOrientation._member_names_, {"default": EnumCanvasOrientation.NORMAL.name}),
             Lexicon.ZOOM: ("FLOAT", {"min": 0, "max": 1, "step": 0.005, "default": 0}),
         }}
-        return deep_merge_dict(IT_REQUIRED, d, IT_INVERT)
+        return deep_merge_dict(IT_REQUIRED, d, IT_WHMODE, IT_SAMPLE, e, IT_INVERT)
 
     @classmethod
     def IS_CHANGED(cls, **kw) -> float:
@@ -83,105 +102,135 @@ class StreamReaderNode(JOVImageBaseNode):
         self.__device = None
         self.__url = ""
         self.__capturing = 0
+        self.__last = torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8, device="cpu")
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        url = kw.get(Lexicon.URL, "")
-        if url == "":
-            url = kw.get(Lexicon.CAMERA, None)
-            try:
-                _ = int(url)
-                url = str(url)
-            except: url = ""
-
-        # width, height = parse_tuple(Lexicon.WH, kw, default=(320, 240,), clip_min=MIN_IMAGE_SIZE)[0]
-
-        if self.__capturing == 0 and (self.__device is None or url != self.__url):
-            self.__capturing = time.perf_counter()
-            self.__url = url
-            try:
-                self.__device = StreamManager().capture(url)
-            except Exception as e:
-                logger.error(str(e))
-
-        if self.__capturing > 0:
-            # timeout and try again?
-            if time.perf_counter() - self.__capturing > 3000:
-                logger.error(f'timed out {self.__url}')
-                self.__capturing = 0
-                self.__url = ""
-
         images = []
-        masks = []
+        batch_size, rate = parse_tuple(Lexicon.BATCH, kw, default=(1, 30), clip_min=1)[0]
+        pbar = comfy.utils.ProgressBar(batch_size)
+        rate = 1. / rate
+        width, height = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,))[0]
+        wait = kw.get(Lexicon.WAIT, False)
+        mode = kw.get(Lexicon.MODE, EnumScaleMode.NONE)
+        mode = EnumScaleMode[mode]
+        sample = kw.get(Lexicon.SAMPLE, EnumInterpolation.LANCZOS4)
+        sample = EnumInterpolation[sample]
         i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1])[0]
-        if self.__device:
-            self.__capturing = 0
+        source = kw.get(Lexicon.SOURCE, "URL")
+        match source:
+            case "MONITOR":
+                if wait:
+                    return ([self.__last],)
+                which = kw.get(Lexicon.MONITOR, "0")
+                which = int(which.split('-')[0].strip()) + 1
+                for idx in range(batch_size):
+                    img = monitor_capture(which)
+                    if img is not None:
+                        if i != 0:
+                            img = light_invert(img, i)
+                        img = geo_scalefit(img, width, height, mode=mode, sample=sample)
+                    else:
+                        img = np.zeros((height, width, 3), dtype=np.uint8)
+                    images.append(cv2tensor(img))
+                    if batch_size > 1:
+                        pbar.update_absolute(idx)
+                        time.sleep(rate)
 
-            fps = kw.get(Lexicon.FPS, 30)
-            if self.__device.fps != fps:
-                self.__device.fps = fps
+            case "WINDOW":
+                if wait:
+                    return ([self.__last],)
+                if (which := kw.get(Lexicon.WINDOW, "NONE")) != "NONE":
+                    which = int(which.split('-')[-1].strip())
+                    dpi = kw.get(Lexicon.DPI, True)
+                    for idx in range(batch_size):
+                        img = window_capture(which, dpi=dpi)
+                        if img is not None:
+                            if i != 0:
+                                img = light_invert(img, i)
+                            img = geo_scalefit(img, width, height, mode=mode, sample=sample)
+                        else:
+                            img = np.zeros((height, width, 3), dtype=np.uint8)
+                        images.append(cv2tensor(img))
+                        if batch_size > 1:
+                            pbar.update_absolute(idx)
+                            time.sleep(rate)
 
-            # only cameras have a zoom
-            try:
-                self.__device.zoom = kw.get(Lexicon.ZOOM, 0)
-            except Exception as e:
-                logger.error(e)
+            case "URL" | "CAMERA":
+                url = kw.get(Lexicon.URL, "")
+                if source == "CAMERA":
+                    url = kw.get(Lexicon.CAMERA, "")
+                    url = url.split('-')[0].strip()
+                    try:
+                        _ = int(url)
+                        url = str(url)
+                    except: url = ""
 
-            if kw.get(Lexicon.WAIT, False):
-                self.__device.pause()
-            else:
-                self.__device.play()
+                if self.__capturing == 0 and (self.__device is None or url != self.__url):
+                    self.__capturing = time.perf_counter()
+                    self.__url = url
+                    try:
+                        self.__device = StreamManager().capture(url)
+                    except Exception as e:
+                        logger.error(str(e))
 
-            #mode = kw.get(Lexicon.MODE, EnumScaleMode.NONE)
-            #mode = EnumScaleMode[mode]
-            ##rs = kw.get(Lexicon.SAMPLE, EnumInterpolation.LANCZOS4)
-            #rs = EnumInterpolation[rs]
-            orient = kw.get(Lexicon.ORIENT, EnumCanvasOrientation.NORMAL)
-            orient = EnumCanvasOrientation[orient]
-            batch_size, rate = parse_tuple(Lexicon.BATCH, kw, default=(1, 30), clip_min=1)[0]
-            rate = 1. / rate
-            pbar = comfy.utils.ProgressBar(batch_size)
-            for idx in range(batch_size):
-                mask = None
-                ret, img = self.__device.frame
-                if img is None:
-                    img = np.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=np.uint8)
+                if self.__capturing > 0:
+                    # timeout and try again?
+                    if time.perf_counter() - self.__capturing > 3000:
+                        logger.error(f'timed out {self.__url}')
+                        self.__capturing = 0
+                        self.__url = ""
 
-                if ret:
-                    cc, _, w, h = channel_count(img)
-                    # drop the alpha?
-                    if cc == 4:
-                        mask = img[:, :, 3]
-                        img = img[:, :, :3]
+                if self.__device:
+                    self.__capturing = 0
 
-                    #if mode != EnumScaleMode.NONE and (width != w or height != h):
-                        #self.__device.size = (width, height)
-                        # img = geo_scalefit(img, width, height, mode, rs)
+                    fps = kw.get(Lexicon.FPS, 30)
+                    if self.__device.fps != fps:
+                        self.__device.fps = fps
 
-                    # print(orient, [EnumCanvasOrientation.FLIPX, EnumCanvasOrientation.FLIPXY])
-                    if orient in [EnumCanvasOrientation.FLIPX, EnumCanvasOrientation.FLIPXY]:
-                        img = cv2.flip(img, 1)
+                    # only cameras have a zoom
+                    try:
+                        self.__device.zoom = kw.get(Lexicon.ZOOM, 0)
+                    except Exception as e:
+                        logger.error(e)
 
-                    if orient in [EnumCanvasOrientation.FLIPY, EnumCanvasOrientation.FLIPXY]:
-                        img = cv2.flip(img, 0)
+                    if wait:
+                        self.__device.pause()
+                    else:
+                        self.__device.play()
 
-                    if i != 0:
-                        img = light_invert(img, i)
+                    orient = kw.get(Lexicon.ORIENT, EnumCanvasOrientation.NORMAL)
+                    orient = EnumCanvasOrientation[orient]
+                    for idx in range(batch_size):
+                        ret, img = self.__device.frame
+                        if img is None:
+                            img = np.zeros((height, width, 3), dtype=np.uint8)
 
-                images.append(cv2tensor(img))
-                if mask is None:
-                    h, w = img.shape[:2]
-                    mask = np.full((h, w), 255, dtype=np.uint8)
-                masks.append(cv2mask(mask))
+                        if ret:
+                            # drop the alpha?
+                            if channel_count(img)[0] == 4:
+                                # mask = img[:, :, 3]
+                                img = img[:, :, :3]
 
-                pbar.update_absolute(idx)
-                if batch_size > 1:
-                    time.sleep(rate)
+                            if orient in [EnumCanvasOrientation.FLIPX, EnumCanvasOrientation.FLIPXY]:
+                                img = cv2.flip(img, 1)
+
+                            if orient in [EnumCanvasOrientation.FLIPY, EnumCanvasOrientation.FLIPXY]:
+                                img = cv2.flip(img, 0)
+
+                            if i != 0:
+                                img = light_invert(img, i)
+
+                        img = geo_scalefit(img, width, height, mode=mode, sample=sample)
+                        images.append(cv2tensor(img))
+
+                        pbar.update_absolute(idx)
+                        if batch_size > 1:
+                            time.sleep(rate)
 
         if len(images) == 0:
-            images = [torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8, device="cpu")]
-            masks = [torch.ones((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), dtype=torch.uint8, device="cpu")]
-
-        return (torch.stack(images), torch.stack(masks))
+            images = [self.__last]
+        self.__last = images[-1]
+        return (images, )
 
 class StreamWriterNode(JOVBaseNode):
     NAME = "STREAM WRITER (JOV) 🎞️"
@@ -238,10 +287,10 @@ class StreamWriterNode(JOVBaseNode):
             rs = kw.get(Lexicon.SAMPLE, EnumInterpolation.LANCZOS4)
             rs = EnumInterpolation[rs]
             i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)[0]
-            img = geo_scalefit(img, w, h, EnumScaleMode.NONE)
+            img = geo_scalefit(img, w, h, mode=EnumScaleMode.NONE)
             if i != 0:
                 img = light_invert(img, i)
-            img = geo_scalefit(img, w, h, mode, rs)
+            img = geo_scalefit(img, w, h, mode=mode, sample=rs)
             self.__device.image = img
         return ()
 
