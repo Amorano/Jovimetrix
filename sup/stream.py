@@ -461,6 +461,7 @@ class StreamingHandler(BaseHTTPRequestHandler):
                 except Exception as e:
                     logger.error(str(e))
                     break
+                time.sleep(0.001)
 
         elif key == 'jovimetrix':
             self.send_response(200)
@@ -503,6 +504,7 @@ class StreamingServer(metaclass=Singleton):
                 if (device := v['_']) is not None:
                     _, frame = device.frame
                     StreamingServer.OUT[k]['b'] = frame
+            time.sleep(0.001)
 
 def __getattr__(name: str) -> Any:
     if name == "StreamManager":
