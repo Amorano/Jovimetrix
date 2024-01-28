@@ -7,6 +7,7 @@ Device -- MIDI, WEBCAM
     type 2 (asynchronous): each track is independent of the others
 """
 
+import sys
 import time
 import uuid
 from math import isclose
@@ -71,8 +72,11 @@ class StreamReaderNode(JOVBaseNode):
         monitors.pop(0)
         monitor = [f"{i} - {v['width']}x{v['height']}" for i, v in enumerate(monitors.values())]
 
-        window = [f"{v} - {k}" for k, v in window_list().items()]
+        window = []
+        if sys.platform.startswith('win'):
+            window = [f"{v} - {k}" for k, v in window_list().items()]
         window_default = window[0] if len(window) else "NONE"
+
         d = {"optional": {
             Lexicon.SOURCE: (["URL", "CAMERA", "MONITOR", "WINDOW"], {"default": "URL"}),
 

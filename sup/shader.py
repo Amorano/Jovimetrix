@@ -71,12 +71,15 @@ class GLSL:
             program = f.read()
 
         # fire and forget
-        return GLSL(program, width, height, param=param).render(texture1)
+        glsl = GLSL(program, width, height, param=param)
+        img = glsl.render(texture1)
+        del glsl
+        return img
 
     def __init__(self, fragment:str, width:int=128, height:int=128, param:dict=None) -> None:
-        self.__fragment: str = FRAGMENT_HEADER + fragment
         self.__ctx = moderngl.create_standalone_context()
 
+        self.__fragment: str = FRAGMENT_HEADER + fragment
         try:
             self.__prog = self.__ctx.program(
                 vertex_shader=VERTEX,
@@ -133,6 +136,13 @@ class GLSL:
         self.__delta: float = 0
         self.__frame_count: int = 0
         self.__time_last: float = time.perf_counter()
+
+    def __del__(self) -> None:
+        if self.__ctx is not None:
+            # logger.debug("clean")
+            self.__ctx.release()
+            self.__ctx.gc()
+            del self.__ctx
 
     def reset(self) -> None:
         self.__runtime = 0
@@ -210,9 +220,9 @@ class GLSL:
             self.__iFrame.value = self.__frame_count
 
         if self.__iChannel0 is not None and channel0 is not None:
-            if (size := len(channel0.mode)) == 4:
+            if len(channel0.mode) == 4:
                 channel0 = channel0.convert("RGB")
-            texture: Image = self.__ctx.texture(channel0.size, components=size, data=channel0.tobytes())
+            texture = self.__ctx.texture(channel0.size, components=3, data=channel0.tobytes())
             texture.use(location=0)
 
     def render(self, channel0:Image=None, param:dict=None) -> Image:

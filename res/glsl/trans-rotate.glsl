@@ -1,3 +1,6 @@
+// JOVIMETRIX GL SHADER
+// Rotate input
+// MIT License
 
 uniform float angle;
 uniform vec2 center;

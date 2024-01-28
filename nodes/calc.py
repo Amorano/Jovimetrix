@@ -102,7 +102,7 @@ class ConversionNode(JOVBaseNode):
         pbar = comfy.utils.ProgressBar(len(values))
         for idx, val in enumerate(values):
             val_new = ConversionNode.convert(typ, val)
-            print(typ, val, val_new)
+            # print(typ, val, val_new)
             result.append(val_new)
             pbar.update_absolute(idx)
         return (result, )

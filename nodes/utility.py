@@ -117,8 +117,6 @@ class ValueGraphNode(JOVBaseNode):
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
-            # Lexicon.UNKNOWN: (WILDCARD, {"default": None}),
-            Lexicon.WAIT: ("BOOLEAN", {"default": False}),
             Lexicon.RESET: ("BOOLEAN", {"default": False}),
             Lexicon.VALUE: ("INT", {"default": 500, "min": 0})
         }}
@@ -139,7 +137,7 @@ class ValueGraphNode(JOVBaseNode):
     def __init__(self, *arg, **kw) -> None:
         super().__init__(*arg, **kw)
         self.__history = []
-        self.__index = 0
+        self.__index = [0]
         self.__fig, self.__ax = plt.subplots(figsize=(11, 8))
         self.__ax.set_xlabel("FRAME")
         self.__ax.set_ylabel("VALUE")
@@ -148,26 +146,31 @@ class ValueGraphNode(JOVBaseNode):
     def run(self, **kw) -> tuple[torch.Tensor]:
 
         if kw.get(Lexicon.RESET, False):
-            self.__history = []
-            self.__index = 0
+            self.__history = [[]]
+            self.__index = [0]
 
-        elif not kw.get(Lexicon.WAIT, False):
-            val = kw.get(Lexicon.UNKNOWN, 0)
-            # logger.debug(val, type(val))
+        idx = 1
+        while 1:
+            who = f"{Lexicon.UNKNOWN}_{idx}"
+            if (val := kw.get(who, None)) is None:
+                break
             if type(val) not in [bool, int, float, np.float16, np.float32, np.float64]:
                 val = 0
-            self.__history.append(val)
-            self.__index += 1
+
+            while len(self.__history) < idx:
+                self.__history.append([])
+                self.__index.append(0)
+            self.__history[idx-1].append(val)
+            idx += 1
 
         slice = kw.get(Lexicon.VALUE, 0)
-
         self.__ax.clear()
-
-        logger.debug(kw)
-        self.__ax.plot(self.__history[-slice + self.__index:], label=curve.label)
+        for i, h in enumerate(self.__history):
+            self.__ax.plot(h[max(0, -slice + self.__index[i]):], color="rgbcymk"[i])
+            # self.__ax.scatter(kfx, kfy, color=line[0].get_color())
+            self.__index[i] += 1
 
         self.__fig.canvas.draw_idle()
-
         buffer = io.BytesIO()
         self.__fig.savefig(buffer, format="png")
         buffer.seek(0)
