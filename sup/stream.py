@@ -66,6 +66,12 @@ def monitor_list() -> dict:
         ret = {i:v for i, v in enumerate(sct.monitors)}
     return ret
 
+def window_list() -> dict:
+    return {}
+
+def window_capture(hwnd:int, dpi:bool=True, clientOnly:bool=True) -> cv2.Mat:
+    return np.array((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=np.uint8)
+
 if sys.platform.startswith('win'):
 
     import win32gui
