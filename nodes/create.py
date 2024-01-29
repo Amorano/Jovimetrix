@@ -135,7 +135,7 @@ class TextNode(JOVImageBaseNode):
         d = {"optional": {
                 Lexicon.STRING: ("STRING", {"default": "", "multiline": True}),
                 Lexicon.FONT: (FONT_NAMES, {"default": FONT_NAMES[0]}),
-                Lexicon.FONT_SIZE: ("FLOAT", {"default": 10, "min": 1, "step": 0.01}),
+                Lexicon.FONT_SIZE: ("INTEGER", {"default": 10, "min": 1, "step": 1}),
                 Lexicon.RGB: ("VEC3", {"default": (255, 255, 255), "min": 0, "max": 255, "step": 1, "label":
                                        [Lexicon.R, Lexicon.G, Lexicon.B]}),
                 Lexicon.RGB_B: ("VEC3", {"default": (0, 0, 0), "min": 0, "max": 255, "step": 1, "label":

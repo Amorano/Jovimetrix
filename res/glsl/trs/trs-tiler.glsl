@@ -1,6 +1,6 @@
-// JOVIMETRIX GL SHADER
+//
 // Tile inputs
-// MIT License
+//
 
 uniform float uTime;
 uniform vec2 uTile;
@@ -90,7 +90,7 @@ float pattern_triangle (vec2 _st,
 
 void main (void) {
 
-    vec2 st = tile(iUV, uTile);
+    vec2 st = tile(fragCoord, uTile);
     //st = tile_rotate(st);
     st = rotate2D(st, -PI * uTime * 0.25);
     vec4 color = texture(iChannel0, st);

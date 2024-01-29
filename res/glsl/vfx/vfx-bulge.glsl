@@ -1,6 +1,6 @@
-// JOVIMETRIX GL SHADER
+//
 // Brownian Noise
-// MIT License
+//
 
 uniform float radius; // 2
 uniform float strength; // 1.
@@ -16,7 +16,7 @@ vec2 bulge(vec2 uv, vec2 pivot) {
 }
 
 void main() {
-    vec2 uv = bulge(iUV, center);
+    vec2 uv = bulge(fragCoord, center);
     vec4 tex = texture(iChannel0, uv);
     fragColor = vec4(tex.rgb, 1.0);
 }

@@ -39,7 +39,7 @@ from Jovimetrix.sup.stream import camera_list, monitor_list, window_list, \
 from Jovimetrix.sup.midi import midi_device_names, \
     MIDIMessage, MIDINoteOnFilter, MIDIServerThread
 
-from Jovimetrix.sup.image import IT_WHMODE, channel_count, tensor2cv, cv2tensor, \
+from Jovimetrix.sup.image import IT_WHMODE, channel_count, cv2mask, tensor2cv, cv2tensor, \
     IT_SAMPLE, IT_SCALEMODE
 
 # =============================================================================
@@ -52,13 +52,10 @@ class EnumCanvasOrientation(Enum):
 
 # =============================================================================
 
-class StreamReaderNode(JOVBaseNode):
+class StreamReaderNode(JOVImageBaseNode):
     NAME = "STREAM READER (JOV) 📺"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/DEVICE"
     DESCRIPTION = ""
-    RETURN_TYPES = ("IMAGE", )
-    RETURN_NAMES = (Lexicon.IMAGE,)
-    OUTPUT_IS_LIST = (True, )
     SORT = 50
     CAMERAS = None
 
@@ -107,9 +104,11 @@ class StreamReaderNode(JOVBaseNode):
         self.__url = ""
         self.__capturing = 0
         self.__last = torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8, device="cpu")
+        self.__last_mask = torch.ones((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), dtype=torch.uint8, device="cpu")
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         images = []
+        masks = []
         batch_size, rate = parse_tuple(Lexicon.BATCH, kw, default=(1, 30), clip_min=1)[0]
         pbar = comfy.utils.ProgressBar(batch_size)
         rate = 1. / rate
@@ -121,28 +120,39 @@ class StreamReaderNode(JOVBaseNode):
         sample = EnumInterpolation[sample]
         i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1])[0]
         source = kw.get(Lexicon.SOURCE, "URL")
+        empty = (torch.stack([self.__last]), torch.stack([self.__last_mask]), )
         match source:
             case "MONITOR":
                 if wait:
-                    return ([self.__last],)
+                    return empty
                 which = kw.get(Lexicon.MONITOR, "0")
                 which = int(which.split('-')[0].strip()) + 1
                 for idx in range(batch_size):
                     img = monitor_capture(which)
-                    if img is not None:
+                    if img is None:
+                        img = np.zeros((height, width, 3), dtype=np.uint8)
+                    else:
                         if i != 0:
                             img = light_invert(img, i)
                         img = geo_scalefit(img, width, height, mode=mode, sample=sample)
+
+                    cc, _, w, h = channel_count(img)
+                    if cc == 4:
+                        mask = img[:, :, 3]
+                        img = img[:, :, :3]
                     else:
-                        img = np.zeros((height, width, 3), dtype=np.uint8)
+                        mask = np.ones((h, w), dtype=np.uint8) * 255
+
                     images.append(cv2tensor(img))
+                    masks.append(cv2mask(mask))
+
                     if batch_size > 1:
                         pbar.update_absolute(idx)
                         time.sleep(rate)
 
             case "WINDOW":
                 if wait:
-                    return ([self.__last],)
+                    return empty
                 if (which := kw.get(Lexicon.WINDOW, "NONE")) != "NONE":
                     which = int(which.split('-')[-1].strip())
                     dpi = kw.get(Lexicon.DPI, True)
@@ -154,7 +164,17 @@ class StreamReaderNode(JOVBaseNode):
                             img = geo_scalefit(img, width, height, mode=mode, sample=sample)
                         else:
                             img = np.zeros((height, width, 3), dtype=np.uint8)
+
+                        cc, _, w, h = channel_count(img)
+                        if cc == 4:
+                            mask = img[:, :, 3]
+                            img = img[:, :, :3]
+                        else:
+                            mask = np.ones((h, w), dtype=np.uint8) * 255
+
                         images.append(cv2tensor(img))
+                        masks.append(cv2mask(mask))
+
                         if batch_size > 1:
                             pbar.update_absolute(idx)
                             time.sleep(rate)
@@ -205,16 +225,10 @@ class StreamReaderNode(JOVBaseNode):
                     orient = kw.get(Lexicon.ORIENT, EnumCanvasOrientation.NORMAL)
                     orient = EnumCanvasOrientation[orient]
                     for idx in range(batch_size):
-                        ret, img = self.__device.frame
+                        _, img = self.__device.frame
                         if img is None:
                             img = np.zeros((height, width, 3), dtype=np.uint8)
-
-                        if ret:
-                            # drop the alpha?
-                            if channel_count(img)[0] == 4:
-                                # mask = img[:, :, 3]
-                                img = img[:, :, :3]
-
+                        else:
                             if orient in [EnumCanvasOrientation.FLIPX, EnumCanvasOrientation.FLIPXY]:
                                 img = cv2.flip(img, 1)
 
@@ -223,18 +237,28 @@ class StreamReaderNode(JOVBaseNode):
 
                             if i != 0:
                                 img = light_invert(img, i)
+                            img = geo_scalefit(img, width, height, mode=mode, sample=sample)
 
-                        img = geo_scalefit(img, width, height, mode=mode, sample=sample)
+                        cc, _, w, h = channel_count(img)
+                        if cc == 4:
+                            mask = img[:, :, 3]
+                            img = img[:, :, :3]
+                        else:
+                            mask = np.ones((h, w), dtype=np.uint8) * 255
+
                         images.append(cv2tensor(img))
+                        masks.append(cv2mask(mask))
 
                         pbar.update_absolute(idx)
                         if batch_size > 1:
                             time.sleep(rate)
 
         if len(images) == 0:
-            images = [self.__last]
+            return empty
+
         self.__last = images[-1]
-        return (images, )
+        self.__last_mask = masks[-1]
+        return ( torch.stack(images), torch.stack(masks), )
 
 class StreamWriterNode(JOVBaseNode):
     NAME = "STREAM WRITER (JOV) 🎞️"

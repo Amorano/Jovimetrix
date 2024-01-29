@@ -1,6 +1,6 @@
-// JOVIMETRIX GL SHADER
+//
 // Create polygonal (convex) of 3+ n-sides
-// MIT License
+//
 
 uniform int sides;
 uniform float radius;
@@ -9,7 +9,7 @@ uniform float radius;
 #define TAU 6.28318530718
 
 void main(){
-    vec2 uv = iUV;
+    vec2 uv = fragCoord;
     uv.x *= iResolution.x / iResolution.y;
     uv = uv * 2. - 1.;
 

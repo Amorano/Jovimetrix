@@ -1,12 +1,8 @@
-// JOVIMETRIX GL SHADER
+//
 // Simplex Noise
-// MIT License
+//
 
 uniform int seed;
-
-vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-vec2 mod289(vec2 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-vec3 permute(vec3 x) { return mod289(((x*34.0)+1.0)*x); }
 
 //
 // Description : GLSL 2D simplex noise function
@@ -17,7 +13,11 @@ vec3 permute(vec3 x) { return mod289(((x*34.0)+1.0)*x); }
 //  Copyright (C) 2011 Ashima Arts. All rights reserved.
 //  Distributed under the MIT License. See LICENSE file.
 //  https://github.com/ashima/webgl-noise
-//
+
+vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+vec2 mod289(vec2 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+vec3 permute(vec3 x) { return mod289(((x*34.0)+1.0)*x); }
+
 float snoise(vec2 v) {
 
     // Precompute values for skewed triangular grid
@@ -76,7 +76,7 @@ float snoise(vec2 v) {
 }
 
 void main() {
-    vec2 st = iUV + seed;
+    vec2 st = fragCoord + seed;
     vec3 color = vec3(snoise(st * 10.) * 0.5 + 0.5);
     fragColor = vec4(color, 1.0);
 }

@@ -21,11 +21,11 @@ MAX_HEIGHT = 8192
 VERTEX = """
 #version 330
 in vec2 iPosition;
-out vec2 iUV;
+out vec2 fragCoord;
 
 void main() {
     gl_Position = vec4(iPosition, 0.0, 1.0);
-    iUV = iPosition / 2.0 + 0.5;
+    fragCoord = iPosition / 2.0 + 0.5;
 }"""
 
 FRAGMENT_HEADER = """
@@ -36,7 +36,7 @@ precision mediump float;
 precision highp float;
 #endif
 
-in vec2 iUV;
+in vec2 fragCoord;
 uniform vec2 iResolution;
 uniform float iTime;
 uniform float iTimeDelta;
@@ -67,7 +67,7 @@ class GLSL:
         if texture1 is not None:
             width, height = texture1.size
 
-        with open(fpath, 'r') as f:
+        with open(fpath, 'r', encoding='utf8') as f:
             program = f.read()
 
         # fire and forget
@@ -78,6 +78,10 @@ class GLSL:
 
     def __init__(self, fragment:str, width:int=128, height:int=128, param:dict=None) -> None:
         self.__ctx = moderngl.create_standalone_context()
+
+        if os.path.isfile(fragment):
+            with open(fragment, 'r', encoding='utf8') as f:
+                fragment = f.read()
 
         self.__fragment: str = FRAGMENT_HEADER + fragment
         try:
@@ -188,6 +192,8 @@ class GLSL:
     @width.setter
     def width(self, val: int) -> None:
         self.__width = max(0, min(val, MAX_WIDTH))
+        if self.__fbo is not None:
+            self.__fbo.release()
         self.__fbo = self.__ctx.framebuffer(
             color_attachments=[self.__ctx.texture((self.__width, self.__height), 3)]
         )
@@ -199,6 +205,8 @@ class GLSL:
     @height.setter
     def height(self, val: int) -> None:
         self.__height = max(0, min(val, MAX_HEIGHT))
+        if self.__fbo is not None:
+            self.__fbo.release()
         self.__fbo = self.__ctx.framebuffer(
             color_attachments=[self.__ctx.texture((self.__width, self.__height), 3)]
         )
@@ -237,6 +245,8 @@ class GLSL:
                     self.__param[k].value = v
                 except KeyError as _:
                     pass
+                except Exception as e:
+                    logger.error(str(e))
 
         self.__vao.render()
         self.__frame = Image.frombytes(

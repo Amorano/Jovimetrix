@@ -3,6 +3,7 @@ Jovimetrix - http://www.github.com/amorano/jovimetrix
 Creation - GLSL
 """
 
+from enum import Enum
 import torch
 from loguru import logger
 
@@ -20,8 +21,8 @@ from Jovimetrix.sup.shader import GLSL, CompileException
 JOV_CONFIG_GLSL = ROOT / 'glsl'
 
 DEFAULT_FRAGMENT = """void main() {
-    vec4 texColor = texture(iChannel0, iUV);
-    vec4 color = vec4(iUV, abs(sin(iTime)), 1.0);
+    vec4 texColor = texture(iChannel0, fragCoord);
+    vec4 color = vec4(fragCoord, abs(sin(iTime)), 1.0);
     fragColor = vec4((texColor.xyz + color.xyz) / 2.0, 1.0);
 }"""
 
@@ -63,7 +64,7 @@ class GLSLNode(JOVBaseNode):
         super().__init__(*arg, **kw)
         self.__glsl = None
         self.__fragment = ""
-        self.__last_good = [torch.zeros((self.WIDTH, self.HEIGHT, 3), dtype=torch.uint8)]
+        self.__last_good = [torch.zeros((self.WIDTH, self.HEIGHT, 3), dtype=torch.uint8, device="cpu")]
 
     def run(self, id, **kw) -> list[torch.Tensor]:
         batch = kw.get(Lexicon.BATCH, 1)
@@ -132,14 +133,32 @@ class GLSLBaseNode(JOVBaseNode):
     def INPUT_TYPES(cls) -> dict:
         return deep_merge_dict(IT_REQUIRED, IT_PIXELS)
 
-    def run(self, frag:str=None, **kw) -> list[torch.Tensor]:
-        if (texture1 := kw.get(Lexicon.PIXEL, None)) is not None:
-            texture1 = tensor2pil(texture1)
+    @classmethod
+    def IS_CHANGED(cls, **kw) -> float:
+        return float("nan")
 
-        wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)[0]
+    def __init__(self, *arg, **kw) -> None:
+        super().__init__(*arg, **kw)
+        self.__program = None
+        self.__glsl = None
+
+    def run(self, **kw) -> list[torch.Tensor]:
+        width, height = MIN_IMAGE_SIZE, MIN_IMAGE_SIZE
+        if (texture1 := kw.pop(Lexicon.PIXEL, None)) is not None:
+            texture1 = tensor2pil(texture1)
+            width, height = texture1.size
+
+        wihi = parse_tuple(Lexicon.WH, kw, default=(width, height,), clip_min=1)[0]
         width, height = wihi
-        program = frag if frag is not None else str(self.FRAGMENT)
-        for x in ['param', 'width', 'height', 'texture1', 'texture2', 'texture3']:
+        kw.pop(Lexicon.WH, None)
+
+        if (texture2 := kw.pop(Lexicon.PIXEL_B, None)) is not None:
+            texture2 = tensor2pil(texture2)
+        if (texture3 := kw.pop(Lexicon.MASK, None)) is not None:
+            texture3 = tensor2pil(texture3)
+
+        frag = kw.pop("frag", self.FRAGMENT)
+        for x in ['param', 'iChannel0', 'iChannel1', 'iChannel2', 'iPosition', 'fragCoord', 'iResolution', 'iTime', 'iTimeDelta', 'iFrameRate', 'iFrame', 'fragColor', 'texture1', 'texture2', 'texture3']:
             kw.pop(x, None)
 
         param = {}
@@ -147,13 +166,47 @@ class GLSLBaseNode(JOVBaseNode):
             if type(v) == dict:
                 v = parse_tuple(k, kw, EnumTupleType.FLOAT)[0]
             param[k] = v
-        img = GLSL.instant(program, texture1=texture1, width=width, height=height, param=param)
-        return (pil2tensor(img),)
+
+        if self.__glsl is None or self.__program is None or self.__program != frag:
+            self.__program = frag
+            if self.__glsl is not None:
+                del self.__glsl
+
+            self.__glsl = None
+            try:
+                self.__glsl = GLSL(self.__program, width=width, height=height, param=param)
+            except Exception as e:
+                logger.error(str(e))
+                logger.error(self.__program)
+                ret = [torch.zeros((height, width, 3), dtype=torch.uint8, device="cpu")]
+                return (ret, )
+
+        self.__glsl.width = width
+        self.__glsl.height = height
+        img = self.__glsl.render(texture1, param)
+        return (pil2tensor(img), )
+
+class GLSLSelectRange(GLSLBaseNode):
+    NAME = "SELECT RANGE GLSL (JOV)"
+    FRAGMENT = str(JOV_GLSL / "clr" / "clr-flt-range.glsl")
+
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        d = super().INPUT_TYPES()
+        e = {"optional": {
+            Lexicon.START: ("VEC3", {"default": (0., 0., 0.), "step": 0.01, "min": 0, "max": 1, "precision": 4, "round": 0.00001, "label": [Lexicon.R, Lexicon.G, Lexicon.B]}),
+            Lexicon.END: ("VEC3", {"default": (1., 1., 1.), "step": 0.01, "min": 0, "max": 1, "precision": 4, "round": 0.00001, "label": [Lexicon.R, Lexicon.G, Lexicon.B]}),
+        }}
+        return deep_merge_dict(d, e)
+
+    def run(self, **kw) -> list[torch.Tensor]:
+        kw["start"] = kw.pop(Lexicon.START, (0., 0., 0.))
+        kw["end"] = kw.pop(Lexicon.END, (1., 1., 1.))
+        return super().run(**kw)
 
 class GLSLColorGrayscale(GLSLBaseNode):
     NAME = "GRAYSCALE GLSL (JOV)"
-    CATEGORY = "JOVIMETRIX GLSL/COLOR"
-    FRAGMENT = JOV_GLSL / "color-grayscale.glsl"
+    FRAGMENT = str(JOV_GLSL / "clr" / "clr-grayscale.glsl")
     DEFAULT = (0.299, 0.587, 0.114)
 
     @classmethod
@@ -169,67 +222,80 @@ class GLSLColorGrayscale(GLSLBaseNode):
         kw["conversion"] = rgb
         return super().run(**kw)
 
-class GLSLMap(GLSLBaseNode):
-    NAME = "MAP GLSL (JOV)"
+class EnumNoiseType(Enum):
+    BROWNIAN = 0
+    VALUE = 10
+    GRADIENT = 20
+    MOSAIC = 30
+    PERLIN_2D = 40
+    PERLIN_2D_P = 42
+    SIMPLEX_2D = 50
+    SIMPLEX_3D = 52
+
+class GLSLCreateNoise(GLSLBaseNode):
+    NAME = "NOISE GLSL (JOV)"
+    CATEGORY = "JOVIMETRIX GLSL"
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = super().INPUT_TYPES()
         e = {"optional": {
-            Lexicon.TYPE: (["POLAR", "RECT-EQUAL"], {"default": "RECT-EQUAL"}),
-            Lexicon.FLIP: ("BOOLEAN", {"default": False}),
+            Lexicon.TYPE: (EnumNoiseType._member_names_, {"default": EnumNoiseType.VALUE.name}),
+            Lexicon.VALUE: ("INT", {"default": 0, "step": 1}),
+            Lexicon.WH: ("VEC2", {"default": (512, 512,), "step": 1, "min": 1}),
         }}
-        return deep_merge_dict(d, e)
+        return deep_merge_dict(IT_REQUIRED, e, IT_WH)
 
     def run(self, **kw) -> list[torch.Tensor]:
+        kw["seed"] = kw.pop(Lexicon.VALUE, 0)
         frag = None
-        match kw.pop(Lexicon.TYPE, "POLAR"):
-            case "POLAR":
-                frag = JOV_GLSL / "map-polar.glsl"
-            case "RECT-EQUAL":
-                frag = JOV_GLSL / "map-rect-equal.glsl"
+        typ = kw.pop(Lexicon.TYPE, EnumNoiseType.VALUE)
+        match EnumNoiseType[typ]:
+            case EnumNoiseType.BROWNIAN:
+                frag = JOV_GLSL / "cre"/ "cre-nse-brownian.glsl"
+            case EnumNoiseType.GRADIENT:
+                frag = JOV_GLSL / "cre"/ "cre-nse-gradient.glsl"
+            case EnumNoiseType.MOSAIC:
+                frag = JOV_GLSL / "cre"/ "cre-nse-mosaic.glsl"
+            case EnumNoiseType.PERLIN_2D:
+                frag = JOV_GLSL / "cre"/ "cre-nse-perlin_2D.glsl"
+            case EnumNoiseType.PERLIN_2D_P:
+                frag = JOV_GLSL / "cre"/ "cre-nse-perlin_2D-periodic.glsl"
+            case EnumNoiseType.SIMPLEX_2D:
+                frag = JOV_GLSL / "cre"/ "cre-nse-simplex_2D.glsl"
+            case EnumNoiseType.SIMPLEX_3D:
+                frag = JOV_GLSL / "cre"/ "cre-nse-simplex_3D.glsl"
+            case EnumNoiseType.VALUE:
+                frag = JOV_GLSL / "cre"/ "cre-nse-value.glsl"
 
-        kw["flip"] = kw.pop(Lexicon.FLIP, False)
-        return super().run(frag=frag, **kw)
+        kw["frag"] = str(frag) if frag is not None else None
+        return super().run(**kw)
 
-class GLSLNoise1D(GLSLBaseNode):
-    NAME = "NOISE 1D GLSL (JOV)"
-    CATEGORY = "JOVIMETRIX GLSL/NOISE"
-    FRAGMENT = JOV_GLSL / "noise-1D.glsl"
+class EnumPatternType(Enum):
+    CHECKER = 10
+
+class GLSLCreatePattern(GLSLBaseNode):
+    NAME = "PATTERN GLSL (JOV)"
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         e = {"optional": {
-            Lexicon.VALUE: ("INT", {"default": 0, "step": 1}),
+            Lexicon.TYPE: (EnumPatternType._member_names_, {"default": EnumPatternType.CHECKER.name}),
         }}
         return deep_merge_dict(IT_REQUIRED, e, IT_WH)
 
     def run(self, **kw) -> list[torch.Tensor]:
-        seed = kw.pop(Lexicon.VALUE, 0)
-        kw["seed"] = seed
+        kw["frag"] = None
+        typ = kw.pop(Lexicon.TYPE, EnumPatternType.CHECKER)
+        match EnumPatternType[typ]:
+            case EnumPatternType.CHECKER:
+                kw["frag"] = JOV_GLSL / "cre"/ "cre-pat-checker.glsl"
+
         return super().run(**kw)
 
-class GLSLNoise2DSimplex(GLSLBaseNode):
-    NAME = "NOISE 2D SIMPLEX GLSL (JOV)"
-    CATEGORY = "JOVIMETRIX GLSL/NOISE"
-    FRAGMENT = JOV_GLSL / "noise-2D-simplex.glsl"
-
-    @classmethod
-    def INPUT_TYPES(cls) -> dict:
-        e = {"optional": {
-            Lexicon.VALUE: ("INT", {"default": 0, "step": 1}),
-        }}
-        return deep_merge_dict(IT_REQUIRED, e, IT_WH)
-
-    def run(self, **kw) -> list[torch.Tensor]:
-        seed = kw.pop(Lexicon.VALUE, 0)
-        kw["seed"] = seed
-        return super().run(**kw)
-
-class GLSLShapePolygon(GLSLBaseNode):
+class GLSLCreatePolygon(GLSLBaseNode):
     NAME = "POLYGON GLSL (JOV)"
-    CATEGORY = "JOVIMETRIX GLSL/CREATE"
-    FRAGMENT = JOV_GLSL / "shape-polygon.glsl"
+    FRAGMENT = str(JOV_GLSL / "cre" / "cre-shp-polygon.glsl")
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -244,10 +310,60 @@ class GLSLShapePolygon(GLSLBaseNode):
         kw["radius"] = 1. / kw.pop(Lexicon.RADIUS, 1)
         return super().run(**kw)
 
-class GLSLTransRotate(GLSLBaseNode):
+class EnumMappingType(Enum):
+    MERCATOR = 10
+    POLAR = 20
+    RECT_EQUAL = 30
+
+class GLSLMap(GLSLBaseNode):
+    NAME = "MAP GLSL (JOV)"
+
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        d = super().INPUT_TYPES()
+        e = {"optional": {
+            Lexicon.TYPE: (EnumMappingType._member_names_, {"default": EnumMappingType.POLAR.name}),
+            Lexicon.FLIP: ("BOOLEAN", {"default": False}),
+        }}
+        return deep_merge_dict(d, e)
+
+    def run(self, **kw) -> list[torch.Tensor]:
+        frag = None
+        typ = kw.pop(Lexicon.TYPE, EnumMappingType.POLAR)
+        match EnumMappingType[typ]:
+            case EnumMappingType.MERCATOR:
+                frag = JOV_GLSL / "map"/ "map-mercator.glsl"
+            case EnumMappingType.POLAR:
+                frag = JOV_GLSL / "map"/ "map-polar.glsl"
+            case EnumMappingType.RECT_EQUAL:
+                frag = JOV_GLSL / "map"/ "map-rect_equal.glsl"
+
+        kw["frag"] = str(frag) if frag is not None else frag
+        kw["flip"] = kw.pop(Lexicon.FLIP, False)
+        return super().run(**kw)
+
+class GLSLTRSMirror(GLSLBaseNode):
+    NAME = "MIRROR GLSL (JOV)"
+    FRAGMENT = str(JOV_GLSL / "trs" / "trs-mirror.glsl")
+
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        d = super().INPUT_TYPES()
+        e = {"optional": {
+            Lexicon.ANGLE: ("FLOAT", {"default": 0, "step": 0.01}),
+            Lexicon.PIVOT: ("VEC2", {"default": (0.5, 0.5), "max": 1, "min": 0, "step": 0.01, "precision": 4, "label": [Lexicon.X, Lexicon.Y]}),
+        }}
+        return deep_merge_dict(d, e)
+
+    def run(self, **kw) -> list[torch.Tensor]:
+        center = parse_tuple(Lexicon.PIVOT, kw, typ=EnumTupleType.FLOAT, default=(0.5, 0.5,), clip_min=0, clip_max=1)[0]
+        kw["angle"] = -kw.pop(Lexicon.ANGLE, 0)
+        kw["center"] = center
+        return super().run(**kw)
+
+class GLSLTRSRotate(GLSLBaseNode):
     NAME = "ROTATE GLSL (JOV)"
-    CATEGORY = "JOVIMETRIX GLSL/ADJUST"
-    FRAGMENT = JOV_GLSL / "trans-rotate.glsl"
+    FRAGMENT = str(JOV_GLSL / "trs" / "trs-rotate.glsl")
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -266,8 +382,7 @@ class GLSLTransRotate(GLSLBaseNode):
 
 class GLSLUtilTiler(GLSLBaseNode):
     NAME = "TILER GLSL (JOV)"
-    CATEGORY = "JOVIMETRIX GLSL/UTIL"
-    FRAGMENT = JOV_GLSL / "util-tiler.glsl"
+    FRAGMENT = JOV_GLSL / "utl" / "utl-tiler.glsl"
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -285,8 +400,20 @@ class GLSLUtilTiler(GLSLBaseNode):
         kw["uTile"] = uTile
         return super().run(**kw)
 
-class GLSLWarp(GLSLBaseNode):
-    NAME = "WARP GLSL (JOV)"
+class EnumVFXType(Enum):
+    BULGE = 10
+    CHROMATIC = 20
+    CROSS_STITCH = 30
+    CROSS_HATCH = 40
+    CRT = 50
+    FILM_GRAIN = 60
+    FROSTED = 70
+    PIXELATION = 80
+    SEPIA = 90
+    VHS = 100
+
+class GLSLVFX(GLSLBaseNode):
+    NAME = "VFX GLSL (JOV)"
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -295,19 +422,40 @@ class GLSLWarp(GLSLBaseNode):
             "radius": ("FLOAT", {"default": 2., "min": 0.0001, "step": 0.01}),
             "strength": ("FLOAT", {"default": 1., "min": 0., "step": 0.01}),
             "center": ("VEC2", {"default": (0.5, 0.5, ), "min": 0., "max": 1., "step": 0.01, "precision": 4, "label": [Lexicon.X, Lexicon.Y]}),
-            Lexicon.TYPE: (["BULGE", "FISH-EYE"], {"default": "BULGE"})
+            Lexicon.TYPE: (EnumVFXType._member_names_, {"default": EnumVFXType.BULGE.name})
         }}
         f = deep_merge_dict(d, e)
         return f
 
     def run(self, **kw) -> list[torch.Tensor]:
-        typ = kw.pop(Lexicon.TYPE, "BULGE")
-        frag = None
-        match typ:
-            case "BULGE":
-                frag = JOV_GLSL / "warp-bulge.glsl"
+        kw["frag"] = None
+        typ = kw.pop(Lexicon.TYPE, EnumVFXType.BULGE)
+        match EnumVFXType[typ]:
+            case EnumVFXType.BULGE:
+                kw["frag"] = str(JOV_GLSL / "vfx" / "vfx-bulge.glsl")
 
-            case "FISH-EYE":
-                frag = JOV_GLSL / "warp-simple.glsl"
+            case EnumVFXType.CHROMATIC:
+                kw["frag"] = str(JOV_GLSL / "vfx" / "vfx-chromatic.glsl")
 
-        return super().run(frag=frag, **kw)
+            case EnumVFXType.CROSS_HATCH:
+                kw["frag"] = str(JOV_GLSL / "vfx" / "vfx-cross_hatch.glsl")
+
+            case EnumVFXType.CRT:
+                kw["frag"] = str(JOV_GLSL / "vfx" / "vfx-crt.glsl")
+
+            case EnumVFXType.FILM_GRAIN:
+                kw["frag"] = str(JOV_GLSL / "vfx" / "vfx-film-grain.glsl")
+
+            case EnumVFXType.FROSTED:
+                kw["frag"] = str(JOV_GLSL / "vfx" / "vfx-frosted.glsl")
+
+            case EnumVFXType.PIXELATION:
+                kw["frag"] = str(JOV_GLSL / "vfx" / "vfx-pixelation.glsl")
+
+            case EnumVFXType.SEPIA:
+                kw["frag"] = str(JOV_GLSL / "vfx" / "vfx-sepia.glsl")
+
+            case EnumVFXType.VHS:
+                kw["frag"] = str(JOV_GLSL / "vfx" / "vfx-vhs.glsl")
+
+        return super().run(**kw)
