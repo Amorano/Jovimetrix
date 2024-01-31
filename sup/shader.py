@@ -77,8 +77,10 @@ class GLSL:
         return img
 
     def __init__(self, fragment:str, width:int=128, height:int=128, param:dict=None) -> None:
-        self.__ctx = moderngl.create_standalone_context()
-
+        self.__fbo = None
+        self.__vao = None
+        self.__vbo = None
+        self.__ctx = moderngl.create_context(standalone=True, share=False)
         if os.path.isfile(fragment):
             with open(fragment, 'r', encoding='utf8') as f:
                 fragment = f.read()
@@ -142,6 +144,20 @@ class GLSL:
         self.__time_last: float = time.perf_counter()
 
     def __del__(self) -> None:
+        if self.__vao is not None:
+            self.__vao.release()
+            self.__vao = None
+            del self.__vao
+
+        if self.__vbo is not None:
+            self.__vbo.release()
+            self.__vbo = None
+            del self.__vbo
+
+        if self.__fbo is not None:
+            self.__fbo.release()
+            self.__fbo = None
+
         if self.__ctx is not None:
             # logger.debug("clean")
             self.__ctx.release()
@@ -153,6 +169,22 @@ class GLSL:
         self.__delta = 0
         self.__frame_count = 0
         self.__time_last = time.perf_counter()
+
+    def __bufferReset(self) -> None:
+        if self.__fbo is not None:
+            self.__fbo.release()
+            self.__fbo = None
+
+        try:
+            self.__fbo = self.__ctx.framebuffer(
+                color_attachments=[self.__ctx.texture((self.__width, self.__height), 3)]
+            )
+        except Exception as e:
+            logger.error(str(e))
+            print(self.__ctx)
+            print(self.__width)
+            print(self.__height)
+            self.__fbo = None
 
     @property
     def frame(self) -> Image:
@@ -192,11 +224,7 @@ class GLSL:
     @width.setter
     def width(self, val: int) -> None:
         self.__width = max(0, min(val, MAX_WIDTH))
-        if self.__fbo is not None:
-            self.__fbo.release()
-        self.__fbo = self.__ctx.framebuffer(
-            color_attachments=[self.__ctx.texture((self.__width, self.__height), 3)]
-        )
+        self.__bufferReset()
 
     @property
     def height(self) -> int:
@@ -205,11 +233,7 @@ class GLSL:
     @height.setter
     def height(self, val: int) -> None:
         self.__height = max(0, min(val, MAX_HEIGHT))
-        if self.__fbo is not None:
-            self.__fbo.release()
-        self.__fbo = self.__ctx.framebuffer(
-            color_attachments=[self.__ctx.texture((self.__width, self.__height), 3)]
-        )
+        self.__bufferReset()
 
     def __set_uniforms(self, channel0: Image=None) -> None:
         if self.__iResolution is not None:
@@ -246,6 +270,7 @@ class GLSL:
                 except KeyError as _:
                     pass
                 except Exception as e:
+                    logger.error(k, v)
                     logger.error(str(e))
 
         self.__vao.render()

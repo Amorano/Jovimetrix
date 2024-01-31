@@ -14,7 +14,7 @@ from Jovimetrix import IT_WH, JOV_GLSL, ComfyAPIMessage, JOVBaseNode, \
     ROOT, IT_PIXELS, IT_REQUIRED, MIN_IMAGE_SIZE, TimedOutException
 
 from Jovimetrix.sup.lexicon import Lexicon
-from Jovimetrix.sup.util import EnumTupleType, deep_merge_dict, parse_tuple
+from Jovimetrix.sup.util import EnumTupleType, deep_merge_dict, parse_tuple, parse_tuple_single
 from Jovimetrix.sup.image import pil2tensor, tensor2pil
 from Jovimetrix.sup.shader import GLSL, CompileException
 
@@ -130,10 +130,6 @@ class GLSLBaseNode(JOVBaseNode):
     FRAGMENT = ".glsl"
 
     @classmethod
-    def INPUT_TYPES(cls) -> dict:
-        return deep_merge_dict(IT_REQUIRED, IT_PIXELS)
-
-    @classmethod
     def IS_CHANGED(cls, **kw) -> float:
         return float("nan")
 
@@ -152,6 +148,12 @@ class GLSLBaseNode(JOVBaseNode):
         width, height = wihi
         kw.pop(Lexicon.WH, None)
 
+        seed = kw.pop(Lexicon.SEED, None)
+
+        uv_tile = None
+        if (uv_tile := kw.pop(Lexicon.TILE, None)) is not None:
+            uv_tile = parse_tuple_single([uv_tile], typ=EnumTupleType.FLOAT, default=(1., 1.,), clip_min=0.01)[0]
+
         if (texture2 := kw.pop(Lexicon.PIXEL_B, None)) is not None:
             texture2 = tensor2pil(texture2)
         if (texture3 := kw.pop(Lexicon.MASK, None)) is not None:
@@ -166,6 +168,11 @@ class GLSLBaseNode(JOVBaseNode):
             if type(v) == dict:
                 v = parse_tuple(k, kw, EnumTupleType.FLOAT)[0]
             param[k] = v
+
+        if uv_tile is not None:
+            param['uv_tile'] = uv_tile
+        if seed is not None:
+            param['seed'] = seed
 
         if self.__glsl is None or self.__program is None or self.__program != frag:
             self.__program = frag
@@ -192,12 +199,11 @@ class GLSLSelectRange(GLSLBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = super().INPUT_TYPES()
         e = {"optional": {
             Lexicon.START: ("VEC3", {"default": (0., 0., 0.), "step": 0.01, "min": 0, "max": 1, "precision": 4, "round": 0.00001, "label": [Lexicon.R, Lexicon.G, Lexicon.B]}),
             Lexicon.END: ("VEC3", {"default": (1., 1., 1.), "step": 0.01, "min": 0, "max": 1, "precision": 4, "round": 0.00001, "label": [Lexicon.R, Lexicon.G, Lexicon.B]}),
         }}
-        return deep_merge_dict(d, e)
+        return deep_merge_dict(IT_REQUIRED, IT_PIXELS, e)
 
     def run(self, **kw) -> list[torch.Tensor]:
         kw["start"] = kw.pop(Lexicon.START, (0., 0., 0.))
@@ -211,11 +217,10 @@ class GLSLColorGrayscale(GLSLBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = super().INPUT_TYPES()
         e = {"optional": {
             Lexicon.RGB: ("VEC3", {"default": cls.DEFAULT, "step": 0.01, "min": 0, "max": 1, "precision": 4, "round": 0.00001, "label": [Lexicon.R, Lexicon.G, Lexicon.B]}),
         }}
-        return deep_merge_dict(d, e)
+        return deep_merge_dict(IT_REQUIRED, IT_PIXELS, e)
 
     def run(self, **kw) -> list[torch.Tensor]:
         rgb = kw.pop(Lexicon.RGB, self.DEFAULT)
@@ -238,16 +243,15 @@ class GLSLCreateNoise(GLSLBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = super().INPUT_TYPES()
         e = {"optional": {
             Lexicon.TYPE: (EnumNoiseType._member_names_, {"default": EnumNoiseType.VALUE.name}),
-            Lexicon.VALUE: ("INT", {"default": 0, "step": 1}),
+            Lexicon.SEED: ("INT", {"default": 0, "step": 1}),
+            Lexicon.TILE: ("VEC2", {"default": (1., 1.,), "step": 0.01, "min": 0.01, "precision": 4, "round": 0.00001, "label": [Lexicon.X, Lexicon.Y]}),
             Lexicon.WH: ("VEC2", {"default": (512, 512,), "step": 1, "min": 1}),
         }}
         return deep_merge_dict(IT_REQUIRED, e, IT_WH)
 
     def run(self, **kw) -> list[torch.Tensor]:
-        kw["seed"] = kw.pop(Lexicon.VALUE, 0)
         frag = None
         typ = kw.pop(Lexicon.TYPE, EnumNoiseType.VALUE)
         match EnumNoiseType[typ]:
@@ -320,12 +324,11 @@ class GLSLMap(GLSLBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = super().INPUT_TYPES()
         e = {"optional": {
             Lexicon.TYPE: (EnumMappingType._member_names_, {"default": EnumMappingType.POLAR.name}),
             Lexicon.FLIP: ("BOOLEAN", {"default": False}),
         }}
-        return deep_merge_dict(d, e)
+        return deep_merge_dict(IT_REQUIRED, IT_PIXELS, e)
 
     def run(self, **kw) -> list[torch.Tensor]:
         frag = None
@@ -348,12 +351,11 @@ class GLSLTRSMirror(GLSLBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = super().INPUT_TYPES()
         e = {"optional": {
             Lexicon.ANGLE: ("FLOAT", {"default": 0, "step": 0.01}),
             Lexicon.PIVOT: ("VEC2", {"default": (0.5, 0.5), "max": 1, "min": 0, "step": 0.01, "precision": 4, "label": [Lexicon.X, Lexicon.Y]}),
         }}
-        return deep_merge_dict(d, e)
+        return deep_merge_dict(IT_REQUIRED, IT_PIXELS, e)
 
     def run(self, **kw) -> list[torch.Tensor]:
         center = parse_tuple(Lexicon.PIVOT, kw, typ=EnumTupleType.FLOAT, default=(0.5, 0.5,), clip_min=0, clip_max=1)[0]
@@ -367,12 +369,11 @@ class GLSLTRSRotate(GLSLBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = super().INPUT_TYPES()
         e = {"optional": {
             Lexicon.ANGLE: ("FLOAT", {"default": 0, "step": 0.01}),
             Lexicon.PIVOT: ("VEC2", {"default": (0.5, 0.5), "max": 1, "min": 0, "step": 0.01, "precision": 4, "label": [Lexicon.X, Lexicon.Y]}),
         }}
-        return deep_merge_dict(d, e)
+        return deep_merge_dict(IT_REQUIRED, IT_PIXELS, e)
 
     def run(self, **kw) -> list[torch.Tensor]:
         center = parse_tuple(Lexicon.PIVOT, kw, typ=EnumTupleType.FLOAT, default=(0.5, 0.5,), clip_min=0, clip_max=1)[0]
@@ -386,12 +387,11 @@ class GLSLUtilTiler(GLSLBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = super().INPUT_TYPES()
         e = {"optional": {
             "uTime": ("FLOAT", {"default": 0, "step": 0.01}),
             "uTile": ("VEC2", {"default": (1., 1., ), "min": 1., "step": 0.01, "precision": 4, "label": [Lexicon.X, Lexicon.Y]}),
         }}
-        return deep_merge_dict(d, e)
+        return deep_merge_dict(IT_REQUIRED, IT_PIXELS, e)
 
     def run(self, **kw) -> list[torch.Tensor]:
         uTime = kw.pop("uTime", 0.)
@@ -417,14 +417,13 @@ class GLSLVFX(GLSLBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = super().INPUT_TYPES()
         e = {"optional": {
             "radius": ("FLOAT", {"default": 2., "min": 0.0001, "step": 0.01}),
             "strength": ("FLOAT", {"default": 1., "min": 0., "step": 0.01}),
             "center": ("VEC2", {"default": (0.5, 0.5, ), "min": 0., "max": 1., "step": 0.01, "precision": 4, "label": [Lexicon.X, Lexicon.Y]}),
             Lexicon.TYPE: (EnumVFXType._member_names_, {"default": EnumVFXType.BULGE.name})
         }}
-        f = deep_merge_dict(d, e)
+        f = deep_merge_dict(IT_REQUIRED, IT_PIXELS, e)
         return f
 
     def run(self, **kw) -> list[torch.Tensor]:

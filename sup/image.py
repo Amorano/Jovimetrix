@@ -92,6 +92,10 @@ IT_SCALEMODE = {"optional": {
     Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
 }}
 
+IT_EDGE = {"optional": {
+    Lexicon.EDGE: (EnumEdge._member_names_, {"default": EnumEdge.CLIP.name}),
+}}
+
 IT_WHMODE = deep_merge_dict(IT_WH, IT_SCALEMODE)
 
 # =============================================================================

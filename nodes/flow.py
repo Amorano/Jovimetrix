@@ -161,8 +161,10 @@ class ComparisonNode(JOVBaseNode):
     NAME = "COMPARISON (JOV) 🕵🏽"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/FLOW"
     DESCRIPTION = "Compare two inputs"
+    INPUT_IS_LIST = True
     RETURN_TYPES = ("BOOLEAN",)
-    RETURN_NAMES = (Lexicon.BOOLEAN, )
+    RETURN_NAMES = (Lexicon.UNKNOWN, )
+    OUTPUT_IS_LIST = (True, )
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -175,10 +177,10 @@ class ComparisonNode(JOVBaseNode):
 
     def run(self, **kw) -> tuple[bool]:
         result = []
-        A = kw[Lexicon.IN_A]
-        B = kw[Lexicon.IN_B]
-        flip = kw[Lexicon.FLIP]
-        op = kw[Lexicon.COMPARE]
+        A = kw.get(Lexicon.IN_A, [None])
+        B = kw.get(Lexicon.IN_B, [None])
+        flip = kw.get(Lexicon.FLIP, [None])
+        op = kw.get(Lexicon.COMPARE, [None])
         params = [tuple(x) for x in zip_longest_fill(A, B, op, flip)]
         pbar = comfy.utils.ProgressBar(len(params))
         for idx, (a, b, op, flip) in enumerate(params):

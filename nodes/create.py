@@ -4,6 +4,7 @@ Creation
 """
 
 from enum import Enum
+from typing import Any
 
 import torch
 from PIL import Image, ImageDraw, ImageFont
@@ -13,7 +14,7 @@ from loguru import logger
 import comfy
 from server import PromptServer
 
-from Jovimetrix import JOVImageBaseNode, \
+from Jovimetrix import JOVImageBaseNode, TYPE_IMAGE, \
     IT_RGBA, IT_WH, IT_SCALE, IT_ROT, IT_INVERT, \
     IT_REQUIRED, MIN_IMAGE_SIZE
 
@@ -22,11 +23,11 @@ from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import deep_merge_dict, parse_tuple, parse_number, \
     EnumTupleType
 
-from Jovimetrix.sup.image import channel_add, pil2tensor, pil2cv, \
-    cv2tensor, cv2mask, IT_WHMODE
+from Jovimetrix.sup.image import EnumEdge, channel_add, pil2tensor, pil2cv, \
+    cv2tensor, cv2mask, IT_EDGE
 
-from Jovimetrix.sup.comp import shape_ellipse, shape_polygon, shape_quad, \
-    light_invert, EnumScaleMode
+from Jovimetrix.sup.comp import geo_rotate, shape_ellipse, shape_polygon, \
+    shape_quad, light_invert
 
 FONT_MANAGER = matplotlib.font_manager.FontManager()
 FONTS = {font.name: font.fname for font in FONT_MANAGER.ttflist}
@@ -41,6 +42,48 @@ class EnumShapes(Enum):
     RECTANGLE=3
     POLYGON=4
 
+class EnumAlignment(Enum):
+    CENTER=0
+    TOP=1
+    BOTTOM=2
+
+class EnumJustify(Enum):
+    CENTER=0
+    LEFT=1
+    RIGHT=2
+
+# =============================================================================
+
+def text_align(align:EnumAlignment, height:int, text_height:int, margin:int) -> Any:
+    y = 0
+    match align:
+        case EnumAlignment.CENTER:
+            y = height / 2 - text_height / 2
+        case EnumAlignment.TOP:
+            y = margin
+        case EnumAlignment.BOTTOM:
+            y = height - text_height - margin
+    return y
+
+def text_justify(justify:EnumJustify, width:int, line_width:int, margin:int) -> Any:
+    x = 0
+    match justify:
+        case EnumJustify.LEFT:
+            x = margin
+        case EnumJustify.RIGHT:
+            x = width - line_width - margin
+        case EnumJustify.CENTER:
+            x = width/2 - line_width/2
+    return x
+
+def text_size(draw:ImageDraw, text:str, font) -> tuple:
+    bbox = draw.textbbox((0, 0), text, font=font)
+
+    # Calculate the text width and height
+    text_width = bbox[2] - bbox[0]
+    text_height = bbox[3] - bbox[1]
+    return text_width, text_height
+
 # =============================================================================
 
 class ConstantNode(JOVImageBaseNode):
@@ -48,6 +91,7 @@ class ConstantNode(JOVImageBaseNode):
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
     DESCRIPTION = ""
     OUTPUT_IS_LIST = (False, False, )
+    EPOCH = 1706647005
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -55,34 +99,38 @@ class ConstantNode(JOVImageBaseNode):
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         width, height = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)[0]
-        color = parse_tuple(Lexicon.RGBA, kw, default=(0, 0, 0, 255), clip_min=0, clip_max=255)[0]
+        color = parse_tuple(Lexicon.RGB_A, kw, default=(0, 0, 0, 255), clip_min=0, clip_max=255)[0]
         image = Image.new("RGB", (width, height), color)
-        return (pil2tensor(image), pil2tensor(image.convert("L")),)
+        mask = Image.new("L", (width, height), color[3])
+        return (pil2tensor(image), pil2tensor(mask), )
 
 class ShapeNode(JOVImageBaseNode):
     NAME = "SHAPE GENERATOR (JOV) ✨"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
     DESCRIPTION = ""
     OUTPUT_IS_LIST = (False, False, )
+    EPOCH = 1706653415
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
-                Lexicon.SHAPE: (EnumShapes._member_names_, {"default": EnumShapes.CIRCLE.name}),
-                Lexicon.SIDES: ("INT", {"default": 3, "min": 3, "max": 100, "step": 1}),
-                Lexicon.RGB: ("VEC3", {"default": (255, 255, 255), "min": 0, "max": 255, "step": 1, "label":
-                                       [Lexicon.R, Lexicon.G, Lexicon.B]}),
-                Lexicon.RGB_B: ("VEC3", {"default": (0, 0, 0), "min": 0, "max": 255, "step": 1, "label":
+            Lexicon.SHAPE: (EnumShapes._member_names_, {"default": EnumShapes.CIRCLE.name}),
+            Lexicon.SIDES: ("INT", {"default": 3, "min": 3, "max": 100, "step": 1}),
+            Lexicon.RGB: ("VEC3", {"default": (255, 255, 255), "min": 0, "max": 255, "step": 1, "label":
+                                    [Lexicon.R, Lexicon.G, Lexicon.B]}),
+            Lexicon.RGB_B: ("VEC3", {"default": (0, 0, 0), "min": 0, "max": 255, "step": 1, "label":
                                        [Lexicon.R, Lexicon.G, Lexicon.B]})
         }}
-        return deep_merge_dict(IT_REQUIRED, d, IT_WH, IT_ROT, IT_SCALE, IT_INVERT)
+        return deep_merge_dict(IT_REQUIRED, d, IT_WH, IT_ROT, IT_SCALE, IT_EDGE, IT_INVERT)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         shape = kw.get(Lexicon.SHAPE, EnumShapes.CIRCLE)
         shape = EnumShapes[shape]
         sides = kw.get(Lexicon.SIDES, 3)
         angle = kw.get(Lexicon.ANGLE, 0)
-        sizeX, sizeY = parse_tuple(Lexicon.SIZE, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,))[0]
+        edge = kw.get(Lexicon.EDGE, EnumEdge.CLIP)
+        edge = EnumEdge[edge]
+        sizeX, sizeY = parse_tuple(Lexicon.SIZE, kw, EnumTupleType.FLOAT, default=(1., 1.,))[0]
         width, height = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,))[0]
         color = parse_tuple(Lexicon.RGB, kw, default=(255, 255, 255))[0]
         bgcolor = parse_tuple(Lexicon.RGB_B, kw, default=(0, 0, 0))[0]
@@ -110,75 +158,127 @@ class ShapeNode(JOVImageBaseNode):
                 img = shape_ellipse(width, height, sizeX, sizeX, fill=color, back=bgcolor)
                 mask = shape_ellipse(width, height, sizeX, sizeX)
 
-        img = img.rotate(-angle)
-        mask = mask.rotate(-angle)
-
         img = pil2cv(img)
         mask = pil2cv(mask)
+        img = geo_rotate(img, angle, edge=edge)
+        mask = geo_rotate(mask, angle, edge=edge)
         if i != 0:
             img = light_invert(img, i)
-            mask = light_invert(mask, i)
 
         if img.shape[2] == 3:
             img = channel_add(img, 0)
-        img[:, :, 3] = mask[:, :, 0]
-        return (cv2tensor(img), cv2tensor(mask), )
+
+        return (cv2tensor(img[:,:,:3]), cv2mask(mask[:, :, 0]), )
 
 class TextNode(JOVImageBaseNode):
     NAME = "TEXT GENERATOR (JOV) 📝"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
     DESCRIPTION = ""
-    OUTPUT_IS_LIST = (False, False, )
+    OUTPUT_IS_LIST = (True, True, )
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
-                Lexicon.STRING: ("STRING", {"default": "", "multiline": True}),
+                Lexicon.STRING: ("STRING", {"default": "", "multiline": True, "dynamicPrompts": False}),
                 Lexicon.FONT: (FONT_NAMES, {"default": FONT_NAMES[0]}),
-                Lexicon.FONT_SIZE: ("INTEGER", {"default": 10, "min": 1, "step": 1}),
+                Lexicon.FONT_SIZE: ("INT", {"default": 100, "min": 1, "step": 1}),
                 Lexicon.RGB: ("VEC3", {"default": (255, 255, 255), "min": 0, "max": 255, "step": 1, "label":
                                        [Lexicon.R, Lexicon.G, Lexicon.B]}),
                 Lexicon.RGB_B: ("VEC3", {"default": (0, 0, 0), "min": 0, "max": 255, "step": 1, "label":
-                                       [Lexicon.R, Lexicon.G, Lexicon.B]})
+                                       [Lexicon.R, Lexicon.G, Lexicon.B]}),
+                Lexicon.LETTER: ("BOOLEAN", {"default": False}),
+                Lexicon.ALIGN: (EnumAlignment._member_names_, {"default": EnumAlignment.CENTER.name}),
+                Lexicon.JUSTIFY: (EnumJustify._member_names_, {"default": EnumJustify.CENTER.name}),
+                Lexicon.MARGIN: ("INT", {"default": 0, "min": -1024, "max": 1024}),
+                Lexicon.SPACING: ("INT", {"default": 25, "min": -1024, "max": 1024}),
         }}
-        return deep_merge_dict(IT_REQUIRED, d, IT_WHMODE, IT_ROT, IT_SCALE, IT_INVERT)
-
-    @staticmethod
-    def render_text(text, font_path, font_size, color, bgcolor, width,
-                    height, autofit=False) -> Image:
-
-        font = ImageFont.truetype(font_path, font_size)
-        img = Image.new("RGB", (width, height), bgcolor)
-        draw = ImageDraw.Draw(img)
-        draw.multiline_text((0, 0), text, font=font, fill=color)
-        return img
-
-        if autofit:
-            img = Image.new("RGB", (1, 1), bgcolor)
-            draw = ImageDraw.Draw(img)
-            font = ImageFont.truetype(font_path, font_size)
-
-            width, height = draw.multiline_text(text, font)
-
-        img = Image.new("RGB", (width, height), bgcolor)
-        draw = ImageDraw.Draw(img)
-        draw.text((0, 0), text, font=font, fill=color)
-        return img
+        return deep_merge_dict(IT_REQUIRED, d, IT_WH, IT_ROT, IT_EDGE, IT_INVERT)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        text = kw.get(Lexicon.STRING, "")
+        full_text = kw[Lexicon.STRING]
         font = FONTS[kw[Lexicon.FONT]]
-        font_size = kw[Lexicon.FONT_SIZE]
-        mode = EnumScaleMode[kw[Lexicon.MODE]]
-        rot = parse_number(Lexicon.ANGLE, kw, EnumTupleType.FLOAT, [1])[0]
-        sizeX, sizeY = parse_tuple(Lexicon.SIZE, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,))[0]
-        width, height = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,))[0]
+        size = kw[Lexicon.FONT_SIZE]
         color = parse_tuple(Lexicon.RGB, kw, default=(255, 255, 255))[0]
         bgcolor = parse_tuple(Lexicon.RGB_B, kw, default=(0, 0, 0))[0]
+
+
+        align = kw[Lexicon.ALIGN]
+        align = EnumAlignment[align]
+        justify = kw[Lexicon.JUSTIFY]
+        justify = EnumJustify[justify]
+        margin = kw[Lexicon.MARGIN]
+        line_spacing = kw[Lexicon.SPACING]
+
+        width, height = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,))[0]
+        angle = parse_number(Lexicon.ANGLE, kw, EnumTupleType.FLOAT, [1])[0]
+        edge = kw[Lexicon.EDGE]
+        edge = EnumEdge[edge]
         i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1])[0]
 
-        img = TextNode.render_text(text, font, font_size, color, bgcolor, width, height, autofit=mode == EnumScaleMode.NONE)
-        img = pil2cv(img)
-        if i != 0:
-            img = light_invert(img, i)
-        return (cv2tensor(img), cv2mask(img),)
+        font = ImageFont.truetype(font, size)
+
+        images = []
+        masks = []
+
+        def process_image(img:TYPE_IMAGE, mask:TYPE_IMAGE) -> TYPE_IMAGE:
+            img = pil2cv(img)
+            mask = pil2cv(mask)
+            img = geo_rotate(img, angle, edge=edge)
+            mask = geo_rotate(mask, angle, edge=edge)
+            if i != 0:
+                img = light_invert(img, i)
+            images.append(cv2tensor(img))
+            masks.append(cv2mask(mask))
+
+        # if we should output single letters instead of full phrase
+        if not kw[Lexicon.LETTER]:
+
+            img = Image.new("RGB", (width, height), bgcolor)
+            mask = Image.new("L", (width, height), 0)
+            draw = ImageDraw.Draw(img)
+            draw_mask = ImageDraw.Draw(mask)
+
+            max_width = 0
+            max_height = 0
+            # Calculate the size of the text plus padding for the tallest line
+            text = full_text.split('\n')
+            for line in text:
+                w, h = text_size(draw, line, font)
+                max_width = max(max_width, w)
+                max_height = max(max_height, h + line_spacing)
+
+            y = 0
+            text_height = max_height * len(text)
+            pbar = comfy.utils.ProgressBar(len(text))
+            for idx, line in enumerate(text):
+                # Calculate the width of the current line
+                line_width, _ = text_size(draw, line, font)
+
+                # Get the text x and y positions for each line
+                x = text_justify(justify, width, line_width, margin)
+                y = text_align(align, height, text_height, margin)
+                y += (idx * max_height)
+
+                # Add the current line to the text mask
+                draw.text((x, y), line, fill=color, font=font)
+                draw_mask.text((x, y), line, fill=255, font=font)
+                pbar.update_absolute(idx)
+
+            process_image(img, mask)
+        else:
+            text = full_text.replace('\n', '')
+            pbar = comfy.utils.ProgressBar(len(text))
+            for idx, letter in enumerate(text):
+                img = Image.new("RGB", (width, height), bgcolor)
+                mask = Image.new("L", (width, height), 0)
+                draw = ImageDraw.Draw(img)
+                draw_mask = ImageDraw.Draw(mask)
+                x = text_justify(justify, width, line_width, margin)
+                y = text_align(align, height, text_height, margin)
+                draw.text((x, y), line, fill=color, font=font)
+                draw_mask.text((x, y), line, fill=255, font=font)
+                pbar.update_absolute(idx)
+
+            process_image(img, mask)
+
+        return (images, masks, )

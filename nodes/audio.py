@@ -44,7 +44,7 @@ class GraphWaveNode(JOVImageBaseNode):
         filen = kw.get(Lexicon.FILEN)
         bars = kw.get(Lexicon.VALUE, None)
         width, height = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)[0]
-        rgb_a = parse_tuple(Lexicon.RGBA, kw, default=(128, 128, 0, 255), clip_min=1)[0]
+        rgb_a = parse_tuple(Lexicon.RGB_A, kw, default=(128, 128, 0, 255), clip_min=1)[0]
         rgb_b = parse_tuple(Lexicon.RGBA_B, kw, default=(0, 128, 128, 255), clip_min=1)[0]
 
         if self.__filen != filen:

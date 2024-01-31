@@ -16,7 +16,7 @@ from loguru import logger
 
 from Jovimetrix import TYPE_IMAGE, TYPE_PIXEL, TYPE_COORD
 
-from Jovimetrix.sup.image import image_rgb_clean, image_rgb_restore, \
+from Jovimetrix.sup.image import EnumEdge, image_rgb_clean, image_rgb_restore, \
     image_grayscale, image_split, image_merge, channel_count, channel_add, \
     channel_solid, cv2pil, pil2cv, channel_fill, pixel_eval, \
     EnumScaleMode, EnumInterpolation
@@ -184,9 +184,15 @@ def geo_crop(image: TYPE_IMAGE,
 def geo_crop_polygonal(image: TYPE_IMAGE,
                        pnt_a: TYPE_COORD, pnt_b: TYPE_COORD,
                        pnt_c: TYPE_COORD, pnt_d: TYPE_COORD,
-                       color: TYPE_PIXEL=0) -> tuple[TYPE_IMAGE, TYPE_IMAGE]:
+                       color: TYPE_PIXEL=0,
+                       width:int=None, height:int=None,
+                       mode:EnumScaleMode=EnumScaleMode.NONE,
+                       sample:EnumInterpolation=EnumInterpolation.LANCZOS4) -> tuple[TYPE_IMAGE, TYPE_IMAGE]:
 
     h, w = image.shape[:2]
+    width = width if width is not None else w
+    height = height if height is not None else h
+
     pnt_a = (int(pnt_a[0] * w), int(pnt_a[1] * h))
     pnt_b = (int(pnt_b[0] * w), int(pnt_b[1] * h))
     pnt_c = (int(pnt_c[0] * w), int(pnt_c[1] * h))
@@ -196,36 +202,52 @@ def geo_crop_polygonal(image: TYPE_IMAGE,
     pts = np.array([pnt_a, pnt_b, pnt_c, pnt_d], np.int32)
     pts = pts.reshape((-1, 1, 2))
     cv2.fillPoly(mask, [pts], 255)
+    x, y, w, h = cv2.boundingRect(mask[:, :])
+    # image is masked off
+    img = cv2.bitwise_and(image, image, mask=mask)
+    img = img[y:y+h, x:x+w]
+    img = geo_scalefit(img, width, height, color, mode, sample)
+    # canvas = np.full_like(image, color, dtype=image.dtype)
+    # canvas = cv2.bitwise_and(canvas, canvas, mask=~mask)
+    # img = cv2.addWeighted(canvas, 1, roi, 1, 0)
+    # img = img.astype(np.uint8)
 
-    canvas = np.full_like(image, color, dtype=image.dtype)
-    canvas = cv2.bitwise_and(canvas, canvas, mask=~mask)
-    roi = cv2.bitwise_and(image, image, mask=mask)
-    img = cv2.addWeighted(canvas, 1, roi, 1, 0)
-    img = img.astype(np.uint8)
     return img, mask
 
-def geo_edge_wrap(image: TYPE_IMAGE, tileX: float=1., tileY: float=1., edge: str='WRAP') -> TYPE_IMAGE:
+def geo_edge_wrap(image: TYPE_IMAGE, tileX: float=1., tileY: float=1., edge:EnumEdge=EnumEdge.WRAP) -> TYPE_IMAGE:
     """TILING."""
     height, width, _ = image.shape
-    tileX = int(tileX * width * 0.5) if edge in ["WRAP", "WRAPX"] else 0
-    tileY = int(tileY * height * 0.5) if edge in ["WRAP", "WRAPY"] else 0
-    # logger.debug(f"[{width}, {height}]  [{tileX}, {tileY}]")
-    return cv2.copyMakeBorder(image, tileY, tileY, tileX, tileX, cv2.BORDER_WRAP)
+    tileX = int(tileX * width * 0.5) if edge in [EnumEdge.WRAP, EnumEdge.WRAPX] else 0
+    tileY = int(tileY * height * 0.5) if edge in [EnumEdge.WRAP, EnumEdge.WRAPY] else 0
+    image = cv2.copyMakeBorder(image, tileY, tileY, tileX, tileX, cv2.BORDER_WRAP)
+    #
+    return image
 
 def geo_translate(image: TYPE_IMAGE, offsetX: float, offsetY: float) -> TYPE_IMAGE:
     """TRANSLATION."""
     height, width, _ = image.shape
     M = np.float32([[1, 0, offsetX * width], [0, 1, offsetY * height]])
-    # logger.debug(f"[{offsetX}, {offsetY}]")
     return cv2.warpAffine(image, M, (width, height), flags=cv2.INTER_LINEAR)
 
-def geo_rotate(image: TYPE_IMAGE, angle: float, center:TYPE_COORD=(0.5 ,0.5)) -> TYPE_IMAGE:
+def geo_rotate(image: TYPE_IMAGE, angle: float, center:TYPE_COORD=(0.5 ,0.5), edge:EnumEdge=EnumEdge.CLIP) -> TYPE_IMAGE:
     """ROTATION."""
+    orig_height, orig_width, _ = image.shape
+    if edge != EnumEdge.CLIP:
+        tileX = int(orig_width) if edge in [EnumEdge.WRAP, EnumEdge.WRAPX] else 0
+        tileY = int(orig_height) if edge in [EnumEdge.WRAP, EnumEdge.WRAPY] else 0
+        image = cv2.copyMakeBorder(image, tileY, tileY, tileX, tileX, cv2.BORDER_WRAP)
+
     height, width, _ = image.shape
     center = (int(width * center[0]), int(height * center[1]))
     M = cv2.getRotationMatrix2D(center, -angle, 1.0)
-    # logger.debug(f"[{angle}]")
-    return cv2.warpAffine(image, M, (width, height), flags=cv2.INTER_LINEAR)
+    image = cv2.warpAffine(image, M, (width, height), flags=cv2.INTER_LINEAR)
+
+    # crop back to original size
+    if edge != EnumEdge.CLIP:
+        h2, w2, _ = image.shape
+        center = (int(w2 * 0.5), int(h2 * 0.5))
+        image = image[ center[1]-orig_height//2:center[1]+orig_height//2, center[0]-orig_width//2:center[0]+orig_width//2, : ]
+    return image
 
 def geo_rotate_array(image: TYPE_IMAGE, angle: float, clip: bool=True) -> TYPE_IMAGE:
     """."""

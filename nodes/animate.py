@@ -98,7 +98,7 @@ class WaveGeneratorNode(JOVBaseNode):
                 Lexicon.FREQ: ("FLOAT", {"default": 1, "min": 0.0, "step": 0.01}),
                 Lexicon.AMP: ("FLOAT", {"default": 1, "min": 0.0, "step": 0.01}),
                 Lexicon.PHASE: ("FLOAT", {"default": 0, "min": 0.0, "step": 0.001}),
-                Lexicon.SHIFT: ("FLOAT", {"default": 0, "min": 0.0, "step": 0.001}),
+                Lexicon.OFFSET: ("FLOAT", {"default": 0, "min": 0.0, "step": 0.001}),
                 Lexicon.TIME: ("FLOAT", {"default": 0, "min": 0, "step": 0.000001}),
             }}
         return deep_merge_dict(IT_REQUIRED, d)
@@ -109,7 +109,7 @@ class WaveGeneratorNode(JOVBaseNode):
         freq = kw.get(Lexicon.FREQ, 1.)
         amp = kw.get(Lexicon.AMP, 1.)
         phase = kw.get(Lexicon.PHASE, 0)
-        shift = kw.get(Lexicon.SHIFT, 0)
+        shift = kw.get(Lexicon.OFFSET, 0)
         delta_time = kw.get(Lexicon.TIME, 0)
         if (op := getattr(anim.Wave, wave.lower(), None)) is not None:
             val = op(phase, freq, amp, shift, delta_time)

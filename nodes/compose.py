@@ -377,22 +377,25 @@ class CropNode(JOVImageInOutBaseNode):
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
-                Lexicon.TLTR: ("VEC4", {"default": (0, 0, 1, 0), "min": 0, "max": 1, "step": 0.005, "precision": 4, "label": [Lexicon.TOP, Lexicon.LEFT, Lexicon.TOP, Lexicon.RIGHT]}),
-                Lexicon.BLBR: ("VEC4", {"default": (0, 1, 1, 1), "min": 0, "max": 1, "step": 0.005, "precision": 4, "label": [Lexicon.BOTTOM, Lexicon.LEFT, Lexicon.BOTTOM, Lexicon.RIGHT]}),
+                Lexicon.TLTR: ("VEC4", {"default": (0, 0, 1, 0), "min": 0, "max": 1, "step": 0.01, "precision": 5, "round": 0.000001, "label": [Lexicon.TOP, Lexicon.LEFT, Lexicon.TOP, Lexicon.RIGHT]}),
+                Lexicon.BLBR: ("VEC4", {"default": (0, 1, 1, 1), "min": 0, "max": 1, "step": 0.01, "precision": 5, "round": 0.000001, "label": [Lexicon.BOTTOM, Lexicon.LEFT, Lexicon.BOTTOM, Lexicon.RIGHT]}),
             }}
-        return deep_merge_dict(IT_REQUIRED, IT_PIXELS, d, IT_RGB, IT_INVERT)
+        return deep_merge_dict(IT_REQUIRED, IT_PIXELS, d, IT_RGB, IT_WHMODE, IT_SAMPLE, IT_INVERT)
 
     def run(self, **kw) -> tuple[list[torch.Tensor], list[torch.Tensor]]:
         pixels = kw.get(Lexicon.PIXEL, [None])
         tltr = parse_tuple(Lexicon.TLTR, kw, EnumTupleType.FLOAT, (0, 0, 1, 1,), 0, 1)
         blbr = parse_tuple(Lexicon.BLBR, kw, EnumTupleType.FLOAT, (0, 0, 1, 1,), 0, 1)
+        wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
+        mode = kw.get(Lexicon.MODE, [EnumScaleMode.NONE])
+        sample = kw.get(Lexicon.SAMPLE, [EnumInterpolation.LANCZOS4])
         rgb = parse_tuple(Lexicon.RGB, kw, default=(0, 0, 0,), clip_min=0, clip_max=255)
         i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], 0, 1)
-        params = [tuple(x) for x in zip_longest_fill(pixels, tltr, blbr, rgb, i)]
+        params = [tuple(x) for x in zip_longest_fill(pixels, tltr, blbr, rgb, wihi, mode, i)]
         masks = []
         images = []
         pbar = comfy.utils.ProgressBar(len(params))
-        for idx, (img, tltr, blbr, rgb, i) in enumerate(params):
+        for idx, (img, tltr, blbr, rgb, wihi, mode, i) in enumerate(params):
             if img is None:
                 images.append(torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8, device="cpu"))
                 masks.append(torch.ones((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), dtype=torch.uint8, device="cpu"))
@@ -401,11 +404,12 @@ class CropNode(JOVImageInOutBaseNode):
             img = tensor2cv(img)
             x1, y1, x2, y2 = tltr
             x4, y4, x3, y3 = blbr
-            img, mask = geo_crop_polygonal(img, (x1, y1), (x2, y2), (x3, y3), (x4, y4), rgb)
+            width, height = wihi
+            img, mask = geo_crop_polygonal(img, (x1, y1), (x2, y2), (x3, y3), (x4, y4), rgb, width, height, mode, sample)
 
             if i != 0:
                 img = light_invert(img, i)
-                mask = light_invert(mask, i)
+            # mask = light_invert(mask, i)
 
             images.append(cv2tensor(img))
             masks.append(cv2mask(mask))
