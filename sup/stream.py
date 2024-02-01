@@ -33,8 +33,8 @@ class StreamMissingException(Exception): pass
 cfg = ConfigParser()
 JOV_SCAN_DEVICES = True
 try:
-    val = os.getenv("JOV_SCAN_DEVICES", JOV_SCAN_DEVICES)
-    JOV_SCAN_DEVICES = val.lower() in ['1', 'true', 'on']
+    val = os.getenv("JOV_SCAN_DEVICES", "True")
+    JOV_SCAN_DEVICES = str(val).lower() in ['1', 'true', 'on']
 except Exception as e:
     logger.error(str(e))
 
