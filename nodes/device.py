@@ -34,13 +34,14 @@ from Jovimetrix.sup.comp import light_invert, geo_scalefit, \
 
 from Jovimetrix.sup.stream import camera_list, monitor_list, window_list, \
     monitor_capture, window_capture, \
-    StreamingServer, StreamManager
+    StreamingServer, StreamManager, \
+    JOV_SCAN_DEVICES
 
 from Jovimetrix.sup.midi import midi_device_names, \
     MIDIMessage, MIDINoteOnFilter, MIDIServerThread
 
-from Jovimetrix.sup.image import IT_WHMODE, channel_count, cv2mask, tensor2cv, cv2tensor, \
-    IT_SAMPLE, IT_SCALEMODE
+from Jovimetrix.sup.image import channel_count, cv2mask, tensor2cv, cv2tensor, \
+    IT_WHMODE, IT_SAMPLE, IT_SCALEMODE
 
 # =============================================================================
 

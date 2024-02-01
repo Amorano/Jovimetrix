@@ -9,6 +9,7 @@ import json
 import time
 import threading
 from typing import Any
+from configparser import ConfigParser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import cv2
@@ -29,10 +30,20 @@ class StreamMissingException(Exception): pass
 # === GLOBAL CONFIG ===
 # =============================================================================
 
-STREAMHOST = os.getenv("JOV_STREAM_HOST", '')
-STREAMPORT = 7227
-try: STREAMPORT = int(os.getenv("JOV_STREAM_PORT", STREAMPORT))
-except: pass
+cfg = ConfigParser()
+JOV_SCAN_DEVICES = True
+try:
+    val = os.getenv("JOV_SCAN_DEVICES", JOV_SCAN_DEVICES)
+    JOV_SCAN_DEVICES = val.lower() in ['1', 'true', 'on']
+except Exception as e:
+    logger.error(str(e))
+
+JOV_STREAM_HOST = os.getenv("JOV_STREAM_HOST", '')
+JOV_STREAM_PORT = 7227
+try:
+    JOV_STREAM_PORT = int(os.getenv("JOV_STREAM_PORT", JOV_STREAM_PORT))
+except Exception as e:
+    logger.error(str(e))
 
 # =============================================================================
 # === SCREEN / WINDOW CAPTURE ===
@@ -143,6 +154,10 @@ if sys.platform.startswith('win'):
 
 def camera_list() -> list:
     camera_list = {}
+    global JOV_SCAN_DEVICES
+    print(JOV_SCAN_DEVICES)
+    if not JOV_SCAN_DEVICES:
+        return camera_list
     failed = 0
     idx = 0
     while failed < 2:
@@ -488,7 +503,7 @@ class StreamingServer(metaclass=Singleton):
         StreamingServer.OUT[name] = {'_': stream, 'b': None}
         logger.info(f"ENDPOINT_ADD ({name})")
 
-    def __init__(self, host: str='', port: int=7227) -> None:
+    def __init__(self, host: str='', port: int=JOV_STREAM_PORT) -> None:
         self.__host = host
         self.__port = port
         self.__address = (self.__host, self.__port)
