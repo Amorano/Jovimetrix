@@ -49,7 +49,6 @@ const ext = {
         const onConnectionsChange = nodeType.prototype.onConnectionsChange
         nodeType.prototype.onConnectionsChange = function (type, input_count, connected, link_info) {
             const r = onConnectionsChange ? onConnectionsChange.apply(this, arguments) : undefined
-            console.info(input_count)
             util.dynamic_connection(this, input_count, connected, `${_prefix}_`, '*')
             if (link_info) {
                 const fromNode = this.graph._nodes.find(

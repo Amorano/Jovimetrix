@@ -43,8 +43,7 @@ const ext = {
             const me = onNodeCreated?.apply(this)
             const self = this;
 
-            let combo_current = "NONE";
-            console.debug(self)
+            let combo_current = "";
             let combo = this.widgets[0];
             let old_x = this.widgets[1]?.value || 0;
             let old_y = this.widgets[2]?.value || 0;
@@ -56,9 +55,6 @@ const ext = {
             combo.callback = () => {
                 if (combo_current != combo.value)  {
                     old_x = this.widgets[1]?.value || old_x;
-                    // old_x_bool = old_x_bool || old_x;
-                    // old_x_int = old_x_int || old_x;
-                    // old_x_str = old_x_str || old_x;
                     old_y = this.widgets[2]?.value || old_y;
                     old_z = this.widgets[3]?.value || old_z;
                     old_w = this.widgets[4]?.value || old_w;
@@ -70,14 +66,15 @@ const ext = {
                     } else if (combo_current == 'STRING') {
                         old_x_str = this.widgets[1]?.value || old_x_str;
                     }
-                    // console.debug(old_x_bool, old_x_int, old_x_str, old_x, old_y, old_z, old_w);
+
+                    // remember the connections and attempt to re-connect
+                    let old_connect = [];
+                    if (this.outputs && this.outputs.length > 0) {
+                        old_connect = this.outputs[0].links ? this.outputs[0].links.map(x => x) : [];
+                    }
 
                     while ((this.widgets || [])[1]) {
                         util.widget_remove(this, 1);
-                    }
-
-                    if (this.outputs && this.outputs.length > 0) {
-                        this.removeOutput(0)
                     }
 
                     if (combo.value == 'BOOLEAN') {
@@ -104,7 +101,7 @@ const ext = {
                         }
                     }
 
-                    const map = {
+                    const my_map = {
                         STRING: "📝",
                         BOOLEAN: "🇴",
                         INT: "🔟",
@@ -113,7 +110,22 @@ const ext = {
                         VEC3: "🇽🇾\u200c🇿",
                         VEC4: "🇽🇾\u200c🇿\u200c🇼",
                     }
-                    this.addOutput(map[combo.value], combo.value, { shape: LiteGraph.CIRCLE_SHAPE });
+                    this.addOutput(my_map[combo.value], combo.value, { shape: LiteGraph.CIRCLE_SHAPE });
+
+                    // reconnect if it had one
+                    if (old_connect.length > 0) {
+                        for (const id of old_connect) {
+                            var link = this.graph.links[id];
+                            if (!link) {
+                                continue;
+                            }
+                            var node = this.graph.getNodeById(link.target_id);
+                            if (node) {
+                                this.connect(1, node, link.target_slot);
+                            }
+                        }
+                    }
+                    this.removeOutput(0);
                     combo_current = combo.value;
                 }
                 this.setSize([this.size[0], this.computeSize([this.size[0], this.size[1]])[1]])
