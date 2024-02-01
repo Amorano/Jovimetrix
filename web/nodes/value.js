@@ -70,7 +70,7 @@ const ext = {
                     } else if (combo_current == 'STRING') {
                         old_x_str = this.widgets[1]?.value || old_x_str;
                     }
-                    console.debug(old_x_bool, old_x_int, old_x_str, old_x, old_y, old_z, old_w);
+                    // console.debug(old_x_bool, old_x_int, old_x_str, old_x, old_y, old_z, old_w);
 
                     while ((this.widgets || [])[1]) {
                         util.widget_remove(this, 1);
@@ -116,8 +116,11 @@ const ext = {
                     this.addOutput(map[combo.value], combo.value, { shape: LiteGraph.CIRCLE_SHAPE });
                     combo_current = combo.value;
                 }
+                this.setSize([this.size[0], this.computeSize([this.size[0], this.size[1]])[1]])
+                this.onResize?.(this.size);
+                this.setDirtyCanvas(true, true);
             }
-            // setTimeout(() => { combo.callback(); }, 15);
+            setTimeout(() => { combo.callback(); }, 15);
             return me;
         }
 

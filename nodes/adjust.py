@@ -44,17 +44,17 @@ class AdjustNode(JOVImageInOutBaseNode):
         return deep_merge_dict(IT_REQUIRED, IT_PIXEL_MASK, d, IT_INVERT)
 
     def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor]:
-        pixel = kw.get(Lexicon.PIXEL, [None])
+        img = kw.get(Lexicon.PIXEL, [None])
         mask = kw.get(Lexicon.MASK, [None])
         op = kw.get(Lexicon.FUNC, [EnumAdjustOP.BLUR])
         radius = kw.get(Lexicon.RADIUS, [3])
         amt = kw.get(Lexicon.VALUE, [0])
         i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
-        params = [tuple(x) for x in zip_longest_fill(pixel, mask, op, radius, amt, i)]
+        params = [tuple(x) for x in zip_longest_fill(img, mask, op, radius, amt, i)]
         masks = []
         images = []
         pbar = comfy.utils.ProgressBar(len(params))
-        for idx, (pixel, mask, o, r, a, i) in enumerate(params):
+        for idx, (img, mask, o, r, a, i) in enumerate(params):
             if img is None:
                 images.append(torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8, device="cpu"))
                 masks.append(torch.ones((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), dtype=torch.uint8, device="cpu"))

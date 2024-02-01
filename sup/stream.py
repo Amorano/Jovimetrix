@@ -155,7 +155,7 @@ if sys.platform.startswith('win'):
 def camera_list() -> list:
     camera_list = {}
     global JOV_SCAN_DEVICES
-    print(JOV_SCAN_DEVICES)
+
     if not JOV_SCAN_DEVICES:
         return camera_list
     failed = 0

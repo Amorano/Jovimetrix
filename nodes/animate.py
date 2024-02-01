@@ -72,7 +72,7 @@ class TickNode(JOVBaseNode):
         beat_16 = beat_loop % round(beat_04 * 0.25) == 0 and self.__count != 0
         beat_32 = beat_loop % round(beat_04 * 0.125) == 0 and self.__count != 0
         beat_64 = beat_loop % round(beat_04 * 0.0625) == 0 and self.__count != 0
-        # print(float(bpm), beat_04, beat_loop, round(beat_04 * 0.03125))
+        # logger.debug(float(bpm), beat_04, beat_loop, round(beat_04 * 0.03125))
         beat_128 = beat_loop % round(beat_04 * 0.03125) == 0 and self.__count != 0
         beat_04 = beat_loop % round(beat_04) == 0 and self.__count != 0
         self.__delta = 0

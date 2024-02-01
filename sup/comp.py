@@ -219,7 +219,7 @@ def geo_crop_center(image: TYPE_IMAGE, width:int=0, height:int=0) -> TYPE_IMAGE:
     center = (int(w * 0.5), int(h * 0.5))
     height //= 2
     width //= 2
-    print(h, w, center, width, height, center[0]-width, center[1]-height, center[0]+width, center[1]+height)
+    # logger.debug(h, w, center, width, height, center[0]-width, center[1]-height, center[0]+width, center[1]+height)
     return image[ center[1]-height:center[1]+height, center[0]-width:center[0]+width]
 
 def geo_edge_wrap(image: TYPE_IMAGE, tileX: float=1., tileY: float=1., edge:EnumEdge=EnumEdge.WRAP) -> TYPE_IMAGE:

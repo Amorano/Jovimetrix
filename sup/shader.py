@@ -181,9 +181,9 @@ class GLSL:
             )
         except Exception as e:
             logger.error(str(e))
-            print(self.__ctx)
-            print(self.__width)
-            print(self.__height)
+            logger.debug(self.__ctx)
+            logger.debug(self.__width)
+            logger.debug(self.__height)
             self.__fbo = None
 
     @property

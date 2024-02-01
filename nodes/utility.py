@@ -25,10 +25,15 @@ import nodes
 
 from Jovimetrix import ComfyAPIMessage, JOVBaseNode, TimedOutException, \
     IT_REQUIRED, WILDCARD, ROOT
+
 from Jovimetrix.sup.lexicon import Lexicon
-from Jovimetrix.sup.util import deep_merge_dict
+
+from Jovimetrix.sup.util import deep_merge_dict, zip_longest_fill
+
 from Jovimetrix.sup.image import cv2tensor, image_load, tensor2pil, pil2tensor, \
     image_formats
+
+from Jovimetrix.sup.anim import Ease, EnumEase
 
 # =============================================================================
 
@@ -252,7 +257,7 @@ class QueueNode(JOVBaseNode):
     DESCRIPTION = "Cycle lists of images files or strings for node inputs."
     RETURN_TYPES = (WILDCARD, WILDCARD, "INT", "STRING", "INT", )
     RETURN_NAMES = (Lexicon.ANY, Lexicon.QUEUE, Lexicon.COUNT, Lexicon.CURRENT, Lexicon.VALUE, )
-    OUTPUT_IS_LIST = (False, True, False, False, False, )
+    OUTPUT_IS_LIST = (True, True, True, True, True, )
     VIDEO_FORMATS = ['.webm', '.mp4', '.avi', '.wmv', '.mkv', '.mov', '.mxf']
 
     @classmethod
@@ -260,7 +265,7 @@ class QueueNode(JOVBaseNode):
         d = {"optional": {
                 Lexicon.QUEUE: ("STRING", {"multiline": True, "default": ""}),
                 Lexicon.LOOP: ("INT", {"default": 0, "min": 0}),
-                Lexicon.BATCH: ("INT", {"default": 0, "min": 0}),
+                Lexicon.BATCH: ("INT", {"default": 1, "min": 1}),
                 Lexicon.WAIT: ("BOOLEAN", {"default": False}),
                 Lexicon.RESET: ("BOOLEAN", {"default": False}),
             },
@@ -370,10 +375,7 @@ class QueueNode(JOVBaseNode):
                 return ()
             self.__index = 0
 
-        if (batch := kw.get(Lexicon.BATCH, 0)) == 0:
-            current = self.__q[self.__index]
-        else:
-            current = f"BATCH {batch}"
+        current = self.__q[self.__index]
         info = f"QUEUE #{id} [{current}] ({self.__index})"
 
         if self.__loops:
@@ -383,18 +385,67 @@ class QueueNode(JOVBaseNode):
             info += f" PAUSED"
 
         data = self.__previous
+        batch = max(1, kw.get(Lexicon.BATCH, 1))
         if not wait:
-            if batch == 0:
+            if batch == 1:
+                data = [process(self.__q[self.__index])]
                 self.__index += 1
-                data = process(current)
             else:
-                size = min(self.__index + batch, self.__len)
-                data = [process(self.__q[self.__index + x]) for x in range(size)]
-                self.__index += size
+                data = [process(self.__q[x]) for x in range(self.__len)]
+
+            #if (size := self.__index + batch) > self.__len:
+            #    size = max(0, self.__len - self.__index)
+            # data = [process(self.__q[self.__index + x]) for x in range(size)]
+            # self.__index += size
 
         self.__last = self.__index
         self.__previous = data
-        # logger.debug(info)
         PromptServer.instance.send_sync("jovi-queue-ping", {"id": id, "c": current, "i": self.__index, "s": self.__len, "l": self.__q})
+
+        return data, [self.__q] * batch, [self.__len] * batch, [current] * batch, [self.__index] * batch,
+        #data = (data, self.__q, self.__len, current, self.__index, )
         return (data, self.__q, self.__len, current, self.__index, )
 
+class LerpNode(JOVBaseNode):
+    NAME = "LERP (JOV) 📏"
+    CATEGORY = "JOVIMETRIX 🔺🟩🔵/UTILITY"
+    DESCRIPTION = "Interpolate between two values with or without a smoothing."
+    INPUT_IS_LIST = True
+    OUTPUT_IS_LIST = (True, True, )
+    RETURN_TYPES = ("FLOAT", "INT" )
+    RETURN_NAMES = (Lexicon.FLOAT, Lexicon.INT, )
+    SORT = 90
+
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        d = {"optional": {
+            Lexicon.LERP_A: (WILDCARD, {}),
+            Lexicon.LERP_B: (WILDCARD, {}),
+            Lexicon.FLOAT: ("FLOAT", {"default": 0., "min": 0., "max": 1.0, "step": 0.001, "precision": 4, "round": 0.00001}),
+            Lexicon.EASE: (["NONE"] + EnumEase._member_names_, {"default": "NONE"})
+        }}
+        return deep_merge_dict(IT_REQUIRED, d)
+
+    def run(self, **kw) -> tuple[Any, Any]:
+        a = kw.get(Lexicon.LERP_A, [0])
+        b = kw.get(Lexicon.LERP_B, [0])
+        pos = kw.get(Lexicon.FLOAT, [0.])
+        op = kw.get(Lexicon.EASE, ["NONE"])
+
+        value_float = []
+        value_int = []
+        params = [tuple(x) for x in zip_longest_fill(a, b, pos, op)]
+        pbar = comfy.utils.ProgressBar(len(params))
+        for idx, (a, b, pos, op) in enumerate(params):
+            val = 0.
+            if op == "NONE":
+                val = b * pos + a * (1 - pos)
+            else:
+                ease = EnumEase[op]
+                val = Ease.ease(ease, start=a, end=b, alpha=pos)
+                logger.debug(ease)
+
+            value_float.append(float(val))
+            value_int.append(int(val))
+            pbar.update_absolute(idx)
+        return (value_float, value_int, )

@@ -23,70 +23,76 @@ class BadOperatorException(Exception):
     """Exception for bad operators."""
     pass
 
+#
+#
+#
+
+TYPE_NUMBER = int|float|np.ndarray
+
 # =============================================================================
 # === EASING ===
 # =============================================================================
 
 class EnumEase(Enum):
-    QUAD_IN = 0
-    QUAD_OUT = 1
-    QUAD_IN_OUT = 2
+    QUAD_IN = 10
+    QUAD_OUT = 11
+    QUAD_IN_OUT = 12
 
-    CUBIC_IN = 3
-    CUBIC_OUT = 4
-    CUBIC_IN_OUT = 5
+    CUBIC_IN = 20
+    CUBIC_OUT = 21
+    CUBIC_IN_OUT = 22
 
-    QUARTIC_IN = 6
-    QUARTIC_OUT = 7
-    QUARTIC_IN_OUT = 8
+    QUARTIC_IN = 30
+    QUARTIC_OUT = 31
+    QUARTIC_IN_OUT = 32
 
-    QUINTIC_IN = 9
-    QUINTIC_OUT = 10
-    QUINTIC_IN_OUT = 11
+    QUINTIC_IN = 40
+    QUINTIC_OUT = 41
+    QUINTIC_IN_OUT = 42
 
-    SIN_IN = 12
-    SIN_OUT = 13
-    SIN_IN_OUT = 14
+    SIN_IN = 50
+    SIN_OUT = 51
+    SIN_IN_OUT = 52
 
-    CIRCULAR_IN = 15
-    CIRCULAR_OUT = 16
-    CIRCULAR_IN_OUT = 17
+    CIRCULAR_IN = 60
+    CIRCULAR_OUT = 61
+    CIRCULAR_IN_OUT = 62
 
-    EXPONENTIAL_IN = 18
-    EXPONENTIAL_OUT = 19
-    EXPONENTIAL_IN_OUT = 20
+    EXPONENTIAL_IN = 70
+    EXPONENTIAL_OUT = 71
+    EXPONENTIAL_IN_OUT = 72
 
-    ELASTIC_IN = 21
-    ELASTIC_OUT = 22
-    ELASTIC_IN_OUT = 23
+    ELASTIC_IN = 80
+    ELASTIC_OUT = 81
+    ELASTIC_IN_OUT = 82
 
-    BACK_IN = 24
-    BACK_OUT = 25
-    BACK_IN_OUT = 26
+    BACK_IN = 90
+    BACK_OUT = 91
+    BACK_IN_OUT = 92
 
-    BOUNCE_IN = 27
-    BOUNCE_OUT = 28
-    BOUNCE_IN_OUT = 29
+    BOUNCE_IN = 100
+    BOUNCE_OUT = 101
+    BOUNCE_IN_OUT = 102
 
 class Ease:
     @classmethod
-    def quad_in(cls, t: np.ndarray) -> np.ndarray:
+    def quad_in(cls, t: TYPE_NUMBER) -> TYPE_NUMBER:
         return t * t
 
     @classmethod
-    def quad_out(cls, t: np.ndarray) -> np.ndarray:
+    def quad_out(cls, t: TYPE_NUMBER) -> TYPE_NUMBER:
         return -(t * (t - 2))
 
     @classmethod
-    def quad_in_out(cls, t: np.ndarray) -> np.ndarray:
+    def quad_in_out(cls, t: TYPE_NUMBER) -> TYPE_NUMBER:
         return np.where(t < 0.5, 2 * t * t, (-2 * t * t) + (4 * t) - 1)
 
     @classmethod
-    def cubic_in(cls, t: np.ndarray) -> np.ndarray:
+    def cubic_in(cls, t: TYPE_NUMBER) -> TYPE_NUMBER:
         return t * t * t
 
     @classmethod
-    def cubic_out(cls, t: np.ndarray) -> np.ndarray:
+    def cubic_out(cls, t: TYPE_NUMBER) -> TYPE_NUMBER:
         return (t - 1) * (t - 1) * (t - 1) + 1
 
     @classmethod
@@ -202,7 +208,7 @@ class Ease:
 
     def ease(op: EnumEase,
              start: float=0, end: float=1, duration: float=1,
-             alpha: Optional[np.ndarray[np.uint8]]=None,
+             alpha: float=1.,
              clip: tuple[int, int]=(0, 1)) -> np.ndarray:
         """
         Compute eased values.
@@ -212,11 +218,11 @@ class Ease:
             start (float): Starting value.
             end (float): Ending value.
             duration (float): Duration of the easing.
-            alpha (np.ndarray): Alpha values.
+            alpha (float): Alpha values.
             clip (tuple[int, int]): Clip range.
 
         Returns:
-            np.ndarray: Eased values.
+            TYPE_NUMBER: Eased value(s)
         """
 
         if (func := getattr(Ease, op.name.lower(), None)) is None:
