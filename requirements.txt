@@ -1,7 +1,7 @@
 torch
 numpy
 matplotlib
-opencv-python<=4.8.1.78
+opencv-python
 ffmpeg-python
 librosa
 loguru
