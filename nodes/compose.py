@@ -119,8 +119,8 @@ class TransformNode(JOVImageInOutBaseNode):
                 mirror = EnumMirrorMode[mirror]
 
                 mpx, mpy = mirror_pivot
-                img = image_mirror(img, mirror, mpx, mpy, i)
-                mask = image_mirror(mask, mirror, mpx, mpy, i)
+                img = image_mirror(img, mirror, mpx, mpy)
+                mask = image_mirror(mask, mirror, mpx, mpy)
 
                 # TILE
                 tx, ty = tile_xy

@@ -334,7 +334,7 @@ IT_TRANS = {"optional": {
 }}
 
 IT_ROT = {"optional": {
-    Lexicon.ANGLE: ("FLOAT", {"default": 0, "min": -180, "max": 180, "step": 0.01, "precision": 4}),
+    Lexicon.ANGLE: ("FLOAT", {"default": 0, "min": -180, "max": 180, "step": 0.01, "precision": 4, "round": 0.00001}),
 }}
 
 IT_SCALE = {"optional": {

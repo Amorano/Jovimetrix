@@ -55,9 +55,13 @@ class EnumEdge(Enum):
 class EnumMirrorMode(Enum):
     NONE = -1
     X = 0
-    Y = 1
-    XY = 2
-    YX = 3
+    FLIP_X = 10
+    Y = 20
+    FLIP_Y = 30
+    XY = 40
+    X_FLIP_Y = 50
+    FLIP_XY = 60
+    FLIP_X_FLIP_Y = 70
 
 class EnumInterpolation(Enum):
     NEAREST = cv2.INTER_NEAREST
@@ -560,21 +564,15 @@ def image_merge(r: TYPE_IMAGE, g: TYPE_IMAGE, b: TYPE_IMAGE, a: TYPE_IMAGE,
         image = cv2.merge((b, g, r))
     return image
 
-def image_mirror(image: TYPE_IMAGE, mode:EnumMirrorMode, x:float=0.5, y:float=0.5, reverse:bool=False) -> TYPE_IMAGE:
+def image_mirror(image: TYPE_IMAGE, mode:EnumMirrorMode, x:float=0.5, y:float=0.5) -> TYPE_IMAGE:
     cc, width, height = channel_count(image)[:3]
 
-    def mirror(img:TYPE_IMAGE, axis:int) -> TYPE_IMAGE:
+    def mirror(img:TYPE_IMAGE, axis:int, reverse:bool=False) -> TYPE_IMAGE:
         pivot = x if axis == 1 else y
-        #if cc > 3:
-        #    alpha = img[:, :, 3]
-        #    alpha = cv2.flip(alpha, axis)
-        #    img = img[:, :, :3]
-
         flip = cv2.flip(img, axis)
-
         pivot = np.clip(pivot, 0, 1)
         if reverse:
-            pivot = 1 - pivot
+            pivot = 1. - pivot
             flip, img = img, flip
 
         scalar = height if axis == 0 else width
@@ -582,7 +580,11 @@ def image_mirror(image: TYPE_IMAGE, mode:EnumMirrorMode, x:float=0.5, y:float=0.
         slice1w = scalar - slice1
         slice2w = min(scalar - slice1w, slice1w)
 
-        output =  np.zeros((height, width, cc), dtype=np.uint8)
+        if cc >= 3:
+            output = np.zeros((height, width, cc), dtype=np.uint8)
+        else:
+            output = np.zeros((height, width), dtype=np.uint8)
+
         if axis == 0:
             output[:slice1, :] = img[:slice1, :]
             output[slice1:slice1 + slice2w, :] = flip[slice1w:slice1w + slice2w, :]
@@ -590,18 +592,66 @@ def image_mirror(image: TYPE_IMAGE, mode:EnumMirrorMode, x:float=0.5, y:float=0.
             output[:, :slice1] = img[:, :slice1]
             output[:, slice1:slice1 + slice2w] = flip[:, slice1w:slice1w + slice2w]
 
-        #if cc == 4:
-        #    output = channel_add(output)
-        #    output[:, :, 3] = alpha
+        return output
+
+    if mode in [EnumMirrorMode.X, EnumMirrorMode.FLIP_X, EnumMirrorMode.XY, EnumMirrorMode.FLIP_XY, EnumMirrorMode.X_FLIP_Y, EnumMirrorMode.FLIP_X_FLIP_Y]:
+        reverse = mode in [EnumMirrorMode.FLIP_X, EnumMirrorMode.FLIP_XY, EnumMirrorMode.FLIP_X_FLIP_Y]
+        image = mirror(image, 1, reverse)
+
+    if mode not in [EnumMirrorMode.NONE, EnumMirrorMode.X, EnumMirrorMode.FLIP_X]:
+        reverse = mode in [EnumMirrorMode.FLIP_Y, EnumMirrorMode.FLIP_X_FLIP_Y, EnumMirrorMode.X_FLIP_Y]
+        image = mirror(image, 0, reverse)
+
+    return image
+
+def image_mirror2(image: TYPE_IMAGE, mode:EnumMirrorMode, x:float=0.5, y:float=0.5) -> TYPE_IMAGE:
+    cc, width, height = channel_count(image)[:3]
+
+    def mirror(img:TYPE_IMAGE, axis:int, reverse:bool=False) -> TYPE_IMAGE:
+        pivot = x if axis == 1 else y
+        flip = cv2.flip(img, axis)
+        pivot = np.clip(pivot, 0, 1)
+
+        if reverse:
+            pivot = 1. - pivot
+            flip, img = img, flip
+
+        scalar = height if axis == 0 else width
+
+        slice1 = int(pivot * scalar)
+        slice1w = scalar - slice1
+        slice2w = min(scalar - slice1w, slice1w)
+
+        if cc >= 3:
+            output = np.zeros((height, width, cc), dtype=np.uint8)
+        else:
+            output = np.zeros((height, width), dtype=np.uint8)
+
+        if axis == 0:
+            output[:slice1, :] = img[:slice1, :]
+            output[slice1:slice1 + slice2w, :] = flip[slice1w:slice1w + slice2w, :]
+        else:
+            output[:, :slice1] = img[:, :slice1]
+            output[:, slice1:slice1 + slice2w] = flip[:, slice1w:slice1w + slice2w]
 
         return output
 
-    if mode in [EnumMirrorMode.X, EnumMirrorMode.XY]:
+    if mode in [EnumMirrorMode.X, EnumMirrorMode.FLIP_X, EnumMirrorMode.XY, EnumMirrorMode.FLIP_XY, EnumMirrorMode.X_FLIP_Y, EnumMirrorMode.FLIP_X_FLIP_Y]:
+        if mode in [EnumMirrorMode.FLIP_X, EnumMirrorMode.FLIP_XY, EnumMirrorMode.FLIP_X_FLIP_Y]:
+            image = cv2.flip(image, 1)
+            x = np.clip(1. - x, 0, 1)
         image = mirror(image, 1)
 
-    if mode in [EnumMirrorMode.Y, EnumMirrorMode.YX, EnumMirrorMode.XY]:
+    if mode not in [EnumMirrorMode.NONE, EnumMirrorMode.X, EnumMirrorMode.FLIP_X]:
+        if mode in [EnumMirrorMode.FLIP_Y, EnumMirrorMode.FLIP_YX, EnumMirrorMode.FLIP_Y_FLIP_X]:
+            image = cv2.flip(image, 0)
+            y = np.clip(1. - y, 0, 1)
         image = mirror(image, 0)
-        if mode == EnumMirrorMode.YX:
+
+        if mode in [EnumMirrorMode.YX, EnumMirrorMode.FLIP_YX, EnumMirrorMode.Y_FLIP_X, EnumMirrorMode.FLIP_Y_FLIP_X]:
+            if mode in [EnumMirrorMode.Y_FLIP_X, EnumMirrorMode.FLIP_Y_FLIP_X]:
+                image = cv2.flip(image, 1)
+                x = np.clip(1. - x, 0, 1)
             image = mirror(image, 1)
 
     return image
