@@ -443,7 +443,7 @@ class LerpNode(JOVBaseNode):
             else:
                 ease = EnumEase[op]
                 val = Ease.ease(ease, start=a, end=b, alpha=pos)
-                logger.debug(ease)
+                # logger.debug(ease)
 
             value_float.append(float(val))
             value_int.append(int(val))
