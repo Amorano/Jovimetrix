@@ -11,8 +11,8 @@ from loguru import logger
 import comfy
 
 from Jovimetrix import JOVImageInOutBaseNode, \
-    IT_PIXELS, IT_RGB, IT_PIXEL_MASK, IT_INVERT, IT_REQUIRED, IT_RGBA_IMAGE, \
-    MIN_IMAGE_SIZE, IT_TRANS, IT_ROT, IT_SCALE, IT_PIXEL2
+    IT_PIXELS, IT_RGB, IT_PIXEL_MASK, IT_PIXEL2_MASK, IT_INVERT, IT_REQUIRED, \
+    IT_RGBA_IMAGE, MIN_IMAGE_SIZE, IT_TRANS, IT_ROT, IT_SCALE, IT_PIXEL2
 
 from Jovimetrix.sup.lexicon import Lexicon
 
@@ -20,12 +20,12 @@ from Jovimetrix.sup.util import parse_number, parse_tuple, zip_longest_fill, \
     deep_merge_dict,\
     EnumTupleType
 
-from Jovimetrix.sup.comp import geo_rotate, geo_translate, comp_blend, \
-    geo_crop_polygonal, geo_edge_wrap, geo_scalefit, geo_mirror, light_invert, \
+from Jovimetrix.sup.comp import geo_rotate, geo_scale, geo_translate, comp_blend, \
+    geo_crop_polygonal, geo_edge_wrap, geo_scalefit, light_invert, \
     EnumScaleMode, EnumInterpolation, EnumBlendType
 
-from Jovimetrix.sup.image import IT_SCALEMODE, image_merge, image_split, tensor2cv, \
-    cv2tensor, cv2mask, pixel_convert, image_stack, \
+from Jovimetrix.sup.image import IT_SCALEMODE, image_merge, image_split, mask2cv, tensor2cv, \
+    cv2tensor, cv2mask, pixel_convert, image_stack, image_mirror, \
     EnumEdge, EnumMirrorMode, EnumOrientation, \
     IT_WHMODE, IT_SAMPLE
 
@@ -53,11 +53,12 @@ class TransformNode(JOVImageInOutBaseNode):
                 Lexicon.PROJECTION: (EnumProjection._member_names_, {"default": EnumProjection.NORMAL.name}),
                 Lexicon.STRENGTH: ("FLOAT", {"default": 1, "min": 0, "precision": 4, "step": 0.005})
             }}
-        return deep_merge_dict(IT_REQUIRED, IT_PIXELS, IT_TRANS, IT_ROT, IT_SCALE, d, IT_WHMODE, IT_SAMPLE, IT_INVERT)
+        return deep_merge_dict(IT_REQUIRED, IT_PIXEL_MASK, IT_TRANS, IT_ROT, IT_SCALE, d, IT_WHMODE, IT_SAMPLE, IT_INVERT)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         pixels = kw.get(Lexicon.PIXEL, [None])
-        offset = parse_tuple(Lexicon.OFFSET, kw, typ=EnumTupleType.FLOAT, default=(0., 0.,), clip_min=-1, clip_max=1)
+        mask = kw.get(Lexicon.MASK, [None])
+        offset = parse_tuple(Lexicon.XY, kw, typ=EnumTupleType.FLOAT, default=(0., 0.,), clip_min=-1, clip_max=1)
         angle = kw.get(Lexicon.ANGLE, [0])
         size = parse_tuple(Lexicon.SIZE, kw, typ=EnumTupleType.FLOAT, default=(1., 1.,), zero=0.001)
         wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
@@ -70,58 +71,56 @@ class TransformNode(JOVImageInOutBaseNode):
         blbr = parse_tuple(Lexicon.BLBR, kw, EnumTupleType.FLOAT, (0, 0, 1, 1,), 0, 1)
         edge = kw.get(Lexicon.EDGE, [EnumEdge.CLIP])
         mode = kw.get(Lexicon.MODE, [EnumScaleMode.NONE])
-        res = kw.get(Lexicon.SAMPLE, [EnumInterpolation.LANCZOS4])
+        sample = kw.get(Lexicon.SAMPLE, [EnumInterpolation.LANCZOS4])
         i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], 0, 1)
-        params = [tuple(x) for x in zip_longest_fill(pixels, offset, angle, size, edge, wihi, tile_xy, mirror, mirror_pivot, proj, strength, tltr, blbr, mode, res, i)]
+        params = [tuple(x) for x in zip_longest_fill(pixels, mask, offset, angle, size, edge, wihi, tile_xy, mirror, mirror_pivot, proj, strength, tltr, blbr, mode, sample, i)]
         masks = []
         images = []
         pbar = comfy.utils.ProgressBar(len(params))
-        for idx, (img, offset, angle, size, edge, wihi, tile_xy, mirror, mirror_pivot, pr, str, tltr, blbr, mode, res, i) in enumerate(params):
+        for idx, (img, mask, offset, angle, size, edge, wihi, tile_xy, mirror, mirror_pivot, pr, str, tltr, blbr, mode, sample, i) in enumerate(params):
             w, h = wihi
             if img is not None:
                 img = tensor2cv(img)
-                sX, sY = size
-                if sX < 0:
-                    img = cv2.flip(img, 1)
-                    sX = -sX
-                if sY < 0:
-                    img = cv2.flip(img, 0)
-                    sY = -sY
+                if mask is None:
+                    ih, iw = img.shape[:2]
+                    mask = np.ones((ih, iw), dtype=np.uint8) * 255
+                else:
+                    mask = mask2cv(mask)
 
-                # SCALE
-                res = EnumInterpolation[res]
-                if sX != 1. or sY != 1.:
-                    wx =  int(max(1, w * sX))
-                    hx =  int(max(1, h * sY))
-                    img = cv2.resize(img, (wx, hx), interpolation=res.value)
+                edge = EnumEdge[edge]
+
+                # TRANSLATION
+                if offset[0] != 0. or offset[1] != 0.:
+                    img = geo_translate(img, offset, edge)
+                    mask = geo_translate(mask, offset, edge)
 
                 # ROTATION
                 if angle != 0:
-                    img = geo_rotate(img, angle)
+                    img = geo_rotate(img, angle, edge=edge)
+                    mask = geo_rotate(mask, angle, edge=edge)
 
-                # TRANSLATION
-                oX, oY = offset
-                if oX != 0. or oY != 0.:
-                    img = geo_translate(img, oX, oY)
+                sX, sY = size
+                if sX < 0:
+                    img = cv2.flip(img, 1)
+                    mask = cv2.flip(mask, 1)
+                    sX = -sX
+                if sY < 0:
+                    img = cv2.flip(img, 0)
+                    mask = cv2.flip(mask, 0)
+                    sY = -sY
 
-                if edge != "CLIP":
-                    tx = ty = 0
-                    if edge in ["WRAP", "WRAPX"] and sX < 1.:
-                        tx = 1. / sX - 1
-
-                    if edge in ["WRAP", "WRAPY"] and sY < 1.:
-                        ty = 1. / sY - 1
-
-                    img = geo_edge_wrap(img, tx, ty)
-                    # h, w = img.shape[:2]
+                # SCALE
+                sample = EnumInterpolation[sample]
+                if sX != 1. or sY != 1.:
+                    img = geo_scale(img, (sX, sY), sample, edge)
+                    mask = geo_scale(mask, (sX, sY), sample, edge)
 
                 # MIRROR
-                mirror = EnumMirrorMode[mirror].name
+                mirror = EnumMirrorMode[mirror]
+
                 mpx, mpy = mirror_pivot
-                if 'X' in mirror:
-                    img = geo_mirror(img, mpx, 1, invert=i)
-                if 'Y' in mirror:
-                    img = geo_mirror(img, mpy, 0, invert=i)
+                img = image_mirror(img, mirror, mpx, mpy, i)
+                mask = image_mirror(mask, mirror, mpx, mpy, i)
 
                 # TILE
                 tx, ty = tile_xy
@@ -129,37 +128,46 @@ class TransformNode(JOVImageInOutBaseNode):
                     img = geo_edge_wrap(img, tx - 1, ty - 1)
                     img = geo_scalefit(img, w, h, mode=EnumScaleMode.FIT)
 
+                    mask = geo_edge_wrap(mask, tx - 1, ty - 1)
+                    mask = geo_scalefit(mask, w, h, mode=EnumScaleMode.FIT)
+
                 # RE-PROJECTION
                 x1, y1, x2, y2 = tltr
                 x4, y4, x3, y3 = blbr
-                #sw, sh = w, h
-                #if mode == EnumScaleMode.NONE:
                 sh, sw = img.shape[:2]
                 x1, x2, x3, x4 = map(lambda x: x * sw, [x1, x2, x3, x4])
                 y1, y2, y3, y4 = map(lambda y: y * sh, [y1, y2, y3, y4])
                 img = remap_perspective(img, [[x1, y1], [x2, y2], [x3, y3], [x4, y4]])
+                mask = remap_perspective(mask, [[x1, y1], [x2, y2], [x3, y3], [x4, y4]])
 
                 # RE-PROJECTION
                 pr = EnumProjection[pr]
                 match pr:
                     case EnumProjection.SPHERICAL:
                         img = remap_sphere(img, str)
+                        mask = remap_sphere(mask, str)
                     case EnumProjection.FISHEYE:
                         img = remap_fisheye(img, str)
+                        mask = remap_fisheye(mask, str)
                     case EnumProjection.POLAR:
                         img = remap_polar(img)
+                        mask = remap_polar(mask)
 
                 if i != 0:
                     img = light_invert(img, i)
 
-                #img = geo_crop(img)
-                img = geo_scalefit(img, w, h, mode=mode, sample=res)
+                img = geo_scalefit(img, w, h, mode=mode, sample=sample)
+                mask = geo_scalefit(mask, w, h, mode=mode, sample=sample)
+                images.append(cv2tensor(img))
+                masks.append(cv2mask(mask))
 
             else:
-                img = np.zeros((h, w, 3), dtype=np.uint8)
+                img = torch.zeros((h, w, 3), dtype=torch.uint8)
+                if mask is None:
+                    mask = torch.ones((h, w), dtype=torch.uint8) * 255
+                images.append(img)
+                masks.append(mask)
 
-            images.append(cv2tensor(img))
-            masks.append(cv2mask(img))
             pbar.update_absolute(idx)
 
         return (
@@ -180,7 +188,7 @@ class BlendNode(JOVImageInOutBaseNode):
                 Lexicon.A: ("FLOAT", {"default": 1, "min": 0, "max": 1, "step": 0.01}),
                 Lexicon.FLIP: ("BOOLEAN", {"default": False}),
             }}
-        return deep_merge_dict(IT_REQUIRED, IT_PIXEL_MASK, d, IT_SCALEMODE, IT_SAMPLE, IT_INVERT)
+        return deep_merge_dict(IT_REQUIRED, IT_PIXEL2_MASK, d, IT_SCALEMODE, IT_SAMPLE, IT_INVERT)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         pixelA = kw.get(Lexicon.PIXEL_A, [None])

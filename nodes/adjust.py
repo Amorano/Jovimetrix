@@ -10,7 +10,7 @@ from loguru import logger
 import comfy
 
 from Jovimetrix import JOVImageInOutBaseNode, \
-    IT_PIXELS, IT_PIXEL2, IT_HSV, IT_FLIP, IT_LOHI, IT_LMH, \
+    IT_PIXELS, IT_PIXEL2, IT_PIXEL_MASK, IT_HSV, IT_FLIP, IT_LOHI, IT_LMH, \
     IT_INVERT, IT_CONTRAST, IT_GAMMA, IT_REQUIRED, MIN_IMAGE_SIZE
 
 from Jovimetrix.sup.lexicon import Lexicon
@@ -41,28 +41,31 @@ class AdjustNode(JOVImageInOutBaseNode):
                 Lexicon.RADIUS: ("INT", {"default": 3, "min": 3, "step": 1}),
                 Lexicon.VALUE: ("FLOAT", {"default": 1, "min": 0, "step": 0.1}),
             }}
-        return deep_merge_dict(IT_REQUIRED, IT_PIXELS, d, IT_INVERT)
+        return deep_merge_dict(IT_REQUIRED, IT_PIXEL_MASK, d, IT_INVERT)
 
     def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor]:
-        img = kw.get(Lexicon.PIXEL, [None])
+        pixel = kw.get(Lexicon.PIXEL, [None])
+        mask = kw.get(Lexicon.MASK, [None])
         op = kw.get(Lexicon.FUNC, [EnumAdjustOP.BLUR])
         radius = kw.get(Lexicon.RADIUS, [3])
         amt = kw.get(Lexicon.VALUE, [0])
         i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
-        params = [tuple(x) for x in zip_longest_fill(img, op, radius, amt, i)]
+        params = [tuple(x) for x in zip_longest_fill(pixel, mask, op, radius, amt, i)]
         masks = []
         images = []
         pbar = comfy.utils.ProgressBar(len(params))
-        for idx, (img, o, r, a, i) in enumerate(params):
+        for idx, (pixel, mask, o, r, a, i) in enumerate(params):
             if img is None:
                 images.append(torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8, device="cpu"))
                 masks.append(torch.ones((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), dtype=torch.uint8, device="cpu"))
                 continue
 
             img = tensor2cv(img)
+            mask = tensor2cv(mask)
             match EnumAdjustOP[o]:
                 case EnumAdjustOP.BLUR:
                     img = cv2.blur(img, (r, r))
+                    mask = cv2.blur(mask, (r, r))
 
                 case EnumAdjustOP.STACK_BLUR:
                     r = min(r, 1399)
@@ -96,12 +99,15 @@ class AdjustNode(JOVImageInOutBaseNode):
 
                 case EnumAdjustOP.PIXELATE:
                     img = adjust_pixelate(img, a / 255.)
+                    mask = adjust_pixelate(mask, a / 255.)
 
                 case EnumAdjustOP.QUANTIZE:
                     img = adjust_quantize(img, int(a))
+                    mask = adjust_quantize(mask, int(a))
 
                 case EnumAdjustOP.POSTERIZE:
                     img = adjust_posterize(img, int(a))
+                    mask = adjust_posterize(mask, int(a))
 
                 case EnumAdjustOP.OUTLINE:
                     img = cv2.morphologyEx(img, cv2.MORPH_GRADIENT, (r, r))

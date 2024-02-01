@@ -12,8 +12,9 @@ from skimage import exposure
 from blendmodes.blend import BlendType
 
 from Jovimetrix import TYPE_IMAGE, TYPE_PIXEL
-from Jovimetrix.sup.image import channel_count, pixel_bgr2hsv, pixel_hsv_adjust, pixel_hsv2bgr
-from Jovimetrix.sup.comp import comp_blend, geo_mirror
+from Jovimetrix.sup.image import EnumMirrorMode, channel_count, pixel_bgr2hsv, pixel_hsv_adjust, \
+    pixel_hsv2bgr, image_mirror
+from Jovimetrix.sup.comp import comp_blend
 
 # =============================================================================
 # === ENUM GLOBALS ===
@@ -254,10 +255,10 @@ def color_theory(image: TYPE_IMAGE, custom:int=0, scheme: EnumColorTheory=EnumCo
 # =============================================================================
 
 if __name__ == "__main__":
-    img = cv2.imread('./_res/img/test_fore2.png', cv2.IMREAD_UNCHANGED)
-    img = geo_mirror(img, 0.75, 0)
-    img = geo_mirror(img, 0.25, 1)
-
-    cv2.imwrite(f'./_res/tst/image-mirror.png', img)
+    img2 = cv2.imread('./_res/img/test_mask.png', cv2.IMREAD_UNCHANGED)
+    img = image_mirror(img2, EnumMirrorMode.YX)
+    cv2.imwrite(f'./_res/tst/image-mirror1.png', img)
+    img = image_mirror(img2, EnumMirrorMode.Y, reverse=True)
+    cv2.imwrite(f'./_res/tst/image-mirror2.png', img)
     # testBlendModes()
     # testImageMerge()

@@ -214,62 +214,63 @@ def geo_crop_polygonal(image: TYPE_IMAGE,
 
     return img, mask
 
+def geo_crop_center(image: TYPE_IMAGE, width:int=0, height:int=0) -> TYPE_IMAGE:
+    h, w = image.shape[:2]
+    center = (int(w * 0.5), int(h * 0.5))
+    height //= 2
+    width //= 2
+    print(h, w, center, width, height, center[0]-width, center[1]-height, center[0]+width, center[1]+height)
+    return image[ center[1]-height:center[1]+height, center[0]-width:center[0]+width]
+
 def geo_edge_wrap(image: TYPE_IMAGE, tileX: float=1., tileY: float=1., edge:EnumEdge=EnumEdge.WRAP) -> TYPE_IMAGE:
     """TILING."""
-    height, width, _ = image.shape
-    tileX = int(tileX * width * 0.5) if edge in [EnumEdge.WRAP, EnumEdge.WRAPX] else 0
-    tileY = int(tileY * height * 0.5) if edge in [EnumEdge.WRAP, EnumEdge.WRAPY] else 0
-    image = cv2.copyMakeBorder(image, tileY, tileY, tileX, tileX, cv2.BORDER_WRAP)
-    #
+    height, width = image.shape[:2]
+    tileX = int(width * tileX) if edge in [EnumEdge.WRAP, EnumEdge.WRAPX] else 0
+    tileY = int(height * tileY) if edge in [EnumEdge.WRAP, EnumEdge.WRAPY] else 0
+    return cv2.copyMakeBorder(image, tileY, tileY, tileX, tileX, cv2.BORDER_WRAP)
+
+def geo_affine_edge(image: TYPE_IMAGE, callback:object, edge:EnumEdge=EnumEdge.WRAP) -> TYPE_IMAGE:
+    height, width = image.shape[:2]
+    if edge != EnumEdge.CLIP:
+        image = geo_edge_wrap(image, edge=edge)
+
+    image = callback(image)
+
+    if edge != EnumEdge.CLIP:
+        image = geo_crop_center(image, width, height)
     return image
 
-def geo_translate(image: TYPE_IMAGE, offsetX: float, offsetY: float) -> TYPE_IMAGE:
-    """TRANSLATION."""
-    height, width, _ = image.shape
-    M = np.float32([[1, 0, offsetX * width], [0, 1, offsetY * height]])
-    return cv2.warpAffine(image, M, (width, height), flags=cv2.INTER_LINEAR)
+def geo_scale(image: TYPE_IMAGE, scale:TYPE_COORD=(1.0, 1.0), sample:EnumInterpolation=EnumInterpolation.LANCZOS4, edge:EnumEdge=EnumEdge.CLIP) -> TYPE_IMAGE:
 
-def geo_rotate(image: TYPE_IMAGE, angle: float, center:TYPE_COORD=(0.5 ,0.5), edge:EnumEdge=EnumEdge.CLIP) -> TYPE_IMAGE:
-    """ROTATION."""
-    orig_height, orig_width, _ = image.shape
-    if edge != EnumEdge.CLIP:
-        tileX = int(orig_width) if edge in [EnumEdge.WRAP, EnumEdge.WRAPX] else 0
-        tileY = int(orig_height) if edge in [EnumEdge.WRAP, EnumEdge.WRAPY] else 0
-        image = cv2.copyMakeBorder(image, tileY, tileY, tileX, tileX, cv2.BORDER_WRAP)
+    def scale(img: TYPE_IMAGE) -> TYPE_IMAGE:
+        height, width = img.shape[:2]
+        w =  int(max(1, width * scale[0]))
+        h =  int(max(1, height * scale[1]))
+        return cv2.resize(img, (w, h), interpolation=sample.value)
 
-    height, width, _ = image.shape
-    center = (int(width * center[0]), int(height * center[1]))
-    M = cv2.getRotationMatrix2D(center, -angle, 1.0)
-    image = cv2.warpAffine(image, M, (width, height), flags=cv2.INTER_LINEAR)
+    return geo_affine_edge(image, scale, edge)
 
-    # crop back to original size
-    if edge != EnumEdge.CLIP:
-        h2, w2, _ = image.shape
-        center = (int(w2 * 0.5), int(h2 * 0.5))
-        image = image[ center[1]-orig_height//2:center[1]+orig_height//2, center[0]-orig_width//2:center[0]+orig_width//2, : ]
-    return image
+def geo_translate(image: TYPE_IMAGE, offset:TYPE_COORD=(0.0, 0.0), edge:EnumEdge=EnumEdge.CLIP) -> TYPE_IMAGE:
 
-def geo_rotate_array(image: TYPE_IMAGE, angle: float, clip: bool=True) -> TYPE_IMAGE:
-    """."""
-    rotated_image = rotate(image, angle, reshape=not clip, mode='constant', cval=0)
+    def translate(img: TYPE_IMAGE) -> TYPE_IMAGE:
+        height, width = img.shape[:2]
+        scalarX = 0.333 if edge in [EnumEdge.WRAP, EnumEdge.WRAPX] else 1.
+        scalarY = 0.333 if edge in [EnumEdge.WRAP, EnumEdge.WRAPY] else 1.
 
-    if not clip:
-        return rotated_image
+        M = np.float32([[1, 0, offset[0] * width * scalarX], [0, 1, offset[1] * height * scalarY]])
+        return cv2.warpAffine(img, M, (width, height), flags=cv2.INTER_LINEAR)
 
-    # Compute the dimensions for clipping
-    height, width, _ = image.shape
-    rotated_height, rotated_width, _ = rotated_image.shape
+    return geo_affine_edge(image, translate, edge)
 
-    # Calculate the difference in dimensions
-    height_diff = rotated_height - height
-    width_diff = rotated_width - width
+def geo_rotate(image: TYPE_IMAGE, angle: float, center:TYPE_COORD=(0.5, 0.5), edge:EnumEdge=EnumEdge.CLIP) -> TYPE_IMAGE:
 
-    # Calculate the starting indices for clipping
-    start_height = height_diff // 2
-    start_width = width_diff // 2
+    def rotate(img: TYPE_IMAGE) -> TYPE_IMAGE:
+        height, width = img.shape[:2]
+        c = (int(width * center[0]), int(height * center[1]))
+        M = cv2.getRotationMatrix2D(c, -angle, 1.0)
+        return cv2.warpAffine(img, M, (width, height), flags=cv2.INTER_LINEAR)
 
-    # Clip the rotated image
-    return rotated_image[start_height:start_height + height, start_width:start_width + width]
+    return geo_affine_edge(image, rotate, edge)
 
 def geo_scalefit(image: TYPE_IMAGE, width: int, height:int,
                  color:TYPE_PIXEL=0.,
@@ -297,45 +298,6 @@ def geo_merge(imageA: TYPE_IMAGE, imageB: TYPE_IMAGE, axis: int=0, flip: bool=Fa
         imageA, imageB = imageB, imageA
     axis = 1 if axis == "HORIZONTAL" else 0
     return np.concatenate((imageA, imageB), axis=axis)
-
-def geo_mirror(image: TYPE_IMAGE, pX: float, axis: int, invert: bool=False) -> TYPE_IMAGE:
-    cc, _, width, height = channel_count(image)
-    output =  np.zeros((height, width, 3), dtype=np.uint8)
-
-    axis = 1 if axis == 0 else 0
-
-    if cc > 3:
-        alpha = image[:,:,3]
-        alpha = cv2.flip(alpha, axis)
-        image = image[:,:,:3]
-
-    flip = cv2.flip(image, axis)
-
-    pX = np.clip(pX, 0, 1)
-    if invert:
-        pX = 1 - pX
-        flip, image = image, flip
-
-    scalar = height if axis == 0 else width
-    slice1 = int(pX * scalar)
-    slice1w = scalar - slice1
-    slice2w = min(scalar - slice1w, slice1w)
-
-    if axis == 0:
-        output[:slice1, :] = image[:slice1, :]
-        output[slice1:slice1 + slice2w, :] = flip[slice1w:slice1w + slice2w, :]
-    else:
-        output[:, :slice1] = image[:, :slice1]
-        output[:, slice1:slice1 + slice2w] = flip[:, slice1w:slice1w + slice2w]
-
-    if invert:
-        output = cv2.flip(output, axis)
-
-    if cc == 4:
-        output = channel_add(output)
-        output[:,:,3] = alpha
-
-    return output
 
 # =============================================================================
 # === LIGHT FUNCTIONS ===
@@ -400,7 +362,7 @@ def comp_lerp(imageA:TYPE_IMAGE,
     # normalize alpha and establish mask
     alpha = np.clip(alpha, 0, 1)
     if mask is None:
-        height, width, _ = imageA.shape
+        height, width = imageA.shape[:2]
         mask = cv2.empty((height, width, 1), dtype=cv2.uint8)
     else:
         # normalize the mask
@@ -618,7 +580,7 @@ def morph_emboss(image: TYPE_IMAGE, amount: float=1., kernel: int=2) -> TYPE_IMA
 # KERNELS
 
 def MEDIAN3x3(image: TYPE_IMAGE) -> TYPE_IMAGE:
-    height, width, _ = image.shape
+    height, width = image.shape[:2]
     out = np.zeros([height, width])
     for i in range(1, height-1):
         for j in range(1, width-1):

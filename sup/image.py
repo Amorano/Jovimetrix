@@ -273,10 +273,10 @@ def pixel_eval(color: TYPE_PIXEL,
 def pixel_convert(in_a: TYPE_IMAGE, in_b: TYPE_IMAGE) -> tuple[TYPE_IMAGE, TYPE_IMAGE]:
     if in_a is not None or in_b is not None:
         if in_a is None:
-            cc, _, w, h = channel_count(in_b)
+            cc, w, h = channel_count(in_b)[:2]
             in_a = np.zeros((h, w, cc), dtype=np.uint8)
         if in_b is None:
-            cc, _, w, h = channel_count(in_a)
+            cc, w, h = channel_count(in_a)[:2]
             in_b = np.zeros((h, w, cc), dtype=np.uint8)
     return in_a, in_b
 
@@ -304,7 +304,7 @@ def channel_count(image:TYPE_IMAGE) -> tuple[int, EnumImageType, int, int]:
     h, w = image.shape[:2]
     size = image.shape[2] if len(image.shape) > 2 else 1
     mode = EnumImageType.RGBA if size == 4 else EnumImageType.RGB if size == 3 else EnumImageType.GRAYSCALE
-    return size, mode, w, h
+    return size, w, h, mode
 
 def channel_add(image:TYPE_IMAGE, value: TYPE_PIXEL=255) -> TYPE_IMAGE:
     new = channel_solid(color=value, image=image)
@@ -332,7 +332,7 @@ def channel_fill(image:TYPE_IMAGE, width:int, height:int, color:TYPE_PIXEL=255) 
     Fills a block of pixels with a matte or stretched to width x height.
     """
 
-    cc, chan, x, y = channel_count(image)
+    cc, x, y, chan = channel_count(image)
     y1 = max(0, (height - y) // 2)
     y2 = min(height, y1 + y)
     x1 = max(0, (width - x) // 2)
@@ -446,7 +446,7 @@ def image_stack(images: list[TYPE_IMAGE],
     # CROP ALL THE IMAGES TO THE LARGEST ONE OF THE INPUT SET
     width, height = 0, 0
     for i in images:
-        w, h = i.shape[:2]
+        h, w = i.shape[:2]
         width = max(width, w)
         height = max(height, h)
 
@@ -521,7 +521,7 @@ def image_grayscale(image: TYPE_IMAGE) -> TYPE_IMAGE:
     return image
 
 def image_split(image: TYPE_IMAGE) -> tuple[TYPE_IMAGE]:
-    cc, _, w, h = channel_count(image)
+    cc, w, h = channel_count(image)[:3]
     if cc == 4:
         b, g, r, a = cv2.split(image)
     elif cc == 3:
@@ -558,6 +558,52 @@ def image_merge(r: TYPE_IMAGE, g: TYPE_IMAGE, b: TYPE_IMAGE, a: TYPE_IMAGE,
         image = cv2.merge((b, g, r, a))
     else:
         image = cv2.merge((b, g, r))
+    return image
+
+def image_mirror(image: TYPE_IMAGE, mode:EnumMirrorMode, x:float=0.5, y:float=0.5, reverse:bool=False) -> TYPE_IMAGE:
+    cc, width, height = channel_count(image)[:3]
+
+    def mirror(img:TYPE_IMAGE, axis:int) -> TYPE_IMAGE:
+        pivot = x if axis == 1 else y
+        #if cc > 3:
+        #    alpha = img[:, :, 3]
+        #    alpha = cv2.flip(alpha, axis)
+        #    img = img[:, :, :3]
+
+        flip = cv2.flip(img, axis)
+
+        pivot = np.clip(pivot, 0, 1)
+        if reverse:
+            pivot = 1 - pivot
+            flip, img = img, flip
+
+        scalar = height if axis == 0 else width
+        slice1 = int(pivot * scalar)
+        slice1w = scalar - slice1
+        slice2w = min(scalar - slice1w, slice1w)
+
+        output =  np.zeros((height, width, cc), dtype=np.uint8)
+        if axis == 0:
+            output[:slice1, :] = img[:slice1, :]
+            output[slice1:slice1 + slice2w, :] = flip[slice1w:slice1w + slice2w, :]
+        else:
+            output[:, :slice1] = img[:, :slice1]
+            output[:, slice1:slice1 + slice2w] = flip[:, slice1w:slice1w + slice2w]
+
+        #if cc == 4:
+        #    output = channel_add(output)
+        #    output[:, :, 3] = alpha
+
+        return output
+
+    if mode in [EnumMirrorMode.X, EnumMirrorMode.XY]:
+        image = mirror(image, 1)
+
+    if mode in [EnumMirrorMode.Y, EnumMirrorMode.YX, EnumMirrorMode.XY]:
+        image = mirror(image, 0)
+        if mode == EnumMirrorMode.YX:
+            image = mirror(image, 1)
+
     return image
 
 # =============================================================================
