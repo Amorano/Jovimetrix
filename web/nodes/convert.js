@@ -1,36 +1,13 @@
 /**
- * File: conversion.js
+ * File: convert.js
  * Project: Jovimetrix
  *
  */
 
 import { app } from "/scripts/app.js"
-import { $el } from "/scripts/ui.js"
 import * as util from '../core/util.js'
 
 const _id = "CONVERT (JOV) 🧬"
-const _cat = "JOVIMETRIX 🔺🟩🔵/CALC"
-
-function get_position_style(ctx, widget_width, y, node_height) {
-    const MARGIN = 4;
-    const elRect = ctx.canvas.getBoundingClientRect();
-    const transform = new DOMMatrix()
-        .scaleSelf(elRect.width / ctx.canvas.width, elRect.height / ctx.canvas.height)
-        .multiplySelf(ctx.getTransform())
-        .translateSelf(MARGIN, MARGIN + y);
-
-    return {
-        transformOrigin: '0 0',
-        transform: transform,
-        left: `0px`,
-        top: `0px`,
-        position: "absolute",
-        maxWidth: `${widget_width - MARGIN * 2}px`,
-        maxHeight: `${node_height - MARGIN * 2}px`,
-        width: `${ctx.canvas.width}px`,  // Set canvas width
-        height: `${ctx.canvas.height}px`,  // Set canvas height
-    };
-}
 
 const ext = {
 	name: 'jovimetrix.node.convert',

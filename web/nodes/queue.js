@@ -8,7 +8,6 @@ import { api } from "/scripts/api.js";
 import { app } from "/scripts/app.js";
 import { ComfyWidgets } from "/scripts/widgets.js"
 import * as util from '../core/util.js'
-import * as util_fun from '../core/util_fun.js'
 
 const _id = "QUEUE (JOV) 🗃"
 

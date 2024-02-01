@@ -5,7 +5,6 @@
  */
 
 import { app } from "/scripts/app.js"
-import { $el } from "/scripts/ui.js"
 import * as util from '../core/util.js'
 import * as util_dom from '../core/util_dom.js'
 import { JImageWidget } from '../widget/widget_jimage.js'
@@ -13,27 +12,6 @@ import { JStringWidget } from '../widget/widget_jstring.js'
 
 const _prefix = 'jovi'
 const _id = "AKASHIC (JOV) 📓"
-
-function get_position_style(ctx, width, y, height) {
-    const MARGIN = 4;
-    const elRect = ctx.canvas.getBoundingClientRect();
-    const transform = new DOMMatrix()
-        .scaleSelf(elRect.width / ctx.canvas.width, elRect.height / ctx.canvas.height)
-        .multiplySelf(ctx.getTransform())
-        .translateSelf(MARGIN, MARGIN + y);
-
-    return {
-        transformOrigin: '0 0',
-        transform: transform,
-        left: `0px`,
-        top: `0px`,
-        position: "absolute",
-        maxWidth: `${width - MARGIN * 2}px`,
-        maxHeight: `${height - MARGIN * 2}px`,
-        width: `auto`,
-        height: `auto`,
-    };
-}
 
 const ext = {
 	name: 'jovimetrix.node.akashic',
