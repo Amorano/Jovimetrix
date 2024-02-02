@@ -300,7 +300,7 @@ def old():
     image_save_gif(root + f"/../_res/tst/glsl.gif", images, glsl.fps)
     for i, x in enumerate(images):
         x.save( root + f"/../_res/tst/glsl-{i}.gif")
-    print(Image.open(root + f"/../_res/tst/glsl.gif").n_frames)
+    logger.debug(Image.open(root + f"/../_res/tst/glsl.gif").n_frames)
 
 if __name__ == "__main__":
     root = os.path.dirname(__file__)

@@ -637,7 +637,7 @@ if __name__ == "__main__":
     streamReadTest()
     # streamWriteTest()
     for m, v in camera_list().items():
-        print(m, v)
+        logger.debug(m, v)
     exit()
     capture_screen_test()
     pass

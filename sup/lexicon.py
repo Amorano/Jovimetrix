@@ -120,6 +120,7 @@ class Lexicon:
     QUEUE = 'Q'
     R = '🟥'
     RADIUS = '🅡'
+    RANDOM = 'RNG'
     REGION = 'REGION'
     RESET = 'RESET'
     RESULT = '👍'

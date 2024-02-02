@@ -94,7 +94,7 @@ def graph_sausage(data: np.ndarray, bar_count:int, width:int, height:int,
 # =============================================================================
 
 if __name__ == "__main__":
-    print(sf.__libsndfile_version__)
+    logger.debug(sf.__libsndfile_version__)
     url = './_res/aud.wav'
     url = "https://upload.wikimedia.org/wikipedia/commons/b/bb/Test_ogg_mp3_48kbps.wav"
     url = "http://tinyurl.com/shepard-risset"

@@ -20,7 +20,7 @@ from Jovimetrix.sup.image import cv2mask, cv2tensor
 from Jovimetrix.sup.audio import load_audio, wave_extract, graph_sausage
 
 class GraphWaveNode(JOVImageBaseNode):
-    NAME = "GRAPH WAVE (JOV) ▶ ılıılıılılılılılı. "
+    NAME = "GRAPH WAVE (JOV) ▶ ılıılıılıl"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/AUDIO"
     RETURN_TYPES = ("IMAGE", "MASK", "WAVE")
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.MASK, Lexicon.WAVE )

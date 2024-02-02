@@ -378,7 +378,7 @@ def image_load_data(data: str) -> TYPE_IMAGE:
     img = ImageOps.exif_transpose(data)
     img = pil2cv(img)
     #cc = channel_count(img)[0]
-    #print(cc)
+    #logger.debug(cc)
     #if cc == 4:
     #    img[:, :, 3] = 1. - img[:, :, 3]
     #if cc == 3:

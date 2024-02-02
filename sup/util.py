@@ -148,7 +148,11 @@ def zip_longest_fill(*iterables: Any) -> Generator[Tuple[Any, ...], None, None]:
     This function behaves like itertools.zip_longest, but it fills the values
     of exhausted iterators with their own last values instead of None.
     """
-    iterators = [iter(iterable) for iterable in iterables]
+    try:
+        iterators = [iter(iterable) for iterable in iterables]
+    except Exception as e:
+        logger.error(iterables)
+        logger.error(str(e))
 
     while True:
         values = [next(iterator, None) for iterator in iterators]
