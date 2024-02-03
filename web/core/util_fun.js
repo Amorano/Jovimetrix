@@ -93,13 +93,13 @@ export const bubbles = function() {
         constructor(mx = 0, my = 0) {
             this.x = Math.random() * canvas.width;
             this.y = canvas.height;
-            this.radius = (3 + 11 * (my/canvas.height)) + Math.random() * (3 + 11 * (my/canvas.height));
-            this.dx = ((mx / canvas.width) - 0.5) * 1.27;
-            this.dx += Math.sign(this.dx) * 1.27;
-            this.dy = 4 + Math.random() * 2;
-            this.hue = 110 + my * 50;
-            this.sat = 75 + Math.random() * 25;
-            this.val = 30 + Math.random() * 25;
+            this.radius = Math.random() * 30;
+            this.dx = Math.random() - 0.5
+            this.dx = Math.sign(this.dx) * Math.random() * 1.27;
+            this.dy = 3 + Math.random() * 3;
+            this.hue = 25 + Math.random() * 250;
+            this.sat = 85 + Math.random() * 15;
+            this.val = 35 + Math.random() * 20;
         }
 
         draw() {
@@ -124,8 +124,10 @@ export const bubbles = function() {
         }
 
         move() {
-            this.x = this.x + this.dx;
-            this.y = this.y - this.dy;
+            // this.dx = (Math.random() - 0.5) * 2.27;
+            // this.dy = (Math.random() - 0.5) * 1.5;
+            this.x = this.x + this.dx + (Math.random() - 0.5) * 0.5;
+            this.y = this.y - this.dy + (Math.random() - 0.5) * 1.5;
 
             // Check if the particle is outside the canvas boundaries
             if (
@@ -151,7 +153,7 @@ export const bubbles = function() {
 
         if (window.bubbles_alive) {
             requestAnimationFrame(animate);
-            if (Math.random() > 0.92) {
+            if (Math.random() > 0.975) {
                 const particle = new Particle(mouseX, mouseY);
                 particleArray.push(particle);
             }
@@ -174,7 +176,7 @@ export const bubbles = function() {
     };
 
     canvas.addEventListener("resize", handleResize);
-    canvas.addEventListener("mousemove", handleMouseMove);
+    // canvas.addEventListener("mousemove", handleMouseMove);
     animate();
 }
 

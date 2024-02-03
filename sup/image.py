@@ -4,6 +4,7 @@ Image Support
 """
 
 import base64
+import pathlib
 import urllib
 from enum import Enum
 from io import BytesIO
@@ -304,7 +305,7 @@ def pixel_hsv_adjust(color:TYPE_PIXEL, hue:int=0, saturation:int=0, value:int=0,
 # === CHANNEL ===
 # =============================================================================
 
-def channel_count(image:TYPE_IMAGE) -> tuple[int, EnumImageType, int, int]:
+def channel_count(image:TYPE_IMAGE) -> tuple[int, int, int, EnumImageType]:
     h, w = image.shape[:2]
     size = image.shape[2] if len(image.shape) > 2 else 1
     mode = EnumImageType.RGBA if size == 4 else EnumImageType.RGB if size == 3 else EnumImageType.GRAYSCALE
@@ -389,20 +390,37 @@ def image_formats() -> list[str]:
     exts = Image.registered_extensions()
     return [ex for ex, f in exts.items() if f in Image.OPEN]
 
-def image_load(url: str) -> list[TYPE_IMAGE]:
-    images = []
-    try:
-        img = Image.open(url)
-    except Exception as e:
-        logger.error(str(e))
-        return [np.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 4), dtype=np.uint8)]
-
+def image_load(url: str) -> tuple[TYPE_IMAGE, TYPE_IMAGE]:
+    """
     if img.format == 'PSD':
         images = [pil2cv(frame.copy()) for frame in ImageSequence.Iterator(img)]
         logger.debug(f"#PSD {len(images)}")
-    else:
-        images = [image_load_data(img)]
-    return images
+    """
+    try:
+        img  = cv2.imread(url, cv2.IMREAD_UNCHANGED)
+    except Exception as e:
+        adw
+        try:
+            img = Image.open(url)
+            img = ImageOps.exif_transpose(img)
+            img = pil2cv(img)
+        except Exception as e:
+            logger.error(str(e))
+            img = np.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=np.uint8)
+            mask = np.ones((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), dtype=np.uint8) * 255
+            return img, mask
+
+    if img.dtype != np.uint8:
+        img = np.array(img / 256.0, dtype=np.float32)
+    cc, width, height = channel_count(img)[:3]
+    mask = np.ones((height, width), dtype=np.uint8) * 255
+    if cc == 4:
+        mask = img[:, :, 3]
+        img = cv2.cvtColor(img, cv2.COLOR_RGBA2RGB)
+    elif cc == 2:
+        img = img[:, :, 0]
+
+    return img, mask
 
 def image_load_from_url(url:str) -> TYPE_IMAGE:
     """Creates a CV2 BGR image from a url."""
@@ -604,58 +622,6 @@ def image_mirror(image: TYPE_IMAGE, mode:EnumMirrorMode, x:float=0.5, y:float=0.
 
     return image
 
-def image_mirror2(image: TYPE_IMAGE, mode:EnumMirrorMode, x:float=0.5, y:float=0.5) -> TYPE_IMAGE:
-    cc, width, height = channel_count(image)[:3]
-
-    def mirror(img:TYPE_IMAGE, axis:int, reverse:bool=False) -> TYPE_IMAGE:
-        pivot = x if axis == 1 else y
-        flip = cv2.flip(img, axis)
-        pivot = np.clip(pivot, 0, 1)
-
-        if reverse:
-            pivot = 1. - pivot
-            flip, img = img, flip
-
-        scalar = height if axis == 0 else width
-
-        slice1 = int(pivot * scalar)
-        slice1w = scalar - slice1
-        slice2w = min(scalar - slice1w, slice1w)
-
-        if cc >= 3:
-            output = np.zeros((height, width, cc), dtype=np.uint8)
-        else:
-            output = np.zeros((height, width), dtype=np.uint8)
-
-        if axis == 0:
-            output[:slice1, :] = img[:slice1, :]
-            output[slice1:slice1 + slice2w, :] = flip[slice1w:slice1w + slice2w, :]
-        else:
-            output[:, :slice1] = img[:, :slice1]
-            output[:, slice1:slice1 + slice2w] = flip[:, slice1w:slice1w + slice2w]
-
-        return output
-
-    if mode in [EnumMirrorMode.X, EnumMirrorMode.FLIP_X, EnumMirrorMode.XY, EnumMirrorMode.FLIP_XY, EnumMirrorMode.X_FLIP_Y, EnumMirrorMode.FLIP_X_FLIP_Y]:
-        if mode in [EnumMirrorMode.FLIP_X, EnumMirrorMode.FLIP_XY, EnumMirrorMode.FLIP_X_FLIP_Y]:
-            image = cv2.flip(image, 1)
-            x = np.clip(1. - x, 0, 1)
-        image = mirror(image, 1)
-
-    if mode not in [EnumMirrorMode.NONE, EnumMirrorMode.X, EnumMirrorMode.FLIP_X]:
-        if mode in [EnumMirrorMode.FLIP_Y, EnumMirrorMode.FLIP_YX, EnumMirrorMode.FLIP_Y_FLIP_X]:
-            image = cv2.flip(image, 0)
-            y = np.clip(1. - y, 0, 1)
-        image = mirror(image, 0)
-
-        if mode in [EnumMirrorMode.YX, EnumMirrorMode.FLIP_YX, EnumMirrorMode.Y_FLIP_X, EnumMirrorMode.FLIP_Y_FLIP_X]:
-            if mode in [EnumMirrorMode.Y_FLIP_X, EnumMirrorMode.FLIP_Y_FLIP_X]:
-                image = cv2.flip(image, 1)
-                x = np.clip(1. - x, 0, 1)
-            image = mirror(image, 1)
-
-    return image
-
 # =============================================================================
 # === TEST ===
 # =============================================================================
@@ -668,5 +634,13 @@ def testColorConvert() -> None:
     logger.debug("{} {}", "255, 128, 0", pixel_eval((255, 128, 0), EnumImageType.GRAYSCALE))
     logger.debug("{} {}", "255", pixel_eval(255))
 
+def testImageLoad() -> None:
+    path = pathlib.Path(r"C:\dev\test")
+    for p in path.iterdir():
+        if p.is_file() and p.suffix =='.png':
+            p, mask = image_load(str(p))
+            cv2.imwrite(fr"C:\dev\test\out.png", p)
+
 if __name__ == "__main__":
-    testColorConvert()
+    # testColorConvert()
+    testImageLoad()

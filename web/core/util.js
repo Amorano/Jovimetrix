@@ -283,3 +283,43 @@ export function convertArrayToObject(values, length, parseFn) {
     return result;
 }
 
+export function showModal(innerHTML, eventCallback, timeout=null) {
+    return new Promise((resolve, reject) => {
+        const modal = document.createElement("div");
+        modal.className = "modal";
+        modal.innerHTML = innerHTML;
+        document.body.appendChild(modal);
+
+        // center
+        const modalContent = modal.querySelector(".jov-modal-content");
+        modalContent.style.position = "absolute";
+        modalContent.style.left = "50%";
+        modalContent.style.top = "50%";
+        modalContent.style.transform = "translate(-50%, -50%)";
+
+        let timeoutId;
+
+        const handleEvent = (event) => {
+            const targetId = event.target.id;
+            const result = eventCallback(targetId);
+
+            if (result != null) {
+                if (timeoutId) {
+                    clearTimeout(timeoutId);
+                    timeoutId = null;
+                }
+                modal.remove();
+                resolve(result);
+            }
+        };
+        modalContent.addEventListener("click", handleEvent);
+
+        if (timeout) {
+            timeout *= 1000;
+            timeoutId = setTimeout(() => {
+                modal.remove();
+                reject(new Error("TIMEOUT"));
+            }, timeout);
+        }
+    });
+}

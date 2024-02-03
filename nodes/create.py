@@ -21,7 +21,7 @@ from Jovimetrix import JOVImageBaseNode, TYPE_IMAGE, \
 from Jovimetrix.sup.lexicon import Lexicon
 
 from Jovimetrix.sup.util import deep_merge_dict, parse_tuple, parse_number, \
-    EnumTupleType
+    EnumTupleType, zip_longest_fill
 
 from Jovimetrix.sup.image import EnumEdge, channel_add, pil2tensor, pil2cv, \
     cv2tensor, cv2mask, IT_EDGE
@@ -174,6 +174,7 @@ class TextNode(JOVImageBaseNode):
     NAME = "TEXT GENERATOR (JOV) 📝"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
     DESCRIPTION = ""
+    INPUT_IS_LIST = True
     OUTPUT_IS_LIST = (True, True, )
 
     @classmethod
@@ -195,90 +196,97 @@ class TextNode(JOVImageBaseNode):
         return deep_merge_dict(IT_REQUIRED, d, IT_WH, IT_ROT, IT_EDGE, IT_INVERT)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        full_text = kw[Lexicon.STRING]
-        font = FONTS[kw[Lexicon.FONT]]
-        size = kw[Lexicon.FONT_SIZE]
-        color = parse_tuple(Lexicon.RGB, kw, default=(255, 255, 255))[0]
-        bgcolor = parse_tuple(Lexicon.RGB_B, kw, default=(0, 0, 0))[0]
+        if len(full_text := kw.get(Lexicon.STRING, [""])) == 0:
+            full_text = [""]
 
+        #if not type(full_text) == list:
+        #   full_text = [full_text]
+        logger.debug(full_text)
 
-        align = kw[Lexicon.ALIGN]
-        align = EnumAlignment[align]
-        justify = kw[Lexicon.JUSTIFY]
-        justify = EnumJustify[justify]
-        margin = kw[Lexicon.MARGIN]
-        line_spacing = kw[Lexicon.SPACING]
-
-        width, height = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,))[0]
-        angle = parse_number(Lexicon.ANGLE, kw, EnumTupleType.FLOAT, [1])[0]
-        edge = kw[Lexicon.EDGE]
-        edge = EnumEdge[edge]
-        i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1])[0]
-
-        font = ImageFont.truetype(font, size)
+        font = kw.get(Lexicon.FONT, FONT_NAMES[0])
+        size = kw.get(Lexicon.FONT_SIZE, [100])
+        color = parse_tuple(Lexicon.RGB, kw, default=(255, 255, 255))
+        bgcolor = parse_tuple(Lexicon.RGB_B, kw, default=(0, 0, 0))
+        align = kw.get(Lexicon.ALIGN, [EnumAlignment.CENTER])
+        justify = kw.get(Lexicon.JUSTIFY, [EnumJustify.CENTER])
+        margin = kw.get(Lexicon.MARGIN, [0])
+        line_spacing = kw.get(Lexicon.SPACING, [25])
+        wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,))
+        angle = parse_number(Lexicon.ANGLE, kw, EnumTupleType.FLOAT, [0])
+        edge = kw.get(Lexicon.EDGE, [EnumEdge.CLIP])
+        i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [0])
+        letter = kw.get(Lexicon.LETTER, [False])
+        params = [tuple(x) for x in zip_longest_fill(full_text, font, size, color, bgcolor, align, justify, margin, line_spacing, wihi, angle, edge, i, letter)]
 
         images = []
         masks = []
 
-        def process_image(img:TYPE_IMAGE, mask:TYPE_IMAGE) -> TYPE_IMAGE:
+        def process(img, mask, ang, e, invert) -> None:
             img = pil2cv(img)
             mask = pil2cv(mask)
-            img = geo_rotate(img, angle, edge=edge)
-            mask = geo_rotate(mask, angle, edge=edge)
-            if i != 0:
-                img = light_invert(img, i)
+            img = geo_rotate(img, ang, edge=e)
+            mask = geo_rotate(mask, ang, edge=e)
+
+            if invert != 0:
+                img = light_invert(img, invert)
+
             images.append(cv2tensor(img))
             masks.append(cv2mask(mask))
 
-        # if we should output single letters instead of full phrase
-        if not kw[Lexicon.LETTER]:
+        pbar = comfy.utils.ProgressBar(len(params))
+        for idx, (full_text, font, size, color, bgcolor, align, justify, margin, line_spacing, wihi, angle, edge, i, letter) in enumerate(params):
+            font = FONTS[font]
+            font = ImageFont.truetype(font, size)
+            align = EnumAlignment[align]
+            justify = EnumJustify[justify]
+            edge = EnumEdge[edge]
+            width, height = wihi
 
-            img = Image.new("RGB", (width, height), bgcolor)
-            mask = Image.new("L", (width, height), 0)
-            draw = ImageDraw.Draw(img)
-            draw_mask = ImageDraw.Draw(mask)
-
-            max_width = 0
-            max_height = 0
-            # Calculate the size of the text plus padding for the tallest line
-            text = full_text.split('\n')
-            for line in text:
-                w, h = text_size(draw, line, font)
-                max_width = max(max_width, w)
-                max_height = max(max_height, h + line_spacing)
-
-            y = 0
-            text_height = max_height * len(text)
-            pbar = comfy.utils.ProgressBar(len(text))
-            for idx, line in enumerate(text):
-                # Calculate the width of the current line
-                line_width, _ = text_size(draw, line, font)
-
-                # Get the text x and y positions for each line
-                x = text_justify(justify, width, line_width, margin)
-                y = text_align(align, height, text_height, margin)
-                y += (idx * max_height)
-
-                # Add the current line to the text mask
-                draw.text((x, y), line, fill=color, font=font)
-                draw_mask.text((x, y), line, fill=255, font=font)
-                pbar.update_absolute(idx)
-
-            process_image(img, mask)
-        else:
-            text = full_text.replace('\n', '')
-            pbar = comfy.utils.ProgressBar(len(text))
-            for idx, letter in enumerate(text):
+            # if we should output single letters instead of full phrase
+            if not letter:
                 img = Image.new("RGB", (width, height), bgcolor)
                 mask = Image.new("L", (width, height), 0)
                 draw = ImageDraw.Draw(img)
                 draw_mask = ImageDraw.Draw(mask)
-                x = text_justify(justify, width, line_width, margin)
-                y = text_align(align, height, text_height, margin)
-                draw.text((x, y), line, fill=color, font=font)
-                draw_mask.text((x, y), line, fill=255, font=font)
-                pbar.update_absolute(idx)
 
-            process_image(img, mask)
+                max_width = 0
+                max_height = 0
+                text = full_text.split('\n')
+                for line in text:
+                    w, h = text_size(draw, line, font)
+                    max_width = max(max_width, w)
+                    max_height = max(max_height, h + line_spacing)
+
+                y = 0
+                text_height = max_height * len(text)
+                for idx, line in enumerate(text):
+                    # Calculate the width of the current line
+                    line_width, _ = text_size(draw, line, font)
+
+                    # Get the text x and y positions for each line
+                    x = text_justify(justify, width, line_width, margin)
+                    y = text_align(align, height, text_height, margin)
+                    y += (idx * max_height)
+
+                    # Add the current line to the text mask
+                    draw.text((x, y), line, fill=color, font=font)
+                    draw_mask.text((x, y), line, fill=255, font=font)
+
+                process(img, mask, angle, edge, i)
+
+            else:
+                text = full_text.replace('\n', '')
+                for idx, letter in enumerate(text):
+                    img = Image.new("RGB", (width, height), bgcolor)
+                    mask = Image.new("L", (width, height), 0)
+                    draw = ImageDraw.Draw(img)
+                    draw_mask = ImageDraw.Draw(mask)
+                    x = text_justify(justify, width, line_width, margin)
+                    y = text_align(align, height, text_height, margin)
+                    draw.text((x, y), line, fill=color, font=font)
+                    draw_mask.text((x, y), line, fill=255, font=font)
+                    process(img, mask, angle, edge, i)
+
+            pbar.update_absolute(idx)
 
         return (images, masks, )
