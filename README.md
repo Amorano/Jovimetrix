@@ -17,6 +17,17 @@
 
 If you have [ComfyUI Manager](https://github.com/ltdrdata/ComfyUI-Manager) installed you can search for Jovimetrix and install from the manager's database.
 
+## GIFSKI SUPPORT
+
+If you have [GIFSKI](https://gif.ski/) installed you can enable the option for the Export Node to use GIFSKI when outputting frames.
+
+You will need to add an environment var so it knows you have it installed and where:
+
+set JOV_GIFSKI=[path to gifski]
+
+Once set the GIFSKI option should appear in the Export Node drop down list of output target formats.
+
+
 ## FFMEPG
 
 The audio nodes require FFMPEG. You can find the official [FFMPEG](https://ffmpeg.org "official FFMPEG binaries") here. Follow it's installation instructions for your specific operating system.
