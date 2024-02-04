@@ -639,3 +639,28 @@ def image_diff(imageA: TYPE_IMAGE, imageB: TYPE_IMAGE) -> tuple[TYPE_IMAGE, TYPE
     imageA = cv2.addWeighted(imageA, 0.5, high_a, 0.5, 1.0)
     imageB = cv2.addWeighted(imageB, 0.5, high_b, 0.5, 1.0)
     return imageA, imageB, diff, thresh, score
+
+def image_stereogram(image: TYPE_IMAGE, depth: TYPE_IMAGE, divisions:int=4, mix:float=0.5, gamma:float=1., shift:float=1.) -> TYPE_IMAGE:
+    height, width = depth.shape[:2]
+    out = np.zeros((height, width, 3), dtype=np.uint8)
+    image = cv2.resize(image, (width, height))
+    if channel_count(depth)[0] < 3:
+        image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
+
+    noise = np.random.randint(0, max(1, int(1 * 255)), (height, width, 3), dtype=np.uint8)
+    # noise = cv2.cvtColor(noise, cv2.COLOR_GRAY2BGR)
+    image = cv2.addWeighted(image, 1. - mix, noise, mix, gamma)
+
+    pattern_width = width // divisions
+    # shift -= 1
+    for y in range(height):
+        for x in range(width):
+            if x < pattern_width:
+                out[y, x] = image[y, x]
+            else:
+                # out[y, x] = out[y, x - pattern_width + int(shift * invert)]
+                offset = depth[y, x][0] // divisions
+                pos = x - pattern_width + int(shift * offset)
+                # pos = max(-pattern_width, min(pattern_width, pos))
+                out[y, x] = out[y, pos]
+    return out

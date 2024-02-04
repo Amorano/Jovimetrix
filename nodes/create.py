@@ -14,7 +14,7 @@ from loguru import logger
 import comfy
 from server import PromptServer
 
-from Jovimetrix import JOVImageBaseNode, \
+from Jovimetrix import JOVBaseNode, JOVImageBaseNode, \
     IT_DEPTH, IT_PIXEL, IT_RGBA, IT_WH, IT_SCALE, IT_ROT, IT_INVERT, \
     IT_REQUIRED, MIN_IMAGE_SIZE
 
@@ -23,8 +23,8 @@ from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import deep_merge_dict, parse_tuple, parse_number, \
     EnumTupleType, zip_longest_fill
 
-from Jovimetrix.sup.image import EnumEdge, channel_add, pil2tensor, pil2cv, \
-    cv2tensor, cv2mask, IT_EDGE
+from Jovimetrix.sup.image import EnumEdge, channel_add, image_stereogram, pil2tensor, pil2cv, \
+    cv2tensor, cv2mask, IT_EDGE, tensor2cv, tensor2pil
 
 from Jovimetrix.sup.comp import geo_rotate, shape_ellipse, shape_polygon, \
     shape_quad, light_invert
@@ -290,45 +290,45 @@ class TextNode(JOVImageBaseNode):
 
         return (images, masks, )
 
-class StereogramNode(JOVImageBaseNode):
-    NAME = "STEREOGRAM (JOV) 📝"
+class StereogramNode(JOVBaseNode):
+    NAME = "STEREOGRAM (JOV) 📻"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
     DESCRIPTION = "Make a magic eye stereogram."
     INPUT_IS_LIST = True
-    OUTPUT_NAMES = ()
+    RETURN_TYPES = ("IMAGE", )
+    RETURN_NAMES = (Lexicon.IMAGE,)
     OUTPUT_IS_LIST = (True, )
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        return deep_merge_dict(IT_REQUIRED, IT_PIXEL, IT_DEPTH)
+        d = {"optional": {
+                Lexicon.TILE: ("INT", {"default": 4, "min": 1}),
+                Lexicon.NOISE: ("FLOAT", {"default": 0.5, "min": 0, "max": 1, "step": 0.01}),
+                Lexicon.GAMMA: ("FLOAT", {"default": 1., "min": 0, "max": 1, "step": 0.01}),
+                Lexicon.SHIFT: ("FLOAT", {"default": 1., "min": -1, "max": 1, "step": 0.01}),
+        }}
+        return deep_merge_dict(IT_REQUIRED, IT_PIXEL, IT_DEPTH, d)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        img = kw.get(Lexicon.PIXEL, [None])
-        depth = kw.get(Lexicon.DEPTH, [None])
-        params = [tuple(x) for x in zip_longest_fill(img, depth)]
+        img = kw.get(Lexicon.PIXEL, [None])[0]
+        depth = kw.get(Lexicon.DEPTH, [None])[0]
+        divisions = kw.get(Lexicon.TILE, [4])
+        noise = kw.get(Lexicon.NOISE, [0.5])
+        gamma = kw.get(Lexicon.VALUE, [1])
+        shift = kw.get(Lexicon.SHIFT, [1])
+        params = [tuple(x) for x in zip_longest_fill(img, depth, divisions, noise, gamma, shift)]
         images = []
         pbar = comfy.utils.ProgressBar(len(params))
-        for idx, (img, depth) in enumerate(params):
-            depth = Image.open(depth).convert("RGB")
-            depth_data = depth.load()
+        for idx, (img, depth, divisions, noise, gamma, shift) in enumerate(params):
+            if img is None:
+                empty = torch.ones((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), device='cpu')
+                images.append(empty)
+                continue
 
-            out_img = Image.new("L", depth.size)
-            out_data = out_img.load()
-
-            divisions = 1
-            pattern_width = depth.size[0] / divisions
-            #pattern = gen_pattern(pattern_width, depth.size[1])
-
-            # Create stereogram
-            for x in range(depth.size[0]):
-                for y in range(depth.size[1]):
-                    if x < pattern_width:
-                        out_data[x, y] = img[x, y]
-                    else:
-                        invert = 0
-                        shift = depth_data[x, y][0] / divisions
-                        out_data[x, y] = out_data[x - pattern_width + (shift * invert), y]
-            images.append(img)
+            img = tensor2cv(img)
+            depth = tensor2cv(depth)
+            img = image_stereogram(img, depth, divisions, noise, gamma, shift)
+            images.append(cv2tensor(img))
             pbar.update_absolute(idx)
 
         return (images, )
