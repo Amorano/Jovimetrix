@@ -399,7 +399,6 @@ def image_load(url: str) -> tuple[TYPE_IMAGE, TYPE_IMAGE]:
     try:
         img  = cv2.imread(url, cv2.IMREAD_UNCHANGED)
     except Exception as e:
-        adw
         try:
             img = Image.open(url)
             img = ImageOps.exif_transpose(img)
