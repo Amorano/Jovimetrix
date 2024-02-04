@@ -4,7 +4,6 @@ Image Support
 """
 
 import base64
-import pathlib
 import urllib
 from enum import Enum
 from io import BytesIO
@@ -15,6 +14,7 @@ import torch
 import numpy as np
 import requests
 from PIL import Image, ImageOps, ImageSequence
+from skimage.metrics import structural_similarity as ssim
 from loguru import logger
 
 from Jovimetrix import TYPE_IMAGE, TYPE_PIXEL, IT_WH, MIN_IMAGE_SIZE
@@ -223,9 +223,9 @@ def cv2pil(image: TYPE_IMAGE) -> Image.Image:
 # =============================================================================
 
 def pixel_eval(color: TYPE_PIXEL,
-               mode: EnumImageType=EnumImageType.RGB,
-               target:EnumIntFloat=EnumIntFloat.INT,
-               crunch:EnumGrayscaleCrunch=EnumGrayscaleCrunch.MEAN) -> TYPE_PIXEL:
+            mode: EnumImageType=EnumImageType.RGB,
+            target:EnumIntFloat=EnumIntFloat.INT,
+            crunch:EnumGrayscaleCrunch=EnumGrayscaleCrunch.MEAN) -> TYPE_PIXEL:
 
     """Create a color by R(GB) and a target pixel type."""
 
@@ -292,7 +292,7 @@ def pixel_hsv2bgr(hsl_color: TYPE_PIXEL) -> TYPE_PIXEL:
     return cv2.cvtColor(np.uint8([[hsl_color]]), cv2.COLOR_HSV2BGR)[0, 0]
 
 def pixel_hsv_adjust(color:TYPE_PIXEL, hue:int=0, saturation:int=0, value:int=0,
-              mod_color:bool=True, mod_sat:bool=False, mod_value:bool=False) -> TYPE_PIXEL:
+            mod_color:bool=True, mod_sat:bool=False, mod_value:bool=False) -> TYPE_PIXEL:
     """Adjust an HSV type pixel.
     OpenCV uses... H: 0-179, S: 0-255, V: 0-255"""
     hsv = [0, 0, 0]
@@ -316,7 +316,7 @@ def channel_add(image:TYPE_IMAGE, value: TYPE_PIXEL=255) -> TYPE_IMAGE:
     return np.concatenate([image, new], axis=-1)
 
 def channel_solid(width:int=512, height:int=512, color:TYPE_PIXEL=255,
-                  image:Optional[TYPE_IMAGE]=None, chan:EnumImageType=EnumImageType.GRAYSCALE) -> TYPE_IMAGE:
+                image:Optional[TYPE_IMAGE]=None, chan:EnumImageType=EnumImageType.GRAYSCALE) -> TYPE_IMAGE:
 
     if image is not None:
         height, width = image.shape[:2]
@@ -363,7 +363,7 @@ def channel_fill(image:TYPE_IMAGE, width:int, height:int, color:TYPE_PIXEL=255) 
 # =============================================================================
 
 def image_save_gif(fpath:str, images: list[Image.Image], fps: int=0,
-                   loop:int=0, optimize:bool=False) -> None:
+                loop:int=0, optimize:bool=False) -> None:
 
     fps = min(50, max(1, fps))
     images[0].save(
@@ -511,7 +511,7 @@ def image_stack(images: list[TYPE_IMAGE],
             image = np.vstack(images)
 
         case _:
-               raise ValueError("image_stack", f"invalid orientation - {axis}")
+            raise ValueError("image_stack", f"invalid orientation - {axis}")
 
     return image
 
@@ -555,7 +555,7 @@ def image_split(image: TYPE_IMAGE) -> tuple[TYPE_IMAGE]:
     return r, g, b, a
 
 def image_merge(r: TYPE_IMAGE, g: TYPE_IMAGE, b: TYPE_IMAGE, a: TYPE_IMAGE,
-          width: int, height: int) -> TYPE_IMAGE:
+        width: int, height: int) -> TYPE_IMAGE:
 
     thr, twr = r.shape[:2] if r is not None else (height, width)
     thg, twg = g.shape[:2] if g is not None else (height, width)
@@ -622,25 +622,21 @@ def image_mirror(image: TYPE_IMAGE, mode:EnumMirrorMode, x:float=0.5, y:float=0.
 
     return image
 
-# =============================================================================
-# === TEST ===
-# =============================================================================
+def image_diff(imageA: TYPE_IMAGE, imageB: TYPE_IMAGE) -> tuple[TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE, float]:
+    grayA = image_grayscale(imageA)
+    grayB = image_grayscale(imageB)
+    (score, diff) = ssim(grayA, grayB, full=True)
+    diff = (diff * 255).astype("uint8")
+    thresh = cv2.threshold(diff, 0, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)[1]
+    cnts = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    high_a = np.zeros(imageA.shape, dtype=np.uint8)
+    high_b = np.zeros(imageA.shape, dtype=np.uint8)
+    color = (255, 0, 0)
+    for c in cnts[0]:
+        (x, y, w, h) = cv2.boundingRect(c)
+        cv2.rectangle(high_a, (x, y), (x + w, y + h), color[::-1], -1)
+        cv2.rectangle(high_b, (x, y), (x + w, y + h), color[::-1], -1)
 
-def testColorConvert() -> None:
-    logger.debug("{} {}", 1, pixel_eval(1., EnumImageType.RGBA))
-    logger.debug("{} {}", "1, 1", pixel_eval((1., 1.), EnumImageType.RGBA))
-    logger.debug("{} {}", "1., 1., 1., 1.", pixel_eval((1., 1., 1., 1.), EnumImageType.GRAYSCALE))
-    logger.debug("{} {}", "255, 128, 100", pixel_eval((255, 128, 100), EnumImageType.GRAYSCALE))
-    logger.debug("{} {}", "255, 128, 0", pixel_eval((255, 128, 0), EnumImageType.GRAYSCALE))
-    logger.debug("{} {}", "255", pixel_eval(255))
-
-def testImageLoad() -> None:
-    path = pathlib.Path(r"C:\dev\test")
-    for p in path.iterdir():
-        if p.is_file() and p.suffix =='.png':
-            p, mask = image_load(str(p))
-            cv2.imwrite(fr"C:\dev\test\out.png", p)
-
-if __name__ == "__main__":
-    # testColorConvert()
-    testImageLoad()
+    imageA = cv2.addWeighted(imageA, 0.5, high_a, 0.5, 1.0)
+    imageB = cv2.addWeighted(imageB, 0.5, high_b, 0.5, 1.0)
+    return imageA, imageB, diff, thresh, score

@@ -3,40 +3,31 @@ Jovimetrix - http://www.github.com/amorano/jovimetrix
 Utility
 """
 
-
 import io
 import os
 import json
 import glob
 import base64
 import random
-from enum import Enum
 from typing import Any
-from uuid import uuid4
 from pathlib import Path
-import matplotlib.pyplot as plt
 
 import torch
 import numpy as np
 from PIL import Image
+import matplotlib.pyplot as plt
 from loguru import logger
 
-import comfy
-from folder_paths import get_output_directory
 from server import PromptServer
 import nodes
 
 from Jovimetrix import ComfyAPIMessage, JOVBaseNode, TimedOutException, \
-    TYPE_IMAGE, IT_REQUIRED, WILDCARD, ROOT
+    IT_REQUIRED, WILDCARD, ROOT
 
 from Jovimetrix.sup.lexicon import Lexicon
-
-from Jovimetrix.sup.util import deep_merge_dict, zip_longest_fill
-
+from Jovimetrix.sup.util import deep_merge_dict
 from Jovimetrix.sup.image import cv2mask, cv2tensor, image_load, tensor2pil, \
     pil2tensor, image_formats
-
-from Jovimetrix.sup.anim import Ease, EnumEase
 
 # =============================================================================
 
@@ -113,158 +104,6 @@ class AkashicNode(JOVBaseNode):
         output["result"] = (o, ak)
         return output
 
-class EnumConvertType(Enum):
-    STRING = 0
-    BOOLEAN = 10
-    INT = 20
-    FLOAT   = 30
-    VEC2 = 40
-    VEC3 = 50
-    VEC4 = 60
-    # TUPLE = 70
-
-class ConvertNode(JOVBaseNode):
-    """Convert A to B."""
-    NAME = "CONVERT (JOV) 🧬"
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/UTILITY"
-    DESCRIPTION = "Convert A to B."
-    RETURN_TYPES = (WILDCARD,)
-    INPUT_IS_LIST = True
-    OUTPUT_IS_LIST = (True, )
-    SORT = 0
-
-    @classmethod
-    def INPUT_TYPES(cls) -> dict:
-        d = {"optional": {
-            Lexicon.IN_A: (WILDCARD, {"default": None}),
-            Lexicon.TYPE: (["STRING", "BOOLEAN", "INT", "FLOAT", "VEC2", "VEC3", "VEC4"], {"default": "BOOLEAN"})
-        }}
-        return deep_merge_dict(IT_REQUIRED, d)
-
-    @staticmethod
-    def convert(typ, val) -> tuple | tuple[Any]:
-        size = len(val) if type(val) == tuple else 0
-        if typ in ["STRING"]:
-            if size > 0:
-                return " ".join(str(val))
-            return str(val)
-        elif typ in ["FLOAT"]:
-            if size > 0:
-                return float(val[0])
-            return float(val)
-        elif typ == "BOOLEAN":
-            if size > 0:
-                return bool(val[0])
-            return bool(val)
-        elif typ == "INT":
-            if size > 0:
-                return int(val[0])
-            return int(val)
-        elif typ == "VEC2":
-            if size > 1:
-                return (val[0], val[1], )
-            elif size > 0:
-                return (val[0], val[0], )
-            return (val, val, )
-        elif typ == "VEC3":
-            if size > 2:
-                return (val[0], val[1], val[2], )
-            elif size > 1:
-                return (val[0], val[1], val[1], )
-            elif size > 0:
-                return (val[0], val[0], val[0], )
-            return (val, val, val, )
-        elif typ == "VEC4":
-            if size > 3:
-                return (val[0], val[1], val[2], val[3], )
-            elif size > 2:
-                return (val[0], val[1], val[2], val[2], )
-            elif size > 1:
-                return (val[0], val[1], val[1], val[1], )
-            elif size > 0:
-                return (val[0], val[0], val[0], val[0], )
-            return (val, val, val, val, )
-        else:
-            return "nan"
-
-    def run(self, **kw) -> tuple[bool]:
-        results = []
-        typ = kw.pop(Lexicon.TYPE, ["STRING"])
-        values = kw.values()
-        params = [tuple(x) for x in zip_longest_fill(typ, values)]
-        pbar = comfy.utils.ProgressBar(len(params))
-        for idx, (typ, values) in enumerate(params):
-            result = []
-
-            v = ''
-            try: v = next(iter(values))
-            except: pass
-
-            if not isinstance(v, (list, set, tuple)):
-                v = [v]
-
-            for idx, val in enumerate(v):
-                val_new = ConvertNode.convert(typ, val)
-                result.append(val_new)
-
-            results.append(result)
-            pbar.update_absolute(idx)
-
-        return results
-
-class ValueNode(JOVBaseNode):
-    """Create a value for most types."""
-
-    NAME = "VALUE (JOV) #️⃣"
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/UTILITY"
-    DESCRIPTION = "Create a value for most types; also universal constants."
-    INPUT_IS_LIST = True
-    RETURN_TYPES = (WILDCARD, )
-    OUTPUT_IS_LIST = (True, )
-    SORT = 1
-
-    @classmethod
-    def INPUT_TYPES(cls) -> dict:
-        d = {"optional": {
-                Lexicon.TYPE: (EnumConvertType._member_names_, {"default": EnumConvertType.BOOLEAN.name}),
-                Lexicon.X: ("FLOAT", {"default": 0}),
-                Lexicon.Y: ("FLOAT", {"default": 0}),
-                Lexicon.Z: ("FLOAT", {"default": 0}),
-                Lexicon.W: ("FLOAT", {"default": 0})
-            }}
-        return deep_merge_dict(IT_REQUIRED, d)
-
-    def run(self, **kw) -> tuple[bool]:
-        typ = kw.get(Lexicon.TYPE, [EnumConvertType.BOOLEAN])
-        x = kw.get(Lexicon.X, [None])
-        y = kw.get(Lexicon.Y, [0])
-        z = kw.get(Lexicon.Z, [0])
-        w = kw.get(Lexicon.W, [0])
-        params = [tuple(x) for x in zip_longest_fill(typ, x, y, z, w)]
-        logger.debug(params)
-        results = []
-        pbar = comfy.utils.ProgressBar(len(params))
-        for idx, (typ, x, y, z, w) in enumerate(params):
-            typ = EnumConvertType[typ]
-            if typ == EnumConvertType.STRING:
-                results.append("" if x is None else str(x))
-                continue
-
-            x = 0 if x is None else x
-            match typ:
-                case EnumConvertType.VEC2:
-                    results.append((x, y,))
-                case EnumConvertType.VEC3:
-                    results.append((x, y, z,))
-                case EnumConvertType.VEC4:
-                    results.append((x, y, z, w,))
-                case _:
-                    results.append(x)
-
-            pbar.update_absolute(idx)
-        logger.debug(results)
-        return (results, )
-
 class ValueGraphNode(JOVBaseNode):
     NAME = "VALUE GRAPH (JOV) 📈"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/UTILITY"
@@ -272,7 +111,7 @@ class ValueGraphNode(JOVBaseNode):
     RETURN_TYPES = ("IMAGE", )
     RETURN_NAMES = (Lexicon.IMAGE, )
     OUTPUT_NODE = True
-    SORT = 100
+    SORT = 45
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -286,6 +125,7 @@ class ValueGraphNode(JOVBaseNode):
     def IS_CHANGED(cls) -> float:
         return float("nan")
 
+    """
     def __plot_parameter(self, data) -> None:
         ys = [data[x] for x in xs]
         #line = plt.plot(xs, ys, *args, **kw)
@@ -293,7 +133,7 @@ class ValueGraphNode(JOVBaseNode):
         kfx = data.keyframes
         kfy = [data[x] for x in kfx]
         plt.scatter(kfx, kfy, color=line[0].get_color())
-
+    """
     def __init__(self, *arg, **kw) -> None:
         super().__init__(*arg, **kw)
         self.__history = []
@@ -345,7 +185,7 @@ class RerouteNode(JOVBaseNode):
     OUTPUT_IS_LIST = (True, )
     RETURN_TYPES = (WILDCARD, )
     RETURN_NAMES = (Lexicon.PASS_OUT, )
-    SORT = 70
+    SORT = 100
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -358,62 +198,15 @@ class RerouteNode(JOVBaseNode):
         o = kw.get(Lexicon.PASS_IN, None)
         return (o, )
 
-class ExportNode(JOVBaseNode):
-    NAME = "EXPORT (JOV) 📽"
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/UTILITY"
-    DESCRIPTION = ""
-    INPUT_IS_LIST = True
-    OUTPUT_NODE = True
-
-    @classmethod
-    def INPUT_TYPES(cls) -> dict:
-        d = {"optional": {
-            Lexicon.PIXEL: ("IMAGE", ),
-            Lexicon.PASS_OUT: ("STRING", {"default": get_output_directory()}),
-            Lexicon.FORMAT: (["gif", "jpg", "png"], {"default": "png"}),
-            Lexicon.OPTIMIZE: ("BOOLEAN", {"default": False}),
-            Lexicon.FPS: ("INT", {"default": 0, "min": 0, "max": 120}),
-        }}
-        return deep_merge_dict(IT_REQUIRED, d)
-
-    def run(self, **kw) -> None:
-        img = kw.get(Lexicon.PIXEL, [])
-        output_dir = kw.get(Lexicon.PASS_OUT, [])[0]
-        format = kw.get(Lexicon.FORMAT, ["gif"])[0]
-        optimize = kw.get(Lexicon.OPTIMIZE, [False])[0]
-        fps = kw.get(Lexicon.FPS, [0])[0]
-
-        output_dir = Path(output_dir)
-        output_dir.mkdir(parents=True, exist_ok=True)
-
-        def output(extension) -> Path:
-            return output_dir / f"{uuid4().hex[:16]}.{extension}"
-
-        images = [tensor2pil(i).convert("RGB") for i in img]
-        if format == "gif":
-            images[0].save(
-                output(format),
-                append_images=images[1:],
-                disposal=2,
-                duration=1 / fps * 1000 if fps else 0,
-                loop=0,
-                optimize=optimize,
-                save_all=True,
-            )
-        else:
-            for img in images:
-                img.save(output(format), optimize=optimize)
-
-        return ()
-
 class QueueNode(JOVBaseNode):
     NAME = "QUEUE (JOV) 🗃"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/UTILITY"
     DESCRIPTION = "Cycle lists of images files or strings for node inputs."
-    RETURN_TYPES = (WILDCARD, "MASK", WILDCARD, "INT", "STRING", "INT", )
-    RETURN_NAMES = (Lexicon.ANY, Lexicon.MASK, Lexicon.QUEUE, Lexicon.COUNT, Lexicon.CURRENT, Lexicon.VALUE, )
+    RETURN_TYPES = (WILDCARD, "MASK", WILDCARD, "STRING", "INT", "INT", )
+    RETURN_NAMES = (Lexicon.ANY, Lexicon.MASK, Lexicon.QUEUE, Lexicon.CURRENT, Lexicon.VALUE, Lexicon.TOTAL, )
     OUTPUT_IS_LIST = (True, True, True, True, True, True, )
     VIDEO_FORMATS = ['.webm', '.mp4', '.avi', '.wmv', '.mkv', '.mov', '.mxf']
+    SORT = 60
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -422,6 +215,7 @@ class QueueNode(JOVBaseNode):
                 Lexicon.LOOP: ("INT", {"default": 0, "min": 0}),
                 Lexicon.RANDOM: ("BOOLEAN", {"default": False}),
                 Lexicon.BATCH: ("INT", {"default": 1, "min": 1}),
+                Lexicon.BATCH_LIST: ("BOOLEAN", {"default": True}),
                 Lexicon.WAIT: ("BOOLEAN", {"default": False}),
                 Lexicon.RESET: ("BOOLEAN", {"default": False}),
             },
@@ -568,6 +362,7 @@ class QueueNode(JOVBaseNode):
         data = self.__previous
         mask = self.__previous_mask
         batch = max(1, kw.get(Lexicon.BATCH, 1))
+        batch_list = kw.get(Lexicon.BATCH_LIST, True)
         if not wait:
             if rand:
                 data, mask = process(self.__q_rand[self.__index])
@@ -582,63 +377,4 @@ class QueueNode(JOVBaseNode):
         self.__previous_mask = mask
         PromptServer.instance.send_sync("jovi-queue-ping", {"id": id, "c": current, "i": self.__index, "s": self.__len, "l": self.__q})
 
-        return [data] * batch, [mask] * batch, [self.__q] * batch, [self.__len] * batch, [current] * batch, [self.__index] * batch,
-
-class EnumNumberType(Enum):
-    INT = 0
-    FLOAT = 10
-
-class LerpNode(JOVBaseNode):
-    NAME = "LERP (JOV) 📏"
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/UTILITY"
-    DESCRIPTION = "Interpolate between two values with or without a smoothing."
-    INPUT_IS_LIST = True
-    OUTPUT_IS_LIST = (True, )
-    RETURN_TYPES = (WILDCARD, )
-    RETURN_NAMES = (Lexicon.ANY )
-    SORT = 90
-
-    @classmethod
-    def INPUT_TYPES(cls) -> dict:
-        d = {"optional": {
-            Lexicon.LERP_A: (WILDCARD, {}),
-            Lexicon.LERP_B: (WILDCARD, {}),
-            Lexicon.FLOAT: ("FLOAT", {"default": 0., "min": 0., "max": 1.0, "step": 0.001, "precision": 4, "round": 0.00001}),
-            Lexicon.EASE: (["NONE"] + EnumEase._member_names_, {"default": "NONE"}),
-            Lexicon.TYPE: (EnumNumberType._member_names_, {"default": EnumNumberType.FLOAT.name})
-        }}
-        return deep_merge_dict(IT_REQUIRED, d)
-
-    def run(self, **kw) -> tuple[Any, Any]:
-        a = kw.get(Lexicon.LERP_A, [0])
-        b = kw.get(Lexicon.LERP_B, [0])
-        pos = kw.get(Lexicon.FLOAT, [0.])
-        op = kw.get(Lexicon.EASE, ["NONE"])
-        typ = kw.get(Lexicon.TYPE, ["NONE"])
-
-        value = []
-        params = [tuple(x) for x in zip_longest_fill(a, b, pos, op, typ)]
-        pbar = comfy.utils.ProgressBar(len(params))
-        for idx, (a, b, pos, op, typ) in enumerate(params):
-            # make sure we only interpolate between the smallest "stride" we can
-            size = min(len(a), len(b))
-            typ = EnumNumberType[typ]
-            ease = EnumEase[op]
-
-            def same():
-                val = 0.
-                if op == "NONE":
-                    val = b * pos + a * (1 - pos)
-                else:
-                    val = Ease.ease(ease, start=a, end=b, alpha=pos)
-                return val
-
-            if size == 3:
-                same()
-            elif size == 2:
-                same()
-            elif size == 1:
-                same()
-
-            pbar.update_absolute(idx)
-        return (value, )
+        return [data] * batch, [mask] * batch, [self.__q] * batch, [current] * batch, [self.__index] * batch, [self.__len] * batch,

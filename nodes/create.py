@@ -14,8 +14,8 @@ from loguru import logger
 import comfy
 from server import PromptServer
 
-from Jovimetrix import JOVImageBaseNode, TYPE_IMAGE, \
-    IT_RGBA, IT_WH, IT_SCALE, IT_ROT, IT_INVERT, \
+from Jovimetrix import JOVImageBaseNode, \
+    IT_DEPTH, IT_PIXEL, IT_RGBA, IT_WH, IT_SCALE, IT_ROT, IT_INVERT, \
     IT_REQUIRED, MIN_IMAGE_SIZE
 
 from Jovimetrix.sup.lexicon import Lexicon
@@ -175,7 +175,6 @@ class TextNode(JOVImageBaseNode):
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
     DESCRIPTION = ""
     INPUT_IS_LIST = True
-    OUTPUT_IS_LIST = (True, True, )
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -290,3 +289,47 @@ class TextNode(JOVImageBaseNode):
             pbar.update_absolute(idx)
 
         return (images, masks, )
+
+class StereogramNode(JOVImageBaseNode):
+    NAME = "STEREOGRAM (JOV) 📝"
+    CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
+    DESCRIPTION = "Make a magic eye stereogram."
+    INPUT_IS_LIST = True
+    OUTPUT_NAMES = ()
+    OUTPUT_IS_LIST = (True, )
+
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        return deep_merge_dict(IT_REQUIRED, IT_PIXEL, IT_DEPTH)
+
+    def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
+        img = kw.get(Lexicon.PIXEL, [None])
+        depth = kw.get(Lexicon.DEPTH, [None])
+        params = [tuple(x) for x in zip_longest_fill(img, depth)]
+        images = []
+        pbar = comfy.utils.ProgressBar(len(params))
+        for idx, (img, depth) in enumerate(params):
+            depth = Image.open(depth).convert("RGB")
+            depth_data = depth.load()
+
+            out_img = Image.new("L", depth.size)
+            out_data = out_img.load()
+
+            divisions = 1
+            pattern_width = depth.size[0] / divisions
+            #pattern = gen_pattern(pattern_width, depth.size[1])
+
+            # Create stereogram
+            for x in range(depth.size[0]):
+                for y in range(depth.size[1]):
+                    if x < pattern_width:
+                        out_data[x, y] = img[x, y]
+                    else:
+                        invert = 0
+                        shift = depth_data[x, y][0] / divisions
+                        out_data[x, y] = out_data[x - pattern_width + (shift * invert), y]
+            images.append(img)
+            pbar.update_absolute(idx)
+
+        return (images, )
+
