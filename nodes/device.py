@@ -137,7 +137,7 @@ class StreamReaderNode(JOVImageBaseNode):
                             img = light_invert(img, i)
                         img = geo_scalefit(img, width, height, mode=mode, sample=sample)
 
-                    cc, w, h = channel_count(img)[:2]
+                    cc, w, h = channel_count(img)[:3]
                     if cc == 4:
                         mask = img[:, :, 3]
                         img = img[:, :, :3]
@@ -166,7 +166,7 @@ class StreamReaderNode(JOVImageBaseNode):
                         else:
                             img = np.zeros((height, width, 3), dtype=np.uint8)
 
-                        cc, w, h = channel_count(img)[:2]
+                        cc, w, h = channel_count(img)[:3]
                         if cc == 4:
                             mask = img[:, :, 3]
                             img = img[:, :, :3]
@@ -240,7 +240,7 @@ class StreamReaderNode(JOVImageBaseNode):
                                 img = light_invert(img, i)
                             img = geo_scalefit(img, width, height, mode=mode, sample=sample)
 
-                        cc, w, h = channel_count(img)[:2]
+                        cc, w, h = channel_count(img)[:3]
                         if cc == 4:
                             mask = img[:, :, 3]
                             img = img[:, :, :3]

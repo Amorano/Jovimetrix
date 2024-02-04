@@ -278,10 +278,10 @@ def pixel_eval(color: TYPE_PIXEL,
 def pixel_convert(in_a: TYPE_IMAGE, in_b: TYPE_IMAGE) -> tuple[TYPE_IMAGE, TYPE_IMAGE]:
     if in_a is not None or in_b is not None:
         if in_a is None:
-            cc, w, h = channel_count(in_b)[:2]
+            cc, w, h = channel_count(in_b)[:3]
             in_a = np.zeros((h, w, cc), dtype=np.uint8)
         if in_b is None:
-            cc, w, h = channel_count(in_a)[:2]
+            cc, w, h = channel_count(in_a)[:3]
             in_b = np.zeros((h, w, cc), dtype=np.uint8)
     return in_a, in_b
 
