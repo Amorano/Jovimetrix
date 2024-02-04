@@ -22,7 +22,7 @@ class TickNode(JOVBaseNode):
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/ANIMATE"
     DESCRIPTION = "Periodic pulse exporting normalized, delta since last pulse and count."
     RETURN_TYPES = ("INT", "FLOAT", "FLOAT", "FLOAT", "FLOAT", "FLOAT", "FLOAT", "FLOAT", "FLOAT", "FLOAT", "FLOAT", "FLOAT" )
-    RETURN_NAMES = (Lexicon.COUNT, Lexicon.LINEAR, Lexicon.TIME, Lexicon.DELTA,
+    RETURN_NAMES = (Lexicon.VALUE, Lexicon.LINEAR, Lexicon.TIME, Lexicon.DELTA,
                     f"{Lexicon.NOTE}_128", f"{Lexicon.NOTE}_64",
                     f"{Lexicon.NOTE}_32", f"{Lexicon.NOTE}_16", f"{Lexicon.NOTE}_08",
                     f"{Lexicon.NOTE}_04", f"{Lexicon.NOTE}_02", f"{Lexicon.NOTE}_01" )

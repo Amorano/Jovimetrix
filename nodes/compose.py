@@ -11,7 +11,7 @@ from loguru import logger
 import comfy
 
 from Jovimetrix import JOVImageInOutBaseNode, \
-    IT_PIXELS, IT_RGB, IT_PIXEL_MASK, IT_PIXEL2_MASK, IT_INVERT, IT_REQUIRED, \
+    IT_PIXEL, IT_RGB, IT_PIXEL_MASK, IT_PIXEL2_MASK, IT_INVERT, IT_REQUIRED, \
     IT_RGBA_IMAGE, MIN_IMAGE_SIZE, IT_TRANS, IT_ROT, IT_SCALE, IT_PIXEL2
 
 from Jovimetrix.sup.lexicon import Lexicon
@@ -239,7 +239,7 @@ class PixelSplitNode(JOVImageInOutBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        return deep_merge_dict(IT_REQUIRED, IT_PIXELS)
+        return deep_merge_dict(IT_REQUIRED, IT_PIXEL)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         ret = {
@@ -293,10 +293,7 @@ class PixelMergeNode(JOVImageInOutBaseNode):
         params = [tuple(x) for x in zip_longest_fill(R, G, B, A, wihi, mode, sample, i)]
 
         if len(R)+len(B)+len(G)+len(A) == 0:
-            return (
-                torch.stack([torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8, device="cpu")]),
-                torch.stack([torch.ones((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), dtype=torch.uint8, device="cpu")]),
-            )
+            return [torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8, device="cpu")], [torch.ones((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), dtype=torch.uint8, device="cpu")]
 
         masks = []
         images = []
@@ -388,7 +385,7 @@ class CropNode(JOVImageInOutBaseNode):
                 Lexicon.TLTR: ("VEC4", {"default": (0, 0, 1, 0), "min": 0, "max": 1, "step": 0.01, "precision": 5, "round": 0.000001, "label": [Lexicon.TOP, Lexicon.LEFT, Lexicon.TOP, Lexicon.RIGHT]}),
                 Lexicon.BLBR: ("VEC4", {"default": (0, 1, 1, 1), "min": 0, "max": 1, "step": 0.01, "precision": 5, "round": 0.000001, "label": [Lexicon.BOTTOM, Lexicon.LEFT, Lexicon.BOTTOM, Lexicon.RIGHT]}),
             }}
-        return deep_merge_dict(IT_REQUIRED, IT_PIXELS, d, IT_RGB, IT_WHMODE, IT_SAMPLE, IT_INVERT)
+        return deep_merge_dict(IT_REQUIRED, IT_PIXEL, d, IT_RGB, IT_WHMODE, IT_SAMPLE, IT_INVERT)
 
     def run(self, **kw) -> tuple[list[torch.Tensor], list[torch.Tensor]]:
         pixels = kw.get(Lexicon.PIXEL, [None])
@@ -443,7 +440,7 @@ class ColorTheoryNode(JOVImageInOutBaseNode):
                 Lexicon.SCHEME: (EnumColorTheory._member_names_, {"default": EnumColorTheory.COMPLIMENTARY.name}),
                 Lexicon.VALUE: ("INT", {"default": 45, "min": -90, "max": 90, "step": 1})
             }}
-        return deep_merge_dict(IT_REQUIRED, IT_PIXELS, d, IT_INVERT)
+        return deep_merge_dict(IT_REQUIRED, IT_PIXEL, d, IT_INVERT)
 
     def run(self, **kw) -> tuple[list[torch.Tensor], list[torch.Tensor]]:
         imageA = []

@@ -22,7 +22,7 @@ from loguru import logger
 import comfy
 
 from Jovimetrix import JOVBaseNode, JOVImageBaseNode, \
-    IT_PIXELS, IT_INVERT, IT_REQUIRED, MIN_IMAGE_SIZE
+    IT_PIXEL, IT_INVERT, IT_REQUIRED, MIN_IMAGE_SIZE
 
 from Jovimetrix.sup.lexicon import Lexicon
 
@@ -275,7 +275,7 @@ class StreamWriterNode(JOVBaseNode):
                 Lexicon.ROUTE: ("STRING", {"default": "/stream"}),
                 Lexicon.WH: ("VEC2", {"default": (640, 480), "min": MIN_IMAGE_SIZE, "max": 8192, "step": 1, "label": [Lexicon.W, Lexicon.H]})
             }}
-        return deep_merge_dict(IT_REQUIRED, IT_PIXELS, d, IT_SCALEMODE, IT_SAMPLE, IT_INVERT)
+        return deep_merge_dict(IT_REQUIRED, IT_PIXEL, d, IT_SCALEMODE, IT_SAMPLE, IT_INVERT)
 
     #@classmethod
     #def IS_CHANGED(cls, **kw) -> float:

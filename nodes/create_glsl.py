@@ -11,7 +11,7 @@ import comfy
 from server import PromptServer
 
 from Jovimetrix import IT_WH, JOV_GLSL, ComfyAPIMessage, JOVBaseNode, \
-    ROOT, IT_PIXELS, IT_REQUIRED, MIN_IMAGE_SIZE, TimedOutException
+    ROOT, IT_PIXEL, IT_REQUIRED, MIN_IMAGE_SIZE, TimedOutException
 
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import EnumTupleType, deep_merge_dict, parse_tuple, parse_tuple_single
@@ -54,7 +54,7 @@ class GLSLNode(JOVBaseNode):
             "hidden": {
                 "id": "UNIQUE_ID"
             }}
-        return deep_merge_dict(IT_REQUIRED, IT_PIXELS, d)
+        return deep_merge_dict(IT_REQUIRED, IT_PIXEL, d)
 
     @classmethod
     def IS_CHANGED(cls, **kw) -> float:
@@ -203,7 +203,7 @@ class GLSLSelectRange(GLSLBaseNode):
             Lexicon.START: ("VEC3", {"default": (0., 0., 0.), "step": 0.01, "min": 0, "max": 1, "precision": 4, "round": 0.00001, "label": [Lexicon.R, Lexicon.G, Lexicon.B]}),
             Lexicon.END: ("VEC3", {"default": (1., 1., 1.), "step": 0.01, "min": 0, "max": 1, "precision": 4, "round": 0.00001, "label": [Lexicon.R, Lexicon.G, Lexicon.B]}),
         }}
-        return deep_merge_dict(IT_REQUIRED, IT_PIXELS, e)
+        return deep_merge_dict(IT_REQUIRED, IT_PIXEL, e)
 
     def run(self, **kw) -> list[torch.Tensor]:
         kw["start"] = kw.pop(Lexicon.START, (0., 0., 0.))
@@ -220,7 +220,7 @@ class GLSLColorGrayscale(GLSLBaseNode):
         e = {"optional": {
             Lexicon.RGB: ("VEC3", {"default": cls.DEFAULT, "step": 0.01, "min": 0, "max": 1, "precision": 4, "round": 0.00001, "label": [Lexicon.R, Lexicon.G, Lexicon.B]}),
         }}
-        return deep_merge_dict(IT_REQUIRED, IT_PIXELS, e)
+        return deep_merge_dict(IT_REQUIRED, IT_PIXEL, e)
 
     def run(self, **kw) -> list[torch.Tensor]:
         rgb = kw.pop(Lexicon.RGB, self.DEFAULT)
@@ -328,7 +328,7 @@ class GLSLMap(GLSLBaseNode):
             Lexicon.TYPE: (EnumMappingType._member_names_, {"default": EnumMappingType.POLAR.name}),
             Lexicon.FLIP: ("BOOLEAN", {"default": False}),
         }}
-        return deep_merge_dict(IT_REQUIRED, IT_PIXELS, e)
+        return deep_merge_dict(IT_REQUIRED, IT_PIXEL, e)
 
     def run(self, **kw) -> list[torch.Tensor]:
         frag = None
@@ -355,7 +355,7 @@ class GLSLTRSMirror(GLSLBaseNode):
             Lexicon.ANGLE: ("FLOAT", {"default": 0, "step": 0.01}),
             Lexicon.PIVOT: ("VEC2", {"default": (0.5, 0.5), "max": 1, "min": 0, "step": 0.01, "precision": 4, "label": [Lexicon.X, Lexicon.Y]}),
         }}
-        return deep_merge_dict(IT_REQUIRED, IT_PIXELS, e)
+        return deep_merge_dict(IT_REQUIRED, IT_PIXEL, e)
 
     def run(self, **kw) -> list[torch.Tensor]:
         center = parse_tuple(Lexicon.PIVOT, kw, typ=EnumTupleType.FLOAT, default=(0.5, 0.5,), clip_min=0, clip_max=1)[0]
@@ -373,7 +373,7 @@ class GLSLTRSRotate(GLSLBaseNode):
             Lexicon.ANGLE: ("FLOAT", {"default": 0, "step": 0.01}),
             Lexicon.PIVOT: ("VEC2", {"default": (0.5, 0.5), "max": 1, "min": 0, "step": 0.01, "precision": 4, "label": [Lexicon.X, Lexicon.Y]}),
         }}
-        return deep_merge_dict(IT_REQUIRED, IT_PIXELS, e)
+        return deep_merge_dict(IT_REQUIRED, IT_PIXEL, e)
 
     def run(self, **kw) -> list[torch.Tensor]:
         center = parse_tuple(Lexicon.PIVOT, kw, typ=EnumTupleType.FLOAT, default=(0.5, 0.5,), clip_min=0, clip_max=1)[0]
@@ -391,7 +391,7 @@ class GLSLUtilTiler(GLSLBaseNode):
             "uTime": ("FLOAT", {"default": 0, "step": 0.01}),
             "uTile": ("VEC2", {"default": (1., 1., ), "min": 1., "step": 0.01, "precision": 4, "label": [Lexicon.X, Lexicon.Y]}),
         }}
-        return deep_merge_dict(IT_REQUIRED, IT_PIXELS, e)
+        return deep_merge_dict(IT_REQUIRED, IT_PIXEL, e)
 
     def run(self, **kw) -> list[torch.Tensor]:
         uTime = kw.pop("uTime", 0.)
@@ -423,7 +423,7 @@ class GLSLVFX(GLSLBaseNode):
             "center": ("VEC2", {"default": (0.5, 0.5, ), "min": 0., "max": 1., "step": 0.01, "precision": 4, "label": [Lexicon.X, Lexicon.Y]}),
             Lexicon.TYPE: (EnumVFXType._member_names_, {"default": EnumVFXType.BULGE.name})
         }}
-        f = deep_merge_dict(IT_REQUIRED, IT_PIXELS, e)
+        f = deep_merge_dict(IT_REQUIRED, IT_PIXEL, e)
         return f
 
     def run(self, **kw) -> list[torch.Tensor]:

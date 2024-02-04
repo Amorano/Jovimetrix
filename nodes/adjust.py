@@ -10,7 +10,7 @@ from loguru import logger
 import comfy
 
 from Jovimetrix import JOVImageInOutBaseNode, \
-    IT_PIXELS, IT_PIXEL2, IT_PIXEL_MASK, IT_HSV, IT_FLIP, IT_LOHI, IT_LMH, \
+    IT_PIXEL, IT_PIXEL2, IT_PIXEL_MASK, IT_HSV, IT_FLIP, IT_LOHI, IT_LMH, \
     IT_INVERT, IT_CONTRAST, IT_GAMMA, IT_REQUIRED, MIN_IMAGE_SIZE
 
 from Jovimetrix.sup.lexicon import Lexicon
@@ -202,7 +202,7 @@ class FindEdgeNode(JOVImageInOutBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        return deep_merge_dict(IT_REQUIRED, IT_PIXELS, IT_LOHI, IT_INVERT)
+        return deep_merge_dict(IT_REQUIRED, IT_PIXEL, IT_LOHI, IT_INVERT)
 
     def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor]:
         img = kw.get(Lexicon.PIXEL, [None])
@@ -241,7 +241,7 @@ class HSVNode(JOVImageInOutBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        return deep_merge_dict(IT_REQUIRED, IT_PIXELS, IT_HSV, IT_CONTRAST, IT_GAMMA, IT_INVERT)
+        return deep_merge_dict(IT_REQUIRED, IT_PIXEL, IT_HSV, IT_CONTRAST, IT_GAMMA, IT_INVERT)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         img = kw.get(Lexicon.PIXEL, [None])
@@ -287,7 +287,7 @@ class LevelsNode(JOVImageInOutBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        return deep_merge_dict(IT_REQUIRED, IT_PIXELS, IT_LMH, IT_GAMMA, IT_INVERT)
+        return deep_merge_dict(IT_REQUIRED, IT_PIXEL, IT_LMH, IT_GAMMA, IT_INVERT)
 
     def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor]:
         img = kw.get(Lexicon.PIXEL, [None])
@@ -335,7 +335,7 @@ class ThresholdNode(JOVImageInOutBaseNode):
                 Lexicon.THRESHOLD: ("FLOAT", {"default": 0.5, "min": 0, "max": 1, "step": 0.005},),
                 Lexicon.SIZE: ("INT", {"default": 3, "min": 3, "max": 103, "step": 1},),
             }}
-        return deep_merge_dict(IT_REQUIRED, IT_PIXELS, d, IT_INVERT)
+        return deep_merge_dict(IT_REQUIRED, IT_PIXEL, d, IT_INVERT)
 
     def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor]:
         img = kw.get(Lexicon.PIXEL, [None])

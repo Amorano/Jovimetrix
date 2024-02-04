@@ -289,6 +289,19 @@ def deep_merge_dict(*dicts: dict) -> dict:
         merged = _deep_merge(merged, d)
     return merged
 
+def path_next(pattern: str) -> str:
+    """
+    Finds the next free path in an sequentially named list of files
+    """
+    i = 1
+    while os.path.exists(pattern % i):
+        i = i * 2
+
+    a, b = (i // 2, i)
+    while a + 1 < b:
+        c = (a + b) // 2
+        a, b = (c, b) if os.path.exists(pattern % c) else (a, c)
+    return pattern % b
 # =============================================================================
 # === GLOBALS ===
 # =============================================================================
@@ -297,8 +310,12 @@ MIN_IMAGE_SIZE = 32
 
 IT_REQUIRED = { "required": {} }
 
-IT_PIXELS = { "optional": {
+IT_PIXEL = { "optional": {
     Lexicon.PIXEL: (WILDCARD, {}),
+}}
+
+IT_DEPTH = { "optional": {
+    Lexicon.DEPTH: (WILDCARD, {}),
 }}
 
 IT_MASK = { "optional": {
@@ -489,8 +506,8 @@ class Session(metaclass=Singleton):
         Session.CLASS_MAPPINGS = {x[0] : x[1] for x in sorted(Session.CLASS_MAPPINGS.items(),
                                                               key=lambda item: getattr(item[1], 'SORT', 0))}
         # now sort the categories...
-        for c in ["CREATE", "GLSL", "ADJUST", "COMPOSE",
-                  "ANIMATE", "FLOW", "CALC", "DEVICE", "AUDIO",
+        for c in ["CREATE", "ADJUST", "COMPOSE", "IMAGE",
+                  "CALC", "ANIMATE", "FLOW", "DEVICE", "AUDIO",
                   "UTILITY", "WIP ☣️💣"]:
 
             prime = Session.CLASS_MAPPINGS.copy()
