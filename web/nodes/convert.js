@@ -45,13 +45,13 @@ const ext = {
             }
             setTimeout(() => { combo.callback(); }, 15);
 
-            this.onConnectionsChange = function(slotType, slot, isChangeConnect, link_info, output) {
-                if (slotType === util.TypeSlot.Input && isChangeConnect === util.TypeSlotEvent.Disconnect) {
+            this.onConnectionsChange = function(slotType, slot, event, link_info, output) {
+                if (slotType === util.TypeSlot.Input && event === util.TypeSlotEvent.Disconnect) {
                     this.inputs[slot].type = '*';
                     this.inputs[slot].name = '*';
                 }
 
-                if (link_info && slotType === util.TypeSlot.Input && isChangeConnect === util.TypeSlotEvent.Connect) {
+                if (link_info && slotType === util.TypeSlot.Input && event === util.TypeSlotEvent.Connect) {
                     const fromNode = this.graph._nodes.find((otherNode) => otherNode.id == link_info.origin_id);
                     const type = fromNode.outputs[link_info.origin_slot].type;
                     this.inputs[0].type = type;

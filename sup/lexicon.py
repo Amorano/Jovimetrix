@@ -142,6 +142,7 @@ class Lexicon:
     SCHEME = 'SCHEME'
     SEED = 'SEED'
     SEL = 'S=>E 🔄'
+    SELECT = 'SELECT'
     SETGET = '🤲🏽'
     SHAPE = '🇸🇴'
     SHIFT = 'SHIFT'

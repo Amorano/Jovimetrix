@@ -238,13 +238,13 @@ export const setupDynamicConnections = (nodeType, prefix, inputType) => {
     }
 }
 
-export const dynamic_connection = (node, index, connected, prefix='in_', type='*', names = []
+export const dynamic_connection = (node, index, event, prefix='in_', type='*', names = []
     ) => {
         if (!node.inputs[index].name.startsWith(prefix)) {
             return
         }
         // remove all non connected inputs
-        if (!connected && node.inputs.length > 1) {
+        if (event == TypeSlotEvent.Disconnect && node.inputs.length > 1) {
             console.info(`Removing input ${index} (${node.inputs[index].name})`)
             if (node.widgets) {
                 const w = node.widgets.find((w) => w.name === node.inputs[index].name)

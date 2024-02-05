@@ -1,17 +1,18 @@
 /**
- * File: valuegraph.js
+ * File: select.js
  * Project: Jovimetrix
  *
  */
 
 import { app } from "/scripts/app.js"
 import * as util from '../core/util.js'
+import { ComfyWidgets } from "/scripts/widgets.js"
 
-const _id = "VALUE GRAPH (JOV) 📈"
+const _id = "SELECT (JOV) 🤏🏽"
 const _prefix = '❔'
 
 const ext = {
-	name: 'jovimetrix.node.valuegraph',
+	name: 'jovimetrix.node.select',
 	async beforeRegisterNodeDef(nodeType, nodeData, app) {
         if (nodeData.name !== _id) {
             return;
@@ -19,9 +20,16 @@ const ext = {
 
         const onNodeCreated = nodeType.prototype.onNodeCreated
         nodeType.prototype.onNodeCreated = function () {
-            const r = onNodeCreated ? onNodeCreated.apply(this, arguments) : undefined
-            this.addInput(`${_prefix}_1`, '*')
-            return r
+            const me = onNodeCreated?.apply(this)
+            const self = this;
+            this.input_count = 1;
+            const widget_reset = this.widgets[1];
+            widget_reset.callback = async (e) => {
+                widget_reset.value = false;
+                util.api_cmd_jovian(self.id, "reset");
+            }
+            this.addInput(`${_prefix}_1`, '*');
+            return me
         }
 
         const onConnectionsChange = nodeType.prototype.onConnectionsChange
