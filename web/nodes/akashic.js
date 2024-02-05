@@ -51,16 +51,16 @@ const ext = {
                 }
             }
 
-        this.setSize(this.computeSize())
-        this.onRemoved = function () {
-            for (let y in this.widgets) {
-                if (this.widgets[y].canvas) {
-                    this.widgets[y].canvas.remove()
+            util.fitHeight(this);
+            this.onRemoved = function () {
+                for (let y in this.widgets) {
+                    if (this.widgets[y].canvas) {
+                        this.widgets[y].canvas.remove()
+                    }
+                    util.node_cleanup(this)
+                    this.widgets[y].onRemoved?.()
                 }
-                util.node_cleanup(this)
-                this.widgets[y].onRemoved?.()
             }
-        }
         }
     }
 }

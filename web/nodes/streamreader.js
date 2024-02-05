@@ -5,6 +5,7 @@
  */
 
 import { app } from "/scripts/app.js"
+import * as util from '../core/util.js'
 import { widget_show, widget_hide } from '../core/util.js'
 
 const _id = "STREAM READER (JOV) 📺"
@@ -68,9 +69,7 @@ const ext = {
                         widget_show(bbox);
                         break;
                 }
-                this.setSize([this.size[0], this.computeSize([this.size[0], this.size[1]])[1]])
-                this.onResize?.(this.size);
-                this.setDirtyCanvas(true, true);
+                util.fitHeight(self);
             }
             setTimeout(() => { mode.callback(); }, 15);
             return me;

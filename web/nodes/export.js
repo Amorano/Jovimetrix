@@ -19,6 +19,8 @@ const ext = {
         const onNodeCreated = nodeType.prototype.onNodeCreated
         nodeType.prototype.onNodeCreated = function () {
             const me = onNodeCreated?.apply(this)
+            const self = this;
+
             let opt = this.widgets[4];
             let quality = this.widgets[5];
             let quality_m = this.widgets[6];
@@ -44,9 +46,8 @@ const ext = {
                         util.widget_show(loop);
                         break;
                 }
-                this.setSize([this.size[0], this.computeSize([this.size[0], this.size[1]])[1]])
-                this.onResize?.(this.size);
-                this.setDirtyCanvas(true, true);
+                self.onResize?.(self.size);
+                util.fitHeight(self);
             }
             setTimeout(() => { combo.callback(); }, 15);
             return me;

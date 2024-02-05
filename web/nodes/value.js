@@ -111,9 +111,7 @@ const ext = {
                     }
                     combo_current = combo.value;
                 }
-                this.setSize([this.size[0], this.computeSize([this.size[0], this.size[1]])[1]])
-                this.onResize?.(this.size);
-                this.setDirtyCanvas(true, true);
+                util.fitHeight(self);
             }
             setTimeout(() => { combo.callback(); }, 15);
             return me;

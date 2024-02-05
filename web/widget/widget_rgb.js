@@ -67,7 +67,7 @@ const widgets = {
                 nodeType.prototype.onNodeCreated = function () {
                     const r = onNodeCreated ? onNodeCreated.apply(this, arguments) : undefined;
                     this.serialize_widgets = true;
-                    this.setSize?.(this.computeSize());
+                    util.fitHeight(this);
                     this.onRemoved = function () {
                         util.node_cleanup(this);
                     };

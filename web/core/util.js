@@ -323,3 +323,9 @@ export function showModal(innerHTML, eventCallback, timeout=null) {
         }
     });
 }
+
+export function fitHeight(node) {
+    node.onResize?.(node.size);
+    node.setSize([node.size[0], node.computeSize([node.size[0], node.size[1]])[1]])
+    node?.graph?.setDirtyCanvas(true, true);
+}
