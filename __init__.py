@@ -146,10 +146,12 @@ class JOVBaseNode:
 class JOVImageBaseNode(JOVBaseNode):
     RETURN_TYPES = ("IMAGE", "MASK",)
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.MASK,)
-    OUTPUT_IS_LIST = (True, True, )
 
-class JOVImageInOutBaseNode(JOVImageBaseNode):
+class JOVImageSimple(JOVBaseNode):
     INPUT_IS_LIST = True
+    RETURN_TYPES = ("IMAGE", )
+    RETURN_NAMES = (Lexicon.IMAGE,)
+    OUTPUT_IS_LIST = (True, )
 
 # wildcard trick is 100% stolen from pythongossss's
 class AnyType(str):

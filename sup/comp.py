@@ -43,7 +43,7 @@ class EnumAdjustOP(Enum):
     SHARPEN = 10
     EMBOSS = 20
     # MEAN = 30 -- in UNARY
-    ADAPTIVE_HISTOGRAM = 35
+    # ADAPTIVE_HISTOGRAM = 35
     EQUALIZE = 40
     PIXELATE = 50
     QUANTIZE = 55
@@ -449,6 +449,7 @@ def adjust_equalize(image:TYPE_IMAGE) -> TYPE_IMAGE:
     cc, image, alpha = image_rgb_clean(image)
     image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     image = cv2.equalizeHist(image)
+    image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
     return image_rgb_restore(image, alpha, cc == 1)
 
 def adjust_threshold(image:TYPE_IMAGE, threshold:float=0.5,

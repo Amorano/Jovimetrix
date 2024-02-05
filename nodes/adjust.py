@@ -4,12 +4,13 @@ Adjustment
 """
 
 import cv2
+import numpy as np
 import torch
 from loguru import logger
 
 import comfy
 
-from Jovimetrix import JOVImageInOutBaseNode, \
+from Jovimetrix import JOVImageSimple, \
     IT_PIXEL, IT_PIXEL2, IT_PIXEL_MASK, IT_HSV, IT_FLIP, IT_LOHI, IT_LMH, \
     IT_INVERT, IT_CONTRAST, IT_GAMMA, IT_REQUIRED, MIN_IMAGE_SIZE
 
@@ -18,18 +19,19 @@ from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import zip_longest_fill, deep_merge_dict, parse_tuple, \
     parse_number, EnumTupleType
 
-from Jovimetrix.sup.image import tensor2cv, cv2tensor, cv2mask, pixel_convert
+from Jovimetrix.sup.image import EnumScaleMode, tensor2cv, cv2tensor, pixel_convert, tensor2mask
+
 from Jovimetrix.sup.color import color_match, color_match_custom_map, color_match_heat_map, \
     EnumColorMap
 
-from Jovimetrix.sup.comp import adjust_sharpen, light_invert, morph_edge_detect, \
-    morph_emboss, adjust_posterize, adjust_equalize, adjust_levels, adjust_pixelate, \
+from Jovimetrix.sup.comp import adjust_sharpen, comp_blend, light_invert, morph_edge_detect, \
+    morph_emboss, adjust_posterize, adjust_equalize, adjust_pixelate, \
     adjust_quantize, adjust_threshold, light_contrast, light_hsv, light_gamma, \
     EnumAdjustOP, EnumThresholdAdapt, EnumThreshold
 
 # =============================================================================
 
-class AdjustNode(JOVImageInOutBaseNode):
+class AdjustNode(JOVImageSimple):
     NAME = "ADJUST (JOV) 🕸️"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/ADJUST"
     DESCRIPTION = "Blur, Sharpen and Emboss an input"
@@ -51,89 +53,84 @@ class AdjustNode(JOVImageInOutBaseNode):
         amt = kw.get(Lexicon.VALUE, [0])
         i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
         params = [tuple(x) for x in zip_longest_fill(img, mask, op, radius, amt, i)]
-        masks = []
         images = []
         pbar = comfy.utils.ProgressBar(len(params))
         for idx, (img, mask, o, r, a, i) in enumerate(params):
             if img is None:
                 images.append(torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8, device="cpu"))
-                masks.append(torch.ones((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), dtype=torch.uint8, device="cpu"))
                 continue
 
             img = tensor2cv(img)
-            mask = tensor2cv(mask)
+            height, width = img.shape[:2]
+            mask = tensor2mask(mask) if mask is not None else np.ones((height, width), dtype=np.uint8) * 255
             match EnumAdjustOP[o]:
                 case EnumAdjustOP.BLUR:
-                    img = cv2.blur(img, (r, r))
-                    mask = cv2.blur(mask, (r, r))
+                    img_new = cv2.blur(img, (r, r))
 
                 case EnumAdjustOP.STACK_BLUR:
                     r = min(r, 1399)
                     if r % 2 == 0:
                         r += 1
-                    img = cv2.stackBlur(img, (r, r))
+                    img_new = cv2.stackBlur(img, (r, r))
 
                 case EnumAdjustOP.GAUSSIAN_BLUR:
                     r = min(r, 999)
                     if r % 2 == 0:
                         r += 1
-                    img = cv2.GaussianBlur(img, (r, r), sigmaX=float(a))
+                    img_new = cv2.GaussianBlur(img, (r, r), sigmaX=float(a))
 
                 case EnumAdjustOP.MEDIAN_BLUR:
                     r = min(r, 357)
                     if r % 2 == 0:
                         r += 1
-                    img = cv2.medianBlur(img, r)
+                    img_new = cv2.medianBlur(img, r)
 
                 case EnumAdjustOP.SHARPEN:
                     r = min(r, 511)
                     if r % 2 == 0:
                         r += 1
-                    img = adjust_sharpen(img, kernel_size=r, amount=a)
+                    img_new = adjust_sharpen(img, kernel_size=r, amount=a)
 
                 case EnumAdjustOP.EMBOSS:
-                    img = morph_emboss(img, a, r)
+                    img_new = morph_emboss(img, a, r)
 
                 case EnumAdjustOP.EQUALIZE:
-                    img = adjust_equalize(img)
+                    img_new = adjust_equalize(img)
 
                 case EnumAdjustOP.PIXELATE:
-                    img = adjust_pixelate(img, a / 255.)
-                    mask = adjust_pixelate(mask, a / 255.)
+                    img_new = adjust_pixelate(img, a / 255.)
 
                 case EnumAdjustOP.QUANTIZE:
-                    img = adjust_quantize(img, int(a))
-                    mask = adjust_quantize(mask, int(a))
+                    img_new = adjust_quantize(img, int(a))
 
                 case EnumAdjustOP.POSTERIZE:
-                    img = adjust_posterize(img, int(a))
-                    mask = adjust_posterize(mask, int(a))
+                    img_new = adjust_posterize(img, int(a))
 
                 case EnumAdjustOP.OUTLINE:
-                    img = cv2.morphologyEx(img, cv2.MORPH_GRADIENT, (r, r))
+                    img_new = cv2.morphologyEx(img, cv2.MORPH_GRADIENT, (r, r))
 
                 case EnumAdjustOP.DILATE:
-                    img = cv2.dilate(img, (r, r), iterations=int(a))
+                    img_new = cv2.dilate(img, (r, r), iterations=int(a))
 
                 case EnumAdjustOP.ERODE:
-                    img = cv2.erode(img, (r, r), iterations=int(a))
+                    img_new = cv2.erode(img, (r, r), iterations=int(a))
 
                 case EnumAdjustOP.OPEN:
-                    img = cv2.morphologyEx(img, cv2.MORPH_OPEN, (r, r), iterations=int(a))
+                    img_new = cv2.morphologyEx(img, cv2.MORPH_OPEN, (r, r), iterations=int(a))
 
                 case EnumAdjustOP.CLOSE:
-                    img = cv2.morphologyEx(img, cv2.MORPH_CLOSE, (r, r), iterations=int(a))
+                    img_new = cv2.morphologyEx(img, cv2.MORPH_CLOSE, (r, r), iterations=int(a))
 
             if i != 0:
-                img = light_invert(img, i)
+                img_new = light_invert(img_new, i)
 
+            img = comp_blend(img, img_new, mask)
             images.append(cv2tensor(img))
-            masks.append(cv2mask(img))
             pbar.update_absolute(idx)
 
-        return ( torch.stack(images), torch.stack(masks) )
+        return images,
 
-class ColorMatchNode(JOVImageInOutBaseNode):
+class ColorMatchNode(JOVImageSimple):
     NAME = "COLOR MATCH (JOV) 💞"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/ADJUST"
     DESCRIPTION = "Project the colors of one pixel block onto another"
@@ -158,13 +155,13 @@ class ColorMatchNode(JOVImageInOutBaseNode):
         flip = kw.get(Lexicon.FLIP, [False])
         i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
         params = [tuple(x) for x in zip_longest_fill(pixelA, pixelB, colormap, threshold, blur, flip, i)]
-        masks = []
+        #masks = []
         images = []
         pbar = comfy.utils.ProgressBar(len(params))
         for idx, (a, b, c, t, bl, f, i) in enumerate(params):
             if a is None and b is None:
                 images.append(torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8, device="cpu"))
-                masks.append(torch.ones((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), dtype=torch.uint8, device="cpu"))
+                #masks.append(torch.ones((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), dtype=torch.uint8, device="cpu"))
                 continue
 
             a = tensor2cv(a) if a is not None else None
@@ -187,15 +184,12 @@ class ColorMatchNode(JOVImageInOutBaseNode):
                 img = light_invert(img, i)
 
             images.append(cv2tensor(img))
-            masks.append(cv2mask(img))
+            # masks.append(cv2mask(img))
             pbar.update_absolute(idx)
 
-        return (
-            torch.stack(images),
-            torch.stack(masks)
-        )
+        return images,
 
-class FindEdgeNode(JOVImageInOutBaseNode):
+class FindEdgeNode(JOVImageSimple):
     NAME = "FIND EDGES (JOV) 🔳"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/ADJUST"
     DESCRIPTION = "Find Edges on an input"
@@ -209,14 +203,14 @@ class FindEdgeNode(JOVImageInOutBaseNode):
         lohi = parse_tuple(Lexicon.LOHI, kw, EnumTupleType.FLOAT, (0, 1), clip_min=0, clip_max=1)
         i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
         params = [tuple(x) for x in zip_longest_fill(img, lohi, i)]
-        masks = []
+        # masks = []
         images = []
         pbar = comfy.utils.ProgressBar(len(params))
         for idx, (img, lohi, i) in enumerate(params):
             lo, hi = lohi
             if img is None:
                 images.append(torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8, device="cpu"))
-                masks.append(torch.ones((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), dtype=torch.uint8, device="cpu"))
+                # masks.append(torch.ones((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), dtype=torch.uint8, device="cpu"))
                 continue
 
             img = tensor2cv(img)
@@ -226,15 +220,12 @@ class FindEdgeNode(JOVImageInOutBaseNode):
                 img = light_invert(img, i)
 
             images.append(cv2tensor(img))
-            masks.append(cv2mask(img))
+            # masks.append(cv2mask(img))
             pbar.update_absolute(idx)
 
-        return (
-            torch.stack(images),
-            torch.stack(masks)
-        )
+        return images,
 
-class HSVNode(JOVImageInOutBaseNode):
+class HSVNode(JOVImageSimple):
     NAME = "HSV (JOV) 🌈"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/ADJUST"
     DESCRIPTION = "Adjust the Hue, Saturation, Value, Contrast and Gamma of the input."
@@ -250,14 +241,14 @@ class HSVNode(JOVImageInOutBaseNode):
         gamma = parse_number(Lexicon.GAMMA, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
         i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [0], clip_min=0, clip_max=1)
         params = [tuple(x) for x in zip_longest_fill(img, hsv, contrast, gamma, i)]
-        masks = []
+        # masks = []
         images = []
         pbar = comfy.utils.ProgressBar(len(params))
         for idx, (img, hsv, c, g, i) in enumerate(params):
             h, s, v = hsv
             if img is None:
                 images.append(torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8, device="cpu"))
-                masks.append(torch.ones((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), dtype=torch.uint8, device="cpu"))
+                # masks.append(torch.ones((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), dtype=torch.uint8, device="cpu"))
                 continue
 
             img = tensor2cv(img)
@@ -272,15 +263,12 @@ class HSVNode(JOVImageInOutBaseNode):
                 img = light_invert(img, i)
 
             images.append(cv2tensor(img))
-            masks.append(cv2mask(img))
+            # masks.append(cv2mask(img))
             pbar.update_absolute(idx)
 
-        return (
-            torch.stack(images),
-            torch.stack(masks)
-        )
+        return images,
 
-class LevelsNode(JOVImageInOutBaseNode):
+class LevelsNode(JOVImageSimple):
     NAME = "LEVELS (JOV) 🛗"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/ADJUST"
     DESCRIPTION = "Clip an input based on a low, high and mid point value"
@@ -295,7 +283,7 @@ class LevelsNode(JOVImageInOutBaseNode):
         gamma = parse_number(Lexicon.GAMMA, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
         i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
         params = [tuple(x) for x in zip_longest_fill(img, lmh, gamma, i)]
-        masks = []
+        # masks = []
         images = []
         pbar = comfy.utils.ProgressBar(len(params))
         for idx, (img, lmh, g, i) in enumerate(params):
@@ -303,7 +291,7 @@ class LevelsNode(JOVImageInOutBaseNode):
 
             if img is None:
                 images.append(torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8, device="cpu"))
-                masks.append(torch.ones((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), dtype=torch.uint8, device="cpu"))
+                # masks.append(torch.ones((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), dtype=torch.uint8, device="cpu"))
                 continue
 
             img = torch.maximum(img - l, torch.tensor(0.0))
@@ -317,12 +305,12 @@ class LevelsNode(JOVImageInOutBaseNode):
                 img = light_invert(img, i)
 
             images.append(cv2tensor(img))
-            masks.append(cv2mask(img))
+            # masks.append(cv2mask(img))
             pbar.update_absolute(idx)
 
-        return ( torch.stack(images), torch.stack(masks) )
+        return images,
 
-class ThresholdNode(JOVImageInOutBaseNode):
+class ThresholdNode(JOVImageSimple):
     NAME = "THRESHOLD (JOV) 📉"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/ADJUST"
     DESCRIPTION = "Clip an input to explicit 0 or 1"
@@ -345,13 +333,13 @@ class ThresholdNode(JOVImageInOutBaseNode):
         size = kw.get(Lexicon.SIZE, [3])
         i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
         params = [tuple(x) for x in zip_longest_fill(img, op, adapt, threshold, size, i)]
-        masks = []
+        # masks = []
         images = []
         pbar = comfy.utils.ProgressBar(len(params))
         for idx, (img, o, a, t, b, i) in enumerate(params):
             if img is None:
                 images.append(torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8, device="cpu"))
-                masks.append(torch.ones((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), dtype=torch.uint8, device="cpu"))
+                # masks.append(torch.ones((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), dtype=torch.uint8, device="cpu"))
                 continue
 
             img = tensor2cv(img)
@@ -362,10 +350,7 @@ class ThresholdNode(JOVImageInOutBaseNode):
                 img = light_invert(img, i)
 
             images.append(cv2tensor(img))
-            masks.append(cv2mask(img))
+            #masks.append(cv2mask(img))
             pbar.update_absolute(idx)
 
-        return (
-            torch.stack(images),
-            torch.stack(masks)
-        )
+        return images,

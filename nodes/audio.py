@@ -10,7 +10,7 @@ from loguru import logger
 
 import comfy
 
-from Jovimetrix import JOVImageBaseNode, \
+from Jovimetrix import JOVBaseNode, \
     MIN_IMAGE_SIZE, IT_REQUIRED, IT_WH, IT_RGBA, IT_RGBA_B
 
 from Jovimetrix.sup.lexicon import Lexicon
@@ -19,7 +19,7 @@ from Jovimetrix.sup.util import deep_merge_dict, parse_tuple
 from Jovimetrix.sup.image import cv2mask, cv2tensor
 from Jovimetrix.sup.audio import load_audio, wave_extract, graph_sausage
 
-class GraphWaveNode(JOVImageBaseNode):
+class GraphWaveNode(JOVBaseNode):
     NAME = "GRAPH WAVE (JOV) ▶ ılıılı"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/AUDIO"
     RETURN_TYPES = ("IMAGE", "MASK", "WAVE")

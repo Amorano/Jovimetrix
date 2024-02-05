@@ -14,7 +14,7 @@ from loguru import logger
 import comfy
 from server import PromptServer
 
-from Jovimetrix import JOVBaseNode, JOVImageBaseNode, \
+from Jovimetrix import JOVImageSimple, JOVImageBaseNode, \
     IT_DEPTH, IT_PIXEL, IT_RGBA, IT_WH, IT_SCALE, IT_ROT, IT_INVERT, \
     IT_REQUIRED, MIN_IMAGE_SIZE
 
@@ -290,14 +290,10 @@ class TextNode(JOVImageBaseNode):
 
         return (images, masks, )
 
-class StereogramNode(JOVBaseNode):
+class StereogramNode(JOVImageSimple):
     NAME = "STEREOGRAM (JOV) 📻"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
     DESCRIPTION = "Make a magic eye stereogram."
-    INPUT_IS_LIST = True
-    RETURN_TYPES = ("IMAGE", )
-    RETURN_NAMES = (Lexicon.IMAGE,)
-    OUTPUT_IS_LIST = (True, )
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
