@@ -302,9 +302,9 @@ class StereogramNode(JOVBaseNode):
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
-                Lexicon.TILE: ("INT", {"default": 4, "min": 1}),
-                Lexicon.NOISE: ("FLOAT", {"default": 0.5, "min": 0, "max": 1, "step": 0.01}),
-                Lexicon.GAMMA: ("FLOAT", {"default": 1., "min": 0, "max": 1, "step": 0.01}),
+                Lexicon.TILE: ("INT", {"default": 8, "min": 1}),
+                Lexicon.NOISE: ("FLOAT", {"default": 0.33, "min": 0, "max": 1, "step": 0.01}),
+                Lexicon.GAMMA: ("FLOAT", {"default": 0.33, "min": 0, "max": 1, "step": 0.01}),
                 Lexicon.SHIFT: ("FLOAT", {"default": 1., "min": -1, "max": 1, "step": 0.01}),
         }}
         return deep_merge_dict(IT_REQUIRED, IT_PIXEL, IT_DEPTH, d)
@@ -312,9 +312,9 @@ class StereogramNode(JOVBaseNode):
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         img = kw.get(Lexicon.PIXEL, [None])[0]
         depth = kw.get(Lexicon.DEPTH, [None])[0]
-        divisions = kw.get(Lexicon.TILE, [4])
-        noise = kw.get(Lexicon.NOISE, [0.5])
-        gamma = kw.get(Lexicon.VALUE, [1])
+        divisions = kw.get(Lexicon.TILE, [8])
+        noise = kw.get(Lexicon.NOISE, [0.33])
+        gamma = kw.get(Lexicon.VALUE, [0.33])
         shift = kw.get(Lexicon.SHIFT, [1])
         params = [tuple(x) for x in zip_longest_fill(img, depth, divisions, noise, gamma, shift)]
         images = []
