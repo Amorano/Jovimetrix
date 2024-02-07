@@ -138,20 +138,20 @@ class JOVBaseNode:
     NAME = "Jovimetrix"
     DESCRIPTION = "A Jovimetrix Node"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵"
+    INPUT_IS_LIST = True
     RETURN_TYPES = ()
     OUTPUT_NODE = False
-    INPUT_IS_LIST = False
     FUNCTION = "run"
 
-class JOVImageBaseNode(JOVBaseNode):
-    RETURN_TYPES = ("IMAGE", "MASK",)
-    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.MASK,)
-
 class JOVImageSimple(JOVBaseNode):
-    INPUT_IS_LIST = True
     RETURN_TYPES = ("IMAGE", )
     RETURN_NAMES = (Lexicon.IMAGE,)
     OUTPUT_IS_LIST = (True, )
+
+class JOVImageMultiple(JOVBaseNode):
+    RETURN_TYPES = ("IMAGE", "MASK",)
+    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.MASK,)
+    OUTPUT_IS_LIST = (True, True, )
 
 # wildcard trick is 100% stolen from pythongossss's
 class AnyType(str):
@@ -291,19 +291,6 @@ def deep_merge_dict(*dicts: dict) -> dict:
         merged = _deep_merge(merged, d)
     return merged
 
-def path_next(pattern: str) -> str:
-    """
-    Finds the next free path in an sequentially named list of files
-    """
-    i = 1
-    while os.path.exists(pattern % i):
-        i = i * 2
-
-    a, b = (i // 2, i)
-    while a + 1 < b:
-        c = (a + b) // 2
-        a, b = (c, b) if os.path.exists(pattern % c) else (a, c)
-    return pattern % b
 # =============================================================================
 # === GLOBALS ===
 # =============================================================================

@@ -14,20 +14,19 @@ from loguru import logger
 import comfy
 from server import PromptServer
 
-from Jovimetrix import JOVImageSimple, JOVImageBaseNode, \
+from Jovimetrix import JOVImageSimple, JOVImageMultiple, \
     IT_DEPTH, IT_PIXEL, IT_RGBA, IT_WH, IT_SCALE, IT_ROT, IT_INVERT, \
     IT_REQUIRED, MIN_IMAGE_SIZE
 
 from Jovimetrix.sup.lexicon import Lexicon
 
 from Jovimetrix.sup.util import deep_merge_dict, parse_tuple, parse_number, \
-    EnumTupleType, zip_longest_fill
+    zip_longest_fill, EnumTupleType
 
-from Jovimetrix.sup.image import EnumEdge, channel_add, image_stereogram, pil2tensor, pil2cv, \
-    cv2tensor, cv2mask, IT_EDGE, tensor2cv, tensor2pil
-
-from Jovimetrix.sup.comp import geo_rotate, shape_ellipse, shape_polygon, \
-    shape_quad, light_invert
+from Jovimetrix.sup.image import image_rotate, channel_add, image_stereogram, \
+    pil2tensor, pil2cv, cv2tensor, cv2mask, tensor2cv, shape_ellipse, shape_polygon, \
+    shape_quad, image_invert, \
+    EnumEdge, IT_EDGE
 
 FONT_MANAGER = matplotlib.font_manager.FontManager()
 FONTS = {font.name: font.fname for font in FONT_MANAGER.ttflist}
@@ -86,30 +85,36 @@ def text_size(draw:ImageDraw, text:str, font) -> tuple:
 
 # =============================================================================
 
-class ConstantNode(JOVImageBaseNode):
+class ConstantNode(JOVImageMultiple):
     NAME = "CONSTANT (JOV) 🟪"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
     DESCRIPTION = ""
-    OUTPUT_IS_LIST = (False, False, )
-    EPOCH = 1706647005
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         return deep_merge_dict(IT_REQUIRED, IT_WH, IT_RGBA)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        width, height = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)[0]
-        color = parse_tuple(Lexicon.RGB_A, kw, default=(0, 0, 0, 255), clip_min=0, clip_max=255)[0]
-        image = Image.new("RGB", (width, height), color)
-        mask = Image.new("L", (width, height), color[3])
-        return (pil2tensor(image), pil2tensor(mask), )
+        wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
+        color = parse_tuple(Lexicon.RGB_A, kw, default=(0, 0, 0, 255), clip_min=0, clip_max=255)
+        params = [tuple(x) for x in zip_longest_fill(wihi, color)]
+        images = []
+        masks = []
+        pbar = comfy.utils.ProgressBar(len(params))
+        for idx, (wihi, color) in enumerate(params):
+            width, height = wihi
+            image = Image.new("RGB", (width, height), color[:3])
+            mask = Image.new("L", (width, height), color[3])
+            images.append(pil2tensor(image))
+            masks.append(pil2tensor(mask))
+            pbar.update_absolute(idx)
 
-class ShapeNode(JOVImageBaseNode):
+        return (images, masks,)
+
+class ShapeNode(JOVImageMultiple):
     NAME = "SHAPE GENERATOR (JOV) ✨"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
     DESCRIPTION = ""
-    OUTPUT_IS_LIST = (False, False, )
-    EPOCH = 1706653415
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -125,52 +130,61 @@ class ShapeNode(JOVImageBaseNode):
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         shape = kw.get(Lexicon.SHAPE, EnumShapes.CIRCLE)
-        shape = EnumShapes[shape]
         sides = kw.get(Lexicon.SIDES, 3)
         angle = kw.get(Lexicon.ANGLE, 0)
         edge = kw.get(Lexicon.EDGE, EnumEdge.CLIP)
-        edge = EnumEdge[edge]
-        sizeX, sizeY = parse_tuple(Lexicon.SIZE, kw, EnumTupleType.FLOAT, default=(1., 1.,))[0]
-        width, height = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,))[0]
-        color = parse_tuple(Lexicon.RGB, kw, default=(255, 255, 255))[0]
-        bgcolor = parse_tuple(Lexicon.RGB_B, kw, default=(0, 0, 0))[0]
-        i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1])[0]
-        img = None
-        mask = None
-        match shape:
-            case EnumShapes.SQUARE:
-                img = shape_quad(width, height, sizeX, sizeX, fill=color, back=bgcolor)
-                mask = shape_quad(width, height, sizeX, sizeX)
+        size = parse_tuple(Lexicon.SIZE, kw, EnumTupleType.FLOAT, default=(1., 1.,))
+        wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,))
+        color = parse_tuple(Lexicon.RGB, kw, default=(255, 255, 255))
+        bgcolor = parse_tuple(Lexicon.RGB_B, kw, default=(0, 0, 0))
+        i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1])
+        params = [tuple(x) for x in zip_longest_fill(shape, sides, angle, edge, size, wihi, color, bgcolor, i)]
+        images = []
+        masks = []
+        pbar = comfy.utils.ProgressBar(len(params))
+        for idx, (shape, sides, angle, edge, size, wihi, color, bgcolor, i) in enumerate(params):
+            width, height = wihi
+            sizeX, sizeY = size
+            edge = EnumEdge[edge]
+            shape = EnumShapes[shape]
+            match shape:
+                case EnumShapes.SQUARE:
+                    img = shape_quad(width, height, sizeX, sizeX, fill=color, back=bgcolor)
+                    mask = shape_quad(width, height, sizeX, sizeX)
 
-            case EnumShapes.ELLIPSE:
-                img = shape_ellipse(width, height, sizeX, sizeY, fill=color, back=bgcolor)
-                mask = shape_ellipse(width, height, sizeX, sizeY)
+                case EnumShapes.ELLIPSE:
+                    img = shape_ellipse(width, height, sizeX, sizeY, fill=color, back=bgcolor)
+                    mask = shape_ellipse(width, height, sizeX, sizeY)
 
-            case EnumShapes.RECTANGLE:
-                img = shape_quad(width, height, sizeX, sizeY, fill=color, back=bgcolor)
-                mask = shape_quad(width, height, sizeX, sizeY)
+                case EnumShapes.RECTANGLE:
+                    img = shape_quad(width, height, sizeX, sizeY, fill=color, back=bgcolor)
+                    mask = shape_quad(width, height, sizeX, sizeY)
 
-            case EnumShapes.POLYGON:
-                img = shape_polygon(width, height, sizeX, sides, fill=color, back=bgcolor)
-                mask = shape_polygon(width, height, sizeX, sides)
+                case EnumShapes.POLYGON:
+                    img = shape_polygon(width, height, sizeX, sides, fill=color, back=bgcolor)
+                    mask = shape_polygon(width, height, sizeX, sides)
 
-            case EnumShapes.CIRCLE:
-                img = shape_ellipse(width, height, sizeX, sizeX, fill=color, back=bgcolor)
-                mask = shape_ellipse(width, height, sizeX, sizeX)
+                case EnumShapes.CIRCLE:
+                    img = shape_ellipse(width, height, sizeX, sizeX, fill=color, back=bgcolor)
+                    mask = shape_ellipse(width, height, sizeX, sizeX)
 
-        img = pil2cv(img)
-        mask = pil2cv(mask)
-        img = geo_rotate(img, angle, edge=edge)
-        mask = geo_rotate(mask, angle, edge=edge)
-        if i != 0:
-            img = light_invert(img, i)
+            img = pil2cv(img)
+            mask = pil2cv(mask)
+            img = image_rotate(img, angle, edge=edge)
+            mask = image_rotate(mask, angle, edge=edge)
+            if i != 0:
+                img = image_invert(img, i)
 
-        if img.shape[2] == 3:
-            img = channel_add(img, 0)
+            if img.shape[2] == 3:
+                img = channel_add(img, 0)
 
-        return (cv2tensor(img[:,:,:3]), cv2mask(mask[:, :, 0]), )
+            images.append(cv2tensor(img[:,:,:3]))
+            masks.append(cv2mask(mask[:, :, 0]))
+            pbar.update_absolute(idx)
 
-class TextNode(JOVImageBaseNode):
+        return (images, masks,)
+
+class TextNode(JOVImageMultiple):
     NAME = "TEXT GENERATOR (JOV) 📝"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
     DESCRIPTION = ""
@@ -179,18 +193,18 @@ class TextNode(JOVImageBaseNode):
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
-                Lexicon.STRING: ("STRING", {"default": "", "multiline": True, "dynamicPrompts": False}),
-                Lexicon.FONT: (FONT_NAMES, {"default": FONT_NAMES[0]}),
-                Lexicon.FONT_SIZE: ("INT", {"default": 100, "min": 1, "step": 1}),
-                Lexicon.RGB: ("VEC3", {"default": (255, 255, 255), "min": 0, "max": 255, "step": 1, "label":
-                                       [Lexicon.R, Lexicon.G, Lexicon.B]}),
-                Lexicon.RGB_B: ("VEC3", {"default": (0, 0, 0), "min": 0, "max": 255, "step": 1, "label":
-                                       [Lexicon.R, Lexicon.G, Lexicon.B]}),
-                Lexicon.LETTER: ("BOOLEAN", {"default": False}),
-                Lexicon.ALIGN: (EnumAlignment._member_names_, {"default": EnumAlignment.CENTER.name}),
-                Lexicon.JUSTIFY: (EnumJustify._member_names_, {"default": EnumJustify.CENTER.name}),
-                Lexicon.MARGIN: ("INT", {"default": 0, "min": -1024, "max": 1024}),
-                Lexicon.SPACING: ("INT", {"default": 25, "min": -1024, "max": 1024}),
+            Lexicon.STRING: ("STRING", {"default": "", "multiline": True, "dynamicPrompts": False}),
+            Lexicon.FONT: (FONT_NAMES, {"default": FONT_NAMES[0]}),
+            Lexicon.FONT_SIZE: ("INT", {"default": 100, "min": 1, "step": 1}),
+            Lexicon.RGB: ("VEC3", {"default": (255, 255, 255), "min": 0, "max": 255, "step": 1, "label":
+                                    [Lexicon.R, Lexicon.G, Lexicon.B]}),
+            Lexicon.RGB_B: ("VEC3", {"default": (0, 0, 0), "min": 0, "max": 255, "step": 1, "label":
+                                    [Lexicon.R, Lexicon.G, Lexicon.B]}),
+            Lexicon.LETTER: ("BOOLEAN", {"default": False}),
+            Lexicon.ALIGN: (EnumAlignment._member_names_, {"default": EnumAlignment.CENTER.name}),
+            Lexicon.JUSTIFY: (EnumJustify._member_names_, {"default": EnumJustify.CENTER.name}),
+            Lexicon.MARGIN: ("INT", {"default": 0, "min": -1024, "max": 1024}),
+            Lexicon.SPACING: ("INT", {"default": 25, "min": -1024, "max": 1024}),
         }}
         return deep_merge_dict(IT_REQUIRED, d, IT_WH, IT_ROT, IT_EDGE, IT_INVERT)
 
@@ -200,7 +214,7 @@ class TextNode(JOVImageBaseNode):
 
         #if not type(full_text) == list:
         #   full_text = [full_text]
-        logger.debug(full_text)
+        # logger.debug(full_text)
 
         font = kw.get(Lexicon.FONT, FONT_NAMES[0])
         size = kw.get(Lexicon.FONT_SIZE, [100])
@@ -223,11 +237,11 @@ class TextNode(JOVImageBaseNode):
         def process(img, mask, ang, e, invert) -> None:
             img = pil2cv(img)
             mask = pil2cv(mask)
-            img = geo_rotate(img, ang, edge=e)
-            mask = geo_rotate(mask, ang, edge=e)
+            img = image_rotate(img, ang, edge=e)
+            mask = image_rotate(mask, ang, edge=e)
 
             if invert != 0:
-                img = light_invert(img, invert)
+                img = image_invert(img, invert)
 
             images.append(cv2tensor(img))
             masks.append(cv2mask(mask))
@@ -294,6 +308,7 @@ class StereogramNode(JOVImageSimple):
     NAME = "STEREOGRAM (JOV) 📻"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
     DESCRIPTION = "Make a magic eye stereogram."
+    INPUT_IS_LIST = True
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -306,8 +321,8 @@ class StereogramNode(JOVImageSimple):
         return deep_merge_dict(IT_REQUIRED, IT_PIXEL, IT_DEPTH, d)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        img = kw.get(Lexicon.PIXEL, [None])[0]
-        depth = kw.get(Lexicon.DEPTH, [None])[0]
+        img = kw.get(Lexicon.PIXEL, [None])
+        depth = kw.get(Lexicon.DEPTH, [None])
         divisions = kw.get(Lexicon.TILE, [8])
         noise = kw.get(Lexicon.NOISE, [0.33])
         gamma = kw.get(Lexicon.VALUE, [0.33])
@@ -328,4 +343,3 @@ class StereogramNode(JOVImageSimple):
             pbar.update_absolute(idx)
 
         return (images, )
-

@@ -8,6 +8,7 @@ import os
 import json
 import glob
 import base64
+from pickle import FALSE
 import random
 from typing import Any
 from pathlib import Path
@@ -202,6 +203,7 @@ class QueueNode(JOVBaseNode):
     NAME = "QUEUE (JOV) 🗃"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/UTILITY"
     DESCRIPTION = "Cycle lists of images files or strings for node inputs."
+    INPUT_IS_LIST = False
     RETURN_TYPES = (WILDCARD, "MASK", WILDCARD, "STRING", "INT", "INT", )
     RETURN_NAMES = (Lexicon.ANY, Lexicon.MASK, Lexicon.QUEUE, Lexicon.CURRENT, Lexicon.VALUE, Lexicon.TOTAL, )
     OUTPUT_IS_LIST = (True, True, True, True, True, True, )
@@ -224,9 +226,9 @@ class QueueNode(JOVBaseNode):
             }}
         return deep_merge_dict(IT_REQUIRED, d)
 
-    @classmethod
-    def IS_CHANGED(cls) -> float:
-        return float("nan")
+    #@classmethod
+    #def IS_CHANGED(cls) -> float:
+    #    return float("nan")
 
     def __init__(self, *arg, **kw) -> None:
         super().__init__(*arg, **kw)

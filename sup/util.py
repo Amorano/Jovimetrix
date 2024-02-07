@@ -3,6 +3,7 @@ Jovimetrix - http://www.github.com/amorano/jovimetrix
 UTIL support
 """
 
+import os
 import math
 from enum import Enum
 from typing import Any, List, Generator, Optional, Tuple, Union
@@ -236,3 +237,17 @@ def grid_make(data: List[Any]) -> Tuple[List[List[Any]], int, int]:
         d = [data[i] for i in range(j * grid, end)]
         ret.append(d)
     return ret, cols, rows
+
+def path_next(pattern: str) -> str:
+    """
+    Finds the next free path in an sequentially named list of files
+    """
+    i = 1
+    while os.path.exists(pattern % i):
+        i = i * 2
+
+    a, b = (i // 2, i)
+    while a + 1 < b:
+        c = (a + b) // 2
+        a, b = (c, b) if os.path.exists(pattern % c) else (a, c)
+    return pattern % b

@@ -7,11 +7,11 @@ import io
 from enum import Enum
 from urllib.request import urlopen
 
-import torch
+# import torch
 import librosa
 import ffmpeg
 import numpy as np
-import soundfile as sf
+# import soundfile as sf
 from PIL import Image, ImageDraw
 
 from Jovimetrix import TYPE_PIXEL
@@ -88,16 +88,3 @@ def graph_sausage(data: np.ndarray, bar_count:int, width:int, height:int,
                   fill=color_line, width=int(thickness * line_width))
 
     return image
-
-# =============================================================================
-# === TESTING ===
-# =============================================================================
-
-if __name__ == "__main__":
-    logger.debug(sf.__libsndfile_version__)
-    url = './_res/aud.wav'
-    url = "https://upload.wikimedia.org/wikipedia/commons/b/bb/Test_ogg_mp3_48kbps.wav"
-    url = "http://tinyurl.com/shepard-risset"
-    data, rate = load_audio(url)
-    img = graph_sausage(data, 65, 1024, 512, color_back=(0, 48, 0))
-    img.save('./_res/tst/sausage_graph.png')

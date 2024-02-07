@@ -80,12 +80,13 @@ class GLSL:
         self.__fbo = None
         self.__vao = None
         self.__vbo = None
-        self.__ctx = moderngl.create_context(standalone=True, share=False)
+        self.__ctx = moderngl.create_context(standalone=True)
+
         if os.path.isfile(fragment):
             with open(fragment, 'r', encoding='utf8') as f:
                 fragment = f.read()
-
         self.__fragment: str = FRAGMENT_HEADER + fragment
+
         try:
             self.__prog = self.__ctx.program(
                 vertex_shader=VERTEX,
@@ -122,13 +123,14 @@ class GLSL:
              1.0,  1.0,
             -1.0,  1.0
         ], dtype='f4')
+        self.__vbo = self.__ctx.buffer(vertices.tobytes())
+        self.__vao = self.__ctx.simple_vertex_array(self.__prog, self.__vbo, "iPosition")
 
         self.__width = width
         self.__height = height
-        self.__vbo = self.__ctx.buffer(vertices.tobytes())
-        self.__vao = self.__ctx.simple_vertex_array(self.__prog, self.__vbo, "iPosition")
+        self.__texture = self.__ctx.texture((width, height), 3)
         self.__fbo = self.__ctx.framebuffer(
-            color_attachments=[self.__ctx.texture((width, height), 3)]
+            color_attachments=[self.__texture]
         )
 
         # FPS > 0 will act as a step (per frame step)
@@ -146,17 +148,19 @@ class GLSL:
     def __del__(self) -> None:
         if self.__vao is not None:
             self.__vao.release()
-            self.__vao = None
             del self.__vao
 
         if self.__vbo is not None:
             self.__vbo.release()
-            self.__vbo = None
             del self.__vbo
 
         if self.__fbo is not None:
             self.__fbo.release()
-            self.__fbo = None
+            del self.__fbo
+
+        if self.__texture is not None:
+            self.__texture.release()
+            del self.__texture
 
         if self.__ctx is not None:
             # logger.debug("clean")
@@ -173,18 +177,24 @@ class GLSL:
     def __bufferReset(self) -> None:
         if self.__fbo is not None:
             self.__fbo.release()
+            del self.__fbo
             self.__fbo = None
 
+        if self.__texture is not None:
+            self.__texture.release()
+            del self.__texture
+            self.__texture = None
+
+        self.__texture = self.__ctx.texture((self.__width, self.__height), 3)
         try:
             self.__fbo = self.__ctx.framebuffer(
-                color_attachments=[self.__ctx.texture((self.__width, self.__height), 3)]
+                color_attachments=[self.__texture]
             )
         except Exception as e:
             logger.error(str(e))
             logger.debug(self.__ctx)
             logger.debug(self.__width)
             logger.debug(self.__height)
-            self.__fbo = None
 
     @property
     def frame(self) -> Image:
@@ -258,8 +268,8 @@ class GLSL:
             texture.use(location=0)
 
     def render(self, channel0:Image=None, param:dict=None) -> Image:
-        self.__fbo.clear(0.0, 0.0, 0.0)
         self.__fbo.use()
+        self.__fbo.clear(0.0, 0.0, 0.0)
         if not self.__hold:
             self.__set_uniforms(channel0)
             # logger.debug(self.__param)
@@ -274,8 +284,9 @@ class GLSL:
                     logger.error(str(e))
 
         self.__vao.render()
+        pixels = self.__fbo.color_attachments[0].read()
         self.__frame = Image.frombytes(
-            "RGB", self.__fbo.size, self.__fbo.color_attachments[0].read(),
+            "RGB", self.__fbo.size, pixels,
             "raw", "RGB", 0, -1
         )
         self.__frame = self.__frame.transpose(Image.FLIP_TOP_BOTTOM)
@@ -288,28 +299,3 @@ class GLSL:
             self.__time_last = time.perf_counter()
 
         return self.__frame
-
-# =============================================================================
-# === TESTING ===
-# =============================================================================
-
-def old():
-    glsl.fps = 60
-    images = [glsl.render() for _ in range(120)]
-    root = os.path.dirname(__file__)
-    image_save_gif(root + f"/../_res/tst/glsl.gif", images, glsl.fps)
-    for i, x in enumerate(images):
-        x.save( root + f"/../_res/tst/glsl-{i}.gif")
-    logger.debug(Image.open(root + f"/../_res/tst/glsl.gif").n_frames)
-
-if __name__ == "__main__":
-    root = os.path.dirname(__file__)
-    fragment = fr"{root}\..\res\glsl\color-grayscale.glsl"
-    param = {
-        "conversion" : (0.299, 0.587, 0.114)
-    }
-    texture1 = Image.open(root + f"/../res/img/color-a.png")
-    glsl = GLSL.instant(fragment, texture1=texture1, param=param)
-    glsl.save(fr"{root}\..\_res\tst\glsl-color-grayscale.png")
-
-

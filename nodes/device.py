@@ -21,7 +21,7 @@ from loguru import logger
 
 import comfy
 
-from Jovimetrix import JOVBaseNode, JOVImageBaseNode, \
+from Jovimetrix import JOVBaseNode, JOVImageMultiple, \
     IT_PIXEL, IT_INVERT, IT_REQUIRED, MIN_IMAGE_SIZE
 
 from Jovimetrix.sup.lexicon import Lexicon
@@ -29,18 +29,16 @@ from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import deep_merge_dict, parse_tuple, parse_number, \
     EnumTupleType
 
-from Jovimetrix.sup.comp import light_invert, geo_scalefit, \
-    EnumInterpolation, EnumScaleMode
-
 from Jovimetrix.sup.stream import camera_list, monitor_list, window_list, \
     monitor_capture, window_capture, \
-    StreamingServer, StreamManager, \
-    JOV_SCAN_DEVICES
+    StreamingServer, StreamManager
 
 from Jovimetrix.sup.midi import midi_device_names, \
     MIDIMessage, MIDINoteOnFilter, MIDIServerThread
 
 from Jovimetrix.sup.image import channel_count, cv2mask, tensor2cv, cv2tensor, \
+    image_scalefit, image_invert, \
+    EnumInterpolation, EnumScaleMode, \
     IT_WHMODE, IT_SAMPLE, IT_SCALEMODE
 
 # =============================================================================
@@ -53,7 +51,7 @@ class EnumCanvasOrientation(Enum):
 
 # =============================================================================
 
-class StreamReaderNode(JOVImageBaseNode):
+class StreamReaderNode(JOVImageMultiple):
     NAME = "STREAM READER (JOV) 📺"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/DEVICE"
     DESCRIPTION = ""
@@ -134,8 +132,8 @@ class StreamReaderNode(JOVImageBaseNode):
                         img = np.zeros((height, width, 3), dtype=np.uint8)
                     else:
                         if i != 0:
-                            img = light_invert(img, i)
-                        img = geo_scalefit(img, width, height, mode=mode, sample=sample)
+                            img = image_invert(img, i)
+                        img = image_scalefit(img, width, height, mode=mode, sample=sample)
 
                     cc, w, h = channel_count(img)[:3]
                     if cc == 4:
@@ -161,8 +159,8 @@ class StreamReaderNode(JOVImageBaseNode):
                         img = window_capture(which, dpi=dpi)
                         if img is not None:
                             if i != 0:
-                                img = light_invert(img, i)
-                            img = geo_scalefit(img, width, height, mode=mode, sample=sample)
+                                img = image_invert(img, i)
+                            img = image_scalefit(img, width, height, mode=mode, sample=sample)
                         else:
                             img = np.zeros((height, width, 3), dtype=np.uint8)
 
@@ -237,8 +235,8 @@ class StreamReaderNode(JOVImageBaseNode):
                                 img = cv2.flip(img, 0)
 
                             if i != 0:
-                                img = light_invert(img, i)
-                            img = geo_scalefit(img, width, height, mode=mode, sample=sample)
+                                img = image_invert(img, i)
+                            img = image_scalefit(img, width, height, mode=mode, sample=sample)
 
                         cc, w, h = channel_count(img)[:3]
                         if cc == 4:
@@ -259,7 +257,7 @@ class StreamReaderNode(JOVImageBaseNode):
 
         self.__last = images[-1]
         self.__last_mask = masks[-1]
-        return ( torch.stack(images), torch.stack(masks), )
+        return images, masks,
 
 class StreamWriterNode(JOVBaseNode):
     NAME = "STREAM WRITER (JOV) 🎞️"
@@ -316,10 +314,10 @@ class StreamWriterNode(JOVBaseNode):
             rs = kw.get(Lexicon.SAMPLE, EnumInterpolation.LANCZOS4)
             rs = EnumInterpolation[rs]
             i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)[0]
-            img = geo_scalefit(img, w, h, mode=EnumScaleMode.NONE)
+            img = image_scalefit(img, w, h, mode=EnumScaleMode.NONE)
             if i != 0:
-                img = light_invert(img, i)
-            img = geo_scalefit(img, w, h, mode=mode, sample=rs)
+                img = image_invert(img, i)
+            img = image_scalefit(img, w, h, mode=mode, sample=rs)
             self.__device.image = img
         return ()
 

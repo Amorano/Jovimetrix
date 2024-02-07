@@ -10,7 +10,7 @@ from loguru import logger
 
 import comfy
 
-from Jovimetrix import JOVImageInOutBaseNode, \
+from Jovimetrix import JOVImageSimple, JOVImageMultiple, \
     IT_PIXEL, IT_RGB, IT_PIXEL_MASK, IT_PIXEL2_MASK, IT_INVERT, IT_REQUIRED, \
     IT_RGBA_IMAGE, MIN_IMAGE_SIZE, IT_TRANS, IT_ROT, IT_SCALE, IT_PIXEL2
 
@@ -20,23 +20,20 @@ from Jovimetrix.sup.util import parse_number, parse_tuple, zip_longest_fill, \
     deep_merge_dict,\
     EnumTupleType
 
-from Jovimetrix.sup.comp import geo_rotate, geo_scale, geo_translate, comp_blend, \
-    geo_crop_polygonal, geo_edge_wrap, geo_scalefit, light_invert, \
-    EnumScaleMode, EnumInterpolation, EnumBlendType
-
-from Jovimetrix.sup.image import IT_SCALEMODE, image_merge, image_split, mask2cv, tensor2cv, \
-    cv2tensor, cv2mask, pixel_convert, image_stack, image_mirror, \
+from Jovimetrix.sup.image import image_rotate, image_scale, \
+    image_translate, channel_merge, image_split, mask2cv, tensor2cv, \
+    image_crop_polygonal, image_edge_wrap, image_scalefit, cv2tensor, \
+    cv2mask, pixel_convert, image_stack, image_mirror, image_blend, \
+    color_theory, remap_fisheye, remap_perspective, remap_polar, \
+    remap_sphere, image_invert, \
+    EnumColorTheory, EnumProjection, \
+    EnumScaleMode, EnumInterpolation, EnumBlendType, \
     EnumEdge, EnumMirrorMode, EnumOrientation, \
-    IT_WHMODE, IT_SAMPLE
-
-from Jovimetrix.sup.color import color_theory, EnumColorTheory
-
-from Jovimetrix.sup.mapping import remap_fisheye, remap_perspective, remap_polar, \
-    remap_sphere, EnumProjection
+    IT_WHMODE, IT_SAMPLE, IT_SCALEMODE
 
 # =============================================================================
 
-class TransformNode(JOVImageInOutBaseNode):
+class TransformNode(JOVImageMultiple):
     NAME = "TRANSFORM (JOV) 🏝️"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/COMPOSE"
     DESCRIPTION = "Translate, Rotate, Scale, Tile, Mirror, Re-project and invert an input"
@@ -91,13 +88,13 @@ class TransformNode(JOVImageInOutBaseNode):
 
                 # TRANSLATION
                 if offset[0] != 0. or offset[1] != 0.:
-                    img = geo_translate(img, offset, edge)
-                    mask = geo_translate(mask, offset, edge)
+                    img = image_translate(img, offset, edge)
+                    mask = image_translate(mask, offset, edge)
 
                 # ROTATION
                 if angle != 0:
-                    img = geo_rotate(img, angle, edge=edge)
-                    mask = geo_rotate(mask, angle, edge=edge)
+                    img = image_rotate(img, angle, edge=edge)
+                    mask = image_rotate(mask, angle, edge=edge)
 
                 sX, sY = size
                 if sX < 0:
@@ -112,8 +109,8 @@ class TransformNode(JOVImageInOutBaseNode):
                 # SCALE
                 sample = EnumInterpolation[sample]
                 if sX != 1. or sY != 1.:
-                    img = geo_scale(img, (sX, sY), sample, edge)
-                    mask = geo_scale(mask, (sX, sY), sample, edge)
+                    img = image_scale(img, (sX, sY), sample, edge)
+                    mask = image_scale(mask, (sX, sY), sample, edge)
 
                 # MIRROR
                 mirror = EnumMirrorMode[mirror]
@@ -125,11 +122,11 @@ class TransformNode(JOVImageInOutBaseNode):
                 # TILE
                 tx, ty = tile_xy
                 if (tx := int(tx)) > 1 or (ty := int(ty)) > 1:
-                    img = geo_edge_wrap(img, tx - 1, ty - 1)
-                    img = geo_scalefit(img, w, h, mode=EnumScaleMode.FIT)
+                    img = image_edge_wrap(img, tx - 1, ty - 1)
+                    img = image_scalefit(img, w, h, mode=EnumScaleMode.FIT)
 
-                    mask = geo_edge_wrap(mask, tx - 1, ty - 1)
-                    mask = geo_scalefit(mask, w, h, mode=EnumScaleMode.FIT)
+                    mask = image_edge_wrap(mask, tx - 1, ty - 1)
+                    mask = image_scalefit(mask, w, h, mode=EnumScaleMode.FIT)
 
                 # RE-PROJECTION
                 x1, y1, x2, y2 = tltr
@@ -154,10 +151,10 @@ class TransformNode(JOVImageInOutBaseNode):
                         mask = remap_polar(mask)
 
                 if i != 0:
-                    img = light_invert(img, i)
+                    img = image_invert(img, i)
 
-                img = geo_scalefit(img, w, h, mode=mode, sample=sample)
-                mask = geo_scalefit(mask, w, h, mode=mode, sample=sample)
+                img = image_scalefit(img, w, h, mode=mode, sample=sample)
+                mask = image_scalefit(mask, w, h, mode=mode, sample=sample)
                 images.append(cv2tensor(img))
                 masks.append(cv2mask(mask))
 
@@ -175,11 +172,10 @@ class TransformNode(JOVImageInOutBaseNode):
             torch.stack(masks)
         )
 
-class BlendNode(JOVImageInOutBaseNode):
+class BlendNode(JOVImageSimple):
     NAME = "BLEND (JOV) ⚗️"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/COMPOSE"
     DESCRIPTION = "Applies selected operation to 2 inputs with optional mask using a linear blend (alpha)."
-    OUTPUT_NODE = False
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -216,9 +212,9 @@ class BlendNode(JOVImageInOutBaseNode):
             rs = EnumInterpolation[rs]
             sm = EnumScaleMode[sm]
             op = EnumBlendType[op]
-            img = comp_blend(pa, pb, ma, op, a, mode=sm, sample=rs)
+            img = image_blend(pa, pb, ma, op, a, mode=sm, sample=rs)
             if i != 0:
-                img = light_invert(img, i)
+                img = image_invert(img, i)
 
             images.append(cv2tensor(img))
             masks.append(cv2mask(img))
@@ -229,13 +225,13 @@ class BlendNode(JOVImageInOutBaseNode):
             torch.stack(masks)
         )
 
-class PixelSplitNode(JOVImageInOutBaseNode):
+class PixelSplitNode(JOVImageMultiple):
     NAME = "PIXEL SPLIT (JOV) 💔"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/COMPOSE"
     DESCRIPTION = "SPLIT THE R-G-B-A from an image"
-    RETURN_TYPES = ("IMAGE", "IMAGE", "IMAGE", "IMAGE", "MASK", "MASK", "MASK", "MASK",)
-    RETURN_NAMES = (Lexicon.RI, Lexicon.GI, Lexicon.BI, Lexicon.MI, Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.M)
-    OUTPUT_IS_LIST = (True, True, True, True, True, True, True, True, )
+    RETURN_TYPES = ("IMAGE", "IMAGE", "IMAGE", "MASK",)
+    RETURN_NAMES = (Lexicon.RI, Lexicon.GI, Lexicon.BI, Lexicon.MI)
+    OUTPUT_IS_LIST = (True, True, True, True, )
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -247,10 +243,6 @@ class PixelSplitNode(JOVImageInOutBaseNode):
             'g': [],
             'b': [],
             'a': [],
-            'rm': [],
-            'gm': [],
-            'bm': [],
-            'am': [],
         }
 
         pixels = kw.get(Lexicon.PIXEL, [None])
@@ -261,18 +253,19 @@ class PixelSplitNode(JOVImageInOutBaseNode):
             e = np.zeros((h, w), dtype=np.uint8)
 
             for rgb, mask, color in (
-                ('r', 'rm', [e, e, r]),
-                ('g', 'gm', [e, g, e]),
-                ('b', 'bm', [b, e, e]),
-                ('a', 'am', [a, a, a])):
+                ('r', [e, e, r]),
+                ('g', [e, g, e]),
+                ('b', [b, e, e]),
+                ('a', [a, a, a])):
 
                 f = cv2.merge(color)
+                if rgb != 'a':
+                    f *= a
                 ret[rgb].append(cv2tensor(f))
-                ret[mask].append(cv2mask(f))
 
-        return tuple(torch.stack(ret[key]) for key in ['r', 'g', 'b', 'a', 'rm', 'gm', 'bm', 'am'])
+        return ret['r'], ret['g'], ret['b'], ret['a']
 
-class PixelMergeNode(JOVImageInOutBaseNode):
+class PixelMergeNode(JOVImageMultiple):
     NAME = "PIXEL MERGE (JOV) 🫂"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/COMPOSE"
     DESCRIPTION = "Merge 3/4 single channel inputs to make an image."
@@ -300,16 +293,18 @@ class PixelMergeNode(JOVImageInOutBaseNode):
         pbar = comfy.utils.ProgressBar(len(params))
         for idx, (r, g, b, a, wihi, m, rs, i) in enumerate(params):
             w, h = wihi
-            r = tensor2cv(r) if r is not None else np.zeros((h, w, 3), dtype=np.uint8)
-            g = tensor2cv(g) if g is not None else np.zeros((h, w, 3), dtype=np.uint8)
-            b = tensor2cv(b) if b is not None else np.zeros((h, w, 3), dtype=np.uint8)
-            a = tensor2cv(a) if a is not None else np.zeros((h, w, 3), dtype=np.uint8)
+            r = mask2cv(r) if r is not None else np.zeros((h, w), dtype=np.uint8)
+            g = mask2cv(g) if g is not None else np.zeros((h, w), dtype=np.uint8)
+            b = mask2cv(b) if b is not None else np.zeros((h, w), dtype=np.uint8)
+            a = mask2cv(a) if a is not None else np.zeros((h, w), dtype=np.uint8)
             rs = EnumInterpolation[rs]
-            img = image_merge(r, g, b, a, w, h)
-            img = geo_scalefit(img, w, h, mode=m, sample=rs)
+
+            img = channel_merge(r, g, b, a, w, h)
+            img = image_scalefit(img, w, h, mode=m, sample=rs)
 
             if i != 0:
-                img = light_invert(img, i)
+                img = image_invert(img, i)
+
             images.append(cv2tensor(img))
             masks.append(cv2mask(img))
             pbar.update_absolute(idx)
@@ -319,7 +314,7 @@ class PixelMergeNode(JOVImageInOutBaseNode):
             torch.stack(masks),
         )
 
-class MergeNode(JOVImageInOutBaseNode):
+class MergeNode(JOVImageMultiple):
     NAME = "MERGE (JOV) ➕"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/COMPOSE"
     DESCRIPTION = "Union multiple latents horizontal, vertical or in a grid."
@@ -362,7 +357,7 @@ class MergeNode(JOVImageInOutBaseNode):
             # color = 255
             img = image_stack(pixels, ax, st, mode=EnumScaleMode.FIT, sample=rs)
             if m != EnumScaleMode.NONE:
-                img = geo_scalefit(img, w, h, mode=m, sample=rs)
+                img = image_scalefit(img, w, h, mode=m, sample=rs)
 
             images.append(cv2tensor(img))
             masks.append(cv2mask(img))
@@ -373,7 +368,7 @@ class MergeNode(JOVImageInOutBaseNode):
             torch.stack(masks)
         )
 
-class CropNode(JOVImageInOutBaseNode):
+class CropNode(JOVImageMultiple):
     NAME = "CROP (JOV) ✂️"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/COMPOSE"
     DESCRIPTION = "Robust cropping with color fill"
@@ -410,11 +405,11 @@ class CropNode(JOVImageInOutBaseNode):
             x1, y1, x2, y2 = tltr
             x4, y4, x3, y3 = blbr
             width, height = wihi
-            img, mask = geo_crop_polygonal(img, (x1, y1), (x2, y2), (x3, y3), (x4, y4), rgb, width, height, mode, sample)
+            img, mask = image_crop_polygonal(img, (x1, y1), (x2, y2), (x3, y3), (x4, y4), rgb, width, height, mode, sample)
 
             if i != 0:
-                img = light_invert(img, i)
-            # mask = light_invert(mask, i)
+                img = image_invert(img, i)
+            # mask = image_invert(mask, i)
 
             images.append(cv2tensor(img))
             masks.append(cv2mask(mask))
@@ -425,7 +420,7 @@ class CropNode(JOVImageInOutBaseNode):
             torch.stack(masks)
         )
 
-class ColorTheoryNode(JOVImageInOutBaseNode):
+class ColorTheoryNode(JOVImageMultiple):
     NAME = "COLOR THEORY (JOV) 🛞"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/COMPOSE"
     DESCRIPTION = "Re-project an input into various color theory mappings"
@@ -459,11 +454,11 @@ class ColorTheoryNode(JOVImageInOutBaseNode):
             img = tensor2cv(img) if img is not None else np.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=np.uint8)
             a, b, c, d, e = color_theory(img, user, EnumColorTheory[s])
             if i != 0:
-                a = light_invert(a, i)
-                b = light_invert(b, i)
-                c = light_invert(c, i)
-                d = light_invert(d, i)
-                e = light_invert(e, i)
+                a = image_invert(a, i)
+                b = image_invert(b, i)
+                c = image_invert(c, i)
+                d = image_invert(d, i)
+                e = image_invert(e, i)
 
             imageA.append(cv2tensor(a))
             imageB.append(cv2tensor(b))

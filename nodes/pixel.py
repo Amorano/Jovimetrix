@@ -20,11 +20,11 @@ from folder_paths import get_output_directory
 # from server import PromptServer
 import nodes
 
-from Jovimetrix import path_next, JOVBaseNode, \
+from Jovimetrix import JOVBaseNode, \
     IT_REQUIRED, IT_PIXEL, MIN_IMAGE_SIZE, IT_PIXEL2
 
 from Jovimetrix.sup.lexicon import Lexicon
-from Jovimetrix.sup.util import deep_merge_dict, zip_longest_fill
+from Jovimetrix.sup.util import deep_merge_dict, zip_longest_fill, path_next
 from Jovimetrix.sup.image import cv2mask, cv2tensor, image_diff, tensor2cv, tensor2pil
 
 FORMATS = ["gif", "png", "jpg"]

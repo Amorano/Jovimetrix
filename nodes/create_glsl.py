@@ -10,11 +10,13 @@ from loguru import logger
 import comfy
 from server import PromptServer
 
-from Jovimetrix import IT_WH, JOV_GLSL, ComfyAPIMessage, JOVBaseNode, \
+from PIL import Image
+
+from Jovimetrix import IT_WH, JOV_GLSL, ComfyAPIMessage, JOVBaseNode, JOVImageSimple, \
     ROOT, IT_PIXEL, IT_REQUIRED, MIN_IMAGE_SIZE, TimedOutException
 
 from Jovimetrix.sup.lexicon import Lexicon
-from Jovimetrix.sup.util import EnumTupleType, deep_merge_dict, parse_tuple, parse_tuple_single
+from Jovimetrix.sup.util import EnumTupleType, deep_merge_dict, parse_tuple, parse_tuple_single, zip_longest_fill
 from Jovimetrix.sup.image import pil2tensor, tensor2pil
 from Jovimetrix.sup.shader import GLSL, CompileException
 
@@ -28,14 +30,10 @@ DEFAULT_FRAGMENT = """void main() {
 
 # =============================================================================
 
-class GLSLNode(JOVBaseNode):
+class GLSLNode(JOVImageSimple):
     NAME = "GLSL (JOV) 🍩"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
     DESCRIPTION = ""
-    RETURN_TYPES = ("IMAGE", )
-    RETURN_NAMES = (Lexicon.IMAGE, )
-    OUTPUT_NODE = True
-    OUTPUT_IS_LIST = (True, )
     WIDTH = 512
     HEIGHT = 512
 
@@ -67,61 +65,66 @@ class GLSLNode(JOVBaseNode):
         self.__last_good = [torch.zeros((self.WIDTH, self.HEIGHT, 3), dtype=torch.uint8, device="cpu")]
 
     def run(self, id, **kw) -> list[torch.Tensor]:
-        batch = kw.get(Lexicon.BATCH, 1)
-        fragment = kw.get(Lexicon.FRAGMENT, DEFAULT_FRAGMENT)
-        param = kw.get(Lexicon.PARAM, {})
-        width, height = parse_tuple(Lexicon.WH, kw, default=(self.WIDTH, self.HEIGHT,), clip_min=1)[0]
-        if self.__fragment != fragment or self.__glsl is None:
+        batch = kw.get(Lexicon.BATCH, [1])
+        fragment = kw.get(Lexicon.FRAGMENT, [DEFAULT_FRAGMENT])
+        param = kw.get(Lexicon.PARAM, [{}])
+        wihi = parse_tuple(Lexicon.WH, kw, default=(self.WIDTH, self.HEIGHT,), clip_min=1)
+        texture1 = kw.get(Lexicon.PIXEL, [None])
+        texture2 = kw.get(Lexicon.PIXEL_B, [None])
+        hold = kw.get(Lexicon.WAIT, [False])
+        reset = kw.get(Lexicon.RESET, [False])
+        fps = kw.get(Lexicon.FPS, [30])
+        params = [tuple(x) for x in zip_longest_fill(batch, fragment, param, wihi, texture1, texture2, hold, reset, fps)]
+        images = []
+        pbar = comfy.utils.ProgressBar(len(params))
+        for idx, (batch, fragment, param, wihi, texture1, texture2, hold, reset, fps) in enumerate(params):
+            width, height = wihi
+
+            if self.__fragment != fragment or self.__glsl is None:
+                try:
+                    self.__glsl = GLSL(fragment, width, height, param)
+                except CompileException as e:
+                    PromptServer.instance.send_sync("jovi-glsl-error", {"id": id, "e": str(e)})
+                    logger.error(e)
+                    return (self.__last_good, )
+                self.__fragment = fragment
+
+            self.__glsl.width = width
+            self.__glsl.height = height
+
+            texture1 = tensor2pil(texture1) if texture1 is not None else None
+            texture2 = tensor2pil(texture2) if texture2 is not None else None
+            self.__glsl.hold = hold
+
+            # clear the queue of msgs...
+            # better resets? check if reset message
             try:
-                self.__glsl = GLSL(fragment, width, height, param)
-            except CompileException as e:
-                PromptServer.instance.send_sync("jovi-glsl-error", {"id": id, "e": str(e)})
-                logger.error(e)
-                return (self.__last_good, )
-            self.__fragment = fragment
+                data = ComfyAPIMessage.poll(id, timeout=0)
+                # logger.debug(data)
+                if (cmd := data.get('cmd', None)) is not None:
+                    if cmd == 'reset':
+                        reset = True
+            except TimedOutException as e:
+                pass
+            except Exception as e:
+                logger.error(str(e))
 
-        self.__glsl.width = width
-        self.__glsl.height = height
+            if reset:
+                self.__glsl.reset()
+                # PromptServer.instance.send_sync("jovi-glsl-time", {"id": id, "t": 0})
 
-        frames = []
-        if (texture1 := kw.get(Lexicon.PIXEL, None)) is not None:
-            texture1 = tensor2pil(texture1)
+            self.__glsl.fps = fps
+            for _ in range(batch):
+                img = self.__glsl.render(texture1, param)
+                images.append(pil2tensor(img))
 
-        if (texture2 := kw.get(Lexicon.PIXEL, None)) is not None:
-            texture2 = tensor2pil(texture2)
+            runtime = self.__glsl.runtime if not reset else 0
+            PromptServer.instance.send_sync("jovi-glsl-time", {"id": id, "t": runtime})
 
-        self.__glsl.hold = kw.get(Lexicon.WAIT, False)
-
-        reset = kw.get(Lexicon.RESET, False)
-        # clear the queue of msgs...
-        # better resets? check if reset message
-        try:
-            data = ComfyAPIMessage.poll(id, timeout=0)
-            # logger.debug(data)
-            if (cmd := data.get('cmd', None)) is not None:
-                if cmd == 'reset':
-                    reset = True
-        except TimedOutException as e:
-            pass
-        except Exception as e:
-            logger.error(str(e))
-
-        if reset:
-            self.__glsl.reset()
-            # PromptServer.instance.send_sync("jovi-glsl-time", {"id": id, "t": 0})
-
-        self.__glsl.fps = kw.get(Lexicon.FPS, 0)
-        pbar = comfy.utils.ProgressBar(batch)
-        for idx in range(batch):
-            img = self.__glsl.render(texture1, param)
-            frames.append(pil2tensor(img))
+            self.__last_good = images
             pbar.update_absolute(idx)
 
-        runtime = self.__glsl.runtime if not reset else 0
-        PromptServer.instance.send_sync("jovi-glsl-time", {"id": id, "t": runtime})
-
-        self.__last_good = frames
-        return (self.__last_good, )
+        return (images,)
 
 class GLSLBaseNode(JOVBaseNode):
     CATEGORY = "JOVIMETRIX GLSL"

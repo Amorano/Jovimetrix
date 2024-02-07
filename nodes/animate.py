@@ -82,7 +82,7 @@ class TickNode(JOVBaseNode):
             self.__delta = (t := time.perf_counter()) - self.__time
             self.__time = t
 
-        return (self.__count, lin, self.__time, self.__delta, beat_128, beat_64, beat_32, beat_16, beat_08, beat_04, beat_02, beat_01, )
+        return self.__count, lin, self.__time, self.__delta, beat_128, beat_64, beat_32, beat_16, beat_08, beat_04, beat_02, beat_01,
 
 class WaveGeneratorNode(JOVBaseNode):
     NAME = "WAVE GENERATOR (JOV) 🌊"
@@ -113,4 +113,4 @@ class WaveGeneratorNode(JOVBaseNode):
         delta_time = kw.get(Lexicon.TIME, 0)
         if (op := getattr(anim.Wave, wave.lower(), None)) is not None:
             val = op(phase, freq, amp, shift, delta_time)
-        return (val, int(val))
+        return val, int(val),
