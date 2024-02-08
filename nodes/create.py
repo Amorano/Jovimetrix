@@ -88,7 +88,7 @@ def text_size(draw:ImageDraw, text:str, font) -> tuple:
 class ConstantNode(JOVImageMultiple):
     NAME = "CONSTANT (JOV) 🟪"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
-    DESCRIPTION = ""
+    DESCRIPTION = "Create a single RGBA block of color. Useful for masks, overlays and general filtering."
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -114,7 +114,7 @@ class ConstantNode(JOVImageMultiple):
 class ShapeNode(JOVImageMultiple):
     NAME = "SHAPE GENERATOR (JOV) ✨"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
-    DESCRIPTION = ""
+    DESCRIPTION = "Generate polyhedra for masking or texture work."
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -187,7 +187,7 @@ class ShapeNode(JOVImageMultiple):
 class TextNode(JOVImageMultiple):
     NAME = "TEXT GENERATOR (JOV) 📝"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
-    DESCRIPTION = ""
+    DESCRIPTION = "Use any system font with auto-fit or manual placement."
     INPUT_IS_LIST = True
 
     @classmethod
@@ -307,7 +307,7 @@ class TextNode(JOVImageMultiple):
 class StereogramNode(JOVImageSimple):
     NAME = "STEREOGRAM (JOV) 📻"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
-    DESCRIPTION = "Make a magic eye stereogram."
+    DESCRIPTION = "Make a magic eye stereograms."
     INPUT_IS_LIST = True
 
     @classmethod

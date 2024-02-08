@@ -138,11 +138,9 @@ OP_UNARY = {
 # =============================================================================
 
 class CalcUnaryOPNode(JOVBaseNode):
-    """Perform a Unary Operation on an input."""
-
     NAME = "CALC OP UNARY (JOV) 🎲"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/CALC"
-    DESCRIPTION = "Perform a Unary Operation on an input"
+    DESCRIPTION = "Perform a Unary Operation on an input."
     INPUT_IS_LIST = True
     RETURN_TYPES = (WILDCARD,)
     RETURN_NAMES = (Lexicon.UNKNOWN, )
@@ -221,11 +219,9 @@ class CalcUnaryOPNode(JOVBaseNode):
         return (result, )
 
 class CalcBinaryOPNode(JOVBaseNode):
-    """Perform a Binary Operation on two inputs."""
-
     NAME = "CALC OP BINARY (JOV) 🌟"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/CALC"
-    DESCRIPTION = "Perform a Binary Operation on two inputs"
+    DESCRIPTION = "Perform a Binary Operation on two inputs."
     INPUT_IS_LIST = True
     RETURN_TYPES = (WILDCARD,)
     RETURN_NAMES = (Lexicon.UNKNOWN, )
@@ -327,8 +323,6 @@ class CalcBinaryOPNode(JOVBaseNode):
         return (result, )
 
 class ValueNode(JOVBaseNode):
-    """Create a value for most types."""
-
     NAME = "VALUE (JOV) #️⃣"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/CALC"
     DESCRIPTION = "Create a value for most types; also universal constants."
@@ -380,10 +374,9 @@ class ValueNode(JOVBaseNode):
         return (results, )
 
 class ConvertNode(JOVBaseNode):
-    """Convert A to B."""
     NAME = "CONVERT (JOV) 🧬"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/CALC"
-    DESCRIPTION = "Convert A to B."
+    DESCRIPTION = "Convert INT, FLOAT, VEC*, STRING and BOOL."
     RETURN_TYPES = (WILDCARD,)
     INPUT_IS_LIST = True
     OUTPUT_IS_LIST = (True, )
@@ -469,7 +462,7 @@ class ConvertNode(JOVBaseNode):
         return results
 
 class LerpNode(JOVBaseNode):
-    NAME = "LERP (JOV) 📏"
+    NAME = "LERP (JOV) 🔰"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/CALC"
     DESCRIPTION = "Interpolate between two values with or without a smoothing."
     INPUT_IS_LIST = True

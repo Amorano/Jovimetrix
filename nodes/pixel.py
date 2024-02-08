@@ -114,7 +114,7 @@ class ExportNode(JOVBaseNode):
                 logger.warning(cmd)
                 logger.error(str(e))
 
-            shutil.rmtree(root)
+            # shutil.rmtree(root)
 
         elif format == "gif":
             images[0].save(

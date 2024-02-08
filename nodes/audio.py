@@ -22,6 +22,7 @@ from Jovimetrix.sup.audio import load_audio, wave_extract, graph_sausage
 class GraphWaveNode(JOVBaseNode):
     NAME = "GRAPH WAVE (JOV) ▶ ılıılı"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/AUDIO"
+    DESCRIPTION = "Import and display audio linear waveform data."
     RETURN_TYPES = ("IMAGE", "MASK", "WAVE")
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.MASK, Lexicon.WAVE )
     OUTPUT_IS_LIST = (False, False, True)

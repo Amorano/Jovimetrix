@@ -54,7 +54,7 @@ class EnumCanvasOrientation(Enum):
 class StreamReaderNode(JOVImageMultiple):
     NAME = "STREAM READER (JOV) 📺"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/DEVICE"
-    DESCRIPTION = ""
+    DESCRIPTION = "Connect system media devices and remote streams into ComfyUI workflows."
     SORT = 50
     CAMERAS = None
 
@@ -140,7 +140,7 @@ class StreamReaderNode(JOVImageMultiple):
                         mask = img[:, :, 3]
                         img = img[:, :, :3]
                     else:
-                        mask = np.ones((h, w), dtype=np.uint8) * 255
+                        mask = np.full((h, w), 255, dtype=np.uint8)
 
                     images.append(cv2tensor(img))
                     masks.append(cv2mask(mask))
@@ -169,7 +169,7 @@ class StreamReaderNode(JOVImageMultiple):
                             mask = img[:, :, 3]
                             img = img[:, :, :3]
                         else:
-                            mask = np.ones((h, w), dtype=np.uint8) * 255
+                            mask = np.full((h, w), 255, dtype=np.uint8)
 
                         images.append(cv2tensor(img))
                         masks.append(cv2mask(mask))
@@ -243,7 +243,7 @@ class StreamReaderNode(JOVImageMultiple):
                             mask = img[:, :, 3]
                             img = img[:, :, :3]
                         else:
-                            mask = np.ones((h, w), dtype=np.uint8) * 255
+                            mask = np.full((h, w), 255, dtype=np.uint8)
 
                         images.append(cv2tensor(img))
                         masks.append(cv2mask(mask))
@@ -262,7 +262,7 @@ class StreamReaderNode(JOVImageMultiple):
 class StreamWriterNode(JOVBaseNode):
     NAME = "STREAM WRITER (JOV) 🎞️"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/DEVICE"
-    DESCRIPTION = ""
+    DESCRIPTION = "Broadcast ComfyUI Node outputs to custom webserver endpoint."
     OUTPUT_NODE = True
     SORT = 70
     OUT_MAP = {}
@@ -345,7 +345,7 @@ class MIDIMessageNode(JOVBaseNode):
 class MIDIReaderNode(JOVBaseNode):
     NAME = "MIDI READER (JOV) 🎹"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/DEVICE"
-    DESCRIPTION = "Reads input from a midi device"
+    DESCRIPTION = "Capture MIDI devices and pass the data into Comfy."
     OUTPUT_IS_LIST = (False, False, False, False, False, False, False)
     RETURN_TYPES = ('JMIDIMSG', 'BOOLEAN', 'INT', 'INT', 'INT', 'FLOAT', 'FLOAT',)
     RETURN_NAMES = (Lexicon.MIDI, Lexicon.ON, Lexicon.CHANNEL, Lexicon.CONTROL, Lexicon.NOTE, Lexicon.VALUE, Lexicon.NORMALIZE,)

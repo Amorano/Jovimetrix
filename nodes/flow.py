@@ -156,11 +156,9 @@ class HoldValueNode(JOVBaseNode):
         return (self.__last_value,)
 
 class ComparisonNode(JOVBaseNode):
-    """Compare two inputs."""
-
     NAME = "COMPARISON (JOV) 🕵🏽"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/FLOW"
-    DESCRIPTION = "Compare two inputs"
+    DESCRIPTION = "Compare two inputs: A=B, A!=B, A>B, A>=B, A<B, A<=B"
     INPUT_IS_LIST = True
     RETURN_TYPES = ("BOOLEAN",)
     RETURN_NAMES = (Lexicon.UNKNOWN, )

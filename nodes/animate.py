@@ -87,7 +87,7 @@ class TickNode(JOVBaseNode):
 class WaveGeneratorNode(JOVBaseNode):
     NAME = "WAVE GENERATOR (JOV) 🌊"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/ANIMATE"
-    DESCRIPTION = ""
+    DESCRIPTION = "Periodic and Non-Periodic Sinosodials."
     RETURN_TYPES = ("FLOAT", "INT", )
     RETURN_NAMES = (Lexicon.FLOAT, Lexicon.INT, )
 

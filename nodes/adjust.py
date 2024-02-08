@@ -21,7 +21,7 @@ from Jovimetrix.sup.util import zip_longest_fill, deep_merge_dict, parse_tuple, 
 
 from Jovimetrix.sup.image import image_equalize, image_pixelate, image_posterize, \
     image_quantize, image_sharpen, image_threshold, tensor2cv, cv2tensor, \
-    pixel_convert, image_mask_default, image_blend, image_invert, morph_edge_detect, \
+    pixel_convert, tensor2cv_mask, image_blend, image_invert, morph_edge_detect, \
     morph_emboss, image_contrast, image_hsv, image_gamma, color_match, \
     color_match_custom_map, color_match_heat_map, \
     EnumColorMap, EnumAdjustOP, EnumThresholdAdapt, EnumThreshold, EnumScaleMode, IT_SCALEMODE
@@ -31,7 +31,7 @@ from Jovimetrix.sup.image import image_equalize, image_pixelate, image_posterize
 class AdjustNode(JOVImageSimple):
     NAME = "ADJUST (JOV) 🕸️"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/ADJUST"
-    DESCRIPTION = "Blur, Sharpen and Emboss an input"
+    DESCRIPTION = "Blur, Sharpen, Emboss, Levels, HSV, Edge detection."
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -63,14 +63,8 @@ class AdjustNode(JOVImageSimple):
         images = []
         pbar = comfy.utils.ProgressBar(len(params))
         for idx, (img, mask, o, r, a, mode, lohi, lmh, hsv, con, gamma, i) in enumerate(params):
-            if img is None:
-                images.append(torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8, device="cpu"))
-                continue
-
-            img = tensor2cv(img)
-            height, width = img.shape[:2]
             mode = EnumScaleMode[mode]
-            mask = image_mask_default(mask, img, width, height, mode)
+            img, mask = tensor2cv_mask(img, mask, mode)
 
             match EnumAdjustOP[o]:
                 case EnumAdjustOP.LEVELS:
@@ -165,7 +159,7 @@ class AdjustNode(JOVImageSimple):
 class ColorMatchNode(JOVImageSimple):
     NAME = "COLOR MATCH (JOV) 💞"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/ADJUST"
-    DESCRIPTION = "Project the colors of one pixel block onto another"
+    DESCRIPTION = "Project the colors of one image  onto another or use a pre-defined color target."
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -222,7 +216,7 @@ class ColorMatchNode(JOVImageSimple):
 class ThresholdNode(JOVImageSimple):
     NAME = "THRESHOLD (JOV) 📉"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/ADJUST"
-    DESCRIPTION = "Clip an input to explicit 0 or 1"
+    DESCRIPTION = "Clip an input based on a mid point value."
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:

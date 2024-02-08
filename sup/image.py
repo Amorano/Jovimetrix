@@ -16,10 +16,12 @@ import torch
 import numpy as np
 import scipy as sp
 
-from PIL import Image, ImageDraw, ImageOps, ImageSequence
-from blendmodes.blend import blendLayers, BlendType
 from skimage import exposure
 from skimage.metrics import structural_similarity as ssim
+# import torchvision.transforms.functional as TF
+from PIL import Image, ImageDraw, ImageOps, ImageSequence
+from blendmodes.blend import blendLayers, BlendType
+
 from loguru import logger
 
 from Jovimetrix import TYPE_IMAGE, TYPE_PIXEL, TYPE_COORD, IT_WH, MIN_IMAGE_SIZE
@@ -220,35 +222,71 @@ IT_WHMODE = deep_merge_dict(IT_WH, IT_SCALEMODE)
 # === MATRIX SUPPORT ===
 # =============================================================================
 
+def tensor2load(tensor: torch.Tensor) -> tuple[torch.Tensor, int]:
+    """Scale tensor to uint8 and scan for channels."""
+    tensor = np.clip(255 * tensor.cpu().numpy().squeeze(), 0, 255).astype(np.uint8)
+
+    # batch mode?
+    cc = 1
+    if (size := len(tensor.shape)) > 2:
+        idx = 3 if size == 4 else 2
+        cc = tensor.shape[idx]
+    print(tensor.shape, cc)
+    return tensor, cc
+
 def tensor2pil(tensor: torch.Tensor) -> Image.Image:
     """Convert a torch Tensor to a PIL Image."""
-    tensor = np.clip(255 * tensor.cpu().numpy().squeeze(), 0, 255).astype(np.uint8)
-    if len(tensor.shape) == 2:
+    tensor, cc = tensor2load(tensor)
+    if cc == 1:
         return Image.fromarray(tensor, mode='L')
-    elif len(tensor.shape) == 3 and tensor.shape[2] == 3:
+    elif cc == 3:
         return Image.fromarray(tensor, mode='RGB')
-    elif len(tensor.shape) == 3 and tensor.shape[2] == 4:
+    elif cc == 4:
         return Image.fromarray(tensor, mode='RGBA')
+    raise Exception(f"broken format {tensor.shape}")
 
 def tensor2cv(tensor: torch.Tensor) -> TYPE_IMAGE:
     """Convert a torch Tensor to a CV2 Matrix."""
-    tensor = np.clip(255 * tensor.cpu().numpy().squeeze(), 0, 255).astype(np.uint8)
-    if len(tensor.shape) == 2:
+    tensor, cc = tensor2load(tensor)
+    # (count, height, width, channel)
+    # (height, width, channel)
+    if cc == 1:
         return cv2.cvtColor(tensor, cv2.COLOR_GRAY2BGR)
-    elif len(tensor.shape) == 3 and tensor.shape[2] == 3:
+    elif cc == 3:
         return cv2.cvtColor(tensor, cv2.COLOR_RGB2BGR)
-    elif len(tensor.shape) == 3 and tensor.shape[2] == 4:
+    elif cc == 4:
         return cv2.cvtColor(tensor, cv2.COLOR_RGBA2BGRA)
+    raise Exception(f"broken format {tensor.shape}")
 
 def tensor2mask(tensor: torch.Tensor) -> TYPE_IMAGE:
     """Convert a torch Tensor to a Mask as a CV2 Matrix."""
-    tensor = np.clip(255 * tensor.cpu().numpy().squeeze(), 0, 255).astype(np.uint8)
-    return tensor
+    tensor, cc = tensor2load(tensor)
+    if cc == 1:
+        return tensor
+    elif cc == 3:
+        return cv2.cvtColor(tensor, cv2.COLOR_RGB2GRAY)
+    elif cc == 4:
+        return cv2.cvtColor(tensor, cv2.COLOR_RGBA2GRAY)
+    raise Exception(f"broken format {tensor.shape}")
 
-def tensor2np(tensor: torch.Tensor) -> TYPE_IMAGE:
-    """Convert a torch Tensor to a Numpy Array."""
-    tensor = np.clip(255 * tensor.cpu().numpy().squeeze(), 0, 255).astype(np.uint8)
-    return tensor
+def tensor2cv_mask(image:torch.tensor, mask:TYPE_IMAGE, mode:EnumScaleMode=EnumScaleMode.NONE) -> tuple[TYPE_IMAGE, TYPE_IMAGE]:
+    width = MIN_IMAGE_SIZE
+    height = MIN_IMAGE_SIZE
+    if image is None:
+        image = np.zeros((height, width, 3), dtype=np.uint8)
+    else:
+        image = tensor2cv(image)
+        height, width = image.shape[:2]
+
+    if mask is None:
+        if channel_count(image)[0] != 4:
+            mask = np.full((height, width), 255, dtype=np.uint8)
+        else:
+            mask = image[:, :, 3][:, :]
+    else:
+        mask = tensor2mask(mask)
+        mask = image_scalefit(mask, width, height, mode=mode)
+    return image, mask,
 
 def b64_2_tensor(base64str: str) -> torch.Tensor:
     img = base64.b64decode(base64str)
@@ -258,13 +296,14 @@ def b64_2_tensor(base64str: str) -> torch.Tensor:
 
 def mask2cv(mask: torch.Tensor) -> TYPE_IMAGE:
     """Convert a torch Tensor (Mask) to a CV2 Matrix."""
-    tensor = np.clip(255 * mask.cpu().numpy().squeeze(), 0, 255).astype(np.uint8)
-    return cv2.cvtColor(tensor, cv2.COLOR_GRAY2BGR)
-
-def mask2pil(mask: torch.Tensor) -> Image.Image:
-    """Convert a torch Tensor (Mask) to a PIL Image."""
-    tensor = np.clip(255 * mask.cpu().numpy().squeeze(), 0, 255).astype(np.uint8)
-    return Image.fromarray(tensor, mode='L')
+    tensor, cc = tensor2load(mask)
+    if cc == 1:
+        return cv2.cvtColor(tensor, cv2.COLOR_GRAY2BGR)
+    elif cc == 3:
+        return tensor
+    elif cc == 4:
+        return cv2.cvtColor(tensor, cv2.COLOR_BGRA2BGR)
+    raise Exception(f"broken format {tensor.shape}")
 
 def pil2tensor(image: Image.Image) -> torch.Tensor:
     """Convert a PIL Image to a Torch Tensor."""
@@ -274,10 +313,6 @@ def pil2cv(image: Image.Image) -> TYPE_IMAGE:
     """Convert a PIL Image to a CV2 Matrix."""
     mode = cv2.COLOR_RGB2BGR if image.mode == 'RGBA' else cv2.COLOR_RGBA2BGRA
     return cv2.cvtColor(np.array(image), mode).astype(np.uint8)
-
-def pil2mask(image: Image.Image) -> torch.Tensor:
-    """Convert a PIL Image to a Torch Tensor (Mask)."""
-    return torch.from_numpy(np.array(image.convert("L")).astype(np.float32) / 255.0).unsqueeze(0)
 
 def cv2tensor(image: TYPE_IMAGE) -> torch.Tensor:
     """Convert a CV2 Matrix to a Torch Tensor."""
@@ -889,13 +924,13 @@ def image_load(url: str) -> tuple[TYPE_IMAGE, TYPE_IMAGE]:
         except Exception as e:
             logger.error(str(e))
             img = np.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=np.uint8)
-            mask = np.ones((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), dtype=np.uint8) * 255
+            mask = np.full((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), 255, dtype=np.uint8)
             return img, mask
 
     if img.dtype != np.uint8:
         img = np.array(img / 256.0, dtype=np.float32)
     cc, width, height = channel_count(img)[:3]
-    mask = np.ones((height, width), dtype=np.uint8) * 255
+    mask = np.full((height, width), 255, dtype=np.uint8)
     if cc == 4:
         mask = img[:, :, 3]
         img = cv2.cvtColor(img, cv2.COLOR_RGBA2RGB)
@@ -927,15 +962,6 @@ def image_load_from_url(url:str) -> TYPE_IMAGE:
             return pil2cv(image)
         except Exception as e:
             logger.error(str(e))
-
-def image_mask_default(mask:TYPE_IMAGE, image:TYPE_IMAGE=None, width:int=MIN_IMAGE_SIZE, height:int=MIN_IMAGE_SIZE, mode:EnumScaleMode=EnumScaleMode.NONE) -> TYPE_IMAGE:
-    if mask is None:
-        if image is None or channel_count(image)[0] != 4:
-            return np.ones((height, width), dtype=np.uint8) * 255
-        mask = image[:, :, 3][:, :]
-    else:
-        mask = tensor2mask(mask)
-    return image_scalefit(mask, width, height, mode=mode)
 
 def image_merge(imageA: TYPE_IMAGE, imageB: TYPE_IMAGE, axis: int=0, flip: bool=False) -> TYPE_IMAGE:
     if flip:
@@ -1113,7 +1139,7 @@ def image_sharpen(image:TYPE_IMAGE, kernel_size=None, sigma:float=1.0,
         np.copyto(sharpened, image, where=low_contrast_mask)
     return sharpened
 
-def image_split(image: TYPE_IMAGE) -> tuple[TYPE_IMAGE]:
+def image_split(image: TYPE_IMAGE) -> tuple[TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE]:
     cc, w, h = channel_count(image)[:3]
     if cc == 4:
         b, g, r, a = cv2.split(image)

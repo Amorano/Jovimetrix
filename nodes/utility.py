@@ -44,7 +44,7 @@ class AkashicData:
 class AkashicNode(JOVBaseNode):
     NAME = "AKASHIC (JOV) 📓"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/UTILITY"
-    DESCRIPTION = "Display the top level attributes of an output"
+    DESCRIPTION = "Display the top level attributes of an output."
     RETURN_TYPES = (WILDCARD, 'AKASHIC', )
     RETURN_NAMES = (Lexicon.PASS_OUT, Lexicon.IO)
     OUTPUT_NODE = True
@@ -108,7 +108,7 @@ class AkashicNode(JOVBaseNode):
 class ValueGraphNode(JOVBaseNode):
     NAME = "VALUE GRAPH (JOV) 📈"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/UTILITY"
-    DESCRIPTION = "Graphs historical execution run values"
+    DESCRIPTION = "Graphs historical execution run values."
     RETURN_TYPES = ("IMAGE", )
     RETURN_NAMES = (Lexicon.IMAGE, )
     OUTPUT_NODE = True
@@ -181,7 +181,7 @@ class ValueGraphNode(JOVBaseNode):
 class RerouteNode(JOVBaseNode):
     NAME = "RE-ROUTE (JOV) 🚌"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/UTILITY"
-    DESCRIPTION = "Pass all data because the default is broken on connection"
+    DESCRIPTION = "Pass all data because the default is broken on connection."
     INPUT_IS_LIST = True
     OUTPUT_IS_LIST = (True, )
     RETURN_TYPES = (WILDCARD, )
@@ -226,9 +226,9 @@ class QueueNode(JOVBaseNode):
             }}
         return deep_merge_dict(IT_REQUIRED, d)
 
-    #@classmethod
-    #def IS_CHANGED(cls) -> float:
-    #    return float("nan")
+    @classmethod
+    def IS_CHANGED(cls) -> float:
+        return float("nan")
 
     def __init__(self, *arg, **kw) -> None:
         super().__init__(*arg, **kw)
