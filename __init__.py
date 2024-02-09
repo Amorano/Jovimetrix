@@ -135,9 +135,9 @@ class JOVBaseNode:
     def INPUT_TYPES(cls) -> dict:
         return IT_REQUIRED
 
-    NAME = "Jovimetrix"
-    DESCRIPTION = "A Jovimetrix Node"
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵"
+    # NAME = "Jovimetrix"
+    # DESCRIPTION = "A Jovimetrix Node"
+    # CATEGORY = "JOVIMETRIX 🔺🟩🔵"
     INPUT_IS_LIST = True
     RETURN_TYPES = ()
     OUTPUT_NODE = False

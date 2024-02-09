@@ -45,8 +45,8 @@ class TransformNode(JOVImageMultiple):
                 Lexicon.MIRROR: (EnumMirrorMode._member_names_, {"default": EnumMirrorMode.NONE.name}),
                 Lexicon.PIVOT: ("VEC2", {"default": (0.5, 0.5), "max": 1, "min": 0, "step": 0.005, "precision": 4, "label": [Lexicon.X, Lexicon.Y]}),
                 Lexicon.TILE: ("VEC2", {"default": (1, 1), "step": 1, "min": 1, "label": [Lexicon.X, Lexicon.Y]}),
-                Lexicon.TLTR: ("VEC4", {"default": (0, 0, 0, 1), "min": 0, "max": 1, "step": 0.005, "precision": 4, "label": [Lexicon.TOP, Lexicon.LEFT, Lexicon.TOP, Lexicon.RIGHT]}),
-                Lexicon.BLBR: ("VEC4", {"default": (1, 0, 1, 1), "min": 0, "max": 1, "step": 0.005, "precision": 4, "label": [Lexicon.BOTTOM, Lexicon.LEFT, Lexicon.BOTTOM, Lexicon.RIGHT]}),
+                Lexicon.TLTR: ("VEC4", {"default": (0, 0, 1, 0), "min": 0, "max": 1, "step": 0.005, "precision": 4, "label": [Lexicon.TOP, Lexicon.LEFT, Lexicon.TOP, Lexicon.RIGHT]}),
+                Lexicon.BLBR: ("VEC4", {"default": (0, 1, 1, 1), "min": 0, "max": 1, "step": 0.005, "precision": 4, "label": [Lexicon.BOTTOM, Lexicon.LEFT, Lexicon.BOTTOM, Lexicon.RIGHT]}),
                 Lexicon.PROJECTION: (EnumProjection._member_names_, {"default": EnumProjection.NORMAL.name}),
                 Lexicon.STRENGTH: ("FLOAT", {"default": 1, "min": 0, "precision": 4, "step": 0.005})
             }}
@@ -63,8 +63,8 @@ class TransformNode(JOVImageMultiple):
         tile_xy = parse_tuple(Lexicon.TILE, kw, default=(1, 1,), clip_min=1)
         proj = kw.get(Lexicon.PROJECTION, [EnumProjection.NORMAL])
         strength = kw.get(Lexicon.STRENGTH, [1])
-        tltr = parse_tuple(Lexicon.TLTR, kw, EnumTupleType.FLOAT, (0, 0, 0, 1,), 0, 1)
-        blbr = parse_tuple(Lexicon.BLBR, kw, EnumTupleType.FLOAT, (1, 0, 1, 1,), 0, 1)
+        tltr = parse_tuple(Lexicon.TLTR, kw, EnumTupleType.FLOAT, (0, 0, 1, 0,), 0, 1)
+        blbr = parse_tuple(Lexicon.BLBR, kw, EnumTupleType.FLOAT, (0, 1, 1, 1,), 0, 1)
         edge = kw.get(Lexicon.EDGE, [EnumEdge.CLIP])
         mode = kw.get(Lexicon.MODE, [EnumScaleMode.NONE])
         sample = kw.get(Lexicon.SAMPLE, [EnumInterpolation.LANCZOS4])
@@ -113,8 +113,8 @@ class TransformNode(JOVImageMultiple):
                 mask = image_edge_wrap(mask, tx - 1, ty - 1)
                 mask = image_scalefit(mask, w, h, mode=EnumScaleMode.FIT)
 
-            y1, x1, y2, x2 = tltr
-            y4, x4, y3, x3 = blbr
+            x1, y1, x2, y2 = tltr
+            x4, y4, x3, y3 = blbr
             sh, sw = img.shape[:2]
             x1, x2, x3, x4 = map(lambda x: x * sw, [x1, x2, x3, x4])
             y1, y2, y3, y4 = map(lambda y: y * sh, [y1, y2, y3, y4])
@@ -140,11 +140,11 @@ class TransformNode(JOVImageMultiple):
             mask = image_scalefit(mask, w, h, mode=mode, sample=sample)
             images.append(cv2tensor(img))
             masks.append(cv2mask(mask))
-            print(img.shape, mask.shape)
+            # logger.debug(img.shape, mask.shape)
             pbar.update_absolute(idx)
 
-        print(images, masks)
-        return (torch.stack(images), torch.stack(mask), )
+        # logger.debug(images, masks)
+        return (images, masks, )
 
 class BlendNode(JOVImageSimple):
     NAME = "BLEND (JOV) ⚗️"
@@ -194,10 +194,7 @@ class BlendNode(JOVImageSimple):
             masks.append(cv2mask(img))
             pbar.update_absolute(idx)
 
-        return (
-            torch.stack(images),
-            torch.stack(masks)
-        )
+        return images, masks,
 
 class PixelSplitNode(JOVImageMultiple):
     NAME = "PIXEL SPLIT (JOV) 💔"
@@ -219,26 +216,23 @@ class PixelSplitNode(JOVImageMultiple):
             'a': [],
         }
 
-        pixels = kw.get(Lexicon.PIXEL, [None])
-        params = [tuple(x) for x in zip_longest_fill(pixels)]
-        pbar = comfy.utils.ProgressBar(len(params))
-        for idx, (img,) in enumerate(params):
-            img = tensor2cv(img) if img  is not None else np.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=np.uint8)
+        pixel = kw.get(Lexicon.PIXEL, [None])
+        # params = [tuple(x) for x in zip_longest_fill(pixels)]
+        pbar = comfy.utils.ProgressBar(len(pixel))
+        empty = np.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=np.uint8)
+        for idx, (img,) in enumerate(pixel):
+            img = tensor2cv(img) if img  is not None else empty
             h, w = img.shape[:2]
             r, g, b, a = image_split(img)
             e = np.zeros((h, w), dtype=np.uint8)
-
-            ret['a'] = cv2.merge([a, a, a])
             for rgb, color in (
                 ('r', [e, e, r]),
                 ('g', [e, g, e]),
                 ('b', [b, e, e])):
-
                 f = cv2.merge(color)
-                if rgb != 'a':
-                    f = cv2.bitwise_and(f, ret['a'])
                 ret[rgb].append(cv2tensor(f))
 
+            ret['a'] = cv2mask(a)
             pbar.update_absolute(idx)
 
         return ret['r'], ret['g'], ret['b'], ret['a']
@@ -264,7 +258,9 @@ class PixelMergeNode(JOVImageMultiple):
         params = [tuple(x) for x in zip_longest_fill(R, G, B, A, wihi, mode, sample, i)]
 
         if len(R)+len(B)+len(G)+len(A) == 0:
-            return [torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8, device="cpu")], [torch.ones((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), dtype=torch.uint8, device="cpu")]
+            e = torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8, device="cpu")
+            m = torch.full((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), 255, dtype=torch.uint8, device="cpu")
+            return [e], [m],
 
         masks = []
         images = []
@@ -275,22 +271,18 @@ class PixelMergeNode(JOVImageMultiple):
             g = mask2cv(g) if g is not None else np.zeros((h, w), dtype=np.uint8)
             b = mask2cv(b) if b is not None else np.zeros((h, w), dtype=np.uint8)
             a = mask2cv(a) if a is not None else np.zeros((h, w), dtype=np.uint8)
+            img, mask = channel_merge(r, g, b, a)
             rs = EnumInterpolation[rs]
-
-            img = channel_merge(r, g, b, a, w, h)
             img = image_scalefit(img, w, h, mode=m, sample=rs)
-
+            mask = image_scalefit(mask, w, h, mode=m, sample=rs)
             if i != 0:
                 img = image_invert(img, i)
 
             images.append(cv2tensor(img))
-            masks.append(cv2mask(img))
+            masks.append(cv2mask(mask))
             pbar.update_absolute(idx)
 
-        return (
-            torch.stack(images),
-            torch.stack(masks),
-        )
+        return images, masks,
 
 class StackNode(JOVImageMultiple):
     NAME = "STACK (JOV) ➕"
@@ -333,18 +325,16 @@ class StackNode(JOVImageMultiple):
             rs = EnumInterpolation[rs]
             ax = EnumOrientation[ax]
             # color = 255
-            img = image_stack(pixels, ax, st, mode=EnumScaleMode.FIT, sample=rs)
+            img, mask = image_stack(pixels, ax, st)
             if m != EnumScaleMode.NONE:
                 img = image_scalefit(img, w, h, mode=m, sample=rs)
+                mask = image_scalefit(mask, w, h, mode=m, sample=rs)
 
             images.append(cv2tensor(img))
-            masks.append(cv2mask(img))
+            masks.append(cv2mask(mask))
             pbar.update_absolute(idx)
 
-        return (
-            torch.stack(images),
-            torch.stack(masks)
-        )
+        return images, masks,
 
 class CropNode(JOVImageMultiple):
     NAME = "CROP (JOV) ✂️"
@@ -376,6 +366,7 @@ class CropNode(JOVImageMultiple):
         for idx, (img, tltr, blbr, rgb, wihi, mode, i) in enumerate(params):
             if img is None:
                 images.append(torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8, device="cpu"))
+                masks.append(torch.full((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), 255, dtype=torch.uint8, device="cpu"))
                 continue
 
             img = tensor2cv(img)
@@ -441,10 +432,4 @@ class ColorTheoryNode(JOVImageMultiple):
 
             pbar.update_absolute(idx)
 
-        return (
-            torch.stack(imageA),
-            torch.stack(imageB),
-            torch.stack(imageC),
-            torch.stack(imageD),
-            torch.stack(imageE)
-        )
+        return imageA, imageB, imageC, imageD, imageE

@@ -114,7 +114,7 @@ class ExportNode(JOVBaseNode):
                 logger.warning(cmd)
                 logger.error(str(e))
 
-            # shutil.rmtree(root)
+            shutil.rmtree(root)
 
         elif format == "gif":
             images[0].save(
@@ -144,29 +144,33 @@ class ImageDiffNode(JOVBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        return deep_merge_dict(IT_REQUIRED, IT_PIXEL2)
+        d = {"optional": {
+              Lexicon.THRESHOLD: ("FLOAT", {"default": 0.5, "min": 0, "max": 1, "step": 0.01},),
+        }}
+        return deep_merge_dict(IT_REQUIRED, IT_PIXEL2, d)
 
     def run(self, **kw) -> tuple[Any, Any]:
         a = kw.get(Lexicon.PIXEL_A, [None])
         b = kw.get(Lexicon.PIXEL_B, [None])
+        th = kw.get(Lexicon.THRESHOLD, [0])
         image_a = []
         image_b = []
         diff = []
         thresh = []
         score = []
-        params = [tuple(x) for x in zip_longest_fill(a, b)]
+        params = [tuple(x) for x in zip_longest_fill(a, b, th)]
         if len(params) == 0:
-            e = [cv2tensor(np.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=np.uint8))]
-            m = [cv2mask(np.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), dtype=np.uint8))]
+            e = [torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8, device="cpu")]
+            m = [torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), dtype=torch.uint8, device="cpu")]
             return e, e, m, m, [1.],
 
         pbar = comfy.utils.ProgressBar(len(params))
-        for idx, (a, b) in enumerate(params):
+        for idx, (a, b, th) in enumerate(params):
             if a is None and b is None:
-                e = cv2tensor(np.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=np.uint8))
+                e = torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8, device="cpu")
                 image_a.append(e)
                 image_b.append(e)
-                m = cv2mask(np.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), dtype=np.uint8))
+                m = torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), dtype=torch.uint8, device="cpu")
                 diff.append(m)
                 thresh.append(m)
                 score.append(1.)
@@ -178,7 +182,7 @@ class ImageDiffNode(JOVBaseNode):
             a = tensor2cv(a) if a is not None else np.zeros((height, width, 3), dtype=np.uint8)
             b = tensor2cv(b) if b is not None else np.zeros((height, width, 3), dtype=np.uint8)
 
-            a, b, d, t, s = image_diff(a, b)
+            a, b, d, t, s = image_diff(a, b, int(th * 255.))
             image_a.append(cv2tensor(a))
             image_b.append(cv2tensor(b))
             diff.append(cv2mask(d))

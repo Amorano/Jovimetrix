@@ -392,7 +392,7 @@ class MediaStreamDevice(MediaStreamURL):
 class MediaStreamFile(MediaStreamBase):
     """A file served from a local file using file:// as the 'uri'."""
     def __init__(self, url:str) -> None:
-        self.__image = image_load(url)[0]
+        self.__image, mask = image_load(url)[0]
         super().__init__()
 
     def callback(self) -> tuple[bool, Any]:

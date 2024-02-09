@@ -119,7 +119,7 @@ class StreamReaderNode(JOVImageMultiple):
         sample = EnumInterpolation[sample]
         i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1])[0]
         source = kw.get(Lexicon.SOURCE, "URL")
-        empty = (torch.stack([self.__last]), torch.stack([self.__last_mask]), )
+        empty = ([self.__last], [self.__last_mask], )
         match source:
             case "MONITOR":
                 if wait:
