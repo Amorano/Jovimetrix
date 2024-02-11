@@ -94,6 +94,7 @@ class Lexicon:
     M = '🖤'
     MARGIN = 'MARGIN'
     MASK = '😷'
+    MATTE = 'MATTE'
     MAX = 'MAX'
     MI = '🤍'
     MID = 'MID'

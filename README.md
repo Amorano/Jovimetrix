@@ -1,4 +1,4 @@
-> [!CAUTION]
+> CAUTION]
 > <h3><p align="center">⚠️ SUBJECT TO CHANGE PRIOR TO VERSION 1.0. USE AT YOUR OWN RISK ⚠️</p></h3>
 
 <picture>
@@ -13,6 +13,23 @@
 
 <!---------------------------------------------------------------------------->
 
+# WHAT IS THE POINT?
+
+There are many ways to do composition and it is apparent that is a large portion of what Computer Vision - aka contemporaneous "A.I" - is invented to resolve.
+
+While diffusers and latent hallucinations can make many amazing things at the moment, there is still a need to resolve final "frames" in something else like Krita (For static 2D), Calvary (for motion graphics) or [Davinci Resolve](https://www.blackmagicdesign.com/products/davinciresolve) for movie editing.
+
+The main goal of Jovimetrix is to suppliment those external workflows before the need to use them.
+
+## TARGETS
+
+* animation / motion graphics
+* traditional image blending
+* support masks as an image channel
+* improved UX
+** custom node colorization
+** node favorites
+
 # INSTALLATION
 
 If you have [ComfyUI Manager](https://github.com/ltdrdata/ComfyUI-Manager) installed you can search for Jovimetrix and install from the manager's database.
@@ -26,7 +43,6 @@ You will need to add an environment var so it knows you have it installed and wh
 set JOV_GIFSKI=[path to gifski]
 
 Once set the GIFSKI option should appear in the Export Node drop down list of output target formats.
-
 
 ## FFMEPG
 
@@ -47,90 +63,101 @@ pip install -r requirements.txt
 ```
 <!---------------------------------------------------------------------------->
 
-# NODE REFERENCE
+# [NODE REFERENCE](https://github.com/Amorano/Jovimetrix/wiki)
 
-CREATE | WHAT
+[CREATE](https://github.com/Amorano/Jovimetrix/wiki/CREATE#create) | &nbsp;
 ---|---
-[CONSTANT 🟪](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/node_constant.png)|Create a single RGBA block of color. Useful for masks, overlays and general filtering.
-[SHAPE GENERATOR ✨](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/node_shape_generator.png)|Generate polyhedra for masking or texture work.
-[TEXT GENERATOR 📝](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/node_text_generator.png)|Uses any system font with auto-fit or manual placement.
-[STEREOGRAM 📻](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/node_stereogram.png)|Make a magic eye stereograms.
-[GLSL 🍩](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/node_glsl.png)|GLSL Shader support
+[CONSTANT 🟪](https://github.com/Amorano/Jovimetrix/wiki/CREATE#-constant)|Create a single RGBA block of color. Useful for masks, overlays and general filtering.
+[SHAPE GENERATOR ✨](https://github.com/Amorano/Jovimetrix/wiki/CREATE#-shape-generator)|Generate polyhedra for masking or texture work.
+[TEXT GENERATOR 📝](https://github.com/Amorano/Jovimetrix/wiki/CREATE#-text-generator)|Uses any system font with auto-fit or manual placement.
+[STEREOGRAM 📻](https://github.com/Amorano/Jovimetrix/wiki/CREATE#-stereogram)|Make a magic eye stereograms.
+[GLSL 🍩](https://github.com/Amorano/Jovimetrix/wiki/CREATE#-glsl)|GLSL Shader support
+<img width=225/>|<img width=800/>
 
-ADJUST | WHAT
+[ADJUST](https://github.com/Amorano/Jovimetrix/wiki/ADJUST#adjust) | &nbsp;
 ---|---
-[ADJUST 🕸️](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/node_adjust.png)|Blur, Sharpen, Emboss, Levels, HSV, Edge detection.
-[COLOR MATCH 💞](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/node_color_match.png)|Project the colors of one image  onto another or use a pre-defined color target.
-[THRESHOLD 📉](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/node_threshold.png)|Clip an input based on a mid point value.
+[ADJUST 🕸️](https://github.com/Amorano/Jovimetrix/wiki/ADJUST#%EF%B8%8F-adjust)|Blur, Sharpen, Emboss, Levels, HSV, Edge detection.
+[COLOR MATCH 💞](https://github.com/Amorano/Jovimetrix/wiki/ADJUST#-color-match)|Project the colors of one image  onto another or use a pre-defined color target.
+[THRESHOLD 📉](https://github.com/Amorano/Jovimetrix/wiki/ADJUST#-threshold)|Clip an input based on a mid point value.
+<img width=225/>|<img width=800/>
 
-COMPOSE | WHAT
+[COMPOSE](https://github.com/Amorano/Jovimetrix/wiki/COMPOSE) | &nbsp;
 ---|---
-[BLEND ⚗️](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/node_blend.png)|Applies selected operation to 2 inputs with optional mask using a linear blend (alpha).
-[PIXEL SPLIT 💔](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/node_pixel_split.png)|Splits images into constituent R, G and B and A channels.
-[PIXEL MERGE 🫂](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/node_pixel_merge.png)|Combine 3 or 4 inputs into a single image
-[TRANSFORM 🏝️](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/node_transform.png)|Translate, Rotate, Scale, Tile, Mirror, Re-project and invert an input.
-[STACK ➕](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/node_stack.png)|Union multiple latents horizontal, vertical or in a grid.
-[CROP ✂️](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/node_crop.png)|Clip away sections of an image and backfill with optional color matte.
-[COLOR THEORY 🛞](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/node_color_theory.png)|Generate Complimentary, Triadic and Tetradic color sets.
+[TRANSFORM 🏝️](https://github.com/Amorano/Jovimetrix/wiki/COMPOSE#-transform)|Translate, Rotate, Scale, Tile, Mirror, Re-project and invert an input.
+[BLEND ⚗️](https://github.com/Amorano/Jovimetrix/wiki/COMPOSE#%EF%B8%8F-blend)|Applies selected operation to 2 inputs with optional mask using a linear blend (alpha).
+[PIXEL SPLIT 💔](https://github.com/Amorano/Jovimetrix/wiki/COMPOSE#-pixel-split)|Splits images into constituent R, G and B and A channels.
+[PIXEL MERGE 🫂](https://github.com/Amorano/Jovimetrix/wiki/COMPOSE#-pixel-merge)|Combine 3 or 4 inputs into a single image
+[STACK ➕](https://github.com/Amorano/Jovimetrix/wiki/COMPOSE#-stack)|Union multiple latents horizontal, vertical or in a grid.
+[CROP ✂️](https://github.com/Amorano/Jovimetrix/wiki/COMPOSE#%EF%B8%8F-crop)|Clip away sections of an image and backfill with optional color matte.
+[COLOR THEORY 🛞](https://github.com/Amorano/Jovimetrix/wiki/COMPOSE#-color-theory)|Generate Complimentary, Triadic and Tetradic color sets.
+<img width=225/>|<img width=800/>
 
-IMAGE | WHAT
+[IMAGE](https://github.com/Amorano/Jovimetrix/wiki/IMAGE) | &nbsp;
 ---|---
-[EXPORT 📽](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/node_export.png)|
-[IMAGE DIFF 📏](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/node_image_diff.png)|
+[EXPORT 📽](https://github.com/Amorano/Jovimetrix/wiki/IMAGE#-export)|Take your frames out static or animated (GIF)
+[IMAGE DIFF 📏](https://github.com/Amorano/Jovimetrix/wiki/IMAGE#-image_diff)|Explicitly show the differences between two images via self-similarity index
+<img width=225/>|<img width=800/>
 
-CALC | WHAT
+[CALC](https://github.com/Amorano/Jovimetrix/wiki/CALC) | &nbsp;
 ---|---
-[VALUE #️⃣](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/node_value.png)|Create a value for most types; also universal constants.
-[CONVERT🧬](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/node_convert.png)|Convert INT, FLOAT, VEC*, STRING and BOOL.
-[CALC OP UNARY 🎲](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/node_calc_unary.png)|Perform a Unary Operation on an input.
-[CALC OP BINARY 🌟](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/node_calc_binary.png)|Perform a Binary Operation on two inputs.
-[LERP 🔰](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/node_lerp.png)|Interpolate between two values with or without a smoothing.
+[VALUE #️⃣](https://github.com/Amorano/Jovimetrix/wiki/CALC#%EF%B8%8F%E2%83%A3-value)|Create a value for most types; also universal constants.
+[CONVERT🧬](https://github.com/Amorano/Jovimetrix/wiki/CALC#-convert)|Convert INT, FLOAT, VEC*, STRING and BOOL.
+[CALC OP UNARY 🎲](https://github.com/Amorano/Jovimetrix/wiki/CALC#-calc-op-unary)|Perform a Unary Operation on an input.
+[CALC OP BINARY 🌟](https://github.com/Amorano/Jovimetrix/wiki/CALC#-calc-op-binary)|Perform a Binary Operation on two inputs.
+[LERP 🔰](https://github.com/Amorano/Jovimetrix/wiki/CALC#-lerp)|Interpolate between two values with or without a smoothing.
+<img width=225/>|<img width=800/>
 
-ANIMATE | WHAT
+[ANIMATE](https://github.com/Amorano/Jovimetrix/wiki/ANIMATE) | &nbsp;
 ---|---
-[TICK ⏱](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/node_tick.png)|Periodic pulse exporting normalized, delta since last pulse and count.
-[WAVE GENERATOR 🌊](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/node_wave_generator.png)|Periodic and Non-Periodic Sinosodials.
+[TICK ⏱](https://github.com/Amorano/Jovimetrix/wiki/ANIMATE#-tick)|Periodic pulse exporting normalized, delta since last pulse and count.
+[WAVE GENERATOR 🌊](https://github.com/Amorano/Jovimetrix/wiki/ANIMATE#-wave_generator)|Periodic and Non-Periodic Sinosodials.
+<img width=225/>|<img width=800/>
 
-FLOW | WHAT
+[FLOW](https://github.com/Amorano/Jovimetrix/wiki/FLOW) | &nbsp;
 ---|---
-[COMPARISON 🕵🏽](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/node_comparison.png)|Compare two inputs: A=B, A!=B, A>B, A>=B, A<B, A<=B
-[DELAY ✋🏽](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/node_delay.png)|Delay traffic. Electrons on the data bus go round.
-[HOLD VALUE 🫴🏽](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/node_hold_value.png)|When engaged will send the last value it had even with new values arriving.
-[IF-THEN-ELSE 🔀](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/node_if-then-else.png)|IF <valid> then A else B
+[COMPARISON 🕵🏽](https://github.com/Amorano/Jovimetrix/wiki/FLOW#-comparison)|Compare two inputs: A=B, A!=B, A>B, A>=B, A<B, A<=B
+[DELAY ✋🏽](https://github.com/Amorano/Jovimetrix/wiki/FLOW#-delay)|Delay traffic. Electrons on the data bus go round.
+[HOLD VALUE 🫴🏽](https://github.com/Amorano/Jovimetrix/wiki/FLOW#-hold-value)|When engaged will send the last value it had even with new values arriving.
+[IF-THEN-ELSE 🔀](https://github.com/Amorano/Jovimetrix/wiki/FLOW#-if-then-else)|IF <valid> then A else B
+<img width=225/>|<img width=800/>
 
-DEVICE | WHAT
+[DEVICE](https://github.com/Amorano/Jovimetrix/wiki/DEVICE) | &nbsp;
 ---|---
-[MIDI READER🎹](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/node_midi_reader.png)|Capture MIDI devices and pass the data into Comfy.
-[MIDI MESSAGE🎛️](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/node_midi_message.png)|Expands a MIDI message into its values.
-[MIDI FILTER ✳️](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/node_midi_filter.png)|Filter MIDI messages by channel, message type or value.
-[MIDI FILTER EZ ❇️](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/node_midi_filter_ez.png)|Filter MIDI messages by channel, message type or value.
-[STREAM READER📺](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/node_stream_reader.png)|Connect system media devices and remote streams into ComfyUI workflows.
-[STREAM WRITER🎞️](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/node_stream_writer.png)|Broadcast ComfyUI Node outputs to custom webserver endpoint.
+[MIDI READER🎹](https://github.com/Amorano/Jovimetrix/wiki/DEVICE#-midi-reader)|Capture MIDI devices and pass the data into Comfy.
+[MIDI MESSAGE🎛️](https://github.com/Amorano/Jovimetrix/wiki/DEVICE#%EF%B8%8F-midi-message)|Expands a MIDI message into its values.
+[MIDI FILTER ✳️](https://github.com/Amorano/Jovimetrix/wiki/DEVICE#%EF%B8%8F-midi-filter)|Filter MIDI messages by channel, message type or value.
+[MIDI FILTER EZ ❇️](https://github.com/Amorano/Jovimetrix/wiki/DEVICE#%EF%B8%8F-midi-filter-ez)|Filter MIDI messages by channel, message type or value.
+[STREAM READER📺](https://github.com/Amorano/Jovimetrix/wiki/DEVICE#-stream-reader)|Connect system media devices and remote streams into ComfyUI workflows.
+[STREAM WRITER🎞️](https://github.com/Amorano/Jovimetrix/wiki/DEVICE#%EF%B8%8F-stream-writer)|Broadcast ComfyUI Node outputs to custom webserver endpoint.
+<img width=225/>|<img width=800/>
 
-AUDIO | WHAT
+[AUDIO](https://github.com/Amorano/Jovimetrix/wiki/AUDIO) | &nbsp;
 ---|---
-[GRAPH WAVE▶ ılıılı](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/node_graph_wave.png)|Import and display audio linear waveform data.
+[GRAPH WAVE▶ ılıılı](https://github.com/Amorano/Jovimetrix/wiki/AUDIO#-graph-wave)|Import and display audio linear waveform data.
+<img width=225/>|<img width=800/>
 
-UTILITY | WHAT
+[UTILITY](https://github.com/Amorano/Jovimetrix/wiki/UTILITY) | &nbsp;
 ---|---
-[VALUE GRAPH📈](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/node_value_graph.png)|Graphs historical execution run values
-[AKASHIC📓](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/node_akashic.png)|Display the top level attributes of an output
-[QUEUE🗃](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/node_queue.png)|Cycle lists of images files or strings for node inputs.
-[SELECT🤏🏽](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/node_select.png)|Select an item from a user explicit list of inputs.
-[RE-ROUTE🚌](https://github.com/Amorano/Jovimetrix-examples/blob/master/node/node_reroute.png)|Pass all data because the default is broken on connection
+[VALUE GRAPH📈](https://github.com/Amorano/Jovimetrix/wiki/UTILITY#-value-graph)|Graphs historical execution run values
+[AKASHIC📓](https://github.com/Amorano/Jovimetrix/wiki/UTILITY#-akashic)|Display the top level attributes of an output
+[QUEUE🗃](https://github.com/Amorano/Jovimetrix/wiki/UTILITY#-queue)|Cycle lists of images files or strings for node inputs.
+[SELECT🤏🏽](https://github.com/Amorano/Jovimetrix/wiki/UTILITY#-select)|Select an item from a user explicit list of inputs.
+[RE-ROUTE🚌](https://github.com/Amorano/Jovimetrix/wiki/UTILITY#-re-route)|Pass all data because the default is broken on connection
+<img width=225/>|<img width=800/>
 
-GLSL | WHAT
+[GLSL](https://github.com/Amorano/Jovimetrix/wiki/GLSL) | &nbsp;
 ---|---
-[GLSL - GRAYSCALE](https://github.com/Amorano/Jovimetrix-examples/blob/master/glsl/glsl-grayscale.png)|Converts input to grayscale.
-[GLSL - NOISE](https://github.com/Amorano/Jovimetrix-examples/blob/master/glsl/glsl-noise.png)|Various noise functions
-[GLSL - PATTERN](https://github.com/Amorano/Jovimetrix-examples/blob/master/glsl/glsl-pattern.png)|Pattern factory wip.
-[GLSL - POLYGON](https://github.com/Amorano/Jovimetrix-examples/blob/master/glsl/glsl-polygon.png)|Make convex polygons
-[GLSL - MAP](https://github.com/Amorano/Jovimetrix-examples/blob/master/glsl/glsl-map.png)|Re-project an image
-[GLSL - SELECT RANGE](https://github.com/Amorano/Jovimetrix-examples/blob/master/glsl/glsl-select_range.png)|Select a value range from an image for masking.
-[GLSL - MIRROR](https://github.com/Amorano/Jovimetrix-examples/blob/master/glsl/glsl-mirror.png)|Mirror an input with an optional custom pivot.
-[GLSL - ROTATE](https://github.com/Amorano/Jovimetrix-examples/blob/master/glsl/glsl-rotate.png)|Rotate an input.
-[GLSL - TILER](https://github.com/Amorano/Jovimetrix-examples/blob/master/glsl/glsl-tiler.png)|A tiling utility wip.
-[GLSL - VFX](https://github.com/Amorano/Jovimetrix-examples/blob/master/glsl/glsl-vfx.png)|Various Video Effects.
+[GLSL - GRAYSCALE](https://github.com/Amorano/Jovimetrix/wiki/GLSL#-glsl-grayscale)|Converts input to grayscale.
+[GLSL - NOISE](https://github.com/Amorano/Jovimetrix/wiki/GLSL#-glsl-noise)|Various noise functions
+[GLSL - PATTERN](https://github.com/Amorano/Jovimetrix/wiki/GLSL#-glsl-pattern)|Pattern factory wip.
+[GLSL - POLYGON](https://github.com/Amorano/Jovimetrix/wiki/GLSL#-glsl-polygon)|Make convex polygons
+[GLSL - MAP](https://github.com/Amorano/Jovimetrix/wiki/GLSL#-glsl-map)|Re-project an image
+[GLSL - SELECT RANGE](https://github.com/Amorano/Jovimetrix/wiki/GLSL#-glsl-select-range)|Select a value range from an image for masking.
+[GLSL - MIRROR](https://github.com/Amorano/Jovimetrix/wiki/GLSL#-glsl-mirror)|Mirror an input with an optional custom pivot.
+[GLSL - ROTATE](https://github.com/Amorano/Jovimetrix/wiki/GLSL#-glsl-rotate)|Rotate an input.
+[GLSL - TILER](https://github.com/Amorano/Jovimetrix/wiki/GLSL#-glsl-tiler)|A tiling utility wip.
+[GLSL - VFX](https://github.com/Amorano/Jovimetrix/wiki/GLSL#-glsl-vfx)|Various Video Effects.
+<img width=225/>|<img width=800/>
 
 <!---------------------------------------------------------------------------->
 
@@ -142,17 +169,15 @@ Everyone mentioned here has been tireless in helping me, at some point, construc
 ---|---
 [Stable Diffusion](https://stability.ai/stable-diffusion/)|without this, we would all still only be using pixel pushing tools
 [ComfyUI](https://github.com/comfyanonymous/ComfyUI)|Thank You! for existing
+<img width=225/>|<img width=auto/>
 
 ## COMFY DEVELOPERS & NODE MAKERS & COMMUNITY BUILDERS
 
 &nbsp; | &nbsp; | &nbsp;
- ---|---|---
+---|---|---
 [comfy](https://github.com/comfyanonymous)|[Chris Goringe](https://github.com/chrisgoringe)|[Purz](https://github.com/purzbeats)
 [pythongosssss](https://github.com/pythongosssss)|[melmass](https://github.com/melMass)|[Fizzledorf](https://github.com/Fizzledorf)
 [Dr. Lt. Data](https://github.com/ltdrdata)|[Trung0246](https://github.com/Trung0246)|[Fannovel16](https://github.com/Fannovel16)
 [Kijai](https://github.com/Kijai)|[WASasquatch](https://github.com/WASasquatch)|[MatisseTec](https://github.com/MatissesProjects)
 [rgthree](https://github.com/rgthree)|[Suzue1](https://github.com/Suzie1)
-
-
-
-
+<img width=250/>|<img width=250/>|<img width=250/>

@@ -376,6 +376,10 @@ IT_RGB = {"optional": {
     Lexicon.RGB: ("VEC3", {"default": (0, 0, 0), "min": 0, "max": 255, "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B]})
 }}
 
+IT_MATTE = {"optional": {
+    Lexicon.MATTE: ("VEC3", {"default": (0, 0, 0), "min": 0, "max": 255, "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B]})
+}}
+
 IT_RGBA = {"optional": {
     Lexicon.RGB_A: ("VEC4", {"default": (0, 0, 0, 255), "min": 0, "max": 255, "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A]})
 }}
