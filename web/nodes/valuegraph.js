@@ -24,7 +24,6 @@ const ext = {
             return r
         }
 
-
         const onConnectionsChange = nodeType.prototype.onConnectionsChange
         nodeType.prototype.onConnectionsChange = function (slotType, slot, event, link_info, data) {
             const me = onConnectionsChange ? onConnectionsChange.apply(this, arguments) : undefined

@@ -4,19 +4,12 @@
  */
 
 import { app } from "/scripts/app.js"
-import { fitHeight, node_cleanup, convertToInput, TYPE_HIDDEN } from '../core/util.js'
+import { fitHeight, node_cleanup, convertToInput, CONVERTED_TYPE } from '../core/util.js'
 import { inner_value_change } from '../core/util_dom.js'
 import { rgbToHex } from '../core/util_color.js'
 
 export const VectorWidget = (app, inputName, options, initial, desc='') => {
-    let isDragging;
-    const offset = 4
-    const label_width = 56
-    const widget_padding = 16
-    const widget_padding2 = 2 * widget_padding
-    const label_full = widget_padding + label_width
     const values = options[1]?.default || initial;
-
     const widget = {
         name: inputName,
         type: options[0],
@@ -25,10 +18,16 @@ export const VectorWidget = (app, inputName, options, initial, desc='') => {
         options: options[1]
     }
 
+    let isDragging;
     const precision = widget.options?.precision !== undefined ? widget.options.precision : 0;
-    let step = options[0].includes('VEC') ? 0.01 : 1;
+    let step = options[0].includes(['VEC', 'vec']) ? 0.01 : 1;
     widget.options.step = widget.options?.step || step;
     widget.options.rgb = widget.options?.rgb || false;
+
+    const offset_y = 5;
+    const widget_padding = 30;
+    const label_full = 72;
+    const label_center = label_full/2;
 
     widget.draw = function(ctx, node, width, Y, height) {
         if (this.type !== options[0] && app.canvas.ds.scale > 0.5) return
@@ -37,41 +36,53 @@ export const VectorWidget = (app, inputName, options, initial, desc='') => {
         ctx.beginPath()
         ctx.lineWidth = 2
         ctx.fillStyle = LiteGraph.WIDGET_OUTLINE_COLOR
-        ctx.roundRect(widget_padding, Y, width - widget_padding2, height, 16)
+        ctx.roundRect(widget_padding/2, Y, width - widget_padding, height, 16)
         ctx.stroke()
         ctx.lineWidth = 1
         ctx.fillStyle = LiteGraph.WIDGET_BGCOLOR
-        ctx.roundRect(widget_padding, Y, width - widget_padding2, height, 16)
+        ctx.roundRect(widget_padding/2, Y, width - widget_padding, height, 16)
         ctx.fill()
 
         // label
         ctx.fillStyle = LiteGraph.WIDGET_SECONDARY_TEXT_COLOR
-        const label_center = (offset + label_full) / 2 - (inputName.length * 2.5)
-        ctx.fillText(inputName, label_center, Y + height / 2 + offset)
+        ctx.fillText(inputName, label_center - (inputName.length * 2.5), Y + height/2 + offset_y)
         let x = label_full
 
-        // const rgb = rgbToHex();
-        const fields = Object.keys(this?.value || [])
-        const element_width = (width - label_full - widget_padding2) / fields.length
+        const fields = Object.keys(this?.value || []);
+        let count = fields.length;
+        if (widget.options.rgb) {
+            count += 0.23;
+        }
+        const element_width = (width - label_full - widget_padding) / count;
+        const element_width2 = element_width/2;
+
+        let converted = [];
         for (const idx of fields) {
             ctx.save()
             ctx.beginPath()
-            ctx.rect(x, Y, element_width, height)
-            ctx.clip()
             ctx.fillStyle = LiteGraph.WIDGET_OUTLINE_COLOR
             // separation bar
-            ctx.fillRect(x - 1, Y, 2, height)
+            if (idx != fields.length || (idx == fields.length && !this.options.rgb)) {
+                ctx.moveTo(x, Y)
+                ctx.lineTo(x, Y+height)
+                ctx.stroke();
+            }
+
+            // value
             ctx.fillStyle = LiteGraph.WIDGET_TEXT_COLOR
             const it = this.value[idx.toString()]
-            const text = Number(it).toFixed(Math.min(2, precision)).toString()
-            ctx.fillText(text, x + element_width / 2 - text.length * 2.5, Y + height / 2 + offset)
-            if (this.options.rgb) {
-                ctx.fillStyle = rgb2hex()
-                ctx.roundRect(widget_padding, Y, width - widget_padding2, height, 16)
-                ctx.fill()
-            }
+            const value = Number(it).toFixed(Math.min(2, precision))
+            converted.push(value);
+            const text = value.toString()
+            ctx.fillText(text, x + element_width2 - text.length * 2.5, Y + height/2 + offset_y)
             ctx.restore()
             x += element_width
+        }
+
+        if (this.options.rgb) {
+            ctx.fillStyle = rgbToHex(converted);
+            ctx.roundRect(width - 1.25 * widget_padding, Y, 0.75 * widget_padding, height, 16)
+            ctx.fill()
         }
         ctx.restore()
     }
@@ -92,11 +103,13 @@ export const VectorWidget = (app, inputName, options, initial, desc='') => {
         if (e.type === 'pointerdown') {
             if (isDragging === undefined) {
                 const x = pos[0] - label_full
-                const fields = Object.keys(this.value)
-                const element_width = (node.size[0] - label_full - widget_padding2) / fields.length
+                const size = Object.keys(this.value).length
+                const element_width = (node.size[0] - label_full - widget_padding * 1.25) / size
                 const index = Math.floor(x / element_width)
                 if (index >= 0 && index < size) {
                     isDragging = { name: this.name, idx: index}
+                } else if (this.options.rgb && index == size) {
+                    console.debug("show picker");
                 }
             }
         }
@@ -200,7 +213,7 @@ const widgets = {
                     const convertToInputArray = [];
                     for (const w of matchingTypes) {
                         const widget = Object.values(this.widgets).find(m => m.name === w[0]);
-                        if (widget.type !== TYPE_HIDDEN && myTypes.includes(widget.type)) {
+                        if (widget.type !== CONVERTED_TYPE && myTypes.includes(widget.type)) {
                             const who = matchingTypes.find(w => w[0] === widget.name)
                             const convertToInputObject = {
                                 content: `Convert ${widget.name} to input`,

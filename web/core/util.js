@@ -6,7 +6,7 @@
 
 import { api } from "/scripts/api.js"
 
-const TYPE_HIDDEN = "hidden-"
+export const CONVERTED_TYPE = "converted-widget"
 
 export const TypeSlot = {
     Input: 1,
@@ -126,7 +126,7 @@ export function widget_hide(node, widget, suffix = '') {
     widget.origComputeSize = widget.computeSize
     widget.origSerializeValue = widget.serializeValue
     widget.computeSize = () => [0, -4]
-    widget.type = TYPE_HIDDEN + suffix
+    widget.type = CONVERTED_TYPE + suffix
     widget.serializeValue = () => {
         // Prevent serializing the widget if we have no input linked
         try {
@@ -225,39 +225,39 @@ export const setupDynamicConnections = (nodeType, prefix, inputType) => {
 
 export const dynamic_connection = (node, index, event, prefix='in_', type='*', names = []
     ) => {
-        if (!node.inputs[index].name.startsWith(prefix)) {
-            return
-        }
-        // remove all non connected inputs
-        if (event == TypeSlotEvent.Disconnect && node.inputs.length > 1) {
-            console.info(`Removing input ${index} (${node.inputs[index].name})`)
-            if (node.widgets) {
-                const w = node.widgets.find((w) => w.name === node.inputs[index].name)
-                if (w) {
-                    w.onRemoved?.()
-                    node.widgets.length = node.widgets.length - 1
-                }
-            }
-            node.removeInput(index)
-
-            // make inputs sequential again
-            for (let i = 0; i < node.inputs.length; i++) {
-                const name = i < names.length ? names[i] : `${prefix}${i + 1}`
-                node.inputs[i].label = name
-                node.inputs[i].name = name
+    if (!node.inputs[index].name.startsWith(prefix)) {
+        return
+    }
+    // remove all non connected inputs
+    if (event == TypeSlotEvent.Disconnect && node.inputs.length > 1) {
+        console.info(`Removing input ${index} (${node.inputs[index].name})`)
+        if (node.widgets) {
+            const w = node.widgets.find((w) => w.name === node.inputs[index].name)
+            if (w) {
+                w.onRemoved?.()
+                node.widgets.length = node.widgets.length - 1
             }
         }
+        node.removeInput(index)
 
-        // add an extra input
-        if (node.inputs[node.inputs.length - 1].link != undefined) {
-            const nextIndex = node.inputs.length
-            const name = nextIndex < names.length
-                ? names[nextIndex]
-                : `${prefix}${nextIndex + 1}`
-
-            console.info(`Adding input ${nextIndex + 1} (${name})`)
-            node.addInput(name, type)
+        // make inputs sequential again
+        for (let i = 0; i < node.inputs.length; i++) {
+            const name = i < names.length ? names[i] : `${prefix}${i + 1}`
+            node.inputs[i].label = name
+            node.inputs[i].name = name
         }
+    }
+
+    // add an extra input
+    if (node.inputs[node.inputs.length - 1].link != undefined) {
+        const nextIndex = node.inputs.length
+        const name = nextIndex < names.length
+            ? names[nextIndex]
+            : `${prefix}${nextIndex + 1}`
+
+        console.info(`Adding input ${nextIndex + 1} (${name})`)
+        node.addInput(name, type)
+    }
 }
 
 export function convertArrayToObject(values, length, parseFn) {

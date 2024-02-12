@@ -5,7 +5,7 @@
  */
 
 import { app } from "/scripts/app.js"
-import { TypeSlot, TypeSlotEvent } '../core/util.js'
+import { TypeSlot, TypeSlotEvent } from '../core/util.js'
 
 const _id = "CONVERT (JOV) 🧬"
 

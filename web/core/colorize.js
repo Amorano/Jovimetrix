@@ -144,7 +144,7 @@ const ext = {
                 delete colors.jov_set_bgcolor
             }
             if (me) {
-                result.serialize_widgets = true
+                me.serialize_widgets = true
             }
             return me
         }

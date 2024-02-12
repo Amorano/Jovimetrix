@@ -7,7 +7,8 @@
 import { api } from "/scripts/api.js";
 import { app } from "/scripts/app.js";
 import { ComfyWidgets } from "/scripts/widgets.js"
-import { flashBackgroundColor, api_cmd_jovian } from '../core/util.js'
+import { api_cmd_jovian } from '../core/util.js'
+import { flashBackgroundColor } from '../core/util_fun.js'
 
 const _id = "QUEUE (JOV) 🗃"
 

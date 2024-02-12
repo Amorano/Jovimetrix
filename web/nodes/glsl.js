@@ -7,10 +7,9 @@
 import { api } from "/scripts/api.js";
 import { app } from "/scripts/app.js";
 import { ComfyWidgets } from "/scripts/widgets.js"
-
 import { widget_remove, widget_hide, api_cmd_jovian } from '../core/util.js'
 import { flashBackgroundColor } from '../core/util_fun.js'
-import { VectorWidget } from '../widget/widget_vector.js'
+// import { VectorWidget } from '../widget/widget_vector.js'
 
 const _id = "GLSL (JOV) 🍩"
 // uniform vec3 conversion; // 114)
@@ -89,7 +88,8 @@ const ext = {
                             while (val.default.length < idx) {
                                 val.default.push(0);
                             }
-                            exist = self.addCustomWidget(VectorWidget(app, varName, [`VEC${idx}`, val]));
+                            exist = this.addWidget(`VEC${idx}`, varName, val);
+                            // exist = self.addCustomWidget(VectorWidget(app, varName, [`VEC${idx}`, val]));
                         }
 
                         if (['vec2', 'vec3', 'vec4', 'float'].includes(varType)) {
