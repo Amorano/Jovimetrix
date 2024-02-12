@@ -5,8 +5,7 @@
  */
 
 import { app } from "/scripts/app.js"
-import * as util from '../core/util.js'
-import { widget_show, widget_hide } from '../core/util.js'
+import { fitHeight, widget_show, widget_hide } from '../core/util.js'
 
 const _id = "ADJUST (JOV) 🕸️"
 
@@ -56,7 +55,7 @@ const ext = {
                     widget_show(radius);
                     widget_show(amount);
                 }
-                util.fitHeight(self);
+                fitHeight(self);
             };
             setTimeout(() => { op.callback(); }, 15);
             return me;

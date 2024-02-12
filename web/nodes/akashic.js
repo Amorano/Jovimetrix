@@ -5,7 +5,7 @@
  */
 
 import { app } from "/scripts/app.js"
-import * as util from '../core/util.js'
+import { fitHeight, node_cleanup } from '../core/util.js'
 import * as util_dom from '../core/util_dom.js'
 import { JImageWidget } from '../widget/widget_jimage.js'
 import { JStringWidget } from '../widget/widget_jstring.js'
@@ -51,13 +51,13 @@ const ext = {
                 }
             }
 
-            util.fitHeight(this);
+            fitHeight(this);
             this.onRemoved = function () {
                 for (let y in this.widgets) {
                     if (this.widgets[y].canvas) {
                         this.widgets[y].canvas.remove()
                     }
-                    util.node_cleanup(this)
+                    node_cleanup(this)
                     this.widgets[y].onRemoved?.()
                 }
             }

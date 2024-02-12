@@ -4,7 +4,7 @@
  */
 
 import { app } from "/scripts/app.js"
-import * as util from '../core/util.js'
+import { TYPE_HIDDEN, fitHeight, node_cleanup, convertToInput } from '../core/util.js'
 
 const PICKER_DEFAULT = '#ff0000'
 
@@ -70,9 +70,9 @@ const widgets = {
                 nodeType.prototype.onNodeCreated = function () {
                     const r = onNodeCreated ? onNodeCreated.apply(this, arguments) : undefined;
                     this.serialize_widgets = true;
-                    util.fitHeight(this);
+                    fitHeight(this);
                     this.onRemoved = function () {
-                        util.node_cleanup(this);
+                        node_cleanup(this);
                     };
                     return r;
                 };
@@ -84,11 +84,11 @@ const widgets = {
                     const convertToInputArray = [];
                     for (const w of matchingTypes) {
                         const widget = Object.values(this.widgets).find(m => m.name === w[0]);
-                        if (widget.type !== util.CONVERTED_TYPE && myTypes.includes(widget.type)) {
+                        if (widget.type !== TYPE_HIDDEN && myTypes.includes(widget.type)) {
                             const who = matchingTypes.find(w => w[0] === widget.name)
                             const convertToInputObject = {
                                 content: `Convert ${widget.name} to input`,
-                                callback: () => util.convertToInput(this, widget, who[1])
+                                callback: () => convertToInput(this, widget, who[1])
                             };
                             convertToInputArray.push(convertToInputObject);
                         }

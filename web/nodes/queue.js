@@ -7,7 +7,7 @@
 import { api } from "/scripts/api.js";
 import { app } from "/scripts/app.js";
 import { ComfyWidgets } from "/scripts/widgets.js"
-import * as util from '../core/util.js'
+import { flashBackgroundColor, api_cmd_jovian } from '../core/util.js'
 
 const _id = "QUEUE (JOV) 🗃"
 
@@ -29,7 +29,7 @@ const ext = {
             self.data_index = 1;
             self.data_current = "";
             update_report(self);
-            util.api_cmd_jovian(self.id, "reset");
+            api_cmd_jovian(self.id, "reset");
         }
 
         const onNodeCreated = nodeType.prototype.onNodeCreated;
@@ -49,13 +49,13 @@ const ext = {
 
             output_data = this.outputs[0];
             const widget_reset = this.widgets[4];
-            const old_callback = widget_reset?.callback;
+            // const old_callback = widget_reset?.callback;
             widget_reset.callback = async (e) => {
                 widget_reset.value = false;
-                if (old_callback) {
-                    old_callback(this, arguments);
-                }
-                util.api_cmd_jovian(self.id, "reset");
+                // if (old_callback) {
+                //     old_callback(this, arguments);
+                // }
+                api_cmd_jovian(self.id, "reset");
             }
 
             self.widget_report = ComfyWidgets.STRING(this, 'QUEUE IS EMPTY 🔜', [
@@ -84,7 +84,7 @@ const ext = {
                 let centerX = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
                 let centerY = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
                 // util_fun.bewm(centerX / 2, centerY / 3);
-                await util.flashBackgroundColor(self.widget_queue.inputEl, 650, 4,  "#995242CC");
+                await flashBackgroundColor(self.widget_queue.inputEl, 650, 4,  "#995242CC");
             }
 
             api.addEventListener("jovi-queue-ping", python_queue_ping);

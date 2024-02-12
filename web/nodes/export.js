@@ -5,7 +5,7 @@
  */
 
 import { app } from "/scripts/app.js"
-import * as util from '../core/util.js'
+import { fitHeight, widget_hide, widget_show } from '../core/util.js'
 
 const _id = "EXPORT (JOV) 📽"
 
@@ -28,26 +28,26 @@ const ext = {
             let loop = this.widgets[8];
             let combo = this.widgets[3];
             combo.callback = () => {
-                util.widget_hide(self, opt);
-                util.widget_hide(self, quality);
-                util.widget_hide(self, quality_m);
-                util.widget_hide(self, fps);
-                util.widget_hide(self, loop);
+                widget_hide(self, opt);
+                widget_hide(self, quality);
+                widget_hide(self, quality_m);
+                widget_hide(self, fps);
+                widget_hide(self, loop);
                 switch (combo.value) {
                     case "gif":
-                        util.widget_show(opt);
-                        util.widget_show(fps);
-                        util.widget_show(loop);
+                        widget_show(opt);
+                        widget_show(fps);
+                        widget_show(loop);
                         break;
                     case "gifski":
-                        util.widget_show(quality);
-                        util.widget_show(quality_m);
-                        util.widget_show(fps);
-                        util.widget_show(loop);
+                        widget_show(quality);
+                        widget_show(quality_m);
+                        widget_show(fps);
+                        widget_show(loop);
                         break;
                 }
                 self.onResize?.(self.size);
-                util.fitHeight(self);
+                fitHeight(self);
             }
             setTimeout(() => { combo.callback(); }, 15);
             return me;

@@ -5,8 +5,7 @@
  */
 
 import { app } from "/scripts/app.js"
-import * as util from '../core/util.js'
-import { widget_show, widget_hide } from '../core/util.js'
+import { fitHeight, widget_hide, widget_show } from '../core/util.js'
 
 const _id = "STREAM READER (JOV) 📺"
 
@@ -69,7 +68,7 @@ const ext = {
                         widget_show(bbox);
                         break;
                 }
-                util.fitHeight(self);
+                fitHeight(self);
             }
             setTimeout(() => { mode.callback(); }, 15);
             return me;

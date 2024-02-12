@@ -5,7 +5,7 @@
  */
 
 import { app } from "/scripts/app.js"
-import * as util from '../core/util.js'
+import { TypeSlot, TypeSlotEvent, dynamic_connection } from '../core/util.js'
 
 const _id = "VALUE GRAPH (JOV) 📈"
 const _prefix = '❔'
@@ -24,18 +24,19 @@ const ext = {
             return r
         }
 
+
         const onConnectionsChange = nodeType.prototype.onConnectionsChange
         nodeType.prototype.onConnectionsChange = function (slotType, slot, event, link_info, data) {
             const me = onConnectionsChange ? onConnectionsChange.apply(this, arguments) : undefined
-            if (slotType === util.TypeSlot.Input) {
-                util.dynamic_connection(this, slot, event, `${_prefix}_`, '*')
-                if (event === util.TypeSlotEvent.Connect && link_info) {
+            if (slotType === TypeSlot.Input) {
+                dynamic_connection(this, slot, event, `${_prefix}_`, '*')
+                if (event === TypeSlotEvent.Connect && link_info) {
                     const fromNode = this.graph._nodes.find(
                         (otherNode) => otherNode.id == link_info.origin_id
                     )
                     const type = fromNode.outputs[link_info.origin_slot].type
                     this.inputs[slot].type = type
-                } else if (event === util.TypeSlotEvent.Disconnect) {
+                } else if (event === TypeSlotEvent.Disconnect) {
                     this.inputs[slot].type = '*'
                     this.inputs[slot].label = `${_prefix}_${slot + 1}`
                 }

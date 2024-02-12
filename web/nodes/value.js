@@ -5,7 +5,7 @@
  */
 
 import { app } from "/scripts/app.js"
-import * as util from '../core/util.js'
+import { widget_remove, fitHeight } from '../core/util.js'
 import { ComfyWidgets } from "/scripts/widgets.js"
 
 const _id = "VALUE (JOV) #️⃣"
@@ -66,7 +66,7 @@ const ext = {
                     }
 
                     while ((this.widgets || [])[1]) {
-                        util.widget_remove(this, 1);
+                        widget_remove(this, 1);
                     }
 
                     if (combo.value == 'BOOLEAN') {
@@ -111,7 +111,7 @@ const ext = {
                     }
                     combo_current = combo.value;
                 }
-                util.fitHeight(self);
+                fitHeight(self);
             }
             setTimeout(() => { combo.callback(); }, 15);
             return me;

@@ -6,7 +6,7 @@
 
 import { api } from "/scripts/api.js";
 import { app } from "/scripts/app.js";
-import * as util from '../core/util.js'
+import { api_post, showModal } from '../core/util.js'
 import * as util_fun from '../core/util_fun.js'
 
 const _id = "DELAY (JOV) ✋🏽"
@@ -35,7 +35,7 @@ const ext = {
                     if (widget_wait.value) {
                         util_fun.bubbles();
                     }
-                    const value = await util.showModal(`
+                    const value = await showModal(`
                         <div class="jov-modal-content">
                             <h3 id="jov-delay-header">DELAY NODE #${event.detail?.title || event.detail.id} (${self.total_timeout})</h3>
                             <h4>CANCEL OR CONTINUE RENDER?</h4>
@@ -54,7 +54,7 @@ const ext = {
 
                     window.bubbles_alive = false;
                     var data = { id: event.detail.id, cancel: value };
-                    util.api_post('/jovimetrix/message', data);
+                    api_post('/jovimetrix/message', data);
                 } catch (e) {
                     if (e.message !== "TIMEOUT") {
                         console.error(e);

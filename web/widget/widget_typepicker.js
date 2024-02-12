@@ -4,7 +4,7 @@
  */
 
 import { app } from "/scripts/app.js"
-import * as util from '../core/util.js'
+import { fitHeight, node_cleanup } from '../core/util.js'
 
 export const TypePickerWidget = (app, inputName, inputData) => {
     const widget = {
@@ -52,9 +52,9 @@ const widgets = {
                     const r = onNodeCreated ? onNodeCreated.apply(this, arguments) : undefined;
                     this.serialize_widgets = true;
                     /*
-                    util.fitHeight(this);
+                    fitHeight(this);
                     this.onRemoved = function () {
-                        util.node_cleanup(this);
+                        node_cleanup(this);
                     };
                     */
                     print(this)

@@ -5,10 +5,10 @@
  */
 
 import { app } from "/scripts/app.js"
-import * as util from './util.js'
+import { api_get } from './util.js'
 
-export let NODE_LIST = await util.api_get("./../object_info")
-export let CONFIG_CORE = await util.api_get("/jovimetrix/config")
+export let NODE_LIST = await api_get("./../object_info")
+export let CONFIG_CORE = await api_get("/jovimetrix/config")
 export let CONFIG_USER = CONFIG_CORE.user.default
 export let CONFIG_COLOR = CONFIG_USER.color
 export let CONFIG_REGEX = CONFIG_COLOR.regex || []

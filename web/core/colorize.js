@@ -6,7 +6,7 @@
 
 import { app } from "/scripts/app.js"
 import { $el } from "/scripts/ui.js"
-import * as util from './util.js'
+import { api_post } from './util.js'
 import * as util_color from './util_color.js'
 import * as util_config from './util_config.js'
 import { JovimetrixConfigDialog } from "./config.js"
@@ -44,7 +44,7 @@ const ext = {
             value = local ? local : util_config.CONFIG_USER.color[key] ? util_config.CONFIG_USER.color[key] : value;
             util_config.setting_make(_id, pretty, type, tip, value, (val) => {
                 var data = { id: id, v: val }
-                util.api_post('/jovimetrix/config', data);
+                api_post('/jovimetrix/config', data);
                 util_config.CONFIG_USER.color[key] = val;
             });
         }
@@ -113,7 +113,7 @@ const ext = {
                         v: util_config.CONFIG_THEME[name]
                     }
                 }
-                util.api_post("/jovimetrix/config", api_packet)
+                api_post("/jovimetrix/config", api_packet)
                 if (util_config.CONFIG_COLOR.overwrite) {
                     util_color.node_color_all()
                 }
