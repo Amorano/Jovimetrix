@@ -65,7 +65,7 @@ const ext = {
             const contrast = localStorage["Comfy.Settings.jov." + util_config.USER + '.color.contrast'] || false;
             if (contrast) {
                 var color = this.current_node.color || LiteGraph.NODE_TITLE_COLOR;
-                var bgcolor = this.current_node.bgcolor || LiteGraph.NODE_DEFAULT_BGCOLOR;
+                var bgcolor = this.current_node.bgcolor || LiteGraph.WIDGET_BGCOLOR;
                 this.node_title_color = util_color.color_contrast(color);
                 LiteGraph.NODE_TEXT_COLOR = util_color.color_contrast(bgcolor);
             } else {
@@ -82,7 +82,7 @@ const ext = {
             appendTo: ext.config_dialog.element,
             noAlpha: false,
             init: function(elm, rgb) {
-                elm.style.backgroundColor = elm.color || "#353535FF"
+                elm.style.backgroundColor = elm.color || LiteGraph.WIDGET_BGCOLOR;
                 elm.style.color = rgb.RGBLuminance > 0.22 ? '#222' : '#ddd'
             },
             convertCallback: function(data, options) {
@@ -128,7 +128,7 @@ const ext = {
     async beforeRegisterNodeDef(nodeType, nodeData) {
         const onNodeCreated = nodeType.prototype.onNodeCreated
         nodeType.prototype.onNodeCreated = function () {
-            const result = onNodeCreated ? onNodeCreated.apply(this, arguments) : undefined
+            const me = onNodeCreated?.apply(this, arguments)
             let colors = util_color.node_color_get(nodeData);
 
             if (colors?.title) {
@@ -143,10 +143,10 @@ const ext = {
             if (colors?.jov_set_bgcolor) {
                 delete colors.jov_set_bgcolor
             }
-            if (result) {
+            if (me) {
                 result.serialize_widgets = true
             }
-            return result
+            return me
         }
     },
 

@@ -4,6 +4,7 @@
  */
 
 import { app } from "/scripts/app.js"
+import { $el } from "/scripts/ui.js"
 import * as util from '../core/util.js'
 import * as util_dom from '../core/util_dom.js'
 
@@ -33,9 +34,14 @@ export const VectorWidget = (app, inputName, options, initial, desc='') => {
 
         ctx.save()
         ctx.beginPath()
-        ctx.fillStyle = LiteGraph.WIDGET_BGCOLOR
-        ctx.roundRect(widget_padding, Y, width - widget_padding2, height, 4)
+        ctx.lineWidth = 2
+        ctx.fillStyle = LiteGraph.WIDGET_OUTLINE_COLOR
+        ctx.roundRect(widget_padding, Y, width - widget_padding2, height, 16)
         ctx.stroke()
+        ctx.lineWidth = 1
+        ctx.fillStyle = LiteGraph.WIDGET_BGCOLOR
+        ctx.roundRect(widget_padding, Y, width - widget_padding2, height, 16)
+        ctx.fill()
 
         // label
         ctx.fillStyle = LiteGraph.WIDGET_SECONDARY_TEXT_COLOR
@@ -52,8 +58,9 @@ export const VectorWidget = (app, inputName, options, initial, desc='') => {
             ctx.rect(x, Y, element_width, height)
             ctx.clip()
             ctx.fillStyle = LiteGraph.WIDGET_OUTLINE_COLOR
+            // separation bar
             ctx.fillRect(x - 1, Y, 2, height)
-            ctx.fillStyle = LiteGraph.WIDGET_SECONDARY_TEXT_COLOR
+            ctx.fillStyle = LiteGraph.WIDGET_TEXT_COLOR
             const it = this.value[idx.toString()]
             const text = Number(it).toFixed(Math.min(2, precision)).toString()
             ctx.fillText(text, x + element_width / 2 - text.length * 2.5, Y + height / 2 + offset)
@@ -201,9 +208,6 @@ const widgets = {
                     return r;
                 };
             }
-        }
-        if (!nodeData.name.includes("(JOV)")) {
-            return;
         }
     }
 };

@@ -53,6 +53,9 @@ const widgets = {
         }
     },
     async beforeRegisterNodeDef(nodeType, nodeData, app) {
+        if (!nodeData.name.includes("(JOV)")) {
+            return;
+        }
         const myTypes = ["RGB"]
         const inputTypes = nodeData.input;
         if (inputTypes) {
@@ -97,9 +100,6 @@ const widgets = {
                     return r;
                 };
             }
-        }
-        if (!nodeData.name.includes("(JOV)")) {
-            return;
         }
     }
 };

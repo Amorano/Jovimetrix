@@ -4,10 +4,9 @@
  *
  */
 
-import { app } from "/scripts/app.js"
 import { api } from "/scripts/api.js"
 
-const CONVERTED_TYPE = "converted-widget";
+const TYPE_HIDDEN = "hidden-"
 
 export const TypeSlot = {
     Input: 1,
@@ -117,29 +116,17 @@ export function widget_remove_all(node) {
     }
 }
 
-export function widget_hideForce(node, widget, suffix = '') {
-    widget.origType = widget.type
-    widget.origComputeSize = widget.computeSize
-    widget.origSerializeValue = widget.serializeValue
-    widget.computeSize = () => [0, -4]
-    widget.type = CONVERTED_TYPE + suffix
-    if (widget.linkedWidgets) {
-      for (const w of widget.linkedWidgets) {
-        widget_hideForce(node, w, ':' + widget.name)
-      }
-    }
-}
-
 export function widget_hide(node, widget, suffix = '') {
     if (widget.hidden) {
         return
     }
+
     widget.origType = widget.type
     widget.hidden = true
     widget.origComputeSize = widget.computeSize
     widget.origSerializeValue = widget.serializeValue
     widget.computeSize = () => [0, -4]
-    widget.type = CONVERTED_TYPE + suffix
+    widget.type = TYPE_HIDDEN + suffix
     widget.serializeValue = () => {
         // Prevent serializing the widget if we have no input linked
         try {
@@ -168,11 +155,9 @@ export function widget_show(widget) {
     widget.computeSize = widget.origComputeSize
     widget.computeSize = (target_width) => [target_width, 20]
     widget.serializeValue = widget.origSerializeValue
-
     delete widget.origType
     delete widget.origComputeSize
     delete widget.origSerializeValue
-
     widget.hidden = false;
 
     // Hide any linked widgets, e.g. seed+seedControl
@@ -197,7 +182,7 @@ export function convertToWidget(node, widget) {
 }
 
 export function convertToInput(node, widget, config) {
-    //console.log(node, widget)
+    // console.log(node, widget)
     widget_hide(node, widget)
 
     const { linkType } = widget_get_type(config)
