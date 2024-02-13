@@ -18,13 +18,12 @@ import scipy as sp
 
 from skimage import exposure
 from skimage.metrics import structural_similarity as ssim
-# import torchvision.transforms.functional as TF
 from PIL import Image, ImageDraw, ImageOps, ImageSequence
 from blendmodes.blend import blendLayers, BlendType
 
 from loguru import logger
 
-from Jovimetrix import TYPE_IMAGE, TYPE_PIXEL, TYPE_COORD, IT_WH, MIN_IMAGE_SIZE
+from Jovimetrix import IT_MATTE, TYPE_IMAGE, TYPE_PIXEL, TYPE_COORD, IT_WH, MIN_IMAGE_SIZE
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import grid_make, deep_merge_dict
 
@@ -143,8 +142,10 @@ class EnumGrayscaleCrunch(Enum):
 
 class EnumImageType(Enum):
     GRAYSCALE = 0
-    RGB = 1
-    RGBA = 2
+    RGB = 10
+    RGBA = 20
+    BGR = 30
+    BGRA = 40
 
 class EnumInterpolation(Enum):
     NEAREST = cv2.INTER_NEAREST
@@ -183,12 +184,15 @@ class EnumProjection(Enum):
     POLAR = 5
     SPHERICAL = 10
     FISHEYE = 15
+    PERSPECTIVE = 20
 
 class EnumScaleMode(Enum):
     NONE = 0
-    FIT = 1
-    CROP = 2
-    ASPECT = 3
+    CROP = 20
+    # CROP_MATTE = 25
+    FIT = 10
+    ASPECT_LONG = 30
+    ASPECT_SHORT = 35
 
 class EnumThreshold(Enum):
     BINARY = cv2.THRESH_BINARY
@@ -204,89 +208,72 @@ class EnumThresholdAdapt(Enum):
 # === NODE SUPPORT ===
 # =============================================================================
 
-IT_SAMPLE = {"optional": {
-    Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
+IT_EDGE = {"optional": {
+    Lexicon.EDGE: (EnumEdge._member_names_, {"default": EnumEdge.CLIP.name}),
 }}
 
 IT_SCALEMODE = {"optional": {
     Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
 }}
 
-IT_EDGE = {"optional": {
-    Lexicon.EDGE: (EnumEdge._member_names_, {"default": EnumEdge.CLIP.name}),
+IT_SAMPLE = {"optional": {
+    Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
 }}
 
-IT_WHMODE = deep_merge_dict(IT_WH, IT_SCALEMODE)
+IT_WHMODE = deep_merge_dict(IT_SCALEMODE, IT_WH, IT_SAMPLE, IT_MATTE)
 
 # =============================================================================
 # === MATRIX SUPPORT ===
 # =============================================================================
 
-def tensor2load(tensor: torch.Tensor) -> tuple[torch.Tensor, int]:
-    """Scale tensor to uint8 and scan for channels."""
-    tensor = np.clip(255 * tensor.cpu().numpy().squeeze(), 0, 255).astype(np.uint8)
-
-    # batch mode?
-    cc = 1
-    if (size := len(tensor.shape)) > 2:
-        idx = 3 if size == 4 else 2
-        cc = tensor.shape[idx]
-    # logger.debug(tensor.shape, cc)
-    return tensor, cc
-
 def tensor2pil(tensor: torch.Tensor) -> Image.Image:
     """Convert a torch Tensor to a PIL Image."""
-    tensor, cc = tensor2load(tensor)
-    if cc == 1:
-        return Image.fromarray(tensor, mode='L')
-    elif cc == 3:
-        return Image.fromarray(tensor, mode='RGB')
-    elif cc == 4:
-        return Image.fromarray(tensor, mode='RGBA')
-    raise Exception(f"broken format {tensor.shape}")
+    tensor = np.clip(255 * tensor.cpu().numpy().squeeze(), 0, 255).astype(np.uint8)
+    h, w = tensor.shape[:2]
+    cc = 1 if len(tensor.shape) < 3 else tensor.shape[2]
+    if cc == 4:
+        image = Image.fromarray(tensor, mode='RGBA')
+        mask = image[:,:,:3]
+        return image, mask
 
-def tensor2cv(tensor: torch.Tensor) -> TYPE_IMAGE:
-    """Convert a torch Tensor to a CV2 Matrix."""
-    tensor, cc = tensor2load(tensor)
-    # (count, height, width, channel)
-    # (height, width, channel)
+    mask = np.full((h, w), 255, dtype=np.uint8)
+    mask = Image.fromarray(mask, mode='L')
     if cc == 1:
-        return cv2.cvtColor(tensor, cv2.COLOR_GRAY2BGR)
+        return Image.fromarray(tensor, mode='L'), mask
+    return Image.fromarray(tensor, mode='RGB'), mask
+
+def tensor2cv(tensor: torch.Tensor, mask:torch.Tensor=None) -> tuple[TYPE_IMAGE, TYPE_IMAGE]:
+    """Convert a torch Tensor to a CV2 Matrix."""
+    tensor = np.clip(255 * tensor.cpu().numpy().squeeze(), 0, 255).astype(np.uint8)
+
+    h, w = tensor.shape[:2]
+    if mask is not None:
+        mask = tensor2mask(mask)
+
+    cc = 1 if len(tensor.shape) < 3 else tensor.shape[2]
+    if cc == 4:
+        image = cv2.cvtColor(tensor, cv2.COLOR_RGBA2BGRA)
+        mask = image[:,:,3][:,:]
+        # mask = np.unsqueeze(mask)
+        # image = image[:,:,:3]
     elif cc == 3:
-        return cv2.cvtColor(tensor, cv2.COLOR_RGB2BGR)
-    elif cc == 4:
-        return cv2.cvtColor(tensor, cv2.COLOR_RGBA2BGRA)
-    raise Exception(f"broken format {tensor.shape}")
+        image = cv2.cvtColor(tensor, cv2.COLOR_RGB2BGR)
+    else:
+        image = cv2.cvtColor(tensor, cv2.COLOR_GRAY2BGR)
+
+    if mask is None:
+        mask = np.full((h, w), 255, dtype=np.uint8)
+    return image, mask
 
 def tensor2mask(tensor: torch.Tensor) -> TYPE_IMAGE:
     """Convert a torch Tensor to a Mask as a CV2 Matrix."""
-    tensor, cc = tensor2load(tensor)
+    tensor = np.clip(255 * tensor.cpu().numpy().squeeze(), 0, 255).astype(np.uint8)
+    cc = 1 if len(tensor.shape) < 3 else tensor.shape[2]
     if cc == 1:
         return tensor
-    elif cc == 3:
+    elif cc < 4:
         return cv2.cvtColor(tensor, cv2.COLOR_RGB2GRAY)
-    elif cc == 4:
-        return cv2.cvtColor(tensor, cv2.COLOR_RGBA2GRAY)
-    raise Exception(f"broken format {tensor.shape}")
-
-def tensor2cv_mask(image:torch.tensor, mask:TYPE_IMAGE, mode:EnumScaleMode=EnumScaleMode.NONE) -> tuple[TYPE_IMAGE, TYPE_IMAGE]:
-    width = MIN_IMAGE_SIZE
-    height = MIN_IMAGE_SIZE
-    if image is None:
-        image = np.zeros((height, width, 3), dtype=np.uint8)
-    else:
-        image = tensor2cv(image)
-        height, width = image.shape[:2]
-
-    if mask is None:
-        if channel_count(image)[0] != 4:
-            mask = np.full((height, width), 255, dtype=np.uint8)
-        else:
-            mask = image[:, :, 3][:, :]
-    else:
-        mask = tensor2mask(mask)
-        mask = image_scalefit(mask, width, height, mode=mode)
-    return image, mask,
+    return cv2.cvtColor(tensor, cv2.COLOR_RGBA2GRAY)
 
 def b64_2_tensor(base64str: str) -> torch.Tensor:
     img = base64.b64decode(base64str)
@@ -296,14 +283,13 @@ def b64_2_tensor(base64str: str) -> torch.Tensor:
 
 def mask2cv(mask: torch.Tensor) -> TYPE_IMAGE:
     """Convert a torch Tensor (Mask) to a CV2 Matrix."""
-    tensor, cc = tensor2load(mask)
+    tensor = np.clip(255 * mask.cpu().numpy().squeeze(), 0, 255).astype(np.uint8)
+    cc = 1 if len(tensor.shape) < 3 else tensor.shape[2]
     if cc == 1:
         return cv2.cvtColor(tensor, cv2.COLOR_GRAY2BGR)
-    elif cc == 3:
+    elif cc < 4:
         return tensor
-    elif cc == 4:
-        return cv2.cvtColor(tensor, cv2.COLOR_BGRA2BGR)
-    raise Exception(f"broken format {tensor.shape}")
+    return cv2.cvtColor(tensor, cv2.COLOR_BGRA2BGR)
 
 def pil2tensor(image: Image.Image) -> torch.Tensor:
     """Convert a PIL Image to a Torch Tensor."""
@@ -371,7 +357,7 @@ def pixel_eval(color: TYPE_PIXEL,
             target:EnumIntFloat=EnumIntFloat.INT,
             crunch:EnumGrayscaleCrunch=EnumGrayscaleCrunch.MEAN) -> TYPE_PIXEL:
 
-    """Create a color by R(GB) and a target pixel type."""
+    """Create a color by R(GB)(A) and a target pixel type."""
 
     def parse_single_color(c: TYPE_PIXEL) -> TYPE_PIXEL:
         if isinstance(c, float) or c != int(c):
@@ -394,30 +380,46 @@ def pixel_eval(color: TYPE_PIXEL,
         color = [parse_single_color(c) for c in color]
 
     if mode == EnumImageType.GRAYSCALE:
+        alpha = 1
+        if len(color) > 3:
+            alpha = color[3]
+            if target == EnumIntFloat.INT:
+                alpha /= 255.
+            color = color[:3]
         match crunch:
             case EnumGrayscaleCrunch.LOW:
-                return min(color)
+                val = min(color) * alpha
             case EnumGrayscaleCrunch.HIGH:
-                return max(color)
+                val = max(color) * alpha
             case EnumGrayscaleCrunch.MEAN:
-                return int(np.mean(color))
+                val = np.mean(color) * alpha
+        if target == EnumIntFloat.INT:
+            val = int(val)
+        return val
 
-    elif mode == EnumImageType.RGB:
+    elif mode == EnumImageType.RGB or mode == EnumImageType.BGR:
         if len(color) == 1:
-            return color * 3
+            return tuple(color * 3)
         if len(color) < 3:
-            color += (255,) * (3 - len(color))
+            color += (0,) * (3 - len(color))
+        color = color[:3]
+        if mode == EnumImageType.BGR:
+            color = color[::-1]
         return tuple(color)
 
-    elif mode == EnumImageType.RGBA:
-        if len(color) == 1:
-            return color * 3 + [255]
+    if len(color) == 1:
+        return tuple(color * 3 + [255])
 
-        if len(color) < 4:
-            color += (255,) * (4 - len(color))
-        return (color[2], color[1], color[0], color[3])
+    if len(color) < 3:
+        color += (0,) * (3 - len(color))
 
-    return color[::-1]
+    if len(color) < 4:
+        color += (255,)
+
+    if mode == EnumImageType.BGRA:
+        color = list(color[2::-1] + [color[-1]])
+
+    return tuple(color)
 
 def pixel_convert(in_a: TYPE_IMAGE, in_b: TYPE_IMAGE) -> tuple[TYPE_IMAGE, TYPE_IMAGE]:
     if in_a is not None or in_b is not None:
@@ -474,7 +476,9 @@ def channel_solid(width:int=512, height:int=512, color:TYPE_PIXEL=255,
             return np.full((height, width, 3), color, dtype=np.uint8)
 
         case EnumImageType.RGBA:
-            return np.full((height, width, 4), color, dtype=np.uint8)
+            img = np.full((height, width, 4), color, dtype=np.uint8)
+            img[:,:,3] = np.full((height, width), 255, dtype=np.uint8)
+            return img
 
 def channel_fill(image:TYPE_IMAGE, width:int, height:int, color:TYPE_PIXEL=255) -> TYPE_IMAGE:
     """
@@ -496,36 +500,33 @@ def channel_fill(image:TYPE_IMAGE, width:int, height:int, color:TYPE_PIXEL=255) 
         x2 = width
 
     canvas = channel_solid(width, height, color, chan=chan)
-    if cc > 1:
-        canvas[y1: y2, x1: x2, :cc] = image[:y2-y1, :x2-x1, :cc]
+    if cc > 3:
+        mask = image_mask(image, 255)
+        canvas[y1: y2, x1: x2, :3] = image[:y2-y1, :x2-x1, :3]
+        canvas[:, :, 3] = 255 - canvas[:, :, 3]
+        canvas[y1: y2, x1: x2, 3] = mask[:y2-y1, :x2-x1]
+    elif cc > 1:
+        canvas[y1: y2, x1: x2] = image[:y2-y1, :x2-x1]
     else:
-        canvas[y1: y2, x1: x2, 0] = image[:y2-y1, :x2-x1]
+        canvas[y1: y2, x1: x2] = image[:y2-y1, :x2-x1]
     return canvas
 
-def channel_merge(r: TYPE_IMAGE, g: TYPE_IMAGE, b: TYPE_IMAGE, a: TYPE_IMAGE) -> tuple[TYPE_IMAGE, TYPE_IMAGE]:
+def channel_merge(channel:list[TYPE_IMAGE]) -> TYPE_IMAGE:
+    ch = [c.shape[:2] if c is not None else (0, 0) for c in channel[:3]]
+    w = max([c[1] for c in ch])
+    h = max([c[0] for c in ch])
+    ch = [np.zeros((h, w), dtype=np.uint8) if c is None else image_grayscale(c) for c in channel[:3]]
+    if len(channel) == 4:
+        a = image_grayscale(channel[3]) if len(channel) == 4 else None
+        a = np.full((h, w), 255, dtype=np.uint8) if a is None else a
+        ch.append(a)
+    return cv2.merge(ch)
 
-    thr, twr = r.shape[:2] if r is not None else (0, 0)
-    thg, twg = g.shape[:2] if g is not None else (0, 0)
-    thb, twb = b.shape[:2] if b is not None else (0, 0)
-    tha, twa = a.shape[:2] if a is not None else (0, 0)
-    w = max(0, max(twa, max(twb, max(twr, twg))))
-    h = max(0, max(tha, max(thb, max(thr, thg))))
+# =============================================================================
+# === EXPLICIT SHAPE FUNCTIONS ===
+# =============================================================================
 
-    a = a if a is not None else np.full((h, w), 255, dtype=np.uint8)
-    #_, mask = cv2.threshold(a, 1, 255, cv2.THRESH_BINARY)
-    #mask = mask[:, :, 0][:, :]
-    r = np.zeros((h, w), dtype=np.uint8) if r is None else image_grayscale(r)# * mask
-    g = np.zeros((h, w), dtype=np.uint8) if g is None else image_grayscale(g)# * mask
-    b = np.zeros((h, w), dtype=np.uint8) if b is None else image_grayscale(b)# * mask
-    a = np.zeros((h, w), dtype=np.uint8) if a is None else image_grayscale(a)
-    image = cv2.merge((b, g, r, a))
-    return image, a
-
-#
-#
-#
-
-def shape_body(func: str, width: int, height: int, sizeX:float=1., sizeY:float=1., fill:TYPE_PIXEL=(255,255,255), back:TYPE_PIXEL=(0,0,0)) -> Image:
+def shape_body(func: str, width: int, height: int, sizeX:float=1., sizeY:float=1., fill:TYPE_PIXEL=255, back:TYPE_PIXEL=0) -> Image:
     sizeX = max(0.5, sizeX / 2 + 0.5)
     sizeY = max(0.5, sizeY / 2 + 0.5)
     xy = [(width * (1. - sizeX), height * (1. - sizeY)),(width * sizeX, height * sizeY)]
@@ -535,13 +536,13 @@ def shape_body(func: str, width: int, height: int, sizeX:float=1., sizeY:float=1
     func(xy, fill=pixel_eval(fill))
     return image
 
-def shape_ellipse(width: int, height: int, sizeX:float=1., sizeY:float=1., fill:TYPE_PIXEL=(255,255,255), back:TYPE_PIXEL=(0,0,0)) -> Image:
+def shape_ellipse(width: int, height: int, sizeX:float=1., sizeY:float=1., fill:TYPE_PIXEL=255, back:TYPE_PIXEL=0) -> Image:
     return shape_body('ellipse', width, height, sizeX=sizeX, sizeY=sizeY, fill=fill, back=back)
 
-def shape_quad(width: int, height: int, sizeX:float=1., sizeY:float=1., fill:TYPE_PIXEL=(255,255,255), back:TYPE_PIXEL=(0,0,0)) -> Image:
+def shape_quad(width: int, height: int, sizeX:float=1., sizeY:float=1., fill:TYPE_PIXEL=255, back:TYPE_PIXEL=0) -> Image:
     return shape_body('rectangle', width, height, sizeX=sizeX, sizeY=sizeY, fill=fill, back=back)
 
-def shape_polygon(width: int, height: int, size: float=1., sides: int=3, angle: float=0., fill:TYPE_PIXEL=(255,255,255), back:TYPE_PIXEL=(0,0,0)) -> Image:
+def shape_polygon(width: int, height: int, size: float=1., sides: int=3, angle: float=0., fill:TYPE_PIXEL=255, back:TYPE_PIXEL=0) -> Image:
 
     fill = pixel_eval(fill)
     size = max(0.00001, size)
@@ -556,7 +557,7 @@ def shape_polygon(width: int, height: int, size: float=1., sides: int=3, angle: 
 # === IMAGE ===
 # =============================================================================
 
-def image_affine_edge(image: TYPE_IMAGE, callback:object, edge:EnumEdge=EnumEdge.WRAP) -> TYPE_IMAGE:
+def image_affine_edge(image: TYPE_IMAGE, callback: object, edge: EnumEdge=EnumEdge.WRAP) -> TYPE_IMAGE:
     height, width = image.shape[:2]
     if edge != EnumEdge.CLIP:
         image = image_edge_wrap(image, edge=edge)
@@ -567,7 +568,7 @@ def image_affine_edge(image: TYPE_IMAGE, callback:object, edge:EnumEdge=EnumEdge
         image = image_crop_center(image, width, height)
     return image
 
-def image_blend(imageA:Optional[TYPE_IMAGE]=None,
+def image_blend(imageA: Optional[TYPE_IMAGE]=None,
                imageB:Optional[TYPE_IMAGE]=None,
                mask:Optional[TYPE_IMAGE]=None,
                blendOp:BlendType=BlendType.NORMAL,
@@ -595,17 +596,9 @@ def image_blend(imageA:Optional[TYPE_IMAGE]=None,
         return channel_solid(targetW or 1, targetH or 1, )
 
     def process(img:TYPE_IMAGE) -> TYPE_IMAGE:
-        img = img if img is not None else channel_solid(targetW, targetH, 0)
-        cc = channel_count(img)[0]
-        while cc < 3:
-            # @TODO: copy first channel to all missing? make grayscale RGB to process?
-            img = channel_add(img, 0)
-            cc += 1
-
-        if cc < 4:
-            img = channel_add(img, 255)
-
-        img = image_scalefit(img, targetW, targetH, color, mode, sample)
+        img = img if img is not None else channel_solid(targetW, targetH, color, chan=EnumImageType.RGB)
+        img = image_convert(img, 4)
+        img = image_scalefit(img, targetW, targetH, mode, sample)
         h, w = img.shape[:2]
         if h != targetH or w != targetW:
             img = channel_fill(img, targetW, targetH, color)
@@ -615,22 +608,19 @@ def image_blend(imageA:Optional[TYPE_IMAGE]=None,
     imageB = process(imageB)
     h, w = imageB.shape[:2]
     if mask is None:
-        mask = np.full((h, w), imageB_maskColor, dtype=np.uint8)
+        mask = image_mask(imageB, imageB_maskColor)
     elif channel_count(mask)[0] != 1:
         mask = image_grayscale(mask)
 
     mH, mW = mask.shape[:2]
     if h != mH or w != mW:
-        mask = image_scalefit(mask, w, h, color, mode, sample)
-        mask = channel_fill(mask, targetW, targetH, color)
-        mask = np.squeeze(mask)
+        mask = image_scalefit(mask, w, h, mode, sample)
 
-    imageB[:, :, 3] = mask[:, :]
+    mask = np.squeeze(mask)
+    imageB[:, :, 3] = mask
     imageA = cv2pil(imageA)
     imageB = cv2pil(imageB)
     image = blendLayers(imageA, imageB, blendOp.value, np.clip(alpha, 0, 1))
-    # make sure to force the type back to uint8
-
     return pil2cv(image)
 
 def image_contrast(image: TYPE_IMAGE, value: float) -> TYPE_IMAGE:
@@ -640,11 +630,10 @@ def image_contrast(image: TYPE_IMAGE, value: float) -> TYPE_IMAGE:
     image = np.clip(image, 0, 255).astype(np.uint8)
     return image_rgb_restore(image, alpha, cc == 1)
 
-def image_convert(image:TYPE_PIXEL, channels:int) -> TYPE_PIXEL:
+def image_convert(image: TYPE_IMAGE, channels: int) -> TYPE_PIXEL:
     """Force image format to number of channels chosen."""
     ncc = max(1, min(4, channels))
-    if ncc == (cc := channel_count(image)[0]):
-        return image
+    cc = channel_count(image)[0]
     if ncc < 3:
         return image_grayscale(image)
     if ncc == 3:
@@ -655,103 +644,35 @@ def image_convert(image:TYPE_PIXEL, channels:int) -> TYPE_PIXEL:
         return cv2.cvtColor(image, cv2.COLOR_GRAY2BGRA)
     return cv2.cvtColor(image, cv2.COLOR_BGR2BGRA)
 
-def image_crop(image: TYPE_IMAGE,
-             pnt_a: TYPE_COORD, pnt_b: TYPE_COORD,
-             pnt_c: TYPE_COORD, pnt_d: TYPE_COORD,
-             widthT: int=None, heightT: int=None,
-             color: TYPE_PIXEL=0) -> TYPE_IMAGE:
+def image_crop_polygonal(image: TYPE_IMAGE, points: list[TYPE_COORD]) -> TYPE_IMAGE:
+    mask = image_mask(image)
+    h, w = image.shape[:2]
+    pts = [(int(p[0] * w), int(p[1] * h)) for p in points]
+    pts = np.array(pts, np.int32)
+    pts = pts.reshape((-1, 1, 2))
+    if len(mask.shape) < 3:
+        mask = np.expand_dims(mask, axis=-1).copy()
+    cv2.fillPoly(mask, [pts], 255)
+    x, y, w, h = cv2.boundingRect(mask)
+    return cv2.bitwise_and(image, image, mask=mask)
+    # return img[y:y+h, x:x+w]
 
-        height, width = image.shape[:2]
-
-        def process_point(pnt) -> TYPE_COORD:
-            x, y = pnt
-            x = np.clip(x, 0, 1) * width
-            y = np.clip(y, 0, 1) * height
-            return x, y
-
-        x1, y1 = process_point(pnt_a)
-        x2, y2 = process_point(pnt_b)
-        x3, y3 = process_point(pnt_c)
-        x4, y4 = process_point(pnt_d)
-
-        x_max = max(x1, x2, x3, x4)
-        x_min = min(x1, x2, x3, x4)
-        y_max = max(y1, y2, y3, y4)
-        y_min = min(y1, y2, y3, y4)
-
-        x_start, x_end = int(max(0, x_min)), int(min(width, x_max))
-        y_start, y_end = int(max(0, y_min)), int(min(height, y_max))
-
-        crop_img = image[y_start:y_end, x_start:x_end]
-        widthT = (widthT if widthT is not None else x_end - x_start)
-        heightT = (heightT if heightT is not None else y_end - y_start)
-
-        if (widthT == x_end - x_start and heightT == y_end - y_start):
-            return crop_img
-
-        cc = channel_count(image)[0]
-        if isinstance(color, (float, int)):
-            color = [color] * cc
-        while len(color) > cc:
-            color.pop(-1)
-
-        if cc > 1:
-            img_padded = np.full((heightT, widthT, cc), color, dtype=np.uint8)
-        else:
-            img_padded = np.full((heightT, widthT), color, dtype=np.uint8)
-
-        crop_height, crop_width = crop_img.shape[:2]
-        h2 = heightT // 2
-        w2 = widthT // 2
-        ch = crop_height // 2
-        cw = crop_width // 2
-        y_start, y_end = max(0, h2 - ch), min(h2 + ch, heightT)
-        x_start, x_end = max(0, w2 - cw), min(w2 + cw, widthT)
-        y_delta = (y_end - y_start) // 2
-        x_delta = (x_end - x_start) // 2
-        y_start2, y_end2 = int(max(0, ch - y_delta)), int(min(ch + y_delta, crop_height))
-        x_start2, x_end2 = int(max(0, cw - x_delta)), int(min(cw + x_delta, crop_width))
-        img_padded[y_start:y_end, x_start:x_end] = crop_img[y_start2:y_end2, x_start2:x_end2]
-        return img_padded
-
-def image_crop_polygonal(image: TYPE_IMAGE,
-                       pnt_a: TYPE_COORD, pnt_b: TYPE_COORD,
-                       pnt_c: TYPE_COORD, pnt_d: TYPE_COORD,
-                       color: TYPE_PIXEL=0,
-                       width:int=None, height:int=None,
-                       mode:EnumScaleMode=EnumScaleMode.NONE,
-                       sample:EnumInterpolation=EnumInterpolation.LANCZOS4) -> tuple[TYPE_IMAGE, TYPE_IMAGE]:
-
-    h, w, cc = image.shape[:3]
+def image_crop(image: TYPE_IMAGE, width:int=None, height:int=None, offset:tuple[float, float]=(0.5, 0.5)) -> TYPE_IMAGE:
+    h, w = image.shape[:2]
     width = width if width is not None else w
     height = height if height is not None else h
+    width = max(0, min(w, width)) * offset[0]
+    height = max(0, min(h, height)) * offset[1]
+    points = [(w - width, h - height), (w + width, h - height), (w + width, h + height), (w - width, h + height)]
+    return image_crop_polygonal(image, points)
 
-    pnt_a = (int(pnt_a[0] * w), int(pnt_a[1] * h))
-    pnt_b = (int(pnt_b[0] * w), int(pnt_b[1] * h))
-    pnt_c = (int(pnt_c[0] * w), int(pnt_c[1] * h))
-    pnt_d = (int(pnt_d[0] * w), int(pnt_d[1] * h))
-
-    mask = np.zeros((h, w), dtype=np.uint8)
-    pts = np.array([pnt_a, pnt_b, pnt_c, pnt_d], np.int32)
-    pts = pts.reshape((-1, 1, 2))
-    cv2.fillPoly(mask, [pts], 255)
-    x, y, w, h = cv2.boundingRect(mask[:, :])
-    # image is masked off
-    img = cv2.bitwise_and(image, image, mask=mask)
-    img = img[y:y+h, x:x+w]
-    img = image_scalefit(img, width, height, color, mode, sample)
-
-    if cc == 4:
-        mask = img[:,:,3]
-    return img, mask
-
-def image_crop_center(image: TYPE_IMAGE, width:int=0, height:int=0) -> TYPE_IMAGE:
+def image_crop_center(image: TYPE_IMAGE, width:int, height:int) -> TYPE_IMAGE:
+    """Helper crop function to find the "center" of the area of interest."""
     h, w = image.shape[:2]
-    center = (int(w * 0.5), int(h * 0.5))
-    height //= 2
-    width //= 2
-    # logger.debug(h, w, center, width, height, center[0]-width, center[1]-height, center[0]+width, center[1]+height)
-    return image[ center[1]-height:center[1]+height, center[0]-width:center[0]+width]
+    # adjust the aspect ratio so we stay at a "25%, 25%" corner
+    x = (width / w) * 0.25
+    y = (height / h) * 0.25
+    return image_crop(image, width, height, (x, y))
 
 def image_diff(imageA: TYPE_IMAGE, imageB: TYPE_IMAGE, threshold:int=0, color:TYPE_PIXEL=(255, 0, 0)) -> tuple[TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE, float]:
     grayA = image_grayscale(imageA)
@@ -823,15 +744,12 @@ def image_gamma(image: TYPE_IMAGE, value: float) -> TYPE_IMAGE:
     return image_rgb_restore(image, alpha, cc == 1)
 
 def image_grayscale(image: TYPE_IMAGE) -> TYPE_IMAGE:
-    if (cc := channel_count(image)[0]) == 1:
-        return image
-    if cc > 2:
-        if image.dtype in [np.float16, np.float32, np.float64]:
-            image = np.clip(image * 255, 0, 255).astype(np.uint8)
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-        return image[:, :, 2][:,:]
-    logger.error("{} {} {}", "unknown image format", cc, image.shape)
-    return image
+    if channel_count(image)[0] == 1:
+        return image #[:, :]
+
+    if image.dtype in [np.float16, np.float32, np.float64]:
+        image = np.clip(image * 255, 0, 255).astype(np.uint8)
+    return cv2.cvtColor(image, cv2.COLOR_BGR2HSV)[:,:,2]
 
 def image_grid(data: list[TYPE_IMAGE], width: int, height: int) -> TYPE_IMAGE:
     #@TODO: makes poor assumption all images are the same dimensions.
@@ -941,6 +859,9 @@ def image_load(url: str) -> tuple[TYPE_IMAGE, TYPE_IMAGE]:
             mask = np.full((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), 255, dtype=np.uint8)
             return img, mask
 
+    if img is None:
+        raise Exception(f"no file {url}")
+
     if img.dtype != np.uint8:
         img = np.array(img / 256.0, dtype=np.float32)
 
@@ -980,6 +901,14 @@ def image_load_from_url(url:str) -> TYPE_IMAGE:
             return pil2cv(image)
         except Exception as e:
             logger.error(str(e))
+
+def image_mask(image:TYPE_IMAGE, color:TYPE_PIXEL=255) -> TYPE_IMAGE:
+    """Returns a mask from an image or a default mask with the color."""
+    cc, width, height = channel_count(image)[:3]
+    if cc == 4:
+        return image[:, :, 3]
+        # return np.expand_dims(mask, axis=-1)
+    return channel_solid(width, height, color)
 
 def image_merge(imageA: TYPE_IMAGE, imageB: TYPE_IMAGE, axis: int=0, flip: bool=False) -> TYPE_IMAGE:
     if flip:
@@ -1077,7 +1006,7 @@ def image_rgb_clean(image: TYPE_IMAGE) -> tuple[int, TYPE_IMAGE, TYPE_IMAGE]:
         image = image[:, :, :3]  # Use slicing for consistency
     return cc, image, alpha
 
-def image_rgb_restore(image: TYPE_IMAGE, alpha: TYPE_IMAGE, gray: bool=False) -> TYPE_IMAGE:
+def image_rgb_restore(image: TYPE_IMAGE, alpha: TYPE_IMAGE=None, gray: bool=False) -> TYPE_IMAGE:
     if gray:
         return cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     if alpha is not None:
@@ -1111,34 +1040,53 @@ def image_save_gif(fpath:str, images: list[Image.Image], fps: int=0,
         save_all=True
     )
 
+def image_scale(image: TYPE_IMAGE, scale:TYPE_COORD=(1.0, 1.0), sample:EnumInterpolation=EnumInterpolation.LANCZOS4) -> TYPE_IMAGE:
+    height, width = image.shape[:2]
+    scaleW = max(0, min(1, scale[0]))
+    scaleH = max(0, min(1, scale[1]))
+    w2 = int(width * scaleW * 0.5)
+    w = w2 * 2
+    h2 = int(height * scaleH * 0.5)
+    h = h2 * 2
+    out = np.zeros_like(image)
+    image = cv2.resize(image, (w, h), interpolation=sample.value)
+    centerY = height // 2
+    centerX = width // 2
+    out[centerY-h2:centerY+h2, centerX-w2:centerX+w2] = image
+    return out
+
+"""
 def image_scale(image: TYPE_IMAGE, scale:TYPE_COORD=(1.0, 1.0), sample:EnumInterpolation=EnumInterpolation.LANCZOS4, edge:EnumEdge=EnumEdge.CLIP) -> TYPE_IMAGE:
 
-    def scale(img: TYPE_IMAGE) -> TYPE_IMAGE:
+    def rescale(img: TYPE_IMAGE) -> TYPE_IMAGE:
         height, width = img.shape[:2]
         w =  int(max(1, width * scale[0]))
         h =  int(max(1, height * scale[1]))
         return cv2.resize(img, (w, h), interpolation=sample.value)
 
-    return image_affine_edge(image, scale, edge)
+    return image_affine_edge(image, rescale, edge)
+"""
 
 def image_scalefit(image: TYPE_IMAGE, width: int, height:int,
-                 color:TYPE_PIXEL=0.,
                  mode:EnumScaleMode=EnumScaleMode.NONE,
                  sample:EnumInterpolation=EnumInterpolation.LANCZOS4) -> TYPE_IMAGE:
 
-    # logger.debug("{} {} {} {}", mode, width, height, sample)
-
     match mode:
-        case EnumScaleMode.ASPECT:
+        case EnumScaleMode.ASPECT_LONG:
             h, w = image.shape[:2]
             aspect = min(width / w, height / h)
-            return cv2.resize(image, None, fx=aspect, fy=aspect, interpolation=sample.value)
+            image = cv2.resize(image, None, fx=aspect, fy=aspect, interpolation=sample.value)
+
+        case EnumScaleMode.ASPECT_SHORT:
+            h, w = image.shape[:2]
+            aspect = min(w / width, h / height)
+            image = cv2.resize(image, None, fx=aspect, fy=aspect, interpolation=sample.value)
 
         case EnumScaleMode.CROP:
-            return image_crop(image, (0, 0), (0, 1), (1, 1), (1, 0), width, height, color)
+            image = image_crop_center(image, width, height)
 
         case EnumScaleMode.FIT:
-            return cv2.resize(image, (width, height), interpolation=sample.value)
+            image = cv2.resize(image, (width, height), interpolation=sample.value)
 
     return image
 
@@ -1169,51 +1117,59 @@ def image_split(image: TYPE_IMAGE) -> tuple[TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE, 
         a = np.full((h, w), 255, dtype=np.uint8)
     return r, g, b, a
 
-def image_stack(images: list[TYPE_IMAGE],
-                axis:EnumOrientation=EnumOrientation.HORIZONTAL,
-                stride:Optional[int]=None,
-                color:TYPE_PIXEL=0) -> tuple[TYPE_IMAGE, TYPE_IMAGE]:
-
-    count = len(images)
+def image_stack(images: list[TYPE_IMAGE], axis:EnumOrientation=EnumOrientation.HORIZONTAL,
+                stride:Optional[int]=None, color:TYPE_PIXEL=0) -> tuple[TYPE_IMAGE, TYPE_IMAGE]:
 
     # CROP ALL THE IMAGES TO THE LARGEST ONE OF THE INPUT SET
+    converted = []
     width, height = 0, 0
+
+    #if len(images) == 0:
+    #    image = image_convert(images[0], 4)
+    #    mask = image[:, :, 3][:, :]
+    #    return images, mask,
+
     for i in images:
         h, w = i.shape[:2]
         width = max(width, w)
         height = max(height, h)
+        converted.append(i)
 
-    images = [channel_fill(i, width, height, color) for i in images]
-    images = [image_convert(i, 4) for i in images]
+    images = []
+    for i in converted:
+        i = channel_fill(i, width, height, color)
+        i = image_convert(i, 4)
+        images.append(i)
+    count = len(images)
 
     match axis:
         case EnumOrientation.GRID:
-            if not stride:
-                stride = int(np.ceil(np.sqrt(count)))
+            if stride == 0:
+                stride = np.ceil(np.sqrt(count))
+                stride = int(stride)
+            stride = min(stride, count)
 
             rows = []
             for i in range(0, count, stride):
-                row = images[i:i + stride]
+                row = images[i:i+stride]
                 row_stacked = np.hstack(row)
                 rows.append(row_stacked)
 
+            """
             height, width = images[0].shape[:2]
-            # Check if the last row needs padding
-            overhang = len(images) % stride
-
-            # logger.debug("{} {} {}", overhang, width, height, )
+            overhang = count % stride
 
             if overhang != 0:
                 overhang = stride - overhang
 
                 chan = 1
                 if len(rows[0].shape) > 2:
-                    chan = 3
+                    chan = rows[0].shape[2]
 
                 size = (height, overhang * width, chan)
                 filler = np.full(size, color, dtype=np.uint8)
                 rows[-1] = np.hstack([rows[-1], filler])
-
+            """
             image = np.vstack(rows)
 
         case EnumOrientation.HORIZONTAL:
@@ -1221,9 +1177,6 @@ def image_stack(images: list[TYPE_IMAGE],
 
         case EnumOrientation.VERTICAL:
             image = np.vstack(images)
-
-        case _:
-            raise ValueError("image_stack", f"invalid orientation - {axis}")
 
     mask = image[:, :, 3][:, :]
     return image, mask,
@@ -1554,7 +1507,6 @@ def color_theory(image: TYPE_IMAGE, custom:int=0, scheme: EnumColorTheory=EnumCo
         np.full((h, w, 4), color + [255], dtype=np.uint8),
     )
 
-
 # =============================================================================
 
 def cart2polar(x, y) -> tuple[Any, Any]:
@@ -1621,12 +1573,15 @@ def remap_polar(image: TYPE_IMAGE) -> TYPE_IMAGE:
     map_y = map_y * height
     return cv2.remap(image, map_x, map_y, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
 
-def remap_polar(image: TYPE_IMAGE, origin=None) -> tuple[np.ndarray, Any, Any]:
+def remap_polar(image: TYPE_IMAGE, origin:tuple[int, int]=None) -> TYPE_IMAGE:
     """Re-projects a 3D numpy array ("data") into a polar coordinate system.
     "origin" is a tuple of (x0, y0) and defaults to the center of the image."""
-    ny, nx = image.shape[:2]
+    cc, nx, ny = channel_count(image)[:3]
+    if cc == 1:
+        image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
+
     if origin is None:
-        origin = (nx//2, ny//2)
+        origin = (nx // 2, ny // 2)
 
     # Determine that the min and max r and theta coords will be...
     x, y = coord_polar(image, origin=origin)
@@ -1647,15 +1602,28 @@ def remap_polar(image: TYPE_IMAGE, origin=None) -> tuple[np.ndarray, Any, Any]:
     for band in image.T:
         zi = sp.ndimage.map_coordinates(band, coords, order=1)
         bands.append(zi.reshape((nx, ny)))
-    return np.dstack(bands)
-    # return output, r_i, theta_i
+
+    image = np.dstack(bands)
+    if cc == 1:
+        image = image[:,:,0][:,:]
+    return image
 
 def remap_perspective(image: TYPE_IMAGE, pts: list) -> TYPE_IMAGE:
-    height, width = image.shape[:2]
+    cc, width, height = channel_count(image)[:3]
+    if cc == 1:
+        image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
     pts = coord_perspective(width, height, pts)
-    return cv2.warpPerspective(image, pts, (width, height))
+    image = cv2.warpPerspective(image, pts, (width, height))
+    if cc == 1:
+        image = image[:,:,0][:,:]
+    return image
 
 def remap_fisheye(image: TYPE_IMAGE, distort: float) -> TYPE_IMAGE:
-    height, width = image.shape[:2]
+    cc, width, height = channel_count(image)[:3]
+    if cc == 1:
+        image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
     map_x, map_y = coord_fisheye(width, height, distort)
-    return cv2.remap(image, map_x, map_y, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
+    image = cv2.remap(image, map_x, map_y, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
+    if cc == 1:
+        image = image[:,:,0][:,:]
+    return image

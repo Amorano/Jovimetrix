@@ -23,10 +23,10 @@ from server import PromptServer
 import nodes
 
 from Jovimetrix import ComfyAPIMessage, JOVBaseNode, TimedOutException, \
-    IT_REQUIRED, WILDCARD, ROOT
+    IT_REQUIRED, WILDCARD, ROOT, IT_WH, MIN_IMAGE_SIZE
 
 from Jovimetrix.sup.lexicon import Lexicon
-from Jovimetrix.sup.util import deep_merge_dict
+from Jovimetrix.sup.util import deep_merge_dict, parse_tuple
 from Jovimetrix.sup.image import cv2mask, cv2tensor, image_load, tensor2pil, \
     pil2tensor, image_formats
 
@@ -48,7 +48,7 @@ class AkashicNode(JOVBaseNode):
     RETURN_TYPES = (WILDCARD, 'AKASHIC', )
     RETURN_NAMES = (Lexicon.PASS_OUT, Lexicon.IO)
     OUTPUT_NODE = True
-    SORT = 50
+    SORT = 10
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -109,44 +109,48 @@ class ValueGraphNode(JOVBaseNode):
     NAME = "VALUE GRAPH (JOV) 📈"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/UTILITY"
     DESCRIPTION = "Graphs historical execution run values."
+    INPUT_IS_LIST = False
     RETURN_TYPES = ("IMAGE", )
     RETURN_NAMES = (Lexicon.IMAGE, )
     OUTPUT_NODE = True
-    SORT = 45
+    SORT = 15
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
             Lexicon.RESET: ("BOOLEAN", {"default": False}),
-            Lexicon.VALUE: ("INT", {"default": 500, "min": 0})
+            Lexicon.VALUE: ("INT", {"default": 120, "min": 0})
         }}
-        return deep_merge_dict(IT_REQUIRED, d)
+        return deep_merge_dict(IT_REQUIRED, d, IT_WH)
 
     @classmethod
     def IS_CHANGED(cls) -> float:
         return float("nan")
 
-    """
-    def __plot_parameter(self, data) -> None:
-        ys = [data[x] for x in xs]
-        #line = plt.plot(xs, ys, *args, **kw)
-        line = plt.plot(xs, ys, label=data.label)
-        kfx = data.keyframes
-        kfy = [data[x] for x in kfx]
-        plt.scatter(kfx, kfy, color=line[0].get_color())
-    """
     def __init__(self, *arg, **kw) -> None:
         super().__init__(*arg, **kw)
         self.__history = []
         self.__index = [0]
-        self.__fig, self.__ax = plt.subplots(figsize=(11, 8))
+        self.__fig, self.__ax = plt.subplots(figsize=(5.12, 3.72))
         self.__ax.set_xlabel("FRAME")
         self.__ax.set_ylabel("VALUE")
         self.__ax.set_title("VALUE HISTORY")
 
     def run(self, **kw) -> tuple[torch.Tensor]:
 
-        if kw.get(Lexicon.RESET, False):
+        reset = kw.get(Lexicon.RESET, False)
+        try:
+            data = ComfyAPIMessage.poll(id, timeout=0)
+            # logger.debug(data)
+            if (cmd := data.get('cmd', None)) is not None:
+                if cmd == 'reset':
+                    reset = True
+        except TimedOutException as e:
+            pass
+        except Exception as e:
+            logger.error(str(e))
+
+        if reset:
             self.__history = [[]]
             self.__index = [0]
 
@@ -170,6 +174,13 @@ class ValueGraphNode(JOVBaseNode):
             self.__ax.plot(h[max(0, -slice + self.__index[i]):], color="rgbcymk"[i])
             # self.__ax.scatter(kfx, kfy, color=line[0].get_color())
             self.__index[i] += 1
+
+        wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)[0]
+        width, height = wihi
+        wihi = (width / 100., height / 100.)
+        if self.__fig.figsize() != wihi:
+            self.__fig.set_figwidth(wihi[0])
+            self.__fig.set_figheight(wihi[1])
 
         self.__fig.canvas.draw_idle()
         buffer = io.BytesIO()
@@ -208,7 +219,7 @@ class QueueNode(JOVBaseNode):
     RETURN_NAMES = (Lexicon.ANY, Lexicon.MASK, Lexicon.QUEUE, Lexicon.CURRENT, Lexicon.VALUE, Lexicon.TOTAL, )
     OUTPUT_IS_LIST = (True, True, True, True, True, True, )
     VIDEO_FORMATS = ['.webm', '.mp4', '.avi', '.wmv', '.mkv', '.mov', '.mxf']
-    SORT = 60
+    SORT = 0
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -380,75 +391,3 @@ class QueueNode(JOVBaseNode):
         PromptServer.instance.send_sync("jovi-queue-ping", {"id": id, "c": current, "i": self.__index, "s": self.__len, "l": self.__q})
 
         return [data] * batch, [mask] * batch, [self.__q] * batch, [current] * batch, [self.__index] * batch, [self.__len] * batch,
-
-class SelectNode(JOVBaseNode):
-    NAME = "SELECT (JOV) 🤏🏽"
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/UTILITY"
-    DESCRIPTION = "Select an item from a user explicit list of inputs."
-    RETURN_TYPES = (WILDCARD, "STRING", "INT", "INT", )
-    RETURN_NAMES = (Lexicon.ANY, Lexicon.QUEUE, Lexicon.VALUE, Lexicon.TOTAL, )
-    OUTPUT_IS_LIST = (False, False, False, False, )
-    SORT = 70
-
-    @classmethod
-    def INPUT_TYPES(cls) -> dict:
-        d = {"optional": {
-                #  -1: Random; 0: Sequential; 1..N: explicitly use index
-                Lexicon.SELECT: ("INT", {"default": 0, "min": -1, "step": 1}),
-                Lexicon.RESET: ("BOOLEAN", {"default": False}),
-            },
-            "hidden": {
-                "id": "UNIQUE_ID"
-            }}
-        return deep_merge_dict(IT_REQUIRED, d)
-
-    @classmethod
-    def IS_CHANGED(cls) -> float:
-        return float("nan")
-
-    def __init__(self, *arg, **kw) -> None:
-        super().__init__(*arg, **kw)
-        self.__index = 0
-
-    def run(self, id, **kw) -> None:
-        reset = kw.get(Lexicon.RESET, False)
-        try:
-            data = ComfyAPIMessage.poll(id, timeout=0)
-            if (cmd := data.get('cmd', None)) is not None:
-                if cmd == 'reset':
-                    reset = True
-        except TimedOutException as e:
-            pass
-        except Exception as e:
-            logger.error(str(e))
-
-        if reset:
-            self.__index = 0
-
-        count = 0
-        vals = []
-        while 1:
-            who = f"{Lexicon.UNKNOWN}_{count+1}"
-            if (val := kw.get(who, None)) is None:
-                break
-            vals.append(val)
-            count += 1
-
-        select = kw.get(Lexicon.SELECT, 0)
-        # clip the index in case it went out of range.
-        index = max(0, min(count - 1, self.__index))
-        val = None
-        if select < 1:
-            if select < 0:
-                index = int(random.random() * count)
-                val = vals[index]
-            else:
-                val = vals[index]
-            index += 1
-            if index >= count:
-                index = 0
-        elif select < count:
-            val = vals[index]
-
-        self.__index = index
-        return val, vals, self.__index + 1, count,

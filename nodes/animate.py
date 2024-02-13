@@ -21,6 +21,7 @@ class TickNode(JOVBaseNode):
     NAME = "TICK (JOV) ⏱"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/ANIMATE"
     DESCRIPTION = "Periodic pulse exporting normalized, delta since last pulse and count."
+    INPUT_IS_LIST = False
     RETURN_TYPES = ("INT", "FLOAT", "FLOAT", "FLOAT", "FLOAT", "FLOAT", "FLOAT", "FLOAT", "FLOAT", "FLOAT", "FLOAT", "FLOAT" )
     RETURN_NAMES = (Lexicon.VALUE, Lexicon.LINEAR, Lexicon.TIME, Lexicon.DELTA,
                     f"{Lexicon.NOTE}_128", f"{Lexicon.NOTE}_64",
@@ -30,14 +31,14 @@ class TickNode(JOVBaseNode):
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
-                Lexicon.BPM: ("FLOAT", {"min": 1, "max": 60000, "default": 120, "step": 1}),
-                # forces a MOD on CYCLE
-                Lexicon.LOOP: ("INT", {"min": 0, "default": 0, "step": 1}),
-                # stick the current "count"
-                Lexicon.WAIT: ("BOOLEAN", {"default": False}),
-                # manual total = 0
-                Lexicon.RESET: ("BOOLEAN", {"default": False}),
-            }}
+            Lexicon.BPM: ("FLOAT", {"min": 1, "max": 60000, "default": 120, "step": 1}),
+            # forces a MOD on CYCLE
+            Lexicon.LOOP: ("INT", {"min": 0, "default": 0, "step": 1}),
+            # stick the current "count"
+            Lexicon.WAIT: ("BOOLEAN", {"default": False}),
+            # manual total = 0
+            Lexicon.RESET: ("BOOLEAN", {"default": False}),
+        }}
         return deep_merge_dict(IT_REQUIRED, d)
 
     @classmethod
@@ -88,6 +89,7 @@ class WaveGeneratorNode(JOVBaseNode):
     NAME = "WAVE GENERATOR (JOV) 🌊"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/ANIMATE"
     DESCRIPTION = "Periodic and Non-Periodic Sinosodials."
+    INPUT_IS_LIST = False
     RETURN_TYPES = ("FLOAT", "INT", )
     RETURN_NAMES = (Lexicon.FLOAT, Lexicon.INT, )
 

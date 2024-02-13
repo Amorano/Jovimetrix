@@ -46,7 +46,7 @@ Polygonal shapes, MIDI, MP3/WAVE, Flow Logic
     TransformNode, BlendNode, PixelSplitNode, PixelMergeNode, MergeNode, CropNode, ColorTheoryNode,
     ConstantNode, ShapeNode, TextNode, GLSLNode,
     StreamReaderNode, StreamWriterNode, MIDIMessageNode, MIDIReaderNode, MIDIFilterEZNode, MIDIFilterNode,
-    DelayNode, HoldValueNode, ComparisonNode, IfThenElseNode
+    DelayNode, HoldValueNode, ComparisonNode, SelectNode
     AkashicNode, ValueGraphNode, RerouteNode, ExportNode, QueueNode
 @version: 0.9999999999999
 """
@@ -332,7 +332,7 @@ IT_PASS_IN = {"optional": {
 }}
 
 IT_WH = {"optional": {
-    Lexicon.WH: ("VEC2", {"default": (512, 512), "min": MIN_IMAGE_SIZE, "max": 8192, "step": 1, "label": [Lexicon.W, Lexicon.H]})
+    Lexicon.WH: ("VEC2", {"default": (512, 512), "min": MIN_IMAGE_SIZE, "max": 8192, "step": 1, "label": [Lexicon.W, Lexicon.H], "tooltip": "WIDTH && HEIGHT"})
 }}
 
 IT_TRANS = {"optional": {
@@ -377,7 +377,7 @@ IT_RGB = {"optional": {
 }}
 
 IT_MATTE = {"optional": {
-    Lexicon.MATTE: ("VEC3", {"default": (0, 0, 0), "min": 0, "max": 255, "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B]})
+    Lexicon.MATTE: ("VEC3", {"default": (0, 0, 0), "min": 0, "max": 255, "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B], "rgb": True})
 }}
 
 IT_RGBA = {"optional": {
@@ -508,11 +508,11 @@ class Session(metaclass=Singleton):
                 if v.CATEGORY.endswith(c):
                     NODE_CLASS_MAPPINGS[k] = v
                     Session.CLASS_MAPPINGS.pop(k)
-                    logger.debug("✅ {}", k)
+                    # logger.debug("✅ {}", k)
 
         # anything we dont know about sort last...
         for k, v in Session.CLASS_MAPPINGS.items():
             NODE_CLASS_MAPPINGS[k] = v
-            logger.debug('⁉️ {} {}', k, v)
+            # logger.debug('⁉️ {} {}', k, v)
 
 session = Session()

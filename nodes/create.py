@@ -336,8 +336,8 @@ class StereogramNode(JOVImageSimple):
                 images.append(empty)
                 continue
 
-            img = tensor2cv(img)
-            depth = tensor2cv(depth)
+            img = tensor2cv(img)[0]
+            depth = tensor2cv(depth)[0]
             img = image_stereogram(img, depth, divisions, noise, gamma, shift)
             images.append(cv2tensor(img))
             pbar.update_absolute(idx)

@@ -37,7 +37,7 @@ else:
 class ExportNode(JOVBaseNode):
     NAME = "EXPORT (JOV) 📽"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/IMAGE"
-    DESCRIPTION = ""
+    DESCRIPTION = "Take your frames out static or animated (GIF)"
     INPUT_IS_LIST = True
     OUTPUT_NODE = True
     SORT = 10
@@ -135,7 +135,7 @@ class ExportNode(JOVBaseNode):
 class ImageDiffNode(JOVBaseNode):
     NAME = "IMAGE DIFF (JOV) 📏"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/IMAGE"
-    DESCRIPTION = "Explicitly show the differences between two images."
+    DESCRIPTION = "Explicitly show the differences between two images via self-similarity index."
     INPUT_IS_LIST = True
     OUTPUT_IS_LIST = (True, True, True, True, True, )
     RETURN_TYPES = ("IMAGE", "IMAGE", "MASK", "MASK", "FLOAT", )
@@ -179,8 +179,8 @@ class ImageDiffNode(JOVBaseNode):
             width = MIN_IMAGE_SIZE
             height = MIN_IMAGE_SIZE
             _, height, width, _ = a.shape if a is not None else b.shape
-            a = tensor2cv(a) if a is not None else np.zeros((height, width, 3), dtype=np.uint8)
-            b = tensor2cv(b) if b is not None else np.zeros((height, width, 3), dtype=np.uint8)
+            a = tensor2cv(a)[0] if a is not None else np.zeros((height, width, 3), dtype=np.uint8)
+            b = tensor2cv(b)[0] if b is not None else np.zeros((height, width, 3), dtype=np.uint8)
 
             a, b, d, t, s = image_diff(a, b, int(th * 255.))
             image_a.append(cv2tensor(a))

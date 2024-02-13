@@ -16,7 +16,8 @@ from Jovimetrix import IT_WH, JOV_GLSL, ComfyAPIMessage, JOVBaseNode, JOVImageSi
     ROOT, IT_PIXEL, IT_REQUIRED, MIN_IMAGE_SIZE, TimedOutException
 
 from Jovimetrix.sup.lexicon import Lexicon
-from Jovimetrix.sup.util import EnumTupleType, deep_merge_dict, parse_tuple, parse_tuple_single, zip_longest_fill
+from Jovimetrix.sup.util import EnumTupleType, deep_merge_dict, parse_tuple, \
+    parse_tuple_single, zip_longest_fill
 from Jovimetrix.sup.image import pil2tensor, tensor2pil
 from Jovimetrix.sup.shader import GLSL, CompileException
 

@@ -234,29 +234,77 @@ class ComparisonNode(JOVBaseNode):
 
         return (result, )
 
-class IfThenElseNode(JOVBaseNode):
-    NAME = "IF-THEN-ELSE (JOV) 🔀"
+class SelectNode(JOVBaseNode):
+    NAME = "SELECT (JOV) 🤏🏽"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/FLOW"
-    DESCRIPTION = "IF <valid> then A else B"
-    RETURN_TYPES = (WILDCARD,)
-    RETURN_NAMES = (Lexicon.RESULT, )
+    DESCRIPTION = "Select an item from a user explicit list of inputs."
+    RETURN_TYPES = (WILDCARD, "STRING", "INT", "INT", )
+    RETURN_NAMES = (Lexicon.ANY, Lexicon.QUEUE, Lexicon.VALUE, Lexicon.TOTAL, )
+    OUTPUT_IS_LIST = (False, False, False, False, )
+    SORT = 70
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
-            Lexicon.TRUE: (WILDCARD, {"default": None}),
-            Lexicon.FALSE: (WILDCARD, {"default": None}),
-            Lexicon.CONDITION: ("BOOLEAN", {"default": False}),
-        }}
+                #  -1: Random; 0: Sequential; 1..N: explicitly use index
+                Lexicon.SELECT: ("INT", {"default": 0, "min": -1, "step": 1}),
+                Lexicon.RESET: ("BOOLEAN", {"default": False}),
+            },
+            "hidden": {
+                "id": "UNIQUE_ID"
+            }}
         return deep_merge_dict(IT_REQUIRED, d)
 
-    def run(self, **kw) -> tuple[bool]:
-        o = kw[Lexicon.CONDITION]
-        T = kw[Lexicon.TRUE]
-        F = kw[Lexicon.FALSE]
-        if T is None or F is None:
-            return (None,)
-        return (T if o else F,)
+    @classmethod
+    def IS_CHANGED(cls) -> float:
+        return float("nan")
+
+    def __init__(self, *arg, **kw) -> None:
+        super().__init__(*arg, **kw)
+        self.__index = 0
+
+    def run(self, id, **kw) -> None:
+        reset = kw.get(Lexicon.RESET, False)
+        try:
+            data = ComfyAPIMessage.poll(id, timeout=0)
+            if (cmd := data.get('cmd', None)) is not None:
+                if cmd == 'reset':
+                    reset = True
+        except TimedOutException as e:
+            pass
+        except Exception as e:
+            logger.error(str(e))
+
+        if reset:
+            self.__index = 0
+
+        count = 0
+        vals = []
+        while 1:
+            who = f"{Lexicon.UNKNOWN}_{count+1}"
+            if (val := kw.get(who, None)) is None:
+                break
+            vals.append(val)
+            count += 1
+
+        select = kw.get(Lexicon.SELECT, 0)
+        # clip the index in case it went out of range.
+        index = max(0, min(count - 1, self.__index))
+        val = None
+        if select < 1:
+            if select < 0:
+                index = int(random.random() * count)
+                val = vals[index]
+            else:
+                val = vals[index]
+            index += 1
+            if index >= count:
+                index = 0
+        elif select < count:
+            val = vals[index]
+
+        self.__index = index
+        return val, vals, self.__index + 1, count,
 
 """
 # HOW TO MAKE COMFY HAVE A MEMORY BETWEEN AUTO-Q?

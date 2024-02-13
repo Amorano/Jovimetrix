@@ -36,7 +36,8 @@ from Jovimetrix.sup.stream import camera_list, monitor_list, window_list, \
 from Jovimetrix.sup.midi import midi_device_names, \
     MIDIMessage, MIDINoteOnFilter, MIDIServerThread
 
-from Jovimetrix.sup.image import channel_count, cv2mask, tensor2cv, cv2tensor, \
+from Jovimetrix.sup.image import channel_count, cv2mask, image_mask, tensor2cv, \
+    cv2tensor, \
     image_scalefit, image_invert, \
     EnumInterpolation, EnumScaleMode, \
     IT_WHMODE, IT_SAMPLE, IT_SCALEMODE
@@ -55,6 +56,7 @@ class StreamReaderNode(JOVImageMultiple):
     NAME = "STREAM READER (JOV) 📺"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/DEVICE"
     DESCRIPTION = "Connect system media devices and remote streams into ComfyUI workflows."
+    INPUT_IS_LIST = False
     SORT = 50
     CAMERAS = None
 
@@ -91,7 +93,7 @@ class StreamReaderNode(JOVImageMultiple):
             Lexicon.ORIENT: (EnumCanvasOrientation._member_names_, {"default": EnumCanvasOrientation.NORMAL.name}),
             Lexicon.ZOOM: ("FLOAT", {"min": 0, "max": 1, "step": 0.005, "default": 0}),
         }}
-        return deep_merge_dict(IT_REQUIRED, d, IT_WHMODE, IT_SAMPLE, e, IT_INVERT)
+        return deep_merge_dict(IT_REQUIRED, d, IT_WHMODE, IT_SAMPLE, e)
 
     @classmethod
     def IS_CHANGED(cls, **kw) -> float:
@@ -117,7 +119,6 @@ class StreamReaderNode(JOVImageMultiple):
         mode = EnumScaleMode[mode]
         sample = kw.get(Lexicon.SAMPLE, EnumInterpolation.LANCZOS4)
         sample = EnumInterpolation[sample]
-        i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1])[0]
         source = kw.get(Lexicon.SOURCE, "URL")
         empty = ([self.__last], [self.__last_mask], )
         match source:
@@ -131,17 +132,8 @@ class StreamReaderNode(JOVImageMultiple):
                     if img is None:
                         img = np.zeros((height, width, 3), dtype=np.uint8)
                     else:
-                        if i != 0:
-                            img = image_invert(img, i)
                         img = image_scalefit(img, width, height, mode=mode, sample=sample)
-
-                    cc, w, h = channel_count(img)[:3]
-                    if cc == 4:
-                        mask = img[:, :, 3]
-                        img = img[:, :, :3]
-                    else:
-                        mask = np.full((h, w), 255, dtype=np.uint8)
-
+                    mask = image_mask(img)
                     images.append(cv2tensor(img))
                     masks.append(cv2mask(mask))
 
@@ -157,23 +149,13 @@ class StreamReaderNode(JOVImageMultiple):
                     dpi = kw.get(Lexicon.DPI, True)
                     for idx in range(batch_size):
                         img = window_capture(which, dpi=dpi)
-                        if img is not None:
-                            if i != 0:
-                                img = image_invert(img, i)
-                            img = image_scalefit(img, width, height, mode=mode, sample=sample)
-                        else:
+                        if img is None:
                             img = np.zeros((height, width, 3), dtype=np.uint8)
-
-                        cc, w, h = channel_count(img)[:3]
-                        if cc == 4:
-                            mask = img[:, :, 3]
-                            img = img[:, :, :3]
                         else:
-                            mask = np.full((h, w), 255, dtype=np.uint8)
-
+                            img = image_scalefit(img, width, height, mode=mode, sample=sample)
+                        mask = image_mask(img)
                         images.append(cv2tensor(img))
                         masks.append(cv2mask(mask))
-
                         if batch_size > 1:
                             pbar.update_absolute(idx)
                             time.sleep(rate)
@@ -234,20 +216,11 @@ class StreamReaderNode(JOVImageMultiple):
                             if orient in [EnumCanvasOrientation.FLIPY, EnumCanvasOrientation.FLIPXY]:
                                 img = cv2.flip(img, 0)
 
-                            if i != 0:
-                                img = image_invert(img, i)
                             img = image_scalefit(img, width, height, mode=mode, sample=sample)
 
-                        cc, w, h = channel_count(img)[:3]
-                        if cc == 4:
-                            mask = img[:, :, 3]
-                            img = img[:, :, :3]
-                        else:
-                            mask = np.full((h, w), 255, dtype=np.uint8)
-
+                        mask = image_mask(img)
                         images.append(cv2tensor(img))
                         masks.append(cv2mask(mask))
-
                         pbar.update_absolute(idx)
                         if batch_size > 1:
                             time.sleep(rate)
@@ -293,7 +266,7 @@ class StreamWriterNode(JOVBaseNode):
         wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)[0]
         w, h = wihi
         img = kw.get(Lexicon.PIXEL, None)
-        img = tensor2cv(img) if img is not None else np.zeros((h, w, 3), dtype=np.uint8)
+        img = tensor2cv(img)[0] if img is not None else np.zeros((h, w, 3), dtype=np.uint8)
         route = kw.get(Lexicon.ROUTE, "/stream")
         if route != self.__route:
             self.__starting = True
