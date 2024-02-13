@@ -7,13 +7,13 @@
 import { api } from "/scripts/api.js";
 import { app } from "/scripts/app.js";
 import { ComfyWidgets } from "/scripts/widgets.js"
-import { api_cmd_jovian } from '../core/util.js'
+import { api_cmd_jovian } from '../core/util_api.js'
 import { flashBackgroundColor } from '../core/util_fun.js'
 
 const _id = "QUEUE (JOV) 🗃"
 
 const ext = {
-	name: _id,
+	name: 'jovimetrix.node.' + _id,
 	async beforeRegisterNodeDef(nodeType, nodeData, app) {
         if (nodeData.name !== _id) {
             return;

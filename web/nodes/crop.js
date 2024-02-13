@@ -5,12 +5,13 @@
  */
 
 import { app } from "/scripts/app.js"
-import { fitHeight, widget_hide, widget_show } from '../core/util.js'
+import { fitHeight } from '../core/util.js'
+import { widget_hide, widget_show } from '../core/util_widget.js'
 
 const _id = "CROP (JOV) ✂️"
 
 const ext = {
-	name: 'jovimetrix.node.crop',
+	name: 'jovimetrix.node.' + _id,
 	async beforeRegisterNodeDef(nodeType, nodeData, app) {
         if (nodeData.name !== _id) {
             return;

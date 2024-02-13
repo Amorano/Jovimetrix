@@ -5,7 +5,7 @@
  */
 
 import { app } from "/scripts/app.js"
-import { api_get } from './util.js'
+import { api_get } from './util_api.js'
 
 export let NODE_LIST = await api_get("./../object_info")
 export let CONFIG_CORE = await api_get("/jovimetrix/config")

@@ -4,7 +4,8 @@
  */
 
 import { app } from "/scripts/app.js"
-import { fitHeight, node_cleanup, convertToInput, CONVERTED_TYPE } from '../core/util.js'
+import { fitHeight, node_cleanup } from '../core/util.js'
+import { CONVERTED_TYPE, convertToInput } from '../core/util_widget.js'
 import { inner_value_change } from '../core/util_dom.js'
 import { rgbToHex } from '../core/util_color.js'
 

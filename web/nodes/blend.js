@@ -10,7 +10,7 @@ import{ hook_widget_size_mode } from '../core/util_jov.js'
 const _id = "BLEND (JOV) ⚗️"
 
 const ext = {
-	name: 'jovimetrix.node.blend',
+	name: 'jovimetrix.node.' + _id,
 	async beforeRegisterNodeDef(nodeType, nodeData, app) {
         if (nodeData.name !== _id) {
             return;

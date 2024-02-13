@@ -6,13 +6,15 @@
 
 import { api } from "/scripts/api.js";
 import { app } from "/scripts/app.js";
-import { api_post, showModal } from '../core/util.js'
-import * as util_fun from '../core/util_fun.js'
+
+import { showModal } from '../core/util.js'
+import { api_post } from '../core/util_api.js'
+import { bubbles } from '../core/util_fun.js'
 
 const _id = "DELAY (JOV) ✋🏽"
 
 const ext = {
-	name: _id,
+	name: 'jovimetrix.node.' + _id,
 	async beforeRegisterNodeDef(nodeType, nodeData, app) {
         if (nodeData.name !== _id) {
             return
@@ -33,7 +35,7 @@ const ext = {
                 const timeout = event.detail.timeout;
                 try {
                     if (widget_wait.value) {
-                        util_fun.bubbles();
+                        bubbles();
                     }
                     const value = await showModal(`
                         <div class="jov-modal-content">

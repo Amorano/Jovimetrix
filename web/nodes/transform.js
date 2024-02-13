@@ -5,13 +5,14 @@
  */
 
 import { app } from "/scripts/app.js"
-import { fitHeight, widget_hide, widget_show } from '../core/util.js'
-import{ hook_widget_size_mode } from '../core/util_jov.js'
+import { fitHeight } from '../core/util.js'
+import { widget_hide, widget_show } from '../core/util_widget.js'
+import { hook_widget_size_mode } from '../core/util_jov.js'
 
 const _id = "TRANSFORM (JOV) 🏝️"
 
 const ext = {
-	name: 'jovimetrix.node.transform',
+	name: 'jovimetrix.node.' + _id,
 	async beforeRegisterNodeDef(nodeType, nodeData, app) {
         if (nodeData.name !== _id) {
             return;

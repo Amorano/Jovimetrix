@@ -5,13 +5,14 @@
  */
 
 import { app } from "/scripts/app.js"
-import { widget_remove, fitHeight } from '../core/util.js'
 import { ComfyWidgets } from "/scripts/widgets.js"
+import { widget_remove } from '../core/util_widget.js'
+import { fitHeight } from '../core/util.js'
 
 const _id = "VALUE (JOV) #️⃣"
 
 const ext = {
-	name: 'jovimetrix.node.value',
+	name: 'jovimetrix.node.' + _id,
 	async beforeRegisterNodeDef(nodeType, nodeData, app) {
         if (nodeData.name !== _id) {
             return;

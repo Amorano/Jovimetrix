@@ -5,8 +5,8 @@
  */
 
 import { ComfyDialog, $el } from "/scripts/ui.js"
-import { api_post } from './util.js'
-import * as util_color from './util_color.js'
+import { api_post } from './util_api.js'
+import { node_color_all } from './util_color.js'
 import * as util_config from './util_config.js'
 
 var headID = document.getElementsByTagName("head")[0]
@@ -72,7 +72,7 @@ function updateRegexColor(index, key, value) {
         v: util_config.CONFIG_REGEX
     }
     api_post("/jovimetrix/config", api_packet)
-    util_color.node_color_all()
+    node_color_all()
 };
 
 const templateColorRegex = (data) => [
@@ -111,7 +111,7 @@ function colorClear(name) {
     api_post("/jovimetrix/config/clear", { "name": name })
     delete util_config.CONFIG_THEME[name]
     if (util_config.CONFIG_COLOR.overwrite) {
-        util_color.node_color_all()
+        node_color_all()
     }
 }
 
@@ -289,7 +289,7 @@ export class JovimetrixConfigDialog extends ComfyDialog {
                                     }
                                     api_post('/jovimetrix/config', data)
                                     if (util_config.CONFIG_USER.color.overwrite) {
-                                        util_color.node_color_all()
+                                        node_color_all()
                                     }
                                 }
                             })

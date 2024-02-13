@@ -4,7 +4,8 @@
  *
  */
 
-import { widget_show, fitHeight, widget_hide } from './util.js'
+import { fitHeight } from './util.js'
+import { widget_hide, widget_show } from './util_widget.js'
 
 export function hook_widget_size_mode(node) {
     const wh = node.widgets.find((w) => w.name === '🇼🇭');

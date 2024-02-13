@@ -6,7 +6,7 @@
 
 import { app } from "/scripts/app.js"
 import { fitHeight, node_cleanup } from '../core/util.js'
-import * as util_dom from '../core/util_dom.js'
+import { escapeHtml } from '../core/util_dom.js'
 import { JImageWidget } from '../widget/widget_jimage.js'
 import { JStringWidget } from '../widget/widget_jstring.js'
 
@@ -14,7 +14,7 @@ const _prefix = 'jovi'
 const _id = "AKASHIC (JOV) 📓"
 
 const ext = {
-	name: 'jovimetrix.node.akashic',
+	name: 'jovimetrix.node.' + _id,
 	async beforeRegisterNodeDef(nodeType, nodeData, app) {
         if (nodeData.name !== _id) {
             return
@@ -34,7 +34,7 @@ const ext = {
             if (message.text) {
                 for (const txt of message.text) {
                     const w = this.addCustomWidget(
-                        JStringWidget(app, `${_prefix}_${index}`, util_dom.escapeHtml(txt))
+                        JStringWidget(app, `${_prefix}_${index}`, escapeHtml(txt))
                     )
                     w.parent = this
                     index++

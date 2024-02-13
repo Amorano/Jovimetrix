@@ -7,7 +7,8 @@
 import { api } from "/scripts/api.js";
 import { app } from "/scripts/app.js";
 import { ComfyWidgets } from "/scripts/widgets.js"
-import { widget_remove, widget_hide, api_cmd_jovian } from '../core/util.js'
+import { api_cmd_jovian } from '../core/util_api.js'
+import { widget_remove, widget_hide } from '../core/util_widget.js'
 import { flashBackgroundColor } from '../core/util_fun.js'
 // import { VectorWidget } from '../widget/widget_vector.js'
 
@@ -20,7 +21,7 @@ const _id = "GLSL (JOV) 🍩"
 const re_variable = /^uniform\s*(bool|int|float|[i|b]?vec[2-4]|mat[2-4])\s*([A-Za-z][A-Za-z0-9_]+)\s*;[\/\/\s]*\(?((?:\-?[0-9.\s,]+)+|(?:(?:true|false)\s*,?)+)/gm;
 
 const ext = {
-	name: _id,
+	name: 'jovimetrix.node.' + _id,
 	async beforeRegisterNodeDef(nodeType, nodeData, app) {
         if (nodeData.name !== _id) {
             return

@@ -6,8 +6,8 @@
 
 import { app } from "/scripts/app.js"
 import { $el } from "/scripts/ui.js"
-import { api_post } from './util.js'
-import * as util_color from './util_color.js'
+import { api_post } from './util_api.js'
+import { color_contrast, node_color_all, node_color_get} from './util_color.js'
 import * as util_config from './util_config.js'
 import { JovimetrixConfigDialog } from "./config.js"
 import "../extern/jsColorPicker.js"
@@ -66,8 +66,8 @@ const ext = {
             if (contrast) {
                 var color = this.current_node.color || LiteGraph.NODE_TITLE_COLOR;
                 var bgcolor = this.current_node.bgcolor || LiteGraph.WIDGET_BGCOLOR;
-                this.node_title_color = util_color.color_contrast(color);
-                LiteGraph.NODE_TEXT_COLOR = util_color.color_contrast(bgcolor);
+                this.node_title_color = color_contrast(color);
+                LiteGraph.NODE_TEXT_COLOR = color_contrast(bgcolor);
             } else {
                 this.node_title_color = original_color
                 LiteGraph.NODE_TEXT_COLOR = original_color;
@@ -115,21 +115,21 @@ const ext = {
                 }
                 api_post("/jovimetrix/config", api_packet)
                 if (util_config.CONFIG_COLOR.overwrite) {
-                    util_color.node_color_all()
+                    node_color_all()
                 }
             }
         })
 
         if (util_config.CONFIG_USER.color.overwrite) {
             // console.info("COLORIZED")
-            util_color.node_color_all()
+            node_color_all()
         }
     },
     async beforeRegisterNodeDef(nodeType, nodeData) {
         const onNodeCreated = nodeType.prototype.onNodeCreated
         nodeType.prototype.onNodeCreated = function () {
             const me = onNodeCreated?.apply(this, arguments)
-            let colors = util_color.node_color_get(nodeData);
+            let colors = node_color_get(nodeData);
 
             if (colors?.title) {
                 this['color'] = colors.title
