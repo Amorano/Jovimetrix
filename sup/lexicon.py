@@ -11,6 +11,7 @@ class Lexicon:
     AMP = '🔊'
     ANGLE = '📐'
     ANY = '*'
+    AUTOSIZE = 'AUTOSIZE'
     AXIS = 'AXIS'
     B = '🟦'
     BATCH = 'BATCH'

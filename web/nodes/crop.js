@@ -34,7 +34,7 @@ const ext = {
                 widget_hide(self, tltr);
                 widget_hide(self, blbr);
 
-                if (op.value == 'CORNER') {
+                if (op.value == 'XY') {
                     widget_show(xy);
                     widget_show(wh);
                 } else if (op.value == 'CENTER') {

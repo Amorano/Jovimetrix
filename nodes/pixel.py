@@ -179,8 +179,8 @@ class ImageDiffNode(JOVBaseNode):
             width = MIN_IMAGE_SIZE
             height = MIN_IMAGE_SIZE
             _, height, width, _ = a.shape if a is not None else b.shape
-            a = tensor2cv(a)[0] if a is not None else np.zeros((height, width, 3), dtype=np.uint8)
-            b = tensor2cv(b)[0] if b is not None else np.zeros((height, width, 3), dtype=np.uint8)
+            a = tensor2cv(a) if a is not None else np.zeros((height, width, 3), dtype=np.uint8)
+            b = tensor2cv(b) if b is not None else np.zeros((height, width, 3), dtype=np.uint8)
 
             a, b, d, t, s = image_diff(a, b, int(th * 255.))
             image_a.append(cv2tensor(a))

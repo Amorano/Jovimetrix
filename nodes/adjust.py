@@ -19,7 +19,7 @@ from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import zip_longest_fill, deep_merge_dict, parse_tuple, \
     parse_number, EnumTupleType
 
-from Jovimetrix.sup.image import image_equalize, image_pixelate, image_posterize, \
+from Jovimetrix.sup.image import image_equalize, image_mask, image_pixelate, image_posterize, \
     image_quantize, image_sharpen, image_threshold, tensor2cv, cv2tensor, \
     pixel_convert, image_blend, image_invert, morph_edge_detect, \
     morph_emboss, image_contrast, image_hsv, image_gamma, color_match, \
@@ -64,7 +64,8 @@ class AdjustNode(JOVImageSimple):
         pbar = comfy.utils.ProgressBar(len(params))
         for idx, (img, mask, o, r, a, mode, lohi, lmh, hsv, con, gamma, i) in enumerate(params):
             mode = EnumScaleMode[mode]
-            img, mask = tensor2cv(img, mask)
+            img = tensor2cv(img)
+            mask = image_mask(img)
 
             match EnumAdjustOP[o]:
                 case EnumAdjustOP.LEVELS:
@@ -75,7 +76,7 @@ class AdjustNode(JOVImageSimple):
                     img_new = (img_new + (m or 0.5)) - 0.5
                     img_new = torch.sign(img_new) * torch.pow(torch.abs(img_new), 1.0 / gamma)
                     img_new = (img_new + 0.5) / h
-                    img_new, _ = tensor2cv(img_new)
+                    img_new = tensor2cv(img_new)
 
                 case EnumAdjustOP.HSV:
                     h, s, v = hsv
@@ -188,8 +189,8 @@ class ColorMatchNode(JOVImageSimple):
                 images.append(torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8, device="cpu"))
                 continue
 
-            a = tensor2cv(a)[0] if a is not None else None
-            b = tensor2cv(b)[0] if b is not None else None
+            a = tensor2cv(a) if a is not None else None
+            b = tensor2cv(b) if b is not None else None
             img, b = pixel_convert(a, b)
 
             if f is not None and f:
@@ -245,7 +246,7 @@ class ThresholdNode(JOVImageSimple):
                 # masks.append(torch.ones((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), dtype=torch.uint8, device="cpu"))
                 continue
 
-            img = tensor2cv(img)[0]
+            img = tensor2cv(img)
             o = EnumThreshold[o]
             a = EnumThresholdAdapt[a]
             img = image_threshold(img, threshold=t, mode=o, adapt=a, block=b, const=t)

@@ -22,26 +22,52 @@ const ext = {
             const me = onNodeCreated?.apply(this);
             const self = this;
 
-            const align = this.widgets[6];
-            const justify = this.widgets[7];
-            const margin = this.widgets[8];
-            const spacing = this.widgets[9];
-
-            const single = this.widgets[5];
-            single.callback = () => {
+            const letter = this.widgets[3];
+            const size = this.widgets[6];
+            const align = this.widgets[7];
+            const justify = this.widgets[8];
+            const margin = this.widgets[9];
+            const spacing = this.widgets[10];
+            const auto = this.widgets[2];
+            auto.callback = () => {
+                widget_hide(this, letter);
+                widget_hide(this, size);
                 widget_hide(this, align);
                 widget_hide(this, justify);
                 widget_hide(this, margin);
                 widget_hide(this, spacing);
-                if (!single.value) {
+                if (!auto.value) {
+                    widget_show(letter);
+                    widget_show(size);
+                    if(!letter.value) {
+                        widget_show(align);
+                        widget_show(justify);
+                        widget_show(margin);
+                        widget_show(spacing);
+                    }
+                }
+                fitHeight(self);
+            }
+            letter.callback = () => {
+                widget_hide(this, size);
+                widget_hide(this, align);
+                widget_hide(this, justify);
+                widget_hide(this, margin);
+                widget_hide(this, spacing);
+                if(!auto.value && !letter.value) {
+                    widget_show(size);
                     widget_show(align);
                     widget_show(justify);
                     widget_show(margin);
                     widget_show(spacing);
                 }
+                if (letter.value) {
+                    widget_show(size);
+                }
                 fitHeight(self);
             }
-            setTimeout(() => { single.callback(); }, 15);
+            setTimeout(() => { auto.callback(); }, 15);
+            setTimeout(() => { letter.callback(); }, 15);
             return me;
         }
     }

@@ -4,7 +4,8 @@ Creation
 """
 
 from enum import Enum
-from typing import Any
+from typing import Any, Literal
+import cv2
 
 import torch
 from PIL import Image, ImageDraw, ImageFont
@@ -23,7 +24,7 @@ from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import deep_merge_dict, parse_tuple, parse_number, \
     zip_longest_fill, EnumTupleType
 
-from Jovimetrix.sup.image import image_rotate, channel_add, image_stereogram, \
+from Jovimetrix.sup.image import channel_count, image_mask, image_rotate, channel_add, image_stereogram, \
     pil2tensor, pil2cv, cv2tensor, cv2mask, tensor2cv, shape_ellipse, shape_polygon, \
     shape_quad, image_invert, \
     EnumEdge, IT_EDGE
@@ -195,12 +196,14 @@ class TextNode(JOVImageMultiple):
         d = {"optional": {
             Lexicon.STRING: ("STRING", {"default": "", "multiline": True, "dynamicPrompts": False}),
             Lexicon.FONT: (FONT_NAMES, {"default": FONT_NAMES[0]}),
-            Lexicon.FONT_SIZE: ("INT", {"default": 100, "min": 1, "step": 1}),
-            Lexicon.RGB: ("VEC3", {"default": (255, 255, 255), "min": 0, "max": 255, "step": 1, "label":
-                                    [Lexicon.R, Lexicon.G, Lexicon.B]}),
-            Lexicon.RGB_B: ("VEC3", {"default": (0, 0, 0), "min": 0, "max": 255, "step": 1, "label":
-                                    [Lexicon.R, Lexicon.G, Lexicon.B]}),
+            Lexicon.AUTOSIZE: ("BOOLEAN", {"default": False}),
             Lexicon.LETTER: ("BOOLEAN", {"default": False}),
+            Lexicon.RGB: ("VEC3", {"default": (255, 255, 255), "min": 0, "max": 255, "step": 1, "label":
+                                    [Lexicon.R, Lexicon.G, Lexicon.B], "rgb": True}),
+            Lexicon.RGB_B: ("VEC3", {"default": (0, 0, 0), "min": 0, "max": 255, "step": 1, "label":
+                                    [Lexicon.R, Lexicon.G, Lexicon.B], "rgb": True}),
+            # if auto on, hide these...
+            Lexicon.FONT_SIZE: ("INT", {"default": 100, "min": 1, "step": 1}),
             Lexicon.ALIGN: (EnumAlignment._member_names_, {"default": EnumAlignment.CENTER.name}),
             Lexicon.JUSTIFY: (EnumJustify._member_names_, {"default": EnumJustify.CENTER.name}),
             Lexicon.MARGIN: ("INT", {"default": 0, "min": -1024, "max": 1024}),
@@ -211,15 +214,12 @@ class TextNode(JOVImageMultiple):
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         if len(full_text := kw.get(Lexicon.STRING, [""])) == 0:
             full_text = [""]
-
-        #if not type(full_text) == list:
-        #   full_text = [full_text]
-        # logger.debug(full_text)
-
         font = kw.get(Lexicon.FONT, FONT_NAMES[0])
-        size = kw.get(Lexicon.FONT_SIZE, [100])
+        autosize = kw.get(Lexicon.AUTOSIZE, [False])
+        letter = kw.get(Lexicon.LETTER, [False])
         color = parse_tuple(Lexicon.RGB, kw, default=(255, 255, 255))
         bgcolor = parse_tuple(Lexicon.RGB_B, kw, default=(0, 0, 0))
+        size = kw.get(Lexicon.FONT_SIZE, [100])
         align = kw.get(Lexicon.ALIGN, [EnumAlignment.CENTER])
         justify = kw.get(Lexicon.JUSTIFY, [EnumJustify.CENTER])
         margin = kw.get(Lexicon.MARGIN, [0])
@@ -228,33 +228,70 @@ class TextNode(JOVImageMultiple):
         angle = parse_number(Lexicon.ANGLE, kw, EnumTupleType.FLOAT, [0])
         edge = kw.get(Lexicon.EDGE, [EnumEdge.CLIP])
         i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [0])
-        letter = kw.get(Lexicon.LETTER, [False])
-        params = [tuple(x) for x in zip_longest_fill(full_text, font, size, color, bgcolor, align, justify, margin, line_spacing, wihi, angle, edge, i, letter)]
-
+        params = [tuple(x) for x in zip_longest_fill(full_text, font, autosize, letter, color, bgcolor, size, align, justify, margin, line_spacing, wihi, angle, edge, i)]
         images = []
         masks = []
 
         def process(img, mask, ang, e, invert) -> None:
             img = pil2cv(img)
+            if channel_count(img)[0] < 4:
+                img = channel_add(img, 0)
             mask = pil2cv(mask)
+            img[:,:,3] = mask[:,:,0]
             img = image_rotate(img, ang, edge=e)
-            mask = image_rotate(mask, ang, edge=e)
-
             if invert != 0:
                 img = image_invert(img, invert)
-
             images.append(cv2tensor(img))
+            mask = image_mask(img)
             masks.append(cv2mask(mask))
 
         pbar = comfy.utils.ProgressBar(len(params))
-        for idx, (full_text, font, size, color, bgcolor, align, justify, margin, line_spacing, wihi, angle, edge, i, letter) in enumerate(params):
-            font = FONTS[font]
-            font = ImageFont.truetype(font, size)
+        for idx, (full_text, font, autosize, letter, color, bgcolor, size, align, justify, margin, line_spacing, wihi, angle, edge, i) in enumerate(params):
+            font_name = FONTS[font]
+            #font = cv2.freetype.createFreeType2()
+            #font.loadFontData(fontFileName=font_name, id=0)
+            width, height = wihi
+
+            if autosize:
+                img = Image.new("RGB", (width, height), bgcolor)
+                mask = Image.new("L", (width, height), 0)
+                draw = ImageDraw.Draw(img)
+                draw_mask = ImageDraw.Draw(mask)
+
+                text = full_text.split('\n')
+                longest = max(text, key=len)
+                # size = font.getTextSize(longest)
+
+                max_width = 0
+                max_height = 0
+                for size in range(1500, 1, -1):
+                    font = ImageFont.truetype(font_name, size)
+                    w, h = ImageFont.getsize(longest, font)[:2]
+                    if w < width:
+                        max_width = w
+                        max_height = h
+                        break
+
+                y = 0
+                text_height = max_height * len(text)
+                for idx, line in enumerate(text):
+                    # Calculate the width of the current line
+                    line_width, _ = text_size(draw, line, font)
+                    # Get the text x and y positions for each line
+                    x = text_justify(justify, width, line_width, margin)
+                    y = text_align(align, height, text_height, margin)
+                    y += (idx * max_height)
+                    # Add the current line to the text mask
+                    draw.text((x, y), line, fill=color, font=font)
+                    draw_mask.text((x, y), line, fill=255, font=font)
+
+                process(img, mask, angle, edge, i)
+                continue
+
             align = EnumAlignment[align]
             justify = EnumJustify[justify]
             edge = EnumEdge[edge]
-            width, height = wihi
-
+            font = ImageFont.truetype(font, size)
             # if we should output single letters instead of full phrase
             if not letter:
                 img = Image.new("RGB", (width, height), bgcolor)
@@ -302,7 +339,7 @@ class TextNode(JOVImageMultiple):
 
             pbar.update_absolute(idx)
 
-        return (images, masks, )
+        return images, masks
 
 class StereogramNode(JOVImageSimple):
     NAME = "STEREOGRAM (JOV) 📻"
@@ -336,8 +373,8 @@ class StereogramNode(JOVImageSimple):
                 images.append(empty)
                 continue
 
-            img = tensor2cv(img)[0]
-            depth = tensor2cv(depth)[0]
+            img = tensor2cv(img)
+            depth = tensor2cv(depth)
             img = image_stereogram(img, depth, divisions, noise, gamma, shift)
             images.append(cv2tensor(img))
             pbar.update_absolute(idx)

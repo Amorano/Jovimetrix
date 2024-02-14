@@ -266,7 +266,7 @@ class StreamWriterNode(JOVBaseNode):
         wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)[0]
         w, h = wihi
         img = kw.get(Lexicon.PIXEL, None)
-        img = tensor2cv(img)[0] if img is not None else np.zeros((h, w, 3), dtype=np.uint8)
+        img = tensor2cv(img) if img is not None else np.zeros((h, w, 3), dtype=np.uint8)
         route = kw.get(Lexicon.ROUTE, "/stream")
         if route != self.__route:
             self.__starting = True
