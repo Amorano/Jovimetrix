@@ -149,9 +149,9 @@ class JOVImageSimple(JOVBaseNode):
     OUTPUT_IS_LIST = (True, )
 
 class JOVImageMultiple(JOVBaseNode):
-    RETURN_TYPES = ("IMAGE", "MASK",)
-    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.MASK,)
-    OUTPUT_IS_LIST = (True, True, )
+    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK",)
+    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK,)
+    OUTPUT_IS_LIST = (True, True, True, )
 
 # wildcard trick is 100% stolen from pythongossss's
 class AnyType(str):
@@ -372,20 +372,24 @@ IT_XYZW = {"optional": {
     Lexicon.XYZW: ("VEC4", {"default": (0, 0, 0, 1), "step": 0.01, "precision": 4, "round": 0.00001, "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W]})
 }}
 
-IT_RGB = {"optional": {
-    Lexicon.RGB: ("VEC3", {"default": (0, 0, 0), "min": 0, "max": 255, "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B]})
-}}
-
 IT_MATTE = {"optional": {
     Lexicon.MATTE: ("VEC3", {"default": (0, 0, 0), "min": 0, "max": 255, "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B], "rgb": True})
 }}
 
-IT_RGBA = {"optional": {
-    Lexicon.RGB_A: ("VEC4", {"default": (0, 0, 0, 255), "min": 0, "max": 255, "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A]})
+IT_RGB = {"optional": {
+    Lexicon.RGB: ("VEC3", {"default": (0, 0, 0), "min": 0, "max": 255, "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B], "rgb": True})
+}}
+
+IT_RGB_B = { "optional": {
+    Lexicon.RGB_B: ("VEC3", {"default": (0, 0, 0), "min": 0, "max": 255, "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B], "rgb": True})
+}}
+
+IT_RGBA_A = {"optional": {
+    Lexicon.RGBA_A: ("VEC4", {"default": (0, 0, 0, 255), "min": 0, "max": 255, "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
 }}
 
 IT_RGBA_B = { "optional": {
-    Lexicon.RGB_B: ("VEC4", {"default": (0, 0, 0, 255), "min": 0, "max": 255, "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A]})
+    Lexicon.RGBA_B: ("VEC4", {"default": (0, 0, 0, 255), "min": 0, "max": 255, "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
 }}
 
 IT_RGBA_IMAGE = { "optional": {

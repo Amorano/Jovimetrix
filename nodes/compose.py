@@ -86,7 +86,7 @@ class TransformNode(JOVImageMultiple):
             cc, w, h = channel_count(img)[:3]
             if cc != 4:
                 img = image_convert(img, 4)
-            img[:,:,3] = mask[:,:,0]
+            img[:,:,3] = mask #[:,:,0]
 
             sX, sY = size
             if sX < 0:

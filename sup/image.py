@@ -20,6 +20,7 @@ from skimage import exposure
 from skimage.metrics import structural_similarity as ssim
 from PIL import Image, ImageDraw, ImageOps, ImageSequence
 from blendmodes.blend import blendLayers, BlendType
+# import torchvision.transforms as transforms
 
 from loguru import logger
 
@@ -488,7 +489,7 @@ def channel_fill(image:TYPE_IMAGE, width:int, height:int, color:TYPE_PIXEL=255) 
         mask = image_mask(image, 0)
         canvas[y1: y2, x1: x2, :3] = image[:y2-y1, :x2-x1, :3]
         canvas[:, :, 3] = 255 - canvas[:, :, 3]
-        canvas[y1: y2, x1: x2, 3] = mask[:y2-y1, :x2-x1, 0]
+        canvas[y1: y2, x1: x2, 3] = mask[:y2-y1, :x2-x1] #, 0]
     elif cc > 1:
         canvas[y1: y2, x1: x2] = image[:y2-y1, :x2-x1]
     else:
@@ -545,11 +546,10 @@ def image_affine_edge(image: TYPE_IMAGE, callback: object, edge: EnumEdge=EnumEd
     height, width = image.shape[:2]
     if edge != EnumEdge.CLIP:
         image = image_edge_wrap(image, edge=edge)
-
     image = callback(image)
-
-    if edge != EnumEdge.CLIP:
-        image = image_crop_center(image, width, height)
+    # if edge != EnumEdge.CLIP:
+    image = image_crop_center(image, width, height)
+    # logger.debug(image.shape)
     return image
 
 def image_blend(imageA: Optional[TYPE_IMAGE]=None,
@@ -601,11 +601,18 @@ def image_blend(imageA: Optional[TYPE_IMAGE]=None,
         mask = image_scalefit(mask, w, h, mode, sample)
 
     # mask = np.squeeze(mask)
-    imageB[:,:,3] = mask[:,:,0]
+    mask = mask[:,:,0] if len(mask.shape) > 2 else mask
+    imageB[:,:,3] = mask
     imageA = cv2pil(imageA)
     imageB = cv2pil(imageB)
     image = blendLayers(imageA, imageB, blendOp.value, np.clip(alpha, 0, 1))
     return pil2cv(image)
+
+def image_constant(color: TYPE_PIXEL, width:int, height:int) -> TYPE_IMAGE:
+    color = pixel_eval(color, EnumImageType.BGRA)
+    image = np.full((height, width, 4), color, dtype=np.uint8)
+    image[:,:,3] = np.full((height, width), color[3], dtype=np.uint8)
+    return image
 
 def image_contrast(image: TYPE_IMAGE, value: float) -> TYPE_IMAGE:
     cc, image, alpha = image_rgb_clean(image)
@@ -630,12 +637,15 @@ def image_convert(image: TYPE_IMAGE, channels: int) -> TYPE_PIXEL:
 
 def image_crop_polygonal(image: TYPE_IMAGE, points: list[TYPE_COORD]) -> TYPE_IMAGE:
     cc, w, h = channel_count(image)[:3]
-    # get the actual crop area first
+    # crop area first
     points = np.array(points, np.int32)
     points = points.reshape((-1, 1, 2))
     mask = np.zeros((h, w, 1), dtype=np.uint8)
     mask = cv2.fillPoly(mask, [points], 255)
     x, y, w, h = cv2.boundingRect(mask)
+    # mask = mask[:,:,0] if len(mask.shape) > 2 else mask
+    mask = mask[:,:,0]
+    # logger.debug('crop', x, y, w, h)
     # crop
     if cc == 4:
         mask = image_mask(image, 0)
@@ -643,7 +653,7 @@ def image_crop_polygonal(image: TYPE_IMAGE, points: list[TYPE_COORD]) -> TYPE_IM
     image = cv2.bitwise_and(image, image, mask=mask)
     if cc == 4:
         image = channel_add(image, 0)
-        image[:,:,3] = mask[:,:,0]
+        image[:,:,3] = mask #[:,:,0]
     return image[y:y+h, x:x+w]
 
 def image_crop(image: TYPE_IMAGE, width:int=None, height:int=None, offset:tuple[float, float]=(0, 0)) -> TYPE_IMAGE:
@@ -659,10 +669,11 @@ def image_crop_center(image: TYPE_IMAGE, width:int=None, height:int=None) -> TYP
     h, w = image.shape[:2]
     width = width if width is not None else w
     height = height if height is not None else h
-    x = max(0, min(width, w // 2 - width // 2))
-    y = max(0, min(height, h // 2 - height // 2))
+    x = int(max(0, min(width, w / 2 - width / 2)))
+    y = int(max(0, min(height, h / 2 - height / 2)))
     points = [(x, y), (x + width, y), (x + width, y + height), (x, y + height)]
-    return image_crop_polygonal(image, points)
+    image = image_crop_polygonal(image, points)
+    return image
 
 def image_diff(imageA: TYPE_IMAGE, imageB: TYPE_IMAGE, threshold:int=0, color:TYPE_PIXEL=(255, 0, 0)) -> tuple[TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE, float]:
     grayA = image_grayscale(imageA)
@@ -898,7 +909,29 @@ def image_mask(image:TYPE_IMAGE, color:TYPE_PIXEL=255) -> TYPE_IMAGE:
     mask = channel_solid(width, height, color)
     if cc == 4:
         mask[:,:,0] = image[:,:,3]
-    return mask
+    return mask[:,:,0]
+
+def image_mask_add(image:TYPE_IMAGE, mask:TYPE_IMAGE=None) -> TYPE_IMAGE:
+    """Places a default or custom mask into an image. Images are expanded to 4 channels."""
+    cc, w, h = channel_count(image)[:3]
+    if cc < 4:
+        image = image_convert(image, 4)
+    if mask is None:
+        mask = np.zeros((h, w), dtype=np.uint8)
+    if len(mask.shape) > 2:
+        mask = mask[:,:,0]
+    image[:,:,3] = mask
+    return image
+
+def image_matte(image:TYPE_IMAGE, color:TYPE_PIXEL=255) -> TYPE_IMAGE:
+    """Puts an image atop a colored matte. If the image has no alpha, the input image is returned."""
+    cc, w, h = channel_count(image)[:3]
+    if cc != 4:
+        return image
+    # mask = image_mask(image)
+    # image = image_convert(image, 3)
+    matte = channel_solid(w, h, color, chan=EnumImageType.RGB)
+    return image_blend(matte, image)
 
 def image_merge(imageA: TYPE_IMAGE, imageB: TYPE_IMAGE, axis: int=0, flip: bool=False) -> TYPE_IMAGE:
     if flip:
@@ -1015,7 +1048,8 @@ def image_rotate(image: TYPE_IMAGE, angle: float, center:TYPE_COORD=(0.5, 0.5), 
         M = cv2.getRotationMatrix2D(c, -angle, 1.0)
         return cv2.warpAffine(img, M, (width, height), flags=cv2.INTER_LINEAR)
 
-    return image_affine_edge(image, func_rotate, edge)
+    image = image_affine_edge(image, func_rotate, edge)
+    return image
 
 def image_save_gif(fpath:str, images: list[Image.Image], fps: int=0,
                 loop:int=0, optimize:bool=False) -> None:

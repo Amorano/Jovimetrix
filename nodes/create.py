@@ -4,8 +4,10 @@ Creation
 """
 
 from enum import Enum
+import math
+import textwrap
 from typing import Any, Literal
-import cv2
+import numpy as np
 
 import torch
 from PIL import Image, ImageDraw, ImageFont
@@ -16,7 +18,8 @@ import comfy
 from server import PromptServer
 
 from Jovimetrix import JOVImageSimple, JOVImageMultiple, \
-    IT_DEPTH, IT_PIXEL, IT_RGBA, IT_WH, IT_SCALE, IT_ROT, IT_INVERT, \
+    IT_RGB, IT_RGB_B, IT_RGBA_A, \
+    IT_DEPTH, IT_PIXEL, IT_WH, IT_SCALE, IT_ROT, IT_INVERT, \
     IT_REQUIRED, MIN_IMAGE_SIZE
 
 from Jovimetrix.sup.lexicon import Lexicon
@@ -24,10 +27,13 @@ from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import deep_merge_dict, parse_tuple, parse_number, \
     zip_longest_fill, EnumTupleType
 
-from Jovimetrix.sup.image import channel_count, image_mask, image_rotate, channel_add, image_stereogram, \
-    pil2tensor, pil2cv, cv2tensor, cv2mask, tensor2cv, shape_ellipse, shape_polygon, \
+from Jovimetrix.sup.image import channel_count,  \
+    image_constant, image_mask_add, image_matte, image_rotate, channel_add, \
+    image_stereogram, pil2cv, cv2tensor, cv2mask, \
+    pixel_eval, tensor2cv, shape_ellipse, shape_polygon, \
     shape_quad, image_invert, \
-    EnumEdge, IT_EDGE
+    EnumEdge, EnumImageType, \
+    IT_EDGE
 
 FONT_MANAGER = matplotlib.font_manager.FontManager()
 FONTS = {font.name: font.fname for font in FONT_MANAGER.ttflist}
@@ -43,27 +49,25 @@ class EnumShapes(Enum):
     POLYGON=4
 
 class EnumAlignment(Enum):
-    CENTER=0
     TOP=1
+    CENTER=0
     BOTTOM=2
 
 class EnumJustify(Enum):
-    CENTER=0
     LEFT=1
+    CENTER=0
     RIGHT=2
 
 # =============================================================================
 
 def text_align(align:EnumAlignment, height:int, text_height:int, margin:int) -> Any:
-    y = 0
     match align:
         case EnumAlignment.CENTER:
-            y = height / 2 - text_height / 2
+            return height / 2 - text_height / 2
         case EnumAlignment.TOP:
-            y = margin
+            return margin
         case EnumAlignment.BOTTOM:
-            y = height - text_height - margin
-    return y
+            return height - text_height - margin
 
 def text_justify(justify:EnumJustify, width:int, line_width:int, margin:int) -> Any:
     x = 0
@@ -76,10 +80,8 @@ def text_justify(justify:EnumJustify, width:int, line_width:int, margin:int) -> 
             x = width/2 - line_width/2
     return x
 
-def text_size(draw:ImageDraw, text:str, font) -> tuple:
+def text_size(draw:ImageDraw, text:str, font:ImageFont) -> tuple:
     bbox = draw.textbbox((0, 0), text, font=font)
-
-    # Calculate the text width and height
     text_width = bbox[2] - bbox[0]
     text_height = bbox[3] - bbox[1]
     return text_width, text_height
@@ -93,24 +95,25 @@ class ConstantNode(JOVImageMultiple):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        return deep_merge_dict(IT_REQUIRED, IT_WH, IT_RGBA)
+        return deep_merge_dict(IT_REQUIRED, IT_WH, IT_RGBA_A)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
-        color = parse_tuple(Lexicon.RGB_A, kw, default=(0, 0, 0, 255), clip_min=0, clip_max=255)
+        color = parse_tuple(Lexicon.RGBA_A, kw, default=(0, 0, 0, 255), clip_min=0, clip_max=255)
         params = [tuple(x) for x in zip_longest_fill(wihi, color)]
-        images = []
-        masks = []
+        # full, rgb, mask
+        frm = [[], [], []]
         pbar = comfy.utils.ProgressBar(len(params))
         for idx, (wihi, color) in enumerate(params):
             width, height = wihi
-            image = Image.new("RGB", (width, height), color[:3])
-            mask = Image.new("L", (width, height), color[3])
-            images.append(pil2tensor(image))
-            masks.append(pil2tensor(mask))
+            img = image_constant(color, width, height)
+            mask = img[:,:,3]
+            rgb = img[:,:,:3]
+            frm[0].append(cv2tensor(img))
+            frm[1].append(cv2tensor(rgb))
+            frm[2].append(cv2mask(mask))
             pbar.update_absolute(idx)
-
-        return (images, masks,)
+        return frm
 
 class ShapeNode(JOVImageMultiple):
     NAME = "SHAPE GENERATOR (JOV) ✨"
@@ -122,12 +125,8 @@ class ShapeNode(JOVImageMultiple):
         d = {"optional": {
             Lexicon.SHAPE: (EnumShapes._member_names_, {"default": EnumShapes.CIRCLE.name}),
             Lexicon.SIDES: ("INT", {"default": 3, "min": 3, "max": 100, "step": 1}),
-            Lexicon.RGB: ("VEC3", {"default": (255, 255, 255), "min": 0, "max": 255, "step": 1, "label":
-                                    [Lexicon.R, Lexicon.G, Lexicon.B]}),
-            Lexicon.RGB_B: ("VEC3", {"default": (0, 0, 0), "min": 0, "max": 255, "step": 1, "label":
-                                       [Lexicon.R, Lexicon.G, Lexicon.B]})
         }}
-        return deep_merge_dict(IT_REQUIRED, d, IT_WH, IT_ROT, IT_SCALE, IT_EDGE, IT_INVERT)
+        return deep_merge_dict(IT_REQUIRED, d, IT_RGBA_A, IT_RGB_B, IT_WH, IT_ROT, IT_SCALE, IT_EDGE, IT_INVERT)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         shape = kw.get(Lexicon.SHAPE, EnumShapes.CIRCLE)
@@ -136,14 +135,13 @@ class ShapeNode(JOVImageMultiple):
         edge = kw.get(Lexicon.EDGE, EnumEdge.CLIP)
         size = parse_tuple(Lexicon.SIZE, kw, EnumTupleType.FLOAT, default=(1., 1.,))
         wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,))
-        color = parse_tuple(Lexicon.RGB, kw, default=(255, 255, 255))
+        color = parse_tuple(Lexicon.RGBA_A, kw, default=(255, 255, 255, 255))
         bgcolor = parse_tuple(Lexicon.RGB_B, kw, default=(0, 0, 0))
-        i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1])
-        params = [tuple(x) for x in zip_longest_fill(shape, sides, angle, edge, size, wihi, color, bgcolor, i)]
-        images = []
-        masks = []
+        invert = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1])
+        params = [tuple(x) for x in zip_longest_fill(shape, sides, angle, edge, size, wihi, color, bgcolor, invert)]
+        frm = [[], [], []]
         pbar = comfy.utils.ProgressBar(len(params))
-        for idx, (shape, sides, angle, edge, size, wihi, color, bgcolor, i) in enumerate(params):
+        for idx, (shape, sides, angle, edge, size, wihi, color, bgcolor, invert) in enumerate(params):
             width, height = wihi
             sizeX, sizeY = size
             edge = EnumEdge[edge]
@@ -151,39 +149,36 @@ class ShapeNode(JOVImageMultiple):
             match shape:
                 case EnumShapes.SQUARE:
                     img = shape_quad(width, height, sizeX, sizeX, fill=color, back=bgcolor)
-                    mask = shape_quad(width, height, sizeX, sizeX)
+                    mask = shape_quad(width, height, sizeX, sizeX, fill=color[3])
 
                 case EnumShapes.ELLIPSE:
                     img = shape_ellipse(width, height, sizeX, sizeY, fill=color, back=bgcolor)
-                    mask = shape_ellipse(width, height, sizeX, sizeY)
+                    mask = shape_ellipse(width, height, sizeX, sizeY, fill=color[3])
 
                 case EnumShapes.RECTANGLE:
                     img = shape_quad(width, height, sizeX, sizeY, fill=color, back=bgcolor)
-                    mask = shape_quad(width, height, sizeX, sizeY)
+                    mask = shape_quad(width, height, sizeX, sizeY, fill=color[3])
 
                 case EnumShapes.POLYGON:
                     img = shape_polygon(width, height, sizeX, sides, fill=color, back=bgcolor)
-                    mask = shape_polygon(width, height, sizeX, sides)
+                    mask = shape_polygon(width, height, sizeX, sides, fill=color[3])
 
                 case EnumShapes.CIRCLE:
                     img = shape_ellipse(width, height, sizeX, sizeX, fill=color, back=bgcolor)
-                    mask = shape_ellipse(width, height, sizeX, sizeX)
+                    mask = shape_ellipse(width, height, sizeX, sizeX, fill=color[3])
 
             img = pil2cv(img)
-            mask = pil2cv(mask)
+            if invert != 0:
+                img = image_invert(img, invert)
+            mask = pil2cv(mask)[:,:,0]
+            img = image_mask_add(img, mask)
             img = image_rotate(img, angle, edge=edge)
-            mask = image_rotate(mask, angle, edge=edge)
-            if i != 0:
-                img = image_invert(img, i)
-
-            if img.shape[2] == 3:
-                img = channel_add(img, 0)
-
-            images.append(cv2tensor(img[:,:,:3]))
-            masks.append(cv2mask(mask[:, :, 0]))
-            pbar.update_absolute(idx)
-
-        return (images, masks,)
+            bg = pixel_eval(bgcolor, EnumImageType.BGR)
+            rgb = image_matte(img, bg)
+            frm[0].append(cv2tensor(img))
+            frm[1].append(cv2tensor(rgb))
+            frm[2].append(cv2mask(img[:,:,3]))
+        return frm
 
 class TextNode(JOVImageMultiple):
     NAME = "TEXT GENERATOR (JOV) 📝"
@@ -196,12 +191,12 @@ class TextNode(JOVImageMultiple):
         d = {"optional": {
             Lexicon.STRING: ("STRING", {"default": "", "multiline": True, "dynamicPrompts": False}),
             Lexicon.FONT: (FONT_NAMES, {"default": FONT_NAMES[0]}),
-            Lexicon.AUTOSIZE: ("BOOLEAN", {"default": False}),
             Lexicon.LETTER: ("BOOLEAN", {"default": False}),
-            Lexicon.RGB: ("VEC3", {"default": (255, 255, 255), "min": 0, "max": 255, "step": 1, "label":
-                                    [Lexicon.R, Lexicon.G, Lexicon.B], "rgb": True}),
-            Lexicon.RGB_B: ("VEC3", {"default": (0, 0, 0), "min": 0, "max": 255, "step": 1, "label":
-                                    [Lexicon.R, Lexicon.G, Lexicon.B], "rgb": True}),
+            Lexicon.AUTOSIZE: ("BOOLEAN", {"default": False}),
+            Lexicon.RGBA_A: ("VEC3", {"default": (255, 255, 255, 255), "min": 0, "max": 255, "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True}),
+            Lexicon.MATTE: ("VEC3", {"default": (0, 0, 0), "min": 0, "max": 255, "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B], "rgb": True}),
+            #
+            Lexicon.COLUMNS: ("INT", {"default": 0, "min": 0, "step": 1}),
             # if auto on, hide these...
             Lexicon.FONT_SIZE: ("INT", {"default": 100, "min": 1, "step": 1}),
             Lexicon.ALIGN: (EnumAlignment._member_names_, {"default": EnumAlignment.CENTER.name}),
@@ -217,8 +212,9 @@ class TextNode(JOVImageMultiple):
         font = kw.get(Lexicon.FONT, FONT_NAMES[0])
         autosize = kw.get(Lexicon.AUTOSIZE, [False])
         letter = kw.get(Lexicon.LETTER, [False])
-        color = parse_tuple(Lexicon.RGB, kw, default=(255, 255, 255))
-        bgcolor = parse_tuple(Lexicon.RGB_B, kw, default=(0, 0, 0))
+        color = parse_tuple(Lexicon.RGBA_A, kw, default=(255, 255, 255, 255))
+        bgcolor = parse_tuple(Lexicon.MATTE, kw, default=(0, 0, 0))
+        columns = kw.get(Lexicon.COLUMNS, [0])
         size = kw.get(Lexicon.FONT_SIZE, [100])
         align = kw.get(Lexicon.ALIGN, [EnumAlignment.CENTER])
         justify = kw.get(Lexicon.JUSTIFY, [EnumJustify.CENTER])
@@ -228,118 +224,115 @@ class TextNode(JOVImageMultiple):
         angle = parse_number(Lexicon.ANGLE, kw, EnumTupleType.FLOAT, [0])
         edge = kw.get(Lexicon.EDGE, [EnumEdge.CLIP])
         i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [0])
-        params = [tuple(x) for x in zip_longest_fill(full_text, font, autosize, letter, color, bgcolor, size, align, justify, margin, line_spacing, wihi, angle, edge, i)]
-        images = []
-        masks = []
-
-        def process(img, mask, ang, e, invert) -> None:
-            img = pil2cv(img)
-            if channel_count(img)[0] < 4:
-                img = channel_add(img, 0)
-            mask = pil2cv(mask)
-            img[:,:,3] = mask[:,:,0]
-            img = image_rotate(img, ang, edge=e)
-            if invert != 0:
-                img = image_invert(img, invert)
-            images.append(cv2tensor(img))
-            mask = image_mask(img)
-            masks.append(cv2mask(mask))
-
+        params = [tuple(x) for x in zip_longest_fill(full_text, font, autosize, letter, color, bgcolor, columns, size, align, justify, margin, line_spacing, wihi, angle, edge, i)]
+        frm = [[],[],[]]
         pbar = comfy.utils.ProgressBar(len(params))
-        for idx, (full_text, font, autosize, letter, color, bgcolor, size, align, justify, margin, line_spacing, wihi, angle, edge, i) in enumerate(params):
-            font_name = FONTS[font]
-            #font = cv2.freetype.createFreeType2()
-            #font.loadFontData(fontFileName=font_name, id=0)
-            width, height = wihi
+        for idx, (full_text, font_idx, autosize, letter, color, bgcolor, columns, size, align, justify, margin, line_spacing, wihi, angle, edge, invert) in enumerate(params):
 
+            font_name = FONTS[font_idx]
+            width, height = wihi
+            align = EnumAlignment[align]
+            justify = EnumJustify[justify]
+            edge = EnumEdge[edge]
+
+            def process(img, mask, idx) -> None:
+                img = pil2cv(img)
+                if invert != 0:
+                    img = image_invert(img, invert)
+                mask = pil2cv(mask)[:,:,0]
+                img = image_mask_add(img, mask)
+                img = image_rotate(img, angle, edge=edge)
+                bg = pixel_eval(bgcolor, EnumImageType.BGR)
+                rgb = image_matte(img, bg)
+                frm[0].append(cv2tensor(img))
+                frm[1].append(cv2tensor(rgb))
+                frm[2].append(cv2mask(img[:,:,3]))
+                pbar.update_absolute(idx)
+
+            def process_line(text: str, font: ImageFont, draw:ImageDraw, mask:ImageDraw, y:int=0, auto_align:bool=True) -> None:
+                # Calculate the width of the current line
+                line_width, text_height = text_size(draw, text, font)
+                # Get the text x and y positions for each line
+                x = text_justify(justify, width, line_width, margin)
+                if auto_align:
+                    y += text_align(align, height, text_height, margin)
+                # Add the current line to the text mask
+                draw.text((x, y), text, fill=color[:3], font=font)
+                mask.text((x, y), text, fill=color[3], font=font)
+
+            def process_block(text: str, font: ImageFont, draw:ImageDraw, mask:ImageDraw, max_width:int, max_height:int) -> None:
+                y = 0
+                for line in text:
+                    process_line(line, font, draw, mask, y=y)
+                    y += max_height
+
+            if letter:
+                text = full_text.replace('\n', '')
+                font = ImageFont.truetype(font_name, size)
+                for ch in text:
+                    img = Image.new("RGB", (width, height), bgcolor)
+                    mask = Image.new("L", (width, height), 0)
+                    draw = ImageDraw.Draw(img)
+                    draw_mask = ImageDraw.Draw(mask)
+                    process_line(str(ch), font, draw, draw_mask)
+                    process(img, mask, idx)
+                continue
+
+            # full text auto-fit mode
             if autosize:
                 img = Image.new("RGB", (width, height), bgcolor)
                 mask = Image.new("L", (width, height), 0)
                 draw = ImageDraw.Draw(img)
                 draw_mask = ImageDraw.Draw(mask)
+                if columns == 0:
+                    side = math.sqrt(len(full_text))
+                    columns = int(math.ceil(side))
 
-                text = full_text.split('\n')
-                longest = max(text, key=len)
-                # size = font.getTextSize(longest)
+                pre_text = full_text.split('\n')
+                lines = []
+                for x in pre_text:
+                    line = textwrap.wrap(x, columns, break_long_words=False)
+                    lines.extend(line)
 
-                max_width = 0
-                max_height = 0
-                for size in range(1500, 1, -1):
-                    font = ImageFont.truetype(font_name, size)
-                    w, h = ImageFont.getsize(longest, font)[:2]
-                    if w < width:
-                        max_width = w
-                        max_height = h
+                line_count = len(lines)
+                all_line_height = line_spacing*line_count
+                line = max(lines, key=len)
+                font_size, max_width, max_height = 1, 0, 0
+                while 1:
+                    font = ImageFont.truetype(font_name, font_size)
+                    w, h = text_size(draw, line, font)
+                    if (w+margin*2) >= width or h >= (height+all_line_height):
                         break
+                    max_width, max_height = w, h
+                    font_size += 1
 
-                y = 0
-                text_height = max_height * len(text)
-                for idx, line in enumerate(text):
-                    # Calculate the width of the current line
-                    line_width, _ = text_size(draw, line, font)
-                    # Get the text x and y positions for each line
-                    x = text_justify(justify, width, line_width, margin)
-                    y = text_align(align, height, text_height, margin)
-                    y += (idx * max_height)
-                    # Add the current line to the text mask
-                    draw.text((x, y), line, fill=color, font=font)
-                    draw_mask.text((x, y), line, fill=255, font=font)
+                y = margin
+                match align:
+                    case EnumAlignment.CENTER:
+                        y = height / 2 - (max_height+line_spacing) * line_count / 2
+                    case EnumAlignment.BOTTOM:
+                        y = height - (max_height+line_spacing) * line_count
 
-                process(img, mask, angle, edge, i)
-                continue
-
-            align = EnumAlignment[align]
-            justify = EnumJustify[justify]
-            edge = EnumEdge[edge]
-            font = ImageFont.truetype(font, size)
-            # if we should output single letters instead of full phrase
-            if not letter:
+                print(font_size, y, all_line_height, max_height, line_count)
+                for line in lines:
+                    process_line(line, font, draw, draw_mask, y, False)
+                    y += (max_height + line_spacing)
+            else:
                 img = Image.new("RGB", (width, height), bgcolor)
                 mask = Image.new("L", (width, height), 0)
                 draw = ImageDraw.Draw(img)
                 draw_mask = ImageDraw.Draw(mask)
-
                 max_width = 0
                 max_height = 0
+                font = ImageFont.truetype(font_name, size)
                 text = full_text.split('\n')
                 for line in text:
                     w, h = text_size(draw, line, font)
                     max_width = max(max_width, w)
                     max_height = max(max_height, h + line_spacing)
-
-                y = 0
-                text_height = max_height * len(text)
-                for idx, line in enumerate(text):
-                    # Calculate the width of the current line
-                    line_width, _ = text_size(draw, line, font)
-
-                    # Get the text x and y positions for each line
-                    x = text_justify(justify, width, line_width, margin)
-                    y = text_align(align, height, text_height, margin)
-                    y += (idx * max_height)
-
-                    # Add the current line to the text mask
-                    draw.text((x, y), line, fill=color, font=font)
-                    draw_mask.text((x, y), line, fill=255, font=font)
-
-                process(img, mask, angle, edge, i)
-
-            else:
-                text = full_text.replace('\n', '')
-                for idx, letter in enumerate(text):
-                    img = Image.new("RGB", (width, height), bgcolor)
-                    mask = Image.new("L", (width, height), 0)
-                    draw = ImageDraw.Draw(img)
-                    draw_mask = ImageDraw.Draw(mask)
-                    x = text_justify(justify, width, line_width, margin)
-                    y = text_align(align, height, text_height, margin)
-                    draw.text((x, y), line, fill=color, font=font)
-                    draw_mask.text((x, y), line, fill=255, font=font)
-                    process(img, mask, angle, edge, i)
-
-            pbar.update_absolute(idx)
-
-        return images, masks
+                process_block(text, font, draw, draw_mask, max_width, max_height)
+            process(img, mask, idx)
+        return frm
 
 class StereogramNode(JOVImageSimple):
     NAME = "STEREOGRAM (JOV) 📻"

@@ -26,6 +26,7 @@ export const VectorWidget = (app, inputName, options, initial, desc='') => {
     widget.options.rgb = widget.options?.rgb || false;
 
     const offset_y = 5;
+    const widget_padding_left = 15;
     const widget_padding = 30;
     const label_full = 72;
     const label_center = label_full/2;
@@ -37,11 +38,11 @@ export const VectorWidget = (app, inputName, options, initial, desc='') => {
         ctx.beginPath()
         ctx.lineWidth = 2
         ctx.fillStyle = LiteGraph.WIDGET_OUTLINE_COLOR
-        ctx.roundRect(widget_padding/2, Y, width - widget_padding, height, 16)
+        ctx.roundRect(widget_padding_left, Y, width - widget_padding, height, 16)
         ctx.stroke()
         ctx.lineWidth = 1
         ctx.fillStyle = LiteGraph.WIDGET_BGCOLOR
-        ctx.roundRect(widget_padding/2, Y, width - widget_padding, height, 16)
+        ctx.roundRect(widget_padding_left, Y, width - widget_padding, height, 16)
         ctx.fill()
 
         // label
@@ -75,14 +76,14 @@ export const VectorWidget = (app, inputName, options, initial, desc='') => {
             const value = Number(it).toFixed(Math.min(2, precision))
             converted.push(value);
             const text = value.toString()
-            ctx.fillText(text, x + element_width2 - text.length * 2.5, Y + height/2 + offset_y)
+            ctx.fillText(text, x + element_width2 - text.length * 3.25, Y + height/2 + offset_y)
             ctx.restore()
             x += element_width
         }
 
         if (this.options.rgb) {
             ctx.fillStyle = rgbToHex(converted);
-            ctx.roundRect(width - 1.25 * widget_padding, Y, 0.75 * widget_padding, height, 16)
+            ctx.roundRect(width - 1.15 * widget_padding, Y, 0.65 * widget_padding, height, 16)
             ctx.fill()
         }
         ctx.restore()

@@ -11,7 +11,7 @@ from loguru import logger
 import comfy
 
 from Jovimetrix import JOVBaseNode, \
-    MIN_IMAGE_SIZE, IT_REQUIRED, IT_WH, IT_RGBA, IT_RGBA_B
+    MIN_IMAGE_SIZE, IT_REQUIRED, IT_WH, IT_RGBA_A, IT_RGBA_B
 
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import deep_merge_dict, parse_tuple
@@ -33,7 +33,7 @@ class GraphWaveNode(JOVBaseNode):
                 Lexicon.FILEN: ("STRING", {"default": ""}),
                 Lexicon.VALUE: ("INT", {"default": 100, "min": 32, "max": 8192, "step": 1})
             }}
-        return deep_merge_dict(IT_REQUIRED, d, IT_WH, IT_RGBA, IT_RGBA_B)
+        return deep_merge_dict(IT_REQUIRED, d, IT_WH, IT_RGBA_A, IT_RGBA_B)
 
     # #️⃣ 🪄
     def __init__(self, *arg, **kw) -> None:
