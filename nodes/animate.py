@@ -17,9 +17,13 @@ from Jovimetrix.sup.anim import EnumWaveSimple
 
 # =============================================================================
 
+JOV_CATEGORY = "JOVIMETRIX 🔺🟩🔵/ANIMATE"
+
+# =============================================================================
+
 class TickNode(JOVBaseNode):
     NAME = "TICK (JOV) ⏱"
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/ANIMATE"
+    CATEGORY = JOV_CATEGORY
     DESCRIPTION = "Periodic pulse exporting normalized, delta since last pulse and count."
     INPUT_IS_LIST = False
     RETURN_TYPES = ("INT", "FLOAT", "FLOAT", "FLOAT", "FLOAT", "FLOAT", "FLOAT", "FLOAT", "FLOAT", "FLOAT", "FLOAT", "FLOAT" )
@@ -87,7 +91,7 @@ class TickNode(JOVBaseNode):
 
 class WaveGeneratorNode(JOVBaseNode):
     NAME = "WAVE GENERATOR (JOV) 🌊"
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/ANIMATE"
+    CATEGORY = JOV_CATEGORY
     DESCRIPTION = "Periodic and Non-Periodic Sinosodials."
     INPUT_IS_LIST = False
     RETURN_TYPES = ("FLOAT", "INT", )

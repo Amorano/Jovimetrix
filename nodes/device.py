@@ -44,6 +44,10 @@ from Jovimetrix.sup.image import channel_solid, cv2mask, image_mask, \
 
 # =============================================================================
 
+JOV_CATEGORY = "JOVIMETRIX 🔺🟩🔵/DEVICE"
+
+# =============================================================================
+
 class EnumCanvasOrientation(Enum):
     NORMAL = 0
     FLIPX = 1
@@ -54,7 +58,7 @@ class EnumCanvasOrientation(Enum):
 
 class StreamReaderNode(JOVImageMultiple):
     NAME = "STREAM READER (JOV) 📺"
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/DEVICE"
+    CATEGORY = JOV_CATEGORY
     DESCRIPTION = "Connect system media devices and remote streams into ComfyUI workflows."
     INPUT_IS_LIST = False
     SORT = 50
@@ -234,7 +238,7 @@ class StreamReaderNode(JOVImageMultiple):
 
 class StreamWriterNode(JOVBaseNode):
     NAME = "STREAM WRITER (JOV) 🎞️"
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/DEVICE"
+    CATEGORY = JOV_CATEGORY
     DESCRIPTION = "Broadcast ComfyUI Node outputs to custom webserver endpoint."
     OUTPUT_NODE = True
     SORT = 70
@@ -296,7 +300,7 @@ class StreamWriterNode(JOVBaseNode):
 
 class MIDIMessageNode(JOVBaseNode):
     NAME = "MIDI MESSAGE (JOV) 🎛️"
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/DEVICE"
+    CATEGORY = JOV_CATEGORY
     DESCRIPTION = "Expands a MIDI message into its values."
     OUTPUT_IS_LIST = (False, False, False, False, False, False, False,)
     RETURN_TYPES = ('JMIDIMSG', 'BOOLEAN', 'INT', 'INT', 'INT', 'FLOAT', 'FLOAT', )
@@ -317,7 +321,7 @@ class MIDIMessageNode(JOVBaseNode):
 
 class MIDIReaderNode(JOVBaseNode):
     NAME = "MIDI READER (JOV) 🎹"
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/DEVICE"
+    CATEGORY = JOV_CATEGORY
     DESCRIPTION = "Capture MIDI devices and pass the data into Comfy."
     OUTPUT_IS_LIST = (False, False, False, False, False, False, False)
     RETURN_TYPES = ('JMIDIMSG', 'BOOLEAN', 'INT', 'INT', 'INT', 'FLOAT', 'FLOAT',)
@@ -386,7 +390,7 @@ class MIDIReaderNode(JOVBaseNode):
 
 class MIDIFilterEZNode(JOVBaseNode):
     NAME = "MIDI FILTER EZ ❇️"
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/DEVICE"
+    CATEGORY = JOV_CATEGORY
     DESCRIPTION = "Filter MIDI messages by channel, message type or value."
     OUTPUT_IS_LIST = (False, False, )
     RETURN_TYPES = ('JMIDIMSG', 'BOOLEAN', )
@@ -433,7 +437,7 @@ class MIDIFilterEZNode(JOVBaseNode):
 
 class MIDIFilterNode(JOVBaseNode):
     NAME = "MIDI FILTER ✳️"
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/DEVICE"
+    CATEGORY = JOV_CATEGORY
     DESCRIPTION = "Filter MIDI messages by channel, message type or value."
     OUTPUT_IS_LIST = (False, False, )
     RETURN_TYPES = ('JMIDIMSG', 'BOOLEAN', )

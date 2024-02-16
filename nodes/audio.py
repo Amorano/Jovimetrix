@@ -19,9 +19,15 @@ from Jovimetrix.sup.util import deep_merge_dict, parse_tuple
 from Jovimetrix.sup.image import cv2mask, cv2tensor
 from Jovimetrix.sup.audio import load_audio, wave_extract, graph_sausage
 
+# =============================================================================
+
+JOV_CATEGORY = "JOVIMETRIX 🔺🟩🔵/AUDIO"
+
+# =============================================================================
+
 class GraphWaveNode(JOVBaseNode):
     NAME = "GRAPH WAVE (JOV) ▶ ılıılı"
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/AUDIO"
+    CATEGORY = JOV_CATEGORY
     DESCRIPTION = "Import and display audio linear waveform data."
     RETURN_TYPES = ("IMAGE", "MASK", "WAVE")
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.MASK, Lexicon.WAVE )

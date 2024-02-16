@@ -4,7 +4,6 @@ Adjustment
 """
 
 import cv2
-import numpy as np
 import torch
 from loguru import logger
 
@@ -19,18 +18,24 @@ from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import zip_longest_fill, deep_merge_dict, parse_tuple, \
     parse_number, EnumTupleType
 
-from Jovimetrix.sup.image import image_equalize, image_mask, image_pixelate, image_posterize, \
+from Jovimetrix.sup.image import image_equalize, image_mask, image_pixelate, \
+    image_posterize, \
     image_quantize, image_sharpen, image_threshold, tensor2cv, cv2tensor, \
     pixel_convert, image_blend, image_invert, morph_edge_detect, \
     morph_emboss, image_contrast, image_hsv, image_gamma, color_match, \
     color_match_custom_map, color_match_heat_map, \
-    EnumColorMap, EnumAdjustOP, EnumThresholdAdapt, EnumThreshold, EnumScaleMode, IT_SCALEMODE
+    EnumColorMap, EnumAdjustOP, EnumThresholdAdapt, EnumThreshold, EnumScaleMode, \
+    IT_SCALEMODE
+
+# =============================================================================
+
+JOV_CATEGORY = "JOVIMETRIX 🔺🟩🔵/ADJUST"
 
 # =============================================================================
 
 class AdjustNode(JOVImageSimple):
     NAME = "ADJUST (JOV) 🕸️"
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/ADJUST"
+    CATEGORY = JOV_CATEGORY
     DESCRIPTION = "Blur, Sharpen, Emboss, Levels, HSV, Edge detection."
 
     @classmethod
@@ -159,7 +164,7 @@ class AdjustNode(JOVImageSimple):
 
 class ColorMatchNode(JOVImageSimple):
     NAME = "COLOR MATCH (JOV) 💞"
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/ADJUST"
+    CATEGORY = CATEGORY = JOV_CATEGORY
     DESCRIPTION = "Project the colors of one image  onto another or use a pre-defined color target."
 
     @classmethod
@@ -216,7 +221,7 @@ class ColorMatchNode(JOVImageSimple):
 
 class ThresholdNode(JOVImageSimple):
     NAME = "THRESHOLD (JOV) 📉"
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/ADJUST"
+    CATEGORY = CATEGORY = JOV_CATEGORY
     DESCRIPTION = "Clip an input based on a mid point value."
 
     @classmethod

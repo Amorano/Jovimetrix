@@ -21,6 +21,10 @@ from Jovimetrix.sup.util import EnumTupleType, deep_merge_dict, parse_tuple, \
 from Jovimetrix.sup.image import pil2tensor, tensor2pil
 from Jovimetrix.sup.shader import GLSL, CompileException
 
+# =============================================================================
+
+JOV_CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
+
 JOV_CONFIG_GLSL = ROOT / 'glsl'
 
 DEFAULT_FRAGMENT = """void main() {
@@ -33,7 +37,7 @@ DEFAULT_FRAGMENT = """void main() {
 
 class GLSLNode(JOVImageSimple):
     NAME = "GLSL (JOV) 🍩"
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
+    CATEGORY = JOV_CATEGORY
     DESCRIPTION = ""
     WIDTH = 512
     HEIGHT = 512

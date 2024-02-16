@@ -23,6 +23,10 @@ from Jovimetrix.sup.anim import Ease, EnumEase
 #    pil2tensor, image_formats
 # =============================================================================
 
+JOV_CATEGORY = "JOVIMETRIX 🔺🟩🔵/CALC"
+
+# =============================================================================
+
 class EnumNumberType(Enum):
     INT = 0
     FLOAT = 10
@@ -139,7 +143,7 @@ OP_UNARY = {
 
 class CalcUnaryOPNode(JOVBaseNode):
     NAME = "CALC OP UNARY (JOV) 🎲"
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/CALC"
+    CATEGORY = JOV_CATEGORY
     DESCRIPTION = "Perform a Unary Operation on an input."
     INPUT_IS_LIST = True
     RETURN_TYPES = (WILDCARD,)
@@ -220,7 +224,7 @@ class CalcUnaryOPNode(JOVBaseNode):
 
 class CalcBinaryOPNode(JOVBaseNode):
     NAME = "CALC OP BINARY (JOV) 🌟"
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/CALC"
+    CATEGORY = JOV_CATEGORY
     DESCRIPTION = "Perform a Binary Operation on two inputs."
     INPUT_IS_LIST = True
     RETURN_TYPES = (WILDCARD,)
@@ -324,7 +328,7 @@ class CalcBinaryOPNode(JOVBaseNode):
 
 class ValueNode(JOVBaseNode):
     NAME = "VALUE (JOV) #️⃣"
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/CALC"
+    CATEGORY = JOV_CATEGORY
     DESCRIPTION = "Create a value for most types; also universal constants."
     INPUT_IS_LIST = True
     RETURN_TYPES = (WILDCARD, )
@@ -375,7 +379,7 @@ class ValueNode(JOVBaseNode):
 
 class ConvertNode(JOVBaseNode):
     NAME = "CONVERT (JOV) 🧬"
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/CALC"
+    CATEGORY = JOV_CATEGORY
     DESCRIPTION = "Convert INT, FLOAT, VEC*, STRING and BOOL."
     RETURN_TYPES = (WILDCARD,)
     INPUT_IS_LIST = True
@@ -463,7 +467,7 @@ class ConvertNode(JOVBaseNode):
 
 class LerpNode(JOVBaseNode):
     NAME = "LERP (JOV) 🔰"
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/CALC"
+    CATEGORY = JOV_CATEGORY
     DESCRIPTION = "Interpolate between two values with or without a smoothing."
     INPUT_IS_LIST = True
     OUTPUT_IS_LIST = (True, )

@@ -35,6 +35,9 @@ from Jovimetrix.sup.image import channel_solid, cv2tensor_full,  \
     EnumEdge, EnumImageType, \
     IT_EDGE
 
+# =============================================================================
+
+JOV_CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
 FONT_MANAGER = matplotlib.font_manager.FontManager()
 FONTS = {font.name: font.fname for font in FONT_MANAGER.ttflist}
 FONT_NAMES = sorted(FONTS.keys())
@@ -90,7 +93,7 @@ def text_size(draw:ImageDraw, text:str, font:ImageFont) -> tuple:
 
 class ConstantNode(JOVImageMultiple):
     NAME = "CONSTANT (JOV) 🟪"
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
+    CATEGORY = JOV_CATEGORY
     DESCRIPTION = "Create a single RGBA block of color. Useful for masks, overlays and general filtering."
 
     @classmethod
@@ -115,7 +118,7 @@ class ConstantNode(JOVImageMultiple):
 
 class ShapeNode(JOVImageMultiple):
     NAME = "SHAPE GENERATOR (JOV) ✨"
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
+    CATEGORY = JOV_CATEGORY
     DESCRIPTION = "Generate polyhedra for masking or texture work."
 
     @classmethod
@@ -179,7 +182,7 @@ class ShapeNode(JOVImageMultiple):
 
 class TextNode(JOVImageMultiple):
     NAME = "TEXT GENERATOR (JOV) 📝"
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
+    CATEGORY = JOV_CATEGORY
     DESCRIPTION = "Use any system font with auto-fit or manual placement."
     INPUT_IS_LIST = True
 
@@ -328,7 +331,7 @@ class TextNode(JOVImageMultiple):
 
 class StereogramNode(JOVImageSimple):
     NAME = "STEREOGRAM (JOV) 📻"
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
+    CATEGORY = JOV_CATEGORY
     DESCRIPTION = "Make a magic eye stereograms."
     INPUT_IS_LIST = True
 

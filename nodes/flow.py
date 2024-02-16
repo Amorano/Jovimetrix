@@ -19,6 +19,10 @@ from Jovimetrix import ComfyAPIMessage, JOVBaseNode, \
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import deep_merge_dict, zip_longest_fill, convert_parameter
 
+# =============================================================================
+
+JOV_CATEGORY = "JOVIMETRIX 🔺🟩🔵/FLOW"
+
 # min amount of time before showing the cancel dialog
 JOV_DELAY_MIN = 1
 try: JOV_DELAY_MIN = int(os.getenv("JOV_DELAY_MIN", JOV_DELAY_MIN))
@@ -56,7 +60,7 @@ class EnumComparison(Enum):
 
 class DelayNode(JOVBaseNode):
     NAME = "DELAY (JOV) ✋🏽"
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/FLOW"
+    CATEGORY = JOV_CATEGORY
     DESCRIPTION = "Delay traffic. Electrons on the data bus go round."
     RETURN_TYPES = (WILDCARD,)
     RETURN_NAMES = (Lexicon.ROUTE,)
@@ -132,7 +136,7 @@ class DelayNode(JOVBaseNode):
 
 class HoldValueNode(JOVBaseNode):
     NAME = "HOLD VALUE (JOV) 🫴🏽"
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/FLOW"
+    CATEGORY = JOV_CATEGORY
     DESCRIPTION = "When engaged will send the last value it had even with new values arriving."
     RETURN_TYPES = (WILDCARD,)
     RETURN_NAMES = (Lexicon.ROUTE,)
@@ -157,7 +161,7 @@ class HoldValueNode(JOVBaseNode):
 
 class ComparisonNode(JOVBaseNode):
     NAME = "COMPARISON (JOV) 🕵🏽"
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/FLOW"
+    CATEGORY = JOV_CATEGORY
     DESCRIPTION = "Compare two inputs: A=B, A!=B, A>B, A>=B, A<B, A<=B"
     INPUT_IS_LIST = True
     RETURN_TYPES = ("BOOLEAN",)
@@ -236,7 +240,7 @@ class ComparisonNode(JOVBaseNode):
 
 class SelectNode(JOVBaseNode):
     NAME = "SELECT (JOV) 🤏🏽"
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/FLOW"
+    CATEGORY = JOV_CATEGORY
     DESCRIPTION = "Select an item from a user explicit list of inputs."
     RETURN_TYPES = (WILDCARD, "STRING", "INT", "INT", )
     RETURN_NAMES = (Lexicon.ANY, Lexicon.QUEUE, Lexicon.VALUE, Lexicon.TOTAL, )
@@ -314,7 +318,7 @@ class SetGetData:
 
 class SetNode(JOVBaseNode):
     NAME = "SET (JOV) 🟰"
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/FLOW"
+    CATEGORY = JOV_CATEGORY
     DESCRIPTION = "Set a value"
     RETURN_TYPES = (WILDCARD,)
     RETURN_NAMES = (Lexicon.RESULT, )
@@ -346,7 +350,7 @@ class SetNode(JOVBaseNode):
 
 class GetNode(JOVBaseNode):
     NAME = "GET (JOV) 🟰"
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/FLOW"
+    CATEGORY = JOV_CATEGORY
     DESCRIPTION = "Get a value"
     RETURN_TYPES = (WILDCARD,)
     RETURN_NAMES = (Lexicon.RESULT, )

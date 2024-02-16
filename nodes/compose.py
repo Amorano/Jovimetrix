@@ -38,9 +38,13 @@ from Jovimetrix.sup.image import channel_count, channel_fill, channel_merge, \
 
 # =============================================================================
 
+JOV_CATEGORY = "JOVIMETRIX 🔺🟩🔵/COMPOSE"
+
+# =============================================================================
+
 class TransformNode(JOVImageMultiple):
     NAME = "TRANSFORM (JOV) 🏝️"
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/COMPOSE"
+    CATEGORY = JOV_CATEGORY
     DESCRIPTION = "Translate, Rotate, Scale, Tile, Mirror, Re-project and invert an input."
     SORT = 0
 
@@ -151,7 +155,7 @@ class TransformNode(JOVImageMultiple):
 
 class BlendNode(JOVImageMultiple):
     NAME = "BLEND (JOV) ⚗️"
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/COMPOSE"
+    CATEGORY = JOV_CATEGORY
     DESCRIPTION = "Applies selected operation to 2 inputs with optional mask using a linear blend (alpha)."
     SORT = 10
 
@@ -199,7 +203,7 @@ class BlendNode(JOVImageMultiple):
 
 class PixelSplitNode(JOVImageMultiple):
     NAME = "PIXEL SPLIT (JOV) 💔"
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/COMPOSE"
+    CATEGORY = JOV_CATEGORY
     DESCRIPTION = "Splits images into constituent R, G and B and A channels."
     RETURN_TYPES = ("MASK", "MASK", "MASK", "MASK",)
     RETURN_NAMES = (Lexicon.RI, Lexicon.GI, Lexicon.BI, Lexicon.MI)
@@ -226,7 +230,7 @@ class PixelSplitNode(JOVImageMultiple):
 
 class PixelMergeNode(JOVImageMultiple):
     NAME = "PIXEL MERGE (JOV) 🫂"
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/COMPOSE"
+    CATEGORY = JOV_CATEGORY
     DESCRIPTION = "Combine 3 or 4 inputs into a single image."
     SORT = 45
 
@@ -261,7 +265,7 @@ class PixelMergeNode(JOVImageMultiple):
 
 class StackNode(JOVImageMultiple):
     NAME = "STACK (JOV) ➕"
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/COMPOSE"
+    CATEGORY = JOV_CATEGORY
     DESCRIPTION = "Union multiple images horizontal, vertical or in a grid."
     INPUT_IS_LIST = False
     OUTPUT_IS_LIST = (False, False,)
@@ -316,7 +320,7 @@ class EnumCropMode(Enum):
 
 class CropNode(JOVImageMultiple):
     NAME = "CROP (JOV) ✂️"
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/COMPOSE"
+    CATEGORY = JOV_CATEGORY
     DESCRIPTION = "Clip away sections of an image and backfill with optional color matte."
     SORT = 5
 
@@ -378,7 +382,7 @@ class CropNode(JOVImageMultiple):
 
 class ColorTheoryNode(JOVImageMultiple):
     NAME = "COLOR THEORY (JOV) 🛞"
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/COMPOSE"
+    CATEGORY = JOV_CATEGORY
     DESCRIPTION = "Generate Complimentary, Triadic and Tetradic color sets."
     RETURN_TYPES = ("IMAGE", "IMAGE", "IMAGE", "IMAGE", "IMAGE")
     RETURN_NAMES = (Lexicon.C1, Lexicon.C2, Lexicon.C3, Lexicon.C4, Lexicon.C5)
