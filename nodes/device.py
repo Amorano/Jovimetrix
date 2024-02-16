@@ -36,8 +36,8 @@ from Jovimetrix.sup.stream import camera_list, monitor_list, window_list, \
 from Jovimetrix.sup.midi import midi_device_names, \
     MIDIMessage, MIDINoteOnFilter, MIDIServerThread
 
-from Jovimetrix.sup.image import channel_count, cv2mask, image_mask, tensor2cv, \
-    cv2tensor, \
+from Jovimetrix.sup.image import channel_solid, cv2mask, image_mask, \
+    tensor2cv, cv2tensor, \
     image_scalefit, image_invert, \
     EnumInterpolation, EnumScaleMode, \
     IT_WHMODE, IT_SAMPLE, IT_SCALEMODE
@@ -130,7 +130,7 @@ class StreamReaderNode(JOVImageMultiple):
                 for idx in range(batch_size):
                     img = monitor_capture(which)
                     if img is None:
-                        img = np.zeros((height, width, 3), dtype=np.uint8)
+                        img = channel_solid(width, height, 0)
                     else:
                         img = image_scalefit(img, width, height, mode=mode, sample=sample)
                     mask = image_mask(img)
@@ -150,7 +150,7 @@ class StreamReaderNode(JOVImageMultiple):
                     for idx in range(batch_size):
                         img = window_capture(which, dpi=dpi)
                         if img is None:
-                            img = np.zeros((height, width, 3), dtype=np.uint8)
+                            img = channel_solid(width, height, 0)
                         else:
                             img = image_scalefit(img, width, height, mode=mode, sample=sample)
                         mask = image_mask(img)
@@ -208,7 +208,7 @@ class StreamReaderNode(JOVImageMultiple):
                     for idx in range(batch_size):
                         _, img = self.__device.frame
                         if img is None:
-                            img = np.zeros((height, width, 3), dtype=np.uint8)
+                            img = channel_solid(width, height, 0)
                         else:
                             if orient in [EnumCanvasOrientation.FLIPX, EnumCanvasOrientation.FLIPXY]:
                                 img = cv2.flip(img, 1)
@@ -266,7 +266,7 @@ class StreamWriterNode(JOVBaseNode):
         wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)[0]
         w, h = wihi
         img = kw.get(Lexicon.PIXEL, None)
-        img = tensor2cv(img) if img is not None else np.zeros((h, w, 3), dtype=np.uint8)
+        img = tensor2cv(img) if img is not None else channel_solid(w, h, 0)
         route = kw.get(Lexicon.ROUTE, "/stream")
         if route != self.__route:
             self.__starting = True

@@ -10,9 +10,7 @@ from pathlib import Path
 from uuid import uuid4
 
 import torch
-import numpy as np
 from PIL import Image
-import matplotlib.pyplot as plt
 from loguru import logger
 
 import comfy
@@ -25,7 +23,8 @@ from Jovimetrix import JOVBaseNode, \
 
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import deep_merge_dict, zip_longest_fill, path_next
-from Jovimetrix.sup.image import cv2mask, cv2tensor, image_diff, tensor2cv, tensor2pil
+from Jovimetrix.sup.image import channel_solid, cv2mask, cv2tensor, image_diff, \
+    tensor2cv, tensor2pil
 
 FORMATS = ["gif", "png", "jpg"]
 if (JOV_GIFSKI := os.getenv("JOV_GIFSKI", None)) is not None:
@@ -38,7 +37,6 @@ class ExportNode(JOVBaseNode):
     NAME = "EXPORT (JOV) 📽"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/IMAGE"
     DESCRIPTION = "Take your frames out static or animated (GIF)"
-    INPUT_IS_LIST = True
     OUTPUT_NODE = True
     SORT = 10
 
@@ -179,8 +177,8 @@ class ImageDiffNode(JOVBaseNode):
             width = MIN_IMAGE_SIZE
             height = MIN_IMAGE_SIZE
             _, height, width, _ = a.shape if a is not None else b.shape
-            a = tensor2cv(a) if a is not None else np.zeros((height, width, 3), dtype=np.uint8)
-            b = tensor2cv(b) if b is not None else np.zeros((height, width, 3), dtype=np.uint8)
+            a = tensor2cv(a) if a is not None else channel_solid(width, height, 0)
+            b = tensor2cv(b) if b is not None else channel_solid(width, height, 0)
 
             a, b, d, t, s = image_diff(a, b, int(th * 255.))
             image_a.append(cv2tensor(a))

@@ -3,16 +3,16 @@ Jovimetrix - http://www.github.com/amorano/jovimetrix
 Composition
 """
 
-from enum import Enum
-import math
 import cv2
 import torch
-import numpy as np
+from enum import Enum
 from loguru import logger
+
+import numpy as np
 
 import comfy
 
-from Jovimetrix import IT_MATTE, JOVImageSimple, JOVImageMultiple, \
+from Jovimetrix import IT_MATTE, JOVImageMultiple, \
     IT_PIXEL, IT_RGB, IT_PIXEL2_MASK, IT_INVERT, IT_REQUIRED, \
     IT_RGBA_IMAGE, MIN_IMAGE_SIZE, IT_TRANS, IT_ROT, IT_SCALE
 
@@ -22,10 +22,11 @@ from Jovimetrix.sup.util import parse_number, parse_tuple, zip_longest_fill, \
     deep_merge_dict,\
     EnumTupleType
 
-from Jovimetrix.sup.image import channel_count, channel_fill, channel_merge, channel_solid, \
+from Jovimetrix.sup.image import channel_count, channel_fill, channel_merge, \
+    channel_solid, cv2tensor_full, \
     image_convert, image_crop, image_crop_center, \
-    image_mask, image_rotate, image_scale, \
-    image_translate, image_split, mask2cv, pixel_eval, tensor2cv, \
+    image_mask, image_mask_add, image_rotate, image_scale, \
+    image_translate, image_split, pixel_eval, tensor2cv, \
     image_crop_polygonal, image_edge_wrap, image_scalefit, cv2tensor, \
     cv2mask, image_stack, image_mirror, image_blend, \
     color_theory, remap_fisheye, remap_perspective, remap_polar, \
@@ -55,7 +56,7 @@ class TransformNode(JOVImageMultiple):
             Lexicon.BLBR: ("VEC4", {"default": (0, 1, 1, 1), "min": 0, "max": 1, "step": 0.005, "precision": 4, "label": [Lexicon.BOTTOM, Lexicon.LEFT, Lexicon.BOTTOM, Lexicon.RIGHT]}),
             Lexicon.STRENGTH: ("FLOAT", {"default": 1, "min": 0, "precision": 4, "step": 0.005})
         }}
-        return deep_merge_dict(IT_REQUIRED, IT_PIXEL, IT_TRANS, IT_ROT, IT_SCALE, d, IT_WHMODE, IT_MATTE, IT_INVERT)
+        return deep_merge_dict(IT_REQUIRED, IT_PIXEL, IT_TRANS, IT_ROT, IT_SCALE, d, IT_WHMODE, IT_MATTE)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         img = kw.get(Lexicon.PIXEL, [None])
@@ -73,19 +74,18 @@ class TransformNode(JOVImageMultiple):
         mode = kw.get(Lexicon.MODE,[EnumScaleMode.NONE])
         wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
         sample = kw.get(Lexicon.SAMPLE, [EnumInterpolation.LANCZOS4])
-        color = parse_tuple(Lexicon.MATTE, kw, default=(0, 0, 0), clip_min=1)
-        i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], 0, 1)
-        params = [tuple(x) for x in zip_longest_fill(img, offset, angle, size, edge, tile_xy, mirror, mirror_pivot, proj, strength, tltr, blbr, mode, wihi, sample, color, i)]
-        masks = []
+        matte = parse_tuple(Lexicon.MATTE, kw, default=(0, 0, 0), clip_min=1)
+        params = [tuple(x) for x in zip_longest_fill(img, offset, angle, size, edge, tile_xy, mirror, mirror_pivot, proj, strength, tltr, blbr, mode, wihi, sample, matte)]
         images = []
         pbar = comfy.utils.ProgressBar(len(params))
-        for idx, (img, offset, angle, size, edge, tile_xy, mirror, mirror_pivot, proj, strength, tltr, blbr, mode, wihi, sample, color, i) in enumerate(params):
+        for idx, (img, offset, angle, size, edge, tile_xy, mirror, mirror_pivot, proj, strength, tltr, blbr, mode, wihi, sample, matte) in enumerate(params):
 
             img = tensor2cv(img)
             mask = image_mask(img)
             cc, w, h = channel_count(img)[:3]
             if cc != 4:
                 img = image_convert(img, 4)
+            # logger.debug([img.shape, mask.shape])
             img[:,:,3] = mask #[:,:,0]
 
             sX, sY = size
@@ -110,8 +110,8 @@ class TransformNode(JOVImageMultiple):
             mirror = EnumMirrorMode[mirror]
             mpx, mpy = mirror_pivot
             img = image_mirror(img, mirror, mpx, mpy)
-
-            color = pixel_eval(color, mode=EnumImageType.BGRA)
+            print(matte)
+            matte = pixel_eval(matte, mode=EnumImageType.BGRA)
             tx, ty = tile_xy
             if (tx := int(tx)) > 1 or (ty := int(ty)) > 1:
                 img = image_edge_wrap(img, tx / 2 - 0.5, ty / 2 - 0.5)
@@ -143,20 +143,13 @@ class TransformNode(JOVImageMultiple):
                 img = image_scalefit(img, w, h, mode, sample)
                 img = channel_fill(img, w, h, 0)
 
-            mask = image_mask(img)
-            if i != 0:
-                img = image_invert(img, i)
-
-            matte = channel_solid(w, h, color, chan=EnumImageType.RGB)
-            img = image_blend(matte, img, mask)
-
-            images.append(cv2tensor(img))
-            masks.append(cv2mask(mask))
+            print(matte)
+            img = cv2tensor_full(img, matte)
+            images.append(img)
             pbar.update_absolute(idx)
+        return list(zip(*images))
 
-        return images, masks,
-
-class BlendNode(JOVImageSimple):
+class BlendNode(JOVImageMultiple):
     NAME = "BLEND (JOV) ⚗️"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/COMPOSE"
     DESCRIPTION = "Applies selected operation to 2 inputs with optional mask using a linear blend (alpha)."
@@ -169,7 +162,7 @@ class BlendNode(JOVImageSimple):
                 Lexicon.A: ("FLOAT", {"default": 1, "min": 0, "max": 1, "step": 0.01}),
                 Lexicon.FLIP: ("BOOLEAN", {"default": False}),
             }}
-        return deep_merge_dict(IT_REQUIRED, IT_PIXEL2_MASK, d, IT_WHMODE, IT_INVERT)
+        return deep_merge_dict(IT_REQUIRED, IT_PIXEL2_MASK, d, IT_WHMODE)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         pixelA = kw.get(Lexicon.PIXEL_A, [None])
@@ -182,34 +175,27 @@ class BlendNode(JOVImageSimple):
         wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
         sample = kw.get(Lexicon.SAMPLE, [EnumInterpolation.LANCZOS4])
         color = parse_tuple(Lexicon.MATTE, kw, default=(0, 0, 0), clip_min=1)
-        i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
-        params = [tuple(x) for x in zip_longest_fill(pixelA, pixelB, mask, func, alpha, flip, mode, wihi, sample, color, i)]
-        masks = []
+        params = [tuple(x) for x in zip_longest_fill(pixelA, pixelB, mask, func, alpha, flip, mode, wihi, sample, color)]
         images = []
         pbar = comfy.utils.ProgressBar(len(params))
-        for idx, (pa, pb, ma, op, alpha, fl, mode, wihi, sample, color, i) in enumerate(params):
+        for idx, (pa, pb, ma, op, alpha, fl, mode, wihi, sample, color) in enumerate(params):
             pa = tensor2cv(pa) if pa is not None else None
             pb = tensor2cv(pb) if pb is not None else None
             ma = tensor2cv(ma) if ma is not None else None
-
             if fl:
                 pa, pb = pb, pa
-
             op = EnumBlendType[op]
             mode = EnumScaleMode[mode]
             sample = EnumInterpolation[sample]
-            # color = pixel_eval(color)
-            img = image_blend(pa, pb, ma, op, alpha, color, mode, sample)
             width, height = wihi
+            color = pixel_eval(color)
+            img = image_blend(pa, pb, ma, op, alpha, color, mode, sample)
             img = image_scalefit(img, width, height, mode, sample)
-            if i != 0:
-                img = image_invert(img, i)
-
-            images.append(cv2tensor(img))
-            masks.append(cv2mask(img))
+            img = cv2tensor_full(img)
+            full, rgb, mask = img
+            images.append((full, rgb, mask))
             pbar.update_absolute(idx)
-
-        return images, masks,
+        return list(zip(*images))
 
 class PixelSplitNode(JOVImageMultiple):
     NAME = "PIXEL SPLIT (JOV) 💔"
@@ -225,42 +211,18 @@ class PixelSplitNode(JOVImageMultiple):
         return deep_merge_dict(IT_REQUIRED, IT_PIXEL)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        ret = {
-            'r': [],
-            'g': [],
-            'b': [],
-            'a': [],
-        }
-
+        images = []
         pixel = kw.get(Lexicon.PIXEL, [None])
         pbar = comfy.utils.ProgressBar(len(pixel))
         for idx, (img,) in enumerate(pixel):
             if img is None:
-                img = np.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 4), dtype=np.uint8)
-                img[:,:,3] = np.full((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), 255, dtype=np.uint8)
-                # mask = np.full((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), 255, dtype=np.uint8)
+                img = channel_solid(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 0, chan=EnumImageType.BGRA)
             else:
                 img = tensor2cv(img)
-                # mask = image_mask(img)
-
-            # h, w = img.shape[:2]
-            r, g, b, a = image_split(img)
-            '''
-            e = np.zeros((h, w), dtype=np.uint8)
-            for rgb, color in (
-                ('r', [e, e, r]),
-                ('g', [e, g, e]),
-                ('b', [b, e, e])):
-                f = cv2.merge(color)
-                ret[rgb].append(cv2tensor(f))
-            '''
-            ret['r'].append(cv2mask(r))
-            ret['g'].append(cv2mask(g))
-            ret['b'].append(cv2mask(b))
-            ret['a'].append(cv2mask(a))
+                img = image_mask_add(img)
+            images.append([cv2mask(x) for x in image_split(img)])
             pbar.update_absolute(idx)
-
-        return ret['r'], ret['g'], ret['b'], ret['a']
+        return list(zip(*images))
 
 class PixelMergeNode(JOVImageMultiple):
     NAME = "PIXEL MERGE (JOV) 🫂"
@@ -270,34 +232,32 @@ class PixelMergeNode(JOVImageMultiple):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        return deep_merge_dict(IT_REQUIRED, IT_RGBA_IMAGE)
+        return deep_merge_dict(IT_REQUIRED, IT_RGBA_IMAGE, IT_MATTE)
 
     def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor]:
         R = kw.get(Lexicon.R, [None])
         G = kw.get(Lexicon.G, [None])
         B = kw.get(Lexicon.B, [None])
         A = kw.get(Lexicon.A, [None])
-        params = [tuple(x) for x in zip_longest_fill(R, G, B, A)]
-
         if len(R)+len(B)+len(G)+len(A) == 0:
-            e = torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8, device="cpu")
-            m = torch.full((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), 255, dtype=torch.uint8, device="cpu")
-            return [e], [m],
-
-        masks = []
+            img = channel_solid(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 0, chan=EnumImageType.BGRA)
+            return list(cv2tensor_full(img, matte))
+        matte = parse_tuple(Lexicon.MATTE, kw, default=(0, 0, 0), clip_min=0, clip_max=255)
+        params = [tuple(x) for x in zip_longest_fill(R, G, B, A, matte)]
         images = []
         pbar = comfy.utils.ProgressBar(len(params))
-        for idx, (r, g, b, a) in enumerate(params):
+        for idx, (r, g, b, a, matte) in enumerate(params):
             r = tensor2mask(r) if r is not None else None
             g = tensor2mask(g) if g is not None else None
             b = tensor2mask(b) if b is not None else None
             mask = tensor2mask(a) if a is not None else None
             img = channel_merge([b, g, r, mask])
-            images.append(cv2tensor(img))
-            masks.append(a)
+            # logger.debug(img.shape)
+            img = cv2tensor_full(img, matte)
+            images.append(img)
             pbar.update_absolute(idx)
-
-        return images, masks,
+        data = list(zip(*images))
+        return data
 
 class StackNode(JOVImageMultiple):
     NAME = "STACK (JOV) ➕"
@@ -326,14 +286,11 @@ class StackNode(JOVImageMultiple):
         color = pixel_eval(color)
         images = []
         for img in pixels:
-            if img is not None:
-                img = tensor2cv(img)
-                # mask = image_mask(img)
-                img = image_convert(img, 4)
+            if img is None:
+                img = channel_solid(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 0, chan=EnumImageType.BGRA)
             else:
-                img = np.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 4), dtype=np.uint8)
-                mask = np.full((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), 255, dtype=np.uint8)
-                img[:, :, 3] = mask
+                img = tensor2cv(img)
+                img = image_convert(img, 4)
             images.append(img)
 
         axis = EnumOrientation[axis]
@@ -348,7 +305,7 @@ class StackNode(JOVImageMultiple):
         mask = img[:, :, 3][:, :]
         img = img[:, :, :3]
 
-        matte = channel_solid(w, h, color, chan=EnumImageType.RGB)
+        matte = channel_solid(w, h, color)
         img = image_blend(matte, img, mask)
         return cv2tensor(img), cv2mask(mask),
 
@@ -450,7 +407,7 @@ class ColorTheoryNode(JOVImageMultiple):
         params = [tuple(x) for x in zip_longest_fill(pixels, scheme, user, i)]
         pbar = comfy.utils.ProgressBar(len(params))
         for idx, (img, s, user, i) in enumerate(params):
-            img = tensor2cv(img) if img is not None else np.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=np.uint8)
+            img = tensor2cv(img) if img is not None else channel_solid(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 0)
             a, b, c, d, e = color_theory(img, user, EnumColorTheory[s])
             if i != 0:
                 a = image_invert(a, i)

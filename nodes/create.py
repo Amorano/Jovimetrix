@@ -3,11 +3,11 @@ Jovimetrix - http://www.github.com/amorano/jovimetrix
 Creation
 """
 
-from enum import Enum
 import math
 import textwrap
-from typing import Any, Literal
-import numpy as np
+from typing import Any
+from enum import Enum
+from itertools import zip_longest
 
 import torch
 from PIL import Image, ImageDraw, ImageFont
@@ -18,17 +18,17 @@ import comfy
 from server import PromptServer
 
 from Jovimetrix import JOVImageSimple, JOVImageMultiple, \
-    IT_RGB, IT_RGB_B, IT_RGBA_A, \
+    IT_RGB_B, IT_RGBA_A, \
     IT_DEPTH, IT_PIXEL, IT_WH, IT_SCALE, IT_ROT, IT_INVERT, \
     IT_REQUIRED, MIN_IMAGE_SIZE
 
 from Jovimetrix.sup.lexicon import Lexicon
 
-from Jovimetrix.sup.util import deep_merge_dict, parse_tuple, parse_number, \
-    zip_longest_fill, EnumTupleType
+from Jovimetrix.sup.util import deep_merge_dict, parse_tuple, \
+    parse_number, zip_longest_fill, EnumTupleType
 
-from Jovimetrix.sup.image import channel_count,  \
-    image_constant, image_mask_add, image_matte, image_rotate, channel_add, \
+from Jovimetrix.sup.image import channel_solid, cv2tensor_full,  \
+    image_mask_add, image_matte, image_rotate, \
     image_stereogram, pil2cv, cv2tensor, cv2mask, \
     pixel_eval, tensor2cv, shape_ellipse, shape_polygon, \
     shape_quad, image_invert, \
@@ -100,20 +100,18 @@ class ConstantNode(JOVImageMultiple):
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
         color = parse_tuple(Lexicon.RGBA_A, kw, default=(0, 0, 0, 255), clip_min=0, clip_max=255)
+        images = []
         params = [tuple(x) for x in zip_longest_fill(wihi, color)]
-        # full, rgb, mask
-        frm = [[], [], []]
         pbar = comfy.utils.ProgressBar(len(params))
         for idx, (wihi, color) in enumerate(params):
             width, height = wihi
-            img = image_constant(color, width, height)
-            mask = img[:,:,3]
-            rgb = img[:,:,:3]
-            frm[0].append(cv2tensor(img))
-            frm[1].append(cv2tensor(rgb))
-            frm[2].append(cv2mask(mask))
+            color = pixel_eval(color, EnumImageType.BGRA)
+            img = channel_solid(width, height, color, chan=EnumImageType.BGRA)
+            logger.debug(img.shape)
+            img = cv2tensor_full(img)
+            images.append(img)
             pbar.update_absolute(idx)
-        return frm
+        return list(zip(*images))
 
 class ShapeNode(JOVImageMultiple):
     NAME = "SHAPE GENERATOR (JOV) ✨"
@@ -139,7 +137,8 @@ class ShapeNode(JOVImageMultiple):
         bgcolor = parse_tuple(Lexicon.RGB_B, kw, default=(0, 0, 0))
         invert = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1])
         params = [tuple(x) for x in zip_longest_fill(shape, sides, angle, edge, size, wihi, color, bgcolor, invert)]
-        frm = [[], [], []]
+        images = []
+        params = [tuple(x) for x in zip_longest_fill(wihi, color)]
         pbar = comfy.utils.ProgressBar(len(params))
         for idx, (shape, sides, angle, edge, size, wihi, color, bgcolor, invert) in enumerate(params):
             width, height = wihi
@@ -173,12 +172,10 @@ class ShapeNode(JOVImageMultiple):
             mask = pil2cv(mask)[:,:,0]
             img = image_mask_add(img, mask)
             img = image_rotate(img, angle, edge=edge)
-            bg = pixel_eval(bgcolor, EnumImageType.BGR)
-            rgb = image_matte(img, bg)
-            frm[0].append(cv2tensor(img))
-            frm[1].append(cv2tensor(rgb))
-            frm[2].append(cv2mask(img[:,:,3]))
-        return frm
+            img = cv2tensor_full(img)
+            images.append(img)
+            pbar.update_absolute(idx)
+        return list(zip(*images))
 
 class TextNode(JOVImageMultiple):
     NAME = "TEXT GENERATOR (JOV) 📝"
@@ -209,7 +206,7 @@ class TextNode(JOVImageMultiple):
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         if len(full_text := kw.get(Lexicon.STRING, [""])) == 0:
             full_text = [""]
-        font = kw.get(Lexicon.FONT, FONT_NAMES[0])
+        font_idx = kw.get(Lexicon.FONT, FONT_NAMES[0])
         autosize = kw.get(Lexicon.AUTOSIZE, [False])
         letter = kw.get(Lexicon.LETTER, [False])
         color = parse_tuple(Lexicon.RGBA_A, kw, default=(255, 255, 255, 255))
@@ -223,11 +220,10 @@ class TextNode(JOVImageMultiple):
         wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,))
         angle = parse_number(Lexicon.ANGLE, kw, EnumTupleType.FLOAT, [0])
         edge = kw.get(Lexicon.EDGE, [EnumEdge.CLIP])
-        i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [0])
-        params = [tuple(x) for x in zip_longest_fill(full_text, font, autosize, letter, color, bgcolor, columns, size, align, justify, margin, line_spacing, wihi, angle, edge, i)]
-        frm = [[],[],[]]
+        images = []
+        params = [tuple(x) for x in zip_longest_fill(full_text, font_idx, autosize, letter, color, bgcolor, columns, size, align, justify, margin, line_spacing, wihi, angle, edge)]
         pbar = comfy.utils.ProgressBar(len(params))
-        for idx, (full_text, font_idx, autosize, letter, color, bgcolor, columns, size, align, justify, margin, line_spacing, wihi, angle, edge, invert) in enumerate(params):
+        for idx, (full_text, font_idx, autosize, letter, color, bgcolor, columns, size, align, justify, margin, line_spacing, wihi, angle, edge) in enumerate(params):
 
             font_name = FONTS[font_idx]
             width, height = wihi
@@ -237,16 +233,12 @@ class TextNode(JOVImageMultiple):
 
             def process(img, mask, idx) -> None:
                 img = pil2cv(img)
-                if invert != 0:
-                    img = image_invert(img, invert)
                 mask = pil2cv(mask)[:,:,0]
                 img = image_mask_add(img, mask)
                 img = image_rotate(img, angle, edge=edge)
-                bg = pixel_eval(bgcolor, EnumImageType.BGR)
-                rgb = image_matte(img, bg)
-                frm[0].append(cv2tensor(img))
-                frm[1].append(cv2tensor(rgb))
-                frm[2].append(cv2mask(img[:,:,3]))
+                matte = pixel_eval(bgcolor)
+                img = cv2tensor_full(img, matte)
+                images.append(img)
                 pbar.update_absolute(idx)
 
             def process_line(text: str, font: ImageFont, draw:ImageDraw, mask:ImageDraw, y:int=0, auto_align:bool=True) -> None:
@@ -313,7 +305,7 @@ class TextNode(JOVImageMultiple):
                     case EnumAlignment.BOTTOM:
                         y = height - (max_height+line_spacing) * line_count
 
-                print(font_size, y, all_line_height, max_height, line_count)
+                logger.debug([font_size, y, all_line_height, max_height, line_count])
                 for line in lines:
                     process_line(line, font, draw, draw_mask, y, False)
                     y += (max_height + line_spacing)
@@ -332,7 +324,7 @@ class TextNode(JOVImageMultiple):
                     max_height = max(max_height, h + line_spacing)
                 process_block(text, font, draw, draw_mask, max_width, max_height)
             process(img, mask, idx)
-        return frm
+        return list(zip(*images))
 
 class StereogramNode(JOVImageSimple):
     NAME = "STEREOGRAM (JOV) 📻"

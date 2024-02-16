@@ -20,7 +20,7 @@ from PIL import Image, ImageGrab
 from loguru import logger
 
 from Jovimetrix import Singleton, MIN_IMAGE_SIZE
-from Jovimetrix.sup.image import image_grid, image_load, pil2cv
+from Jovimetrix.sup.image import channel_solid, image_grid, image_load, pil2cv
 
 # =============================================================================
 
@@ -570,7 +570,7 @@ def streamReadTest() -> None:
     widthT = 160
     heightT = 120
 
-    empty = np.zeros((heightT, widthT, 3), dtype=np.uint8)
+    empty = channel_solid(widthT, heightT, 0)
     try:
         StreamManager().capture(urls[streamIdx % len(urls)])
     except Exception as e:
@@ -582,7 +582,7 @@ def streamReadTest() -> None:
         for x in StreamManager().active:
             _, chunk = x.frame
             if chunk is None:
-                chunk = np.zeros((heightT, widthT, 3), dtype=np.uint8)
+                chunk = channel_solid(widthT, heightT, 0)
             else:
                 chunk = cv2.resize(chunk, (widthT, heightT))
             streams.append(chunk)
