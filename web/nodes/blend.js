@@ -5,7 +5,7 @@
  */
 
 import { app } from "/scripts/app.js"
-import{ hook_widget_size_mode } from '../core/util_jov.js'
+import{ hook_widget_size_mode } from '../util/util_jov.js'
 
 const _id = "BLEND (JOV) ⚗️"
 

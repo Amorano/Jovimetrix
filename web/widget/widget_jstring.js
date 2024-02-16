@@ -4,7 +4,7 @@
  */
 
 import { app } from "/scripts/app.js"
-import * as util_dom from '../core/util_dom.js'
+import * as util_dom from '../util/util_dom.js'
 
 export const JStringWidget = (app, name, value) => {
     const fontSize = 16

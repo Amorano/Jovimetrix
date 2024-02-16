@@ -5,7 +5,7 @@
  */
 
 import { app } from "/scripts/app.js"
-import { node_add_dynamic } from '../core/util.js'
+import { node_add_dynamic } from '../util/util.js'
 
 const _id = "VALUE GRAPH (JOV) 📈"
 const _prefix = '❔'

@@ -6,8 +6,8 @@
 
 import { app } from "/scripts/app.js"
 import { ComfyWidgets } from "/scripts/widgets.js"
-import { widget_remove } from '../core/util_widget.js'
-import { fitHeight } from '../core/util.js'
+import { widget_remove } from '../util/util_widget.js'
+import { fitHeight } from '../util/util.js'
 
 const _id = "VALUE (JOV) #️⃣"
 

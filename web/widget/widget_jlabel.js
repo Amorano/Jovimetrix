@@ -4,8 +4,8 @@
  */
 
 import { app } from "/scripts/app.js"
-import * as util from '../core/util.js'
-import * as util_dom from '../core/util_dom.js'
+import * as util from '../util/util.js'
+import * as util_dom from '../util/util_dom.js'
 
 export const jLabelWidget = (label) => {
     const widget = {

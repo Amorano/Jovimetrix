@@ -5,9 +5,9 @@
  */
 
 import { app } from "/scripts/app.js"
-import { fitHeight } from '../core/util.js'
-import { widget_hide, widget_show } from '../core/util_widget.js'
-import { hook_widget_size_mode } from '../core/util_jov.js'
+import { fitHeight } from '../util/util.js'
+import { widget_hide, widget_show } from '../util/util_widget.js'
+import { hook_widget_size_mode } from '../util/util_jov.js'
 
 const _id = "TRANSFORM (JOV) 🏝️"
 

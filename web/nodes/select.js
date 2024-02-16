@@ -5,8 +5,8 @@
  */
 
 import { app } from "/scripts/app.js"
-import { node_add_dynamic } from '../core/util.js'
-import { api_cmd_jovian } from '../core/util_api.js'
+import { node_add_dynamic } from '../util/util.js'
+import { api_cmd_jovian } from '../util/util_api.js'
 
 const _id = "SELECT (JOV) 🤏🏽"
 const _prefix = '❔'

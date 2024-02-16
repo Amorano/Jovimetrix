@@ -7,9 +7,9 @@
 import { api } from "/scripts/api.js";
 import { app } from "/scripts/app.js";
 
-import { showModal } from '../core/util.js'
-import { api_post } from '../core/util_api.js'
-import { bubbles } from '../core/util_fun.js'
+import { showModal } from '../util/util.js'
+import { api_post } from '../util/util_api.js'
+import { bubbles } from '../util/util_fun.js'
 
 const _id = "DELAY (JOV) ✋🏽"
 

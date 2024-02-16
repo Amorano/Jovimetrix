@@ -5,8 +5,8 @@
  */
 
 import { app } from "/scripts/app.js"
-import { fitHeight, node_cleanup } from '../core/util.js'
-import { escapeHtml } from '../core/util_dom.js'
+import { fitHeight, node_cleanup } from '../util/util.js'
+import { escapeHtml } from '../util/util_dom.js'
 import { JImageWidget } from '../widget/widget_jimage.js'
 import { JStringWidget } from '../widget/widget_jstring.js'
 

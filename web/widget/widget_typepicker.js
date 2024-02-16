@@ -4,7 +4,7 @@
  */
 
 import { app } from "/scripts/app.js"
-import { fitHeight, node_cleanup } from '../core/util.js'
+import { fitHeight, node_cleanup } from '../util/util.js'
 
 export const TypePickerWidget = (app, inputName, inputData) => {
     const widget = {

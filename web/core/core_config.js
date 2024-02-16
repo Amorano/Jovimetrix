@@ -1,13 +1,13 @@
 /**
- * File: config.js
+ * File: core_config.js
  * Project: Jovimetrix
  *
  */
 
 import { ComfyDialog, $el } from "/scripts/ui.js"
-import { api_post } from './util_api.js'
-import { node_color_all } from './util_color.js'
-import * as util_config from './util_config.js'
+import { api_post } from '../util/util_api.js'
+import { node_color_all } from '../util/util_color.js'
+import * as util_config from '../util/util_config.js'
 
 var headID = document.getElementsByTagName("head")[0]
 var cssNode = document.createElement('link')

@@ -1,7 +1,7 @@
 // jsColorpicker.js
 
-import * as util_color from '../core/util_color.js';
-import * as util_config from '../core/util_config.js';
+import * as util_color from '../util/util_color.js';
+import * as util_config from '../util/util_config.js';
 
 (function (global) {
     if (typeof global.ColorPicker === 'undefined') {

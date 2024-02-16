@@ -1,15 +1,15 @@
 /**
- * File: colorize.js
+ * File: core_colorize.js
  * Project: Jovimetrix
  *
  */
 
 import { app } from "/scripts/app.js"
 import { $el } from "/scripts/ui.js"
-import { api_post } from './util_api.js'
-import { color_contrast, node_color_all, node_color_get} from './util_color.js'
-import * as util_config from './util_config.js'
-import { JovimetrixConfigDialog } from "./config.js"
+import { api_post } from '../util/util_api.js'
+import { color_contrast, node_color_all, node_color_get} from '../util/util_color.js'
+import * as util_config from '../util/util_config.js'
+import { JovimetrixConfigDialog } from "./core_config.js"
 import "../extern/jsColorPicker.js"
 
 const ext = {

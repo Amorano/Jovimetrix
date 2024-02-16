@@ -5,8 +5,8 @@
  */
 
 import { app } from "/scripts/app.js"
-// import { TypeSlot, TypeSlotEvent } from '../core/util.js'
-import { node_add_dynamic } from '../core/util.js'
+// import { TypeSlot, TypeSlotEvent } from '../util/util.js'
+import { node_add_dynamic } from '../util/util.js'
 
 const _id = "CONVERT (JOV) 🧬"
 const _prefix = '🧬'

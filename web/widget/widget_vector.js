@@ -4,10 +4,10 @@
  */
 
 import { app } from "/scripts/app.js"
-import { fitHeight, node_cleanup } from '../core/util.js'
-import { CONVERTED_TYPE, convertToInput } from '../core/util_widget.js'
-import { inner_value_change } from '../core/util_dom.js'
-import { rgbToHex } from '../core/util_color.js'
+import { fitHeight, node_cleanup } from '../util/util.js'
+import { CONVERTED_TYPE, convertToInput } from '../util/util_widget.js'
+import { inner_value_change } from '../util/util_dom.js'
+import { rgbToHex } from '../util/util_color.js'
 
 export const VectorWidget = (app, inputName, options, initial, desc='') => {
     const values = options[1]?.default || initial;
