@@ -6,7 +6,7 @@
 import { app } from "/scripts/app.js"
 
 import { CONFIG_USER } from '../util/util_config.js'
-const TOOLTIP_COLOR = CONFIG_USER.color.tooltips;
+// const TOOLTIP_COLOR = CONFIG_USER.color.tooltips;
 
 const TOOLTIP_LENGTH = 250;
 const TOOLTIP_LINES_MAX = 3;
@@ -86,6 +86,10 @@ app.registerExtension({
             if (!self.tooltips_visible || this.flags.collapsed) {
                 return me;
             }
+
+            const TOOLTIP_COLOR = CONFIG_USER.color.tooltips;
+            let alpha = TOOLTIP_COLOR.length > 6 ? TOOLTIP_COLOR.slice(-2) : "FF";
+
             for (const selectedNode of Object.values(app.canvas.selected_nodes)) {
                 // Check if the selectedNode is the same as `this`
                 if (selectedNode !== this) {
@@ -122,7 +126,7 @@ app.registerExtension({
                 }
                 ctx.save();
                 ctx.lineWidth = 1
-                ctx.fillStyle = LiteGraph.WIDGET_BGCOLOR + "DF";
+                ctx.fillStyle = LiteGraph.WIDGET_BGCOLOR + alpha;
                 //  + LiteGraph.NODE_TITLE_HEIGHT
                 const offset_y = visible[0].y;
                 const height = this.size[1] - offset_y;
@@ -149,7 +153,7 @@ app.registerExtension({
                     var lines = text.split('\n').slice(0, TOOLTIP_LINES_MAX);
                     const tooltip_line_count = Math.min(TOOLTIP_LINES_MAX, lines.length);
                     const font_size = LiteGraph.NODE_SUBTEXT_SIZE / tooltip_line_count + 1;
-                    ctx.fillStyle = TOOLTIP_COLOR;
+                    ctx.fillStyle = TOOLTIP_COLOR.slice(0, 7) + alpha;
                     ctx.font = "" + font_size + "px sans-serif";
                     var offset_tip = Y_OFFSET_MAX - (lines.length-1) * font_size;
                     const offset_tip_step = Y_OFFSET_MAX / tooltip_line_count;
@@ -169,6 +173,7 @@ app.registerExtension({
         // HELP!
         const getExtraMenuOptions = nodeType.prototype.getExtraMenuOptions;
         nodeType.prototype.getExtraMenuOptions = function (_, options) {
+            const self = this;
             const me = getExtraMenuOptions?.apply(this, arguments);
             const widget_tooltip = (this.widgets || [])
                 .find(widget => widget.type === 'JTOOLTIP');
@@ -183,7 +188,9 @@ app.registerExtension({
             const help_menu = [{
                 content: `HELP: ${this.title}`,
                 callback: () => {
+                    LiteGraph.closeAllContextMenus();
                     window.open(url, '_blank');
+                    self.setDirtyCanvas(true, true);
                 }
             }];
             if (help_menu.length) {

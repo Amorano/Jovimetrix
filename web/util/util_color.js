@@ -68,24 +68,14 @@ export function node_color_list(nodes) {
 
 export function node_color_all() {
     app.graph._nodes.forEach((node) => {
-        this.node_color_reset(node, false);
+        node_color_reset(node, false);
     })
     app.canvas.setDirty(true);
     // console.info("JOVI] all nodes color refreshed")
 }
 
-export function convert_hex(color) {
-    if (!color.HEX.includes("NAN")) {
-        return '#' + color.HEX + ((color.alpha * 255) | 1 << 8).toString(16).slice(1).toUpperCase()
-    }
-    return "#353535FF"
-}
-
-export function hexToRgb(hex) {
-  //console.info(hex)
+export function hex2rgb(hex) {
   hex = hex.replace(/^#/, '');
-
-  // Parse the hex value into RGB components
   const bigint = parseInt(hex, 16);
   const r = (bigint >> 16) & 255;
   const g = (bigint >> 8) & 255;
@@ -93,16 +83,27 @@ export function hexToRgb(hex) {
   return [r, g, b];
 }
 
-export function rgbToHex(rgb) {
-  // Convert RGB components to a hex color string
-  const [r, g, b] = rgb;
-  return `#${(1 << 24 | r << 16 | g << 8 | b).toString(16).slice(1)}`;
+/*
+* Parse a string "255,255,255,255" or a list[255,255,255,255] into hex
+*/
+export function rgb2hex(input) {
+    const rgbArray = typeof input === 'string' ? input.match(/\d+/g) : input;
+    if (rgbArray.length < 3) {
+        console.error(rgbArray)
+        throw new Error('input not 3 or 4 values');
+    }
+    const hexValues = rgbArray.map((value, index) => {
+        if (index === 3 && !value) return 'ff';
+        const hex = parseInt(value).toString(16);
+        return hex.length === 1 ? '0' + hex : hex;
+    });
+    return '#' + hexValues.slice(0, 3).join('') + (hexValues[3] || '');
 }
 
 export function fade_lerp_color(colorStart, colorEnd, lerp) {
   // Parse color strings into RGB arrays
-  const startRGB = hexToRgb(colorStart);
-  const endRGB = hexToRgb(colorEnd);
+  const startRGB = hex2rgb(colorStart);
+  const endRGB = hex2rgb(colorEnd);
 
   // Linearly interpolate each RGB component
   const lerpedRGB = startRGB.map((component, index) => {
@@ -110,11 +111,11 @@ export function fade_lerp_color(colorStart, colorEnd, lerp) {
   });
 
   // Convert the interpolated RGB values back to a hex color string
-  return rgbToHex(lerpedRGB);
+  return rgb2hex(lerpedRGB);
 }
 
 export function color_contrast(hexColor) {
-    const rgb = hexToRgb(hexColor);
+    const rgb = hex2rgb(hexColor);
     const L = 0.2126 * rgb[0] / 255. + 0.7152 * rgb[1] / 255. + 0.0722 * rgb[2] / 255.;
     // console.info(L)
     return L > 0.790 ? "#000" : "#CCC";

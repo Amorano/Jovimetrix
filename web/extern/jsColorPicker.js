@@ -1,22 +1,22 @@
 // jsColorpicker.js
 
-import * as util_color from '../util/util_color.js';
-import * as util_config from '../util/util_config.js';
+import { rgb2hex } from '../util/util_color.js';
+import { local_set, local_get } from '../util/util_config.js';
 
 (function (global) {
     if (typeof global.ColorPicker === 'undefined') {
         global.ColorPicker = {};
     }
 
-        // Define docCookies if it's not already defined
+    // Define docCookies if it's not already defined
     if (typeof window.ColorPicker.docCookies === 'undefined') {
         window.ColorPicker.docCookies = {
             getItem: function (key, def) {
-                const data = util_config.local_get(key, def);
+                const data = local_get(key, def);
                 return data;
             },
             setItem: function (key, value, options) {
-                util_config.local_set(key, value);
+                local_set(key, value);
             }
         };
     }
@@ -27,8 +27,8 @@ import * as util_config from '../util/util_config.js';
                     input = options.input,
                     patch = options.patch,
                     RGB = colors.RND.rgb;
+                const AHEX = !colors.HEX.includes("NAN") ? rgb2hex(colors) : LiteGraph.NODE_DEFAULT_BGCOLOR // LiteGraph.NODE_DEFAULT_COLOR; // LiteGraph.NODE_DEFAULT_BGCOLOR
 
-                const AHEX = util_color.convert_hex(colors);
                 patch.style.cssText =
                     'color:' + (colors.rgbaMixCustom.luminance > 0.22 ? '#222' : '#ddd') + ';' + // Black...???
                     'background-color: ' + AHEX + ';' +

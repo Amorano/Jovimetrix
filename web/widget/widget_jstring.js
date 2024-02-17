@@ -20,7 +20,7 @@ export const JStringWidget = (app, name, value) => {
                 return [32, 32]
             }
             if (!width) {
-                console.debug(`No width ${this.parent.size}`)
+                console.error(`No width ${this.parent.size}`)
             }
             let dimensions
             withFont(app.ctx, `${fontSize}px monospace`, () => {

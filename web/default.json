@@ -69,7 +69,8 @@
                         "title": "#42378BFF"
                     }
                 },
-                "contrast": true
+                "contrast": true,
+                "tooltips": "#FF7227DF"
             }
         }
     }

@@ -4,10 +4,11 @@
  */
 
 import { app } from "/scripts/app.js"
-import { fitHeight, node_cleanup } from '../util/util.js'
+import { node_cleanup } from '../util/util.js'
 import { CONVERTED_TYPE, convertToInput } from '../util/util_widget.js'
 import { inner_value_change } from '../util/util_dom.js'
-import { rgbToHex } from '../util/util_color.js'
+import { hex2rgb, rgb2hex } from '../util/util_color.js'
+import { $el } from "/scripts/ui.js"
 
 export const VectorWidget = (app, inputName, options, initial, desc='') => {
     const values = options[1]?.default || initial;
@@ -82,7 +83,7 @@ export const VectorWidget = (app, inputName, options, initial, desc='') => {
         }
 
         if (this.options.rgb) {
-            ctx.fillStyle = rgbToHex(converted);
+            ctx.fillStyle = rgb2hex(converted);
             ctx.roundRect(width - 1.15 * widget_padding, Y, 0.65 * widget_padding, height, 16)
             ctx.fill()
         }
@@ -101,7 +102,6 @@ export const VectorWidget = (app, inputName, options, initial, desc='') => {
 
     widget.mouse = function (e, pos, node) {
         let delta = 0;
-
         if (e.type === 'pointerdown') {
             if (isDragging === undefined) {
                 const x = pos[0] - label_full
@@ -110,8 +110,35 @@ export const VectorWidget = (app, inputName, options, initial, desc='') => {
                 const index = Math.floor(x / element_width)
                 if (index >= 0 && index < size) {
                     isDragging = { name: this.name, idx: index}
-                } else if (this.options.rgb && index == size) {
-                    console.debug("show picker");
+                } else if (this.options.rgb) {
+                    let picker;
+                    const rgba = Object.values(this?.value || []);
+                    let color = rgb2hex(rgba.slice(0, 3));
+                    if (index == size) {
+                        if (!picker) {
+                            picker = $el("input", {
+                                type: "color",
+                                parent: document.body,
+                                style: {
+                                    display: "none",
+                                },
+                            });
+                            picker.onchange = () => {
+                                if (picker.value) {
+                                    this.value = hex2rgb(picker.value);
+                                    if (rgba.length > 3) {
+                                        this.value.push(rgba[3])
+                                    }
+                                }
+                            };
+                        }
+                        picker.value = color;
+                        picker.click();
+                    } else if (x < 0 && rgba.length > 2) {
+                        const target = Object.values(rgba.map(item => 255 - item)).slice(0, 3);
+                        this.value = Object.values(this.value);
+                        this.value.splice(0, 3, ...target);
+                    }
                 }
             }
         }
