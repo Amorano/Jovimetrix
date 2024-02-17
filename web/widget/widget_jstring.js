@@ -4,7 +4,7 @@
  */
 
 import { app } from "/scripts/app.js"
-import * as util_dom from '../util/util_dom.js'
+import { offsetDOMWidget } from '../util/util_dom.js'
 
 export const JStringWidget = (app, name, value) => {
     const fontSize = 16
@@ -13,7 +13,7 @@ export const JStringWidget = (app, name, value) => {
         type: "JSTRING",
         value: value,
         draw: function (ctx, node, widgetWidth, widgetY, height) {
-            util_dom.offsetDOMWidget(this, ctx, node, widgetWidth, widgetY, height)
+            offsetDOMWidget(this, ctx, node, widgetWidth, widgetY, height)
         },
         computeSize(width) {
             if (!this.value) {
@@ -57,7 +57,7 @@ export const JStringWidget = (app, name, value) => {
     return w
 }
 
-const widgets = {
+app.registerExtension({
     name: "jovimetrix.widget.jstring",
     async getCustomWidgets(app) {
         return {
@@ -66,5 +66,4 @@ const widgets = {
             })
         }
     }
-}
-app.registerExtension(widgets)
+})

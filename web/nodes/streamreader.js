@@ -10,7 +10,7 @@ import { widget_hide, widget_show } from '../util/util_widget.js'
 
 const _id = "STREAM READER (JOV) 📺"
 
-const ext = {
+app.registerExtension({
 	name: 'jovimetrix.node.' + _id,
 	async beforeRegisterNodeDef(nodeType, nodeData, app) {
         if (nodeData.name !== _id) {
@@ -75,6 +75,4 @@ const ext = {
             return me;
         }
     }
-}
-
-app.registerExtension(ext)
+})

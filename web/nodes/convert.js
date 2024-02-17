@@ -11,7 +11,7 @@ import { node_add_dynamic } from '../util/util.js'
 const _id = "CONVERT (JOV) 🧬"
 const _prefix = '🧬'
 
-const ext = {
+app.registerExtension({
 	name: 'jovimetrix.node.' + _id,
 	async beforeRegisterNodeDef(nodeType, nodeData, app) {
         if (nodeData.name !== _id) {
@@ -46,6 +46,4 @@ const ext = {
             return me;
         }
     }
-}
-
-app.registerExtension(ext)
+})

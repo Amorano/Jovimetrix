@@ -506,7 +506,7 @@ class ExportNode(JOVBaseNode):
 
 class ImageDiffNode(JOVBaseNode):
     NAME = "IMAGE DIFF (JOV) 📏"
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/IMAGE"
+    CATEGORY = JOV_CATEGORY
     DESCRIPTION = "Explicitly show the differences between two images via self-similarity index."
     INPUT_IS_LIST = True
     OUTPUT_IS_LIST = (True, True, True, True, True, )

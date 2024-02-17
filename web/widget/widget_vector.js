@@ -170,7 +170,7 @@ export const VectorWidget = (app, inputName, options, initial, desc='') => {
     return widget
 }
 
-const widgets = {
+app.registerExtension({
     name: "jovimetrix.widget.spinner",
     async getCustomWidgets(app) {
         return {
@@ -195,23 +195,21 @@ const widgets = {
                     .filter(([_, value]) => myTypes.includes(value[0]))
                 );
 
-            // HAVE TO HOOK FOR CONNECTION CLEANUP ON REMOVE
+            // CLEANUP ON REMOVE
             if (matchingTypes.length > 0) {
                 const onNodeCreated = nodeType.prototype.onNodeCreated;
                 nodeType.prototype.onNodeCreated = function () {
-                    const r = onNodeCreated ? onNodeCreated.apply(this, arguments) : undefined;
-                    this.serialize_widgets = true;
-                    fitHeight(this);
+                    const me = onNodeCreated?.apply(this, arguments);
                     this.onRemoved = function () {
                         node_cleanup(this);
                     };
-                    return r;
+                    return me;
                 };
 
                 // MENU CONVERSIONS
-                const origGetExtraMenuOptions = nodeType.prototype.getExtraMenuOptions;
+                const getExtraMenuOptions = nodeType.prototype.getExtraMenuOptions;
                 nodeType.prototype.getExtraMenuOptions = function (_, options) {
-                    const r = origGetExtraMenuOptions ? origGetExtraMenuOptions.apply(this, arguments) : undefined;
+                    const me = getExtraMenuOptions?.apply(this, arguments);
                     const convertToInputArray = [];
                     for (const w of matchingTypes) {
                         const widget = Object.values(this.widgets).find(m => m.name === w[0]);
@@ -224,15 +222,13 @@ const widgets = {
                             convertToInputArray.push(convertToInputObject);
                         }
                     }
-                    const toInput = convertToInputArray;
-                    if (toInput.length) {
-                        options.push(...toInput, null);
+                    //const toInput = convertToInputArray;
+                    if (convertToInputArray.length) {
+                        options.push(...convertToInputArray, null);
                     }
-                    return r;
+                    return me;
                 };
             }
         }
     }
-};
-
-app.registerExtension(widgets)
+})

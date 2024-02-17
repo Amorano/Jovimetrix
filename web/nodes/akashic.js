@@ -13,7 +13,7 @@ import { JStringWidget } from '../widget/widget_jstring.js'
 const _prefix = 'jovi'
 const _id = "AKASHIC (JOV) 📓"
 
-const ext = {
+app.registerExtension({
 	name: 'jovimetrix.node.' + _id,
 	async beforeRegisterNodeDef(nodeType, nodeData, app) {
         if (nodeData.name !== _id) {
@@ -63,6 +63,4 @@ const ext = {
             }
         }
     }
-}
-
-app.registerExtension(ext)
+})

@@ -4,7 +4,7 @@
  */
 
 import { app } from "/scripts/app.js"
-import * as util_dom from '../util/util_dom.js'
+import { offsetDOMWidget } from '../util/util_dom.js'
 
 export const JImageWidget = (app, name, value) => {
     const w = {
@@ -13,7 +13,7 @@ export const JImageWidget = (app, name, value) => {
         value: value,
         draw: function (ctx, node, widgetWidth, widgetY, height) {
             const [cw, ch] = this.computeSize(widgetWidth)
-            util_dom.offsetDOMWidget(this, ctx, node, widgetWidth, widgetY, ch)
+            offsetDOMWidget(this, ctx, node, widgetWidth, widgetY, ch)
         },
         computeSize: function (width) {
             const ratio = this.inputRatio || 1
@@ -38,7 +38,7 @@ export const JImageWidget = (app, name, value) => {
     return w
 }
 
-const widgets = {
+app.registerExtension({
     name: "jovimetrix.widget.jimage",
     async getCustomWidgets(app) {
         return {
@@ -47,5 +47,4 @@ const widgets = {
             })
         }
     }
-}
-app.registerExtension(widgets)
+})

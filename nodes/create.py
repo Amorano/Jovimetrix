@@ -6,18 +6,16 @@ Creation
 import math
 import textwrap
 from typing import Any
-from enum import Enum
-from itertools import zip_longest
 
 import torch
 from PIL import Image, ImageDraw, ImageFont
-import matplotlib.font_manager
+
 from loguru import logger
 
 import comfy
 from server import PromptServer
 
-from Jovimetrix import JOVImageSimple, JOVImageMultiple, \
+from Jovimetrix import JOV_HELP_URL, JOVImageSimple, JOVImageMultiple, \
     IT_RGB_B, IT_RGBA_A, \
     IT_DEPTH, IT_PIXEL, IT_WH, IT_SCALE, IT_ROT, IT_INVERT, \
     IT_REQUIRED, MIN_IMAGE_SIZE
@@ -28,66 +26,20 @@ from Jovimetrix.sup.util import deep_merge_dict, parse_tuple, \
     parse_number, zip_longest_fill, EnumTupleType
 
 from Jovimetrix.sup.image import channel_solid, cv2tensor_full,  \
-    image_mask_add, image_matte, image_rotate, \
-    image_stereogram, pil2cv, cv2tensor, cv2mask, \
+    image_mask_add, image_rotate, \
+    image_stereogram, pil2cv, cv2tensor, \
     pixel_eval, tensor2cv, shape_ellipse, shape_polygon, \
     shape_quad, image_invert, \
     EnumEdge, EnumImageType, \
     IT_EDGE
 
+from Jovimetrix.sup.text import font_all, font_all_names, \
+    text_align, text_justify, text_size, \
+    EnumAlignment, EnumJustify, EnumShapes
+
 # =============================================================================
 
 JOV_CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
-FONT_MANAGER = matplotlib.font_manager.FontManager()
-FONTS = {font.name: font.fname for font in FONT_MANAGER.ttflist}
-FONT_NAMES = sorted(FONTS.keys())
-
-# =============================================================================
-
-class EnumShapes(Enum):
-    CIRCLE=0
-    SQUARE=1
-    ELLIPSE=2
-    RECTANGLE=3
-    POLYGON=4
-
-class EnumAlignment(Enum):
-    TOP=1
-    CENTER=0
-    BOTTOM=2
-
-class EnumJustify(Enum):
-    LEFT=1
-    CENTER=0
-    RIGHT=2
-
-# =============================================================================
-
-def text_align(align:EnumAlignment, height:int, text_height:int, margin:int) -> Any:
-    match align:
-        case EnumAlignment.CENTER:
-            return height / 2 - text_height / 2
-        case EnumAlignment.TOP:
-            return margin
-        case EnumAlignment.BOTTOM:
-            return height - text_height - margin
-
-def text_justify(justify:EnumJustify, width:int, line_width:int, margin:int) -> Any:
-    x = 0
-    match justify:
-        case EnumJustify.LEFT:
-            x = margin
-        case EnumJustify.RIGHT:
-            x = width - line_width - margin
-        case EnumJustify.CENTER:
-            x = width/2 - line_width/2
-    return x
-
-def text_size(draw:ImageDraw, text:str, font:ImageFont) -> tuple:
-    bbox = draw.textbbox((0, 0), text, font=font)
-    text_width = bbox[2] - bbox[0]
-    text_height = bbox[3] - bbox[1]
-    return text_width, text_height
 
 # =============================================================================
 
@@ -127,7 +79,20 @@ class ShapeNode(JOVImageMultiple):
             Lexicon.SHAPE: (EnumShapes._member_names_, {"default": EnumShapes.CIRCLE.name}),
             Lexicon.SIDES: ("INT", {"default": 3, "min": 3, "max": 100, "step": 1}),
         }}
-        return deep_merge_dict(IT_REQUIRED, d, IT_RGBA_A, IT_RGB_B, IT_WH, IT_ROT, IT_SCALE, IT_EDGE, IT_INVERT)
+        tips = {"optional": {
+            "tooltips": ("JTOOLTIP", {"default": {
+                Lexicon.SHAPE: "Shape to Generate. Polygons have a minimum of 3 sides and a maximum of 100 (circle)",
+                Lexicon.SIDES: "Number of sides in polygon",
+                Lexicon.RGBA_A: "Foreground Color",
+                Lexicon.RGB_B: "Background color",
+                Lexicon.WH: "Width and Height",
+                Lexicon.ANGLE: "Rotation Angle",
+                Lexicon.SIZE: "Scale along the Width or Height",
+                Lexicon.EDGE: "Clip or Wrap the Canvas Edge",
+                Lexicon.INVERT: "Color Inversion",
+            }}),
+        }}
+        return deep_merge_dict(IT_REQUIRED, d, IT_RGBA_A, IT_RGB_B, IT_WH, IT_ROT, IT_SCALE, IT_EDGE, IT_INVERT, tips)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         shape = kw.get(Lexicon.SHAPE, EnumShapes.CIRCLE)
@@ -185,12 +150,14 @@ class TextNode(JOVImageMultiple):
     CATEGORY = JOV_CATEGORY
     DESCRIPTION = "Use any system font with auto-fit or manual placement."
     INPUT_IS_LIST = True
+    FONT_NAMES = font_all_names()
+    FONTS = font_all()
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
             Lexicon.STRING: ("STRING", {"default": "", "multiline": True, "dynamicPrompts": False}),
-            Lexicon.FONT: (FONT_NAMES, {"default": FONT_NAMES[0]}),
+            Lexicon.FONT: (cls.FONT_NAMES, {"default": cls.FONT_NAMES[0]}),
             Lexicon.LETTER: ("BOOLEAN", {"default": False}),
             Lexicon.AUTOSIZE: ("BOOLEAN", {"default": False}),
             Lexicon.RGBA_A: ("VEC3", {"default": (255, 255, 255, 255), "min": 0, "max": 255, "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True}),
@@ -204,12 +171,33 @@ class TextNode(JOVImageMultiple):
             Lexicon.MARGIN: ("INT", {"default": 0, "min": -1024, "max": 1024}),
             Lexicon.SPACING: ("INT", {"default": 25, "min": -1024, "max": 1024}),
         }}
-        return deep_merge_dict(IT_REQUIRED, d, IT_WH, IT_ROT, IT_EDGE, IT_INVERT)
+        tips = {"optional": {
+            "tooltips": ("JTOOLTIP", {"default": {
+                "_": JOV_HELP_URL + "/CREATE#-text-generator",
+                Lexicon.STRING: "Text to generate",
+                Lexicon.FONT: "Available System Fonts",
+                Lexicon.LETTER: "Generate each letter into a batch",
+                Lexicon.AUTOSIZE: "Scale based on Width & Height",
+                Lexicon.RGBA_A: "Foreground Color",
+                Lexicon.MATTE: "Background Color",
+                Lexicon.COLUMNS: "0 = Auto-Fit, >0 = Fit into N columns",
+                Lexicon.FONT_SIZE: "Text Size",
+                Lexicon.ALIGN: "Top, Center or Bottom alignment",
+                Lexicon.JUSTIFY: "Left, Right, Center or Spread Justify",
+                Lexicon.MARGIN:  "Whitespace padding around canvas",
+                Lexicon.SPACING: "Line Spacing between Text Lines",
+                Lexicon.WH: "Width and Height",
+                Lexicon.ANGLE: "Rotation Angle",
+                Lexicon.EDGE: "Clip or Wrap the Canvas Edge",
+                Lexicon.INVERT: "Color Inversion",
+            }}),
+        }}
+        return deep_merge_dict(IT_REQUIRED, d, IT_WH, IT_ROT, IT_EDGE, IT_INVERT, tips)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         if len(full_text := kw.get(Lexicon.STRING, [""])) == 0:
             full_text = [""]
-        font_idx = kw.get(Lexicon.FONT, FONT_NAMES[0])
+        font_idx = kw.get(Lexicon.FONT, self.FONT_NAMES[0])
         autosize = kw.get(Lexicon.AUTOSIZE, [False])
         letter = kw.get(Lexicon.LETTER, [False])
         color = parse_tuple(Lexicon.RGBA_A, kw, default=(255, 255, 255, 255))
@@ -228,7 +216,7 @@ class TextNode(JOVImageMultiple):
         pbar = comfy.utils.ProgressBar(len(params))
         for idx, (full_text, font_idx, autosize, letter, color, bgcolor, columns, size, align, justify, margin, line_spacing, wihi, angle, edge) in enumerate(params):
 
-            font_name = FONTS[font_idx]
+            font_name = self.FONTS[font_idx]
             width, height = wihi
             align = EnumAlignment[align]
             justify = EnumJustify[justify]

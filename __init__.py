@@ -112,6 +112,8 @@ TYPE_PIXEL = Union[
 
 TYPE_IMAGE = Union[np.ndarray, torch.Tensor]
 
+JOV_HELP_URL = "https://github.com/Amorano/Jovimetrix/wiki"
+
 # =============================================================================
 # === THERE CAN BE ONLY ONE ===
 # =============================================================================

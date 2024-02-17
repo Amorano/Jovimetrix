@@ -12,7 +12,7 @@ import * as util_config from '../util/util_config.js'
 import { JovimetrixConfigDialog } from "./core_config.js"
 import "../extern/jsColorPicker.js"
 
-const ext = {
+app.registerExtension({
     name: "jovimetrix.colorize",
     async init(app) {
         const showButton = $el("button.comfy-settings-btn", {
@@ -49,6 +49,8 @@ const ext = {
             });
         }
 
+        setting_make(util_config.USER + '.color.tooltips', '🇯 🎨 Tooltip Color ', 'text', 'Color to display tooltip text on ctrl-shift', 'tooltips', '#72FF27')
+
         setting_make(util_config.USER + '.color.titleA', '🇯 🎨 Group Title A ', 'text', 'Alternative title color for separating groups in the color configuration panel', 'titleA', '#302929')
 
         setting_make(util_config.USER + '.color.backA', '🇯 🎨 Group Back A ', 'text', 'Alternative color for separating groups in the color configuration panel', 'backA', '#050303');
@@ -79,7 +81,7 @@ const ext = {
             readOnly: true,
             size: 2,
             multipleInstances: false,
-            appendTo: ext.config_dialog.element,
+            appendTo: this.config_dialog.element,
             noAlpha: false,
             init: function(elm, rgb) {
                 elm.style.backgroundColor = elm.color || LiteGraph.WIDGET_BGCOLOR;
@@ -148,9 +150,5 @@ const ext = {
             }
             return me
         }
-    },
-
-}
-
-app.registerExtension(ext)
-
+    }
+})

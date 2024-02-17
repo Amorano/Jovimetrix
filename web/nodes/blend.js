@@ -9,7 +9,7 @@ import{ hook_widget_size_mode } from '../util/util_jov.js'
 
 const _id = "BLEND (JOV) ⚗️"
 
-const ext = {
+app.registerExtension({
 	name: 'jovimetrix.node.' + _id,
 	async beforeRegisterNodeDef(nodeType, nodeData, app) {
         if (nodeData.name !== _id) {
@@ -23,6 +23,4 @@ const ext = {
             return me;
         }
 	}
-}
-
-app.registerExtension(ext)
+})

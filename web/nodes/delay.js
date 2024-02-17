@@ -13,7 +13,7 @@ import { bubbles } from '../util/util_fun.js'
 
 const _id = "DELAY (JOV) ✋🏽"
 
-const ext = {
+app.registerExtension({
 	name: 'jovimetrix.node.' + _id,
 	async beforeRegisterNodeDef(nodeType, nodeData, app) {
         if (nodeData.name !== _id) {
@@ -77,5 +77,4 @@ const ext = {
         }
 
     }
-}
-app.registerExtension(ext)
+})

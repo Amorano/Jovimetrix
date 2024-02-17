@@ -20,7 +20,7 @@ const _id = "GLSL (JOV) 🍩"
 
 const re_variable = /^uniform\s*(bool|int|float|[i|b]?vec[2-4]|mat[2-4])\s*([A-Za-z][A-Za-z0-9_]+)\s*;[\/\/\s]*\(?((?:\-?[0-9.\s,]+)+|(?:(?:true|false)\s*,?)+)/gm;
 
-const ext = {
+app.registerExtension({
 	name: 'jovimetrix.node.' + _id,
 	async beforeRegisterNodeDef(nodeType, nodeData, app) {
         if (nodeData.name !== _id) {
@@ -168,6 +168,4 @@ const ext = {
             return me;
         }
     }
-}
-
-app.registerExtension(ext)
+})

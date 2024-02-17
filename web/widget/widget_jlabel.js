@@ -4,10 +4,10 @@
  */
 
 import { app } from "/scripts/app.js"
-import * as util from '../util/util.js'
-import * as util_dom from '../util/util_dom.js'
+// import * as util from '../util/util.js'
+// import { offsetDOMWidget } from '../util/util_dom.js'
 
-export const jLabelWidget = (label) => {
+export const JLabelWidget = (label) => {
     const widget = {
         value: label,
         type: "JLABEL",
@@ -30,3 +30,14 @@ export const jLabelWidget = (label) => {
 
     return widget;
 }
+
+app.registerExtension({
+    name: "jovimetrix.widget.jlabel",
+    async getCustomWidgets(app) {
+        return {
+            JLABEL: (node, inputName, inputData, app) => ({
+                widget: node.addCustomWidget(JLabelWidget(app, inputName, inputData[0])),
+            })
+        }
+    }
+})

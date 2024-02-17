@@ -12,7 +12,7 @@ import { flashBackgroundColor } from '../util/util_fun.js'
 
 const _id = "QUEUE (JOV) 🗃"
 
-const ext = {
+app.registerExtension({
 	name: 'jovimetrix.node.' + _id,
 	async beforeRegisterNodeDef(nodeType, nodeData, app) {
         if (nodeData.name !== _id) {
@@ -141,5 +141,4 @@ const ext = {
 
 
     }
-}
-app.registerExtension(ext)
+})
