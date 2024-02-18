@@ -11,21 +11,19 @@ from loguru import logger
 import comfy
 from server import PromptServer
 
-from Jovimetrix import JOV_HELP_URL, ComfyAPIMessage, JOVBaseNode, JOVImageSimple, TimedOutException, \
+from Jovimetrix import JOV_HELP_URL, ComfyAPIMessage, JOVBaseNode, JOVImageMultiple, JOVImageSimple, TimedOutException, \
     ROOT, IT_PIXEL, IT_REQUIRED, MIN_IMAGE_SIZE, IT_WH, JOV_GLSL
 
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import deep_merge_dict, parse_tuple, \
     parse_tuple_single, zip_longest_fill, EnumTupleType
-from Jovimetrix.sup.image import pil2tensor, tensor2pil
+from Jovimetrix.sup.image import cv2tensor_full, pil2cv, pil2tensor, tensor2pil
 from Jovimetrix.sup.shader import GLSL, CompileException
 
 # =============================================================================
 
 JOV_CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
-
 JOV_CONFIG_GLSL = ROOT / 'glsl'
-
 DEFAULT_FRAGMENT = """void main() {
     vec4 texColor = texture(iChannel0, fragCoord);
     vec4 color = vec4(fragCoord, abs(sin(iTime)), 1.0);
@@ -34,7 +32,7 @@ DEFAULT_FRAGMENT = """void main() {
 
 # =============================================================================
 
-class GLSLNode(JOVImageSimple):
+class GLSLNode(JOVImageMultiple):
     NAME = "GLSL (JOV) 🍩"
     CATEGORY = JOV_CATEGORY
     DESCRIPTION = ""
@@ -57,7 +55,6 @@ class GLSLNode(JOVImageSimple):
             "id": "UNIQUE_ID"
         }}
         d = deep_merge_dict(IT_REQUIRED, IT_PIXEL, d)
-        print(d)
         return Lexicon._parse(d, JOV_HELP_URL + "/CREATE#-glsl")
 
     @classmethod
@@ -122,15 +119,16 @@ class GLSLNode(JOVImageSimple):
             self.__glsl.fps = fps
             for _ in range(batch):
                 img = self.__glsl.render(texture1, param)
-                images.append(pil2tensor(img))
+                img = pil2cv(img)
+                img = cv2tensor_full(img)
+                images.append(img)
 
             runtime = self.__glsl.runtime if not reset else 0
             PromptServer.instance.send_sync("jovi-glsl-time", {"id": id, "t": runtime})
 
             self.__last_good = images
             pbar.update_absolute(idx)
-
-        return (images,)
+        return list(zip(*images))
 
 class GLSLBaseNode(JOVBaseNode):
     CATEGORY = "JOVIMETRIX GLSL"

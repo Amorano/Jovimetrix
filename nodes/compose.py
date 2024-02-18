@@ -115,7 +115,7 @@ class TransformNode(JOVImageMultiple):
             mirror = EnumMirrorMode[mirror]
             mpx, mpy = mirror_pivot
             img = image_mirror(img, mirror, mpx, mpy)
-            print(matte)
+            logger.debug(matte)
             matte = pixel_eval(matte, mode=EnumImageType.BGRA)
             tx, ty = tile_xy
             if (tx := int(tx)) > 1 or (ty := int(ty)) > 1:
@@ -148,7 +148,7 @@ class TransformNode(JOVImageMultiple):
                 img = image_scalefit(img, w, h, mode, sample)
                 img = channel_fill(img, w, h, 0)
 
-            print(matte)
+            logger.debug(matte)
             img = cv2tensor_full(img, matte)
             images.append(img)
             pbar.update_absolute(idx)

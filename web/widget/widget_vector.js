@@ -84,7 +84,11 @@ export const VectorWidget = (app, inputName, options, initial, desc='') => {
         }
 
         if (this.options.rgb) {
-            ctx.fillStyle = rgb2hex(converted);
+            try {
+                ctx.fillStyle = rgb2hex(converted);
+            } catch (e) {
+                ctx.fillStyle = "#000"
+            }
             ctx.roundRect(width - 1.15 * widget_padding, Y, 0.65 * widget_padding, height, 16)
             ctx.fill()
         }

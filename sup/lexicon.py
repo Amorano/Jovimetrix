@@ -4,13 +4,10 @@ EMOJI OCD Support
 """
 
 # 🔗 ⚓ 📀 🧹 🍿 ➕ 📽️ 🦄 📑 📺 🎪 🐘 🚦 🤯 😱 💀 ⛓️ 🔒 🪀 🪁 🔮 🧿 🧙🏽 🧙🏽‍♀️
-# 🧯 🦚 ♻️  ⤴️ ⚜️ 🅱️ 🅾️ ⬆️ ↔️ ↕️ 〰️ ☐ 🚮 🤲🏽 👍 ✳️
-    #USER1 = '☝🏽', ""
-    #USER2 = '✌🏽'
+# 🧯 🦚 ♻️  ⤴️ ⚜️ 🅱️ 🅾️ ⬆️ ↔️ ↕️ 〰️ ☐ 🚮 🤲🏽 👍 ✳️ ✌🏽 ☝🏽
+
 from typing import Any
 from loguru import logger
-
-from Jovimetrix.sup.util import deep_merge_dict
 
 class LexiconMeta(type):
     def __new__(cls, name, bases, dct) -> object:
@@ -226,7 +223,5 @@ class Lexicon(metaclass=LexiconMeta):
                         continue
                 data[k] = tip
 
-        data = {"optional": {
-            "tooltips": ("JTOOLTIP", {"default": data})
-        }}
-        return deep_merge_dict(node, data)
+        node["optional"]["tooltips"] = ("JTOOLTIP", {"default": data})
+        return node

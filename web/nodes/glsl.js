@@ -31,13 +31,13 @@ app.registerExtension({
         nodeType.prototype.onNodeCreated = async function () {
             const me = onNodeCreated?.apply(this);
             const self = this;
-            const widget_time = this.widgets[0];
-            const widget_fragment = this.widgets[6];
+            const widget_time = this.widgets.find(w => w.name === '🕛');
+            const widget_fragment = this.widgets.find(w => w.name === 'FRAGMENT');
             widget_fragment.dynamicPrompts = false;
             widget_fragment.inputEl.addEventListener('input', function (event) {
                 init_fragment(event.target.value)
             });
-            const widget_param = this.widgets[7];
+            const widget_param = this.widgets.find(w => w.name === 'PARAM');
             widget_param.serializeValue = async () =>
                 self.widgets.slice(8).reduce((result, widget) =>
                     ({ ...result, [widget.name]: widget.value }), {});
@@ -132,7 +132,7 @@ app.registerExtension({
                 app.canvas.setDirty(true);
             }
 
-            const widget_reset = this.widgets[4];
+            const widget_reset = this.widgets.find(w => w.name === 'RESET');
             const old_callback = widget_reset?.callback;
             widget_reset.callback = async (e) => {
                 widget_reset.value = false;
