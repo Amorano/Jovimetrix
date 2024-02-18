@@ -4,6 +4,7 @@ Logic and Code flow nodes
 """
 
 import os
+import random
 import time
 from enum import Enum
 from typing import Any
@@ -14,8 +15,8 @@ import comfy
 from server import PromptServer
 import nodes
 
-from Jovimetrix import ComfyAPIMessage, JOVBaseNode, \
-    IT_REQUIRED, IT_FLIP, WILDCARD, TimedOutException
+from Jovimetrix import JOV_HELP_URL, ComfyAPIMessage, JOVBaseNode, TimedOutException, \
+    IT_REQUIRED, IT_FLIP, WILDCARD
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import deep_merge_dict, zip_longest_fill, convert_parameter
 
@@ -75,7 +76,8 @@ class DelayNode(JOVBaseNode):
         "hidden": {
             "id": "UNIQUE_ID"
         }}
-        return deep_merge_dict(IT_REQUIRED, d)
+        d = deep_merge_dict(IT_REQUIRED, d)
+        return Lexicon._parse(d, JOV_HELP_URL + "/FLOW#-delay")
 
     @staticmethod
     def parse_q(id, delay: int, forced:bool=False)-> bool:
@@ -147,7 +149,8 @@ class HoldValueNode(JOVBaseNode):
             Lexicon.PASS_IN: (WILDCARD, {"default": None}),
             Lexicon.WAIT: ("BOOLEAN", {"default": False}),
         }}
-        return deep_merge_dict(IT_REQUIRED, d)
+        d = deep_merge_dict(IT_REQUIRED, d)
+        return Lexicon._parse(d, JOV_HELP_URL + "/FLOW#-hold")
 
     def __init__(self, *arg, **kw) -> None:
         super().__init__(*arg, **kw)
@@ -175,7 +178,8 @@ class ComparisonNode(JOVBaseNode):
             Lexicon.COMPARE: (EnumComparison._member_names_, {"default": EnumComparison.EQUAL.name}),
             Lexicon.IN_B: (WILDCARD, {"default": None})
         }}
-        return deep_merge_dict(IT_REQUIRED, d, IT_FLIP)
+        d = deep_merge_dict(IT_REQUIRED, d, IT_FLIP)
+        return Lexicon._parse(d, JOV_HELP_URL + "/FLOW#-comparison")
 
     def run(self, **kw) -> tuple[bool]:
         result = []
@@ -250,14 +254,15 @@ class SelectNode(JOVBaseNode):
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
-                #  -1: Random; 0: Sequential; 1..N: explicitly use index
-                Lexicon.SELECT: ("INT", {"default": 0, "min": -1, "step": 1}),
-                Lexicon.RESET: ("BOOLEAN", {"default": False}),
-            },
-            "hidden": {
-                "id": "UNIQUE_ID"
-            }}
-        return deep_merge_dict(IT_REQUIRED, d)
+            #  -1: Random; 0: Sequential; 1..N: explicitly use index
+            Lexicon.SELECT: ("INT", {"default": 0, "min": -1, "step": 1}),
+            Lexicon.RESET: ("BOOLEAN", {"default": False}),
+        },
+        "hidden": {
+            "id": "UNIQUE_ID"
+        }}
+        d = deep_merge_dict(IT_REQUIRED, d)
+        return Lexicon._parse(d, JOV_HELP_URL + "/FLOW#-select")
 
     @classmethod
     def IS_CHANGED(cls) -> float:

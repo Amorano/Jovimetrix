@@ -25,7 +25,7 @@ from folder_paths import get_output_directory
 from server import PromptServer
 import nodes
 
-from Jovimetrix import ComfyAPIMessage, JOVBaseNode, TimedOutException, \
+from Jovimetrix import JOV_HELP_URL, ComfyAPIMessage, JOVBaseNode, TimedOutException, \
     WILDCARD, ROOT, IT_REQUIRED, IT_WH, MIN_IMAGE_SIZE, IT_PIXEL, IT_PIXEL2
 
 from Jovimetrix.sup.lexicon import Lexicon
@@ -70,7 +70,8 @@ class AkashicNode(JOVBaseNode):
         d = {"optional": {
             Lexicon.PASS_IN: (WILDCARD, {})
         }}
-        return deep_merge_dict(IT_REQUIRED, d)
+        d = deep_merge_dict(IT_REQUIRED, d)
+        return Lexicon._parse(d, JOV_HELP_URL + "/UTILITY#-akashic")
 
     def __parse(self, val) -> dict[str, list[Any]]:
         if isinstance(val, dict):
@@ -136,7 +137,8 @@ class ValueGraphNode(JOVBaseNode):
             Lexicon.RESET: ("BOOLEAN", {"default": False}),
             Lexicon.VALUE: ("INT", {"default": 120, "min": 0})
         }}
-        return deep_merge_dict(IT_REQUIRED, d, IT_WH)
+        d = deep_merge_dict(IT_REQUIRED, d, IT_WH)
+        return Lexicon._parse(d, JOV_HELP_URL + "/UTILITY#-value-graph")
 
     @classmethod
     def IS_CHANGED(cls) -> float:
@@ -219,7 +221,8 @@ class RerouteNode(JOVBaseNode):
         d = {"optional": {
             Lexicon.PASS_IN: (WILDCARD, {})
         }}
-        return deep_merge_dict(IT_REQUIRED, d)
+        d = deep_merge_dict(IT_REQUIRED, d)
+        return Lexicon._parse(d, JOV_HELP_URL + "/UTILITY#-re-route")
 
     def run(self, **kw) -> tuple[Any, Any]:
         o = kw.get(Lexicon.PASS_IN, None)
@@ -250,7 +253,8 @@ class QueueNode(JOVBaseNode):
             "hidden": {
                 "id": "UNIQUE_ID"
             }}
-        return deep_merge_dict(IT_REQUIRED, d)
+        d = deep_merge_dict(IT_REQUIRED, d)
+        return Lexicon._parse(d, JOV_HELP_URL + "/UTILITY#-queue")
 
     @classmethod
     def IS_CHANGED(cls) -> float:
@@ -431,7 +435,8 @@ class ExportNode(JOVBaseNode):
             # GIF OR GIFSKI
             Lexicon.LOOP: ("INT", {"default": 0, "min": 0}),
         }}
-        return deep_merge_dict(IT_REQUIRED, IT_PIXEL, d)
+        d = deep_merge_dict(IT_REQUIRED, IT_PIXEL, d)
+        return Lexicon._parse(d, JOV_HELP_URL + "/UTILITY#-export")
 
     def run(self, **kw) -> None:
         img = kw.get(Lexicon.PIXEL, [None])[0]
@@ -519,7 +524,8 @@ class ImageDiffNode(JOVBaseNode):
         d = {"optional": {
               Lexicon.THRESHOLD: ("FLOAT", {"default": 0.5, "min": 0, "max": 1, "step": 0.01},),
         }}
-        return deep_merge_dict(IT_REQUIRED, IT_PIXEL2, d)
+        d = deep_merge_dict(IT_REQUIRED, IT_PIXEL2, d)
+        return Lexicon._parse(d, JOV_HELP_URL + "/UTILITY#-image-diff")
 
     def run(self, **kw) -> tuple[Any, Any]:
         a = kw.get(Lexicon.PIXEL_A, [None])

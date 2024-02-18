@@ -15,7 +15,7 @@ import comfy
 # from server import PromptServer
 import nodes
 
-from Jovimetrix import JOVBaseNode, IT_REQUIRED, WILDCARD, IT_FLIP
+from Jovimetrix import JOV_HELP_URL, JOVBaseNode, IT_REQUIRED, WILDCARD, IT_FLIP
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import zip_longest_fill, convert_parameter, deep_merge_dict
 from Jovimetrix.sup.anim import Ease, EnumEase
@@ -157,7 +157,8 @@ class CalcUnaryOPNode(JOVBaseNode):
             Lexicon.IN_A: (WILDCARD, {"default": None}),
             Lexicon.FUNC: (EnumUnaryOperation._member_names_, {"default": EnumUnaryOperation.ABS.name})
         }}
-        return deep_merge_dict(IT_REQUIRED, d)
+        d = deep_merge_dict(IT_REQUIRED, d)
+        return Lexicon._parse(d, JOV_HELP_URL + "/CALC#-calc-op-unary")
 
     def run(self, **kw) -> tuple[bool]:
         result = []
@@ -239,7 +240,8 @@ class CalcBinaryOPNode(JOVBaseNode):
             Lexicon.FUNC: (EnumBinaryOperation._member_names_, {"default": EnumBinaryOperation.ADD.name}),
             Lexicon.IN_B: (WILDCARD, {"default": None})
         }}
-        return deep_merge_dict(IT_REQUIRED, d, IT_FLIP)
+        d = deep_merge_dict(IT_REQUIRED, d, IT_FLIP)
+        return Lexicon._parse(d, JOV_HELP_URL + "/CALC#-calc-op-binary")
 
     def run(self, **kw) -> tuple[bool]:
         result = []
@@ -338,13 +340,14 @@ class ValueNode(JOVBaseNode):
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
-                Lexicon.TYPE: (EnumConvertType._member_names_, {"default": EnumConvertType.BOOLEAN.name}),
-                Lexicon.X: ("FLOAT", {"default": 0}),
-                Lexicon.Y: ("FLOAT", {"default": 0}),
-                Lexicon.Z: ("FLOAT", {"default": 0}),
-                Lexicon.W: ("FLOAT", {"default": 0})
-            }}
-        return deep_merge_dict(IT_REQUIRED, d)
+            Lexicon.TYPE: (EnumConvertType._member_names_, {"default": EnumConvertType.BOOLEAN.name}),
+            Lexicon.X: ("FLOAT", {"default": 0}),
+            Lexicon.Y: ("FLOAT", {"default": 0}),
+            Lexicon.Z: ("FLOAT", {"default": 0}),
+            Lexicon.W: ("FLOAT", {"default": 0})
+        }}
+        d = deep_merge_dict(IT_REQUIRED, d)
+        return Lexicon._parse(d, JOV_HELP_URL + "/CALC#%EF%B8%8F⃣-value")
 
     def run(self, **kw) -> tuple[bool]:
         typ = kw.get(Lexicon.TYPE, [EnumConvertType.BOOLEAN])
@@ -392,7 +395,8 @@ class ConvertNode(JOVBaseNode):
             Lexicon.IN_A: (WILDCARD, {"default": None}),
             Lexicon.TYPE: (["STRING", "BOOLEAN", "INT", "FLOAT", "VEC2", "VEC3", "VEC4"], {"default": "BOOLEAN"})
         }}
-        return deep_merge_dict(IT_REQUIRED, d)
+        d = deep_merge_dict(IT_REQUIRED, d)
+        return Lexicon._parse(d, JOV_HELP_URL + "/CALC#-convert")
 
     @staticmethod
     def convert(typ, val) -> tuple | tuple[Any]:
@@ -478,17 +482,18 @@ class LerpNode(JOVBaseNode):
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
-            Lexicon.LERP_A: (WILDCARD, {}),
-            Lexicon.LERP_B: (WILDCARD, {}),
-            Lexicon.FLOAT: ("FLOAT", {"default": 0., "min": 0., "max": 1.0, "step": 0.001, "precision": 4, "round": 0.00001}),
+            Lexicon.IN_A: (WILDCARD, {}),
+            Lexicon.IN_B: (WILDCARD, {}),
+            Lexicon.FLOAT: ("FLOAT", {"default": 0., "min": 0., "max": 1.0, "step": 0.001, "precision": 4, "round": 0.00001, "tooltip": "Blend Amount. 0 = full A, 1 = full B"}),
             Lexicon.EASE: (["NONE"] + EnumEase._member_names_, {"default": "NONE"}),
-            Lexicon.TYPE: (EnumNumberType._member_names_, {"default": EnumNumberType.FLOAT.name})
+            Lexicon.TYPE: (EnumNumberType._member_names_, {"default": EnumNumberType.FLOAT.name, "tooltip": "Output As"})
         }}
-        return deep_merge_dict(IT_REQUIRED, d)
+        d = deep_merge_dict(IT_REQUIRED, d)
+        return Lexicon._parse(d, JOV_HELP_URL + "/CALC#-lerp")
 
     def run(self, **kw) -> tuple[Any, Any]:
-        a = kw.get(Lexicon.LERP_A, [0])
-        b = kw.get(Lexicon.LERP_B, [0])
+        a = kw.get(Lexicon.IN_A, [0])
+        b = kw.get(Lexicon.IN_B, [0])
         pos = kw.get(Lexicon.FLOAT, [0.])
         op = kw.get(Lexicon.EASE, ["NONE"])
         typ = kw.get(Lexicon.TYPE, ["NONE"])

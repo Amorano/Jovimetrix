@@ -10,7 +10,7 @@ from loguru import logger
 
 import comfy
 
-from Jovimetrix import JOVBaseNode, \
+from Jovimetrix import JOV_HELP_URL, JOVBaseNode, \
     MIN_IMAGE_SIZE, IT_REQUIRED, IT_WH, IT_RGBA_A, IT_RGBA_B
 
 from Jovimetrix.sup.lexicon import Lexicon
@@ -39,7 +39,9 @@ class GraphWaveNode(JOVBaseNode):
                 Lexicon.FILEN: ("STRING", {"default": ""}),
                 Lexicon.VALUE: ("INT", {"default": 100, "min": 32, "max": 8192, "step": 1})
             }}
-        return deep_merge_dict(IT_REQUIRED, d, IT_WH, IT_RGBA_A, IT_RGBA_B)
+
+        d = deep_merge_dict(IT_REQUIRED, d, IT_WH, IT_RGBA_A, IT_RGBA_B)
+        return Lexicon._parse(d, JOV_HELP_URL + "/AUDIO#-graph-wave")
 
     # #️⃣ 🪄
     def __init__(self, *arg, **kw) -> None:

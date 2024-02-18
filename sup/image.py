@@ -939,7 +939,7 @@ def image_matte(image:TYPE_IMAGE, color:TYPE_PIXEL=255) -> TYPE_IMAGE:
     if cc != 4:
         return image
     matte = channel_solid(w, h, color)
-    logger.debug(matte.shape)
+    # logger.debug(matte.shape)
     image = image_blend(matte, image)
     return image[:,:,:3]
 

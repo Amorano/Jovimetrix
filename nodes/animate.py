@@ -9,7 +9,7 @@ from loguru import logger
 
 import comfy
 
-from Jovimetrix import JOVBaseNode, IT_REQUIRED
+from Jovimetrix import JOV_HELP_URL, JOVBaseNode, IT_REQUIRED
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import deep_merge_dict
 from Jovimetrix.sup import anim
@@ -43,7 +43,8 @@ class TickNode(JOVBaseNode):
             # manual total = 0
             Lexicon.RESET: ("BOOLEAN", {"default": False}),
         }}
-        return deep_merge_dict(IT_REQUIRED, d)
+        d = deep_merge_dict(IT_REQUIRED, d)
+        return Lexicon._parse(d, JOV_HELP_URL + "/ANIMATE#-tick")
 
     @classmethod
     def IS_CHANGED(cls) -> float:
@@ -107,7 +108,8 @@ class WaveGeneratorNode(JOVBaseNode):
                 Lexicon.OFFSET: ("FLOAT", {"default": 0, "min": 0.0, "step": 0.001}),
                 Lexicon.TIME: ("FLOAT", {"default": 0, "min": 0, "step": 0.000001}),
             }}
-        return deep_merge_dict(IT_REQUIRED, d)
+        d = deep_merge_dict(IT_REQUIRED, d)
+        return Lexicon._parse(d, JOV_HELP_URL + "/ANIMATE#-wave-generator")
 
     def run(self, **kw) -> tuple[float, int]:
         val = 0.

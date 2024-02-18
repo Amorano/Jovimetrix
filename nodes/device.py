@@ -21,7 +21,7 @@ from loguru import logger
 
 import comfy
 
-from Jovimetrix import JOVBaseNode, JOVImageMultiple, \
+from Jovimetrix import JOV_HELP_URL, JOVBaseNode, JOVImageMultiple, \
     IT_PIXEL, IT_INVERT, IT_REQUIRED, MIN_IMAGE_SIZE
 
 from Jovimetrix.sup.lexicon import Lexicon
@@ -97,7 +97,8 @@ class StreamReaderNode(JOVImageMultiple):
             Lexicon.ORIENT: (EnumCanvasOrientation._member_names_, {"default": EnumCanvasOrientation.NORMAL.name}),
             Lexicon.ZOOM: ("FLOAT", {"min": 0, "max": 1, "step": 0.005, "default": 0}),
         }}
-        return deep_merge_dict(IT_REQUIRED, d, IT_WHMODE, IT_SAMPLE, e)
+        d = deep_merge_dict(IT_REQUIRED, d, IT_WHMODE, IT_SAMPLE, e)
+        return Lexicon._parse(d, JOV_HELP_URL + "/DEVICE#-stream-reader")
 
     @classmethod
     def IS_CHANGED(cls, **kw) -> float:
@@ -250,7 +251,8 @@ class StreamWriterNode(JOVBaseNode):
                 Lexicon.ROUTE: ("STRING", {"default": "/stream"}),
                 Lexicon.WH: ("VEC2", {"default": (640, 480), "min": MIN_IMAGE_SIZE, "max": 8192, "step": 1, "label": [Lexicon.W, Lexicon.H]})
             }}
-        return deep_merge_dict(IT_REQUIRED, IT_PIXEL, d, IT_SCALEMODE, IT_SAMPLE, IT_INVERT)
+        d = deep_merge_dict(IT_REQUIRED, IT_PIXEL, d, IT_SCALEMODE, IT_SAMPLE, IT_INVERT)
+        return Lexicon._parse(d, JOV_HELP_URL + "/DEVICE#-stream-writer")
 
     #@classmethod
     #def IS_CHANGED(cls, **kw) -> float:
@@ -312,7 +314,8 @@ class MIDIMessageNode(JOVBaseNode):
         d = {"optional": {
             Lexicon.MIDI: ('JMIDIMSG', {"default": None})
         }}
-        return deep_merge_dict(IT_REQUIRED, d)
+        d = deep_merge_dict(IT_REQUIRED, d)
+        return Lexicon._parse(d, JOV_HELP_URL + "/DEVICE#-midi-message")
 
     def run(self, **kw) -> tuple[object, bool, int, int, int, float, float]:
         if (message := kw.get(Lexicon.MIDI, None)) is None:
@@ -334,7 +337,8 @@ class MIDIReaderNode(JOVBaseNode):
         d = {"optional": {
             Lexicon.DEVICE : (cls.DEVICES, {"default": cls.DEVICES[0] if len(cls.DEVICES) > 0 else None})
         }}
-        return deep_merge_dict(IT_REQUIRED, d)
+        d = deep_merge_dict(IT_REQUIRED, d)
+        return Lexicon._parse(d, JOV_HELP_URL + "/DEVICE#-midi-reader")
 
     @classmethod
     def IS_CHANGED(cls) -> float:
@@ -409,7 +413,8 @@ class MIDIFilterEZNode(JOVBaseNode):
             Lexicon.VALUE: ("INT", {"default": -1, "min": -1, "max": 127, "step": 1}),
             Lexicon.NORMALIZE: ("FLOAT", {"default": -1, "min": -1, "max": 1, "step": 0.01})
         }}
-        return deep_merge_dict(IT_REQUIRED, d)
+        d = deep_merge_dict(IT_REQUIRED, d)
+        return Lexicon._parse(d, JOV_HELP_URL + "/DEVICE#-midi-filter-ez")
 
     def run(self, **kw) -> tuple[bool]:
         message = kw.get(Lexicon.MIDI, None)
@@ -456,7 +461,8 @@ class MIDIFilterNode(JOVBaseNode):
             Lexicon.VALUE: ("STRING", {"default": ""}),
             Lexicon.NORMALIZE: ("STRING", {"default": ""})
         }}
-        return deep_merge_dict(IT_REQUIRED, d)
+        d = deep_merge_dict(IT_REQUIRED, d)
+        return Lexicon._parse(d, JOV_HELP_URL + "/DEVICE#-midi-filter")
 
     def __filter(self, data: str, value: float) -> bool:
         if not data:

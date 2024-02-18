@@ -12,8 +12,8 @@ import numpy as np
 
 import comfy
 
-from Jovimetrix import IT_MATTE, JOVImageMultiple, \
-    IT_PIXEL, IT_RGB, IT_PIXEL2_MASK, IT_INVERT, IT_REQUIRED, \
+from Jovimetrix import JOV_HELP_URL, JOVImageMultiple, \
+    IT_MATTE, IT_PIXEL, IT_RGB, IT_PIXEL2_MASK, IT_INVERT, IT_REQUIRED, \
     IT_RGBA_IMAGE, MIN_IMAGE_SIZE, IT_TRANS, IT_ROT, IT_SCALE
 
 from Jovimetrix.sup.lexicon import Lexicon
@@ -60,7 +60,8 @@ class TransformNode(JOVImageMultiple):
             Lexicon.BLBR: ("VEC4", {"default": (0, 1, 1, 1), "min": 0, "max": 1, "step": 0.005, "precision": 4, "label": [Lexicon.BOTTOM, Lexicon.LEFT, Lexicon.BOTTOM, Lexicon.RIGHT]}),
             Lexicon.STRENGTH: ("FLOAT", {"default": 1, "min": 0, "precision": 4, "step": 0.005})
         }}
-        return deep_merge_dict(IT_REQUIRED, IT_PIXEL, IT_TRANS, IT_ROT, IT_SCALE, d, IT_WHMODE, IT_MATTE)
+        d = deep_merge_dict(IT_REQUIRED, IT_PIXEL, IT_TRANS, IT_ROT, IT_SCALE, d, IT_WHMODE, IT_MATTE)
+        return Lexicon._parse(d, JOV_HELP_URL + "/COMPOSE#-transform")
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         img = kw.get(Lexicon.PIXEL, [None])
@@ -162,11 +163,12 @@ class BlendNode(JOVImageMultiple):
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
-                Lexicon.FUNC: (EnumBlendType._member_names_, {"default": EnumBlendType.NORMAL.name}),
-                Lexicon.A: ("FLOAT", {"default": 1, "min": 0, "max": 1, "step": 0.01}),
-                Lexicon.FLIP: ("BOOLEAN", {"default": False}),
-            }}
-        return deep_merge_dict(IT_REQUIRED, IT_PIXEL2_MASK, d, IT_WHMODE)
+            Lexicon.FUNC: (EnumBlendType._member_names_, {"default": EnumBlendType.NORMAL.name}),
+            Lexicon.A: ("FLOAT", {"default": 1, "min": 0, "max": 1, "step": 0.01}),
+            Lexicon.FLIP: ("BOOLEAN", {"default": False}),
+        }}
+        d = deep_merge_dict(IT_REQUIRED, IT_PIXEL2_MASK, d, IT_WHMODE)
+        return Lexicon._parse(d, JOV_HELP_URL + "/COMPOSE#-blend")
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         pixelA = kw.get(Lexicon.PIXEL_A, [None])
@@ -212,7 +214,8 @@ class PixelSplitNode(JOVImageMultiple):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        return deep_merge_dict(IT_REQUIRED, IT_PIXEL)
+        d = deep_merge_dict(IT_REQUIRED, IT_PIXEL)
+        return Lexicon._parse(d, JOV_HELP_URL + "/COMPOSE#-pixel-split")
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         images = []
@@ -236,7 +239,8 @@ class PixelMergeNode(JOVImageMultiple):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        return deep_merge_dict(IT_REQUIRED, IT_RGBA_IMAGE, IT_MATTE)
+        d = deep_merge_dict(IT_REQUIRED, IT_RGBA_IMAGE, IT_MATTE)
+        return Lexicon._parse(d, JOV_HELP_URL + "/COMPOSE#-pixel-merge")
 
     def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor]:
         R = kw.get(Lexicon.R, [None])
@@ -277,7 +281,8 @@ class StackNode(JOVImageMultiple):
                 Lexicon.AXIS: (EnumOrientation._member_names_, {"default": EnumOrientation.GRID.name}),
                 Lexicon.STEP: ("INT", {"min": 0, "step": 1, "default": 0}),
             }}
-        return deep_merge_dict(IT_REQUIRED, IT_PIXEL, d, IT_WHMODE)
+        d = deep_merge_dict(IT_REQUIRED, IT_PIXEL, d, IT_WHMODE)
+        return Lexicon._parse(d, JOV_HELP_URL + "/COMPOSE#-stack")
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         pixels = kw.get(Lexicon.PIXEL, [None])
@@ -333,7 +338,8 @@ class CropNode(JOVImageMultiple):
             Lexicon.TLTR: ("VEC4", {"default": (0, 0, 0, 1), "min": 0, "max": 1, "step": 0.01, "precision": 5, "round": 0.000001, "label": [Lexicon.TOP, Lexicon.LEFT, Lexicon.TOP, Lexicon.RIGHT]}),
             Lexicon.BLBR: ("VEC4", {"default": (1, 0, 1, 1), "min": 0, "max": 1, "step": 0.01, "precision": 5, "round": 0.000001, "label": [Lexicon.BOTTOM, Lexicon.LEFT, Lexicon.BOTTOM, Lexicon.RIGHT]}),
         }}
-        return deep_merge_dict(IT_REQUIRED, IT_PIXEL, d, IT_RGB)
+        d = deep_merge_dict(IT_REQUIRED, IT_PIXEL, d, IT_RGB)
+        return Lexicon._parse(d, JOV_HELP_URL + "/COMPOSE#-crop")
 
     def run(self, **kw) -> tuple[list[torch.Tensor], list[torch.Tensor]]:
         pixels = kw.get(Lexicon.PIXEL, [None])
@@ -395,7 +401,8 @@ class ColorTheoryNode(JOVImageMultiple):
                 Lexicon.SCHEME: (EnumColorTheory._member_names_, {"default": EnumColorTheory.COMPLIMENTARY.name}),
                 Lexicon.VALUE: ("INT", {"default": 45, "min": -90, "max": 90, "step": 1})
             }}
-        return deep_merge_dict(IT_REQUIRED, IT_PIXEL, d, IT_INVERT)
+        d = deep_merge_dict(IT_REQUIRED, IT_PIXEL, d, IT_INVERT)
+        return Lexicon._parse(d, JOV_HELP_URL + "/COMPOSE#-color-theory")
 
     def run(self, **kw) -> tuple[list[torch.Tensor], list[torch.Tensor]]:
         imageA = []

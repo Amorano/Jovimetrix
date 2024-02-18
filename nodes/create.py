@@ -15,10 +15,9 @@ from loguru import logger
 import comfy
 from server import PromptServer
 
-from Jovimetrix import JOV_HELP_URL, JOVImageSimple, JOVImageMultiple, \
-    IT_RGB_B, IT_RGBA_A, \
-    IT_DEPTH, IT_PIXEL, IT_WH, IT_SCALE, IT_ROT, IT_INVERT, \
-    IT_REQUIRED, MIN_IMAGE_SIZE
+from Jovimetrix import JOVImageSimple, JOVImageMultiple, \
+    JOV_HELP_URL,IT_RGB_B, IT_RGBA_A, IT_DEPTH, IT_PIXEL, IT_WH, IT_SCALE, \
+    IT_ROT, IT_INVERT, IT_REQUIRED, MIN_IMAGE_SIZE
 
 from Jovimetrix.sup.lexicon import Lexicon
 
@@ -50,7 +49,8 @@ class ConstantNode(JOVImageMultiple):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        return deep_merge_dict(IT_REQUIRED, IT_WH, IT_RGBA_A)
+        d = deep_merge_dict(IT_REQUIRED, IT_WH, IT_RGBA_A)
+        return Lexicon._parse(d, JOV_HELP_URL + "/CREATE#-constant")
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
@@ -62,7 +62,7 @@ class ConstantNode(JOVImageMultiple):
             width, height = wihi
             color = pixel_eval(color, EnumImageType.BGRA)
             img = channel_solid(width, height, color, chan=EnumImageType.BGRA)
-            logger.debug(img.shape)
+            # logger.debug(img.shape)
             img = cv2tensor_full(img)
             images.append(img)
             pbar.update_absolute(idx)
@@ -78,21 +78,11 @@ class ShapeNode(JOVImageMultiple):
         d = {"optional": {
             Lexicon.SHAPE: (EnumShapes._member_names_, {"default": EnumShapes.CIRCLE.name}),
             Lexicon.SIDES: ("INT", {"default": 3, "min": 3, "max": 100, "step": 1}),
+            Lexicon.RGBA_A: ("VEC4", {"default": (255, 255, 255, 255), "min": 0, "max": 255, "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
         }}
-        tips = {"optional": {
-            "tooltips": ("JTOOLTIP", {"default": {
-                Lexicon.SHAPE: "Shape to Generate. Polygons have a minimum of 3 sides and a maximum of 100 (circle)",
-                Lexicon.SIDES: "Number of sides in polygon",
-                Lexicon.RGBA_A: "Foreground Color",
-                Lexicon.RGB_B: "Background color",
-                Lexicon.WH: "Width and Height",
-                Lexicon.ANGLE: "Rotation Angle",
-                Lexicon.SIZE: "Scale along the Width or Height",
-                Lexicon.EDGE: "Clip or Wrap the Canvas Edge",
-                Lexicon.INVERT: "Color Inversion",
-            }}),
-        }}
-        return deep_merge_dict(IT_REQUIRED, d, IT_RGBA_A, IT_RGB_B, IT_WH, IT_ROT, IT_SCALE, IT_EDGE, IT_INVERT, tips)
+        d = deep_merge_dict(IT_REQUIRED, d, IT_RGB_B, IT_WH, IT_ROT, IT_SCALE, IT_EDGE, IT_INVERT)
+        d = Lexicon._parse(d, JOV_HELP_URL + "/CREATE#-shape-generator")
+        return d
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         shape = kw.get(Lexicon.SHAPE, EnumShapes.CIRCLE)
@@ -106,7 +96,6 @@ class ShapeNode(JOVImageMultiple):
         invert = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1])
         params = [tuple(x) for x in zip_longest_fill(shape, sides, angle, edge, size, wihi, color, bgcolor, invert)]
         images = []
-        params = [tuple(x) for x in zip_longest_fill(wihi, color)]
         pbar = comfy.utils.ProgressBar(len(params))
         for idx, (shape, sides, angle, edge, size, wihi, color, bgcolor, invert) in enumerate(params):
             width, height = wihi
@@ -140,7 +129,8 @@ class ShapeNode(JOVImageMultiple):
             mask = pil2cv(mask)[:,:,0]
             img = image_mask_add(img, mask)
             img = image_rotate(img, angle, edge=edge)
-            img = cv2tensor_full(img)
+            bgcolor = pixel_eval(bgcolor)
+            img = cv2tensor_full(img, bgcolor)
             images.append(img)
             pbar.update_absolute(idx)
         return list(zip(*images))
@@ -156,13 +146,12 @@ class TextNode(JOVImageMultiple):
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
-            Lexicon.STRING: ("STRING", {"default": "", "multiline": True, "dynamicPrompts": False}),
+            Lexicon.STRING: ("STRING", {"default": "", "multiline": True, "dynamicPrompts": False, "tooltip": "As the sun sets on the horizon, casting a warm glow over the landscape, families gather around the."}),
             Lexicon.FONT: (cls.FONT_NAMES, {"default": cls.FONT_NAMES[0]}),
             Lexicon.LETTER: ("BOOLEAN", {"default": False}),
             Lexicon.AUTOSIZE: ("BOOLEAN", {"default": False}),
             Lexicon.RGBA_A: ("VEC3", {"default": (255, 255, 255, 255), "min": 0, "max": 255, "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True}),
             Lexicon.MATTE: ("VEC3", {"default": (0, 0, 0), "min": 0, "max": 255, "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B], "rgb": True}),
-            #
             Lexicon.COLUMNS: ("INT", {"default": 0, "min": 0, "step": 1}),
             # if auto on, hide these...
             Lexicon.FONT_SIZE: ("INT", {"default": 100, "min": 1, "step": 1}),
@@ -171,28 +160,8 @@ class TextNode(JOVImageMultiple):
             Lexicon.MARGIN: ("INT", {"default": 0, "min": -1024, "max": 1024}),
             Lexicon.SPACING: ("INT", {"default": 25, "min": -1024, "max": 1024}),
         }}
-        tips = {"optional": {
-            "tooltips": ("JTOOLTIP", {"default": {
-                "_": JOV_HELP_URL + "/CREATE#-text-generator",
-                Lexicon.STRING: "Text to generate",
-                Lexicon.FONT: "Available System Fonts",
-                Lexicon.LETTER: "Generate each letter into a batch",
-                Lexicon.AUTOSIZE: "Scale based on Width & Height",
-                Lexicon.RGBA_A: "Foreground Color",
-                Lexicon.MATTE: "Background Color",
-                Lexicon.COLUMNS: "0 = Auto-Fit, >0 = Fit into N columns",
-                Lexicon.FONT_SIZE: "Text Size",
-                Lexicon.ALIGN: "Top, Center or Bottom alignment",
-                Lexicon.JUSTIFY: "Left, Right, Center or Spread Justify",
-                Lexicon.MARGIN:  "Whitespace padding around canvas",
-                Lexicon.SPACING: "Line Spacing between Text Lines",
-                Lexicon.WH: "Width and Height",
-                Lexicon.ANGLE: "Rotation Angle",
-                Lexicon.EDGE: "Clip or Wrap the Canvas Edge",
-                Lexicon.INVERT: "Color Inversion",
-            }}),
-        }}
-        return deep_merge_dict(IT_REQUIRED, d, IT_WH, IT_ROT, IT_EDGE, IT_INVERT, tips)
+        d = deep_merge_dict(IT_REQUIRED, d, IT_WH, IT_ROT, IT_EDGE, IT_INVERT)
+        return Lexicon._parse(d, JOV_HELP_URL + "/CREATE#-text-generator")
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         if len(full_text := kw.get(Lexicon.STRING, [""])) == 0:
@@ -331,7 +300,8 @@ class StereogramNode(JOVImageSimple):
                 Lexicon.GAMMA: ("FLOAT", {"default": 0.33, "min": 0, "max": 1, "step": 0.01}),
                 Lexicon.SHIFT: ("FLOAT", {"default": 1., "min": -1, "max": 1, "step": 0.01}),
         }}
-        return deep_merge_dict(IT_REQUIRED, IT_PIXEL, IT_DEPTH, d)
+        d = deep_merge_dict(IT_REQUIRED, IT_PIXEL, IT_DEPTH, d)
+        return Lexicon._parse(d, JOV_HELP_URL + "/CREATE#-stereogram")
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         img = kw.get(Lexicon.PIXEL, [None])
@@ -344,15 +314,10 @@ class StereogramNode(JOVImageSimple):
         images = []
         pbar = comfy.utils.ProgressBar(len(params))
         for idx, (img, depth, divisions, noise, gamma, shift) in enumerate(params):
-            if img is None:
-                empty = torch.ones((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), device='cpu')
-                images.append(empty)
-                continue
-
             img = tensor2cv(img)
             depth = tensor2cv(depth)
             img = image_stereogram(img, depth, divisions, noise, gamma, shift)
-            images.append(cv2tensor(img))
+            img = cv2tensor_full(img)
+            images.append(img)
             pbar.update_absolute(idx)
-
-        return (images, )
+        return list(zip(*images))

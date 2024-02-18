@@ -31,6 +31,7 @@ export const VectorWidget = (app, inputName, options, initial, desc='') => {
     const widget_padding = 30;
     const label_full = 72;
     const label_center = label_full/2;
+    let picker;
 
     widget.draw = function(ctx, node, width, Y, height) {
         if (this.type !== options[0] && app.canvas.ds.scale > 0.5) return
@@ -111,7 +112,6 @@ export const VectorWidget = (app, inputName, options, initial, desc='') => {
                 if (index >= 0 && index < size) {
                     isDragging = { name: this.name, idx: index}
                 } else if (this.options.rgb) {
-                    let picker;
                     const rgba = Object.values(this?.value || []);
                     let color = rgb2hex(rgba.slice(0, 3));
                     if (index == size) {
