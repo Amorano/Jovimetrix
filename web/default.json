@@ -3,35 +3,25 @@
         "default": {
             "color": {
                 "overwrite": true,
-                "titleA": "#302929",
+                "titleA": "#322929",
                 "backA": "#050303",
-                "titleB": "#293029",
+                "titleB": "#293229",
                 "backB": "#030503",
                 "regex": [
                     {
-                        "regex": "",
-                        "title": "#FF22D8FF",
-                        "body": "#8EFFE0FF"
+                        "regex": ""
                     },
                     {
-                        "regex": "",
-                        "title": "#FF22D8FF",
-                        "body": "#8EFFE0FF"
+                        "regex": ""
                     },
                     {
-                        "regex": "",
-                        "title": "#FF22D8FF",
-                        "body": "#8EFFE0FF"
+                        "regex": ""
                     },
                     {
-                        "regex": "",
-                        "title": "#FF22D8FF",
-                        "body": "#8EFFE0FF"
+                        "regex": ""
                     },
                     {
-                        "regex": "",
-                        "title": "#FF22D8FF",
-                        "body": "#8EFFE0FF"
+                        "regex": ""
                     }
                 ],
                 "theme": {

@@ -27,7 +27,8 @@ import { local_set, local_get } from '../util/util_config.js';
                     input = options.input,
                     patch = options.patch,
                     RGB = colors.RND.rgb;
-                const AHEX = !colors.HEX.includes("NAN") ? rgb2hex(colors) : LiteGraph.NODE_DEFAULT_BGCOLOR // LiteGraph.NODE_DEFAULT_COLOR; // LiteGraph.NODE_DEFAULT_BGCOLOR
+                const rgb = Object.values(RGB).reverse();
+                const AHEX = !colors.HEX.includes("NAN") ? rgb2hex(rgb) : LiteGraph.NODE_DEFAULT_BGCOLOR // LiteGraph.NODE_DEFAULT_COLOR; // LiteGraph.NODE_DEFAULT_BGCOLOR
 
                 patch.style.cssText =
                     'color:' + (colors.rgbaMixCustom.luminance > 0.22 ? '#222' : '#ddd') + ';' + // Black...???

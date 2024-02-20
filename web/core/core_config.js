@@ -4,6 +4,7 @@
  *
  */
 
+import { app } from "/scripts/app.js"
 import { ComfyDialog, $el } from "/scripts/ui.js"
 import { api_post } from '../util/util_api.js'
 import { node_color_all } from '../util/util_color.js'
@@ -170,9 +171,9 @@ export class JovimetrixConfigDialog extends ComfyDialog {
             const data = {
                 idx: idx,
                 name: entry.regex,
-                title: entry.title || '#353535FF',
-                body: entry.body || '#353535FF',
-                background: '#292930FF'
+                title: entry.title, // || LiteGraph.NODE_TITLE_COLOR,
+                body: entry.body, // || LiteGraph.NODE_DEFAULT_COLOR,
+                background: LiteGraph.WIDGET_BGCOLOR
             }
             const row = templateColorRegex(data);
             colorTable.appendChild($el("tbody", row))
@@ -181,8 +182,18 @@ export class JovimetrixConfigDialog extends ComfyDialog {
 
         // get categories to generate on the fly
         const category = []
-        const all_nodes = Object.entries(util_config.NODE_LIST)
-        all_nodes.sort((a, b) => a[1].category.toLowerCase().localeCompare(b[1].category.toLowerCase()))
+        const all_nodes = Object.entries(util_config.NODE_LIST);
+        all_nodes.sort((a, b) => {
+            const categoryComparison = a[1].category.toLowerCase().localeCompare(b[1].category.toLowerCase());
+            // Move items with empty category or starting with underscore to the end
+            if (a[1].category === "" || a[1].category.startsWith("_")) {
+                return 1;
+            } else if (b[1].category === "" || b[1].category.startsWith("_")) {
+                return -1;
+            } else {
+                return categoryComparison;
+            }
+        });
 
         // groups + nodes
         const alts = util_config.CONFIG_COLOR
@@ -200,12 +211,10 @@ export class JovimetrixConfigDialog extends ComfyDialog {
                 background_index = (background_index + 1) % 2
                 data = {
                     name: meow,
-                    title: '#353535FF',
-                    body: '#353535FF',
-                    background: '#292930'
+                    background: LiteGraph.WIDGET_BGCOLOR
                 }
                 if (util_config.CONFIG_THEME.hasOwnProperty(meow)) {
-                    data.title = util_config.CONFIG_THEME[meow].title,
+                    data.title = util_config.CONFIG_THEME[meow].title
                     data.body = util_config.CONFIG_THEME[meow].body
                 }
                 colorTable.appendChild($el("tbody", templateColorHeader(data)))
@@ -216,24 +225,22 @@ export class JovimetrixConfigDialog extends ComfyDialog {
                 background_index = (background_index + 1) % 2
                 data = {
                     name: cat,
-                    title: '#353535FF',
-                    body: '#353535FF',
-                    background: background_title[background_index]
+                    background: background_title[background_index] || LiteGraph.WIDGET_BGCOLOR
                 }
                 if (util_config.CONFIG_THEME.hasOwnProperty(cat)) {
-                    data.title = util_config.CONFIG_THEME[cat].title,
+                    data.title = util_config.CONFIG_THEME[cat].title
                     data.body = util_config.CONFIG_THEME[cat].body
                 }
                 colorTable.appendChild($el("tbody", templateColorHeader(data)))
                 category.push(cat)
             }
 
-            const who = util_config.CONFIG_THEME[name]
+            const who = util_config.CONFIG_THEME[name] || {};
             data = {
                 name: name,
-                title:  who ? who.title : '#353535FF',
-                body: who ? who.body :'#353535FF',
-                background: background[background_index]
+                title: who.title,
+                body: who.body,
+                background: background[background_index] || LiteGraph.NODE_DEFAULT_COLOR
             }
             colorTable.appendChild($el("tbody", templateColorBlock(data)))
         })
@@ -335,5 +342,3 @@ export class JovimetrixConfigDialog extends ComfyDialog {
         this.element.style.display = this.visible ? "block" : ""
     }
 }
-
-// export const CONFIG_DIALOG = new JovimetrixConfigDialog()

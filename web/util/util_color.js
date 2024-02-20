@@ -89,7 +89,6 @@ export function hex2rgb(hex) {
 export function rgb2hex(input) {
     const rgbArray = typeof input === 'string' ? input.match(/\d+/g) : input;
     if (rgbArray.length < 3) {
-        // console.error(rgbArray)
         throw new Error('input not 3 or 4 values');
     }
     const hexValues = rgbArray.map((value, index) => {
