@@ -1,6 +1,3 @@
-> CAUTION]
-> <h3><p align="center">⚠️ SUBJECT TO CHANGE PRIOR TO VERSION 1.0. USE AT YOUR OWN RISK ⚠️</p></h3>
-
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://github.com/Amorano/Jovimetrix-examples/blob/master/res/logo-jovimetrix.png">
   <source media="(prefers-color-scheme: light)" srcset="https://github.com/Amorano/Jovimetrix-examples/blob/master/res/logo-jovimetrix-light.png">
@@ -13,13 +10,16 @@
 
 <!---------------------------------------------------------------------------->
 
-# WHAT IS THE POINT?
+# WHY BUILD THESE NODES?
 
 There are many ways to do composition and it is apparent that is a large portion of what Computer Vision - aka contemporaneous "A.I" - is invented to resolve.
 
-While diffusers and latent hallucinations can make many amazing things at the moment, there is still a need to resolve final "frames" in something else like Krita (For static 2D), Calvary (for motion graphics) or [Davinci Resolve](https://www.blackmagicdesign.com/products/davinciresolve) for movie editing.
+While diffusers and latent hallucinations can make many amazing things at the moment, there is still a need to resolve final "frames" in something else, like one of the many free tools:
+* [Krita](https://krita.org/en/) (2D)
+* [Calvary](https://cavalry.scenegroup.co/) (motion graphics)
+* [Davinci Resolve](https://www.blackmagicdesign.com/products/davinciresolve) (movie editing)
 
-The main goal of Jovimetrix is to suppliment those external workflows before the need to use them.
+The main goal of Jovimetrix is to supplement those external workflows before the need to use them.
 
 ## TARGETS
 
@@ -32,9 +32,51 @@ The main goal of Jovimetrix is to suppliment those external workflows before the
 
 # INSTALLATION
 
-If you have [ComfyUI Manager](https://github.com/ltdrdata/ComfyUI-Manager) installed you can search for Jovimetrix and install from the manager's database.
+## COMFYUI MANAGER
 
-## GIFSKI SUPPORT
+If you have [ComfyUI Manager](https://github.com/ltdrdata/ComfyUI-Manager) installed, simply search for Jovimetrix and install from the manager's database.
+
+## MANUAL INSTALL
+Clone the repository into your ComfyUI custom_nodes directory. You can clone the repository with the command:
+```
+git clone https://github.com/Amorano/Jovimetrix.git
+```
+You can then install the requirements by using the command:
+```
+.\python_embed\python.exe -s -m pip install -r requirements.txt
+```
+If you are using a <code>virtual environment</code> (<code><i>venv</i></code>), make sure it is activated before installation. Then install the requirements with the command:
+```
+pip install -r requirements.txt
+```
+
+## ENVIRONMENT VARIABLES
+
+### LOGGER
+
+The logger can be controlled via the JOV_LOG_LEVEL variable. It can be set to one of the following, by name or value:
+
+* TRACE (5)
+* DEBUG (10)
+* INFO (20)
+* SUCCESS (25)
+* WARNING (30)
+* ERROR (40)
+* CRITICAL (50)
+
+The default is WARNING (30); i.e. SET JOV_LOG_LEVEL=WARNING
+
+### SYSTEM DEVICE SCAN
+
+Allows the system to auto-scan for any devices, so that it can populate the device list in the Stream Reader Node.
+
+The [STREAM READER📺](https://github.com/Amorano/Jovimetrix/wiki/DEVICE#-stream-reader) is able to load media from local media, web media dna also system devices such as (virtual) web cameras and monitors. By default, the scan for web cameras is off.
+
+If you wish to engage the auto-scan on ComfyUI statrt-up, set the JOV_SCAN_DEVICES variable to 1 or True.
+
+JOV_SCAN_DEVICES=1
+
+### GIFSKI SUPPORT
 
 If you have [GIFSKI](https://gif.ski/) installed you can enable the option for the Export Node to use GIFSKI when outputting frames.
 
@@ -48,19 +90,6 @@ Once set the GIFSKI option should appear in the Export Node drop down list of ou
 
 The audio nodes require FFMPEG. You can find the official [FFMPEG](https://ffmpeg.org "official FFMPEG binaries") here. Follow it's installation instructions for your specific operating system.
 
-## MANUAL INSTALL
-To manually install, clone the repository into your ComfyUI custom_nodes directory. You can clone the repository with the command:
-```
-git clone https://github.com/Amorano/Jovimetrix.git
-```
-You can then install the requirements by using the command:
-```
-.\python_embed\python.exe -s -m pip install -r requirements.txt
-```
-If you are using a <code>virtual environment</code> (<code><i>venv</i></code>), make sure it is activated before installation. Then install the requirements with the command:
-```
-pip install -r requirements.txt
-```
 <!---------------------------------------------------------------------------->
 
 # [NODE REFERENCE](https://github.com/Amorano/Jovimetrix/wiki)
@@ -90,12 +119,6 @@ pip install -r requirements.txt
 [STACK ➕](https://github.com/Amorano/Jovimetrix/wiki/COMPOSE#-stack)|Union multiple latents horizontal, vertical or in a grid.
 [CROP ✂️](https://github.com/Amorano/Jovimetrix/wiki/COMPOSE#%EF%B8%8F-crop)|Clip away sections of an image and backfill with optional color matte.
 [COLOR THEORY 🛞](https://github.com/Amorano/Jovimetrix/wiki/COMPOSE#-color-theory)|Generate Complimentary, Triadic and Tetradic color sets.
-<img width=225/>|<img width=800/>
-
-[IMAGE](https://github.com/Amorano/Jovimetrix/wiki/IMAGE) | &nbsp;
----|---
-[EXPORT 📽](https://github.com/Amorano/Jovimetrix/wiki/IMAGE#-export)|Take your frames out static or animated (GIF)
-[IMAGE DIFF 📏](https://github.com/Amorano/Jovimetrix/wiki/IMAGE#-image_diff)|Explicitly show the differences between two images via self-similarity index
 <img width=225/>|<img width=800/>
 
 [CALC](https://github.com/Amorano/Jovimetrix/wiki/CALC) | &nbsp;
@@ -143,6 +166,8 @@ pip install -r requirements.txt
 [QUEUE🗃](https://github.com/Amorano/Jovimetrix/wiki/UTILITY#-queue)|Cycle lists of images files or strings for node inputs.
 [SELECT🤏🏽](https://github.com/Amorano/Jovimetrix/wiki/UTILITY#-select)|Select an item from a user explicit list of inputs.
 [RE-ROUTE🚌](https://github.com/Amorano/Jovimetrix/wiki/UTILITY#-re-route)|Pass all data because the default is broken on connection
+[EXPORT 📽](https://github.com/Amorano/Jovimetrix/wiki/UTILITY#-export)|Take your frames out static or animated (GIF)
+[IMAGE DIFF 📏](https://github.com/Amorano/Jovimetrix/wiki/UTILITY#-image-diff)|Explicitly show the differences between two images via self-similarity index
 <img width=225/>|<img width=800/>
 
 [GLSL](https://github.com/Amorano/Jovimetrix/wiki/GLSL) | &nbsp;
