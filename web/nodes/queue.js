@@ -43,13 +43,13 @@ app.registerExtension({
             self.data_current = "";
             self.data_all = [];
 
-            self.widget_queue = this.widgets[0];
+            self.widget_queue = this.widgets.find(w => w.name === 'Q');
             self.widget_queue.inputEl.addEventListener('input', function (event) {
                 update_list(self);
             });
 
             output_data = this.outputs[0];
-            const widget_reset = this.widgets[4];
+            const widget_reset = this.widgets.find(w => w.name === 'RESET');
             // const old_callback = widget_reset?.callback;
             widget_reset.callback = async (e) => {
                 widget_reset.value = false;

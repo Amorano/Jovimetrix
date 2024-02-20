@@ -36,9 +36,8 @@ from Jovimetrix.sup.stream import camera_list, monitor_list, window_list, \
 from Jovimetrix.sup.midi import midi_device_names, \
     MIDIMessage, MIDINoteOnFilter, MIDIServerThread
 
-from Jovimetrix.sup.image import channel_solid, cv2mask, image_mask, \
-    tensor2cv, cv2tensor, \
-    image_scalefit, image_invert, \
+from Jovimetrix.sup.image import channel_solid, cv2tensor_full, image_mask, \
+    tensor2cv, cv2tensor, image_scalefit, image_invert, \
     EnumInterpolation, EnumScaleMode, \
     IT_WHMODE, IT_SAMPLE, IT_SCALEMODE
 
@@ -109,12 +108,11 @@ class StreamReaderNode(JOVImageMultiple):
         self.__device = None
         self.__url = ""
         self.__capturing = 0
-        self.__last = torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8, device="cpu")
-        self.__last_mask = torch.ones((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), dtype=torch.uint8, device="cpu")
+        e = torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8, device="cpu")
+        self.__last = [e, e, e]
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         images = []
-        masks = []
         batch_size, rate = parse_tuple(Lexicon.BATCH, kw, default=(1, 30), clip_min=1)[0]
         pbar = comfy.utils.ProgressBar(batch_size)
         rate = 1. / rate
@@ -125,11 +123,10 @@ class StreamReaderNode(JOVImageMultiple):
         sample = kw.get(Lexicon.SAMPLE, EnumInterpolation.LANCZOS4)
         sample = EnumInterpolation[sample]
         source = kw.get(Lexicon.SOURCE, "URL")
-        empty = ([self.__last], [self.__last_mask], )
         match source:
             case "MONITOR":
                 if wait:
-                    return empty
+                    return self.__last
                 which = kw.get(Lexicon.MONITOR, "0")
                 which = int(which.split('-')[0].strip()) + 1
                 for idx in range(batch_size):
@@ -138,17 +135,15 @@ class StreamReaderNode(JOVImageMultiple):
                         img = channel_solid(width, height, 0)
                     else:
                         img = image_scalefit(img, width, height, mode=mode, sample=sample)
-                    mask = image_mask(img)
-                    images.append(cv2tensor(img))
-                    masks.append(cv2mask(mask))
 
+                    images.append(cv2tensor_full(img))
                     if batch_size > 1:
                         pbar.update_absolute(idx)
                         time.sleep(rate)
 
             case "WINDOW":
                 if wait:
-                    return empty
+                    return self.__last
                 if (which := kw.get(Lexicon.WINDOW, "NONE")) != "NONE":
                     which = int(which.split('-')[-1].strip())
                     dpi = kw.get(Lexicon.DPI, True)
@@ -158,9 +153,7 @@ class StreamReaderNode(JOVImageMultiple):
                             img = channel_solid(width, height, 0)
                         else:
                             img = image_scalefit(img, width, height, mode=mode, sample=sample)
-                        mask = image_mask(img)
-                        images.append(cv2tensor(img))
-                        masks.append(cv2mask(mask))
+                        images.append(cv2tensor_full(img))
                         if batch_size > 1:
                             pbar.update_absolute(idx)
                             time.sleep(rate)
@@ -223,19 +216,15 @@ class StreamReaderNode(JOVImageMultiple):
 
                             img = image_scalefit(img, width, height, mode=mode, sample=sample)
 
-                        mask = image_mask(img)
-                        images.append(cv2tensor(img))
-                        masks.append(cv2mask(mask))
+                        images.append(cv2tensor_full(img))
                         pbar.update_absolute(idx)
                         if batch_size > 1:
                             time.sleep(rate)
 
         if len(images) == 0:
-            return empty
-
+            return self.__last
         self.__last = images[-1]
-        self.__last_mask = masks[-1]
-        return images, masks,
+        return list(zip(*images))
 
 class StreamWriterNode(JOVBaseNode):
     NAME = "STREAM WRITER (JOV) 🎞️"
@@ -272,7 +261,7 @@ class StreamWriterNode(JOVBaseNode):
         wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)[0]
         w, h = wihi
         img = kw.get(Lexicon.PIXEL, None)
-        img = tensor2cv(img) if img is not None else channel_solid(w, h, 0)
+        img = tensor2cv(img)
         route = kw.get(Lexicon.ROUTE, "/stream")
         if route != self.__route:
             self.__starting = True

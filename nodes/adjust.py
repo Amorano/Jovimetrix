@@ -9,23 +9,24 @@ from loguru import logger
 
 import comfy
 
-from Jovimetrix import JOV_HELP_URL, JOVImageMultiple, JOVImageSimple, \
-    IT_PIXEL, IT_PIXEL2, IT_PIXEL_MASK, IT_HSV, IT_FLIP, IT_LOHI, IT_LMH, \
-    IT_INVERT, IT_CONTRAST, IT_GAMMA, IT_REQUIRED, MIN_IMAGE_SIZE
+from Jovimetrix import JOV_HELP_URL, JOVImageMultiple, \
+    IT_PIXEL, IT_PIXEL2, IT_PIXEL_MASK, IT_HSV, IT_FLIP, \
+    IT_LOHI, IT_LMH, IT_INVERT, IT_CONTRAST, IT_GAMMA, IT_REQUIRED
 
 from Jovimetrix.sup.lexicon import Lexicon
 
-from Jovimetrix.sup.util import zip_longest_fill, deep_merge_dict, parse_tuple, \
+from Jovimetrix.sup.util import zip_longest_fill, deep_merge_dict, \
+    parse_tuple, \
     parse_number, EnumTupleType
 
-from Jovimetrix.sup.image import cv2tensor_full, image_equalize, image_mask, image_pixelate, \
-    image_posterize, \
-    image_quantize, image_sharpen, image_threshold, tensor2cv, cv2tensor, \
-    pixel_convert, image_blend, image_invert, morph_edge_detect, \
+from Jovimetrix.sup.image import EnumImageType, cv2tensor_full, \
+    image_equalize, image_levels, image_mask, image_mask_add, \
+    image_posterize, image_pixelate, tensor2cv, cv2tensor, \
+    image_quantize, image_sharpen, image_threshold,  \
+    image_blend, image_invert, morph_edge_detect, \
     morph_emboss, image_contrast, image_hsv, image_gamma, color_match, \
     color_match_custom_map, color_match_heat_map, \
-    EnumColorMap, EnumAdjustOP, EnumThresholdAdapt, EnumThreshold, EnumScaleMode, \
-    IT_SCALEMODE
+    EnumColorMap, EnumAdjustOP, EnumThresholdAdapt, EnumThreshold
 
 # =============================================================================
 
@@ -45,7 +46,7 @@ class AdjustNode(JOVImageMultiple):
                 Lexicon.RADIUS: ("INT", {"default": 3, "min": 3, "step": 1}),
                 Lexicon.VALUE: ("FLOAT", {"default": 1, "min": 0, "step": 0.1}),
             }}
-        d = deep_merge_dict(IT_REQUIRED, IT_PIXEL_MASK, d, IT_LOHI, IT_LMH, IT_HSV, IT_CONTRAST, IT_GAMMA, IT_SCALEMODE, IT_INVERT)
+        d = deep_merge_dict(IT_REQUIRED, IT_PIXEL_MASK, d, IT_LOHI, IT_LMH, IT_HSV, IT_CONTRAST, IT_GAMMA, IT_INVERT)
         return Lexicon._parse(d, JOV_HELP_URL + "/ADJUST#-adjust")
 
     def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor]:
@@ -54,31 +55,24 @@ class AdjustNode(JOVImageMultiple):
         op = kw.get(Lexicon.FUNC, [EnumAdjustOP.BLUR])
         radius = kw.get(Lexicon.RADIUS, [3])
         amt = kw.get(Lexicon.VALUE, [0])
-        mode = kw.get(Lexicon.MODE, [EnumScaleMode.NONE])
         lohi = parse_tuple(Lexicon.LOHI, kw, EnumTupleType.FLOAT, (0, 1), clip_min=0, clip_max=1)
         lmh = parse_tuple(Lexicon.LMH, kw, EnumTupleType.FLOAT, (0, 0.5, 1), clip_min=0, clip_max=1)
         hsv = parse_tuple(Lexicon.HSV, kw, EnumTupleType.FLOAT, (0, 1, 1), clip_min=0, clip_max=1)
         contrast = parse_number(Lexicon.CONTRAST, kw, EnumTupleType.FLOAT, [0], clip_min=0, clip_max=1)
         gamma = parse_number(Lexicon.GAMMA, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
-        i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
-        params = [tuple(x) for x in zip_longest_fill(img, mask, op, radius, amt, mode, lohi, lmh, hsv, contrast, gamma, i)]
+        invert = kw.get(Lexicon.INVERT, [False])
+        params = [tuple(x) for x in zip_longest_fill(img, mask, op, radius, amt, lohi, lmh, hsv, contrast, gamma, invert)]
         images = []
         pbar = comfy.utils.ProgressBar(len(params))
-        for idx, (img, mask, o, r, a, mode, lohi, lmh, hsv, con, gamma, i) in enumerate(params):
-            mode = EnumScaleMode[mode]
-            img = tensor2cv(img)
-            mask = image_mask(img)
-
+        for idx, (pixel, mask, o, r, a, lohi, lmh, hsv, con, gamma, invert) in enumerate(params):
+            img = tensor2cv(pixel)
             match EnumAdjustOP[o]:
+                case EnumAdjustOP.INVERT:
+                    img_new = image_invert(img, a)
+
                 case EnumAdjustOP.LEVELS:
                     l, m, h = lmh
-                    img_new = cv2tensor(img)
-                    img_new = torch.maximum(img - l, torch.tensor(0.0))
-                    img_new = torch.minimum(img_new, torch.tensor(h - l))
-                    img_new = (img_new + (m or 0.5)) - 0.5
-                    img_new = torch.sign(img_new) * torch.pow(torch.abs(img_new), 1.0 / gamma)
-                    img_new = (img_new + 0.5) / h
-                    img_new = tensor2cv(img_new)
+                    img_new = image_levels(img, l, h, m, gamma)
 
                 case EnumAdjustOP.HSV:
                     h, s, v = hsv
@@ -150,10 +144,14 @@ class AdjustNode(JOVImageMultiple):
                 case EnumAdjustOP.CLOSE:
                     img_new = cv2.morphologyEx(img, cv2.MORPH_CLOSE, (r, r), iterations=int(a))
 
-            if i != 0:
-                img_new = image_invert(img_new, i)
-
+            mask = tensor2cv(mask, chan=EnumImageType.GRAYSCALE)
+            if invert:
+                mask = image_invert(mask, 1)
+            if (wh := img.shape[:2]) != mask.shape[:2]:
+                mask = cv2.resize(mask, wh[::-1])
+            alpha = image_mask(img)
             img = image_blend(img, img_new, mask)
+            img = image_mask_add(img, alpha)
             img = cv2tensor_full(img)
             images.append(img)
             pbar.update_absolute(idx)
@@ -178,8 +176,6 @@ class ColorMatchNode(JOVImageMultiple):
         pixelA = kw.get(Lexicon.PIXEL_A, [None])
         pixelB = kw.get(Lexicon.PIXEL_B, [None])
         colormap = kw.get(Lexicon.COLORMAP, [EnumColorMap.HSV])
-        # if the colormap is not "none" entry...use it.
-        # usemap = usemap or [None]
         threshold = parse_number(Lexicon.THRESHOLD, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
         blur = kw.get(Lexicon.BLUR, [3])
         flip = kw.get(Lexicon.FLIP, [False])
@@ -188,18 +184,10 @@ class ColorMatchNode(JOVImageMultiple):
         images = []
         pbar = comfy.utils.ProgressBar(len(params))
         for idx, (a, b, c, t, bl, f, i) in enumerate(params):
-            if a is None and b is None:
-                empty = torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), dtype=torch.uint8, device="cpu")
-                images.append([empty, empty, empty])
-                continue
-
-            a = tensor2cv(a) if a is not None else None
-            b = tensor2cv(b) if b is not None else None
-            img, b = pixel_convert(a, b)
-
+            img = tensor2cv(a)
+            b = tensor2cv(b)
             if f is not None and f:
                 img, b = b, img
-
             if c == 'NONE':
                 img = color_match(img, b)
             else:
@@ -244,11 +232,6 @@ class ThresholdNode(JOVImageMultiple):
         images = []
         pbar = comfy.utils.ProgressBar(len(params))
         for idx, (img, o, a, t, b, i) in enumerate(params):
-            if img is None:
-                empty = torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), dtype=torch.uint8, device="cpu")
-                images.append([empty, empty, empty])
-                continue
-
             img = tensor2cv(img)
             o = EnumThreshold[o]
             a = EnumThresholdAdapt[a]

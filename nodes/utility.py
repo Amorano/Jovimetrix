@@ -31,8 +31,8 @@ from Jovimetrix import JOV_HELP_URL, ComfyAPIMessage, JOVBaseNode, TimedOutExcep
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import path_next, deep_merge_dict, parse_tuple, \
     zip_longest_fill
-from Jovimetrix.sup.image import cv2mask, cv2tensor, tensor2pil, tensor2cv, \
-    pil2tensor, image_load, image_formats, image_diff, channel_solid
+from Jovimetrix.sup.image import EnumImageType, cv2tensor, image_convert, tensor2pil, tensor2cv, \
+    pil2tensor, image_load, image_formats, image_diff
 
 # =============================================================================
 
@@ -40,8 +40,12 @@ JOV_CATEGORY = "JOVIMETRIX 🔺🟩🔵/UTILITY"
 
 FORMATS = ["gif", "png", "jpg"]
 if (JOV_GIFSKI := os.getenv("JOV_GIFSKI", None)) is not None:
-    FORMATS = ["gifski"] + FORMATS
-    logger.info("gifski support")
+    if not os.path.isfile(JOV_GIFSKI):
+        logger.error(f"gifski missing [{JOV_GIFSKI}]")
+        JOV_GIFSKI = None
+    else:
+        FORMATS = ["gifski"] + FORMATS
+        logger.info("gifski support")
 else:
     logger.warning("no gifski support")
 
@@ -312,16 +316,13 @@ class QueueNode(JOVBaseNode):
             if ext in image_formats():
                 data, mask = image_load(data)
                 data = cv2tensor(data)
-                mask = cv2mask(mask)
+                mask = cv2tensor(mask, EnumImageType.GRAYSCALE)
             elif ext == '.json':
                 with open(data, 'r', encoding='utf-8') as f:
                     data = json.load(f)
             elif ext == '.txt':
                 with open(data, 'r', encoding='utf-8') as f:
                     data = f.read()
-            #except Exception as e:
-            #    logger.error(data)
-            #    logger.error(str(e))
             return data, mask
 
         reset = kw.get(Lexicon.RESET, False)
@@ -394,14 +395,12 @@ class QueueNode(JOVBaseNode):
         data = self.__previous
         mask = self.__previous_mask
         batch = max(1, kw.get(Lexicon.BATCH, 1))
-        batch_list = kw.get(Lexicon.BATCH_LIST, True)
+        # batch_list = kw.get(Lexicon.BATCH_LIST, True)
         if not wait:
             if rand:
                 data, mask = process(self.__q_rand[self.__index])
             else:
                 data, mask = process(self.__q[self.__index])
-            # data = [data]
-            # mask = [mask]
             self.__index += 1
 
         self.__last = self.__index
@@ -421,10 +420,10 @@ class ExportNode(JOVBaseNode):
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
-            Lexicon.PREFIX: ("STRING", {"default": ""}),
             Lexicon.PASS_OUT: ("STRING", {"default": get_output_directory()}),
-            Lexicon.OVERWRITE: ("BOOLEAN", {"default": False}),
             Lexicon.FORMAT: (FORMATS, {"default": FORMATS[0]}),
+            Lexicon.PREFIX: ("STRING", {"default": ""}),
+            Lexicon.OVERWRITE: ("BOOLEAN", {"default": False}),
             # GIF ONLY
             Lexicon.OPTIMIZE: ("BOOLEAN", {"default": False}),
             # GIFSKI ONLY
@@ -531,41 +530,23 @@ class ImageDiffNode(JOVBaseNode):
         a = kw.get(Lexicon.PIXEL_A, [None])
         b = kw.get(Lexicon.PIXEL_B, [None])
         th = kw.get(Lexicon.THRESHOLD, [0])
-        image_a = []
-        image_b = []
-        diff = []
-        thresh = []
-        score = []
+        results = []
         params = [tuple(x) for x in zip_longest_fill(a, b, th)]
+        empty_3 = torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8, device="cpu")
+        empty_1 = torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), dtype=torch.uint8, device="cpu")
         if len(params) == 0:
-            e = [torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8, device="cpu")]
-            m = [torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), dtype=torch.uint8, device="cpu")]
-            return e, e, m, m, [1.],
+            return [empty_3], [empty_3], [empty_1], [empty_1], [1.],
 
         pbar = comfy.utils.ProgressBar(len(params))
         for idx, (a, b, th) in enumerate(params):
             if a is None and b is None:
-                e = torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8, device="cpu")
-                image_a.append(e)
-                image_b.append(e)
-                m = torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), dtype=torch.uint8, device="cpu")
-                diff.append(m)
-                thresh.append(m)
-                score.append(1.)
+                results.append([empty_3, empty_3, empty_1, empty_1, 1.])
                 continue
-
-            width = MIN_IMAGE_SIZE
-            height = MIN_IMAGE_SIZE
-            _, height, width, _ = a.shape if a is not None else b.shape
-            a = tensor2cv(a) if a is not None else channel_solid(width, height, 0)
-            b = tensor2cv(b) if b is not None else channel_solid(width, height, 0)
-
+            a = tensor2cv(a)
+            b = tensor2cv(b)
             a, b, d, t, s = image_diff(a, b, int(th * 255.))
-            image_a.append(cv2tensor(a))
-            image_b.append(cv2tensor(b))
-            diff.append(cv2mask(d))
-            thresh.append(cv2mask(t))
-            score.append(s)
+            d = image_convert(d, 1)
+            t = image_convert(t, 1)
+            results.append([cv2tensor(a), cv2tensor(b), cv2tensor(d), cv2tensor(t), s])
             pbar.update_absolute(idx)
-
-        return image_a, image_b, diff, thresh, score,
+        return list(zip(*results))

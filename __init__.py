@@ -321,6 +321,10 @@ IT_FLIP = {"optional": {
 }}
 
 IT_INVERT = {"optional": {
+    Lexicon.INVERT: ("BOOLEAN", {"default": False})
+}}
+
+IT_INVERTF = {"optional": {
     Lexicon.INVERT: ("FLOAT", {"default": 0, "min": 0, "max": 1, "step": 0.01, "round": 0.00001, "precision": 4})
 }}
 

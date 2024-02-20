@@ -25,8 +25,7 @@ from Jovimetrix.sup.util import deep_merge_dict, parse_tuple, \
     parse_number, zip_longest_fill, EnumTupleType
 
 from Jovimetrix.sup.image import channel_solid, cv2tensor_full,  \
-    image_mask_add, image_rotate, \
-    image_stereogram, pil2cv, cv2tensor, \
+    image_mask_add, image_rotate, image_stereogram, pil2cv, \
     pixel_eval, tensor2cv, shape_ellipse, shape_polygon, \
     shape_quad, image_invert, \
     EnumEdge, EnumImageType, \

@@ -16,7 +16,7 @@ from Jovimetrix import JOV_HELP_URL, JOVBaseNode, \
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import deep_merge_dict, parse_tuple
 
-from Jovimetrix.sup.image import cv2mask, cv2tensor
+from Jovimetrix.sup.image import cv2tensor, image_mask
 from Jovimetrix.sup.audio import load_audio, wave_extract, graph_sausage
 
 # =============================================================================
@@ -70,7 +70,5 @@ class GraphWaveNode(JOVBaseNode):
         if self.__data is not None:
             image = graph_sausage(self.__data, bars, width, height, rgb_a, rgb_b)
 
-        image = cv2tensor(image)
-        mask = cv2mask(image)
         data = wave_extract(self.__data)
-        return (image, mask, data,)
+        return cv2tensor(image), image_mask(image), data

@@ -22,12 +22,12 @@ app.registerExtension({
             const me = onNodeCreated?.apply(this)
             const self = this;
 
-            let opt = this.widgets[4];
-            let quality = this.widgets[5];
-            let quality_m = this.widgets[6];
-            let fps = this.widgets[7];
-            let loop = this.widgets[8];
-            let combo = this.widgets[3];
+            let opt = this.widgets.find(w => w.name === 'PREFIX');
+            let quality = this.widgets.find(w => w.name === 'QUALITY');
+            let quality_m = this.widgets.find(w => w.name === 'MOTION');
+            let fps = this.widgets.find(w => w.name === '🏎️');
+            let loop = this.widgets.find(w => w.name === '🔄');
+            let combo = this.widgets.find(w => w.name === 'FORMAT');
             combo.callback = () => {
                 widget_hide(self, opt);
                 widget_hide(self, quality);
