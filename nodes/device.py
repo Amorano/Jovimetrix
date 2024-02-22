@@ -29,7 +29,7 @@ from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import deep_merge_dict, parse_tuple, parse_number, \
     EnumTupleType
 
-from Jovimetrix.sup.stream import camera_list, monitor_list, window_list, \
+from Jovimetrix.sup.stream import MediaStreamDevice, camera_list, monitor_list, window_list, \
     monitor_capture, window_capture, \
     StreamingServer, StreamManager
 
@@ -90,13 +90,10 @@ class StreamReaderNode(JOVImageMultiple):
             Lexicon.FPS: ("INT", {"min": 1, "max": 60, "default": 30}),
             Lexicon.WAIT: ("BOOLEAN", {"default": False}),
             Lexicon.BATCH: ("VEC2", {"default": (1, 30), "min": 1, "step": 1, "label": ["COUNT", "FPS"]}),
-        }}
-
-        e = {"optional": {
             Lexicon.ORIENT: (EnumCanvasOrientation._member_names_, {"default": EnumCanvasOrientation.NORMAL.name}),
             Lexicon.ZOOM: ("FLOAT", {"min": 0, "max": 1, "step": 0.005, "default": 0}),
         }}
-        d = deep_merge_dict(IT_REQUIRED, d, IT_WHMODE, IT_SAMPLE, e)
+        d = deep_merge_dict(IT_REQUIRED, d, IT_WHMODE, IT_SAMPLE)
         return Lexicon._parse(d, JOV_HELP_URL + "/DEVICE#-stream-reader")
 
     @classmethod
@@ -109,7 +106,9 @@ class StreamReaderNode(JOVImageMultiple):
         self.__url = ""
         self.__capturing = 0
         e = torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8, device="cpu")
-        self.__last = [e, e, e]
+        m = torch.ones((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 1), dtype=torch.uint8, device="cpu")
+        self.__empty = [e, e, m]
+        self.__last = [e, e, m]
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         images = []
@@ -183,47 +182,44 @@ class StreamReaderNode(JOVImageMultiple):
                         self.__capturing = 0
                         self.__url = ""
 
-                if self.__device:
+                if self.__device is not None:
                     self.__capturing = 0
-
-                    fps = kw.get(Lexicon.FPS, 30)
-                    if self.__device.fps != fps:
-                        self.__device.fps = fps
-
-                    # only cameras have a zoom
-                    try:
-                        self.__device.zoom = kw.get(Lexicon.ZOOM, 0)
-                    except Exception as e:
-                        logger.error(e)
 
                     if wait:
                         self.__device.pause()
                     else:
                         self.__device.play()
 
+                    fps = kw.get(Lexicon.FPS, 30)
+                    if self.__device.fps != fps:
+                        self.__device.fps = fps
+
+                    if type(self.__device) == MediaStreamDevice:
+                        self.__device.zoom = kw.get(Lexicon.ZOOM, 0)
+
                     orient = kw.get(Lexicon.ORIENT, EnumCanvasOrientation.NORMAL)
                     orient = EnumCanvasOrientation[orient]
                     for idx in range(batch_size):
                         _, img = self.__device.frame
                         if img is None:
-                            img = channel_solid(width, height, 0)
-                        else:
+                            images.append(self.__empty)
+                            continue
+
+                        if type(self.__device) == MediaStreamDevice:
                             if orient in [EnumCanvasOrientation.FLIPX, EnumCanvasOrientation.FLIPXY]:
                                 img = cv2.flip(img, 1)
-
                             if orient in [EnumCanvasOrientation.FLIPY, EnumCanvasOrientation.FLIPXY]:
                                 img = cv2.flip(img, 0)
 
-                            img = image_scalefit(img, width, height, mode=mode, sample=sample)
-
+                        img = image_scalefit(img, width, height, mode, sample)
                         images.append(cv2tensor_full(img))
                         pbar.update_absolute(idx)
                         if batch_size > 1:
                             time.sleep(rate)
 
         if len(images) == 0:
-            return self.__last
-        self.__last = images[-1]
+            images = [self.__empty]
+        #self.__last = images[-1]
         return list(zip(*images))
 
 class StreamWriterNode(JOVBaseNode):

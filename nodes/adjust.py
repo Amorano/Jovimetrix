@@ -16,17 +16,15 @@ from Jovimetrix import IT_MATTE, JOV_HELP_URL, JOVImageMultiple, \
 from Jovimetrix.sup.lexicon import Lexicon
 
 from Jovimetrix.sup.util import zip_longest_fill, deep_merge_dict, \
-    parse_tuple, \
-    parse_number, EnumTupleType
+    parse_tuple, parse_number, EnumTupleType
 
-from Jovimetrix.sup.image import EnumImageType, cv2tensor_full, \
-    image_equalize, image_levels, image_matte, \
-    image_posterize, image_pixelate, pixel_eval, tensor2cv, \
-    image_quantize, image_sharpen, image_threshold,  \
+from Jovimetrix.sup.image import cv2tensor_full, image_equalize, image_levels, \
+    image_posterize, image_pixelate, tensor2cv, \
+    image_quantize, image_sharpen, image_threshold, \
     image_blend, image_invert, morph_edge_detect, \
     morph_emboss, image_contrast, image_hsv, image_gamma, color_match, \
     color_match_custom_map, color_match_heat_map, \
-    EnumColorMap, EnumAdjustOP, EnumThresholdAdapt, EnumThreshold
+    EnumImageType, EnumColorMap, EnumAdjustOP, EnumThresholdAdapt, EnumThreshold
 
 # =============================================================================
 
@@ -147,11 +145,15 @@ class AdjustNode(JOVImageMultiple):
                 case EnumAdjustOP.CLOSE:
                     img_new = cv2.morphologyEx(img, cv2.MORPH_CLOSE, (r, r), iterations=int(a))
 
+            print(mask.shape)
             mask = tensor2cv(mask, chan=EnumImageType.GRAYSCALE)
+            print(mask.shape)
             if invert:
                 mask = 255 - mask
+            print(mask.shape)
             if (wh := img.shape[:2]) != mask.shape[:2]:
                 mask = cv2.resize(mask, wh[::-1])
+            print(mask.shape)
             img = image_blend(img, img_new, mask)
             img = cv2tensor_full(img, matte)
             images.append(img)

@@ -364,6 +364,8 @@ class MediaStreamDevice(MediaStreamURL):
 
     @zoom.setter
     def zoom(self, val: float) -> None:
+        if self.source is None:
+            return
         self.__zoom = np.clip(val, 0, 1)
         val = 100 + 300 * self.__zoom
         self.source.set(cv2.CAP_PROP_ZOOM, val)
@@ -374,6 +376,8 @@ class MediaStreamDevice(MediaStreamURL):
 
     @exposure.setter
     def exposure(self, val: float) -> None:
+        if self.source is None:
+            return
         # -10 to -1 range
         self.__exposure = np.clip(val, 0, 1)
         val = -10 + 9 * self.__exposure
@@ -385,6 +389,8 @@ class MediaStreamDevice(MediaStreamURL):
 
     @focus.setter
     def focus(self, val: float) -> None:
+        if self.source is None:
+            return
         self.__focus = np.clip(val, 0, 1)
         val = 255 * self.__focus
         self.source.set(cv2.CAP_PROP_FOCUS, val)

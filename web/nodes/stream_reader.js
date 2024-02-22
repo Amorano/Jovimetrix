@@ -1,11 +1,12 @@
 /**
- * File: streamreader.js
+ * File: stream_reader.js
  * Project: Jovimetrix
  *
  */
 
 import { app } from "/scripts/app.js"
 import { fitHeight } from '../util/util.js'
+import{ hook_widget_size_mode } from '../util/util_jov.js'
 import { widget_hide, widget_show } from '../util/util_widget.js'
 
 const _id = "STREAM READER (JOV) 📺"
@@ -21,20 +22,20 @@ app.registerExtension({
         nodeType.prototype.onNodeCreated = async function () {
             const me = onNodeCreated?.apply(this);
             const self = this;
+            hook_widget_size_mode(this);
 
-            const url = this.widgets[1];
-            const camera = this.widgets[2];
-            const monitor = this.widgets[3];
-            const window = this.widgets[4];
-            const dpi = this.widgets[5];
-            const bbox = this.widgets[6];
+            const url = this.widgets.find(w => w.name === '🌐');
+            const orient = this.widgets.find(w => w.name === '🧭');
+            const zoom = this.widgets.find(w => w.name === '🔎');
+            const dpi = this.widgets.find(w => w.name === 'DPI');
+            const camera = this.widgets.find(w => w.name === '📹');
+            const monitor =this.widgets.find(w => w.name === '🖥');
+            const window = this.widgets.find(w => w.name === '🪟');
+            const fps = this.widgets.find(w => w.name === '🏎️');
+            const bbox = this.widgets.find(w => w.name === '🔲');
 
-            const fps = this.widgets[7];
-            const orient = this.widgets[13];
-            const zoom = this.widgets[14];
-
-            const mode = this.widgets[0];
-            mode.callback = () => {
+            const source = this.widgets.find(w => w.name === 'SRC');
+            source.callback = () => {
                 widget_hide(this, url);
                 widget_hide(this, camera);
                 widget_hide(this, monitor);
@@ -45,7 +46,7 @@ app.registerExtension({
                 widget_hide(this, orient);
                 widget_hide(this, zoom);
 
-                switch (mode.value) {
+                switch (source.value) {
                     // "URL", "CAMERA", "MONITOR", "WINDOW"
                     case "URL":
                         widget_show(url);
@@ -71,7 +72,7 @@ app.registerExtension({
                 }
                 fitHeight(self);
             }
-            setTimeout(() => { mode.callback(); }, 15);
+            setTimeout(() => { source.callback(); }, 15);
             return me;
         }
     }

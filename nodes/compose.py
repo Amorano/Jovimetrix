@@ -24,7 +24,7 @@ from Jovimetrix.sup.util import parse_number, parse_tuple, zip_longest_fill, \
 
 from Jovimetrix.sup.image import channel_count, channel_merge, \
     channel_solid, cv2tensor_full, \
-    image_convert, image_crop, image_crop_center, image_crop_polygonal, \
+    image_convert, image_crop, image_crop_center, image_crop_polygonal, image_grayscale, \
     image_mask, image_mask_add, image_matte, image_rotate, image_scale, \
     image_translate, image_split, pixel_eval, tensor2cv, \
     image_edge_wrap, image_scalefit, cv2tensor, \
@@ -221,9 +221,9 @@ class PixelSplitNode(JOVImageMultiple):
         pixel = kw.get(Lexicon.PIXEL, [None])
         pbar = comfy.utils.ProgressBar(len(pixel))
         for idx, (img,) in enumerate(pixel):
-            img = tensor2cv(img, EnumImageType.BGRA)
+            img = tensor2cv(img)
             img = image_mask_add(img)
-            images.append([cv2tensor(x) for x in image_split(img)])
+            images.append([image_grayscale(cv2tensor(x)) for x in image_split(img)])
             pbar.update_absolute(idx)
         return list(zip(*images))
 

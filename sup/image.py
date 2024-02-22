@@ -240,7 +240,7 @@ def tensor2pil(tensor: torch.Tensor) -> Image.Image:
 def tensor2cv(tensor: torch.Tensor, chan:EnumImageType=EnumImageType.BGRA) -> TYPE_IMAGE:
     if tensor is None:
         return channel_solid(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, chan=chan)
-    return np.clip(tensor.squeeze().cpu().numpy() * 255, 0, 255).astype(np.uint8)
+    image = np.clip(tensor.squeeze().cpu().numpy() * 255, 0, 255).astype(np.uint8)
     cc = 1 if len(image.shape) < 3 else image.shape[2]
     if chan == EnumImageType.BGRA:
         if cc == 4:
@@ -306,52 +306,24 @@ def pil2cv(image: Image.Image, chan:EnumImageType=EnumImageType.BGRA) -> TYPE_IM
             return cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
     return image
 
-def cv2tensor(image: TYPE_IMAGE, chan:EnumImageType=EnumImageType.RGBA) -> torch.Tensor:
+def cv2tensor(image: TYPE_IMAGE) -> torch.Tensor:
     """Convert a CV2 Matrix to a Torch Tensor."""
-    if image is None:
-        return channel_solid(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 0, chan)
     cc = 1 if len(image.shape) < 3 else image.shape[2]
-    if chan == EnumImageType.RGBA or chan == EnumImageType.BGRA:
-        if cc == 3:
-            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGBA)
-        elif cc == 1:
-            image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGBA)
-    #elif chan == EnumImageType.BGRA:
-    #    if cc == 3:
-    #        image = cv2.cvtColor(image, cv2.COLOR_BGR2BGRA)
-    #    elif cc == 1:
-    #        image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGRA)
-    elif chan == EnumImageType.RGB or chan == EnumImageType.BGR:
-        if cc == 4:
-            image = cv2.cvtColor(image, cv2.COLOR_BGRA2RGB)
-        elif cc == 1:
-            image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
-    #elif chan == EnumImageType.BGR:
-    #    if cc == 4:
-    #        image = cv2.cvtColor(image, cv2.COLOR_BGRA2BGR)
-    #    elif cc == 1:
-    #        image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
-    elif chan == EnumImageType.GRAYSCALE:
-        if cc == 4:
-            image = cv2.cvtColor(image, cv2.COLOR_BGRA2GRAY)
-        elif cc == 3:
-            image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    return torch.from_numpy(image.astype(np.float32) / 255.0).unsqueeze(0)
+    match cc:
+        case 3:
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        case 4:
+            image = cv2.cvtColor(image, cv2.COLOR_BGRA2RGBA)
+    return torch.from_numpy(image.astype(np.float32) / 255).unsqueeze(0)
 
 def cv2tensor_full(image: TYPE_IMAGE, matte:TYPE_PIXEL=0, invert:bool=False) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-    # RGB-A
-    image = image_convert(image, 4)
-    image = image_matte(image, matte)
-    full = cv2tensor(image, EnumImageType.BGRA)
-    # MASK
     mask = image_mask(image)
-    mask = cv2tensor(mask, EnumImageType.GRAYSCALE)
-    # RGB
+    image = image_convert(image, 4)
     if not invert:
-        image[:,:,3] = 255 - mask
+        image[:,:,3] = 255 - mask[:,:,0] if len(mask.shape) > 2 else mask
+    image = image_matte(image, matte)
     rgb = image_convert(image, 3)
-    rgb = cv2tensor(rgb, EnumImageType.BGR)
-    return full, rgb, mask
+    return cv2tensor(image), cv2tensor(rgb), cv2tensor(mask)
 
 def cv2pil(image: TYPE_IMAGE, chan:EnumImageType=EnumImageType.RGBA) -> Image.Image:
     """Convert a CV2 Matrix to a PIL Image."""
@@ -515,8 +487,8 @@ def channel_add(image:TYPE_IMAGE, color: TYPE_PIXEL=255) -> TYPE_IMAGE:
     new = channel_solid(w, h, color, EnumImageType.GRAYSCALE)
     return np.concatenate([image, new], axis=-1)
 
-def channel_solid(width:int, height:int,
-                  color:TYPE_PIXEL=255, chan:EnumImageType=EnumImageType.BGR) -> TYPE_IMAGE:
+def channel_solid(width:int, height:int, color:TYPE_PIXEL=255,
+                  chan:EnumImageType=EnumImageType.BGR) -> TYPE_IMAGE:
 
     color = pixel_eval(color, chan)
     match chan:
@@ -613,7 +585,7 @@ def image_blend(imageA: TYPE_IMAGE, imageB: TYPE_IMAGE, mask:Optional[TYPE_IMAGE
     else:
         mask = image_mask(imageB)
 
-    imageB[:,:,3] = mask[:,:,0]
+    imageB[:,:,3] = mask[:,:,0] if len(mask.shape) > 2 else mask
     imageB = cv2pil(imageB)
     image = blendLayers(imageA, imageB, blendOp.value, np.clip(alpha, 0, 1))
     image = pil2cv(image)
@@ -632,17 +604,15 @@ def image_convert(image: TYPE_IMAGE, channels: int) -> TYPE_IMAGE:
     if ncc < 3:
         return image_grayscale(image)
     cc = channel_count(image)[0]
-    if ncc == 3:
+    if ncc == cc:
+        return image
+    elif ncc == 3:
         if cc == 1:
             return cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
-        elif cc == 4:
-            return cv2.cvtColor(image, cv2.COLOR_BGRA2BGR)
-        return image
+        return cv2.cvtColor(image, cv2.COLOR_BGRA2BGR)
     if cc == 1:
         return cv2.cvtColor(image, cv2.COLOR_GRAY2BGRA)
-    elif cc == 3:
-        return cv2.cvtColor(image, cv2.COLOR_BGR2BGRA)
-    return image
+    return cv2.cvtColor(image, cv2.COLOR_BGR2BGRA)
 
 def image_crop_polygonal(image: TYPE_IMAGE, points: list[TYPE_COORD]) -> TYPE_IMAGE:
     cc, w, h = channel_count(image)[:3]
@@ -757,12 +727,16 @@ def image_gamma(image: TYPE_IMAGE, value: float) -> TYPE_IMAGE:
     return bgr2image(image, alpha, cc == 1)
 
 def image_grayscale(image: TYPE_IMAGE) -> TYPE_IMAGE:
-    if channel_count(image)[0] == 1:
-        return image[:, :]
-
+    cc = channel_count(image)[0]
+    if cc == 1:
+        if len(image.shape) == 2:
+            image = np.expand_dims(image, -1)
+        return image
     if image.dtype in [np.float16, np.float32, np.float64]:
         image = np.clip(image * 255, 0, 255).astype(np.uint8)
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)[:,:,2]
+    if cc == 4:
+        image = image[:,:,:3]
+    return cv2.cvtColor(image, cv2.COLOR_BGR2HSV)[:,:,2]
     if len(image.shape) == 2:
         image = np.expand_dims(image, -1)
     return image
@@ -891,10 +865,8 @@ def image_mask(image:TYPE_IMAGE, color:TYPE_PIXEL=255) -> TYPE_IMAGE:
     """Returns a mask from an image or a default mask with the color."""
     cc, width, height = channel_count(image)[:3]
     if cc == 4:
-        mask = image[:,:,3]
-    else:
-        mask = channel_solid(width, height, color, EnumImageType.GRAYSCALE)
-    return mask[:,:]
+        return image[:,:,3]
+    return channel_solid(width, height, color, EnumImageType.GRAYSCALE)
 
 def image_mask_add(image:TYPE_IMAGE, mask:TYPE_IMAGE=None) -> TYPE_IMAGE:
     """Places a default or custom mask into an image.
@@ -915,6 +887,8 @@ def image_matte(image:TYPE_IMAGE, color:TYPE_PIXEL=255, width:int=None,
                 height:int=None) -> TYPE_IMAGE:
     """Puts an image atop a colored matte."""
     cc, w, h = channel_count(image)[:3]
+    if cc != 4:
+        return image
     width = width if width is not None else w
     height = height if height is not None else h
     width = max(w, width)

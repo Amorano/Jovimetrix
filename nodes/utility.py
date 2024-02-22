@@ -315,8 +315,6 @@ class QueueNode(JOVBaseNode):
             _, ext = os.path.splitext(data)
             if ext in image_formats():
                 data, mask = image_load(data)
-                #data = cv2tensor(data)
-                #mask = cv2tensor(mask, EnumImageType.GRAYSCALE)
                 data, _, mask = cv2tensor_full(data)
             elif ext == '.json':
                 with open(data, 'r', encoding='utf-8') as f:
