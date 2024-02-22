@@ -31,7 +31,8 @@ from Jovimetrix import JOV_HELP_URL, ComfyAPIMessage, JOVBaseNode, TimedOutExcep
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import path_next, deep_merge_dict, parse_tuple, \
     zip_longest_fill
-from Jovimetrix.sup.image import EnumImageType, cv2tensor, image_convert, tensor2pil, tensor2cv, \
+from Jovimetrix.sup.image import EnumImageType, cv2tensor, cv2tensor_full, image_convert, \
+    tensor2pil, tensor2cv, \
     pil2tensor, image_load, image_formats, image_diff
 
 # =============================================================================
@@ -210,8 +211,8 @@ class ValueGraphNode(JOVBaseNode):
         image = Image.open(buffer)
         return (pil2tensor(image),)
 
-class RerouteNode(JOVBaseNode):
-    NAME = "RE-ROUTE (JOV) 🚌"
+class RouteNode(JOVBaseNode):
+    NAME = "ROUTE (JOV) 🚌"
     CATEGORY = JOV_CATEGORY
     DESCRIPTION = "Pass all data because the default is broken on connection."
     INPUT_IS_LIST = True
@@ -226,7 +227,7 @@ class RerouteNode(JOVBaseNode):
             Lexicon.PASS_IN: (WILDCARD, {})
         }}
         d = deep_merge_dict(IT_REQUIRED, d)
-        return Lexicon._parse(d, JOV_HELP_URL + "/UTILITY#-re-route")
+        return Lexicon._parse(d, JOV_HELP_URL + "/UTILITY#-route")
 
     def run(self, **kw) -> tuple[Any, Any]:
         o = kw.get(Lexicon.PASS_IN, None)
@@ -311,12 +312,12 @@ class QueueNode(JOVBaseNode):
             mask = None
             if not os.path.isfile(data):
                 return data, mask
-            #try:
             _, ext = os.path.splitext(data)
             if ext in image_formats():
                 data, mask = image_load(data)
-                data = cv2tensor(data)
-                mask = cv2tensor(mask, EnumImageType.GRAYSCALE)
+                #data = cv2tensor(data)
+                #mask = cv2tensor(mask, EnumImageType.GRAYSCALE)
+                data, _, mask = cv2tensor_full(data)
             elif ext == '.json':
                 with open(data, 'r', encoding='utf-8') as f:
                     data = json.load(f)

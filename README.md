@@ -141,7 +141,6 @@ The audio nodes require FFMPEG. You can find the official [FFMPEG](https://ffmpe
 [COMPARISON 🕵🏽](https://github.com/Amorano/Jovimetrix/wiki/FLOW#-comparison)|Compare two inputs: A=B, A!=B, A>B, A>=B, A<B, A<=B
 [DELAY ✋🏽](https://github.com/Amorano/Jovimetrix/wiki/FLOW#-delay)|Delay traffic. Electrons on the data bus go round.
 [HOLD VALUE 🫴🏽](https://github.com/Amorano/Jovimetrix/wiki/FLOW#-hold-value)|When engaged will send the last value it had even with new values arriving.
-[IF-THEN-ELSE 🔀](https://github.com/Amorano/Jovimetrix/wiki/FLOW#-if-then-else)|IF <valid> then A else B
 <img width=225/>|<img width=800/>
 
 [DEVICE](https://github.com/Amorano/Jovimetrix/wiki/DEVICE) | &nbsp;
@@ -165,7 +164,7 @@ The audio nodes require FFMPEG. You can find the official [FFMPEG](https://ffmpe
 [AKASHIC📓](https://github.com/Amorano/Jovimetrix/wiki/UTILITY#-akashic)|Display the top level attributes of an output
 [QUEUE🗃](https://github.com/Amorano/Jovimetrix/wiki/UTILITY#-queue)|Cycle lists of images files or strings for node inputs.
 [SELECT🤏🏽](https://github.com/Amorano/Jovimetrix/wiki/UTILITY#-select)|Select an item from a user explicit list of inputs.
-[RE-ROUTE🚌](https://github.com/Amorano/Jovimetrix/wiki/UTILITY#-re-route)|Pass all data because the default is broken on connection
+[ROUTE🚌](https://github.com/Amorano/Jovimetrix/wiki/UTILITY#-route)|Pass all data because the default is broken on connection
 [EXPORT 📽](https://github.com/Amorano/Jovimetrix/wiki/UTILITY#-export)|Take your frames out static or animated (GIF)
 [IMAGE DIFF 📏](https://github.com/Amorano/Jovimetrix/wiki/UTILITY#-image-diff)|Explicitly show the differences between two images via self-similarity index
 <img width=225/>|<img width=800/>

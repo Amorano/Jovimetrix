@@ -9,7 +9,7 @@ from loguru import logger
 
 import comfy
 
-from Jovimetrix import JOV_HELP_URL, JOVImageMultiple, \
+from Jovimetrix import IT_MATTE, JOV_HELP_URL, JOVImageMultiple, \
     IT_PIXEL, IT_PIXEL2, IT_PIXEL_MASK, IT_HSV, IT_FLIP, \
     IT_LOHI, IT_LMH, IT_INVERT, IT_CONTRAST, IT_GAMMA, IT_REQUIRED
 
@@ -20,8 +20,8 @@ from Jovimetrix.sup.util import zip_longest_fill, deep_merge_dict, \
     parse_number, EnumTupleType
 
 from Jovimetrix.sup.image import EnumImageType, cv2tensor_full, \
-    image_equalize, image_levels, image_mask, image_mask_add, \
-    image_posterize, image_pixelate, tensor2cv, cv2tensor, \
+    image_equalize, image_levels, image_matte, \
+    image_posterize, image_pixelate, pixel_eval, tensor2cv, \
     image_quantize, image_sharpen, image_threshold,  \
     image_blend, image_invert, morph_edge_detect, \
     morph_emboss, image_contrast, image_hsv, image_gamma, color_match, \
@@ -46,7 +46,8 @@ class AdjustNode(JOVImageMultiple):
                 Lexicon.RADIUS: ("INT", {"default": 3, "min": 3, "step": 1}),
                 Lexicon.VALUE: ("FLOAT", {"default": 1, "min": 0, "step": 0.1}),
             }}
-        d = deep_merge_dict(IT_REQUIRED, IT_PIXEL_MASK, d, IT_LOHI, IT_LMH, IT_HSV, IT_CONTRAST, IT_GAMMA, IT_INVERT)
+        d = deep_merge_dict(IT_REQUIRED, IT_PIXEL_MASK, d, IT_LOHI, IT_LMH, IT_HSV,
+                            IT_CONTRAST, IT_GAMMA, IT_MATTE, IT_INVERT)
         return Lexicon._parse(d, JOV_HELP_URL + "/ADJUST#-adjust")
 
     def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor]:
@@ -60,11 +61,13 @@ class AdjustNode(JOVImageMultiple):
         hsv = parse_tuple(Lexicon.HSV, kw, EnumTupleType.FLOAT, (0, 1, 1), clip_min=0, clip_max=1)
         contrast = parse_number(Lexicon.CONTRAST, kw, EnumTupleType.FLOAT, [0], clip_min=0, clip_max=1)
         gamma = parse_number(Lexicon.GAMMA, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
+        matte = parse_tuple(Lexicon.MATTE, kw, default=(0, 0, 0), clip_min=0)
         invert = kw.get(Lexicon.INVERT, [False])
-        params = [tuple(x) for x in zip_longest_fill(img, mask, op, radius, amt, lohi, lmh, hsv, contrast, gamma, invert)]
+        params = [tuple(x) for x in zip_longest_fill(img, mask, op, radius, amt, lohi,
+                                                     lmh, hsv, contrast, gamma, matte, invert)]
         images = []
         pbar = comfy.utils.ProgressBar(len(params))
-        for idx, (pixel, mask, o, r, a, lohi, lmh, hsv, con, gamma, invert) in enumerate(params):
+        for idx, (pixel, mask, o, r, a, lohi, lmh, hsv, con, gamma, matte, invert) in enumerate(params):
             img = tensor2cv(pixel)
             match EnumAdjustOP[o]:
                 case EnumAdjustOP.INVERT:
@@ -146,13 +149,11 @@ class AdjustNode(JOVImageMultiple):
 
             mask = tensor2cv(mask, chan=EnumImageType.GRAYSCALE)
             if invert:
-                mask = image_invert(mask, 1)
+                mask = 255 - mask
             if (wh := img.shape[:2]) != mask.shape[:2]:
                 mask = cv2.resize(mask, wh[::-1])
-            alpha = image_mask(img)
             img = image_blend(img, img_new, mask)
-            img = image_mask_add(img, alpha)
-            img = cv2tensor_full(img)
+            img = cv2tensor_full(img, matte)
             images.append(img)
             pbar.update_absolute(idx)
         return list(zip(*images))

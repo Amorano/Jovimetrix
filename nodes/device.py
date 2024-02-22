@@ -36,8 +36,8 @@ from Jovimetrix.sup.stream import camera_list, monitor_list, window_list, \
 from Jovimetrix.sup.midi import midi_device_names, \
     MIDIMessage, MIDINoteOnFilter, MIDIServerThread
 
-from Jovimetrix.sup.image import channel_solid, cv2tensor_full, image_mask, \
-    tensor2cv, cv2tensor, image_scalefit, image_invert, \
+from Jovimetrix.sup.image import channel_solid, cv2tensor_full, \
+    tensor2cv, image_scalefit, image_invert, \
     EnumInterpolation, EnumScaleMode, \
     IT_WHMODE, IT_SAMPLE, IT_SCALEMODE
 

@@ -47,7 +47,7 @@ Polygonal shapes, MIDI, MP3/WAVE, Flow Logic
     ConstantNode, ShapeNode, TextNode, GLSLNode,
     StreamReaderNode, StreamWriterNode, MIDIMessageNode, MIDIReaderNode, MIDIFilterEZNode, MIDIFilterNode,
     DelayNode, HoldValueNode, ComparisonNode, SelectNode
-    AkashicNode, ValueGraphNode, RerouteNode, ExportNode, QueueNode
+    AkashicNode, ValueGraphNode, RouteNode, ExportNode, QueueNode
 @version: 0.9999999999999
 """
 
@@ -264,7 +264,7 @@ def update_nested_dict(d, path, value) -> None:
 # === GLOBALS ===
 # =============================================================================
 
-MIN_IMAGE_SIZE = 32
+MIN_IMAGE_SIZE = 512
 
 IT_REQUIRED = { "required": {} }
 

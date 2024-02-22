@@ -239,28 +239,36 @@ def tensor2pil(tensor: torch.Tensor) -> Image.Image:
 
 def tensor2cv(tensor: torch.Tensor, chan:EnumImageType=EnumImageType.BGRA) -> TYPE_IMAGE:
     if tensor is None:
-        return channel_solid(color=255, chan=chan)
-    image = np.clip(tensor.cpu().numpy().squeeze() * 255, 0, 255).astype(np.uint8)
+        return channel_solid(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, chan=chan)
+    return np.clip(tensor.squeeze().cpu().numpy() * 255, 0, 255).astype(np.uint8)
     cc = 1 if len(image.shape) < 3 else image.shape[2]
     if chan == EnumImageType.BGRA:
         if cc == 4:
-            image = cv2.cvtColor(image, cv2.COLOR_RGBA2BGRA)
+            return cv2.cvtColor(image, cv2.COLOR_RGBA2BGRA)
         elif cc == 3:
-            image = cv2.cvtColor(image, cv2.COLOR_RGB2BGRA)
-        else:
-            image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGRA)
+            return cv2.cvtColor(image, cv2.COLOR_RGB2BGRA)
+        return cv2.cvtColor(image, cv2.COLOR_GRAY2BGRA)
+    elif chan == EnumImageType.RGBA:
+        if cc == 3:
+            return cv2.cvtColor(image, cv2.COLOR_RGB2RGBA)
+        elif cc == 1:
+            return cv2.cvtColor(image, cv2.COLOR_GRAY2RGBA)
     elif chan == EnumImageType.BGR:
         if cc == 4:
-            image = cv2.cvtColor(image, cv2.COLOR_RGBA2BGR)
+            return cv2.cvtColor(image, cv2.COLOR_RGBA2BGR)
         elif cc == 3:
-            image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-        else:
-            image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
+            return cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+        return cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
+    elif chan == EnumImageType.RGB:
+        if cc == 4:
+            return cv2.cvtColor(image, cv2.COLOR_RGBA2RGB)
+        elif cc == 1:
+            return cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
     elif chan == EnumImageType.GRAYSCALE:
         if cc == 4:
-            image = cv2.cvtColor(image, cv2.COLOR_RGBA2GRAY)
+            return cv2.cvtColor(image, cv2.COLOR_RGBA2GRAY)
         elif cc == 3:
-            image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+            return cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
     return image
 
 def b64_2_tensor(base64str: str) -> torch.Tensor:
@@ -301,18 +309,28 @@ def pil2cv(image: Image.Image, chan:EnumImageType=EnumImageType.BGRA) -> TYPE_IM
 def cv2tensor(image: TYPE_IMAGE, chan:EnumImageType=EnumImageType.RGBA) -> torch.Tensor:
     """Convert a CV2 Matrix to a Torch Tensor."""
     if image is None:
-        return channel_solid(color=0, chan=chan)
+        return channel_solid(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 0, chan)
     cc = 1 if len(image.shape) < 3 else image.shape[2]
     if chan == EnumImageType.RGBA or chan == EnumImageType.BGRA:
         if cc == 3:
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGBA)
         elif cc == 1:
             image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGBA)
+    #elif chan == EnumImageType.BGRA:
+    #    if cc == 3:
+    #        image = cv2.cvtColor(image, cv2.COLOR_BGR2BGRA)
+    #    elif cc == 1:
+    #        image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGRA)
     elif chan == EnumImageType.RGB or chan == EnumImageType.BGR:
         if cc == 4:
             image = cv2.cvtColor(image, cv2.COLOR_BGRA2RGB)
         elif cc == 1:
-            image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+            image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
+    #elif chan == EnumImageType.BGR:
+    #    if cc == 4:
+    #        image = cv2.cvtColor(image, cv2.COLOR_BGRA2BGR)
+    #    elif cc == 1:
+    #        image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
     elif chan == EnumImageType.GRAYSCALE:
         if cc == 4:
             image = cv2.cvtColor(image, cv2.COLOR_BGRA2GRAY)
@@ -320,22 +338,25 @@ def cv2tensor(image: TYPE_IMAGE, chan:EnumImageType=EnumImageType.RGBA) -> torch
             image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     return torch.from_numpy(image.astype(np.float32) / 255.0).unsqueeze(0)
 
-def cv2tensor_full(image: TYPE_IMAGE, matte:TYPE_PIXEL=0) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+def cv2tensor_full(image: TYPE_IMAGE, matte:TYPE_PIXEL=0, invert:bool=False) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     # RGB-A
     image = image_convert(image, 4)
-    full = cv2tensor(image)
+    image = image_matte(image, matte)
+    full = cv2tensor(image, EnumImageType.BGRA)
     # MASK
     mask = image_mask(image)
     mask = cv2tensor(mask, EnumImageType.GRAYSCALE)
     # RGB
-    rgb = image_matte(image, matte)
-    rgb = cv2tensor(rgb, EnumImageType.RGB)
+    if not invert:
+        image[:,:,3] = 255 - mask
+    rgb = image_convert(image, 3)
+    rgb = cv2tensor(rgb, EnumImageType.BGR)
     return full, rgb, mask
 
 def cv2pil(image: TYPE_IMAGE, chan:EnumImageType=EnumImageType.RGBA) -> Image.Image:
     """Convert a CV2 Matrix to a PIL Image."""
     if image is None:
-        return channel_solid(color=0, chan=chan)
+        return channel_solid(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 0, chan)
     cc = 1 if len(image.shape) < 3 else image.shape[2]
     if chan == EnumImageType.RGBA:
         if cc == 4:
@@ -489,16 +510,13 @@ def channel_count(image:TYPE_IMAGE) -> tuple[int, int, int, EnumImageType]:
         mode = EnumImageType.GRAYSCALE
     return size, w, h, mode
 
-def channel_add(image:TYPE_IMAGE, value: TYPE_PIXEL=255) -> TYPE_IMAGE:
-    new = channel_solid(color=value, image=image, chan=EnumImageType.GRAYSCALE)
+def channel_add(image:TYPE_IMAGE, color: TYPE_PIXEL=255) -> TYPE_IMAGE:
+    h, w = image.shape[:2]
+    new = channel_solid(w, h, color, EnumImageType.GRAYSCALE)
     return np.concatenate([image, new], axis=-1)
 
-def channel_solid(width:int=512, height:int=512, color:TYPE_PIXEL=255,
-                image:Optional[TYPE_IMAGE]=None,
-                chan:EnumImageType=EnumImageType.BGR) -> TYPE_IMAGE:
-
-    if image is not None:
-        height, width = image.shape[:2]
+def channel_solid(width:int, height:int,
+                  color:TYPE_PIXEL=255, chan:EnumImageType=EnumImageType.BGR) -> TYPE_IMAGE:
 
     color = pixel_eval(color, chan)
     match chan:
@@ -519,35 +537,6 @@ def channel_solid(width:int=512, height:int=512, color:TYPE_PIXEL=255,
             img = np.full((height, width, 4), color, dtype=np.uint8)
             img[:,:,3] = np.full((height, width), color[3], dtype=np.uint8)
     return img
-
-def channel_fill(image:TYPE_IMAGE, width:int, height:int, color:TYPE_PIXEL=255) -> TYPE_IMAGE:
-    """Will matte image with color if the width and/or height exceed the image size."""
-
-    cc, x, y, chan = channel_count(image)
-    y1 = max(0, (height - y) // 2)
-    y2 = min(height, y1 + y)
-    x1 = max(0, (width - x) // 2)
-    x2 = min(width, x1 + x)
-
-    # crop/clip
-    if y > height:
-        y1 = 0
-        y2 = height
-    if x > width:
-        x1 = 0
-        x2 = width
-
-    canvas = channel_solid(width, height, color, chan=chan)
-    if cc > 3:
-        mask = image_mask(image, 0)
-        canvas[y1: y2, x1: x2, :3] = image[:y2-y1, :x2-x1, :3]
-        canvas[:, :, 3] = 255 - canvas[:, :, 3]
-        canvas[y1: y2, x1: x2, 3] = mask[:y2-y1, :x2-x1]
-    elif cc > 1:
-        canvas[y1: y2, x1: x2] = image[:y2-y1, :x2-x1]
-    else:
-        canvas[y1: y2, x1: x2] = image[:y2-y1, :x2-x1]
-    return canvas
 
 def channel_merge(channel:list[TYPE_IMAGE]) -> TYPE_IMAGE:
     ch = [c.shape[:2] if c is not None else (0, 0) for c in channel[:3]]
@@ -603,57 +592,32 @@ def image_affine_edge(image: TYPE_IMAGE, callback: object, edge: EnumEdge=EnumEd
     image = image_crop_center(image, width, height)
     return image
 
-def image_blend(imageA: Optional[TYPE_IMAGE]=None,
-               imageB:Optional[TYPE_IMAGE]=None,
-               mask:Optional[TYPE_IMAGE]=None,
-               blendOp:BlendType=BlendType.NORMAL,
-               alpha:float=1., matte:TYPE_PIXEL=0.,
-               mode:EnumScaleMode=EnumScaleMode.NONE,
-               sample:EnumInterpolation=EnumInterpolation.LANCZOS4) -> TYPE_IMAGE:
+def image_blend(imageA: TYPE_IMAGE, imageB: TYPE_IMAGE, mask:Optional[TYPE_IMAGE]=None,
+                blendOp:BlendType=BlendType.NORMAL, alpha:float=1) -> TYPE_IMAGE:
 
-    targetW = targetH = 0
-    if mode == EnumScaleMode.NONE:
-        targetW = max(imageA.shape[1] if imageA is not None else 0,
-                      imageB.shape[1] if imageB is not None else 0)
-        targetH = max(imageA.shape[0] if imageA is not None else 0,
-                      imageB.shape[0] if imageB is not None else 0)
-    else:
-        targetW = imageA.shape[1] if imageA is not None else imageB.shape[1] \
-            if imageB is not None else mask.shape[1] if mask is not None else 0
-        targetH = imageA.shape[0] if imageA is not None else imageB.shape[0] \
-            if imageB is not None else mask.shape[1] if mask is not None else 0
-    # imageB_maskColor = 0 if imageB is None else 255
-
-    targetW, targetH = max(0, targetW), max(0, targetH)
-    if targetH == 0 or targetW == 0:
-        logger.warning("bad dimensions {} {}", targetW, targetH)
-        return channel_solid(targetW or 1, targetH or 1, chan=EnumImageType.GRAYSCALE)
-
-    def process(img:TYPE_IMAGE) -> TYPE_IMAGE:
-        if img is None:
-            return channel_solid(targetW, targetH, matte, EnumImageType.BGRA)
-        img = image_scalefit(img, targetW, targetH, mode, sample)
-        img = channel_fill(img, targetW, targetH, matte)
-        img = image_convert(img, 4)
-        return img
-
-    imageA = process(imageA)
-    imageB = process(imageB)
-    h, w = imageB.shape[:2]
-    if mask is None:
-        mask = image_mask(imageB)
-    elif channel_count(mask)[0] != 1:
-        mask = image_convert(mask, 1)
-        if mode != EnumScaleMode.NONE:
-            mask = image_scalefit(mask, w, h, mode, sample)
-        mask = image_crop_center(mask, w, h)
-        mask = channel_fill(mask, w, h, 0)
-    mask = mask[:,:,0] if len(mask.shape) > 2 else mask
-    imageB[:,:,3] = mask
+    h, w = imageA.shape[:2]
+    imageA = image_convert(imageA, 4)
     imageA = cv2pil(imageA)
+
+    if imageB is None:
+        imageB = channel_solid(w, h, (0,0,0,0), EnumImageType.BGRA)
+    else:
+        imageB = image_convert(imageB, 4)
+        imageB = image_crop_center(imageB, w, h)
+        imageB = image_matte(imageB, (0,0,0,0), w, h)
+
+    if mask is not None:
+        mask = image_convert(mask, 1)
+        mask = image_crop_center(mask, w, h)
+        mask = image_matte(mask, 255, w, h)
+    else:
+        mask = image_mask(imageB)
+
+    imageB[:,:,3] = mask[:,:,0]
     imageB = cv2pil(imageB)
     image = blendLayers(imageA, imageB, blendOp.value, np.clip(alpha, 0, 1))
-    return pil2cv(image)
+    image = pil2cv(image)
+    return image_crop_center(image, w, h)
 
 def image_contrast(image: TYPE_IMAGE, value: float) -> TYPE_IMAGE:
     image, alpha, cc = image2bgr(image)
@@ -682,25 +646,27 @@ def image_convert(image: TYPE_IMAGE, channels: int) -> TYPE_IMAGE:
 
 def image_crop_polygonal(image: TYPE_IMAGE, points: list[TYPE_COORD]) -> TYPE_IMAGE:
     cc, w, h = channel_count(image)[:3]
+    mask = image_mask(image, 0)
     # crop area first
-    points = np.array(points, np.int32)
-    points = points.reshape((-1, 1, 2))
-    mask = np.zeros((h, w, 1), dtype=np.uint8)
-    mask = cv2.fillPoly(mask, [points], 255)
-    x, y, w, h = cv2.boundingRect(mask)
-    point_mask = mask[:,:,0]
+    points = np.array(points, np.int32).reshape((-1, 1, 2))
+    point_mask = np.zeros((h, w, 1), dtype=np.uint8)
+    point_mask = cv2.fillPoly(point_mask, [points], 255)
+    x, y, w, h = cv2.boundingRect(point_mask)
+    point_mask = point_mask[:,:,0]
     # store any alpha channel
     if cc == 4:
         mask = image_mask(image, 0)
         image = cv2.cvtColor(image, cv2.COLOR_BGRA2BGR)
+    if cc == 1:
+        image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
     # crop with the point_mask
     image = cv2.bitwise_and(image, image, mask=point_mask)
+    image = image[y:y+h, x:x+w, :3]
     # replace old alpha channel
     if cc == 4:
-        image = channel_add(image, 0)
-        image[y:y+h, x:x+w,3] = mask[y:y+h, x:x+w]
-    if len(image.shape) == 2:
-        image = np.expand_dims(image, -1)
+        return image_mask_add(image, mask[y:y+h, x:x+w])
+    elif cc == 1:
+        return image_convert(image, cc)
     return image
 
 def image_crop(image: TYPE_IMAGE, width:int=None, height:int=None, offset:tuple[float, float]=(0, 0)) -> TYPE_IMAGE:
@@ -716,9 +682,9 @@ def image_crop_center(image: TYPE_IMAGE, width:int=None, height:int=None) -> TYP
     h, w = image.shape[:2]
     width = width if width is not None else w
     height = height if height is not None else h
-    x = int(max(0, min(width, w / 2 - width / 2)))
-    y = int(max(0, min(height, h / 2 - height / 2)))
-    points = [(x, y), (x + width, y), (x + width, y + height), (x, y + height)]
+    y = max(0, int((h - height) / 2))
+    x = max(0, int((w - width)/ 2))
+    points = [(x, y), (x + width - 1, y), (x + width - 1, y + height - 1), (x, y + height - 1)]
     return image_crop_polygonal(image, points)
 
 def image_diff(imageA: TYPE_IMAGE, imageB: TYPE_IMAGE, threshold:int=0, color:TYPE_PIXEL=(255, 0, 0)) -> tuple[TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE, float]:
@@ -879,7 +845,7 @@ def image_load(url: str) -> tuple[TYPE_IMAGE, TYPE_IMAGE]:
         logger.debug(f"#PSD {len(images)}")
     """
     try:
-        img  = cv2.imread(url, cv2.IMREAD_UNCHANGED)
+        img = cv2.imread(url, cv2.IMREAD_UNCHANGED)
     except Exception as e:
         try:
             img = Image.open(url)
@@ -893,22 +859,9 @@ def image_load(url: str) -> tuple[TYPE_IMAGE, TYPE_IMAGE]:
 
     if img is None:
         raise Exception(f"no file {url}")
-
     if img.dtype != np.uint8:
-        img = np.array(img / 256.0, dtype=np.float32)
-
-    cc, width, height = channel_count(img)[:3]
-    if cc == 4:
-        mask = img[:, :, 3]
-        # img = cv2.cvtColor(img, cv2.COLOR_RGBA2RGB)
-    elif cc == 3:
-        mask = np.full((height, width), 255, dtype=np.uint8)
-    else:
-        if len(img.shape) > 2:
-            img = img[:, :, 0]
-        mask = np.full((height, width), 255, dtype=np.uint8)
-
-    return img, mask
+        img = np.array(img * 255, dtype=np.uint8)
+    return img, image_mask(img)
 
 def image_load_data(data: str) -> TYPE_IMAGE:
     img = ImageOps.exif_transpose(data)
@@ -940,7 +893,7 @@ def image_mask(image:TYPE_IMAGE, color:TYPE_PIXEL=255) -> TYPE_IMAGE:
     if cc == 4:
         mask = image[:,:,3]
     else:
-        mask = channel_solid(width, height, color, chan=EnumImageType.GRAYSCALE)
+        mask = channel_solid(width, height, color, EnumImageType.GRAYSCALE)
     return mask[:,:]
 
 def image_mask_add(image:TYPE_IMAGE, mask:TYPE_IMAGE=None) -> TYPE_IMAGE:
@@ -948,31 +901,39 @@ def image_mask_add(image:TYPE_IMAGE, mask:TYPE_IMAGE=None) -> TYPE_IMAGE:
     Images are expanded to 4 channels.
     Existing 4 channel images with no mask input just return themselves.
     """
-    cc, w, h = channel_count(image)[:3]
-    if cc < 4:
-        image = image_convert(image, 4)
+    h, w = image.shape[:2]
+    image = image_convert(image, 4)
     if mask is None:
-        if cc == 4:
-            mask = image[:,:,3]
-        else:
-            mask = np.zeros((h, w), dtype=np.uint8)
-    if len(mask.shape) > 2:
-        mask = mask[:,:,0]
-    image[:,:,3] = mask
+        mask = image_mask(image)
+    else:
+        mask = image_convert(mask, 1)
+        mask = image_scalefit(mask, w, h, EnumScaleMode.FIT)
+    image[:,:,3] = mask[:,:,0] if len(mask.shape) > 2 else mask
     return image
 
-def image_matte(image:TYPE_IMAGE, color:TYPE_PIXEL=255) -> TYPE_IMAGE:
-    """Puts an image atop a colored matte. If the image has no alpha, the input image is returned."""
+def image_matte(image:TYPE_IMAGE, color:TYPE_PIXEL=255, width:int=None,
+                height:int=None) -> TYPE_IMAGE:
+    """Puts an image atop a colored matte."""
     cc, w, h = channel_count(image)[:3]
-    if cc != 4:
-        return image
-    matte = channel_solid(w, h, color, chan=EnumImageType.BGRA)
-    alphaA = image[...,3] / 255.
-    alphaB = matte[...,3] / 255.
-    alpha = alphaA + alphaB * (1 - alphaA)
-    rgb = (image[:,:,:3] * alphaA[...,np.newaxis] +
-           matte[:,:,:3] * alphaB[...,np.newaxis] * (1 - alphaA[...,np.newaxis])) / alpha[...,np.newaxis]
-    return np.dstack((rgb, alpha * 255)).astype(np.uint8)
+    width = width if width is not None else w
+    height = height if height is not None else h
+    width = max(w, width)
+    height = max(h, height)
+    y1 = max(0, (height - h) // 2)
+    y2 = min(height, y1 + h)
+    x1 = max(0, (width - w) // 2)
+    x2 = min(width, x1 + w)
+    if cc == 4:
+        mask = image_mask(image)
+    image = image_convert(image, 4)
+    matte = channel_solid(width, height, color, EnumImageType.BGRA)
+    alpha = image[:,:,3]
+    alpha = cv2.bitwise_not(alpha)
+    alpha = cv2.cvtColor(alpha, cv2.COLOR_GRAY2BGRA) / 255.0
+    matte[y1:y2, x1:x2] = cv2.convertScaleAbs(image * (1 - alpha) + matte[y1:y2, x1:x2] * alpha)
+    if cc == 4:
+        matte[y1:y2, x1:x2,3] = mask
+    return image_convert(matte, cc)
 
 def image_merge(imageA: TYPE_IMAGE, imageB: TYPE_IMAGE, axis: int=0, flip: bool=False) -> TYPE_IMAGE:
     if flip:
@@ -1171,7 +1132,7 @@ def image_stack(images: list[TYPE_IMAGE], axis:EnumOrientation=EnumOrientation.H
 
     images = []
     for i in converted:
-        i = channel_fill(i, width, height, color)
+        i = image_matte(i, color, width, height)
         i = image_convert(i, 4)
         images.append(i)
     count = len(images)

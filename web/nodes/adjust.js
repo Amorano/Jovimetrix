@@ -21,16 +21,14 @@ app.registerExtension({
         nodeType.prototype.onNodeCreated = async function () {
             const me = onNodeCreated?.apply(this);
             const self = this;
-
-            const radius = this.widgets[1];
-            const amount = this.widgets[2];
-            const lohi = this.widgets[3];
-            const lmh = this.widgets[4];
-            const hsv = this.widgets[5];
-            const contrast = this.widgets[6];
-            const gamma = this.widgets[7];
-
-            const op = this.widgets[0];
+            const radius = this.widgets.find(w => w.name === '🅡');
+            const amount = this.widgets.find(w => w.name === '#️⃣');
+            const lohi = this.widgets.find(w => w.name === 'LoHi');
+            const lmh = this.widgets.find(w => w.name === 'LMH');
+            const hsv = this.widgets.find(w => w.name === '🇭🇸\u200c🇻');
+            const contrast = this.widgets.find(w => w.name === '🌓');
+            const gamma = this.widgets.find(w => w.name === '🔆');
+            const op = this.widgets.find(w => w.name === '⚒️');
             op.callback = () => {
                 widget_hide(this, radius);
                 widget_hide(this, amount);

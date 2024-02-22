@@ -60,7 +60,7 @@ class ConstantNode(JOVImageMultiple):
         for idx, (wihi, color) in enumerate(params):
             width, height = wihi
             color = pixel_eval(color, EnumImageType.BGRA)
-            img = channel_solid(width, height, color, chan=EnumImageType.BGRA)
+            img = channel_solid(width, height, color, EnumImageType.BGRA)
             # logger.debug(img.shape)
             img = cv2tensor_full(img)
             images.append(img)
