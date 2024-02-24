@@ -67,6 +67,10 @@ class DelayNode(JOVBaseNode):
     RETURN_NAMES = (Lexicon.ROUTE,)
 
     @classmethod
+    def IS_CHANGED(cls, **kw) -> float:
+        return float("nan")
+
+    @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
             Lexicon.PASS_IN: (WILDCARD, {"default": None}),
@@ -112,9 +116,10 @@ class DelayNode(JOVBaseNode):
         self.__delay = 0
 
     def run(self, id, **kw) -> tuple[Any]:
-        o = kw.get(Lexicon.PASS_IN, None)
-        wait = kw.get(Lexicon.WAIT, False)
-        delay = min(kw.get(Lexicon.TIMER, 0), JOVI_DELAY_MAX)
+        o = kw.get(Lexicon.PASS_IN, [None])
+        wait = kw.get(Lexicon.WAIT, [False])[0]
+        delay = min(kw.get(Lexicon.TIMER, 0), [JOVI_DELAY_MAX])[0]
+
         if wait:
             cancel = False
             while not cancel:
@@ -122,7 +127,7 @@ class DelayNode(JOVBaseNode):
                 if loop_delay == 0:
                     loop_delay = JOVI_DELAY_MAX
                 cancel = DelayNode.parse_q(id, loop_delay, True)
-            return (o, )
+            return o
 
         if delay != self.__delay:
             self.__delay = delay
@@ -134,7 +139,7 @@ class DelayNode(JOVBaseNode):
 
         if loops > 0:
             cancel = DelayNode.parse_q(id, loops)
-        return (o,)
+        return o
 
 class HoldValueNode(JOVBaseNode):
     NAME = "HOLD VALUE (JOV) 🫴🏽"
@@ -157,8 +162,8 @@ class HoldValueNode(JOVBaseNode):
         self.__last_value = None
 
     def run(self, **kw) -> tuple[Any]:
-        o = kw.get(Lexicon.PASS_IN, None)
-        if self.__last_value is None or not kw.get(Lexicon.WAIT, False):
+        o = kw.get(Lexicon.PASS_IN, [None])
+        if self.__last_value is None or not kw.get(Lexicon.WAIT, [False]):
             self.__last_value = o
         return (self.__last_value,)
 
@@ -246,6 +251,7 @@ class SelectNode(JOVBaseNode):
     NAME = "SELECT (JOV) 🤏🏽"
     CATEGORY = JOV_CATEGORY
     DESCRIPTION = "Select an item from a user explicit list of inputs."
+    INPUT_IS_LIST = False
     RETURN_TYPES = (WILDCARD, "STRING", "INT", "INT", )
     RETURN_NAMES = (Lexicon.ANY, Lexicon.QUEUE, Lexicon.VALUE, Lexicon.TOTAL, )
     OUTPUT_IS_LIST = (False, False, False, False, )
@@ -314,77 +320,3 @@ class SelectNode(JOVBaseNode):
 
         self.__index = index
         return val, vals, self.__index + 1, count,
-
-"""
-# HOW TO MAKE COMFY HAVE A MEMORY BETWEEN AUTO-Q?
-class SetGetData:
-    DATA = {}
-    DEFAULT = '🔺🟩🔵'
-
-class SetNode(JOVBaseNode):
-    NAME = "SET (JOV) 🟰"
-    CATEGORY = JOV_CATEGORY
-    DESCRIPTION = "Set a value"
-    RETURN_TYPES = (WILDCARD,)
-    RETURN_NAMES = (Lexicon.RESULT, )
-
-    @classmethod
-    def INPUT_TYPES(cls) -> dict:
-        d = {"optional": {
-            Lexicon.SETGET: (["SET", "GET"], {"default": "SET"}),
-            Lexicon.KEY: ("STRING", {"default": ""}),
-            Lexicon.VALUE: (WILDCARD, {"default": None}),
-        }}
-        return deep_merge_dict(IT_REQUIRED, d)
-
-    @classmethod
-    def IS_CHANGED(cls, *arg, **kw) -> float:
-        return float("nan")
-
-    def run(self, **kw) -> tuple[bool]:
-        setget = kw[Lexicon.SETGET]
-        key = kw[Lexicon.KEY]
-        val = kw.get(Lexicon.VALUE, None)
-        if setget == "SET":
-            SetGetData.DATA[key] = val
-            return (val, )
-
-        if SetGetData.DATA.get(key, SetGetData.DEFAULT) == SetGetData.DEFAULT:
-            SetGetData.DATA[key] = val
-        return (SetGetData.DATA[key], )
-
-class GetNode(JOVBaseNode):
-    NAME = "GET (JOV) 🟰"
-    CATEGORY = JOV_CATEGORY
-    DESCRIPTION = "Get a value"
-    RETURN_TYPES = (WILDCARD,)
-    RETURN_NAMES = (Lexicon.RESULT, )
-
-    # HOW TO MAKE COMFY HAVE A MEMORY BETWEEN AUTO-Q
-    DATA = {}
-    DEFAULT = '🔺🟩🔵'
-
-    @classmethod
-    def INPUT_TYPES(cls) -> dict:
-        d = {"optional": {
-            Lexicon.SETGET: (["SET", "GET"], {"default": "SET"}),
-            Lexicon.KEY: ("STRING", {"default": ""}),
-            Lexicon.VALUE: (WILDCARD, {"default": None}),
-        }}
-        return deep_merge_dict(IT_REQUIRED, d)
-
-    @classmethod
-    def IS_CHANGED(cls, *arg, **kw) -> float:
-        return float("nan")
-
-    def run(self, **kw) -> tuple[bool]:
-        setget = kw[Lexicon.SETGET]
-        key = kw[Lexicon.KEY]
-        val = kw.get(Lexicon.VALUE, None)
-        if setget == "SET":
-            SetGetData.DATA[key] = val
-            return (val, )
-        if SetGetData.DATA.get(key, SetGetData.DEFAULT) == SetGetData.DEFAULT:
-            SetGetData.DATA[key] = val
-        return (SetGetData.DATA[key], )
-"""

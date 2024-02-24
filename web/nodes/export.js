@@ -21,7 +21,6 @@ app.registerExtension({
         nodeType.prototype.onNodeCreated = function () {
             const me = onNodeCreated?.apply(this)
             const self = this;
-
             let opt = this.widgets.find(w => w.name === 'PREFIX');
             let quality = this.widgets.find(w => w.name === 'QUALITY');
             let quality_m = this.widgets.find(w => w.name === 'MOTION');

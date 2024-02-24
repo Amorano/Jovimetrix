@@ -355,7 +355,7 @@ class ValueNode(JOVBaseNode):
         z = kw.get(Lexicon.Z, [0])
         w = kw.get(Lexicon.W, [0])
         params = [tuple(x) for x in zip_longest_fill(typ, x, y, z, w)]
-        logger.debug(params)
+        # logger.debug(params)
         results = []
         pbar = comfy.utils.ProgressBar(len(params))
         for idx, (typ, x, y, z, w) in enumerate(params):
@@ -376,7 +376,7 @@ class ValueNode(JOVBaseNode):
                     results.append(x)
 
             pbar.update_absolute(idx)
-        logger.debug(results)
+        # logger.debug(results)
         return (results, )
 
 class ConvertNode(JOVBaseNode):

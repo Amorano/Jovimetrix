@@ -301,11 +301,11 @@ IT_PASS_IN = {"optional": {
 }}
 
 IT_WH = {"optional": {
-    Lexicon.WH: ("VEC2", {"default": (512, 512), "min": MIN_IMAGE_SIZE, "max": 8192, "step": 1, "label": [Lexicon.W, Lexicon.H]})
+    Lexicon.WH: ("VEC2", {"default": (512, 512), "step": 1, "label": [Lexicon.W, Lexicon.H]})
 }}
 
 IT_TRANS = {"optional": {
-    Lexicon.XY: ("VEC2", {"default": (0., 0.,), "min": -1, "max": 1, "step": 0.01, "precision": 4, "round": 0.00001, "label": [Lexicon.X, Lexicon.Y]})
+    Lexicon.XY: ("VEC2", {"default": (0., 0.,), "step": 0.01, "precision": 4, "round": 0.00001, "label": [Lexicon.X, Lexicon.Y]})
 }}
 
 IT_ROT = {"optional": {
@@ -321,7 +321,7 @@ IT_FLIP = {"optional": {
 }}
 
 IT_INVERT = {"optional": {
-    Lexicon.INVERT: ("BOOLEAN", {"default": False})
+    Lexicon.INVERT: ("BOOLEAN", {"default": False, "tooltip": "Invert the mask input"})
 }}
 
 IT_INVERTF = {"optional": {
@@ -346,23 +346,23 @@ IT_XYZW = {"optional": {
 }}
 
 IT_MATTE = {"optional": {
-    Lexicon.MATTE: ("VEC3", {"default": (0, 0, 0), "min": 0, "max": 255, "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B], "rgb": True})
+    Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
 }}
 
 IT_RGB = {"optional": {
-    Lexicon.RGB: ("VEC3", {"default": (0, 0, 0), "min": 0, "max": 255, "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B], "rgb": True})
+    Lexicon.RGB: ("VEC3", {"default": (0, 0, 0),  "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B], "rgb": True})
 }}
 
 IT_RGB_B = { "optional": {
-    Lexicon.RGB_B: ("VEC3", {"default": (0, 0, 0), "min": 0, "max": 255, "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B], "rgb": True})
+    Lexicon.RGB_B: ("VEC3", {"default": (0, 0, 0), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B], "rgb": True})
 }}
 
 IT_RGBA_A = {"optional": {
-    Lexicon.RGBA_A: ("VEC4", {"default": (0, 0, 0, 255), "min": 0, "max": 255, "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
+    Lexicon.RGBA_A: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
 }}
 
 IT_RGBA_B = { "optional": {
-    Lexicon.RGBA_B: ("VEC4", {"default": (0, 0, 0, 255), "min": 0, "max": 255, "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
+    Lexicon.RGBA_B: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
 }}
 
 IT_RGBA_IMAGE = { "optional": {
@@ -373,7 +373,7 @@ IT_RGBA_IMAGE = { "optional": {
 }}
 
 IT_HSV = { "optional": {
-    Lexicon.HSV: ("VEC3",{"default": (0, 1, 1), "min": 0, "max": 1, "step": 0.01, "precision": 4, "round": 0.00001, "label": [Lexicon.H, Lexicon.S, Lexicon.V]})
+    Lexicon.HSV: ("VEC3",{"default": (0, 1, 1), "step": 0.01, "precision": 4, "round": 0.00001, "label": [Lexicon.H, Lexicon.S, Lexicon.V]})
 }}
 
 IT_GAMMA = {"optional": {
@@ -385,20 +385,20 @@ IT_CONTRAST = {"optional": {
 }}
 
 IT_BBOX = {"optional": {
-    Lexicon.BBOX: ("VEC4", {"default": (0, 0, 1, 1), "min": 0, "max": 1, "step": 0.01, "precision": 4, "round": 0.00001, "label": [Lexicon.TOP, Lexicon.LEFT, Lexicon.BOTTOM, Lexicon.RIGHT]})
+    Lexicon.BBOX: ("VEC4", {"default": (0, 0, 1, 1), "step": 0.01, "precision": 4, "round": 0.00001, "label": [Lexicon.TOP, Lexicon.LEFT, Lexicon.BOTTOM, Lexicon.RIGHT]})
 }}
 
 IT_BBOX_FULL = {"optional": {
-    Lexicon.TLTR: ("VEC4", {"default": (0, 0, 1, 0), "min": 0, "max": 1, "step": 0.01, "precision": 4, "round": 0.00001, "label": [Lexicon.TOP, Lexicon.LEFT, Lexicon.TOP, Lexicon.RIGHT]}),
-    Lexicon.BLBR: ("VEC4", {"default": (0, 1, 1, 1), "min": 0, "max": 1, "step": 0.01, "precision": 4, "round": 0.00001, "label": [Lexicon.BOTTOM, Lexicon.LEFT, Lexicon.BOTTOM, Lexicon.RIGHT]})
+    Lexicon.TLTR: ("VEC4", {"default": (0, 0, 1, 0), "step": 0.01, "precision": 4, "round": 0.00001, "label": [Lexicon.TOP, Lexicon.LEFT, Lexicon.TOP, Lexicon.RIGHT]}),
+    Lexicon.BLBR: ("VEC4", {"default": (0, 1, 1, 1), "step": 0.01, "precision": 4, "round": 0.00001, "label": [Lexicon.BOTTOM, Lexicon.LEFT, Lexicon.BOTTOM, Lexicon.RIGHT]})
 }}
 
 IT_LOHI = {"optional": {
-    Lexicon.LOHI: ("VEC2", {"default": (0, 1), "min": 0, "max": 1, "step": 0.01, "precision": 4, "round": 0.00001, "label": [Lexicon.LO, Lexicon.HI]})
+    Lexicon.LOHI: ("VEC2", {"default": (0, 1), "step": 0.01, "precision": 4, "round": 0.00001, "label": [Lexicon.LO, Lexicon.HI]})
 }}
 
 IT_LMH = {"optional": {
-    Lexicon.LMH: ("VEC3", {"default": (0, 0.5, 1), "min": 0, "max": 1, "step": 0.01, "precision": 4, "round": 0.00001, "label": [Lexicon.LO, Lexicon.MID, Lexicon.HI]})
+    Lexicon.LMH: ("VEC3", {"default": (0, 0.5, 1), "step": 0.01, "precision": 4, "round": 0.00001, "label": [Lexicon.LO, Lexicon.MID, Lexicon.HI]})
 }}
 
 IT_TIME = {"optional": {

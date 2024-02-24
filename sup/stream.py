@@ -615,7 +615,7 @@ def streamReadTest() -> None:
     cv2.destroyAllWindows()
 
 def streamWriteTest() -> None:
-    logger.debug(cv2.getBuildInformation())
+    logger.info(cv2.getBuildInformation())
     ss = StreamingServer()
 
     fpath = 'res/stream-video.mp4'

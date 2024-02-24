@@ -146,6 +146,7 @@ export const VectorWidget = (app, inputName, options, initial, desc='') => {
                 }
             }
         }
+
         if (isDragging !== undefined && isDragging.idx > -1 && isDragging.name === this.name) {
             const idx = isDragging.idx
             const old_value = { ...this.value };

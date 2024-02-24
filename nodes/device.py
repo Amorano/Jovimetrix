@@ -226,6 +226,7 @@ class StreamWriterNode(JOVBaseNode):
     NAME = "STREAM WRITER (JOV) 🎞️"
     CATEGORY = JOV_CATEGORY
     DESCRIPTION = "Broadcast ComfyUI Node outputs to custom webserver endpoint."
+    INPUT_IS_LIST = False
     OUTPUT_NODE = True
     SORT = 70
     OUT_MAP = {}
@@ -238,10 +239,6 @@ class StreamWriterNode(JOVBaseNode):
             }}
         d = deep_merge_dict(IT_REQUIRED, IT_PIXEL, d, IT_SCALEMODE, IT_SAMPLE, IT_INVERT)
         return Lexicon._parse(d, JOV_HELP_URL + "/DEVICE#-stream-writer")
-
-    #@classmethod
-    #def IS_CHANGED(cls, **kw) -> float:
-    #    return float("nan")
 
     def __init__(self, *arg, **kw) -> None:
         super().__init__(*arg, **kw)
@@ -289,6 +286,7 @@ class MIDIMessageNode(JOVBaseNode):
     NAME = "MIDI MESSAGE (JOV) 🎛️"
     CATEGORY = JOV_CATEGORY
     DESCRIPTION = "Expands a MIDI message into its values."
+    INPUT_IS_LIST = False
     OUTPUT_IS_LIST = (False, False, False, False, False, False, False,)
     RETURN_TYPES = ('JMIDIMSG', 'BOOLEAN', 'INT', 'INT', 'INT', 'FLOAT', 'FLOAT', )
     RETURN_NAMES = (Lexicon.MIDI, Lexicon.ON, Lexicon.CHANNEL, Lexicon.CONTROL, Lexicon.NOTE, Lexicon.VALUE, Lexicon.NORMALIZE, )
@@ -311,6 +309,7 @@ class MIDIReaderNode(JOVBaseNode):
     NAME = "MIDI READER (JOV) 🎹"
     CATEGORY = JOV_CATEGORY
     DESCRIPTION = "Capture MIDI devices and pass the data into Comfy."
+    INPUT_IS_LIST = False
     OUTPUT_IS_LIST = (False, False, False, False, False, False, False)
     RETURN_TYPES = ('JMIDIMSG', 'BOOLEAN', 'INT', 'INT', 'INT', 'FLOAT', 'FLOAT',)
     RETURN_NAMES = (Lexicon.MIDI, Lexicon.ON, Lexicon.CHANNEL, Lexicon.CONTROL, Lexicon.NOTE, Lexicon.VALUE, Lexicon.NORMALIZE,)
@@ -357,13 +356,9 @@ class MIDIReaderNode(JOVBaseNode):
                 self.__note = data.note
                 self.__note_on = True
                 self.__value = data.velocity
-                # note=59 velocity=0 time=0
             case "note_off":
                 self.__note = data.note
                 self.__value = data.velocity
-                # note=59 velocity=0 time=0
-
-        # logger.debug("{} {} {} {} {}", self.__note_on, self.__channel, self.__control, self.__note, self.__value)
 
     def run(self, **kw) -> tuple[bool, int, int, int]:
         device = kw.get(Lexicon.DEVICE, None)
@@ -373,7 +368,7 @@ class MIDIReaderNode(JOVBaseNode):
             self.__device = device
 
         normalize = self.__value / 127.
-        logger.debug("{} {} {} {} {} {}", self.__note_on, self.__channel, self.__control, self.__note, self.__value, normalize)
+        # logger.debug("{} {} {} {} {} {}", self.__note_on, self.__channel, self.__control, self.__note, self.__value, normalize)
         msg = MIDIMessage(self.__note_on, self.__channel, self.__control, self.__note, self.__value)
         return (msg, self.__note_on, self.__channel, self.__control, self.__note, self.__value, normalize,  )
 
@@ -381,11 +376,11 @@ class MIDIFilterEZNode(JOVBaseNode):
     NAME = "MIDI FILTER EZ ❇️"
     CATEGORY = JOV_CATEGORY
     DESCRIPTION = "Filter MIDI messages by channel, message type or value."
+    INPUT_IS_LIST = False
     OUTPUT_IS_LIST = (False, False, )
     RETURN_TYPES = ('JMIDIMSG', 'BOOLEAN', )
     RETURN_NAMES = (Lexicon.MIDI, Lexicon.TRIGGER,)
     SORT = 25
-    # EPSILON = 1 / 128.
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -429,6 +424,7 @@ class MIDIFilterNode(JOVBaseNode):
     NAME = "MIDI FILTER ✳️"
     CATEGORY = JOV_CATEGORY
     DESCRIPTION = "Filter MIDI messages by channel, message type or value."
+    INPUT_IS_LIST = False
     OUTPUT_IS_LIST = (False, False, )
     RETURN_TYPES = ('JMIDIMSG', 'BOOLEAN', )
     RETURN_NAMES = (Lexicon.MIDI, Lexicon.TRIGGER,)

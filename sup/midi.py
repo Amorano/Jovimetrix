@@ -38,7 +38,7 @@ def midi_load(fn) -> None:
     mid = MidiFile(fn, clip=True)
     logger.debug(mid)
     for msg in mid.tracks[0]:
-        logger.debug(msg)
+       logger.debug(msg)
 
 def midi_device_names() -> list[str]:
     return mido.get_input_names()
@@ -135,10 +135,10 @@ if __name__ == "__main__":
                 # note=59 velocity=0 time=0
 
         value /= 127.
-        logger.debug("{} {} {} {} {}", note_on, channel, control, note, value)
+        # logger.debug("{} {} {} {} {}", note_on, channel, control, note, value)
 
     device= mido.get_input_names()[0]
-    logger.debug(device)
+    # logger.debug(device)
     q_in = Queue()
     q_out = Queue()
     server = MIDIServerThread(q_in, device, process, daemon=True)

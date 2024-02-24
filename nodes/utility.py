@@ -31,7 +31,7 @@ from Jovimetrix import JOV_HELP_URL, ComfyAPIMessage, JOVBaseNode, TimedOutExcep
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import path_next, deep_merge_dict, parse_tuple, \
     zip_longest_fill
-from Jovimetrix.sup.image import EnumImageType, cv2tensor, cv2tensor_full, image_convert, \
+from Jovimetrix.sup.image import EnumImageType, channel_count, cv2tensor, cv2tensor_full, image_convert, image_matte, \
     tensor2pil, tensor2cv, \
     pil2tensor, image_load, image_formats, image_diff
 
@@ -194,15 +194,13 @@ class ValueGraphNode(JOVBaseNode):
         self.__ax.clear()
         for i, h in enumerate(self.__history):
             self.__ax.plot(h[max(0, -slice + self.__index[i]):], color="rgbcymk"[i])
-            # self.__ax.scatter(kfx, kfy, color=line[0].get_color())
             self.__index[i] += 1
 
         wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)[0]
         width, height = wihi
         wihi = (width / 100., height / 100.)
-        if self.__fig.figsize() != wihi:
-            self.__fig.set_figwidth(wihi[0])
-            self.__fig.set_figheight(wihi[1])
+        self.__fig.set_figwidth(wihi[0])
+        self.__fig.set_figheight(wihi[1])
 
         self.__fig.canvas.draw_idle()
         buffer = io.BytesIO()
@@ -247,17 +245,17 @@ class QueueNode(JOVBaseNode):
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
-                Lexicon.QUEUE: ("STRING", {"multiline": True, "default": ""}),
-                Lexicon.LOOP: ("INT", {"default": 0, "min": 0}),
-                Lexicon.RANDOM: ("BOOLEAN", {"default": False}),
-                Lexicon.BATCH: ("INT", {"default": 1, "min": 1}),
-                Lexicon.BATCH_LIST: ("BOOLEAN", {"default": True}),
-                Lexicon.WAIT: ("BOOLEAN", {"default": False}),
-                Lexicon.RESET: ("BOOLEAN", {"default": False}),
-            },
-            "hidden": {
-                "id": "UNIQUE_ID"
-            }}
+            Lexicon.QUEUE: ("STRING", {"multiline": True, "default": ""}),
+            Lexicon.LOOP: ("INT", {"default": 0, "min": 0}),
+            Lexicon.RANDOM: ("BOOLEAN", {"default": False}),
+            Lexicon.BATCH: ("INT", {"default": 1, "min": 1}),
+            Lexicon.BATCH_LIST: ("BOOLEAN", {"default": True}),
+            Lexicon.WAIT: ("BOOLEAN", {"default": False}),
+            Lexicon.RESET: ("BOOLEAN", {"default": False}),
+        },
+        "hidden": {
+            "id": "UNIQUE_ID"
+        }}
         d = deep_merge_dict(IT_REQUIRED, d)
         return Lexicon._parse(d, JOV_HELP_URL + "/UTILITY#-queue")
 
@@ -531,19 +529,11 @@ class ImageDiffNode(JOVBaseNode):
         th = kw.get(Lexicon.THRESHOLD, [0])
         results = []
         params = [tuple(x) for x in zip_longest_fill(a, b, th)]
-        empty_3 = torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8, device="cpu")
-        empty_1 = torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), dtype=torch.uint8, device="cpu")
-        if len(params) == 0:
-            return [empty_3], [empty_3], [empty_1], [empty_1], [1.],
-
         pbar = comfy.utils.ProgressBar(len(params))
         for idx, (a, b, th) in enumerate(params):
-            if a is None and b is None:
-                results.append([empty_3, empty_3, empty_1, empty_1, 1.])
-                continue
             a = tensor2cv(a)
             b = tensor2cv(b)
-            a, b, d, t, s = image_diff(a, b, int(th * 255.))
+            a, b, d, t, s = image_diff(a, b, int(th * 255))
             d = image_convert(d, 1)
             t = image_convert(t, 1)
             results.append([cv2tensor(a), cv2tensor(b), cv2tensor(d), cv2tensor(t), s])

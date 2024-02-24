@@ -24,10 +24,8 @@ app.registerExtension({
         nodeType.prototype.onNodeCreated = async function () {
             const me = onNodeCreated?.apply(this);
             const self = this;
-            const widget_timeout = this.widgets[0];
-            const widget_wait = this.widgets[1];
+            const widget_wait = this.widgets.find(w => w.name === '✋🏽');
             this.total_timeout = 0;
-
             async function python_delay_user(event) {
                 if (event.detail.id != self.id) {
                     return;

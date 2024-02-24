@@ -8,11 +8,11 @@ import { app } from "/scripts/app.js"
 import { CONFIG_USER } from '../util/util_config.js'
 // const TOOLTIP_COLOR = CONFIG_USER.color.tooltips;
 
-const TOOLTIP_LENGTH = 175;
-const TOOLTIP_LINES_MAX = 3;
-const TOOLTIP_WIDTH_MAX = 200;
+const TOOLTIP_LENGTH = 155;
+const TOOLTIP_WIDTH_MAX = 225;
 const TOOLTIP_WIDTH_OFFSET = 10;
-const Y_OFFSET_MAX = LiteGraph.NODE_SLOT_HEIGHT * 0.70;
+const TOOLTIP_HEIGHT_MAX = LiteGraph.NODE_SLOT_HEIGHT * 0.72;
+const FONT_SIZE = [10, 8, 7, 6, 5];
 
 /*
 * wraps a single text line into maxWidth chunks
@@ -31,7 +31,7 @@ function wrapText(text, maxWidth=145) {
         }
     });
     lines.push(currentLine);
-    return lines.join('\n');
+    return lines;
 }
 
 export const JTooltipWidget = (app, name, opts) => {
@@ -98,14 +98,14 @@ app.registerExtension({
                 }
                 const tips = widget_tooltip.options.default || {};
                 let visible = [];
-                let offset = Y_OFFSET_MAX * 0.4;
+                let offset = TOOLTIP_HEIGHT_MAX;
                 for(const item of this.inputs || []) {
                     if (!item.hidden || item.hidden == false) {
                         const data = {
                             name: item.name,
                             y: offset
                         }
-                        offset += Y_OFFSET_MAX * 1.35;
+                        offset += TOOLTIP_HEIGHT_MAX;
                         visible.push(data);
                     }
                 };
@@ -137,27 +137,31 @@ app.registerExtension({
                 ctx.roundRect(-TOOLTIP_WIDTH_MAX-TOOLTIP_WIDTH_OFFSET,
                     offset_y,
                     TOOLTIP_WIDTH_MAX + 4, height, 8);
-                ctx.stroke()
+                ctx.stroke();
+
                 let index = 0;
                 for(const item of visible) {
                     let text = tips[item.name] || item.options?.tooltip || item.name;
-                    text = text.slice(0, TOOLTIP_LENGTH);
-                    const factor = text.length < 58 ? 42 : 58;
-                    text = wrapText(text, factor)
-                    var lines = text.split('\n').slice(0, TOOLTIP_LINES_MAX);
-                    const tooltip_line_count = Math.min(TOOLTIP_LINES_MAX, lines.length);
-                    let font_size = LiteGraph.NODE_SUBTEXT_SIZE / tooltip_line_count;
-                    font_size = Math.max(8, font_size - (text.length / 25));
-                    ctx.font = `${font_size-1}px sans-serif`;
+                    text = text.slice(0, TOOLTIP_LENGTH).toUpperCase();
+                    const size = text.length / 3;
+                    let wrap = 35;
+                    if (size > 12) {
+                        wrap = 38;
+                    }
+                    if (size > 20) {
+                        wrap = 50;
+                    }
+                    console.debug(text, wrap)
+                    var lines = wrapText(text, wrap).slice(0, 3);
+                    ctx.font = FONT_SIZE[lines.length-1] + "px sans-serif";
                     ctx.fillStyle = TOOLTIP_COLOR.slice(0, 7) + alpha;
-                    const scalar = tooltip_line_count > 2 ? 2 : 1;
-                    var offset_tip = (item?.y || item.last_y) + scalar * Y_OFFSET_MAX / tooltip_line_count;
-                    const offset_tip_step = (Y_OFFSET_MAX / tooltip_line_count + Y_OFFSET_MAX * (tooltip_line_count-1) / tooltip_line_count) * 0.75;
+                    const offset = TOOLTIP_HEIGHT_MAX * 2 / (lines.length+1);
+                    let idx = 1;
                     for (const line of lines) {
                         const sz = ctx.measureText(line);
                         const left = Math.max(-TOOLTIP_WIDTH_MAX, -TOOLTIP_WIDTH_OFFSET-sz.width);
-                        ctx.fillText(line, left, offset_tip);
-                        offset_tip += offset_tip_step;
+                        ctx.fillText(line, left, item.y + idx * offset);
+                        idx += 1;
                     }
                     index += 1
                 }

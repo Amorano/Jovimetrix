@@ -79,7 +79,7 @@ class Lexicon(metaclass=LexiconMeta):
     FILEN = '💾', "File Name"
     FILTER = '🔎', "Filter"
     FIXED = 'FIXED', "Fixed"
-    FLIP = '🙃', "Flip"
+    FLIP = '🙃', "Flip Input A and Input B with each other"
     FLOAT = '🛟', "Float"
     FOLDER = '📁', "Folder"
     FONT = 'FONT', "Available System Fonts"
@@ -104,10 +104,10 @@ class Lexicon(metaclass=LexiconMeta):
     INT = '🔟', "Integer"
     INVERT = '🔳', "Color Inversion"
     IO = '📋', "File I/O"
-    JUSTIFY = 'JUSTIFY', "Left, Right, Center or Spread"
+    JUSTIFY = 'JUSTIFY', "How to align the text to the side margins of the canvas: Left, Right, Center or Spread each letter evenly"
     KEY = '🔑', "Key"
     LEFT = '◀️', "Left"
-    LETTER = 'LETTER', "Generate each letter in a batch"
+    LETTER = 'LETTER', "If each letter be generated and output in a batch"
     LINEAR = '🛟', "Linear"
     LIST = '🧾', "List"
     LMH = 'LMH', "Low, Middle, High"
@@ -116,14 +116,14 @@ class Lexicon(metaclass=LexiconMeta):
     LOOP = '🔄', "Loop"
     M = '🖤', "Alpha Channel"
     MARGIN = 'MARGIN', "Whitespace padding around canvas"
-    MASK = '😷', "Channel Mask or image to use as mask"
+    MASK = '😷', "Mask or Image to use as Mask"
     MATTE = 'MATTE', "Background Color"
     MAX = 'MAX', "Maximum"
     MI = '🤍', "Alpha Channel"
     MID = 'MID', "Middle"
     MIDI = '🎛️', "Midi"
     MIRROR = '🪞', "Mirror"
-    MODE = 'MODE', "Mode"
+    MODE = 'MODE', "Scaling Mode"
     MONITOR = '🖥', "Monitor"
     NORMALIZE = '0-1', "Normalize"
     NOISE = 'NOISE', "Noise"
@@ -163,7 +163,7 @@ class Lexicon(metaclass=LexiconMeta):
     RIGHT = '▶️', "Right"
     ROUTE = '🚌', "Route"
     S = '🇸', "Saturation"
-    SAMPLE = '🎞️', "Sample"
+    SAMPLE = '🎞️', "Sampling Method to apply when Rescaling"
     SCHEME = 'SCHEME', "Scheme"
     SEED = 'SEED', "Seed"
     SELECT = 'SELECT', "Select"
@@ -219,7 +219,7 @@ class Lexicon(metaclass=LexiconMeta):
             for k, v in entry.items():
                 if (tip := v[1].get('tooltip', None)) is None:
                     if (tip := cls._tooltipsDB.get(k), None) is None:
-                        logger.debug(f"no {k}")
+                        logger.warning(f"no {k}")
                         continue
                 data[k] = tip
 

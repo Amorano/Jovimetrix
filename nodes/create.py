@@ -61,7 +61,6 @@ class ConstantNode(JOVImageMultiple):
             width, height = wihi
             color = pixel_eval(color, EnumImageType.BGRA)
             img = channel_solid(width, height, color, EnumImageType.BGRA)
-            # logger.debug(img.shape)
             img = cv2tensor_full(img)
             images.append(img)
             pbar.update_absolute(idx)
@@ -77,9 +76,10 @@ class ShapeNode(JOVImageMultiple):
         d = {"optional": {
             Lexicon.SHAPE: (EnumShapes._member_names_, {"default": EnumShapes.CIRCLE.name}),
             Lexicon.SIDES: ("INT", {"default": 3, "min": 3, "max": 100, "step": 1}),
-            Lexicon.RGBA_A: ("VEC4", {"default": (255, 255, 255, 255), "min": 0, "max": 255, "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
+            Lexicon.RGBA_A: ("VEC4", {"default": (255, 255, 255, 255), "min": 0, "max": 255, "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True, "tooltip": "Main Shape Color"}),
+            Lexicon.RGB_B: ("VEC4", {"default": (0, 0, 0), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True, "tooltip": "Background Color"})
         }}
-        d = deep_merge_dict(IT_REQUIRED, d, IT_RGB_B, IT_WH, IT_ROT, IT_SCALE, IT_EDGE, IT_INVERT)
+        d = deep_merge_dict(IT_REQUIRED, d, IT_WH, IT_ROT, IT_SCALE, IT_EDGE, IT_INVERT)
         d = Lexicon._parse(d, JOV_HELP_URL + "/CREATE#-shape-generator")
         return d
 
@@ -123,8 +123,8 @@ class ShapeNode(JOVImageMultiple):
                     mask = shape_ellipse(width, height, sizeX, sizeX, fill=color[3])
 
             img = pil2cv(img)
-            if invert != 0:
-                img = image_invert(img, invert)
+            if invert:
+                img = image_invert(img, 1)
             mask = pil2cv(mask)[:,:,0]
             img = image_mask_add(img, mask)
             img = image_rotate(img, angle, edge=edge)
@@ -145,11 +145,11 @@ class TextNode(JOVImageMultiple):
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
-            Lexicon.STRING: ("STRING", {"default": "", "multiline": True, "dynamicPrompts": False, "tooltip": "As the sun sets on the horizon, casting a warm glow over the landscape, families gather around the."}),
+        Lexicon.STRING: ("STRING", {"default": "", "multiline": True, "dynamicPrompts": False, "tooltip": "Your Message"}),
             Lexicon.FONT: (cls.FONT_NAMES, {"default": cls.FONT_NAMES[0]}),
             Lexicon.LETTER: ("BOOLEAN", {"default": False}),
             Lexicon.AUTOSIZE: ("BOOLEAN", {"default": False}),
-            Lexicon.RGBA_A: ("VEC3", {"default": (255, 255, 255, 255), "min": 0, "max": 255, "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True}),
+            Lexicon.RGBA_A: ("VEC3", {"default": (255, 255, 255, 255), "min": 0, "max": 255, "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True, "tooltip": "Color of the letters"}),
             Lexicon.MATTE: ("VEC3", {"default": (0, 0, 0), "min": 0, "max": 255, "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B], "rgb": True}),
             Lexicon.COLUMNS: ("INT", {"default": 0, "min": 0, "step": 1}),
             # if auto on, hide these...
@@ -264,7 +264,7 @@ class TextNode(JOVImageMultiple):
                     case EnumAlignment.BOTTOM:
                         y = height - (max_height+line_spacing) * line_count
 
-                logger.debug([font_size, y, all_line_height, max_height, line_count])
+                # logger.debug([font_size, y, all_line_height, max_height, line_count])
                 for line in lines:
                     process_line(line, font, draw, draw_mask, y, False)
                     y += (max_height + line_spacing)

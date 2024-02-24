@@ -158,8 +158,8 @@ class BlendNode(JOVImageMultiple):
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
-            Lexicon.FUNC: (EnumBlendType._member_names_, {"default": EnumBlendType.NORMAL.name}),
-            Lexicon.A: ("FLOAT", {"default": 1, "min": 0, "max": 1, "step": 0.01}),
+            Lexicon.FUNC: (EnumBlendType._member_names_, {"default": EnumBlendType.NORMAL.name, "tooltip": "Blending Operation"}),
+            Lexicon.A: ("FLOAT", {"default": 1, "min": 0, "max": 1, "step": 0.01, "tooltip": "Amount of Blending to Perform on the Selected Operation"}),
             Lexicon.FLIP: ("BOOLEAN", {"default": False}),
         }}
         d = deep_merge_dict(IT_REQUIRED, IT_PIXEL2_MASK, d, IT_INVERT, IT_WHMODE)
@@ -181,22 +181,32 @@ class BlendNode(JOVImageMultiple):
         images = []
         pbar = comfy.utils.ProgressBar(len(params))
         for idx, (pA, pB, mask, func, alpha, flip, mode, wihi, sample, matte, invert) in enumerate(params):
-            pA = tensor2cv(pA)
-            pB = tensor2cv(pB)
-            mask = tensor2cv(mask, EnumImageType.GRAYSCALE)
-            if invert:
-                mask = 255 - mask
+
             if flip:
                 pA, pB = pB, pA
+
+            pB = tensor2cv(pB)
+            if pA is None:
+                h, w = pB.shape[:2]
+                pA = channel_solid(w, h, matte)
+            else:
+                pA = tensor2cv(pA)
+
+            if mask is None:
+                mask = image_mask(pB)
+            else:
+                mask = tensor2cv(mask, EnumImageType.GRAYSCALE)
+
+            if invert:
+                mask = 255 - mask
+
             func = EnumBlendType[func]
             img = image_blend(pA, pB, mask, func, alpha)
-
             mode = EnumScaleMode[mode]
             if mode != EnumScaleMode.NONE:
                 w, h = wihi
                 sample = EnumInterpolation[sample]
-                img = image_scalefit(img, w, h, mode, sample)
-
+                img = image_scalefit(img, w, h, mode, sample, matte)
             img = cv2tensor_full(img, matte)
             images.append(img)
             pbar.update_absolute(idx)
@@ -223,7 +233,8 @@ class PixelSplitNode(JOVImageMultiple):
         for idx, (img,) in enumerate(pixel):
             img = tensor2cv(img)
             img = image_mask_add(img)
-            images.append([image_grayscale(cv2tensor(x)) for x in image_split(img)])
+            img = [cv2tensor(image_grayscale(x)) for x in image_split(img)]
+            images.append(img)
             pbar.update_absolute(idx)
         return list(zip(*images))
 
@@ -360,12 +371,6 @@ class CropNode(JOVImageMultiple):
             else:
                 img = image_crop_center(img, width, height)
 
-            #cc = channel_count(img)[0]
-            # mask = image_mask(img)
-            #if cc > 1:
-            #img = image_matte(img, color)
-                #matte = channel_solid(w, h, color, chan)
-                #img = image_blend(matte, img, mask)
             img = cv2tensor_full(img, color)
             images.append(img)
             pbar.update_absolute(idx)
