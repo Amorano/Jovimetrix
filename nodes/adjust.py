@@ -9,7 +9,7 @@ from loguru import logger
 
 import comfy
 
-from Jovimetrix import IT_MATTE, JOV_HELP_URL, JOVImageMultiple, \
+from Jovimetrix import JOV_HELP_URL, JOVImageMultiple, \
     IT_PIXEL, IT_PIXEL2, IT_PIXEL_MASK, IT_HSV, IT_FLIP, \
     IT_LOHI, IT_LMH, IT_INVERT, IT_CONTRAST, IT_GAMMA, IT_REQUIRED
 
@@ -40,12 +40,15 @@ class AdjustNode(JOVImageMultiple):
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
-                Lexicon.FUNC: (EnumAdjustOP._member_names_, {"default": EnumAdjustOP.BLUR.name}),
-                Lexicon.RADIUS: ("INT", {"default": 3, "min": 3, "step": 1}),
-                Lexicon.VALUE: ("FLOAT", {"default": 1, "min": 0, "step": 0.1}),
-            }}
+            Lexicon.FUNC: (EnumAdjustOP._member_names_, {"default": EnumAdjustOP.BLUR.name}),
+            Lexicon.RADIUS: ("INT", {"default": 3, "min": 3, "step": 1}),
+            Lexicon.VALUE: ("FLOAT", {"default": 1, "min": 0, "step": 0.1}),
+        }}
+        e = {"optional": {
+            Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
+        }}
         d = deep_merge_dict(IT_REQUIRED, IT_PIXEL_MASK, d, IT_LOHI, IT_LMH, IT_HSV,
-                            IT_CONTRAST, IT_GAMMA, IT_MATTE, IT_INVERT)
+                            IT_CONTRAST, IT_GAMMA, e, IT_INVERT)
         return Lexicon._parse(d, JOV_HELP_URL + "/ADJUST#-adjust")
 
     def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor]:

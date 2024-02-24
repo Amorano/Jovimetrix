@@ -20,18 +20,16 @@ app.registerExtension({
         const onNodeCreated = nodeType.prototype.onNodeCreated;
         nodeType.prototype.onNodeCreated = async function () {
             const me = onNodeCreated?.apply(this);
-            const letter = this.widgets[2];
-            const cols = this.widgets[6];
-            const size = this.widgets[7];
-            const margin = this.widgets[10];
-            const spacing = this.widgets[11];
-            const autosize = this.widgets[3];
+            const letter = this.widgets.find(w => w.name === 'LETTER');
+            const cols = this.widgets.find(w => w.name === 'COLS');
+            const size = this.widgets.find(w => w.name === '📏');
+            const margin = this.widgets.find(w => w.name === 'MARGIN');
+            const spacing = this.widgets.find(w => w.name === 'SPACING');
+            const autosize = this.widgets.find(w => w.name === 'AUTOSIZE');
             autosize.callback = () => {
                 widget_hide(this, cols);
-                //widget_hide(this, spacing);
                 widget_hide(this, size);
                 if (!autosize.value) {
-                    //widget_show(spacing);
                     widget_show(size);
 
                 } else if (!letter.value) {

@@ -151,7 +151,6 @@ app.registerExtension({
                     if (size > 20) {
                         wrap = 50;
                     }
-                    console.debug(text, wrap)
                     var lines = wrapText(text, wrap).slice(0, 3);
                     ctx.font = FONT_SIZE[lines.length-1] + "px sans-serif";
                     ctx.fillStyle = TOOLTIP_COLOR.slice(0, 7) + alpha;

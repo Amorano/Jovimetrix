@@ -13,7 +13,7 @@ import numpy as np
 import comfy
 
 from Jovimetrix import JOV_HELP_URL, JOVImageMultiple, \
-    IT_MATTE, IT_PIXEL, IT_RGB, IT_PIXEL2_MASK, IT_INVERT, IT_REQUIRED, \
+    IT_PIXEL, IT_RGB, IT_PIXEL2_MASK, IT_INVERT, IT_REQUIRED, \
     IT_RGBA_IMAGE, MIN_IMAGE_SIZE, IT_TRANS, IT_ROT, IT_SCALE
 
 from Jovimetrix.sup.lexicon import Lexicon
@@ -22,7 +22,7 @@ from Jovimetrix.sup.util import parse_number, parse_tuple, zip_longest_fill, \
     deep_merge_dict,\
     EnumTupleType
 
-from Jovimetrix.sup.image import channel_count, channel_merge, \
+from Jovimetrix.sup.image import batch_extract, channel_count, channel_merge, \
     channel_solid, cv2tensor_full, \
     image_convert, image_crop, image_crop_center, image_crop_polygonal, image_grayscale, \
     image_mask, image_mask_add, image_matte, image_rotate, image_scale, \
@@ -51,20 +51,24 @@ class TransformNode(JOVImageMultiple):
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
-            Lexicon.TILE: ("VEC2", {"default": (1, 1), "step": 1, "min": 1, "label": [Lexicon.X, Lexicon.Y]}),
+            Lexicon.TILE: ("VEC2", {"default": (1, 1), "step": 1, "label": [Lexicon.X, Lexicon.Y]}),
             Lexicon.EDGE: (EnumEdge._member_names_, {"default": EnumEdge.CLIP.name}),
             Lexicon.MIRROR: (EnumMirrorMode._member_names_, {"default": EnumMirrorMode.NONE.name}),
-            Lexicon.PIVOT: ("VEC2", {"default": (0.5, 0.5), "max": 1, "min": 0, "step": 0.005, "precision": 4, "label": [Lexicon.X, Lexicon.Y]}),
+            Lexicon.PIVOT: ("VEC2", {"default": (0.5, 0.5), "step": 0.005, "precision": 4, "label": [Lexicon.X, Lexicon.Y]}),
             Lexicon.PROJECTION: (EnumProjection._member_names_, {"default": EnumProjection.NORMAL.name}),
-            Lexicon.TLTR: ("VEC4", {"default": (0, 0, 1, 0), "min": 0, "max": 1, "step": 0.005, "precision": 4, "label": [Lexicon.TOP, Lexicon.LEFT, Lexicon.TOP, Lexicon.RIGHT]}),
-            Lexicon.BLBR: ("VEC4", {"default": (0, 1, 1, 1), "min": 0, "max": 1, "step": 0.005, "precision": 4, "label": [Lexicon.BOTTOM, Lexicon.LEFT, Lexicon.BOTTOM, Lexicon.RIGHT]}),
+            Lexicon.TLTR: ("VEC4", {"default": (0, 0, 1, 0), "step": 0.005, "precision": 4, "label": [Lexicon.TOP, Lexicon.LEFT, Lexicon.TOP, Lexicon.RIGHT]}),
+            Lexicon.BLBR: ("VEC4", {"default": (0, 1, 1, 1), "step": 0.005, "precision": 4, "label": [Lexicon.BOTTOM, Lexicon.LEFT, Lexicon.BOTTOM, Lexicon.RIGHT]}),
             Lexicon.STRENGTH: ("FLOAT", {"default": 1, "min": 0, "precision": 4, "step": 0.005})
         }}
-        d = deep_merge_dict(IT_REQUIRED, IT_PIXEL, IT_TRANS, IT_ROT, IT_SCALE, d, IT_WHMODE, IT_MATTE)
+        e = {"optional": {
+            Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
+        }}
+        d = deep_merge_dict(IT_REQUIRED, IT_PIXEL, IT_TRANS, IT_ROT, IT_SCALE, d, IT_WHMODE, e)
         return Lexicon._parse(d, JOV_HELP_URL + "/COMPOSE#-transform")
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        img = kw.get(Lexicon.PIXEL, [None])
+        pA = kw.get(Lexicon.PIXEL_A, None)
+        pA = [None] if pA is None else batch_extract(pA)
         offset = parse_tuple(Lexicon.XY, kw, typ=EnumTupleType.FLOAT, default=(0., 0.,), clip_min=-1, clip_max=1)
         angle = kw.get(Lexicon.ANGLE, [0])
         size = parse_tuple(Lexicon.SIZE, kw, typ=EnumTupleType.FLOAT, default=(1., 1.,), zero=0.001)
@@ -80,72 +84,69 @@ class TransformNode(JOVImageMultiple):
         wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
         sample = kw.get(Lexicon.SAMPLE, [EnumInterpolation.LANCZOS4])
         matte = parse_tuple(Lexicon.MATTE, kw, default=(0, 0, 0), clip_min=0)
-        params = [tuple(x) for x in zip_longest_fill(img, offset, angle, size, edge, tile_xy, mirror, mirror_pivot, proj, strength, tltr, blbr, mode, wihi, sample, matte)]
+        params = [tuple(x) for x in zip_longest_fill(pA, offset, angle, size, edge, tile_xy, mirror, mirror_pivot, proj, strength, tltr, blbr, mode, wihi, sample, matte)]
         images = []
         pbar = comfy.utils.ProgressBar(len(params))
-        for idx, (img, offset, angle, size, edge, tile_xy, mirror, mirror_pivot, proj, strength, tltr, blbr, mode, wihi, sample, matte) in enumerate(params):
-            img = tensor2cv(img)
-            mask = image_mask(img)
-            cc, w, h = channel_count(img)[:3]
-            if cc != 4:
-                img = image_convert(img, 4)
-            img = image_mask(img, mask)
+        for idx, (pA, offset, angle, size, edge, tile_xy, mirror, mirror_pivot, proj, strength, tltr, blbr, mode, wihi, sample, matte) in enumerate(params):
+            pA = tensor2cv(pA)
+            h, w = pA.shape[:2]
 
             sX, sY = size
             if sX < 0:
-                img = cv2.flip(img, 1)
+                pA = cv2.flip(pA, 1)
                 sX = -sX
 
             if sY < 0:
-                img = cv2.flip(img, 0)
+                pA = cv2.flip(pA, 0)
                 sY = -sY
 
-            edge = EnumEdge[edge]
             if sX != 1. or sY != 1.:
-                img = image_scale(img, (sX, sY))
+                pA = image_scale(pA, (sX, sY), sample=sample, edge=edge)
 
+            edge = EnumEdge[edge]
             if offset[0] != 0. or offset[1] != 0.:
-                img = image_translate(img, offset, edge)
+                pA = image_translate(pA, offset, edge)
 
             if angle != 0:
-                img = image_rotate(img, angle, edge=edge)
+                pA = image_rotate(pA, angle, edge=edge)
 
             mirror = EnumMirrorMode[mirror]
-            mpx, mpy = mirror_pivot
-            img = image_mirror(img, mirror, mpx, mpy)
+            if mirror != EnumMirrorMode.NONE:
+                mpx, mpy = mirror_pivot
+                pA = image_mirror(pA, mirror, mpx, mpy)
 
             tx, ty = tile_xy
             if (tx := int(tx)) > 1 or (ty := int(ty)) > 1:
-                img = image_edge_wrap(img, tx / 2 - 0.5, ty / 2 - 0.5)
-                img = image_scalefit(img, w, h, mode=EnumScaleMode.FIT)
+                pA = image_edge_wrap(pA, tx / 2 - 0.5, ty / 2 - 0.5)
+                pA = image_scalefit(pA, w, h, mode=EnumScaleMode.FIT)
 
             proj = EnumProjection[proj]
             match proj:
                 case EnumProjection.PERSPECTIVE:
                     x1, y1, x2, y2 = tltr
                     x4, y4, x3, y3 = blbr
-                    sh, sw = img.shape[:2]
+                    sh, sw = pA.shape[:2]
                     x1, x2, x3, x4 = map(lambda x: x * sw, [x1, x2, x3, x4])
                     y1, y2, y3, y4 = map(lambda y: y * sh, [y1, y2, y3, y4])
-                    img = remap_perspective(img, [[x1, y1], [x2, y2], [x3, y3], [x4, y4]])
+                    pA = remap_perspective(pA, [[x1, y1], [x2, y2], [x3, y3], [x4, y4]])
                 case EnumProjection.SPHERICAL:
-                    img = remap_sphere(img, strength)
+                    pA = remap_sphere(pA, strength)
                 case EnumProjection.FISHEYE:
-                    img = remap_fisheye(img, strength)
+                    pA = remap_fisheye(pA, strength)
                 case EnumProjection.POLAR:
-                    img = remap_polar(img)
+                    pA = remap_polar(pA)
 
             if proj != EnumProjection.NORMAL:
-                img = image_scalefit(img, w, h, mode=EnumScaleMode.FIT)
+                pA = image_scalefit(pA, w, h, mode=EnumScaleMode.FIT)
 
             mode = EnumScaleMode[mode]
             if mode != EnumScaleMode.NONE:
                 w, h = wihi
                 sample = EnumInterpolation[sample]
-                img = image_scalefit(img, w, h, mode, sample)
+                pA = image_scalefit(pA, w, h, mode, sample)
 
-            img = cv2tensor_full(img, matte)
-            images.append(img)
+            pA = cv2tensor_full(pA, matte)
+            images.append(pA)
             pbar.update_absolute(idx)
         return list(zip(*images))
 
@@ -166,9 +167,12 @@ class BlendNode(JOVImageMultiple):
         return Lexicon._parse(d, JOV_HELP_URL + "/COMPOSE#-blend")
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        pA = kw.get(Lexicon.PIXEL_A, [None])
-        pB = kw.get(Lexicon.PIXEL_B, [None])
-        mask = kw.get(Lexicon.MASK, [None])
+        pA = kw.get(Lexicon.PIXEL_A, None)
+        pA = [None] if pA is None else batch_extract(pA)
+        pB = kw.get(Lexicon.PIXEL_B, None)
+        pB = [None] if pB is None else batch_extract(pB)
+        mask = kw.get(Lexicon.MASK, None)
+        mask = [None] if mask is None else batch_extract(mask)
         func = kw.get(Lexicon.FUNC, [EnumBlendType.NORMAL])
         alpha = kw.get(Lexicon.A, [1])
         flip = kw.get(Lexicon.FLIP, [False])
@@ -246,7 +250,10 @@ class PixelMergeNode(JOVImageMultiple):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = deep_merge_dict(IT_REQUIRED, IT_RGBA_IMAGE, IT_MATTE)
+        d = {"optional": {
+            Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
+        }}
+        d = deep_merge_dict(IT_REQUIRED, IT_RGBA_IMAGE, d)
         return Lexicon._parse(d, JOV_HELP_URL + "/COMPOSE#-pixel-merge")
 
     def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor]:
@@ -336,10 +343,10 @@ class CropNode(JOVImageMultiple):
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
             Lexicon.FUNC: (EnumCropMode._member_names_, {"default": EnumCropMode.CENTER.name}),
-            Lexicon.XY: ("VEC2", {"default": (0, 0), "min": 0, "step": 1, "label": [Lexicon.X, Lexicon.Y]}),
-            Lexicon.WH: ("VEC2", {"default": (512, 512), "min": MIN_IMAGE_SIZE, "max": 8192, "step": 1, "label": [Lexicon.W, Lexicon.H]}),
-            Lexicon.TLTR: ("VEC4", {"default": (0, 0, 0, 1), "min": 0, "max": 1, "step": 0.01, "precision": 5, "round": 0.000001, "label": [Lexicon.TOP, Lexicon.LEFT, Lexicon.TOP, Lexicon.RIGHT]}),
-            Lexicon.BLBR: ("VEC4", {"default": (1, 0, 1, 1), "min": 0, "max": 1, "step": 0.01, "precision": 5, "round": 0.000001, "label": [Lexicon.BOTTOM, Lexicon.LEFT, Lexicon.BOTTOM, Lexicon.RIGHT]}),
+            Lexicon.XY: ("VEC2", {"default": (0, 0), "label": [Lexicon.X, Lexicon.Y]}),
+            Lexicon.WH: ("VEC2", {"default": (512, 512), "step": 1, "label": [Lexicon.W, Lexicon.H]}),
+            Lexicon.TLTR: ("VEC4", {"default": (0, 0, 0, 1), "step": 0.01, "precision": 5, "round": 0.000001, "label": [Lexicon.TOP, Lexicon.LEFT, Lexicon.TOP, Lexicon.RIGHT]}),
+            Lexicon.BLBR: ("VEC4", {"default": (1, 0, 1, 1), "step": 0.01, "precision": 5, "round": 0.000001, "label": [Lexicon.BOTTOM, Lexicon.LEFT, Lexicon.BOTTOM, Lexicon.RIGHT]}),
         }}
         d = deep_merge_dict(IT_REQUIRED, IT_PIXEL, d, IT_RGB)
         return Lexicon._parse(d, JOV_HELP_URL + "/COMPOSE#-crop")

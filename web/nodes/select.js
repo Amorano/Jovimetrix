@@ -23,7 +23,7 @@ app.registerExtension({
         const onNodeCreated = nodeType.prototype.onNodeCreated
         nodeType.prototype.onNodeCreated = function () {
             const me = onNodeCreated?.apply(this)
-            const widget_reset = this.widgets[1];
+            const widget_reset = this.widgets.find(w => w.name === 'RESET');
             widget_reset.callback = async (e) => {
                 widget_reset.value = false;
                 api_cmd_jovian(self.id, "reset");

@@ -23,9 +23,7 @@ app.registerExtension({
         const onNodeCreated = nodeType.prototype.onNodeCreated
         nodeType.prototype.onNodeCreated = function () {
             const me = onNodeCreated?.apply(this)
-            // let combo_current = "NONE";
-            // console.debug("jovimetrix.node.convert.onNodeCreated", this)
-            let combo = this.widgets[0]
+            const combo = this.widgets.find(w => w.name === '❓');
             combo.callback = () => {
                 if (this.outputs && this.outputs.length > 0) {
                     this.removeOutput(0)

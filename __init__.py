@@ -345,10 +345,6 @@ IT_XYZW = {"optional": {
     Lexicon.XYZW: ("VEC4", {"default": (0, 0, 0, 1), "step": 0.01, "precision": 4, "round": 0.00001, "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W]})
 }}
 
-IT_MATTE = {"optional": {
-    Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
-}}
-
 IT_RGB = {"optional": {
     Lexicon.RGB: ("VEC3", {"default": (0, 0, 0),  "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B], "rgb": True})
 }}

@@ -31,8 +31,8 @@ from Jovimetrix import JOV_HELP_URL, ComfyAPIMessage, JOVBaseNode, TimedOutExcep
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import path_next, deep_merge_dict, parse_tuple, \
     zip_longest_fill
-from Jovimetrix.sup.image import EnumImageType, channel_count, cv2tensor, cv2tensor_full, image_convert, image_matte, \
-    tensor2pil, tensor2cv, \
+from Jovimetrix.sup.image import batch_extract, cv2tensor, cv2tensor_full, \
+    image_convert, tensor2pil, tensor2cv, \
     pil2tensor, image_load, image_formats, image_diff
 
 # =============================================================================
@@ -53,8 +53,7 @@ else:
 # =============================================================================
 
 class AkashicData:
-    def __init__(self, *arg, **kw) -> None:
-        super().__init__(*arg, **kw)
+    def __init__(self, **kw) -> None:
         for k, v in kw.items():
             setattr(self, k, v)
 
@@ -273,6 +272,7 @@ class QueueNode(JOVBaseNode):
         self.__len = 0
         self.__previous = None
         self.__previous_mask = None
+        self.__last_q_value = {}
 
     def __parse(self, data) -> list:
         entries = []
@@ -306,21 +306,26 @@ class QueueNode(JOVBaseNode):
 
     def run(self, id, **kw) -> None:
 
-        def process(data: str) -> tuple[torch.Tensor, torch.Tensor] | str | dict:
-            mask = None
-            if not os.path.isfile(data):
+        def process(q_data: str) -> tuple[torch.Tensor, torch.Tensor] | str | dict:
+            # single Q cache to skip loading single entries over and over
+            if (val := self.__last_q_value.get(q_data, None)) is not None:
+                return val
+            if not os.path.isfile(q_data):
                 return data, mask
-            _, ext = os.path.splitext(data)
+            _, ext = os.path.splitext(q_data)
             if ext in image_formats():
-                data, mask = image_load(data)
+                data, mask = image_load(q_data)
                 data, _, mask = cv2tensor_full(data)
+                self.__last_q_value[q_data] = (data, mask)
             elif ext == '.json':
-                with open(data, 'r', encoding='utf-8') as f:
+                with open(q_data, 'r', encoding='utf-8') as f:
                     data = json.load(f)
+                self.__last_q_value[q_data] = (data, None)
             elif ext == '.txt':
-                with open(data, 'r', encoding='utf-8') as f:
+                with open(q_data, 'r', encoding='utf-8') as f:
                     data = f.read()
-            return data, mask
+                self.__last_q_value[q_data] = (data, None)
+            return self.__last_q_value[q_data]
 
         reset = kw.get(Lexicon.RESET, False)
         rand = kw.get(Lexicon.RANDOM, False)
@@ -435,7 +440,8 @@ class ExportNode(JOVBaseNode):
         return Lexicon._parse(d, JOV_HELP_URL + "/UTILITY#-export")
 
     def run(self, **kw) -> None:
-        img = kw.get(Lexicon.PIXEL, [None])[0]
+        pA = kw.get(Lexicon.PIXEL, None)
+        pA = [None] if pA is None else batch_extract(pA)
         suffix = kw.get(Lexicon.PREFIX, [""])[0]
         if suffix == "":
             suffix = uuid4().hex[:16]
@@ -460,9 +466,8 @@ class ExportNode(JOVBaseNode):
             return path
 
         empty = Image.new("RGB", (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE))
-        images = [tensor2pil(i) if i is not None else empty for i in img]
-        images = [i.convert("RGB") if i is not None else empty for i in images]
-
+        images = [tensor2pil(i).convert("RGB") if i is not None else empty for i in pA]
+        print(len(images))
         if format == "gifski":
             root = output_dir / f"{suffix}_{uuid4().hex[:16]}"
             try:

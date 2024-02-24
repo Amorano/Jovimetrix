@@ -22,11 +22,9 @@ app.registerExtension({
         nodeType.prototype.onNodeCreated = function () {
             const me = onNodeCreated?.apply(this)
             const self = this;
-
             hook_widget_size_mode(this);
-
-            const stride = this.widgets[1];
-            const axis = this.widgets[0];
+            const stride = this.widgets.find(w => w.name === '🦶🏽');
+            const axis = this.widgets.find(w => w.name === 'AXIS');
             axis.callback = () => {
                 widget_hide(self, stride);
                 if (axis.value == 'GRID') {

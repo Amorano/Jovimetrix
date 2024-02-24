@@ -23,7 +23,6 @@ app.registerExtension({
             const me = onNodeCreated?.apply(this);
             const self = this;
             hook_widget_size_mode(this);
-
             const url = this.widgets.find(w => w.name === '🌐');
             const orient = this.widgets.find(w => w.name === '🧭');
             const zoom = this.widgets.find(w => w.name === '🔎');
@@ -33,7 +32,6 @@ app.registerExtension({
             const window = this.widgets.find(w => w.name === '🪟');
             const fps = this.widgets.find(w => w.name === '🏎️');
             const bbox = this.widgets.find(w => w.name === '🔲');
-
             const source = this.widgets.find(w => w.name === 'SRC');
             source.callback = () => {
                 widget_hide(this, url);

@@ -23,7 +23,7 @@ from blendmodes.blend import blendLayers, BlendType
 
 from loguru import logger
 
-from Jovimetrix import IT_MATTE, TYPE_IMAGE, TYPE_PIXEL, TYPE_COORD, IT_WH, MIN_IMAGE_SIZE
+from Jovimetrix import TYPE_IMAGE, TYPE_PIXEL, TYPE_COORD, IT_WH, MIN_IMAGE_SIZE
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import grid_make, deep_merge_dict
 
@@ -221,11 +221,22 @@ IT_SAMPLE = {"optional": {
     Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
 }}
 
+IT_MATTE = {"optional": {
+    Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
+}}
+
 IT_WHMODE = deep_merge_dict(IT_SCALEMODE, IT_WH, IT_SAMPLE, IT_MATTE)
 
 # =============================================================================
 # === CONVERSION ===
 # =============================================================================
+
+def batch_extract(batch: torch.Tensor) -> list[torch.Tensor]:
+    out = []
+    for img in batch:
+        for i in range(img.shape[0]):
+            out.append(img[i:i+1])
+    return out
 
 def bgr2hsv(bgr_color: TYPE_PIXEL) -> TYPE_PIXEL:
     return cv2.cvtColor(np.uint8([[bgr_color]]), cv2.COLOR_BGR2HSV)[0, 0]
@@ -1031,20 +1042,17 @@ def image_save_gif(fpath:str, images: list[Image.Image], fps: int=0,
         save_all=True
     )
 
-def image_scale(image: TYPE_IMAGE, scale:TYPE_COORD=(1.0, 1.0), sample:EnumInterpolation=EnumInterpolation.LANCZOS4) -> TYPE_IMAGE:
-    height, width = image.shape[:2]
-    scaleW = max(0, min(1, scale[0]))
-    scaleH = max(0, min(1, scale[1]))
-    w2 = int(width * scaleW * 0.5)
-    w = w2 * 2
-    h2 = int(height * scaleH * 0.5)
-    h = h2 * 2
-    out = np.zeros_like(image)
-    image = cv2.resize(image, (w, h), interpolation=sample.value)
-    centerY = height // 2
-    centerX = width // 2
-    out[centerY-h2:centerY+h2, centerX-w2:centerX+w2] = image
-    return out
+def image_scale(image: TYPE_IMAGE, scale:TYPE_COORD=(1.0, 1.0), sample:EnumInterpolation=EnumInterpolation.LANCZOS4, edge:EnumEdge=EnumEdge.CLIP) -> TYPE_IMAGE:
+
+    def scale_func(img: TYPE_IMAGE) -> TYPE_IMAGE:
+        height, width = img.shape[:2]
+        scaleW = max(0, min(1, scale[0]))
+        scaleH = max(0, min(1, scale[1]))
+        width = int(width * scaleW * 0.5) * 2
+        height = int(height * scaleH * 0.5) * 2
+        return cv2.resize(img, (width, height), interpolation=sample.value)
+
+    return image_affine_edge(image, scale_func, edge)
 
 def image_scalefit(image: TYPE_IMAGE, width: int, height:int,
                  mode:EnumScaleMode=EnumScaleMode.NONE,

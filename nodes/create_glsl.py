@@ -47,7 +47,7 @@ class GLSLNode(JOVImageMultiple):
             Lexicon.BATCH: ("INT", {"default": 1, "step": 1, "min": 1, "max": 36000}),
             Lexicon.WAIT: ("BOOLEAN", {"default": False}),
             Lexicon.RESET: ("BOOLEAN", {"default": False}),
-            Lexicon.WH: ("VEC2", {"default": (cls.WIDTH, cls.HEIGHT,), "step": 1, "min": 1}),
+            Lexicon.WH: ("VEC2", {"default": (cls.WIDTH, cls.HEIGHT,), "step": 1,}),
             Lexicon.FRAGMENT: ("STRING", {"multiline": True, "default": DEFAULT_FRAGMENT, "dynamicPrompts": False}),
             Lexicon.PARAM: ("STRING", {"default": ""})
         },
@@ -207,8 +207,8 @@ class GLSLSelectRange(GLSLBaseNode):
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
-            Lexicon.START: ("VEC3", {"default": (0., 0., 0.), "step": 0.01, "min": 0, "max": 1, "precision": 4, "round": 0.00001, "label": [Lexicon.R, Lexicon.G, Lexicon.B]}),
-            Lexicon.END: ("VEC3", {"default": (1., 1., 1.), "step": 0.01, "min": 0, "max": 1, "precision": 4, "round": 0.00001, "label": [Lexicon.R, Lexicon.G, Lexicon.B]}),
+            Lexicon.START: ("VEC3", {"default": (0., 0., 0.), "step": 0.01, "precision": 4, "round": 0.00001, "label": [Lexicon.R, Lexicon.G, Lexicon.B]}),
+            Lexicon.END: ("VEC3", {"default": (1., 1., 1.), "step": 0.01, "precision": 4, "round": 0.00001, "label": [Lexicon.R, Lexicon.G, Lexicon.B]}),
         }}
         d = deep_merge_dict(IT_REQUIRED, IT_PIXEL, d)
         return Lexicon._parse(d, JOV_HELP_URL + "/CREATE#-glsl")
@@ -226,7 +226,7 @@ class GLSLColorGrayscale(GLSLBaseNode):
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
-            Lexicon.RGB: ("VEC3", {"default": cls.DEFAULT, "step": 0.01, "min": 0, "max": 1, "precision": 4, "round": 0.00001, "label": [Lexicon.R, Lexicon.G, Lexicon.B]}),
+            Lexicon.RGB: ("VEC3", {"default": cls.DEFAULT, "step": 0.01, "precision": 4, "round": 0.00001, "label": [Lexicon.R, Lexicon.G, Lexicon.B]}),
         }}
         d = deep_merge_dict(IT_REQUIRED, IT_PIXEL, d)
         return Lexicon._parse(d, JOV_HELP_URL + "/CREATE#-glsl")
@@ -255,8 +255,8 @@ class GLSLCreateNoise(GLSLBaseNode):
         d = {"optional": {
             Lexicon.TYPE: (EnumNoiseType._member_names_, {"default": EnumNoiseType.VALUE.name}),
             Lexicon.SEED: ("INT", {"default": 0, "step": 1}),
-            Lexicon.TILE: ("VEC2", {"default": (1., 1.,), "step": 0.01, "min": 0.01, "precision": 4, "round": 0.00001, "label": [Lexicon.X, Lexicon.Y]}),
-            Lexicon.WH: ("VEC2", {"default": (512, 512,), "step": 1, "min": 1}),
+            Lexicon.TILE: ("VEC2", {"default": (1., 1.,), "step": 0.01, "precision": 4, "round": 0.00001, "label": [Lexicon.X, Lexicon.Y]}),
+            Lexicon.WH: ("VEC2", {"default": (512, 512,), "step": 1}),
         }}
         d = deep_merge_dict(IT_REQUIRED, d, IT_WH)
         return Lexicon._parse(d, JOV_HELP_URL + "/CREATE#-glsl")
@@ -366,7 +366,7 @@ class GLSLTRSMirror(GLSLBaseNode):
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
             Lexicon.ANGLE: ("FLOAT", {"default": 0, "step": 0.01}),
-            Lexicon.PIVOT: ("VEC2", {"default": (0.5, 0.5), "max": 1, "min": 0, "step": 0.01, "precision": 4, "label": [Lexicon.X, Lexicon.Y]}),
+            Lexicon.PIVOT: ("VEC2", {"default": (0.5, 0.5), "step": 0.01, "precision": 4, "label": [Lexicon.X, Lexicon.Y]}),
         }}
         d = deep_merge_dict(IT_REQUIRED, IT_PIXEL, d)
         return Lexicon._parse(d, JOV_HELP_URL + "/CREATE#-glsl")
@@ -385,7 +385,7 @@ class GLSLTRSRotate(GLSLBaseNode):
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
             Lexicon.ANGLE: ("FLOAT", {"default": 0, "step": 0.01}),
-            Lexicon.PIVOT: ("VEC2", {"default": (0.5, 0.5), "max": 1, "min": 0, "step": 0.01, "precision": 4, "label": [Lexicon.X, Lexicon.Y]}),
+            Lexicon.PIVOT: ("VEC2", {"default": (0.5, 0.5), "step": 0.01, "precision": 4, "label": [Lexicon.X, Lexicon.Y]}),
         }}
         d = deep_merge_dict(IT_REQUIRED, IT_PIXEL, d)
         return Lexicon._parse(d, JOV_HELP_URL + "/CREATE#-glsl")
@@ -404,7 +404,7 @@ class GLSLUtilTiler(GLSLBaseNode):
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
             "uTime": ("FLOAT", {"default": 0, "step": 0.01}),
-            "uTile": ("VEC2", {"default": (1., 1., ), "min": 1., "step": 0.01, "precision": 4, "label": [Lexicon.X, Lexicon.Y]}),
+            "uTile": ("VEC2", {"default": (1., 1., ), "step": 0.01, "precision": 4, "label": [Lexicon.X, Lexicon.Y]}),
         }}
         d = deep_merge_dict(IT_REQUIRED, IT_PIXEL, d)
         return Lexicon._parse(d, JOV_HELP_URL + "/CREATE#-glsl")
@@ -436,7 +436,7 @@ class GLSLVFX(GLSLBaseNode):
         d = {"optional": {
             "radius": ("FLOAT", {"default": 2., "min": 0.0001, "step": 0.01}),
             "strength": ("FLOAT", {"default": 1., "min": 0., "step": 0.01}),
-            "center": ("VEC2", {"default": (0.5, 0.5, ), "min": 0., "max": 1., "step": 0.01, "precision": 4, "label": [Lexicon.X, Lexicon.Y]}),
+            "center": ("VEC2", {"default": (0.5, 0.5, ), "step": 0.01, "precision": 4, "label": [Lexicon.X, Lexicon.Y]}),
             Lexicon.TYPE: (EnumVFXType._member_names_, {"default": EnumVFXType.BULGE.name})
         }}
         d = deep_merge_dict(IT_REQUIRED, IT_PIXEL, d)

@@ -86,10 +86,10 @@ class StreamReaderNode(JOVImageMultiple):
             Lexicon.MONITOR: (monitor, {"default": monitor[0]}),
             Lexicon.WINDOW: (window, {"default": window_default}),
             Lexicon.DPI: ("BOOLEAN", {"default": True}),
-            Lexicon.BBOX: ("VEC4", {"default": (0, 0, 1, 1), "min": 0, "max": 1, "step": 0.01, "precision": 4, "round": 0.00001, "label": [Lexicon.TOP, Lexicon.LEFT, Lexicon.BOTTOM, Lexicon.RIGHT]}),
+            Lexicon.BBOX: ("VEC4", {"default": (0, 0, 1, 1), "step": 0.01, "precision": 4, "round": 0.00001, "label": [Lexicon.TOP, Lexicon.LEFT, Lexicon.BOTTOM, Lexicon.RIGHT]}),
             Lexicon.FPS: ("INT", {"min": 1, "max": 60, "default": 30}),
             Lexicon.WAIT: ("BOOLEAN", {"default": False}),
-            Lexicon.BATCH: ("VEC2", {"default": (1, 30), "min": 1, "step": 1, "label": ["COUNT", "FPS"]}),
+            Lexicon.BATCH: ("VEC2", {"default": (1, 30), "step": 1, "label": ["COUNT", "FPS"]}),
             Lexicon.ORIENT: (EnumCanvasOrientation._member_names_, {"default": EnumCanvasOrientation.NORMAL.name}),
             Lexicon.ZOOM: ("FLOAT", {"min": 0, "max": 1, "step": 0.005, "default": 0}),
         }}
@@ -235,7 +235,7 @@ class StreamWriterNode(JOVBaseNode):
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
                 Lexicon.ROUTE: ("STRING", {"default": "/stream"}),
-                Lexicon.WH: ("VEC2", {"default": (640, 480), "min": MIN_IMAGE_SIZE, "max": 8192, "step": 1, "label": [Lexicon.W, Lexicon.H]})
+                Lexicon.WH: ("VEC2", {"default": (640, 480), "step": 1, "label": [Lexicon.W, Lexicon.H]})
             }}
         d = deep_merge_dict(IT_REQUIRED, IT_PIXEL, d, IT_SCALEMODE, IT_SAMPLE, IT_INVERT)
         return Lexicon._parse(d, JOV_HELP_URL + "/DEVICE#-stream-writer")

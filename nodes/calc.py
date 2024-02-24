@@ -144,7 +144,6 @@ class CalcUnaryOPNode(JOVBaseNode):
     NAME = "CALC OP UNARY (JOV) 🎲"
     CATEGORY = JOV_CATEGORY
     DESCRIPTION = "Perform a Unary Operation on an input."
-    INPUT_IS_LIST = True
     RETURN_TYPES = (WILDCARD,)
     RETURN_NAMES = (Lexicon.UNKNOWN, )
     OUTPUT_IS_LIST = (True, )
@@ -226,7 +225,6 @@ class CalcBinaryOPNode(JOVBaseNode):
     NAME = "CALC OP BINARY (JOV) 🌟"
     CATEGORY = JOV_CATEGORY
     DESCRIPTION = "Perform a Binary Operation on two inputs."
-    INPUT_IS_LIST = True
     RETURN_TYPES = (WILDCARD,)
     RETURN_NAMES = (Lexicon.UNKNOWN, )
     OUTPUT_IS_LIST = (True, )
@@ -331,7 +329,6 @@ class ValueNode(JOVBaseNode):
     NAME = "VALUE (JOV) #️⃣"
     CATEGORY = JOV_CATEGORY
     DESCRIPTION = "Create a value for most types; also universal constants."
-    INPUT_IS_LIST = True
     RETURN_TYPES = (WILDCARD, )
     OUTPUT_IS_LIST = (True, )
     SORT = 1
@@ -384,7 +381,6 @@ class ConvertNode(JOVBaseNode):
     CATEGORY = JOV_CATEGORY
     DESCRIPTION = "Convert INT, FLOAT, VEC*, STRING and BOOL."
     RETURN_TYPES = (WILDCARD,)
-    INPUT_IS_LIST = True
     OUTPUT_IS_LIST = (True, )
     SORT = 5
 
@@ -472,7 +468,6 @@ class LerpNode(JOVBaseNode):
     NAME = "LERP (JOV) 🔰"
     CATEGORY = JOV_CATEGORY
     DESCRIPTION = "Interpolate between two values with or without a smoothing."
-    INPUT_IS_LIST = True
     OUTPUT_IS_LIST = (True, )
     RETURN_TYPES = (WILDCARD, )
     RETURN_NAMES = (Lexicon.ANY )

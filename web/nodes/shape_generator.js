@@ -20,8 +20,8 @@ app.registerExtension({
         const onNodeCreated = nodeType.prototype.onNodeCreated
         nodeType.prototype.onNodeCreated = function () {
             const me = onNodeCreated?.apply(this)
-            const sides = this.widgets[1];
-            const op = this.widgets[0];
+            const sides = this.widgets.find(w => w.name === '♾️');
+            const op = this.widgets.find(w => w.name === '🇸🇴');
             op.callback = () => {
                 widget_hide(this, sides);
                 if (op.value == 'POLYGON') {

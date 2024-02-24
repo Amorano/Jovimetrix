@@ -21,13 +21,11 @@ app.registerExtension({
         nodeType.prototype.onNodeCreated = function () {
             const me = onNodeCreated?.apply(this)
             const self = this;
-
-            const xy = this.widgets[1];
-            const wh = this.widgets[2];
-            const tltr = this.widgets[3];
-            const blbr = this.widgets[4];
-            // const rgb = this.widgets[5];
-            const op = this.widgets[0];
+            const xy = this.widgets.find(w => w.name === '🇽🇾');
+            const wh = this.widgets.find(w => w.name === '🇼🇭');
+            const tltr = this.widgets.find(w => w.name === 'TL-TR');
+            const blbr = this.widgets.find(w => w.name === 'BL-BR');
+            const op = this.widgets.find(w => w.name === '⚒️');
             op.callback = () => {
                 widget_hide(self, xy);
                 widget_hide(self, wh);

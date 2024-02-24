@@ -22,28 +22,31 @@ app.registerExtension({
         nodeType.prototype.onNodeCreated = function () {
             const me = onNodeCreated?.apply(this)
             const self = this;
-
             let combo_current = "";
-            let combo = this.widgets[0];
-            let old_x = this.widgets[1]?.value || 0;
-            let old_y = this.widgets[2]?.value || 0;
-            let old_z = this.widgets[3]?.value || 0;
-            let old_w = this.widgets[4]?.value || 0;
+            const widget_x = this.widgets.find(w => w.name === '🇽');
+            const widget_y = this.widgets.find(w => w.name === '🇾');
+            const widget_z = this.widgets.find(w => w.name === '🇿');
+            const widget_w = this.widgets.find(w => w.name === '🇼');
+            const combo = this.widgets.find(w => w.name === '❓');
+            let old_x = widget_x?.value || 0;
+            let old_y = widget_y?.value || 0;
+            let old_z = widget_z?.value || 0;
+            let old_w = widget_w?.value || 0;
             let old_x_bool;
             let old_x_str;
             combo.callback = () => {
                 if (combo_current != combo.value)  {
-                    old_x = this.widgets[1]?.value || old_x;
-                    old_y = this.widgets[2]?.value || old_y;
-                    old_z = this.widgets[3]?.value || old_z;
-                    old_w = this.widgets[4]?.value || old_w;
+                    old_x = widget_x?.value || old_x;
+                    old_y = widget_y?.value || old_y;
+                    old_z = widget_z?.value || old_z;
+                    old_w = widget_w?.value || old_w;
 
                     if (combo_current == 'BOOLEAN') {
-                        old_x_bool = this.widgets[1]?.value || old_x_bool;
+                        old_x_bool = widget_x?.value || old_x_bool;
                     //} else if (combo_current == 'INT') {
-                    //    old_x = this.widgets[1]?.value || old_x;
+                    //    old_x = widget_x?.value || old_x;
                     } else if (combo_current == 'STRING') {
-                        old_x_str = this.widgets[1]?.value || old_x_str;
+                        old_x_str = widget_x?.value || old_x_str;
                     }
 
                     // remember the connections and attempt to re-connect

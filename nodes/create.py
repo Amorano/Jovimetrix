@@ -24,7 +24,7 @@ from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import deep_merge_dict, parse_tuple, \
     parse_number, zip_longest_fill, EnumTupleType
 
-from Jovimetrix.sup.image import channel_solid, cv2tensor_full,  \
+from Jovimetrix.sup.image import channel_solid, cv2tensor_full, image_grayscale,  \
     image_mask_add, image_rotate, image_stereogram, pil2cv, \
     pixel_eval, tensor2cv, shape_ellipse, shape_polygon, \
     shape_quad, image_invert, \
@@ -76,10 +76,10 @@ class ShapeNode(JOVImageMultiple):
         d = {"optional": {
             Lexicon.SHAPE: (EnumShapes._member_names_, {"default": EnumShapes.CIRCLE.name}),
             Lexicon.SIDES: ("INT", {"default": 3, "min": 3, "max": 100, "step": 1}),
-            Lexicon.RGBA_A: ("VEC4", {"default": (255, 255, 255, 255), "min": 0, "max": 255, "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True, "tooltip": "Main Shape Color"}),
-            Lexicon.RGB_B: ("VEC4", {"default": (0, 0, 0), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True, "tooltip": "Background Color"})
+            Lexicon.RGBA_A: ("VEC4", {"default": (255, 255, 255, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True, "tooltip": "Main Shape Color"}),
+            Lexicon.RGB_B: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True, "tooltip": "Background Color"})
         }}
-        d = deep_merge_dict(IT_REQUIRED, d, IT_WH, IT_ROT, IT_SCALE, IT_EDGE, IT_INVERT)
+        d = deep_merge_dict(IT_REQUIRED, d, IT_WH, IT_ROT, IT_SCALE, IT_EDGE)
         d = Lexicon._parse(d, JOV_HELP_URL + "/CREATE#-shape-generator")
         return d
 
@@ -91,12 +91,11 @@ class ShapeNode(JOVImageMultiple):
         size = parse_tuple(Lexicon.SIZE, kw, EnumTupleType.FLOAT, default=(1., 1.,))
         wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,))
         color = parse_tuple(Lexicon.RGBA_A, kw, default=(255, 255, 255, 255))
-        bgcolor = parse_tuple(Lexicon.RGB_B, kw, default=(0, 0, 0))
-        invert = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1])
-        params = [tuple(x) for x in zip_longest_fill(shape, sides, angle, edge, size, wihi, color, bgcolor, invert)]
+        bgcolor = parse_tuple(Lexicon.RGB_B, kw, default=(0, 0, 0, 255))
+        params = [tuple(x) for x in zip_longest_fill(shape, sides, angle, edge, size, wihi, color, bgcolor)]
         images = []
         pbar = comfy.utils.ProgressBar(len(params))
-        for idx, (shape, sides, angle, edge, size, wihi, color, bgcolor, invert) in enumerate(params):
+        for idx, (shape, sides, angle, edge, size, wihi, color, bgcolor) in enumerate(params):
             width, height = wihi
             sizeX, sizeY = size
             edge = EnumEdge[edge]
@@ -123,9 +122,8 @@ class ShapeNode(JOVImageMultiple):
                     mask = shape_ellipse(width, height, sizeX, sizeX, fill=color[3])
 
             img = pil2cv(img)
-            if invert:
-                img = image_invert(img, 1)
-            mask = pil2cv(mask)[:,:,0]
+            mask = pil2cv(mask)
+            mask = image_grayscale(mask)
             img = image_mask_add(img, mask)
             img = image_rotate(img, angle, edge=edge)
             bgcolor = pixel_eval(bgcolor)
@@ -149,8 +147,8 @@ class TextNode(JOVImageMultiple):
             Lexicon.FONT: (cls.FONT_NAMES, {"default": cls.FONT_NAMES[0]}),
             Lexicon.LETTER: ("BOOLEAN", {"default": False}),
             Lexicon.AUTOSIZE: ("BOOLEAN", {"default": False}),
-            Lexicon.RGBA_A: ("VEC3", {"default": (255, 255, 255, 255), "min": 0, "max": 255, "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True, "tooltip": "Color of the letters"}),
-            Lexicon.MATTE: ("VEC3", {"default": (0, 0, 0), "min": 0, "max": 255, "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B], "rgb": True}),
+            Lexicon.RGBA_A: ("VEC3", {"default": (255, 255, 255, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True, "tooltip": "Color of the letters"}),
+            Lexicon.MATTE: ("VEC3", {"default": (0, 0, 0), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B], "rgb": True}),
             Lexicon.COLUMNS: ("INT", {"default": 0, "min": 0, "step": 1}),
             # if auto on, hide these...
             Lexicon.FONT_SIZE: ("INT", {"default": 100, "min": 1, "step": 1}),
