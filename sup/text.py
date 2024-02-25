@@ -4,12 +4,15 @@ TEXT support
 """
 
 from enum import Enum
-from typing import Any
+import textwrap
 
 import matplotlib.font_manager
-from PIL import ImageFont, ImageDraw
+from PIL import Image, ImageFont, ImageDraw
 
 from loguru import logger
+
+from Jovimetrix import TYPE_IMAGE, TYPE_PIXEL
+from Jovimetrix.sup.image import pil2cv
 
 # =============================================================================
 
@@ -29,9 +32,9 @@ class EnumJustify(Enum):
     LEFT = 10
     CENTER = 0
     RIGHT = 20
-    JUSTIFY = 30
 
 # =============================================================================
+
 def font_all() -> dict[str, str]:
     mgr = matplotlib.font_manager.FontManager()
     return {font.name: font.fname for font in mgr.ttflist}
@@ -39,27 +42,7 @@ def font_all() -> dict[str, str]:
 def font_all_names() -> list[str]:
     return sorted(font_all().keys())
 
-def text_align(align:EnumAlignment, height:int, text_height:int, margin:int) -> Any:
-    match align:
-        case EnumAlignment.CENTER:
-            return height / 2 - text_height / 2
-        case EnumAlignment.TOP:
-            return margin
-        case EnumAlignment.BOTTOM:
-            return height - text_height - margin
-
-def text_justify(justify:EnumJustify, width:int, line_width:int, margin:int) -> Any:
-    x = 0
-    match justify:
-        case EnumJustify.LEFT:
-            x = margin
-        case EnumJustify.RIGHT:
-            x = width - line_width - margin
-        case EnumJustify.CENTER:
-            x = width/2 - line_width/2
-    return x
-
-def text_size(draw:ImageDraw, text:str, font:ImageFont) -> tuple:
+def text_size(draw:ImageDraw, text:str, font:ImageFont) -> tuple[int, int]:
     bbox = draw.textbbox((0, 0), text, font=font)
     text_width = bbox[2] - bbox[0]
     text_height = bbox[3] - bbox[1]
@@ -70,7 +53,7 @@ def get_font_size(text, font, max_width=None, max_height=None):
         raise ValueError('You need to pass max_width or max_height')
 
     font_size = 1
-    text_size = get_text_size(font, font_size, text)
+    text_size = ImageFont.truetype(font, font_size).getsize(text)
     if (max_width is not None and text_size[0] > max_width) or \
         (max_height is not None and text_size[1] > max_height):
         raise ValueError("Text can't be filled in only (%dpx, %dpx)" % \
@@ -80,91 +63,97 @@ def get_font_size(text, font, max_width=None, max_height=None):
             (max_height is not None and text_size[1] >= max_height):
             return font_size - 1
         font_size += 1
-        text_size = get_text_size(font, font_size, text)
+        text_size = ImageFont.truetype(font, font_size).getsize(text)
 
-def write_text(xy, text, font_filename, font_size=11,
-                color=(0, 0, 0), max_width=None, max_height=None):
-    x, y = xy
-    if font_size == 0 and \
-        (max_width is not None or max_height is not None):
-        font_size = get_font_size(text, font_filename, max_width,
-                                        max_height)
-    text_size = get_text_size(font_filename, font_size, text)
-    font = ImageFont.truetype(font_filename, font_size)
-    if x == 'center':
-        x = (self.size[0] - text_size[0]) / 2
-    if y == 'center':
-        y = (self.size[1] - text_size[1]) / 2
-    draw.text((x, y), text, font=font, fill=color)
-    return text_size
+def text_draw(full_text: str, font: ImageFont, width:int, height:int, align:EnumAlignment, justify:EnumJustify, margin:int, line_spacing:int, color:TYPE_PIXEL) -> TYPE_IMAGE:
 
-def get_text_size(font_filename, font_size, text):
-    return ImageFont.truetype(font_filename, font_size).getsize(text)
+    img = Image.new("RGBA", (width, height))
+    draw = ImageDraw.Draw(img)
 
-def write_text_box(width, height, xy, text, box_width, font_filename,
-                    font_size=11, color=(0, 0, 0), justify:EnumJustify=EnumJustify.LEFT,
-                    justify_last_line=False, position:EnumAlignment=EnumAlignment.TOP,
-                    line_spacing=1.0):
-    x, y = xy
-    lines = []
-    line = []
-    words = text.split()
-    for word in words:
-        new_line = ' '.join(line + [word])
-        size = get_text_size(font_filename, font_size, new_line)
-        text_height = size[1] * line_spacing
-        last_line_bleed = text_height - size[1]
-        if size[0] <= box_width:
-            line.append(word)
-        else:
-            lines.append(line)
-            line = [word]
-    if line:
-        lines.append(line)
-    lines = [' '.join(line) for line in lines if line]
+    def text_process_line(text: str, font: ImageFont) -> None:
+        line_width, text_height = text_size(draw, text, font)
+        x, y = 0, 0
+        match justify:
+            case EnumJustify.LEFT:
+                x = margin
+            case EnumJustify.RIGHT:
+                x = width - line_width - margin
+            case EnumJustify.CENTER:
+                x = width / 2 - line_width / 2
 
-    if position == EnumAlignment.CENTER:
-        height = (height - len(lines)*text_height + last_line_bleed)/2
-    elif position == EnumAlignment.BOTTOM:
-        height = height - len(lines)*text_height + last_line_bleed
+        match align:
+            case EnumAlignment.CENTER:
+                y = height / 2 - text_height / 2
+            case EnumAlignment.TOP:
+                y = margin
+            case EnumAlignment.BOTTOM:
+                y = height - text_height - margin
+        return x, y
+
+    max_height = 0
+    text = full_text.split('\n')
+    for line in text:
+        w, h = text_size(draw, line, font)
+        max_height = max(max_height, h + line_spacing)
+
+    y = 0
+    for line in text:
+        text_process_line(line, font, y)
+        y += max_height
+    return pil2cv(img)
+
+def text_autosize(text:str, font:str, width:int, height:int, columns:int=0) -> tuple[str, int, int, int]:
+    img = Image.new("L", (width, height))
+    draw = ImageDraw.Draw(img)
+    if columns != 0:
+        text = text.split('\n')
+        lines = []
+        for x in text:
+            line = textwrap.wrap(x, columns, break_long_words=False)
+            lines.extend(line)
+        text = '\n'.join(lines)
+
+    size = (1, 1, 1)
+    font_size = 1
+    while 1:
+        ttf = ImageFont.truetype(font, font_size)
+        w, h = text_size(draw, text, ttf)
+        if w >= width or h >= height:
+            break
+        size = (font_size, w, h)
+        font_size += 1
+    return text, *size
+
+def text_draw(full_text: str, font: ImageFont, width: int, height: int,
+              align: EnumAlignment=EnumAlignment.CENTER,
+              justify: EnumJustify=EnumJustify.CENTER,
+              margin: int=0, line_spacing: int=0,
+              color: TYPE_PIXEL=(255,255,255,255)) -> TYPE_IMAGE:
+
+    img = Image.new("RGBA", (width, height))
+    draw = ImageDraw.Draw(img)
+    text_lines = full_text.split('\n')
+    count = len(text_lines)
+    height_max = text_size(draw, full_text, font)[1] + line_spacing * count
+    height_delta = height_max / count
+    if align == EnumAlignment.TOP:
+        y = margin
+    elif align == EnumAlignment.BOTTOM:
+        y = height - height_max - margin - line_spacing
     else:
-        height = y
-    height -= text_height  # the loop below will fix this height
+        y = (height - height_max) / 2
+    y = min(height, max(0, y))
 
-    for index, line in enumerate(lines):
+    for line in text_lines:
+        line_width = text_size(draw, line, font)[0]
         if justify == EnumJustify.LEFT:
-            write_text((x, height), line, font_filename, font_size, color)
-
+            x = margin
         elif justify == EnumJustify.RIGHT:
-            total_size = get_text_size(font_filename, font_size, line)
-            x_left = x + box_width - total_size[0]
-            write_text((x_left, height), line, font_filename, font_size, color)
-
-        elif justify == EnumJustify.CENTER:
-            total_size = get_text_size(font_filename, font_size, line)
-            x_left = int(x + ((box_width - total_size[0]) / 2))
-            write_text((x_left, height), line, font_filename, font_size, color)
-
-        elif justify == EnumJustify.JUSTIFY:
-            words = line.split()
-            if (index == len(lines) - 1 and not justify_last_line) or \
-                len(words) == 1:
-                write_text((x, height), line, font_filename, font_size, color)
-                continue
-
-            line_without_spaces = ''.join(words)
-            total_size = get_text_size(font_filename, font_size, line_without_spaces)
-            space_width = (box_width - total_size[0]) / (len(words) - 1.0)
-            start_x = x
-            for word in words[:-1]:
-                write_text((start_x, height), word, font_filename, font_size, color)
-                word_size = get_text_size(font_filename, font_size, word)
-                start_x += word_size[0] + space_width
-
-            last_word_size = get_text_size(font_filename, font_size, words[-1])
-            last_word_x = x + box_width - last_word_size[0]
-            write_text((last_word_x, height), words[-1], font_filename, font_size, color)
-
-        height += text_height
-
-    return (box_width, height - y)
+            x = width - line_width - margin
+        else:
+            x = (width - line_width) / 2
+        x = min(width, max(0, x))
+        draw.text((x, y), line, fill=color, font=font)
+        # print(height_max, height_delta, x, y)
+        y += height_delta
+    return pil2cv(img)

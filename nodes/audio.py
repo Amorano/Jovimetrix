@@ -29,6 +29,7 @@ class GraphWaveNode(JOVBaseNode):
     NAME = "GRAPH WAVE (JOV) ▶ ılıılı"
     CATEGORY = JOV_CATEGORY
     DESCRIPTION = "Import and display audio linear waveform data."
+    INPUT_IS_LIST = False
     RETURN_TYPES = ("IMAGE", "MASK", "WAVE")
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.MASK, Lexicon.WAVE )
     OUTPUT_IS_LIST = (False, False, True)

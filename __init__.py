@@ -305,7 +305,7 @@ IT_WH = {"optional": {
 }}
 
 IT_TRANS = {"optional": {
-    Lexicon.XY: ("VEC2", {"default": (0., 0.,), "step": 0.01, "precision": 4, "round": 0.00001, "label": [Lexicon.X, Lexicon.Y]})
+    Lexicon.XY: ("VEC2", {"default": (0, 0,), "step": 0.01, "precision": 4, "round": 0.00001, "label": [Lexicon.X, Lexicon.Y]})
 }}
 
 IT_ROT = {"optional": {

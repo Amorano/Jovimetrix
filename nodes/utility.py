@@ -235,9 +235,9 @@ class QueueNode(JOVBaseNode):
     CATEGORY = JOV_CATEGORY
     DESCRIPTION = "Cycle lists of images files or strings for node inputs."
     INPUT_IS_LIST = False
-    RETURN_TYPES = (WILDCARD, "MASK", WILDCARD, "STRING", "INT", "INT", )
-    RETURN_NAMES = (Lexicon.ANY, Lexicon.MASK, Lexicon.QUEUE, Lexicon.CURRENT, Lexicon.VALUE, Lexicon.TOTAL, )
-    OUTPUT_IS_LIST = (True, True, True, True, True, True, )
+    RETURN_TYPES = (WILDCARD, WILDCARD, "STRING", "INT", "INT", )
+    RETURN_NAMES = (Lexicon.ANY, Lexicon.QUEUE, Lexicon.CURRENT, Lexicon.VALUE, Lexicon.TOTAL, )
+    OUTPUT_IS_LIST = (True, True, True, True, True, )
     VIDEO_FORMATS = ['.webm', '.mp4', '.avi', '.wmv', '.mkv', '.mov', '.mxf']
     SORT = 0
 
@@ -271,7 +271,6 @@ class QueueNode(JOVBaseNode):
         self.__last = None
         self.__len = 0
         self.__previous = None
-        self.__previous_mask = None
         self.__last_q_value = {}
 
     def __parse(self, data) -> list:
@@ -311,20 +310,17 @@ class QueueNode(JOVBaseNode):
             if (val := self.__last_q_value.get(q_data, None)) is not None:
                 return val
             if not os.path.isfile(q_data):
-                return data, mask
+                return q_data
             _, ext = os.path.splitext(q_data)
             if ext in image_formats():
-                data, mask = image_load(q_data)
-                data, _, mask = cv2tensor_full(data)
-                self.__last_q_value[q_data] = (data, mask)
+                data = image_load(q_data)[0]
+                self.__last_q_value[q_data] = cv2tensor(data)
             elif ext == '.json':
                 with open(q_data, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-                self.__last_q_value[q_data] = (data, None)
+                    self.__last_q_value[q_data] = json.load(f)
             elif ext == '.txt':
                 with open(q_data, 'r', encoding='utf-8') as f:
-                    data = f.read()
-                self.__last_q_value[q_data] = (data, None)
+                    self.__last_q_value[q_data] = f.read()
             return self.__last_q_value[q_data]
 
         reset = kw.get(Lexicon.RESET, False)
@@ -361,7 +357,7 @@ class QueueNode(JOVBaseNode):
             self.__last = 0
             self.__previous = self.__q[0] if len(self.__q) else None
             if self.__previous:
-                self.__previous, self.__previous_mask = process(self.__previous)
+                self.__previous = process(self.__previous)
 
         if (wait := kw.get(Lexicon.WAIT, False)):
             self.__index = self.__last
@@ -395,22 +391,20 @@ class QueueNode(JOVBaseNode):
             info += f" PAUSED"
 
         data = self.__previous
-        mask = self.__previous_mask
         batch = max(1, kw.get(Lexicon.BATCH, 1))
         # batch_list = kw.get(Lexicon.BATCH_LIST, True)
         if not wait:
             if rand:
-                data, mask = process(self.__q_rand[self.__index])
+                data = process(self.__q_rand[self.__index])
             else:
-                data, mask = process(self.__q[self.__index])
+                data = process(self.__q[self.__index])
             self.__index += 1
 
         self.__last = self.__index
         self.__previous = data
-        self.__previous_mask = mask
         PromptServer.instance.send_sync("jovi-queue-ping", {"id": id, "c": current, "i": self.__index, "s": self.__len, "l": self.__q})
 
-        return [data] * batch, [mask] * batch, [self.__q] * batch, [current] * batch, [self.__index] * batch, [self.__len] * batch,
+        return [data] * batch, [self.__q] * batch, [current] * batch, [self.__index] * batch, [self.__len] * batch,
 
 class ExportNode(JOVBaseNode):
     NAME = "EXPORT (JOV) 📽"

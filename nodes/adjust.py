@@ -18,7 +18,7 @@ from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import zip_longest_fill, deep_merge_dict, \
     parse_tuple, parse_number, EnumTupleType
 
-from Jovimetrix.sup.image import channel_count, cv2tensor_full, image_equalize, image_levels, \
+from Jovimetrix.sup.image import batch_extract, channel_count, cv2tensor_full, image_equalize, image_levels, \
     image_posterize, image_pixelate, pixel_eval, tensor2cv, \
     image_quantize, image_sharpen, image_threshold, \
     image_blend, image_invert, morph_edge_detect, \
@@ -52,8 +52,10 @@ class AdjustNode(JOVImageMultiple):
         return Lexicon._parse(d, JOV_HELP_URL + "/ADJUST#-adjust")
 
     def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor]:
-        img = kw.get(Lexicon.PIXEL, [None])
-        mask = kw.get(Lexicon.MASK, [None])
+        pA = kw.get(Lexicon.PIXEL, None)
+        pA = [None] if pA is None else batch_extract(pA)
+        mask = kw.get(Lexicon.MASK, None)
+        mask = [None] if mask is None else batch_extract(mask)
         op = kw.get(Lexicon.FUNC, [EnumAdjustOP.BLUR])
         radius = kw.get(Lexicon.RADIUS, [3])
         amt = kw.get(Lexicon.VALUE, [0])
@@ -62,14 +64,15 @@ class AdjustNode(JOVImageMultiple):
         hsv = parse_tuple(Lexicon.HSV, kw, EnumTupleType.FLOAT, (0, 1, 1), clip_min=0, clip_max=1)
         contrast = parse_number(Lexicon.CONTRAST, kw, EnumTupleType.FLOAT, [0], clip_min=0, clip_max=1)
         gamma = parse_number(Lexicon.GAMMA, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
-        matte = parse_tuple(Lexicon.MATTE, kw, default=(0, 0, 0), clip_min=0)
+        matte = parse_tuple(Lexicon.MATTE, kw, default=(0, 0, 0), clip_min=0, clip_max=255)
         invert = kw.get(Lexicon.INVERT, [False])
-        params = [tuple(x) for x in zip_longest_fill(img, mask, op, radius, amt, lohi,
+        params = [tuple(x) for x in zip_longest_fill(pA, mask, op, radius, amt, lohi,
                                                      lmh, hsv, contrast, gamma, matte, invert)]
         images = []
         pbar = comfy.utils.ProgressBar(len(params))
-        for idx, (pixel, mask, o, r, a, lohi, lmh, hsv, con, gamma, matte, invert) in enumerate(params):
-            img = tensor2cv(pixel)
+        for idx, (pA, mask, o, r, a, lohi, lmh, hsv, con, gamma, matte, invert) in enumerate(params):
+
+            img = tensor2cv(pA)
             if (cc := channel_count(img)[0]) == 4:
                 alpha = img[:,:,3]
 
@@ -184,8 +187,10 @@ class ColorMatchNode(JOVImageMultiple):
         return Lexicon._parse(d, JOV_HELP_URL + "/ADJUST#-colormatch")
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        pA = kw.get(Lexicon.PIXEL_A, [None])
-        pB = kw.get(Lexicon.PIXEL_B, [None])
+        pA = kw.get(Lexicon.PIXEL_A, None)
+        pA = [None] if pA is None else batch_extract(pA)
+        pB = kw.get(Lexicon.PIXEL_B, None)
+        pB = [None] if pB is None else batch_extract(pB)
         colormap = kw.get(Lexicon.COLORMAP, [EnumColorMap.HSV])
         threshold = parse_number(Lexicon.THRESHOLD, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
         blur = kw.get(Lexicon.BLUR, [3])

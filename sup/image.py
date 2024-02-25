@@ -352,8 +352,6 @@ def pil2tensor(image: Image.Image) -> torch.Tensor:
     return torch.from_numpy(np.array(image).astype(np.float32) / 255).unsqueeze(0)
 
 def tensor2cv(tensor: torch.Tensor, chan:EnumImageType=EnumImageType.BGRA) -> TYPE_IMAGE:
-    if tensor is None:
-        return channel_solid(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, chan=chan)
     image = np.clip(tensor.squeeze().cpu().numpy() * 255, 0, 255).astype(np.uint8)
     cc = 1 if len(image.shape) < 3 else image.shape[2]
     if chan == EnumImageType.BGRA:
@@ -503,7 +501,7 @@ def channel_add(image:TYPE_IMAGE, color:TYPE_PIXEL=255) -> TYPE_IMAGE:
     new = channel_solid(w, h, color, EnumImageType.GRAYSCALE)
     return np.concatenate([image, new], axis=-1)
 
-def channel_solid(width:int, height:int, color:TYPE_PIXEL=(0, 0, 0, 255),
+def channel_solid(width:int, height:int, color:TYPE_PIXEL=(0, 0, 0, 0),
                   chan:EnumImageType=EnumImageType.BGR) -> TYPE_IMAGE:
 
     if chan == EnumImageType.GRAYSCALE:
@@ -584,22 +582,16 @@ def image_blend(imageA: TYPE_IMAGE, imageB: TYPE_IMAGE, mask:Optional[TYPE_IMAGE
     h, w = imageA.shape[:2]
     imageA = image_convert(imageA, 4)
     imageA = cv2pil(imageA)
-
-    if imageB is None:
-        imageB = channel_solid(w, h, (0,0,0,0), EnumImageType.BGRA)
-    else:
-        imageB = image_convert(imageB, 4)
-        imageB = image_crop_center(imageB, w, h)
-        imageB = image_matte(imageB, (0,0,0,0), w, h)
-
+    imageB = image_convert(imageB, 4)
+    imageB = image_crop_center(imageB, w, h)
+    imageB = image_matte(imageB, (0,0,0,0), w, h)
+    old_mask = image_mask(imageB)[:,:,0]
     if mask is not None:
-        mask = image_convert(mask, 1)
         mask = image_crop_center(mask, w, h)
-        mask = image_matte(mask, 255, w, h)
-    else:
-        mask = image_mask(imageB)
-
-    imageB[:,:,3] = mask[:,:,0]
+        mask = image_matte(mask, (0,0,0,0), w, h)
+        mask = image_convert(mask, 1)
+        old_mask = cv2.bitwise_and(mask, old_mask)
+    imageB[:,:,3] = old_mask
     imageB = cv2pil(imageB)
     image = blendLayers(imageA, imageB, blendOp.value, np.clip(alpha, 0, 1))
     image = pil2cv(image)
@@ -1046,10 +1038,10 @@ def image_scale(image: TYPE_IMAGE, scale:TYPE_COORD=(1.0, 1.0), sample:EnumInter
 
     def scale_func(img: TYPE_IMAGE) -> TYPE_IMAGE:
         height, width = img.shape[:2]
-        scaleW = max(0, min(1, scale[0]))
-        scaleH = max(0, min(1, scale[1]))
-        width = int(width * scaleW * 0.5) * 2
-        height = int(height * scaleH * 0.5) * 2
+        #scaleW = max(0, min(1, scale[0]))
+        #scaleH = max(0, min(1, scale[1]))
+        width = int(width * max(0, min(1, scale[0])))
+        height = int(height * max(0, min(1, scale[1])))
         return cv2.resize(img, (width, height), interpolation=sample.value)
 
     return image_affine_edge(image, scale_func, edge)
@@ -1114,30 +1106,18 @@ def image_split(image: TYPE_IMAGE) -> tuple[TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE, 
     return r, g, b, a
 
 def image_stack(images: list[TYPE_IMAGE], axis:EnumOrientation=EnumOrientation.HORIZONTAL,
-                stride:Optional[int]=None, color:TYPE_PIXEL=0) -> tuple[TYPE_IMAGE, TYPE_IMAGE]:
+                stride:Optional[int]=None, matte:TYPE_PIXEL=(0,0,0,255)) -> TYPE_IMAGE:
 
-    # CROP ALL THE IMAGES TO THE LARGEST ONE OF THE INPUT SET
-    converted = []
+    stack = []
     width, height = 0, 0
-
-    #if len(images) == 0:
-    #    image = image_convert(images[0], 4)
-    #    mask = image[:, :, 3][:, :]
-    #    return images, mask,
-
     for i in images:
         h, w = i.shape[:2]
         width = max(width, w)
         height = max(height, h)
-        converted.append(i)
+        stack.append(i)
 
-    images = []
-    for i in converted:
-        i = image_matte(i, color, width, height)
-        i = image_convert(i, 4)
-        images.append(i)
+    images = [image_matte(image_convert(i, 4), matte, width, height) for i in stack]
     count = len(images)
-
     match axis:
         case EnumOrientation.GRID:
             if stride == 0:
@@ -1151,7 +1131,6 @@ def image_stack(images: list[TYPE_IMAGE], axis:EnumOrientation=EnumOrientation.H
                 row_stacked = np.hstack(row)
                 rows.append(row_stacked)
 
-            """
             height, width = images[0].shape[:2]
             overhang = count % stride
 
@@ -1163,9 +1142,8 @@ def image_stack(images: list[TYPE_IMAGE], axis:EnumOrientation=EnumOrientation.H
                     chan = rows[0].shape[2]
 
                 size = (height, overhang * width, chan)
-                filler = np.full(size, color, dtype=np.uint8)
+                filler = np.full(size, matte, dtype=np.uint8)
                 rows[-1] = np.hstack([rows[-1], filler])
-            """
             image = np.vstack(rows)
 
         case EnumOrientation.HORIZONTAL:
@@ -1174,8 +1152,7 @@ def image_stack(images: list[TYPE_IMAGE], axis:EnumOrientation=EnumOrientation.H
         case EnumOrientation.VERTICAL:
             image = np.vstack(images)
 
-    mask = image[:, :, 3][:, :]
-    return image, mask,
+    return image
 
 def image_stereogram(image: TYPE_IMAGE, depth: TYPE_IMAGE, divisions:int=8, mix:float=0.33, gamma:float=0.33, shift:float=1.) -> TYPE_IMAGE:
     height, width = depth.shape[:2]

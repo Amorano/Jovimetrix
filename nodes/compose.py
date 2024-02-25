@@ -12,8 +12,8 @@ import numpy as np
 
 import comfy
 
-from Jovimetrix import JOV_HELP_URL, JOVImageMultiple, \
-    IT_PIXEL, IT_RGB, IT_PIXEL2_MASK, IT_INVERT, IT_REQUIRED, \
+from Jovimetrix import JOV_HELP_URL, WILDCARD, JOVImageMultiple, \
+    IT_PIXEL, IT_RGB, IT_INVERT, IT_REQUIRED, \
     IT_RGBA_IMAGE, MIN_IMAGE_SIZE, IT_TRANS, IT_ROT, IT_SCALE
 
 from Jovimetrix.sup.lexicon import Lexicon
@@ -22,9 +22,9 @@ from Jovimetrix.sup.util import parse_number, parse_tuple, zip_longest_fill, \
     deep_merge_dict,\
     EnumTupleType
 
-from Jovimetrix.sup.image import batch_extract, channel_count, channel_merge, \
+from Jovimetrix.sup.image import batch_extract, channel_merge, \
     channel_solid, cv2tensor_full, \
-    image_convert, image_crop, image_crop_center, image_crop_polygonal, image_grayscale, \
+    image_crop, image_crop_center, image_crop_polygonal, image_grayscale, \
     image_mask, image_mask_add, image_matte, image_rotate, image_scale, \
     image_translate, image_split, pixel_eval, tensor2cv, \
     image_edge_wrap, image_scalefit, cv2tensor, \
@@ -58,16 +58,13 @@ class TransformNode(JOVImageMultiple):
             Lexicon.PROJECTION: (EnumProjection._member_names_, {"default": EnumProjection.NORMAL.name}),
             Lexicon.TLTR: ("VEC4", {"default": (0, 0, 1, 0), "step": 0.005, "precision": 4, "label": [Lexicon.TOP, Lexicon.LEFT, Lexicon.TOP, Lexicon.RIGHT]}),
             Lexicon.BLBR: ("VEC4", {"default": (0, 1, 1, 1), "step": 0.005, "precision": 4, "label": [Lexicon.BOTTOM, Lexicon.LEFT, Lexicon.BOTTOM, Lexicon.RIGHT]}),
-            Lexicon.STRENGTH: ("FLOAT", {"default": 1, "min": 0, "precision": 4, "step": 0.005})
+            Lexicon.STRENGTH: ("FLOAT", {"default": 1, "min": 0, "precision": 4, "step": 0.005}),
         }}
-        e = {"optional": {
-            Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
-        }}
-        d = deep_merge_dict(IT_REQUIRED, IT_PIXEL, IT_TRANS, IT_ROT, IT_SCALE, d, IT_WHMODE, e)
+        d = deep_merge_dict(IT_REQUIRED, IT_PIXEL, IT_TRANS, IT_ROT, IT_SCALE, d, IT_WHMODE)
         return Lexicon._parse(d, JOV_HELP_URL + "/COMPOSE#-transform")
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        pA = kw.get(Lexicon.PIXEL_A, None)
+        pA = kw.get(Lexicon.PIXEL, None)
         pA = [None] if pA is None else batch_extract(pA)
         offset = parse_tuple(Lexicon.XY, kw, typ=EnumTupleType.FLOAT, default=(0., 0.,), clip_min=-1, clip_max=1)
         angle = kw.get(Lexicon.ANGLE, [0])
@@ -83,14 +80,22 @@ class TransformNode(JOVImageMultiple):
         mode = kw.get(Lexicon.MODE,[EnumScaleMode.NONE])
         wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
         sample = kw.get(Lexicon.SAMPLE, [EnumInterpolation.LANCZOS4])
-        matte = parse_tuple(Lexicon.MATTE, kw, default=(0, 0, 0), clip_min=0)
+        matte = parse_tuple(Lexicon.MATTE, kw, default=(0, 0, 0, 255), clip_min=0, clip_max=255)
         params = [tuple(x) for x in zip_longest_fill(pA, offset, angle, size, edge, tile_xy, mirror, mirror_pivot, proj, strength, tltr, blbr, mode, wihi, sample, matte)]
         images = []
         pbar = comfy.utils.ProgressBar(len(params))
         for idx, (pA, offset, angle, size, edge, tile_xy, mirror, mirror_pivot, proj, strength, tltr, blbr, mode, wihi, sample, matte) in enumerate(params):
-            pA = tensor2cv(pA)
-            h, w = pA.shape[:2]
 
+            matte = pixel_eval(matte, EnumImageType.BGRA)
+            if pA is None:
+                pA = channel_solid(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, matte, EnumImageType.BGRA)
+                pA = cv2tensor_full(pA, matte)
+                images.append(pA)
+                pbar.update_absolute(idx)
+                logger.debug("Should not be here")
+                continue
+
+            pA = tensor2cv(pA)
             sX, sY = size
             if sX < 0:
                 pA = cv2.flip(pA, 1)
@@ -100,10 +105,11 @@ class TransformNode(JOVImageMultiple):
                 pA = cv2.flip(pA, 0)
                 sY = -sY
 
-            if sX != 1. or sY != 1.:
-                pA = image_scale(pA, (sX, sY), sample=sample, edge=edge)
-
             edge = EnumEdge[edge]
+            sample = EnumInterpolation[sample]
+            if sX != 1. or sY != 1.:
+                pA = image_scale(pA, (sX, sY), sample, edge)
+
             if offset[0] != 0. or offset[1] != 0.:
                 pA = image_translate(pA, offset, edge)
 
@@ -116,9 +122,10 @@ class TransformNode(JOVImageMultiple):
                 pA = image_mirror(pA, mirror, mpx, mpy)
 
             tx, ty = tile_xy
+            h, w = pA.shape[:2]
             if (tx := int(tx)) > 1 or (ty := int(ty)) > 1:
                 pA = image_edge_wrap(pA, tx / 2 - 0.5, ty / 2 - 0.5)
-                pA = image_scalefit(pA, w, h, mode=EnumScaleMode.FIT)
+                pA = image_scalefit(pA, w, h, EnumScaleMode.FIT, sample, matte)
 
             proj = EnumProjection[proj]
             match proj:
@@ -137,13 +144,12 @@ class TransformNode(JOVImageMultiple):
                     pA = remap_polar(pA)
 
             if proj != EnumProjection.NORMAL:
-                pA = image_scalefit(pA, w, h, mode=EnumScaleMode.FIT)
+                pA = image_scalefit(pA, w, h, EnumScaleMode.FIT, sample, matte)
 
             mode = EnumScaleMode[mode]
             if mode != EnumScaleMode.NONE:
                 w, h = wihi
-                sample = EnumInterpolation[sample]
-                pA = image_scalefit(pA, w, h, mode, sample)
+                pA = image_scalefit(pA, w, h, mode, sample, matte)
 
             pA = cv2tensor_full(pA, matte)
             images.append(pA)
@@ -159,11 +165,14 @@ class BlendNode(JOVImageMultiple):
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {"optional": {
+            Lexicon.PIXEL_A: (WILDCARD, {"tooltip": "Background Plate"}),
+            Lexicon.PIXEL_B: (WILDCARD, {"tooltip": "Image to Overlay on Background Plate"}),
+            Lexicon.MASK: (WILDCARD, {"tooltip": "Optional Mask to use for Alpha Blend Operation. If empty, will use the ALPHA of B."}),
             Lexicon.FUNC: (EnumBlendType._member_names_, {"default": EnumBlendType.NORMAL.name, "tooltip": "Blending Operation"}),
             Lexicon.A: ("FLOAT", {"default": 1, "min": 0, "max": 1, "step": 0.01, "tooltip": "Amount of Blending to Perform on the Selected Operation"}),
             Lexicon.FLIP: ("BOOLEAN", {"default": False}),
         }}
-        d = deep_merge_dict(IT_REQUIRED, IT_PIXEL2_MASK, d, IT_INVERT, IT_WHMODE)
+        d = deep_merge_dict(IT_REQUIRED, d, IT_INVERT, IT_WHMODE)
         return Lexicon._parse(d, JOV_HELP_URL + "/COMPOSE#-blend")
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
@@ -179,7 +188,7 @@ class BlendNode(JOVImageMultiple):
         mode = kw.get(Lexicon.MODE, [EnumScaleMode.NONE])
         wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
         sample = kw.get(Lexicon.SAMPLE, [EnumInterpolation.LANCZOS4])
-        matte = parse_tuple(Lexicon.MATTE, kw, default=(0, 0, 0), clip_min=0)
+        matte = parse_tuple(Lexicon.MATTE, kw, default=(0, 0, 0), clip_min=0, clip_max=255)
         invert = kw.get(Lexicon.INVERT, [False])
         params = [tuple(x) for x in zip_longest_fill(pA, pB, mask, func, alpha, flip, mode, wihi, sample, matte, invert)]
         images = []
@@ -189,12 +198,18 @@ class BlendNode(JOVImageMultiple):
             if flip:
                 pA, pB = pB, pA
 
-            pB = tensor2cv(pB)
+            if pB is None:
+                pB = channel_solid(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, (0,0,0,255), EnumImageType.BGRA)
+            else:
+                pB = tensor2cv(pB)
+
+            matte = pixel_eval(matte, EnumImageType.BGRA)
             if pA is None:
                 h, w = pB.shape[:2]
-                pA = channel_solid(w, h, matte)
+                pA = channel_solid(w, h, matte, chan=EnumImageType.BGRA)
             else:
                 pA = tensor2cv(pA)
+                pA = image_matte(pA, matte)
 
             if mask is None:
                 mask = image_mask(pB)
@@ -285,8 +300,7 @@ class StackNode(JOVImageMultiple):
     NAME = "STACK (JOV) ➕"
     CATEGORY = JOV_CATEGORY
     DESCRIPTION = "Union multiple images horizontal, vertical or in a grid."
-    INPUT_IS_LIST = False
-    OUTPUT_IS_LIST = (False, False,)
+    OUTPUT_IS_LIST = (False, False, False,)
     SORT = 55
 
     @classmethod
@@ -299,33 +313,24 @@ class StackNode(JOVImageMultiple):
         return Lexicon._parse(d, JOV_HELP_URL + "/COMPOSE#-stack")
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        pixels = kw.get(Lexicon.PIXEL, [None])
-        axis = kw.get(Lexicon.AXIS, EnumOrientation.GRID)
-        stride = kw.get(Lexicon.STEP, 0)
-        mode = kw.get(Lexicon.MODE,EnumScaleMode.NONE)
-        wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)[0]
-        sample = kw.get(Lexicon.SAMPLE, EnumInterpolation.LANCZOS4)
-        color = parse_tuple(Lexicon.MATTE, kw, default=(0, 0, 0), clip_min=0)[0]
-        color = pixel_eval(color)
-        images = []
-        for img in pixels:
-            img = tensor2cv(img)
-            img = image_convert(img, 4)
-            images.append(img)
-
+        pA = kw.get(Lexicon.PIXEL, None)
+        pA = [None] if pA is None else batch_extract(pA)
+        axis = kw.get(Lexicon.AXIS, [EnumOrientation.GRID])[0]
         axis = EnumOrientation[axis]
-        img, mask = image_stack(images, axis, stride, color)
-
+        stride = kw.get(Lexicon.STEP, [0])[0]
+        mode = kw.get(Lexicon.MODE, [EnumScaleMode.NONE])[0]
         mode = EnumScaleMode[mode]
+        wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), clip_min=1)[0]
+        sample = kw.get(Lexicon.SAMPLE, [EnumInterpolation.LANCZOS4])[0]
+        matte = parse_tuple(Lexicon.MATTE, kw, default=(0, 0, 0, 255), clip_min=0, clip_max=255)[0]
+        matte = pixel_eval(matte)
+        images = [tensor2cv(img) for img in pA]
+        print(len(images))
+        img = image_stack(images, axis, stride, matte)
+        w, h = wihi
         if mode != EnumScaleMode.NONE:
             sample = EnumInterpolation[sample]
-            w, h = wihi
             img = image_scalefit(img, w, h, mode, sample)
-
-        mask = image_mask(img)
-        img = img[:, :, :3]
-        matte = channel_solid(w, h, color)
-        img = image_blend(matte, img, mask)
         return cv2tensor_full(img, matte)
 
 class EnumCropMode(Enum):
