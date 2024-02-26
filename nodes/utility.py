@@ -26,14 +26,12 @@ from server import PromptServer
 import nodes
 
 from Jovimetrix import JOV_HELP_URL, ComfyAPIMessage, JOVBaseNode, TimedOutException, \
-    WILDCARD, ROOT, IT_REQUIRED, IT_WH, MIN_IMAGE_SIZE, IT_PIXEL, IT_PIXEL2
+    WILDCARD, ROOT, MIN_IMAGE_SIZE
 
 from Jovimetrix.sup.lexicon import Lexicon
-from Jovimetrix.sup.util import path_next, deep_merge_dict, parse_tuple, \
-    zip_longest_fill
-from Jovimetrix.sup.image import batch_extract, cv2tensor, cv2tensor_full, \
-    image_convert, tensor2pil, tensor2cv, \
-    pil2tensor, image_load, image_formats, image_diff
+from Jovimetrix.sup.util import path_next, parse_tuple, zip_longest_fill
+from Jovimetrix.sup.image import batch_extract, cv2tensor, image_convert, \
+    tensor2pil, tensor2cv, pil2tensor, image_load, image_formats, image_diff
 
 # =============================================================================
 
@@ -71,10 +69,11 @@ class AkashicNode(JOVBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {"optional": {
+        d = {
+        "required": {},
+        "optional": {
             Lexicon.PASS_IN: (WILDCARD, {})
         }}
-        d = deep_merge_dict(IT_REQUIRED, d)
         return Lexicon._parse(d, JOV_HELP_URL + "/UTILITY#-akashic")
 
     def __parse(self, val) -> dict[str, list[Any]]:
@@ -137,11 +136,13 @@ class ValueGraphNode(JOVBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {"optional": {
+        d = {
+        "required": {},
+        "optional": {
             Lexicon.RESET: ("BOOLEAN", {"default": False}),
-            Lexicon.VALUE: ("INT", {"default": 120, "min": 0})
+            Lexicon.VALUE: ("INT", {"default": 120, "min": 0}),
+            Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), "step": 1, "label": [Lexicon.W, Lexicon.H]})
         }}
-        d = deep_merge_dict(IT_REQUIRED, d, IT_WH)
         return Lexicon._parse(d, JOV_HELP_URL + "/UTILITY#-value-graph")
 
     @classmethod
@@ -158,11 +159,9 @@ class ValueGraphNode(JOVBaseNode):
         self.__ax.set_title("VALUE HISTORY")
 
     def run(self, **kw) -> tuple[torch.Tensor]:
-
         reset = kw.get(Lexicon.RESET, False)
         try:
             data = ComfyAPIMessage.poll(id, timeout=0)
-            # logger.debug(data)
             if (cmd := data.get('cmd', None)) is not None:
                 if cmd == 'reset':
                     reset = True
@@ -220,10 +219,11 @@ class RouteNode(JOVBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {"optional": {
+        d = {
+        "required": {},
+        "optional": {
             Lexicon.PASS_IN: (WILDCARD, {})
         }}
-        d = deep_merge_dict(IT_REQUIRED, d)
         return Lexicon._parse(d, JOV_HELP_URL + "/UTILITY#-route")
 
     def run(self, **kw) -> tuple[Any, Any]:
@@ -243,7 +243,9 @@ class QueueNode(JOVBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {"optional": {
+        d = {
+        "required": {},
+        "optional": {
             Lexicon.QUEUE: ("STRING", {"multiline": True, "default": ""}),
             Lexicon.LOOP: ("INT", {"default": 0, "min": 0}),
             Lexicon.RANDOM: ("BOOLEAN", {"default": False}),
@@ -255,7 +257,6 @@ class QueueNode(JOVBaseNode):
         "hidden": {
             "id": "UNIQUE_ID"
         }}
-        d = deep_merge_dict(IT_REQUIRED, d)
         return Lexicon._parse(d, JOV_HELP_URL + "/UTILITY#-queue")
 
     @classmethod
@@ -415,7 +416,10 @@ class ExportNode(JOVBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {"optional": {
+        d = {
+        "required": {},
+        "optional": {
+            Lexicon.PIXEL: (WILDCARD, {}),
             Lexicon.PASS_OUT: ("STRING", {"default": get_output_directory()}),
             Lexicon.FORMAT: (FORMATS, {"default": FORMATS[0]}),
             Lexicon.PREFIX: ("STRING", {"default": ""}),
@@ -430,7 +434,6 @@ class ExportNode(JOVBaseNode):
             # GIF OR GIFSKI
             Lexicon.LOOP: ("INT", {"default": 0, "min": 0}),
         }}
-        d = deep_merge_dict(IT_REQUIRED, IT_PIXEL, d)
         return Lexicon._parse(d, JOV_HELP_URL + "/UTILITY#-export")
 
     def run(self, **kw) -> None:
@@ -516,10 +519,13 @@ class ImageDiffNode(JOVBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {"optional": {
-              Lexicon.THRESHOLD: ("FLOAT", {"default": 0.5, "min": 0, "max": 1, "step": 0.01},),
+        d = {
+        "required": {},
+        "optional": {
+            Lexicon.PIXEL_A: (WILDCARD, {}),
+            Lexicon.PIXEL_B: (WILDCARD, {}),
+            Lexicon.THRESHOLD: ("FLOAT", {"default": 0.5, "min": 0, "max": 1, "step": 0.01}),
         }}
-        d = deep_merge_dict(IT_REQUIRED, IT_PIXEL2, d)
         return Lexicon._parse(d, JOV_HELP_URL + "/UTILITY#-image-diff")
 
     def run(self, **kw) -> tuple[Any, Any]:

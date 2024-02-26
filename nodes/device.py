@@ -16,36 +16,29 @@ from enum import Enum
 
 import cv2
 import torch
-import numpy as np
 from loguru import logger
 
 import comfy
 
-from Jovimetrix import JOV_HELP_URL, JOVBaseNode, JOVImageMultiple, \
-    IT_PIXEL, IT_INVERT, IT_REQUIRED, MIN_IMAGE_SIZE
-
+from Jovimetrix import JOV_HELP_URL, WILDCARD, MIN_IMAGE_SIZE, JOVBaseNode, JOVImageMultiple
 from Jovimetrix.sup.lexicon import Lexicon
-
-from Jovimetrix.sup.util import deep_merge_dict, parse_tuple, parse_number, \
-    EnumTupleType
-
-from Jovimetrix.sup.stream import MediaStreamDevice, camera_list, monitor_list, window_list, \
+from Jovimetrix.sup.util import parse_tuple, parse_number, EnumTupleType
+from Jovimetrix.sup.stream import camera_list, monitor_list, window_list, \
     monitor_capture, window_capture, \
-    StreamingServer, StreamManager
+    StreamingServer, StreamManager, MediaStreamDevice
 
 from Jovimetrix.sup.midi import midi_device_names, \
     MIDIMessage, MIDINoteOnFilter, MIDIServerThread
 
 from Jovimetrix.sup.image import channel_solid, cv2tensor_full, \
     tensor2cv, image_scalefit, image_invert, \
-    EnumInterpolation, EnumScaleMode, \
-    IT_WHMODE, IT_SAMPLE, IT_SCALEMODE
+    EnumInterpolation, EnumScaleMode
+
+from Jovimetrix.sup.audio import AudioDevice
 
 # =============================================================================
 
 JOV_CATEGORY = "JOVIMETRIX 🔺🟩🔵/DEVICE"
-
-# =============================================================================
 
 class EnumCanvasOrientation(Enum):
     NORMAL = 0
@@ -78,9 +71,9 @@ class StreamReaderNode(JOVImageMultiple):
             window = [f"{v} - {k}" for k, v in window_list().items()]
         window_default = window[0] if len(window) else "NONE"
 
-        d = {"optional": {
+        d = {"required": {},
+             "optional": {
             Lexicon.SOURCE: (["URL", "CAMERA", "MONITOR", "WINDOW"], {"default": "URL"}),
-
             Lexicon.URL: ("STRING", {"default": "", "dynamicPrompts": False}),
             Lexicon.CAMERA: (cls.CAMERAS, {"default": camera_default}),
             Lexicon.MONITOR: (monitor, {"default": monitor[0]}),
@@ -92,8 +85,11 @@ class StreamReaderNode(JOVImageMultiple):
             Lexicon.BATCH: ("VEC2", {"default": (1, 30), "step": 1, "label": ["COUNT", "FPS"]}),
             Lexicon.ORIENT: (EnumCanvasOrientation._member_names_, {"default": EnumCanvasOrientation.NORMAL.name}),
             Lexicon.ZOOM: ("FLOAT", {"min": 0, "max": 1, "step": 0.005, "default": 0}),
+            Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
+            Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), "step": 1, "label": [Lexicon.W, Lexicon.H]}),
+            Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
+            Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
         }}
-        d = deep_merge_dict(IT_REQUIRED, d, IT_WHMODE, IT_SAMPLE)
         return Lexicon._parse(d, JOV_HELP_URL + "/DEVICE#-stream-reader")
 
     @classmethod
@@ -233,11 +229,16 @@ class StreamWriterNode(JOVBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {"optional": {
-                Lexicon.ROUTE: ("STRING", {"default": "/stream"}),
-                Lexicon.WH: ("VEC2", {"default": (640, 480), "step": 1, "label": [Lexicon.W, Lexicon.H]})
-            }}
-        d = deep_merge_dict(IT_REQUIRED, IT_PIXEL, d, IT_SCALEMODE, IT_SAMPLE, IT_INVERT)
+        d = {
+        "required": {} ,
+        "optional": {
+            Lexicon.PIXEL: (WILDCARD, {}),
+            Lexicon.ROUTE: ("STRING", {"default": "/stream"}),
+            Lexicon.WH: ("VEC2", {"default": (640, 480), "step": 1, "label": [Lexicon.W, Lexicon.H]}),
+            Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
+            Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
+            Lexicon.INVERT: ("BOOLEAN", {"default": False, "tooltip": "Invert the mask input"})
+        }}
         return Lexicon._parse(d, JOV_HELP_URL + "/DEVICE#-stream-writer")
 
     def __init__(self, *arg, **kw) -> None:
@@ -294,10 +295,11 @@ class MIDIMessageNode(JOVBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {"optional": {
+        d = {
+            "required": {} ,
+            "optional": {
             Lexicon.MIDI: ('JMIDIMSG', {"default": None})
         }}
-        d = deep_merge_dict(IT_REQUIRED, d)
         return Lexicon._parse(d, JOV_HELP_URL + "/DEVICE#-midi-message")
 
     def run(self, **kw) -> tuple[object, bool, int, int, int, float, float]:
@@ -318,10 +320,11 @@ class MIDIReaderNode(JOVBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {"optional": {
+        d = {
+            "required": {} ,
+            "optional": {
             Lexicon.DEVICE : (cls.DEVICES, {"default": cls.DEVICES[0] if len(cls.DEVICES) > 0 else None})
         }}
-        d = deep_merge_dict(IT_REQUIRED, d)
         return Lexicon._parse(d, JOV_HELP_URL + "/DEVICE#-midi-reader")
 
     @classmethod
@@ -384,7 +387,9 @@ class MIDIFilterEZNode(JOVBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {"optional": {
+        d = {
+            "required": {} ,
+            "optional": {
             Lexicon.MIDI: ('JMIDIMSG', {"default": None}),
             Lexicon.MODE: (MIDINoteOnFilter._member_names_, {"default": MIDINoteOnFilter.IGNORE.name}),
             Lexicon.CHANNEL: ("INT", {"default": -1, "min": -1, "max": 127, "step": 1}),
@@ -393,7 +398,6 @@ class MIDIFilterEZNode(JOVBaseNode):
             Lexicon.VALUE: ("INT", {"default": -1, "min": -1, "max": 127, "step": 1}),
             Lexicon.NORMALIZE: ("FLOAT", {"default": -1, "min": -1, "max": 1, "step": 0.01})
         }}
-        d = deep_merge_dict(IT_REQUIRED, d)
         return Lexicon._parse(d, JOV_HELP_URL + "/DEVICE#-midi-filter-ez")
 
     def run(self, **kw) -> tuple[bool]:
@@ -433,7 +437,9 @@ class MIDIFilterNode(JOVBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {"optional": {
+        d = {
+            "required": {} ,
+            "optional": {
             Lexicon.MIDI: ('JMIDIMSG', {"default": None}),
             Lexicon.ON: (MIDINoteOnFilter._member_names_, {"default": MIDINoteOnFilter.IGNORE.name}),
             Lexicon.CHANNEL: ("STRING", {"default": ""}),
@@ -442,7 +448,6 @@ class MIDIFilterNode(JOVBaseNode):
             Lexicon.VALUE: ("STRING", {"default": ""}),
             Lexicon.NORMALIZE: ("STRING", {"default": ""})
         }}
-        d = deep_merge_dict(IT_REQUIRED, d)
         return Lexicon._parse(d, JOV_HELP_URL + "/DEVICE#-midi-filter")
 
     def __filter(self, data: str, value: float) -> bool:
@@ -504,3 +509,34 @@ class MIDIFilterNode(JOVBaseNode):
         if self.__filter(kw[Lexicon.NORMALIZE], message.normal) == False:
             return (message, False, )
         return (message, True, )
+
+class AudioDeviceNode(JOVBaseNode):
+    NAME = "AUDIO DEVICE (JOV) 📺"
+    CATEGORY = JOV_CATEGORY
+    DESCRIPTION = "Stream from System audio devices into ComfyUI workflows"
+    INPUT_IS_LIST = False
+    OUTPUT_IS_LIST = (False,)
+    RETURN_TYPES = ('WAVE',)
+    RETURN_NAMES = (Lexicon.WAVE,)
+    SORT = 90
+
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        dev = AudioDevice()
+        dev_list = list(dev.devices.keys())
+        d = {
+            "required": {} ,
+            "optional": {
+            Lexicon.DEVICE: (dev_list, {"default": next(iter(dev_list))}),
+            Lexicon.TRIGGER: ("BOOLEAN", {"default": True, "tooltip":"Auto-record when executed by the Q"}),
+            Lexicon.RECORD: ("BOOLEAN", {"default": True, "tooltip":"Control to manually adjust when the selected device is recording"}),
+        }}
+        return Lexicon._parse(d, JOV_HELP_URL + "/DEVICE#-audio_device")
+
+    @classmethod
+    def IS_CHANGED(cls, **kw) -> float:
+        return float("nan")
+
+    def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
+        wave = None
+        return wave

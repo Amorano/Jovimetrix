@@ -17,6 +17,7 @@ import mss
 import mss.tools
 import numpy as np
 from PIL import Image, ImageGrab
+
 from loguru import logger
 
 from Jovimetrix import Singleton, MIN_IMAGE_SIZE

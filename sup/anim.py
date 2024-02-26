@@ -5,10 +5,9 @@ Animation Support
 
 import math
 from enum import Enum
-from typing import Optional
 
 import numpy as np
-
+from loguru import logger
 
 __all__ = ["Ease", "Wave"]
 

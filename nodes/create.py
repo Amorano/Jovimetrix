@@ -3,9 +3,6 @@ Jovimetrix - http://www.github.com/amorano/jovimetrix
 Creation
 """
 
-from re import X
-from typing import Any
-
 import torch
 from PIL import ImageFont
 
@@ -14,21 +11,18 @@ from loguru import logger
 import comfy
 # from server import PromptServer
 
-from Jovimetrix import IT_TRANS, JOVImageSimple, JOVImageMultiple, \
-    JOV_HELP_URL, IT_RGBA_A, IT_DEPTH, IT_PIXEL, IT_WH, IT_SCALE, \
-    IT_ROT, IT_INVERT, IT_REQUIRED, MIN_IMAGE_SIZE
+from Jovimetrix import WILDCARD, JOVImageSimple, JOVImageMultiple, \
+    JOV_HELP_URL, MIN_IMAGE_SIZE
 
 from Jovimetrix.sup.lexicon import Lexicon
 
-from Jovimetrix.sup.util import deep_merge_dict, parse_tuple, \
+from Jovimetrix.sup.util import parse_tuple, \
     parse_number, zip_longest_fill, EnumTupleType
 
-from Jovimetrix.sup.image import channel_solid, cv2tensor_full, image_grayscale,  \
-    image_mask_add, image_rotate, image_stereogram, image_translate, pil2cv, \
-    pixel_eval, tensor2cv, shape_ellipse, shape_polygon, \
-    shape_quad, \
-    EnumEdge, EnumImageType, \
-    IT_EDGE
+from Jovimetrix.sup.image import batch_extract, channel_solid, cv2tensor_full, \
+    image_grayscale, image_mask_add, image_matte, image_rotate, image_stereogram, \
+    image_translate, pil2cv, pixel_eval, tensor2cv, shape_ellipse, shape_polygon, \
+    shape_quad, EnumEdge, EnumImageType
 
 from Jovimetrix.sup.text import font_all, font_all_names, text_autosize, text_draw, \
     EnumAlignment, EnumJustify, EnumShapes
@@ -46,19 +40,30 @@ class ConstantNode(JOVImageMultiple):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = deep_merge_dict(IT_REQUIRED, IT_WH, IT_RGBA_A)
+        d = {
+        "required": {},
+        "optional": {
+            Lexicon.PIXEL: (WILDCARD, {}),
+            Lexicon.RGBA_A: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True}),
+            Lexicon.WH: ("VEC2", {"default": (512, 512), "step": 1, "label": [Lexicon.W, Lexicon.H]})
+        }}
         return Lexicon._parse(d, JOV_HELP_URL + "/CREATE#-constant")
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
+        pA = kw.get(Lexicon.PIXEL, None)
+        pA = [None] if pA is None else batch_extract(pA)
         wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
-        color = parse_tuple(Lexicon.RGBA_A, kw, default=(0, 0, 0, 255), clip_min=0, clip_max=255)
+        matte = parse_tuple(Lexicon.RGBA_A, kw, default=(0, 0, 0, 255), clip_min=0, clip_max=255)
         images = []
-        params = [tuple(x) for x in zip_longest_fill(wihi, color)]
+        params = [tuple(x) for x in zip_longest_fill(pA, wihi, matte)]
         pbar = comfy.utils.ProgressBar(len(params))
-        for idx, (wihi, color) in enumerate(params):
+        for idx, (pA, wihi, matte) in enumerate(params):
             width, height = wihi
-            color = pixel_eval(color, EnumImageType.BGRA)
-            img = channel_solid(width, height, color, EnumImageType.BGRA)
+            matte = pixel_eval(matte, EnumImageType.BGRA)
+            if pA is not None:
+                img = image_matte(img, matte)
+            else:
+                img = channel_solid(width, height, matte, EnumImageType.BGRA)
             img = cv2tensor_full(img)
             images.append(img)
             pbar.update_absolute(idx)
@@ -71,13 +76,18 @@ class ShapeNode(JOVImageMultiple):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {"optional": {
+        d = {
+        "required": {},
+        "optional": {
             Lexicon.SHAPE: (EnumShapes._member_names_, {"default": EnumShapes.CIRCLE.name}),
             Lexicon.SIDES: ("INT", {"default": 3, "min": 3, "max": 100, "step": 1}),
             Lexicon.RGBA_A: ("VEC4", {"default": (255, 255, 255, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True, "tooltip": "Main Shape Color"}),
-            Lexicon.RGB_B: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True, "tooltip": "Background Color"})
+            Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True, "tooltip": "Background Color"}),
+            Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), "step": 1, "label": [Lexicon.W, Lexicon.H]}),
+            Lexicon.ANGLE: ("FLOAT", {"default": 0, "min": -180, "max": 180, "step": 0.01, "precision": 4, "round": 0.00001}),
+            Lexicon.SIZE: ("VEC2", {"default": (1., 1.), "step": 0.01, "precision": 4, "round": 0.00001, "label": [Lexicon.X, Lexicon.Y]}),
+            Lexicon.EDGE: (EnumEdge._member_names_, {"default": EnumEdge.CLIP.name}),
         }}
-        d = deep_merge_dict(IT_REQUIRED, d, IT_WH, IT_ROT, IT_SCALE, IT_EDGE)
         d = Lexicon._parse(d, JOV_HELP_URL + "/CREATE#-shape-generator")
         return d
 
@@ -89,34 +99,34 @@ class ShapeNode(JOVImageMultiple):
         size = parse_tuple(Lexicon.SIZE, kw, EnumTupleType.FLOAT, default=(1., 1.,))
         wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,))
         color = parse_tuple(Lexicon.RGBA_A, kw, default=(255, 255, 255, 255))
-        bgcolor = parse_tuple(Lexicon.RGB_B, kw, default=(0, 0, 0, 255))
-        params = [tuple(x) for x in zip_longest_fill(shape, sides, angle, edge, size, wihi, color, bgcolor)]
+        matte = parse_tuple(Lexicon.MATTE, kw, default=(0, 0, 0, 255))
+        params = [tuple(x) for x in zip_longest_fill(shape, sides, angle, edge, size, wihi, color, matte)]
         images = []
         pbar = comfy.utils.ProgressBar(len(params))
-        for idx, (shape, sides, angle, edge, size, wihi, color, bgcolor) in enumerate(params):
+        for idx, (shape, sides, angle, edge, size, wihi, color, matte) in enumerate(params):
             width, height = wihi
             sizeX, sizeY = size
             edge = EnumEdge[edge]
             shape = EnumShapes[shape]
             match shape:
                 case EnumShapes.SQUARE:
-                    img = shape_quad(width, height, sizeX, sizeX, fill=color, back=bgcolor)
+                    img = shape_quad(width, height, sizeX, sizeX, fill=color, back=matte)
                     mask = shape_quad(width, height, sizeX, sizeX, fill=color[3])
 
                 case EnumShapes.ELLIPSE:
-                    img = shape_ellipse(width, height, sizeX, sizeY, fill=color, back=bgcolor)
+                    img = shape_ellipse(width, height, sizeX, sizeY, fill=color, back=matte)
                     mask = shape_ellipse(width, height, sizeX, sizeY, fill=color[3])
 
                 case EnumShapes.RECTANGLE:
-                    img = shape_quad(width, height, sizeX, sizeY, fill=color, back=bgcolor)
+                    img = shape_quad(width, height, sizeX, sizeY, fill=color, back=matte)
                     mask = shape_quad(width, height, sizeX, sizeY, fill=color[3])
 
                 case EnumShapes.POLYGON:
-                    img = shape_polygon(width, height, sizeX, sides, fill=color, back=bgcolor)
+                    img = shape_polygon(width, height, sizeX, sides, fill=color, back=matte)
                     mask = shape_polygon(width, height, sizeX, sides, fill=color[3])
 
                 case EnumShapes.CIRCLE:
-                    img = shape_ellipse(width, height, sizeX, sizeX, fill=color, back=bgcolor)
+                    img = shape_ellipse(width, height, sizeX, sizeX, fill=color, back=matte)
                     mask = shape_ellipse(width, height, sizeX, sizeX, fill=color[3])
 
             img = pil2cv(img)
@@ -124,8 +134,8 @@ class ShapeNode(JOVImageMultiple):
             mask = image_grayscale(mask)
             img = image_mask_add(img, mask)
             img = image_rotate(img, angle, edge=edge)
-            bgcolor = pixel_eval(bgcolor)
-            img = cv2tensor_full(img, bgcolor)
+            matte = pixel_eval(matte, EnumImageType.BGRA)
+            img = cv2tensor_full(img, matte)
             images.append(img)
             pbar.update_absolute(idx)
         return list(zip(*images))
@@ -140,13 +150,20 @@ class TextNode(JOVImageMultiple):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {"optional": {
-        Lexicon.STRING: ("STRING", {"default": "", "multiline": True, "dynamicPrompts": False, "tooltip": "Your Message"}),
+        d = {
+        "required": {},
+        "optional": {
+            Lexicon.STRING: ("STRING", {"default": "", "multiline": True,
+                                        "dynamicPrompts": False,
+                                        "tooltip": "Your Message"}),
             Lexicon.FONT: (cls.FONT_NAMES, {"default": cls.FONT_NAMES[0]}),
             Lexicon.LETTER: ("BOOLEAN", {"default": False}),
             Lexicon.AUTOSIZE: ("BOOLEAN", {"default": False}),
-            Lexicon.RGBA_A: ("VEC3", {"default": (255, 255, 255, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True, "tooltip": "Color of the letters"}),
-            Lexicon.MATTE: ("VEC3", {"default": (0, 0, 0), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B], "rgb": True}),
+            Lexicon.RGBA_A: ("VEC3", {"default": (255, 255, 255, 255), "step": 1,
+                                      "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A],
+                                      "rgb": True, "tooltip": "Color of the letters"}),
+            Lexicon.MATTE: ("VEC3", {"default": (0, 0, 0), "step": 1,
+                                     "label": [Lexicon.R, Lexicon.G, Lexicon.B], "rgb": True}),
             Lexicon.COLUMNS: ("INT", {"default": 0, "min": 0, "step": 1}),
             # if auto on, hide these...
             Lexicon.FONT_SIZE: ("INT", {"default": 100, "min": 1, "step": 1}),
@@ -154,8 +171,12 @@ class TextNode(JOVImageMultiple):
             Lexicon.JUSTIFY: (EnumJustify._member_names_, {"default": EnumJustify.CENTER.name}),
             Lexicon.MARGIN: ("INT", {"default": 0, "min": -1024, "max": 1024}),
             Lexicon.SPACING: ("INT", {"default": 25, "min": -1024, "max": 1024}),
+            Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), "step": 1, "label": [Lexicon.W, Lexicon.H]}),
+            Lexicon.XY: ("VEC2", {"default": (0, 0,), "step": 0.01, "precision": 4, "round": 0.00001, "label": [Lexicon.X, Lexicon.Y]}),
+            Lexicon.ANGLE: ("FLOAT", {"default": 0, "min": -180, "max": 180, "step": 0.01, "precision": 4, "round": 0.00001}),
+            Lexicon.EDGE: (EnumEdge._member_names_, {"default": EnumEdge.CLIP.name}),
+            Lexicon.INVERT: ("BOOLEAN", {"default": False, "tooltip": "Invert the mask input"})
         }}
-        d = deep_merge_dict(IT_REQUIRED, d, IT_WH, IT_TRANS, IT_ROT, IT_EDGE, IT_INVERT)
         return Lexicon._parse(d, JOV_HELP_URL + "/CREATE#-text-generator")
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
@@ -228,13 +249,16 @@ class StereogramNode(JOVImageSimple):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {"optional": {
-                Lexicon.TILE: ("INT", {"default": 8, "min": 1}),
-                Lexicon.NOISE: ("FLOAT", {"default": 0.33, "min": 0, "max": 1, "step": 0.01}),
-                Lexicon.GAMMA: ("FLOAT", {"default": 0.33, "min": 0, "max": 1, "step": 0.01}),
-                Lexicon.SHIFT: ("FLOAT", {"default": 1., "min": -1, "max": 1, "step": 0.01}),
+        d = {
+        "required": {},
+        "optional": {
+            Lexicon.PIXEL: (WILDCARD, {}),
+            Lexicon.DEPTH: (WILDCARD, {}),
+            Lexicon.TILE: ("INT", {"default": 8, "min": 1}),
+            Lexicon.NOISE: ("FLOAT", {"default": 0.33, "min": 0, "max": 1, "step": 0.01}),
+            Lexicon.GAMMA: ("FLOAT", {"default": 0.33, "min": 0, "max": 1, "step": 0.01}),
+            Lexicon.SHIFT: ("FLOAT", {"default": 1., "min": -1, "max": 1, "step": 0.01}),
         }}
-        d = deep_merge_dict(IT_REQUIRED, IT_PIXEL, IT_DEPTH, d)
         return Lexicon._parse(d, JOV_HELP_URL + "/CREATE#-stereogram")
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:

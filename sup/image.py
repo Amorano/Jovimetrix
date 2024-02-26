@@ -15,6 +15,7 @@ import cv2
 import torch
 import numpy as np
 import scipy as sp
+from sklearn.cluster import MiniBatchKMeans
 
 from skimage import exposure
 from skimage.metrics import structural_similarity as ssim
@@ -23,9 +24,8 @@ from blendmodes.blend import blendLayers, BlendType
 
 from loguru import logger
 
-from Jovimetrix import TYPE_IMAGE, TYPE_PIXEL, TYPE_COORD, IT_WH, MIN_IMAGE_SIZE
-from Jovimetrix.sup.lexicon import Lexicon
-from Jovimetrix.sup.util import grid_make, deep_merge_dict
+from Jovimetrix import TYPE_IMAGE, TYPE_PIXEL, TYPE_COORD, MIN_IMAGE_SIZE
+from Jovimetrix.sup.util import grid_make
 
 # =============================================================================
 # === ENUM GLOBALS ===
@@ -204,28 +204,6 @@ class EnumThresholdAdapt(Enum):
     ADAPT_NONE = -1
     ADAPT_MEAN = cv2.ADAPTIVE_THRESH_MEAN_C
     ADAPT_GAUSS = cv2.ADAPTIVE_THRESH_GAUSSIAN_C
-
-# =============================================================================
-# === NODE SUPPORT ===
-# =============================================================================
-
-IT_EDGE = {"optional": {
-    Lexicon.EDGE: (EnumEdge._member_names_, {"default": EnumEdge.CLIP.name}),
-}}
-
-IT_SCALEMODE = {"optional": {
-    Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
-}}
-
-IT_SAMPLE = {"optional": {
-    Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
-}}
-
-IT_MATTE = {"optional": {
-    Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
-}}
-
-IT_WHMODE = deep_merge_dict(IT_SCALEMODE, IT_WH, IT_SAMPLE, IT_MATTE)
 
 # =============================================================================
 # === CONVERSION ===
@@ -476,6 +454,16 @@ def pixel_hsv_adjust(color:TYPE_PIXEL, hue:int=0, saturation:int=0, value:int=0,
     hsv[2] = (color[2] + value) % 255 if mod_value else np.clip(color[2] + value, 0, 255)
     return hsv
 
+def pixel_convert(color:TYPE_PIXEL, size:int=4, alpha:int=255) -> TYPE_PIXEL:
+    """Convert X channel pixel into Y channel pixel."""
+    if (cc := len(color)) == size:
+        return color
+    if size > 2:
+        color += (0,) * (3 - cc)
+        if size == 4:
+            color += (alpha,)
+        return color
+    return color[0]
 # =============================================================================
 # === CHANNEL ===
 # =============================================================================
@@ -1118,30 +1106,25 @@ def image_stack(images: list[TYPE_IMAGE], axis:EnumOrientation=EnumOrientation.H
 
     images = [image_matte(image_convert(i, 4), matte, width, height) for i in stack]
     count = len(images)
+    matte = pixel_convert(matte, 4)
     match axis:
         case EnumOrientation.GRID:
-            if stride == 0:
+            if stride < 1:
                 stride = np.ceil(np.sqrt(count))
                 stride = int(stride)
             stride = min(stride, count)
 
             rows = []
             for i in range(0, count, stride):
-                row = images[i:i+stride]
+                row = images[i:i + stride]
                 row_stacked = np.hstack(row)
                 rows.append(row_stacked)
 
             height, width = images[0].shape[:2]
             overhang = count % stride
-
             if overhang != 0:
                 overhang = stride - overhang
-
-                chan = 1
-                if len(rows[0].shape) > 2:
-                    chan = rows[0].shape[2]
-
-                size = (height, overhang * width, chan)
+                size = (height, overhang * width, 4)
                 filler = np.full(size, matte, dtype=np.uint8)
                 rows[-1] = np.hstack([rows[-1], filler])
             image = np.vstack(rows)
@@ -1290,18 +1273,33 @@ def kernel(stride: int) -> TYPE_IMAGE:
 # === COLOR FUNCTIONS ===
 # =============================================================================
 
-def color_lut_from_image(image: TYPE_IMAGE, num_colors:int=256) -> TYPE_IMAGE:
+def color_image2lut(image: TYPE_IMAGE, num_colors:int=256) -> np.ndarray[np.uint8]:
     """Create X sized LUT from an RGB image."""
-    image = cv2.resize(image, (num_colors, 1))
-    return image.reshape(-1, 3).astype(np.uint8)
+    image = image_convert(image, 3)
+    lab = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
+    pixels = lab.reshape(-1, 3)
+    kmeans = MiniBatchKMeans(n_clusters=num_colors)
+    kmeans.fit(pixels)
+    colors = kmeans.cluster_centers_.astype(np.uint8)
+    lut = np.zeros((256, 1, 3), dtype=np.uint8)
+    for i, color in enumerate(colors):
+        lut[i] = color
+    return lut
 
-def color_match(image: TYPE_IMAGE, usermap: TYPE_IMAGE) -> TYPE_IMAGE:
+def color_match_histogram(image: TYPE_IMAGE, usermap: TYPE_IMAGE) -> TYPE_IMAGE:
     """Colorize one input based on the histogram matches."""
+    if (cc := channel_count(image)[0]) == 4:
+        alpha = image_mask(image)[:,:,0]
+    image = image_convert(image, 3)
     image = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
     beta = cv2.cvtColor(usermap, cv2.COLOR_BGR2LAB)
     image = exposure.match_histograms(image, beta, channel_axis=2)
     image = cv2.cvtColor(image, cv2.COLOR_LAB2BGR)
-    return image_blend(usermap, image, blendOp=BlendType.LUMINOSITY)
+    image = image_blend(usermap, image, blendOp=BlendType.LUMINOSITY)
+    image = image_convert(image, cc)
+    if cc == 4:
+        image[:,:,3] = alpha
+    return image
 
 def color_match_reinhard(image: TYPE_IMAGE, target: TYPE_IMAGE) -> TYPE_IMAGE:
     """Reinhard Color matching based on https://www.cs.tau.ac.il/~turkel/imagepapers/ColorTransfer."""
@@ -1314,37 +1312,22 @@ def color_match_reinhard(image: TYPE_IMAGE, target: TYPE_IMAGE) -> TYPE_IMAGE:
     lab_tar = cv2.convertScaleAbs(lab_ori*ratio + offset)
     return cv2.cvtColor(lab_tar, cv2.COLOR_Lab2BGR)
 
-def color_match_custom_map(image: TYPE_IMAGE,
-                   usermap: Optional[TYPE_IMAGE]=None,
-                   colormap: int=cv2.COLORMAP_JET) -> TYPE_IMAGE:
-    """Colorize one input based on custom GNU Octave/MATLAB map"""
-
+def color_match_lut(image: TYPE_IMAGE, colormap:int=cv2.COLORMAP_JET,
+                      usermap:TYPE_IMAGE=None, num_colors:int=255) -> TYPE_IMAGE:
+    """Colorize one input based on built in cv2 color maps or a user defined image."""
+    if (cc := channel_count(image)[0]) == 4:
+        alpha = image_mask(image)[:,:,0]
+    image = image_convert(image, 3)
     image = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
-    image = image[:, :, 1]
     if usermap is not None:
-        usermap = color_lut_from_image(usermap)
-        return cv2.applyColorMap(image, usermap)
-    return cv2.applyColorMap(image, colormap)
-
-def color_match_heat_map(image: TYPE_IMAGE,
-                  threshold:float=0.55,
-                  colormap:int=cv2.COLORMAP_JET,
-                  sigma:int=13) -> TYPE_IMAGE:
-    """Colorize one input based on custom GNU Octave/MATLAB map"""
-
-    threshold = min(1, max(0, threshold)) * 255
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
-    image = image[:, :, 1]
-    image = cv2.threshold(image, threshold, 255, cv2.THRESH_BINARY)[1]
-
-    sigma = max(3, sigma)
-    if sigma % 2 == 0:
-        sigma += 1
-    sigmaY = sigma - 2
-
-    image = cv2.GaussianBlur(image, (sigma, sigma), sigmaY)
+        usermap = image_convert(usermap, 3)
+    colormap = colormap if usermap is None else color_image2lut(usermap, num_colors)
     image = cv2.applyColorMap(image, colormap)
-    return cv2.addWeighted(image, 0.5, image, 0.5, 0)
+    image = cv2.addWeighted(image, 0.5, image, 0.5, 0)
+    image = image_convert(image, cc)
+    if cc == 4:
+        image[:,:,3] = alpha
+    return image
 
 def color_mean(image: TYPE_IMAGE) -> TYPE_IMAGE:
     color = [0, 0, 0]

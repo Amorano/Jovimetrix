@@ -11,12 +11,12 @@ from loguru import logger
 import comfy
 from server import PromptServer
 
-from Jovimetrix import JOV_HELP_URL, ComfyAPIMessage, JOVBaseNode, JOVImageMultiple, JOVImageSimple, TimedOutException, \
-    ROOT, IT_PIXEL, IT_REQUIRED, MIN_IMAGE_SIZE, IT_WH, JOV_GLSL
+from Jovimetrix import JOV_HELP_URL, WILDCARD, ComfyAPIMessage, \
+    JOVBaseNode, JOVImageMultiple, TimedOutException, \
+    ROOT, MIN_IMAGE_SIZE, JOV_GLSL
 
 from Jovimetrix.sup.lexicon import Lexicon
-from Jovimetrix.sup.util import deep_merge_dict, parse_tuple, \
-    parse_tuple_single, zip_longest_fill, EnumTupleType
+from Jovimetrix.sup.util import parse_tuple, parse_tuple_single, zip_longest_fill, EnumTupleType
 from Jovimetrix.sup.image import cv2tensor_full, pil2cv, pil2tensor, tensor2pil
 from Jovimetrix.sup.shader import GLSL, CompileException
 
@@ -41,7 +41,10 @@ class GLSLNode(JOVImageMultiple):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {"optional": {
+        d = {
+        "required": {},
+        "optional": {
+            Lexicon.PIXEL: (WILDCARD, {}),
             Lexicon.TIME: ("FLOAT", {"default": 0, "step": 0.0001, "min": 0, "precision": 6}),
             Lexicon.FPS: ("INT", {"default": 0, "step": 1, "min": 0, "max": 1000}),
             Lexicon.BATCH: ("INT", {"default": 1, "step": 1, "min": 1, "max": 36000}),
@@ -54,7 +57,6 @@ class GLSLNode(JOVImageMultiple):
         "hidden": {
             "id": "UNIQUE_ID"
         }}
-        d = deep_merge_dict(IT_REQUIRED, IT_PIXEL, d)
         return Lexicon._parse(d, JOV_HELP_URL + "/CREATE#-glsl")
 
     @classmethod
@@ -206,11 +208,13 @@ class GLSLSelectRange(GLSLBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {"optional": {
+        d = {
+        "required": {},
+        "optional": {
+            Lexicon.PIXEL: (WILDCARD, {}),
             Lexicon.START: ("VEC3", {"default": (0., 0., 0.), "step": 0.01, "precision": 4, "round": 0.00001, "label": [Lexicon.R, Lexicon.G, Lexicon.B]}),
             Lexicon.END: ("VEC3", {"default": (1., 1., 1.), "step": 0.01, "precision": 4, "round": 0.00001, "label": [Lexicon.R, Lexicon.G, Lexicon.B]}),
         }}
-        d = deep_merge_dict(IT_REQUIRED, IT_PIXEL, d)
         return Lexicon._parse(d, JOV_HELP_URL + "/CREATE#-glsl")
 
     def run(self, **kw) -> list[torch.Tensor]:
@@ -225,10 +229,12 @@ class GLSLColorGrayscale(GLSLBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {"optional": {
+        d = {
+        "required": {},
+        "optional": {
+            Lexicon.PIXEL: (WILDCARD, {}),
             Lexicon.RGB: ("VEC3", {"default": cls.DEFAULT, "step": 0.01, "precision": 4, "round": 0.00001, "label": [Lexicon.R, Lexicon.G, Lexicon.B]}),
         }}
-        d = deep_merge_dict(IT_REQUIRED, IT_PIXEL, d)
         return Lexicon._parse(d, JOV_HELP_URL + "/CREATE#-glsl")
 
     def run(self, **kw) -> list[torch.Tensor]:
@@ -252,13 +258,15 @@ class GLSLCreateNoise(GLSLBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {"optional": {
+        d = {
+        "required": {},
+        "optional": {
             Lexicon.TYPE: (EnumNoiseType._member_names_, {"default": EnumNoiseType.VALUE.name}),
             Lexicon.SEED: ("INT", {"default": 0, "step": 1}),
             Lexicon.TILE: ("VEC2", {"default": (1., 1.,), "step": 0.01, "precision": 4, "round": 0.00001, "label": [Lexicon.X, Lexicon.Y]}),
             Lexicon.WH: ("VEC2", {"default": (512, 512,), "step": 1}),
+            Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), "step": 1, "label": [Lexicon.W, Lexicon.H]})
         }}
-        d = deep_merge_dict(IT_REQUIRED, d, IT_WH)
         return Lexicon._parse(d, JOV_HELP_URL + "/CREATE#-glsl")
 
     def run(self, **kw) -> list[torch.Tensor]:
@@ -293,10 +301,12 @@ class GLSLCreatePattern(GLSLBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {"optional": {
+        d = {
+        "required": {},
+        "optional": {
             Lexicon.TYPE: (EnumPatternType._member_names_, {"default": EnumPatternType.CHECKER.name}),
+            Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), "step": 1, "label": [Lexicon.W, Lexicon.H]})
         }}
-        d = deep_merge_dict(IT_REQUIRED, d, IT_WH)
         return Lexicon._parse(d, JOV_HELP_URL + "/CREATE#-glsl")
 
     def run(self, **kw) -> list[torch.Tensor]:
@@ -314,11 +324,13 @@ class GLSLCreatePolygon(GLSLBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {"optional": {
+        d = {
+        "required": {},
+        "optional": {
             Lexicon.VALUE: ("INT", {"default": 3, "step": 1, "min": 3}),
             Lexicon.RADIUS: ("FLOAT", {"default": 1, "min": 0.01, "max": 4, "step": 0.01}),
+            Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), "step": 1, "label": [Lexicon.W, Lexicon.H]})
         }}
-        d = deep_merge_dict(IT_REQUIRED, d, IT_WH)
         return Lexicon._parse(d, JOV_HELP_URL + "/CREATE#-glsl")
 
     def run(self, **kw) -> list[torch.Tensor]:
@@ -336,11 +348,13 @@ class GLSLMap(GLSLBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {"optional": {
+        d = {
+        "required": {},
+        "optional": {
+            Lexicon.PIXEL: (WILDCARD, {}),
             Lexicon.TYPE: (EnumMappingType._member_names_, {"default": EnumMappingType.POLAR.name}),
             Lexicon.FLIP: ("BOOLEAN", {"default": False}),
         }}
-        d = deep_merge_dict(IT_REQUIRED, IT_PIXEL, d)
         return Lexicon._parse(d, JOV_HELP_URL + "/CREATE#-glsl")
 
     def run(self, **kw) -> list[torch.Tensor]:
@@ -364,11 +378,13 @@ class GLSLTRSMirror(GLSLBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {"optional": {
+        d = {
+        "required": {},
+        "optional": {
+            Lexicon.PIXEL: (WILDCARD, {}),
             Lexicon.ANGLE: ("FLOAT", {"default": 0, "step": 0.01}),
             Lexicon.PIVOT: ("VEC2", {"default": (0.5, 0.5), "step": 0.01, "precision": 4, "label": [Lexicon.X, Lexicon.Y]}),
         }}
-        d = deep_merge_dict(IT_REQUIRED, IT_PIXEL, d)
         return Lexicon._parse(d, JOV_HELP_URL + "/CREATE#-glsl")
 
     def run(self, **kw) -> list[torch.Tensor]:
@@ -383,11 +399,13 @@ class GLSLTRSRotate(GLSLBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {"optional": {
+        d = {
+        "required": {},
+        "optional": {
+            Lexicon.PIXEL: (WILDCARD, {}),
             Lexicon.ANGLE: ("FLOAT", {"default": 0, "step": 0.01}),
             Lexicon.PIVOT: ("VEC2", {"default": (0.5, 0.5), "step": 0.01, "precision": 4, "label": [Lexicon.X, Lexicon.Y]}),
         }}
-        d = deep_merge_dict(IT_REQUIRED, IT_PIXEL, d)
         return Lexicon._parse(d, JOV_HELP_URL + "/CREATE#-glsl")
 
     def run(self, **kw) -> list[torch.Tensor]:
@@ -402,11 +420,13 @@ class GLSLUtilTiler(GLSLBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {"optional": {
+        d = {
+        "required": {},
+        "optional": {
+            Lexicon.PIXEL: (WILDCARD, {}),
             "uTime": ("FLOAT", {"default": 0, "step": 0.01}),
             "uTile": ("VEC2", {"default": (1., 1., ), "step": 0.01, "precision": 4, "label": [Lexicon.X, Lexicon.Y]}),
         }}
-        d = deep_merge_dict(IT_REQUIRED, IT_PIXEL, d)
         return Lexicon._parse(d, JOV_HELP_URL + "/CREATE#-glsl")
 
     def run(self, **kw) -> list[torch.Tensor]:
@@ -433,13 +453,15 @@ class GLSLVFX(GLSLBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {"optional": {
+        d = {
+        "required": {},
+        "optional": {
+            Lexicon.PIXEL: (WILDCARD, {}),
             "radius": ("FLOAT", {"default": 2., "min": 0.0001, "step": 0.01}),
             "strength": ("FLOAT", {"default": 1., "min": 0., "step": 0.01}),
             "center": ("VEC2", {"default": (0.5, 0.5, ), "step": 0.01, "precision": 4, "label": [Lexicon.X, Lexicon.Y]}),
             Lexicon.TYPE: (EnumVFXType._member_names_, {"default": EnumVFXType.BULGE.name})
         }}
-        d = deep_merge_dict(IT_REQUIRED, IT_PIXEL, d)
         return Lexicon._parse(d, JOV_HELP_URL + "/CREATE#-glsl")
 
     def run(self, **kw) -> list[torch.Tensor]:

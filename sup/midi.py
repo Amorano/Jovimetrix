@@ -12,7 +12,7 @@ from loguru import logger
 
 try:
     import mido
-    from mido import Message, MetaMessage, MidiFile, MidiTrack, bpm2tempo, second2tick
+    from mido import Message, MetaMessage, MidiFile, MidiTrack, bpm2tempo
 except:
     logger.warning("MISSING MIDI SUPPORT")
 

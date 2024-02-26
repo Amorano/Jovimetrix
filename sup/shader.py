@@ -11,8 +11,6 @@ import numpy as np
 from PIL import Image
 from loguru import logger
 
-from Jovimetrix.sup.image import image_save_gif
-
 # =============================================================================
 
 MAX_WIDTH = 8192

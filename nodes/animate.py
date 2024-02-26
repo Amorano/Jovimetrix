@@ -9,9 +9,8 @@ from loguru import logger
 
 import comfy
 
-from Jovimetrix import JOV_HELP_URL, JOVBaseNode, IT_REQUIRED
+from Jovimetrix import JOV_HELP_URL, JOVBaseNode
 from Jovimetrix.sup.lexicon import Lexicon
-from Jovimetrix.sup.util import deep_merge_dict
 from Jovimetrix.sup import anim
 from Jovimetrix.sup.anim import EnumWaveSimple
 
@@ -34,7 +33,9 @@ class TickNode(JOVBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {"optional": {
+        d = {
+        "required": {},
+        "optional": {
             Lexicon.BPM: ("FLOAT", {"min": 1, "max": 60000, "default": 120, "step": 1}),
             # forces a MOD on CYCLE
             Lexicon.LOOP: ("INT", {"min": 0, "default": 0, "step": 1}),
@@ -43,7 +44,6 @@ class TickNode(JOVBaseNode):
             # manual total = 0
             Lexicon.RESET: ("BOOLEAN", {"default": False}),
         }}
-        d = deep_merge_dict(IT_REQUIRED, d)
         return Lexicon._parse(d, JOV_HELP_URL + "/ANIMATE#-tick")
 
     @classmethod
@@ -100,15 +100,16 @@ class WaveGeneratorNode(JOVBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {"optional":{
-                Lexicon.WAVE: (EnumWaveSimple._member_names_, {"default": EnumWaveSimple.SIN.name}),
-                Lexicon.FREQ: ("FLOAT", {"default": 1, "min": 0.0, "step": 0.01}),
-                Lexicon.AMP: ("FLOAT", {"default": 1, "min": 0.0, "step": 0.01}),
-                Lexicon.PHASE: ("FLOAT", {"default": 0, "min": 0.0, "step": 0.001}),
-                Lexicon.OFFSET: ("FLOAT", {"default": 0, "min": 0.0, "step": 0.001}),
-                Lexicon.TIME: ("FLOAT", {"default": 0, "min": 0, "step": 0.000001}),
-            }}
-        d = deep_merge_dict(IT_REQUIRED, d)
+        d = {
+        "required": {},
+        "optional": {
+            Lexicon.WAVE: (EnumWaveSimple._member_names_, {"default": EnumWaveSimple.SIN.name}),
+            Lexicon.FREQ: ("FLOAT", {"default": 1, "min": 0.0, "step": 0.01}),
+            Lexicon.AMP: ("FLOAT", {"default": 1, "min": 0.0, "step": 0.01}),
+            Lexicon.PHASE: ("FLOAT", {"default": 0, "min": 0.0, "step": 0.001}),
+            Lexicon.OFFSET: ("FLOAT", {"default": 0, "min": 0.0, "step": 0.001}),
+            Lexicon.TIME: ("FLOAT", {"default": 0, "min": 0, "step": 0.000001}),
+        }}
         return Lexicon._parse(d, JOV_HELP_URL + "/ANIMATE#-wave-generator")
 
     def run(self, **kw) -> tuple[float, int]:

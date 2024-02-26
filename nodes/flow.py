@@ -15,10 +15,10 @@ import comfy
 from server import PromptServer
 import nodes
 
-from Jovimetrix import JOV_HELP_URL, ComfyAPIMessage, JOVBaseNode, TimedOutException, \
-    IT_REQUIRED, IT_FLIP, WILDCARD
+from Jovimetrix import ComfyAPIMessage, JOVBaseNode, TimedOutException, \
+    JOV_HELP_URL, WILDCARD
 from Jovimetrix.sup.lexicon import Lexicon
-from Jovimetrix.sup.util import deep_merge_dict, zip_longest_fill, convert_parameter
+from Jovimetrix.sup.util import zip_longest_fill, convert_parameter
 
 # =============================================================================
 
@@ -72,7 +72,9 @@ class DelayNode(JOVBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {"optional": {
+        d = {
+        "required": {},
+        "optional": {
             Lexicon.PASS_IN: (WILDCARD, {"default": None}),
             Lexicon.TIMER: ("INT", {"step": 1, "default" : 0}),
             Lexicon.WAIT: ("BOOLEAN", {"default": False}),
@@ -80,7 +82,6 @@ class DelayNode(JOVBaseNode):
         "hidden": {
             "id": "UNIQUE_ID"
         }}
-        d = deep_merge_dict(IT_REQUIRED, d)
         return Lexicon._parse(d, JOV_HELP_URL + "/FLOW#-delay")
 
     @staticmethod
@@ -150,11 +151,12 @@ class HoldValueNode(JOVBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {"optional": {
+        d = {
+        "required": {},
+        "optional": {
             Lexicon.PASS_IN: (WILDCARD, {"default": None}),
             Lexicon.WAIT: ("BOOLEAN", {"default": False}),
         }}
-        d = deep_merge_dict(IT_REQUIRED, d)
         return Lexicon._parse(d, JOV_HELP_URL + "/FLOW#-hold")
 
     def __init__(self, *arg, **kw) -> None:
@@ -178,12 +180,14 @@ class ComparisonNode(JOVBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {"optional": {
+        d = {
+        "required": {},
+        "optional": {
             Lexicon.IN_A: (WILDCARD, {"default": None}),
             Lexicon.COMPARE: (EnumComparison._member_names_, {"default": EnumComparison.EQUAL.name}),
-            Lexicon.IN_B: (WILDCARD, {"default": None})
+            Lexicon.IN_B: (WILDCARD, {"default": None}),
+            Lexicon.FLIP: ("BOOLEAN", {"default": False}),
         }}
-        d = deep_merge_dict(IT_REQUIRED, d, IT_FLIP)
         return Lexicon._parse(d, JOV_HELP_URL + "/FLOW#-comparison")
 
     def run(self, **kw) -> tuple[bool]:
@@ -259,7 +263,9 @@ class SelectNode(JOVBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {"optional": {
+        d = {
+        "required": {},
+        "optional": {
             #  -1: Random; 0: Sequential; 1..N: explicitly use index
             Lexicon.SELECT: ("INT", {"default": 0, "min": -1, "step": 1}),
             Lexicon.RESET: ("BOOLEAN", {"default": False}),
@@ -267,7 +273,6 @@ class SelectNode(JOVBaseNode):
         "hidden": {
             "id": "UNIQUE_ID"
         }}
-        d = deep_merge_dict(IT_REQUIRED, d)
         return Lexicon._parse(d, JOV_HELP_URL + "/FLOW#-select")
 
     @classmethod
