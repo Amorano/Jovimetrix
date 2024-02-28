@@ -236,8 +236,8 @@ class QueueNode(JOVBaseNode):
     DESCRIPTION = "Cycle lists of images files or strings for node inputs."
     INPUT_IS_LIST = False
     RETURN_TYPES = (WILDCARD, WILDCARD, "STRING", "INT", "INT", )
-    RETURN_NAMES = (Lexicon.ANY, Lexicon.QUEUE, Lexicon.CURRENT, Lexicon.VALUE, Lexicon.TOTAL, )
-    OUTPUT_IS_LIST = (True, True, True, True, True, )
+    RETURN_NAMES = (Lexicon.ANY, Lexicon.QUEUE, Lexicon.CURRENT, Lexicon.INDEX, Lexicon.TOTAL, )
+    OUTPUT_IS_LIST = (True, True, False, False, False, )
     VIDEO_FORMATS = ['.webm', '.mp4', '.avi', '.wmv', '.mkv', '.mov', '.mxf']
     SORT = 0
 
@@ -405,7 +405,7 @@ class QueueNode(JOVBaseNode):
         self.__previous = data
         PromptServer.instance.send_sync("jovi-queue-ping", {"id": id, "c": current, "i": self.__index, "s": self.__len, "l": self.__q})
 
-        return [data] * batch, [self.__q] * batch, [current] * batch, [self.__index] * batch, [self.__len] * batch,
+        return [data] * batch, [self.__q] * batch, current, self.__index, self.__len,
 
 class ExportNode(JOVBaseNode):
     NAME = "EXPORT (JOV) 📽"

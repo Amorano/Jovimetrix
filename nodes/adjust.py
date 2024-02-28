@@ -45,27 +45,27 @@ class AdjustNode(JOVImageMultiple):
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {
-            "required": {},
-            "optional": {
-                Lexicon.PIXEL: (WILDCARD, {}),
-                Lexicon.MASK: (WILDCARD, {}),
-                Lexicon.FUNC: (EnumAdjustOP._member_names_, {"default": EnumAdjustOP.BLUR.name}),
-                Lexicon.RADIUS: ("INT", {"default": 3, "min": 3, "step": 1}),
-                Lexicon.VALUE: ("FLOAT", {"default": 1, "min": 0, "step": 0.1}),
-                Lexicon.LOHI: ("VEC2", {"default": (0, 1), "step": 0.01, "precision": 4,
-                                        "round": 0.00001, "label": [Lexicon.LO, Lexicon.HI]}),
-                Lexicon.LMH: ("VEC3", {"default": (0, 0.5, 1), "step": 0.01, "precision": 4,
-                                       "round": 0.00001, "label": [Lexicon.LO, Lexicon.MID, Lexicon.HI]}),
-                Lexicon.HSV: ("VEC3",{"default": (0, 1, 1), "step": 0.01, "precision": 4,
-                                      "round": 0.00001, "label": [Lexicon.H, Lexicon.S, Lexicon.V]}),
-                Lexicon.CONTRAST: ("FLOAT", {"default": 0, "min": 0, "max": 1, "step": 0.01,
-                                             "precision": 4, "round": 0.00001}),
-                Lexicon.GAMMA: ("FLOAT", {"default": 1, "min": 0.00001, "max": 1, "step": 0.01,
-                                          "precision": 4, "round": 0.00001}),
-                Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1,
-                                         "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True}),
-                Lexicon.INVERT: ("BOOLEAN", {"default": False, "tooltip": "Invert the mask input"})
-            }}
+        "required": {},
+        "optional": {
+            Lexicon.PIXEL: (WILDCARD, {}),
+            Lexicon.MASK: (WILDCARD, {}),
+            Lexicon.FUNC: (EnumAdjustOP._member_names_, {"default": EnumAdjustOP.BLUR.name}),
+            Lexicon.RADIUS: ("INT", {"default": 3, "min": 3, "step": 1}),
+            Lexicon.VALUE: ("FLOAT", {"default": 1, "min": 0, "step": 0.1}),
+            Lexicon.LOHI: ("VEC2", {"default": (0, 1), "step": 0.01, "precision": 4,
+                                    "round": 0.00001, "label": [Lexicon.LO, Lexicon.HI]}),
+            Lexicon.LMH: ("VEC3", {"default": (0, 0.5, 1), "step": 0.01, "precision": 4,
+                                    "round": 0.00001, "label": [Lexicon.LO, Lexicon.MID, Lexicon.HI]}),
+            Lexicon.HSV: ("VEC3",{"default": (0, 1, 1), "step": 0.01, "precision": 4,
+                                    "round": 0.00001, "label": [Lexicon.H, Lexicon.S, Lexicon.V]}),
+            Lexicon.CONTRAST: ("FLOAT", {"default": 0, "min": 0, "max": 1, "step": 0.01,
+                                            "precision": 4, "round": 0.00001}),
+            Lexicon.GAMMA: ("FLOAT", {"default": 1, "min": 0.00001, "max": 1, "step": 0.01,
+                                        "precision": 4, "round": 0.00001}),
+            Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1,
+                                        "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True}),
+            Lexicon.INVERT: ("BOOLEAN", {"default": False, "tooltip": "Invert the mask input"})
+        }}
         return Lexicon._parse(d, JOV_HELP_URL + "/ADJUST#-adjust")
 
     def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor]:
@@ -197,22 +197,22 @@ class ColorMatchNode(JOVImageMultiple):
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {
-            "required": {} ,
-            "optional": {
-                Lexicon.PIXEL_A: (WILDCARD, {}),
-                Lexicon.PIXEL_B: (WILDCARD, {}),
-                Lexicon.COLORMATCH_MODE: (EnumColorMatchMode._member_names_,
-                                          {"default": EnumColorMatchMode.REINHARD.name}),
-                Lexicon.COLORMATCH_MAP: (EnumColorMatchMap._member_names_,
-                                         {"default": EnumColorMatchMap.USER_MAP.name}),
-                Lexicon.COLORMAP: (EnumColorMap._member_names_,
-                                   {"default": EnumColorMap.HSV.name}),
-                Lexicon.VALUE: ("INT", {"default": 255, "min": 0, "max": 255}),
-                Lexicon.FLIP: ("BOOLEAN", {"default": False}),
-                Lexicon.INVERT: ("BOOLEAN", {"default": False,
-                                             "tooltip": "Invert the color match output"}),
-                Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1,
-                                         "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True}),
+        "required": {} ,
+        "optional": {
+            Lexicon.PIXEL_A: (WILDCARD, {}),
+            Lexicon.PIXEL_B: (WILDCARD, {}),
+            Lexicon.COLORMATCH_MODE: (EnumColorMatchMode._member_names_,
+                                        {"default": EnumColorMatchMode.REINHARD.name}),
+            Lexicon.COLORMATCH_MAP: (EnumColorMatchMap._member_names_,
+                                        {"default": EnumColorMatchMap.USER_MAP.name}),
+            Lexicon.COLORMAP: (EnumColorMap._member_names_,
+                                {"default": EnumColorMap.HSV.name}),
+            Lexicon.VALUE: ("INT", {"default": 255, "min": 0, "max": 255}),
+            Lexicon.FLIP: ("BOOLEAN", {"default": False}),
+            Lexicon.INVERT: ("BOOLEAN", {"default": False,
+                                            "tooltip": "Invert the color match output"}),
+            Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1,
+                                        "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True}),
         }}
         return Lexicon._parse(d, JOV_HELP_URL + "/ADJUST#-color-match")
 
@@ -235,16 +235,19 @@ class ColorMatchNode(JOVImageMultiple):
         for idx, (pA, pB, colormap, mode, cmap, num_colors, flip, invert, matte) in enumerate(params):
             if flip == True:
                 pA, pB = pB, pA
-            if pA is not None:
-                pA = tensor2cv(pA)
-            else:
+            if pA is None:
                 pA = channel_solid(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, chan=EnumImageType.BGRA)
+            else:
+                pA = tensor2cv(pA)
             h, w = pA.shape[:2]
-            if pB is None:
-                pB = channel_solid(w, h, chan=EnumImageType.BGRA)
 
             cmap = EnumColorMatchMap[cmap]
-            if cmap == EnumColorMatchMap.PRESET_MAP:
+            if cmap != EnumColorMatchMap.PRESET_MAP:
+                if pB is None:
+                    pB = channel_solid(w, h, chan=EnumImageType.BGRA)
+                else:
+                    pB = tensor2cv(pB)
+            else:
                 pB = None
 
             mode = EnumColorMatchMode[mode]
@@ -272,37 +275,37 @@ class ThresholdNode(JOVImageMultiple):
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {
-            "required": {} ,
-            "optional": {
-                Lexicon.PIXEL: (WILDCARD, {}),
-                Lexicon.ADAPT: ( EnumThresholdAdapt._member_names_,
-                                {"default": EnumThresholdAdapt.ADAPT_NONE.name}),
-                Lexicon.FUNC: ( EnumThreshold._member_names_, {"default": EnumThreshold.BINARY.name}),
-                Lexicon.THRESHOLD: ("FLOAT", {"default": 0.5, "min": 0, "max": 1, "step": 0.005}),
-                Lexicon.SIZE: ("INT", {"default": 3, "min": 3, "max": 103, "step": 1}),
-                Lexicon.INVERT: ("BOOLEAN", {"default": False, "tooltip": "Invert the mask input"})
-            }}
+        "required": {} ,
+        "optional": {
+            Lexicon.PIXEL: (WILDCARD, {}),
+            Lexicon.ADAPT: ( EnumThresholdAdapt._member_names_,
+                            {"default": EnumThresholdAdapt.ADAPT_NONE.name}),
+            Lexicon.FUNC: ( EnumThreshold._member_names_, {"default": EnumThreshold.BINARY.name}),
+            Lexicon.THRESHOLD: ("FLOAT", {"default": 0.5, "min": 0, "max": 1, "step": 0.005}),
+            Lexicon.SIZE: ("INT", {"default": 3, "min": 3, "max": 103, "step": 1}),
+            Lexicon.INVERT: ("BOOLEAN", {"default": False, "tooltip": "Invert the mask input"})
+        }}
         return Lexicon._parse(d, JOV_HELP_URL + "/ADJUST#-threshold")
 
     def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor]:
-        pA = kw.get(Lexicon.PIXEL_A, None)
+        pA = kw.get(Lexicon.PIXEL, None)
         pA = [None] if pA is None else batch_extract(pA)
-        op = kw.get(Lexicon.FUNC, [EnumThreshold.BINARY])
+        mode = kw.get(Lexicon.FUNC, [EnumThreshold.BINARY])
         adapt = kw.get(Lexicon.ADAPT, [EnumThresholdAdapt.ADAPT_NONE])
         threshold = parse_number(Lexicon.THRESHOLD, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
-        size = kw.get(Lexicon.SIZE, [3])
+        block = kw.get(Lexicon.SIZE, [3])
         invert = kw.get(Lexicon.INVERT, [False])
-        params = [tuple(x) for x in zip_longest_fill(pA, op, adapt, threshold, size, invert)]
+        params = [tuple(x) for x in zip_longest_fill(pA, mode, adapt, threshold, block, invert)]
         images = []
         pbar = comfy.utils.ProgressBar(len(params))
-        for idx, (pA, op, adapt, th, size, invert) in enumerate(params):
-            if pA is not None:
-                pA = tensor2cv(pA)
-            else:
+        for idx, (pA, mode, adapt, th, block, invert) in enumerate(params):
+            if pA is None:
                 pA = channel_solid(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE)
-            op = EnumThreshold[op]
+            else:
+                pA = tensor2cv(pA)
+            mode = EnumThreshold[mode]
             adapt = EnumThresholdAdapt[adapt]
-            pA = image_threshold(pA, threshold=th, mode=op, adapt=adapt, block=size, const=th)
+            pA = image_threshold(pA, th, mode, adapt, block)
             if invert == True:
                 pA = image_invert(pA, 1)
             images.append(cv2tensor_full(pA))

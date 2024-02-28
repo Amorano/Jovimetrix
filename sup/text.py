@@ -102,6 +102,39 @@ def text_draw(full_text: str, font: ImageFont, width:int, height:int, align:Enum
         y += max_height
     return pil2cv(img)
 
+
+"""
+def wrap_text_and_calculate_height(self, text, font, max_width, line_height):
+    wrapped_lines = []
+    # Split the input text by newline characters to respect manual line breaks
+    paragraphs = text.split('\n')
+
+    for paragraph in paragraphs:
+        words = paragraph.split()
+        current_line = words[0] if words else ''
+
+        for word in words[1:]:
+            # Test if adding a new word exceeds the max width
+            test_line = current_line + ' ' + word if current_line else word
+            test_line_bbox = font.getbbox(test_line)
+            w = test_line_bbox[2] - test_line_bbox[0]  # Right - Left for width
+            if w <= max_width:
+                current_line = test_line
+            else:
+                # If the current line plus the new word exceeds max width, wrap it
+                wrapped_lines.append(current_line)
+                current_line = word
+
+        # Don't forget to add the last line of the paragraph
+        wrapped_lines.append(current_line)
+
+    # Calculate the total height considering the custom line height
+    total_height = len(wrapped_lines) * line_height
+
+    wrapped_text = '\n'.join(wrapped_lines)
+    return wrapped_text, total_height
+"""
+
 def text_autosize(text:str, font:str, width:int, height:int, columns:int=0) -> tuple[str, int, int, int]:
     img = Image.new("L", (width, height))
     draw = ImageDraw.Draw(img)

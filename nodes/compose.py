@@ -438,8 +438,8 @@ class ColorTheoryNode(JOVImageMultiple):
         "optional": {
             Lexicon.PIXEL: (WILDCARD, {}),
             Lexicon.SCHEME: (EnumColorTheory._member_names_, {"default": EnumColorTheory.COMPLIMENTARY.name}),
-            Lexicon.VALUE: ("INT", {"default": 45, "min": -90, "max": 90, "step": 1}),
-            Lexicon.INVERT: ("BOOLEAN", {"default": False, "tooltip": "Invert the mask input"})
+            Lexicon.VALUE: ("INT", {"default": 45, "min": -90, "max": 90, "step": 1, "tooltip": "Custom angle of seperation to use when calculating colors"}),
+            Lexicon.INVERT: ("BOOLEAN", {"default": False})
         }}
         return Lexicon._parse(d, JOV_HELP_URL + "/COMPOSE#-color-theory")
 
@@ -447,15 +447,15 @@ class ColorTheoryNode(JOVImageMultiple):
         pixels = kw.get(Lexicon.PIXEL, [None])
         scheme = kw.get(Lexicon.SCHEME, [EnumColorTheory.COMPLIMENTARY])
         user = parse_number(Lexicon.VALUE, kw, EnumTupleType.INT, [0], clip_min=-180, clip_max=180)
-        i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
-        params = [tuple(x) for x in zip_longest_fill(pixels, scheme, user, i)]
+        invert = kw.get(Lexicon.INVERT, [False])
+        params = [tuple(x) for x in zip_longest_fill(pixels, scheme, user, invert)]
         images = []
         pbar = comfy.utils.ProgressBar(len(params))
-        for idx, (img, s, user, i) in enumerate(params):
+        for idx, (img, s, user, invert) in enumerate(params):
             img = tensor2cv(img)
-            stuff = color_theory(img, user, EnumColorTheory[s])
-            if i != 0:
-                stuff = (image_invert(s, i) for s in stuff)
-            images.append([cv2tensor(a) for a in stuff])
+            img = color_theory(img, user, EnumColorTheory[s])
+            if invert:
+                img = (image_invert(s, 1) for s in img)
+            images.append([cv2tensor(a) for a in img])
             pbar.update_absolute(idx)
         return list(zip(*images))

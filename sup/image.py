@@ -210,11 +210,7 @@ class EnumThresholdAdapt(Enum):
 # =============================================================================
 
 def batch_extract(batch: torch.Tensor) -> list[torch.Tensor]:
-    out = []
-    for img in batch:
-        for i in range(img.shape[0]):
-            out.append(img[i:i+1])
-    return out
+    return [img[i:i+1] for img in batch for i in range(img.shape[0])]
 
 def bgr2hsv(bgr_color: TYPE_PIXEL) -> TYPE_PIXEL:
     return cv2.cvtColor(np.uint8([[bgr_color]]), cv2.COLOR_BGR2HSV)[0, 0]
@@ -232,38 +228,15 @@ def b64_2_tensor(base64str: str) -> torch.Tensor:
     return pil2tensor(img)
 
 def cv2pil(image: TYPE_IMAGE, chan:EnumImageType=EnumImageType.RGBA) -> Image.Image:
-    """Convert a CV2 Matrix to a PIL Image."""
     if image is None:
         return channel_solid(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 0, chan)
-    cc = 1 if len(image.shape) < 3 else image.shape[2]
-    if chan == EnumImageType.RGBA:
-        if cc == 4:
-            image = cv2.cvtColor(image, cv2.COLOR_BGRA2RGBA)
-            return Image.fromarray(image.astype(np.uint8), mode='RGBA')
-        elif cc == 3:
-            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGBA)
-            return Image.fromarray(image.astype(np.uint8), mode='RGBA')
-        else:
-            image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGBA)
-            return Image.fromarray(image.astype(np.uint8), mode='RGBA')
-    elif chan == EnumImageType.RGB:
-        if cc == 4:
-            image = cv2.cvtColor(image, cv2.COLOR_BGRA2RGB)
-            return Image.fromarray(image.astype(np.uint8), mode='RGB')
-        elif cc == 3:
-            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-            return Image.fromarray(image.astype(np.uint8), mode='RGB')
-        else:
-            image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
-            return Image.fromarray(image.astype(np.uint8), mode='RGB')
-    elif chan == EnumImageType.GRAYSCALE:
-        if cc == 4:
-            image = cv2.cvtColor(image, cv2.COLOR_BGRA2GRAY)
-            return Image.fromarray(image.astype(np.uint8), mode='L')
-        elif cc == 3:
-            image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-            return Image.fromarray(image.astype(np.uint8), mode='L')
-    return Image.fromarray(image.astype(np.uint8), mode='L')
+    mode = cv2.COLOR_BGR2GRAY
+    if chan == EnumImageType.RGB:
+        mode = cv2.COLOR_BGR2RGBA
+    elif chan == EnumImageType.RGBA:
+        mode = cv2.COLOR_BGRA2RGBA
+    image = cv2.cvtColor(image, mode)
+    return Image.fromarray(image)
 
 def cv2tensor(image: TYPE_IMAGE) -> torch.Tensor:
     """Convert a CV2 Matrix to a Torch Tensor."""
@@ -851,6 +824,21 @@ def image_load_data(data: str) -> TYPE_IMAGE:
     #    img = channel_add(img)
     return img
 
+def image_load_exr(url: str) -> typle[TYPE_IMAGE, TYPE_IMAGE]:
+    exr_file     = OpenEXR.InputFile(url)
+    exr_header   = exr_file.header()
+    r,g,b = exr_file.channels("RGB", pixel_type=Imath.PixelType(Imath.PixelType.FLOAT) )
+
+    dw = exr_header[ "dataWindow" ]
+    w  = dw.max.x - dw.min.x + 1
+    h  = dw.max.y - dw.min.y + 1
+
+    image = np.ones( (h, w, 4), dtype = np.float32 )
+    image[:, :, 0] = np.core.multiarray.frombuffer( r, dtype = np.float32 ).reshape(h, w)
+    image[:, :, 1] = np.core.multiarray.frombuffer( g, dtype = np.float32 ).reshape(h, w)
+    image[:, :, 2] = np.core.multiarray.frombuffer( b, dtype = np.float32 ).reshape(h, w)
+    return create_optix_image_2D( w, h, image.flatten() )
+
 def image_load_from_url(url:str) -> TYPE_IMAGE:
     """Creates a CV2 BGR image from a url."""
     try:
@@ -1410,57 +1398,33 @@ def color_theory_tetrad_custom(color: TYPE_PIXEL, delta:int=0) -> tuple[TYPE_PIX
 
 def color_theory(image: TYPE_IMAGE, custom:int=0, scheme: EnumColorTheory=EnumColorTheory.COMPLIMENTARY) -> tuple[TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE]:
 
-    aR = aG = aB = bR = bG = bB = cR = cG = cB = dR = dG = dB = 0
+    b = c = d = [0,0,0]
     color = color_mean(image)
     match scheme:
         case EnumColorTheory.COMPLIMENTARY:
             a = color_theory_complementary(color)
-            aB, aG, aR = a
         case EnumColorTheory.MONOCHROMATIC:
             a, b, c, d = color_theory_monochromatic(color)
-            aB, aG, aR = a
-            bB, bG, bR = b
-            cB, cG, cR = c
-            dB, dG, dR = d
         case EnumColorTheory.SPLIT_COMPLIMENTARY:
             a, b = color_theory_split_complementary(color)
-            aB, aG, aR = a
-            bB, bG, bR = b
         case EnumColorTheory.ANALOGOUS:
             a, b, c, d = color_theory_analogous(color)
-            aB, aG, aR = a
-            bB, bG, bR = b
-            cB, cG, cR = c
-            dB, dG, dR = d
         case EnumColorTheory.TRIADIC:
             a, b = color_theory_triadic(color)
-            aB, aG, aR = a
-            bB, bG, bR = b
         case EnumColorTheory.SQUARE:
             a, b, c = color_theory_square(color)
-            aB, aG, aR = a
-            bB, bG, bR = b
-            cB, cG, cR = c
         case EnumColorTheory.COMPOUND:
             a, b, c = color_theory_compound(color)
-            aB, aG, aR = a
-            bB, bG, bR = b
-            cB, cG, cR = c
         case EnumColorTheory.CUSTOM_TETRAD:
             a, b, c, d = color_theory_tetrad_custom(color, custom)
-            aB, aG, aR = a
-            bB, bG, bR = b
-            cB, cG, cR = c
-            dB, dG, dR = d
 
     h, w = image.shape[:2]
-
     return (
-        np.full((h, w, 4), [aB, aG, aR, 255], dtype=np.uint8),
-        np.full((h, w, 4), [bB, bG, bR, 255], dtype=np.uint8),
-        np.full((h, w, 4), [cB, cG, cR, 255], dtype=np.uint8),
-        np.full((h, w, 4), [dB, dG, dR, 255], dtype=np.uint8),
-        np.full((h, w, 4), color + [255], dtype=np.uint8),
+        np.full((h, w, 3), color, dtype=np.uint8),
+        np.full((h, w, 3), a, dtype=np.uint8),
+        np.full((h, w, 3), b, dtype=np.uint8),
+        np.full((h, w, 3), c, dtype=np.uint8),
+        np.full((h, w, 3), d, dtype=np.uint8),
     )
 
 # =============================================================================

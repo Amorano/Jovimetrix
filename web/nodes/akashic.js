@@ -31,7 +31,8 @@ app.registerExtension({
             }
 
             let index = 0
-            if (message.text) {
+            console.debug("unknown message", message)
+            if (message.text && message.txt != "") {
                 for (const txt of message.text) {
                     const w = this.addCustomWidget(
                         JStringWidget(app, `${_prefix}_${index}`, escapeHtml(txt))
@@ -40,8 +41,7 @@ app.registerExtension({
                     index++
                 }
             }
-
-            if (message.b64_images) {
+            else if (message.b64_images) {
                 for (const img of message.b64_images) {
                     const w = this.addCustomWidget(
                         JImageWidget(app, `${_prefix}_${index}`, img)
@@ -49,6 +49,8 @@ app.registerExtension({
                     w.parent = this
                     index++
                 }
+            } else {
+                console.debug("unknown message", message)
             }
 
             fitHeight(this);

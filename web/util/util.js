@@ -100,8 +100,10 @@ export function node_add_dynamic(nodeType, prefix, type='*') {
                 const fromNode = this.graph._nodes.find(
                     (otherNode) => otherNode.id == link_info.origin_id
                 )
-                const old_type = fromNode.outputs[link_info.origin_slot].type
-                this.inputs[slot].type = old_type
+                if (fromNode) {
+                    const old_type = fromNode.outputs[link_info.origin_slot].type;
+                    this.inputs[slot].type = old_type;
+                }
             } else if (event === TypeSlotEvent.Disconnect) {
                 this.inputs[slot].type = type
                 this.inputs[slot].label = `${prefix}_${slot + 1}`

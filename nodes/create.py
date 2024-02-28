@@ -43,9 +43,9 @@ class ConstantNode(JOVImageMultiple):
         d = {
         "required": {},
         "optional": {
-            Lexicon.PIXEL: (WILDCARD, {}),
-            Lexicon.RGBA_A: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True}),
-            Lexicon.WH: ("VEC2", {"default": (512, 512), "step": 1, "label": [Lexicon.W, Lexicon.H]})
+            Lexicon.PIXEL: (WILDCARD, {"tooltip":"Optional Image to Matte with Selected Color"}),
+            Lexicon.RGBA_A: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True, "tooltip": "Constant Color to Output"}),
+            Lexicon.WH: ("VEC2", {"default": (512, 512), "step": 1, "label": [Lexicon.W, Lexicon.H], "tooltip": "Desired Width and Height of the Color Output"})
         }}
         return Lexicon._parse(d, JOV_HELP_URL + "/CREATE#-constant")
 
@@ -61,11 +61,11 @@ class ConstantNode(JOVImageMultiple):
             width, height = wihi
             matte = pixel_eval(matte, EnumImageType.BGRA)
             if pA is not None:
-                img = image_matte(img, matte)
+                pA = image_matte(pA, matte)
             else:
-                img = channel_solid(width, height, matte, EnumImageType.BGRA)
-            img = cv2tensor_full(img)
-            images.append(img)
+                pA = channel_solid(width, height, matte, EnumImageType.BGRA)
+            pA = cv2tensor_full(pA)
+            images.append(pA)
             pbar.update_absolute(idx)
         return list(zip(*images))
 
@@ -166,7 +166,7 @@ class TextNode(JOVImageMultiple):
                                      "label": [Lexicon.R, Lexicon.G, Lexicon.B], "rgb": True}),
             Lexicon.COLUMNS: ("INT", {"default": 0, "min": 0, "step": 1}),
             # if auto on, hide these...
-            Lexicon.FONT_SIZE: ("INT", {"default": 100, "min": 1, "step": 1}),
+            Lexicon.FONT_SIZE: ("INT", {"default": 16, "min": 1, "step": 1}),
             Lexicon.ALIGN: (EnumAlignment._member_names_, {"default": EnumAlignment.CENTER.name}),
             Lexicon.JUSTIFY: (EnumJustify._member_names_, {"default": EnumJustify.CENTER.name}),
             Lexicon.MARGIN: ("INT", {"default": 0, "min": -1024, "max": 1024}),
@@ -188,7 +188,7 @@ class TextNode(JOVImageMultiple):
         color = parse_tuple(Lexicon.RGBA_A, kw, default=(255, 255, 255, 255))
         matte = parse_tuple(Lexicon.MATTE, kw, default=(0, 0, 0), clip_min=0, clip_max=255)
         columns = kw.get(Lexicon.COLUMNS, [0])
-        size = kw.get(Lexicon.FONT_SIZE, [100])
+        font_size = kw.get(Lexicon.FONT_SIZE, [16])
         align = kw.get(Lexicon.ALIGN, [EnumAlignment.CENTER])
         justify = kw.get(Lexicon.JUSTIFY, [EnumJustify.CENTER])
         margin = kw.get(Lexicon.MARGIN, [0])
@@ -198,9 +198,9 @@ class TextNode(JOVImageMultiple):
         angle = parse_number(Lexicon.ANGLE, kw, EnumTupleType.FLOAT, [0])
         edge = kw.get(Lexicon.EDGE, [EnumEdge.CLIP])
         images = []
-        params = [tuple(x) for x in zip_longest_fill(full_text, font_idx, autosize, letter, color, matte, columns, size, align, justify, margin, line_spacing, wihi, pos, angle, edge)]
+        params = [tuple(x) for x in zip_longest_fill(full_text, font_idx, autosize, letter, color, matte, columns, font_size, align, justify, margin, line_spacing, wihi, pos, angle, edge)]
         pbar = comfy.utils.ProgressBar(len(params))
-        for idx, (full_text, font_idx, autosize, letter, color, matte, columns, size, align, justify, margin, line_spacing, wihi, pos, angle, edge) in enumerate(params):
+        for idx, (full_text, font_idx, autosize, letter, color, matte, columns, font_size, align, justify, margin, line_spacing, wihi, pos, angle, edge) in enumerate(params):
 
             width, height = wihi
             font_name = self.FONTS[font_idx]
@@ -214,21 +214,18 @@ class TextNode(JOVImageMultiple):
             if letter:
                 full_text = full_text.replace('\n', '')
                 if autosize:
-                    x, n = 0, 10000
-                    for ch in full_text:
-                        if (size := text_autosize(ch, font_name, wm, hm)[1]) > 0:
-                            x = max(x, size)
-                            n = min(n, size)
-                    size = (x + n) * 0.25
-
-                font = ImageFont.truetype(font_name, size)
+                    w, h = text_autosize(full_text, font_name, wm, hm)[2:]
+                    w /= len(full_text) * 1.25 # kerning?
+                    font_size = (w + h) * 0.5
+                font_size *= 10
+                font = ImageFont.truetype(font_name, font_size)
                 for ch in full_text:
                     img = text_draw(ch, font, width, height, align, justify, color=color)
                     images.append(img)
 
             elif autosize:
-                full_text, size = text_autosize(full_text, font_name, wm, hm)[:2]
-                font = ImageFont.truetype(font_name, size)
+                full_text, font_size = text_autosize(full_text, font_name, wm, hm)[:2]
+                font = ImageFont.truetype(font_name, font_size)
                 img = text_draw(full_text, font, width, height, align, justify, margin, line_spacing, color)
                 images.append(img)
 
@@ -262,20 +259,24 @@ class StereogramNode(JOVImageSimple):
         return Lexicon._parse(d, JOV_HELP_URL + "/CREATE#-stereogram")
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        img = kw.get(Lexicon.PIXEL, [None])
+        pA = kw.get(Lexicon.PIXEL, None)
+        pA = [None] if pA is None else batch_extract(pA)
         depth = kw.get(Lexicon.DEPTH, [None])
         divisions = kw.get(Lexicon.TILE, [8])
         noise = kw.get(Lexicon.NOISE, [0.33])
         gamma = kw.get(Lexicon.VALUE, [0.33])
         shift = kw.get(Lexicon.SHIFT, [1])
-        params = [tuple(x) for x in zip_longest_fill(img, depth, divisions, noise, gamma, shift)]
+        params = [tuple(x) for x in zip_longest_fill(pA, depth, divisions, noise, gamma, shift)]
         images = []
         pbar = comfy.utils.ProgressBar(len(params))
-        for idx, (img, depth, divisions, noise, gamma, shift) in enumerate(params):
-            img = tensor2cv(img)
+        for idx, (pA, depth, divisions, noise, gamma, shift) in enumerate(params):
+            if pA is None:
+                pA = channel_solid(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, EnumImageType.BGRA)
+            else:
+                pA = tensor2cv(pA)
+
             depth = tensor2cv(depth)
-            img = image_stereogram(img, depth, divisions, noise, gamma, shift)
-            img = cv2tensor_full(img)
-            images.append(img)
+            pA = image_stereogram(pA, depth, divisions, noise, gamma, shift)
+            images.append(cv2tensor_full(pA))
             pbar.update_absolute(idx)
         return list(zip(*images))

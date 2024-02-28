@@ -11,8 +11,8 @@ import { CONFIG_USER } from '../util/util_config.js'
 const TOOLTIP_LENGTH = 155;
 const TOOLTIP_WIDTH_MAX = 225;
 const TOOLTIP_WIDTH_OFFSET = 10;
-const TOOLTIP_HEIGHT_MAX = LiteGraph.NODE_SLOT_HEIGHT * 0.72;
-const FONT_SIZE = [10, 8, 7, 6, 5];
+const TOOLTIP_HEIGHT_MAX = LiteGraph.NODE_SLOT_HEIGHT * 0.65;
+const FONT_SIZE = 7;
 
 /*
 * wraps a single text line into maxWidth chunks
@@ -98,14 +98,14 @@ app.registerExtension({
                 }
                 const tips = widget_tooltip.options.default || {};
                 let visible = [];
-                let offset = TOOLTIP_HEIGHT_MAX;
+                let offset = TOOLTIP_HEIGHT_MAX / 4;
                 for(const item of this.inputs || []) {
                     if (!item.hidden || item.hidden == false) {
                         const data = {
                             name: item.name,
                             y: offset
                         }
-                        offset += TOOLTIP_HEIGHT_MAX;
+                        offset += TOOLTIP_HEIGHT_MAX * 1.45;
                         visible.push(data);
                     }
                 };
@@ -130,12 +130,12 @@ app.registerExtension({
                 const offset_y = visible[0].y;
                 const height = this.size[1] - offset_y;
                 ctx.roundRect(-TOOLTIP_WIDTH_MAX-TOOLTIP_WIDTH_OFFSET,
-                    offset_y,
+                    offset_y- TOOLTIP_HEIGHT_MAX / 2,
                     TOOLTIP_WIDTH_MAX + 4, height, 8);
                 ctx.fill();
                 ctx.fillStyle = LiteGraph.WIDGET_OUTLINE_COLOR;
                 ctx.roundRect(-TOOLTIP_WIDTH_MAX-TOOLTIP_WIDTH_OFFSET,
-                    offset_y,
+                    offset_y- TOOLTIP_HEIGHT_MAX / 2,
                     TOOLTIP_WIDTH_MAX + 4, height, 8);
                 ctx.stroke();
 
@@ -143,16 +143,15 @@ app.registerExtension({
                 for(const item of visible) {
                     let text = tips[item.name] || item.options?.tooltip || item.name;
                     text = text.slice(0, TOOLTIP_LENGTH).toUpperCase();
-                    const size = text.length / 3;
-                    let wrap = 35;
-                    if (size > 12) {
-                        wrap = 38;
-                    }
-                    if (size > 20) {
+                    const size = text.length;
+                    let wrap = 50;
+                    if (size > 45) {
                         wrap = 50;
+                    } else if (size > 80) {
+                        wrap = 52;
                     }
                     var lines = wrapText(text, wrap).slice(0, 3);
-                    ctx.font = FONT_SIZE[lines.length-1] + "px sans-serif";
+                    ctx.font = FONT_SIZE - lines.length/2 + "px sans-serif";
                     ctx.fillStyle = TOOLTIP_COLOR.slice(0, 7) + alpha;
                     const offset = TOOLTIP_HEIGHT_MAX * 2 / (lines.length+1);
                     let idx = 1;
