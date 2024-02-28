@@ -815,16 +815,10 @@ def image_load(url: str) -> tuple[TYPE_IMAGE, TYPE_IMAGE]:
 
 def image_load_data(data: str) -> TYPE_IMAGE:
     img = ImageOps.exif_transpose(data)
-    img = pil2cv(img)
-    #cc = channel_count(img)[0]
-    #logger.debug(cc)
-    #if cc == 4:
-    #    img[:, :, 3] = 1. - img[:, :, 3]
-    #if cc == 3:
-    #    img = channel_add(img)
-    return img
+    return pil2cv(img)
 
-def image_load_exr(url: str) -> typle[TYPE_IMAGE, TYPE_IMAGE]:
+def image_load_exr(url: str) -> tuple[TYPE_IMAGE, TYPE_IMAGE]:
+    """
     exr_file     = OpenEXR.InputFile(url)
     exr_header   = exr_file.header()
     r,g,b = exr_file.channels("RGB", pixel_type=Imath.PixelType(Imath.PixelType.FLOAT) )
@@ -838,6 +832,8 @@ def image_load_exr(url: str) -> typle[TYPE_IMAGE, TYPE_IMAGE]:
     image[:, :, 1] = np.core.multiarray.frombuffer( g, dtype = np.float32 ).reshape(h, w)
     image[:, :, 2] = np.core.multiarray.frombuffer( b, dtype = np.float32 ).reshape(h, w)
     return create_optix_image_2D( w, h, image.flatten() )
+    """
+    pass
 
 def image_load_from_url(url:str) -> TYPE_IMAGE:
     """Creates a CV2 BGR image from a url."""
