@@ -253,8 +253,6 @@ def cv2tensor(image: TYPE_IMAGE) -> torch.Tensor:
 
 def cv2tensor_full(image: TYPE_IMAGE, matte:TYPE_PIXEL=0) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     mask = image_mask(image)
-    image = image_convert(image, 4)
-    image[:,:,3] = mask[:,:,0]
     image = image_matte(image, matte)
     rgb = image_convert(image, 3)
     return cv2tensor(image), cv2tensor(rgb), cv2tensor(mask)
@@ -351,7 +349,7 @@ def tensor2pil(tensor: torch.Tensor) -> Image.Image:
 def pixel_eval(color: TYPE_PIXEL,
             target: EnumImageType=EnumImageType.BGR,
             precision:EnumIntFloat=EnumIntFloat.INT,
-            crunch:EnumGrayscaleCrunch=EnumGrayscaleCrunch.MEAN) -> TYPE_PIXEL:
+            crunch:EnumGrayscaleCrunch=EnumGrayscaleCrunch.MEAN) -> tuple[TYPE_PIXEL] | TYPE_PIXEL:
 
     """Evaluates R(GB)(A) pixels in range (0-255) into target target pixel type."""
 
@@ -390,24 +388,14 @@ def pixel_eval(color: TYPE_PIXEL,
             val = int(val)
         return val
 
-    if len(color) == 1:
-        color = list(color * 3)
+    if len(color) < 3:
+        color += (0,) * (3 - len(color))
 
     if target in [EnumImageType.RGB, EnumImageType.BGR]:
-        if len(color) == 1:
-            return color
-        if len(color) < 3:
-            color += (0,) * (3 - len(color))
         color = color[:3]
         if target == EnumImageType.BGR:
             color = color[::-1]
         return color
-
-    if len(color) == 1:
-        return color + [255]
-
-    if len(color) < 3:
-        color += (0,) * (3 - len(color))
 
     if len(color) < 4:
         color += (255,)
@@ -507,7 +495,8 @@ def shape_body(func: str, width: int, height: int, sizeX:float=1., sizeY:float=1
     image = Image.new("RGB", (width, height), back)
     d = ImageDraw.Draw(image)
     func = getattr(d, func)
-    func(xy, fill=pixel_eval(fill, EnumImageType.RGB))
+    print(pixel_eval(fill, EnumImageType.RGBA))
+    func(xy, fill=pixel_eval(fill, EnumImageType.RGBA))
     return image
 
 def shape_ellipse(width: int, height: int, sizeX:float=1., sizeY:float=1., fill:TYPE_PIXEL=255, back:TYPE_PIXEL=0) -> Image:
@@ -882,19 +871,19 @@ def image_matte(image:TYPE_IMAGE, color:TYPE_PIXEL=(0,0,0,255), width:int=None,
     y2 = min(height, y1 + h)
     x1 = max(0, (width - w) // 2)
     x2 = min(width, x1 + w)
-    if cc == 4:
-        mask = image_mask(image)
-    image = image_convert(image, 4)
+    if cc != 4:
+        image = image_convert(image, 4)
+    # save the old alpha channel
+    mask = image_mask(image)
     matte = channel_solid(width, height, color, EnumImageType.BGRA)
-    alpha = image[:,:,3]
+    alpha = mask[:,:,0]
     matte[y1:y2, x1:x2, 3] = alpha
     alpha = cv2.bitwise_not(alpha)
     alpha = cv2.cvtColor(alpha, cv2.COLOR_GRAY2BGRA) / 255.0
     matte[y1:y2, x1:x2] = cv2.convertScaleAbs(image * (1 - alpha) + matte[y1:y2, x1:x2] * alpha)
     if cc == 4:
         matte[y1:y2, x1:x2,3] = mask[:,:,0]
-    return matte #
-    return image_convert(matte, cc)
+    return matte
 
 def image_merge(imageA: TYPE_IMAGE, imageB: TYPE_IMAGE, axis: int=0, flip: bool=False) -> TYPE_IMAGE:
     if flip:
@@ -1010,10 +999,8 @@ def image_scale(image: TYPE_IMAGE, scale:TYPE_COORD=(1.0, 1.0), sample:EnumInter
 
     def scale_func(img: TYPE_IMAGE) -> TYPE_IMAGE:
         height, width = img.shape[:2]
-        #scaleW = max(0, min(1, scale[0]))
-        #scaleH = max(0, min(1, scale[1]))
-        width = int(width * max(0, min(1, scale[0])))
-        height = int(height * max(0, min(1, scale[1])))
+        width = int(width * scale[0])
+        height = int(height * scale[1])
         return cv2.resize(img, (width, height), interpolation=sample.value)
 
     return image_affine_edge(image, scale_func, edge)
@@ -1024,9 +1011,6 @@ def image_scalefit(image: TYPE_IMAGE, width: int, height:int,
                  matte:TYPE_PIXEL=(0,0,0,255)) -> TYPE_IMAGE:
 
     match mode:
-        #case EnumScaleMode.NONE:
-        #   image = image_matte(image, matte)
-
         case EnumScaleMode.MATTE:
             image = image_matte(image, matte, width, height)
 

@@ -55,9 +55,6 @@ class AkashicData:
         for k, v in kw.items():
             setattr(self, k, v)
 
-    def __str__(self) -> str:
-        return {k: v for k, v in dir(self)}
-
 class AkashicNode(JOVBaseNode):
     NAME = "AKASHIC (JOV) 📓"
     CATEGORY = JOV_CATEGORY
@@ -464,7 +461,6 @@ class ExportNode(JOVBaseNode):
 
         empty = Image.new("RGB", (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE))
         images = [tensor2pil(i).convert("RGB") if i is not None else empty for i in pA]
-        print(len(images))
         if format == "gifski":
             root = output_dir / f"{suffix}_{uuid4().hex[:16]}"
             try:

@@ -35,6 +35,11 @@ class EnumCropMode(Enum):
     XY = 0
     FREE = 10
 
+class EnumPixelSwap(Enum):
+    PASSTHRU = 0
+    IMAGE_B = 10
+    SOLID = 20
+
 # =============================================================================
 
 class TransformNode(JOVImageMultiple):
@@ -70,7 +75,7 @@ class TransformNode(JOVImageMultiple):
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         pA = kw.get(Lexicon.PIXEL, None)
         pA = [None] if pA is None else batch_extract(pA)
-        offset = parse_tuple(Lexicon.XY, kw, typ=EnumTupleType.FLOAT, default=(0., 0.,), clip_min=-1, clip_max=1)
+        offset = parse_tuple(Lexicon.XY, kw, typ=EnumTupleType.FLOAT, default=(0., 0.,))
         angle = kw.get(Lexicon.ANGLE, [0])
         size = parse_tuple(Lexicon.SIZE, kw, typ=EnumTupleType.FLOAT, default=(1., 1.,), zero=0.001)
         edge = kw.get(Lexicon.EDGE, [EnumEdge.CLIP])
@@ -315,6 +320,55 @@ class PixelMergeNode(JOVImageMultiple):
         data = list(zip(*images))
         return data
 
+class PixelSwapNode(JOVImageMultiple):
+    NAME = "PIXEL SWAP (JOV) 🔃"
+    CATEGORY = JOV_CATEGORY
+    DESCRIPTION = "Swap inputs of one image with another or fill its channels with solids."
+    SORT = 48
+
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        d = {
+        "required": {},
+        "optional": {
+            Lexicon.PIXEL: (WILDCARD, {}),
+            Lexicon.PIXEL_B: (WILDCARD, {}),
+            Lexicon.SWAP_R: (EnumPixelSwap._member_names_, {"default": EnumPixelSwap.PASSTHRU.name}),
+            Lexicon.R: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True}),
+            Lexicon.SWAP_G: (EnumPixelSwap._member_names_, {"default": EnumPixelSwap.PASSTHRU.name}),
+            Lexicon.G: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True}),
+            Lexicon.SWAP_B: (EnumPixelSwap._member_names_, {"default": EnumPixelSwap.PASSTHRU.name}),
+            Lexicon.B: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True}),
+            Lexicon.SWAP_A: (EnumPixelSwap._member_names_, {"default": EnumPixelSwap.PASSTHRU.name}),
+            Lexicon.A: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
+        }}
+        return Lexicon._parse(d, JOV_HELP_URL + "/COMPOSE#-pixel-swap")
+
+    def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor]:
+        R = kw.get(Lexicon.R, [None])
+        G = kw.get(Lexicon.G, [None])
+        B = kw.get(Lexicon.B, [None])
+        A = kw.get(Lexicon.A, [None])
+        if len(R)+len(B)+len(G)+len(A) == 0:
+            img = channel_solid(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 0, EnumImageType.BGRA)
+            return list(cv2tensor_full(img, matte))
+        matte = parse_tuple(Lexicon.MATTE, kw, default=(0, 0, 0), clip_min=0, clip_max=255)
+        params = [tuple(x) for x in zip_longest_fill(R, G, B, A, matte)]
+        images = []
+        pbar = comfy.utils.ProgressBar(len(params))
+        for idx, (r, g, b, a, matte) in enumerate(params):
+            r = tensor2cv(r, chan=EnumImageType.GRAYSCALE)
+            g = tensor2cv(g, chan=EnumImageType.GRAYSCALE)
+            b = tensor2cv(b, chan=EnumImageType.GRAYSCALE)
+            mask = tensor2cv(a, chan=EnumImageType.GRAYSCALE)
+            img = channel_merge([b, g, r, mask])
+            # logger.debug(img.shape)
+            img = cv2tensor_full(img, matte)
+            images.append(img)
+            pbar.update_absolute(idx)
+        data = list(zip(*images))
+        return data
+
 class StackNode(JOVImageMultiple):
     NAME = "STACK (JOV) ➕"
     CATEGORY = JOV_CATEGORY
@@ -360,7 +414,6 @@ class StackNode(JOVImageMultiple):
         matte = parse_tuple(Lexicon.MATTE, kw, default=(0, 0, 0, 255), clip_min=0, clip_max=255)[0]
         matte = pixel_eval(matte, EnumImageType.BGRA)
         images = [tensor2cv(img) for img in images if img is not None]
-        print(len(images))
         img = image_stack(images, axis, stride, matte)
         w, h = wihi
         if mode != EnumScaleMode.NONE:
