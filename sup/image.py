@@ -205,6 +205,14 @@ class EnumThresholdAdapt(Enum):
     ADAPT_MEAN = cv2.ADAPTIVE_THRESH_MEAN_C
     ADAPT_GAUSS = cv2.ADAPTIVE_THRESH_GAUSSIAN_C
 
+class EnumPixelSwap(Enum):
+    PASSTHRU = 0
+    IMAGE_B_R = 10
+    IMAGE_B_G = 20
+    IMAGE_B_B = 30
+    IMAGE_B_A = 40
+    SOLID = 90
+
 # =============================================================================
 # === CONVERSION ===
 # =============================================================================
@@ -425,6 +433,7 @@ def pixel_convert(color:TYPE_PIXEL, size:int=4, alpha:int=255) -> TYPE_PIXEL:
             color += (alpha,)
         return color
     return color[0]
+
 # =============================================================================
 # === CHANNEL ===
 # =============================================================================
@@ -479,10 +488,23 @@ def channel_merge(channel:list[TYPE_IMAGE]) -> TYPE_IMAGE:
     h = max([c[0] for c in ch])
     ch = [np.zeros((h, w), dtype=np.uint8) if c is None else c for c in channel[:3]]
     if len(channel) == 4:
-        a = channel[3] if len(channel) == 4 else None
-        a = np.full((h, w), 255, dtype=np.uint8) if a is None else a
+        a = channel[3] if len(channel) == 4 else np.full((h, w), 255, dtype=np.uint8)
         ch.append(a)
     return cv2.merge(ch)
+
+def channel_swap(image:TYPE_IMAGE, swap:EnumPixelSwap, matte:TYPE_PIXEL=0) -> TYPE_IMAGE:
+    match swap:
+        case EnumPixelSwap.IMAGE_B_B:
+            return image[:,:,0]
+        case EnumPixelSwap.IMAGE_B_G:
+            return image[:,:,1]
+        case EnumPixelSwap.IMAGE_B_R:
+            return image[:,:,2]
+        case EnumPixelSwap.IMAGE_B_A:
+            return image[:,:,3]
+        case EnumPixelSwap.SOLID:
+            h, w = image.shape[:2]
+            return channel_solid(w, h, matte, EnumImageType.GRAYSCALE)[:,:,0]
 
 # =============================================================================
 # === EXPLICIT SHAPE FUNCTIONS ===

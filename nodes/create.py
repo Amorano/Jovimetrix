@@ -292,7 +292,7 @@ class StereogramNode(JOVImageSimple):
         pbar = comfy.utils.ProgressBar(len(params))
         for idx, (pA, depth, divisions, noise, gamma, shift) in enumerate(params):
             if pA is None:
-                pA = channel_solid(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, EnumImageType.BGRA)
+                pA = channel_solid(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, chan=EnumImageType.BGRA)
             else:
                 pA = tensor2cv(pA)
 

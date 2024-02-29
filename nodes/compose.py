@@ -10,11 +10,11 @@ from loguru import logger
 
 import comfy
 
-from Jovimetrix import JOVImageMultiple, JOV_HELP_URL, WILDCARD, MIN_IMAGE_SIZE
+from Jovimetrix import TYPE_PIXEL, JOVImageMultiple, JOV_HELP_URL, WILDCARD, MIN_IMAGE_SIZE
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import parse_number, parse_tuple, zip_longest_fill, EnumTupleType
 from Jovimetrix.sup.image import batch_extract, channel_merge, \
-    channel_solid, cv2tensor_full, \
+    channel_solid, channel_swap, cv2tensor_full, \
     image_crop, image_crop_center, image_crop_polygonal, image_grayscale, \
     image_mask, image_mask_add, image_matte, image_rotate, image_scale, \
     image_translate, image_split, pixel_eval, tensor2cv, \
@@ -24,7 +24,7 @@ from Jovimetrix.sup.image import batch_extract, channel_merge, \
     remap_sphere, image_invert, \
     EnumImageType, EnumColorTheory, EnumProjection, \
     EnumScaleMode, EnumInterpolation, EnumBlendType, \
-    EnumEdge, EnumMirrorMode, EnumOrientation
+    EnumEdge, EnumMirrorMode, EnumOrientation, EnumPixelSwap
 
 # =============================================================================
 
@@ -34,11 +34,6 @@ class EnumCropMode(Enum):
     CENTER = 20
     XY = 0
     FREE = 10
-
-class EnumPixelSwap(Enum):
-    PASSTHRU = 0
-    IMAGE_B = 10
-    SOLID = 20
 
 # =============================================================================
 
@@ -334,37 +329,53 @@ class PixelSwapNode(JOVImageMultiple):
             Lexicon.PIXEL: (WILDCARD, {}),
             Lexicon.PIXEL_B: (WILDCARD, {}),
             Lexicon.SWAP_R: (EnumPixelSwap._member_names_, {"default": EnumPixelSwap.PASSTHRU.name}),
-            Lexicon.R: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True}),
+            Lexicon.R: ("INT", {"default": 0, "step": 1, "min": 0, "max": 255}),
             Lexicon.SWAP_G: (EnumPixelSwap._member_names_, {"default": EnumPixelSwap.PASSTHRU.name}),
-            Lexicon.G: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True}),
+            Lexicon.G: ("INT", {"default": 0, "step": 1, "min": 0, "max": 255}),
             Lexicon.SWAP_B: (EnumPixelSwap._member_names_, {"default": EnumPixelSwap.PASSTHRU.name}),
-            Lexicon.B: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True}),
+            Lexicon.B: ("INT", {"default": 0, "step": 1, "min": 0, "max": 255}),
             Lexicon.SWAP_A: (EnumPixelSwap._member_names_, {"default": EnumPixelSwap.PASSTHRU.name}),
-            Lexicon.A: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
+            Lexicon.A: ("INT", {"default": 0, "step": 1, "min": 0, "max": 255})
         }}
         return Lexicon._parse(d, JOV_HELP_URL + "/COMPOSE#-pixel-swap")
 
     def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor]:
-        R = kw.get(Lexicon.R, [None])
-        G = kw.get(Lexicon.G, [None])
-        B = kw.get(Lexicon.B, [None])
-        A = kw.get(Lexicon.A, [None])
-        if len(R)+len(B)+len(G)+len(A) == 0:
-            img = channel_solid(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 0, EnumImageType.BGRA)
-            return list(cv2tensor_full(img, matte))
-        matte = parse_tuple(Lexicon.MATTE, kw, default=(0, 0, 0), clip_min=0, clip_max=255)
-        params = [tuple(x) for x in zip_longest_fill(R, G, B, A, matte)]
+        pA = kw.get(Lexicon.PIXEL, None)
+        pA = [None] if pA is None else batch_extract(pA)
+        pB = kw.get(Lexicon.PIXEL_B, None)
+        pB = [None] if pB is None else batch_extract(pB)
+        swap_r = kw.get(Lexicon.SWAP_R, [EnumPixelSwap.PASSTHRU])
+        r = kw.get(Lexicon.R, [0])
+        swap_g = kw.get(Lexicon.SWAP_G, [EnumPixelSwap.PASSTHRU.name])
+        g = kw.get(Lexicon.G, [0])
+        swap_b = kw.get(Lexicon.SWAP_B, [EnumPixelSwap.PASSTHRU.name])
+        b = kw.get(Lexicon.B, [0])
+        swap_a = kw.get(Lexicon.SWAP_A, [EnumPixelSwap.PASSTHRU.name])
+        a = kw.get(Lexicon.A, [0])
+        params = [tuple(x) for x in zip_longest_fill(pA, pB, r, swap_r, g, swap_g,
+                                                     b, swap_b, a, swap_a)]
         images = []
         pbar = comfy.utils.ProgressBar(len(params))
-        for idx, (r, g, b, a, matte) in enumerate(params):
-            r = tensor2cv(r, chan=EnumImageType.GRAYSCALE)
-            g = tensor2cv(g, chan=EnumImageType.GRAYSCALE)
-            b = tensor2cv(b, chan=EnumImageType.GRAYSCALE)
-            mask = tensor2cv(a, chan=EnumImageType.GRAYSCALE)
-            img = channel_merge([b, g, r, mask])
-            # logger.debug(img.shape)
-            img = cv2tensor_full(img, matte)
-            images.append(img)
+        for idx, (pA, pB, r, swap_r, g, swap_g, b, swap_b, a, swap_a) in enumerate(params):
+            if pA is None:
+                pA = channel_solid(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, chan=EnumImageType.BGRA)
+            else:
+                pA = tensor2cv(pA)
+
+            h, w = pA.shape[:2]
+            if pB is None:
+                pB = channel_solid(w, h, chan=EnumImageType.BGRA)
+            else:
+                pB = tensor2cv(pB)
+                pB = image_crop_center(pB, w, h)
+                pB = image_matte(pB, width=w, height=h)
+
+            for i, swap in enumerate([(swap_b, b), (swap_g, g), (swap_r, r), (swap_a, a)]):
+                swap, matte = swap
+                swap = EnumPixelSwap[swap]
+                if swap != EnumPixelSwap.PASSTHRU:
+                    pA[:,:,i] = channel_swap(pB, swap, matte)
+            images.append(cv2tensor_full(pA))
             pbar.update_absolute(idx)
         data = list(zip(*images))
         return data
