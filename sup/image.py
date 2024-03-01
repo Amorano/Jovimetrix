@@ -374,9 +374,9 @@ def pixel_eval(color: TYPE_PIXEL,
 
     # make sure we are an RGBA value already
     if isinstance(color, (float, int)):
-        color = [parse_single_color(color)]
+        color = tuple([parse_single_color(color)])
     elif isinstance(color, (set, tuple, list)):
-        color = [parse_single_color(c) for c in color]
+        color = tuple([parse_single_color(c) for c in color])
 
     if target == EnumImageType.GRAYSCALE:
         alpha = 1
@@ -409,7 +409,7 @@ def pixel_eval(color: TYPE_PIXEL,
         color += (255,)
 
     if target == EnumImageType.BGRA:
-        color = list(color[2::-1] + [color[-1]])
+        color = tuple(color[2::-1]) + tuple([color[-1]])
 
     return color
 
@@ -517,7 +517,6 @@ def shape_body(func: str, width: int, height: int, sizeX:float=1., sizeY:float=1
     image = Image.new("RGB", (width, height), back)
     d = ImageDraw.Draw(image)
     func = getattr(d, func)
-    print(pixel_eval(fill, EnumImageType.RGBA))
     func(xy, fill=pixel_eval(fill, EnumImageType.RGBA))
     return image
 

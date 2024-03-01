@@ -293,7 +293,9 @@ class QueueNode(JOVBaseNode):
                     data = new_data
             elif path.is_file() or path2.is_file():
                 path = path if path.is_file() else path2
-                data = [str(path.resolve())]
+                path = str(path.resolve())
+                with open(path, 'r', encoding='utf-8') as f:
+                    data = f.read().split('\n')
             elif len(results := glob.glob(str(path2))) > 0:
                 data = [x.replace('\\\\', '/') for x in results]
 
@@ -316,9 +318,6 @@ class QueueNode(JOVBaseNode):
             elif ext == '.json':
                 with open(q_data, 'r', encoding='utf-8') as f:
                     self.__last_q_value[q_data] = json.load(f)
-            elif ext == '.txt':
-                with open(q_data, 'r', encoding='utf-8') as f:
-                    self.__last_q_value[q_data] = f.read()
             return self.__last_q_value[q_data]
 
         reset = kw.get(Lexicon.RESET, False)
