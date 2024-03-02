@@ -1024,6 +1024,8 @@ def image_scale(image: TYPE_IMAGE, scale:TYPE_COORD=(1.0, 1.0), sample:EnumInter
         height = int(height * scale[1])
         return cv2.resize(img, (width, height), interpolation=sample.value)
 
+    if edge == EnumEdge.CLIP:
+        return scale_func(image)
     return image_affine_edge(image, scale_func, edge)
 
 def image_scalefit(image: TYPE_IMAGE, width: int, height:int,

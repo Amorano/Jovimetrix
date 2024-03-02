@@ -36,9 +36,11 @@ class EnumConvertType(Enum):
     INT = 20
     FLOAT   = 30
     VEC2 = 40
+    VEC2INT = 45
     VEC3 = 50
+    VEC3INT = 55
     VEC4 = 60
-    # TUPLE = 70
+    VEC4INT = 65
 
 class EnumUnaryOperation(Enum):
     ABS = 0
@@ -333,6 +335,7 @@ class ValueNode(JOVBaseNode):
     CATEGORY = JOV_CATEGORY
     DESCRIPTION = "Create a value for most types; also universal constants."
     RETURN_TYPES = (WILDCARD, )
+    RETURN_NAMES = (Lexicon.ANY, )
     OUTPUT_IS_LIST = (True, )
     SORT = 1
 
@@ -341,6 +344,7 @@ class ValueNode(JOVBaseNode):
         d = {
         "required": {},
         "optional": {
+            Lexicon.IN_A: (WILDCARD, {"default": None}),
             Lexicon.TYPE: (EnumConvertType._member_names_, {"default": EnumConvertType.BOOLEAN.name}),
             Lexicon.X: ("FLOAT", {"default": 0}),
             Lexicon.Y: ("FLOAT", {"default": 0}),
@@ -350,16 +354,16 @@ class ValueNode(JOVBaseNode):
         return Lexicon._parse(d, JOV_HELP_URL + "/CALC#%EF%B8%8F⃣-value")
 
     def run(self, **kw) -> tuple[bool]:
+        raw = kw.get(Lexicon.IN_A, [None])
         typ = kw.get(Lexicon.TYPE, [EnumConvertType.BOOLEAN])
         x = kw.get(Lexicon.X, [None])
         y = kw.get(Lexicon.Y, [0])
         z = kw.get(Lexicon.Z, [0])
         w = kw.get(Lexicon.W, [0])
-        params = [tuple(x) for x in zip_longest_fill(typ, x, y, z, w)]
-        # logger.debug(params)
+        params = [tuple(x) for x in zip_longest_fill(raw, typ, x, y, z, w)]
         results = []
         pbar = comfy.utils.ProgressBar(len(params))
-        for idx, (typ, x, y, z, w) in enumerate(params):
+        for idx, (raw, typ, x, y, z, w) in enumerate(params):
             typ = EnumConvertType[typ]
             if typ == EnumConvertType.STRING:
                 results.append("" if x is None else str(x))
@@ -367,17 +371,21 @@ class ValueNode(JOVBaseNode):
 
             x = 0 if x is None else x
             match typ:
+                case EnumConvertType.VEC2INT:
+                    results.append((int(x), int(y),))
                 case EnumConvertType.VEC2:
                     results.append((x, y,))
+                case EnumConvertType.VEC3INT:
+                    results.append((int(x), int(y), int(z),))
                 case EnumConvertType.VEC3:
                     results.append((x, y, z,))
+                case EnumConvertType.VEC4INT:
+                    results.append((int(x), int(y), int(z), int(w),))
                 case EnumConvertType.VEC4:
                     results.append((x, y, z, w,))
                 case _:
                     results.append(x)
-
             pbar.update_absolute(idx)
-        # logger.debug(results)
         return (results, )
 
 class ConvertNode(JOVBaseNode):
@@ -497,7 +505,6 @@ class LerpNode(JOVBaseNode):
         pos = kw.get(Lexicon.FLOAT, [0.])
         op = kw.get(Lexicon.EASE, ["NONE"])
         typ = kw.get(Lexicon.TYPE, ["NONE"])
-
         value = []
         params = [tuple(x) for x in zip_longest_fill(a, b, pos, op, typ)]
         pbar = comfy.utils.ProgressBar(len(params))

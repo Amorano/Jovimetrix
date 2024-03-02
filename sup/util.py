@@ -77,7 +77,11 @@ def parse_number(key: str, data: Union[dict, List[dict]], typ: EnumTupleType=Enu
         ret.append(v)
     return ret
 
-def parse_tuple_single(unified: list[Any], typ: EnumTupleType=EnumTupleType.INT, default: tuple[Any]=None, clip_min: Optional[float]=None, clip_max: Optional[float]=None, zero=0) -> tuple[List[Any]]:
+def parse_tuple(key: str, data: Union[dict, List[dict]], typ: EnumTupleType=EnumTupleType.INT, default: tuple[Any]=None, clip_min: Optional[float]=None, clip_max: Optional[float]=None, zero:int=0) -> tuple[List[Any]]:
+
+    unified = data.get(key, [default])
+    if not isinstance(unified, (list, tuple, set)):
+        unified = [unified]
 
     ret = []
     for entry in unified:
@@ -119,13 +123,6 @@ def parse_tuple_single(unified: list[Any], typ: EnumTupleType=EnumTupleType.INT,
 
         ret.append(tuple(newboi))
     return ret
-
-def parse_tuple(key: str, data: Union[dict, List[dict]], typ: EnumTupleType=EnumTupleType.INT, default: tuple[Any]=None, clip_min: Optional[float]=None, clip_max: Optional[float]=None, zero=0) -> tuple[List[Any]]:
-
-    unified = data.get(key, [default])
-    if not isinstance(unified, (list, tuple, set)):
-        unified = [unified]
-    return parse_tuple_single(unified, typ, default, clip_min, clip_max, zero)
 
 def update_nested_dict(d, path, value) -> None:
     keys = path.split('.')

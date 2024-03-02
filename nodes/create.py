@@ -3,6 +3,7 @@ Jovimetrix - http://www.github.com/amorano/jovimetrix
 Creation
 """
 
+import pprint
 import torch
 from PIL import ImageFont
 
@@ -195,6 +196,8 @@ class TextNode(JOVImageMultiple):
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         if len(full_text := kw.get(Lexicon.STRING, [""])) == 0:
             full_text = [""]
+
+        pprint.pprint(kw)
         font_idx = kw.get(Lexicon.FONT, self.FONT_NAMES[0])
         autosize = kw.get(Lexicon.AUTOSIZE, [False])
         letter = kw.get(Lexicon.LETTER, [False])
@@ -208,7 +211,7 @@ class TextNode(JOVImageMultiple):
         line_spacing = kw.get(Lexicon.SPACING, [25])
         wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,))
         pos = parse_tuple(Lexicon.XY, kw, EnumTupleType.FLOAT, (0, 0), -1, 1)
-        angle = parse_number(Lexicon.ANGLE, kw, EnumTupleType.FLOAT, [0])
+        angle = kw.get(Lexicon.ANGLE, [0])
         edge = kw.get(Lexicon.EDGE, [EnumEdge.CLIP])
         images = []
         params = [tuple(x) for x in zip_longest_fill(full_text, font_idx, autosize,
@@ -239,24 +242,20 @@ class TextNode(JOVImageMultiple):
                 font = ImageFont.truetype(font_name, font_size)
                 for ch in full_text:
                     img = text_draw(ch, font, width, height, align, justify, color=color)
-                    images.append(img)
-
+                    img = image_rotate(img, angle, edge=edge)
+                    img = image_translate(img, pos, edge=edge)
+                    images.append(cv2tensor_full(img, matte))
             else:
                 if autosize:
                     full_text, font_size = text_autosize(full_text, font_name, wm, hm)[:2]
                 font = ImageFont.truetype(font_name, font_size)
                 img = text_draw(full_text, font, width, height, align, justify,
                                 margin, line_spacing, color)
-                images.append(img)
-
-        out = []
-        for i in images:
-            img = image_rotate(i, angle, edge=edge)
-            img = image_translate(img, pos, edge=edge)
-            img = cv2tensor_full(img, matte)
-            out.append(img)
+                img = image_rotate(img, angle, edge=edge)
+                img = image_translate(img, pos, edge=edge)
+                images.append(cv2tensor_full(img, matte))
             pbar.update_absolute(idx)
-        return list(zip(*out))
+        return list(zip(*images))
 
 class StereogramNode(JOVImageSimple):
     NAME = "STEREOGRAM (JOV) 📻"

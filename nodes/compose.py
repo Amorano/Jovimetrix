@@ -89,7 +89,6 @@ class TransformNode(JOVImageMultiple):
         images = []
         pbar = comfy.utils.ProgressBar(len(params))
         for idx, (pA, offset, angle, size, edge, tile_xy, mirror, mirror_pivot, proj, strength, tltr, blbr, mode, wihi, sample, matte) in enumerate(params):
-
             matte = pixel_eval(matte, EnumImageType.BGRA)
             if pA is None:
                 pA = channel_solid(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, matte, EnumImageType.BGRA)
@@ -100,6 +99,7 @@ class TransformNode(JOVImageMultiple):
                 continue
 
             pA = tensor2cv(pA)
+            h, w = pA.shape[:2]
             sX, sY = size
             if sX < 0:
                 pA = cv2.flip(pA, 1)
@@ -114,11 +114,11 @@ class TransformNode(JOVImageMultiple):
             if sX != 1. or sY != 1.:
                 pA = image_scale(pA, (sX, sY), sample, edge)
 
-            if offset[0] != 0. or offset[1] != 0.:
-                pA = image_translate(pA, offset, edge)
-
             if angle != 0:
                 pA = image_rotate(pA, angle, edge=edge)
+
+            if offset[0] != 0. or offset[1] != 0.:
+                pA = image_translate(pA, offset, edge)
 
             mirror = EnumMirrorMode[mirror]
             if mirror != EnumMirrorMode.NONE:
@@ -126,7 +126,7 @@ class TransformNode(JOVImageMultiple):
                 pA = image_mirror(pA, mirror, mpx, mpy)
 
             tx, ty = tile_xy
-            h, w = pA.shape[:2]
+            # h, w = pA.shape[:2]
             if (tx := int(tx)) > 1 or (ty := int(ty)) > 1:
                 pA = image_edge_wrap(pA, tx / 2 - 0.5, ty / 2 - 0.5)
                 pA = image_scalefit(pA, w, h, EnumScaleMode.FIT, sample, matte)
@@ -155,8 +155,7 @@ class TransformNode(JOVImageMultiple):
                 w, h = wihi
                 pA = image_scalefit(pA, w, h, mode, sample, matte)
 
-            pA = cv2tensor_full(pA, matte)
-            images.append(pA)
+            images.append(cv2tensor_full(pA, matte))
             pbar.update_absolute(idx)
         return list(zip(*images))
 

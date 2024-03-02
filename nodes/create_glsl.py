@@ -16,7 +16,7 @@ from Jovimetrix import JOV_HELP_URL, WILDCARD, ComfyAPIMessage, \
     ROOT, MIN_IMAGE_SIZE, JOV_GLSL
 
 from Jovimetrix.sup.lexicon import Lexicon
-from Jovimetrix.sup.util import parse_tuple, parse_tuple_single, zip_longest_fill, EnumTupleType
+from Jovimetrix.sup.util import parse_tuple, zip_longest_fill, EnumTupleType
 from Jovimetrix.sup.image import cv2tensor_full, pil2cv, pil2tensor, tensor2pil
 from Jovimetrix.sup.shader import GLSL, CompileException
 
@@ -161,7 +161,7 @@ class GLSLBaseNode(JOVBaseNode):
 
         uv_tile = None
         if (uv_tile := kw.pop(Lexicon.TILE, None)) is not None:
-            uv_tile = parse_tuple_single([uv_tile], typ=EnumTupleType.FLOAT, default=(1., 1.,), clip_min=0.01)[0]
+            uv_tile = parse_tuple([uv_tile], typ=EnumTupleType.FLOAT, default=(1., 1.,), clip_min=0.01)[0]
 
         if (texture2 := kw.pop(Lexicon.PIXEL_B, None)) is not None:
             texture2 = tensor2pil(texture2)

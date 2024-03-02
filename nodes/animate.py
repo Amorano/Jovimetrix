@@ -13,6 +13,7 @@ from Jovimetrix import JOV_HELP_URL, JOVBaseNode
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup import anim
 from Jovimetrix.sup.anim import EnumWaveSimple
+from Jovimetrix.sup.util import parse_tuple, zip_longest_fill
 
 # =============================================================================
 
@@ -94,7 +95,7 @@ class WaveGeneratorNode(JOVBaseNode):
     NAME = "WAVE GENERATOR (JOV) 🌊"
     CATEGORY = JOV_CATEGORY
     DESCRIPTION = "Periodic and Non-Periodic Sinosodials."
-    INPUT_IS_LIST = False
+    OUTPUT_IS_LIST = (True, True,)
     RETURN_TYPES = ("FLOAT", "INT", )
     RETURN_NAMES = (Lexicon.FLOAT, Lexicon.INT, )
 
@@ -109,17 +110,38 @@ class WaveGeneratorNode(JOVBaseNode):
             Lexicon.PHASE: ("FLOAT", {"default": 0, "min": 0.0, "step": 0.001}),
             Lexicon.OFFSET: ("FLOAT", {"default": 0, "min": 0.0, "step": 0.001}),
             Lexicon.TIME: ("FLOAT", {"default": 0, "min": 0, "step": 0.000001}),
+            Lexicon.BATCH: ("VEC2", {"default": (1, 30), "step": 1, "label": ["COUNT", "FPS"]}),
         }}
         return Lexicon._parse(d, JOV_HELP_URL + "/ANIMATE#-wave-generator")
 
     def run(self, **kw) -> tuple[float, int]:
-        val = 0.
-        wave = kw.get(Lexicon.WAVE, EnumWaveSimple.SIN)
-        freq = kw.get(Lexicon.FREQ, 1.)
-        amp = kw.get(Lexicon.AMP, 1.)
-        phase = kw.get(Lexicon.PHASE, 0)
-        shift = kw.get(Lexicon.OFFSET, 0)
-        delta_time = kw.get(Lexicon.TIME, 0)
-        if (op := getattr(anim.Wave, wave.lower(), None)) is not None:
-            val = op(phase, freq, amp, shift, delta_time)
-        return val, int(val),
+        wave = kw.get(Lexicon.WAVE, [EnumWaveSimple.SIN])
+        freq = kw.get(Lexicon.FREQ, [1.])
+        amp = kw.get(Lexicon.AMP, [1.])
+        phase = kw.get(Lexicon.PHASE, [0])
+        shift = kw.get(Lexicon.OFFSET, [0])
+        delta_time = kw.get(Lexicon.TIME, [0])
+        batch = parse_tuple(Lexicon.BATCH, kw, default=(1, 30), clip_min=1)
+        results = []
+        params = [tuple(x) for x in zip_longest_fill(wave, freq, amp, phase, shift, delta_time, batch)]
+        pbar = comfy.utils.ProgressBar(len(params))
+        for idx, (wave, freq, amp, phase, shift, delta_time, batch) in enumerate(params):
+            val = 0.
+            if (op := getattr(anim.Wave, wave.lower(), None)) is not None:
+                freq = 1. / freq
+                batch_size, batch_fps = batch
+                if batch_size == 1:
+                    val = op(phase, freq, amp, shift, delta_time)
+                    results.append([val, int(val)])
+                    continue
+
+                delta = delta_time
+                delta_step = 1 / batch_fps
+                for _ in range(batch_size):
+                    val = op(phase, freq, amp, shift, delta)
+                    results.append([val, int(val)])
+                    delta += delta_step
+            else:
+                results.append([val, int(val)])
+            pbar.update_absolute(idx)
+        return list(zip(*results))

@@ -30,7 +30,7 @@ from Jovimetrix import JOV_HELP_URL, ComfyAPIMessage, JOVBaseNode, TimedOutExcep
 
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import path_next, parse_tuple, zip_longest_fill
-from Jovimetrix.sup.image import batch_extract, cv2tensor, image_convert, \
+from Jovimetrix.sup.image import batch_extract, cv2tensor, cv2tensor_full, image_convert, pil2cv, \
     tensor2pil, tensor2cv, pil2tensor, image_load, image_formats, image_diff
 
 # =============================================================================
@@ -125,7 +125,6 @@ class ValueGraphNode(JOVBaseNode):
     NAME = "VALUE GRAPH (JOV) 📈"
     CATEGORY = JOV_CATEGORY
     DESCRIPTION = "Graphs historical execution run values."
-    INPUT_IS_LIST = False
     RETURN_TYPES = ("IMAGE", )
     RETURN_NAMES = (Lexicon.IMAGE, )
     OUTPUT_NODE = True
@@ -148,7 +147,7 @@ class ValueGraphNode(JOVBaseNode):
 
     def __init__(self, *arg, **kw) -> None:
         super().__init__(*arg, **kw)
-        self.__history = []
+        self.__history = [[]]
         self.__index = [0]
         self.__fig, self.__ax = plt.subplots(figsize=(5.12, 3.72))
         self.__ax.set_xlabel("FRAME")
@@ -156,53 +155,57 @@ class ValueGraphNode(JOVBaseNode):
         self.__ax.set_title("VALUE HISTORY")
 
     def run(self, **kw) -> tuple[torch.Tensor]:
-        reset = kw.get(Lexicon.RESET, False)
-        try:
-            data = ComfyAPIMessage.poll(id, timeout=0)
-            if (cmd := data.get('cmd', None)) is not None:
-                if cmd == 'reset':
-                    reset = True
-        except TimedOutException as e:
-            pass
-        except Exception as e:
-            logger.error(str(e))
-
-        if reset:
-            self.__history = [[]]
-            self.__index = [0]
-
+        reset = kw.get(Lexicon.RESET, [0])
+        slice = kw.get(Lexicon.VALUE, [120])
+        wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), zero=0.001)
+        accepted = [bool, int, float, np.float16, np.float32, np.float64]
         idx = 1
         while 1:
             who = f"{Lexicon.UNKNOWN}_{idx}"
             if (val := kw.get(who, None)) is None:
                 break
-            if type(val) not in [bool, int, float, np.float16, np.float32, np.float64]:
-                val = 0
-
+            val = [v if type(v) not in accepted else 0 for v in val]
             while len(self.__history) < idx:
                 self.__history.append([])
                 self.__index.append(0)
-            self.__history[idx-1].append(val)
+            self.__history[idx-1].extend(val)
             idx += 1
 
-        slice = kw.get(Lexicon.VALUE, 0)
-        self.__ax.clear()
-        for i, h in enumerate(self.__history):
-            self.__ax.plot(h[max(0, -slice + self.__index[i]):], color="rgbcymk"[i])
-            self.__index[i] += 1
+        params = [tuple(x) for x in zip_longest_fill(reset, slice, wihi)]
+        images = []
+        pbar = comfy.utils.ProgressBar(len(params))
+        for idx, (reset, slice, wihi) in enumerate(params):
+            try:
+                data = ComfyAPIMessage.poll(id, timeout=0)
+                if (cmd := data.get('cmd', None)) is not None:
+                    if cmd == 'reset':
+                        reset = True
+            except TimedOutException as e:
+                pass
+            except Exception as e:
+                logger.error(str(e))
 
-        wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)[0]
-        width, height = wihi
-        wihi = (width / 100., height / 100.)
-        self.__fig.set_figwidth(wihi[0])
-        self.__fig.set_figheight(wihi[1])
+            if reset:
+                self.__history = [[]]
+                self.__index = [0]
 
-        self.__fig.canvas.draw_idle()
-        buffer = io.BytesIO()
-        self.__fig.savefig(buffer, format="png")
-        buffer.seek(0)
-        image = Image.open(buffer)
-        return (pil2tensor(image),)
+            self.__ax.clear()
+            for i, h in enumerate(self.__history):
+                self.__ax.plot(h[max(0, -slice + self.__index[i]):], color="rgbcymk"[i])
+                self.__index[i] += 1
+
+            width, height = wihi
+            wihi = (width / 100., height / 100.)
+            self.__fig.set_figwidth(wihi[0])
+            self.__fig.set_figheight(wihi[1])
+            self.__fig.canvas.draw_idle()
+            buffer = io.BytesIO()
+            self.__fig.savefig(buffer, format="png")
+            buffer.seek(0)
+            image = Image.open(buffer)
+            images.append(pil2tensor(image))
+            pbar.update_absolute(idx)
+        return list(zip(*images))
 
 class RouteNode(JOVBaseNode):
     NAME = "ROUTE (JOV) 🚌"
@@ -294,8 +297,11 @@ class QueueNode(JOVBaseNode):
             elif path.is_file() or path2.is_file():
                 path = path if path.is_file() else path2
                 path = str(path.resolve())
-                with open(path, 'r', encoding='utf-8') as f:
-                    data = f.read().split('\n')
+                if path.lower().endswith('.txt'):
+                    with open(path, 'r', encoding='utf-8') as f:
+                        data = f.read().split('\n')
+                else:
+                    data = [path]
             elif len(results := glob.glob(str(path2))) > 0:
                 data = [x.replace('\\\\', '/') for x in results]
 
@@ -506,7 +512,6 @@ class ImageDiffNode(JOVBaseNode):
     NAME = "IMAGE DIFF (JOV) 📏"
     CATEGORY = JOV_CATEGORY
     DESCRIPTION = "Explicitly show the differences between two images via self-similarity index."
-    INPUT_IS_LIST = True
     OUTPUT_IS_LIST = (True, True, True, True, True, )
     RETURN_TYPES = ("IMAGE", "IMAGE", "MASK", "MASK", "FLOAT", )
     RETURN_NAMES = (Lexicon.IN_A, Lexicon.IN_B, Lexicon.DIFF, Lexicon.THRESHOLD, Lexicon.FLOAT, )
@@ -539,3 +544,24 @@ class ImageDiffNode(JOVBaseNode):
             results.append([cv2tensor(a), cv2tensor(b), cv2tensor(d), cv2tensor(t), s])
             pbar.update_absolute(idx)
         return list(zip(*results))
+
+class BatchMakeNode(JOVBaseNode):
+    NAME = "BATCH MAKE (JOV) 📚"
+    CATEGORY = JOV_CATEGORY
+    DESCRIPTION = ""
+    OUTPUT_IS_LIST = (True, True,)
+    RETURN_TYPES = ("FLOAT", "INT",  )
+    RETURN_NAMES = (Lexicon.FLOAT, Lexicon.INT, )
+    SORT = 110
+
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        d = {
+        "required": {},
+        "optional": {
+        }}
+        return Lexicon._parse(d, JOV_HELP_URL + "/UTILITY#-batch-make")
+
+    def run(self, **kw) -> tuple[Any, Any]:
+        data = [x for x in range(0, 360, 5)]
+        return data, data,
