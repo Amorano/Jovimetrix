@@ -21,7 +21,7 @@ from Jovimetrix.sup.util import parse_tuple, \
     parse_number, zip_longest_fill, EnumTupleType
 
 from Jovimetrix.sup.image import batch_extract, channel_solid, cv2tensor_full, \
-    image_grayscale, image_mask_add, image_matte, image_rotate, image_stereogram, \
+    image_grayscale, image_mask_add, image_matte, image_rotate, image_stereogram, image_transform, \
     image_translate, pil2cv, pixel_eval, tensor2cv, shape_ellipse, shape_polygon, \
     shape_quad, EnumEdge, EnumImageType
 
@@ -93,6 +93,8 @@ class ShapeNode(JOVImageMultiple):
                                      "rgb": True, "tooltip": "Background Color"}),
             Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE),
                                   "step": 1, "label": [Lexicon.W, Lexicon.H]}),
+            Lexicon.XY: ("VEC2", {"default": (0, 0,), "step": 0.01, "precision": 4,
+                                   "round": 0.00001, "label": [Lexicon.X, Lexicon.Y]}),
             Lexicon.ANGLE: ("FLOAT", {"default": 0, "min": -180, "max": 180,
                                       "step": 0.01, "precision": 4, "round": 0.00001}),
             Lexicon.SIZE: ("VEC2", {"default": (1., 1.), "step": 0.01, "precision": 4,
@@ -107,48 +109,49 @@ class ShapeNode(JOVImageMultiple):
         sides = kw.get(Lexicon.SIDES, 3)
         angle = kw.get(Lexicon.ANGLE, 0)
         edge = kw.get(Lexicon.EDGE, EnumEdge.CLIP)
+        offset = parse_tuple(Lexicon.XY, kw, typ=EnumTupleType.FLOAT, default=(0., 0.,))
         size = parse_tuple(Lexicon.SIZE, kw, EnumTupleType.FLOAT, default=(1., 1.,))
         wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,))
         color = parse_tuple(Lexicon.RGBA_A, kw, default=(255, 255, 255, 255))
         matte = parse_tuple(Lexicon.MATTE, kw, default=(0, 0, 0, 255))
-        params = [tuple(x) for x in zip_longest_fill(shape, sides, angle, edge,
+        params = [tuple(x) for x in zip_longest_fill(shape, sides, offset, angle, edge,
                                                      size, wihi, color, matte)]
         images = []
         pbar = comfy.utils.ProgressBar(len(params))
-        for idx, (shape, sides, angle, edge, size, wihi, color, matte) in enumerate(params):
+        for idx, (shape, sides, offset, angle, edge, size, wihi, color, matte) in enumerate(params):
             width, height = wihi
             sizeX, sizeY = size
+            sides = int(sides)
             edge = EnumEdge[edge]
             shape = EnumShapes[shape]
             match shape:
                 case EnumShapes.SQUARE:
-                    img = shape_quad(width, height, sizeX, sizeX, fill=color, back=matte)
+                    pA = shape_quad(width, height, sizeX, sizeX, fill=color, back=matte)
                     mask = shape_quad(width, height, sizeX, sizeX, fill=color[3])
 
                 case EnumShapes.ELLIPSE:
-                    img = shape_ellipse(width, height, sizeX, sizeY, fill=color, back=matte)
+                    pA = shape_ellipse(width, height, sizeX, sizeY, fill=color, back=matte)
                     mask = shape_ellipse(width, height, sizeX, sizeY, fill=color[3])
 
                 case EnumShapes.RECTANGLE:
-                    img = shape_quad(width, height, sizeX, sizeY, fill=color, back=matte)
+                    pA = shape_quad(width, height, sizeX, sizeY, fill=color, back=matte)
                     mask = shape_quad(width, height, sizeX, sizeY, fill=color[3])
 
                 case EnumShapes.POLYGON:
-                    img = shape_polygon(width, height, sizeX, sides, fill=color, back=matte)
+                    pA = shape_polygon(width, height, sizeX, sides, fill=color, back=matte)
                     mask = shape_polygon(width, height, sizeX, sides, fill=color[3])
 
                 case EnumShapes.CIRCLE:
-                    img = shape_ellipse(width, height, sizeX, sizeX, fill=color, back=matte)
+                    pA = shape_ellipse(width, height, sizeX, sizeX, fill=color, back=matte)
                     mask = shape_ellipse(width, height, sizeX, sizeX, fill=color[3])
 
-            img = pil2cv(img)
+            pA = pil2cv(pA)
             mask = pil2cv(mask)
             mask = image_grayscale(mask)
-            img = image_mask_add(img, mask)
-            img = image_rotate(img, angle, edge=edge)
+            pA = image_mask_add(pA, mask)
+            pA = image_transform(pA, offset, angle, size, edge=edge)
             matte = pixel_eval(matte, EnumImageType.BGRA)
-            img = cv2tensor_full(img, matte)
-            images.append(img)
+            images.append(cv2tensor_full(pA, matte))
             pbar.update_absolute(idx)
         return list(zip(*images))
 

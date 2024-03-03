@@ -11,6 +11,8 @@ import numpy as np
 from PIL import Image
 from loguru import logger
 
+from Jovimetrix import TYPE_IMAGE
+
 # =============================================================================
 
 MAX_WIDTH = 8192
@@ -183,7 +185,9 @@ class GLSL:
             del self.__texture
             self.__texture = None
 
-        self.__texture = self.__ctx.texture((self.__width, self.__height), 3)
+        if self.__texture is None:
+            self.__texture = self.__ctx.texture((self.__width, self.__height), 3)
+
         try:
             self.__fbo = self.__ctx.framebuffer(
                 color_attachments=[self.__texture]
@@ -243,6 +247,18 @@ class GLSL:
         self.__height = max(0, min(val, MAX_HEIGHT))
         self.__bufferReset()
 
+    @property
+    def channel0(self) -> int:
+        return self.__iChannel0
+
+    @channel0.setter
+    def channel0(self, val:TYPE_IMAGE) -> None:
+        if self.__iChannel0 is not None:
+            if len(channel0.mode) == 4:
+                channel0 = channel0.convert("RGB")
+            self.__channel0_texture = self.__ctx.texture(channel0.size, components=3, data=channel0.tobytes())
+            self.__channel0_texture.use(location=0)
+
     def __set_uniforms(self, channel0: Image=None) -> None:
         if self.__iResolution is not None:
             self.__iResolution.value = (self.__width, self.__height)
@@ -259,11 +275,13 @@ class GLSL:
         if self.__iFrame is not None:
             self.__iFrame.value = self.__frame_count
 
-        if self.__iChannel0 is not None and channel0 is not None:
+        """
+        if self.__iChannel0 is not None:
             if len(channel0.mode) == 4:
                 channel0 = channel0.convert("RGB")
             texture = self.__ctx.texture(channel0.size, components=3, data=channel0.tobytes())
             texture.use(location=0)
+        """
 
     def render(self, channel0:Image=None, param:dict=None) -> Image:
         self.__fbo.use()

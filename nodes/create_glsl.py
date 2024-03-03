@@ -17,7 +17,7 @@ from Jovimetrix import JOV_HELP_URL, WILDCARD, ComfyAPIMessage, \
 
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import parse_tuple, zip_longest_fill, EnumTupleType
-from Jovimetrix.sup.image import cv2tensor_full, pil2cv, pil2tensor, tensor2pil
+from Jovimetrix.sup.image import batch_extract, cv2tensor_full, pil2cv, pil2tensor, tensor2pil
 from Jovimetrix.sup.shader import GLSL, CompileException
 
 # =============================================================================
@@ -46,8 +46,7 @@ class GLSLNode(JOVImageMultiple):
         "optional": {
             Lexicon.PIXEL: (WILDCARD, {}),
             Lexicon.TIME: ("FLOAT", {"default": 0, "step": 0.0001, "min": 0, "precision": 6}),
-            Lexicon.FPS: ("INT", {"default": 0, "step": 1, "min": 0, "max": 1000}),
-            Lexicon.BATCH: ("INT", {"default": 1, "step": 1, "min": 1, "max": 36000}),
+            Lexicon.BATCH: ("VEC2", {"default": (1, 30), "step": 1, "label": ["COUNT", "FPS"]}),
             Lexicon.WAIT: ("BOOLEAN", {"default": False}),
             Lexicon.RESET: ("BOOLEAN", {"default": False}),
             Lexicon.WH: ("VEC2", {"default": (cls.WIDTH, cls.HEIGHT,), "step": 1,}),
@@ -70,21 +69,20 @@ class GLSLNode(JOVImageMultiple):
         self.__last_good = [torch.zeros((self.WIDTH, self.HEIGHT, 3), dtype=torch.uint8, device="cpu")]
 
     def run(self, id, **kw) -> list[torch.Tensor]:
-        batch = kw.get(Lexicon.BATCH, [1])
+        batch = parse_tuple(Lexicon.BATCH, kw, default=(1, 30), clip_min=1)
         fragment = kw.get(Lexicon.FRAGMENT, [DEFAULT_FRAGMENT])
         param = kw.get(Lexicon.PARAM, [{}])
         wihi = parse_tuple(Lexicon.WH, kw, default=(self.WIDTH, self.HEIGHT,), clip_min=1)
-        texture1 = kw.get(Lexicon.PIXEL, [None])
-        texture2 = kw.get(Lexicon.PIXEL_B, [None])
+        texture1 = kw.get(Lexicon.PIXEL, None)
+        texture1 = [None] if texture1 is None else batch_extract(texture1)
         hold = kw.get(Lexicon.WAIT, [False])
         reset = kw.get(Lexicon.RESET, [False])
-        fps = kw.get(Lexicon.FPS, [30])
-        params = [tuple(x) for x in zip_longest_fill(batch, fragment, param, wihi, texture1, texture2, hold, reset, fps)]
+        params = [tuple(x) for x in zip_longest_fill(batch, fragment, param, wihi, texture1, hold, reset)]
         images = []
         pbar = comfy.utils.ProgressBar(len(params))
-        for idx, (batch, fragment, param, wihi, texture1, texture2, hold, reset, fps) in enumerate(params):
+        for idx, (batch, fragment, param, wihi, texture1, hold, reset) in enumerate(params):
             width, height = wihi
-
+            batch_size, batch_fps = batch
             if self.__fragment != fragment or self.__glsl is None:
                 try:
                     self.__glsl = GLSL(fragment, width, height, param)
@@ -94,18 +92,14 @@ class GLSLNode(JOVImageMultiple):
                     return (self.__last_good, )
                 self.__fragment = fragment
 
-            self.__glsl.width = width
-            self.__glsl.height = height
-
+            if width != self.__glsl.width:
+                self.__glsl.width = width
+            if height != self.__glsl.height:
+                self.__glsl.height = height
             texture1 = tensor2pil(texture1) if texture1 is not None else None
-            texture2 = tensor2pil(texture2) if texture2 is not None else None
             self.__glsl.hold = hold
-
-            # clear the queue of msgs...
-            # better resets? check if reset message
             try:
                 data = ComfyAPIMessage.poll(id, timeout=0)
-                # logger.debug(data)
                 if (cmd := data.get('cmd', None)) is not None:
                     if cmd == 'reset':
                         reset = True
@@ -118,13 +112,10 @@ class GLSLNode(JOVImageMultiple):
                 self.__glsl.reset()
                 # PromptServer.instance.send_sync("jovi-glsl-time", {"id": id, "t": 0})
 
-            self.__glsl.fps = fps
-            for _ in range(batch):
+            self.__glsl.fps = batch_fps
+            for _ in range(batch_size):
                 img = self.__glsl.render(texture1, param)
-                img = pil2cv(img)
-                img = cv2tensor_full(img)
-                images.append(img)
-
+                images.append(cv2tensor_full(pil2cv(img)))
             runtime = self.__glsl.runtime if not reset else 0
             PromptServer.instance.send_sync("jovi-glsl-time", {"id": id, "t": runtime})
 

@@ -16,7 +16,7 @@ from Jovimetrix.sup.util import parse_number, parse_tuple, zip_longest_fill, Enu
 from Jovimetrix.sup.image import batch_extract, channel_merge, \
     channel_solid, channel_swap, cv2tensor_full, \
     image_crop, image_crop_center, image_crop_polygonal, image_grayscale, \
-    image_mask, image_mask_add, image_matte, image_rotate, image_scale, \
+    image_mask, image_mask_add, image_matte, image_rotate, image_scale, image_transform, \
     image_translate, image_split, pixel_eval, tensor2cv, \
     image_edge_wrap, image_scalefit, cv2tensor, \
     image_stack, image_mirror, image_blend, \
@@ -100,25 +100,9 @@ class TransformNode(JOVImageMultiple):
 
             pA = tensor2cv(pA)
             h, w = pA.shape[:2]
-            sX, sY = size
-            if sX < 0:
-                pA = cv2.flip(pA, 1)
-                sX = -sX
-
-            if sY < 0:
-                pA = cv2.flip(pA, 0)
-                sY = -sY
-
             edge = EnumEdge[edge]
             sample = EnumInterpolation[sample]
-            if sX != 1. or sY != 1.:
-                pA = image_scale(pA, (sX, sY), sample, edge)
-
-            if angle != 0:
-                pA = image_rotate(pA, angle, edge=edge)
-
-            if offset[0] != 0. or offset[1] != 0.:
-                pA = image_translate(pA, offset, edge)
+            pA = image_transform(pA, offset, angle, size, sample, edge)
 
             mirror = EnumMirrorMode[mirror]
             if mirror != EnumMirrorMode.NONE:
@@ -126,7 +110,6 @@ class TransformNode(JOVImageMultiple):
                 pA = image_mirror(pA, mirror, mpx, mpy)
 
             tx, ty = tile_xy
-            # h, w = pA.shape[:2]
             if (tx := int(tx)) > 1 or (ty := int(ty)) > 1:
                 pA = image_edge_wrap(pA, tx / 2 - 0.5, ty / 2 - 0.5)
                 pA = image_scalefit(pA, w, h, EnumScaleMode.FIT, sample, matte)
@@ -345,11 +328,11 @@ class PixelSwapNode(JOVImageMultiple):
         pB = [None] if pB is None else batch_extract(pB)
         swap_r = kw.get(Lexicon.SWAP_R, [EnumPixelSwap.PASSTHRU])
         r = kw.get(Lexicon.R, [0])
-        swap_g = kw.get(Lexicon.SWAP_G, [EnumPixelSwap.PASSTHRU.name])
+        swap_g = kw.get(Lexicon.SWAP_G, [EnumPixelSwap.PASSTHRU])
         g = kw.get(Lexicon.G, [0])
-        swap_b = kw.get(Lexicon.SWAP_B, [EnumPixelSwap.PASSTHRU.name])
+        swap_b = kw.get(Lexicon.SWAP_B, [EnumPixelSwap.PASSTHRU])
         b = kw.get(Lexicon.B, [0])
-        swap_a = kw.get(Lexicon.SWAP_A, [EnumPixelSwap.PASSTHRU.name])
+        swap_a = kw.get(Lexicon.SWAP_A, [EnumPixelSwap.PASSTHRU])
         a = kw.get(Lexicon.A, [0])
         params = [tuple(x) for x in zip_longest_fill(pA, pB, r, swap_r, g, swap_g,
                                                      b, swap_b, a, swap_a)]
@@ -384,7 +367,7 @@ class StackNode(JOVImageMultiple):
     CATEGORY = JOV_CATEGORY
     DESCRIPTION = "Union multiple images horizontal, vertical or in a grid."
     OUTPUT_IS_LIST = (False, False, False,)
-    SORT = 55
+    SORT = 75
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -492,7 +475,7 @@ class ColorTheoryNode(JOVImageMultiple):
     RETURN_TYPES = ("IMAGE", "IMAGE", "IMAGE", "IMAGE", "IMAGE")
     RETURN_NAMES = (Lexicon.C1, Lexicon.C2, Lexicon.C3, Lexicon.C4, Lexicon.C5)
     OUTPUT_IS_LIST = (True, True, True, True, True)
-    SORT = 85
+    SORT = 100
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:

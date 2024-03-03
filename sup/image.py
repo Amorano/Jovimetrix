@@ -15,6 +15,7 @@ import cv2
 import torch
 import numpy as np
 import scipy as sp
+from daltonlens import simulate
 from sklearn.cluster import MiniBatchKMeans
 
 from skimage import exposure
@@ -211,10 +212,58 @@ class EnumPixelSwap(Enum):
     IMAGE_B_G = 20
     IMAGE_B_B = 30
     IMAGE_B_A = 40
+    SCALAR = 50
     SOLID = 90
 
+class EnumCBSimulator(Enum):
+    AUTOSELECT = 0
+    BRETTEL1997 = 1
+    COBLISV1 = 2
+    COBLISV2 = 3
+    MACHADO2009 = 4
+    VIENOT1999 = 5
+    VISCHECK = 6
+
+class EnumCBDefiency(Enum):
+    DEUTAN = simulate.Deficiency.DEUTAN
+    PROTAN = simulate.Deficiency.PROTAN
+    TRITAN = simulate.Deficiency.TRITAN
+
 # =============================================================================
-# === CONVERSION ===
+# === COLOR SPACE CONVERSION ===
+# =============================================================================
+
+def gamma2linear(image: TYPE_IMAGE) -> TYPE_IMAGE:
+    """Gamma correction for old PCs/CRT monitors"""
+    return np.power(image, 2.2)
+
+def linear2gamma(image: TYPE_IMAGE) -> TYPE_IMAGE:
+    """Inverse gamma correction for old PCs/CRT monitors"""
+    return np.power(np.clip(image, 0., 1.), 1.0 / 2.2)
+
+def sRGB2Linear(image: TYPE_IMAGE) -> TYPE_IMAGE:
+    """Convert sRGB to linearRGB, removing the gamma correction.
+    Formula taken from Wikipedia https://en.wikipedia.org/wiki/SRGB
+    """
+    image = image.astype(float) / 255.
+    gamma = ((image + 0.055) / 1.055) ** 2.4
+    scale = image / 12.92
+    image = np.where (image > 0.04045, gamma, scale)
+    return (image * 255).astype(np.uint8)
+
+def linear2sRGB(image: TYPE_IMAGE) -> TYPE_IMAGE:
+    """Convert linearRGB to sRGB, applying the gamma correction.
+    Formula taken from Wikipedia https://en.wikipedia.org/wiki/SRGB
+    """
+    image = image.astype(float) / 255.
+    cutoff = image < 0.0031308
+    higher = 1.055 * pow(image, 1.0 / 2.4) - 0.055
+    lower = image * 12.92
+    image = np.where (image > cutoff, higher, lower)
+    return (image * 255).astype(np.uint8)
+
+# =============================================================================
+# === IMAGE CONVERSION ===
 # =============================================================================
 
 def batch_extract(batch: torch.Tensor) -> list[torch.Tensor]:
@@ -568,6 +617,35 @@ def image_blend(imageA: TYPE_IMAGE, imageB: TYPE_IMAGE, mask:Optional[TYPE_IMAGE
     image = pil2cv(image)
     return image_crop_center(image, w, h)
 
+def image_color_blind(image: TYPE_IMAGE, deficiency:EnumCBDefiency,
+                      simulator:EnumCBSimulator=EnumCBSimulator.AUTOSELECT,
+                      severity:float=1.0) -> TYPE_IMAGE:
+
+    if (cc := channel_count(image)[0]) == 4:
+        mask = image_mask(image)
+    image = image_convert(image, 3)
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    match simulator:
+        case EnumCBSimulator.AUTOSELECT:
+            simulator = simulate.Simulator_AutoSelect()
+        case EnumCBSimulator.BRETTEL1997:
+            simulator = simulate.Simulator_Brettel1997()
+        case EnumCBSimulator.COBLISV1:
+            simulator = simulate.Simulator_CoblisV1()
+        case EnumCBSimulator.COBLISV2:
+            simulator = simulate.Simulator_CoblisV2()
+        case EnumCBSimulator.MACHADO2009:
+            simulator = simulate.Simulator_Machado2009()
+        case EnumCBSimulator.VIENOT1999:
+            simulator = simulate.Simulator_Vienot1999()
+        case EnumCBSimulator.VISCHECK:
+            simulator = simulate.Simulator_Vischeck()
+    image = simulator.simulate_cvd(image, deficiency.value, severity=severity)
+    image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+    if cc == 4:
+        image = image_mask_add(image, mask)
+    return image
+
 def image_contrast(image: TYPE_IMAGE, value: float) -> TYPE_IMAGE:
     image, alpha, cc = image2bgr(image)
     mean_value = np.mean(image)
@@ -697,6 +775,22 @@ def image_exposure(image: TYPE_IMAGE, value: float) -> TYPE_IMAGE:
     image, alpha, cc = image2bgr(image)
     image = np.clip(image * value, 0, 255).astype(np.uint8)
     return bgr2image(image, alpha, cc == 1)
+
+def image_filter(image:TYPE_IMAGE, matrix:list[float|int]) -> TYPE_IMAGE:
+    """Apply a scalar matrix of numbers to each channel of an image.
+
+    The matrix should be formed such that all the R scalars are first, G then B.
+    """
+    if channel_count(image)[0] < 3:
+        image = image_convert(image, 3)
+    image = image.astype(float)
+    r = matrix[:3]
+    g = matrix[3:6]
+    b = matrix[6:]
+    image[:,:,2] = (image[:,:,2] * r[0] + image[:,:,1] * r[1] + image[:,:,0] * r[2])
+    image[:,:,1] = (image[:,:,2] * g[0] + image[:,:,1] * g[1] + image[:,:,0] * g[2])
+    image[:,:,0] = (image[:,:,2] * b[0] + image[:,:,1] * b[1] + image[:,:,0] * b[2])
+    return image.astype(np.uint8)
 
 def image_formats() -> list[str]:
     exts = Image.registered_extensions()
@@ -1182,6 +1276,22 @@ def image_translate(image: TYPE_IMAGE, offset:TYPE_COORD=(0.0, 0.0), edge:EnumEd
         return cv2.warpAffine(img, M, (width, height), flags=cv2.INTER_LINEAR)
 
     return image_affine_edge(image, translate, edge)
+
+def image_transform(image: TYPE_IMAGE, offset:TYPE_COORD=(0.0, 0.0), angle:float=0, scale:TYPE_COORD=(1.0, 1.0), sample:EnumInterpolation=EnumInterpolation.LANCZOS4, edge:EnumEdge=EnumEdge.CLIP) -> TYPE_IMAGE:
+    sX, sY = scale
+    if sX < 0:
+        image = cv2.flip(image, 1)
+        sX = -sX
+    if sY < 0:
+        image = cv2.flip(image, 0)
+        sY = -sY
+    if sX != 1. or sY != 1.:
+        image = image_scale(image, (sX, sY), sample, edge)
+    if angle != 0:
+        image = image_rotate(image, angle, edge=edge)
+    if offset[0] != 0. or offset[1] != 0.:
+        image = image_translate(image, offset, edge)
+    return image
 
 # MORPHOLOGY
 

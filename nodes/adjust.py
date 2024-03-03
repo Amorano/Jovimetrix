@@ -14,9 +14,9 @@ import comfy
 from Jovimetrix import JOV_HELP_URL, MIN_IMAGE_SIZE, WILDCARD, JOVImageMultiple
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import zip_longest_fill, parse_tuple, parse_number, EnumTupleType
-from Jovimetrix.sup.image import batch_extract, channel_count, \
+from Jovimetrix.sup.image import EnumCBDefiency, EnumCBSimulator, EnumScaleMode, batch_extract, channel_count, \
     channel_solid, color_match_histogram, color_match_lut, color_match_reinhard, \
-    cv2tensor_full, tensor2cv, image_equalize, image_levels, pixel_eval, \
+    cv2tensor_full, image_color_blind, image_scalefit, tensor2cv, image_equalize, image_levels, pixel_eval, \
     image_posterize, image_pixelate, image_quantize, image_sharpen, \
     image_threshold, image_blend, image_invert, morph_edge_detect, \
     morph_emboss, image_contrast, image_hsv, image_gamma, \
@@ -177,8 +177,9 @@ class AdjustNode(JOVImageMultiple):
                 mask = tensor2cv(mask, chan=EnumImageType.GRAYSCALE)
             else:
                 mask = channel_solid(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, chan=EnumImageType.GRAYSCALE)
-            if invert:
+            if not invert:
                 mask = 255 - mask
+
             if (wh := pA.shape[:2]) != mask.shape[:2]:
                 mask = cv2.resize(mask, wh[::-1])
             pA = image_blend(pA, img_new, mask)
@@ -216,7 +217,7 @@ class ColorMatchNode(JOVImageMultiple):
         }}
         return Lexicon._parse(d, JOV_HELP_URL + "/ADJUST#-color-match")
 
-    def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
+    def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         pA = kw.get(Lexicon.PIXEL_A, None)
         pA = [None] if pA is None else batch_extract(pA)
         pB = kw.get(Lexicon.PIXEL_B, None)
@@ -240,28 +241,25 @@ class ColorMatchNode(JOVImageMultiple):
             else:
                 pA = tensor2cv(pA)
             h, w = pA.shape[:2]
-
-            cmap = EnumColorMatchMap[cmap]
-            if cmap != EnumColorMatchMap.PRESET_MAP:
-                if pB is None:
-                    pB = channel_solid(w, h, chan=EnumImageType.BGRA)
-                else:
-                    pB = tensor2cv(pB)
+            if pB is None:
+                pB = channel_solid(w, h, chan=EnumImageType.BGRA)
             else:
-                pB = None
-
+                pB = tensor2cv(pB)
             mode = EnumColorMatchMode[mode]
-            colormap = EnumColorMap[colormap]
             match mode:
                 case EnumColorMatchMode.LUT:
+                    cmap = EnumColorMatchMap[cmap]
+                    if cmap == EnumColorMatchMap.PRESET_MAP:
+                        pB = None
+                    colormap = EnumColorMap[colormap]
                     pA = color_match_lut(pA, colormap.value, pB, num_colors)
                 case EnumColorMatchMode.HISTOGRAM:
+                    pB = image_scalefit(pB, w, h, EnumScaleMode.MATTE, (0,0,0,0))
                     pA = color_match_histogram(pA, pB)
                 case EnumColorMatchMode.REINHARD:
                     pA = color_match_reinhard(pA, pB)
             if invert == True:
                 pA = image_invert(pA, 1)
-
             matte = pixel_eval(matte, EnumImageType.BGRA)
             images.append(cv2tensor_full(pA, matte))
             pbar.update_absolute(idx)
@@ -287,7 +285,7 @@ class ThresholdNode(JOVImageMultiple):
         }}
         return Lexicon._parse(d, JOV_HELP_URL + "/ADJUST#-threshold")
 
-    def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor]:
+    def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         pA = kw.get(Lexicon.PIXEL, None)
         pA = [None] if pA is None else batch_extract(pA)
         mode = kw.get(Lexicon.FUNC, [EnumThreshold.BINARY])
@@ -311,3 +309,42 @@ class ThresholdNode(JOVImageMultiple):
             images.append(cv2tensor_full(pA))
             pbar.update_absolute(idx)
         return list(zip(*images))
+
+class ColorBlindNode(JOVImageMultiple):
+    NAME = "COLOR BLIND (JOV) 👁‍🗨"
+    CATEGORY = CATEGORY = JOV_CATEGORY
+    DESCRIPTION = "Transform an image into specific color blind color space"
+
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        d = {
+        "required": {},
+        "optional": {
+            Lexicon.PIXEL_A: (WILDCARD, {}),
+            Lexicon.COLORMATCH_MODE: (EnumCBDefiency._member_names_,
+                                        {"default": EnumCBDefiency.PROTAN.name}),
+            Lexicon.COLORMATCH_MAP: (EnumCBSimulator._member_names_,
+                                        {"default": EnumCBSimulator.AUTOSELECT.name}),
+            Lexicon.VALUE: ("FLOAT", {"default": 1, "min": 0, "max": 1, "step": 0.001}),
+        }}
+        return Lexicon._parse(d, JOV_HELP_URL + "/ADJUST#-color-match")
+
+    def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        pA = kw.get(Lexicon.PIXEL_A, None)
+        pA = [None] if pA is None else batch_extract(pA)
+        defiency = kw.get(Lexicon.DEFIENCY, [EnumCBDefiency.PROTAN.name])
+        simulator = kw.get(Lexicon.SIMULATOR, [EnumCBSimulator.AUTOSELECT.name])
+        severity = kw.get(Lexicon.SIMULATOR, [1])
+        params = [tuple(x) for x in zip_longest_fill(pA, defiency, simulator, severity)]
+        images = []
+        pbar = comfy.utils.ProgressBar(len(params))
+        for idx, (pA, defiency, simulator, severity) in enumerate(params):
+            if pA is None:
+                pA = channel_solid(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, chan=EnumImageType.BGRA)
+            else:
+                pA = tensor2cv(pA)
+            pA = image_color_blind(pA, defiency, simulator, severity)
+            images.append(cv2tensor_full(pA))
+            pbar.update_absolute(idx)
+        return list(zip(*images))
+
