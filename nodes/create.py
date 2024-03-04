@@ -17,11 +17,10 @@ from Jovimetrix import WILDCARD, JOVImageSimple, JOVImageMultiple, \
 
 from Jovimetrix.sup.lexicon import Lexicon
 
-from Jovimetrix.sup.util import parse_tuple, \
-    parse_number, zip_longest_fill, EnumTupleType
+from Jovimetrix.sup.util import parse_tuple, zip_longest_fill, EnumTupleType
 
 from Jovimetrix.sup.image import batch_extract, channel_solid, cv2tensor_full, \
-    image_grayscale, image_mask_add, image_matte, image_rotate, image_stereogram, image_transform, \
+    image_grayscale, image_invert, image_mask_add, image_rotate, image_stereogram, image_transform, \
     image_translate, pil2cv, pixel_eval, tensor2cv, shape_ellipse, shape_polygon, \
     shape_quad, EnumEdge, EnumImageType
 
@@ -199,33 +198,38 @@ class TextNode(JOVImageMultiple):
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         if len(full_text := kw.get(Lexicon.STRING, [""])) == 0:
             full_text = [""]
-
         pprint.pprint(kw)
-        font_idx = kw.get(Lexicon.FONT, self.FONT_NAMES[0])
-        autosize = kw.get(Lexicon.AUTOSIZE, [False])
-        letter = kw.get(Lexicon.LETTER, [False])
+        font_idx = kw[Lexicon.FONT]
+        autosize = kw[Lexicon.AUTOSIZE]
+        letter = kw[Lexicon.LETTER]
         color = parse_tuple(Lexicon.RGBA_A, kw, default=(255, 255, 255, 255))
         matte = parse_tuple(Lexicon.MATTE, kw, default=(0, 0, 0), clip_min=0, clip_max=255)
-        columns = kw.get(Lexicon.COLUMNS, [0])
-        font_size = kw.get(Lexicon.FONT_SIZE, [16])
-        align = kw.get(Lexicon.ALIGN, [EnumAlignment.CENTER])
-        justify = kw.get(Lexicon.JUSTIFY, [EnumJustify.CENTER])
-        margin = kw.get(Lexicon.MARGIN, [0])
-        line_spacing = kw.get(Lexicon.SPACING, [25])
+        columns = kw[Lexicon.COLUMNS]
+        font_size = kw[Lexicon.FONT_SIZE]
+        align = kw[Lexicon.ALIGN]
+        justify = kw[Lexicon.JUSTIFY]
+        margin = kw[Lexicon.MARGIN]
+        line_spacing = kw[Lexicon.SPACING]
         wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,))
         pos = parse_tuple(Lexicon.XY, kw, EnumTupleType.FLOAT, (0, 0), -1, 1)
-        angle = kw.get(Lexicon.ANGLE, [0])
-        edge = kw.get(Lexicon.EDGE, [EnumEdge.CLIP])
+        angle = kw[Lexicon.ANGLE]
+        edge = kw[Lexicon.EDGE]
+        invert = kw[Lexicon.INVERT]
         images = []
         params = [tuple(x) for x in zip_longest_fill(full_text, font_idx, autosize,
                                                      letter, color, matte, columns,
                                                      font_size, align, justify,
                                                      margin, line_spacing, wihi,
-                                                     pos, angle, edge)]
+                                                     pos, angle, edge, invert)]
+
+        print(full_text)
+        print(params)
+
+
         pbar = comfy.utils.ProgressBar(len(params))
         for idx, (full_text, font_idx, autosize, letter, color, matte, columns,
                   font_size, align, justify, margin, line_spacing, wihi, pos,
-                  angle, edge) in enumerate(params):
+                  angle, edge, invert) in enumerate(params):
 
             width, height = wihi
             font_name = self.FONTS[font_idx]
@@ -247,6 +251,7 @@ class TextNode(JOVImageMultiple):
                     img = text_draw(ch, font, width, height, align, justify, color=color)
                     img = image_rotate(img, angle, edge=edge)
                     img = image_translate(img, pos, edge=edge)
+                    img = image_invert(img, 1)
                     images.append(cv2tensor_full(img, matte))
             else:
                 if autosize:
@@ -256,6 +261,7 @@ class TextNode(JOVImageMultiple):
                                 margin, line_spacing, color)
                 img = image_rotate(img, angle, edge=edge)
                 img = image_translate(img, pos, edge=edge)
+                img = image_invert(img, 1)
                 images.append(cv2tensor_full(img, matte))
             pbar.update_absolute(idx)
         return list(zip(*images))

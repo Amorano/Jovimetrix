@@ -394,7 +394,7 @@ class StackNode(JOVImageMultiple):
             idx += 1
 
         if len(images) == 0:
-            logger.warn("no images to stack")
+            logger.warning("no images to stack")
             return
 
         axis = kw.get(Lexicon.AXIS, [EnumOrientation.GRID])[0]

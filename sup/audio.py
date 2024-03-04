@@ -130,7 +130,7 @@ class AudioDevice:
     @device.setter
     def device(self, device:str) -> None:
         if (device := self.__devices.get(device, None)) is None:
-            logger.warn(f"Device doesn't exist {device}")
+            logger.warning(f"Device doesn't exist {device}")
             return
         self.__device = device
 

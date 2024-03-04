@@ -407,7 +407,8 @@ class QueueNode(JOVBaseNode):
         self.__previous = data
         PromptServer.instance.send_sync("jovi-queue-ping", {"id": id, "c": current, "i": self.__index, "s": self.__len, "l": self.__q})
 
-        return [data] * batch, [self.__q] * batch, current, self.__index, self.__len,
+        # q = torch.cat(self.__q, dim=0)
+        return [data] * batch, self.__q, current, self.__index, self.__len,
 
 class ExportNode(JOVBaseNode):
     NAME = "EXPORT (JOV) 📽"

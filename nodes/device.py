@@ -241,6 +241,10 @@ class StreamWriterNode(JOVBaseNode):
         }}
         return Lexicon._parse(d, JOV_HELP_URL + "/DEVICE#-stream-writer")
 
+    @classmethod
+    def IS_CHANGED(cls, **kw) -> float:
+        return float("nan")
+
     def __init__(self, *arg, **kw) -> None:
         super().__init__(*arg, **kw)
         self.__route = ""
