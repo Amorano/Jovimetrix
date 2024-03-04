@@ -198,7 +198,6 @@ class TextNode(JOVImageMultiple):
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         if len(full_text := kw.get(Lexicon.STRING, [""])) == 0:
             full_text = [""]
-        pprint.pprint(kw)
         font_idx = kw[Lexicon.FONT]
         autosize = kw[Lexicon.AUTOSIZE]
         letter = kw[Lexicon.LETTER]
@@ -222,10 +221,6 @@ class TextNode(JOVImageMultiple):
                                                      margin, line_spacing, wihi,
                                                      pos, angle, edge, invert)]
 
-        print(full_text)
-        print(params)
-
-
         pbar = comfy.utils.ProgressBar(len(params))
         for idx, (full_text, font_idx, autosize, letter, color, matte, columns,
                   font_size, align, justify, margin, line_spacing, wihi, pos,
@@ -237,6 +232,7 @@ class TextNode(JOVImageMultiple):
             justify = EnumJustify[justify]
             edge = EnumEdge[edge]
             matte = pixel_eval(matte)
+            # color = pixel_eval(color, EnumImageType.BGRA)
             wm = width-margin * 2
             hm = height-margin * 2 - line_spacing
             if letter:
@@ -251,7 +247,8 @@ class TextNode(JOVImageMultiple):
                     img = text_draw(ch, font, width, height, align, justify, color=color)
                     img = image_rotate(img, angle, edge=edge)
                     img = image_translate(img, pos, edge=edge)
-                    img = image_invert(img, 1)
+                    if invert:
+                        img = image_invert(img, 1)
                     images.append(cv2tensor_full(img, matte))
             else:
                 if autosize:
@@ -261,7 +258,8 @@ class TextNode(JOVImageMultiple):
                                 margin, line_spacing, color)
                 img = image_rotate(img, angle, edge=edge)
                 img = image_translate(img, pos, edge=edge)
-                img = image_invert(img, 1)
+                if invert:
+                    img = image_invert(img, 1)
                 images.append(cv2tensor_full(img, matte))
             pbar.update_absolute(idx)
         return list(zip(*images))
