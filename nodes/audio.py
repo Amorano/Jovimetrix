@@ -45,7 +45,7 @@ class LoadWaveNode(JOVBaseNode):
         self.__cache = {}
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        filen = kw.get(Lexicon.FILEN)
+        filen = kw[Lexicon.FILEN]
         params = [tuple(x) for x in zip_longest_fill(filen)]
         waves = []
         pbar = comfy.utils.ProgressBar(len(params))
@@ -87,9 +87,9 @@ class WaveGraphNode(JOVImageMultiple):
         return Lexicon._parse(d, JOV_HELP_URL + "/AUDIO#-wave-graph")
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        wave = kw.get(Lexicon.WAVE, [None])
-        bars = kw.get(Lexicon.VALUE, [100])
-        thick = kw.get(Lexicon.THICK, [0.72])
+        wave = kw[Lexicon.WAVE]
+        bars = kw[Lexicon.VALUE]
+        thick = kw[Lexicon.THICK]
         wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), clip_min=1)
         rgb_a = parse_tuple(Lexicon.RGBA_A, kw, default=(128, 128, 0, 255), clip_min=0, clip_max=255)
         matte = parse_tuple(Lexicon.RGBA_B, kw, default=(0, 128, 128, 255), clip_min=0, clip_max=255)

@@ -70,13 +70,13 @@ class GLSLNode(JOVImageMultiple):
 
     def run(self, id, **kw) -> list[torch.Tensor]:
         batch = parse_tuple(Lexicon.BATCH, kw, default=(1, 30), clip_min=1)
-        fragment = kw.get(Lexicon.FRAGMENT, [DEFAULT_FRAGMENT])
-        param = kw.get(Lexicon.PARAM, [{}])
+        fragment = kw[Lexicon.FRAGMENT]
+        param = kw[Lexicon.PARAM]
         wihi = parse_tuple(Lexicon.WH, kw, default=(self.WIDTH, self.HEIGHT,), clip_min=1)
-        texture1 = kw.get(Lexicon.PIXEL, None)
+        texture1 = kw[Lexicon.PIXEL]
         texture1 = [None] if texture1 is None else batch_extract(texture1)
-        hold = kw.get(Lexicon.WAIT, [False])
-        reset = kw.get(Lexicon.RESET, [False])
+        hold = kw[Lexicon.WAIT]
+        reset = kw[Lexicon.RESET]
         params = [tuple(x) for x in zip_longest_fill(batch, fragment, param, wihi, texture1, hold, reset)]
         images = []
         pbar = comfy.utils.ProgressBar(len(params))

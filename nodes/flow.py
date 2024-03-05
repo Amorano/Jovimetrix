@@ -117,9 +117,9 @@ class DelayNode(JOVBaseNode):
         self.__delay = 0
 
     def run(self, id, **kw) -> tuple[Any]:
-        o = kw.get(Lexicon.PASS_IN, [None])
-        wait = kw.get(Lexicon.WAIT, [False])[0]
-        delay = min(kw.get(Lexicon.TIMER, 0), [JOVI_DELAY_MAX])[0]
+        o = kw[Lexicon.PASS_IN]
+        wait = kw[Lexicon.WAIT][0]
+        delay = min(kw[Lexicon.TIMER], [JOVI_DELAY_MAX])[0]
 
         if wait:
             cancel = False
@@ -164,8 +164,8 @@ class HoldValueNode(JOVBaseNode):
         self.__last_value = None
 
     def run(self, **kw) -> tuple[Any]:
-        o = kw.get(Lexicon.PASS_IN, [None])
-        if self.__last_value is None or not kw.get(Lexicon.WAIT, [False]):
+        o = kw[Lexicon.PASS_IN]
+        if self.__last_value is None or not kw[Lexicon.WAIT]:
             self.__last_value = o
         return (self.__last_value,)
 
@@ -192,10 +192,10 @@ class ComparisonNode(JOVBaseNode):
 
     def run(self, **kw) -> tuple[bool]:
         result = []
-        A = kw.get(Lexicon.IN_A, [None])
-        B = kw.get(Lexicon.IN_B, [None])
-        flip = kw.get(Lexicon.FLIP, [None])
-        op = kw.get(Lexicon.COMPARE, [None])
+        A = kw[Lexicon.IN_A]
+        B = kw[Lexicon.IN_B]
+        flip = kw[Lexicon.FLIP]
+        op = kw[Lexicon.COMPARE]
         params = [tuple(x) for x in zip_longest_fill(A, B, op, flip)]
         pbar = comfy.utils.ProgressBar(len(params))
         for idx, (a, b, op, flip) in enumerate(params):
@@ -284,7 +284,7 @@ class SelectNode(JOVBaseNode):
         self.__index = 0
 
     def run(self, id, **kw) -> None:
-        reset = kw.get(Lexicon.RESET, False)
+        reset = kw[Lexicon.RESET]
         try:
             data = ComfyAPIMessage.poll(id, timeout=0)
             if (cmd := data.get('cmd', None)) is not None:
@@ -307,7 +307,7 @@ class SelectNode(JOVBaseNode):
             vals.append(val)
             count += 1
 
-        select = kw.get(Lexicon.SELECT, 0)
+        select = kw[Lexicon.SELECT]
         # clip the index in case it went out of range.
         index = max(0, min(count - 1, self.__index))
         val = None

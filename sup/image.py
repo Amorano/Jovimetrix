@@ -358,6 +358,8 @@ def pil2tensor(image: Image.Image) -> torch.Tensor:
     return torch.from_numpy(np.array(image).astype(np.float32) / 255).unsqueeze(0)
 
 def tensor2cv(tensor: torch.Tensor, chan:EnumImageType=EnumImageType.BGRA) -> TYPE_IMAGE:
+    if not isinstance(tensor, (torch.Tensor,)):
+        return channel_solid(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, (0, 0, 0, 255))
     image = np.clip(tensor.squeeze().cpu().numpy() * 255, 0, 255).astype(np.uint8)
     cc = 1 if len(image.shape) < 3 else image.shape[2]
     if chan == EnumImageType.BGRA:

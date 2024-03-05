@@ -107,7 +107,7 @@ class AkashicNode(JOVBaseNode):
             return "text", [meh]
 
     def run(self, **kw) -> tuple[Any, Any]:
-        o = kw.get(Lexicon.PASS_IN, None)
+        o = kw[Lexicon.PASS_IN]
         output = {"ui": {"b64_images": [], "text": []}}
         if o is None:
             output["ui"]["result"] = (o, {}, )
@@ -155,8 +155,8 @@ class ValueGraphNode(JOVBaseNode):
         self.__ax.set_title("VALUE HISTORY")
 
     def run(self, **kw) -> tuple[torch.Tensor]:
-        reset = kw.get(Lexicon.RESET, [0])
-        slice = kw.get(Lexicon.VALUE, [120])
+        reset = kw[Lexicon.RESET]
+        slice = kw[Lexicon.VALUE]
         wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), zero=0.001)
         accepted = [bool, int, float, np.float16, np.float32, np.float64]
         idx = 1
@@ -227,7 +227,7 @@ class RouteNode(JOVBaseNode):
         return Lexicon._parse(d, JOV_HELP_URL + "/UTILITY#-route")
 
     def run(self, **kw) -> tuple[Any, Any]:
-        o = kw.get(Lexicon.PASS_IN, None)
+        o = kw[Lexicon.PASS_IN]
         return (o, )
 
 class QueueNode(JOVBaseNode):
@@ -326,8 +326,8 @@ class QueueNode(JOVBaseNode):
                     self.__last_q_value[q_data] = json.load(f)
             return self.__last_q_value[q_data]
 
-        reset = kw.get(Lexicon.RESET, False)
-        rand = kw.get(Lexicon.RANDOM, False)
+        reset = kw[Lexicon.RESET]
+        rand = kw[Lexicon.RANDOM]
 
         # clear the queue of msgs...
         # better resets? check if reset message
@@ -350,7 +350,7 @@ class QueueNode(JOVBaseNode):
             # process Q into ...
             # check if folder first, file, then string.
             # entry is: data, <filter if folder:*.png,*.jpg>, <repeats:1+>
-            q = kw.get(Lexicon.QUEUE, "")
+            q = kw[Lexicon.QUEUE]
             self.__q = self.__parse(q)
             self.__q_rand = list(self.__q)
             random.shuffle(self.__q_rand)
@@ -362,11 +362,11 @@ class QueueNode(JOVBaseNode):
             if self.__previous:
                 self.__previous = process(self.__previous)
 
-        if (wait := kw.get(Lexicon.WAIT, False)):
+        if (wait := kw[Lexicon.WAIT]):
             self.__index = self.__last
 
         if self.__index >= len(self.__q):
-            loop = kw.get(Lexicon.LOOP, 0)
+            loop = kw[Lexicon.LOOP]
             # we are done with X loops
             self.__loops += 1
             if loop > 0 and self.__loops >= loop:
@@ -394,8 +394,8 @@ class QueueNode(JOVBaseNode):
             info += f" PAUSED"
 
         data = self.__previous
-        batch = max(1, kw.get(Lexicon.BATCH, 1))
-        # batch_list = kw.get(Lexicon.BATCH_LIST, True)
+        batch = max(1, kw[Lexicon.BATCH])
+        # batch_list = kw[Lexicon.BATCH_LIST, True)
         if not wait:
             if rand:
                 data = process(self.__q_rand[self.__index])
@@ -442,18 +442,18 @@ class ExportNode(JOVBaseNode):
     def run(self, **kw) -> None:
         pA = kw.get(Lexicon.PIXEL, None)
         pA = [None] if pA is None else batch_extract(pA)
-        suffix = kw.get(Lexicon.PREFIX, [""])[0]
+        suffix = kw[Lexicon.PREFIX][0]
         if suffix == "":
             suffix = uuid4().hex[:16]
 
-        output_dir = kw.get(Lexicon.PASS_OUT, [""])[0]
-        format = kw.get(Lexicon.FORMAT, ["gif"])[0]
-        overwrite = kw.get(Lexicon.OVERWRITE, False)[0]
-        optimize = kw.get(Lexicon.OPTIMIZE, [False])[0]
-        quality = kw.get(Lexicon.QUALITY, [0])[0]
-        motion = kw.get(Lexicon.QUALITY_M, [0])[0]
-        fps = kw.get(Lexicon.FPS, [0])[0]
-        loop = kw.get(Lexicon.LOOP, [0])[0]
+        output_dir = kw[Lexicon.PASS_OUT][0]
+        format = kw[Lexicon.FORMAT][0]
+        overwrite = kw[Lexicon.OVERWRITE][0]
+        optimize = kw[Lexicon.OPTIMIZE][0]
+        quality = kw[Lexicon.QUALITY][0]
+        motion = kw[Lexicon.QUALITY_M][0]
+        fps = kw[Lexicon.FPS][0]
+        loop = kw[Lexicon.LOOP][0]
 
         output_dir = Path(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
@@ -530,9 +530,11 @@ class ImageDiffNode(JOVBaseNode):
         return Lexicon._parse(d, JOV_HELP_URL + "/UTILITY#-image-diff")
 
     def run(self, **kw) -> tuple[Any, Any]:
-        a = kw.get(Lexicon.PIXEL_A, [None])
-        b = kw.get(Lexicon.PIXEL_B, [None])
-        th = kw.get(Lexicon.THRESHOLD, [0])
+        pA = kw.get(Lexicon.PIXEL_A, None)
+        pA = [None] if pA is None else batch_extract(pA)
+        pB = kw.get(Lexicon.PIXEL_B, None)
+        pB = [None] if pB is None else batch_extract(pB)
+        th = kw[Lexicon.THRESHOLD]
         results = []
         params = [tuple(x) for x in zip_longest_fill(a, b, th)]
         pbar = comfy.utils.ProgressBar(len(params))
