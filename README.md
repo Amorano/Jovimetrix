@@ -1,3 +1,4 @@
+<h2><p align="center">THIS ENTIRE PROJECT IS DONATIONWARE.<br>PLEASE FEEL FREE TO CONTRIBUTE IN ANYWAY YOU THINK YOU CAN</p></h2>
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://github.com/Amorano/Jovimetrix-examples/blob/master/res/logo-jovimetrix.png">
   <source media="(prefers-color-scheme: light)" srcset="https://github.com/Amorano/Jovimetrix-examples/blob/master/res/logo-jovimetrix-light.png">
