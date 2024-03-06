@@ -126,11 +126,11 @@ app.registerExtension({
                 }
                 ctx.save();
                 ctx.lineWidth = 1
-                ctx.fillStyle = LiteGraph.WIDGET_BGCOLOR + alpha;
+                ctx.fillStyle = LiteGraph.WIDGET_BGCOLOR; //"#333333" + alpha; // LiteGraph.WIDGET_BGCOLOR
                 const offset_y = visible[0].y;
                 const height = this.size[1] - offset_y;
                 ctx.roundRect(-TOOLTIP_WIDTH_MAX-TOOLTIP_WIDTH_OFFSET,
-                    offset_y- TOOLTIP_HEIGHT_MAX / 2,
+                    offset_y - TOOLTIP_HEIGHT_MAX / 2,
                     TOOLTIP_WIDTH_MAX + 4, height, 8);
                 ctx.fill();
                 ctx.fillStyle = LiteGraph.WIDGET_OUTLINE_COLOR;
@@ -151,7 +151,7 @@ app.registerExtension({
                         wrap = 52;
                     }
                     var lines = wrapText(text, wrap).slice(0, 3);
-                    ctx.font = FONT_SIZE - lines.length/2 + "px sans-serif";
+                    ctx.font = FONT_SIZE - lines.length / 2 + "px sans-serif";
                     ctx.fillStyle = TOOLTIP_COLOR.slice(0, 7) + alpha;
                     const offset = TOOLTIP_HEIGHT_MAX * 2 / (lines.length+1);
                     let idx = 1;
