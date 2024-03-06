@@ -256,7 +256,7 @@ class TextNode(JOVImageMultiple):
                     images.append(cv2tensor_full(img, matte))
             else:
                 if autosize:
-                    full_text, font_size = text_autosize(full_text, font_name, wm, hm)[:2]
+                    full_text, font_size = text_autosize(full_text, font_name, wm, hm, columns)[:2]
                 font = ImageFont.truetype(font_name, font_size)
                 img = text_draw(full_text, font, width, height, align, justify,
                                 margin, line_spacing, color)
