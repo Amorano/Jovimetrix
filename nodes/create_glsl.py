@@ -70,17 +70,17 @@ class GLSLNode(JOVImageMultiple):
 
     def run(self, id, **kw) -> list[torch.Tensor]:
         batch = parse_tuple(Lexicon.BATCH, kw, default=(1, 30), clip_min=1)
-        fragment = kw[Lexicon.FRAGMENT]
-        param = kw[Lexicon.PARAM]
+        fragment = kw.get(Lexicon.FRAGMENT, [DEFAULT_FRAGMENT])
+        param = kw.get(Lexicon.PARAM, [{}])
         wihi = parse_tuple(Lexicon.WH, kw, default=(self.WIDTH, self.HEIGHT,), clip_min=1)
-        texture1 = kw[Lexicon.PIXEL]
-        texture1 = [None] if texture1 is None else batch_extract(texture1)
+        pA = kw.get(Lexicon.PIXEL, None)
+        pA = [None] if pA is None else batch_extract(pA)
         hold = kw[Lexicon.WAIT]
         reset = kw[Lexicon.RESET]
-        params = [tuple(x) for x in zip_longest_fill(batch, fragment, param, wihi, texture1, hold, reset)]
+        params = [tuple(x) for x in zip_longest_fill(batch, fragment, param, wihi, pA, hold, reset)]
         images = []
         pbar = comfy.utils.ProgressBar(len(params))
-        for idx, (batch, fragment, param, wihi, texture1, hold, reset) in enumerate(params):
+        for idx, (batch, fragment, param, wihi, pA, hold, reset) in enumerate(params):
             width, height = wihi
             batch_size, batch_fps = batch
             if self.__fragment != fragment or self.__glsl is None:
@@ -96,7 +96,7 @@ class GLSLNode(JOVImageMultiple):
                 self.__glsl.width = width
             if height != self.__glsl.height:
                 self.__glsl.height = height
-            texture1 = tensor2pil(texture1) if texture1 is not None else None
+            pA = tensor2pil(pA) if pA is not None else None
             self.__glsl.hold = hold
             try:
                 data = ComfyAPIMessage.poll(id, timeout=0)
@@ -114,7 +114,7 @@ class GLSLNode(JOVImageMultiple):
 
             self.__glsl.fps = batch_fps
             for _ in range(batch_size):
-                img = self.__glsl.render(texture1, param)
+                img = self.__glsl.render(pA, param)
                 images.append(cv2tensor_full(pil2cv(img)))
             runtime = self.__glsl.runtime if not reset else 0
             PromptServer.instance.send_sync("jovi-glsl-time", {"id": id, "t": runtime})
@@ -140,24 +140,27 @@ class GLSLBaseNode(JOVBaseNode):
 
     def run(self, **kw) -> list[torch.Tensor]:
         width, height = MIN_IMAGE_SIZE, MIN_IMAGE_SIZE
-        if (texture1 := kw.pop(Lexicon.PIXEL, None)) is not None:
-            texture1 = tensor2pil(texture1)
-            width, height = texture1.size
+        pA = kw.get(Lexicon.PIXEL, None)
+        pA = None if pA is None else batch_extract(pA)[0]
+        if pA is not None:
+            pA = tensor2pil(pA)
+            width, height = pA.size
 
         wihi = parse_tuple(Lexicon.WH, kw, default=(width, height,), clip_min=1)[0]
         width, height = wihi
         kw.pop(Lexicon.WH, None)
-
         seed = kw.pop(Lexicon.SEED, None)
 
         uv_tile = None
         if (uv_tile := kw.pop(Lexicon.TILE, None)) is not None:
             uv_tile = parse_tuple([uv_tile], typ=EnumTupleType.FLOAT, default=(1., 1.,), clip_min=0.01)[0]
 
-        if (texture2 := kw.pop(Lexicon.PIXEL_B, None)) is not None:
-            texture2 = tensor2pil(texture2)
-        if (texture3 := kw.pop(Lexicon.MASK, None)) is not None:
-            texture3 = tensor2pil(texture3)
+        if (pB := kw.pop(Lexicon.PIXEL_B, None)) is not None:
+            # texture2 = tensor2pil(texture2)
+            pB = None if pB is None else batch_extract(pB)[0]
+
+        #if (texture3 := kw.pop(Lexicon.MASK, None)) is not None:
+        #    texture3 = tensor2pil(texture3)
 
         frag = kw.pop("frag", self.FRAGMENT)
         for x in ['param', 'iChannel0', 'iChannel1', 'iChannel2', 'iPosition', 'fragCoord', 'iResolution', 'iTime', 'iTimeDelta', 'iFrameRate', 'iFrame', 'fragColor', 'texture1', 'texture2', 'texture3']:
@@ -190,7 +193,7 @@ class GLSLBaseNode(JOVBaseNode):
 
         self.__glsl.width = width
         self.__glsl.height = height
-        img = self.__glsl.render(texture1, param)
+        img = self.__glsl.render(pA, param)
         return (pil2tensor(img), )
 
 class GLSLSelectRange(GLSLBaseNode):

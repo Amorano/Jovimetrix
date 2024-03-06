@@ -54,7 +54,7 @@ class ConstantNode(JOVImageMultiple):
         return Lexicon._parse(d, JOV_HELP_URL + "/CREATE#-constant")
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        pA = kw[Lexicon.PIXEL]
+        pA = kw.get(Lexicon.PIXEL, None)
         pA = [None] if pA is None else batch_extract(pA)
         wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
         matte = parse_tuple(Lexicon.RGBA_A, kw, default=(0, 0, 0, 255), clip_min=0, clip_max=255)
@@ -104,10 +104,10 @@ class ShapeNode(JOVImageMultiple):
         return d
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        shape = kw[Lexicon.SHAPE]
-        sides = kw[Lexicon.SIDES]
-        angle = kw[Lexicon.ANGLE]
-        edge = kw[Lexicon.EDGE]
+        shape = kw.get(Lexicon.SHAPE, EnumShapes.CIRCLE)
+        sides = kw.get(Lexicon.SIDES, 3)
+        angle = kw.get(Lexicon.ANGLE, 0)
+        edge = kw.get(Lexicon.EDGE, EnumEdge.CLIP)
         offset = parse_tuple(Lexicon.XY, kw, typ=EnumTupleType.FLOAT, default=(0., 0.,))
         size = parse_tuple(Lexicon.SIZE, kw, EnumTupleType.FLOAT, default=(1., 1.,))
         wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,))
@@ -196,7 +196,7 @@ class TextNode(JOVImageMultiple):
         return Lexicon._parse(d, JOV_HELP_URL + "/CREATE#-text-generator")
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        if len(full_text := kw[Lexicon.STRING]) == 0:
+        if len(full_text := kw.get(Lexicon.STRING, [""])) == 0:
             full_text = [""]
         font_idx = kw[Lexicon.FONT]
         autosize = kw[Lexicon.AUTOSIZE]
@@ -232,11 +232,7 @@ class TextNode(JOVImageMultiple):
             justify = EnumJustify[justify]
             edge = EnumEdge[edge]
             matte = pixel_eval(matte)
-            columns = int(columns)
-            font_size = int(font_size)
-            margin = int(margin)
-            line_spacing = int(line_spacing)
-            angle = float(angle)
+            # color = pixel_eval(color, EnumImageType.BGRA)
             wm = width-margin * 2
             hm = height-margin * 2 - line_spacing
             if letter:
@@ -289,13 +285,13 @@ class StereogramNode(JOVImageSimple):
         return Lexicon._parse(d, JOV_HELP_URL + "/CREATE#-stereogram")
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        pA = kw[Lexicon.PIXEL]
+        pA = kw.get(Lexicon.PIXEL, None)
         pA = [None] if pA is None else batch_extract(pA)
-        depth = kw[Lexicon.DEPTH]
-        divisions = kw[Lexicon.TILE]
-        noise = kw[Lexicon.NOISE]
-        gamma = kw[Lexicon.VALUE]
-        shift = kw[Lexicon.SHIFT]
+        depth = kw.get(Lexicon.DEPTH, [None])
+        divisions = kw.get(Lexicon.TILE, [8])
+        noise = kw.get(Lexicon.NOISE, [0.33])
+        gamma = kw.get(Lexicon.GAMMA, [0.33])
+        shift = kw.get(Lexicon.SHIFT, [1])
         params = [tuple(x) for x in zip_longest_fill(pA, depth, divisions, noise,
                                                      gamma, shift)]
         images = []

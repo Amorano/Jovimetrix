@@ -59,10 +59,10 @@ class TickNode(JOVBaseNode):
         self.__delta = 0
 
     def run(self, **kw) -> tuple[int, float, float, float, float, float, float, float, float, float, float, float, float]:
-        bpm = kw[Lexicon.BPM]
-        loop = kw[Lexicon.LOOP]
-        hold = kw[Lexicon.WAIT]
-        reset = kw[Lexicon.RESET]
+        bpm = kw.get(Lexicon.BPM, 1.)
+        loop = kw.get(Lexicon.LOOP, 0)
+        hold = kw.get(Lexicon.WAIT, False)
+        reset = kw.get(Lexicon.RESET, False)
 
         if reset:
             self.__count = 0
@@ -115,12 +115,12 @@ class WaveGeneratorNode(JOVBaseNode):
         return Lexicon._parse(d, JOV_HELP_URL + "/ANIMATE#-wave-generator")
 
     def run(self, **kw) -> tuple[float, int]:
-        wave = kw[Lexicon.WAVE]
-        freq = kw[Lexicon.FREQ]
-        amp = kw[Lexicon.AMP]
-        phase = kw[Lexicon.PHASE]
-        shift = kw[Lexicon.OFFSET]
-        delta_time = kw[Lexicon.TIME]
+        wave = kw.get(Lexicon.WAVE, [EnumWaveSimple.SIN])
+        freq = kw.get(Lexicon.FREQ, [1.])
+        amp = kw.get(Lexicon.AMP, [1.])
+        phase = kw.get(Lexicon.PHASE, [0])
+        shift = kw.get(Lexicon.OFFSET, [0])
+        delta_time = kw.get(Lexicon.TIME, [0])
         batch = parse_tuple(Lexicon.BATCH, kw, default=(1, 30), clip_min=1)
         results = []
         params = [tuple(x) for x in zip_longest_fill(wave, freq, amp, phase, shift, delta_time, batch)]

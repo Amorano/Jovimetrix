@@ -112,17 +112,17 @@ class StreamReaderNode(JOVImageMultiple):
         pbar = comfy.utils.ProgressBar(batch_size)
         rate = 1. / rate
         width, height = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,))[0]
-        wait = kw[Lexicon.WAIT]
-        mode = kw[Lexicon.MODE]
+        wait = kw.get(Lexicon.WAIT, False)
+        mode = kw.get(Lexicon.MODE, EnumScaleMode.NONE)
         mode = EnumScaleMode[mode]
-        sample = kw[Lexicon.SAMPLE]
+        sample = kw.get(Lexicon.SAMPLE, EnumInterpolation.LANCZOS4)
         sample = EnumInterpolation[sample]
-        source = kw[Lexicon.SOURCE]
+        source = kw.get(Lexicon.SOURCE, "URL")
         match source:
             case "MONITOR":
                 if wait:
                     return self.__last
-                which = kw[Lexicon.MONITOR]
+                which = kw.get(Lexicon.MONITOR, "0")
                 which = int(which.split('-')[0].strip()) + 1
                 for idx in range(batch_size):
                     img = monitor_capture(which)
@@ -141,7 +141,7 @@ class StreamReaderNode(JOVImageMultiple):
                     return self.__last
                 if (which := kw.get(Lexicon.WINDOW, "NONE")) != "NONE":
                     which = int(which.split('-')[-1].strip())
-                    dpi = kw[Lexicon.DPI]
+                    dpi = kw.get(Lexicon.DPI, True)
                     for idx in range(batch_size):
                         img = window_capture(which, dpi=dpi)
                         if img is None:
@@ -154,9 +154,9 @@ class StreamReaderNode(JOVImageMultiple):
                             time.sleep(rate)
 
             case "URL" | "CAMERA":
-                url = kw[Lexicon.URL]
+                url = kw.get(Lexicon.URL, "")
                 if source == "CAMERA":
-                    url = kw[Lexicon.CAMERA]
+                    url = kw.get(Lexicon.CAMERA, "")
                     url = url.split('-')[0].strip()
                     try:
                         _ = int(url)
@@ -186,14 +186,14 @@ class StreamReaderNode(JOVImageMultiple):
                     else:
                         self.__device.play()
 
-                    fps = kw[Lexicon.FPS]
+                    fps = kw.get(Lexicon.FPS, 30)
                     if self.__device.fps != fps:
                         self.__device.fps = fps
 
                     if type(self.__device) == MediaStreamDevice:
-                        self.__device.zoom = kw[Lexicon.ZOOM]
+                        self.__device.zoom = kw.get(Lexicon.ZOOM, 0)
 
-                    orient = kw[Lexicon.ORIENT]
+                    orient = kw.get(Lexicon.ORIENT, EnumCanvasOrientation.NORMAL)
                     orient = EnumCanvasOrientation[orient]
                     for idx in range(batch_size):
                         _, img = self.__device.frame
@@ -258,9 +258,9 @@ class StreamWriterNode(JOVBaseNode):
 
         wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)[0]
         w, h = wihi
-        img = kw[Lexicon.PIXEL]
+        img = kw.get(Lexicon.PIXEL, None)
         img = tensor2cv(img)
-        route = kw[Lexicon.ROUTE]
+        route = kw.get(Lexicon.ROUTE, "/stream")
         if route != self.__route:
             self.__starting = True
             # close old, if any
@@ -275,9 +275,9 @@ class StreamWriterNode(JOVBaseNode):
 
         self.__starting = False
         if self.__device is not None:
-            mode = kw[Lexicon.MODE]
+            mode = kw.get(Lexicon.MODE, EnumScaleMode.NONE)
             mode = EnumScaleMode[mode]
-            rs = kw[Lexicon.SAMPLE]
+            rs = kw.get(Lexicon.SAMPLE, EnumInterpolation.LANCZOS4)
             rs = EnumInterpolation[rs]
             i = parse_number(Lexicon.INVERT, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)[0]
             img = image_scalefit(img, w, h, mode=EnumScaleMode.NONE)
@@ -307,7 +307,7 @@ class MIDIMessageNode(JOVBaseNode):
         return Lexicon._parse(d, JOV_HELP_URL + "/DEVICE#-midi-message")
 
     def run(self, **kw) -> tuple[object, bool, int, int, int, float, float]:
-        if (message := kw[Lexicon.MIDI]) is None:
+        if (message := kw.get(Lexicon.MIDI, None)) is None:
             return message, False, -1, -1, -1, -1, -1
         return message, *message.flat
 
@@ -368,7 +368,8 @@ class MIDIReaderNode(JOVBaseNode):
                 self.__value = data.velocity
 
     def run(self, **kw) -> tuple[bool, int, int, int]:
-        device = kw[Lexicon.DEVICE]
+        device = kw.get(Lexicon.DEVICE, None)
+
         if device != self.__device:
             self.__q_in.put(device)
             self.__device = device
@@ -404,7 +405,7 @@ class MIDIFilterEZNode(JOVBaseNode):
         return Lexicon._parse(d, JOV_HELP_URL + "/DEVICE#-midi-filter-ez")
 
     def run(self, **kw) -> tuple[bool]:
-        message = kw[Lexicon.MIDI]
+        message = kw.get(Lexicon.MIDI, None)
         if message is None:
             logger.warning('no midi message. connected?')
             return (message, False, )
@@ -490,7 +491,7 @@ class MIDIFilterNode(JOVBaseNode):
         return False
 
     def run(self, **kw) -> tuple[bool]:
-        message = kw[Lexicon.MIDI]
+        message = kw.get(Lexicon.MIDI, None)
         if message is None:
             logger.warning('no midi message. connected?')
             return (message, False, )

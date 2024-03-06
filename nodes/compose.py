@@ -71,19 +71,19 @@ class TransformNode(JOVImageMultiple):
         pA = kw.get(Lexicon.PIXEL, None)
         pA = [None] if pA is None else batch_extract(pA)
         offset = parse_tuple(Lexicon.XY, kw, typ=EnumTupleType.FLOAT, default=(0., 0.,))
-        angle = kw[Lexicon.ANGLE]
+        angle = kw.get(Lexicon.ANGLE, [0])
         size = parse_tuple(Lexicon.SIZE, kw, typ=EnumTupleType.FLOAT, default=(1., 1.,), zero=0.001)
-        edge = kw[Lexicon.EDGE]
-        mirror = kw[Lexicon.MIRROR]
+        edge = kw.get(Lexicon.EDGE, [EnumEdge.CLIP])
+        mirror = kw.get(Lexicon.MIRROR, [EnumMirrorMode.NONE])
         mirror_pivot = parse_tuple(Lexicon.PIVOT, kw, typ=EnumTupleType.FLOAT, default=(0.5, 0.5,), clip_min=0, clip_max=1)
         tile_xy = parse_tuple(Lexicon.TILE, kw, default=(1, 1), clip_min=1)
-        proj = kw[Lexicon.PROJECTION]
+        proj = kw.get(Lexicon.PROJECTION, [EnumProjection.NORMAL])
         tltr = parse_tuple(Lexicon.TLTR, kw, EnumTupleType.FLOAT, (0, 0, 1, 0,), 0, 1)
         blbr = parse_tuple(Lexicon.BLBR, kw, EnumTupleType.FLOAT, (0, 1, 1, 1,), 0, 1)
-        strength = kw[Lexicon.STRENGTH]
-        mode = kw[Lexicon.MODE]
+        strength = kw.get(Lexicon.STRENGTH, [1])
+        mode = kw.get(Lexicon.MODE,[EnumScaleMode.NONE])
         wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
-        sample = kw[Lexicon.SAMPLE]
+        sample = kw.get(Lexicon.SAMPLE, [EnumInterpolation.LANCZOS4])
         matte = parse_tuple(Lexicon.MATTE, kw, default=(0, 0, 0, 255), clip_min=0, clip_max=255)
         params = [tuple(x) for x in zip_longest_fill(pA, offset, angle, size, edge, tile_xy, mirror, mirror_pivot, proj, strength, tltr, blbr, mode, wihi, sample, matte)]
         images = []
@@ -174,14 +174,14 @@ class BlendNode(JOVImageMultiple):
         pB = [None] if pB is None else batch_extract(pB)
         mask = kw.get(Lexicon.MASK, None)
         mask = [None] if mask is None else batch_extract(mask)
-        func = kw[Lexicon.FUNC]
-        alpha = kw[Lexicon.A]
-        flip = kw[Lexicon.FLIP]
-        mode = kw[Lexicon.MODE]
+        func = kw.get(Lexicon.FUNC, [EnumBlendType.NORMAL])
+        alpha = kw.get(Lexicon.A, [1])
+        flip = kw.get(Lexicon.FLIP, [False])
+        mode = kw.get(Lexicon.MODE, [EnumScaleMode.NONE])
         wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
-        sample = kw[Lexicon.SAMPLE]
+        sample = kw.get(Lexicon.SAMPLE, [EnumInterpolation.LANCZOS4])
         matte = parse_tuple(Lexicon.MATTE, kw, default=(0, 0, 0), clip_min=0, clip_max=255)
-        invert = kw[Lexicon.INVERT]
+        invert = kw.get(Lexicon.INVERT, [False])
         params = [tuple(x) for x in zip_longest_fill(pA, pB, mask, func, alpha, flip, mode, wihi, sample, matte, invert)]
         images = []
         pbar = comfy.utils.ProgressBar(len(params))
@@ -274,10 +274,10 @@ class PixelMergeNode(JOVImageMultiple):
         return Lexicon._parse(d, JOV_HELP_URL + "/COMPOSE#-pixel-merge")
 
     def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor]:
-        R = kw[Lexicon.R]
-        G = kw[Lexicon.G]
-        B = kw[Lexicon.B]
-        A = kw[Lexicon.A]
+        R = kw.get(Lexicon.R, [None])
+        G = kw.get(Lexicon.G, [None])
+        B = kw.get(Lexicon.B, [None])
+        A = kw.get(Lexicon.A, [None])
         if len(R)+len(B)+len(G)+len(A) == 0:
             img = channel_solid(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 0, EnumImageType.BGRA)
             return list(cv2tensor_full(img, matte))
@@ -327,14 +327,14 @@ class PixelSwapNode(JOVImageMultiple):
         pA = [None] if pA is None else batch_extract(pA)
         pB = kw.get(Lexicon.PIXEL_B, None)
         pB = [None] if pB is None else batch_extract(pB)
-        swap_r = kw[Lexicon.SWAP_R]
-        r = kw[Lexicon.R]
-        swap_g = kw[Lexicon.SWAP_G]
-        g = kw[Lexicon.G]
-        swap_b = kw[Lexicon.SWAP_B]
-        b = kw[Lexicon.B]
-        swap_a = kw[Lexicon.SWAP_A]
-        a = kw[Lexicon.A]
+        swap_r = kw.get(Lexicon.SWAP_R, [EnumPixelSwap.PASSTHRU])
+        r = kw.get(Lexicon.R, [0])
+        swap_g = kw.get(Lexicon.SWAP_G, [EnumPixelSwap.PASSTHRU])
+        g = kw.get(Lexicon.G, [0])
+        swap_b = kw.get(Lexicon.SWAP_B, [EnumPixelSwap.PASSTHRU])
+        b = kw.get(Lexicon.B, [0])
+        swap_a = kw.get(Lexicon.SWAP_A, [EnumPixelSwap.PASSTHRU])
+        a = kw.get(Lexicon.A, [0])
         params = [tuple(x) for x in zip_longest_fill(pA, pB, r, swap_r, g, swap_g,
                                                      b, swap_b, a, swap_a)]
         images = []
@@ -398,13 +398,13 @@ class StackNode(JOVImageMultiple):
             logger.warning("no images to stack")
             return
 
-        axis = kw[Lexicon.AXIS][0]
+        axis = kw.get(Lexicon.AXIS, [EnumOrientation.GRID])[0]
         axis = EnumOrientation[axis]
-        stride = int(kw[Lexicon.STEP][0])
-        mode = kw[Lexicon.MODE][0]
+        stride = kw.get(Lexicon.STEP, [1])[0]
+        mode = kw.get(Lexicon.MODE, [EnumScaleMode.NONE])[0]
         mode = EnumScaleMode[mode]
         wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), clip_min=1)[0]
-        sample = kw[Lexicon.SAMPLE][0]
+        sample = kw.get(Lexicon.SAMPLE, [EnumInterpolation.LANCZOS4])[0]
         matte = parse_tuple(Lexicon.MATTE, kw, default=(0, 0, 0, 255), clip_min=0, clip_max=255)[0]
         matte = pixel_eval(matte, EnumImageType.BGRA)
         images = [tensor2cv(img) for img in images if img is not None]
@@ -496,7 +496,7 @@ class ColorTheoryNode(JOVImageMultiple):
         pA = [None] if pA is None else batch_extract(pA)
         scheme = kw[Lexicon.SCHEME]
         user = parse_number(Lexicon.VALUE, kw, EnumTupleType.INT, [0], clip_min=-180, clip_max=180)
-        invert = kw[Lexicon.INVERT]
+        invert = kw.get(Lexicon.INVERT, [False])
         params = [tuple(x) for x in zip_longest_fill(pA, scheme, user, invert)]
         images = []
         pbar = comfy.utils.ProgressBar(len(params))

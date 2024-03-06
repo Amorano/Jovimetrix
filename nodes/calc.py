@@ -163,8 +163,8 @@ class CalcUnaryOPNode(JOVBaseNode):
 
     def run(self, **kw) -> tuple[bool]:
         result = []
-        data = kw[Lexicon.IN_A]
-        op = kw[Lexicon.FUNC]
+        data = kw.get(Lexicon.IN_A, [0])
+        op = kw.get(Lexicon.FUNC, [EnumUnaryOperation.ABS])
         params = [tuple(x) for x in zip_longest_fill(data, op)]
         pbar = comfy.utils.ProgressBar(len(params))
         for idx, (data, op) in enumerate(params):
@@ -354,16 +354,13 @@ class ValueNode(JOVBaseNode):
         return Lexicon._parse(d, JOV_HELP_URL + "/CALC#%EF%B8%8F⃣-value")
 
     def run(self, **kw) -> tuple[bool]:
-        raw = kw[Lexicon.IN_A]
-        try:
-            raw = float(raw)
-        except ValueError as e:
-            raw = 0
-        typ = kw[Lexicon.TYPE]
-        x = kw[Lexicon.X]
-        y = kw[Lexicon.Y]
-        z = kw[Lexicon.Z]
-        w = kw[Lexicon.W]
+        raw = kw.get(Lexicon.IN_A, [0])
+
+        typ = kw.get(Lexicon.TYPE, [EnumConvertType.BOOLEAN])
+        x = kw.get(Lexicon.X, [None])
+        y = kw.get(Lexicon.Y, [0])
+        z = kw.get(Lexicon.Z, [0])
+        w = kw.get(Lexicon.W, [0])
         params = [tuple(x) for x in zip_longest_fill(raw, typ, x, y, z, w)]
         results = []
         pbar = comfy.utils.ProgressBar(len(params))
@@ -504,11 +501,11 @@ class LerpNode(JOVBaseNode):
         return Lexicon._parse(d, JOV_HELP_URL + "/CALC#-lerp")
 
     def run(self, **kw) -> tuple[Any, Any]:
-        a = kw[Lexicon.IN_A]
-        b = kw[Lexicon.IN_B]
-        pos = kw[Lexicon.FLOAT]
-        op = kw[Lexicon.EASE]
-        typ = kw[Lexicon.TYPE]
+        a = kw.get(Lexicon.IN_A, [0])
+        b = kw.get(Lexicon.IN_B, [0])
+        pos = kw.get(Lexicon.FLOAT, [0.])
+        op = kw.get(Lexicon.EASE, ["NONE"])
+        typ = kw.get(Lexicon.TYPE, ["NONE"])
         value = []
         params = [tuple(x) for x in zip_longest_fill(a, b, pos, op, typ)]
         pbar = comfy.utils.ProgressBar(len(params))

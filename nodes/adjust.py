@@ -73,16 +73,16 @@ class AdjustNode(JOVImageMultiple):
         pA = [None] if pA is None else batch_extract(pA)
         mask = kw.get(Lexicon.MASK, None)
         mask = [None] if mask is None else batch_extract(mask)
-        op = kw[Lexicon.FUNC]
-        radius = kw[Lexicon.RADIUS]
-        amt = kw[Lexicon.VALUE]
+        op = kw.get(Lexicon.FUNC, [EnumAdjustOP.BLUR])
+        radius = kw.get(Lexicon.RADIUS, [3])
+        amt = kw.get(Lexicon.VALUE, [0])
         lohi = parse_tuple(Lexicon.LOHI, kw, EnumTupleType.FLOAT, (0, 1), clip_min=0, clip_max=1)
         lmh = parse_tuple(Lexicon.LMH, kw, EnumTupleType.FLOAT, (0, 0.5, 1), clip_min=0, clip_max=1)
         hsv = parse_tuple(Lexicon.HSV, kw, EnumTupleType.FLOAT, (0, 1, 1), clip_min=0, clip_max=1)
         contrast = parse_number(Lexicon.CONTRAST, kw, EnumTupleType.FLOAT, [0], clip_min=0, clip_max=1)
         gamma = parse_number(Lexicon.GAMMA, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
         matte = parse_tuple(Lexicon.MATTE, kw, default=(0, 0, 0, 255), clip_min=0, clip_max=255)
-        invert = kw[Lexicon.INVERT]
+        invert = kw.get(Lexicon.INVERT, [False])
         params = [tuple(x) for x in zip_longest_fill(pA, mask, op, radius, amt, lohi,
                                                      lmh, hsv, contrast, gamma, matte, invert)]
         images = []
@@ -222,12 +222,12 @@ class ColorMatchNode(JOVImageMultiple):
         pA = [None] if pA is None else batch_extract(pA)
         pB = kw.get(Lexicon.PIXEL_B, None)
         pB = [None] if pB is None else batch_extract(pB)
-        colormatch_mode = kw[Lexicon.COLORMATCH_MODE]
-        colormatch_map = kw[Lexicon.COLORMATCH_MAP]
-        colormap = kw[Lexicon.COLORMAP]
-        num_colors = kw[Lexicon.VALUE]
-        flip = kw[Lexicon.FLIP]
-        invert = kw[Lexicon.INVERT]
+        colormatch_mode = kw.get(Lexicon.COLORMATCH_MODE, [EnumColorMatchMode.REINHARD.name])
+        colormatch_map = kw.get(Lexicon.COLORMATCH_MAP, [EnumColorMatchMap.USER_MAP.name])
+        colormap = kw.get(Lexicon.COLORMAP, [EnumColorMap.HSV])
+        num_colors = kw.get(Lexicon.VALUE, [255])
+        flip = kw.get(Lexicon.FLIP, [False])
+        invert = kw.get(Lexicon.INVERT, [False])
         matte = parse_tuple(Lexicon.MATTE, kw, default=(0, 0, 0, 255), clip_min=0, clip_max=255)
         params = [tuple(x) for x in zip_longest_fill(pA, pB, colormap, colormatch_mode,
                                                      colormatch_map, num_colors, flip, invert, matte)]
@@ -289,11 +289,11 @@ class ThresholdNode(JOVImageMultiple):
     def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         pA = kw.get(Lexicon.PIXEL, None)
         pA = [None] if pA is None else batch_extract(pA)
-        mode = kw[Lexicon.FUNC]
-        adapt = kw[Lexicon.ADAPT]
+        mode = kw.get(Lexicon.FUNC, [EnumThreshold.BINARY])
+        adapt = kw.get(Lexicon.ADAPT, [EnumThresholdAdapt.ADAPT_NONE])
         threshold = parse_number(Lexicon.THRESHOLD, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
-        block = kw[Lexicon.SIZE]
-        invert = kw[Lexicon.INVERT]
+        block = kw.get(Lexicon.SIZE, [3])
+        invert = kw.get(Lexicon.INVERT, [False])
         params = [tuple(x) for x in zip_longest_fill(pA, mode, adapt, threshold, block, invert)]
         images = []
         pbar = comfy.utils.ProgressBar(len(params))
@@ -333,9 +333,9 @@ class ColorBlindNode(JOVImageMultiple):
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         pA = kw.get(Lexicon.PIXEL_A, None)
         pA = [None] if pA is None else batch_extract(pA)
-        defiency = kw[Lexicon.DEFIENCY]
-        simulator = kw[Lexicon.SIMULATOR]
-        severity = kw[Lexicon.SIMULATOR]
+        defiency = kw.get(Lexicon.DEFIENCY, [EnumCBDefiency.PROTAN.name])
+        simulator = kw.get(Lexicon.SIMULATOR, [EnumCBSimulator.AUTOSELECT.name])
+        severity = kw.get(Lexicon.SIMULATOR, [1])
         params = [tuple(x) for x in zip_longest_fill(pA, defiency, simulator, severity)]
         images = []
         pbar = comfy.utils.ProgressBar(len(params))
