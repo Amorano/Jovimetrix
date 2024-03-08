@@ -80,27 +80,27 @@ class DelayNode(JOVBaseNode):
             Lexicon.WAIT: ("BOOLEAN", {"default": False}),
         },
         "hidden": {
-            "id": "UNIQUE_ID"
+            "ident": "UNIQUE_ID"
         }}
         return Lexicon._parse(d, JOV_HELP_URL + "/FLOW#-delay")
 
     @staticmethod
-    def parse_q(id, delay: int, forced:bool=False)-> bool:
+    def parse_q(ident, delay: int, forced:bool=False)-> bool:
         pbar = comfy.utils.ProgressBar(delay)
         # if longer than X seconds, pop up the "cancel continue"
         if delay > JOV_DELAY_MIN or forced:
-            PromptServer.instance.send_sync("jovi-delay-user", {"id": id, "timeout": delay})
+            PromptServer.instance.send_sync("jovi-delay-user", {"id": ident, "timeout": delay})
 
         step = 0
         while (step := step + 1) <= delay:
             try:
                 if delay > JOV_DELAY_MIN or forced:
-                    data = ComfyAPIMessage.poll(id, timeout=1)
+                    data = ComfyAPIMessage.poll(ident, timeout=1)
                     if data.get('cancel', None):
                         nodes.interrupt_processing(True)
-                        logger.warning(f"render cancelled delay: {id}")
+                        logger.warning(f"render cancelled delay: {ident}")
                     else:
-                        logger.info(f"render continued delay: {id}")
+                        logger.info(f"render continued delay: {ident}")
                     return True
                 else:
                     time.sleep(1)
@@ -116,7 +116,7 @@ class DelayNode(JOVBaseNode):
         super().__init__(*arg, **kw)
         self.__delay = 0
 
-    def run(self, id, **kw) -> tuple[Any]:
+    def run(self, ident, **kw) -> tuple[Any]:
         o = kw.get(Lexicon.PASS_IN, [None])
         wait = kw.get(Lexicon.WAIT, [False])[0]
         delay = min(kw.get(Lexicon.TIMER, 0), [JOVI_DELAY_MAX])[0]
@@ -127,7 +127,7 @@ class DelayNode(JOVBaseNode):
                 loop_delay = delay
                 if loop_delay == 0:
                     loop_delay = JOVI_DELAY_MAX
-                cancel = DelayNode.parse_q(id, loop_delay, True)
+                cancel = DelayNode.parse_q(ident, loop_delay, True)
             return o
 
         if delay != self.__delay:
@@ -139,7 +139,7 @@ class DelayNode(JOVBaseNode):
             time.sleep(remainder)
 
         if loops > 0:
-            cancel = DelayNode.parse_q(id, loops)
+            cancel = DelayNode.parse_q(ident, loops)
         return o
 
 class HoldValueNode(JOVBaseNode):
@@ -271,7 +271,7 @@ class SelectNode(JOVBaseNode):
             Lexicon.RESET: ("BOOLEAN", {"default": False}),
         },
         "hidden": {
-            "id": "UNIQUE_ID"
+            "ident": "UNIQUE_ID"
         }}
         return Lexicon._parse(d, JOV_HELP_URL + "/FLOW#-select")
 
@@ -283,10 +283,10 @@ class SelectNode(JOVBaseNode):
         super().__init__(*arg, **kw)
         self.__index = 0
 
-    def run(self, id, **kw) -> None:
+    def run(self, ident, **kw) -> None:
         reset = kw.get(Lexicon.RESET, False)
         try:
-            data = ComfyAPIMessage.poll(id, timeout=0)
+            data = ComfyAPIMessage.poll(ident, timeout=0)
             if (cmd := data.get('cmd', None)) is not None:
                 if cmd == 'reset':
                     reset = True

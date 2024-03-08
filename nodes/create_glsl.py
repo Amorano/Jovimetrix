@@ -54,7 +54,7 @@ class GLSLNode(JOVImageMultiple):
             Lexicon.PARAM: ("STRING", {"default": ""})
         },
         "hidden": {
-            "id": "UNIQUE_ID"
+            "ident": "UNIQUE_ID"
         }}
         return Lexicon._parse(d, JOV_HELP_URL + "/CREATE#-glsl")
 
@@ -68,7 +68,7 @@ class GLSLNode(JOVImageMultiple):
         self.__fragment = ""
         self.__last_good = [torch.zeros((self.WIDTH, self.HEIGHT, 3), dtype=torch.uint8, device="cpu")]
 
-    def run(self, id, **kw) -> list[torch.Tensor]:
+    def run(self, ident, **kw) -> list[torch.Tensor]:
         batch = parse_tuple(Lexicon.BATCH, kw, default=(1, 30), clip_min=1)
         fragment = kw.get(Lexicon.FRAGMENT, [DEFAULT_FRAGMENT])
         param = kw.get(Lexicon.PARAM, [{}])
@@ -87,7 +87,7 @@ class GLSLNode(JOVImageMultiple):
                 try:
                     self.__glsl = GLSL(fragment, width, height, param)
                 except CompileException as e:
-                    PromptServer.instance.send_sync("jovi-glsl-error", {"id": id, "e": str(e)})
+                    PromptServer.instance.send_sync("jovi-glsl-error", {"id": ident, "e": str(e)})
                     logger.error(e)
                     return (self.__last_good, )
                 self.__fragment = fragment
@@ -99,7 +99,7 @@ class GLSLNode(JOVImageMultiple):
             pA = tensor2pil(pA) if pA is not None else None
             self.__glsl.hold = hold
             try:
-                data = ComfyAPIMessage.poll(id, timeout=0)
+                data = ComfyAPIMessage.poll(ident, timeout=0)
                 if (cmd := data.get('cmd', None)) is not None:
                     if cmd == 'reset':
                         reset = True
@@ -110,14 +110,14 @@ class GLSLNode(JOVImageMultiple):
 
             if reset:
                 self.__glsl.reset()
-                # PromptServer.instance.send_sync("jovi-glsl-time", {"id": id, "t": 0})
+                # PromptServer.instance.send_sync("jovi-glsl-time", {"id": ident, "t": 0})
 
             self.__glsl.fps = batch_fps
             for _ in range(batch_size):
                 img = self.__glsl.render(pA, param)
                 images.append(cv2tensor_full(pil2cv(img)))
             runtime = self.__glsl.runtime if not reset else 0
-            PromptServer.instance.send_sync("jovi-glsl-time", {"id": id, "t": runtime})
+            PromptServer.instance.send_sync("jovi-glsl-time", {"id": ident, "t": runtime})
 
             self.__last_good = images
             pbar.update_absolute(idx)

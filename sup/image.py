@@ -839,6 +839,37 @@ def image_grid(data: list[TYPE_IMAGE], width: int, height: int) -> TYPE_IMAGE:
 
     return frame
 
+def image_histogram(image:TYPE_IMAGE, bins=256) -> TYPE_IMAGE:
+    bins = max(image.max(), bins) + 1
+    flatImage = image.flatten()
+    histogram = np.zeros(bins)
+    for pixel in flatImage:
+        histogram[pixel] += 1
+    return histogram
+
+def image_histogram_normalize(image:TYPE_IMAGE)-> TYPE_IMAGE:
+    L = image.max()
+    nonEqualizedHistogram = image_histogram(image, bins=L)
+    sumPixels = np.sum(nonEqualizedHistogram)
+    nonEqualizedHistogram = nonEqualizedHistogram/sumPixels
+    cfdHistogram = np.cumsum(nonEqualizedHistogram)
+    transformMap = np.floor((L-1) * cfdHistogram)
+    flatNonEqualizedImage = list(image.flatten())
+    flatEqualizedImage = [transformMap[p] for p in flatNonEqualizedImage]
+    return np.reshape(flatEqualizedImage, image.shape)
+
+def image_histogram_statistics(histogram:np.ndarray, L=256)-> TYPE_IMAGE:
+    sumPixels = np.sum(histogram)
+    normalizedHistogram = histogram/sumPixels
+    mean = 0
+    for i in range(L):
+        mean += i * normalizedHistogram[i]
+    variance = 0
+    for i in range(L):
+        variance += (i-mean)**2 * normalizedHistogram[i]
+    std = np.sqrt(variance)
+    return mean, variance, std
+
 def image_hsv(image: TYPE_IMAGE, hue: float, saturation: float, value: float) -> TYPE_IMAGE:
     image, alpha, cc = image2bgr(image)
     image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
@@ -1662,3 +1693,39 @@ def remap_fisheye(image: TYPE_IMAGE, distort: float) -> TYPE_IMAGE:
     if cc == 1:
         image = image[:,:,0][:,:]
     return image
+
+def remap_orthographic(image: TYPE_IMAGE, tile2: int=512, p0: float=0., l0: float=0.) -> TYPE_IMAGE:
+    """
+    Render noise onto a spherical surface with an Orthographic projection.
+
+    Args:
+        noise: a `pyfastnoisesimd.Noise` object.
+        tile2: the half-width of the returned array, i.e. return will have shape ``(2*tile2, 2*tile2)``.
+        p0: the central parallel (i.e. latitude)
+        l0: the central meridian (i.e. longitude)
+
+    See also:
+        https://en.wikipedia.org/wiki/Orthographic_projection_in_cartography
+    """
+
+    xVect = np.linspace(-0.5*np.pi, 0.5*np.pi, 2 * tile2, endpoint=True).astype('float32')
+    xMesh, yMesh = np.meshgrid(xVect, xVect)
+    p0 = np.float32(p0)
+    l0 = np.float32(l0)
+    valids = np.argwhere(xMesh*xMesh + yMesh*yMesh <= 0.25*np.pi*np.pi)
+    xMasked = xMesh[valids[:,0], valids[:,1]]
+    yMasked = yMesh[valids[:,0], valids[:,1]]
+    maskLen = xMasked.size
+    one = np.float32(0.25*np.pi*np.pi)
+    rhoStar = np.sqrt(one - xMasked*xMasked - yMasked*yMasked)
+    muStar =  yMasked*np.cos(p0) + rhoStar*np.sin(p0)
+    conjMuStar = rhoStar*np.cos(p0) - yMasked*np.sin(p0)
+    alphaStar = l0 + np.arctan2(xMasked, conjMuStar)
+    sqrtM1MuStar2 = np.sqrt(one - muStar*muStar)
+    coords = fns.empty_coords(maskLen)
+    coords[0,:maskLen] = muStar
+    coords[1,:maskLen] = sqrtM1MuStar2 * np.sin(alphaStar)
+    coords[2,:maskLen] = sqrtM1MuStar2 * np.cos(alphaStar)
+    pmap = np.full( (2 * tile2, 2 * tile2), -np.inf, dtype='float32')
+    pmap[valids[:,0], valids[:,1]] = image[coords[:,2], coords[:, 1]][:maskLen]
+    return pmap

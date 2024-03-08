@@ -3,7 +3,8 @@ Jovimetrix - http://www.github.com/amorano/jovimetrix
 Creation
 """
 
-import pprint
+from enum import Enum
+
 import torch
 from PIL import ImageFont
 
@@ -30,6 +31,9 @@ from Jovimetrix.sup.text import font_all, font_all_names, text_autosize, text_dr
 # =============================================================================
 
 JOV_CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
+
+class EnumNoise(Enum):
+    PERLIN = 20
 
 # =============================================================================
 
@@ -307,3 +311,36 @@ class StereogramNode(JOVImageSimple):
             images.append(cv2tensor_full(pA))
             pbar.update_absolute(idx)
         return list(zip(*images))
+
+"""
+class NoiseNode(JOVImageMultiple):
+    NAME = "NOISE (JOV) 🟪"
+    CATEGORY = JOV_CATEGORY
+    DESCRIPTION = "Blocks of noise"
+
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        d = {
+        "required": {},
+        "optional": {
+            Lexicon.NOISE: (EnumNoise._member_names_, {"default": EnumNoise.PERLIN.name}),
+            Lexicon.SEED: ("INT", {"default": 0, "step": 1}),
+            Lexicon.WH: ("VEC2", {"default": (512, 512), "step": 1,
+                                  "label": [Lexicon.W, Lexicon.H],
+                                  "tooltip": "Desired Width and Height of the Color Output"})
+        }}
+        return Lexicon._parse(d, JOV_HELP_URL + "/CREATE#-noise")
+
+    def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
+        seed = kw.get(Lexicon.SEED, [0])
+        wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
+        images = []
+        params = [tuple(x) for x in zip_longest_fill(seed, wihi, matte)]
+        pbar = comfy.utils.ProgressBar(len(params))
+        for idx, (seed, wihi, matte) in enumerate(params):
+            width, height = wihi
+
+            images.append(cv2tensor_full(pA, matte))
+            pbar.update_absolute(idx)
+        return list(zip(*images))
+"""

@@ -138,6 +138,9 @@ class ValueGraphNode(JOVBaseNode):
             Lexicon.RESET: ("BOOLEAN", {"default": False}),
             Lexicon.VALUE: ("INT", {"default": 120, "min": 0}),
             Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), "step": 1, "label": [Lexicon.W, Lexicon.H]})
+        },
+        "hidden": {
+            "ident": "UNIQUE_ID"
         }}
         return Lexicon._parse(d, JOV_HELP_URL + "/UTILITY#-value-graph")
 
@@ -154,41 +157,39 @@ class ValueGraphNode(JOVBaseNode):
         self.__ax.set_ylabel("VALUE")
         self.__ax.set_title("VALUE HISTORY")
 
-    def run(self, **kw) -> tuple[torch.Tensor]:
-        reset = kw.get(Lexicon.RESET, [0])
+    def run(self, ident, **kw) -> tuple[torch.Tensor]:
         slice = kw.get(Lexicon.VALUE, [120])
         wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), zero=0.001)
         accepted = [bool, int, float, np.float16, np.float32, np.float64]
-        idx = 1
+        reset = False
+        try:
+            data = ComfyAPIMessage.poll(ident, timeout=0)
+            reset = data.get('cmd', None) == 'reset'
+        except TimedOutException as e:
+            pass
+        except Exception as e:
+            logger.error(str(e))
+
+        if reset:
+            self.__history = [[]]
+            self.__index = [0]
+
+        idx = 0
         while 1:
-            who = f"{Lexicon.UNKNOWN}_{idx}"
+            who = f"{Lexicon.UNKNOWN}_{idx+1}"
             if (val := kw.get(who, None)) is None:
                 break
-            val = [v if type(v) not in accepted else 0 for v in val]
+            val = [v if type(v) in accepted else 0 for v in val]
             while len(self.__history) < idx:
                 self.__history.append([])
                 self.__index.append(0)
-            self.__history[idx-1].extend(val)
+            self.__history[idx].extend(val)
             idx += 1
 
-        params = [tuple(x) for x in zip_longest_fill(reset, slice, wihi)]
+        params = [tuple(x) for x in zip_longest_fill(slice, wihi)]
         images = []
         pbar = comfy.utils.ProgressBar(len(params))
-        for idx, (reset, slice, wihi) in enumerate(params):
-            try:
-                data = ComfyAPIMessage.poll(id, timeout=0)
-                if (cmd := data.get('cmd', None)) is not None:
-                    if cmd == 'reset':
-                        reset = True
-            except TimedOutException as e:
-                pass
-            except Exception as e:
-                logger.error(str(e))
-
-            if reset:
-                self.__history = [[]]
-                self.__index = [0]
-
+        for idx, (slice, wihi) in enumerate(params):
             self.__ax.clear()
             for i, h in enumerate(self.__history):
                 self.__ax.plot(h[max(0, -slice + self.__index[i]):], color="rgbcymk"[i])
@@ -255,7 +256,7 @@ class QueueNode(JOVBaseNode):
             Lexicon.RESET: ("BOOLEAN", {"default": False}),
         },
         "hidden": {
-            "id": "UNIQUE_ID"
+            "ident": "UNIQUE_ID"
         }}
         return Lexicon._parse(d, JOV_HELP_URL + "/UTILITY#-queue")
 
@@ -309,7 +310,7 @@ class QueueNode(JOVBaseNode):
                 entries.extend(data * count)
         return entries
 
-    def run(self, id, **kw) -> None:
+    def run(self, ident, **kw) -> None:
 
         def process(q_data: str) -> tuple[torch.Tensor, torch.Tensor] | str | dict:
             # single Q cache to skip loading single entries over and over
@@ -332,7 +333,7 @@ class QueueNode(JOVBaseNode):
         # clear the queue of msgs...
         # better resets? check if reset message
         try:
-            data = ComfyAPIMessage.poll(id, timeout=0)
+            data = ComfyAPIMessage.poll(ident, timeout=0)
             # logger.debug(data)
             if (cmd := data.get('cmd', None)) is not None:
                 if cmd == 'reset':
@@ -371,9 +372,9 @@ class QueueNode(JOVBaseNode):
             self.__loops += 1
             if loop > 0 and self.__loops >= loop:
                 # hard halt?
-                PromptServer.instance.send_sync("jovi-queue-done", {"id": id})
+                PromptServer.instance.send_sync("jovi-queue-done", {"id": ident})
                 nodes.interrupt_processing(True)
-                logger.warning(f"Q Complete [{id}]")
+                logger.warning(f"Q Complete [{ident}]")
                 self.__q = None
                 self.__q_rand = None
                 return ()
@@ -385,7 +386,7 @@ class QueueNode(JOVBaseNode):
             current = self.__q_rand[self.__index]
         else:
             current = self.__q[self.__index]
-        info = f"QUEUE #{id} [{current}] ({self.__index})"
+        info = f"QUEUE #{ident} [{current}] ({self.__index})"
 
         if self.__loops:
             info += f" |{self.__loops}|"
@@ -405,7 +406,7 @@ class QueueNode(JOVBaseNode):
 
         self.__last = self.__index
         self.__previous = data
-        PromptServer.instance.send_sync("jovi-queue-ping", {"id": id, "c": current, "i": self.__index, "s": self.__len, "l": self.__q})
+        PromptServer.instance.send_sync("jovi-queue-ping", {"id": ident, "c": current, "i": self.__index, "s": self.__len, "l": self.__q})
 
         # q = torch.cat(self.__q, dim=0)
         return [data] * batch, self.__q, current, self.__index, self.__len,
@@ -546,6 +547,7 @@ class ImageDiffNode(JOVBaseNode):
             pbar.update_absolute(idx)
         return list(zip(*results))
 
+"""
 class BatchMakeNode(JOVBaseNode):
     NAME = "BATCH MAKE (JOV) 📚"
     CATEGORY = JOV_CATEGORY
@@ -566,3 +568,32 @@ class BatchMakeNode(JOVBaseNode):
     def run(self, **kw) -> tuple[Any, Any]:
         data = [x for x in range(0, 360, 5)]
         return data, data,
+
+
+class HistogramNode(JOVImageSimple):
+    NAME = "HISTOGRAM (JOV) 👁‍🗨"
+    CATEGORY = CATEGORY = JOV_CATEGORY
+    DESCRIPTION = "Histogram"
+
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        d = {
+        "required": {},
+        "optional": {
+            Lexicon.PIXEL_A: (WILDCARD, {}),
+        }}
+        return Lexicon._parse(d, JOV_HELP_URL + "/ADJUST#-histogram")
+
+    def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        pA = kw.get(Lexicon.PIXEL_A, None)
+        pA = [None] if pA is None else batch_extract(pA)
+        params = [tuple(x) for x in zip_longest_fill(pA,)]
+        images = []
+        pbar = comfy.utils.ProgressBar(len(params))
+        for idx, (pA, ) in enumerate(params):
+            pA = image_histogram(pA)
+            pA = image_histogram_normalize(pA)
+            images.append(cv2tensor(pA))
+            pbar.update_absolute(idx)
+        return list(zip(*images))
+"""

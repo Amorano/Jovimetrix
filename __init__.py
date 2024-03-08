@@ -169,24 +169,27 @@ class ComfyAPIMessage:
     MESSAGE = {}
 
     #@classmethod
-    #def send(cls, id, message) -> None:
-        #cls.MESSAGE[str(id)] = message
+    #def send(cls, ident, message) -> None:
+        #cls.MESSAGE[str(ident)] = message
 
     @classmethod
-    def poll(cls, _id, period=0.01, timeout=3) -> Any:
+    def poll(cls, ident, period=0.01, timeout=3) -> Any:
         _t = time.monotonic()
-        sid = str(_id)
+        if isinstance(ident, (set, list, tuple, )):
+            ident = ident[0]
+        sid = str(ident)
         while not (sid in cls.MESSAGE) and time.monotonic() - _t < timeout:
             time.sleep(period)
 
-        # logger.debug(sid)
-        # logger.debug(cls.MESSAGE)
+        #logger.debug(sid)
+        #logger.debug(cls.MESSAGE)
 
         if not (sid in cls.MESSAGE):
+            print('huh?')
             raise TimedOutException
 
         dat = cls.MESSAGE.pop(sid)
-        # logger.debug(dat)
+        #logger.debug(dat)
         return dat
 
 try:
