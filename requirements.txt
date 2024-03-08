@@ -16,4 +16,3 @@ mido[ports-rtmidi]
 python3-pyaudio; platform_system=="Linux"
 pyaudio; platform_system!="Linux"
 daltonlens
-pythonperlin
