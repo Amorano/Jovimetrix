@@ -39,15 +39,15 @@ Polygonal shapes, MIDI, MP3/WAVE, Flow Logic
 @author: amorano
 @reference: https://github.com/Amorano/Jovimetrix
 @node list:
-    AdjustNode, ColorMatchNode, FindEdgeNode, HSVNode, LevelsNode, ThresholdNode,
-    TickNode, WaveGeneratorNode,
-    GraphWaveNode,
-    ConversionNode, CalcUnaryOPNode, CalcBinaryOPNode, ValueNode
-    TransformNode, BlendNode, PixelSplitNode, PixelMergeNode, MergeNode, CropNode, ColorTheoryNode,
-    ConstantNode, ShapeNode, TextNode, GLSLNode,
-    StreamReaderNode, StreamWriterNode, MIDIMessageNode, MIDIReaderNode, MIDIFilterEZNode, MIDIFilterNode,
+    AdjustNode, ColorMatchNode, ThresholdNode, ColorBlindNode
+    TickNode, WaveGeneratorNode, Pulsetronome,
+    LoadWaveNode, GraphWaveNode,
+    CalcUnaryOPNode, CalcBinaryOPNode, ValueNode, ConvertNode, LerpNode
+    TransformNode, BlendNode, PixelSplitNode, PixelMergeNode, PixelSwapNode, StackNode, CropNode, ColorTheoryNode,
+    ConstantNode, ShapeNode, TextNode, StereogramNode, GLSLNode, NoiseNode,
+    StreamReaderNode, StreamWriterNode, MIDIMessageNode, MIDIReaderNode, MIDIFilterEZNode, MIDIFilterNode, AudioDeviceNode
     DelayNode, HoldValueNode, ComparisonNode, SelectNode
-    AkashicNode, ValueGraphNode, RouteNode, ExportNode, QueueNode
+    AkashicNode, ValueGraphNode, RouteNode, QueueNode, ExportNode, ImageDiffNode
 @version: 0.9999999999999
 """
 
@@ -181,15 +181,10 @@ class ComfyAPIMessage:
         while not (sid in cls.MESSAGE) and time.monotonic() - _t < timeout:
             time.sleep(period)
 
-        #logger.debug(sid)
-        #logger.debug(cls.MESSAGE)
-
         if not (sid in cls.MESSAGE):
-            print('huh?')
+            # logger.warning(f"message failed {sid}")
             raise TimedOutException
-
         dat = cls.MESSAGE.pop(sid)
-        #logger.debug(dat)
         return dat
 
 try:
@@ -217,6 +212,7 @@ try:
             return
 
         global JOV_CONFIG
+        from Jovimetrix.sup.util import update_nested_dict
         update_nested_dict(JOV_CONFIG, did, value)
         # logger.debug("{} {}", did, value)
         with open(JOV_CONFIG_FILE, 'w', encoding='utf-8') as f:
@@ -244,20 +240,14 @@ except Exception as e:
 # == SUPPORT FUNCTIONS
 # =============================================================================
 
-def update_nested_dict(d, path, value) -> None:
-    keys = path.split('.')
-    current = d
-
-    for key in keys[:-1]:
-        current = current.setdefault(key, {})
-
-    last_key = keys[-1]
-
-    # Check if the key already exists
-    if last_key in current and isinstance(current[last_key], dict):
-        current[last_key].update(value)
-    else:
-        current[last_key] = value
+def parse_reset(ident:str) -> bool:
+    try:
+        data = ComfyAPIMessage.poll(ident, timeout=0)
+        return data.get('cmd', None) == 'reset'
+    except TimedOutException as e:
+        pass
+    except Exception as e:
+        logger.error(str(e))
 
 # =============================================================================
 # === GLOBALS ===

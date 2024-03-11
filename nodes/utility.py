@@ -10,6 +10,7 @@ import glob
 import base64
 import random
 import shutil
+from enum import Enum
 from typing import Any
 from pathlib import Path
 from uuid import uuid4
@@ -25,12 +26,12 @@ from folder_paths import get_output_directory
 from server import PromptServer
 import nodes
 
-from Jovimetrix import JOV_HELP_URL, ComfyAPIMessage, JOVBaseNode, TimedOutException, \
-    WILDCARD, ROOT, MIN_IMAGE_SIZE
+from Jovimetrix import JOV_HELP_URL, JOVBaseNode, \
+    WILDCARD, ROOT, MIN_IMAGE_SIZE, parse_reset
 
 from Jovimetrix.sup.lexicon import Lexicon
-from Jovimetrix.sup.util import path_next, parse_tuple, zip_longest_fill
-from Jovimetrix.sup.image import batch_extract, cv2tensor, cv2tensor_full, image_convert, pil2cv, \
+from Jovimetrix.sup.util import parse_dynamic, path_next, parse_tuple, zip_longest_fill
+from Jovimetrix.sup.image import batch_extract, cv2tensor,  image_convert, \
     tensor2pil, tensor2cv, pil2tensor, image_load, image_formats, image_diff
 
 # =============================================================================
@@ -47,6 +48,12 @@ if (JOV_GIFSKI := os.getenv("JOV_GIFSKI", None)) is not None:
         logger.info("gifski support")
 else:
     logger.warning("no gifski support")
+
+# =============================================================================
+
+class EnumBatchSelect(Enum):
+    INDEX = 10
+    RANDOM = 5
 
 # =============================================================================
 
@@ -161,24 +168,12 @@ class ValueGraphNode(JOVBaseNode):
         slice = kw.get(Lexicon.VALUE, [120])
         wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), zero=0.001)
         accepted = [bool, int, float, np.float16, np.float32, np.float64]
-        reset = False
-        try:
-            data = ComfyAPIMessage.poll(ident, timeout=0)
-            reset = data.get('cmd', None) == 'reset'
-        except TimedOutException as e:
-            pass
-        except Exception as e:
-            logger.error(str(e))
-
-        if reset:
+        if parse_reset(ident):
             self.__history = [[]]
             self.__index = [0]
 
         idx = 0
-        while 1:
-            who = f"{Lexicon.UNKNOWN}_{idx+1}"
-            if (val := kw.get(who, None)) is None:
-                break
+        for val in parse_dynamic(Lexicon.UNKNOWN, kw):
             val = [v if type(v) in accepted else 0 for v in val]
             while len(self.__history) < idx:
                 self.__history.append([])
@@ -327,23 +322,7 @@ class QueueNode(JOVBaseNode):
                     self.__last_q_value[q_data] = json.load(f)
             return self.__last_q_value[q_data]
 
-        reset = kw.get(Lexicon.RESET, False)
-        rand = kw.get(Lexicon.RANDOM, False)
-
-        # clear the queue of msgs...
-        # better resets? check if reset message
-        try:
-            data = ComfyAPIMessage.poll(ident, timeout=0)
-            # logger.debug(data)
-            if (cmd := data.get('cmd', None)) is not None:
-                if cmd == 'reset':
-                    reset = True
-        except TimedOutException as e:
-            pass
-        except Exception as e:
-            logger.error(str(e))
-
-        if reset:
+        if parse_reset(ident):
             self.__q = None
             self.__q_rand = None
 
@@ -382,6 +361,7 @@ class QueueNode(JOVBaseNode):
             random.shuffle(self.__q_rand)
             self.__index = 0
 
+        rand = kw.get(Lexicon.RANDOM, False)
         if rand:
             current = self.__q_rand[self.__index]
         else:
@@ -547,29 +527,101 @@ class ImageDiffNode(JOVBaseNode):
             pbar.update_absolute(idx)
         return list(zip(*results))
 
-"""
-class BatchMakeNode(JOVBaseNode):
-    NAME = "BATCH MAKE (JOV) 📚"
+class BatchChunkNode(JOVBaseNode):
+    NAME = "BATCH CHUNK (JOV) 📚"
     CATEGORY = JOV_CATEGORY
-    DESCRIPTION = ""
-    OUTPUT_IS_LIST = (True, True,)
-    RETURN_TYPES = ("FLOAT", "INT",  )
-    RETURN_NAMES = (Lexicon.FLOAT, Lexicon.INT, )
-    SORT = 110
+    DESCRIPTION = "Make a batch of batches or a batch of list."
+    RETURN_TYPES = ("INT", WILDCARD,)
+    RETURN_NAMES = (Lexicon.VALUE, Lexicon.BATCH, )
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {
         "required": {},
         "optional": {
+            Lexicon.BATCH: (WILDCARD, {}),
+            Lexicon.SIZE: ("INT", {"default": 1, "min": 1, "step": 1}),
         }}
-        return Lexicon._parse(d, JOV_HELP_URL + "/UTILITY#-batch-make")
+        return Lexicon._parse(d, JOV_HELP_URL + "/UTILITY#-batch-chunk")
 
-    def run(self, **kw) -> tuple[Any, Any]:
-        data = [x for x in range(0, 360, 5)]
-        return data, data,
+    def run(self, **kw) -> tuple[int, list]:
+        batch = kw.get(Lexicon.BATCH, [None])
+        chunk_size = kw.get(Lexicon.SIZE, [1])
 
+        latent = False
+        if isinstance(batch, dict) and "samples" in batch:
+            batch = batch["samples"]
+            latent = True
 
+        chunks = []
+        for i in range(0, len(batch), chunk_size):
+            chunk = batch[i:i + chunk_size]
+            if latent:
+                chunk = {"samples": chunk}
+            chunks.append(chunk)
+        amount_chunks = len(chunks)
+        return (amount_chunks, chunks,)
+
+class BatchSelectNode(JOVBaseNode):
+    NAME = "BATCH SELECT (JOV) 🤏🏾"
+    CATEGORY = JOV_CATEGORY
+    DESCRIPTION = "Explicitly show the differences between two images via self-similarity index."
+    RETURN_TYPES = (WILDCARD, "INT",)
+    RETURN_NAMES = (Lexicon.BATCH, Lexicon.SEED, )
+
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        d = {
+        "required": {},
+        "optional": {
+            Lexicon.BATCH: (WILDCARD, {}),
+            Lexicon.MODE: (EnumBatchSelect._member_names_, {"default": EnumBatchSelect.RANDOM.name}),
+            Lexicon.INDEX: ("INT", {"default": 1, "min": 1, "step": 1}),
+        }}
+        return Lexicon._parse(d, JOV_HELP_URL + "/UTILITY#-batch-select")
+
+    def run(self, **kw)-> tuple[Any]:
+        chunks, index, one_index, seed=None
+        if seed is None:
+            seed = random.randint(0, 1000000)
+        return (chunks[index - one_index], seed + index,)
+
+class BatchMergeNode(JOVBaseNode):
+    NAME = "BATCH MERGE (JOV) 👬🏼"
+    CATEGORY = JOV_CATEGORY
+    DESCRIPTION = "Merge batches or lists together into a single batch"
+    RETURN_TYPES = (WILDCARD, )
+    RETURN_NAMES = (Lexicon.BATCH, )
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "chunk": (WILDCARD,),
+                "batch": (WILDCARD,),
+                },
+            }
+
+    def run(self, **kw):
+
+        chunk, batch=None
+
+        latent = False
+        if isinstance(chunk, dict) and "samples" in chunk:
+            chunk = chunk["samples"]
+            latent = True
+
+        if batch is None:
+            batch = []
+        elif "samples" in batch:
+            batch = batch["samples"]
+
+        batch.extend(chunk)
+        if latent:
+            return ({"samples": batch},)
+        return (batch,)
+
+"""
 class HistogramNode(JOVImageSimple):
     NAME = "HISTOGRAM (JOV) 👁‍🗨"
     CATEGORY = CATEGORY = JOV_CATEGORY

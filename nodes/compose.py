@@ -10,14 +10,14 @@ from loguru import logger
 
 import comfy
 
-from Jovimetrix import TYPE_PIXEL, JOVImageMultiple, JOV_HELP_URL, WILDCARD, MIN_IMAGE_SIZE
+from Jovimetrix import JOVImageMultiple, JOV_HELP_URL, WILDCARD, MIN_IMAGE_SIZE
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import parse_number, parse_tuple, zip_longest_fill, EnumTupleType
 from Jovimetrix.sup.image import batch_extract, channel_merge, \
     channel_solid, channel_swap, cv2tensor_full, \
     image_crop, image_crop_center, image_crop_polygonal, image_grayscale, \
-    image_mask, image_mask_add, image_matte, image_rotate, image_scale, image_transform, \
-    image_translate, image_split, pixel_eval, tensor2cv, \
+    image_mask, image_mask_add, image_matte, image_transform, \
+    image_split, pixel_eval, tensor2cv, \
     image_edge_wrap, image_scalefit, cv2tensor, \
     image_stack, image_mirror, image_blend, \
     color_theory, remap_fisheye, remap_perspective, remap_polar, \
@@ -353,11 +353,11 @@ class PixelSwapNode(JOVImageMultiple):
                 pB = image_crop_center(pB, w, h)
                 pB = image_matte(pB, width=w, height=h)
 
-            for i, swap in enumerate([(swap_b, b), (swap_g, g), (swap_r, r), (swap_a, a)]):
+            for _, swap in enumerate([(swap_b, b), (swap_g, g), (swap_r, r), (swap_a, a)]):
                 swap, matte = swap
                 swap = EnumPixelSwap[swap]
                 if swap != EnumPixelSwap.PASSTHRU:
-                    pA[:,:,i] = channel_swap(pB, swap, matte)
+                    pA = channel_swap(pA, swap, pB, matte)
             images.append(cv2tensor_full(pA))
             pbar.update_absolute(idx)
         data = list(zip(*images))

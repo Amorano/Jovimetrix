@@ -18,10 +18,16 @@ import mss.tools
 import numpy as np
 from PIL import Image, ImageGrab
 
+# SPOUT SUPPORT
+import SpoutGL
+from itertools import repeat
+import array
+from OpenGL import GL
+
 from loguru import logger
 
-from Jovimetrix import Singleton, MIN_IMAGE_SIZE
-from Jovimetrix.sup.image import channel_solid, image_grid, image_load, pil2cv
+from Jovimetrix import TYPE_PIXEL, Singleton, MIN_IMAGE_SIZE
+from Jovimetrix.sup.image import image_convert, image_load, pil2cv
 
 # =============================================================================
 
@@ -183,7 +189,6 @@ class MediaStreamBase:
         self.__quit = False
         self.__paused = False
         self.__captured = False
-        self.__ret = False
         self.__fps = fps
         self.__timeout = None
         self.__frame = None
@@ -209,11 +214,11 @@ class MediaStreamBase:
                     self.__captured = True
                     logger.info(f"CAPTURED")
 
-                if self.__timeout is None:
+                if self.__timeout is None and self.TIMEOUT > 0:
                     self.__timeout = time.perf_counter() + self.TIMEOUT
 
                 # call the run capture frame command on subclasses
-                self.__ret, newframe = self.callback()
+                newframe = self.callback()
                 if newframe is not None:
                     self.__frame = newframe
                     self.__timeout = None
@@ -236,7 +241,7 @@ class MediaStreamBase:
         return self.__class__.__name__
 
     def callback(self) -> tuple[bool, Any]:
-        return True, None
+        return None
 
     def capture(self) -> None:
         self.__captured = True
@@ -260,8 +265,8 @@ class MediaStreamBase:
         return self.__captured
 
     @property
-    def frame(self) -> tuple[bool, Any]:
-        return self.__ret, self.__frame
+    def frame(self) -> Any:
+        return self.__frame
 
     @property
     def fps(self) -> float:
@@ -278,17 +283,7 @@ class MediaStreamStatic(MediaStreamBase):
         super().__init__()
 
     def callback(self) -> tuple[bool, Any]:
-        return True, self.image
-
-class MediaStreamDesktop(MediaStreamBase):
-    """Desktop, specific monitor, specific window or cropped region."""
-    def __init__(self, area:int|str=None, region:tuple[int, int, int, int]=None) -> None:
-        try: area = int(area)
-        except: pass
-        super().__init__()
-
-    def callback(self) -> tuple[bool, Any]:
-        return True, None
+        return self.image
 
 class MediaStreamURL(MediaStreamBase):
     """A media point (could be a camera index)."""
@@ -309,7 +304,7 @@ class MediaStreamURL(MediaStreamBase):
 
         if ret:
             self.__last = result
-            return ret, result
+            return result
 
         count = int(self.source.get(cv2.CAP_PROP_FRAME_COUNT))
         pos = int(self.source.get(cv2.CAP_PROP_POS_FRAMES))
@@ -319,9 +314,9 @@ class MediaStreamURL(MediaStreamBase):
 
         # maybe its a single frame -- if we ever got one.
         if not ret and self.__last is not None:
-            return True, self.__last
+            return self.__last
 
-        return ret, result
+        return result
 
     @property
     def url(self) -> str:
@@ -396,6 +391,46 @@ class MediaStreamDevice(MediaStreamURL):
         val = 255 * self.__focus
         self.source.set(cv2.CAP_PROP_FOCUS, val)
 
+class MediaStreamSpout(MediaStreamBase):
+    """Capture from SpoutGL stream."""
+
+    TIMEOUT = 0
+
+    def __init__(self, url:str, fps:float=30) -> None:
+        self.__buffer = None
+        self.__url = url
+        self.__last = None
+        self.__width = self.__height = 0
+        self.__spout = SpoutGL.SpoutReceiver()
+        self.__spout.setReceiverName(url)
+        super().__init__(fps)
+
+    def callback(self) -> Any:
+        if self.__spout.isUpdated():
+            self.__width = self.__spout.getSenderWidth()
+            self.__height = self.__spout.getSenderHeight()
+            self.__buffer = array.array('B', repeat(0, self.__width * self.__height * 4))
+        result = self.__spout.receiveImage(self.__buffer, GL.GL_RGBA, False, 0)
+        if self.__buffer is not None and result: # and not SpoutGL.helpers.isBufferEmpty(self.__buffer):
+            self.__last = np.asarray(self.__buffer, dtype=np.uint8).reshape((self.__height, self.__width, 4))
+            self.__last[:, :, [0, 2]] = self.__last[:, :, [2, 0]]
+        return self.__last
+
+    @property
+    def url(self) -> str:
+        return self.__url
+
+    @url.setter
+    def url(self, url:str) -> None:
+        self.__spout.setReceiverName(url)
+        self.__url = url
+
+    def __del__(self) -> None:
+        if self.__spout is not None:
+            self.__spout.ReleaseReceiver()
+        self.__spout = None
+        del self.__spout
+
 class MediaStreamFile(MediaStreamBase):
     """A file served from a local file using file:// as the 'uri'."""
     def __init__(self, url:str) -> None:
@@ -420,7 +455,7 @@ class StreamManager(metaclass=Singleton):
     def active(self) -> list[MediaStreamDevice]:
         return [stream for stream in StreamManager.STREAM.values() if stream.captured]
 
-    def frame(self, url: str) -> tuple[bool, Any]:
+    def frame(self, url: str) -> Any:
         if (stream := StreamManager.STREAM.get(url, None)) is None:
             # attempt to capture first time...
             stream = self.capture(url)
@@ -530,9 +565,68 @@ class StreamingServer(metaclass=Singleton):
             current = StreamingServer.OUT.copy()
             for k, v in current.items():
                 if (device := v['_']) is not None:
-                    _, frame = device.frame
-                    StreamingServer.OUT[k]['b'] = frame
+                    StreamingServer.OUT[k]['b'] = device.frame
             time.sleep(0.001)
+
+# =============================================================================
+# === SPOUT SERVER ===
+# =============================================================================
+
+class SpoutSender:
+    def __init__(self, host: str='', fps:int=30, frame:TYPE_PIXEL=None) -> None:
+        self.__fps = self.__width = self.__height = 0
+        self.__frame = None
+        self.frame = frame
+        self.__host = host
+        self.__delay = 0
+        self.fps = max(1, fps)
+        self.__sender = SpoutGL.SpoutSender()
+        self.__sender.setSenderName(self.__host)
+        self.__thread_server = threading.Thread(target=self.__server, daemon=True)
+        self.__thread_server.start()
+        logger.info("STARTED")
+
+    @property
+    def frame(self) -> TYPE_PIXEL:
+        return self.__frame
+
+    @frame.setter
+    def frame(self, image: TYPE_PIXEL) -> None:
+        """Must be RGBA"""
+        self.__frame = image
+
+    @property
+    def host(self) -> str:
+        return self.__host
+
+    @host.setter
+    def host(self, host: str) -> None:
+        if host != self.__host:
+            self.__sender = SpoutGL.SpoutSender()
+            self.__sender.setSenderName(host)
+            self.__host = host
+
+    @property
+    def fps(self) -> int:
+        return self.__fps
+
+    @fps.setter
+    def fps(self, fps: int) -> None:
+        self.__fps = max(1, fps)
+        self.__delay = 1. / fps
+
+    def __server(self) -> None:
+        while 1:
+            if self.__sender is not None:
+                if self.__frame is not None:
+                    h, w = self.__frame.shape[:2]
+                    self.__sender.sendImage(self.__frame, w, h, GL.GL_RGBA, False, 0)
+                self.__sender.setFrameSync(self.__host)
+            time.sleep(self.__delay)
+
+    def __del__(self) -> None:
+        self.__sender = None
+        del self.__sender
 
 def __getattr__(name: str) -> Any:
     if name == "StreamManager":
@@ -540,111 +634,3 @@ def __getattr__(name: str) -> Any:
     elif name == "StreamingServer":
         return StreamingServer()
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
-
-# =============================================================================
-# === TESTING ===
-# =============================================================================
-
-def streamReadTest() -> None:
-    urls = [
-        "https://images.squarespace-cdn.com/content/v1/600743194a20ea052ee04fbb/a1415a46-a24d-4efb-afe2-9ef896d2da62/CircleUnderBerry2.jpg",
-        "https://www.learningcontainer.com/wp-content/uploads/2020/05/sample-mp4-file.mp4",
-        "https://images.squarespace-cdn.com/content/v1/600743194a20ea052ee04fbb/a1415a46-a24d-4efb-afe2-9ef896d2da62/CircleUnderBerry2.jpg",
-        "file://z:\\alex.png",
-        "0", 1,
-        "https://images.squarespace-cdn.com/content/v1/600743194a20ea052ee04fbb/1611094440833-JRYTH6W6ODHF0F66FSTI/CD876BD2-EDF9-4FE0-9E85-4D05EEFE9513.jpeg",
-        "http://63.142.183.154:6103/mjpg/video.mjpg",
-        "http://104.207.27.126:8080/mjpg/video.mjpg",
-        "http://185.133.99.214:8011/mjpg/video.mjpg",
-        "http://tapioles.eu:85/mjpg/video.mjpg",
-        "http://63.142.190.238:6106/mjpg/video.mjpg",
-        "http://77.222.181.11:8080/mjpg/video.mjpg",
-        "http://195.196.36.242/mjpg/video.mjpg",
-        "http://honjin1.miemasu.net/nphMotionJpeg?Resolution=320x240&Quality=Standard",
-        "http://clausenrc5.viewnetcam.com:50003/nphMotionJpeg?Resolution=320x240&Quality=Standard",
-        "http://takemotopiano.aa1.netvolante.jp:8190/nphMotionJpeg?Resolution=320x240&Quality=Standard",
-        "http://tamperehacklab.tunk.org:38001/nphMotionJpeg?Resolution=320x240&Quality=Standard",
-        "http://vetter.viewnetcam.com:50000/nphMotionJpeg?Resolution=320x240&Quality=Standard",
-        "http://61.211.241.239/nphMotionJpeg?Resolution=320x240&Quality=Standard",
-        "http://webcam.mchcares.com/mjpg/video.mjpg",
-        "http://htadmcam01.larimer.org/mjpg/video.mjpg",
-        "http://pendelcam.kip.uni-heidelberg.de/mjpg/video.mjpg",
-        "https://gbpvcam01.taferresorts.com/mjpg/video.mjpg",
-        "http://217.147.30.197:8087/mjpg/video.mjpg",
-    ]
-    streamIdx = 0
-
-    widthT = 160
-    heightT = 120
-
-    empty = channel_solid(widthT, heightT, 0)
-    try:
-        StreamManager().capture(urls[streamIdx % len(urls)])
-    except Exception as e:
-        logger.error(e)
-    streamIdx += 1
-
-    while True:
-        streams = []
-        for x in StreamManager().active:
-            _, chunk = x.frame
-            if chunk is None:
-                chunk = channel_solid(widthT, heightT, 0)
-            else:
-                chunk = cv2.resize(chunk, (widthT, heightT))
-            streams.append(chunk)
-
-        if len(streams) > 0:
-            frame = image_grid(streams, widthT, heightT)
-        else:
-            frame = empty
-
-        try:
-            cv2.imshow("Media", frame)
-        except Exception as e:
-            logger.error(e)
-        val = cv2.waitKey(1) & 0xFF
-        if val == ord('c'):
-            try:
-                StreamManager().capture(urls[streamIdx % len(urls)])
-            except Exception as e:
-                logger.error(e)
-            streamIdx += 1
-        elif val == ord('q'):
-            break
-
-    cv2.destroyAllWindows()
-
-def streamWriteTest() -> None:
-    logger.info(cv2.getBuildInformation())
-    ss = StreamingServer()
-
-    fpath = 'res/stream-video.mp4'
-    try:
-        device = StreamManager().capture(fpath, endpoint=f'/media')
-        device.fps = 30
-    except:
-        pass
-
-    StreamManager().capture(0, endpoint='/stream/0')
-    StreamManager().capture(1, endpoint='/stream/1')
-
-    while 1:
-        pass
-
-def capture_screen_test() -> None:
-    while(True):
-        img = window_capture(monitor=33, width=960, height=540)
-        cv2.imshow('window', img)
-        if cv2.waitKey(25) & 0xFF == ord('q'):
-            cv2.destroyAllWindows()
-            break
-
-if __name__ == "__main__":
-    streamReadTest()
-    # streamWriteTest()
-    for m, v in camera_list().items():
-        logger.debug(m, v)
-    exit()
-    capture_screen_test()
-    pass

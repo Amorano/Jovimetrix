@@ -4,26 +4,28 @@ Creation
 """
 
 from enum import Enum
+import numpy as np
 
 import torch
 from PIL import ImageFont
-
+from vnoise import Noise
 from loguru import logger
 
 import comfy
-# from server import PromptServer
 
 from Jovimetrix import WILDCARD, JOVImageSimple, JOVImageMultiple, \
     JOV_HELP_URL, MIN_IMAGE_SIZE
 
 from Jovimetrix.sup.lexicon import Lexicon
-
-from Jovimetrix.sup.util import parse_tuple, zip_longest_fill, EnumTupleType
+from Jovimetrix.sup.snoise import SNoise
+from Jovimetrix.sup.util import parse_dynamic, parse_tuple, zip_longest_fill, \
+    EnumTupleType
 
 from Jovimetrix.sup.image import batch_extract, channel_solid, cv2tensor_full, \
-    image_grayscale, image_invert, image_mask_add, image_rotate, image_stereogram, image_transform, \
-    image_translate, pil2cv, pixel_eval, tensor2cv, shape_ellipse, shape_polygon, \
-    shape_quad, EnumEdge, EnumImageType
+    image_gradient, image_grayscale, image_invert, image_mask_add, image_matte, \
+    image_rotate, image_stereogram, image_transform, image_translate, pil2cv, \
+    pixel_eval, tensor2cv, shape_ellipse, shape_polygon, shape_quad, \
+    EnumEdge, EnumImageType
 
 from Jovimetrix.sup.text import font_all, font_all_names, text_autosize, text_draw, \
     EnumAlignment, EnumJustify, EnumShapes
@@ -33,7 +35,14 @@ from Jovimetrix.sup.text import font_all, font_all_names, text_autosize, text_dr
 JOV_CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
 
 class EnumNoise(Enum):
-    PERLIN = 20
+    PERLIN_1D = 10
+    PERLIN_2D = 20
+    PERLIN_2D_RGB = 30
+    PERLIN_2D_RGBA = 40
+    #PERLIN_3D = 50
+    #SIMPLEX_2D = 60
+    #SIMPLEX_3D = 70
+    #SIMPLEX_4D = 80
 
 # =============================================================================
 
@@ -312,35 +321,150 @@ class StereogramNode(JOVImageSimple):
             pbar.update_absolute(idx)
         return list(zip(*images))
 
-"""
-class NoiseNode(JOVImageMultiple):
-    NAME = "NOISE (JOV) 🟪"
+class GradientNode(JOVImageMultiple):
+    NAME = "GRADIENT (JOV) 🍧"
     CATEGORY = JOV_CATEGORY
-    DESCRIPTION = "Blocks of noise"
+    DESCRIPTION = "Make a gradient mapped to a linear or polar coordinate system."
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {
         "required": {},
         "optional": {
-            Lexicon.NOISE: (EnumNoise._member_names_, {"default": EnumNoise.PERLIN.name}),
-            Lexicon.SEED: ("INT", {"default": 0, "step": 1}),
+            Lexicon.PIXEL: (WILDCARD, {"tooltip":"Optional Image to Matte with Selected Color"}),
             Lexicon.WH: ("VEC2", {"default": (512, 512), "step": 1,
                                   "label": [Lexicon.W, Lexicon.H],
                                   "tooltip": "Desired Width and Height of the Color Output"})
         }}
-        return Lexicon._parse(d, JOV_HELP_URL + "/CREATE#-noise")
+        return Lexicon._parse(d, JOV_HELP_URL + "/CREATE#-constant")
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        seed = kw.get(Lexicon.SEED, [0])
+        pA = kw.get(Lexicon.PIXEL, None)
+        pA = [None] if pA is None else batch_extract(pA)
         wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
+        colors = parse_dynamic(Lexicon.COLOR, kw)
         images = []
-        params = [tuple(x) for x in zip_longest_fill(seed, wihi, matte)]
+        params = [tuple(x) for x in zip_longest_fill(pA, wihi, colors)]
         pbar = comfy.utils.ProgressBar(len(params))
-        for idx, (seed, wihi, matte) in enumerate(params):
+        for idx, (pA, wihi, clr) in enumerate(params):
+            # colors = [(0,0,0,255) if c is None else pixel_eval(c, EnumImageType.BGRA) for c in clr]
             width, height = wihi
-
-            images.append(cv2tensor_full(pA, matte))
+            image = image_gradient(width, height, clr)
+            if pA is not None:
+                pA = tensor2cv(pA)
+                pA = image_matte(image, imageB=pA)
+            images.append(cv2tensor_full(image))
             pbar.update_absolute(idx)
         return list(zip(*images))
-"""
+
+class NoiseNode(JOVImageMultiple):
+    NAME = "NOISE (JOV) 🏞"
+    CATEGORY = JOV_CATEGORY
+    DESCRIPTION = "Blocks of noise"
+    RETURN_TYPES = ("FLOAT", "IMAGE", "IMAGE", "MASK",)
+    RETURN_NAMES = (Lexicon.FLOAT, Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK,)
+    OUTPUT_IS_LIST = (True, True, True, True, )
+
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        d = {
+        "required": {},
+        "optional": {
+            Lexicon.NOISE: (EnumNoise._member_names_, {"default": EnumNoise.PERLIN_2D.name}),
+            Lexicon.SEED: ("INT", {"default": 0, "step": 1}),
+            Lexicon.X: ("FLOAT", {"default": MIN_IMAGE_SIZE, "step": 1,
+                                  "label": Lexicon.X, "min": 2,
+                                  "tooltip": "Width of the Noise Output"}),
+            Lexicon.XY: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), "step": 1,
+                                  "label": [Lexicon.X, Lexicon.Y],
+                                  "tooltip": "Width and Height of the Noise Output"}),
+            #Lexicon.XYZ: ("VEC3", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 4), "step": 1,
+            #                      "label": [Lexicon.X, Lexicon.Y, Lexicon.Z],
+            #                      "tooltip": "Width, Height and Depth of the Noise Output"}),
+            #Lexicon.XYZW: ("VEC4", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 4, 1), "step": 1,
+            #                      "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W],
+            #                      "tooltip": "Width, Height, Depth and Time of the Noise Output"}),
+            Lexicon.INDEX: ("INT", {"default": 1, "step": 1, "min": 1, "max": 2, "tooltip":"which index in the noise block to use for the float output"}),
+            Lexicon.OCTAVES: ("INT", {"default": 2, "step": 1, "min": 1, "max": 32, "tooltip":"number of passes"}),
+            Lexicon.PERSISTENCE: ("FLOAT", {"default": 2, "min": 0, "step": 0.01, "tooltip":"relative amplitude of each octave to its parent"}),
+            Lexicon.LACUNARITY: ("FLOAT", {"default": 4, "min": 0, "step": 0.01, "tooltip":"frequency of each successive octave relative"}),
+            Lexicon.OFFSET: ("INT", {"default": 0, "step": 1}),
+            Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE*2, MIN_IMAGE_SIZE*2), "step": 1,
+                                  "label": [Lexicon.W, Lexicon.H],
+                                  "tooltip": "Where the noise will repeat"}),
+            Lexicon.VALUE: ("FLOAT", {"default": 255, "step": 0.1, "tooltip":"scale the noise"}),
+            Lexicon.ROUND: ("INT", {"default": 0, "step": 1, "min": 0, "max": 16}),
+        }}
+        return Lexicon._parse(d, JOV_HELP_URL + "/CREATE#-noise")
+
+    def __init__(self, *arg, **kw) -> None:
+        super().__init__(*arg, **kw)
+        self.__seed = 0
+        self.__noise = None
+        self.__ntype = None
+        self.__empty = (torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 4), dtype=torch.uint8, device="cpu"),
+                        torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8, device="cpu"),
+                        torch.ones((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 1), dtype=torch.uint8, device="cpu"),)
+
+    def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
+        ntype = kw.get(Lexicon.NOISE, [EnumNoise.PERLIN_2D_RGB])
+        seed = kw.get(Lexicon.SEED, [0])
+        octaves = kw.get(Lexicon.OCTAVES, [2])
+        persistence = kw.get(Lexicon.PERSISTENCE, [2])
+        lacunarity = kw.get(Lexicon.LACUNARITY, [4])
+        float_index = kw.get(Lexicon.INDEX, [0])
+        x = kw.get(Lexicon.X, [512])
+        xy = parse_tuple(Lexicon.XY, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=2)
+        #xyz = parse_tuple(Lexicon.XYZ, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 4), clip_min=1)
+        #xyzw = parse_tuple(Lexicon.XYZW, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 4, 1), clip_min=1)
+        offset = kw.get(Lexicon.OFFSET, [0])
+        repeat = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE*2, MIN_IMAGE_SIZE*2,), clip_min=1)
+        scalar = kw.get(Lexicon.VALUE, [255])
+        rounding = kw.get(Lexicon.ROUND, [0])
+        images = []
+        params = [tuple(x) for x in zip_longest_fill(ntype, seed, octaves, persistence, lacunarity, float_index, x, xy, offset, repeat, scalar, rounding)]
+        pbar = comfy.utils.ProgressBar(len(params))
+        for idx, (ntype, seed, octaves, persistence, lacunarity, float_index, x, xy, offset, repeat, scalar, rounding) in enumerate(params):
+            ntype = EnumNoise[ntype]
+            if self.__ntype != ntype or self.__noise is None or self.__seed != seed:
+                self.__noise = Noise(seed)
+                #if ntype in [EnumNoise.PERLIN_1D, EnumNoise.PERLIN_2D, EnumNoise.PERLIN_2D_RGB, EnumNoise.#PERLIN_2D_RGBA]:
+                    #self.__noise = Noise(seed)
+                #else:
+                    #self.__noise = SNoise(seed)
+                block = None
+                self.__ntype = ntype
+
+            floats = []
+            block = []
+            repeat_x, repeat_y = repeat
+            if ntype == EnumNoise.PERLIN_1D:
+                floats = block = self.__noise.noise1(np.linspace(0, 1, x), octaves, persistence, lacunarity, repeat_x, offset)
+                image = self.__empty
+            else:
+                x, y = xy
+                float_index -= 1
+                if ntype == EnumNoise.PERLIN_2D:
+                    block = self.__noise.noise2(np.linspace(0, 1, x), np.linspace(0, 1, y), octaves, persistence, lacunarity, repeat_x, repeat_y, offset)
+                elif ntype == EnumNoise.PERLIN_2D_RGB:
+                    block = self.__noise.noise3(np.linspace(0, 1, x), np.linspace(0, 1, y), np.linspace(0, 1, 3), octaves, persistence, lacunarity, repeat_x, repeat_y, repeat_x, offset)
+                elif ntype == EnumNoise.PERLIN_2D_RGBA:
+                    block = self.__noise.noise3(np.linspace(0, 1, x), np.linspace(0, 1, y), np.linspace(0, 1, 4), octaves, persistence, lacunarity, repeat_x, repeat_y, repeat_x, offset)
+
+                image = np.array(block * scalar, dtype=np.uint8)
+                image = cv2tensor_full(image)
+                floats = block[float_index]
+
+            if rounding > 0:
+                rounding = max(0, min(16, rounding))
+                scalar = round(scalar, rounding)
+            else:
+                scalar = int(scalar)
+            floats *= scalar
+            if rounding == 0:
+                floats = floats.astype(np.uint8)
+            floats = [floats]
+            floats.extend(image)
+            images.append(floats)
+            pbar.update_absolute(idx)
+        return list(zip(*images))

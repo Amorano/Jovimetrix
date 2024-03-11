@@ -14,11 +14,13 @@ from typing import Any, Optional
 import cv2
 import torch
 import numpy as np
-import scipy as sp
+import numba
+from numba import jit
 from daltonlens import simulate
 from sklearn.cluster import MiniBatchKMeans
 
 from skimage import exposure
+from skimage.transform import warp_polar
 from skimage.metrics import structural_similarity as ssim
 from PIL import Image, ImageDraw, ImageOps
 from blendmodes.blend import blendLayers, BlendType
@@ -207,12 +209,11 @@ class EnumThresholdAdapt(Enum):
     ADAPT_GAUSS = cv2.ADAPTIVE_THRESH_GAUSSIAN_C
 
 class EnumPixelSwap(Enum):
-    PASSTHRU = 0
-    IMAGE_B_R = 10
-    IMAGE_B_G = 20
-    IMAGE_B_B = 30
-    IMAGE_B_A = 40
-    SCALAR = 50
+    PASSTHRU = 10
+    IMAGE_B_R = 2
+    IMAGE_B_G = 1
+    IMAGE_B_B = 0
+    IMAGE_B_A = 3
     SOLID = 90
 
 class EnumCBSimulator(Enum):
@@ -310,6 +311,8 @@ def cv2tensor(image: TYPE_IMAGE) -> torch.Tensor:
 
 def cv2tensor_full(image: TYPE_IMAGE, matte:TYPE_PIXEL=0) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     mask = image_mask(image)
+    #if channel_count(image)[0] != 4:
+    #    image = image_convert(image, 4)
     image = image_matte(image, matte)
     rgb = image_convert(image, 3)
     return cv2tensor(image), cv2tensor(rgb), cv2tensor(mask)
@@ -490,8 +493,11 @@ def pixel_convert(color:TYPE_PIXEL, size:int=4, alpha:int=255) -> TYPE_PIXEL:
 # =============================================================================
 
 def channel_count(image:TYPE_IMAGE) -> tuple[int, int, int, EnumImageType]:
-    h, w = image.shape[:2]
     size = image.shape[2] if len(image.shape) > 2 else 1
+    if len(image.shape) > 1:
+        h, w = image.shape[:2]
+    else:
+        h = w = image.shape[0]
     if size == 4:
         mode = EnumImageType.BGRA
         if type(image) == Image:
@@ -543,20 +549,25 @@ def channel_merge(channel:list[TYPE_IMAGE]) -> TYPE_IMAGE:
         ch.append(a)
     return cv2.merge(ch)
 
-def channel_swap(image:TYPE_IMAGE, swap:EnumPixelSwap, matte:TYPE_PIXEL=0) -> TYPE_IMAGE:
-    match swap:
-        case EnumPixelSwap.IMAGE_B_B:
-            return image[:,:,0]
-        case EnumPixelSwap.IMAGE_B_G:
-            return image[:,:,1]
-        case EnumPixelSwap.IMAGE_B_R:
-            return image[:,:,2]
-        case EnumPixelSwap.IMAGE_B_A:
-            return image[:,:,3]
-        case EnumPixelSwap.SOLID:
-            h, w = image.shape[:2]
-            return channel_solid(w, h, matte, EnumImageType.GRAYSCALE)[:,:,0]
+def channel_swap(imageA:TYPE_IMAGE, swap:EnumPixelSwap, imageB:TYPE_IMAGE=None, matte:TYPE_PIXEL=(0,0,0)) -> TYPE_IMAGE:
+    index = swap.value
+    cc, h, w = channel_count(imageA)[:3]
+    if index > cc:
+        return imageA
 
+    if swap == EnumPixelSwap.SOLID:
+        imageA[:,:,index] = channel_solid(w, h, matte, EnumImageType.GRAYSCALE)[:,:,0]
+        return imageA
+
+    if index > 4:
+        return imageA
+
+    if imageB is not None and channel_count(imageB)[0] >= index:
+        data = imageB[:,:,index]
+    else:
+        data = channel_solid(w, h, 0, EnumImageType.GRAYSCALE)[:,:,0]
+    imageA[:,:,index] = data
+    return imageA
 # =============================================================================
 # === EXPLICIT SHAPE FUNCTIONS ===
 # =============================================================================
@@ -811,6 +822,33 @@ def image_gamma(image: TYPE_IMAGE, value: float) -> TYPE_IMAGE:
         # now back to the original "format"
     return bgr2image(image, alpha, cc == 1)
 
+def image_gradient(width:int, height:int, color_map:dict=None) -> TYPE_IMAGE:
+    if color_map is None:
+        color_map = {0: (0,0,0,255)}
+    else:
+        color_map = {np.clip(float(k), 0, 1): [np.clip(int(c), 0, 255) for c in v] for k, v in color_map.items()}
+    color_map = dict(sorted(color_map.items()))
+    image = Image.new('RGBA', (width, height))
+    draw = image.load()
+    widthf = float(width)
+
+    @jit
+    def gaussian(x, a, b, c, d=0) -> Any:
+        return a * math.exp(-(x - b)**2 / (2 * c**2)) + d
+
+    def pixel(x, spread:int=1) -> tuple[int, int, int]:
+        ws = widthf / (spread * len(color_map))
+        r = sum([gaussian(x, p[0], k * widthf, ws) for k, p in color_map.items()])
+        g = sum([gaussian(x, p[1], k * widthf, ws) for k, p in color_map.items()])
+        b = sum([gaussian(x, p[2], k * widthf, ws) for k, p in color_map.items()])
+        return min(255, int(r)), min(255, int(g)), min(255, int(b))
+
+    for x in range(width):
+        r, g, b = pixel(x)
+        for y in range(height):
+            draw[x, y] = r, g, b
+    return pil2cv(image)
+
 def image_grayscale(image: TYPE_IMAGE) -> TYPE_IMAGE:
     if image.dtype in [np.float16, np.float32, np.float64]:
         image = np.clip(image * 255, 0, 255).astype(np.uint8)
@@ -1007,8 +1045,8 @@ def image_mask_add(image:TYPE_IMAGE, mask:TYPE_IMAGE=None) -> TYPE_IMAGE:
     image[:,:,3] = mask[:,:,0]
     return image
 
-def image_matte(image:TYPE_IMAGE, color:TYPE_PIXEL=(0,0,0,255), width:int=None,
-                height:int=None) -> TYPE_IMAGE:
+def image_matte(image:TYPE_IMAGE, color:TYPE_PIXEL=(0,0,0,255),
+                width:int=None, height:int=None, imageB:TYPE_IMAGE=None) -> TYPE_IMAGE:
     """Puts an image atop a colored matte."""
     cc, w, h = channel_count(image)[:3]
     width = width if width is not None else w
@@ -1023,7 +1061,11 @@ def image_matte(image:TYPE_IMAGE, color:TYPE_PIXEL=(0,0,0,255), width:int=None,
         image = image_convert(image, 4)
     # save the old alpha channel
     mask = image_mask(image)
-    matte = channel_solid(width, height, color, EnumImageType.BGRA)
+    if imageB is not None:
+        matte = image_convert(imageB, 4)
+        matte = image_scalefit(matte, width, height, EnumScaleMode.FIT)
+    else:
+        matte = channel_solid(width, height, color, EnumImageType.BGRA)
     alpha = mask[:,:,0]
     matte[y1:y2, x1:x2, 3] = alpha
     alpha = cv2.bitwise_not(alpha)
@@ -1575,46 +1617,28 @@ def color_theory(image: TYPE_IMAGE, custom:int=0, scheme: EnumColorTheory=EnumCo
 
 # =============================================================================
 
-def cart2polar(x, y) -> tuple[Any, Any]:
+def coord_cart2polar(x, y) -> tuple[Any, Any]:
     r = np.sqrt(x**2 + y**2)
     theta = np.arctan2(y, x)
     return r, theta
 
-def polar2cart(r, theta) -> tuple:
+def coord_polar2cart(r, theta) -> tuple:
     x = r * np.cos(theta)
     y = r * np.sin(theta)
     return x, y
 
-# =============================================================================
-
-def coord_sphere(width: int, height: int, radius: float) -> tuple[TYPE_IMAGE, TYPE_IMAGE]:
-    theta, phi = np.meshgrid(np.linspace(0, TAU, width), np.linspace(0, np.pi, height))
-    x = radius * np.sin(phi) * np.cos(theta)
-    y = radius * np.sin(phi) * np.sin(theta)
-    # z = radius * np.cos(phi)
-    x_image = (x + 1) * (width - 1) / 2
-    y_image = (y + 1) * (height - 1) / 2
-    return x_image.astype(np.float32), y_image.astype(np.float32)
-
-def coord_polar(data, origin=None) -> tuple:
+def coord_default(width:int, height:int, origin:tuple[float, float]=None) -> tuple:
     """Creates x & y coords for the indicies in a numpy array "data".
     "origin" defaults to the center of the image. Specify origin=(0,0)
     to set the origin to the lower left corner of the image."""
-    ny, nx = data.shape[:2]
     if origin is None:
-        origin_x, origin_y = nx // 2, ny // 2
+        origin_x, origin_y = width // 2, height // 2
     else:
         origin_x, origin_y = origin
-    x, y = np.meshgrid(np.arange(nx), np.arange(ny))
+    x, y = np.meshgrid(np.arange(width), np.arange(height))
     x -= origin_x
     y -= origin_y
     return x, y
-
-def coord_perspective(width: int, height: int, pts: list[TYPE_COORD]) -> TYPE_IMAGE:
-    object_pts = np.float32([[0, 0], [width, 0], [width, height], [0, height]])
-    pts = np.float32(pts)
-    pts = np.column_stack([pts[:, 0], pts[:, 1]])
-    return cv2.getPerspectiveTransform(object_pts, pts)
 
 def coord_fisheye(width: int, height: int, distortion: float) -> tuple[TYPE_IMAGE, TYPE_IMAGE]:
     map_x, map_y = np.meshgrid(np.linspace(0., 1., width), np.linspace(0., 1., height))
@@ -1627,49 +1651,27 @@ def coord_fisheye(width: int, height: int, distortion: float) -> tuple[TYPE_IMAG
     xu, yu = ((xdu + 1) * width) / 2, ((ydu + 1) * height) / 2
     return xu.astype(np.float32), yu.astype(np.float32)
 
-def remap_sphere(image: TYPE_IMAGE, radius: float) -> TYPE_IMAGE:
-    height, width = image.shape[:2]
-    map_x, map_y = coord_sphere(width, height, radius)
-    return cv2.remap(image, map_x, map_y, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
+def coord_perspective(width: int, height: int, pts: list[TYPE_COORD]) -> TYPE_IMAGE:
+    object_pts = np.float32([[0, 0], [width, 0], [width, height], [0, height]])
+    pts = np.float32(pts)
+    pts = np.column_stack([pts[:, 0], pts[:, 1]])
+    return cv2.getPerspectiveTransform(object_pts, pts)
 
-def remap_polar(image: TYPE_IMAGE) -> TYPE_IMAGE:
-    height, width = image.shape[:2]
-    map_x, map_y = coord_polar(width, height)
-    map_x = map_x * width
-    map_y = map_y * height
-    return cv2.remap(image, map_x, map_y, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
+def coord_sphere(width: int, height: int, radius: float) -> tuple[TYPE_IMAGE, TYPE_IMAGE]:
+    theta, phi = np.meshgrid(np.linspace(0, TAU, width), np.linspace(0, np.pi, height))
+    x = radius * np.sin(phi) * np.cos(theta)
+    y = radius * np.sin(phi) * np.sin(theta)
+    # z = radius * np.cos(phi)
+    x_image = (x + 1) * (width - 1) / 2
+    y_image = (y + 1) * (height - 1) / 2
+    return x_image.astype(np.float32), y_image.astype(np.float32)
 
-def remap_polar(image: TYPE_IMAGE, origin:tuple[int, int]=None) -> TYPE_IMAGE:
-    """Re-projects a 3D numpy array ("data") into a polar coordinate system.
-    "origin" is a tuple of (x0, y0) and defaults to the center of the image."""
-    cc, nx, ny = channel_count(image)[:3]
+def remap_fisheye(image: TYPE_IMAGE, distort: float) -> TYPE_IMAGE:
+    cc, width, height = channel_count(image)[:3]
     if cc == 1:
         image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
-
-    if origin is None:
-        origin = (nx // 2, ny // 2)
-
-    # Determine that the min and max r and theta coords will be...
-    x, y = coord_polar(image, origin=origin)
-    r, theta = cart2polar(x, y)
-
-    # Make a regular (in polar space) grid based on the min and max r & theta
-    r_i = np.linspace(r.min(), r.max(), nx)
-    theta_i = np.linspace(theta.min(), theta.max(), ny)
-    theta_grid, r_grid = np.meshgrid(theta_i, r_i)
-
-    # Project the r and theta grid back into pixel coordinates
-    xi, yi = polar2cart(r_grid, theta_grid)
-    xi += origin[0]
-    yi += origin[1]
-    xi, yi = xi.flatten(), yi.flatten()
-    coords = np.vstack((xi, yi))
-    bands = []
-    for band in image.T:
-        zi = sp.ndimage.map_coordinates(band, coords, order=1)
-        bands.append(zi.reshape((nx, ny)))
-
-    image = np.dstack(bands)
+    map_x, map_y = coord_fisheye(width, height, distort)
+    image = cv2.remap(image, map_x, map_y, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
     if cc == 1:
         image = image[:,:,0][:,:]
     return image
@@ -1684,48 +1686,14 @@ def remap_perspective(image: TYPE_IMAGE, pts: list) -> TYPE_IMAGE:
         image = image[:,:,0][:,:]
     return image
 
-def remap_fisheye(image: TYPE_IMAGE, distort: float) -> TYPE_IMAGE:
-    cc, width, height = channel_count(image)[:3]
-    if cc == 1:
-        image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
-    map_x, map_y = coord_fisheye(width, height, distort)
-    image = cv2.remap(image, map_x, map_y, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
-    if cc == 1:
-        image = image[:,:,0][:,:]
-    return image
+def remap_polar(image: TYPE_IMAGE) -> TYPE_IMAGE:
+    """Re-projects a 3D numpy array ("data") into a polar coordinate system.
+    "origin" is a tuple of (x0, y0) and defaults to the center of the image."""
+    h, w = image.shape[:2]
+    radius = max(w, h)
+    return cv2.linearPolar(image, (h // 2, w // 2), radius // 2, cv2.WARP_INVERSE_MAP)
 
-def remap_orthographic(image: TYPE_IMAGE, tile2: int=512, p0: float=0., l0: float=0.) -> TYPE_IMAGE:
-    """
-    Render noise onto a spherical surface with an Orthographic projection.
-
-    Args:
-        noise: a `pyfastnoisesimd.Noise` object.
-        tile2: the half-width of the returned array, i.e. return will have shape ``(2*tile2, 2*tile2)``.
-        p0: the central parallel (i.e. latitude)
-        l0: the central meridian (i.e. longitude)
-
-    See also:
-        https://en.wikipedia.org/wiki/Orthographic_projection_in_cartography
-    """
-
-    xVect = np.linspace(-0.5*np.pi, 0.5*np.pi, 2 * tile2, endpoint=True).astype('float32')
-    xMesh, yMesh = np.meshgrid(xVect, xVect)
-    p0 = np.float32(p0)
-    l0 = np.float32(l0)
-    valids = np.argwhere(xMesh*xMesh + yMesh*yMesh <= 0.25*np.pi*np.pi)
-    xMasked = xMesh[valids[:,0], valids[:,1]]
-    yMasked = yMesh[valids[:,0], valids[:,1]]
-    maskLen = xMasked.size
-    one = np.float32(0.25*np.pi*np.pi)
-    rhoStar = np.sqrt(one - xMasked*xMasked - yMasked*yMasked)
-    muStar =  yMasked*np.cos(p0) + rhoStar*np.sin(p0)
-    conjMuStar = rhoStar*np.cos(p0) - yMasked*np.sin(p0)
-    alphaStar = l0 + np.arctan2(xMasked, conjMuStar)
-    sqrtM1MuStar2 = np.sqrt(one - muStar*muStar)
-    coords = fns.empty_coords(maskLen)
-    coords[0,:maskLen] = muStar
-    coords[1,:maskLen] = sqrtM1MuStar2 * np.sin(alphaStar)
-    coords[2,:maskLen] = sqrtM1MuStar2 * np.cos(alphaStar)
-    pmap = np.full( (2 * tile2, 2 * tile2), -np.inf, dtype='float32')
-    pmap[valids[:,0], valids[:,1]] = image[coords[:,2], coords[:, 1]][:maskLen]
-    return pmap
+def remap_sphere(image: TYPE_IMAGE, radius: float) -> TYPE_IMAGE:
+    height, width = image.shape[:2]
+    map_x, map_y = coord_sphere(width, height, radius)
+    return cv2.remap(image, map_x, map_y, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)

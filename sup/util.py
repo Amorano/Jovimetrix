@@ -46,8 +46,15 @@ def convert_parameter(data: Any) -> Any:
             v = 0
         typ.append(t)
         val.append(v)
-
     return typ, val
+
+def parse_dynamic(who, data) -> list:
+    vals = []
+    count = 1
+    while (val := data.get(f"{who}_{count}", None)) is not None:
+        vals.append(val)
+        count += 1
+    return vals
 
 def parse_number(key: str, data: Union[dict, List[dict]], typ: EnumTupleType=EnumTupleType.INT, default: tuple[Any]=None, clip_min: Optional[int]=None, clip_max: Optional[int]=None) -> tuple[List[Any]]:
     ret = []

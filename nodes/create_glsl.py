@@ -11,9 +11,9 @@ from loguru import logger
 import comfy
 from server import PromptServer
 
-from Jovimetrix import JOV_HELP_URL, WILDCARD, ComfyAPIMessage, \
-    JOVBaseNode, JOVImageMultiple, TimedOutException, \
-    ROOT, MIN_IMAGE_SIZE, JOV_GLSL
+from Jovimetrix import JOV_HELP_URL, WILDCARD, \
+    JOVBaseNode, JOVImageMultiple, \
+    ROOT, MIN_IMAGE_SIZE, JOV_GLSL, parse_reset
 
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import parse_tuple, zip_longest_fill, EnumTupleType
@@ -98,17 +98,7 @@ class GLSLNode(JOVImageMultiple):
                 self.__glsl.height = height
             pA = tensor2pil(pA) if pA is not None else None
             self.__glsl.hold = hold
-            try:
-                data = ComfyAPIMessage.poll(ident, timeout=0)
-                if (cmd := data.get('cmd', None)) is not None:
-                    if cmd == 'reset':
-                        reset = True
-            except TimedOutException as e:
-                pass
-            except Exception as e:
-                logger.error(str(e))
-
-            if reset:
+            if parse_reset(ident):
                 self.__glsl.reset()
                 # PromptServer.instance.send_sync("jovi-glsl-time", {"id": ident, "t": 0})
 

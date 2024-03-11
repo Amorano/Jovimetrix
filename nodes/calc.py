@@ -12,13 +12,11 @@ from scipy.special import gamma
 from loguru import logger
 
 import comfy
-# from server import PromptServer
-import nodes
 
 from Jovimetrix import JOV_HELP_URL, JOVBaseNode, WILDCARD
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import zip_longest_fill, convert_parameter
-from Jovimetrix.sup.anim import Ease, EnumEase
+from Jovimetrix.sup.anim import ease_op, EnumEase
 
 # =============================================================================
 
@@ -520,7 +518,7 @@ class LerpNode(JOVBaseNode):
                 if op == "NONE":
                     val = b * pos + a * (1 - pos)
                 else:
-                    val = Ease.ease(ease, start=a, end=b, alpha=pos)
+                    val = ease_op(ease, a, b, alpha=pos)
                 return val
 
             if size == 3:

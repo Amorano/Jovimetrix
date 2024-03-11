@@ -11,12 +11,12 @@ from loguru import logger
 
 import comfy
 
-from Jovimetrix import JOV_HELP_URL, MIN_IMAGE_SIZE, WILDCARD, JOVImageMultiple, JOVImageSimple
+from Jovimetrix import JOV_HELP_URL, MIN_IMAGE_SIZE, WILDCARD, JOVImageMultiple
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import zip_longest_fill, parse_tuple, parse_number, EnumTupleType
 from Jovimetrix.sup.image import EnumCBDefiency, EnumCBSimulator, EnumScaleMode, batch_extract, channel_count, \
-    channel_solid, color_match_histogram, color_match_lut, color_match_reinhard, cv2tensor, \
-    cv2tensor_full, image_color_blind, image_histogram, image_histogram_normalize, image_scalefit, tensor2cv, image_equalize, image_levels, pixel_eval, \
+    channel_solid, color_match_histogram, color_match_lut, color_match_reinhard, \
+    cv2tensor_full, image_color_blind, image_scalefit, tensor2cv, image_equalize, image_levels, pixel_eval, \
     image_posterize, image_pixelate, image_quantize, image_sharpen, \
     image_threshold, image_blend, image_invert, morph_edge_detect, \
     morph_emboss, image_contrast, image_hsv, image_gamma, \

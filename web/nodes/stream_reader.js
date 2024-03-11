@@ -45,7 +45,7 @@ app.registerExtension({
                 widget_hide(this, zoom);
 
                 switch (source.value) {
-                    // "URL", "CAMERA", "MONITOR", "WINDOW"
+                    // "URL", "CAMERA", "MONITOR", "WINDOW", "SPOUT"
                     case "URL":
                         widget_show(url);
                         break;
@@ -66,6 +66,11 @@ app.registerExtension({
                         widget_show(window);
                         widget_show(dpi);
                         widget_show(bbox);
+                        break;
+
+                    case "SPOUT":
+                        widget_show(url);
+                        widget_show(fps);
                         break;
                 }
                 fitHeight(self);

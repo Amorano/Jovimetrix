@@ -15,10 +15,9 @@ import comfy
 from server import PromptServer
 import nodes
 
-from Jovimetrix import ComfyAPIMessage, JOVBaseNode, TimedOutException, \
-    JOV_HELP_URL, WILDCARD
+from Jovimetrix import parse_reset, ComfyAPIMessage, JOVBaseNode, TimedOutException, JOV_HELP_URL, WILDCARD
 from Jovimetrix.sup.lexicon import Lexicon
-from Jovimetrix.sup.util import zip_longest_fill, convert_parameter
+from Jovimetrix.sup.util import parse_dynamic, zip_longest_fill, convert_parameter
 
 # =============================================================================
 
@@ -284,29 +283,10 @@ class SelectNode(JOVBaseNode):
         self.__index = 0
 
     def run(self, ident, **kw) -> None:
-        reset = kw.get(Lexicon.RESET, False)
-        try:
-            data = ComfyAPIMessage.poll(ident, timeout=0)
-            if (cmd := data.get('cmd', None)) is not None:
-                if cmd == 'reset':
-                    reset = True
-        except TimedOutException as e:
-            pass
-        except Exception as e:
-            logger.error(str(e))
-
-        if reset:
+        if parse_reset(ident):
             self.__index = 0
-
-        count = 0
-        vals = []
-        while 1:
-            who = f"{Lexicon.UNKNOWN}_{count+1}"
-            if (val := kw.get(who, None)) is None:
-                break
-            vals.append(val)
-            count += 1
-
+        vals = parse_dynamic(Lexicon.UNKNOWN, kw)
+        count = len(vals)
         select = kw.get(Lexicon.SELECT, 0)
         # clip the index in case it went out of range.
         index = max(0, min(count - 1, self.__index))
@@ -322,6 +302,5 @@ class SelectNode(JOVBaseNode):
                 index = 0
         elif select < count:
             val = vals[index]
-
         self.__index = index
         return val, vals, self.__index + 1, count,
