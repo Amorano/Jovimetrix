@@ -52,7 +52,7 @@ class TransformNode(JOVImageMultiple):
             Lexicon.XY: ("VEC2", {"default": (0, 0,), "step": 0.01, "precision": 4, "round": 0.00001, "label": [Lexicon.X, Lexicon.Y]}),
             Lexicon.ANGLE: ("FLOAT", {"default": 0, "min": -180, "max": 180, "step": 0.01, "precision": 4, "round": 0.00001}),
             Lexicon.SIZE: ("VEC2", {"default": (1., 1.), "step": 0.01, "precision": 4, "round": 0.00001, "label": [Lexicon.X, Lexicon.Y]}),
-            Lexicon.TILE: ("VEC2", {"default": (1, 1), "step": 1, "label": [Lexicon.X, Lexicon.Y]}),
+            Lexicon.TILE: ("VEC2", {"default": (1., 1.), "step": 0.1,  "precision": 4, "label": [Lexicon.X, Lexicon.Y]}),
             Lexicon.EDGE: (EnumEdge._member_names_, {"default": EnumEdge.CLIP.name}),
             Lexicon.MIRROR: (EnumMirrorMode._member_names_, {"default": EnumMirrorMode.NONE.name}),
             Lexicon.PIVOT: ("VEC2", {"default": (0.5, 0.5), "step": 0.005, "precision": 4, "label": [Lexicon.X, Lexicon.Y]}),
@@ -70,13 +70,13 @@ class TransformNode(JOVImageMultiple):
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         pA = kw.get(Lexicon.PIXEL, None)
         pA = [None] if pA is None else batch_extract(pA)
-        offset = parse_tuple(Lexicon.XY, kw, typ=EnumTupleType.FLOAT, default=(0., 0.,))
+        offset = parse_tuple(Lexicon.XY, kw, EnumTupleType.FLOAT, (0., 0.,))
         angle = kw.get(Lexicon.ANGLE, [0])
-        size = parse_tuple(Lexicon.SIZE, kw, typ=EnumTupleType.FLOAT, default=(1., 1.,), zero=0.001)
+        size = parse_tuple(Lexicon.SIZE, kw, EnumTupleType.FLOAT, (1., 1.,), zero=0.001)
         edge = kw.get(Lexicon.EDGE, [EnumEdge.CLIP])
         mirror = kw.get(Lexicon.MIRROR, [EnumMirrorMode.NONE])
-        mirror_pivot = parse_tuple(Lexicon.PIVOT, kw, typ=EnumTupleType.FLOAT, default=(0.5, 0.5,), clip_min=0, clip_max=1)
-        tile_xy = parse_tuple(Lexicon.TILE, kw, default=(1, 1), clip_min=1)
+        mirror_pivot = parse_tuple(Lexicon.PIVOT, kw, EnumTupleType.FLOAT, (0.5, 0.5,), 0, 1)
+        tile_xy = parse_tuple(Lexicon.TILE, kw, EnumTupleType.FLOAT, (1., 1.), clip_min=1)
         proj = kw.get(Lexicon.PROJECTION, [EnumProjection.NORMAL])
         tltr = parse_tuple(Lexicon.TLTR, kw, EnumTupleType.FLOAT, (0, 0, 1, 0,), 0, 1)
         blbr = parse_tuple(Lexicon.BLBR, kw, EnumTupleType.FLOAT, (0, 1, 1, 1,), 0, 1)
@@ -110,7 +110,7 @@ class TransformNode(JOVImageMultiple):
                 pA = image_mirror(pA, mirror, mpx, mpy)
 
             tx, ty = tile_xy
-            if (tx := int(tx)) > 1 or (ty := int(ty)) > 1:
+            if tx != 1. or ty != 1.:
                 pA = image_edge_wrap(pA, tx / 2 - 0.5, ty / 2 - 0.5)
                 pA = image_scalefit(pA, w, h, EnumScaleMode.FIT, sample, matte)
 

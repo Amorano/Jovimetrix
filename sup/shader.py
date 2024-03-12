@@ -77,16 +77,11 @@ class GLSL:
         return img
 
     def __init__(self, fragment:str, width:int=128, height:int=128, param:dict=None) -> None:
-        self.__fbo = None
-        self.__vao = None
-        self.__vbo = None
-        self.__ctx = moderngl.create_context(standalone=True)
-
         if os.path.isfile(fragment):
             with open(fragment, 'r', encoding='utf8') as f:
                 fragment = f.read()
         self.__fragment: str = FRAGMENT_HEADER + fragment
-
+        self.__ctx = moderngl.create_context(standalone=True)
         try:
             self.__prog = self.__ctx.program(
                 vertex_shader=VERTEX,
@@ -107,13 +102,20 @@ class GLSL:
             pass
         self.__iChannel0 = self.__prog.get('iChannel0', None)
 
-        self.__param = {}
         for k, v in (param or {}).items():
-            self.__param[k] = self.__prog.get(k, None)
-            if self.__param[k] is not None:
-                if isinstance(v, dict):
-                    v = [v[str(k)] for k in range(len(v))]
-                self.__param[k].value = v
+            var = self.__prog.get(k, None)
+            if var is None:
+                logger.warning(f"variable missing {k}")
+                continue
+
+            if isinstance(v, dict):
+                v = [v[str(k)] for k in range(len(v))]
+            try:
+                self.__prog[k].value = v
+            except Exception as e:
+                logger.error(e)
+                logger.warning(k)
+                logger.warning(v)
 
         vertices = np.array([
             -1.0, -1.0,
@@ -123,12 +125,12 @@ class GLSL:
              1.0,  1.0,
             -1.0,  1.0
         ], dtype='f4')
+
         self.__vbo = self.__ctx.buffer(vertices.tobytes())
         self.__vao = self.__ctx.simple_vertex_array(self.__prog, self.__vbo, "iPosition")
-
         self.__width = width
         self.__height = height
-        self.__texture = self.__ctx.texture((width, height), 3)
+        self.__texture = self.__ctx.texture((width, height), 4)
         self.__fbo = self.__ctx.framebuffer(
             color_attachments=[self.__texture]
         )
@@ -139,7 +141,6 @@ class GLSL:
         # the last frame rendered
         self.__frame: Image = Image.new("RGB", (1, 1))
         self.__hold: bool = False
-
         self.__runtime: float = 0
         self.__delta: float = 0
         self.__frame_count: int = 0
@@ -148,25 +149,23 @@ class GLSL:
     def __del__(self) -> None:
         if self.__vao is not None:
             self.__vao.release()
-            del self.__vao
+            self.__vao = None
 
         if self.__vbo is not None:
             self.__vbo.release()
-            del self.__vbo
+            self.__vbo = None
 
         if self.__fbo is not None:
             self.__fbo.release()
-            del self.__fbo
+            self.__fbo = None
 
         if self.__texture is not None:
             self.__texture.release()
-            del self.__texture
+            self.__texture = None
 
         if self.__ctx is not None:
-            # logger.debug("clean")
             self.__ctx.release()
             self.__ctx.gc()
-            del self.__ctx
 
     def reset(self) -> None:
         self.__runtime = 0
@@ -177,16 +176,14 @@ class GLSL:
     def __bufferReset(self) -> None:
         if self.__fbo is not None:
             self.__fbo.release()
-            del self.__fbo
             self.__fbo = None
 
         if self.__texture is not None:
             self.__texture.release()
-            del self.__texture
             self.__texture = None
 
         if self.__texture is None:
-            self.__texture = self.__ctx.texture((self.__width, self.__height), 3)
+            self.__texture = self.__ctx.texture((self.__width, self.__height), 4)
 
         try:
             self.__fbo = self.__ctx.framebuffer(
@@ -235,8 +232,10 @@ class GLSL:
 
     @width.setter
     def width(self, val: int) -> None:
-        self.__width = max(0, min(val, MAX_WIDTH))
-        self.__bufferReset()
+        val = max(0, min(val, MAX_WIDTH))
+        if val != self.__width:
+            self.__width = val
+            self.__bufferReset()
 
     @property
     def height(self) -> int:
@@ -244,8 +243,10 @@ class GLSL:
 
     @height.setter
     def height(self, val: int) -> None:
-        self.__height = max(0, min(val, MAX_HEIGHT))
-        self.__bufferReset()
+        val = max(0, min(val, MAX_HEIGHT))
+        if val != self.__height:
+            self.__height = val
+            self.__bufferReset()
 
     @property
     def channel0(self) -> int:
@@ -254,12 +255,12 @@ class GLSL:
     @channel0.setter
     def channel0(self, val:TYPE_IMAGE) -> None:
         if self.__iChannel0 is not None:
-            if len(channel0.mode) == 4:
-                channel0 = channel0.convert("RGB")
-            self.__channel0_texture = self.__ctx.texture(channel0.size, components=3, data=channel0.tobytes())
+            if len(val.mode) != 4:
+                val = val.convert("RGBA")
+            self.__channel0_texture = self.__ctx.texture(val.size, components=4, data=val.tobytes())
             self.__channel0_texture.use(location=0)
 
-    def __set_uniforms(self, channel0: Image=None) -> None:
+    def __set_uniforms(self) -> None:
         if self.__iResolution is not None:
             self.__iResolution.value = (self.__width, self.__height)
 
@@ -275,24 +276,16 @@ class GLSL:
         if self.__iFrame is not None:
             self.__iFrame.value = self.__frame_count
 
-        """
-        if self.__iChannel0 is not None:
-            if len(channel0.mode) == 4:
-                channel0 = channel0.convert("RGB")
-            texture = self.__ctx.texture(channel0.size, components=3, data=channel0.tobytes())
-            texture.use(location=0)
-        """
-
     def render(self, channel0:Image=None, param:dict=None) -> Image:
         self.__fbo.use()
         self.__fbo.clear(0.0, 0.0, 0.0)
         if not self.__hold:
-            self.__set_uniforms(channel0)
-            # logger.debug(self.__param)
-            # logger.debug(param)
+            self.__set_uniforms()
+            if channel0 is not None:
+                self.channel0 = channel0
             for k, v in (param or {}).items():
                 try:
-                    self.__param[k].value = v
+                    self.__prog[k].value = v
                 except KeyError as _:
                     pass
                 except Exception as e:
@@ -302,8 +295,8 @@ class GLSL:
         self.__vao.render()
         pixels = self.__fbo.color_attachments[0].read()
         self.__frame = Image.frombytes(
-            "RGB", self.__fbo.size, pixels,
-            "raw", "RGB", 0, -1
+            "RGBA", self.__fbo.size, pixels,
+            "raw", "RGBA", 0, -1
         )
         self.__frame = self.__frame.transpose(Image.FLIP_TOP_BOTTOM)
 

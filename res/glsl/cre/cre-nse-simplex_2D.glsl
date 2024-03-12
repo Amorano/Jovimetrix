@@ -1,10 +1,4 @@
 //
-// Simplex Noise
-//
-
-uniform int seed;
-
-//
 // Description : GLSL 2D simplex noise function
 //      Author : Ian McEwan, Ashima Arts
 //  Maintainer : ijm
@@ -13,6 +7,8 @@ uniform int seed;
 //  Copyright (C) 2011 Ashima Arts. All rights reserved.
 //  Distributed under the MIT License. See LICENSE file.
 //  https://github.com/ashima/webgl-noise
+
+uniform int seed;
 
 vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
 vec2 mod289(vec2 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
@@ -77,6 +73,6 @@ float snoise(vec2 v) {
 
 void main() {
     vec2 st = fragCoord + seed;
-    vec3 color = vec3(snoise(st * 10.) * 0.5 + 0.5);
-    fragColor = vec4(color, 1.0);
+    fragColor = vec4(snoise(st * 10.) * 0.5 + 0.5);
+    // fragColor = vec4(color, 1.0);
 }

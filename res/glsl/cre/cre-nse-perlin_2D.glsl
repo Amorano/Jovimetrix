@@ -1,8 +1,4 @@
 //
-// Simplex Noise
-//
-
-//
 // GLSL textureless classic 2D noise "cnoise",
 // with an RSL-style periodic variant "pnoise".
 // Author:  Stefan Gustavson (stefan.gustavson@liu.se)
@@ -16,15 +12,17 @@
 // https://github.com/ashima/webgl-noise
 //
 
+uniform float seed = 0;
+
 vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
 vec4 permute(vec4 x) { return mod289(((x*34.0)+1.0)*x); }
 vec4 taylorInvSqrt(vec4 r) { return 1.79284291400159 - 0.85373472095314 * r; }
 vec2 fade(vec2 t) { return t*t*t*(t*(t*6.0-15.0)+10.0); }
 
 // Classic Perlin noise
-float cnoise(vec2 P) {
-    vec4 Pi = floor(P.xyxy) + vec4(0.0, 0.0, 1.0, 1.0);
-    vec4 Pf = fract(P.xyxy) - vec4(0.0, 0.0, 1.0, 1.0);
+float cnoise(vec2 P, int seed) {
+    vec4 Pi = floor(P.xyxy * seed) + vec4(0.0, 0.0, 1.0, 1.0);
+    vec4 Pf = fract(P.xyxy * seed) - vec4(0.0, 0.0, 1.0, 1.0);
     Pi = mod289(Pi); // To avoid truncation effects in permutation
     vec4 ix = Pi.xzxz;
     vec4 iy = Pi.yyww;
@@ -101,12 +99,9 @@ float pnoise(vec2 P, vec2 rep) {
 }
 
 void main() {
-    vec2 st = gl_FragCoord.xy/u_resolution.xy;
-    vec3 color = vec3(0.0);
-
-    vec2 pos = vec2(st*10.);
-
-    color = vec3( cnoise(pos) );
-
-    gl_FragColor = vec4(color,1.0);
+    vec2 st = fragCoord.xy;
+    vec2 pos = vec2(st * 10.);
+    vec2 rep = vec2(10, 10);
+    vec3 color = vec3( pnoise(pos, rep) );
+    fragColor = vec4(color, 1.0);
 }

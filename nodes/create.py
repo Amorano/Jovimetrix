@@ -17,7 +17,6 @@ from Jovimetrix import WILDCARD, JOVImageSimple, JOVImageMultiple, \
     JOV_HELP_URL, MIN_IMAGE_SIZE
 
 from Jovimetrix.sup.lexicon import Lexicon
-from Jovimetrix.sup.snoise import SNoise
 from Jovimetrix.sup.util import parse_dynamic, parse_tuple, zip_longest_fill, \
     EnumTupleType
 
@@ -30,19 +29,11 @@ from Jovimetrix.sup.image import batch_extract, channel_solid, cv2tensor_full, \
 from Jovimetrix.sup.text import font_all, font_all_names, text_autosize, text_draw, \
     EnumAlignment, EnumJustify, EnumShapes
 
+from Jovimetrix.sup.fractal import EnumNoise
+
 # =============================================================================
 
 JOV_CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
-
-class EnumNoise(Enum):
-    PERLIN_1D = 10
-    PERLIN_2D = 20
-    PERLIN_2D_RGB = 30
-    PERLIN_2D_RGBA = 40
-    #PERLIN_3D = 50
-    #SIMPLEX_2D = 60
-    #SIMPLEX_3D = 70
-    #SIMPLEX_4D = 80
 
 # =============================================================================
 
@@ -300,7 +291,8 @@ class StereogramNode(JOVImageSimple):
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         pA = kw.get(Lexicon.PIXEL, None)
         pA = [None] if pA is None else batch_extract(pA)
-        depth = kw.get(Lexicon.DEPTH, [None])
+        depth = kw.get(Lexicon.DEPTH, None)
+        depth = [None] if pA is None else batch_extract(depth)
         divisions = kw.get(Lexicon.TILE, [8])
         noise = kw.get(Lexicon.NOISE, [0.33])
         gamma = kw.get(Lexicon.GAMMA, [0.33])
