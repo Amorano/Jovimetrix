@@ -4,15 +4,16 @@ Animate
 """
 
 import time
+from typing import Any
 
 from loguru import logger
 
-import comfy
+from comfy.utils import ProgressBar
 
-from Jovimetrix import JOV_HELP_URL, WILDCARD, JOVBaseNode, parse_reset
+from Jovimetrix import JOV_HELP_URL, WILDCARD, JOVBaseNode, comfy_message, parse_reset
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.anim import EnumWave, wave_op
-from Jovimetrix.sup.util import parse_tuple, zip_longest_fill
+from Jovimetrix.sup.util import zip_longest_fill
 
 # =============================================================================
 
@@ -23,22 +24,33 @@ JOV_CATEGORY = "JOVIMETRIX 🔺🟩🔵/ANIMATE"
 class TickNode(JOVBaseNode):
     NAME = "TICK (JOV) ⏱"
     CATEGORY = JOV_CATEGORY
-    DESCRIPTION = "Periodic pulse exporting normalized, delta since last pulse and count."
+    DESCRIPTION = "Periodic pulse with total pulse count, normalized count relative to the loop setting and fixed pulse step."
     INPUT_IS_LIST = False
-    RETURN_TYPES = ("INT", "FLOAT", "FLOAT", "FLOAT", )
-    RETURN_NAMES = (Lexicon.VALUE, Lexicon.LINEAR, Lexicon.TIME, Lexicon.DELTA,)
+    RETURN_TYPES = ("INT", "FLOAT", "FLOAT", WILDCARD)
+    RETURN_NAMES = (Lexicon.VALUE, Lexicon.LINEAR, Lexicon.FPS, Lexicon.ANY)
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {
         "required": {},
         "optional": {
+            # data to pass on a pulse of the loop
+            Lexicon.ANY: (WILDCARD, {"default": None, "tooltip":"Output to send when beat (BPM setting) is hit."}),
             # forces a MOD on CYCLE
-            Lexicon.LOOP: ("INT", {"min": 0, "default": 0, "step": 1}),
+            Lexicon.VALUE: ("INT", {"min": 0, "default": 0, "step": 1, "tooltip": "current tick index"}),
+            Lexicon.LOOP: ("INT", {"min": 0, "default": 0, "step": 1, "tooltip": "number of frames before looping starts. 0 means continuous playback (no loop point)"}),
+            #
+            Lexicon.FPS: ("INT", {"min": 1, "default": 24, "step": 1, "tooltip": "Fixed frame step rate based on FPS (1/FPS)"}),
+            Lexicon.BPM: ("FLOAT", {"min": 1, "max": 60000, "default": 120, "step": 1,
+                                    "tooltip": "BPM trigger rate to send the input. If input is empty, TRUE is sent on trigger"}),
+            Lexicon.NOTE: ("INT", {"default": 4, "min": 1, "max": 256, "step": 1,
+                                   "tooltip":"Number of beats per measure. Quarter note is 4, Eighth is 8, 16 is 16, etc..."}),
             # stick the current "count"
             Lexicon.WAIT: ("BOOLEAN", {"default": False}),
             # manual total = 0
             Lexicon.RESET: ("BOOLEAN", {"default": False}),
+            # how many frames to dump....
+            Lexicon.BATCH: ("INT", {"min": 1, "default": 1, "step": 1, "tooltip": "Number of frames wanted"}),
         },
         "hidden": {
             "ident": "UNIQUE_ID"
@@ -51,60 +63,51 @@ class TickNode(JOVBaseNode):
 
     def __init__(self, *arg, **kw) -> None:
         super().__init__(*arg, **kw)
+        # how many pulses we have done -- total unless reset
         self.__count = 0
-        # previous time, current time
-        self.__time = time.perf_counter()
-        self.__delta = 0
+        # the current frame index based on the user FPS value
+        self.__fixed_step = 0
 
-    def run(self, ident, **kw) -> tuple[int, float, float, float]:
+    def run(self, ident, **kw) -> tuple[int, float, float, Any]:
+        passthru = kw.get(Lexicon.ANY, None)
+        self.__count = kw.get(Lexicon.VALUE, self.__count)
         loop = kw.get(Lexicon.LOOP, 0)
         hold = kw.get(Lexicon.WAIT, False)
-        if parse_reset(ident):
-            self.__time = time.perf_counter()
-            self.__count = 0
-        if loop > 0:
-            self.__count %= loop
-        lin = self.__count / (loop if loop != 0 else 1)
-        self.__delta = 0
-        if not hold:
-            self.__count += 1
-            self.__delta = (t := time.perf_counter()) - self.__time
-            self.__time = t
-        return self.__count, lin, self.__time, self.__delta,
+        fps = kw.get(Lexicon.FPS, 24)
+        bpm = kw.get(Lexicon.BPM, 120)
+        divisor = kw.get(Lexicon.NOTE, 4)
+        beat = 240000. / max(1, int(bpm))
+        beat = round(beat / divisor)
+        batch = kw.get(Lexicon.BATCH, 1)
+        results = []
+        step = 1. / max(1, int(fps))
+        pbar = ProgressBar(batch)
+        for idx in range(batch):
+            if parse_reset(ident):
+                self.__count = 0
+                self.__fixed_step = 0
+                self.__beat = 0
 
-class Pulsetronome(JOVBaseNode):
-    NAME = "PULSETRONOME (JOV) 🥁"
-    CATEGORY = JOV_CATEGORY
-    DESCRIPTION = "Sends trigger pulse when the specific beat filter is matched"
-    RETURN_TYPES = ("FLOAT", )
-    RETURN_NAMES = (Lexicon.NOTE,)
+            trigger = self.__count % beat == 0
+            if passthru is not None:
+                trigger = passthru if trigger else None
 
-    @classmethod
-    def INPUT_TYPES(cls) -> dict:
-        d = {
-        "required": {},
-        "optional": {
-            Lexicon.FLOAT: ("FLOAT", {"default": 0, "min": 0, "step": 0.1, "forceInput": True, "tooltip": "Current time index for calculating the beat modulation"}),
-            Lexicon.BPM: ("FLOAT", {"min": 1, "max": 60000, "default": 120, "step": 1}),
-            Lexicon.NOTE: ("INT", {"default": 4, "min": 1, "max": 256, "step": 1,
-                                   "tooltip":"Number of beats per measure. Quarter note is 4, Eighth is 8, 16 is 16, etc..."}),
-            Lexicon.ANY: (WILDCARD, {"default": None, "tooltip":"Output to send on trigger. Can be anything."}),
-        }}
-        return Lexicon._parse(d, JOV_HELP_URL + "/ANIMATE#-pulsetronome")
+            lin = self.__count
+            if loop > 0:
+                self.__count %= loop
+                self.__fixed_step %= fps
+                lin /= loop
 
-    def run(self, **kw) -> tuple[float]:
-        beats = []
-        index = kw.get(Lexicon.VALUE, [0])
-        bpm = kw.get(Lexicon.BPM, [120])
-        divisor = kw.get(Lexicon.NOTE, [4])
-        params = [tuple(x) for x in zip_longest_fill(index, bpm, divisor)]
-        pbar = comfy.utils.ProgressBar(len(params))
-        for idx, (index, bpm, divisor) in enumerate(params):
-            beat = 240000. / bpm
-            val = int(index) % round(beat / divisor) == 0
-            beats.append([val])
+            results.append([self.__count, lin, self.__fixed_step, trigger])
+
+            if not hold:
+                self.__count += 1
+                self.__fixed_step += step
+
             pbar.update_absolute(idx)
-        return list(zip(*beats))
+
+        comfy_message(ident, "jovi-tick", {"i": self.__count})
+        return list(zip(*results))
 
 class WaveGeneratorNode(JOVBaseNode):
     NAME = "WAVE GENERATOR (JOV) 🌊"
@@ -125,8 +128,6 @@ class WaveGeneratorNode(JOVBaseNode):
             Lexicon.PHASE: ("FLOAT", {"default": 0, "min": 0.0, "step": 0.001}),
             Lexicon.OFFSET: ("FLOAT", {"default": 0, "min": 0.0, "step": 0.001}),
             Lexicon.TIME: ("FLOAT", {"default": 0, "min": 0, "step": 0.000001}),
-            Lexicon.BATCH: ("VEC2", {"default": (1, 30), "step": 1, "label": ["COUNT", "FPS"],
-                                     "tooltip": "Number of frames wanted; Playback rate (FPS)"}),
         }}
         return Lexicon._parse(d, JOV_HELP_URL + "/ANIMATE#-wave-generator")
 
@@ -137,24 +138,13 @@ class WaveGeneratorNode(JOVBaseNode):
         phase = kw.get(Lexicon.PHASE, [0])
         shift = kw.get(Lexicon.OFFSET, [0])
         delta_time = kw.get(Lexicon.TIME, [0])
-        batch = parse_tuple(Lexicon.BATCH, kw, default=(1, 30), clip_min=1)
-        results = []
-        params = [tuple(x) for x in zip_longest_fill(op, freq, amp, phase, shift, delta_time, batch)]
-        pbar = comfy.utils.ProgressBar(len(params))
-        for idx, (op, freq, amp, phase, shift, delta_time, batch) in enumerate(params):
-            val = 0.
-            freq = 1. / freq
-            batch_size, batch_fps = batch
-            if batch_size == 1:
-                val = wave_op(op, phase, freq, amp, shift, delta_time)
-                results.append([val, int(val)])
-                continue
 
-            delta = delta_time
-            delta_step = 1 / batch_fps
-            for _ in range(batch_size):
-                val = wave_op(op, phase, freq, amp, shift, delta)
-                results.append([val, int(val)])
-                delta += delta_step
+        results = []
+        params = [tuple(x) for x in zip_longest_fill(op, freq, amp, phase, shift, delta_time)]
+        pbar = ProgressBar(len(params))
+        for idx, (op, freq, amp, phase, shift, delta_time) in enumerate(params):
+            freq = 1. / freq
+            val = wave_op(op, phase, freq, amp, shift, delta_time)
+            results.append([val, int(val)])
             pbar.update_absolute(idx)
         return list(zip(*results))

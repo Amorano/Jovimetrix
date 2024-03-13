@@ -8,7 +8,7 @@ import ffmpeg
 import numpy as np
 from loguru import logger
 
-import comfy
+from comfy.utils import ProgressBar
 
 from Jovimetrix import JOV_HELP_URL, MIN_IMAGE_SIZE, JOVBaseNode, JOVImageMultiple
 
@@ -48,7 +48,7 @@ class LoadWaveNode(JOVBaseNode):
         filen = kw.get(Lexicon.FILEN)
         params = [tuple(x) for x in zip_longest_fill(filen)]
         waves = []
-        pbar = comfy.utils.ProgressBar(len(params))
+        pbar = ProgressBar(len(params))
         for idx, (filen,) in enumerate(params):
             data = self.__cache.get(filen, None)
             if data is None:
@@ -95,7 +95,7 @@ class WaveGraphNode(JOVImageMultiple):
         matte = parse_tuple(Lexicon.RGBA_B, kw, default=(0, 128, 128, 255), clip_min=0, clip_max=255)
         params = [tuple(x) for x in zip_longest_fill(wave, bars, wihi, thick, rgb_a, matte)]
         images = []
-        pbar = comfy.utils.ProgressBar(len(params))
+        pbar = ProgressBar(len(params))
         for idx, (wave, bars, wihi, thick, rgb_a, matte) in enumerate(params):
             width, height = wihi
             if wave is None:

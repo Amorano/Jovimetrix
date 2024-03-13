@@ -44,6 +44,7 @@ class Lexicon(metaclass=LexiconMeta):
     BATCH = 'BATCH', "Process multiple images"
     BATCH_LIST = 'AS LIST', "Process each entry as a list"
     BBOX = '🔲', "Bounding box"
+    BEAT = '🥁', "Beats per minute"
     BI = '💙', "Blue Channel"
     BLACK = '⬛', "Black Channel"
     BLBR = 'BL-BR', "Bottom Left - Bottom Right"

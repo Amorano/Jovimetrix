@@ -8,12 +8,11 @@ from enum import Enum
 import torch
 from loguru import logger
 
-import comfy
-from server import PromptServer
+from comfy.utils import ProgressBar
 
 from Jovimetrix import JOV_HELP_URL, WILDCARD, \
     JOVImageMultiple, \
-    ROOT, MIN_IMAGE_SIZE, JOV_GLSL, parse_reset
+    ROOT, MIN_IMAGE_SIZE, JOV_GLSL, comfy_message, parse_reset
 
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import parse_tuple, parse_tuple_raw, zip_longest_fill, \
@@ -111,7 +110,7 @@ class GLSLNode(JOVImageMultiple):
         reset = kw[Lexicon.RESET]
         params = [tuple(x) for x in zip_longest_fill(batch, fragment, param, wihi, pA, hold, reset)]
         images = []
-        pbar = comfy.utils.ProgressBar(len(params))
+        pbar = ProgressBar(len(params))
         for idx, (batch, fragment, param, wihi, pA, hold, reset) in enumerate(params):
             width, height = wihi
             batch_size, batch_fps = batch
@@ -119,7 +118,7 @@ class GLSLNode(JOVImageMultiple):
                 try:
                     self.__glsl = GLSL(fragment, width, height, param)
                 except CompileException as e:
-                    PromptServer.instance.send_sync("jovi-glsl-error", {"id": ident, "e": str(e)})
+                    comfy_message(ident, "jovi-glsl-error", {"id": ident, "e": str(e)})
                     logger.error(e)
                     return (self.__last_good, )
                 self.__fragment = fragment
@@ -132,14 +131,14 @@ class GLSLNode(JOVImageMultiple):
             self.__glsl.hold = hold
             if parse_reset(ident):
                 self.__glsl.reset()
-                # PromptServer.instance.send_sync("jovi-glsl-time", {"id": ident, "t": 0})
+                # comfy_message(ident, "jovi-glsl-time", {"id": ident, "t": 0})
 
             self.__glsl.fps = batch_fps
             for _ in range(batch_size):
                 img = self.__glsl.render(pA, param)
                 images.append(cv2tensor_full(pil2cv(img)))
             runtime = self.__glsl.runtime if not reset else 0
-            PromptServer.instance.send_sync("jovi-glsl-time", {"id": ident, "t": runtime})
+            comfy_message(ident, "jovi-glsl-time", {"id": ident, "t": runtime})
 
             self.__last_good = images
             pbar.update_absolute(idx)
@@ -170,7 +169,7 @@ class GLSLBaseNode(JOVImageMultiple):
 
         images = []
         params = [tuple(x) for x in zip_longest_fill(pA, pB, wihi, frag)]
-        pbar = comfy.utils.ProgressBar(len(params))
+        pbar = ProgressBar(len(params))
         for idx, (pA, pB, wihi, frag) in enumerate(params):
             param = {}
             for k, v in kw.items():

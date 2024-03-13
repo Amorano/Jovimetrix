@@ -4,6 +4,7 @@
  *
  */
 
+import { api } from "/scripts/api.js";
 import { app } from "/scripts/app.js"
 import { api_cmd_jovian } from '../util/util_api.js'
 
@@ -24,6 +25,16 @@ app.registerExtension({
                 widget_reset.value = false;
                 api_cmd_jovian(self.id, "reset");
             }
+
+            self.widget_count = this.widgets.find(w => w.name === '#️⃣');
+            async function python_tick(event) {
+                console.log(event)
+                if (event.detail.id != self.id) {
+                    return;
+                }
+                self.widget_count.value = event.detail.i;
+            }
+            api.addEventListener("jovi-tick", python_tick);
             return me;
         }
 	}

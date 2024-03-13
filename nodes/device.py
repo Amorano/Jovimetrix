@@ -18,13 +18,14 @@ import cv2
 import torch
 from loguru import logger
 
-import comfy
+from comfy.utils import ProgressBar
 
 from Jovimetrix import JOV_HELP_URL, WILDCARD, MIN_IMAGE_SIZE, JOVBaseNode, JOVImageMultiple
 from Jovimetrix.sup.lexicon import Lexicon
-from Jovimetrix.sup.util import parse_tuple, parse_number, EnumTupleType, zip_longest_fill
-from Jovimetrix.sup.stream import MediaStreamSpout, SpoutSender, camera_list, monitor_list, window_list, \
+from Jovimetrix.sup.util import parse_tuple
+from Jovimetrix.sup.stream import camera_list, monitor_list, window_list, \
     monitor_capture, window_capture, \
+    MediaStreamSpout, SpoutSender, \
     StreamingServer, StreamManager, MediaStreamDevice
 
 from Jovimetrix.sup.midi import midi_device_names, \
@@ -121,7 +122,7 @@ class StreamReaderNode(JOVImageMultiple):
             return self.__last
         images = []
         batch_size, rate = parse_tuple(Lexicon.BATCH, kw, default=(1, 30), clip_min=1)[0]
-        pbar = comfy.utils.ProgressBar(batch_size)
+        pbar = ProgressBar(batch_size)
         rate = 1. / rate
         width, height = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,))[0]
         matte = parse_tuple(Lexicon.MATTE, kw, default=(0,0,0,255))[0]
@@ -361,7 +362,7 @@ class SpoutWriterNode(JOVBaseNode):
         matte = parse_tuple(Lexicon.MATTE, kw, default=(0,0,0,255))[0]
         images = []
         #params = [tuple(x) for x in zip_longest_fill(pA, host, delta, mode, wihi, sample, matte)]
-        pbar = comfy.utils.ProgressBar(len(pA))
+        pbar = ProgressBar(len(pA))
         for idx, pA in enumerate(pA):
             self.__sender.host = host
             width, height = wihi

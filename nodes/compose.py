@@ -3,12 +3,11 @@ Jovimetrix - http://www.github.com/amorano/jovimetrix
 Composition
 """
 
-import cv2
 import torch
 from enum import Enum
 from loguru import logger
 
-import comfy
+from comfy.utils import ProgressBar
 
 from Jovimetrix import JOVImageMultiple, JOV_HELP_URL, WILDCARD, MIN_IMAGE_SIZE
 from Jovimetrix.sup.lexicon import Lexicon
@@ -87,7 +86,7 @@ class TransformNode(JOVImageMultiple):
         matte = parse_tuple(Lexicon.MATTE, kw, default=(0, 0, 0, 255), clip_min=0, clip_max=255)
         params = [tuple(x) for x in zip_longest_fill(pA, offset, angle, size, edge, tile_xy, mirror, mirror_pivot, proj, strength, tltr, blbr, mode, wihi, sample, matte)]
         images = []
-        pbar = comfy.utils.ProgressBar(len(params))
+        pbar = ProgressBar(len(params))
         for idx, (pA, offset, angle, size, edge, tile_xy, mirror, mirror_pivot, proj, strength, tltr, blbr, mode, wihi, sample, matte) in enumerate(params):
             matte = pixel_eval(matte, EnumImageType.BGRA)
             if pA is None:
@@ -184,7 +183,7 @@ class BlendNode(JOVImageMultiple):
         invert = kw.get(Lexicon.INVERT, [False])
         params = [tuple(x) for x in zip_longest_fill(pA, pB, mask, func, alpha, flip, mode, wihi, sample, matte, invert)]
         images = []
-        pbar = comfy.utils.ProgressBar(len(params))
+        pbar = ProgressBar(len(params))
         for idx, (pA, pB, mask, func, alpha, flip, mode, wihi, sample, matte, invert) in enumerate(params):
 
             if flip:
@@ -245,7 +244,7 @@ class PixelSplitNode(JOVImageMultiple):
         images = []
         pA = kw.get(Lexicon.PIXEL, None)
         pA = [None] if pA is None else batch_extract(pA)
-        pbar = comfy.utils.ProgressBar(len(pA))
+        pbar = ProgressBar(len(pA))
         for idx, (pA,) in enumerate(pA):
             pA = tensor2cv(pA)
             pA = image_mask_add(pA)
@@ -284,7 +283,7 @@ class PixelMergeNode(JOVImageMultiple):
         matte = parse_tuple(Lexicon.MATTE, kw, default=(0, 0, 0), clip_min=0, clip_max=255)
         params = [tuple(x) for x in zip_longest_fill(R, G, B, A, matte)]
         images = []
-        pbar = comfy.utils.ProgressBar(len(params))
+        pbar = ProgressBar(len(params))
         for idx, (r, g, b, a, matte) in enumerate(params):
             r = tensor2cv(r, chan=EnumImageType.GRAYSCALE)
             g = tensor2cv(g, chan=EnumImageType.GRAYSCALE)
@@ -338,7 +337,7 @@ class PixelSwapNode(JOVImageMultiple):
         params = [tuple(x) for x in zip_longest_fill(pA, pB, r, swap_r, g, swap_g,
                                                      b, swap_b, a, swap_a)]
         images = []
-        pbar = comfy.utils.ProgressBar(len(params))
+        pbar = ProgressBar(len(params))
         for idx, (pA, pB, r, swap_r, g, swap_g, b, swap_b, a, swap_a) in enumerate(params):
             if pA is None:
                 pA = channel_solid(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, chan=EnumImageType.BGRA)
@@ -448,7 +447,7 @@ class CropNode(JOVImageMultiple):
         color = parse_tuple(Lexicon.RGB, kw, default=(0, 0, 0,), clip_min=0, clip_max=255)
         params = [tuple(x) for x in zip_longest_fill(pA, func, xy, wihi, tltr, blbr, color)]
         images = []
-        pbar = comfy.utils.ProgressBar(len(params))
+        pbar = ProgressBar(len(params))
         for idx, (pA, func, xy, wihi, tltr, blbr, color) in enumerate(params):
             width, height = wihi
             if pA is not None:
@@ -499,7 +498,7 @@ class ColorTheoryNode(JOVImageMultiple):
         invert = kw.get(Lexicon.INVERT, [False])
         params = [tuple(x) for x in zip_longest_fill(pA, scheme, user, invert)]
         images = []
-        pbar = comfy.utils.ProgressBar(len(params))
+        pbar = ProgressBar(len(params))
         for idx, (img, s, user, invert) in enumerate(params):
             img = tensor2cv(img)
             img = color_theory(img, user, EnumColorTheory[s])

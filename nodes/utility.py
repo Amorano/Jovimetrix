@@ -21,13 +21,12 @@ from PIL import Image
 import matplotlib.pyplot as plt
 from loguru import logger
 
-import comfy
+from comfy.utils import ProgressBar
 from folder_paths import get_output_directory
-from server import PromptServer
-import nodes
+from nodes import interrupt_processing
 
 from Jovimetrix import JOV_HELP_URL, JOVBaseNode, \
-    WILDCARD, ROOT, MIN_IMAGE_SIZE, parse_reset
+    WILDCARD, ROOT, MIN_IMAGE_SIZE, comfy_message, parse_reset
 
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import parse_dynamic, path_next, parse_tuple, zip_longest_fill
@@ -143,7 +142,7 @@ class ValueGraphNode(JOVBaseNode):
         "required": {},
         "optional": {
             Lexicon.RESET: ("BOOLEAN", {"default": False}),
-            Lexicon.VALUE: ("INT", {"default": 120, "min": 0}),
+            Lexicon.VALUE: ("INT", {"default": 120, "min": 0, "tooltip":"Number of values to graph and display"}),
             Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), "step": 1, "label": [Lexicon.W, Lexicon.H]})
         },
         "hidden": {
@@ -157,38 +156,32 @@ class ValueGraphNode(JOVBaseNode):
 
     def __init__(self, *arg, **kw) -> None:
         super().__init__(*arg, **kw)
-        self.__history = [[]]
-        self.__index = [0]
+        self.__history = []
         self.__fig, self.__ax = plt.subplots(figsize=(5.12, 3.72))
-        self.__ax.set_xlabel("FRAME")
-        self.__ax.set_ylabel("VALUE")
-        self.__ax.set_title("VALUE HISTORY")
 
     def run(self, ident, **kw) -> tuple[torch.Tensor]:
         slice = kw.get(Lexicon.VALUE, [120])
         wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), zero=0.001)
         accepted = [bool, int, float, np.float16, np.float32, np.float64]
         if parse_reset(ident):
-            self.__history = [[]]
-            self.__index = [0]
+            self.__history = []
 
-        idx = 0
-        for val in parse_dynamic(Lexicon.UNKNOWN, kw):
+        for idx, val in enumerate(parse_dynamic(Lexicon.UNKNOWN, kw)):
             val = [v if type(v) in accepted else 0 for v in val]
-            while len(self.__history) < idx:
+            while len(self.__history) <= idx:
                 self.__history.append([])
-                self.__index.append(0)
+            print(val)
             self.__history[idx].extend(val)
-            idx += 1
+        self.__history = self.__history[:idx]
 
         params = [tuple(x) for x in zip_longest_fill(slice, wihi)]
         images = []
-        pbar = comfy.utils.ProgressBar(len(params))
+        pbar = ProgressBar(len(params))
         for idx, (slice, wihi) in enumerate(params):
             self.__ax.clear()
             for i, h in enumerate(self.__history):
-                self.__ax.plot(h[max(0, -slice + self.__index[i]):], color="rgbcymk"[i])
-                self.__index[i] += 1
+                data = h[max(0, -slice + len(h)):]
+                self.__ax.plot(data, color="rgbcymk"[i])
 
             width, height = wihi
             wihi = (width / 100., height / 100.)
@@ -351,8 +344,8 @@ class QueueNode(JOVBaseNode):
             self.__loops += 1
             if loop > 0 and self.__loops >= loop:
                 # hard halt?
-                PromptServer.instance.send_sync("jovi-queue-done", {"id": ident})
-                nodes.interrupt_processing(True)
+                comfy_message(ident, "jovi-queue-done", {"id": ident})
+                interrupt_processing(True)
                 logger.warning(f"Q Complete [{ident}]")
                 self.__q = None
                 self.__q_rand = None
@@ -386,7 +379,13 @@ class QueueNode(JOVBaseNode):
 
         self.__last = self.__index
         self.__previous = data
-        PromptServer.instance.send_sync("jovi-queue-ping", {"id": ident, "c": current, "i": self.__index, "s": self.__len, "l": self.__q})
+        msg = {"id": ident,
+               "c": current,
+               "i": self.__index,
+               "s": self.__len,
+               "l": self.__q
+        }
+        comfy_message(ident, "jovi-queue-ping", msg)
 
         # q = torch.cat(self.__q, dim=0)
         return [data] * batch, self.__q, current, self.__index, self.__len,
@@ -516,7 +515,7 @@ class ImageDiffNode(JOVBaseNode):
         th = kw.get(Lexicon.THRESHOLD, [0])
         results = []
         params = [tuple(x) for x in zip_longest_fill(a, b, th)]
-        pbar = comfy.utils.ProgressBar(len(params))
+        pbar = ProgressBar(len(params))
         for idx, (a, b, th) in enumerate(params):
             a = tensor2cv(a)
             b = tensor2cv(b)
@@ -641,7 +640,7 @@ class HistogramNode(JOVImageSimple):
         pA = [None] if pA is None else batch_extract(pA)
         params = [tuple(x) for x in zip_longest_fill(pA,)]
         images = []
-        pbar = comfy.utils.ProgressBar(len(params))
+        pbar = ProgressBar(len(params))
         for idx, (pA, ) in enumerate(params):
             pA = image_histogram(pA)
             pA = image_histogram_normalize(pA)

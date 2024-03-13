@@ -11,7 +11,7 @@ from collections import Counter
 from scipy.special import gamma
 from loguru import logger
 
-import comfy
+from comfy.utils import ProgressBar
 
 from Jovimetrix import JOV_HELP_URL, JOVBaseNode, WILDCARD
 from Jovimetrix.sup.lexicon import Lexicon
@@ -164,7 +164,7 @@ class CalcUnaryOPNode(JOVBaseNode):
         data = kw.get(Lexicon.IN_A, [0])
         op = kw.get(Lexicon.FUNC, [EnumUnaryOperation.ABS])
         params = [tuple(x) for x in zip_longest_fill(data, op)]
-        pbar = comfy.utils.ProgressBar(len(params))
+        pbar = ProgressBar(len(params))
         for idx, (data, op) in enumerate(params):
             typ, val = convert_parameter(data)
             op = EnumUnaryOperation[op]
@@ -250,7 +250,7 @@ class CalcBinaryOPNode(JOVBaseNode):
         flip = kw[Lexicon.FLIP]
         op = kw[Lexicon.FUNC]
         params = [tuple(x) for x in zip_longest_fill(A, B, op, flip)]
-        pbar = comfy.utils.ProgressBar(len(params))
+        pbar = ProgressBar(len(params))
         for idx, (a, b, op, flip) in enumerate(params):
             if type(a) == tuple and type(b) == tuple:
                 if (short := len(a) - len(b)) > 0:
@@ -361,7 +361,7 @@ class ValueNode(JOVBaseNode):
         w = kw.get(Lexicon.W, [0])
         params = [tuple(x) for x in zip_longest_fill(raw, typ, x, y, z, w)]
         results = []
-        pbar = comfy.utils.ProgressBar(len(params))
+        pbar = ProgressBar(len(params))
         for idx, (raw, typ, x, y, z, w) in enumerate(params):
             typ = EnumConvertType[typ]
             if typ == EnumConvertType.STRING:
@@ -456,7 +456,7 @@ class ConvertNode(JOVBaseNode):
         typ = kw.pop(Lexicon.TYPE, ["STRING"])
         values = kw.values()
         params = [tuple(x) for x in zip_longest_fill(typ, values)]
-        pbar = comfy.utils.ProgressBar(len(params))
+        pbar = ProgressBar(len(params))
         for idx, (typ, values) in enumerate(params):
             result = []
 
@@ -506,7 +506,7 @@ class LerpNode(JOVBaseNode):
         typ = kw.get(Lexicon.TYPE, ["NONE"])
         value = []
         params = [tuple(x) for x in zip_longest_fill(a, b, pos, op, typ)]
-        pbar = comfy.utils.ProgressBar(len(params))
+        pbar = ProgressBar(len(params))
         for idx, (a, b, pos, op, typ) in enumerate(params):
             # make sure we only interpolate between the smallest "stride" we can
             size = min(len(a), len(b))

@@ -9,17 +9,19 @@ import cv2
 import torch
 from loguru import logger
 
-import comfy
+from comfy.utils import ProgressBar
 
 from Jovimetrix import JOV_HELP_URL, MIN_IMAGE_SIZE, WILDCARD, JOVImageMultiple
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import zip_longest_fill, parse_tuple, parse_number, EnumTupleType
-from Jovimetrix.sup.image import EnumCBDefiency, EnumCBSimulator, EnumScaleMode, batch_extract, channel_count, \
+from Jovimetrix.sup.image import batch_extract, channel_count, \
     channel_solid, color_match_histogram, color_match_lut, color_match_reinhard, \
-    cv2tensor_full, image_color_blind, image_scalefit, tensor2cv, image_equalize, image_levels, pixel_eval, \
+    cv2tensor_full, image_color_blind, image_scalefit, tensor2cv, image_equalize, \
+    image_levels, pixel_eval, \
     image_posterize, image_pixelate, image_quantize, image_sharpen, \
     image_threshold, image_blend, image_invert, morph_edge_detect, \
     morph_emboss, image_contrast, image_hsv, image_gamma, \
+    EnumCBDefiency, EnumCBSimulator, EnumScaleMode, \
     EnumImageType, EnumColorMap, EnumAdjustOP, EnumThresholdAdapt, EnumThreshold
 
 # =============================================================================
@@ -86,7 +88,7 @@ class AdjustNode(JOVImageMultiple):
         params = [tuple(x) for x in zip_longest_fill(pA, mask, op, radius, amt, lohi,
                                                      lmh, hsv, contrast, gamma, matte, invert)]
         images = []
-        pbar = comfy.utils.ProgressBar(len(params))
+        pbar = ProgressBar(len(params))
         for idx, (pA, mask, o, r, a, lohi, lmh, hsv, con, gamma, matte, invert) in enumerate(params):
             if pA is not None:
                 pA = tensor2cv(pA)
@@ -232,7 +234,7 @@ class ColorMatchNode(JOVImageMultiple):
         params = [tuple(x) for x in zip_longest_fill(pA, pB, colormap, colormatch_mode,
                                                      colormatch_map, num_colors, flip, invert, matte)]
         images = []
-        pbar = comfy.utils.ProgressBar(len(params))
+        pbar = ProgressBar(len(params))
         for idx, (pA, pB, colormap, mode, cmap, num_colors, flip, invert, matte) in enumerate(params):
             if flip == True:
                 pA, pB = pB, pA
@@ -296,7 +298,7 @@ class ThresholdNode(JOVImageMultiple):
         invert = kw.get(Lexicon.INVERT, [False])
         params = [tuple(x) for x in zip_longest_fill(pA, mode, adapt, threshold, block, invert)]
         images = []
-        pbar = comfy.utils.ProgressBar(len(params))
+        pbar = ProgressBar(len(params))
         for idx, (pA, mode, adapt, th, block, invert) in enumerate(params):
             if pA is None:
                 pA = channel_solid(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE)
@@ -338,7 +340,7 @@ class ColorBlindNode(JOVImageMultiple):
         severity = kw.get(Lexicon.SIMULATOR, [1])
         params = [tuple(x) for x in zip_longest_fill(pA, defiency, simulator, severity)]
         images = []
-        pbar = comfy.utils.ProgressBar(len(params))
+        pbar = ProgressBar(len(params))
         for idx, (pA, defiency, simulator, severity) in enumerate(params):
             if pA is None:
                 pA = channel_solid(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, chan=EnumImageType.BGRA)

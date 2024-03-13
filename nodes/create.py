@@ -11,7 +11,7 @@ from PIL import ImageFont
 from vnoise import Noise
 from loguru import logger
 
-import comfy
+from comfy.utils import ProgressBar
 
 from Jovimetrix import WILDCARD, JOVImageSimple, JOVImageMultiple, \
     JOV_HELP_URL, MIN_IMAGE_SIZE
@@ -64,7 +64,7 @@ class ConstantNode(JOVImageMultiple):
         matte = parse_tuple(Lexicon.RGBA_A, kw, default=(0, 0, 0, 255), clip_min=0, clip_max=255)
         images = []
         params = [tuple(x) for x in zip_longest_fill(pA, wihi, matte)]
-        pbar = comfy.utils.ProgressBar(len(params))
+        pbar = ProgressBar(len(params))
         for idx, (pA, wihi, matte) in enumerate(params):
             width, height = wihi
             matte = pixel_eval(matte, EnumImageType.BGRA)
@@ -120,7 +120,7 @@ class ShapeNode(JOVImageMultiple):
         params = [tuple(x) for x in zip_longest_fill(shape, sides, offset, angle, edge,
                                                      size, wihi, color, matte)]
         images = []
-        pbar = comfy.utils.ProgressBar(len(params))
+        pbar = ProgressBar(len(params))
         for idx, (shape, sides, offset, angle, edge, size, wihi, color, matte) in enumerate(params):
             width, height = wihi
             sizeX, sizeY = size
@@ -225,7 +225,7 @@ class TextNode(JOVImageMultiple):
                                                      margin, line_spacing, wihi,
                                                      pos, angle, edge, invert)]
 
-        pbar = comfy.utils.ProgressBar(len(params))
+        pbar = ProgressBar(len(params))
         for idx, (full_text, font_idx, autosize, letter, color, matte, columns,
                   font_size, align, justify, margin, line_spacing, wihi, pos,
                   angle, edge, invert) in enumerate(params):
@@ -300,7 +300,7 @@ class StereogramNode(JOVImageSimple):
         params = [tuple(x) for x in zip_longest_fill(pA, depth, divisions, noise,
                                                      gamma, shift)]
         images = []
-        pbar = comfy.utils.ProgressBar(len(params))
+        pbar = ProgressBar(len(params))
         for idx, (pA, depth, divisions, noise, gamma, shift) in enumerate(params):
             if pA is None:
                 pA = channel_solid(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, chan=EnumImageType.BGRA)
@@ -337,7 +337,7 @@ class GradientNode(JOVImageMultiple):
         colors = parse_dynamic(Lexicon.COLOR, kw)
         images = []
         params = [tuple(x) for x in zip_longest_fill(pA, wihi, colors)]
-        pbar = comfy.utils.ProgressBar(len(params))
+        pbar = ProgressBar(len(params))
         for idx, (pA, wihi, clr) in enumerate(params):
             # colors = [(0,0,0,255) if c is None else pixel_eval(c, EnumImageType.BGRA) for c in clr]
             width, height = wihi
@@ -415,7 +415,7 @@ class NoiseNode(JOVImageMultiple):
         rounding = kw.get(Lexicon.ROUND, [0])
         images = []
         params = [tuple(x) for x in zip_longest_fill(ntype, seed, octaves, persistence, lacunarity, float_index, x, xy, offset, repeat, scalar, rounding)]
-        pbar = comfy.utils.ProgressBar(len(params))
+        pbar = ProgressBar(len(params))
         for idx, (ntype, seed, octaves, persistence, lacunarity, float_index, x, xy, offset, repeat, scalar, rounding) in enumerate(params):
             ntype = EnumNoise[ntype]
             if self.__ntype != ntype or self.__noise is None or self.__seed != seed:

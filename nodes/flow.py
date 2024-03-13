@@ -11,11 +11,10 @@ from typing import Any
 
 from loguru import logger
 
-import comfy
-from server import PromptServer
-import nodes
+from comfy.utils import ProgressBar
+from nodes import interrupt_processing
 
-from Jovimetrix import parse_reset, ComfyAPIMessage, JOVBaseNode, TimedOutException, JOV_HELP_URL, WILDCARD
+from Jovimetrix import comfy_message, parse_reset, ComfyAPIMessage, JOVBaseNode, TimedOutException, JOV_HELP_URL, WILDCARD
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import parse_dynamic, zip_longest_fill, convert_parameter
 
@@ -85,10 +84,10 @@ class DelayNode(JOVBaseNode):
 
     @staticmethod
     def parse_q(ident, delay: int, forced:bool=False)-> bool:
-        pbar = comfy.utils.ProgressBar(delay)
+        pbar = ProgressBar(delay)
         # if longer than X seconds, pop up the "cancel continue"
         if delay > JOV_DELAY_MIN or forced:
-            PromptServer.instance.send_sync("jovi-delay-user", {"id": ident, "timeout": delay})
+            comfy_message(ident, "jovi-delay-user", {"id": ident, "timeout": delay})
 
         step = 0
         while (step := step + 1) <= delay:
@@ -96,7 +95,7 @@ class DelayNode(JOVBaseNode):
                 if delay > JOV_DELAY_MIN or forced:
                     data = ComfyAPIMessage.poll(ident, timeout=1)
                     if data.get('cancel', None):
-                        nodes.interrupt_processing(True)
+                        interrupt_processing(True)
                         logger.warning(f"render cancelled delay: {ident}")
                     else:
                         logger.info(f"render continued delay: {ident}")
@@ -196,7 +195,7 @@ class ComparisonNode(JOVBaseNode):
         flip = kw.get(Lexicon.FLIP, [None])
         op = kw.get(Lexicon.COMPARE, [None])
         params = [tuple(x) for x in zip_longest_fill(A, B, op, flip)]
-        pbar = comfy.utils.ProgressBar(len(params))
+        pbar = ProgressBar(len(params))
         for idx, (a, b, op, flip) in enumerate(params):
             if type(a) == tuple and type(b) == tuple:
                 if (short := len(a) - len(b)) > 0:

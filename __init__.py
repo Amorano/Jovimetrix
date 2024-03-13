@@ -40,7 +40,7 @@ Polygonal shapes, MIDI, MP3/WAVE, Flow Logic
 @reference: https://github.com/Amorano/Jovimetrix
 @node list:
     AdjustNode, ColorMatchNode, ThresholdNode, ColorBlindNode
-    TickNode, WaveGeneratorNode, Pulsetronome,
+    TickNode, WaveGeneratorNode,
     LoadWaveNode, GraphWaveNode,
     CalcUnaryOPNode, CalcBinaryOPNode, ValueNode, ConvertNode, LerpNode
     TransformNode, BlendNode, PixelSplitNode, PixelMergeNode, PixelSwapNode, StackNode, CropNode, ColorTheoryNode,
@@ -186,6 +186,10 @@ class ComfyAPIMessage:
             raise TimedOutException
         dat = cls.MESSAGE.pop(sid)
         return dat
+
+def comfy_message(ident:str, route:str, data:dict) -> None:
+    data['id'] = ident
+    PromptServer.instance.send_sync(route, data)
 
 try:
     @PromptServer.instance.routes.post("/jovimetrix/message")
