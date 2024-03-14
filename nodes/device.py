@@ -290,7 +290,7 @@ class StreamWriterNode(JOVBaseNode):
     def run(self, **kw) -> tuple[torch.Tensor]:
         if self.__starting:
             return
-
+        matte = parse_tuple(Lexicon.MATTE, kw, default=(0,0,0,255))[0]
         wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)[0]
         w, h = wihi
         img = kw.get(Lexicon.PIXEL, None)
@@ -313,7 +313,7 @@ class StreamWriterNode(JOVBaseNode):
         if self.__device is not None:
             mode = kw.get(Lexicon.MODE, EnumScaleMode.NONE)
             sample = kw.get(Lexicon.SAMPLE, EnumInterpolation.LANCZOS4)
-            img = image_scalefit(img, w, h, EnumScaleMode.NONE)
+            #img = image_scalefit(img, w, h, EnumScaleMode.NONE)
             img = image_scalefit(img, w, h, mode, sample, matte)
             self.__device.image = img
         return ()
@@ -505,20 +505,20 @@ class MIDIFilterEZNode(JOVBaseNode):
             return (message, False, )
 
         # empty values mean pass-thru (no filter)
-        if (val := kw[Lexicon.MODE]) != MIDINoteOnFilter.IGNORE:
+        if (val := kw.get(Lexicon.MODE, MIDINoteOnFilter)) != MIDINoteOnFilter.IGNORE:
             if val == "TRUE" and message.note_on != True:
                 return (message, False, )
             if val == "FALSE" and message.note_on != False:
                 return (message, False, )
-        if (val := kw[Lexicon.CHANNEL]) != -1 and val != message.channel:
+        if (val := kw.get(Lexicon.CHANNEL, -1)) != -1 and val != message.channel:
             return (message, False, )
-        if (val := kw[Lexicon.CONTROL]) != -1 and val != message.control:
+        if (val := kw.get(Lexicon.CONTROL, -1)) != -1 and val != message.control:
             return (message, False, )
-        if (val := kw[Lexicon.NOTE]) != -1 and val != message.note:
+        if (val := kw.get(Lexicon.NOTE, -1)) != -1 and val != message.note:
             return (message, False, )
-        if (val := kw[Lexicon.VALUE]) != -1 and val != message.value:
+        if (val := kw.get(Lexicon.VALUE, -1)) != -1 and val != message.value:
             return (message, False, )
-        if (val := kw[Lexicon.NORMALIZE]) != -1 and isclose(val, message.normal):
+        if (val := kw.get(Lexicon.NORMALIZE, -1)) != -1 and isclose(val, message.normal):
             return (message, False, )
         return (message, True, )
 
@@ -591,20 +591,20 @@ class MIDIFilterNode(JOVBaseNode):
             return (message, False, )
 
         # empty values mean pass-thru (no filter)
-        if (val := kw[Lexicon.ON]) != MIDINoteOnFilter.IGNORE:
+        if (val := kw.get(Lexicon.ON, MIDINoteOnFilter.IGNORE)) != MIDINoteOnFilter.IGNORE:
             if val == "TRUE" and message.note_on != True:
                 return (message, False, )
             if val == "FALSE" and message.note_on != False:
                 return (message, False, )
-        if self.__filter(kw[Lexicon.CHANNEL], message.channel) == False:
+        if self.__filter(kw.get(Lexicon.CHANNEL, False), message.channel) == False:
             return (message, False, )
-        if self.__filter(kw[Lexicon.CONTROL], message.control) == False:
+        if self.__filter(kw.get(Lexicon.CONTROL, False), message.control) == False:
             return (message, False, )
-        if self.__filter(kw[Lexicon.NOTE], message.note) == False:
+        if self.__filter(kw.get(Lexicon.NOTE, False), message.note) == False:
             return (message, False, )
-        if self.__filter(kw[Lexicon.VALUE], message.value) == False:
+        if self.__filter(kw.get(Lexicon.VALUE, False), message.value) == False:
             return (message, False, )
-        if self.__filter(kw[Lexicon.NORMALIZE], message.normal) == False:
+        if self.__filter(kw.get(Lexicon.NORMALIZE, False), message.normal) == False:
             return (message, False, )
         return (message, True, )
 

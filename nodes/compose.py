@@ -438,7 +438,7 @@ class CropNode(JOVImageMultiple):
     def run(self, **kw) -> tuple[list[torch.Tensor], list[torch.Tensor]]:
         pA = kw.get(Lexicon.PIXEL, None)
         pA = [None] if pA is None else batch_extract(pA)
-        func = kw[Lexicon.FUNC]
+        func = kw.get(Lexicon.FUNC, [EnumCropMode.CENTER])
         # if less than 1 then use as scalar, over 1 = int(size)
         xy = parse_tuple(Lexicon.XY, kw, EnumTupleType.FLOAT, (0, 0,), 1)
         wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
@@ -493,7 +493,7 @@ class ColorTheoryNode(JOVImageMultiple):
     def run(self, **kw) -> tuple[list[torch.Tensor], list[torch.Tensor]]:
         pA = kw.get(Lexicon.PIXEL_A, None)
         pA = [None] if pA is None else batch_extract(pA)
-        scheme = kw[Lexicon.SCHEME]
+        scheme = kw.get(Lexicon.SCHEME, [EnumColorTheory.COMPLIMENTARY])
         user = parse_number(Lexicon.VALUE, kw, EnumTupleType.INT, [0], clip_min=-180, clip_max=180)
         invert = kw.get(Lexicon.INVERT, [False])
         params = [tuple(x) for x in zip_longest_fill(pA, scheme, user, invert)]

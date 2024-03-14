@@ -245,11 +245,11 @@ class CalcBinaryOPNode(JOVBaseNode):
         return Lexicon._parse(d, JOV_HELP_URL + "/CALC#-calc-op-binary")
 
     def run(self, **kw) -> tuple[bool]:
-        result = []
-        A = kw[Lexicon.IN_A]
-        B = kw[Lexicon.IN_B]
-        flip = kw[Lexicon.FLIP]
-        op = kw[Lexicon.FUNC]
+        results = []
+        A = kw.get(Lexicon.IN_A, [None])
+        B = kw.get(Lexicon.IN_B, [None])
+        flip = kw.get(Lexicon.FLIP, [False])
+        op = kw.get(Lexicon.FUNC, [EnumBinaryOperation.ADD])
         params = [tuple(x) for x in zip_longest_fill(A, B, op, flip)]
         pbar = ProgressBar(len(params))
         for idx, (a, b, op, flip) in enumerate(params):
@@ -321,13 +321,12 @@ class CalcBinaryOPNode(JOVBaseNode):
 
             val = [typ_a[i](v) for i, v in enumerate(val)]
             if len(val) == 1:
-                result.append(val[0])
+                results.append(val[0])
             else:
-                result.append(tuple(val))
+                results.append(tuple(val))
             # logger.debug("{} {}", result, val)
             pbar.update_absolute(idx)
-
-        return (result, )
+        return list(zip(*results))
 
 class ValueNode(JOVBaseNode):
     NAME = "VALUE (JOV) 🧬"
@@ -365,19 +364,18 @@ class ValueNode(JOVBaseNode):
         pbar = ProgressBar(len(params))
         for idx, (raw, typ, x, y, z, w) in enumerate(params):
             typ = EnumConvertType[typ]
-            size = int(typ.value / 10)
-            val = [0] * size
+            size = max(1, int(typ.value / 10))
+            # val = [0] * size
             if raw is None:
                 val = [x, y, z, w]
+            elif isinstance(raw, (torch.Tensor,)):
+                val = list(raw.size())
+                val = val[1:4] + [val[0]]
             else:
-                if isinstance(val, (torch.Tensor,)):
-                    val = list(val.size())
-                    val = val[1:4] + [val[0]]
-                else:
-                    val = raw
+                val = raw
             if not isinstance(val, (list, tuple, set,)):
                 val = [val] * size
-
+            print(val)
             # convert
             if typ == EnumConvertType.STRING:
                 val = ", ".join([str(v) for v in val])
@@ -385,12 +383,15 @@ class ValueNode(JOVBaseNode):
                 val = bool(val[0])
             elif typ in [EnumConvertType.FLOAT, EnumConvertType.VEC2,
                          EnumConvertType.VEC3, EnumConvertType.VEC4]:
-                val = [float(v) for v in val]
+                val = [round(float(v), 12) for v in val][:size]
             else:
-                val = [int(v) for v in val]
-            val = val[:size]
+                val = [int(v) for v in val][:size]
+            if typ in [EnumConvertType.FLOAT, EnumConvertType.INT]:
+                val = val[0]
+            print(val)
             results.append(val)
             pbar.update_absolute(idx)
+        print(results)
         return (results, )
 
 class LerpNode(JOVBaseNode):

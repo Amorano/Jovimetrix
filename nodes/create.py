@@ -202,22 +202,22 @@ class TextNode(JOVImageMultiple):
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         if len(full_text := kw.get(Lexicon.STRING, [""])) == 0:
             full_text = [""]
-        font_idx = kw[Lexicon.FONT]
-        autosize = kw[Lexicon.AUTOSIZE]
-        letter = kw[Lexicon.LETTER]
+        font_idx = kw.get(Lexicon.FONT, [self.FONT_NAMES[0]])
+        autosize = kw.get(Lexicon.AUTOSIZE, [False])
+        letter = kw.get(Lexicon.LETTER, [False])
         color = parse_tuple(Lexicon.RGBA_A, kw, default=(255, 255, 255, 255))
         matte = parse_tuple(Lexicon.MATTE, kw, default=(0, 0, 0), clip_min=0, clip_max=255)
-        columns = kw[Lexicon.COLUMNS]
-        font_size = kw[Lexicon.FONT_SIZE]
-        align = kw[Lexicon.ALIGN]
-        justify = kw[Lexicon.JUSTIFY]
-        margin = kw[Lexicon.MARGIN]
-        line_spacing = kw[Lexicon.SPACING]
+        columns = kw.get(Lexicon.COLUMNS, [0])
+        font_size = kw.get(Lexicon.FONT_SIZE, [16])
+        align = kw.get(Lexicon.ALIGN, [EnumAlignment.CENTER])
+        justify = kw.get(Lexicon.JUSTIFY, [EnumJustify.CENTER])
+        margin = kw.get(Lexicon.MARGIN, [0])
+        line_spacing = kw.get(Lexicon.SPACING, [25])
         wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,))
         pos = parse_tuple(Lexicon.XY, kw, EnumTupleType.FLOAT, (0, 0), -1, 1)
-        angle = kw[Lexicon.ANGLE]
-        edge = kw[Lexicon.EDGE]
-        invert = kw[Lexicon.INVERT]
+        angle = kw.get(Lexicon.ANGLE, [0])
+        edge = kw.get(Lexicon.EDGE, [EnumEdge.CLIP])
+        invert = kw.get(Lexicon.INVERT, [False])
         images = []
         params = [tuple(x) for x in zip_longest_fill(full_text, font_idx, autosize,
                                                      letter, color, matte, columns,

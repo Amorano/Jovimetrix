@@ -22,6 +22,8 @@ app.registerExtension({
             if (!input) {
                 if (visible) {
                     widget_show(widget);
+                    widget.origType = widget.type;
+                    widget.type = "number";
                 }
             }
             widget.options.precision = precision;
@@ -47,7 +49,6 @@ app.registerExtension({
                 const in_y = this.inputs.find(w => w.name === '🇾') != undefined;
                 const in_z = this.inputs.find(w => w.name === '🇿') != undefined;
                 const in_w = this.inputs.find(w => w.name === '🇼') != undefined;
-                const in_str = this.inputs.find(w => w.name === '📝') != undefined;
                 const widget_a = this.inputs.find(w => w.name === '🅰️');
                 //
                 const widget_x = this.widgets.find(w => w.name === '🇽');
@@ -65,9 +66,8 @@ app.registerExtension({
                 if (combo.value == "BOOLEAN") {
                     if (!in_x && visible) {
                         widget_show(widget_x);
+                        widget_x.origType = widget_x.type;
                         widget_x.type = "toggle";
-                    } else {
-                        widget_x.origType = "toggle";
                     }
                 } else if (combo.value == "STRING") {
                     if (!in_x && visible) {
