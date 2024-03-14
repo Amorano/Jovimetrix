@@ -5,11 +5,11 @@
  */
 
 import { app } from "/scripts/app.js"
-import { ComfyWidgets } from "/scripts/widgets.js"
-import { widget_remove } from '../util/util_widget.js'
-import { fitHeight } from '../util/util.js'
+import { fitHeight, TypeSlot } from '../util/util.js'
+import { widget_hide, widget_show } from '../util/util_widget.js'
+import { convertToWidget, convertToInput } from '../util/util_widget.js'
 
-const _id = "VALUE (JOV) #️⃣"
+const _id = "VALUE (JOV) 🧬"
 
 app.registerExtension({
 	name: 'jovimetrix.node.' + _id,
@@ -18,153 +18,164 @@ app.registerExtension({
             return;
         }
 
+        function process_value(input, widget, precision=0, visible=false) {
+            if (!input) {
+                if (visible) {
+                    widget_show(widget);
+                }
+            }
+            widget.options.precision = precision;
+            if (precision == 0) {
+                widget.options.step = 10;
+                widget.options.round = 1;
+            } else {
+                widget.options.step = 1;
+                widget.options.round =  0.1;
+            }
+        }
+
         const onNodeCreated = nodeType.prototype.onNodeCreated
         nodeType.prototype.onNodeCreated = function () {
             const me = onNodeCreated?.apply(this)
-            const self = this;
-            let combo_current = "";
-            const widget_x = this.widgets.find(w => w.name === '🇽');
-            const widget_y = this.widgets.find(w => w.name === '🇾');
-            const widget_z = this.widgets.find(w => w.name === '🇿');
-            const widget_w = this.widgets.find(w => w.name === '🇼');
+            const widget_str = this.widgets.find(w => w.name === '📝');
+            widget_str.origComputeSize = widget_str.computeSize;
             const combo = this.widgets.find(w => w.name === '❓');
-            let old_x = widget_x?.value || 0;
-            let old_y = widget_y?.value || 0;
-            let old_z = widget_z?.value || 0;
-            let old_w = widget_w?.value || 0;
-            let old_x_bool;
-            let old_x_str;
             combo.callback = () => {
-                if (combo_current != combo.value)  {
-                    old_x = widget_x?.value || old_x;
-                    old_y = widget_y?.value || old_y;
-                    old_z = widget_z?.value || old_z;
-                    old_w = widget_w?.value || old_w;
-                    if (combo_current == 'BOOLEAN') {
-                        old_x_bool = widget_x?.value || old_x_bool;
-                    } else if (combo_current == 'STRING') {
-                        old_x_str = widget_x?.value || old_x_str;
-                    }
-                    // remember the connections and attempt to re-connect
-                    /*
-                    let old_connect = [];
-                    if (this.outputs && this.outputs.length > 0) {
-                        const old = this.outputs[0].links ? this.outputs[0].links.map(x => x) : [];
-                        for (const id of old) {
-                            var link = this.graph.links[id];
-                            if (!link) {
-                                continue;
-                            }
-                            var node = this.graph.getNodeById(link.target_id);
-                            if (node) {
-                                old_connect.push({
-                                    node: node,
-                                    slot: link.target_slot,
-                                })
-                            }
-                        }
-                        this.removeOutput(0);
-                    }*/
-
-                    while ((this.widgets || [])[1]) {
-                        widget_remove(this, 1);
-                    }
-                    const x = this.inputs.find(w => w.name === '🇽');
-                    const y = this.inputs.find(w => w.name === '🇾');
-                    const z = this.inputs.find(w => w.name === '🇿');
-                    const w = this.inputs.find(w => w.name === '🇼');
-                    if (combo.value == 'BOOLEAN' && x == undefined) {
-                        ComfyWidgets[combo.value](this, '🇽', [combo.value, {"default": old_x_bool}], app)
-                    } else if (combo.value == 'INT' && x == undefined) {
-                        ComfyWidgets[combo.value](this, '🇽', [combo.value, {"default": old_x, "step": 1}], app)
-                    } else if (combo.value == 'FLOAT' && x == undefined) {
-                        ComfyWidgets[combo.value](this, '🇽', [combo.value, {"default": old_x, "step": 0.01}], app)
-                    } else if (combo.value == 'STRING' && x == undefined) {
-                        ComfyWidgets[combo.value](this, '🇽', [combo.value, {"default": old_x_str, "multiline": true, "dynamicPrompts": false}], app)
+                widget_str.inputEl.className = "jov-hidden";
+                widget_str.computeSize = () => [0, -4];
+                const in_x = this.inputs.find(w => w.name === '🇽') != undefined;
+                const in_y = this.inputs.find(w => w.name === '🇾') != undefined;
+                const in_z = this.inputs.find(w => w.name === '🇿') != undefined;
+                const in_w = this.inputs.find(w => w.name === '🇼') != undefined;
+                const in_str = this.inputs.find(w => w.name === '📝') != undefined;
+                const widget_a = this.inputs.find(w => w.name === '🅰️');
+                //
+                const widget_x = this.widgets.find(w => w.name === '🇽');
+                const widget_y = this.widgets.find(w => w.name === '🇾');
+                const widget_z = this.widgets.find(w => w.name === '🇿');
+                const widget_w = this.widgets.find(w => w.name === '🇼');
+                //
+                const visible = widget_a.link === null;
+                widget_hide(this, widget_x, "-jovi");
+                widget_hide(this, widget_y, "-jovi");
+                widget_hide(this, widget_z, "-jovi");
+                widget_hide(this, widget_w, "-jovi");
+                widget_hide(this, widget_str, "-jovi");
+                //
+                if (combo.value == "BOOLEAN") {
+                    if (!in_x && visible) {
+                        widget_show(widget_x);
+                        widget_x.type = "toggle";
                     } else {
-                        if (combo.value === "VEC2") {
-                            if (x == undefined) {
-                                ComfyWidgets.FLOAT(this, '🇽', ["FLOAT", {"default": old_x, "step": 0.01}], app);
-                            }
-                            if (y == undefined) {
-                                ComfyWidgets.FLOAT(this, '🇾', ["FLOAT", {"default": old_y, "step": 0.01}], app)
-                            }
-                        } else if (combo.value === "VEC2INT") {
-                            if (x == undefined) {
-                                ComfyWidgets.INT(this, '🇽', ["INT", {"default": old_y, "step": 1}], app)
-                            }
-                            if (y == undefined) {
-                                ComfyWidgets.INT(this, '🇾', ["INT", {"default": old_y, "step": 1}], app)
-                            }
-                        } else if (combo.value === "VEC3") {
-                            if (x == undefined) {
-                                ComfyWidgets.FLOAT(this, '🇽', ["FLOAT", {"default": old_x, "step": 0.01}], app);
-                            }
-                            if (y == undefined) {
-                                ComfyWidgets.FLOAT(this, '🇾', ["FLOAT", {"default": old_y, "step": 0.01}], app)
-                            }
-                            if (z == undefined) {
-                                ComfyWidgets.FLOAT(this, '🇿', ["FLOAT", {"default": old_z, "step": 0.01}], app)
-                            }
-                        } else if (combo.value === "VEC3INT") {
-                            if (x == undefined) {
-                                ComfyWidgets.INT(this, '🇽', ["INT", {"default": old_y, "step": 1}], app)
-                            }
-                            if (y == undefined) {
-                                ComfyWidgets.INT(this, '🇾', ["INT", {"default": old_y, "step": 1}], app)
-                            }
-                            if (z == undefined) {
-                                ComfyWidgets.INT(this, '🇿', ["INT", {"default": old_z, "step": 1}], app)
-                            }
-                        } else if (combo.value === "VEC4") {
-                            if (x == undefined) {
-                                ComfyWidgets.FLOAT(this, '🇽', ["FLOAT", {"default": old_x, "step": 0.01}], app);
-                            }
-                            if (y == undefined) {
-                                ComfyWidgets.FLOAT(this, '🇾', ["FLOAT", {"default": old_y, "step": 0.01}], app)
-                            }
-                            if (z == undefined) {
-                                ComfyWidgets.FLOAT(this, '🇿', ["FLOAT", {"default": old_z, "step": 0.01}], app)
-                            }
-                            if (w == undefined) {
-                                ComfyWidgets.FLOAT(this, '🇼', ["FLOAT", {"default": old_w, "step": 0.01}], app)
-                            }
-                        } else if (combo.value === "VEC4INT") {
-                            if (x == undefined) {
-                                ComfyWidgets.INT(this, '🇽', ["INT", {"default": old_y, "step": 1}], app)
-                            }
-                            if (y == undefined) {
-                                ComfyWidgets.INT(this, '🇾', ["INT", {"default": old_y, "step": 1}], app)
-                            }
-                            if (z == undefined) {
-                                ComfyWidgets.INT(this, '🇿', ["INT", {"default": old_z, "step": 1}], app)
-                            }
-                            if (w == undefined) {
-                                ComfyWidgets.INT(this, '🇼', ["INT", {"default": old_w, "step": 1}], app)
-                            }
-                        }
+                        widget_x.origType = "toggle";
                     }
-
-                    const my_map = {
-                        STRING: "📝",
-                        BOOLEAN: "🇴",
-                        INT: "🔟",
-                        FLOAT: "🛟",
-                        VEC2: "🇽🇾",
-                        VEC2INT: "🇽🇾",
-                        VEC3: "🇽🇾\u200c🇿",
-                        VEC3INT: "🇽🇾\u200c🇿",
-                        VEC4: "🇽🇾\u200c🇿\u200c🇼",
-                        VEC4INT: "🇽🇾\u200c🇿\u200c🇼",
+                } else if (combo.value == "STRING") {
+                    if (!in_x && visible) {
+                        widget_show(widget_str);
+                        widget_str.inputEl.className = "comfy-multiline-input";
+                        widget_str.computeSize = widget_str.origComputeSize;
                     }
-                    // console.debug(this.outputs[0])
-                    this.outputs[0].name = my_map[combo.value];
-                    combo_current = combo.value;
+                } else if (combo.value == "FLOAT") {
+                    process_value(in_x, widget_x, 1, visible)
+                } else if (combo.value == "INT") {
+                    process_value(in_x, widget_x, 0, visible)
+                } else if (combo.value == "VEC2") {
+                    process_value(in_x, widget_x, 1, visible)
+                    process_value(in_y, widget_y, 1, visible)
+                } else if (combo.value == "VEC2INT") {
+                    process_value(in_x, widget_x, 0, visible)
+                    process_value(in_y, widget_y, 0, visible)
+                } else if (combo.value == "VEC3") {
+                    process_value(in_x, widget_x, 1, visible)
+                    process_value(in_y, widget_y, 1, visible)
+                    process_value(in_z, widget_z, 1, visible)
+                } else if (combo.value == "VEC3INT") {
+                    process_value(in_x, widget_x, 0, visible)
+                    process_value(in_y, widget_y, 0, visible)
+                    process_value(in_z, widget_z, 0, visible)
+                } else if (combo.value == "VEC4") {
+                    process_value(in_x, widget_x, 1, visible)
+                    process_value(in_y, widget_y, 1, visible)
+                    process_value(in_z, widget_z, 1, visible)
+                    process_value(in_w, widget_w, 1, visible)
+                } else if (combo.value == "VEC4INT") {
+                    process_value(in_x, widget_x, 0, visible)
+                    process_value(in_y, widget_y, 0, visible)
+                    process_value(in_z, widget_z, 0, visible)
+                    process_value(in_w, widget_w, 0, visible)
                 }
-                fitHeight(self);
+                const my_map = {
+                    STRING: "📝",
+                    BOOLEAN: "🇴",
+                    INT: "🔟",
+                    FLOAT: "🛟",
+                    VEC2: "🇽🇾",
+                    VEC2INT: "🇽🇾",
+                    VEC3: "🇽🇾\u200c🇿",
+                    VEC3INT: "🇽🇾\u200c🇿",
+                    VEC4: "🇽🇾\u200c🇿\u200c🇼",
+                    VEC4INT: "🇽🇾\u200c🇿\u200c🇼",
+                }
+                this.outputs[0].name = my_map[combo.value];
+                fitHeight(this);
             }
             setTimeout(() => { combo.callback(); }, 15);
             return me;
         }
+
+        const onConnectionsChange = nodeType.prototype.onConnectionsChange
+        nodeType.prototype.onConnectionsChange = function (slotType, slot, event, link_info, data) {
+            if (slotType === TypeSlot.Input) {
+                const combo = this.widgets.find(w => w.name === '❓');
+                setTimeout(() => { combo.callback(); }, 15);
+
+            }
+            return onConnectionsChange?.apply(this, arguments);
+        }
+
+        // MENU CONVERSIONS
+        /*
+        const getExtraMenuOptions = nodeType.prototype.getExtraMenuOptions;
+        nodeType.prototype.getExtraMenuOptions = function (_, options) {
+            // const me = getExtraMenuOptions?.apply(this, arguments);
+            // console.log(me)
+            const combo = this.widgets.find(w => w.name === '❓');
+            let toWidget = [];
+            let toInput = [];
+            for (const w of this.widgets) {
+                if (w.options?.forceInput) {
+                    continue;
+                }
+                if (w.type === CONVERTED_JOV_TYPE && w.hidden) {
+                    toWidget.push({
+                        content: `Convertz ${w.name} to widget`,
+                        callback: () => {
+                            convertToWidget(this, w)
+                            setTimeout(() => { combo.callback(); }, 15);
+                        },
+                    });
+                } else {
+                    const config = getConfig.call(this, w.name) ?? [w.type, w.options || {}];
+                    toInput.push({
+                        content: `Convertz ${w.name} to input`,
+                        callback: () => {
+                            convertToInput(this, w, config);
+                            setTimeout(() => { combo.callback(); }, 15);
+                        },
+                    });
+                }
+            }
+            if (toInput.length) {
+                options.push(...toInput, null);
+            }
+
+            if (toWidget.length) {
+                options.push(...toWidget, null);
+            }
+			// return me;
+
+		};
+        */
+       return nodeType;
 	}
 })

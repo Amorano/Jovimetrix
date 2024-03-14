@@ -138,7 +138,5 @@ app.registerExtension({
             }
             return onConnectionsChange?.apply(this, arguments);
         };
-
-
     }
 })

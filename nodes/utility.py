@@ -19,6 +19,7 @@ import torch
 import numpy as np
 from PIL import Image
 import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 from loguru import logger
 
 from comfy.utils import ProgressBar
@@ -131,9 +132,10 @@ class ValueGraphNode(JOVBaseNode):
     NAME = "VALUE GRAPH (JOV) 📈"
     CATEGORY = JOV_CATEGORY
     DESCRIPTION = "Graphs historical execution run values."
+    INPUT_IS_LIST = False
     RETURN_TYPES = ("IMAGE", )
     RETURN_NAMES = (Lexicon.IMAGE, )
-    OUTPUT_NODE = True
+    OUTPUT_IS_LIST = (False,)
     SORT = 15
 
     @classmethod
@@ -150,51 +152,48 @@ class ValueGraphNode(JOVBaseNode):
         }}
         return Lexicon._parse(d, JOV_HELP_URL + "/UTILITY#-value-graph")
 
-    @classmethod
-    def IS_CHANGED(cls) -> float:
-        return float("nan")
-
     def __init__(self, *arg, **kw) -> None:
         super().__init__(*arg, **kw)
         self.__history = []
-        self.__fig, self.__ax = plt.subplots(figsize=(5.12, 3.72))
+        self.__fig, self.__ax = plt.subplots(figsize=(5.12, 5.12))
 
     def run(self, ident, **kw) -> tuple[torch.Tensor]:
-        slice = kw.get(Lexicon.VALUE, [120])
-        wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), zero=0.001)
+        slice = kw.get(Lexicon.VALUE, 120)
+        wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), zero=0.001)[0]
         accepted = [bool, int, float, np.float16, np.float32, np.float64]
         if parse_reset(ident):
             self.__history = []
 
+        longest_edge = 0
         for idx, val in enumerate(parse_dynamic(Lexicon.UNKNOWN, kw)):
+            if not isinstance(val, (list, set, tuple,)):
+                val = [val]
             val = [v if type(v) in accepted else 0 for v in val]
             while len(self.__history) <= idx:
                 self.__history.append([])
-            print(val)
             self.__history[idx].extend(val)
+            stride = max(0, -slice + len(self.__history[idx]) + 1)
+            longest_edge = max(longest_edge, stride)
+            self.__history[idx] = self.__history[idx][stride:]
+
         self.__history = self.__history[:idx]
 
-        params = [tuple(x) for x in zip_longest_fill(slice, wihi)]
-        images = []
-        pbar = ProgressBar(len(params))
-        for idx, (slice, wihi) in enumerate(params):
-            self.__ax.clear()
-            for i, h in enumerate(self.__history):
-                data = h[max(0, -slice + len(h)):]
-                self.__ax.plot(data, color="rgbcymk"[i])
+        self.__ax.clear()
+        for i, h in enumerate(self.__history):
+            self.__ax.plot(h, color="rgbcymk"[i])
 
-            width, height = wihi
-            wihi = (width / 100., height / 100.)
-            self.__fig.set_figwidth(wihi[0])
-            self.__fig.set_figheight(wihi[1])
-            self.__fig.canvas.draw_idle()
-            buffer = io.BytesIO()
-            self.__fig.savefig(buffer, format="png")
-            buffer.seek(0)
-            image = Image.open(buffer)
-            images.append(pil2tensor(image))
-            pbar.update_absolute(idx)
-        return list(zip(*images))
+        width, height = wihi
+        wihi = (width / 100., height / 100.)
+        self.__fig.set_figwidth(wihi[0])
+        self.__fig.set_figheight(wihi[1])
+        # self.__ax.xaxis.set_major_formatter(ticker.FuncFormatter(lambda x, pos: ('%g') % (x * 5.0)))
+        # self.__ax.set_xlim([max(0, longest_edge-slice), longest_edge])
+        self.__fig.canvas.draw_idle()
+        buffer = io.BytesIO()
+        self.__fig.savefig(buffer, format="png")
+        buffer.seek(0)
+        image = Image.open(buffer)
+        return (pil2tensor(image),)
 
 class RouteNode(JOVBaseNode):
     NAME = "ROUTE (JOV) 🚌"

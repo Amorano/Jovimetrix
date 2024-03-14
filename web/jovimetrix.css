@@ -146,3 +146,7 @@ tr, td {
   flex-direction: column;
   margin-left: 20px;
 }
+
+.jov-hidden {
+  visibility: hidden;
+}

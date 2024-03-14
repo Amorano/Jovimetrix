@@ -236,6 +236,7 @@ class TextNode(JOVImageMultiple):
             justify = EnumJustify[justify]
             edge = EnumEdge[edge]
             matte = pixel_eval(matte)
+            full_text = str(full_text)
             # color = pixel_eval(color, EnumImageType.BGRA)
             wm = width-margin * 2
             hm = height-margin * 2 - line_spacing

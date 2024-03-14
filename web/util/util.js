@@ -14,6 +14,11 @@ export const TypeSlotEvent = {
     Disconnect: false,
 };
 
+export function getConfig(widgetName) {
+	const { nodeData } = this.constructor;
+	return nodeData?.input?.required[widgetName] ?? nodeData?.input?.optional?.[widgetName];
+}
+
 export const node_has_widgets = (node) => {
     if (!node.widgets || !node.widgets?.[Symbol.iterator]) {
       return false

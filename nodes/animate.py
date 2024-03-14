@@ -81,31 +81,25 @@ class TickNode(JOVBaseNode):
         batch = kw.get(Lexicon.BATCH, 1)
         results = []
         step = 1. / max(1, int(fps))
+        if parse_reset(ident):
+            self.__count = 0
+            self.__fixed_step = 0
         pbar = ProgressBar(batch)
         for idx in range(batch):
-            if parse_reset(ident):
-                self.__count = 0
-                self.__fixed_step = 0
-                self.__beat = 0
-
+            lin = self.__count
+            if not hold:
+                if loop > 0:
+                    self.__count %= loop
+                    lin /= loop
+                self.__fixed_step %= fps
             trigger = self.__count % beat == 0
             if passthru is not None:
                 trigger = passthru if trigger else None
-
-            lin = self.__count
-            if loop > 0:
-                self.__count %= loop
-                self.__fixed_step %= fps
-                lin /= loop
-
             results.append([self.__count, lin, self.__fixed_step, trigger])
-
             if not hold:
                 self.__count += 1
                 self.__fixed_step += step
-
             pbar.update_absolute(idx)
-
         comfy_message(ident, "jovi-tick", {"i": self.__count})
         return list(zip(*results))
 

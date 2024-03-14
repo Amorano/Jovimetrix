@@ -5,6 +5,7 @@
  */
 
 export const CONVERTED_TYPE = "converted-widget"
+export const CONVERTED_JOV_TYPE = "converted-widget-jovi"
 
 export function widget_get_type(config) {
     // Special handling for COMBO so we restrict links based on the entries
@@ -48,10 +49,9 @@ export function widget_remove_all(node) {
 }
 
 export function widget_hide(node, widget, suffix = '') {
-    if (widget.hidden) {
+    if (widget.type == CONVERTED_TYPE + suffix) {
         return
     }
-
     widget.origType = widget.type
     widget.hidden = true
     widget.origComputeSize = widget.computeSize

@@ -10,6 +10,7 @@ from collections import Counter
 
 from scipy.special import gamma
 from loguru import logger
+import torch
 
 from comfy.utils import ProgressBar
 
@@ -329,7 +330,7 @@ class CalcBinaryOPNode(JOVBaseNode):
         return (result, )
 
 class ValueNode(JOVBaseNode):
-    NAME = "VALUE (JOV) #️⃣"
+    NAME = "VALUE (JOV) 🧬"
     CATEGORY = JOV_CATEGORY
     DESCRIPTION = "Create a value for most types; also universal constants."
     RETURN_TYPES = (WILDCARD, )
@@ -342,18 +343,64 @@ class ValueNode(JOVBaseNode):
         d = {
         "required": {},
         "optional": {
-            Lexicon.IN_A: (WILDCARD, {"default": None}),
+            Lexicon.IN_A: (WILDCARD, {"default": None, "tooltip":"Passes a raw value directly, or supplies defaults for any value inputs without connections."}),
             Lexicon.TYPE: (EnumConvertType._member_names_, {"default": EnumConvertType.BOOLEAN.name}),
             Lexicon.X: ("FLOAT", {"default": 0}),
             Lexicon.Y: ("FLOAT", {"default": 0}),
             Lexicon.Z: ("FLOAT", {"default": 0}),
-            Lexicon.W: ("FLOAT", {"default": 0})
+            Lexicon.W: ("FLOAT", {"default": 0}),
+            Lexicon.STRING: ("STRING", {"default": "", "dynamicPrompts": False, "multiline": True}),
         }}
         return Lexicon._parse(d, JOV_HELP_URL + "/CALC#%EF%B8%8F⃣-value")
 
-    def run(self, **kw) -> tuple[bool]:
-        raw = kw.get(Lexicon.IN_A, [0])
+    @staticmethod
+    def convert(typ, val) -> tuple | tuple[Any]:
+        print(type(val))
+        if isinstance(val, (torch.Tensor,)):
+            val = val.size()
+        if not isinstance(val, (list, tuple, set,)):
+            val = [val]
+        size = len(val)
+        print(type(val))
+        print(val)
+        print(size)
+        if typ == EnumConvertType.STRING:
+            return ", ".join(str(val))
+        elif typ == EnumConvertType.FLOAT:
+            return float(val[0])
+        elif typ == EnumConvertType.BOOLEAN:
+            return bool(val[0])
+        elif typ == EnumConvertType.INT:
+            return int(val[0])
 
+        if typ in [EnumConvertType.VEC2, EnumConvertType.VEC3, EnumConvertType.VEC4]:
+            val = [float(v) for v in val]
+        else:
+            val = [int(v) for v in val]
+
+        typ = str(typ)
+        if typ.startswith("VEC2"):
+            if size > 1:
+                return (val[0], val[1], )
+            return (val[0], val[0], )
+        elif typ.startswith("VEC3"):
+            if size > 2:
+                return (val[0], val[1], val[2], )
+            elif size > 1:
+                return (val[0], val[1], val[1], )
+            return (val[0], val[0], val[0], )
+        elif typ.startswith("VEC4"):
+            if size > 3:
+                return (val[0], val[1], val[2], val[3], )
+            elif size > 2:
+                return (val[0], val[1], val[2], val[2], )
+            elif size > 1:
+                return (val[0], val[1], val[1], val[1], )
+            return (val[0], val[0], val[0], val[0], )
+        return "nan"
+
+    def run(self, **kw) -> tuple[bool]:
+        raw = kw.get(Lexicon.IN_A, [None])
         typ = kw.get(Lexicon.TYPE, [EnumConvertType.BOOLEAN])
         x = kw.get(Lexicon.X, [None])
         y = kw.get(Lexicon.Y, [0])
@@ -364,6 +411,11 @@ class ValueNode(JOVBaseNode):
         pbar = ProgressBar(len(params))
         for idx, (raw, typ, x, y, z, w) in enumerate(params):
             typ = EnumConvertType[typ]
+            if raw is not None:
+                val = self.convert(typ, raw)
+                results.append(val)
+                continue
+
             if typ == EnumConvertType.STRING:
                 results.append("" if x is None else str(x))
                 continue
@@ -373,108 +425,19 @@ class ValueNode(JOVBaseNode):
                 case EnumConvertType.VEC2INT:
                     results.append((int(x), int(y),))
                 case EnumConvertType.VEC2:
-                    results.append((x, y,))
+                    results.append((float(x), float(y),))
                 case EnumConvertType.VEC3INT:
                     results.append((int(x), int(y), int(z),))
                 case EnumConvertType.VEC3:
-                    results.append((x, y, z,))
+                    results.append((float(x), float(y), float(z),))
                 case EnumConvertType.VEC4INT:
                     results.append((int(x), int(y), int(z), int(w),))
                 case EnumConvertType.VEC4:
-                    results.append((x, y, z, w,))
+                    results.append((float(x), float(y), float(z), float(w),))
                 case _:
                     results.append(x)
             pbar.update_absolute(idx)
         return (results, )
-
-class ConvertNode(JOVBaseNode):
-    NAME = "CONVERT (JOV) 🧬"
-    CATEGORY = JOV_CATEGORY
-    DESCRIPTION = "Convert INT, FLOAT, VEC*, STRING and BOOL."
-    RETURN_TYPES = (WILDCARD,)
-    OUTPUT_IS_LIST = (True, )
-    SORT = 5
-
-    @classmethod
-    def INPUT_TYPES(cls) -> dict:
-        d = {
-        "required": {},
-        "optional": {
-            Lexicon.IN_A: (WILDCARD, {"default": None}),
-            Lexicon.TYPE: (["STRING", "BOOLEAN", "INT", "FLOAT", "VEC2", "VEC3", "VEC4"], {"default": "BOOLEAN"})
-        }}
-        return Lexicon._parse(d, JOV_HELP_URL + "/CALC#-convert")
-
-    @staticmethod
-    def convert(typ, val) -> tuple | tuple[Any]:
-        size = len(val) if type(val) == tuple else 0
-        if typ in ["STRING"]:
-            if size > 0:
-                return " ".join(str(val))
-            return str(val)
-        elif typ in ["FLOAT"]:
-            if size > 0:
-                return float(val[0])
-            return float(val)
-        elif typ == "BOOLEAN":
-            if size > 0:
-                return bool(val[0])
-            return bool(val)
-        elif typ == "INT":
-            if size > 0:
-                return int(val[0])
-            return int(val)
-        elif typ == "VEC2":
-            if size > 1:
-                return (val[0], val[1], )
-            elif size > 0:
-                return (val[0], val[0], )
-            return (val, val, )
-        elif typ == "VEC3":
-            if size > 2:
-                return (val[0], val[1], val[2], )
-            elif size > 1:
-                return (val[0], val[1], val[1], )
-            elif size > 0:
-                return (val[0], val[0], val[0], )
-            return (val, val, val, )
-        elif typ == "VEC4":
-            if size > 3:
-                return (val[0], val[1], val[2], val[3], )
-            elif size > 2:
-                return (val[0], val[1], val[2], val[2], )
-            elif size > 1:
-                return (val[0], val[1], val[1], val[1], )
-            elif size > 0:
-                return (val[0], val[0], val[0], val[0], )
-            return (val, val, val, val, )
-        else:
-            return "nan"
-
-    def run(self, **kw) -> tuple[bool]:
-        results = []
-        typ = kw.pop(Lexicon.TYPE, ["STRING"])
-        values = kw.values()
-        params = [tuple(x) for x in zip_longest_fill(typ, values)]
-        pbar = ProgressBar(len(params))
-        for idx, (typ, values) in enumerate(params):
-            result = []
-
-            v = ''
-            try: v = next(iter(values))
-            except: pass
-
-            if not isinstance(v, (list, set, tuple)):
-                v = [v]
-
-            for idx, val in enumerate(v):
-                val_new = ConvertNode.convert(typ, val)
-                result.append(val_new)
-
-            results.append(result)
-            pbar.update_absolute(idx)
-
-        return results
 
 class LerpNode(JOVBaseNode):
     NAME = "LERP (JOV) 🔰"
