@@ -32,14 +32,14 @@ class EnumNumberType(Enum):
 class EnumConvertType(Enum):
     STRING = 0
     BOOLEAN = 10
-    INT = 20
-    FLOAT   = 30
-    VEC2 = 40
-    VEC2INT = 45
-    VEC3 = 50
-    VEC3INT = 55
-    VEC4 = 60
-    VEC4INT = 65
+    INT = 12
+    FLOAT   = 14
+    VEC2 = 20
+    VEC2INT = 25
+    VEC3 = 30
+    VEC3INT = 35
+    VEC4 = 40
+    VEC4INT = 45
 
 class EnumUnaryOperation(Enum):
     ABS = 0
@@ -353,50 +353,6 @@ class ValueNode(JOVBaseNode):
         }}
         return Lexicon._parse(d, JOV_HELP_URL + "/CALC#%EF%B8%8F⃣-value")
 
-    @staticmethod
-    def convert(typ, val) -> tuple | tuple[Any]:
-        print(type(val))
-        if isinstance(val, (torch.Tensor,)):
-            val = list(val.size())
-            val = val[1:4] + [val[0]]
-        if not isinstance(val, (list, tuple, set,)):
-            val = [val]
-        size = len(val)
-        if typ == EnumConvertType.STRING:
-            return ", ".join([str(v) for v in val])
-        elif typ == EnumConvertType.FLOAT:
-            return float(val[0])
-        elif typ == EnumConvertType.BOOLEAN:
-            return bool(val[0])
-        elif typ == EnumConvertType.INT:
-            return int(val[0])
-
-        if typ in [EnumConvertType.VEC2, EnumConvertType.VEC3, EnumConvertType.VEC4]:
-            val = [float(v) for v in val]
-        else:
-            val = [int(v) for v in val]
-
-        typ = str(typ)
-        if typ.startswith("VEC2"):
-            if size > 1:
-                return (val[0], val[1], )
-            return (val[0], val[0], )
-        elif typ.startswith("VEC3"):
-            if size > 2:
-                return (val[0], val[1], val[2], )
-            elif size > 1:
-                return (val[0], val[1], val[1], )
-            return (val[0], val[0], val[0], )
-        elif typ.startswith("VEC4"):
-            if size > 3:
-                return (val[0], val[1], val[2], val[3], )
-            elif size > 2:
-                return (val[0], val[1], val[2], val[2], )
-            elif size > 1:
-                return (val[0], val[1], val[1], val[1], )
-            return (val[0], val[0], val[0], val[0], )
-        return "nan"
-
     def run(self, **kw) -> tuple[bool]:
         raw = kw.get(Lexicon.IN_A, [None])
         typ = kw.get(Lexicon.TYPE, [EnumConvertType.BOOLEAN])
@@ -409,31 +365,31 @@ class ValueNode(JOVBaseNode):
         pbar = ProgressBar(len(params))
         for idx, (raw, typ, x, y, z, w) in enumerate(params):
             typ = EnumConvertType[typ]
-            if raw is not None:
-                val = self.convert(typ, raw)
-                results.append(val)
-                continue
+            size = int(typ.value / 10)
+            val = [0] * size
+            if raw is None:
+                val = [x, y, z, w]
+            else:
+                if isinstance(val, (torch.Tensor,)):
+                    val = list(val.size())
+                    val = val[1:4] + [val[0]]
+                else:
+                    val = raw
+            if not isinstance(val, (list, tuple, set,)):
+                val = [val] * size
 
+            # convert
             if typ == EnumConvertType.STRING:
-                results.append("" if x is None else str(x))
-                continue
-
-            x = 0 if x is None else x
-            match typ:
-                case EnumConvertType.VEC2INT:
-                    results.append((int(x), int(y),))
-                case EnumConvertType.VEC2:
-                    results.append((float(x), float(y),))
-                case EnumConvertType.VEC3INT:
-                    results.append((int(x), int(y), int(z),))
-                case EnumConvertType.VEC3:
-                    results.append((float(x), float(y), float(z),))
-                case EnumConvertType.VEC4INT:
-                    results.append((int(x), int(y), int(z), int(w),))
-                case EnumConvertType.VEC4:
-                    results.append((float(x), float(y), float(z), float(w),))
-                case _:
-                    results.append(x)
+                val = ", ".join([str(v) for v in val])
+            elif typ == EnumConvertType.BOOLEAN:
+                val = bool(val[0])
+            elif typ in [EnumConvertType.FLOAT, EnumConvertType.VEC2,
+                         EnumConvertType.VEC3, EnumConvertType.VEC4]:
+                val = [float(v) for v in val]
+            else:
+                val = [int(v) for v in val]
+            val = val[:size]
+            results.append(val)
             pbar.update_absolute(idx)
         return (results, )
 
