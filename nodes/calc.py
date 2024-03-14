@@ -357,15 +357,13 @@ class ValueNode(JOVBaseNode):
     def convert(typ, val) -> tuple | tuple[Any]:
         print(type(val))
         if isinstance(val, (torch.Tensor,)):
-            val = val.size()
+            val = list(val.size())
+            val = val[1:4] + [val[0]]
         if not isinstance(val, (list, tuple, set,)):
             val = [val]
         size = len(val)
-        print(type(val))
-        print(val)
-        print(size)
         if typ == EnumConvertType.STRING:
-            return ", ".join(str(val))
+            return ", ".join([str(v) for v in val])
         elif typ == EnumConvertType.FLOAT:
             return float(val[0])
         elif typ == EnumConvertType.BOOLEAN:
