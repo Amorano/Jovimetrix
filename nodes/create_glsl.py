@@ -15,10 +15,10 @@ from Jovimetrix import JOV_HELP_URL, WILDCARD, \
     ROOT, MIN_IMAGE_SIZE, JOV_GLSL, comfy_message, parse_reset
 
 from Jovimetrix.sup.lexicon import Lexicon
-from Jovimetrix.sup.util import parse_tuple, parse_tuple_raw, zip_longest_fill, \
+from Jovimetrix.sup.util import parse_tuple, zip_longest_fill, \
     EnumTupleType
 from Jovimetrix.sup.image import batch_extract, cv2tensor_full, \
-    pil2cv, pil2tensor, tensor2cv, tensor2pil
+    pil2cv, tensor2pil
 from Jovimetrix.sup.shader import GLSL, CompileException
 
 # =============================================================================

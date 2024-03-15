@@ -108,10 +108,10 @@ class ShapeNode(JOVImageMultiple):
         return d
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        shape = kw.get(Lexicon.SHAPE, EnumShapes.CIRCLE)
-        sides = kw.get(Lexicon.SIDES, 3)
-        angle = kw.get(Lexicon.ANGLE, 0)
-        edge = kw.get(Lexicon.EDGE, EnumEdge.CLIP)
+        shape = kw.get(Lexicon.SHAPE, [EnumShapes.CIRCLE])
+        sides = kw.get(Lexicon.SIDES, [3])
+        angle = kw.get(Lexicon.ANGLE, [0])
+        edge = kw.get(Lexicon.EDGE, [EnumEdge.CLIP])
         offset = parse_tuple(Lexicon.XY, kw, typ=EnumTupleType.FLOAT, default=(0., 0.,))
         size = parse_tuple(Lexicon.SIZE, kw, EnumTupleType.FLOAT, default=(1., 1.,))
         wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,))

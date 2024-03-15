@@ -84,7 +84,17 @@ def parse_number(key: str, data: Union[dict, List[dict]], typ: EnumTupleType=Enu
         ret.append(v)
     return ret
 
-def parse_tuple_raw(data: Union[dict, List[dict]], typ: EnumTupleType=EnumTupleType.INT, default: tuple[Any]=None, clip_min: Optional[float]=None, clip_max: Optional[float]=None, zero:int=0) -> tuple[List[Any]]:
+def parse_tuple(key: str, data: Union[dict, List[dict]], typ: EnumTupleType=EnumTupleType.INT, default: tuple[Any]=None, clip_min: Optional[float]=None, clip_max: Optional[float]=None, zero:int=0) -> tuple[List[Any]]:
+    unified = data.get(key, [default])
+    if not isinstance(unified, (list, tuple, set)):
+        unified = [unified]
+    if isinstance(unified[0], (dict,)):
+        unified = [list(v.values()) for v in unified]
+    data = []
+    for v in unified:
+        if not isinstance(v, (list, tuple, set)):
+            v = [v]
+        data.append(v)
     ret = []
     for entry in data:
         size = len(entry)
@@ -93,9 +103,7 @@ def parse_tuple_raw(data: Union[dict, List[dict]], typ: EnumTupleType=EnumTupleT
             d = default[idx] if default is not None and idx < len(default) else None
             # entry could be a dict, list/tuple...
             v = entry
-            if isinstance(entry, dict):
-                v = entry.get(str(idx), d)
-            elif isinstance(entry, (list, tuple, set)):
+            if isinstance(entry, (list, tuple, set)):
                 v = entry[idx] if idx < len(entry) else d
 
             match typ:
@@ -105,14 +113,11 @@ def parse_tuple_raw(data: Union[dict, List[dict]], typ: EnumTupleType=EnumTupleT
                         if len(parts) > 1:
                             v ='.'.join(parts[:2])
                     v = float(v if v is not None else zero)
-
                 case EnumTupleType.LIST:
                     if v is not None:
                         v = v.split(',')
-
                 case EnumTupleType.INT:
                     v = int(v if v is not None else zero)
-
             if typ in [EnumTupleType.INT, EnumTupleType.FLOAT]:
                 if clip_min is not None:
                     v = max(v, clip_min)
@@ -122,15 +127,9 @@ def parse_tuple_raw(data: Union[dict, List[dict]], typ: EnumTupleType=EnumTupleT
             if v == 0:
                 v = zero
             newboi.append(v)
-
+        newboi.extend([newboi[-1]] * max(0, len(default) - len(newboi)))
         ret.append(tuple(newboi))
     return ret
-
-def parse_tuple(key: str, data: Union[dict, List[dict]], typ: EnumTupleType=EnumTupleType.INT, default: tuple[Any]=None, clip_min: Optional[float]=None, clip_max: Optional[float]=None, zero:int=0) -> tuple[List[Any]]:
-    unified = data.get(key, [default])
-    if not isinstance(unified, (list, tuple, set)):
-        unified = [unified]
-    return parse_tuple_raw(unified, typ, default, clip_min, clip_max, zero)
 
 def update_nested_dict(d, path, value) -> None:
     keys = path.split('.')
