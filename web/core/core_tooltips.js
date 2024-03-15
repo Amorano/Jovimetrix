@@ -3,7 +3,7 @@
  * Project: Jovimetrix
  */
 
-import { app } from "/scripts/app.js"
+import { app } from "../../../scripts/app.js"
 
 import { CONFIG_USER } from '../util/util_config.js'
 // const TOOLTIP_COLOR = CONFIG_USER.color.tooltips;

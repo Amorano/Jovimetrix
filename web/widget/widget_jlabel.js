@@ -3,7 +3,7 @@
  * Project: Jovimetrix
  */
 
-import { app } from "/scripts/app.js"
+import { app } from "../../../scripts/app.js"
 // import * as util from '../util/util.js'
 // import { offsetDOMWidget } from '../util/util_dom.js'
 

@@ -4,7 +4,7 @@
  *
  */
 
-import { app } from "/scripts/app.js"
+import { app } from "../../../scripts/app.js"
 import { fitHeight } from '../util/util.js'
 import { widget_hide, widget_show } from '../util/util_widget.js'
 

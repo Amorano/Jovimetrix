@@ -3,7 +3,7 @@
  * Project: Jovimetrix
  */
 
-import { app } from "/scripts/app.js"
+import { app } from "../../../scripts/app.js"
 import { offsetDOMWidget } from '../util/util_dom.js'
 
 export const JImageWidget = (app, name, value) => {

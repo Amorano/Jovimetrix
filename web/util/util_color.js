@@ -4,7 +4,7 @@
  *
  */
 
-import { app } from "/scripts/app.js"
+import { app } from "../../../scripts/app.js"
 import * as util_config from './util_config.js'
 
 // gets the CONFIG entry for name

@@ -3,12 +3,12 @@
  * Project: Jovimetrix
  */
 
-import { app } from "/scripts/app.js"
+import { app } from "../../../scripts/app.js"
 import { node_cleanup } from '../util/util.js'
 import { CONVERTED_TYPE, convertToInput } from '../util/util_widget.js'
 import { inner_value_change } from '../util/util_dom.js'
 import { hex2rgb, rgb2hex } from '../util/util_color.js'
-import { $el } from "/scripts/ui.js"
+import { $el } from "../../../scripts/ui.js"
 
 export const VectorWidget = (app, inputName, options, initial, desc='') => {
     const values = options[1]?.default || initial;

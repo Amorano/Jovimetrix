@@ -4,7 +4,7 @@
  *
  */
 
-import { app } from "/scripts/app.js"
+import { app } from "../../../scripts/app.js"
 import { convertArrayToObject } from './util.js'
 
 export function renderTemplate(template, data) {

@@ -4,7 +4,7 @@
  *
  */
 
-import { app } from "/scripts/app.js"
+import { app } from "../../../scripts/app.js"
 import { node_add_dynamic } from '../util/util.js'
 import { api_cmd_jovian } from '../util/util_api.js'
 

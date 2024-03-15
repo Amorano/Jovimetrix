@@ -4,7 +4,7 @@
  *
  */
 
-import { app } from "/scripts/app.js"
+import { app } from "../../../scripts/app.js"
 import { ComfyDialog, $el } from "/scripts/ui.js"
 import { api_post } from '../util/util_api.js'
 import { node_color_all } from '../util/util_color.js'

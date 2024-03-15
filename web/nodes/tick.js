@@ -5,7 +5,7 @@
  */
 
 import { api } from "/scripts/api.js";
-import { app } from "/scripts/app.js"
+import { app } from "../../../scripts/app.js"
 import { api_cmd_jovian } from '../util/util_api.js'
 
 const _id = "TICK (JOV) ⏱"

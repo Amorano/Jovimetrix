@@ -4,7 +4,7 @@
  *
  */
 
-import { app } from "/scripts/app.js"
+import { app } from "../../../scripts/app.js"
 import { fitHeight, TypeSlot } from '../util/util.js'
 import { widget_hide, widget_show, process_value, widget_type_name } from '../util/util_widget.js'
 
