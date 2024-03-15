@@ -87,6 +87,8 @@ JOV_CONFIG = {}
 JOV_WEB = ROOT / 'web'
 JOV_DEFAULT = JOV_WEB / 'default.json'
 JOV_CONFIG_FILE = JOV_WEB / 'config.json'
+# nodes to skip on import; for online systems; skip Export, Streamreader, etc...
+JOV_IGNORE_NODE = ROOT / 'ignore.txt'
 JOV_GLSL = ROOT / 'res' / 'glsl'
 
 JOV_LOG_LEVEL = os.getenv("JOV_LOG_LEVEL", "WARNING")
@@ -202,8 +204,8 @@ try:
 
     @PromptServer.instance.routes.get("/jovimetrix/config")
     async def jovimetrix_config(request) -> Any:
-        global JOV_CONFIG
-        configLoad()
+        global JOV_CONFIG, JOV_CONFIG_FILE
+        configLoad(JOV_CONFIG_FILE)
         return web.json_response(JOV_CONFIG)
 
     @PromptServer.instance.routes.post("/jovimetrix/config")
@@ -263,11 +265,12 @@ MIN_IMAGE_SIZE = 512
 # === SESSION ===
 # =============================================================================
 
-def configLoad() -> None:
-    global JOV_CONFIG
+def configLoad(fname:Path, as_json:bool=True) -> None:
     try:
-        with open(JOV_CONFIG_FILE, 'r', encoding='utf-8') as fn:
-            JOV_CONFIG = json.load(fn)
+        with open(fname, 'r', encoding='utf-8') as fn:
+            if as_json:
+                return json.load(fn)
+            return fn.read().splitlines()
     except (IOError, FileNotFoundError) as e:
         pass
     except Exception as e:
@@ -282,10 +285,10 @@ class Session(metaclass=Singleton):
         return [x for x in files if x.endswith('.json') or x.endswith('.html')]
 
     def __init__(self, *arg, **kw) -> None:
-        global JOV_CONFIG
+        global JOV_CONFIG, JOV_IGNORE_NODE
         found = False
         if JOV_CONFIG_FILE.exists():
-            configLoad()
+            JOV_CONFIG = configLoad(JOV_CONFIG_FILE)
             # is this an old config, copy default (sorry, not sorry)
             found = JOV_CONFIG.get('user', None) is not None
 
@@ -296,12 +299,20 @@ class Session(metaclass=Singleton):
             except:
                 raise Exception("MAJOR 😿😰😬🥟 BLUNDERCATS 🥟😬😰😿")
 
-        for f in (ROOT / 'nodes').iterdir():
+        if JOV_IGNORE_NODE.exists():
+            JOV_IGNORE_NODE = configLoad(JOV_IGNORE_NODE, False)
+        else:
+            JOV_IGNORE_NODE = []
+
+        for f in (ROOT / 'core').iterdir():
             if f.suffix != ".py" or f.stem.startswith('_'):
                 continue
-
+            if f.stem in JOV_IGNORE_NODE or f.stem+'.py' in JOV_IGNORE_NODE:
+                logger.warning(f"💀 Jovimetrix.core.{f.stem}")
+                continue
+            module = importlib.import_module(f"Jovimetrix.core.{f.stem}")
             try:
-                module = importlib.import_module(f"Jovimetrix.nodes.{f.stem}")
+                module = importlib.import_module(f"Jovimetrix.core.{f.stem}")
             except Exception as e:
                 logger.warning(f"module failed {f}")
                 logger.warning(str(e))
@@ -311,14 +322,17 @@ class Session(metaclass=Singleton):
             for class_name, class_object in classes:
                 # assume both attrs are good enough....
                 if not class_name.endswith('BaseNode') and hasattr(class_object, 'NAME') and hasattr(class_object, 'CATEGORY'):
-                    name = class_object.NAME
+                    if (name := class_object.NAME) in JOV_IGNORE_NODE:
+                        logger.warning(f"😥 {name}")
+                        continue
+
                     if hasattr(class_object, 'POST'):
                         class_object.CATEGORY = "JOVIMETRIX 🔺🟩🔵/WIP ☣️💣"
                         Session.CLASS_MAPPINGS_WIP[name] = class_object
                     else:
                         Session.CLASS_MAPPINGS[name] = class_object
 
-            logger.info("✅ {}", module.__name__)
+            logger.info(f"✅ {module.__name__}")
 
         # 🔗 ⚓ 📀 🍿 🎪 🐘 🤯 😱 💀 ⛓️ 🔒 🔑 🪀 🪁 🔮 🧿 🧙🏽 🧙🏽‍♀️ 🧯 🦚
 

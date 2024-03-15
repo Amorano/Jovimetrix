@@ -3,7 +3,7 @@ Jovimetrix - http://www.github.com/amorano/jovimetrix
 EMOJI OCD Support
 """
 
-# 🔗 ⚓ 📀 🧹 🍿 ➕ 📽️ 🦄 📑 📺 🎪 🐘 🚦 🤯 😱 💀 ⛓️ 🔒 🪀 🪁 🔮 🧿 🧙🏽 🧙🏽‍♀️
+# 🔗 ⚓ 📀 🧹 🍿 ➕ 📽️ 🦄 📑 📺 🎪 🐘 🚦 🤯 😱 💀 ⛓️ 🔒 🪀 🪁 🧿 🧙🏽 🧙🏽‍♀️
 # 🧯 🦚 ♻️  ⤴️ ⚜️ 🅱️ 🅾️ ⬆️ ↔️ ↕️ 〰️ ☐ 🚮 🤲🏽 👍 ✳️ ✌🏽 ☝🏽
 
 from typing import Any
@@ -64,8 +64,9 @@ class Lexicon(metaclass=LexiconMeta):
     COLORMATCH_MAP = 'MAP', "Custom image that will be transformed into a LUT or a built-in cv2 LUT"
     COLORMATCH_MODE = 'MODE', "Match colors from an image or built-in (LUT), Histogram lookups or Reinhard method"
     COLUMNS = 'COLS', "0 = Auto-Fit, >0 = Fit into N columns"
-    COMPARE = '🕵🏽‍♀️', "Compare"
-    CONDITION = '⁉️', "Condition"
+    COMP_A = '😍', "pass this data on a successful condition"
+    COMP_B = '🥵', "pass this data on a failure condition"
+    COMPARE = '🕵🏽‍♀️', "Comparison function. Will pass the data in 😍 on successful comparison"
     CONTRAST = '🌓', "Contrast"
     CONTROL = '🎚️', "Control"
     CURRENT = 'CURRENT', "Current"

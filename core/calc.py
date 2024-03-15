@@ -144,7 +144,6 @@ OP_UNARY = {
 
 def parse_type_value(typ:EnumConvertType, A:Any, default:tuple=(0,0,0,0)) -> tuple[EnumConvertType, Any, int]:
     size = max(1, int(typ.value / 10))
-    # val = [0] * size
     if A is None:
         val = default
     elif isinstance(A, (torch.Tensor,)):

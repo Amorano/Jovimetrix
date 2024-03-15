@@ -6,7 +6,7 @@ TEXT support
 from enum import Enum
 import textwrap
 
-import matplotlib.font_manager
+from matplotlib import font_manager
 from PIL import Image, ImageFont, ImageDraw
 
 from loguru import logger
@@ -35,12 +35,9 @@ class EnumJustify(Enum):
 
 # =============================================================================
 
-def font_all() -> dict[str, str]:
-    mgr = matplotlib.font_manager.FontManager()
+def font_names() -> list[str]:
+    mgr = font_manager.FontManager()
     return {font.name: font.fname for font in mgr.ttflist}
-
-def font_all_names() -> list[str]:
-    return sorted(font_all().keys())
 
 def text_size(draw:ImageDraw, text:str, font:ImageFont) -> tuple[int, int]:
     bbox = draw.textbbox((0, 0), text, font=font)

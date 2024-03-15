@@ -16,7 +16,8 @@ from nodes import interrupt_processing
 
 from Jovimetrix import comfy_message, parse_reset, ComfyAPIMessage, JOVBaseNode, TimedOutException, JOV_HELP_URL, WILDCARD
 from Jovimetrix.sup.lexicon import Lexicon
-from Jovimetrix.sup.util import parse_dynamic, zip_longest_fill, convert_parameter
+from Jovimetrix.sup.util import parse_dynamic, zip_longest_fill
+from Jovimetrix.core.calc import EnumConvertType, convert_value, parse_type_value
 
 # =============================================================================
 
@@ -172,8 +173,8 @@ class ComparisonNode(JOVBaseNode):
     CATEGORY = JOV_CATEGORY
     DESCRIPTION = "Compare two inputs: A=B, A!=B, A>B, A>=B, A<B, A<=B"
     INPUT_IS_LIST = True
-    RETURN_TYPES = ("BOOLEAN",)
-    RETURN_NAMES = (Lexicon.UNKNOWN, )
+    RETURN_TYPES = (WILDCARD,)
+    RETURN_NAMES = (Lexicon.ANY,)
     OUTPUT_IS_LIST = (True, )
 
     @classmethod
@@ -181,29 +182,40 @@ class ComparisonNode(JOVBaseNode):
         d = {
         "required": {},
         "optional": {
-            Lexicon.IN_A: (WILDCARD, {"default": None}),
+            Lexicon.IN_A: (WILDCARD, {"default": None, "tooltip":"Master Comparator"}),
+            Lexicon.IN_B: (WILDCARD, {"default": None, "tooltip":"Secondary Comparator"}),
+            Lexicon.COMP_A: (WILDCARD, {"default": None}),
+            Lexicon.COMP_B: (WILDCARD, {"default": None}),
             Lexicon.COMPARE: (EnumComparison._member_names_, {"default": EnumComparison.EQUAL.name}),
-            Lexicon.IN_B: (WILDCARD, {"default": None}),
             Lexicon.FLIP: ("BOOLEAN", {"default": False}),
         }}
         return Lexicon._parse(d, JOV_HELP_URL + "/FLOW#-comparison")
 
     def run(self, **kw) -> tuple[bool]:
-        result = []
         A = kw.get(Lexicon.IN_A, [None])
         B = kw.get(Lexicon.IN_B, [None])
+        good = kw.get(Lexicon.COMP_A, [None])
+        fail = kw.get(Lexicon.COMP_B, [None])
         flip = kw.get(Lexicon.FLIP, [None])
         op = kw.get(Lexicon.COMPARE, [None])
         params = [tuple(x) for x in zip_longest_fill(A, B, op, flip)]
         pbar = ProgressBar(len(params))
-        for idx, (a, b, op, flip) in enumerate(params):
-            if type(a) == tuple and type(b) == tuple:
-                if (short := len(a) - len(b)) > 0:
-                    b = list(b) + [0] * short
-            typ_a, val_a = convert_parameter(a)
-            _, val_b = convert_parameter(b)
+        result = []
+        for idx, (A, B, op, flip) in enumerate(params):
+            typ_a = [EnumConvertType.FLOAT, EnumConvertType.VEC2, EnumConvertType.VEC3, EnumConvertType.VEC4][len(A)]
+            typ_b = [EnumConvertType.FLOAT, EnumConvertType.VEC2, EnumConvertType.VEC3, EnumConvertType.VEC4][len(B)]
+            typ_a, val_a, size_a = parse_type_value(typ_a, A, [0] * len(A))
+            typ_b, val_b, size_b = parse_type_value(typ_b, B, [0] * len(B))
+            val_a = convert_value(typ_a, val_a, size_a)
+            if not isinstance(val_a, (list, set, tuple,)):
+                val_a = [val_a]
+            val_b = convert_value(typ_b, val_b, size_b)
+            if not isinstance(val_b, (list, set, tuple,)):
+                val_b = [val_b]
+            if (short := len(val_a) - len(val_b)) > 0:
+                val_b.extend([0] * short)
             if flip:
-                a, b = b, a
+                val_a, val_b = val_b, val_a
             op = EnumComparison[op]
             match op:
                 case EnumComparison.EQUAL:
@@ -240,10 +252,7 @@ class ComparisonNode(JOVBaseNode):
                     val = [a not in val_b for a in val_a]
 
             val = [typ_a[i](v) for i, v in enumerate(val)]
-            if len(val) == 1:
-                result.append(val[0])
-            else:
-                result.append(tuple(val))
+            result.append(tuple(val))
             # logger.debug("{} {}", result, val)
             pbar.update_absolute(idx)
 

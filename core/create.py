@@ -26,7 +26,7 @@ from Jovimetrix.sup.image import batch_extract, channel_solid, cv2tensor_full, \
     pixel_eval, tensor2cv, shape_ellipse, shape_polygon, shape_quad, \
     EnumEdge, EnumImageType
 
-from Jovimetrix.sup.text import font_all, font_all_names, text_autosize, text_draw, \
+from Jovimetrix.sup.text import font_names, text_autosize, text_draw, \
     EnumAlignment, EnumJustify, EnumShapes
 
 from Jovimetrix.sup.fractal import EnumNoise
@@ -162,8 +162,8 @@ class TextNode(JOVImageMultiple):
     NAME = "TEXT GENERATOR (JOV) 📝"
     CATEGORY = JOV_CATEGORY
     DESCRIPTION = "Use any system font with auto-fit or manual placement."
-    FONT_NAMES = font_all_names()
-    FONTS = font_all()
+    FONTS = font_names()
+    FONT_NAMES = sorted(FONTS.keys())
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -203,7 +203,7 @@ class TextNode(JOVImageMultiple):
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         if len(full_text := kw.get(Lexicon.STRING, [""])) == 0:
             full_text = [""]
-        font_idx = kw.get(Lexicon.FONT, [self.FONT_NAMES[0]])
+        font_idx = kw.get(Lexicon.FONT, [self.FONTS[0]])
         autosize = kw.get(Lexicon.AUTOSIZE, [False])
         letter = kw.get(Lexicon.LETTER, [False])
         color = parse_tuple(Lexicon.RGBA_A, kw, default=(255, 255, 255, 255))
@@ -232,7 +232,7 @@ class TextNode(JOVImageMultiple):
                   angle, edge, invert) in enumerate(params):
 
             width, height = wihi
-            font_name = self.FONTS[font_idx]
+            font_name = self.FONT_NAMES[font_idx]
             align = EnumAlignment[align]
             justify = EnumJustify[justify]
             edge = EnumEdge[edge]
