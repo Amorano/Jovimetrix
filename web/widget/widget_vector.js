@@ -21,7 +21,6 @@ export const VectorWidget = (app, inputName, options, initial, desc='') => {
     }
 
     let isDragging;
-    const precision = widget.options?.precision !== undefined ? widget.options.precision : 0;
     let step = options[0].includes(['VEC', 'vec']) ? 0.01 : 1;
     widget.options.step = widget.options?.step || step;
     widget.options.rgb = widget.options?.rgb || false;
@@ -35,6 +34,8 @@ export const VectorWidget = (app, inputName, options, initial, desc='') => {
 
     widget.draw = function(ctx, node, width, Y, height) {
         if (this.type !== options[0] && app.canvas.ds.scale > 0.5) return
+
+        const precision = widget.options?.precision !== undefined ? widget.options.precision : 0;
 
         ctx.save()
         ctx.beginPath()
@@ -102,6 +103,7 @@ export const VectorWidget = (app, inputName, options, initial, desc='') => {
         if (w.options?.min !== undefined) {
             v = Math.max(v, w.options.min)
         }
+        const precision = widget.options?.precision !== undefined ? widget.options.precision : 0;
         w.value[idx] = (precision == 0) ? Number(v) : parseFloat(v).toFixed(precision)
     }
 

@@ -132,7 +132,6 @@ class ValueGraphNode(JOVBaseNode):
     NAME = "VALUE GRAPH (JOV) 📈"
     CATEGORY = JOV_CATEGORY
     DESCRIPTION = "Graphs historical execution run values."
-    INPUT_IS_LIST = False
     RETURN_TYPES = ("IMAGE", )
     RETURN_NAMES = (Lexicon.IMAGE, )
     OUTPUT_IS_LIST = (False,)
@@ -144,7 +143,7 @@ class ValueGraphNode(JOVBaseNode):
         "required": {},
         "optional": {
             Lexicon.RESET: ("BOOLEAN", {"default": False}),
-            Lexicon.VALUE: ("INT", {"default": 120, "min": 0, "tooltip":"Number of values to graph and display"}),
+            Lexicon.VALUE: ("INT", {"default": 60, "min": 0, "tooltip":"Number of values to graph and display"}),
             Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), "step": 1, "label": [Lexicon.W, Lexicon.H]})
         },
         "hidden": {
@@ -152,20 +151,26 @@ class ValueGraphNode(JOVBaseNode):
         }}
         return Lexicon._parse(d, JOV_HELP_URL + "/UTILITY#-value-graph")
 
+    @classmethod
+    def IS_CHANGED(cls, **kw) -> float:
+        return float("nan")
+
     def __init__(self, *arg, **kw) -> None:
         super().__init__(*arg, **kw)
         self.__history = []
         self.__fig, self.__ax = plt.subplots(figsize=(5.12, 5.12))
 
     def run(self, ident, **kw) -> tuple[torch.Tensor]:
-        slice = kw.get(Lexicon.VALUE, 120)
+        slice = kw.get(Lexicon.VALUE, [60])
         wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), zero=0.001)[0]
         accepted = [bool, int, float, np.float16, np.float32, np.float64]
         if parse_reset(ident):
             self.__history = []
-
         longest_edge = 0
-        for idx, val in enumerate(parse_dynamic(Lexicon.UNKNOWN, kw)):
+        dynamic = parse_dynamic(Lexicon.UNKNOWN, kw)
+        params = [tuple(x) for x in zip_longest_fill(dynamic, slice)]
+        pbar = ProgressBar(len(params))
+        for idx, (val, slice) in enumerate(params):
             if not isinstance(val, (list, set, tuple,)):
                 val = [val]
             val = [v if type(v) in accepted else 0 for v in val]
@@ -175,9 +180,9 @@ class ValueGraphNode(JOVBaseNode):
             stride = max(0, -slice + len(self.__history[idx]) + 1)
             longest_edge = max(longest_edge, stride)
             self.__history[idx] = self.__history[idx][stride:]
+            pbar.update_absolute(idx)
 
-        self.__history = self.__history[:idx]
-
+        self.__history = self.__history[:idx+1]
         self.__ax.clear()
         for i, h in enumerate(self.__history):
             self.__ax.plot(h, color="rgbcymk"[i])
@@ -186,8 +191,6 @@ class ValueGraphNode(JOVBaseNode):
         wihi = (width / 100., height / 100.)
         self.__fig.set_figwidth(wihi[0])
         self.__fig.set_figheight(wihi[1])
-        # self.__ax.xaxis.set_major_formatter(ticker.FuncFormatter(lambda x, pos: ('%g') % (x * 5.0)))
-        # self.__ax.set_xlim([max(0, longest_edge-slice), longest_edge])
         self.__fig.canvas.draw_idle()
         buffer = io.BytesIO()
         self.__fig.savefig(buffer, format="png")

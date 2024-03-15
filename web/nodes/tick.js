@@ -28,7 +28,6 @@ app.registerExtension({
 
             self.widget_count = this.widgets.find(w => w.name === '#️⃣');
             async function python_tick(event) {
-                console.log(event)
                 if (event.detail.id != self.id) {
                     return;
                 }

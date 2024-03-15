@@ -4,8 +4,24 @@
  *
  */
 
+const my_map = {
+    STRING: "📝",
+    BOOLEAN: "🇴",
+    INT: "🔟",
+    FLOAT: "🛟",
+    VEC2: "🇽🇾",
+    VEC2INT: "🇽🇾",
+    VEC3: "🇽🇾\u200c🇿",
+    VEC3INT: "🇽🇾\u200c🇿",
+    VEC4: "🇽🇾\u200c🇿\u200c🇼",
+    VEC4INT: "🇽🇾\u200c🇿\u200c🇼",
+}
+
 export const CONVERTED_TYPE = "converted-widget"
 export const CONVERTED_JOV_TYPE = "converted-widget-jovi"
+
+// return the internal mapping type name
+export function widget_type_name(type) { return my_map[type];}
 
 export function widget_get_type(config) {
     // Special handling for COMBO so we restrict links based on the entries
@@ -45,6 +61,24 @@ export function widget_remove_all(node) {
             widget_remove(node, w);
         }
         who.widgets.length = 0;
+    }
+}
+
+export function process_value(input, widget, precision=0, visible=false, typ="number") {
+    if (!input) {
+        if (visible) {
+            widget_show(widget);
+            widget.origType = widget.type;
+            widget.type = typ;
+        }
+    }
+    widget.options.precision = precision;
+    if (precision == 0) {
+        widget.options.step = 10;
+        widget.options.round = 1;
+    } else {
+        widget.options.step = 1;
+        widget.options.round =  0.1;
     }
 }
 

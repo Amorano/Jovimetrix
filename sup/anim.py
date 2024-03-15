@@ -360,6 +360,14 @@ def wave_op(op: EnumEase, phase: float, frequency: float, amplitude: float,
     op = op.lower()
     if (func := getattr(MODULE, f"wave_{op}", None)) is None:
         raise BadOperatorException(str(op))
+    """
+    phase = float(phase)
+    frequency = float(frequency)
+    amplitude = float(amplitude)
+    offset = float(offset)
+    timestep = float(timestep)
+    std_dev = float(std_dev)
+    """
     if op.endswith('gaussian'):
         return func(phase, frequency, amplitude, offset, timestep, std_dev)
     return func(phase, frequency, amplitude, offset, timestep)

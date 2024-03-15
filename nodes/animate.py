@@ -26,6 +26,7 @@ class TickNode(JOVBaseNode):
     CATEGORY = JOV_CATEGORY
     DESCRIPTION = "Periodic pulse with total pulse count, normalized count relative to the loop setting and fixed pulse step."
     INPUT_IS_LIST = False
+    OUTPUT_IS_LIST = (True, True, True, True,)
     RETURN_TYPES = ("INT", "FLOAT", "FLOAT", WILDCARD)
     RETURN_NAMES = (Lexicon.VALUE, Lexicon.LINEAR, Lexicon.FPS, Lexicon.ANY)
 
@@ -132,7 +133,6 @@ class WaveGeneratorNode(JOVBaseNode):
         phase = kw.get(Lexicon.PHASE, [0])
         shift = kw.get(Lexicon.OFFSET, [0])
         delta_time = kw.get(Lexicon.TIME, [0])
-
         results = []
         params = [tuple(x) for x in zip_longest_fill(op, freq, amp, phase, shift, delta_time)]
         pbar = ProgressBar(len(params))
