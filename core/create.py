@@ -203,7 +203,7 @@ class TextNode(JOVImageMultiple):
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         if len(full_text := kw.get(Lexicon.STRING, [""])) == 0:
             full_text = [""]
-        font_idx = kw.get(Lexicon.FONT, [self.FONTS[0]])
+        font_idx = kw.get(Lexicon.FONT, [self.FONT_NAMES[0]])
         autosize = kw.get(Lexicon.AUTOSIZE, [False])
         letter = kw.get(Lexicon.LETTER, [False])
         color = parse_tuple(Lexicon.RGBA_A, kw, default=(255, 255, 255, 255))
@@ -232,7 +232,7 @@ class TextNode(JOVImageMultiple):
                   angle, edge, invert) in enumerate(params):
 
             width, height = wihi
-            font_name = self.FONT_NAMES[font_idx]
+            font_name = self.FONTS[font_idx]
             align = EnumAlignment[align]
             justify = EnumJustify[justify]
             edge = EnumEdge[edge]

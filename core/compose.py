@@ -164,7 +164,7 @@ class BlendNode(JOVImageMultiple):
             Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
             Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
         }}
-        return Lexicon._parse(d, JOV_HELP_URL + "/COMPOSE#-blend")
+        return Lexicon._parse(d, JOV_HELP_URL + "COMPOSE#%EF%B8%8F-blend")
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         pA = kw.get(Lexicon.PIXEL_A, None)

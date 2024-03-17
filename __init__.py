@@ -39,15 +39,18 @@ Polygonal shapes, MIDI, MP3/WAVE, Flow Logic
 @author: amorano
 @reference: https://github.com/Amorano/Jovimetrix
 @node list:
-    AdjustNode, ColorMatchNode, ThresholdNode, ColorBlindNode
+    AdjustNode, ColorMatchNode, ThresholdNode, ColorBlindNode,
     TickNode, WaveGeneratorNode,
     LoadWaveNode, GraphWaveNode,
-    CalcUnaryOPNode, CalcBinaryOPNode, ValueNode, ConvertNode, LerpNode
-    TransformNode, BlendNode, PixelSplitNode, PixelMergeNode, PixelSwapNode, StackNode, CropNode, ColorTheoryNode,
+    CalcUnaryOPNode, CalcBinaryOPNode, ValueNode, ConvertNode, LerpNode,
+    TransformNode, BlendNode, PixelSplitNode, PixelMergeNode, PixelSwapNode,
+    StackNode, CropNode, ColorTheoryNode,
     ConstantNode, ShapeNode, TextNode, StereogramNode, GLSLNode, NoiseNode,
-    StreamReaderNode, StreamWriterNode, MIDIMessageNode, MIDIReaderNode, MIDIFilterEZNode, MIDIFilterNode, AudioDeviceNode
-    DelayNode, HoldValueNode, ComparisonNode, SelectNode
-    AkashicNode, ValueGraphNode, RouteNode, QueueNode, ExportNode, ImageDiffNode
+    StreamReaderNode, StreamWriterNode, MIDIMessageNode, MIDIReaderNode,
+    MIDIFilterEZNode, MIDIFilterNode, AudioDeviceNode,
+    DelayNode, HoldValueNode, ComparisonNode, SelectNode,
+    AkashicNode, ValueGraphNode, RouteNode, QueueNode, ExportNode, ImageDiffNode,
+    BatchNode
 @version: 0.9999999999999
 """
 

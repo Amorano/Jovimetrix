@@ -528,10 +528,10 @@ class ImageDiffNode(JOVBaseNode):
             pbar.update_absolute(idx)
         return list(zip(*results))
 
-class BatchChunkNode(JOVBaseNode):
-    NAME = "BATCH CHUNK (JOV) 📚"
+class BatchNode(JOVBaseNode):
+    NAME = "BATCH (JOV) 📚"
     CATEGORY = JOV_CATEGORY
-    DESCRIPTION = "Make a batch of batches or a batch of list."
+    DESCRIPTION = "Make batches, unbatch batches, merge batches, slice and select items from a batch."
     RETURN_TYPES = ("INT", WILDCARD,)
     RETURN_NAMES = (Lexicon.VALUE, Lexicon.BATCH, )
 
@@ -563,50 +563,14 @@ class BatchChunkNode(JOVBaseNode):
         amount_chunks = len(chunks)
         return (amount_chunks, chunks,)
 
-class BatchSelectNode(JOVBaseNode):
-    NAME = "BATCH SELECT (JOV) 🤏🏾"
-    CATEGORY = JOV_CATEGORY
-    DESCRIPTION = "Explicitly show the differences between two images via self-similarity index."
-    RETURN_TYPES = (WILDCARD, "INT",)
-    RETURN_NAMES = (Lexicon.BATCH, Lexicon.SEED, )
-
-    @classmethod
-    def INPUT_TYPES(cls) -> dict:
-        d = {
-        "required": {},
-        "optional": {
-            Lexicon.BATCH: (WILDCARD, {}),
-            Lexicon.MODE: (EnumBatchSelect._member_names_, {"default": EnumBatchSelect.RANDOM.name}),
-            Lexicon.INDEX: ("INT", {"default": 1, "min": 1, "step": 1}),
-        }}
-        return Lexicon._parse(d, JOV_HELP_URL + "/UTILITY#-batch-select")
-
-    def run(self, **kw)-> tuple[Any]:
-        chunks, index, one_index, seed=None
+    def select(self, **kw)-> tuple[Any]:
+        chunks, index, one_index, seed = None
         if seed is None:
             seed = random.randint(0, 1000000)
         return (chunks[index - one_index], seed + index,)
 
-class BatchMergeNode(JOVBaseNode):
-    NAME = "BATCH MERGE (JOV) 👬🏼"
-    CATEGORY = JOV_CATEGORY
-    DESCRIPTION = "Merge batches or lists together into a single batch"
-    RETURN_TYPES = (WILDCARD, )
-    RETURN_NAMES = (Lexicon.BATCH, )
-
-    @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "chunk": (WILDCARD,),
-                "batch": (WILDCARD,),
-                },
-            }
-
-    def run(self, **kw):
-
-        chunk, batch=None
-
+    def merge(self, **kw):
+        chunk, batch = None, None
         latent = False
         if isinstance(chunk, dict) and "samples" in chunk:
             chunk = chunk["samples"]
