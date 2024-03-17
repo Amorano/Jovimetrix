@@ -71,8 +71,7 @@ class AdjustNode(JOVImageMultiple):
         return Lexicon._parse(d, JOV_HELP_URL + "/ADJUST#-adjust")
 
     def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor]:
-        pA = kw.get(Lexicon.PIXEL, None)
-        pA = [None] if pA is None else batch_extract(pA)
+        pA = batch_extract(kw.get(Lexicon.PIXEL, None))
         mask = kw.get(Lexicon.MASK, None)
         mask = [None] if mask is None else batch_extract(mask)
         op = kw.get(Lexicon.FUNC, [EnumAdjustOP.BLUR])
@@ -220,10 +219,8 @@ class ColorMatchNode(JOVImageMultiple):
         return Lexicon._parse(d, JOV_HELP_URL + "/ADJUST#-color-match")
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        pA = kw.get(Lexicon.PIXEL_A, None)
-        pA = [None] if pA is None else batch_extract(pA)
-        pB = kw.get(Lexicon.PIXEL_B, None)
-        pB = [None] if pB is None else batch_extract(pB)
+        pA = batch_extract(kw.get(Lexicon.PIXEL_A, None))
+        pB = batch_extract(kw.get(Lexicon.PIXEL_B, None))
         colormatch_mode = kw.get(Lexicon.COLORMATCH_MODE, [EnumColorMatchMode.REINHARD.name])
         colormatch_map = kw.get(Lexicon.COLORMATCH_MAP, [EnumColorMatchMap.USER_MAP.name])
         colormap = kw.get(Lexicon.COLORMAP, [EnumColorMap.HSV])
@@ -289,8 +286,7 @@ class ThresholdNode(JOVImageMultiple):
         return Lexicon._parse(d, JOV_HELP_URL + "/ADJUST#-threshold")
 
     def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        pA = kw.get(Lexicon.PIXEL, None)
-        pA = [None] if pA is None else batch_extract(pA)
+        pA = batch_extract(kw.get(Lexicon.PIXEL_A, None))
         mode = kw.get(Lexicon.FUNC, [EnumThreshold.BINARY])
         adapt = kw.get(Lexicon.ADAPT, [EnumThresholdAdapt.ADAPT_NONE])
         threshold = parse_number(Lexicon.THRESHOLD, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
@@ -333,8 +329,7 @@ class ColorBlindNode(JOVImageMultiple):
         return Lexicon._parse(d, JOV_HELP_URL + "/ADJUST#-color-match")
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        pA = kw.get(Lexicon.PIXEL_A, None)
-        pA = [None] if pA is None else batch_extract(pA)
+        pA = batch_extract(kw.get(Lexicon.PIXEL_A, None))
         defiency = kw.get(Lexicon.DEFIENCY, [EnumCBDefiency.PROTAN.name])
         simulator = kw.get(Lexicon.SIMULATOR, [EnumCBSimulator.AUTOSELECT.name])
         severity = kw.get(Lexicon.SIMULATOR, [1])

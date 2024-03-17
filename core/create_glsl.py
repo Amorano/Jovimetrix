@@ -82,7 +82,7 @@ class GLSLNode(JOVImageMultiple):
             Lexicon.RESET: ("BOOLEAN", {"default": False}),
             Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), "step": 1,}),
             Lexicon.FRAGMENT: ("STRING", {"multiline": True, "default": DEFAULT_FRAGMENT, "dynamicPrompts": False}),
-            Lexicon.PARAM: ("STRING", {"default": ""})
+            Lexicon.PARAM: ("STRING", {"default": {}})
         },
         "hidden": {
             "ident": "UNIQUE_ID"
@@ -104,8 +104,7 @@ class GLSLNode(JOVImageMultiple):
         fragment = kw.get(Lexicon.FRAGMENT, [DEFAULT_FRAGMENT])
         param = kw.get(Lexicon.PARAM, [{}])
         wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), clip_min=1)
-        pA = kw.get(Lexicon.PIXEL, None)
-        pA = [None] if pA is None else batch_extract(pA)
+        pA = batch_extract(kw.get(Lexicon.PIXEL_A, None))
         hold = kw.get(Lexicon.WAIT, [False])
         reset = kw.get(Lexicon.RESET, [False])
         params = [tuple(x) for x in zip_longest_fill(batch, fragment, param, wihi, pA, hold, reset)]
@@ -154,10 +153,8 @@ class GLSLBaseNode(JOVImageMultiple):
         self.__glsl = None
 
     def run(self, **kw) -> list[torch.Tensor]:
-        pA = kw.pop(Lexicon.PIXEL, None)
-        pA = [None] if pA is None else batch_extract(pA)
-        pB = kw.pop(Lexicon.PIXEL_B, None)
-        pB = [None] if pB is None else batch_extract(pB)
+        pA = batch_extract(kw.get(Lexicon.PIXEL_A, None))
+        pB = batch_extract(kw.get(Lexicon.PIXEL_B, None))
         wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), clip_min=1)
         kw.pop(Lexicon.WH, None)
         frag = kw.pop("frag", [self.FRAGMENT])

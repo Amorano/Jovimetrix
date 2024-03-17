@@ -268,6 +268,8 @@ def linear2sRGB(image: TYPE_IMAGE) -> TYPE_IMAGE:
 # =============================================================================
 
 def batch_extract(batch: torch.Tensor) -> list[torch.Tensor]:
+    if batch is None:
+        return [None]
     return [img[i:i+1] for img in batch for i in range(img.shape[0])]
 
 def bgr2hsv(bgr_color: TYPE_PIXEL) -> TYPE_PIXEL:
@@ -1586,7 +1588,9 @@ def color_theory_tetrad_custom(color: TYPE_PIXEL, delta:int=0) -> tuple[TYPE_PIX
 
 def color_theory(image: TYPE_IMAGE, custom:int=0, scheme: EnumColorTheory=EnumColorTheory.COMPLIMENTARY) -> tuple[TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE]:
 
-    b = c = d = [0,0,0]
+    b = [0,0,0]
+    c = [0,0,0]
+    d = [0,0,0]
     color = color_mean(image)
     match scheme:
         case EnumColorTheory.COMPLIMENTARY:

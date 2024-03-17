@@ -67,8 +67,7 @@ class TransformNode(JOVImageMultiple):
         return Lexicon._parse(d, JOV_HELP_URL + "/COMPOSE#-transform")
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        pA = kw.get(Lexicon.PIXEL, None)
-        pA = [None] if pA is None else batch_extract(pA)
+        pA = batch_extract(kw.get(Lexicon.PIXEL_A, None))
         offset = parse_tuple(Lexicon.XY, kw, EnumTupleType.FLOAT, (0., 0.,))
         angle = kw.get(Lexicon.ANGLE, [0])
         size = parse_tuple(Lexicon.SIZE, kw, EnumTupleType.FLOAT, (1., 1.,), zero=0.001)
@@ -167,10 +166,8 @@ class BlendNode(JOVImageMultiple):
         return Lexicon._parse(d, JOV_HELP_URL + "COMPOSE#%EF%B8%8F-blend")
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        pA = kw.get(Lexicon.PIXEL_A, None)
-        pA = [None] if pA is None else batch_extract(pA)
-        pB = kw.get(Lexicon.PIXEL_B, None)
-        pB = [None] if pB is None else batch_extract(pB)
+        pA = batch_extract(kw.get(Lexicon.PIXEL_A, None))
+        pB = batch_extract(kw.get(Lexicon.PIXEL_B, None))
         mask = kw.get(Lexicon.MASK, None)
         mask = [None] if mask is None else batch_extract(mask)
         func = kw.get(Lexicon.FUNC, [EnumBlendType.NORMAL])
@@ -242,8 +239,7 @@ class PixelSplitNode(JOVImageMultiple):
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         images = []
-        pA = kw.get(Lexicon.PIXEL, None)
-        pA = [None] if pA is None else batch_extract(pA)
+        pA = batch_extract(kw.get(Lexicon.PIXEL_A, None))
         pbar = ProgressBar(len(pA))
         for idx, (pA,) in enumerate(pA):
             pA = tensor2cv(pA)
@@ -322,10 +318,8 @@ class PixelSwapNode(JOVImageMultiple):
         return Lexicon._parse(d, JOV_HELP_URL + "/COMPOSE#-pixel-swap")
 
     def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor]:
-        pA = kw.get(Lexicon.PIXEL, None)
-        pA = [None] if pA is None else batch_extract(pA)
-        pB = kw.get(Lexicon.PIXEL_B, None)
-        pB = [None] if pB is None else batch_extract(pB)
+        pA = batch_extract(kw.get(Lexicon.PIXEL_A, None))
+        pB = batch_extract(kw.get(Lexicon.PIXEL_B, None))
         swap_r = kw.get(Lexicon.SWAP_R, [EnumPixelSwap.PASSTHRU])
         r = kw.get(Lexicon.R, [0])
         swap_g = kw.get(Lexicon.SWAP_G, [EnumPixelSwap.PASSTHRU])
@@ -436,8 +430,7 @@ class CropNode(JOVImageMultiple):
         return Lexicon._parse(d, JOV_HELP_URL + "/COMPOSE#-crop")
 
     def run(self, **kw) -> tuple[list[torch.Tensor], list[torch.Tensor]]:
-        pA = kw.get(Lexicon.PIXEL, None)
-        pA = [None] if pA is None else batch_extract(pA)
+        pA = batch_extract(kw.get(Lexicon.PIXEL_A, None))
         func = kw.get(Lexicon.FUNC, [EnumCropMode.CENTER])
         # if less than 1 then use as scalar, over 1 = int(size)
         xy = parse_tuple(Lexicon.XY, kw, EnumTupleType.FLOAT, (0, 0,), 1)
@@ -485,23 +478,23 @@ class ColorTheoryNode(JOVImageMultiple):
         "optional": {
             Lexicon.PIXEL: (WILDCARD, {}),
             Lexicon.SCHEME: (EnumColorTheory._member_names_, {"default": EnumColorTheory.COMPLIMENTARY.name}),
-            Lexicon.VALUE: ("INT", {"default": 45, "min": -90, "max": 90, "step": 1, "tooltip": "Custom angle of seperation to use when calculating colors"}),
+            Lexicon.VALUE: ("INT", {"default": 45, "min": -90, "max": 90, "step": 1, "tooltip": "Custom angle of separation to use when calculating colors"}),
             Lexicon.INVERT: ("BOOLEAN", {"default": False})
         }}
         return Lexicon._parse(d, JOV_HELP_URL + "/COMPOSE#-color-theory")
 
     def run(self, **kw) -> tuple[list[torch.Tensor], list[torch.Tensor]]:
-        pA = kw.get(Lexicon.PIXEL_A, None)
-        pA = [None] if pA is None else batch_extract(pA)
+        pA = batch_extract(kw.get(Lexicon.PIXEL_A, None))
         scheme = kw.get(Lexicon.SCHEME, [EnumColorTheory.COMPLIMENTARY])
         user = parse_number(Lexicon.VALUE, kw, EnumTupleType.INT, [0], clip_min=-180, clip_max=180)
         invert = kw.get(Lexicon.INVERT, [False])
         params = [tuple(x) for x in zip_longest_fill(pA, scheme, user, invert)]
         images = []
         pbar = ProgressBar(len(params))
-        for idx, (img, s, user, invert) in enumerate(params):
+        for idx, (img, target, user, invert) in enumerate(params):
             img = tensor2cv(img)
-            img = color_theory(img, user, EnumColorTheory[s])
+            target = EnumColorTheory[target]
+            img = color_theory(img, user, target)
             if invert:
                 img = (image_invert(s, 1) for s in img)
             images.append([cv2tensor(a) for a in img])

@@ -147,25 +147,40 @@ class GLSL:
         self.__time_last: float = time.perf_counter()
 
     def __del__(self) -> None:
-        if self.__vao is not None:
-            self.__vao.release()
-            self.__vao = None
+        try:
+            if self.__vao is not None:
+                self.__vao.release()
+                self.__vao = None
+        except:
+            pass
 
-        if self.__vbo is not None:
-            self.__vbo.release()
-            self.__vbo = None
+        try:
+            if self.__vbo is not None:
+                self.__vbo.release()
+                self.__vbo = None
+        except:
+            pass
 
-        if self.__fbo is not None:
-            self.__fbo.release()
-            self.__fbo = None
+        try:
+            if self.__fbo is not None:
+                self.__fbo.release()
+                self.__fbo = None
+        except:
+            pass
 
-        if self.__texture is not None:
-            self.__texture.release()
-            self.__texture = None
+        try:
+            if self.__texture is not None:
+                self.__texture.release()
+                self.__texture = None
+        except:
+            pass
 
-        if self.__ctx is not None:
-            self.__ctx.release()
-            self.__ctx.gc()
+        try:
+            if self.__ctx is not None:
+                self.__ctx.release()
+                self.__ctx.gc()
+        except:
+            pass
 
     def reset(self) -> None:
         self.__runtime = 0

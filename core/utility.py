@@ -422,8 +422,7 @@ class ExportNode(JOVBaseNode):
         return Lexicon._parse(d, JOV_HELP_URL + "/UTILITY#-export")
 
     def run(self, **kw) -> None:
-        pA = kw.get(Lexicon.PIXEL, None)
-        pA = [None] if pA is None else batch_extract(pA)
+        pA = batch_extract(kw.get(Lexicon.PIXEL_A, None))
         suffix = kw.get(Lexicon.PREFIX, [""])[0]
         if suffix == "":
             suffix = uuid4().hex[:16]
@@ -602,8 +601,7 @@ class HistogramNode(JOVImageSimple):
         return Lexicon._parse(d, JOV_HELP_URL + "/ADJUST#-histogram")
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        pA = kw.get(Lexicon.PIXEL_A, None)
-        pA = [None] if pA is None else batch_extract(pA)
+        pA = batch_extract(kw.get(Lexicon.PIXEL_A, None))
         params = [tuple(x) for x in zip_longest_fill(pA,)]
         images = []
         pbar = ProgressBar(len(params))
