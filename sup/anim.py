@@ -344,9 +344,3 @@ def wave_op(op: EnumEase, phase: float, frequency: float, amplitude: float,
     if op.endswith('gaussian'):
         return func(phase, frequency, amplitude, offset, timestep, std_dev)
     return func(phase, frequency, amplitude, offset, timestep)
-
-import math
-
-for x in range(360):
-    y = wave_square(0, 1, 1, 0, x * np.pi / 180)
-    print(y)
