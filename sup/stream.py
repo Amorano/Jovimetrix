@@ -23,13 +23,14 @@ from PIL import Image, ImageGrab
 from loguru import logger
 
 # SPOUT SUPPORT
-JOV_SPOUT = os.getenv("JOV_SPOUT", 'False').lower() in ('true', '1', 't')
+JOV_SPOUT = os.getenv("JOV_SPOUT", 'true').lower() in ('true', '1', 't')
 if JOV_SPOUT:
     try:
         import SpoutGL
         from OpenGL import GL
-    except:
+    except Exception as e:
         logger.error("NO SPOUT GL SUPPORT")
+        logger.error(e)
 else:
     logger.warning("SKIPPING SPOUT GL SUPPORT")
 
