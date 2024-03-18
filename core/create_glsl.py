@@ -104,7 +104,7 @@ class GLSLNode(JOVImageMultiple):
         fragment = kw.get(Lexicon.FRAGMENT, [DEFAULT_FRAGMENT])
         param = kw.get(Lexicon.PARAM, [{}])
         wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), clip_min=1)
-        pA = batch_extract(kw.get(Lexicon.PIXEL_A, None))
+        pA = batch_extract(kw.get(Lexicon.PIXEL, None))
         hold = kw.get(Lexicon.WAIT, [False])
         reset = kw.get(Lexicon.RESET, [False])
         params = [tuple(x) for x in zip_longest_fill(batch, fragment, param, wihi, pA, hold, reset)]

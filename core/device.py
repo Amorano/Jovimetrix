@@ -351,7 +351,7 @@ class SpoutWriterNode(JOVBaseNode):
         self.__sender = SpoutSender("")
 
     def run(self, **kw) -> tuple[torch.Tensor]:
-        pA = batch_extract(kw.get(Lexicon.PIXEL_A, None))
+        pA = batch_extract(kw.get(Lexicon.PIXEL, None))
         host = kw.get(Lexicon.ROUTE, [""])[0]
         fps = kw.get(Lexicon.FPS, [30])[0]
         delta = 1. / float(fps)

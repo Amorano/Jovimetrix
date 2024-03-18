@@ -33,6 +33,7 @@ class LexiconMeta(type):
 
 class Lexicon(metaclass=LexiconMeta):
     A = '⬜', "Alpha"
+    ABSOLUTE = 'ABSOLUTE', "Return the absolute value of the input"
     ADAPT = '🧬', "X-Men"
     ALIGN = 'ALIGN', "Top, Center or Bottom alignment"
     AMP = '🔊', "Amplitude"

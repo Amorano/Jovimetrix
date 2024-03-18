@@ -206,3 +206,12 @@ Everyone mentioned here has been tireless in helping me, at some point, construc
 [Kijai](https://github.com/Kijai)|[WASasquatch](https://github.com/WASasquatch)|[MatisseTec](https://github.com/MatissesProjects)
 [rgthree](https://github.com/rgthree)|[Suzue1](https://github.com/Suzie1)
 <img width=250/>|<img width=250/>|<img width=250/>
+
+<!---------------------------------------------------------------------------->
+
+# HELP & DONATIONS FOR DONATION WARE
+
+Everything here is made because I wanted to make it.
+Everything you are looking for here that you cant find doesnt exsit because I didnt make it.
+If you feel like helping with text or code contributions, please pull and send me any PRs.
+[If you feel like donating money resource instead, you can always use my ko-fi](https://ko-fi.com/alexandermorano).

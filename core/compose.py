@@ -67,7 +67,7 @@ class TransformNode(JOVImageMultiple):
         return Lexicon._parse(d, JOV_HELP_URL + "/COMPOSE#-transform")
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        pA = batch_extract(kw.get(Lexicon.PIXEL_A, None))
+        pA = batch_extract(kw.get(Lexicon.PIXEL, None))
         offset = parse_tuple(Lexicon.XY, kw, EnumTupleType.FLOAT, (0., 0.,))
         angle = kw.get(Lexicon.ANGLE, [0])
         size = parse_tuple(Lexicon.SIZE, kw, EnumTupleType.FLOAT, (1., 1.,), zero=0.001)
@@ -168,8 +168,7 @@ class BlendNode(JOVImageMultiple):
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         pA = batch_extract(kw.get(Lexicon.PIXEL_A, None))
         pB = batch_extract(kw.get(Lexicon.PIXEL_B, None))
-        mask = kw.get(Lexicon.MASK, None)
-        mask = [None] if mask is None else batch_extract(mask)
+        mask = batch_extract(kw.get(Lexicon.MASK, None))
         func = kw.get(Lexicon.FUNC, [EnumBlendType.NORMAL])
         alpha = kw.get(Lexicon.A, [1])
         flip = kw.get(Lexicon.FLIP, [False])
@@ -239,7 +238,7 @@ class PixelSplitNode(JOVImageMultiple):
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         images = []
-        pA = batch_extract(kw.get(Lexicon.PIXEL_A, None))
+        pA = batch_extract(kw.get(Lexicon.PIXEL, None))
         pbar = ProgressBar(len(pA))
         for idx, (pA,) in enumerate(pA):
             pA = tensor2cv(pA)
@@ -304,7 +303,7 @@ class PixelSwapNode(JOVImageMultiple):
         d = {
         "required": {},
         "optional": {
-            Lexicon.PIXEL: (WILDCARD, {}),
+            Lexicon.PIXEL_A: (WILDCARD, {}),
             Lexicon.PIXEL_B: (WILDCARD, {}),
             Lexicon.SWAP_R: (EnumPixelSwap._member_names_, {"default": EnumPixelSwap.PASSTHRU.name}),
             Lexicon.R: ("INT", {"default": 0, "step": 1, "min": 0, "max": 255}),
@@ -384,7 +383,7 @@ class StackNode(JOVImageMultiple):
             who = f"{Lexicon.PIXEL}_{idx}"
             if (val := kw.get(who, None)) is None:
                 break
-            images.extend([None] if val is None else batch_extract(val))
+            images.extend(batch_extract(val))
             idx += 1
 
         if len(images) == 0:
@@ -430,7 +429,7 @@ class CropNode(JOVImageMultiple):
         return Lexicon._parse(d, JOV_HELP_URL + "/COMPOSE#-crop")
 
     def run(self, **kw) -> tuple[list[torch.Tensor], list[torch.Tensor]]:
-        pA = batch_extract(kw.get(Lexicon.PIXEL_A, None))
+        pA = batch_extract(kw.get(Lexicon.PIXEL, None))
         func = kw.get(Lexicon.FUNC, [EnumCropMode.CENTER])
         # if less than 1 then use as scalar, over 1 = int(size)
         xy = parse_tuple(Lexicon.XY, kw, EnumTupleType.FLOAT, (0, 0,), 1)
@@ -484,7 +483,7 @@ class ColorTheoryNode(JOVImageMultiple):
         return Lexicon._parse(d, JOV_HELP_URL + "/COMPOSE#-color-theory")
 
     def run(self, **kw) -> tuple[list[torch.Tensor], list[torch.Tensor]]:
-        pA = batch_extract(kw.get(Lexicon.PIXEL_A, None))
+        pA = batch_extract(kw.get(Lexicon.PIXEL, None))
         scheme = kw.get(Lexicon.SCHEME, [EnumColorTheory.COMPLIMENTARY])
         user = parse_number(Lexicon.VALUE, kw, EnumTupleType.INT, [0], clip_min=-180, clip_max=180)
         invert = kw.get(Lexicon.INVERT, [False])

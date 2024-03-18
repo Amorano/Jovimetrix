@@ -54,7 +54,7 @@ export function fitHeight(node) {
     node?.graph?.setDirtyCanvas(true, true);
 }
 
-export function node_add_dynamic(nodeType, prefix, type='*') {
+export function node_add_dynamic(nodeType, prefix, type='*', count=-1) {
     const onNodeCreated = nodeType.prototype.onNodeCreated
     nodeType.prototype.onNodeCreated = function () {
         const me = onNodeCreated?.apply(this)
@@ -66,16 +66,12 @@ export function node_add_dynamic(nodeType, prefix, type='*') {
     nodeType.prototype.onConnectionsChange = function (slotType, slot, event, link_info, data) {
         const me = onConnectionsChange?.apply(this, arguments)
         if (slotType === TypeSlot.Input) {
-            // dynamic_connection(node, slot, event, `${prefix}_`, type)
-            // (node, index, event, prefix='in_', type='*', names = []
-
             if (!this.inputs[slot].name.startsWith(prefix)) {
                 return
             }
 
             // remove all non connected inputs
             if (event == TypeSlotEvent.Disconnect && this.inputs.length > 1) {
-                // console.info(`Removing input ${slot} (${this.inputs[slot].name})`)
                 if (this.widgets) {
                     const w = this.widgets.find((w) => w.name === this.inputs[slot].name)
                     if (w) {
@@ -94,10 +90,13 @@ export function node_add_dynamic(nodeType, prefix, type='*') {
             }
 
             // add an extra input
-            if (this.inputs[this.inputs.length - 1].link != undefined) {
+            if (count-1 < 0) {
+                count = 1000;
+            }
+            const length = this.inputs.length - 1;
+            if (length < count-1 && this.inputs[length].link != undefined) {
                 const nextIndex = this.inputs.length
                 const name = `${prefix}_${nextIndex + 1}`
-                // console.info(`Adding input ${nextIndex + 1} (${name})`)
                 this.addInput(name, type)
             }
 

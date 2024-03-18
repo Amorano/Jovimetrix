@@ -72,8 +72,7 @@ class AdjustNode(JOVImageMultiple):
 
     def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor]:
         pA = batch_extract(kw.get(Lexicon.PIXEL, None))
-        mask = kw.get(Lexicon.MASK, None)
-        mask = [None] if mask is None else batch_extract(mask)
+        mask = batch_extract(kw.get(Lexicon.MASK, None))
         op = kw.get(Lexicon.FUNC, [EnumAdjustOP.BLUR])
         radius = kw.get(Lexicon.RADIUS, [3])
         amt = kw.get(Lexicon.VALUE, [0])
@@ -286,7 +285,7 @@ class ThresholdNode(JOVImageMultiple):
         return Lexicon._parse(d, JOV_HELP_URL + "/ADJUST#-threshold")
 
     def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        pA = batch_extract(kw.get(Lexicon.PIXEL_A, None))
+        pA = batch_extract(kw.get(Lexicon.PIXEL, None))
         mode = kw.get(Lexicon.FUNC, [EnumThreshold.BINARY])
         adapt = kw.get(Lexicon.ADAPT, [EnumThresholdAdapt.ADAPT_NONE])
         threshold = parse_number(Lexicon.THRESHOLD, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
@@ -319,7 +318,7 @@ class ColorBlindNode(JOVImageMultiple):
         d = {
         "required": {},
         "optional": {
-            Lexicon.PIXEL_A: (WILDCARD, {}),
+            Lexicon.PIXEL: (WILDCARD, {}),
             Lexicon.COLORMATCH_MODE: (EnumCBDefiency._member_names_,
                                         {"default": EnumCBDefiency.PROTAN.name}),
             Lexicon.COLORMATCH_MAP: (EnumCBSimulator._member_names_,
@@ -329,7 +328,7 @@ class ColorBlindNode(JOVImageMultiple):
         return Lexicon._parse(d, JOV_HELP_URL + "/ADJUST#-color-match")
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        pA = batch_extract(kw.get(Lexicon.PIXEL_A, None))
+        pA = batch_extract(kw.get(Lexicon.PIXEL, None))
         defiency = kw.get(Lexicon.DEFIENCY, [EnumCBDefiency.PROTAN.name])
         simulator = kw.get(Lexicon.SIMULATOR, [EnumCBSimulator.AUTOSELECT.name])
         severity = kw.get(Lexicon.SIMULATOR, [1])

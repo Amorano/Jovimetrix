@@ -3,7 +3,6 @@ Jovimetrix - http://www.github.com/amorano/jovimetrix
 Animation Support
 """
 
-import math
 import inspect
 from enum import Enum
 
@@ -12,9 +11,6 @@ from numba import jit
 from loguru import logger
 
 __all__ = ["Ease", "Wave"]
-
-HALFPI = math.pi / 2
-TAU = math.pi * 2
 
 # =============================================================================
 # === EXCEPTIONAL ===
@@ -125,15 +121,15 @@ def ease_quintic_in_out(t: np.ndarray) -> np.ndarray:
 
 @jit(parallel=True, cache=True)
 def ease_sin_in(t: np.ndarray) -> np.ndarray:
-    return np.sin((t - 1) * HALFPI) + 1
+    return np.sin((t - 1) * np.pi * 0.5) + 1
 
 @jit(parallel=True, cache=True)
 def ease_sin_out(t: np.ndarray) -> np.ndarray:
-    return np.sin(t * HALFPI)
+    return np.sin(t * np.pi * 0.5)
 
 @jit(parallel=True, cache=True)
 def ease_sin_in_out(t: np.ndarray) -> np.ndarray:
-    return 0.5 * (1 - np.cos(t * math.pi))
+    return 0.5 * (1 - np.cos(t * np.pi))
 
 @jit(parallel=True, cache=True)
 def ease_circular_in(t: np.ndarray) -> np.ndarray:
@@ -163,30 +159,30 @@ def ease_exponential_in_out(t: np.ndarray) -> np.ndarray:
 
 @jit(parallel=True, cache=True)
 def ease_elastic_in(t: np.ndarray) -> np.ndarray:
-    return np.sin(13 * HALFPI * t) * np.power(2, 10 * (t - 1))
+    return np.sin(13 * np.pi * 0.5 * t) * np.power(2, 10 * (t - 1))
 
 @jit(parallel=True, cache=True)
 def ease_elastic_out(t: np.ndarray) -> np.ndarray:
-    return np.sin(-13 * HALFPI * (t + 1)) * np.power(2, -10 * t) + 1
+    return np.sin(-13 * np.pi * 0.5 * (t + 1)) * np.power(2, -10 * t) + 1
 
 @jit(parallel=True, cache=True)
 def ease_elastic_in_out(t: np.ndarray) -> np.ndarray:
-    return np.where(t < 0.5, 0.5 * np.sin(13 * HALFPI * (2 * t)) * np.power(2, 10 * ((2 * t) - 1)),
-                    0.5 * (np.sin(-13 * HALFPI * ((2 * t - 1) + 1)) * np.power(2, -10 * (2 * t - 1)) + 2))
+    return np.where(t < 0.5, 0.5 * np.sin(13 * np.pi * 0.5 * (2 * t)) * np.power(2, 10 * ((2 * t) - 1)),
+                    0.5 * (np.sin(-13 * np.pi * 0.5 * ((2 * t - 1) + 1)) * np.power(2, -10 * (2 * t - 1)) + 2))
 
 @jit(parallel=True, cache=True)
 def ease_back_in(t: np.ndarray) -> np.ndarray:
-    return t * t * t - t * np.sin(t * math.pi)
+    return t * t * t - t * np.sin(t * np.pi)
 
 @jit(parallel=True, cache=True)
 def ease_back_out(t: np.ndarray) -> np.ndarray:
     p = 1 - t
-    return 1 - (p * p * p - p * np.sin(p * math.pi))
+    return 1 - (p * p * p - p * np.sin(p * np.pi))
 
 @jit(parallel=True, cache=True)
 def ease_back_in_out(t: np.ndarray) -> np.ndarray:
-    return np.where(t < 0.5, 0.5 * (2 * t) * (2 * t) * (2 * t) - (2 * t) * np.sin((2 * t) * math.pi),
-                    0.5 * (1 - (2 * t - 1)) * (1 - (2 * t - 1)) * (1 - (2 * t - 1)) - (1 - (2 * t - 1)) * np.sin((1 - (2 * t - 1)) * math.pi) + 0.5)
+    return np.where(t < 0.5, 0.5 * (2 * t) * (2 * t) * (2 * t) - (2 * t) * np.sin((2 * t) * np.pi),
+                    0.5 * (1 - (2 * t - 1)) * (1 - (2 * t - 1)) * (1 - (2 * t - 1)) - (1 - (2 * t - 1)) * np.sin((1 - (2 * t - 1)) * np.pi) + 0.5)
 
 @jit(parallel=True, cache=True)
 def ease_bounce_in(t: np.ndarray) -> np.ndarray:
@@ -234,54 +230,36 @@ def ease_op(op: EnumEase,
 
 class EnumWave(Enum):
     SIN = 0
-    SIN_INV = 1
-    SIN_ABS = 2
     COS = 3
-    COS_INV = 4
-    COS_ABS = 5
-    SAWTOOTH = 6
-    TRIANGLE = 7
-    SQUARE = 8
-    PULSE = 9
-    RAMP = 10
-    STEP = 11
-    EXPONENTIAL = 12
-    LOGARITHMIC = 13
-    NOISE = 14
-    HAVERSINE = 15
-    RECTANGULAR_PULSE = 16
-    GAUSSIAN = 17
-    CHIRP = 18
+    TAN = 6
+    SAWTOOTH = 30
+    TRIANGLE = 32
+    SQUARE = 34
+    PULSE = 36
+    RAMP = 40
+    STEP = 41
+    EXPONENTIAL = 50
+    LOGARITHMIC = 55
+    NOISE = 60
+    HAVERSINE = 70
+    RECTANGULAR_PULSE = 80
+    GAUSSIAN = 90
+    CHIRP = 100
 
 @jit(parallel=True, cache=True)
 def wave_sin(phase: float, frequency: float, amplitude: float, offset: float,
              timestep: float) -> float:
-    return amplitude * np.sin(frequency * TAU * timestep + phase) + offset
-
-@jit(parallel=True, cache=True)
-def wave_sin_inv(phase: float, frequency: float, amplitude: float, offset: float,
-                 timestep: float) -> float:
-    return -amplitude * np.sin(frequency * TAU * timestep + phase) + offset
-
-@jit(parallel=True, cache=True)
-def wave_sin_abs(phase: float, frequency: float, amplitude: float, offset: float,
-                 timestep: float) -> float:
-    return np.abs(amplitude * np.sin(frequency * TAU * timestep + phase)) + offset
+    return amplitude * np.sin(frequency * np.pi * 2 * timestep + phase) + offset
 
 @jit(parallel=True, cache=True)
 def wave_cos(phase: float, frequency: float, amplitude: float, offset: float,
              timestep: float) -> float:
-    return amplitude * np.cos(frequency * TAU * timestep + phase) + offset
+    return amplitude * np.cos(frequency * np.pi * 2 * timestep + phase) + offset
 
 @jit(parallel=True, cache=True)
-def wave_cos_inv(phase: float, frequency: float, amplitude: float, offset: float,
-                 timestep: float) -> float:
-    return -amplitude * np.cos(frequency * TAU * timestep + phase) + offset
-
-@jit(parallel=True, cache=True)
-def wave_cos_abs(phase: float, frequency: float, amplitude: float, offset: float,
-                 timestep: float) -> float:
-    return np.abs(amplitude * np.cos(frequency * TAU * timestep + phase)) + offset
+def wave_tan(phase: float, frequency: float, amplitude: float, offset: float,
+             timestep: float) -> float:
+    return amplitude * np.tan(frequency * np.pi * 2 * timestep + phase) + offset
 
 @jit(parallel=True, cache=True)
 def wave_sawtooth(phase: float, frequency: float, amplitude: float, offset: float,
@@ -306,7 +284,7 @@ def wave_step(phase: float, frequency: float, amplitude: float, offset: float,
 @jit(parallel=True, cache=True)
 def wave_haversine(phase: float, frequency: float, amplitude: float, offset: float,
                    timestep: float) -> float:
-    return amplitude * (1 - np.cos(frequency * TAU * (timestep + phase))) + offset
+    return amplitude * (1 - np.cos(frequency * np.pi * 2 * (timestep + phase))) + offset
 
 @jit(parallel=True, cache=True)
 def wave_noise(phase: float, frequency: float, amplitude: float, offset: float,
@@ -320,12 +298,7 @@ def wave_noise(phase: float, frequency: float, amplitude: float, offset: float,
 @jit(parallel=True, cache=True)
 def wave_square(phase: float, frequency: float, amplitude: float, offset: float,
                 timestep: float) -> float:
-    return amplitude * np.sign(np.sin(TAU * timestep + phase) - frequency) + offset
-
-@jit(parallel=True, cache=True)
-def wave_pulse(phase: float, frequency: float, amplitude: float, offset: float,
-               timestep: float) -> float:
-    return amplitude * np.sign(np.sin(TAU * timestep + phase) - frequency) + offset
+    return amplitude * np.sign(np.sin(np.pi * 2 * timestep + phase) - frequency) + offset
 
 @jit(parallel=True, cache=True)
 def wave_exponential(phase: float, frequency: float, amplitude: float,
@@ -340,12 +313,12 @@ def wave_rectangular_pulse(phase: float, frequency: float, amplitude: float,
 @jit(parallel=True, cache=True)
 def wave_logarithmic(phase: float, frequency: float, amplitude: float, offset: float,
                      timestep: float) -> float:
-    return amplitude * np.log10(timestep + phase) / np.log10(frequency) + offset
+    return amplitude * np.log10(timestep + phase) / np.max(1, np.log10(frequency)) + offset
 
 @jit(parallel=True, cache=True)
 def wave_chirp(phase: float, frequency: float, amplitude: float, offset: float,
                timestep: float) -> float:
-    return amplitude * np.sin(TAU * frequency * (timestep + phase)**2) + offset
+    return amplitude * np.sin(np.pi * 2 * frequency * (timestep + phase)**2) + offset
 
 ####
 
@@ -371,3 +344,9 @@ def wave_op(op: EnumEase, phase: float, frequency: float, amplitude: float,
     if op.endswith('gaussian'):
         return func(phase, frequency, amplitude, offset, timestep, std_dev)
     return func(phase, frequency, amplitude, offset, timestep)
+
+import math
+
+for x in range(360):
+    y = wave_square(0, 1, 1, 0, x * np.pi / 180)
+    print(y)

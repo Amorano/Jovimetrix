@@ -58,7 +58,7 @@ class ConstantNode(JOVImageMultiple):
         return Lexicon._parse(d, JOV_HELP_URL + "/CREATE#-constant")
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        pA = batch_extract(kw.get(Lexicon.PIXEL_A, None))
+        pA = batch_extract(kw.get(Lexicon.PIXEL, None))
         wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
         matte = parse_tuple(Lexicon.RGBA_A, kw, default=(0, 0, 0, 255), clip_min=0, clip_max=255)
         images = []
@@ -290,7 +290,7 @@ class StereogramNode(JOVImageSimple):
         return Lexicon._parse(d, JOV_HELP_URL + "/CREATE#-stereogram")
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        pA = batch_extract(kw.get(Lexicon.PIXEL_A, None))
+        pA = batch_extract(kw.get(Lexicon.PIXEL, None))
         depth = batch_extract(kw.get(Lexicon.DEPTH, None))
         divisions = kw.get(Lexicon.TILE, [8])
         noise = kw.get(Lexicon.NOISE, [0.33])
@@ -330,7 +330,7 @@ class GradientNode(JOVImageMultiple):
         return Lexicon._parse(d, JOV_HELP_URL + "/CREATE#-constant")
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        pA = batch_extract(kw.get(Lexicon.PIXEL_A, None))
+        pA = batch_extract(kw.get(Lexicon.PIXEL, None))
         wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
         colors = parse_dynamic(Lexicon.COLOR, kw)
         images = []

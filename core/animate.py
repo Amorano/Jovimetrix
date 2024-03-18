@@ -3,10 +3,12 @@ Jovimetrix - http://www.github.com/amorano/jovimetrix
 Animate
 """
 
+import math
 import time
 from typing import Any
 
 from loguru import logger
+import numpy as np
 
 from comfy.utils import ProgressBar
 
@@ -123,6 +125,8 @@ class WaveGeneratorNode(JOVBaseNode):
             Lexicon.PHASE: ("FLOAT", {"default": 0, "min": 0.0, "step": 0.001}),
             Lexicon.OFFSET: ("FLOAT", {"default": 0, "min": 0.0, "step": 0.001}),
             Lexicon.TIME: ("FLOAT", {"default": 0, "min": 0, "step": 0.000001}),
+            # stick the current "count"
+            Lexicon.INVERT: ("BOOLEAN", {"default": False}),
         }}
         return Lexicon._parse(d, JOV_HELP_URL + "/ANIMATE#-wave-generator")
 
@@ -133,12 +137,18 @@ class WaveGeneratorNode(JOVBaseNode):
         phase = kw.get(Lexicon.PHASE, [0])
         shift = kw.get(Lexicon.OFFSET, [0])
         delta_time = kw.get(Lexicon.TIME, [0])
+        invert = kw.get(Lexicon.INVERT, [False])
+        abs = kw.get(Lexicon.ABSOLUTE, [False])
         results = []
-        params = [tuple(x) for x in zip_longest_fill(op, freq, amp, phase, shift, delta_time)]
+        params = [tuple(x) for x in zip_longest_fill(op, freq, amp, phase, shift, delta_time, invert, abs)]
         pbar = ProgressBar(len(params))
-        for idx, (op, freq, amp, phase, shift, delta_time) in enumerate(params):
+        for idx, (op, freq, amp, phase, shift, delta_time, invert, abs) in enumerate(params):
             freq = 1. / freq
+            if invert:
+                amp = -amp
             val = wave_op(op, phase, freq, amp, shift, delta_time)
+            if abs:
+                val = np.abs(val)
             results.append([val, int(val)])
             pbar.update_absolute(idx)
         return list(zip(*results))
