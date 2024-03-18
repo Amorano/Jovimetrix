@@ -18,5 +18,6 @@ pyaudio; platform_system!="Linux"
 daltonlens
 numba
 PyOpenGL
-SpoutGL
+PyOpenGL-accelerate
+SpoutGL; platform_system != "Linux"
 vnoise

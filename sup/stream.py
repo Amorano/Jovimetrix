@@ -7,8 +7,10 @@ import os
 import sys
 import json
 import time
+import array
 import threading
 from typing import Any
+from itertools import repeat
 from configparser import ConfigParser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
@@ -18,16 +20,21 @@ import mss.tools
 import numpy as np
 from PIL import Image, ImageGrab
 
-# SPOUT SUPPORT
-import SpoutGL
-from itertools import repeat
-import array
-from OpenGL import GL
-
 from loguru import logger
 
+# SPOUT SUPPORT
+JOV_SPOUT = os.getenv("JOV_SPOUT", 'False').lower() in ('true', '1', 't')
+if JOV_SPOUT:
+    try:
+        import SpoutGL
+        from OpenGL import GL
+    except:
+        logger.error("NO SPOUT GL SUPPORT")
+else:
+    logger.warning("SKIPPING SPOUT GL SUPPORT")
+
 from Jovimetrix import TYPE_PIXEL, Singleton, MIN_IMAGE_SIZE
-from Jovimetrix.sup.image import image_convert, image_load, pil2cv
+from Jovimetrix.sup.image import image_load, pil2cv
 
 # =============================================================================
 
@@ -39,12 +46,7 @@ class StreamMissingException(Exception): pass
 
 cfg = ConfigParser()
 JOV_SCAN_DEVICES = True
-try:
-    val = os.getenv("JOV_SCAN_DEVICES", "True")
-    JOV_SCAN_DEVICES = str(val).lower() in ['1', 'true', 'on']
-except Exception as e:
-    logger.error(str(e))
-
+JOV_SCAN_DEVICES = os.getenv("JOV_SCAN_DEVICES", "True").lower() in ['1', 'true', 'on']
 JOV_STREAM_HOST = os.getenv("JOV_STREAM_HOST", '')
 JOV_STREAM_PORT = 7227
 try:
@@ -391,45 +393,46 @@ class MediaStreamDevice(MediaStreamURL):
         val = 255 * self.__focus
         self.source.set(cv2.CAP_PROP_FOCUS, val)
 
-class MediaStreamSpout(MediaStreamBase):
-    """Capture from SpoutGL stream."""
+if JOV_SPOUT:
+    class MediaStreamSpout(MediaStreamBase):
+        """Capture from SpoutGL stream."""
 
-    TIMEOUT = 0
+        TIMEOUT = 0
 
-    def __init__(self, url:str, fps:float=30) -> None:
-        self.__buffer = None
-        self.__url = url
-        self.__last = None
-        self.__width = self.__height = 0
-        self.__spout = SpoutGL.SpoutReceiver()
-        self.__spout.setReceiverName(url)
-        super().__init__(fps)
+        def __init__(self, url:str, fps:float=30) -> None:
+            self.__buffer = None
+            self.__url = url
+            self.__last = None
+            self.__width = self.__height = 0
+            self.__spout = SpoutGL.SpoutReceiver()
+            self.__spout.setReceiverName(url)
+            super().__init__(fps)
 
-    def callback(self) -> Any:
-        if self.__spout.isUpdated():
-            self.__width = self.__spout.getSenderWidth()
-            self.__height = self.__spout.getSenderHeight()
-            self.__buffer = array.array('B', repeat(0, self.__width * self.__height * 4))
-        result = self.__spout.receiveImage(self.__buffer, GL.GL_RGBA, False, 0)
-        if self.__buffer is not None and result: # and not SpoutGL.helpers.isBufferEmpty(self.__buffer):
-            self.__last = np.asarray(self.__buffer, dtype=np.uint8).reshape((self.__height, self.__width, 4))
-            self.__last[:, :, [0, 2]] = self.__last[:, :, [2, 0]]
-        return self.__last
+        def callback(self) -> Any:
+            if self.__spout.isUpdated():
+                self.__width = self.__spout.getSenderWidth()
+                self.__height = self.__spout.getSenderHeight()
+                self.__buffer = array.array('B', repeat(0, self.__width * self.__height * 4))
+            result = self.__spout.receiveImage(self.__buffer, GL.GL_RGBA, False, 0)
+            if self.__buffer is not None and result: # and not SpoutGL.helpers.isBufferEmpty(self.__buffer):
+                self.__last = np.asarray(self.__buffer, dtype=np.uint8).reshape((self.__height, self.__width, 4))
+                self.__last[:, :, [0, 2]] = self.__last[:, :, [2, 0]]
+            return self.__last
 
-    @property
-    def url(self) -> str:
-        return self.__url
+        @property
+        def url(self) -> str:
+            return self.__url
 
-    @url.setter
-    def url(self, url:str) -> None:
-        self.__spout.setReceiverName(url)
-        self.__url = url
+        @url.setter
+        def url(self, url:str) -> None:
+            self.__spout.setReceiverName(url)
+            self.__url = url
 
-    def __del__(self) -> None:
-        if self.__spout is not None:
-            self.__spout.ReleaseReceiver()
-        self.__spout = None
-        del self.__spout
+        def __del__(self) -> None:
+            if self.__spout is not None:
+                self.__spout.ReleaseReceiver()
+            self.__spout = None
+            del self.__spout
 
 class MediaStreamFile(MediaStreamBase):
     """A file served from a local file using file:// as the 'uri'."""
@@ -572,61 +575,62 @@ class StreamingServer(metaclass=Singleton):
 # === SPOUT SERVER ===
 # =============================================================================
 
-class SpoutSender:
-    def __init__(self, host: str='', fps:int=30, frame:TYPE_PIXEL=None) -> None:
-        self.__fps = self.__width = self.__height = 0
-        self.__frame = None
-        self.frame = frame
-        self.__host = host
-        self.__delay = 0
-        self.fps = max(1, fps)
-        self.__sender = SpoutGL.SpoutSender()
-        self.__sender.setSenderName(self.__host)
-        self.__thread_server = threading.Thread(target=self.__server, daemon=True)
-        self.__thread_server.start()
-        logger.info("STARTED")
-
-    @property
-    def frame(self) -> TYPE_PIXEL:
-        return self.__frame
-
-    @frame.setter
-    def frame(self, image: TYPE_PIXEL) -> None:
-        """Must be RGBA"""
-        self.__frame = image
-
-    @property
-    def host(self) -> str:
-        return self.__host
-
-    @host.setter
-    def host(self, host: str) -> None:
-        if host != self.__host:
-            self.__sender = SpoutGL.SpoutSender()
-            self.__sender.setSenderName(host)
+if JOV_SPOUT:
+    class SpoutSender:
+        def __init__(self, host: str='', fps:int=30, frame:TYPE_PIXEL=None) -> None:
+            self.__fps = self.__width = self.__height = 0
+            self.__frame = None
+            self.frame = frame
             self.__host = host
+            self.__delay = 0
+            self.fps = max(1, fps)
+            self.__sender = SpoutGL.SpoutSender()
+            self.__sender.setSenderName(self.__host)
+            self.__thread_server = threading.Thread(target=self.__server, daemon=True)
+            self.__thread_server.start()
+            logger.info("STARTED")
 
-    @property
-    def fps(self) -> int:
-        return self.__fps
+        @property
+        def frame(self) -> TYPE_PIXEL:
+            return self.__frame
 
-    @fps.setter
-    def fps(self, fps: int) -> None:
-        self.__fps = max(1, fps)
-        self.__delay = 1. / fps
+        @frame.setter
+        def frame(self, image: TYPE_PIXEL) -> None:
+            """Must be RGBA"""
+            self.__frame = image
 
-    def __server(self) -> None:
-        while 1:
-            if self.__sender is not None:
-                if self.__frame is not None:
-                    h, w = self.__frame.shape[:2]
-                    self.__sender.sendImage(self.__frame, w, h, GL.GL_RGBA, False, 0)
-                self.__sender.setFrameSync(self.__host)
-            time.sleep(self.__delay)
+        @property
+        def host(self) -> str:
+            return self.__host
 
-    def __del__(self) -> None:
-        self.__sender = None
-        del self.__sender
+        @host.setter
+        def host(self, host: str) -> None:
+            if host != self.__host:
+                self.__sender = SpoutGL.SpoutSender()
+                self.__sender.setSenderName(host)
+                self.__host = host
+
+        @property
+        def fps(self) -> int:
+            return self.__fps
+
+        @fps.setter
+        def fps(self, fps: int) -> None:
+            self.__fps = max(1, fps)
+            self.__delay = 1. / fps
+
+        def __server(self) -> None:
+            while 1:
+                if self.__sender is not None:
+                    if self.__frame is not None:
+                        h, w = self.__frame.shape[:2]
+                        self.__sender.sendImage(self.__frame, w, h, GL.GL_RGBA, False, 0)
+                    self.__sender.setFrameSync(self.__host)
+                time.sleep(self.__delay)
+
+        def __del__(self) -> None:
+            self.__sender = None
+            del self.__sender
 
 def __getattr__(name: str) -> Any:
     if name == "StreamManager":

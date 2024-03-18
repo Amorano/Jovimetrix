@@ -24,15 +24,18 @@ from Jovimetrix import JOV_HELP_URL, WILDCARD, MIN_IMAGE_SIZE, JOVBaseNode, JOVI
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import parse_tuple
 from Jovimetrix.sup.stream import camera_list, monitor_list, window_list, \
-    monitor_capture, window_capture, \
-    MediaStreamSpout, SpoutSender, \
+    monitor_capture, window_capture, JOV_SPOUT, \
     StreamingServer, StreamManager, MediaStreamDevice
+
+if JOV_SPOUT:
+    from Jovimetrix.sup.stream import SpoutSender, MediaStreamSpout
 
 from Jovimetrix.sup.midi import midi_device_names, \
     MIDIMessage, MIDINoteOnFilter, MIDIServerThread
 
-from Jovimetrix.sup.image import EnumImageType, batch_extract, channel_solid, cv2tensor, cv2tensor_full, image_convert, pixel_eval, \
-    tensor2cv, image_scalefit, image_invert, \
+from Jovimetrix.sup.image import EnumImageType, batch_extract, channel_solid, \
+    cv2tensor, cv2tensor_full, image_convert, pixel_eval, \
+    tensor2cv, image_scalefit, \
     EnumInterpolation, EnumScaleMode
 
 from Jovimetrix.sup.audio import AudioDevice
@@ -79,9 +82,13 @@ class StreamReaderNode(JOVImageMultiple):
             window = [f"{v} - {k}" for k, v in window_list().items()]
         window_default = window[0] if len(window) else "NONE"
 
+        names = EnumStreamType._member_names_
+        if not JOV_SPOUT:
+            names.pop()
+
         d = {"required": {},
              "optional": {
-            Lexicon.SOURCE: (EnumStreamType._member_names_, {"default": EnumStreamType.URL.name}),
+            Lexicon.SOURCE: (names, {"default": EnumStreamType.URL.name}),
             Lexicon.URL: ("STRING", {"default": "", "dynamicPrompts": False}),
             Lexicon.CAMERA: (cls.CAMERAS, {"default": camera_default}),
             Lexicon.MONITOR: (monitor, {"default": monitor[0]}),
@@ -132,8 +139,7 @@ class StreamReaderNode(JOVImageMultiple):
         sample = EnumInterpolation[sample]
         source = kw.get(Lexicon.SOURCE, EnumStreamType.URL)
         source = EnumStreamType[source]
-        match source:
-            case EnumStreamType.MONITOR:
+        if source == EnumStreamType.MONITOR:
                 self.__deviceType = EnumStreamType.MONITOR
                 which = kw.get(Lexicon.MONITOR, "0")
                 which = int(which.split('-')[0].strip()) + 1
@@ -149,7 +155,7 @@ class StreamReaderNode(JOVImageMultiple):
                         pbar.update_absolute(idx)
                         time.sleep(rate)
 
-            case EnumStreamType.WINDOW:
+        elif source == EnumStreamType.WINDOW:
                 self.__deviceType = EnumStreamType.WINDOW
                 if (which := kw.get(Lexicon.WINDOW, "NONE")) != "NONE":
                     which = int(which.split('-')[-1].strip())
@@ -165,7 +171,7 @@ class StreamReaderNode(JOVImageMultiple):
                             pbar.update_absolute(idx)
                             time.sleep(rate)
 
-            case EnumStreamType.URL | EnumStreamType.CAMERA:
+        elif source == EnumStreamType.URL | EnumStreamType.CAMERA:
                 url = kw.get(Lexicon.URL, "")
                 if source == EnumStreamType.CAMERA:
                     url = kw.get(Lexicon.CAMERA, "")
@@ -227,7 +233,7 @@ class StreamReaderNode(JOVImageMultiple):
                         if batch_size > 1:
                             time.sleep(rate)
 
-            case EnumStreamType.SPOUT:
+        elif source == EnumStreamType.SPOUT:
                 url = kw.get(Lexicon.URL, "")
                 if self.__device is None or self.__deviceType != EnumStreamType.SPOUT:
                     self.__device = MediaStreamSpout(url)
@@ -318,67 +324,68 @@ class StreamWriterNode(JOVBaseNode):
             self.__device.image = img
         return ()
 
-class SpoutWriterNode(JOVBaseNode):
-    NAME = "SPOUT WRITER (JOV) 🎥"
-    CATEGORY = JOV_CATEGORY
-    DESCRIPTION = "Send image data to Spout endpoints"
-    RETURN_TYPES = ("IMAGE", )
-    RETURN_NAMES = (Lexicon.IMAGE,)
-    OUTPUT_NODE = True
-    SORT = 90
+if JOV_SPOUT:
+    class SpoutWriterNode(JOVBaseNode):
+        NAME = "SPOUT WRITER (JOV) 🎥"
+        CATEGORY = JOV_CATEGORY
+        DESCRIPTION = "Send image data to Spout endpoints"
+        RETURN_TYPES = ("IMAGE", )
+        RETURN_NAMES = (Lexicon.IMAGE,)
+        OUTPUT_NODE = True
+        SORT = 90
 
-    @classmethod
-    def INPUT_TYPES(cls) -> dict:
-        d = {
-        "required": {} ,
-        "optional": {
-            Lexicon.PIXEL: (WILDCARD, {}),
-            Lexicon.ROUTE: ("STRING", {"default": "Spout Sender"}),
-            Lexicon.FPS: ("INT", {"min": 1, "max": 60, "default": 30}),
-            Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
-            Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), "step": 1, "label": [Lexicon.W, Lexicon.H]}),
-            Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
-            Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
-        }}
-        return Lexicon._parse(d, JOV_HELP_URL + "/DEVICE#-spout-writer")
+        @classmethod
+        def INPUT_TYPES(cls) -> dict:
+            d = {
+            "required": {} ,
+            "optional": {
+                Lexicon.PIXEL: (WILDCARD, {}),
+                Lexicon.ROUTE: ("STRING", {"default": "Spout Sender"}),
+                Lexicon.FPS: ("INT", {"min": 1, "max": 60, "default": 30}),
+                Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
+                Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), "step": 1, "label": [Lexicon.W, Lexicon.H]}),
+                Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
+                Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
+            }}
+            return Lexicon._parse(d, JOV_HELP_URL + "/DEVICE#-spout-writer")
 
-    @classmethod
-    def IS_CHANGED(cls, **kw) -> float:
-        return float("nan")
+        @classmethod
+        def IS_CHANGED(cls, **kw) -> float:
+            return float("nan")
 
-    def __init__(self, *arg, **kw) -> None:
-        super().__init__(*arg, **kw)
-        self.__sender = SpoutSender("")
+        def __init__(self, *arg, **kw) -> None:
+            super().__init__(*arg, **kw)
+            self.__sender = SpoutSender("")
 
-    def run(self, **kw) -> tuple[torch.Tensor]:
-        pA = batch_extract(kw.get(Lexicon.PIXEL, None))
-        host = kw.get(Lexicon.ROUTE, [""])[0]
-        fps = kw.get(Lexicon.FPS, [30])[0]
-        delta = 1. / float(fps)
-        mode = kw.get(Lexicon.MODE, [EnumScaleMode.NONE])[0]
-        wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,))[0]
-        sample = kw.get(Lexicon.SAMPLE, [EnumInterpolation.LANCZOS4])[0]
-        matte = parse_tuple(Lexicon.MATTE, kw, default=(0,0,0,255))[0]
-        images = []
-        #params = [tuple(x) for x in zip_longest_fill(pA, host, delta, mode, wihi, sample, matte)]
-        pbar = ProgressBar(len(pA))
-        for idx, pA in enumerate(pA):
-            self.__sender.host = host
-            width, height = wihi
-            matte = pixel_eval(matte, EnumImageType.BGRA)
-            if pA is None:
-                image = channel_solid(width, height, matte, EnumImageType.BGRA)
-            else:
-                image = tensor2cv(pA)
-                image = image_scalefit(image, width, height, mode, sample, matte)
-                image = image_convert(image, 4)
-            images.append(cv2tensor(image))
-            if pA is not None:
-                image[:, :, [0, 2]] = image[:, :, [2, 0]]
-                self.__sender.frame = image
-            time.sleep(delta)
-            pbar.update_absolute(idx)
-        return images
+        def run(self, **kw) -> tuple[torch.Tensor]:
+            pA = batch_extract(kw.get(Lexicon.PIXEL, None))
+            host = kw.get(Lexicon.ROUTE, [""])[0]
+            fps = kw.get(Lexicon.FPS, [30])[0]
+            delta = 1. / float(fps)
+            mode = kw.get(Lexicon.MODE, [EnumScaleMode.NONE])[0]
+            wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,))[0]
+            sample = kw.get(Lexicon.SAMPLE, [EnumInterpolation.LANCZOS4])[0]
+            matte = parse_tuple(Lexicon.MATTE, kw, default=(0,0,0,255))[0]
+            images = []
+            #params = [tuple(x) for x in zip_longest_fill(pA, host, delta, mode, wihi, sample, matte)]
+            pbar = ProgressBar(len(pA))
+            for idx, pA in enumerate(pA):
+                self.__sender.host = host
+                width, height = wihi
+                matte = pixel_eval(matte, EnumImageType.BGRA)
+                if pA is None:
+                    image = channel_solid(width, height, matte, EnumImageType.BGRA)
+                else:
+                    image = tensor2cv(pA)
+                    image = image_scalefit(image, width, height, mode, sample, matte)
+                    image = image_convert(image, 4)
+                images.append(cv2tensor(image))
+                if pA is not None:
+                    image[:, :, [0, 2]] = image[:, :, [2, 0]]
+                    self.__sender.frame = image
+                time.sleep(delta)
+                pbar.update_absolute(idx)
+            return images
 
 class MIDIMessageNode(JOVBaseNode):
     NAME = "MIDI MESSAGE (JOV) 🎛️"

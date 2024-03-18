@@ -14,7 +14,6 @@ from typing import Any, Optional
 import cv2
 import torch
 import numpy as np
-import numba
 from numba import jit
 from daltonlens import simulate
 from sklearn.cluster import MiniBatchKMeans
