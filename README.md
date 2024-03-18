@@ -87,11 +87,7 @@ set JOV_GIFSKI=[path to gifski]
 
 Once set the GIFSKI option should appear in the Export Node drop down list of output target formats.
 
-## FFMEPG
-
-The audio nodes require FFMPEG. You can find the official [FFMPEG](https://ffmpeg.org "official FFMPEG binaries") here. Follow it's installation instructions for your specific operating system.
-
-## PYAUDIO
+### PYAUDIO
 
 By default, pyaudio is installed for all platforms; however, it may be nessicary to run a specific platform package manager to obtain all the correct platform dependencies. [You can refer to the non-complicated specific platform instructions for help.](https://people.csail.mit.edu/hubert/pyaudio).
 
@@ -99,7 +95,7 @@ In short:
 * For MacOS you need the extra brew package of portaudio. (brew install portaudio)
 * For Linux you need the extra apt package of python3-pyaudio. (sudo apt-get install python3-pyaudio)
 
-## SPOUT (WINDOWS ONLY)
+### SPOUT (WINDOWS ONLY)
 
 If you are on Linux or Mac, Spout will not be installed from the requirements.txt.
 
@@ -111,6 +107,10 @@ If you are on Mac or Linux, this will only amount to a message at startup about 
 If you want to fully turn off the initial startup attempt to import Spout, you can use the environment variable:
 
 JOV_SPOUT=0
+
+## FFMEPG
+
+The audio nodes require FFMPEG. You can find the official [FFMPEG](https://ffmpeg.org "official FFMPEG binaries") here. Follow it's installation instructions for your specific operating system.
 
 <!---------------------------------------------------------------------------->
 

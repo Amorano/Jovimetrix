@@ -19,7 +19,6 @@ import torch
 import numpy as np
 from PIL import Image
 import matplotlib.pyplot as plt
-import matplotlib.ticker as ticker
 from loguru import logger
 
 from comfy.utils import ProgressBar
@@ -49,7 +48,11 @@ if (JOV_GIFSKI := os.getenv("JOV_GIFSKI", None)) is not None:
 else:
     logger.warning("no gifski support")
 
-# =============================================================================
+class EnumBatchMode(Enum):
+    BATCH = 10
+    UNBATCH = 20
+    MERGE = 30
+    SELECT = 50
 
 class EnumBatchSelect(Enum):
     INDEX = 10
@@ -527,10 +530,10 @@ class ImageDiffNode(JOVBaseNode):
             pbar.update_absolute(idx)
         return list(zip(*results))
 
-class BatchNode(JOVBaseNode):
-    NAME = "BATCH (JOV) 📚"
+class BatcherNode(JOVBaseNode):
+    NAME = "BATCHER (JOV) 📚"
     CATEGORY = JOV_CATEGORY
-    DESCRIPTION = "Make batches, unbatch batches, merge batches, slice and select items from a batch."
+    DESCRIPTION = "Make, merge, splice or split a batch or list."
     RETURN_TYPES = ("INT", WILDCARD,)
     RETURN_NAMES = (Lexicon.VALUE, Lexicon.BATCH, )
 
@@ -539,15 +542,38 @@ class BatchNode(JOVBaseNode):
         d = {
         "required": {},
         "optional": {
-            Lexicon.BATCH: (WILDCARD, {}),
-            Lexicon.SIZE: ("INT", {"default": 1, "min": 1, "step": 1}),
+            Lexicon.BATCH_MODE: (EnumBatchMode._member_names_, {"default": EnumBatchMode.BATCH.name}),
+            Lexicon.BATCH_SELECT: (EnumBatchSelect._member_names_, {"default": EnumBatchSelect.INDEX.name}),
+            Lexicon.BATCH_LIST: ("BOOLEAN", {"default": False}),
+            Lexicon.FLIP: ("BOOLEAN", {"default": False}),
+            Lexicon.XYZ: ("VEC3", {"default": (0, 0, 1), "tooltip":"start index, ending index (0 means full length) and how many items to skip per step"}),
+            Lexicon.BATCH_CHUNK: ("INT", {"default": 0, "min": 0, "step": 1}),
+            Lexicon.STRING: ("STRING", {"default": ""}),
         }}
-        return Lexicon._parse(d, JOV_HELP_URL + "/UTILITY#-batch-chunk")
+        return Lexicon._parse(d, JOV_HELP_URL + "/UTILITY#-batch")
 
     def run(self, **kw) -> tuple[int, list]:
-        batch = kw.get(Lexicon.BATCH, [None])
-        chunk_size = kw.get(Lexicon.SIZE, [1])
+        batch = parse_dynamic(Lexicon.BATCH, kw)
+        mode = kw.get(Lexicon.BATCH_MODE, [EnumBatchMode.BATCH])
+        select = kw.get(Lexicon.BATCH_SELECT, [EnumBatchSelect.INDEX])
+        as_list = kw.get(Lexicon.BATCH_LIST, [False])
+        reverse = kw.get(Lexicon.FLIP, [False])
+        slice = parse_tuple(Lexicon.XYZ, kw, default=(0, 0, 1))
+        chunk_size = kw.get(Lexicon.BATCH_CHUNK, [0])
+        user = kw.get(Lexicon.STRING, [""])
+        results = []
+        params = [tuple(x) for x in zip_longest_fill(batch, mode, select, as_list, reverse, slice, chunk_size, user)]
+        pbar = ProgressBar(len(params))
+        for idx, (batch, mode, select, as_list, reverse, slice, chunk_size, user) in enumerate(params):
+            if not isinstance(batch, (list, set, tuple,)):
+                batch = [batch]
+            if reverse:
+                batch = batch[::-1]
+            results.append(batch)
+            pbar.update_absolute(idx)
+        return list(zip(*results))
 
+    def make(self):
         latent = False
         if isinstance(batch, dict) and "samples" in batch:
             batch = batch["samples"]
