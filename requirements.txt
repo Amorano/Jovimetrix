@@ -13,8 +13,7 @@ pywin32==306; platform_system=="Windows"
 scikit-image
 blendmodes
 mido[ports-rtmidi]
-python3-pyaudio; platform_system=="Linux"
-pyaudio; platform_system!="Linux"
+pyaudio
 daltonlens
 numba
 PyOpenGL
