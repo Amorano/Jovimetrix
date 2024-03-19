@@ -437,7 +437,7 @@ class ValueNode(JOVBaseNode):
     def run(self, **kw) -> tuple[bool]:
         raw = kw.get(Lexicon.IN_A, [None])
         typ = kw.get(Lexicon.TYPE, [EnumConvertType.BOOLEAN])
-        x = kw.get(Lexicon.X, [None])
+        x = kw.get(Lexicon.X, [0])
         y = kw.get(Lexicon.Y, [0])
         z = kw.get(Lexicon.Z, [0])
         w = kw.get(Lexicon.W, [0])
