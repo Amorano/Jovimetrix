@@ -9,6 +9,7 @@ from enum import Enum
 from typing import Any, List, Generator, Optional, Tuple, Union
 
 from loguru import logger
+import torch
 
 # =============================================================================
 # === ENUMERATION ===
@@ -29,7 +30,7 @@ def convert_parameter(data: Any) -> Any:
     if data is None:
         return [int], [0]
 
-    if not isinstance(data, (list, tuple, set,)):
+    if not isinstance(data, (torch.Tensor, list, tuple, set,)):
         data = [data]
 
     typ = []

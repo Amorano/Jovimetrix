@@ -4,6 +4,7 @@ Utility
 """
 
 import io
+from itertools import islice, zip_longest
 import os
 import json
 import glob
@@ -49,13 +50,10 @@ else:
     logger.warning("no gifski support")
 
 class EnumBatchMode(Enum):
-    BATCH = 10
-    UNBATCH = 20
     MERGE = 30
-    SELECT = 50
-
-class EnumBatchSelect(Enum):
-    INDEX = 10
+    PICK = 10
+    SLICE = 15
+    INDEX_LIST = 20
     RANDOM = 5
 
 # =============================================================================
@@ -530,86 +528,111 @@ class ImageDiffNode(JOVBaseNode):
             pbar.update_absolute(idx)
         return list(zip(*results))
 
-class BatcherNode(JOVBaseNode):
-    NAME = "BATCHER (JOV) 📚"
+class ArrayNode(JOVBaseNode):
+    NAME = "ARRAY (JOV) 📚"
     CATEGORY = JOV_CATEGORY
     DESCRIPTION = "Make, merge, splice or split a batch or list."
-    RETURN_TYPES = ("INT", WILDCARD,)
-    RETURN_NAMES = (Lexicon.VALUE, Lexicon.BATCH, )
+    INPUT_IS_LIST = False
+    OUTPUT_IS_LIST = (False, False, True,)
+    RETURN_TYPES = ("INT", WILDCARD, WILDCARD,)
+    RETURN_NAMES = (Lexicon.VALUE, Lexicon.ANY, Lexicon.LIST,)
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {
         "required": {},
         "optional": {
-            Lexicon.BATCH_MODE: (EnumBatchMode._member_names_, {"default": EnumBatchMode.BATCH.name}),
-            Lexicon.BATCH_SELECT: (EnumBatchSelect._member_names_, {"default": EnumBatchSelect.INDEX.name}),
-            Lexicon.BATCH_LIST: ("BOOLEAN", {"default": False}),
-            Lexicon.FLIP: ("BOOLEAN", {"default": False}),
-            Lexicon.XYZ: ("VEC3", {"default": (0, 0, 1), "tooltip":"start index, ending index (0 means full length) and how many items to skip per step"}),
-            Lexicon.BATCH_CHUNK: ("INT", {"default": 0, "min": 0, "step": 1}),
+            Lexicon.BATCH_MODE: (EnumBatchMode._member_names_, {"default": EnumBatchMode.MERGE.name, "tooltip":"select a single index, specific range, custom index list or randomized."}),
+            Lexicon.INDEX: ("INT", {"default": 0, "min": 0, "step": 1}),
+            Lexicon.RANGE: ("VEC3", {"default": (0, 0, 1)}),
             Lexicon.STRING: ("STRING", {"default": ""}),
+            Lexicon.SEED: ("INT", {"default": 0, "min": 0, "step": 1}),
+            Lexicon.FLIP: ("BOOLEAN", {"default": False}),
+            Lexicon.BATCH_CHUNK: ("INT", {"default": 0, "min": 0, "step": 1}),
         }}
-        return Lexicon._parse(d, JOV_HELP_URL + "/UTILITY#-batch")
+        return Lexicon._parse(d, JOV_HELP_URL + "/UTILITY#-array")
+
+    @classmethod
+    def batched(cls, iterable, chunk_size, expand:bool=False, fill:Any=None):
+        if expand:
+            iterator = iter(iterable)
+            return zip_longest(*[iterator] * chunk_size, fillvalue=fill)
+        return [iterable[i: i + chunk_size] for i in range(0, len(iterable), chunk_size)]
+        # return iter(lambda: tuple(islice(iterator, chunk_size)), tuple())
 
     def run(self, **kw) -> tuple[int, list]:
-        batch = parse_dynamic(Lexicon.BATCH, kw)
-        mode = kw.get(Lexicon.BATCH_MODE, [EnumBatchMode.BATCH])
-        select = kw.get(Lexicon.BATCH_SELECT, [EnumBatchSelect.INDEX])
-        as_list = kw.get(Lexicon.BATCH_LIST, [False])
-        reverse = kw.get(Lexicon.FLIP, [False])
-        slice = parse_tuple(Lexicon.XYZ, kw, default=(0, 0, 1))
-        chunk_size = kw.get(Lexicon.BATCH_CHUNK, [0])
-        user = kw.get(Lexicon.STRING, [""])
-        results = []
-        params = [tuple(x) for x in zip_longest_fill(batch, mode, select, as_list, reverse, slice, chunk_size, user)]
-        pbar = ProgressBar(len(params))
-        for idx, (batch, mode, select, as_list, reverse, slice, chunk_size, user) in enumerate(params):
-            if not isinstance(batch, (list, set, tuple,)):
-                batch = [batch]
-            if reverse:
-                batch = batch[::-1]
-            results.append(batch)
-            pbar.update_absolute(idx)
-        return list(zip(*results))
+        batch = parse_dynamic(Lexicon.UNKNOWN, kw)
+        mode = kw.get(Lexicon.BATCH_MODE, EnumBatchMode.MERGE)
+        flip = kw.get(Lexicon.FLIP, False)
+        chunk = kw.get(Lexicon.BATCH_CHUNK, 0)
+        extract = []
+        # track latents since they need to be added back to dict['samples']
+        latents = []
+        full = []
+        for b in batch:
+            if isinstance(b, dict) and "samples" in b:
+                # latents are batched in the x.samples key
+                data = b["samples"]
+                full.extend([{"samples": [i]} for i in data])
+                extract.extend(data)
+                latents.extend([True] * len(data))
+            elif isinstance(b, torch.Tensor):
+                data = [i for i in batch]
+                full.extend(data)
+                extract.extend(data)
+                latents.extend([False] * len(data))
+            elif isinstance(b, (list, set, tuple,)):
+                full.extend(b)
+                extract.extend(b)
+                latents.extend([False] * len(b))
+            else:
+                full.append(b)
+                extract.append(b)
+                latents.append(False)
 
-    def make(self):
-        latent = False
-        if isinstance(batch, dict) and "samples" in batch:
-            batch = batch["samples"]
-            latent = True
+        if mode == EnumBatchMode.PICK:
+            index = kw.get(Lexicon.BATCH_CHUNK, 0)
+            index = index if index < len(extract) else -1
+            extract = [extract[index]]
+            if latents[index]:
+                extract = {"samples": extract}
+        elif mode == EnumBatchMode.SLICE:
+            slice_range = parse_tuple(Lexicon.RANGE, kw, default=(0, 0, 1))[0]
+            start, end, step = slice_range
+            end = len(extract) if end == 0 else end
+            data = extract[start:end:step]
+            latents = latents[start:end:step]
+            extract = []
+            for i, lat in enumerate(latents):
+                dat = data[i]
+                if lat:
+                    dat = {"samples": [dat]}
+                extract.append(dat)
+        elif mode == EnumBatchMode.RANDOM:
+            seed = kw.get(Lexicon.SEED, 0)
+            random.seed(seed)
+            full = random.choices(full)
+            idx = random.randrange(0, len(extract))
+            extract = [extract[idx]]
+            if latents[idx]:
+                extract = {"samples": extract}
+        elif mode == EnumBatchMode.INDEX_LIST:
+            indices = kw.get(Lexicon.STRING, [""]).split(",")
+            data = [extract[i:j] for i, j in zip([0]+indices, indices+[None])]
+            latents = [latents[i:j] for i, j in zip([0]+indices, indices+[None])]
+            extract = []
+            for i, lat in enumerate(latents):
+                dat = data[i]
+                if lat:
+                    dat = {"samples": [dat]}
+                extract.append(dat)
 
-        chunks = []
-        for i in range(0, len(batch), chunk_size):
-            chunk = batch[i:i + chunk_size]
-            if latent:
-                chunk = {"samples": chunk}
-            chunks.append(chunk)
-        amount_chunks = len(chunks)
-        return (amount_chunks, chunks,)
+        if flip and len(extract) > 1:
+            extract = extract[::-1]
 
-    def select(self, **kw)-> tuple[Any]:
-        chunks, index, one_index, seed = None
-        if seed is None:
-            seed = random.randint(0, 1000000)
-        return (chunks[index - one_index], seed + index,)
-
-    def merge(self, **kw):
-        chunk, batch = None, None
-        latent = False
-        if isinstance(chunk, dict) and "samples" in chunk:
-            chunk = chunk["samples"]
-            latent = True
-
-        if batch is None:
-            batch = []
-        elif "samples" in batch:
-            batch = batch["samples"]
-
-        batch.extend(chunk)
-        if latent:
-            return ({"samples": batch},)
-        return (batch,)
+        if chunk > 0:
+            extract = [e for e in self.batched(extract, chunk)]
+        return (len(extract), extract, full,)
 
 """
 class HistogramNode(JOVImageSimple):
