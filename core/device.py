@@ -128,11 +128,11 @@ class StreamReaderNode(JOVImageMultiple):
         if wait:
             return self.__last
         images = []
-        batch_size, rate = parse_tuple(Lexicon.BATCH, kw, default=(1, 30), clip_min=1)[0]
+        batch_size, rate = parse_tuple(Lexicon.BATCH, kw, (1, 30), clip_min=1)[0]
         pbar = ProgressBar(batch_size)
         rate = 1. / rate
-        width, height = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,))[0]
-        matte = parse_tuple(Lexicon.MATTE, kw, default=(0,0,0,255))[0]
+        width, height = parse_tuple(Lexicon.WH, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,))[0]
+        matte = parse_tuple(Lexicon.MATTE, kw, (0,0,0,255))[0]
         mode = kw.get(Lexicon.MODE, EnumScaleMode.NONE)
         mode = EnumScaleMode[mode]
         sample = kw.get(Lexicon.SAMPLE, EnumInterpolation.LANCZOS4)
@@ -296,8 +296,8 @@ class StreamWriterNode(JOVBaseNode):
     def run(self, **kw) -> tuple[torch.Tensor]:
         if self.__starting:
             return
-        matte = parse_tuple(Lexicon.MATTE, kw, default=(0,0,0,255))[0]
-        wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)[0]
+        matte = parse_tuple(Lexicon.MATTE, kw, (0,0,0,255))[0]
+        wihi = parse_tuple(Lexicon.WH, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), clip_min=1)[0]
         w, h = wihi
         img = kw.get(Lexicon.PIXEL, None)
         img = tensor2cv(img)
@@ -363,9 +363,9 @@ if JOV_SPOUT:
             fps = kw.get(Lexicon.FPS, [30])[0]
             delta = 1. / float(fps)
             mode = kw.get(Lexicon.MODE, [EnumScaleMode.NONE])[0]
-            wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,))[0]
+            wihi = parse_tuple(Lexicon.WH, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,))[0]
             sample = kw.get(Lexicon.SAMPLE, [EnumInterpolation.LANCZOS4])[0]
-            matte = parse_tuple(Lexicon.MATTE, kw, default=(0,0,0,255))[0]
+            matte = parse_tuple(Lexicon.MATTE, kw, (0,0,0,255))[0]
             images = []
             #params = [tuple(x) for x in zip_longest_fill(pA, host, delta, mode, wihi, sample, matte)]
             pbar = ProgressBar(len(pA))

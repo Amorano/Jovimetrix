@@ -90,9 +90,9 @@ class WaveGraphNode(JOVImageMultiple):
         wave = kw.get(Lexicon.WAVE, [None])
         bars = kw.get(Lexicon.VALUE, [100])
         thick = kw.get(Lexicon.THICK, [0.72])
-        wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), clip_min=1)
-        rgb_a = parse_tuple(Lexicon.RGBA_A, kw, default=(128, 128, 0, 255), clip_min=0, clip_max=255)
-        matte = parse_tuple(Lexicon.RGBA_B, kw, default=(0, 128, 128, 255), clip_min=0, clip_max=255)
+        wihi = parse_tuple(Lexicon.WH, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), clip_min=1)
+        rgb_a = parse_tuple(Lexicon.RGBA_A, kw, (128, 128, 0, 255), clip_min=0, clip_max=255)
+        matte = parse_tuple(Lexicon.RGBA_B, kw, (0, 128, 128, 255), clip_min=0, clip_max=255)
         params = [tuple(x) for x in zip_longest_fill(wave, bars, wihi, thick, rgb_a, matte)]
         images = []
         pbar = ProgressBar(len(params))

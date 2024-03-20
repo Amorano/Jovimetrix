@@ -67,7 +67,7 @@ class TickNode(JOVBaseNode):
     def __init__(self, *arg, **kw) -> None:
         super().__init__(*arg, **kw)
         # how many pulses we have done -- total unless reset
-        self.__count = 0
+        self.__count = 1
         # the current frame index based on the user FPS value
         self.__fixed_step = 0
 
@@ -85,7 +85,7 @@ class TickNode(JOVBaseNode):
         results = []
         step = 1. / max(1, int(fps))
         if parse_reset(ident):
-            self.__count = 0
+            self.__count = 1
             self.__fixed_step = 0
         pbar = ProgressBar(batch)
         for idx in range(batch):

@@ -76,12 +76,12 @@ class AdjustNode(JOVImageMultiple):
         op = kw.get(Lexicon.FUNC, [EnumAdjustOP.BLUR])
         radius = kw.get(Lexicon.RADIUS, [3])
         amt = kw.get(Lexicon.VALUE, [0])
-        lohi = parse_tuple(Lexicon.LOHI, kw, EnumTupleType.FLOAT, (0, 1), clip_min=0, clip_max=1)
-        lmh = parse_tuple(Lexicon.LMH, kw, EnumTupleType.FLOAT, (0, 0.5, 1), clip_min=0, clip_max=1)
-        hsv = parse_tuple(Lexicon.HSV, kw, EnumTupleType.FLOAT, (0, 1, 1), clip_min=0, clip_max=1)
-        contrast = parse_number(Lexicon.CONTRAST, kw, EnumTupleType.FLOAT, [0], clip_min=0, clip_max=1)
-        gamma = parse_number(Lexicon.GAMMA, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
-        matte = parse_tuple(Lexicon.MATTE, kw, default=(0, 0, 0, 255), clip_min=0, clip_max=255)
+        lohi = parse_tuple(Lexicon.LOHI, kw, (0, 1), EnumTupleType.FLOAT, clip_min=0, clip_max=1)
+        lmh = parse_tuple(Lexicon.LMH, kw, (0, 0.5, 1), EnumTupleType.FLOAT, clip_min=0, clip_max=1)
+        hsv = parse_tuple(Lexicon.HSV, kw, (0, 1, 1), EnumTupleType.FLOAT, clip_min=0, clip_max=1)
+        contrast = parse_number(Lexicon.CONTRAST, kw, [0], EnumTupleType.FLOAT,  clip_min=0, clip_max=1)
+        gamma = parse_number(Lexicon.GAMMA, kw, [1], EnumTupleType.FLOAT, clip_min=0, clip_max=1)
+        matte = parse_tuple(Lexicon.MATTE, kw, (0, 0, 0, 255), clip_min=0, clip_max=255)
         invert = kw.get(Lexicon.INVERT, [False])
         params = [tuple(x) for x in zip_longest_fill(pA, mask, op, radius, amt, lohi,
                                                      lmh, hsv, contrast, gamma, matte, invert)]
@@ -226,7 +226,7 @@ class ColorMatchNode(JOVImageMultiple):
         num_colors = kw.get(Lexicon.VALUE, [255])
         flip = kw.get(Lexicon.FLIP, [False])
         invert = kw.get(Lexicon.INVERT, [False])
-        matte = parse_tuple(Lexicon.MATTE, kw, default=(0, 0, 0, 255), clip_min=0, clip_max=255)
+        matte = parse_tuple(Lexicon.MATTE, kw, (0, 0, 0, 255), clip_min=0, clip_max=255)
         params = [tuple(x) for x in zip_longest_fill(pA, pB, colormap, colormatch_mode,
                                                      colormatch_map, num_colors, flip, invert, matte)]
         images = []

@@ -5,7 +5,7 @@ Calculation
 
 import math
 from enum import Enum
-from typing import Any
+from typing import Any, List
 from collections import Counter
 
 import numpy as np
@@ -142,7 +142,8 @@ OP_UNARY = {
 
 # =============================================================================
 
-def parse_type_value(typ:EnumConvertType, A:Any, default:tuple=(0,0,0,0)) -> tuple[EnumConvertType, Any, int]:
+def parse_type_value(typ:EnumConvertType, A:Any, default:tuple=(0,0,0,0)) -> List[Any]:
+    """Converts a number into a 1, 2, 3 or 4 vector array"""
     size = max(1, int(typ.value / 10))
     if A is None:
         val = default
@@ -152,22 +153,26 @@ def parse_type_value(typ:EnumConvertType, A:Any, default:tuple=(0,0,0,0)) -> tup
     else:
         val = A
     if not isinstance(val, (list, tuple, set,)):
-        val = [val] * size
-    return typ, val, size
+        val = [val]
+    last = val[-1]
+    val += [last] * (size - len(val))
+    return val[:size]
 
-def convert_value(typ:EnumConvertType, val:Any, size:int) -> Any:
+def convert_value(typ:EnumConvertType, val:Any) -> Any:
     if typ == EnumConvertType.STRING:
-        val = ", ".join([str(v) for v in val])
+        return ", ".join([str(v) for v in val])
     elif typ == EnumConvertType.BOOLEAN:
-        val = bool(val[0])
-    elif typ in [EnumConvertType.FLOAT, EnumConvertType.VEC2,
+        return bool(val[0])
+
+    size = max(1, int(typ.value / 10))
+    if typ in [EnumConvertType.FLOAT, EnumConvertType.VEC2,
                     EnumConvertType.VEC3, EnumConvertType.VEC4]:
-        val = [round(float(v), 12) for v in val][:size]
+        val = [round(float(v), 12) for v in val]
     else:
-        val = [int(v) for v in val][:size]
-    if typ in [EnumConvertType.FLOAT, EnumConvertType.INT]:
-        val = val[0]
-    return val
+        val = [int(v) for v in val]
+    last = val[-1]
+    val += [last] * (size - len(val))
+    return val[:size]
 
 # =============================================================================
 
@@ -197,9 +202,8 @@ class CalcUnaryOPNode(JOVBaseNode):
         params = [tuple(x) for x in zip_longest_fill(A, op)]
         pbar = ProgressBar(len(params))
         for idx, (A, op) in enumerate(params):
-            _, val, size = parse_type_value(EnumConvertType.VEC4, A)
-            convert = int if isinstance(A, (bool, int, np.uint8, np.uint16, np.uint32, np.uint64)) else float
-            val = [convert(v) for v in val][:size]
+            val = parse_type_value(EnumConvertType.VEC4, A)
+            val = [float(v) for v in val]
             op = EnumUnaryOperation[op]
             match op:
                 case EnumUnaryOperation.MEAN:
@@ -232,7 +236,8 @@ class CalcUnaryOPNode(JOVBaseNode):
                             v = 0
                         ret.append(v)
                     val = ret
-            results.append(val)
+            convert = int if isinstance(A, (bool, int, np.uint8, np.uint16, np.uint32, np.uint64)) else float
+            results.append([convert(v) for v in val])
             pbar.update_absolute(idx)
         return list(zip(*results))
 
@@ -288,14 +293,14 @@ class CalcBinaryOPNode(JOVBaseNode):
         B = kw.get(Lexicon.IN_B, [None])
 
         a_x = kw.get(Lexicon.X, [0])
-        a_xy = parse_tuple(Lexicon.IN_A+"2", kw, EnumTupleType.FLOAT, (0, 0))
-        a_xyz = parse_tuple(Lexicon.IN_A+"3", kw, EnumTupleType.FLOAT, (0, 0, 0))
-        a_xyzw = parse_tuple(Lexicon.IN_A+"4", kw, EnumTupleType.FLOAT, (0, 0, 0, 0))
+        a_xy = parse_tuple(Lexicon.IN_A+"2", kw, (0, 0), EnumTupleType.FLOAT)
+        a_xyz = parse_tuple(Lexicon.IN_A+"3", kw, (0, 0, 0), EnumTupleType.FLOAT)
+        a_xyzw = parse_tuple(Lexicon.IN_A+"4", kw, (0, 0, 0, 0), EnumTupleType.FLOAT)
 
         b_x = kw.get(Lexicon.Y, [0])
-        b_xy = parse_tuple(Lexicon.IN_B+"2", kw, EnumTupleType.FLOAT, (0, 0))
-        b_xyz = parse_tuple(Lexicon.IN_B+"3", kw, EnumTupleType.FLOAT, (0, 0, 0))
-        b_xyzw = parse_tuple(Lexicon.IN_B+"4", kw, EnumTupleType.FLOAT, (0, 0, 0, 0))
+        b_xy = parse_tuple(Lexicon.IN_B+"2", kw, (0, 0), EnumTupleType.FLOAT)
+        b_xyz = parse_tuple(Lexicon.IN_B+"3", kw, (0, 0, 0), EnumTupleType.FLOAT)
+        b_xyzw = parse_tuple(Lexicon.IN_B+"4", kw, (0, 0, 0, 0), EnumTupleType.FLOAT)
 
         op = kw.get(Lexicon.FUNC, [EnumBinaryOperation.ADD])
         typ = kw.get(Lexicon.TYPE, [EnumConvertType.FLOAT])
@@ -308,36 +313,23 @@ class CalcBinaryOPNode(JOVBaseNode):
 
             typ = EnumConvertType[typ]
             if typ == EnumConvertType.BOOLEAN:
-                typ_a, val_a, size_a = parse_type_value(typ, A, A if A is not None else a_x)
-                typ_b, val_b, size_b = parse_type_value(typ, B, B if B is not None else b_x)
+                val_a = parse_type_value(typ, A, A if A is not None else a_x)
+                val_b = parse_type_value(typ, B, B if B is not None else b_x)
             elif typ in [EnumConvertType.INT, EnumConvertType.FLOAT]:
-                typ_a, val_a, size_a = parse_type_value(typ, A, A if A is not None else a_x)
-                typ_b, val_b, size_b = parse_type_value(typ, B, B if B is not None else b_x)
+                val_a = parse_type_value(typ, A, A if A is not None else a_x)
+                val_b = parse_type_value(typ, B, B if B is not None else b_x)
             elif typ in [EnumConvertType.VEC2, EnumConvertType.VEC2INT]:
-                typ_a, val_a, size_a = parse_type_value(typ, A, A if A is not None else a_xy)
-                typ_b, val_b, size_b = parse_type_value(typ, B, B if B is not None else b_xy)
+                val_a = parse_type_value(typ, A, A if A is not None else a_xy)
+                val_b = parse_type_value(typ, B, B if B is not None else b_xy)
             elif typ in [EnumConvertType.VEC3, EnumConvertType.VEC3INT]:
-                typ_a, val_a, size_a = parse_type_value(typ, A, A if A is not None else a_xyz)
-                typ_b, val_b, size_b = parse_type_value(typ, B, B if B is not None else b_xyz)
+                val_a = parse_type_value(typ, A, A if A is not None else a_xyz)
+                val_b = parse_type_value(typ, B, B if B is not None else b_xyz)
             else:
-                typ_a, val_a, size_a = parse_type_value(typ, A, A if A is not None else a_xyzw)
-                typ_b, val_b, size_b = parse_type_value(typ, B, B if B is not None else b_xyzw)
-            val_a = convert_value(typ_a, val_a, size_a)
-            if not isinstance(val_a, (list, set, tuple,)):
-                val_a = [val_a]
-            val_b = convert_value(typ_b, val_b, size_b)
-            if not isinstance(val_b, (list, set, tuple,)):
-                val_b = [val_b]
-            if (short := len(val_a) - len(val_b)) > 0:
-                val_b.extend([0] * short)
-            convert = int if typ in [
-                EnumConvertType.BOOLEAN,
-                EnumConvertType.INT,
-                EnumConvertType.VEC2INT,
-                EnumConvertType.VEC3INT,
-                EnumConvertType.VEC4INT, ] else float
-            val_a = [convert(v) for v in val_a][:size_a]
-            val_b = [convert(v) for v in val_b][:size_b]
+                val_a = parse_type_value(typ, A, A if A is not None else a_xyzw)
+                val_b = parse_type_value(typ, B, B if B is not None else b_xyzw)
+
+            val_a = [float(v) for v in val_a]
+            val_b = [float(v) for v in val_b]
             if flip:
                 val_a, val_b = val_b, val_a
 
@@ -363,6 +355,7 @@ class CalcBinaryOPNode(JOVBaseNode):
                     val = [a - b for a, b in zip(val_a, val_b)]
                 case EnumBinaryOperation.MULTIPLY:
                     val = [a * b for a, b in zip(val_a, val_b)]
+                    print(val)
                 case EnumBinaryOperation.DIVIDE:
                     val = [a / b if b != 0 else 0 for a, b in zip(val_a, val_b)]
                 case EnumBinaryOperation.DIVIDE_FLOOR:
@@ -406,6 +399,9 @@ class CalcBinaryOPNode(JOVBaseNode):
 
             if len(val) == 0:
                 val = [None]
+            else:
+                val = convert_value(typ, val)
+            print(val)
             results.append(val)
             pbar.update_absolute(idx)
         return list(zip(*results))
@@ -446,8 +442,8 @@ class ValueNode(JOVBaseNode):
         pbar = ProgressBar(len(params))
         for idx, (raw, typ, x, y, z, w) in enumerate(params):
             typ = EnumConvertType[typ]
-            typ, val, size = parse_type_value(typ, raw, [x, y, z, w])
-            val = convert_value(typ, val, size)
+            val = parse_type_value(typ, raw, [x, y, z, w])
+            val = convert_value(typ, val)
             results.append(val)
             pbar.update_absolute(idx)
         return (results, )

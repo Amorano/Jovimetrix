@@ -163,7 +163,7 @@ class ValueGraphNode(JOVBaseNode):
 
     def run(self, ident, **kw) -> tuple[torch.Tensor]:
         slice = kw.get(Lexicon.VALUE, [60])
-        wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), zero=0.001)[0]
+        wihi = parse_tuple(Lexicon.WH, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), zero=0.001)[0]
         accepted = [bool, int, float, np.float16, np.float32, np.float64]
         if parse_reset(ident):
             self.__history = []
@@ -597,7 +597,7 @@ class ArrayNode(JOVBaseNode):
             if latents[index]:
                 extract = {"samples": extract}
         elif mode == EnumBatchMode.SLICE:
-            slice_range = parse_tuple(Lexicon.RANGE, kw, default=(0, 0, 1))[0]
+            slice_range = parse_tuple(Lexicon.RANGE, kw, (0, 0, 1))[0]
             start, end, step = slice_range
             end = len(extract) if end == 0 else end
             data = extract[start:end:step]

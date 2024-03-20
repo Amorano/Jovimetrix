@@ -3,7 +3,6 @@ Jovimetrix - http://www.github.com/amorano/jovimetrix
 Creation
 """
 
-from enum import Enum
 import numpy as np
 
 import torch
@@ -59,8 +58,8 @@ class ConstantNode(JOVImageMultiple):
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         pA = batch_extract(kw.get(Lexicon.PIXEL, None))
-        wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
-        matte = parse_tuple(Lexicon.RGBA_A, kw, default=(0, 0, 0, 255), clip_min=0, clip_max=255)
+        wihi = parse_tuple(Lexicon.WH, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
+        matte = parse_tuple(Lexicon.RGBA_A, kw, (0, 0, 0, 255), clip_min=0, clip_max=255)
         images = []
         params = [tuple(x) for x in zip_longest_fill(pA, wihi, matte)]
         pbar = ProgressBar(len(params))
@@ -111,11 +110,12 @@ class ShapeNode(JOVImageMultiple):
         sides = kw.get(Lexicon.SIDES, [3])
         angle = kw.get(Lexicon.ANGLE, [0])
         edge = kw.get(Lexicon.EDGE, [EnumEdge.CLIP])
-        offset = parse_tuple(Lexicon.XY, kw, typ=EnumTupleType.FLOAT, default=(0., 0.,))
-        size = parse_tuple(Lexicon.SIZE, kw, EnumTupleType.FLOAT, default=(1., 1.,))
-        wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,))
-        color = parse_tuple(Lexicon.RGBA_A, kw, default=(255, 255, 255, 255))
-        matte = parse_tuple(Lexicon.MATTE, kw, default=(0, 0, 0, 255))
+        offset = parse_tuple(Lexicon.XY, kw, (0., 0.,), EnumTupleType.FLOAT, )
+        size = parse_tuple(Lexicon.SIZE, kw, (1., 1.,), EnumTupleType.FLOAT, )
+        wihi = parse_tuple(Lexicon.WH, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,))
+        color = parse_tuple(Lexicon.RGBA_A, kw, (255, 255, 255, 255))
+        print(color)
+        matte = parse_tuple(Lexicon.MATTE, kw, (0, 0, 0, 255))
         params = [tuple(x) for x in zip_longest_fill(shape, sides, offset, angle, edge,
                                                      size, wihi, color, matte)]
         images = []
@@ -205,16 +205,16 @@ class TextNode(JOVImageMultiple):
         font_idx = kw.get(Lexicon.FONT, [self.FONT_NAMES[0]])
         autosize = kw.get(Lexicon.AUTOSIZE, [False])
         letter = kw.get(Lexicon.LETTER, [False])
-        color = parse_tuple(Lexicon.RGBA_A, kw, default=(255, 255, 255, 255))
-        matte = parse_tuple(Lexicon.MATTE, kw, default=(0, 0, 0), clip_min=0, clip_max=255)
+        color = parse_tuple(Lexicon.RGBA_A, kw, (255, 255, 255, 255))
+        matte = parse_tuple(Lexicon.MATTE, kw, (0, 0, 0), clip_min=0, clip_max=255)
         columns = kw.get(Lexicon.COLUMNS, [0])
         font_size = kw.get(Lexicon.FONT_SIZE, [16])
         align = kw.get(Lexicon.ALIGN, [EnumAlignment.CENTER])
         justify = kw.get(Lexicon.JUSTIFY, [EnumJustify.CENTER])
         margin = kw.get(Lexicon.MARGIN, [0])
         line_spacing = kw.get(Lexicon.SPACING, [25])
-        wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,))
-        pos = parse_tuple(Lexicon.XY, kw, EnumTupleType.FLOAT, (0, 0), -1, 1)
+        wihi = parse_tuple(Lexicon.WH, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,))
+        pos = parse_tuple(Lexicon.XY, kw, (0, 0), EnumTupleType.FLOAT,  -1, 1)
         angle = kw.get(Lexicon.ANGLE, [0])
         edge = kw.get(Lexicon.EDGE, [EnumEdge.CLIP])
         invert = kw.get(Lexicon.INVERT, [False])
@@ -331,7 +331,7 @@ class GradientNode(JOVImageMultiple):
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         pA = batch_extract(kw.get(Lexicon.PIXEL, None))
-        wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
+        wihi = parse_tuple(Lexicon.WH, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
         colors = parse_dynamic(Lexicon.COLOR, kw)
         images = []
         params = [tuple(x) for x in zip_longest_fill(pA, wihi, colors)]
@@ -404,11 +404,11 @@ class NoiseNode(JOVImageMultiple):
         lacunarity = kw.get(Lexicon.LACUNARITY, [4])
         float_index = kw.get(Lexicon.INDEX, [0])
         x = kw.get(Lexicon.X, [512])
-        xy = parse_tuple(Lexicon.XY, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=2)
-        #xyz = parse_tuple(Lexicon.XYZ, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 4), clip_min=1)
-        #xyzw = parse_tuple(Lexicon.XYZW, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 4, 1), clip_min=1)
+        xy = parse_tuple(Lexicon.XY, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=2)
+        #xyz = parse_tuple(Lexicon.XYZ, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 4), clip_min=1)
+        #xyzw = parse_tuple(Lexicon.XYZW, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 4, 1), clip_min=1)
         offset = kw.get(Lexicon.OFFSET, [0])
-        repeat = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE*2, MIN_IMAGE_SIZE*2,), clip_min=1)
+        repeat = parse_tuple(Lexicon.WH, kw, (MIN_IMAGE_SIZE*2, MIN_IMAGE_SIZE*2,), clip_min=1)
         scalar = kw.get(Lexicon.VALUE, [255])
         rounding = kw.get(Lexicon.ROUND, [0])
         images = []

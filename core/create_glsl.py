@@ -100,10 +100,10 @@ class GLSLNode(JOVImageMultiple):
         self.__last_good = [torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 4), dtype=torch.uint8, device="cpu")]
 
     def run(self, ident, **kw) -> list[torch.Tensor]:
-        batch = parse_tuple(Lexicon.BATCH, kw, default=(1, 30), clip_min=1)
+        batch = parse_tuple(Lexicon.BATCH, kw, (1, 30), clip_min=1)
         fragment = kw.get(Lexicon.FRAGMENT, [DEFAULT_FRAGMENT])
         param = kw.get(Lexicon.PARAM, [{}])
-        wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), clip_min=1)
+        wihi = parse_tuple(Lexicon.WH, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), clip_min=1)
         pA = batch_extract(kw.get(Lexicon.PIXEL, None))
         hold = kw.get(Lexicon.WAIT, [False])
         reset = kw.get(Lexicon.RESET, [False])
@@ -155,7 +155,7 @@ class GLSLBaseNode(JOVImageMultiple):
     def run(self, **kw) -> list[torch.Tensor]:
         pA = batch_extract(kw.get(Lexicon.PIXEL_A, None))
         pB = batch_extract(kw.get(Lexicon.PIXEL_B, None))
-        wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), clip_min=1)
+        wihi = parse_tuple(Lexicon.WH, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), clip_min=1)
         kw.pop(Lexicon.WH, None)
         frag = kw.pop("frag", [self.FRAGMENT])
         # clear any junk, since the rest are 'params'
@@ -369,7 +369,7 @@ class GLSLTRSMirror(GLSLBaseNode):
         return Lexicon._parse(d, JOV_HELP_URL + "/CREATE#-glsl")
 
     def run(self, **kw) -> list[torch.Tensor]:
-        center = parse_tuple(Lexicon.PIVOT, kw, typ=EnumTupleType.FLOAT, default=(0.5, 0.5,), clip_min=0, clip_max=1)[0]
+        center = parse_tuple(Lexicon.PIVOT, kw, (0.5, 0.5,), EnumTupleType.FLOAT,  0, 1)[0]
         kw["angle"] = -kw.pop(Lexicon.ANGLE, 0)
         kw["center"] = center
         return super().run(**kw)
@@ -390,7 +390,7 @@ class GLSLTRSRotate(GLSLBaseNode):
         return Lexicon._parse(d, JOV_HELP_URL + "/CREATE#-glsl")
 
     def run(self, **kw) -> list[torch.Tensor]:
-        center = parse_tuple(Lexicon.PIVOT, kw, typ=EnumTupleType.FLOAT, default=(0.5, 0.5,), clip_min=0, clip_max=1)[0]
+        center = parse_tuple(Lexicon.PIVOT, kw, (0.5, 0.5,), EnumTupleType.FLOAT,  0, 1)[0]
         kw["angle"] = -kw.pop(Lexicon.ANGLE, 0)
         kw["center"] = center
         return super().run(**kw)
@@ -411,8 +411,8 @@ class GLSLUtilTiler(GLSLBaseNode):
         return Lexicon._parse(d, JOV_HELP_URL + "/CREATE#-glsl-util-tiler")
 
     def run(self, **kw) -> list[torch.Tensor]:
-        kw["uTile"] = parse_tuple(Lexicon.TILE, kw, typ=EnumTupleType.FLOAT,
-                                  default=(1., 1.,), clip_min=1)
+        kw["uTile"] = parse_tuple(Lexicon.TILE, kw, (1., 1.,), EnumTupleType.FLOAT,
+                                  1)
         kw.pop(Lexicon.TILE)
         return super().run(**kw)
 

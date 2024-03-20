@@ -68,21 +68,21 @@ class TransformNode(JOVImageMultiple):
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         pA = batch_extract(kw.get(Lexicon.PIXEL, None))
-        offset = parse_tuple(Lexicon.XY, kw, EnumTupleType.FLOAT, (0., 0.,))
+        offset = parse_tuple(Lexicon.XY, kw, (0., 0.,), EnumTupleType.FLOAT)
         angle = kw.get(Lexicon.ANGLE, [0])
-        size = parse_tuple(Lexicon.SIZE, kw, EnumTupleType.FLOAT, (1., 1.,), zero=0.001)
+        size = parse_tuple(Lexicon.SIZE, kw, (1., 1.,), EnumTupleType.FLOAT, zero=0.001)
         edge = kw.get(Lexicon.EDGE, [EnumEdge.CLIP])
         mirror = kw.get(Lexicon.MIRROR, [EnumMirrorMode.NONE])
-        mirror_pivot = parse_tuple(Lexicon.PIVOT, kw, EnumTupleType.FLOAT, (0.5, 0.5,), 0, 1)
-        tile_xy = parse_tuple(Lexicon.TILE, kw, EnumTupleType.FLOAT, (1., 1.), clip_min=1)
+        mirror_pivot = parse_tuple(Lexicon.PIVOT, kw, (0.5, 0.5,), EnumTupleType.FLOAT, 0, 1)
+        tile_xy = parse_tuple(Lexicon.TILE, kw, (1., 1.), EnumTupleType.FLOAT, clip_min=1)
         proj = kw.get(Lexicon.PROJECTION, [EnumProjection.NORMAL])
-        tltr = parse_tuple(Lexicon.TLTR, kw, EnumTupleType.FLOAT, (0, 0, 1, 0,), 0, 1)
-        blbr = parse_tuple(Lexicon.BLBR, kw, EnumTupleType.FLOAT, (0, 1, 1, 1,), 0, 1)
+        tltr = parse_tuple(Lexicon.TLTR, kw, (0, 0, 1, 0,), EnumTupleType.FLOAT, 0, 1)
+        blbr = parse_tuple(Lexicon.BLBR, kw, (0, 1, 1, 1,), EnumTupleType.FLOAT, 0, 1)
         strength = kw.get(Lexicon.STRENGTH, [1])
         mode = kw.get(Lexicon.MODE,[EnumScaleMode.NONE])
-        wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
+        wihi = parse_tuple(Lexicon.WH, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
         sample = kw.get(Lexicon.SAMPLE, [EnumInterpolation.LANCZOS4])
-        matte = parse_tuple(Lexicon.MATTE, kw, default=(0, 0, 0, 255), clip_min=0, clip_max=255)
+        matte = parse_tuple(Lexicon.MATTE, kw, (0, 0, 0, 255), clip_min=0, clip_max=255)
         params = [tuple(x) for x in zip_longest_fill(pA, offset, angle, size, edge, tile_xy, mirror, mirror_pivot, proj, strength, tltr, blbr, mode, wihi, sample, matte)]
         images = []
         pbar = ProgressBar(len(params))
@@ -173,9 +173,9 @@ class BlendNode(JOVImageMultiple):
         alpha = kw.get(Lexicon.A, [1])
         flip = kw.get(Lexicon.FLIP, [False])
         mode = kw.get(Lexicon.MODE, [EnumScaleMode.NONE])
-        wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
+        wihi = parse_tuple(Lexicon.WH, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
         sample = kw.get(Lexicon.SAMPLE, [EnumInterpolation.LANCZOS4])
-        matte = parse_tuple(Lexicon.MATTE, kw, default=(0, 0, 0), clip_min=0, clip_max=255)
+        matte = parse_tuple(Lexicon.MATTE, kw, (0, 0, 0), clip_min=0, clip_max=255)
         invert = kw.get(Lexicon.INVERT, [False])
         params = [tuple(x) for x in zip_longest_fill(pA, pB, mask, func, alpha, flip, mode, wihi, sample, matte, invert)]
         images = []
@@ -275,7 +275,7 @@ class PixelMergeNode(JOVImageMultiple):
         if len(R)+len(B)+len(G)+len(A) == 0:
             img = channel_solid(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 0, EnumImageType.BGRA)
             return list(cv2tensor_full(img, matte))
-        matte = parse_tuple(Lexicon.MATTE, kw, default=(0, 0, 0), clip_min=0, clip_max=255)
+        matte = parse_tuple(Lexicon.MATTE, kw, (0, 0, 0), clip_min=0, clip_max=255)
         params = [tuple(x) for x in zip_longest_fill(R, G, B, A, matte)]
         images = []
         pbar = ProgressBar(len(params))
@@ -395,9 +395,9 @@ class StackNode(JOVImageMultiple):
         stride = kw.get(Lexicon.STEP, [1])[0]
         mode = kw.get(Lexicon.MODE, [EnumScaleMode.NONE])[0]
         mode = EnumScaleMode[mode]
-        wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), clip_min=1)[0]
+        wihi = parse_tuple(Lexicon.WH, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), clip_min=1)[0]
         sample = kw.get(Lexicon.SAMPLE, [EnumInterpolation.LANCZOS4])[0]
-        matte = parse_tuple(Lexicon.MATTE, kw, default=(0, 0, 0, 255), clip_min=0, clip_max=255)[0]
+        matte = parse_tuple(Lexicon.MATTE, kw, (0, 0, 0, 255), clip_min=0, clip_max=255)[0]
         matte = pixel_eval(matte, EnumImageType.BGRA)
         images = [tensor2cv(img) for img in images if img is not None]
         img = image_stack(images, axis, stride, matte)
@@ -432,11 +432,11 @@ class CropNode(JOVImageMultiple):
         pA = batch_extract(kw.get(Lexicon.PIXEL, None))
         func = kw.get(Lexicon.FUNC, [EnumCropMode.CENTER])
         # if less than 1 then use as scalar, over 1 = int(size)
-        xy = parse_tuple(Lexicon.XY, kw, EnumTupleType.FLOAT, (0, 0,), 1)
-        wihi = parse_tuple(Lexicon.WH, kw, default=(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
-        tltr = parse_tuple(Lexicon.TLTR, kw, EnumTupleType.FLOAT, (0, 0, 0, 1,), 0, 1)
-        blbr = parse_tuple(Lexicon.BLBR, kw, EnumTupleType.FLOAT, (1, 0, 1, 1,), 0, 1)
-        color = parse_tuple(Lexicon.RGB, kw, default=(0, 0, 0,), clip_min=0, clip_max=255)
+        xy = parse_tuple(Lexicon.XY, kw, (0, 0,), EnumTupleType.FLOAT, 1)
+        wihi = parse_tuple(Lexicon.WH, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
+        tltr = parse_tuple(Lexicon.TLTR, kw, (0, 0, 0, 1,), EnumTupleType.FLOAT, 0, 1)
+        blbr = parse_tuple(Lexicon.BLBR, kw, (1, 0, 1, 1,), EnumTupleType.FLOAT, 0, 1)
+        color = parse_tuple(Lexicon.RGB, kw, (0, 0, 0,), clip_min=0, clip_max=255)
         params = [tuple(x) for x in zip_longest_fill(pA, func, xy, wihi, tltr, blbr, color)]
         images = []
         pbar = ProgressBar(len(params))
