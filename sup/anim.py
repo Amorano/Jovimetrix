@@ -5,12 +5,15 @@ Animation Support
 
 import inspect
 from enum import Enum
+from typing import Union
 
 import numpy as np
 from numba import jit
 from loguru import logger
 
 __all__ = ["Ease", "Wave"]
+
+TYPE_NUMBER = Union[int|float|np.ndarray]
 
 # =============================================================================
 # === EXCEPTIONAL ===
@@ -20,7 +23,6 @@ class BadOperatorException(Exception):
     """Exception for bad operators."""
     pass
 
-TYPE_NUMBER = int|float|np.ndarray
 MODULE = inspect.getmodule(inspect.currentframe())
 
 # =============================================================================

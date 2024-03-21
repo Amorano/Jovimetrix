@@ -300,7 +300,7 @@ class StreamWriterNode(JOVBaseNode):
         wihi = parse_tuple(Lexicon.WH, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), clip_min=1)[0]
         w, h = wihi
         img = kw.get(Lexicon.PIXEL, None)
-        img = tensor2cv(img)
+        img = tensor2cv(img, width=w, height=h)
         route = kw.get(Lexicon.ROUTE, "/stream")
         if route != self.__route:
             self.__starting = True
@@ -373,12 +373,9 @@ if JOV_SPOUT:
                 self.__sender.host = host
                 width, height = wihi
                 matte = pixel_eval(matte, EnumImageType.BGRA)
-                if pA is None:
-                    image = channel_solid(width, height, matte, EnumImageType.BGRA)
-                else:
-                    image = tensor2cv(pA)
-                    image = image_scalefit(image, width, height, mode, sample, matte)
-                    image = image_convert(image, 4)
+                image = tensor2cv(pA)
+                image = image_scalefit(image, width, height, mode, sample, matte)
+                image = image_convert(image, 4)
                 images.append(cv2tensor(image))
                 if pA is not None:
                     image[:, :, [0, 2]] = image[:, :, [2, 0]]

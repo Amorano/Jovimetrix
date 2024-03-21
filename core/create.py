@@ -66,10 +66,7 @@ class ConstantNode(JOVImageMultiple):
         for idx, (pA, wihi, matte) in enumerate(params):
             width, height = wihi
             matte = pixel_eval(matte, EnumImageType.BGRA)
-            if pA is None:
-                pA = channel_solid(width, height, matte, EnumImageType.BGRA)
-            else:
-                pA = tensor2cv(pA)
+            pA = tensor2cv(pA, EnumImageType.BGRA, width, height, matte)
             images.append(cv2tensor_full(pA, matte))
             pbar.update_absolute(idx)
         return list(zip(*images))
@@ -114,7 +111,6 @@ class ShapeNode(JOVImageMultiple):
         size = parse_tuple(Lexicon.SIZE, kw, (1., 1.,), EnumTupleType.FLOAT, )
         wihi = parse_tuple(Lexicon.WH, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,))
         color = parse_tuple(Lexicon.RGBA_A, kw, (255, 255, 255, 255))
-        print(color)
         matte = parse_tuple(Lexicon.MATTE, kw, (0, 0, 0, 255))
         params = [tuple(x) for x in zip_longest_fill(shape, sides, offset, angle, edge,
                                                      size, wihi, color, matte)]
@@ -301,11 +297,7 @@ class StereogramNode(JOVImageSimple):
         images = []
         pbar = ProgressBar(len(params))
         for idx, (pA, depth, divisions, noise, gamma, shift) in enumerate(params):
-            if pA is None:
-                pA = channel_solid(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, chan=EnumImageType.BGRA)
-            else:
-                pA = tensor2cv(pA)
-
+            pA = tensor2cv(pA)
             depth = tensor2cv(depth)
             pA = image_stereogram(pA, depth, divisions, noise, gamma, shift)
             images.append(cv2tensor_full(pA))

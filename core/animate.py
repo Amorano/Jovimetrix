@@ -38,7 +38,7 @@ class TickNode(JOVBaseNode):
         "required": {},
         "optional": {
             # data to pass on a pulse of the loop
-            Lexicon.ANY: (WILDCARD, {"default": None, "tooltip":"Output to send when beat (BPM setting) is hit."}),
+            Lexicon.ANY: (WILDCARD, {"default": None, "tooltip":"Output to send when beat (BPM setting) is hit"}),
             # forces a MOD on CYCLE
             Lexicon.VALUE: ("INT", {"min": 0, "default": 0, "step": 1, "tooltip": "current tick index"}),
             Lexicon.LOOP: ("INT", {"min": 0, "default": 0, "step": 1, "tooltip": "number of frames before looping starts. 0 means continuous playback (no loop point)"}),
@@ -47,7 +47,7 @@ class TickNode(JOVBaseNode):
             Lexicon.BPM: ("FLOAT", {"min": 1, "max": 60000, "default": 120, "step": 1,
                                     "tooltip": "BPM trigger rate to send the input. If input is empty, TRUE is sent on trigger"}),
             Lexicon.NOTE: ("INT", {"default": 4, "min": 1, "max": 256, "step": 1,
-                                   "tooltip":"Number of beats per measure. Quarter note is 4, Eighth is 8, 16 is 16, etc..."}),
+                                   "tooltip":"Number of beats per measure. Quarter note is 4, Eighth is 8, 16 is 16, etc."}),
             # stick the current "count"
             Lexicon.WAIT: ("BOOLEAN", {"default": False}),
             # manual total = 0

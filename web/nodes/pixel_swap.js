@@ -28,7 +28,7 @@ app.registerExtension({
             const swap_r = this.widgets.find(w => w.name === 'SWAP R');
             swap_r.callback = () => {
                 widget_hide(this, r);
-                if (swap_r.value == "SOLID") {
+                if (swap_r.value == "CONSTANT") {
                     widget_show(r);
                 }
                 fitHeight(self);
@@ -36,7 +36,7 @@ app.registerExtension({
             const swap_g = this.widgets.find(w => w.name === 'SWAP G');
             swap_g.callback = () => {
                 widget_hide(this, g);
-                if (swap_g.value == "SOLID") {
+                if (swap_g.value == "CONSTANT") {
                     widget_show(g);
                 }
                 fitHeight(self);
@@ -44,7 +44,7 @@ app.registerExtension({
             const swap_b = this.widgets.find(w => w.name === 'SWAP B');
             swap_b.callback = () => {
                 widget_hide(this, b);
-                if (swap_b.value == "SOLID") {
+                if (swap_b.value == "CONSTANT") {
                     widget_show(b);
                 }
                 fitHeight(self);
@@ -52,7 +52,7 @@ app.registerExtension({
             const swap_a = this.widgets.find(w => w.name === 'SWAP A');
             swap_a.callback = () => {
                 widget_hide(this, a);
-                if (swap_a.value == "SOLID") {
+                if (swap_a.value == "CONSTANT") {
                     widget_show(a);
                 }
                 fitHeight(self);

@@ -117,6 +117,8 @@ TYPE_PIXEL = Union[
 
 TYPE_IMAGE = Union[np.ndarray, torch.Tensor]
 
+TYPE_VECTOR = Union[TYPE_IMAGE|TYPE_PIXEL]
+
 JOV_HELP_URL = "https://github.com/Amorano/Jovimetrix/wiki"
 
 # =============================================================================

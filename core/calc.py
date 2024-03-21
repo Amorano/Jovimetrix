@@ -257,9 +257,9 @@ class CalcBinaryOPNode(JOVBaseNode):
         "required": {},
         "optional": {
             Lexicon.IN_A: (WILDCARD, {"default": None,
-                                      "tooltip":"Passes a raw value directly, or supplies defaults for any value inputs without connections."}),
+                                      "tooltip":"Passes a raw value directly, or supplies defaults for any value inputs without connections"}),
             Lexicon.IN_B: (WILDCARD, {"default": None,
-                                      "tooltip":"Passes a raw value directly, or supplies defaults for any value inputs without connections."}),
+                                      "tooltip":"Passes a raw value directly, or supplies defaults for any value inputs without connections"}),
             Lexicon.FUNC: (EnumBinaryOperation._member_names_, {"default": EnumBinaryOperation.ADD.name, "tooltip":"Arithmetic operation to perform"}),
             Lexicon.TYPE: (names_convert, {"default": names_convert[2],
                                            "tooltip":"Output type desired from resultant operation"}),
@@ -355,7 +355,6 @@ class CalcBinaryOPNode(JOVBaseNode):
                     val = [a - b for a, b in zip(val_a, val_b)]
                 case EnumBinaryOperation.MULTIPLY:
                     val = [a * b for a, b in zip(val_a, val_b)]
-                    print(val)
                 case EnumBinaryOperation.DIVIDE:
                     val = [a / b if b != 0 else 0 for a, b in zip(val_a, val_b)]
                 case EnumBinaryOperation.DIVIDE_FLOOR:
@@ -364,7 +363,6 @@ class CalcBinaryOPNode(JOVBaseNode):
                     val = [a % b if b != 0 else 0 for a, b in zip(val_a, val_b)]
                 case EnumBinaryOperation.POWER:
                     val = [a ** b for a, b in zip(val_a, val_b)]
-
                 case EnumBinaryOperation.MAXIMUM:
                     val = [max(val_a, val_b)]
                 case EnumBinaryOperation.MINIMUM:
@@ -420,7 +418,7 @@ class ValueNode(JOVBaseNode):
         d = {
         "required": {},
         "optional": {
-            Lexicon.IN_A: (WILDCARD, {"default": None, "tooltip":"Passes a raw value directly, or supplies defaults for any value inputs without connections."}),
+            Lexicon.IN_A: (WILDCARD, {"default": None, "tooltip":"Passes a raw value directly, or supplies defaults for any value inputs without connections"}),
             Lexicon.TYPE: (EnumConvertType._member_names_, {"default": EnumConvertType.BOOLEAN.name}),
             Lexicon.X: ("FLOAT", {"default": 0}),
             Lexicon.Y: ("FLOAT", {"default": 0}),

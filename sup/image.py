@@ -9,7 +9,7 @@ import urllib
 import requests
 from enum import Enum
 from io import BytesIO
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 import cv2
 import torch
@@ -19,7 +19,6 @@ from daltonlens import simulate
 from sklearn.cluster import MiniBatchKMeans
 
 from skimage import exposure
-from skimage.transform import warp_polar
 from skimage.metrics import structural_similarity as ssim
 from PIL import Image, ImageDraw, ImageOps
 from blendmodes.blend import blendLayers, BlendType
@@ -207,13 +206,28 @@ class EnumThresholdAdapt(Enum):
     ADAPT_MEAN = cv2.ADAPTIVE_THRESH_MEAN_C
     ADAPT_GAUSS = cv2.ADAPTIVE_THRESH_GAUSSIAN_C
 
-class EnumPixelSwap(Enum):
-    PASSTHRU = 10
-    IMAGE_B_R = 2
-    IMAGE_B_G = 1
-    IMAGE_B_B = 0
-    IMAGE_B_A = 3
-    SOLID = 90
+class EnumPixelSwizzle(Enum):
+    RED_A = 20
+    GREEN_A = 10
+    BLUE_A = 0
+    ALPHA_A = 30
+    RED_B = 21
+    GREEN_B = 11
+    BLUE_B = 1
+    ALPHA_B = 31
+    CONSTANT = 50
+
+class EnumSwizzle(Enum):
+    PASSTHRU = 0
+    A_X = 10
+    A_Y = 11
+    A_Z = 12
+    A_W = 13
+    B_X = 20
+    B_Y = 21
+    B_Z = 22
+    B_W = 23
+    CONSTANT = 40
 
 class EnumCBSimulator(Enum):
     AUTOSELECT = 0
@@ -367,9 +381,9 @@ def pil2tensor(image: Image.Image) -> torch.Tensor:
     """Convert a PIL Image to a Torch Tensor."""
     return torch.from_numpy(np.array(image).astype(np.float32) / 255).unsqueeze(0)
 
-def tensor2cv(tensor: torch.Tensor, chan:EnumImageType=EnumImageType.BGRA) -> TYPE_IMAGE:
+def tensor2cv(tensor: torch.Tensor, chan:EnumImageType=EnumImageType.BGRA, width:int=MIN_IMAGE_SIZE, height:int=MIN_IMAGE_SIZE, matte:TYPE_PIXEL=(0, 0, 0, 255)) -> TYPE_IMAGE:
     if not isinstance(tensor, (torch.Tensor,)):
-        return channel_solid(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, (0, 0, 0, 255))
+        return channel_solid(width, height, matte, chan=chan)
     image = np.clip(tensor.squeeze().cpu().numpy() * 255, 0, 255).astype(np.uint8)
     cc = 1 if len(image.shape) < 3 else image.shape[2]
     if chan == EnumImageType.BGRA:
@@ -532,8 +546,7 @@ def channel_solid(width:int, height:int, color:TYPE_PIXEL=(0, 0, 0, 0),
 
     if not type(color) in [list, set, tuple]:
         color = [color]
-    if len(color) < 3:
-        color += (0,) * (3 - len(color))
+    color += (0,) * (3 - len(color))
     if chan in [EnumImageType.BGR, EnumImageType.RGB]:
         if chan == EnumImageType.RGB:
             color = color[2::-1]
@@ -556,25 +569,25 @@ def channel_merge(channel:list[TYPE_IMAGE]) -> TYPE_IMAGE:
         ch.append(a)
     return cv2.merge(ch)
 
-def channel_swap(imageA:TYPE_IMAGE, swap:EnumPixelSwap, imageB:TYPE_IMAGE=None, matte:TYPE_PIXEL=(0,0,0)) -> TYPE_IMAGE:
-    index = swap.value
-    cc, h, w = channel_count(imageA)[:3]
-    if index > cc:
+def channel_swap(imageA:TYPE_IMAGE, swap_ot:EnumPixelSwizzle,
+                 imageB:TYPE_IMAGE, swap_in:EnumPixelSwizzle) -> TYPE_IMAGE:
+    index_out = int(swap_ot.value / 10)
+    cc_out = channel_count(imageA)[0]
+    # swap channel is out of range of image size
+    if index_out > cc_out:
         return imageA
-
-    if swap == EnumPixelSwap.SOLID:
-        imageA[:,:,index] = channel_solid(w, h, matte, EnumImageType.GRAYSCALE)[:,:,0]
+    index_in = int(swap_in.value / 10)
+    cc_in = channel_count(imageB)[0]
+    if index_in > cc_in:
         return imageA
+    h, w = imageA.shape[:2]
 
-    if index > 4:
-        return imageA
-
-    if imageB is not None and channel_count(imageB)[0] >= index:
-        data = imageB[:,:,index]
-    else:
-        data = channel_solid(w, h, 0, EnumImageType.GRAYSCALE)[:,:,0]
-    imageA[:,:,index] = data
+    # imageB = image_crop_center(imageB, w, h)
+    # imageB = image_matte(imageB, width=w, height=h)
+    imageB = image_scalefit(imageB, w, h, EnumScaleMode.FIT)
+    imageA[:,:,index_out] = imageB[:,:,index_in]
     return imageA
+
 # =============================================================================
 # === EXPLICIT SHAPE FUNCTIONS ===
 # =============================================================================

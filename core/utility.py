@@ -30,9 +30,11 @@ from Jovimetrix import JOV_HELP_URL, JOVBaseNode, \
     WILDCARD, ROOT, MIN_IMAGE_SIZE, comfy_message, parse_reset
 
 from Jovimetrix.sup.lexicon import Lexicon
-from Jovimetrix.sup.util import parse_dynamic, path_next, parse_tuple, zip_longest_fill
+from Jovimetrix.sup.util import parse_dynamic, path_next, parse_tuple, \
+    zip_longest_fill
 from Jovimetrix.sup.image import batch_extract, cv2tensor,  image_convert, \
-    tensor2pil, tensor2cv, pil2tensor, image_load, image_formats, image_diff
+    tensor2pil, tensor2cv, pil2tensor, image_load, image_formats, image_diff, \
+    EnumSwizzle
 
 # =============================================================================
 
@@ -421,6 +423,7 @@ class ExportNode(JOVBaseNode):
             Lexicon.LOOP: ("INT", {"default": 0, "min": 0}),
         }}
         return Lexicon._parse(d, JOV_HELP_URL + "/UTILITY#-export")
+    SORT = 2000
 
     def run(self, **kw) -> None:
         pA = batch_extract(kw.get(Lexicon.PIXEL, None))
@@ -536,13 +539,14 @@ class ArrayNode(JOVBaseNode):
     OUTPUT_IS_LIST = (False, False, True,)
     RETURN_TYPES = ("INT", WILDCARD, WILDCARD,)
     RETURN_NAMES = (Lexicon.VALUE, Lexicon.ANY, Lexicon.LIST,)
+    SORT = 50
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {
         "required": {},
         "optional": {
-            Lexicon.BATCH_MODE: (EnumBatchMode._member_names_, {"default": EnumBatchMode.MERGE.name, "tooltip":"select a single index, specific range, custom index list or randomized."}),
+            Lexicon.BATCH_MODE: (EnumBatchMode._member_names_, {"default": EnumBatchMode.MERGE.name, "tooltip":"select a single index, specific range, custom index list or randomized"}),
             Lexicon.INDEX: ("INT", {"default": 0, "min": 0, "step": 1}),
             Lexicon.RANGE: ("VEC3", {"default": (0, 0, 1)}),
             Lexicon.STRING: ("STRING", {"default": ""}),
@@ -634,11 +638,59 @@ class ArrayNode(JOVBaseNode):
             extract = [e for e in self.batched(extract, chunk)]
         return (len(extract), extract, full,)
 
+class SwapNode(JOVBaseNode):
+    NAME = "SWAP (JOV) 😵"
+    CATEGORY = JOV_CATEGORY
+    DESCRIPTION = "Swap vector positions within a vector or with another vector input."
+    SORT = 55
+
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        d = {
+        "required": {},
+        "optional": {
+            Lexicon.A: (WILDCARD, {}),
+            Lexicon.B: (WILDCARD, {}),
+            Lexicon.SWAP_X: (EnumSwizzle._member_names_, {"default": EnumSwizzle.PASSTHRU.name}),
+            Lexicon.X: ("INT", {"default": 0, "step": 1, "min": 0, "max": 255}),
+            Lexicon.SWAP_Y: (EnumSwizzle._member_names_, {"default": EnumSwizzle.PASSTHRU.name}),
+            Lexicon.Y: ("INT", {"default": 0, "step": 1, "min": 0, "max": 255}),
+            Lexicon.SWAP_Z: (EnumSwizzle._member_names_, {"default": EnumSwizzle.PASSTHRU.name}),
+            Lexicon.Z: ("INT", {"default": 0, "step": 1, "min": 0, "max": 255}),
+            Lexicon.SWAP_W: (EnumSwizzle._member_names_, {"default": EnumSwizzle.PASSTHRU.name}),
+            Lexicon.W: ("INT", {"default": 0, "step": 1, "min": 0, "max": 255})
+        }}
+        return Lexicon._parse(d, JOV_HELP_URL + "/UTILITY#-swizzle")
+
+    def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor]:
+        pA = parse_tuple(Lexicon.A, kw, (0, 0, 0, 0))
+        pB = batch_extract(kw.get(Lexicon.B, None))
+        swap_x = kw.get(Lexicon.SWAP_X, [EnumSwizzle.PASSTHRU])
+        x = kw.get(Lexicon.X, [0])
+        swap_y = kw.get(Lexicon.SWAP_Y, [EnumSwizzle.PASSTHRU])
+        y = kw.get(Lexicon.Y, [0])
+        swap_z = kw.get(Lexicon.SWAP_Z, [EnumSwizzle.PASSTHRU])
+        z = kw.get(Lexicon.Z, [0])
+        swap_w = kw.get(Lexicon.SWAP_W, [EnumSwizzle.PASSTHRU])
+        w = kw.get(Lexicon.W, [0])
+        params = [tuple(x) for x in zip_longest_fill(pA, pB, x, swap_x, y, swap_y,
+                                                     z, swap_z, w, swap_w)]
+        images = []
+        pbar = ProgressBar(len(params))
+        for idx, (pA, pB, r, swap_r, g, swap_g, b, swap_b, a, swap_a) in enumerate(params):
+
+
+            images.append(pA)
+            pbar.update_absolute(idx)
+        data = list(zip(*images))
+        return data
+
 """
 class HistogramNode(JOVImageSimple):
     NAME = "HISTOGRAM (JOV) 👁‍🗨"
     CATEGORY = CATEGORY = JOV_CATEGORY
     DESCRIPTION = "Histogram"
+    SORT = 40
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:

@@ -3,6 +3,9 @@ Jovimetrix - http://www.github.com/amorano/jovimetrix
 Composition
 """
 
+from typing import Any
+import cv2
+import numpy as np
 import torch
 from enum import Enum
 from loguru import logger
@@ -11,7 +14,8 @@ from comfy.utils import ProgressBar
 
 from Jovimetrix import JOVImageMultiple, JOV_HELP_URL, WILDCARD, MIN_IMAGE_SIZE
 from Jovimetrix.sup.lexicon import Lexicon
-from Jovimetrix.sup.util import parse_number, parse_tuple, zip_longest_fill, EnumTupleType
+from Jovimetrix.sup.util import parse_number, parse_tuple, zip_longest_fill, \
+    EnumTupleType
 from Jovimetrix.sup.image import batch_extract, channel_merge, \
     channel_solid, channel_swap, cv2tensor_full, \
     image_crop, image_crop_center, image_crop_polygonal, image_grayscale, \
@@ -23,7 +27,7 @@ from Jovimetrix.sup.image import batch_extract, channel_merge, \
     remap_sphere, image_invert, \
     EnumImageType, EnumColorTheory, EnumProjection, \
     EnumScaleMode, EnumInterpolation, EnumBlendType, \
-    EnumEdge, EnumMirrorMode, EnumOrientation, EnumPixelSwap
+    EnumEdge, EnumMirrorMode, EnumOrientation, EnumPixelSwizzle
 
 # =============================================================================
 
@@ -88,19 +92,12 @@ class TransformNode(JOVImageMultiple):
         pbar = ProgressBar(len(params))
         for idx, (pA, offset, angle, size, edge, tile_xy, mirror, mirror_pivot, proj, strength, tltr, blbr, mode, wihi, sample, matte) in enumerate(params):
             matte = pixel_eval(matte, EnumImageType.BGRA)
-            if pA is None:
-                pA = channel_solid(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, matte, EnumImageType.BGRA)
-                pA = cv2tensor_full(pA, matte)
-                images.append(pA)
-                pbar.update_absolute(idx)
-                logger.debug("Should not be here")
-                continue
-
             pA = tensor2cv(pA)
             h, w = pA.shape[:2]
             edge = EnumEdge[edge]
             sample = EnumInterpolation[sample]
             pA = image_transform(pA, offset, angle, size, sample, edge)
+            pA = image_crop_center(pA, w, h)
 
             mirror = EnumMirrorMode[mirror]
             if mirror != EnumMirrorMode.NONE:
@@ -153,7 +150,7 @@ class BlendNode(JOVImageMultiple):
         "optional": {
             Lexicon.PIXEL_A: (WILDCARD, {"tooltip": "Background Plate"}),
             Lexicon.PIXEL_B: (WILDCARD, {"tooltip": "Image to Overlay on Background Plate"}),
-            Lexicon.MASK: (WILDCARD, {"tooltip": "Optional Mask to use for Alpha Blend Operation. If empty, will use the ALPHA of B."}),
+            Lexicon.MASK: (WILDCARD, {"tooltip": "Optional Mask to use for Alpha Blend Operation. If empty, will use the ALPHA of B"}),
             Lexicon.FUNC: (EnumBlendType._member_names_, {"default": EnumBlendType.NORMAL.name, "tooltip": "Blending Operation"}),
             Lexicon.A: ("FLOAT", {"default": 1, "min": 0, "max": 1, "step": 0.01, "tooltip": "Amount of Blending to Perform on the Selected Operation"}),
             Lexicon.FLIP: ("BOOLEAN", {"default": False}),
@@ -185,23 +182,16 @@ class BlendNode(JOVImageMultiple):
             if flip:
                 pA, pB = pB, pA
 
-            if pB is None:
-                pB = channel_solid(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, (0,0,0,255), EnumImageType.BGRA)
-            else:
-                pB = tensor2cv(pB)
-
+            pB = tensor2cv(pB)
             matte = pixel_eval(matte, EnumImageType.BGRA)
-            if pA is None:
-                h, w = pB.shape[:2]
-                pA = channel_solid(w, h, matte, chan=EnumImageType.BGRA)
-            else:
-                pA = tensor2cv(pA)
-                pA = image_matte(pA, matte)
+            pA = tensor2cv(pA, width=w, height=h)
+            pA = image_matte(pA, matte)
 
             if mask is None:
                 mask = image_mask(pB)
             else:
-                mask = tensor2cv(mask, EnumImageType.GRAYSCALE)
+                h, w = pB.shape[:2]
+                mask = tensor2cv(mask, EnumImageType.GRAYSCALE, w, h)
 
             if invert:
                 mask = 255 - mask
@@ -280,12 +270,11 @@ class PixelMergeNode(JOVImageMultiple):
         images = []
         pbar = ProgressBar(len(params))
         for idx, (r, g, b, a, matte) in enumerate(params):
-            r = tensor2cv(r, chan=EnumImageType.GRAYSCALE)
-            g = tensor2cv(g, chan=EnumImageType.GRAYSCALE)
-            b = tensor2cv(b, chan=EnumImageType.GRAYSCALE)
-            mask = tensor2cv(a, chan=EnumImageType.GRAYSCALE)
+            r = tensor2cv(r, EnumImageType.GRAYSCALE)
+            g = tensor2cv(g, EnumImageType.GRAYSCALE)
+            b = tensor2cv(b, EnumImageType.GRAYSCALE)
+            mask = tensor2cv(a, EnumImageType.GRAYSCALE)
             img = channel_merge([b, g, r, mask])
-            # logger.debug(img.shape)
             img = cv2tensor_full(img, matte)
             images.append(img)
             pbar.update_absolute(idx)
@@ -305,52 +294,59 @@ class PixelSwapNode(JOVImageMultiple):
         "optional": {
             Lexicon.PIXEL_A: (WILDCARD, {}),
             Lexicon.PIXEL_B: (WILDCARD, {}),
-            Lexicon.SWAP_R: (EnumPixelSwap._member_names_, {"default": EnumPixelSwap.PASSTHRU.name}),
+            Lexicon.SWAP_R: (EnumPixelSwizzle._member_names_,
+                             {"default": EnumPixelSwizzle.RED_A.name}),
             Lexicon.R: ("INT", {"default": 0, "step": 1, "min": 0, "max": 255}),
-            Lexicon.SWAP_G: (EnumPixelSwap._member_names_, {"default": EnumPixelSwap.PASSTHRU.name}),
+            Lexicon.SWAP_G: (EnumPixelSwizzle._member_names_,
+                             {"default": EnumPixelSwizzle.GREEN_A.name}),
             Lexicon.G: ("INT", {"default": 0, "step": 1, "min": 0, "max": 255}),
-            Lexicon.SWAP_B: (EnumPixelSwap._member_names_, {"default": EnumPixelSwap.PASSTHRU.name}),
+            Lexicon.SWAP_B: (EnumPixelSwizzle._member_names_,
+                             {"default": EnumPixelSwizzle.BLUE_A.name}),
             Lexicon.B: ("INT", {"default": 0, "step": 1, "min": 0, "max": 255}),
-            Lexicon.SWAP_A: (EnumPixelSwap._member_names_, {"default": EnumPixelSwap.PASSTHRU.name}),
-            Lexicon.A: ("INT", {"default": 0, "step": 1, "min": 0, "max": 255})
+            Lexicon.SWAP_A: (EnumPixelSwizzle._member_names_,
+                             {"default": EnumPixelSwizzle.ALPHA_A.name}),
+            Lexicon.A: ("INT", {"default": 0, "step": 1, "min": 0, "max": 255}),
         }}
         return Lexicon._parse(d, JOV_HELP_URL + "/COMPOSE#-pixel-swap")
 
     def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor]:
         pA = batch_extract(kw.get(Lexicon.PIXEL_A, None))
         pB = batch_extract(kw.get(Lexicon.PIXEL_B, None))
-        swap_r = kw.get(Lexicon.SWAP_R, [EnumPixelSwap.PASSTHRU])
+        swap_r = kw.get(Lexicon.SWAP_R, [EnumPixelSwizzle.RED_A])
         r = kw.get(Lexicon.R, [0])
-        swap_g = kw.get(Lexicon.SWAP_G, [EnumPixelSwap.PASSTHRU])
+        swap_g = kw.get(Lexicon.SWAP_G, [EnumPixelSwizzle.GREEN_A])
         g = kw.get(Lexicon.G, [0])
-        swap_b = kw.get(Lexicon.SWAP_B, [EnumPixelSwap.PASSTHRU])
+        swap_b = kw.get(Lexicon.SWAP_B, [EnumPixelSwizzle.BLUE_A])
         b = kw.get(Lexicon.B, [0])
-        swap_a = kw.get(Lexicon.SWAP_A, [EnumPixelSwap.PASSTHRU])
+        swap_a = kw.get(Lexicon.SWAP_A, [EnumPixelSwizzle.ALPHA_A])
         a = kw.get(Lexicon.A, [0])
         params = [tuple(x) for x in zip_longest_fill(pA, pB, r, swap_r, g, swap_g,
                                                      b, swap_b, a, swap_a)]
         images = []
         pbar = ProgressBar(len(params))
         for idx, (pA, pB, r, swap_r, g, swap_g, b, swap_b, a, swap_a) in enumerate(params):
-            if pA is None:
-                pA = channel_solid(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, chan=EnumImageType.BGRA)
-            else:
-                pA = tensor2cv(pA)
-
+            pA = tensor2cv(pA)
             h, w = pA.shape[:2]
-            if pB is None:
-                pB = channel_solid(w, h, chan=EnumImageType.BGRA)
-            else:
-                pB = tensor2cv(pB)
-                pB = image_crop_center(pB, w, h)
-                pB = image_matte(pB, width=w, height=h)
+            pB = tensor2cv(pB, width=w, height=h)
+            out = channel_solid(w, h, (r,g,b,a), EnumImageType.BGRA)
 
-            for _, swap in enumerate([(swap_b, b), (swap_g, g), (swap_r, r), (swap_a, a)]):
-                swap, matte = swap
-                swap = EnumPixelSwap[swap]
-                if swap != EnumPixelSwap.PASSTHRU:
-                    pA = channel_swap(pA, swap, pB, matte)
-            images.append(cv2tensor_full(pA))
+            def swapper(swap_out:EnumPixelSwizzle, swap_in:EnumPixelSwizzle) -> np.ndarray[Any]:
+                target = out
+                swap_in = EnumPixelSwizzle[swap_in]
+                if swap_in in [EnumPixelSwizzle.RED_A, EnumPixelSwizzle.GREEN_A,
+                            EnumPixelSwizzle.BLUE_A, EnumPixelSwizzle.ALPHA_A]:
+                    target = pA
+                elif swap_in != EnumPixelSwizzle.CONSTANT:
+                    target = pB
+                if swap_in != EnumPixelSwizzle.CONSTANT:
+                    target = channel_swap(pA, swap_out, target, swap_in)
+                return target
+
+            out[:,:,0] = swapper(EnumPixelSwizzle.BLUE_A, swap_b)[:,:,0]
+            out[:,:,1] = swapper(EnumPixelSwizzle.GREEN_A, swap_g)[:,:,1]
+            out[:,:,2] = swapper(EnumPixelSwizzle.RED_A, swap_r)[:,:,2]
+            out[:,:,3] = swapper(EnumPixelSwizzle.ALPHA_A, swap_a)[:,:,3]
+            images.append(cv2tensor_full(out))
             pbar.update_absolute(idx)
         data = list(zip(*images))
         return data
@@ -399,7 +395,7 @@ class StackNode(JOVImageMultiple):
         sample = kw.get(Lexicon.SAMPLE, [EnumInterpolation.LANCZOS4])[0]
         matte = parse_tuple(Lexicon.MATTE, kw, (0, 0, 0, 255), clip_min=0, clip_max=255)[0]
         matte = pixel_eval(matte, EnumImageType.BGRA)
-        images = [tensor2cv(img) for img in images if img is not None]
+        images = [tensor2cv(img) for img in images]
         img = image_stack(images, axis, stride, matte)
         w, h = wihi
         if mode != EnumScaleMode.NONE:
@@ -442,10 +438,7 @@ class CropNode(JOVImageMultiple):
         pbar = ProgressBar(len(params))
         for idx, (pA, func, xy, wihi, tltr, blbr, color) in enumerate(params):
             width, height = wihi
-            if pA is not None:
-                pA = tensor2cv(pA)
-            else:
-                pA = channel_solid(width, height)
+            pA = tensor2cv(pA, width=width, height=height)
             func = EnumCropMode[func]
             if func == EnumCropMode.FREE:
                 y1, x1, y2, x2 = tltr

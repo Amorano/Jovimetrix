@@ -8,8 +8,9 @@ import math
 from enum import Enum
 from typing import Any, List, Generator, Optional, Tuple, Union
 
-from loguru import logger
 import torch
+
+from loguru import logger
 
 # =============================================================================
 # === ENUMERATION ===
