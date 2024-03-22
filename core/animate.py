@@ -40,7 +40,7 @@ class TickNode(JOVBaseNode):
             # data to pass on a pulse of the loop
             Lexicon.ANY: (WILDCARD, {"default": None, "tooltip":"Output to send when beat (BPM setting) is hit"}),
             # forces a MOD on CYCLE
-            Lexicon.VALUE: ("INT", {"min": 0, "default": 0, "step": 1, "tooltip": "current tick index"}),
+            Lexicon.VALUE: ("INT", {"min": 0, "default": 0, "step": 1, "tooltip": "the current frame number of the tick"}),
             Lexicon.LOOP: ("INT", {"min": 0, "default": 0, "step": 1, "tooltip": "number of frames before looping starts. 0 means continuous playback (no loop point)"}),
             #
             Lexicon.FPS: ("INT", {"min": 1, "default": 24, "step": 1, "tooltip": "Fixed frame step rate based on FPS (1/FPS)"}),
@@ -67,14 +67,19 @@ class TickNode(JOVBaseNode):
     def __init__(self, *arg, **kw) -> None:
         super().__init__(*arg, **kw)
         # how many pulses we have done -- total unless reset
-        self.__count = 1
+        self.__frame = 0
         # the current frame index based on the user FPS value
         self.__fixed_step = 0
 
     def run(self, ident, **kw) -> tuple[int, float, float, Any]:
         passthru = kw.get(Lexicon.ANY, None)
-        self.__count = kw.get(Lexicon.VALUE, self.__count)
+        # how many frames before reset to 0 -- 0 = run continuous
         loop = kw.get(Lexicon.LOOP, 0)
+        # current frame
+        self.__frame = kw.get(Lexicon.VALUE, self.__frame)
+        if loop > 0:
+            self.__frame = min(loop, self.__frame)
+        self.__frame = max(0, self.__frame)
         hold = kw.get(Lexicon.WAIT, False)
         fps = kw.get(Lexicon.FPS, 24)
         bpm = kw.get(Lexicon.BPM, 120)
@@ -85,25 +90,28 @@ class TickNode(JOVBaseNode):
         results = []
         step = 1. / max(1, int(fps))
         if parse_reset(ident):
-            self.__count = 1
+            self.__frame = 0
             self.__fixed_step = 0
+        lin = self.__frame
+        trigger = None
         pbar = ProgressBar(batch)
         for idx in range(batch):
-            lin = self.__count
-            if not hold:
-                if loop > 0:
-                    self.__count %= loop
-                    lin /= loop
-                self.__fixed_step %= fps
-            trigger = self.__count % beat == 0
             if passthru is not None:
                 trigger = passthru if trigger else None
-            results.append([self.__count, lin, self.__fixed_step, trigger])
+            results.append([self.__frame, lin, self.__fixed_step, trigger])
             if not hold:
-                self.__count += 1
+                self.__frame += 1
                 self.__fixed_step += step
+                lin = self.__frame
+                if loop > 0:
+                    self.__frame %= loop
+                    lin /= loop
+                self.__fixed_step %= fps
+                trigger = self.__frame % beat == 0
             pbar.update_absolute(idx)
-        comfy_message(ident, "jovi-tick", {"i": self.__count})
+        if loop > 0:
+            self.__frame = 0
+        comfy_message(ident, "jovi-tick", {"i": self.__frame})
         return list(zip(*results))
 
 class WaveGeneratorNode(JOVBaseNode):

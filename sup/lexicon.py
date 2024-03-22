@@ -218,6 +218,7 @@ class Lexicon(metaclass=LexiconMeta):
     URL = '🌐', "URL"
     V = '🇻', "Value"
     VALUE = '#️⃣', "Value"
+    VEC = 'VECTOR', "Compound value of type float, vec2, vec3 or vec4"
     W = '🇼', "Width"
     WAIT = '✋🏽', "Wait"
     WAVE = '♒', "Wave Function"

@@ -218,7 +218,6 @@ class EnumPixelSwizzle(Enum):
     CONSTANT = 50
 
 class EnumSwizzle(Enum):
-    PASSTHRU = 0
     A_X = 10
     A_Y = 11
     A_Z = 12
@@ -599,7 +598,8 @@ def shape_body(func: str, width: int, height: int, sizeX:float=1., sizeY:float=1
     image = Image.new("RGB", (width, height), back)
     d = ImageDraw.Draw(image)
     func = getattr(d, func)
-    func(xy, fill=pixel_eval(fill, EnumImageType.RGBA))
+    fill = pixel_eval(fill, EnumImageType.RGBA)
+    func(xy, fill=fill)
     return image
 
 def shape_ellipse(width: int, height: int, sizeX:float=1., sizeY:float=1., fill:TYPE_PIXEL=255, back:TYPE_PIXEL=0) -> Image:

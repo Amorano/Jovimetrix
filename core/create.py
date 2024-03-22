@@ -147,7 +147,7 @@ class ShapeNode(JOVImageMultiple):
             mask = pil2cv(mask)
             mask = image_grayscale(mask)
             pA = image_mask_add(pA, mask)
-            pA = image_transform(pA, offset, angle, size, edge=edge)
+            pA = image_transform(pA, offset, angle, (1,1), edge=edge)
             matte = pixel_eval(matte, EnumImageType.BGRA)
             images.append(cv2tensor_full(pA, matte))
             pbar.update_absolute(idx)

@@ -6,7 +6,7 @@
 
 import { app } from "../../../scripts/app.js"
 import { fitHeight, TypeSlot } from '../util/util.js'
-import { widget_hide, widget_show, process_value, widget_type_name } from '../util/util_widget.js'
+import { CONVERTED_TYPE, CONVERTED_JOV_TYPE, convertToWidget, widget_hide, widget_show, process_value, widget_type_name } from '../util/util_widget.js'
 
 const _id = "VALUE (JOV) 🧬"
 
@@ -43,6 +43,7 @@ app.registerExtension({
                 widget_hide(this, widget_z, "-jovi");
                 widget_hide(this, widget_w, "-jovi");
                 widget_hide(this, widget_str, "-jovi");
+                console.info(this)
                 //
                 if (combo.value == "BOOLEAN") {
                     if (!in_x && visible) {
@@ -97,25 +98,23 @@ app.registerExtension({
             if (slotType === TypeSlot.Input) {
                 const combo = this.widgets.find(w => w.name === '❓');
                 setTimeout(() => { combo.callback(); }, 15);
-
             }
             return onConnectionsChange?.apply(this, arguments);
         }
 
         // MENU CONVERSIONS
-        /*
         const getExtraMenuOptions = nodeType.prototype.getExtraMenuOptions;
         nodeType.prototype.getExtraMenuOptions = function (_, options) {
-            // const me = getExtraMenuOptions?.apply(this, arguments);
+            const me = getExtraMenuOptions?.apply(this, arguments);
             // console.log(me)
             const combo = this.widgets.find(w => w.name === '❓');
             let toWidget = [];
-            let toInput = [];
+            //let toInput = [];
             for (const w of this.widgets) {
                 if (w.options?.forceInput) {
                     continue;
                 }
-                if (w.type === CONVERTED_JOV_TYPE && w.hidden) {
+                if (w.type === CONVERTED_JOV_TYPE && w.origType === CONVERTED_TYPE) {
                     toWidget.push({
                         content: `Convertz ${w.name} to widget`,
                         callback: () => {
@@ -123,28 +122,13 @@ app.registerExtension({
                             setTimeout(() => { combo.callback(); }, 15);
                         },
                     });
-                } else {
-                    const config = getConfig.call(this, w.name) ?? [w.type, w.options || {}];
-                    toInput.push({
-                        content: `Convertz ${w.name} to input`,
-                        callback: () => {
-                            convertToInput(this, w, config);
-                            setTimeout(() => { combo.callback(); }, 15);
-                        },
-                    });
                 }
             }
-            if (toInput.length) {
-                options.push(...toInput, null);
-            }
-
             if (toWidget.length) {
                 options.push(...toWidget, null);
             }
-			// return me;
-
+			return me;
 		};
-        */
        return nodeType;
 	}
 })

@@ -184,6 +184,5 @@ def text_draw(full_text: str, font: ImageFont, width: int, height: int,
             x = (width - line_width) / 2
         x = min(width, max(0, x))
         draw.text((x, y), line, fill=color, font=font)
-        # print(height_max, height_delta, x, y)
         y += height_delta
     return pil2cv(img)

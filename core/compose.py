@@ -348,8 +348,7 @@ class PixelSwapNode(JOVImageMultiple):
             out[:,:,3] = swapper(EnumPixelSwizzle.ALPHA_A, swap_a)[:,:,3]
             images.append(cv2tensor_full(out))
             pbar.update_absolute(idx)
-        data = list(zip(*images))
-        return data
+        return list(zip(*images))
 
 class StackNode(JOVImageMultiple):
     NAME = "STACK (JOV) ➕"

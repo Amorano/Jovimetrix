@@ -88,7 +88,9 @@ def parse_number(key: str, data: Union[dict, List[dict]], typ: EnumTupleType=Enu
 
 def parse_tuple(key: str, data: Union[dict, List[dict]], default: tuple[Any], typ: EnumTupleType=EnumTupleType.INT, clip_min: Optional[float]=None, clip_max: Optional[float]=None, zero:int=0) -> tuple[List[Any]]:
     unified = data.get(key, [default])
-    if not isinstance(unified, (list, tuple, set)):
+    if isinstance(unified, (tuple, set,)):
+        unified = list(unified)
+    if not isinstance(unified, (list, )):
         unified = [unified]
     if isinstance(unified[0], (dict,)):
         unified = [list(v.values()) for v in unified]
@@ -120,6 +122,7 @@ def parse_tuple(key: str, data: Union[dict, List[dict]], default: tuple[Any], ty
                         v = v.split(',')
                 case EnumTupleType.INT:
                     v = int(v if v is not None else zero)
+
             if typ in [EnumTupleType.INT, EnumTupleType.FLOAT]:
                 if clip_min is not None:
                     v = max(v, clip_min)

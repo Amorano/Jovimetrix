@@ -144,18 +144,24 @@ OP_UNARY = {
 
 def parse_type_value(typ:EnumConvertType, A:Any, default:tuple=(0,0,0,0)) -> List[Any]:
     """Converts a number into a 1, 2, 3 or 4 vector array"""
+    if not isinstance(default, (list, set, tuple,)):
+        default = [default]
     size = max(1, int(typ.value / 10))
     if A is None:
         val = default
     elif isinstance(A, (torch.Tensor,)):
-        val = list(A.size())
-        val = val[1:4] + [val[0]]
+        val = list(A.size())[1:4] + [val[0]]
     else:
         val = A
-    if not isinstance(val, (list, tuple, set,)):
+    if isinstance(val, (set, tuple,)):
+        val = list(val)
+    if not isinstance(val, (list,)):
         val = [val]
     last = val[-1]
-    val += [last] * (size - len(val))
+    pos = len(val)
+    for x in range(size - pos):
+        idx = pos + x
+        val.append(default[idx] if idx < len(default) else last)
     return val[:size]
 
 def convert_value(typ:EnumConvertType, val:Any) -> Any:
@@ -170,8 +176,7 @@ def convert_value(typ:EnumConvertType, val:Any) -> Any:
         val = [round(float(v), 12) for v in val]
     else:
         val = [int(v) for v in val]
-    last = val[-1]
-    val += [last] * (size - len(val))
+    val += [val[-1]] * (size - len(val))
     return val[:size]
 
 # =============================================================================
@@ -239,7 +244,7 @@ class CalcUnaryOPNode(JOVBaseNode):
             convert = int if isinstance(A, (bool, int, np.uint8, np.uint16, np.uint32, np.uint64)) else float
             results.append([convert(v) for v in val])
             pbar.update_absolute(idx)
-        return list(zip(*results))
+        return (results,)
 
 class CalcBinaryOPNode(JOVBaseNode):
     NAME = "CALC OP BINARY (JOV) 🌟"
@@ -291,17 +296,14 @@ class CalcBinaryOPNode(JOVBaseNode):
         results = []
         A = kw.get(Lexicon.IN_A, [None])
         B = kw.get(Lexicon.IN_B, [None])
-
-        a_x = kw.get(Lexicon.X, [0])
+        a_x = parse_tuple(Lexicon.X, kw, (0,), EnumTupleType.FLOAT)
         a_xy = parse_tuple(Lexicon.IN_A+"2", kw, (0, 0), EnumTupleType.FLOAT)
         a_xyz = parse_tuple(Lexicon.IN_A+"3", kw, (0, 0, 0), EnumTupleType.FLOAT)
         a_xyzw = parse_tuple(Lexicon.IN_A+"4", kw, (0, 0, 0, 0), EnumTupleType.FLOAT)
-
-        b_x = kw.get(Lexicon.Y, [0])
+        b_x = parse_tuple(Lexicon.Y, kw, (0,), EnumTupleType.FLOAT)
         b_xy = parse_tuple(Lexicon.IN_B+"2", kw, (0, 0), EnumTupleType.FLOAT)
         b_xyz = parse_tuple(Lexicon.IN_B+"3", kw, (0, 0, 0), EnumTupleType.FLOAT)
         b_xyzw = parse_tuple(Lexicon.IN_B+"4", kw, (0, 0, 0, 0), EnumTupleType.FLOAT)
-
         op = kw.get(Lexicon.FUNC, [EnumBinaryOperation.ADD])
         typ = kw.get(Lexicon.TYPE, [EnumConvertType.FLOAT])
         flip = kw.get(Lexicon.FLIP, [False])
@@ -396,13 +398,10 @@ class CalcBinaryOPNode(JOVBaseNode):
                     val = list(set(val_a) - set(val_b))
 
             if len(val) == 0:
-                val = [None]
-            else:
-                val = convert_value(typ, val)
-            print(val)
-            results.append(val)
+                val = [0]
+            results.append(tuple(val))
             pbar.update_absolute(idx)
-        return list(zip(*results))
+        return (results,)
 
 class ValueNode(JOVBaseNode):
     NAME = "VALUE (JOV) 🧬"
@@ -441,10 +440,14 @@ class ValueNode(JOVBaseNode):
         for idx, (raw, typ, x, y, z, w) in enumerate(params):
             typ = EnumConvertType[typ]
             val = parse_type_value(typ, raw, [x, y, z, w])
-            val = convert_value(typ, val)
-            results.append(val)
+            # val = convert_value(typ, val)
+            if isinstance(val, (set, tuple,)):
+                val = list(val)
+            if not isinstance(val, (list,)):
+                val = [val]
+            results.append(tuple(val))
             pbar.update_absolute(idx)
-        return (results, )
+        return (results,)
 
 class LerpNode(JOVBaseNode):
     NAME = "LERP (JOV) 🔰"
@@ -460,8 +463,10 @@ class LerpNode(JOVBaseNode):
         d = {
         "required": {},
         "optional": {
-            Lexicon.IN_A: (WILDCARD, {}),
-            Lexicon.IN_B: (WILDCARD, {}),
+            Lexicon.IN_A: (WILDCARD, {"tooltip": "Custom Start Point"}),
+            Lexicon.IN_B: (WILDCARD, {"tooltip": "Custom End Point"}),
+            #Lexicon.FLOAT_A: ("FLOAT", {"default": 0., "min": 0., "max": 1.0, "step": 0.001, "precision": 4, "round": 0.00001, "tooltip": "Custom Start Point"}),
+            #Lexicon.FLOAT+"1": ("FLOAT", {"default": 0., "min": 0., "max": 1.0, "step": 0.001, "precision": 4, "round": 0.00001, "tooltip": "Custom End point"}),
             Lexicon.FLOAT: ("FLOAT", {"default": 0., "min": 0., "max": 1.0, "step": 0.001, "precision": 4, "round": 0.00001, "tooltip": "Blend Amount. 0 = full A, 1 = full B"}),
             Lexicon.EASE: (["NONE"] + EnumEase._member_names_, {"default": "NONE"}),
             Lexicon.TYPE: (EnumNumberType._member_names_, {"default": EnumNumberType.FLOAT.name, "tooltip": "Output As"})
@@ -469,34 +474,32 @@ class LerpNode(JOVBaseNode):
         return Lexicon._parse(d, JOV_HELP_URL + "/CALC#-lerp")
 
     def run(self, **kw) -> tuple[Any, Any]:
-        a = kw.get(Lexicon.IN_A, [0])
-        b = kw.get(Lexicon.IN_B, [0])
-        pos = kw.get(Lexicon.FLOAT, [0.])
+        A = parse_tuple(Lexicon.IN_A, kw, [0], EnumTupleType.FLOAT)
+        B = parse_tuple(Lexicon.IN_B, kw, [0], EnumTupleType.FLOAT)
+        alpha = parse_tuple(Lexicon.FLOAT, kw, [0], EnumTupleType.FLOAT)
         op = kw.get(Lexicon.EASE, ["NONE"])
         typ = kw.get(Lexicon.TYPE, ["NONE"])
-        value = []
-        params = [tuple(x) for x in zip_longest_fill(a, b, pos, op, typ)]
+        values = []
+        params = [tuple(x) for x in zip_longest_fill(A, B, alpha, op, typ)]
         pbar = ProgressBar(len(params))
-        for idx, (a, b, pos, op, typ) in enumerate(params):
-            # make sure we only interpolate between the smallest "stride" we can
-            size = min(len(a), len(b))
+        for idx, (A, B, alpha, op, typ) in enumerate(params):
+            # make sure we only interpolate between the longest "stride" we can
+            size = max(3, max(len(A), len(B)))
+            best_type = [EnumConvertType.FLOAT, EnumConvertType.VEC2, EnumConvertType.VEC3, EnumConvertType.VEC4][size]
+            A = parse_type_value(best_type, A)
+            B = parse_type_value(best_type, B)
+            alpha = parse_type_value(best_type, alpha)
+            if op == "NONE":
+                val = [B[x] * alpha[x] + A[x] * (1 - alpha[x]) for x in range(size)]
+            else:
+                ease = EnumEase[op]
+                val = [ease_op(ease, A[x], B[x], alpha=alpha[x]) for x in range(size)]
+
             typ = EnumNumberType[typ]
-            ease = EnumEase[op]
-
-            def same():
-                val = 0.
-                if op == "NONE":
-                    val = b * pos + a * (1 - pos)
-                else:
-                    val = ease_op(ease, a, b, alpha=pos)
-                return val
-
-            if size == 3:
-                same()
-            elif size == 2:
-                same()
-            elif size == 1:
-                same()
-
+            if typ == EnumNumberType.FLOAT:
+                val = [float(v) for v in val]
+            else:
+                val = [int(v) for v in val]
+            values.append(val)
             pbar.update_absolute(idx)
-        return (value, )
+        return (values, )

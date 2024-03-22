@@ -83,7 +83,7 @@ export function process_value(input, widget, precision=0, visible=false, typ="nu
 }
 
 export function widget_hide(node, widget, suffix = '') {
-    if (widget.type == CONVERTED_TYPE + suffix) {
+    if (widget.hidden || widget.type == CONVERTED_TYPE + suffix) {
         return
     }
     widget.origType = widget.type

@@ -508,10 +508,10 @@ class MIDIFilterEZNode(JOVBaseNode):
             return (message, False, )
 
         # empty values mean pass-thru (no filter)
-        if (val := kw.get(Lexicon.MODE, MIDINoteOnFilter)) != MIDINoteOnFilter.IGNORE:
-            if val == "TRUE" and message.note_on != True:
+        if (val := kw.get(Lexicon.MODE, MIDINoteOnFilter.IGNORE)) != MIDINoteOnFilter.IGNORE:
+            if val == MIDINoteOnFilter.NOTE_ON and message.note_on != True:
                 return (message, False, )
-            if val == "FALSE" and message.note_on != False:
+            if val == MIDINoteOnFilter.NOTE_OFF and message.note_on != False:
                 return (message, False, )
         if (val := kw.get(Lexicon.CHANNEL, -1)) != -1 and val != message.channel:
             return (message, False, )
