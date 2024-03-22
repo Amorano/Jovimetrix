@@ -46,11 +46,11 @@ app.registerExtension({
                 return;
             }
             for (let i = 0; i < this.inputs.length; i++) {
-            //if (slotType === TypeSlot.Input) {
                 const link_id = this.inputs[i].link;
                 const link = app.graph.links[link_id];
                 if(link) {
                     link.type = `JOV_VG_${i}`;
+                    this.inputs[i].color_on = LGraphCanvas.link_type_colors[link.type];
                 }
             }
             app.graph.setDirtyCanvas(true, true);

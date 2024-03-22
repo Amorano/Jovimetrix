@@ -4,9 +4,9 @@
  *
  */
 
-import { api } from "/scripts/api.js";
+import { api } from "../../../scripts/api.js";
 import { app } from "../../../scripts/app.js";
-import { ComfyWidgets } from "/scripts/widgets.js"
+import { ComfyWidgets } from "../../../scripts/widgets.js"
 import { api_cmd_jovian } from '../util/util_api.js'
 import { widget_remove, widget_hide } from '../util/util_widget.js'
 import { flashBackgroundColor } from '../util/util_fun.js'

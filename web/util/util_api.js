@@ -4,7 +4,7 @@
  *
  */
 
-import { api } from "/scripts/api.js"
+import { api } from "../../../scripts/api.js"
 
 export async function api_get(url) {
     var response = await api.fetchApi(url, { cache: "no-store" })

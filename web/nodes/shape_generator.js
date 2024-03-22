@@ -23,7 +23,7 @@ app.registerExtension({
             const sides = this.widgets.find(w => w.name === '♾️');
             const op = this.widgets.find(w => w.name === '🇸🇴');
             op.callback = () => {
-                console.log(this.widgets)
+                // console.log(this.widgets);
                 widget_hide(this, sides);
                 if (op.value == 'POLYGON') {
                     widget_show(sides);

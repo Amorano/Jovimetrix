@@ -139,15 +139,6 @@ app.registerExtension({
             if (colors?.body) {
                 this['bgcolor'] = colors.body
             }
-            if (colors?.jov_set_color) {
-                delete colors.jov_set_color
-            }
-            if (colors?.jov_set_bgcolor) {
-                delete colors.jov_set_bgcolor
-            }
-            if (me) {
-                me.serialize_widgets = true
-            }
             return me
         }
     }

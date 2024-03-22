@@ -43,7 +43,7 @@ app.registerExtension({
                 widget_hide(this, widget_z, "-jovi");
                 widget_hide(this, widget_w, "-jovi");
                 widget_hide(this, widget_str, "-jovi");
-                console.info(this)
+                // console.info(this);
                 //
                 if (combo.value == "BOOLEAN") {
                     if (!in_x && visible) {

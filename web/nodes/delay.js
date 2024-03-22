@@ -4,7 +4,7 @@
  *
  */
 
-import { api } from "/scripts/api.js";
+import { api } from "../../../scripts/api.js";
 import { app } from "../../../scripts/app.js";
 
 import { showModal } from '../util/util.js'
