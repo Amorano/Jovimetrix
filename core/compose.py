@@ -3,16 +3,17 @@ Jovimetrix - http://www.github.com/amorano/jovimetrix
 Composition
 """
 
-from typing import Any
-import cv2
-import numpy as np
-import torch
 from enum import Enum
+from typing import Any
+
+import torch
+import numpy as np
+
 from loguru import logger
 
 from comfy.utils import ProgressBar
 
-from Jovimetrix import JOVImageMultiple, JOV_HELP_URL, WILDCARD, MIN_IMAGE_SIZE
+from Jovimetrix import load_help, JOVImageMultiple, JOV_HELP_URL, WILDCARD, MIN_IMAGE_SIZE
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import parse_number, parse_tuple, zip_longest_fill, \
     EnumTupleType
@@ -43,7 +44,9 @@ class EnumCropMode(Enum):
 class TransformNode(JOVImageMultiple):
     NAME = "TRANSFORM (JOV) 🏝️"
     CATEGORY = JOV_CATEGORY
-    DESCRIPTION = "Translate, Rotate, Scale, Tile, Mirror, Re-project and invert an input."
+    HELP_URL = JOV_HELP_URL + "/COMPOSE#-transform"
+    DESC = "Translate, Rotate, Scale, Tile, Mirror, Re-project and invert an input."
+    DESCRIPTION = load_help(NAME, CATEGORY, HELP_URL)
     SORT = 0
 
     @classmethod
@@ -68,7 +71,7 @@ class TransformNode(JOVImageMultiple):
             Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
             Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
         }}
-        return Lexicon._parse(d, JOV_HELP_URL + "/COMPOSE#-transform")
+        return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         pA = batch_extract(kw.get(Lexicon.PIXEL, None))
@@ -140,7 +143,9 @@ class TransformNode(JOVImageMultiple):
 class BlendNode(JOVImageMultiple):
     NAME = "BLEND (JOV) ⚗️"
     CATEGORY = JOV_CATEGORY
-    DESCRIPTION = "Applies selected operation to 2 inputs with optional mask using a linear blend (alpha)."
+    HELP_URL = JOV_HELP_URL + "/COMPOSE#%EF%B8%8F-blend"
+    DESC = "Applies selected operation to 2 inputs with optional mask using a linear blend (alpha)."
+    DESCRIPTION = load_help(NAME, CATEGORY, HELP_URL)
     SORT = 10
 
     @classmethod
@@ -160,7 +165,7 @@ class BlendNode(JOVImageMultiple):
             Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
             Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
         }}
-        return Lexicon._parse(d, JOV_HELP_URL + "COMPOSE#%EF%B8%8F-blend")
+        return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         pA = batch_extract(kw.get(Lexicon.PIXEL_A, None))
@@ -211,7 +216,9 @@ class BlendNode(JOVImageMultiple):
 class PixelSplitNode(JOVImageMultiple):
     NAME = "PIXEL SPLIT (JOV) 💔"
     CATEGORY = JOV_CATEGORY
-    DESCRIPTION = "Splits images into constituent R, G and B and A channels."
+    HELP_URL = JOV_HELP_URL + "/COMPOSE#-pixel-split"
+    DESC = "Splits images into constituent R, G and B and A channels."
+    DESCRIPTION = load_help(NAME, CATEGORY, HELP_URL)
     RETURN_TYPES = ("MASK", "MASK", "MASK", "MASK",)
     RETURN_NAMES = (Lexicon.RI, Lexicon.GI, Lexicon.BI, Lexicon.MI)
     OUTPUT_IS_LIST = (True, True, True, True, )
@@ -224,7 +231,7 @@ class PixelSplitNode(JOVImageMultiple):
         "optional": {
             Lexicon.PIXEL: (WILDCARD, {})
         }}
-        return Lexicon._parse(d, JOV_HELP_URL + "/COMPOSE#-pixel-split")
+        return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         images = []
@@ -241,7 +248,9 @@ class PixelSplitNode(JOVImageMultiple):
 class PixelMergeNode(JOVImageMultiple):
     NAME = "PIXEL MERGE (JOV) 🫂"
     CATEGORY = JOV_CATEGORY
-    DESCRIPTION = "Combine 3 or 4 inputs into a single image."
+    HELP_URL = JOV_HELP_URL + "/COMPOSE#-pixel-merge"
+    DESC = "Combine 3 or 4 inputs into a single image."
+    DESCRIPTION = load_help(NAME, CATEGORY, HELP_URL)
     SORT = 45
 
     @classmethod
@@ -255,7 +264,7 @@ class PixelMergeNode(JOVImageMultiple):
             Lexicon.A: (WILDCARD, {}),
             Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
         }}
-        return Lexicon._parse(d, JOV_HELP_URL + "/COMPOSE#-pixel-merge")
+        return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor]:
         R = kw.get(Lexicon.R, [None])
@@ -284,7 +293,9 @@ class PixelMergeNode(JOVImageMultiple):
 class PixelSwapNode(JOVImageMultiple):
     NAME = "PIXEL SWAP (JOV) 🔃"
     CATEGORY = JOV_CATEGORY
-    DESCRIPTION = "Swap inputs of one image with another or fill its channels with solids."
+    HELP_URL = JOV_HELP_URL + "/COMPOSE#-pixel-swap"
+    DESC = "Swap inputs of one image with another or fill its channels with solids."
+    DESCRIPTION = load_help(NAME, CATEGORY, HELP_URL)
     SORT = 48
 
     @classmethod
@@ -307,7 +318,7 @@ class PixelSwapNode(JOVImageMultiple):
                              {"default": EnumPixelSwizzle.ALPHA_A.name}),
             Lexicon.A: ("INT", {"default": 0, "step": 1, "min": 0, "max": 255}),
         }}
-        return Lexicon._parse(d, JOV_HELP_URL + "/COMPOSE#-pixel-swap")
+        return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor]:
         pA = batch_extract(kw.get(Lexicon.PIXEL_A, None))
@@ -353,7 +364,9 @@ class PixelSwapNode(JOVImageMultiple):
 class StackNode(JOVImageMultiple):
     NAME = "STACK (JOV) ➕"
     CATEGORY = JOV_CATEGORY
-    DESCRIPTION = "Union multiple images horizontal, vertical or in a grid."
+    HELP_URL = JOV_HELP_URL + "/COMPOSE#-stack"
+    DESC = "Union multiple images horizontal, vertical or in a grid."
+    DESCRIPTION = load_help(NAME, CATEGORY, HELP_URL)
     OUTPUT_IS_LIST = (False, False, False,)
     SORT = 75
 
@@ -369,7 +382,7 @@ class StackNode(JOVImageMultiple):
             Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
             Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
         }}
-        return Lexicon._parse(d, JOV_HELP_URL + "/COMPOSE#-stack")
+        return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         images = []
@@ -405,7 +418,9 @@ class StackNode(JOVImageMultiple):
 class CropNode(JOVImageMultiple):
     NAME = "CROP (JOV) ✂️"
     CATEGORY = JOV_CATEGORY
-    DESCRIPTION = "Clip away sections of an image and backfill with optional color matte."
+    HELP_URL = JOV_HELP_URL + "/COMPOSE#-crop"
+    DESC = "Clip away sections of an image and backfill with optional color matte."
+    DESCRIPTION = load_help(NAME, CATEGORY, HELP_URL)
     SORT = 5
 
     @classmethod
@@ -421,7 +436,7 @@ class CropNode(JOVImageMultiple):
             Lexicon.BLBR: ("VEC4", {"default": (1, 0, 1, 1), "step": 0.01, "precision": 5, "round": 0.000001, "label": [Lexicon.BOTTOM, Lexicon.LEFT, Lexicon.BOTTOM, Lexicon.RIGHT]}),
             Lexicon.RGB: ("VEC3", {"default": (0, 0, 0),  "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B], "rgb": True})
         }}
-        return Lexicon._parse(d, JOV_HELP_URL + "/COMPOSE#-crop")
+        return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> tuple[list[torch.Tensor], list[torch.Tensor]]:
         pA = batch_extract(kw.get(Lexicon.PIXEL, None))
@@ -456,7 +471,9 @@ class CropNode(JOVImageMultiple):
 class ColorTheoryNode(JOVImageMultiple):
     NAME = "COLOR THEORY (JOV) 🛞"
     CATEGORY = JOV_CATEGORY
-    DESCRIPTION = "Generate Complimentary, Triadic and Tetradic color sets."
+    HELP_URL = JOV_HELP_URL + "/COMPOSE#-color-theory"
+    DESC = "Generate Complimentary, Triadic and Tetradic color sets"
+    DESCRIPTION = load_help(NAME, CATEGORY, HELP_URL)
     RETURN_TYPES = ("IMAGE", "IMAGE", "IMAGE", "IMAGE", "IMAGE")
     RETURN_NAMES = (Lexicon.C1, Lexicon.C2, Lexicon.C3, Lexicon.C4, Lexicon.C5)
     OUTPUT_IS_LIST = (True, True, True, True, True)
@@ -472,7 +489,7 @@ class ColorTheoryNode(JOVImageMultiple):
             Lexicon.VALUE: ("INT", {"default": 45, "min": -90, "max": 90, "step": 1, "tooltip": "Custom angle of separation to use when calculating colors"}),
             Lexicon.INVERT: ("BOOLEAN", {"default": False})
         }}
-        return Lexicon._parse(d, JOV_HELP_URL + "/COMPOSE#-color-theory")
+        return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> tuple[list[torch.Tensor], list[torch.Tensor]]:
         pA = batch_extract(kw.get(Lexicon.PIXEL, None))

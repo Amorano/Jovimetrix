@@ -230,9 +230,21 @@ Everyone mentioned here has been tireless in helping me, at some point, construc
 
 <!---------------------------------------------------------------------------->
 
-# HELP & DONATIONS FOR DONATION WARE
+# DONATION WARE
 
 Everything here is made because I wanted to make it.
 Everything you are looking for here that you cant find doesnt exsit because I didnt make it.
 If you feel like helping with text or code contributions, please pull and send me any PRs.
-[If you feel like donating money resource instead, you can always use my ko-fi](https://ko-fi.com/alexandermorano).
+
+## CONTRIBUTIONS
+
+Feel free to contribute to this project by reporting issues or suggesting improvements. Open an issue or submit a pull request on the GitHub repository.
+
+## DONATIONS
+
+[![If you feel like donating money resource instead, you can always use my ko-fi ❤️](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/alexandermorano)
+
+
+# LICENSE
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.

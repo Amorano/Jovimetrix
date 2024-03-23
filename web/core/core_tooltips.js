@@ -4,7 +4,7 @@
  */
 
 import { app } from "../../../scripts/app.js"
-
+import { addDocumentation } from '../util/util_help.js'
 import { CONFIG_USER } from '../util/util_config.js'
 // const TOOLTIP_COLOR = CONFIG_USER.color.tooltips;
 
@@ -77,7 +77,7 @@ app.registerExtension({
             this.tooltips_visible = false;
         };
     },
-	beforeRegisterNodeDef(nodeType) {
+	beforeRegisterNodeDef(nodeType, nodeData) {
         const self = this;
         const onDrawForeground = nodeType.prototype.onDrawForeground;
         nodeType.prototype.onDrawForeground = function (ctx) {
@@ -166,6 +166,10 @@ app.registerExtension({
                 ctx.restore();
             }
             return me;
+        }
+
+        if (nodeData?.category?.startsWith("JOVIMETRIX")) {
+            addDocumentation(nodeData, nodeType);
         }
 
         // HELP!

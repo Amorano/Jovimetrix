@@ -15,13 +15,13 @@ import torch
 
 from comfy.utils import ProgressBar
 
-from Jovimetrix import JOV_HELP_URL, JOVBaseNode, WILDCARD
+from Jovimetrix import JOV_HELP_URL, JOVBaseNode, WILDCARD, load_help
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import EnumTupleType, parse_tuple, zip_longest_fill
 from Jovimetrix.sup.anim import ease_op, EnumEase
 
 # =============================================================================
-
+HELP_URL = JOV_HELP_URL + "/CALC#%EF%B8%8F⃣-value"
 JOV_CATEGORY = "JOVIMETRIX 🔺🟩🔵/CALC"
 
 # =============================================================================
@@ -184,7 +184,9 @@ def convert_value(typ:EnumConvertType, val:Any) -> Any:
 class CalcUnaryOPNode(JOVBaseNode):
     NAME = "CALC OP UNARY (JOV) 🎲"
     CATEGORY = JOV_CATEGORY
-    DESCRIPTION = "Perform a Unary Operation on an input."
+    HELP_URL = JOV_HELP_URL + "/CALC#-calc-op-unary"
+    DESC = "Perform a Unary Operation on an input."
+    DESCRIPTION = load_help(NAME, CATEGORY, HELP_URL)
     RETURN_TYPES = (WILDCARD,)
     RETURN_NAMES = (Lexicon.UNKNOWN, )
     OUTPUT_IS_LIST = (True, )
@@ -198,7 +200,7 @@ class CalcUnaryOPNode(JOVBaseNode):
             Lexicon.IN_A: (WILDCARD, {"default": None}),
             Lexicon.FUNC: (EnumUnaryOperation._member_names_, {"default": EnumUnaryOperation.ABS.name})
         }}
-        return Lexicon._parse(d, JOV_HELP_URL + "/CALC#-calc-op-unary")
+        return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> tuple[bool]:
         results = []
@@ -249,7 +251,9 @@ class CalcUnaryOPNode(JOVBaseNode):
 class CalcBinaryOPNode(JOVBaseNode):
     NAME = "CALC OP BINARY (JOV) 🌟"
     CATEGORY = JOV_CATEGORY
-    DESCRIPTION = "Perform a Binary Operation on two inputs."
+    HELP_URL = JOV_HELP_URL + "/CALC#-calc-op-binary"
+    DESC = "Perform a Binary Operation on two inputs."
+    DESCRIPTION = load_help(NAME, CATEGORY, HELP_URL)
     RETURN_TYPES = (WILDCARD,)
     RETURN_NAMES = (Lexicon.UNKNOWN, )
     OUTPUT_IS_LIST = (True, )
@@ -290,7 +294,7 @@ class CalcBinaryOPNode(JOVBaseNode):
                                       "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W],
                                       "tooltip":"4-value vector"}),
         }}
-        return Lexicon._parse(d, JOV_HELP_URL + "/CALC#-calc-op-binary")
+        return Lexicon._parse(d, HELP_URL)
 
     def run(self, **kw) -> tuple[bool]:
         results = []
@@ -406,7 +410,9 @@ class CalcBinaryOPNode(JOVBaseNode):
 class ValueNode(JOVBaseNode):
     NAME = "VALUE (JOV) 🧬"
     CATEGORY = JOV_CATEGORY
-    DESCRIPTION = "Create a value for most types; also universal constants."
+    HELP_URL = JOV_HELP_URL + "/CALC#-value"
+    DESC = "Create a value for most types; also universal constants."
+    DESCRIPTION = load_help(NAME, CATEGORY, HELP_URL)
     RETURN_TYPES = (WILDCARD, )
     RETURN_NAMES = (Lexicon.ANY, )
     OUTPUT_IS_LIST = (True, )
@@ -425,7 +431,7 @@ class ValueNode(JOVBaseNode):
             Lexicon.W: ("FLOAT", {"default": 0}),
             Lexicon.STRING: ("STRING", {"default": "", "dynamicPrompts": False, "multiline": True}),
         }}
-        return Lexicon._parse(d, JOV_HELP_URL + "/CALC#%EF%B8%8F⃣-value")
+        return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> tuple[bool]:
         raw = kw.get(Lexicon.IN_A, [None])
@@ -452,7 +458,9 @@ class ValueNode(JOVBaseNode):
 class LerpNode(JOVBaseNode):
     NAME = "LERP (JOV) 🔰"
     CATEGORY = JOV_CATEGORY
-    DESCRIPTION = "Interpolate between two values with or without a smoothing."
+    HELP_URL = JOV_HELP_URL + "/CALC#-lerp"
+    DESC = "Interpolate between two values with or without a smoothing."
+    DESCRIPTION = load_help(NAME, CATEGORY, HELP_URL)
     OUTPUT_IS_LIST = (True, )
     RETURN_TYPES = (WILDCARD, )
     RETURN_NAMES = (Lexicon.ANY )
@@ -471,7 +479,7 @@ class LerpNode(JOVBaseNode):
             Lexicon.EASE: (["NONE"] + EnumEase._member_names_, {"default": "NONE"}),
             Lexicon.TYPE: (EnumNumberType._member_names_, {"default": EnumNumberType.FLOAT.name, "tooltip": "Output As"})
         }}
-        return Lexicon._parse(d, JOV_HELP_URL + "/CALC#-lerp")
+        return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> tuple[Any, Any]:
         A = parse_tuple(Lexicon.IN_A, kw, [0], EnumTupleType.FLOAT)

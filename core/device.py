@@ -20,7 +20,7 @@ from loguru import logger
 
 from comfy.utils import ProgressBar
 
-from Jovimetrix import JOV_HELP_URL, WILDCARD, MIN_IMAGE_SIZE, JOVBaseNode, JOVImageMultiple
+from Jovimetrix import JOV_HELP_URL, WILDCARD, MIN_IMAGE_SIZE, JOVBaseNode, JOVImageMultiple, load_help
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import parse_tuple
 from Jovimetrix.sup.stream import camera_list, monitor_list, window_list, \
@@ -62,7 +62,9 @@ class EnumStreamType(Enum):
 class StreamReaderNode(JOVImageMultiple):
     NAME = "STREAM READER (JOV) 📺"
     CATEGORY = JOV_CATEGORY
-    DESCRIPTION = "Connect system media devices and remote streams into ComfyUI workflows."
+    HELP_URL = JOV_HELP_URL + "/DEVICE#-stream-reader"
+    DESC = "Connect system media devices and remote streams into ComfyUI workflows."
+    DESCRIPTION = load_help(NAME, CATEGORY, HELP_URL)
     INPUT_IS_LIST = False
     SORT = 50
     CAMERAS = None
@@ -105,7 +107,7 @@ class StreamReaderNode(JOVImageMultiple):
             Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
             Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
         }}
-        return Lexicon._parse(d, JOV_HELP_URL + "/DEVICE#-stream-reader")
+        return Lexicon._parse(d, cls.HELP_URL)
 
     @classmethod
     def IS_CHANGED(cls, **kw) -> float:
@@ -260,7 +262,9 @@ class StreamReaderNode(JOVImageMultiple):
 class StreamWriterNode(JOVBaseNode):
     NAME = "STREAM WRITER (JOV) 🎞️"
     CATEGORY = JOV_CATEGORY
-    DESCRIPTION = "Broadcast ComfyUI Node outputs to custom webserver endpoint."
+    HELP_URL = JOV_HELP_URL + "/DEVICE#%EF%B8%8F-stream-writer"
+    DESC = "Broadcast ComfyUI Node outputs to custom webserver endpoint."
+    DESCRIPTION = load_help(NAME, CATEGORY, HELP_URL)
     INPUT_IS_LIST = False
     OUTPUT_NODE = True
     SORT = 70
@@ -278,7 +282,7 @@ class StreamWriterNode(JOVBaseNode):
             Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
             Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
         }}
-        return Lexicon._parse(d, JOV_HELP_URL + "/DEVICE#-stream-writer")
+        return Lexicon._parse(d, cls.HELP_URL)
 
     """
     @classmethod
@@ -328,7 +332,9 @@ if JOV_SPOUT:
     class SpoutWriterNode(JOVBaseNode):
         NAME = "SPOUT WRITER (JOV) 🎥"
         CATEGORY = JOV_CATEGORY
-        DESCRIPTION = "Send image data to Spout endpoints"
+        HELP_URL = JOV_HELP_URL + "/DEVICE#-spout-writer"
+        DESC = "Send image data to Spout endpoints"
+        DESCRIPTION = load_help(NAME, CATEGORY, HELP_URL)
         RETURN_TYPES = ("IMAGE", )
         RETURN_NAMES = (Lexicon.IMAGE,)
         OUTPUT_NODE = True
@@ -347,7 +353,7 @@ if JOV_SPOUT:
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
                 Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
             }}
-            return Lexicon._parse(d, JOV_HELP_URL + "/DEVICE#-spout-writer")
+            return Lexicon._parse(d, cls.HELP_URL)
 
         @classmethod
         def IS_CHANGED(cls, **kw) -> float:
@@ -387,7 +393,9 @@ if JOV_SPOUT:
 class MIDIMessageNode(JOVBaseNode):
     NAME = "MIDI MESSAGE (JOV) 🎛️"
     CATEGORY = JOV_CATEGORY
-    DESCRIPTION = "Expands a MIDI message into its values."
+    HELP_URL = JOV_HELP_URL + "/DEVICE#%EF%B8%8F-midi-message"
+    DESC = "Expands a MIDI message into its values."
+    DESCRIPTION = load_help(NAME, CATEGORY, HELP_URL)
     INPUT_IS_LIST = False
     OUTPUT_IS_LIST = (False, False, False, False, False, False, False,)
     RETURN_TYPES = ('JMIDIMSG', 'BOOLEAN', 'INT', 'INT', 'INT', 'FLOAT', 'FLOAT', )
@@ -401,7 +409,7 @@ class MIDIMessageNode(JOVBaseNode):
             "optional": {
             Lexicon.MIDI: ('JMIDIMSG', {"default": None})
         }}
-        return Lexicon._parse(d, JOV_HELP_URL + "/DEVICE#-midi-message")
+        return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> tuple[object, bool, int, int, int, float, float]:
         if (message := kw.get(Lexicon.MIDI, None)) is None:
@@ -411,7 +419,9 @@ class MIDIMessageNode(JOVBaseNode):
 class MIDIReaderNode(JOVBaseNode):
     NAME = "MIDI READER (JOV) 🎹"
     CATEGORY = JOV_CATEGORY
-    DESCRIPTION = "Capture MIDI devices and pass the data into Comfy."
+    HELP_URL = JOV_HELP_URL + "/DEVICE#-midi-reader"
+    DESC = "Capture MIDI devices and pass the data into Comfy."
+    DESCRIPTION = load_help(NAME, CATEGORY, HELP_URL)
     INPUT_IS_LIST = False
     OUTPUT_IS_LIST = (False, False, False, False, False, False, False)
     RETURN_TYPES = ('JMIDIMSG', 'BOOLEAN', 'INT', 'INT', 'INT', 'FLOAT', 'FLOAT',)
@@ -426,7 +436,7 @@ class MIDIReaderNode(JOVBaseNode):
             "optional": {
             Lexicon.DEVICE : (cls.DEVICES, {"default": cls.DEVICES[0] if len(cls.DEVICES) > 0 else None})
         }}
-        return Lexicon._parse(d, JOV_HELP_URL + "/DEVICE#-midi-reader")
+        return Lexicon._parse(d, cls.HELP_URL)
 
     @classmethod
     def IS_CHANGED(cls) -> float:
@@ -479,7 +489,9 @@ class MIDIReaderNode(JOVBaseNode):
 class MIDIFilterEZNode(JOVBaseNode):
     NAME = "MIDI FILTER EZ ❇️"
     CATEGORY = JOV_CATEGORY
-    DESCRIPTION = "Filter MIDI messages by channel, message type or value."
+    HELP_URL = JOV_HELP_URL + "/DEVICE#%EF%B8%8F-midi-filter-ez"
+    DESC = "Filter MIDI messages by channel, message type or value."
+    DESCRIPTION = load_help(NAME, CATEGORY, HELP_URL)
     INPUT_IS_LIST = False
     OUTPUT_IS_LIST = (False, False, )
     RETURN_TYPES = ('JMIDIMSG', 'BOOLEAN', )
@@ -499,7 +511,7 @@ class MIDIFilterEZNode(JOVBaseNode):
             Lexicon.VALUE: ("INT", {"default": -1, "min": -1, "max": 127, "step": 1}),
             Lexicon.NORMALIZE: ("FLOAT", {"default": -1, "min": -1, "max": 1, "step": 0.01})
         }}
-        return Lexicon._parse(d, JOV_HELP_URL + "/DEVICE#-midi-filter-ez")
+        return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> tuple[bool]:
         message = kw.get(Lexicon.MIDI, None)
@@ -528,7 +540,9 @@ class MIDIFilterEZNode(JOVBaseNode):
 class MIDIFilterNode(JOVBaseNode):
     NAME = "MIDI FILTER ✳️"
     CATEGORY = JOV_CATEGORY
-    DESCRIPTION = "Filter MIDI messages by channel, message type or value."
+    HELP_URL = JOV_HELP_URL + "/DEVICE#%EF%B8%8F-midi-filter"
+    DESC = "Filter MIDI messages by channel, message type or value."
+    DESCRIPTION = load_help(NAME, CATEGORY, HELP_URL)
     INPUT_IS_LIST = False
     OUTPUT_IS_LIST = (False, False, )
     RETURN_TYPES = ('JMIDIMSG', 'BOOLEAN', )
@@ -549,7 +563,7 @@ class MIDIFilterNode(JOVBaseNode):
             Lexicon.VALUE: ("STRING", {"default": ""}),
             Lexicon.NORMALIZE: ("STRING", {"default": ""})
         }}
-        return Lexicon._parse(d, JOV_HELP_URL + "/DEVICE#-midi-filter")
+        return Lexicon._parse(d, cls.HELP_URL)
 
     def __filter(self, data: str, value: float) -> bool:
         if not data:
@@ -614,7 +628,9 @@ class MIDIFilterNode(JOVBaseNode):
 class AudioDeviceNode(JOVBaseNode):
     NAME = "AUDIO DEVICE (JOV) 📺"
     CATEGORY = JOV_CATEGORY
-    DESCRIPTION = "Stream from System audio devices into ComfyUI workflows"
+    HELP_URL = JOV_HELP_URL + "/DEVICE#-audio-device"
+    DESC = "Stream from System audio devices into ComfyUI workflows"
+    DESCRIPTION = load_help(NAME, CATEGORY, HELP_URL)
     INPUT_IS_LIST = False
     OUTPUT_IS_LIST = (False,)
     RETURN_TYPES = ('WAVE',)
@@ -632,7 +648,7 @@ class AudioDeviceNode(JOVBaseNode):
             Lexicon.TRIGGER: ("BOOLEAN", {"default": True, "tooltip":"Auto-record when executed by the Q"}),
             Lexicon.RECORD: ("BOOLEAN", {"default": True, "tooltip":"Control to manually adjust when the selected device is recording"}),
         }}
-        return Lexicon._parse(d, JOV_HELP_URL + "/DEVICE#-audio_device")
+        return Lexicon._parse(d, cls.HELP_URL)
 
     @classmethod
     def IS_CHANGED(cls, **kw) -> float:

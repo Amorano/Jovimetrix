@@ -14,7 +14,7 @@ from loguru import logger
 from comfy.utils import ProgressBar
 from nodes import interrupt_processing
 
-from Jovimetrix import comfy_message, parse_reset, ComfyAPIMessage, JOVBaseNode, TimedOutException, JOV_HELP_URL, WILDCARD
+from Jovimetrix import comfy_message, load_help, parse_reset, ComfyAPIMessage, JOVBaseNode, TimedOutException, JOV_HELP_URL, WILDCARD
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import parse_dynamic, zip_longest_fill
 from Jovimetrix.core.calc import EnumConvertType, parse_type_value
@@ -63,7 +63,9 @@ class EnumComparison(Enum):
 class DelayNode(JOVBaseNode):
     NAME = "DELAY (JOV) ✋🏽"
     CATEGORY = JOV_CATEGORY
-    DESCRIPTION = "Delay traffic. Electrons on the data bus go round."
+    HELP_URL = JOV_HELP_URL + "/FLOW#-delay"
+    DESC = "Delay traffic. Electrons on the data bus go round."
+    DESCRIPTION = load_help(NAME, CATEGORY, HELP_URL)
     RETURN_TYPES = (WILDCARD,)
     RETURN_NAMES = (Lexicon.ROUTE,)
 
@@ -83,7 +85,7 @@ class DelayNode(JOVBaseNode):
         "hidden": {
             "ident": "UNIQUE_ID"
         }}
-        return Lexicon._parse(d, JOV_HELP_URL + "/FLOW#-delay")
+        return Lexicon._parse(d, cls.HELP_URL)
 
     @staticmethod
     def parse_q(ident, delay: int, forced:bool=False)-> bool:
@@ -146,7 +148,9 @@ class DelayNode(JOVBaseNode):
 class HoldValueNode(JOVBaseNode):
     NAME = "HOLD VALUE (JOV) 🫴🏽"
     CATEGORY = JOV_CATEGORY
-    DESCRIPTION = "When engaged will send the last value it had even with new values arriving."
+    HELP_URL = JOV_HELP_URL + "/FLOW#-hold"
+    DESC = "When engaged will send the last value it had even with new values arriving."
+    DESCRIPTION = load_help(NAME, CATEGORY, HELP_URL)
     RETURN_TYPES = (WILDCARD,)
     RETURN_NAMES = (Lexicon.ROUTE,)
 
@@ -158,7 +162,7 @@ class HoldValueNode(JOVBaseNode):
             Lexicon.PASS_IN: (WILDCARD, {"default": None}),
             Lexicon.WAIT: ("BOOLEAN", {"default": False}),
         }}
-        return Lexicon._parse(d, JOV_HELP_URL + "/FLOW#-hold")
+        return Lexicon._parse(d, cls.HELP_URL)
 
     def __init__(self, *arg, **kw) -> None:
         super().__init__(*arg, **kw)
@@ -173,7 +177,9 @@ class HoldValueNode(JOVBaseNode):
 class ComparisonNode(JOVBaseNode):
     NAME = "COMPARISON (JOV) 🕵🏽"
     CATEGORY = JOV_CATEGORY
-    DESCRIPTION = "Compare two inputs: A=B, A!=B, A>B, A>=B, A<B, A<=B"
+    HELP_URL = JOV_HELP_URL + "/FLOW#-comparison"
+    DESC = "Compare two inputs: A=B, A!=B, A>B, A>=B, A<B, A<=B"
+    DESCRIPTION = load_help(NAME, CATEGORY, HELP_URL)
     RETURN_TYPES = (WILDCARD, WILDCARD,)
     RETURN_NAMES = (Lexicon.ANY, Lexicon.VEC, )
     OUTPUT_IS_LIST = (True, True, )
@@ -190,7 +196,7 @@ class ComparisonNode(JOVBaseNode):
             Lexicon.COMPARE: (EnumComparison._member_names_, {"default": EnumComparison.EQUAL.name}),
             Lexicon.FLIP: ("BOOLEAN", {"default": False}),
         }}
-        return Lexicon._parse(d, JOV_HELP_URL + "/FLOW#-comparison")
+        return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> tuple[bool]:
         A = kw.get(Lexicon.IN_A, [0])
@@ -257,7 +263,9 @@ class ComparisonNode(JOVBaseNode):
 class SelectNode(JOVBaseNode):
     NAME = "SELECT (JOV) 🤏🏽"
     CATEGORY = JOV_CATEGORY
-    DESCRIPTION = "Select an item from a user explicit list of inputs."
+    HELP_URL = JOV_HELP_URL + "/FLOW#-select"
+    DESC = "Select an item from a user explicit list of inputs."
+    DESCRIPTION = load_help(NAME, CATEGORY, HELP_URL)
     INPUT_IS_LIST = False
     RETURN_TYPES = (WILDCARD, "STRING", "INT", "INT", )
     RETURN_NAMES = (Lexicon.ANY, Lexicon.QUEUE, Lexicon.VALUE, Lexicon.TOTAL, )
@@ -276,7 +284,7 @@ class SelectNode(JOVBaseNode):
         "hidden": {
             "ident": "UNIQUE_ID"
         }}
-        return Lexicon._parse(d, JOV_HELP_URL + "/FLOW#-select")
+        return Lexicon._parse(d, cls.HELP_URL)
 
     @classmethod
     def IS_CHANGED(cls) -> float:

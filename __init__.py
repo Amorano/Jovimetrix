@@ -90,6 +90,8 @@ JOV_CONFIG = {}
 JOV_WEB = ROOT / 'web'
 JOV_DEFAULT = JOV_WEB / 'default.json'
 JOV_CONFIG_FILE = JOV_WEB / 'config.json'
+JOV_HELP_INDEX = {}
+JOV_HELP_ROOT = ROOT / 'help'
 # nodes to skip on import; for online systems; skip Export, Streamreader, etc...
 JOV_IGNORE_NODE = ROOT / 'ignore.txt'
 JOV_GLSL = ROOT / 'res' / 'glsl'
@@ -251,6 +253,11 @@ except Exception as e:
 # == SUPPORT FUNCTIONS
 # =============================================================================
 
+def load_help(node:str, category:str, url:str) -> str:
+    global JOV_HELP_INDEX
+    parse = JOV_HELP_INDEX.get(node, "NO HELP AVAILABLE")
+    return parse.replace("<URL>", url).replace("<CAT>", category)
+
 def parse_reset(ident:str) -> bool:
     try:
         data = ComfyAPIMessage.poll(ident, timeout=0)
@@ -270,7 +277,7 @@ MIN_IMAGE_SIZE = 512
 # === SESSION ===
 # =============================================================================
 
-def configLoad(fname:Path, as_json:bool=True) -> None:
+def configLoad(fname:Path, as_json:bool=True) -> Any | list[str] | None:
     try:
         with open(fname, 'r', encoding='utf-8') as fn:
             if as_json:
@@ -280,6 +287,7 @@ def configLoad(fname:Path, as_json:bool=True) -> None:
         pass
     except Exception as e:
         logger.error(e)
+    return []
 
 class Session(metaclass=Singleton):
     CLASS_MAPPINGS = {}
@@ -304,11 +312,23 @@ class Session(metaclass=Singleton):
             except:
                 raise Exception("MAJOR 😿😰😬🥟 BLUNDERCATS 🥟😬😰😿")
 
+        help_count = 0
+        global JOV_HELP_ROOT, JOV_HELP_INDEX
+        for f in (JOV_HELP_ROOT).iterdir():
+            if f.suffix != ".md":
+                continue
+            if len(data := configLoad(f, as_json=False)) > 0:
+                JOV_HELP_INDEX[f.stem] = '\n'.join(data)
+            help_count += 1
+        if help_count > 0:
+            logger.info(f"{help_count} help files loaded")
+
         if JOV_IGNORE_NODE.exists():
             JOV_IGNORE_NODE = configLoad(JOV_IGNORE_NODE, False)
         else:
             JOV_IGNORE_NODE = []
 
+        node_count = 0
         for f in (ROOT / 'core').iterdir():
             if f.suffix != ".py" or f.stem.startswith('_'):
                 continue
@@ -337,7 +357,19 @@ class Session(metaclass=Singleton):
                     else:
                         Session.CLASS_MAPPINGS[name] = class_object
 
+                    if JOV_HELP_INDEX.get(name, None) is None:
+                        if hasattr(class_object, 'DESCRIPTION'):
+                            JOV_HELP_INDEX[name] = class_object.DESCRIPTION
+                        elif hasattr(class_object, 'DESC'):
+                            JOV_HELP_INDEX[name] = class_object.DESC
+                        else:
+                            JOV_HELP_INDEX[name] = "NO HELP AVAILABLE"
+                            logger.debug(f"{name} missing help")
+
+                    node_count += 1
+
             logger.info(f"✅ {module.__name__}")
+        logger.info(f"{node_count} nodes loaded")
 
         # 🔗 ⚓ 📀 🍿 🎪 🐘 🤯 😱 💀 ⛓️ 🔒 🔑 🪀 🪁 🔮 🧿 🧙🏽 🧙🏽‍♀️ 🧯 🦚
 

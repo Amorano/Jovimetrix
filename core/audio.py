@@ -10,7 +10,7 @@ from loguru import logger
 
 from comfy.utils import ProgressBar
 
-from Jovimetrix import JOV_HELP_URL, MIN_IMAGE_SIZE, JOVBaseNode, JOVImageMultiple
+from Jovimetrix import JOV_HELP_URL, MIN_IMAGE_SIZE, JOVBaseNode, JOVImageMultiple, load_help
 
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import parse_tuple, zip_longest_fill
@@ -26,7 +26,9 @@ JOV_CATEGORY = "JOVIMETRIX 🔺🟩🔵/AUDIO"
 class LoadWaveNode(JOVBaseNode):
     NAME = "LOAD WAVE (JOV) 🎼"
     CATEGORY = JOV_CATEGORY
-    DESCRIPTION = "Import audio waveform data"
+    HELP_URL = JOV_HELP_URL + "/AUDIO#-load-wave"
+    DESC = "Import audio waveform data"
+    DESCRIPTION = load_help(NAME, CATEGORY, HELP_URL)
     RETURN_TYPES = ("WAVE",)
     RETURN_NAMES = (Lexicon.WAVE,)
     OUTPUT_IS_LIST = (False,)
@@ -38,7 +40,7 @@ class LoadWaveNode(JOVBaseNode):
             "optional": {
                 Lexicon.FILEN: ("STRING", {"default": ""})
         }}
-        return Lexicon._parse(d, JOV_HELP_URL + "/AUDIO#-load-wave")
+        return Lexicon._parse(d, cls.HELP_URL)
 
     def __init__(self, *arg, **kw) -> None:
         super().__init__(*arg, **kw)
@@ -67,7 +69,9 @@ class LoadWaveNode(JOVBaseNode):
 class WaveGraphNode(JOVImageMultiple):
     NAME = "WAVE GRAPH (JOV) ▶ ılıılı"
     CATEGORY = JOV_CATEGORY
-    DESCRIPTION = "Display audio waveform data as a linear bar graph"
+    HELP_URL = JOV_HELP_URL + "/AUDIO#-wave-graph"
+    DESC = "Display audio waveform data as a linear bar graph"
+    DESCRIPTION = load_help(NAME, CATEGORY, HELP_URL)
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -84,7 +88,7 @@ class WaveGraphNode(JOVImageMultiple):
             Lexicon.MATTE: ("VEC4", {"default": (0, 128, 128, 255), "step": 1,
                                      "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
         }}
-        return Lexicon._parse(d, JOV_HELP_URL + "/AUDIO#-wave-graph")
+        return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         wave = kw.get(Lexicon.WAVE, [None])

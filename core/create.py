@@ -13,7 +13,7 @@ from loguru import logger
 from comfy.utils import ProgressBar
 
 from Jovimetrix import WILDCARD, JOVImageSimple, JOVImageMultiple, \
-    JOV_HELP_URL, MIN_IMAGE_SIZE
+    JOV_HELP_URL, MIN_IMAGE_SIZE, load_help
 
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import parse_dynamic, parse_tuple, zip_longest_fill, \
@@ -39,7 +39,9 @@ JOV_CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
 class ConstantNode(JOVImageMultiple):
     NAME = "CONSTANT (JOV) 🟪"
     CATEGORY = JOV_CATEGORY
-    DESCRIPTION = "Create a single RGBA block of color. Useful for masks, overlays and general filtering."
+    HELP_URL = JOV_HELP_URL + "/CREATE#-constant"
+    DESC = "Create a single RGBA block of color. Useful for masks, overlays and general filtering."
+    DESCRIPTION = load_help(NAME, CATEGORY, HELP_URL)
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -54,7 +56,7 @@ class ConstantNode(JOVImageMultiple):
                                   "label": [Lexicon.W, Lexicon.H],
                                   "tooltip": "Desired Width and Height of the Color Output"})
         }}
-        return Lexicon._parse(d, JOV_HELP_URL + "/CREATE#-constant")
+        return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         pA = batch_extract(kw.get(Lexicon.PIXEL, None))
@@ -74,7 +76,9 @@ class ConstantNode(JOVImageMultiple):
 class ShapeNode(JOVImageMultiple):
     NAME = "SHAPE GENERATOR (JOV) ✨"
     CATEGORY = JOV_CATEGORY
-    DESCRIPTION = "Generate polyhedra for masking or texture work."
+    HELP_URL = JOV_HELP_URL + "/CREATE#-shape-generator"
+    DESC = "Generate polyhedra for masking or texture work."
+    DESCRIPTION = load_help(NAME, CATEGORY, HELP_URL)
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -99,6 +103,7 @@ class ShapeNode(JOVImageMultiple):
                                     "round": 0.00001, "label": [Lexicon.X, Lexicon.Y]}),
             Lexicon.EDGE: (EnumEdge._member_names_, {"default": EnumEdge.CLIP.name}),
         }}
+        return Lexicon._parse(d, cls.HELP_URL)
         d = Lexicon._parse(d, JOV_HELP_URL + "/CREATE#-shape-generator")
         return d
 
@@ -156,7 +161,9 @@ class ShapeNode(JOVImageMultiple):
 class TextNode(JOVImageMultiple):
     NAME = "TEXT GENERATOR (JOV) 📝"
     CATEGORY = JOV_CATEGORY
-    DESCRIPTION = "Use any system font with auto-fit or manual placement."
+    HELP_URL = JOV_HELP_URL + "/CREATE#-text-generator"
+    DESC = "Use any system font with auto-fit or manual placement."
+    DESCRIPTION = load_help(NAME, CATEGORY, HELP_URL)
     FONTS = font_names()
     FONT_NAMES = sorted(FONTS.keys())
 
@@ -193,6 +200,7 @@ class TextNode(JOVImageMultiple):
             Lexicon.EDGE: (EnumEdge._member_names_, {"default": EnumEdge.CLIP.name}),
             Lexicon.INVERT: ("BOOLEAN", {"default": False, "tooltip": "Invert the mask input"})
         }}
+        return Lexicon._parse(d, cls.HELP_URL)
         return Lexicon._parse(d, JOV_HELP_URL + "/CREATE#-text-generator")
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
@@ -268,7 +276,9 @@ class TextNode(JOVImageMultiple):
 class StereogramNode(JOVImageSimple):
     NAME = "STEREOGRAM (JOV) 📻"
     CATEGORY = JOV_CATEGORY
-    DESCRIPTION = "Make a magic eye stereograms."
+    HELP_URL = JOV_HELP_URL + "/CREATE#-stereogram"
+    DESC = "Make a magic eye stereograms."
+    DESCRIPTION = load_help(NAME, CATEGORY, HELP_URL)
     INPUT_IS_LIST = True
 
     @classmethod
@@ -283,6 +293,7 @@ class StereogramNode(JOVImageSimple):
             Lexicon.GAMMA: ("FLOAT", {"default": 0.33, "min": 0, "max": 1, "step": 0.01}),
             Lexicon.SHIFT: ("FLOAT", {"default": 1., "min": -1, "max": 1, "step": 0.01}),
         }}
+        return Lexicon._parse(d, cls.HELP_URL)
         return Lexicon._parse(d, JOV_HELP_URL + "/CREATE#-stereogram")
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
@@ -307,7 +318,9 @@ class StereogramNode(JOVImageSimple):
 class GradientNode(JOVImageMultiple):
     NAME = "GRADIENT (JOV) 🍧"
     CATEGORY = JOV_CATEGORY
-    DESCRIPTION = "Make a gradient mapped to a linear or polar coordinate system."
+    HELP_URL = JOV_HELP_URL + "/CREATE#-gradient"
+    DESC = "Make a gradient mapped to a linear or polar coordinate system."
+    DESCRIPTION = load_help(NAME, CATEGORY, HELP_URL)
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -319,7 +332,7 @@ class GradientNode(JOVImageMultiple):
                                   "label": [Lexicon.W, Lexicon.H],
                                   "tooltip": "Desired Width and Height of the Color Output"})
         }}
-        return Lexicon._parse(d, JOV_HELP_URL + "/CREATE#-constant")
+        return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         pA = batch_extract(kw.get(Lexicon.PIXEL, None))
@@ -336,117 +349,5 @@ class GradientNode(JOVImageMultiple):
                 pA = tensor2cv(pA)
                 pA = image_matte(image, imageB=pA)
             images.append(cv2tensor_full(image))
-            pbar.update_absolute(idx)
-        return list(zip(*images))
-
-class NoiseNode(JOVImageMultiple):
-    NAME = "NOISE (JOV) 🏞"
-    CATEGORY = JOV_CATEGORY
-    DESCRIPTION = "Blocks of noise"
-    RETURN_TYPES = ("FLOAT", "IMAGE", "IMAGE", "MASK",)
-    RETURN_NAMES = (Lexicon.FLOAT, Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK,)
-    OUTPUT_IS_LIST = (True, True, True, True, )
-
-    @classmethod
-    def INPUT_TYPES(cls) -> dict:
-        d = {
-        "required": {},
-        "optional": {
-            Lexicon.NOISE: (EnumNoise._member_names_, {"default": EnumNoise.PERLIN_2D.name}),
-            Lexicon.SEED: ("INT", {"default": 0, "step": 1}),
-            Lexicon.X: ("FLOAT", {"default": MIN_IMAGE_SIZE, "step": 1,
-                                  "label": Lexicon.X, "min": 2,
-                                  "tooltip": "Width of the Noise Output"}),
-            Lexicon.XY: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), "step": 1,
-                                  "label": [Lexicon.X, Lexicon.Y],
-                                  "tooltip": "Width and Height of the Noise Output"}),
-            #Lexicon.XYZ: ("VEC3", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 4), "step": 1,
-            #                      "label": [Lexicon.X, Lexicon.Y, Lexicon.Z],
-            #                      "tooltip": "Width, Height and Depth of the Noise Output"}),
-            #Lexicon.XYZW: ("VEC4", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 4, 1), "step": 1,
-            #                      "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W],
-            #                      "tooltip": "Width, Height, Depth and Time of the Noise Output"}),
-            Lexicon.INDEX: ("INT", {"default": 1, "step": 1, "min": 1, "max": 2, "tooltip":"which index in the noise block to use for the float output"}),
-            Lexicon.OCTAVES: ("INT", {"default": 2, "step": 1, "min": 1, "max": 32, "tooltip":"number of passes"}),
-            Lexicon.PERSISTENCE: ("FLOAT", {"default": 2, "min": 0, "step": 0.01, "tooltip":"relative amplitude of each octave to its parent"}),
-            Lexicon.LACUNARITY: ("FLOAT", {"default": 4, "min": 0, "step": 0.01, "tooltip":"frequency of each successive octave relative"}),
-            Lexicon.OFFSET: ("INT", {"default": 0, "step": 1}),
-            Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE*2, MIN_IMAGE_SIZE*2), "step": 1,
-                                  "label": [Lexicon.W, Lexicon.H],
-                                  "tooltip": "Where the noise will repeat"}),
-            Lexicon.VALUE: ("FLOAT", {"default": 255, "step": 0.1, "tooltip":"scale the noise"}),
-            Lexicon.ROUND: ("INT", {"default": 0, "step": 1, "min": 0, "max": 16}),
-        }}
-        return Lexicon._parse(d, JOV_HELP_URL + "/CREATE#-noise")
-
-    def __init__(self, *arg, **kw) -> None:
-        super().__init__(*arg, **kw)
-        self.__seed = 0
-        self.__noise = None
-        self.__ntype = None
-        self.__empty = (torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 4), dtype=torch.uint8, device="cpu"),
-                        torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8, device="cpu"),
-                        torch.ones((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 1), dtype=torch.uint8, device="cpu"),)
-
-    def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        ntype = kw.get(Lexicon.NOISE, [EnumNoise.PERLIN_2D_RGB])
-        seed = kw.get(Lexicon.SEED, [0])
-        octaves = kw.get(Lexicon.OCTAVES, [2])
-        persistence = kw.get(Lexicon.PERSISTENCE, [2])
-        lacunarity = kw.get(Lexicon.LACUNARITY, [4])
-        float_index = kw.get(Lexicon.INDEX, [0])
-        x = kw.get(Lexicon.X, [512])
-        xy = parse_tuple(Lexicon.XY, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=2)
-        #xyz = parse_tuple(Lexicon.XYZ, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 4), clip_min=1)
-        #xyzw = parse_tuple(Lexicon.XYZW, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 4, 1), clip_min=1)
-        offset = kw.get(Lexicon.OFFSET, [0])
-        repeat = parse_tuple(Lexicon.WH, kw, (MIN_IMAGE_SIZE*2, MIN_IMAGE_SIZE*2,), clip_min=1)
-        scalar = kw.get(Lexicon.VALUE, [255])
-        rounding = kw.get(Lexicon.ROUND, [0])
-        images = []
-        params = [tuple(x) for x in zip_longest_fill(ntype, seed, octaves, persistence, lacunarity, float_index, x, xy, offset, repeat, scalar, rounding)]
-        pbar = ProgressBar(len(params))
-        for idx, (ntype, seed, octaves, persistence, lacunarity, float_index, x, xy, offset, repeat, scalar, rounding) in enumerate(params):
-            ntype = EnumNoise[ntype]
-            if self.__ntype != ntype or self.__noise is None or self.__seed != seed:
-                self.__noise = Noise(seed)
-                #if ntype in [EnumNoise.PERLIN_1D, EnumNoise.PERLIN_2D, EnumNoise.PERLIN_2D_RGB, EnumNoise.#PERLIN_2D_RGBA]:
-                    #self.__noise = Noise(seed)
-                #else:
-                    #self.__noise = SNoise(seed)
-                block = None
-                self.__ntype = ntype
-
-            floats = []
-            block = []
-            repeat_x, repeat_y = repeat
-            if ntype == EnumNoise.PERLIN_1D:
-                floats = block = self.__noise.noise1(np.linspace(0, 1, x), octaves, persistence, lacunarity, repeat_x, offset)
-                image = self.__empty
-            else:
-                x, y = xy
-                float_index -= 1
-                if ntype == EnumNoise.PERLIN_2D:
-                    block = self.__noise.noise2(np.linspace(0, 1, x), np.linspace(0, 1, y), octaves, persistence, lacunarity, repeat_x, repeat_y, offset)
-                elif ntype == EnumNoise.PERLIN_2D_RGB:
-                    block = self.__noise.noise3(np.linspace(0, 1, x), np.linspace(0, 1, y), np.linspace(0, 1, 3), octaves, persistence, lacunarity, repeat_x, repeat_y, repeat_x, offset)
-                elif ntype == EnumNoise.PERLIN_2D_RGBA:
-                    block = self.__noise.noise3(np.linspace(0, 1, x), np.linspace(0, 1, y), np.linspace(0, 1, 4), octaves, persistence, lacunarity, repeat_x, repeat_y, repeat_x, offset)
-
-                image = np.array(block * scalar, dtype=np.uint8)
-                image = cv2tensor_full(image)
-                floats = block[float_index]
-
-            if rounding > 0:
-                rounding = max(0, min(16, rounding))
-                scalar = round(scalar, rounding)
-            else:
-                scalar = int(scalar)
-            floats *= scalar
-            if rounding == 0:
-                floats = floats.astype(np.uint8)
-            floats = [floats]
-            floats.extend(image)
-            images.append(floats)
             pbar.update_absolute(idx)
         return list(zip(*images))

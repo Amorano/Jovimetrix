@@ -12,7 +12,7 @@ from comfy.utils import ProgressBar
 
 from Jovimetrix import JOV_HELP_URL, WILDCARD, \
     JOVImageMultiple, \
-    ROOT, MIN_IMAGE_SIZE, JOV_GLSL, comfy_message, parse_reset
+    ROOT, MIN_IMAGE_SIZE, JOV_GLSL, comfy_message, load_help, parse_reset
 
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import parse_tuple, zip_longest_fill, \
@@ -23,7 +23,7 @@ from Jovimetrix.sup.shader import GLSL, CompileException
 
 # =============================================================================
 
-JOV_CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
+JOV_CATEGORY = "JOVIMETRIX GLSL"
 JOV_CONFIG_GLSL = ROOT / 'glsl'
 DEFAULT_FRAGMENT = """void main() {
     vec4 texColor = texture(iChannel0, fragCoord);
@@ -67,8 +67,8 @@ class EnumPatternType(Enum):
 
 class GLSLNode(JOVImageMultiple):
     NAME = "GLSL (JOV) 🍩"
-    CATEGORY = JOV_CATEGORY
-    DESCRIPTION = ""
+    CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
+    DESC = ""
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -144,7 +144,10 @@ class GLSLNode(JOVImageMultiple):
         return list(zip(*images))
 
 class GLSLBaseNode(JOVImageMultiple):
-    CATEGORY = "JOVIMETRIX GLSL"
+    CATEGORY = JOV_CATEGORY
+    HELP_URL = JOV_HELP_URL + "/GLSL#-"
+    # DESCRIPTION = load_help(NAME, CATEGORY, HELP_URL)
+
     FRAGMENT = ".glsl"
 
     def __init__(self, *arg, **kw) -> None:
@@ -201,6 +204,10 @@ class GLSLBaseNode(JOVImageMultiple):
 
 class GLSLSelectRange(GLSLBaseNode):
     NAME = "SELECT RANGE GLSL (JOV)"
+    CATEGORY = JOV_CATEGORY
+    HELP_URL = JOV_HELP_URL + "/GLSL#-"
+    DESCRIPTION = load_help(NAME, CATEGORY, HELP_URL)
+
     FRAGMENT = str(JOV_GLSL / "clr" / "clr-flt-range.glsl")
 
     @classmethod
@@ -223,6 +230,10 @@ class GLSLSelectRange(GLSLBaseNode):
 
 class GLSLColorGrayscale(GLSLBaseNode):
     NAME = "GRAYSCALE GLSL (JOV)"
+    CATEGORY = JOV_CATEGORY
+    HELP_URL = JOV_HELP_URL + "/GLSL#-"
+    DESCRIPTION = load_help(NAME, CATEGORY, HELP_URL)
+
     FRAGMENT = str(JOV_GLSL / "clr" / "clr-grayscale.glsl")
     DEFAULT = (0.299, 0.587, 0.114)
 
@@ -244,7 +255,9 @@ class GLSLColorGrayscale(GLSLBaseNode):
 
 class GLSLCreateNoise(GLSLBaseNode):
     NAME = "NOISE GLSL (JOV)"
-    CATEGORY = "JOVIMETRIX GLSL"
+    CATEGORY = JOV_CATEGORY
+    HELP_URL = JOV_HELP_URL + "/GLSL#-"
+    DESCRIPTION = load_help(NAME, CATEGORY, HELP_URL)
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -284,6 +297,9 @@ class GLSLCreateNoise(GLSLBaseNode):
 
 class GLSLCreatePattern(GLSLBaseNode):
     NAME = "PATTERN GLSL (JOV)"
+    CATEGORY = JOV_CATEGORY
+    HELP_URL = JOV_HELP_URL + "/GLSL#-"
+    DESCRIPTION = load_help(NAME, CATEGORY, HELP_URL)
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -306,6 +322,10 @@ class GLSLCreatePattern(GLSLBaseNode):
 
 class GLSLCreatePolygon(GLSLBaseNode):
     NAME = "POLYGON GLSL (JOV)"
+    CATEGORY = JOV_CATEGORY
+    HELP_URL = JOV_HELP_URL + "/GLSL#-"
+    DESCRIPTION = load_help(NAME, CATEGORY, HELP_URL)
+
     FRAGMENT = str(JOV_GLSL / "cre" / "cre-shp-polygon.glsl")
 
     @classmethod
@@ -326,6 +346,9 @@ class GLSLCreatePolygon(GLSLBaseNode):
 
 class GLSLMap(GLSLBaseNode):
     NAME = "MAP GLSL (JOV)"
+    CATEGORY = JOV_CATEGORY
+    HELP_URL = JOV_HELP_URL + "/GLSL#-"
+    DESCRIPTION = load_help(NAME, CATEGORY, HELP_URL)
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -355,6 +378,10 @@ class GLSLMap(GLSLBaseNode):
 
 class GLSLTRSMirror(GLSLBaseNode):
     NAME = "MIRROR GLSL (JOV)"
+    CATEGORY = JOV_CATEGORY
+    HELP_URL = JOV_HELP_URL + "/GLSL#-"
+    DESCRIPTION = load_help(NAME, CATEGORY, HELP_URL)
+
     FRAGMENT = str(JOV_GLSL / "trs" / "trs-mirror.glsl")
 
     @classmethod
@@ -376,6 +403,9 @@ class GLSLTRSMirror(GLSLBaseNode):
 
 class GLSLTRSRotate(GLSLBaseNode):
     NAME = "ROTATE GLSL (JOV)"
+    CATEGORY = JOV_CATEGORY
+    HELP_URL = JOV_HELP_URL + "/GLSL#-"
+    DESCRIPTION = load_help(NAME, CATEGORY, HELP_URL)
     FRAGMENT = str(JOV_GLSL / "trs" / "trs-rotate.glsl")
 
     @classmethod
@@ -418,6 +448,9 @@ class GLSLUtilTiler(GLSLBaseNode):
 
 class GLSLVFX(GLSLBaseNode):
     NAME = "VFX GLSL (JOV)"
+    CATEGORY = JOV_CATEGORY
+    HELP_URL = JOV_HELP_URL + "/GLSL#-"
+    DESCRIPTION = load_help(NAME, CATEGORY, HELP_URL)
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
