@@ -128,7 +128,7 @@ class GLSLNode(JOVImageMultiple):
                 self.__glsl.height = height
             pA = tensor2pil(pA) if pA is not None else None
             self.__glsl.hold = hold
-            if parse_reset(ident):
+            if parse_reset(ident) > 0 or reset:
                 self.__glsl.reset()
                 # comfy_message(ident, "jovi-glsl-time", {"id": ident, "t": 0})
 
@@ -141,10 +141,10 @@ class GLSLNode(JOVImageMultiple):
 
             self.__last_good = images
             pbar.update_absolute(idx)
-        return list(zip(*images))
+        return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
 
 class GLSLBaseNode(JOVImageMultiple):
-    CATEGORY = JOV_CATEGORY
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = "GLSL#-"
     # DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
 
@@ -204,7 +204,7 @@ class GLSLBaseNode(JOVImageMultiple):
 
 class GLSLSelectRange(GLSLBaseNode):
     NAME = "SELECT RANGE GLSL (JOV)"
-    CATEGORY = JOV_CATEGORY
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = "GLSL#-"
     DESC = ""
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
@@ -231,7 +231,7 @@ class GLSLSelectRange(GLSLBaseNode):
 
 class GLSLColorGrayscale(GLSLBaseNode):
     NAME = "GRAYSCALE GLSL (JOV)"
-    CATEGORY = JOV_CATEGORY
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = "GLSL#-"
     DESC = ""
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
@@ -257,7 +257,7 @@ class GLSLColorGrayscale(GLSLBaseNode):
 
 class GLSLCreateNoise(GLSLBaseNode):
     NAME = "NOISE GLSL (JOV)"
-    CATEGORY = JOV_CATEGORY
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = "GLSL#-"
     DESC = ""
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
@@ -300,7 +300,7 @@ class GLSLCreateNoise(GLSLBaseNode):
 
 class GLSLCreatePattern(GLSLBaseNode):
     NAME = "PATTERN GLSL (JOV)"
-    CATEGORY = JOV_CATEGORY
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = "GLSL#-"
     DESC = ""
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
@@ -326,7 +326,7 @@ class GLSLCreatePattern(GLSLBaseNode):
 
 class GLSLCreatePolygon(GLSLBaseNode):
     NAME = "POLYGON GLSL (JOV)"
-    CATEGORY = JOV_CATEGORY
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = "GLSL#-"
     DESC = ""
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
@@ -351,7 +351,7 @@ class GLSLCreatePolygon(GLSLBaseNode):
 
 class GLSLMap(GLSLBaseNode):
     NAME = "MAP GLSL (JOV)"
-    CATEGORY = JOV_CATEGORY
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = "GLSL#-"
     DESC = ""
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
@@ -384,7 +384,7 @@ class GLSLMap(GLSLBaseNode):
 
 class GLSLTRSMirror(GLSLBaseNode):
     NAME = "MIRROR GLSL (JOV)"
-    CATEGORY = JOV_CATEGORY
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = "GLSL#-"
     DESC = ""
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
@@ -410,7 +410,7 @@ class GLSLTRSMirror(GLSLBaseNode):
 
 class GLSLTRSRotate(GLSLBaseNode):
     NAME = "ROTATE GLSL (JOV)"
-    CATEGORY = JOV_CATEGORY
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = "GLSL#-"
     DESC = ""
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
@@ -435,7 +435,7 @@ class GLSLTRSRotate(GLSLBaseNode):
 
 class GLSLUtilTiler(GLSLBaseNode):
     NAME = "TILER GLSL (JOV)"
-    CATEGORY = JOV_CATEGORY
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = "GLSL#-"
     DESC = ""
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
@@ -460,7 +460,7 @@ class GLSLUtilTiler(GLSLBaseNode):
 
 class GLSLVFX(GLSLBaseNode):
     NAME = "VFX GLSL (JOV)"
-    CATEGORY = JOV_CATEGORY
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = "GLSL#-"
     DESC = ""
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)

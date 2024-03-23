@@ -22,7 +22,7 @@ from Jovimetrix.core.calc import EnumConvertType, parse_type_value
 
 # =============================================================================
 
-JOV_CATEGORY = "JOVIMETRIX 🔺🟩🔵/FLOW"
+JOV_CATEGORY = "FLOW"
 
 # min amount of time before showing the cancel dialog
 JOV_DELAY_MIN = 1
@@ -63,7 +63,7 @@ class EnumComparison(Enum):
 
 class DelayNode(JOVBaseNode):
     NAME = "DELAY (JOV) ✋🏽"
-    CATEGORY = JOV_CATEGORY
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = "FLOW#-delay"
     DESC = "Delay traffic. Electrons on the data bus go round."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
@@ -148,7 +148,7 @@ class DelayNode(JOVBaseNode):
 
 class HoldValueNode(JOVBaseNode):
     NAME = "HOLD VALUE (JOV) 🫴🏽"
-    CATEGORY = JOV_CATEGORY
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = "FLOW#-hold"
     DESC = "When engaged will send the last value it had even with new values arriving."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
@@ -177,7 +177,7 @@ class HoldValueNode(JOVBaseNode):
 
 class ComparisonNode(JOVBaseNode):
     NAME = "COMPARISON (JOV) 🕵🏽"
-    CATEGORY = JOV_CATEGORY
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = "FLOW#-comparison"
     DESC = "Compare two inputs: A=B, A!=B, A>B, A>=B, A<B, A<=B"
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
@@ -263,7 +263,7 @@ class ComparisonNode(JOVBaseNode):
 
 class SelectNode(JOVBaseNode):
     NAME = "SELECT (JOV) 🤏🏽"
-    CATEGORY = JOV_CATEGORY
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = "FLOW#-select"
     DESC = "Select an item from a user explicit list of inputs."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
@@ -296,7 +296,7 @@ class SelectNode(JOVBaseNode):
         self.__index = 0
 
     def run(self, ident, **kw) -> None:
-        if parse_reset(ident):
+        if parse_reset(ident) > 0 or kw.get(Lexicon.RESET, False):
             self.__index = 0
         vals = parse_dynamic(Lexicon.UNKNOWN, kw)
         count = len(vals)

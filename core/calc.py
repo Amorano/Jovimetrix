@@ -17,12 +17,14 @@ from comfy.utils import ProgressBar
 
 from Jovimetrix import JOVBaseNode, WILDCARD, load_help
 from Jovimetrix.sup.lexicon import Lexicon
-from Jovimetrix.sup.util import EnumTupleType, parse_tuple, zip_longest_fill
+from Jovimetrix.sup.util import parse_tuple, zip_longest_fill, EnumTupleType
 from Jovimetrix.sup.anim import ease_op, EnumEase
+from Jovimetrix.sup.image import batch_extract, channel_solid, channel_swap, \
+    tensor2cv, EnumImageType, EnumSwizzle
 
 # =============================================================================
-HELP_URL = "CALC#%EF%B8%8F⃣-value"
-JOV_CATEGORY = "JOVIMETRIX 🔺🟩🔵/CALC"
+
+JOV_CATEGORY = "CALC"
 
 # =============================================================================
 
@@ -183,7 +185,7 @@ def convert_value(typ:EnumConvertType, val:Any) -> Any:
 
 class CalcUnaryOPNode(JOVBaseNode):
     NAME = "CALC OP UNARY (JOV) 🎲"
-    CATEGORY = JOV_CATEGORY
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = "CALC#-calc-op-unary"
     DESC = "Perform a Unary Operation on an input."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
@@ -250,7 +252,7 @@ class CalcUnaryOPNode(JOVBaseNode):
 
 class CalcBinaryOPNode(JOVBaseNode):
     NAME = "CALC OP BINARY (JOV) 🌟"
-    CATEGORY = JOV_CATEGORY
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = "CALC#-calc-op-binary"
     DESC = "Perform a Binary Operation on two inputs."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
@@ -294,7 +296,7 @@ class CalcBinaryOPNode(JOVBaseNode):
                                       "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W],
                                       "tooltip":"4-value vector"}),
         }}
-        return Lexicon._parse(d, HELP_URL)
+        return Lexicon._parse(d, "CALC#%EF%B8%8F⃣-value")
 
     def run(self, **kw) -> tuple[bool]:
         results = []
@@ -409,7 +411,7 @@ class CalcBinaryOPNode(JOVBaseNode):
 
 class ValueNode(JOVBaseNode):
     NAME = "VALUE (JOV) 🧬"
-    CATEGORY = JOV_CATEGORY
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = "CALC#-value"
     DESC = "Create a value for most types; also universal constants."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
@@ -457,7 +459,7 @@ class ValueNode(JOVBaseNode):
 
 class LerpNode(JOVBaseNode):
     NAME = "LERP (JOV) 🔰"
-    CATEGORY = JOV_CATEGORY
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = "CALC#-lerp"
     DESC = "Interpolate between two values with or without a smoothing."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
@@ -511,3 +513,70 @@ class LerpNode(JOVBaseNode):
             values.append(val)
             pbar.update_absolute(idx)
         return (values, )
+
+class SwapNode(JOVBaseNode):
+    NAME = "SWAP (JOV) 😵"
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
+    HELP_URL = "CALC#-swap"
+    DESC = "Swap vector positions within a vector or with another vector input."
+    DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
+    SORT = 55
+
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        d = {
+        "required": {},
+        "optional": {
+            Lexicon.A: (WILDCARD, {}),
+            Lexicon.B: (WILDCARD, {}),
+            Lexicon.SWAP_X: (EnumSwizzle._member_names_, {"default": EnumSwizzle.A_X.name}),
+            Lexicon.X: ("FLOAT", {"default": 0}),
+            Lexicon.SWAP_Y: (EnumSwizzle._member_names_, {"default": EnumSwizzle.A_Y.name}),
+            Lexicon.Y: ("FLOAT", {"default": 0}),
+            Lexicon.SWAP_Z: (EnumSwizzle._member_names_, {"default": EnumSwizzle.A_Z.name}),
+            Lexicon.Z: ("FLOAT", {"default": 0}),
+            Lexicon.SWAP_W: (EnumSwizzle._member_names_, {"default": EnumSwizzle.A_W.name}),
+            Lexicon.W: ("FLOAT", {"default": 0})
+        }}
+        return Lexicon._parse(d, "/UTILITY#-swap")
+
+    def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor]:
+        pA = parse_tuple(Lexicon.A, kw, (0, 0, 0, 0))
+        pB = batch_extract(kw.get(Lexicon.B, None))
+        swap_x = kw.get(Lexicon.SWAP_X, [EnumSwizzle.PASSTHRU])
+        x = kw.get(Lexicon.X, [0])
+        swap_y = kw.get(Lexicon.SWAP_Y, [EnumSwizzle.PASSTHRU])
+        y = kw.get(Lexicon.Y, [0])
+        swap_z = kw.get(Lexicon.SWAP_Z, [EnumSwizzle.PASSTHRU])
+        z = kw.get(Lexicon.Z, [0])
+        swap_w = kw.get(Lexicon.SWAP_W, [EnumSwizzle.PASSTHRU])
+        w = kw.get(Lexicon.W, [0])
+        params = [tuple(x) for x in zip_longest_fill(pA, pB, x, swap_x, y, swap_y,
+                                                     z, swap_z, w, swap_w)]
+        images = []
+        pbar = ProgressBar(len(params))
+        for idx, (pA, pB, r, swap_r, g, swap_g, b, swap_b, a, swap_a) in enumerate(params):
+            pA = tensor2cv(pA)
+            h, w = pA.shape[:2]
+            pB = tensor2cv(pB, width=w, height=h)
+            out = channel_solid(w, h, (r,g,b,a), EnumImageType.BGRA)
+
+            def swapper(swap_out:EnumSwizzle, swap_in:EnumSwizzle) -> np.ndarray[Any]:
+                target = out
+                swap_in = EnumSwizzle[swap_in]
+                if swap_in in [EnumSwizzle.RED_A, EnumSwizzle.GREEN_A,
+                            EnumSwizzle.BLUE_A, EnumSwizzle.ALPHA_A]:
+                    target = pA
+                elif swap_in != EnumSwizzle.CONSTANT:
+                    target = pB
+                if swap_in != EnumSwizzle.CONSTANT:
+                    target = channel_swap(pA, swap_out, target, swap_in)
+                return target
+
+            out[:,:,0] = swapper(EnumSwizzle.BLUE_A, swap_b)[:,:,0]
+            out[:,:,1] = swapper(EnumSwizzle.GREEN_A, swap_g)[:,:,1]
+            out[:,:,2] = swapper(EnumSwizzle.RED_A, swap_r)[:,:,2]
+            out[:,:,3] = swapper(EnumSwizzle.ALPHA_A, swap_a)[:,:,3]
+            images.append(cv2tensor_full(out))
+            pbar.update_absolute(idx)
+        return list(zip(*images))

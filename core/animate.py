@@ -19,13 +19,13 @@ from Jovimetrix.sup.util import zip_longest_fill
 
 # =============================================================================
 
-JOV_CATEGORY = "JOVIMETRIX 🔺🟩🔵/ANIMATE"
+JOV_CATEGORY = "ANIMATE"
 
 # =============================================================================
 
 class TickNode(JOVBaseNode):
     NAME = "TICK (JOV) ⏱"
-    CATEGORY = JOV_CATEGORY
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = "ANIMATE#-tick"
     DESC = "Periodic pulse with total pulse count, normalized count relative to the loop setting and fixed pulse step."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
@@ -91,7 +91,7 @@ class TickNode(JOVBaseNode):
         batch = kw.get(Lexicon.BATCH, 1)
         results = []
         step = 1. / max(1, int(fps))
-        if parse_reset(ident):
+        if parse_reset(ident) > 0 or kw.get(Lexicon.RESET, False):
             self.__frame = 0
             self.__fixed_step = 0
         lin = self.__frame
@@ -118,7 +118,7 @@ class TickNode(JOVBaseNode):
 
 class WaveGeneratorNode(JOVBaseNode):
     NAME = "WAVE GENERATOR (JOV) 🌊"
-    CATEGORY = JOV_CATEGORY
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = "ANIMATE#-wave-generator"
     DESC = "Periodic and Non-Periodic Sinosodials."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)

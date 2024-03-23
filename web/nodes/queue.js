@@ -20,7 +20,7 @@ app.registerExtension({
         }
 
         function update_report(self) {
-            self.widget_report.value = `[${self.data_index} / ${self.data_all.length}] ${self.data_current}`;
+            self.widget_report.value = `[${self.data_index} / ${self.data_all.length}]\n${self.data_current}`;
             app.canvas.setDirty(true);
         }
 
@@ -39,33 +39,29 @@ app.registerExtension({
             const self = this;
 
             let output_data;
-            self.data_index = 1;
-            self.data_current = "";
-            self.data_all = [];
+            this.data_index = 1;
+            this.data_current = "";
+            this.data_all = [];
 
-            self.widget_queue = this.widgets.find(w => w.name === 'Q');
-            self.widget_queue.inputEl.addEventListener('input', function (event) {
+            this.widget_queue = this.widgets.find(w => w.name === 'Q');
+            this.widget_queue.inputEl.addEventListener('input', function (event) {
                 update_list(self);
             });
 
             output_data = this.outputs[0];
             const widget_reset = this.widgets.find(w => w.name === 'RESET');
-            // const old_callback = widget_reset?.callback;
             widget_reset.callback = async (e) => {
                 widget_reset.value = false;
-                // if (old_callback) {
-                //     old_callback(this, arguments);
-                // }
                 api_cmd_jovian(self.id, "reset");
             }
 
-            self.widget_report = ComfyWidgets.STRING(this, 'QUEUE IS EMPTY 🔜', [
+            this.widget_report = ComfyWidgets.STRING(this, 'QUEUE IS EMPTY 🔜', [
                 'STRING', {
                     multiline: true,
                 },
             ], app).widget;
-            self.widget_report.inputEl.readOnly = true;
-            self.widget_report.serializeValue = async () => { };
+            this.widget_report.inputEl.readOnly = true;
+            this.widget_report.serializeValue = async () => { };
 
             async function python_queue_ping(event) {
                 if (event.detail.id != self.id) {

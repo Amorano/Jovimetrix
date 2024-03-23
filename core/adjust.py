@@ -13,9 +13,10 @@ from comfy.utils import ProgressBar
 
 from Jovimetrix import WILDCARD, JOVImageMultiple, load_help
 from Jovimetrix.sup.lexicon import Lexicon
-from Jovimetrix.sup.util import zip_longest_fill, parse_tuple, parse_number, EnumTupleType
+from Jovimetrix.sup.util import zip_longest_fill, parse_tuple, parse_number, \
+    EnumTupleType
 from Jovimetrix.sup.image import batch_extract, channel_count, \
-    channel_solid, color_match_histogram, color_match_lut, color_match_reinhard, \
+    color_match_histogram, color_match_lut, color_match_reinhard, \
     cv2tensor_full, image_color_blind, image_scalefit, tensor2cv, image_equalize, \
     image_levels, pixel_eval, \
     image_posterize, image_pixelate, image_quantize, image_sharpen, \
@@ -26,7 +27,7 @@ from Jovimetrix.sup.image import batch_extract, channel_count, \
 
 # =============================================================================
 
-JOV_CATEGORY = "JOVIMETRIX 🔺🟩🔵/ADJUST"
+JOV_CATEGORY = "ADJUST"
 
 class EnumColorMatchMode(Enum):
     REINHARD = 30
@@ -41,7 +42,7 @@ class EnumColorMatchMap(Enum):
 
 class AdjustNode(JOVImageMultiple):
     NAME = "ADJUST (JOV) 🕸️"
-    CATEGORY = JOV_CATEGORY
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = "ADJUST#-adjust"
     DESC = "Blur, Sharpen, Emboss, Levels, HSV, Edge detection."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
@@ -184,11 +185,11 @@ class AdjustNode(JOVImageMultiple):
             matte = pixel_eval(matte, EnumImageType.BGRA)
             images.append(cv2tensor_full(pA, matte))
             pbar.update_absolute(idx)
-        return list(zip(*images))
+        return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
 
 class ColorMatchNode(JOVImageMultiple):
     NAME = "COLOR MATCH (JOV) 💞"
-    CATEGORY = JOV_CATEGORY
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = "ADJUST#-color-match"
     DESC = "Project the colors of one image  onto another or use a pre-defined color target."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
@@ -254,11 +255,11 @@ class ColorMatchNode(JOVImageMultiple):
             matte = pixel_eval(matte, EnumImageType.BGRA)
             images.append(cv2tensor_full(pA, matte))
             pbar.update_absolute(idx)
-        return list(zip(*images))
+        return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
 
 class ThresholdNode(JOVImageMultiple):
     NAME = "THRESHOLD (JOV) 📉"
-    CATEGORY = JOV_CATEGORY
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = "ADJUST#-threshold"
     DESC = "Clip an input based on a mid point value."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
@@ -297,11 +298,11 @@ class ThresholdNode(JOVImageMultiple):
                 pA = image_invert(pA, 1)
             images.append(cv2tensor_full(pA))
             pbar.update_absolute(idx)
-        return list(zip(*images))
+        return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
 
 class ColorBlindNode(JOVImageMultiple):
     NAME = "COLOR BLIND (JOV) 👁‍🗨"
-    CATEGORY = JOV_CATEGORY
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = "ADJUST#-colorblind"
     DESC = "Transform an image into specific color blind color space"
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
@@ -333,4 +334,4 @@ class ColorBlindNode(JOVImageMultiple):
             pA = image_color_blind(pA, defiency, simulator, severity)
             images.append(cv2tensor_full(pA))
             pbar.update_absolute(idx)
-        return list(zip(*images))
+        return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]

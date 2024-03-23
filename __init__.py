@@ -154,12 +154,10 @@ class JOVBaseNode:
 class JOVImageSimple(JOVBaseNode):
     RETURN_TYPES = ("IMAGE", )
     RETURN_NAMES = (Lexicon.IMAGE,)
-    OUTPUT_IS_LIST = (True, )
 
 class JOVImageMultiple(JOVBaseNode):
     RETURN_TYPES = ("IMAGE", "IMAGE", "MASK",)
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK,)
-    OUTPUT_IS_LIST = (True, True, True, )
 
 # wildcard trick is 100% stolen from pythongossss's
 class AnyType(str):
@@ -268,12 +266,12 @@ def load_help(name:str, category:str, desc:str, url:str) -> str:
     parse = parse.replace("!URL_VID!", name_vid)
     return parse
 
-def parse_reset(ident:str) -> bool:
+def parse_reset(ident:str) -> int:
     try:
         data = ComfyAPIMessage.poll(ident, timeout=0)
         return data.get('cmd', None) == 'reset'
     except TimedOutException as e:
-        pass
+        return -1
     except Exception as e:
         logger.error(str(e))
 

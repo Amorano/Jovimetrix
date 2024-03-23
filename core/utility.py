@@ -24,7 +24,6 @@ from loguru import logger
 
 from comfy.utils import ProgressBar
 from folder_paths import get_output_directory
-from nodes import interrupt_processing
 
 from Jovimetrix import comfy_message, load_help, parse_reset, JOVBaseNode, \
     WILDCARD, ROOT, MIN_IMAGE_SIZE
@@ -32,12 +31,11 @@ from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import parse_dynamic, path_next, parse_tuple, \
     zip_longest_fill
 from Jovimetrix.sup.image import batch_extract, cv2tensor,  image_convert, \
-    tensor2pil, tensor2cv, pil2tensor, image_load, image_formats, image_diff, \
-    EnumSwizzle
+    tensor2pil, tensor2cv, pil2tensor, image_load, image_formats, image_diff
 
 # =============================================================================
 
-JOV_CATEGORY = "JOVIMETRIX 🔺🟩🔵/UTILITY"
+JOV_CATEGORY = "UTILITY"
 
 FORMATS = ["gif", "png", "jpg"]
 if (JOV_GIFSKI := os.getenv("JOV_GIFSKI", None)) is not None:
@@ -66,7 +64,7 @@ class AkashicData:
 
 class AkashicNode(JOVBaseNode):
     NAME = "AKASHIC (JOV) 📓"
-    CATEGORY = JOV_CATEGORY
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = "UTILITY#-akashic"
     DESC = "Display the top level attributes of an output."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
@@ -134,7 +132,7 @@ class AkashicNode(JOVBaseNode):
 
 class ValueGraphNode(JOVBaseNode):
     NAME = "VALUE GRAPH (JOV) 📈"
-    CATEGORY = JOV_CATEGORY
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = "UTILITY#-value-graph"
     DESC = "Graphs historical execution run values."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
@@ -170,7 +168,7 @@ class ValueGraphNode(JOVBaseNode):
         slice = kw.get(Lexicon.VALUE, [60])
         wihi = parse_tuple(Lexicon.WH, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), zero=0.001)[0]
         accepted = [bool, int, float, np.float16, np.float32, np.float64]
-        if parse_reset(ident):
+        if parse_reset(ident) > 0 or kw.get(Lexicon.RESET, False):
             self.__history = []
         longest_edge = 0
         dynamic = parse_dynamic(Lexicon.UNKNOWN, kw)
@@ -208,7 +206,7 @@ class ValueGraphNode(JOVBaseNode):
 
 class RouteNode(JOVBaseNode):
     NAME = "ROUTE (JOV) 🚌"
-    CATEGORY = JOV_CATEGORY
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = "UTILITY#-route"
     DESC = "Pass all data because the default is broken on connection."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
@@ -233,14 +231,14 @@ class RouteNode(JOVBaseNode):
 
 class QueueNode(JOVBaseNode):
     NAME = "QUEUE (JOV) 🗃"
-    CATEGORY = JOV_CATEGORY
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = "UTILITY#-queue"
     DESC = "Cycle lists of images files or strings for node inputs."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     INPUT_IS_LIST = False
     RETURN_TYPES = (WILDCARD, WILDCARD, "STRING", "INT", "INT", )
     RETURN_NAMES = (Lexicon.ANY, Lexicon.QUEUE, Lexicon.CURRENT, Lexicon.INDEX, Lexicon.TOTAL, )
-    OUTPUT_IS_LIST = (True, True, False, False, False, )
+    OUTPUT_IS_LIST = (False, True, False, False, False, )
     VIDEO_FORMATS = ['.webm', '.mp4', '.avi', '.wmv', '.mkv', '.mov', '.mxf']
     SORT = 0
 
@@ -250,12 +248,9 @@ class QueueNode(JOVBaseNode):
         "required": {},
         "optional": {
             Lexicon.QUEUE: ("STRING", {"multiline": True, "default": ""}),
-            Lexicon.LOOP: ("INT", {"default": 0, "min": 0}),
-            Lexicon.RANDOM: ("BOOLEAN", {"default": False}),
-            Lexicon.BATCH: ("INT", {"default": 1, "min": 1}),
-            Lexicon.BATCH_LIST: ("BOOLEAN", {"default": True}),
-            Lexicon.WAIT: ("BOOLEAN", {"default": False}),
-            Lexicon.RESET: ("BOOLEAN", {"default": False}),
+            Lexicon.VALUE: ("INT", {"min": 0, "default": 0, "step": 1, "tooltip": "the current index for the current queue item"}),
+            Lexicon.WAIT: ("BOOLEAN", {"default": False, "tooltip":"Hold the item at the current queue index"}),
+            Lexicon.RESET: ("BOOLEAN", {"default": False, "tooltip":"reset the queue back to index 1"}),
         },
         "hidden": {
             "ident": "UNIQUE_ID"
@@ -266,13 +261,10 @@ class QueueNode(JOVBaseNode):
     def IS_CHANGED(cls) -> float:
         return float("nan")
 
-    def __init__(self, *arg, **kw) -> None:
-        super().__init__(*arg, **kw)
-        self.__loops = 0
+    def __init__(self) -> None:
         self.__index = 0
         self.__q = None
-        self.__q_rand = None
-        self.__last = None
+        self.__index_last = None
         self.__len = 0
         self.__previous = None
         self.__last_q_value = {}
@@ -281,8 +273,8 @@ class QueueNode(JOVBaseNode):
         entries = []
         for line in data.strip().split('\n'):
             parts = [part.strip() for part in line.split(',')]
-
             count = 1
+
             try: count = int(parts[-1])
             except: pass
 
@@ -327,11 +319,15 @@ class QueueNode(JOVBaseNode):
             elif ext == '.json':
                 with open(q_data, 'r', encoding='utf-8') as f:
                     self.__last_q_value[q_data] = json.load(f)
-            return self.__last_q_value[q_data]
+            return self.__last_q_value.get(q_data, q_data)
 
-        if parse_reset(ident):
+        # should work headless as well
+        if parse_reset(ident) > 0 or kw.get(Lexicon.RESET, False):
             self.__q = None
-            self.__q_rand = None
+            self.__index = 0
+
+        if (new_val := kw.get(Lexicon.VALUE, self.__index)) > 0:
+            self.__index = new_val
 
         if self.__q is None:
             # process Q into ...
@@ -339,74 +335,39 @@ class QueueNode(JOVBaseNode):
             # entry is: data, <filter if folder:*.png,*.jpg>, <repeats:1+>
             q = kw.get(Lexicon.QUEUE, "")
             self.__q = self.__parse(q)
-            self.__q_rand = list(self.__q)
-            random.shuffle(self.__q_rand)
-            self.__len = len(self.__q) - 1
-            self.__loops = 0
-            self.__index = 0
-            self.__last = 0
+            self.__len = len(self.__q)
+            self.__index_last = 0
             self.__previous = self.__q[0] if len(self.__q) else None
             if self.__previous:
                 self.__previous = process(self.__previous)
 
-        if (wait := kw.get(Lexicon.WAIT, False)):
-            self.__index = self.__last
+        if (wait := kw.get(Lexicon.WAIT, False)) == True:
+            self.__index = self.__index_last
 
-        if self.__index >= len(self.__q):
-            loop = kw.get(Lexicon.LOOP, 0)
-            # we are done with X loops
-            self.__loops += 1
-            if loop > 0 and self.__loops >= loop:
-                # hard halt?
-                comfy_message(ident, "jovi-queue-done", {"id": ident})
-                interrupt_processing(True)
-                logger.warning(f"Q Complete [{ident}]")
-                self.__q = None
-                self.__q_rand = None
-                return ()
-
-            random.shuffle(self.__q_rand)
-            self.__index = 0
-
-        rand = kw.get(Lexicon.RANDOM, False)
-        if rand:
-            current = self.__q_rand[self.__index]
-        else:
-            current = self.__q[self.__index]
-        info = f"QUEUE #{ident} [{current}] ({self.__index})"
-
-        if self.__loops:
-            info += f" |{self.__loops}|"
-
-        if wait:
-            info += f" PAUSED"
-
+        self.__index = max(0, self.__index) % self.__len
+        current = self.__q[self.__index]
         data = self.__previous
-        batch = max(1, kw.get(Lexicon.BATCH, 1))
-        # batch_list = kw.get(Lexicon.BATCH_LIST, True)
-        if not wait:
-            if rand:
-                data = process(self.__q_rand[self.__index])
-            else:
-                data = process(self.__q[self.__index])
+        self.__index_last = self.__index
+        info = f"QUEUE #{ident} [{current}] ({self.__index})"
+        if wait == True:
+            info += f" PAUSED"
+        else:
+            data = process(self.__q[self.__index])
             self.__index += 1
 
-        self.__last = self.__index
         self.__previous = data
         msg = {"id": ident,
                "c": current,
-               "i": self.__index,
+               "i": self.__index_last+1,
                "s": self.__len,
                "l": self.__q
         }
         comfy_message(ident, "jovi-queue-ping", msg)
-
-        # q = torch.cat(self.__q, dim=0)
-        return [data] * batch, self.__q, current, self.__index, self.__len,
+        return data, self.__q, current, self.__index_last+1, self.__len,
 
 class ExportNode(JOVBaseNode):
     NAME = "EXPORT (JOV) 📽"
-    CATEGORY = JOV_CATEGORY
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = "UTILITY#-export"
     DESC = "Take your frames out static or animated (GIF)"
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
@@ -507,11 +468,11 @@ class ExportNode(JOVBaseNode):
 
 class ImageDiffNode(JOVBaseNode):
     NAME = "IMAGE DIFF (JOV) 📏"
-    CATEGORY = JOV_CATEGORY
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = "UTILITY#-image-diff"
     DESC = "Explicitly show the differences between two images via self-similarity index."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
-    OUTPUT_IS_LIST = (True, True, True, True, True, )
+    OUTPUT_IS_LIST = (False, False, False, False, True, )
     RETURN_TYPES = ("IMAGE", "IMAGE", "MASK", "MASK", "FLOAT", )
     RETURN_NAMES = (Lexicon.IN_A, Lexicon.IN_B, Lexicon.DIFF, Lexicon.THRESHOLD, Lexicon.FLOAT, )
     SORT = 90
@@ -546,7 +507,7 @@ class ImageDiffNode(JOVBaseNode):
 
 class ArrayNode(JOVBaseNode):
     NAME = "ARRAY (JOV) 📚"
-    CATEGORY = JOV_CATEGORY
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = "UTILITY#-array"
     DESC = "Make, merge, splice or split a batch or list."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
@@ -653,77 +614,10 @@ class ArrayNode(JOVBaseNode):
             extract = [e for e in self.batched(extract, chunk)]
         return (len(extract), extract, full,)
 
-class SwapNode(JOVBaseNode):
-    NAME = "SWAP (JOV) 😵"
-    CATEGORY = JOV_CATEGORY
-    HELP_URL = "UTILITY#-swap"
-    DESC = "Swap vector positions within a vector or with another vector input."
-    DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
-    SORT = 55
-
-    @classmethod
-    def INPUT_TYPES(cls) -> dict:
-        d = {
-        "required": {},
-        "optional": {
-            Lexicon.A: (WILDCARD, {}),
-            Lexicon.B: (WILDCARD, {}),
-            Lexicon.SWAP_X: (EnumSwizzle._member_names_, {"default": EnumSwizzle.A_X.name}),
-            Lexicon.X: ("FLOAT", {"default": 0}),
-            Lexicon.SWAP_Y: (EnumSwizzle._member_names_, {"default": EnumSwizzle.A_Y.name}),
-            Lexicon.Y: ("FLOAT", {"default": 0}),
-            Lexicon.SWAP_Z: (EnumSwizzle._member_names_, {"default": EnumSwizzle.A_Z.name}),
-            Lexicon.Z: ("FLOAT", {"default": 0}),
-            Lexicon.SWAP_W: (EnumSwizzle._member_names_, {"default": EnumSwizzle.A_W.name}),
-            Lexicon.W: ("FLOAT", {"default": 0})
-        }}
-        return Lexicon._parse(d, "/UTILITY#-swap")
-
-    def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor]:
-        pA = parse_tuple(Lexicon.A, kw, (0, 0, 0, 0))
-        pB = batch_extract(kw.get(Lexicon.B, None))
-        swap_x = kw.get(Lexicon.SWAP_X, [EnumSwizzle.PASSTHRU])
-        x = kw.get(Lexicon.X, [0])
-        swap_y = kw.get(Lexicon.SWAP_Y, [EnumSwizzle.PASSTHRU])
-        y = kw.get(Lexicon.Y, [0])
-        swap_z = kw.get(Lexicon.SWAP_Z, [EnumSwizzle.PASSTHRU])
-        z = kw.get(Lexicon.Z, [0])
-        swap_w = kw.get(Lexicon.SWAP_W, [EnumSwizzle.PASSTHRU])
-        w = kw.get(Lexicon.W, [0])
-        params = [tuple(x) for x in zip_longest_fill(pA, pB, x, swap_x, y, swap_y,
-                                                     z, swap_z, w, swap_w)]
-        images = []
-        pbar = ProgressBar(len(params))
-        for idx, (pA, pB, r, swap_r, g, swap_g, b, swap_b, a, swap_a) in enumerate(params):
-            pA = tensor2cv(pA)
-            h, w = pA.shape[:2]
-            pB = tensor2cv(pB, width=w, height=h)
-            out = channel_solid(w, h, (r,g,b,a), EnumImageType.BGRA)
-
-            def swapper(swap_out:EnumSwizzle, swap_in:EnumSwizzle) -> np.ndarray[Any]:
-                target = out
-                swap_in = EnumSwizzle[swap_in]
-                if swap_in in [EnumSwizzle.RED_A, EnumSwizzle.GREEN_A,
-                            EnumSwizzle.BLUE_A, EnumSwizzle.ALPHA_A]:
-                    target = pA
-                elif swap_in != EnumSwizzle.CONSTANT:
-                    target = pB
-                if swap_in != EnumSwizzle.CONSTANT:
-                    target = channel_swap(pA, swap_out, target, swap_in)
-                return target
-
-            out[:,:,0] = swapper(EnumPixelSwizzle.BLUE_A, swap_b)[:,:,0]
-            out[:,:,1] = swapper(EnumPixelSwizzle.GREEN_A, swap_g)[:,:,1]
-            out[:,:,2] = swapper(EnumPixelSwizzle.RED_A, swap_r)[:,:,2]
-            out[:,:,3] = swapper(EnumPixelSwizzle.ALPHA_A, swap_a)[:,:,3]
-            images.append(cv2tensor_full(out))
-            pbar.update_absolute(idx)
-        return list(zip(*images))
-
 """
 class HistogramNode(JOVImageSimple):
     NAME = "HISTOGRAM (JOV) 👁‍🗨"
-    CATEGORY = JOV_CATEGORY
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     DESC = "Histogram"
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     SORT = 40

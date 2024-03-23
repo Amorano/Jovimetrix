@@ -32,7 +32,7 @@ from Jovimetrix.sup.image import batch_extract, channel_merge, \
 
 # =============================================================================
 
-JOV_CATEGORY = "JOVIMETRIX 🔺🟩🔵/COMPOSE"
+JOV_CATEGORY = "COMPOSE"
 
 class EnumCropMode(Enum):
     CENTER = 20
@@ -43,7 +43,7 @@ class EnumCropMode(Enum):
 
 class TransformNode(JOVImageMultiple):
     NAME = "TRANSFORM (JOV) 🏝️"
-    CATEGORY = JOV_CATEGORY
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = "COMPOSE#-transform"
     DESC = "Translate, Rotate, Scale, Tile, Mirror, Re-project and invert an input."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
@@ -138,11 +138,11 @@ class TransformNode(JOVImageMultiple):
 
             images.append(cv2tensor_full(pA, matte))
             pbar.update_absolute(idx)
-        return list(zip(*images))
+        return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
 
 class BlendNode(JOVImageMultiple):
     NAME = "BLEND (JOV) ⚗️"
-    CATEGORY = JOV_CATEGORY
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = "COMPOSE#%EF%B8%8F-blend"
     DESC = "Applies selected operation to 2 inputs with optional mask using a linear blend (alpha)."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
@@ -187,6 +187,7 @@ class BlendNode(JOVImageMultiple):
             if flip:
                 pA, pB = pB, pA
 
+            w, h = wihi
             pB = tensor2cv(pB)
             matte = pixel_eval(matte, EnumImageType.BGRA)
             pA = tensor2cv(pA, width=w, height=h)
@@ -211,17 +212,16 @@ class BlendNode(JOVImageMultiple):
             img = cv2tensor_full(img, matte)
             images.append(img)
             pbar.update_absolute(idx)
-        return list(zip(*images))
+        return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
 
 class PixelSplitNode(JOVImageMultiple):
     NAME = "PIXEL SPLIT (JOV) 💔"
-    CATEGORY = JOV_CATEGORY
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = "COMPOSE#-pixel-split"
     DESC = "Splits images into constituent R, G and B and A channels."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     RETURN_TYPES = ("MASK", "MASK", "MASK", "MASK",)
     RETURN_NAMES = (Lexicon.RI, Lexicon.GI, Lexicon.BI, Lexicon.MI)
-    OUTPUT_IS_LIST = (True, True, True, True, )
     SORT = 40
 
     @classmethod
@@ -243,11 +243,11 @@ class PixelSplitNode(JOVImageMultiple):
             pA = [cv2tensor(image_grayscale(x)) for x in image_split(pA)]
             images.append(pA)
             pbar.update_absolute(idx)
-        return list(zip(*images))
+        return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
 
 class PixelMergeNode(JOVImageMultiple):
     NAME = "PIXEL MERGE (JOV) 🫂"
-    CATEGORY = JOV_CATEGORY
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = "COMPOSE#-pixel-merge"
     DESC = "Combine 3 or 4 inputs into a single image."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
@@ -284,15 +284,13 @@ class PixelMergeNode(JOVImageMultiple):
             b = tensor2cv(b, EnumImageType.GRAYSCALE)
             mask = tensor2cv(a, EnumImageType.GRAYSCALE)
             img = channel_merge([b, g, r, mask])
-            img = cv2tensor_full(img, matte)
-            images.append(img)
+            images.append(cv2tensor_full(img, matte))
             pbar.update_absolute(idx)
-        data = list(zip(*images))
-        return data
+        return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
 
 class PixelSwapNode(JOVImageMultiple):
     NAME = "PIXEL SWAP (JOV) 🔃"
-    CATEGORY = JOV_CATEGORY
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = "COMPOSE#-pixel-swap"
     DESC = "Swap inputs of one image with another or fill its channels with solids."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
@@ -359,15 +357,14 @@ class PixelSwapNode(JOVImageMultiple):
             out[:,:,3] = swapper(EnumPixelSwizzle.ALPHA_A, swap_a)[:,:,3]
             images.append(cv2tensor_full(out))
             pbar.update_absolute(idx)
-        return list(zip(*images))
+        return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
 
 class StackNode(JOVImageMultiple):
     NAME = "STACK (JOV) ➕"
-    CATEGORY = JOV_CATEGORY
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = "COMPOSE#-stack"
     DESC = "Union multiple images horizontal, vertical or in a grid."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
-    OUTPUT_IS_LIST = (False, False, False,)
     SORT = 75
 
     @classmethod
@@ -417,7 +414,7 @@ class StackNode(JOVImageMultiple):
 
 class CropNode(JOVImageMultiple):
     NAME = "CROP (JOV) ✂️"
-    CATEGORY = JOV_CATEGORY
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = "COMPOSE#-crop"
     DESC = "Clip away sections of an image and backfill with optional color matte."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
@@ -466,17 +463,16 @@ class CropNode(JOVImageMultiple):
                 pA = image_crop_center(pA, width, height)
             images.append(cv2tensor_full(pA, color))
             pbar.update_absolute(idx)
-        return list(zip(*images))
+        return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
 
 class ColorTheoryNode(JOVImageMultiple):
     NAME = "COLOR THEORY (JOV) 🛞"
-    CATEGORY = JOV_CATEGORY
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = "COMPOSE#-color-theory"
     DESC = "Generate Complimentary, Triadic and Tetradic color sets"
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     RETURN_TYPES = ("IMAGE", "IMAGE", "IMAGE", "IMAGE", "IMAGE")
     RETURN_NAMES = (Lexicon.C1, Lexicon.C2, Lexicon.C3, Lexicon.C4, Lexicon.C5)
-    OUTPUT_IS_LIST = (True, True, True, True, True)
     SORT = 100
 
     @classmethod
@@ -507,4 +503,4 @@ class ColorTheoryNode(JOVImageMultiple):
                 img = (image_invert(s, 1) for s in img)
             images.append([cv2tensor(a) for a in img])
             pbar.update_absolute(idx)
-        return list(zip(*images))
+        return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]

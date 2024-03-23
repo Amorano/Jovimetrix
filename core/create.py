@@ -32,13 +32,13 @@ from Jovimetrix.sup.fractal import EnumNoise
 
 # =============================================================================
 
-JOV_CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
+JOV_CATEGORY = "CREATE"
 
 # =============================================================================
 
 class ConstantNode(JOVImageMultiple):
     NAME = "CONSTANT (JOV) 🟪"
-    CATEGORY = JOV_CATEGORY
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = "CREATE#-constant"
     DESC = "Create a single RGBA block of color. Useful for masks, overlays and general filtering."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
@@ -71,11 +71,11 @@ class ConstantNode(JOVImageMultiple):
             pA = tensor2cv(pA, EnumImageType.BGRA, width, height, matte)
             images.append(cv2tensor_full(pA, matte))
             pbar.update_absolute(idx)
-        return list(zip(*images))
+        return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
 
 class ShapeNode(JOVImageMultiple):
     NAME = "SHAPE GENERATOR (JOV) ✨"
-    CATEGORY = JOV_CATEGORY
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = "CREATE#-shape-generator"
     DESC = "Generate polyhedra for masking or texture work."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
@@ -156,11 +156,11 @@ class ShapeNode(JOVImageMultiple):
             matte = pixel_eval(matte, EnumImageType.BGRA)
             images.append(cv2tensor_full(pA, matte))
             pbar.update_absolute(idx)
-        return list(zip(*images))
+        return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
 
 class TextNode(JOVImageMultiple):
     NAME = "TEXT GENERATOR (JOV) 📝"
-    CATEGORY = JOV_CATEGORY
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = "CREATE#-text-generator"
     DESC = "Use any system font with auto-fit or manual placement."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
@@ -201,7 +201,6 @@ class TextNode(JOVImageMultiple):
             Lexicon.INVERT: ("BOOLEAN", {"default": False, "tooltip": "Invert the mask input"})
         }}
         return Lexicon._parse(d, cls.HELP_URL)
-        return Lexicon._parse(d, "/CREATE#-text-generator")
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         if len(full_text := kw.get(Lexicon.STRING, [""])) == 0:
@@ -271,11 +270,11 @@ class TextNode(JOVImageMultiple):
                     img = image_invert(img, 1)
                 images.append(cv2tensor_full(img, matte))
             pbar.update_absolute(idx)
-        return list(zip(*images))
+        return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
 
-class StereogramNode(JOVImageSimple):
+class StereogramNode(JOVImageMultiple):
     NAME = "STEREOGRAM (JOV) 📻"
-    CATEGORY = JOV_CATEGORY
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = "CREATE#-stereogram"
     DESC = "Make a magic eye stereograms."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
@@ -294,7 +293,6 @@ class StereogramNode(JOVImageSimple):
             Lexicon.SHIFT: ("FLOAT", {"default": 1., "min": -1, "max": 1, "step": 0.01}),
         }}
         return Lexicon._parse(d, cls.HELP_URL)
-        return Lexicon._parse(d, "/CREATE#-stereogram")
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         pA = batch_extract(kw.get(Lexicon.PIXEL, None))
@@ -313,11 +311,11 @@ class StereogramNode(JOVImageSimple):
             pA = image_stereogram(pA, depth, divisions, noise, gamma, shift)
             images.append(cv2tensor_full(pA))
             pbar.update_absolute(idx)
-        return list(zip(*images))
+        return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
 
 class GradientNode(JOVImageMultiple):
     NAME = "GRADIENT (JOV) 🍧"
-    CATEGORY = JOV_CATEGORY
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = "CREATE#-gradient"
     DESC = "Make a gradient mapped to a linear or polar coordinate system."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
@@ -350,4 +348,4 @@ class GradientNode(JOVImageMultiple):
                 pA = image_matte(image, imageB=pA)
             images.append(cv2tensor_full(image))
             pbar.update_absolute(idx)
-        return list(zip(*images))
+        return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
