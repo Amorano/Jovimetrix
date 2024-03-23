@@ -1,1 +1,0 @@
-Generate Complimentary, Triadic and Tetradic color sets
