@@ -22,6 +22,6 @@ export function hook_widget_size_mode(node) {
         }
         fitHeight(node);
     }
-    setTimeout(() => { mode.callback(); }, 15);
+    setTimeout(() => { mode.callback(); }, 10);
     return mode;
 }

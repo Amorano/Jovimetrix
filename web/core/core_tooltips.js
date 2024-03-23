@@ -6,7 +6,8 @@
 import { app } from "../../../scripts/app.js"
 import { addDocumentation } from '../util/util_help.js'
 import { CONFIG_USER } from '../util/util_config.js'
-// const TOOLTIP_COLOR = CONFIG_USER.color.tooltips;
+
+const JOV_WEBWIKI_URL = "https://github.com/Amorano/Jovimetrix/wiki";
 
 const TOOLTIP_LENGTH = 155;
 const TOOLTIP_WIDTH_MAX = 225;
@@ -191,7 +192,7 @@ app.registerExtension({
                 content: `HELP: ${this.title}`,
                 callback: () => {
                     LiteGraph.closeAllContextMenus();
-                    window.open(url, '_blank');
+                    window.open(`${JOV_WEBWIKI_URL}/${url}`, '_blank');
                     self.setDirtyCanvas(true, true);
                 }
             }];

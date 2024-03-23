@@ -42,9 +42,9 @@ app.registerExtension({
                 if (mode.value == "LUT") {
                     widget_show(map);
                 }
-                setTimeout(() => { map.callback(); }, 15);
+                setTimeout(() => { map.callback(); }, 10);
             };
-            setTimeout(() => { mode.callback(); }, 15);
+            setTimeout(() => { mode.callback(); }, 10);
             return me;
         }
     }

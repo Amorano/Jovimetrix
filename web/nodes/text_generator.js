@@ -51,8 +51,8 @@ app.registerExtension({
                 }
                 fitHeight(this);
             }
-            setTimeout(() => { autosize.callback(); }, 15);
-            setTimeout(() => { letter.callback(); }, 15);
+            setTimeout(() => { autosize.callback(); }, 10);
+            setTimeout(() => { letter.callback(); }, 10);
             return me;
         }
     }

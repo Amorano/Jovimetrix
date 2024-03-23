@@ -45,7 +45,7 @@ app.registerExtension({
                 }
                 fitHeight(this);
             }
-            setTimeout(() => { widget_mode.callback(); }, 15);
+            setTimeout(() => { widget_mode.callback(); }, 10);
             return me;
         }
 	}

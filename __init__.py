@@ -96,6 +96,9 @@ JOV_HELP_ROOT = ROOT / 'help'
 JOV_IGNORE_NODE = ROOT / 'ignore.txt'
 JOV_GLSL = ROOT / 'res' / 'glsl'
 
+JOV_WEBWIKI_URL = "https://github.com/Amorano/Jovimetrix/wiki"
+JOV_WEBHELP_ROOT = 'https://github.com/Amorano/Jovimetrix-examples/blob/master'
+
 JOV_LOG_LEVEL = os.getenv("JOV_LOG_LEVEL", "WARNING")
 logger.configure(handlers=[{"sink": sys.stdout, "level": JOV_LOG_LEVEL}])
 
@@ -118,10 +121,7 @@ TYPE_PIXEL = Union[
 ]
 
 TYPE_IMAGE = Union[np.ndarray, torch.Tensor]
-
 TYPE_VECTOR = Union[TYPE_IMAGE|TYPE_PIXEL]
-
-JOV_HELP_URL = "https://github.com/Amorano/Jovimetrix/wiki"
 
 # =============================================================================
 # === THERE CAN BE ONLY ONE ===
@@ -253,10 +253,12 @@ except Exception as e:
 # == SUPPORT FUNCTIONS
 # =============================================================================
 
-def load_help(node:str, category:str, url:str) -> str:
-    global JOV_HELP_INDEX
-    parse = JOV_HELP_INDEX.get(node, "NO HELP AVAILABLE")
-    return parse.replace("<URL>", url).replace("<CAT>", category)
+def load_help(name:str, category:str, desc:str, url:str) -> str:
+    global JOV_HELP_INDEX, JOV_WEBHELP_ROOT
+    parse = JOV_HELP_INDEX.get(name, "NO HELP AVAILABLE")
+    parse = parse.replace("!NAME!", name).replace("!DESC!", desc)
+    parse = parse.replace("!URL!", f"[{name}]({url})")
+    return parse.replace("!CAT!", category)
 
 def parse_reset(ident:str) -> bool:
     try:
@@ -319,6 +321,9 @@ class Session(metaclass=Singleton):
                 continue
             if len(data := configLoad(f, as_json=False)) > 0:
                 JOV_HELP_INDEX[f.stem] = '\n'.join(data)
+            else:
+                JOV_HELP_INDEX[f.stem] = "!NAME! || !CAT!\n\n!DESC!\n\nWIKI: !URL!\n\n"
+
             help_count += 1
         if help_count > 0:
             logger.info(f"{help_count} help files loaded")
@@ -360,8 +365,6 @@ class Session(metaclass=Singleton):
                     if JOV_HELP_INDEX.get(name, None) is None:
                         if hasattr(class_object, 'DESCRIPTION'):
                             JOV_HELP_INDEX[name] = class_object.DESCRIPTION
-                        elif hasattr(class_object, 'DESC'):
-                            JOV_HELP_INDEX[name] = class_object.DESC
                         else:
                             JOV_HELP_INDEX[name] = "NO HELP AVAILABLE"
                             logger.debug(f"{name} missing help")

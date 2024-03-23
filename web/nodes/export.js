@@ -49,7 +49,7 @@ app.registerExtension({
                 self.onResize?.(self.size);
                 fitHeight(self);
             }
-            setTimeout(() => { combo.callback(); }, 15);
+            setTimeout(() => { combo.callback(); }, 10);
             return me;
         }
 	}

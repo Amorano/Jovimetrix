@@ -34,7 +34,7 @@ app.registerExtension({
                 }
                 fitHeight(self);
             }
-            setTimeout(() => { axis.callback(); }, 15);
+            setTimeout(() => { axis.callback(); }, 10);
             return me;
         }
 	}

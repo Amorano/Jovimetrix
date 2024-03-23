@@ -14,7 +14,8 @@ from loguru import logger
 from comfy.utils import ProgressBar
 from nodes import interrupt_processing
 
-from Jovimetrix import comfy_message, load_help, parse_reset, ComfyAPIMessage, JOVBaseNode, TimedOutException, JOV_HELP_URL, WILDCARD
+from Jovimetrix import comfy_message, load_help, parse_reset, \
+    ComfyAPIMessage, JOVBaseNode, TimedOutException, WILDCARD
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import parse_dynamic, zip_longest_fill
 from Jovimetrix.core.calc import EnumConvertType, parse_type_value
@@ -63,9 +64,9 @@ class EnumComparison(Enum):
 class DelayNode(JOVBaseNode):
     NAME = "DELAY (JOV) ✋🏽"
     CATEGORY = JOV_CATEGORY
-    HELP_URL = JOV_HELP_URL + "/FLOW#-delay"
+    HELP_URL = "FLOW#-delay"
     DESC = "Delay traffic. Electrons on the data bus go round."
-    DESCRIPTION = load_help(NAME, CATEGORY, HELP_URL)
+    DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     RETURN_TYPES = (WILDCARD,)
     RETURN_NAMES = (Lexicon.ROUTE,)
 
@@ -148,9 +149,9 @@ class DelayNode(JOVBaseNode):
 class HoldValueNode(JOVBaseNode):
     NAME = "HOLD VALUE (JOV) 🫴🏽"
     CATEGORY = JOV_CATEGORY
-    HELP_URL = JOV_HELP_URL + "/FLOW#-hold"
+    HELP_URL = "FLOW#-hold"
     DESC = "When engaged will send the last value it had even with new values arriving."
-    DESCRIPTION = load_help(NAME, CATEGORY, HELP_URL)
+    DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     RETURN_TYPES = (WILDCARD,)
     RETURN_NAMES = (Lexicon.ROUTE,)
 
@@ -177,9 +178,9 @@ class HoldValueNode(JOVBaseNode):
 class ComparisonNode(JOVBaseNode):
     NAME = "COMPARISON (JOV) 🕵🏽"
     CATEGORY = JOV_CATEGORY
-    HELP_URL = JOV_HELP_URL + "/FLOW#-comparison"
+    HELP_URL = "FLOW#-comparison"
     DESC = "Compare two inputs: A=B, A!=B, A>B, A>=B, A<B, A<=B"
-    DESCRIPTION = load_help(NAME, CATEGORY, HELP_URL)
+    DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     RETURN_TYPES = (WILDCARD, WILDCARD,)
     RETURN_NAMES = (Lexicon.ANY, Lexicon.VEC, )
     OUTPUT_IS_LIST = (True, True, )
@@ -263,9 +264,9 @@ class ComparisonNode(JOVBaseNode):
 class SelectNode(JOVBaseNode):
     NAME = "SELECT (JOV) 🤏🏽"
     CATEGORY = JOV_CATEGORY
-    HELP_URL = JOV_HELP_URL + "/FLOW#-select"
+    HELP_URL = "FLOW#-select"
     DESC = "Select an item from a user explicit list of inputs."
-    DESCRIPTION = load_help(NAME, CATEGORY, HELP_URL)
+    DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     INPUT_IS_LIST = False
     RETURN_TYPES = (WILDCARD, "STRING", "INT", "INT", )
     RETURN_NAMES = (Lexicon.ANY, Lexicon.QUEUE, Lexicon.VALUE, Lexicon.TOTAL, )

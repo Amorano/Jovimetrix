@@ -12,14 +12,14 @@ from loguru import logger
 
 from comfy.utils import ProgressBar
 
-from Jovimetrix import WILDCARD, JOVImageSimple, JOVImageMultiple, \
-    JOV_HELP_URL, MIN_IMAGE_SIZE, load_help
+from Jovimetrix import load_help, JOVImageSimple, JOVImageMultiple, \
+    MIN_IMAGE_SIZE, WILDCARD
 
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import parse_dynamic, parse_tuple, zip_longest_fill, \
     EnumTupleType
 
-from Jovimetrix.sup.image import batch_extract, channel_solid, cv2tensor_full, \
+from Jovimetrix.sup.image import batch_extract, cv2tensor_full, \
     image_gradient, image_grayscale, image_invert, image_mask_add, image_matte, \
     image_rotate, image_stereogram, image_transform, image_translate, pil2cv, \
     pixel_eval, tensor2cv, shape_ellipse, shape_polygon, shape_quad, \
@@ -39,9 +39,9 @@ JOV_CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
 class ConstantNode(JOVImageMultiple):
     NAME = "CONSTANT (JOV) 🟪"
     CATEGORY = JOV_CATEGORY
-    HELP_URL = JOV_HELP_URL + "/CREATE#-constant"
+    HELP_URL = "CREATE#-constant"
     DESC = "Create a single RGBA block of color. Useful for masks, overlays and general filtering."
-    DESCRIPTION = load_help(NAME, CATEGORY, HELP_URL)
+    DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -76,9 +76,9 @@ class ConstantNode(JOVImageMultiple):
 class ShapeNode(JOVImageMultiple):
     NAME = "SHAPE GENERATOR (JOV) ✨"
     CATEGORY = JOV_CATEGORY
-    HELP_URL = JOV_HELP_URL + "/CREATE#-shape-generator"
+    HELP_URL = "CREATE#-shape-generator"
     DESC = "Generate polyhedra for masking or texture work."
-    DESCRIPTION = load_help(NAME, CATEGORY, HELP_URL)
+    DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -104,7 +104,7 @@ class ShapeNode(JOVImageMultiple):
             Lexicon.EDGE: (EnumEdge._member_names_, {"default": EnumEdge.CLIP.name}),
         }}
         return Lexicon._parse(d, cls.HELP_URL)
-        d = Lexicon._parse(d, JOV_HELP_URL + "/CREATE#-shape-generator")
+        d = Lexicon._parse(d, "/CREATE#-shape-generator")
         return d
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
@@ -161,9 +161,9 @@ class ShapeNode(JOVImageMultiple):
 class TextNode(JOVImageMultiple):
     NAME = "TEXT GENERATOR (JOV) 📝"
     CATEGORY = JOV_CATEGORY
-    HELP_URL = JOV_HELP_URL + "/CREATE#-text-generator"
+    HELP_URL = "CREATE#-text-generator"
     DESC = "Use any system font with auto-fit or manual placement."
-    DESCRIPTION = load_help(NAME, CATEGORY, HELP_URL)
+    DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     FONTS = font_names()
     FONT_NAMES = sorted(FONTS.keys())
 
@@ -201,7 +201,7 @@ class TextNode(JOVImageMultiple):
             Lexicon.INVERT: ("BOOLEAN", {"default": False, "tooltip": "Invert the mask input"})
         }}
         return Lexicon._parse(d, cls.HELP_URL)
-        return Lexicon._parse(d, JOV_HELP_URL + "/CREATE#-text-generator")
+        return Lexicon._parse(d, "/CREATE#-text-generator")
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         if len(full_text := kw.get(Lexicon.STRING, [""])) == 0:
@@ -276,9 +276,9 @@ class TextNode(JOVImageMultiple):
 class StereogramNode(JOVImageSimple):
     NAME = "STEREOGRAM (JOV) 📻"
     CATEGORY = JOV_CATEGORY
-    HELP_URL = JOV_HELP_URL + "/CREATE#-stereogram"
+    HELP_URL = "CREATE#-stereogram"
     DESC = "Make a magic eye stereograms."
-    DESCRIPTION = load_help(NAME, CATEGORY, HELP_URL)
+    DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     INPUT_IS_LIST = True
 
     @classmethod
@@ -294,7 +294,7 @@ class StereogramNode(JOVImageSimple):
             Lexicon.SHIFT: ("FLOAT", {"default": 1., "min": -1, "max": 1, "step": 0.01}),
         }}
         return Lexicon._parse(d, cls.HELP_URL)
-        return Lexicon._parse(d, JOV_HELP_URL + "/CREATE#-stereogram")
+        return Lexicon._parse(d, "/CREATE#-stereogram")
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         pA = batch_extract(kw.get(Lexicon.PIXEL, None))
@@ -318,9 +318,9 @@ class StereogramNode(JOVImageSimple):
 class GradientNode(JOVImageMultiple):
     NAME = "GRADIENT (JOV) 🍧"
     CATEGORY = JOV_CATEGORY
-    HELP_URL = JOV_HELP_URL + "/CREATE#-gradient"
+    HELP_URL = "CREATE#-gradient"
     DESC = "Make a gradient mapped to a linear or polar coordinate system."
-    DESCRIPTION = load_help(NAME, CATEGORY, HELP_URL)
+    DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:

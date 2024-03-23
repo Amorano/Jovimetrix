@@ -30,7 +30,7 @@ app.registerExtension({
                 }
                 fitHeight(this);
             }
-            setTimeout(() => { op.callback(); }, 15);
+            setTimeout(() => { op.callback(); }, 10);
             return me;
         }
 	}

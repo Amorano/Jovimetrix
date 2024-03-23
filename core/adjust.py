@@ -11,7 +11,7 @@ from loguru import logger
 
 from comfy.utils import ProgressBar
 
-from Jovimetrix import JOV_HELP_URL, MIN_IMAGE_SIZE, WILDCARD, JOVImageMultiple, load_help
+from Jovimetrix import WILDCARD, JOVImageMultiple, load_help
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import zip_longest_fill, parse_tuple, parse_number, EnumTupleType
 from Jovimetrix.sup.image import batch_extract, channel_count, \
@@ -42,9 +42,9 @@ class EnumColorMatchMap(Enum):
 class AdjustNode(JOVImageMultiple):
     NAME = "ADJUST (JOV) 🕸️"
     CATEGORY = JOV_CATEGORY
-    HELP_URL = JOV_HELP_URL + "/ADJUST#-adjust"
+    HELP_URL = "ADJUST#-adjust"
     DESC = "Blur, Sharpen, Emboss, Levels, HSV, Edge detection."
-    DESCRIPTION = load_help(NAME, CATEGORY, HELP_URL)
+    DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -188,10 +188,10 @@ class AdjustNode(JOVImageMultiple):
 
 class ColorMatchNode(JOVImageMultiple):
     NAME = "COLOR MATCH (JOV) 💞"
-    CATEGORY = CATEGORY = JOV_CATEGORY
-    HELP_URL = JOV_HELP_URL + "/ADJUST#-color-match"
+    CATEGORY = JOV_CATEGORY
+    HELP_URL = "ADJUST#-color-match"
     DESC = "Project the colors of one image  onto another or use a pre-defined color target."
-    DESCRIPTION = load_help(NAME, CATEGORY, HELP_URL)
+    DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -258,10 +258,10 @@ class ColorMatchNode(JOVImageMultiple):
 
 class ThresholdNode(JOVImageMultiple):
     NAME = "THRESHOLD (JOV) 📉"
-    CATEGORY = CATEGORY = JOV_CATEGORY
-    HELP_URL = JOV_HELP_URL + "/ADJUST#-threshold"
+    CATEGORY = JOV_CATEGORY
+    HELP_URL = "ADJUST#-threshold"
     DESC = "Clip an input based on a mid point value."
-    DESCRIPTION = load_help(NAME, CATEGORY, HELP_URL)
+    DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -301,10 +301,10 @@ class ThresholdNode(JOVImageMultiple):
 
 class ColorBlindNode(JOVImageMultiple):
     NAME = "COLOR BLIND (JOV) 👁‍🗨"
-    CATEGORY = CATEGORY = JOV_CATEGORY
-    HELP_URL = JOV_HELP_URL + "/ADJUST#-colorblind"
+    CATEGORY = JOV_CATEGORY
+    HELP_URL = "ADJUST#-colorblind"
     DESC = "Transform an image into specific color blind color space"
-    DESCRIPTION = load_help(NAME, CATEGORY, HELP_URL)
+    DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:

@@ -31,7 +31,7 @@ app.registerExtension({
                 }
                 fitHeight(self);
             };
-            setTimeout(() => { scheme.callback(); }, 15);
+            setTimeout(() => { scheme.callback(); }, 10);
             return me;
         }
     }

@@ -57,10 +57,10 @@ app.registerExtension({
                 }
                 fitHeight(self);
             };
-            setTimeout(() => { swap_r.callback(); }, 15);
-            setTimeout(() => { swap_g.callback(); }, 15);
-            setTimeout(() => { swap_b.callback(); }, 15);
-            setTimeout(() => { swap_a.callback(); }, 15);
+            setTimeout(() => { swap_r.callback(); }, 10);
+            setTimeout(() => { swap_g.callback(); }, 10);
+            setTimeout(() => { swap_b.callback(); }, 10);
+            setTimeout(() => { swap_a.callback(); }, 10);
             return me;
         }
     }

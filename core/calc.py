@@ -15,13 +15,13 @@ import torch
 
 from comfy.utils import ProgressBar
 
-from Jovimetrix import JOV_HELP_URL, JOVBaseNode, WILDCARD, load_help
+from Jovimetrix import JOVBaseNode, WILDCARD, load_help
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import EnumTupleType, parse_tuple, zip_longest_fill
 from Jovimetrix.sup.anim import ease_op, EnumEase
 
 # =============================================================================
-HELP_URL = JOV_HELP_URL + "/CALC#%EF%B8%8F⃣-value"
+HELP_URL = "CALC#%EF%B8%8F⃣-value"
 JOV_CATEGORY = "JOVIMETRIX 🔺🟩🔵/CALC"
 
 # =============================================================================
@@ -184,9 +184,9 @@ def convert_value(typ:EnumConvertType, val:Any) -> Any:
 class CalcUnaryOPNode(JOVBaseNode):
     NAME = "CALC OP UNARY (JOV) 🎲"
     CATEGORY = JOV_CATEGORY
-    HELP_URL = JOV_HELP_URL + "/CALC#-calc-op-unary"
+    HELP_URL = "CALC#-calc-op-unary"
     DESC = "Perform a Unary Operation on an input."
-    DESCRIPTION = load_help(NAME, CATEGORY, HELP_URL)
+    DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     RETURN_TYPES = (WILDCARD,)
     RETURN_NAMES = (Lexicon.UNKNOWN, )
     OUTPUT_IS_LIST = (True, )
@@ -251,9 +251,9 @@ class CalcUnaryOPNode(JOVBaseNode):
 class CalcBinaryOPNode(JOVBaseNode):
     NAME = "CALC OP BINARY (JOV) 🌟"
     CATEGORY = JOV_CATEGORY
-    HELP_URL = JOV_HELP_URL + "/CALC#-calc-op-binary"
+    HELP_URL = "CALC#-calc-op-binary"
     DESC = "Perform a Binary Operation on two inputs."
-    DESCRIPTION = load_help(NAME, CATEGORY, HELP_URL)
+    DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     RETURN_TYPES = (WILDCARD,)
     RETURN_NAMES = (Lexicon.UNKNOWN, )
     OUTPUT_IS_LIST = (True, )
@@ -410,9 +410,9 @@ class CalcBinaryOPNode(JOVBaseNode):
 class ValueNode(JOVBaseNode):
     NAME = "VALUE (JOV) 🧬"
     CATEGORY = JOV_CATEGORY
-    HELP_URL = JOV_HELP_URL + "/CALC#-value"
+    HELP_URL = "CALC#-value"
     DESC = "Create a value for most types; also universal constants."
-    DESCRIPTION = load_help(NAME, CATEGORY, HELP_URL)
+    DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     RETURN_TYPES = (WILDCARD, )
     RETURN_NAMES = (Lexicon.ANY, )
     OUTPUT_IS_LIST = (True, )
@@ -458,9 +458,9 @@ class ValueNode(JOVBaseNode):
 class LerpNode(JOVBaseNode):
     NAME = "LERP (JOV) 🔰"
     CATEGORY = JOV_CATEGORY
-    HELP_URL = JOV_HELP_URL + "/CALC#-lerp"
+    HELP_URL = "CALC#-lerp"
     DESC = "Interpolate between two values with or without a smoothing."
-    DESCRIPTION = load_help(NAME, CATEGORY, HELP_URL)
+    DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     OUTPUT_IS_LIST = (True, )
     RETURN_TYPES = (WILDCARD, )
     RETURN_NAMES = (Lexicon.ANY )

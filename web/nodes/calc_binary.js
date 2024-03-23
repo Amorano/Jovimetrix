@@ -105,7 +105,7 @@ app.registerExtension({
                 this.outputs[0].name = widget_type_name(combo.value);
                 fitHeight(this);
             }
-            setTimeout(() => { combo.callback(); }, 15);
+            setTimeout(() => { combo.callback(); }, 10);
             return me;
         }
 
@@ -113,7 +113,7 @@ app.registerExtension({
         nodeType.prototype.onConnectionsChange = function (slotType, slot, event, link_info, data) {
             if (slotType === TypeSlot.Input) {
                 const combo = this.widgets.find(w => w.name === '❓');
-                setTimeout(() => { combo.callback(); }, 15);
+                setTimeout(() => { combo.callback(); }, 10);
 
             }
             return onConnectionsChange?.apply(this, arguments);
@@ -136,7 +136,7 @@ app.registerExtension({
                         content: `Convertz ${w.name} to widget`,
                         callback: () => {
                             convertToWidget(this, w)
-                            setTimeout(() => { combo.callback(); }, 15);
+                            setTimeout(() => { combo.callback(); }, 10);
                         },
                     });
                 } else {
@@ -145,7 +145,7 @@ app.registerExtension({
                         content: `Convertz ${w.name} to input`,
                         callback: () => {
                             convertToInput(this, w, config);
-                            setTimeout(() => { combo.callback(); }, 15);
+                            setTimeout(() => { combo.callback(); }, 10);
                         },
                     });
                 }

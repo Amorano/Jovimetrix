@@ -49,8 +49,8 @@ app.registerExtension({
                 fitHeight(self);
             }
 
-            setTimeout(() => { mirror.callback(); }, 15);
-            setTimeout(() => { proj.callback(); }, 15);
+            setTimeout(() => { mirror.callback(); }, 10);
+            setTimeout(() => { proj.callback(); }, 10);
             return me;
         }
 	}

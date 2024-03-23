@@ -10,7 +10,7 @@ from loguru import logger
 
 from comfy.utils import ProgressBar
 
-from Jovimetrix import JOV_HELP_URL, MIN_IMAGE_SIZE, JOVBaseNode, JOVImageMultiple, load_help
+from Jovimetrix import MIN_IMAGE_SIZE, JOVBaseNode, JOVImageMultiple, load_help
 
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import parse_tuple, zip_longest_fill
@@ -26,9 +26,9 @@ JOV_CATEGORY = "JOVIMETRIX 🔺🟩🔵/AUDIO"
 class LoadWaveNode(JOVBaseNode):
     NAME = "LOAD WAVE (JOV) 🎼"
     CATEGORY = JOV_CATEGORY
-    HELP_URL = JOV_HELP_URL + "/AUDIO#-load-wave"
+    HELP_URL = "AUDIO#-load-wave"
     DESC = "Import audio waveform data"
-    DESCRIPTION = load_help(NAME, CATEGORY, HELP_URL)
+    DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     RETURN_TYPES = ("WAVE",)
     RETURN_NAMES = (Lexicon.WAVE,)
     OUTPUT_IS_LIST = (False,)
@@ -69,9 +69,9 @@ class LoadWaveNode(JOVBaseNode):
 class WaveGraphNode(JOVImageMultiple):
     NAME = "WAVE GRAPH (JOV) ▶ ılıılı"
     CATEGORY = JOV_CATEGORY
-    HELP_URL = JOV_HELP_URL + "/AUDIO#-wave-graph"
+    HELP_URL = "AUDIO#-wave-graph"
     DESC = "Display audio waveform data as a linear bar graph"
-    DESCRIPTION = load_help(NAME, CATEGORY, HELP_URL)
+    DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
