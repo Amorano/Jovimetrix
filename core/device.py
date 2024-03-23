@@ -487,7 +487,7 @@ class MIDIReaderNode(JOVBaseNode):
         return (msg, self.__note_on, self.__channel, self.__control, self.__note, self.__value, normalize,  )
 
 class MIDIFilterEZNode(JOVBaseNode):
-    NAME = "MIDI FILTER EZ ❇️"
+    NAME = "MIDI FILTER EZ (JOV) ❇️"
     CATEGORY = JOV_CATEGORY
     HELP_URL = "DEVICE#%EF%B8%8F-midi-filter-ez"
     DESC = "Filter MIDI messages by channel, message type or value."
@@ -538,7 +538,7 @@ class MIDIFilterEZNode(JOVBaseNode):
         return (message, True, )
 
 class MIDIFilterNode(JOVBaseNode):
-    NAME = "MIDI FILTER ✳️"
+    NAME = "MIDI FILTER (JOV) ✳️"
     CATEGORY = JOV_CATEGORY
     HELP_URL = "DEVICE#%EF%B8%8F-midi-filter"
     DESC = "Filter MIDI messages by channel, message type or value."

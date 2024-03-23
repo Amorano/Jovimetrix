@@ -97,7 +97,8 @@ JOV_IGNORE_NODE = ROOT / 'ignore.txt'
 JOV_GLSL = ROOT / 'res' / 'glsl'
 
 JOV_WEBWIKI_URL = "https://github.com/Amorano/Jovimetrix/wiki"
-JOV_WEBHELP_ROOT = 'https://github.com/Amorano/Jovimetrix-examples/blob/master'
+JOV_WEBHELP_ROOT = "https://github.com/Amorano/Jovimetrix-examples/blob/master"
+JOV_WEBRES_ROOT = "https://raw.githubusercontent.com/Amorano/Jovimetrix-examples/master"
 
 JOV_LOG_LEVEL = os.getenv("JOV_LOG_LEVEL", "WARNING")
 logger.configure(handlers=[{"sink": sys.stdout, "level": JOV_LOG_LEVEL}])
@@ -254,11 +255,18 @@ except Exception as e:
 # =============================================================================
 
 def load_help(name:str, category:str, desc:str, url:str) -> str:
-    global JOV_HELP_INDEX, JOV_WEBHELP_ROOT
+    global JOV_HELP_INDEX, JOV_WEBWIKI_URL, JOV_WEBHELP_ROOT, JOV_WEBRES_ROOT
     parse = JOV_HELP_INDEX.get(name, "NO HELP AVAILABLE")
-    parse = parse.replace("!NAME!", name).replace("!DESC!", desc)
-    parse = parse.replace("!URL!", f"[{name}]({url})")
-    return parse.replace("!CAT!", category)
+    parse = parse.replace("!NAME!", name).replace("!DESC!", desc).replace("!CAT!", category)
+    parse = parse.replace("!URL!", f"[{name}]({JOV_WEBWIKI_URL}/{url})")
+    name_raw = name.split('(JOV)')[0].lower().strip().replace(' ', '_')
+    name_vid = f"![]({JOV_WEBRES_ROOT}/node/{name}/{name_raw}.gif)"
+    name_vid = name_vid.replace(' ', '%20')
+    print(name_vid)
+    # https://raw.githubusercontent.com/Amorano/Jovimetrix-examples/master/node/BLEND%20(JOV)%20%E2%9A%97%EF%B8%8F/blend.gif
+    # https://github.com/Amorano/Jovimetrix-examples/blob/master/node/BLEND%20(JOV)%20%E2%9A%97%EF%B8%8F/blend.gif
+    parse = parse.replace("!URL_VID!", name_vid)
+    return parse
 
 def parse_reset(ident:str) -> bool:
     try:
@@ -322,8 +330,15 @@ class Session(metaclass=Singleton):
             if len(data := configLoad(f, as_json=False)) > 0:
                 JOV_HELP_INDEX[f.stem] = '\n'.join(data)
             else:
-                JOV_HELP_INDEX[f.stem] = "!NAME! || !CAT!\n\n!DESC!\n\nWIKI: !URL!\n\n"
+                JOV_HELP_INDEX[f.stem] = """
+!NAME! || !CAT!
 
+!DESC!
+
+WIKI: !URL!
+
+!URL_VID!
+"""
             help_count += 1
         if help_count > 0:
             logger.info(f"{help_count} help files loaded")
