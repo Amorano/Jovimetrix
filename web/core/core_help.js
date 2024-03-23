@@ -1,5 +1,5 @@
 /**
- * File: core_tooltips.js
+ * File: core_help.js
  * Project: Jovimetrix
  */
 
@@ -54,7 +54,7 @@ export const JTooltipWidget = (app, name, opts) => {
 }
 
 app.registerExtension({
-    name: "jovimetrix.tooltips",
+    name: "jovimetrix.help",
     async getCustomWidgets(app) {
         return {
             JTOOLTIP: (node, inputName, inputData, app) => ({

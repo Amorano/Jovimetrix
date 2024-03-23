@@ -323,6 +323,7 @@ class Session(metaclass=Singleton):
                 raise Exception("MAJOR 😿😰😬🥟 BLUNDERCATS 🥟😬😰😿")
 
         help_count = 0
+        footer = "help system powered by [MelMass](https://github.com/melMass) and the [comfy_mtb](https://github.com/melMass/comfy_mtb) project"
         global JOV_HELP_ROOT, JOV_HELP_INDEX
         for f in (JOV_HELP_ROOT).iterdir():
             if f.suffix != ".md":
@@ -339,6 +340,7 @@ WIKI: !URL!
 
 !URL_VID!
 """
+            JOV_HELP_INDEX[f.stem] = JOV_HELP_INDEX[f.stem] + f'\n\n{footer}'
             help_count += 1
         if help_count > 0:
             logger.info(f"{help_count} help files loaded")
