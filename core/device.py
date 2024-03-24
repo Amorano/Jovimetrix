@@ -20,7 +20,7 @@ from loguru import logger
 
 from comfy.utils import ProgressBar
 
-from Jovimetrix import load_help, JOVBaseNode, JOVImageMultiple, WILDCARD, MIN_IMAGE_SIZE
+from Jovimetrix import load_help, JOVBaseNode, JOVImageMultiple, WILDCARD
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import parse_parameter
 from Jovimetrix.sup.stream import camera_list, monitor_list, window_list, \
@@ -36,7 +36,7 @@ from Jovimetrix.sup.midi import midi_device_names, \
 from Jovimetrix.sup.image import EnumImageType, channel_solid, \
     cv2tensor, cv2tensor_full, image_convert, pixel_eval, \
     tensor2cv, image_scalefit, \
-    EnumInterpolation, EnumScaleMode
+    EnumInterpolation, EnumScaleMode, MIN_IMAGE_SIZE
 
 from Jovimetrix.sup.audio import AudioDevice
 

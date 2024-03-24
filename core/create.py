@@ -9,8 +9,7 @@ from loguru import logger
 
 from comfy.utils import ProgressBar
 
-from Jovimetrix import load_help, JOVImageMultiple, \
-    MIN_IMAGE_SIZE, WILDCARD
+from Jovimetrix import load_help, JOVImageMultiple, WILDCARD
 
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import parse_dynamic, parse_parameter, zip_longest_fill, \
@@ -20,7 +19,7 @@ from Jovimetrix.sup.image import  cv2tensor_full, \
     image_gradient, image_grayscale, image_invert, image_mask_add, image_matte, \
     image_rotate, image_stereogram, image_transform, image_translate, pil2cv, \
     pixel_eval, tensor2cv, shape_ellipse, shape_polygon, shape_quad, \
-    EnumEdge, EnumImageType
+    EnumEdge, EnumImageType, MIN_IMAGE_SIZE
 
 from Jovimetrix.sup.text import font_names, text_autosize, text_draw, \
     EnumAlignment, EnumJustify, EnumShapes

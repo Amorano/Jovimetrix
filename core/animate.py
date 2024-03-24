@@ -3,8 +3,6 @@ Jovimetrix - http://www.github.com/amorano/jovimetrix
 Animate
 """
 
-import math
-import time
 from typing import Any
 
 from loguru import logger
@@ -30,7 +28,6 @@ class TickNode(JOVBaseNode):
     DESC = "Periodic pulse with total pulse count, normalized count relative to the loop setting and fixed pulse step."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     INPUT_IS_LIST = False
-    OUTPUT_IS_LIST = (True, True, True, True,)
     RETURN_TYPES = ("INT", "FLOAT", "FLOAT", WILDCARD)
     RETURN_NAMES = (Lexicon.VALUE, Lexicon.LINEAR, Lexicon.FPS, Lexicon.ANY)
 
@@ -114,7 +111,7 @@ class TickNode(JOVBaseNode):
         if loop > 0:
             self.__frame = 0
         comfy_message(ident, "jovi-tick", {"i": self.__frame})
-        return list(zip(*results))
+        return [list(a) for a in zip(*results)]
 
 class WaveGeneratorNode(JOVBaseNode):
     NAME = "WAVE GENERATOR (JOV) 🌊"
@@ -165,4 +162,4 @@ class WaveGeneratorNode(JOVBaseNode):
                 val = np.abs(val)
             results.append([val, int(val)])
             pbar.update_absolute(idx)
-        return list(zip(*results))
+        return [list(a) for a in zip(*results)]

@@ -13,7 +13,7 @@ from loguru import logger
 
 from comfy.utils import ProgressBar
 
-from Jovimetrix import load_help, JOVImageMultiple, WILDCARD, MIN_IMAGE_SIZE
+from Jovimetrix import load_help, JOVImageMultiple, WILDCARD
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import parse_parameter, zip_longest_fill, \
     EnumConvertType
@@ -28,7 +28,8 @@ from Jovimetrix.sup.image import  channel_merge, \
     remap_sphere, image_invert, \
     EnumImageType, EnumColorTheory, EnumProjection, \
     EnumScaleMode, EnumInterpolation, EnumBlendType, \
-    EnumEdge, EnumMirrorMode, EnumOrientation, EnumPixelSwizzle
+    EnumEdge, EnumMirrorMode, EnumOrientation, EnumPixelSwizzle, \
+    MIN_IMAGE_SIZE
 
 # =============================================================================
 

@@ -10,11 +10,10 @@ from loguru import logger
 
 from comfy.utils import ProgressBar
 
-from Jovimetrix import MIN_IMAGE_SIZE, JOVBaseNode, JOVImageMultiple, load_help
-
+from Jovimetrix import JOVBaseNode, JOVImageMultiple, load_help
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import parse_parameter, zip_longest_fill
-from Jovimetrix.sup.image import EnumImageType, channel_solid, cv2tensor_full
+from Jovimetrix.sup.image import EnumImageType, channel_solid, cv2tensor_full, MIN_IMAGE_SIZE
 from Jovimetrix.sup.audio import load_audio, graph_sausage
 
 # =============================================================================

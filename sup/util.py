@@ -18,7 +18,7 @@ from loguru import logger
 
 class EnumConvertType(Enum):
     STRING = 0
-    BOOLEAN = 10
+    BOOLEAN = 1
     INT = 12
     FLOAT = 14
     VEC2 = 20
@@ -27,11 +27,11 @@ class EnumConvertType(Enum):
     VEC3INT = 35
     VEC4 = 40
     VEC4INT = 45
-    LIST = 50
-    DICT = 60
-    IMAGE = 70
-    #LATENT = 80
-    #MASK = 90
+    LIST = 2
+    DICT = 3
+    IMAGE = 4
+    #LATENT = 5
+    #MASK = 6
 
 # =============================================================================
 # === SUPPORT ===
@@ -45,73 +45,89 @@ def parse_dynamic(who, data) -> list:
         count += 1
     return vals
 
-def parse_parameter(key: str, data: Union[dict, List[dict]], default: tuple[Any],
-                    typ: EnumConvertType=EnumConvertType.INT, clip_min: Optional[float]=None,
-                    clip_max: Optional[float]=None, zero:int=0) -> tuple[List[Any]]:
+def parse_value(val:List[Any], typ:EnumConvertType, default: Any,
+                clip_min: Optional[float]=None, clip_max: Optional[float]=None,
+                zero:int=0) -> Any:
+    """Convert target list of values into the new specified type."""
+    if not isinstance(val, (str, set, list,)):
+        if isinstance(val, (dict,)):
+            if 'samples' in val:
+                # latents....
+                val = val["samples"]
+            else:
+                val = list(val.values())
+        elif isinstance(val, (tuple, )):
+            val = list(val)
+        else:
+            val = [val]
 
+    if typ != EnumConvertType.IMAGE and isinstance(val, (torch.Tensor,)):
+        val = list(val.size())[1:4] + [val[0]]
+
+    pos = len(val)
+    size = max(1, int(typ.value / 10))
+    for x in range(size - pos):
+        idx = pos + x
+        last = val[-1] if len(val) else 0
+        val.append(default[idx] if idx < len(default) else last)
+
+    # val = [v.value if issubclass(type(v), Enum) else v for v in val]
+    if typ in [EnumConvertType.FLOAT, EnumConvertType.INT,
+                EnumConvertType.VEC2, EnumConvertType.VEC2INT,
+                EnumConvertType.VEC3, EnumConvertType.VEC3INT,
+                EnumConvertType.VEC4, EnumConvertType.VEC4INT]:
+
+        for idx in range(size):
+            if isinstance(val[idx], str):
+                parts = val[idx].split('.', 1)
+                if len(parts) > 1:
+                    val[idx] ='.'.join(parts[:2])
+
+            try:
+                if typ in [EnumConvertType.FLOAT, EnumConvertType.VEC2,
+                            EnumConvertType.VEC3, EnumConvertType.VEC4]:
+                    val[idx] = round(float(val[idx]), 12)
+                else:
+                    val[idx] = int(val[idx])
+            except ValueError as _:
+                val = [0] * size
+                break
+
+            if clip_min is not None:
+                val[idx] = max(val[idx], clip_min)
+            if clip_max is not None:
+                val[idx] = min(val[idx], clip_max)
+            if val[idx] == 0:
+                val[idx] = zero
+        val = val[:size]
+    elif typ == EnumConvertType.IMAGE:
+        if isinstance(val, (torch.Tensor,)):
+            val = val.tolist()
+    elif typ == EnumConvertType.STRING:
+        if not isinstance(val, (str,)):
+            val = [", ".join([str(v) for v in val])]
+    elif typ == EnumConvertType.BOOLEAN:
+        val = [bool(v) for v in val[:size]]
+    elif typ == EnumConvertType.DICT:
+        val = {i: v for i, v in enumerate(val[:size])}
+    if len(val) == 1:
+        return val[0]
+    return val
+
+def parse_parameter(key: str, data: Union[dict, List[dict]], default: Any,
+                    typ: EnumConvertType, clip_min: Optional[float]=None,
+                    clip_max: Optional[float]=None, zero:int=0) -> tuple[List[Any]]:
+    """Convert all inputs, regardless of structure, into a list of parameters."""
     # should be operating on a list of values, all times
+    # typ = EnumConvertType[typ]
     if not isinstance(default, (list, tuple,)):
         default = [default]
     unified = data.get(key, default)
     if not isinstance(unified, (list, )):
         unified = [unified]
-
-    result = []
-    for u in unified:
-        # first get the values aligned into an array of values
-        val = u
-        if isinstance(u, (dict,)):
-            if 'samples' in u:
-                # latents....
-                val = u["samples"]
-            else:
-                val = [list(v.values()) for v in u]
-
-        if isinstance(val, (tuple, )):
-            val = list(val)
-        elif not isinstance(val, (list, )):
-            val = [val]
-        elif typ != EnumConvertType.IMAGE and isinstance(val, (torch.Tensor,)):
-            val = list(u.size())[1:4] + [u[0]]
-
-        if typ in [EnumConvertType.FLOAT, EnumConvertType.INT,
-                   EnumConvertType.VEC2, EnumConvertType.VEC2INT,
-                   EnumConvertType.VEC3, EnumConvertType.VEC3INT,
-                   EnumConvertType.VEC4, EnumConvertType.VEC4INT]:
-
-
-            last = val[-1] if len(val) else 0
-            pos = len(val)
-            size = int(typ.value / 10)
-            for x in range(size - pos):
-                idx = pos + x
-                val.append(default[idx] if idx < len(default) else last)
-            for idx in range(size):
-                if typ in [EnumConvertType.FLOAT, EnumConvertType.VEC2,
-                            EnumConvertType.VEC3, EnumConvertType.VEC4]:
-                    if isinstance(val[idx], str):
-                        parts = val[idx].split('.', 1)
-                        if len(parts) > 1:
-                            val[idx] ='.'.join(parts[:2])
-                    val[idx] = round(float(val[idx]), 12)
-                else:
-                    val[idx] = int(val[idx])
-                if clip_min is not None:
-                    val[idx] = max(val[idx], clip_min)
-                if clip_max is not None:
-                    val[idx] = min(val[idx], clip_max)
-                if val[idx] == 0:
-                    val[idx] = zero
-            val = val[:size]
-        elif typ == EnumConvertType.IMAGE:
-            if isinstance(u, (torch.Tensor,)):
-                val = u.tolist()
-        elif typ == EnumConvertType.STRING:
-            val = ", ".join([str(v) for v in val])
-        elif typ == EnumConvertType.BOOLEAN:
-            val = bool(val[0])
-        result.append(val)
-    return result
+    if len(unified) == 0:
+        unified = [default[0] if len(default) else 0]
+    return [parse_value(u, typ, default, clip_min, clip_max, zero) for u in unified]
 
 def update_nested_dict(d, path, value) -> None:
     keys = path.split('.')

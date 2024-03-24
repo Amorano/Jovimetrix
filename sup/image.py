@@ -9,7 +9,7 @@ import urllib
 import requests
 from enum import Enum
 from io import BytesIO
-from typing import Any, Optional, Union
+from typing import Any, Optional, Tuple, Union
 
 import cv2
 import torch
@@ -25,15 +25,36 @@ from blendmodes.blend import blendLayers, BlendType
 
 from loguru import logger
 
-from Jovimetrix import TYPE_IMAGE, TYPE_PIXEL, TYPE_COORD, MIN_IMAGE_SIZE
 from Jovimetrix.sup.util import grid_make
 
 # =============================================================================
-# === ENUM GLOBALS ===
+# === GLOBAL ===
 # =============================================================================
 
+MIN_IMAGE_SIZE = 512
 HALFPI = math.pi / 2
 TAU = math.pi * 2
+
+# =============================================================================
+# === TYPE SHORTCUTS ===
+# =============================================================================
+
+TYPE_COORD = Union[
+    tuple[int, int],
+    tuple[float, float]
+]
+
+TYPE_PIXEL = Union[
+    int,
+    float,
+    Tuple[float, float, float],
+    Tuple[float, float, float, Optional[float]],
+    Tuple[int, int, int],
+    Tuple[int, int, int, Optional[int]]
+]
+
+TYPE_IMAGE = Union[np.ndarray, torch.Tensor]
+TYPE_VECTOR = Union[TYPE_IMAGE|TYPE_PIXEL]
 
 # =============================================================================
 # === ENUM GLOBALS ===

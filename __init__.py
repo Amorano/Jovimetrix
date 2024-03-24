@@ -104,27 +104,6 @@ JOV_LOG_LEVEL = os.getenv("JOV_LOG_LEVEL", "WARNING")
 logger.configure(handlers=[{"sink": sys.stdout, "level": JOV_LOG_LEVEL}])
 
 # =============================================================================
-# === TYPE SHORTCUTS ===
-# =============================================================================
-
-TYPE_COORD = Union[
-    tuple[int, int],
-    tuple[float, float]
-]
-
-TYPE_PIXEL = Union[
-    int,
-    float,
-    Tuple[float, float, float],
-    Tuple[float, float, float, Optional[float]],
-    Tuple[int, int, int],
-    Tuple[int, int, int, Optional[int]]
-]
-
-TYPE_IMAGE = Union[np.ndarray, torch.Tensor]
-TYPE_VECTOR = Union[TYPE_IMAGE|TYPE_PIXEL]
-
-# =============================================================================
 # === THERE CAN BE ONLY ONE ===
 # =============================================================================
 
@@ -146,7 +125,6 @@ class JOVBaseNode:
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         return {"required": {}}
-    INPUT_IS_LIST = True
     RETURN_TYPES = ()
     OUTPUT_NODE = False
     FUNCTION = "run"
@@ -261,7 +239,7 @@ def load_help(name:str, category:str, desc:str, url:str) -> str:
     name_raw = name.split('(JOV)')[0].lower().strip().replace(' ', '_')
     name_vid = f"![]({JOV_WEBRES_ROOT}/node/{name}/{name_raw}.gif)"
     name_vid = name_vid.replace(' ', '%20')
-    # print(name_vid)
+    # logger.debug(name_vid)
     # https://raw.githubusercontent.com/Amorano/Jovimetrix-examples/master/node/BLEND%20(JOV)%20%E2%9A%97%EF%B8%8F/blend.gif
     # https://github.com/Amorano/Jovimetrix-examples/blob/master/node/BLEND%20(JOV)%20%E2%9A%97%EF%B8%8F/blend.gif
     parse = parse.replace("!URL_VID!", name_vid)
@@ -275,12 +253,6 @@ def parse_reset(ident:str) -> int:
         return -1
     except Exception as e:
         logger.error(str(e))
-
-# =============================================================================
-# === GLOBALS ===
-# =============================================================================
-
-MIN_IMAGE_SIZE = 512
 
 # =============================================================================
 # === SESSION ===

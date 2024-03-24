@@ -26,12 +26,15 @@ from comfy.utils import ProgressBar
 from folder_paths import get_output_directory
 
 from Jovimetrix import comfy_message, load_help, parse_reset, JOVBaseNode, \
-    WILDCARD, ROOT, MIN_IMAGE_SIZE
+    WILDCARD, ROOT
+
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import parse_dynamic, path_next, parse_parameter, \
     zip_longest_fill
+
 from Jovimetrix.sup.image import  cv2tensor,  image_convert, \
-    tensor2pil, tensor2cv, pil2tensor, image_load, image_formats, image_diff
+    tensor2pil, tensor2cv, pil2tensor, image_load, image_formats, image_diff, \
+    MIN_IMAGE_SIZE
 
 # =============================================================================
 
@@ -502,7 +505,7 @@ class ImageDiffNode(JOVBaseNode):
             t = image_convert(t, 1)
             results.append([cv2tensor(a), cv2tensor(b), cv2tensor(d), cv2tensor(t), s])
             pbar.update_absolute(idx)
-        return list(zip(*results))
+        return [list(a) for a in zip(*results)]
 
 class ArrayNode(JOVBaseNode):
     NAME = "ARRAY (JOV) 📚"
@@ -673,4 +676,4 @@ class GenuflectNode(JOVBaseNode):
             pA = tensor2cv(pA)
             results.append(cv2tensor(pA))
             pbar.update_absolute(idx)
-        return list(zip(*results))
+        return [list(a) for a in zip(*results)]

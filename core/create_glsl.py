@@ -11,12 +11,12 @@ from loguru import logger
 from comfy.utils import ProgressBar
 
 from Jovimetrix import comfy_message, load_help, parse_reset, JOVImageMultiple, \
-    WILDCARD, ROOT, MIN_IMAGE_SIZE, JOV_GLSL
+    WILDCARD, ROOT, JOV_GLSL
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import parse_parameter, zip_longest_fill, \
     EnumConvertType
 from Jovimetrix.sup.image import  cv2tensor_full, \
-    pil2cv, tensor2pil
+    pil2cv, tensor2pil, MIN_IMAGE_SIZE
 from Jovimetrix.sup.shader import GLSL, CompileException
 
 # =============================================================================

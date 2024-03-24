@@ -17,7 +17,7 @@ from comfy.utils import ProgressBar
 
 from Jovimetrix import JOVBaseNode, WILDCARD, load_help
 from Jovimetrix.sup.lexicon import Lexicon
-from Jovimetrix.sup.util import parse_parameter, parse_parameter, zip_longest_fill, EnumConvertType
+from Jovimetrix.sup.util import parse_parameter, parse_parameter, parse_value, parse_value, zip_longest_fill, EnumConvertType
 from Jovimetrix.sup.anim import ease_op, EnumEase
 from Jovimetrix.sup.image import  channel_solid, channel_swap, cv2tensor_full, \
     tensor2cv, EnumImageType, EnumSwizzle
@@ -407,7 +407,7 @@ class ValueNode(JOVBaseNode):
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     RETURN_TYPES = (WILDCARD, )
     RETURN_NAMES = (Lexicon.ANY, )
-    OUTPUT_IS_LIST = (True, )
+    # OUTPUT_IS_LIST = (True, )
     SORT = 1
 
     @classmethod
@@ -426,24 +426,22 @@ class ValueNode(JOVBaseNode):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> tuple[bool]:
-        raw = kw.get(Lexicon.IN_A, [None])
-        typ = kw.get(Lexicon.TYPE, [EnumConvertType.BOOLEAN])
-        x = kw.get(Lexicon.X, [0])
-        y = kw.get(Lexicon.Y, [0])
-        z = kw.get(Lexicon.Z, [0])
-        w = kw.get(Lexicon.W, [0])
+        raw = parse_parameter(Lexicon.IN_A, kw, 0, EnumConvertType.FLOAT)
+        typ = parse_parameter(Lexicon.TYPE, kw, [EnumConvertType.BOOLEAN.name], EnumConvertType.STRING)
+        x = parse_parameter(Lexicon.X, kw, 0, EnumConvertType.FLOAT)
+        y = parse_parameter(Lexicon.Y, kw, 0, EnumConvertType.FLOAT)
+        z = parse_parameter(Lexicon.Z, kw, 0, EnumConvertType.FLOAT)
+        w = parse_parameter(Lexicon.W, kw, 0, EnumConvertType.FLOAT)
+        # logger.debug('raw', raw, typ, x, y, z, w)
         params = [tuple(x) for x in zip_longest_fill(raw, typ, x, y, z, w)]
+        # logger.debug(params)
         results = []
         pbar = ProgressBar(len(params))
         for idx, (raw, typ, x, y, z, w) in enumerate(params):
+            # logger.debug('val', raw, typ, x, y, z, w)
             typ = EnumConvertType[typ]
-            val = parse_parameter(typ, raw, [x, y, z, w])
-            # val = convert_value(typ, val)
-            if isinstance(val, (set, tuple,)):
-                val = list(val)
-            if not isinstance(val, (list,)):
-                val = [val]
-            results.append(tuple(val))
+            val = parse_value(raw, typ, [x, y, z, w])
+            results.append(val)
             pbar.update_absolute(idx)
         return (results,)
 
