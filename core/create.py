@@ -3,23 +3,20 @@ Jovimetrix - http://www.github.com/amorano/jovimetrix
 Creation
 """
 
-import numpy as np
-
 import torch
 from PIL import ImageFont
-from vnoise import Noise
 from loguru import logger
 
 from comfy.utils import ProgressBar
 
-from Jovimetrix import load_help, JOVImageSimple, JOVImageMultiple, \
+from Jovimetrix import load_help, JOVImageMultiple, \
     MIN_IMAGE_SIZE, WILDCARD
 
 from Jovimetrix.sup.lexicon import Lexicon
-from Jovimetrix.sup.util import parse_dynamic, parse_tuple, zip_longest_fill, \
-    EnumTupleType
+from Jovimetrix.sup.util import parse_dynamic, parse_parameter, zip_longest_fill, \
+    EnumConvertType
 
-from Jovimetrix.sup.image import batch_extract, cv2tensor_full, \
+from Jovimetrix.sup.image import  cv2tensor_full, \
     image_gradient, image_grayscale, image_invert, image_mask_add, image_matte, \
     image_rotate, image_stereogram, image_transform, image_translate, pil2cv, \
     pixel_eval, tensor2cv, shape_ellipse, shape_polygon, shape_quad, \
@@ -39,7 +36,7 @@ JOV_CATEGORY = "CREATE"
 class ConstantNode(JOVImageMultiple):
     NAME = "CONSTANT (JOV) 🟪"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "{JOV_CATEGORY}#-constant"
+    HELP_URL = f"{JOV_CATEGORY}#-constant"
     DESC = "Create a single RGBA block of color. Useful for masks, overlays and general filtering."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
 
@@ -59,9 +56,9 @@ class ConstantNode(JOVImageMultiple):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        pA = batch_extract(kw.get(Lexicon.PIXEL, None))
-        wihi = parse_tuple(Lexicon.WH, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
-        matte = parse_tuple(Lexicon.RGBA_A, kw, (0, 0, 0, 255), clip_min=0, clip_max=255)
+        pA = parse_parameter(kw.get(Lexicon.PIXEL, None))
+        wihi = parse_parameter(Lexicon.WH, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
+        matte = parse_parameter(Lexicon.RGBA_A, kw, (0, 0, 0, 255), clip_min=0, clip_max=255)
         images = []
         params = [tuple(x) for x in zip_longest_fill(pA, wihi, matte)]
         pbar = ProgressBar(len(params))
@@ -76,7 +73,7 @@ class ConstantNode(JOVImageMultiple):
 class ShapeNode(JOVImageMultiple):
     NAME = "SHAPE GENERATOR (JOV) ✨"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "{JOV_CATEGORY}#-shape-generator"
+    HELP_URL = f"{JOV_CATEGORY}#-shape-generator"
     DESC = "Generate polyhedra for masking or texture work."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
 
@@ -112,11 +109,11 @@ class ShapeNode(JOVImageMultiple):
         sides = kw.get(Lexicon.SIDES, [3])
         angle = kw.get(Lexicon.ANGLE, [0])
         edge = kw.get(Lexicon.EDGE, [EnumEdge.CLIP])
-        offset = parse_tuple(Lexicon.XY, kw, (0., 0.,), EnumTupleType.FLOAT, )
-        size = parse_tuple(Lexicon.SIZE, kw, (1., 1.,), EnumTupleType.FLOAT, )
-        wihi = parse_tuple(Lexicon.WH, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,))
-        color = parse_tuple(Lexicon.RGBA_A, kw, (255, 255, 255, 255))
-        matte = parse_tuple(Lexicon.MATTE, kw, (0, 0, 0, 255))
+        offset = parse_parameter(Lexicon.XY, kw, (0., 0.,), EnumConvertType.FLOAT, )
+        size = parse_parameter(Lexicon.SIZE, kw, (1., 1.,), EnumConvertType.FLOAT, )
+        wihi = parse_parameter(Lexicon.WH, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,))
+        color = parse_parameter(Lexicon.RGBA_A, kw, (255, 255, 255, 255))
+        matte = parse_parameter(Lexicon.MATTE, kw, (0, 0, 0, 255))
         params = [tuple(x) for x in zip_longest_fill(shape, sides, offset, angle, edge,
                                                      size, wihi, color, matte)]
         images = []
@@ -161,7 +158,7 @@ class ShapeNode(JOVImageMultiple):
 class TextNode(JOVImageMultiple):
     NAME = "TEXT GENERATOR (JOV) 📝"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "{JOV_CATEGORY}#-text-generator"
+    HELP_URL = f"{JOV_CATEGORY}#-text-generator"
     DESC = "Use any system font with auto-fit or manual placement."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     FONTS = font_names()
@@ -208,16 +205,16 @@ class TextNode(JOVImageMultiple):
         font_idx = kw.get(Lexicon.FONT, [self.FONT_NAMES[0]])
         autosize = kw.get(Lexicon.AUTOSIZE, [False])
         letter = kw.get(Lexicon.LETTER, [False])
-        color = parse_tuple(Lexicon.RGBA_A, kw, (255, 255, 255, 255))
-        matte = parse_tuple(Lexicon.MATTE, kw, (0, 0, 0), clip_min=0, clip_max=255)
+        color = parse_parameter(Lexicon.RGBA_A, kw, (255, 255, 255, 255))
+        matte = parse_parameter(Lexicon.MATTE, kw, (0, 0, 0), clip_min=0, clip_max=255)
         columns = kw.get(Lexicon.COLUMNS, [0])
         font_size = kw.get(Lexicon.FONT_SIZE, [16])
         align = kw.get(Lexicon.ALIGN, [EnumAlignment.CENTER])
         justify = kw.get(Lexicon.JUSTIFY, [EnumJustify.CENTER])
         margin = kw.get(Lexicon.MARGIN, [0])
         line_spacing = kw.get(Lexicon.SPACING, [25])
-        wihi = parse_tuple(Lexicon.WH, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,))
-        pos = parse_tuple(Lexicon.XY, kw, (0, 0), EnumTupleType.FLOAT,  -1, 1)
+        wihi = parse_parameter(Lexicon.WH, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,))
+        pos = parse_parameter(Lexicon.XY, kw, (0, 0), EnumConvertType.FLOAT,  -1, 1)
         angle = kw.get(Lexicon.ANGLE, [0])
         edge = kw.get(Lexicon.EDGE, [EnumEdge.CLIP])
         invert = kw.get(Lexicon.INVERT, [False])
@@ -275,7 +272,7 @@ class TextNode(JOVImageMultiple):
 class StereogramNode(JOVImageMultiple):
     NAME = "STEREOGRAM (JOV) 📻"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "{JOV_CATEGORY}#-stereogram"
+    HELP_URL = f"{JOV_CATEGORY}#-stereogram"
     DESC = "Make a magic eye stereograms."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     INPUT_IS_LIST = True
@@ -295,8 +292,8 @@ class StereogramNode(JOVImageMultiple):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        pA = batch_extract(kw.get(Lexicon.PIXEL, None))
-        depth = batch_extract(kw.get(Lexicon.DEPTH, None))
+        pA = parse_parameter(kw.get(Lexicon.PIXEL, None))
+        depth = parse_parameter(kw.get(Lexicon.DEPTH, None))
         divisions = kw.get(Lexicon.TILE, [8])
         noise = kw.get(Lexicon.NOISE, [0.33])
         gamma = kw.get(Lexicon.GAMMA, [0.33])
@@ -316,7 +313,7 @@ class StereogramNode(JOVImageMultiple):
 class GradientNode(JOVImageMultiple):
     NAME = "GRADIENT (JOV) 🍧"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "{JOV_CATEGORY}#-gradient"
+    HELP_URL = f"{JOV_CATEGORY}#-gradient"
     DESC = "Make a gradient mapped to a linear or polar coordinate system."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
 
@@ -333,8 +330,8 @@ class GradientNode(JOVImageMultiple):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        pA = batch_extract(kw.get(Lexicon.PIXEL, None))
-        wihi = parse_tuple(Lexicon.WH, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
+        pA = parse_parameter(kw.get(Lexicon.PIXEL, None))
+        wihi = parse_parameter(Lexicon.WH, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
         colors = parse_dynamic(Lexicon.COLOR, kw)
         images = []
         params = [tuple(x) for x in zip_longest_fill(pA, wihi, colors)]

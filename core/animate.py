@@ -15,7 +15,7 @@ from comfy.utils import ProgressBar
 from Jovimetrix import WILDCARD, JOVBaseNode, comfy_message, load_help, parse_reset
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.anim import EnumWave, wave_op
-from Jovimetrix.sup.util import zip_longest_fill
+from Jovimetrix.sup.util import EnumConvertType, parse_parameter, zip_longest_fill
 
 # =============================================================================
 
@@ -122,7 +122,7 @@ class WaveGeneratorNode(JOVBaseNode):
     HELP_URL = f"{JOV_CATEGORY}#-wave-generator"
     DESC = "Periodic and Non-Periodic Sinosodials."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
-    OUTPUT_IS_LIST = (True, True,)
+    # OUTPUT_IS_LIST = (True, True,)
     RETURN_TYPES = ("FLOAT", "INT", )
     RETURN_NAMES = (Lexicon.FLOAT, Lexicon.INT, )
 
@@ -148,7 +148,8 @@ class WaveGeneratorNode(JOVBaseNode):
         amp = kw.get(Lexicon.AMP, [1.])
         phase = kw.get(Lexicon.PHASE, [0])
         shift = kw.get(Lexicon.OFFSET, [0])
-        delta_time = kw.get(Lexicon.TIME, [0])
+        delta_time = parse_parameter(Lexicon.TIME, kw, [0], EnumConvertType.FLOAT, clip_min=0)
+
         invert = kw.get(Lexicon.INVERT, [False])
         abs = kw.get(Lexicon.ABSOLUTE, [False])
         results = []
@@ -158,6 +159,7 @@ class WaveGeneratorNode(JOVBaseNode):
             freq = 1. / freq
             if invert:
                 amp = -amp
+
             val = wave_op(op, phase, freq, amp, shift, delta_time)
             if abs:
                 val = np.abs(val)

@@ -13,9 +13,9 @@ from comfy.utils import ProgressBar
 from Jovimetrix import comfy_message, load_help, parse_reset, JOVImageMultiple, \
     WILDCARD, ROOT, MIN_IMAGE_SIZE, JOV_GLSL
 from Jovimetrix.sup.lexicon import Lexicon
-from Jovimetrix.sup.util import parse_tuple, zip_longest_fill, \
-    EnumTupleType
-from Jovimetrix.sup.image import batch_extract, cv2tensor_full, \
+from Jovimetrix.sup.util import parse_parameter, zip_longest_fill, \
+    EnumConvertType
+from Jovimetrix.sup.image import  cv2tensor_full, \
     pil2cv, tensor2pil
 from Jovimetrix.sup.shader import GLSL, CompileException
 
@@ -66,7 +66,7 @@ class EnumPatternType(Enum):
 class GLSLNode(JOVImageMultiple):
     NAME = "GLSL (JOV) 🍩"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
-    HELP_URL = "CREATE#-glsl"
+    HELP_URL = f"CREATE#-glsl"
     DESC = ""
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
 
@@ -100,11 +100,11 @@ class GLSLNode(JOVImageMultiple):
         self.__last_good = [torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 4), dtype=torch.uint8, device="cpu")]
 
     def run(self, ident, **kw) -> list[torch.Tensor]:
-        batch = parse_tuple(Lexicon.BATCH, kw, (1, 30), clip_min=1)
+        batch = parse_parameter(Lexicon.BATCH, kw, (1, 30), clip_min=1)
         fragment = kw.get(Lexicon.FRAGMENT, [DEFAULT_FRAGMENT])
         param = kw.get(Lexicon.PARAM, [{}])
-        wihi = parse_tuple(Lexicon.WH, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), clip_min=1)
-        pA = batch_extract(kw.get(Lexicon.PIXEL, None))
+        wihi = parse_parameter(Lexicon.WH, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), clip_min=1)
+        pA = parse_parameter(kw.get(Lexicon.PIXEL, None))
         hold = kw.get(Lexicon.WAIT, [False])
         reset = kw.get(Lexicon.RESET, [False])
         params = [tuple(x) for x in zip_longest_fill(batch, fragment, param, wihi, pA, hold, reset)]
@@ -145,7 +145,7 @@ class GLSLNode(JOVImageMultiple):
 
 class GLSLBaseNode(JOVImageMultiple):
     CATEGORY = JOV_CATEGORY
-    HELP_URL = "GLSL#-"
+    HELP_URL = f"GLSL#-"
     # DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     FRAGMENT = ".glsl"
 
@@ -155,9 +155,9 @@ class GLSLBaseNode(JOVImageMultiple):
         self.__glsl = None
 
     def run(self, **kw) -> list[torch.Tensor]:
-        pA = batch_extract(kw.get(Lexicon.PIXEL_A, None))
-        pB = batch_extract(kw.get(Lexicon.PIXEL_B, None))
-        wihi = parse_tuple(Lexicon.WH, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), clip_min=1)
+        pA = parse_parameter(kw.get(Lexicon.PIXEL_A, None))
+        pB = parse_parameter(kw.get(Lexicon.PIXEL_B, None))
+        wihi = parse_parameter(Lexicon.WH, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), clip_min=1)
         kw.pop(Lexicon.WH, None)
         frag = kw.pop("frag", [self.FRAGMENT])
         # clear any junk, since the rest are 'params'
@@ -203,7 +203,7 @@ class GLSLBaseNode(JOVImageMultiple):
 
 class GLSLSelectRange(GLSLBaseNode):
     NAME = "SELECT RANGE GLSL (JOV)"
-    HELP_URL = "GLSL#-"
+    HELP_URL = f"GLSL#-"
     DESC = ""
     DESCRIPTION = load_help(NAME, JOV_CATEGORY, DESC, HELP_URL)
     FRAGMENT = str(JOV_GLSL / "clr" / "clr-flt-range.glsl")
@@ -228,7 +228,7 @@ class GLSLSelectRange(GLSLBaseNode):
 
 class GLSLColorGrayscale(GLSLBaseNode):
     NAME = "GRAYSCALE GLSL (JOV)"
-    HELP_URL = "GLSL#-"
+    HELP_URL = f"GLSL#-"
     DESC = ""
     DESCRIPTION = load_help(NAME, JOV_CATEGORY, DESC, HELP_URL)
 
@@ -253,7 +253,7 @@ class GLSLColorGrayscale(GLSLBaseNode):
 
 class GLSLCreateNoise(GLSLBaseNode):
     NAME = "NOISE GLSL (JOV)"
-    HELP_URL = "GLSL#-"
+    HELP_URL = f"GLSL#-"
     DESC = ""
     DESCRIPTION = load_help(NAME, JOV_CATEGORY, DESC, HELP_URL)
 
@@ -295,7 +295,7 @@ class GLSLCreateNoise(GLSLBaseNode):
 
 class GLSLCreatePattern(GLSLBaseNode):
     NAME = "PATTERN GLSL (JOV)"
-    HELP_URL = "GLSL#-"
+    HELP_URL = f"GLSL#-"
     DESC = ""
     DESCRIPTION = load_help(NAME, JOV_CATEGORY, DESC, HELP_URL)
 
@@ -320,7 +320,7 @@ class GLSLCreatePattern(GLSLBaseNode):
 
 class GLSLCreatePolygon(GLSLBaseNode):
     NAME = "POLYGON GLSL (JOV)"
-    HELP_URL = "GLSL#-"
+    HELP_URL = f"GLSL#-"
     DESC = ""
     DESCRIPTION = load_help(NAME, JOV_CATEGORY, DESC, HELP_URL)
 
@@ -344,7 +344,7 @@ class GLSLCreatePolygon(GLSLBaseNode):
 
 class GLSLMap(GLSLBaseNode):
     NAME = "MAP GLSL (JOV)"
-    HELP_URL = "GLSL#-"
+    HELP_URL = f"GLSL#-"
     DESC = ""
     DESCRIPTION = load_help(NAME, JOV_CATEGORY, DESC, HELP_URL)
 
@@ -377,7 +377,7 @@ class GLSLMap(GLSLBaseNode):
 class GLSLTRSMirror(GLSLBaseNode):
     NAME = "MIRROR GLSL (JOV)"
 
-    HELP_URL = "GLSL#-"
+    HELP_URL = f"GLSL#-"
     DESC = ""
     DESCRIPTION = load_help(NAME, JOV_CATEGORY, DESC, HELP_URL)
 
@@ -395,7 +395,7 @@ class GLSLTRSMirror(GLSLBaseNode):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> list[torch.Tensor]:
-        center = parse_tuple(Lexicon.PIVOT, kw, (0.5, 0.5,), EnumTupleType.FLOAT,  0, 1)[0]
+        center = parse_parameter(Lexicon.PIVOT, kw, (0.5, 0.5,), EnumConvertType.FLOAT,  0, 1)[0]
         kw["angle"] = -kw.pop(Lexicon.ANGLE, 0)
         kw["center"] = center
         return super().run(**kw)
@@ -403,7 +403,7 @@ class GLSLTRSMirror(GLSLBaseNode):
 class GLSLTRSRotate(GLSLBaseNode):
     NAME = "ROTATE GLSL (JOV)"
 
-    HELP_URL = "GLSL#-"
+    HELP_URL = f"GLSL#-"
     DESC = ""
     DESCRIPTION = load_help(NAME, JOV_CATEGORY, DESC, HELP_URL)
     FRAGMENT = str(JOV_GLSL / "trs" / "trs-rotate.glsl")
@@ -420,7 +420,7 @@ class GLSLTRSRotate(GLSLBaseNode):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> list[torch.Tensor]:
-        center = parse_tuple(Lexicon.PIVOT, kw, (0.5, 0.5,), EnumTupleType.FLOAT,  0, 1)[0]
+        center = parse_parameter(Lexicon.PIVOT, kw, (0.5, 0.5,), EnumConvertType.FLOAT,  0, 1)[0]
         kw["angle"] = -kw.pop(Lexicon.ANGLE, 0)
         kw["center"] = center
         return super().run(**kw)
@@ -428,7 +428,7 @@ class GLSLTRSRotate(GLSLBaseNode):
 class GLSLUtilTiler(GLSLBaseNode):
     NAME = "TILER GLSL (JOV)"
 
-    HELP_URL = "GLSL#-"
+    HELP_URL = f"GLSL#-"
     DESC = ""
     DESCRIPTION = load_help(NAME, JOV_CATEGORY, DESC, HELP_URL)
     FRAGMENT = str(JOV_GLSL / "trs" / "trs-tiler.glsl")
@@ -445,7 +445,7 @@ class GLSLUtilTiler(GLSLBaseNode):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> list[torch.Tensor]:
-        kw["uTile"] = parse_tuple(Lexicon.TILE, kw, (1., 1.,), EnumTupleType.FLOAT,
+        kw["uTile"] = parse_parameter(Lexicon.TILE, kw, (1., 1.,), EnumConvertType.FLOAT,
                                   1)
         kw.pop(Lexicon.TILE)
         return super().run(**kw)
@@ -453,7 +453,7 @@ class GLSLUtilTiler(GLSLBaseNode):
 class GLSLVFX(GLSLBaseNode):
     NAME = "VFX GLSL (JOV)"
 
-    HELP_URL = "GLSL#-"
+    HELP_URL = f"GLSL#-"
     DESC = ""
     DESCRIPTION = load_help(NAME, JOV_CATEGORY, DESC, HELP_URL)
 

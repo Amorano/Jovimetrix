@@ -16,39 +16,26 @@ from loguru import logger
 # === ENUMERATION ===
 # =============================================================================
 
-class EnumTupleType(Enum):
-    INT = 0
-    FLOAT = 1
-    STRING = 2
-    LIST = 3
-    DICT = 4
+class EnumConvertType(Enum):
+    STRING = 0
+    BOOLEAN = 10
+    INT = 12
+    FLOAT = 14
+    VEC2 = 20
+    VEC2INT = 25
+    VEC3 = 30
+    VEC3INT = 35
+    VEC4 = 40
+    VEC4INT = 45
+    LIST = 50
+    DICT = 60
+    IMAGE = 70
+    #LATENT = 80
+    #MASK = 90
 
 # =============================================================================
 # === SUPPORT ===
 # =============================================================================
-
-def convert_parameter(data: Any) -> Any:
-    if data is None:
-        return [int], [0]
-
-    if not isinstance(data, (torch.Tensor, list, tuple, set,)):
-        data = [data]
-
-    typ = []
-    val = []
-    for v in data:
-        # logger.debug("{} {} {} {}", v, type(v), type(v) == float, type(v) == int)
-        t = type(v)
-        if t == int:
-            t = float
-        try:
-            v = float(v)
-        except Exception as e:
-            logger.error(str(e))
-            v = 0
-        typ.append(t)
-        val.append(v)
-    return typ, val
 
 def parse_dynamic(who, data) -> list:
     vals = []
@@ -58,83 +45,73 @@ def parse_dynamic(who, data) -> list:
         count += 1
     return vals
 
-def parse_number(key: str, data: Union[dict, List[dict]], typ: EnumTupleType=EnumTupleType.INT, default: tuple[Any]=None, clip_min: Optional[int]=None, clip_max: Optional[int]=None) -> tuple[List[Any]]:
-    ret = []
-    unified = data.get(key, {})
+def parse_parameter(key: str, data: Union[dict, List[dict]], default: tuple[Any],
+                    typ: EnumConvertType=EnumConvertType.INT, clip_min: Optional[float]=None,
+                    clip_max: Optional[float]=None, zero:int=0) -> tuple[List[Any]]:
 
-    if not isinstance(unified, (set, tuple, list,)):
-        unified = [unified]
-
-    for v in unified:
-        match typ:
-            case EnumTupleType.FLOAT:
-                if isinstance(v, str):
-                    parts = v.split('.', 1)
-                    if len(parts) > 1:
-                        v ='.'.join(parts[:2])
-                v = float(v if v is not None else 0)
-
-            case EnumTupleType.INT:
-                v = int(v if v is not None else 0)
-
-        if typ in [EnumTupleType.INT, EnumTupleType.FLOAT]:
-            if clip_min is not None:
-                v = max(v, clip_min)
-            if clip_max is not None:
-                v = min(v, clip_max)
-
-        ret.append(v)
-    return ret
-
-def parse_tuple(key: str, data: Union[dict, List[dict]], default: tuple[Any], typ: EnumTupleType=EnumTupleType.INT, clip_min: Optional[float]=None, clip_max: Optional[float]=None, zero:int=0) -> tuple[List[Any]]:
-    unified = data.get(key, [default])
-    if isinstance(unified, (tuple, set,)):
-        unified = list(unified)
+    # should be operating on a list of values, all times
+    if not isinstance(default, (list, tuple,)):
+        default = [default]
+    unified = data.get(key, default)
     if not isinstance(unified, (list, )):
         unified = [unified]
-    if isinstance(unified[0], (dict,)):
-        unified = [list(v.values()) for v in unified]
-    data = []
-    for v in unified:
-        if not isinstance(v, (list, tuple, set)):
-            v = [v]
-        data.append(v)
-    ret = []
-    default_size = len(default)
-    for entry in data:
-        newboi = []
-        for idx in range(default_size):
-            d = default[idx] if default is not None and idx < default_size else None
-            # entry could be a dict, list/tuple...
-            v = entry
-            if isinstance(entry, (list, tuple, set)):
-                v = entry[idx] if idx < len(entry) else d
 
-            match typ:
-                case EnumTupleType.FLOAT:
-                    if isinstance(v, str):
-                        parts = v.split('.', 1)
+    result = []
+    for u in unified:
+        # first get the values aligned into an array of values
+        val = u
+        if isinstance(u, (dict,)):
+            if 'samples' in u:
+                # latents....
+                val = u["samples"]
+            else:
+                val = [list(v.values()) for v in u]
+
+        if isinstance(val, (tuple, )):
+            val = list(val)
+        elif not isinstance(val, (list, )):
+            val = [val]
+        elif typ != EnumConvertType.IMAGE and isinstance(val, (torch.Tensor,)):
+            val = list(u.size())[1:4] + [u[0]]
+
+        if typ in [EnumConvertType.FLOAT, EnumConvertType.INT,
+                   EnumConvertType.VEC2, EnumConvertType.VEC2INT,
+                   EnumConvertType.VEC3, EnumConvertType.VEC3INT,
+                   EnumConvertType.VEC4, EnumConvertType.VEC4INT]:
+
+
+            last = val[-1] if len(val) else 0
+            pos = len(val)
+            size = int(typ.value / 10)
+            for x in range(size - pos):
+                idx = pos + x
+                val.append(default[idx] if idx < len(default) else last)
+            for idx in range(size):
+                if typ in [EnumConvertType.FLOAT, EnumConvertType.VEC2,
+                            EnumConvertType.VEC3, EnumConvertType.VEC4]:
+                    if isinstance(val[idx], str):
+                        parts = val[idx].split('.', 1)
                         if len(parts) > 1:
-                            v ='.'.join(parts[:2])
-                    v = float(v if v is not None else zero)
-                case EnumTupleType.LIST:
-                    if v is not None:
-                        v = v.split(',')
-                case EnumTupleType.INT:
-                    v = int(v if v is not None else zero)
-
-            if typ in [EnumTupleType.INT, EnumTupleType.FLOAT]:
+                            val[idx] ='.'.join(parts[:2])
+                    val[idx] = round(float(val[idx]), 12)
+                else:
+                    val[idx] = int(val[idx])
                 if clip_min is not None:
-                    v = max(v, clip_min)
+                    val[idx] = max(val[idx], clip_min)
                 if clip_max is not None:
-                    v = min(v, clip_max)
-
-            if v == 0:
-                v = zero
-            newboi.append(v)
-        newboi.extend([newboi[-1]] * max(0, len(default) - len(newboi)))
-        ret.append(tuple(newboi))
-    return ret
+                    val[idx] = min(val[idx], clip_max)
+                if val[idx] == 0:
+                    val[idx] = zero
+            val = val[:size]
+        elif typ == EnumConvertType.IMAGE:
+            if isinstance(u, (torch.Tensor,)):
+                val = u.tolist()
+        elif typ == EnumConvertType.STRING:
+            val = ", ".join([str(v) for v in val])
+        elif typ == EnumConvertType.BOOLEAN:
+            val = bool(val[0])
+        result.append(val)
+    return result
 
 def update_nested_dict(d, path, value) -> None:
     keys = path.split('.')
@@ -258,3 +235,5 @@ def path_next(pattern: str) -> str:
         c = (a + b) // 2
         a, b = (c, b) if os.path.exists(pattern % c) else (a, c)
     return pattern % b
+
+

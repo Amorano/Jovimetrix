@@ -13,9 +13,8 @@ from comfy.utils import ProgressBar
 
 from Jovimetrix import WILDCARD, JOVImageMultiple, load_help
 from Jovimetrix.sup.lexicon import Lexicon
-from Jovimetrix.sup.util import zip_longest_fill, parse_tuple, parse_number, \
-    EnumTupleType
-from Jovimetrix.sup.image import batch_extract, channel_count, \
+from Jovimetrix.sup.util import EnumConvertType, zip_longest_fill, parse_parameter
+from Jovimetrix.sup.image import channel_count, \
     color_match_histogram, color_match_lut, color_match_reinhard, \
     cv2tensor_full, image_color_blind, image_scalefit, tensor2cv, image_equalize, \
     image_levels, pixel_eval, \
@@ -74,17 +73,17 @@ class AdjustNode(JOVImageMultiple):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor]:
-        pA = batch_extract(kw.get(Lexicon.PIXEL, None))
-        mask = batch_extract(kw.get(Lexicon.MASK, None))
+        pA = parse_parameter(kw.get(Lexicon.PIXEL, None))
+        mask = parse_parameter(kw.get(Lexicon.MASK, None))
         op = kw.get(Lexicon.FUNC, [EnumAdjustOP.BLUR])
         radius = kw.get(Lexicon.RADIUS, [3])
         amt = kw.get(Lexicon.VALUE, [0])
-        lohi = parse_tuple(Lexicon.LOHI, kw, (0, 1), EnumTupleType.FLOAT, clip_min=0, clip_max=1)
-        lmh = parse_tuple(Lexicon.LMH, kw, (0, 0.5, 1), EnumTupleType.FLOAT, clip_min=0, clip_max=1)
-        hsv = parse_tuple(Lexicon.HSV, kw, (0, 1, 1), EnumTupleType.FLOAT, clip_min=0, clip_max=1)
-        contrast = parse_number(Lexicon.CONTRAST, kw, [0], EnumTupleType.FLOAT,  clip_min=0, clip_max=1)
-        gamma = parse_number(Lexicon.GAMMA, kw, [1], EnumTupleType.FLOAT, clip_min=0, clip_max=1)
-        matte = parse_tuple(Lexicon.MATTE, kw, (0, 0, 0, 255), clip_min=0, clip_max=255)
+        lohi = parse_parameter(Lexicon.LOHI, kw, (0, 1), EnumConvertType.FLOAT, clip_min=0, clip_max=1)
+        lmh = parse_parameter(Lexicon.LMH, kw, (0, 0.5, 1), EnumConvertType.FLOAT, clip_min=0, clip_max=1)
+        hsv = parse_parameter(Lexicon.HSV, kw, (0, 1, 1), EnumConvertType.FLOAT, clip_min=0, clip_max=1)
+        contrast = parse_parameter(Lexicon.CONTRAST, kw, [0], EnumConvertType.FLOAT,  clip_min=0, clip_max=1)
+        gamma = parse_parameter(Lexicon.GAMMA, kw, [1], EnumConvertType.FLOAT, clip_min=0, clip_max=1)
+        matte = parse_parameter(Lexicon.MATTE, kw, (0, 0, 0, 255), clip_min=0, clip_max=255)
         invert = kw.get(Lexicon.INVERT, [False])
         params = [tuple(x) for x in zip_longest_fill(pA, mask, op, radius, amt, lohi,
                                                      lmh, hsv, contrast, gamma, matte, invert)]
@@ -217,15 +216,15 @@ class ColorMatchNode(JOVImageMultiple):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        pA = batch_extract(kw.get(Lexicon.PIXEL_A, None))
-        pB = batch_extract(kw.get(Lexicon.PIXEL_B, None))
+        pA = parse_parameter(kw.get(Lexicon.PIXEL_A, None))
+        pB = parse_parameter(kw.get(Lexicon.PIXEL_B, None))
         colormatch_mode = kw.get(Lexicon.COLORMATCH_MODE, [EnumColorMatchMode.REINHARD.name])
         colormatch_map = kw.get(Lexicon.COLORMATCH_MAP, [EnumColorMatchMap.USER_MAP.name])
         colormap = kw.get(Lexicon.COLORMAP, [EnumColorMap.HSV])
         num_colors = kw.get(Lexicon.VALUE, [255])
         flip = kw.get(Lexicon.FLIP, [False])
         invert = kw.get(Lexicon.INVERT, [False])
-        matte = parse_tuple(Lexicon.MATTE, kw, (0, 0, 0, 255), clip_min=0, clip_max=255)
+        matte = parse_parameter(Lexicon.MATTE, kw, (0, 0, 0, 255), clip_min=0, clip_max=255)
         params = [tuple(x) for x in zip_longest_fill(pA, pB, colormap, colormatch_mode,
                                                      colormatch_map, num_colors, flip, invert, matte)]
         images = []
@@ -280,10 +279,10 @@ class ThresholdNode(JOVImageMultiple):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        pA = batch_extract(kw.get(Lexicon.PIXEL, None))
+        pA = parse_parameter(kw.get(Lexicon.PIXEL, None))
         mode = kw.get(Lexicon.FUNC, [EnumThreshold.BINARY])
         adapt = kw.get(Lexicon.ADAPT, [EnumThresholdAdapt.ADAPT_NONE])
-        threshold = parse_number(Lexicon.THRESHOLD, kw, EnumTupleType.FLOAT, [1], clip_min=0, clip_max=1)
+        threshold = parse_parameter(Lexicon.THRESHOLD, kw, EnumConvertType.FLOAT, [1], clip_min=0, clip_max=1)
         block = kw.get(Lexicon.SIZE, [3])
         invert = kw.get(Lexicon.INVERT, [False])
         params = [tuple(x) for x in zip_longest_fill(pA, mode, adapt, threshold, block, invert)]
@@ -322,7 +321,7 @@ class ColorBlindNode(JOVImageMultiple):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        pA = batch_extract(kw.get(Lexicon.PIXEL, None))
+        pA = parse_parameter(kw.get(Lexicon.PIXEL, None))
         defiency = kw.get(Lexicon.DEFIENCY, [EnumCBDefiency.PROTAN.name])
         simulator = kw.get(Lexicon.SIMULATOR, [EnumCBSimulator.AUTOSELECT.name])
         severity = kw.get(Lexicon.SIMULATOR, [1])

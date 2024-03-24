@@ -17,9 +17,9 @@ from comfy.utils import ProgressBar
 
 from Jovimetrix import JOVBaseNode, WILDCARD, load_help
 from Jovimetrix.sup.lexicon import Lexicon
-from Jovimetrix.sup.util import parse_tuple, zip_longest_fill, EnumTupleType
+from Jovimetrix.sup.util import parse_parameter, parse_parameter, zip_longest_fill, EnumConvertType
 from Jovimetrix.sup.anim import ease_op, EnumEase
-from Jovimetrix.sup.image import batch_extract, channel_solid, channel_swap, cv2tensor_full, \
+from Jovimetrix.sup.image import  channel_solid, channel_swap, cv2tensor_full, \
     tensor2cv, EnumImageType, EnumSwizzle
 
 # =============================================================================
@@ -31,18 +31,6 @@ JOV_CATEGORY = "CALC"
 class EnumNumberType(Enum):
     INT = 0
     FLOAT = 10
-
-class EnumConvertType(Enum):
-    STRING = 0
-    BOOLEAN = 10
-    INT = 12
-    FLOAT = 14
-    VEC2 = 20
-    VEC2INT = 25
-    VEC3 = 30
-    VEC3INT = 35
-    VEC4 = 40
-    VEC4INT = 45
 
 class EnumUnaryOperation(Enum):
     ABS = 0
@@ -144,8 +132,9 @@ OP_UNARY = {
 
 # =============================================================================
 
-def parse_type_value(typ:EnumConvertType, A:Any, default:tuple=(0,0,0,0)) -> List[Any]:
-    """Converts a number into a 1, 2, 3 or 4 vector array"""
+"""
+def parse_parameter(typ:EnumConvertType, A:Any, default:tuple=(0,0,0,0)) -> List[Any]:
+    # Converts a number into a 1, 2, 3 or 4 vector array
     if not isinstance(default, (list, set, tuple,)):
         default = [default]
     size = max(1, int(typ.value / 10))
@@ -180,6 +169,7 @@ def convert_value(typ:EnumConvertType, val:Any) -> Any:
         val = [int(v) for v in val]
     val += [val[-1]] * (size - len(val))
     return val[:size]
+"""
 
 # =============================================================================
 
@@ -211,7 +201,7 @@ class CalcUnaryOPNode(JOVBaseNode):
         params = [tuple(x) for x in zip_longest_fill(A, op)]
         pbar = ProgressBar(len(params))
         for idx, (A, op) in enumerate(params):
-            val = parse_type_value(EnumConvertType.VEC4, A)
+            val = parse_parameter(EnumConvertType.VEC4, A)
             val = [float(v) for v in val]
             op = EnumUnaryOperation[op]
             match op:
@@ -302,14 +292,14 @@ class CalcBinaryOPNode(JOVBaseNode):
         results = []
         A = kw.get(Lexicon.IN_A, [None])
         B = kw.get(Lexicon.IN_B, [None])
-        a_x = parse_tuple(Lexicon.X, kw, (0,), EnumTupleType.FLOAT)
-        a_xy = parse_tuple(Lexicon.IN_A+"2", kw, (0, 0), EnumTupleType.FLOAT)
-        a_xyz = parse_tuple(Lexicon.IN_A+"3", kw, (0, 0, 0), EnumTupleType.FLOAT)
-        a_xyzw = parse_tuple(Lexicon.IN_A+"4", kw, (0, 0, 0, 0), EnumTupleType.FLOAT)
-        b_x = parse_tuple(Lexicon.Y, kw, (0,), EnumTupleType.FLOAT)
-        b_xy = parse_tuple(Lexicon.IN_B+"2", kw, (0, 0), EnumTupleType.FLOAT)
-        b_xyz = parse_tuple(Lexicon.IN_B+"3", kw, (0, 0, 0), EnumTupleType.FLOAT)
-        b_xyzw = parse_tuple(Lexicon.IN_B+"4", kw, (0, 0, 0, 0), EnumTupleType.FLOAT)
+        a_x = parse_parameter(Lexicon.X, kw, (0,), EnumConvertType.FLOAT)
+        a_xy = parse_parameter(Lexicon.IN_A+"2", kw, (0, 0), EnumConvertType.FLOAT)
+        a_xyz = parse_parameter(Lexicon.IN_A+"3", kw, (0, 0, 0), EnumConvertType.FLOAT)
+        a_xyzw = parse_parameter(Lexicon.IN_A+"4", kw, (0, 0, 0, 0), EnumConvertType.FLOAT)
+        b_x = parse_parameter(Lexicon.Y, kw, (0,), EnumConvertType.FLOAT)
+        b_xy = parse_parameter(Lexicon.IN_B+"2", kw, (0, 0), EnumConvertType.FLOAT)
+        b_xyz = parse_parameter(Lexicon.IN_B+"3", kw, (0, 0, 0), EnumConvertType.FLOAT)
+        b_xyzw = parse_parameter(Lexicon.IN_B+"4", kw, (0, 0, 0, 0), EnumConvertType.FLOAT)
         op = kw.get(Lexicon.FUNC, [EnumBinaryOperation.ADD])
         typ = kw.get(Lexicon.TYPE, [EnumConvertType.FLOAT])
         flip = kw.get(Lexicon.FLIP, [False])
@@ -321,20 +311,20 @@ class CalcBinaryOPNode(JOVBaseNode):
 
             typ = EnumConvertType[typ]
             if typ == EnumConvertType.BOOLEAN:
-                val_a = parse_type_value(typ, A, A if A is not None else a_x)
-                val_b = parse_type_value(typ, B, B if B is not None else b_x)
+                val_a = parse_parameter(typ, A, A if A is not None else a_x)
+                val_b = parse_parameter(typ, B, B if B is not None else b_x)
             elif typ in [EnumConvertType.INT, EnumConvertType.FLOAT]:
-                val_a = parse_type_value(typ, A, A if A is not None else a_x)
-                val_b = parse_type_value(typ, B, B if B is not None else b_x)
+                val_a = parse_parameter(typ, A, A if A is not None else a_x)
+                val_b = parse_parameter(typ, B, B if B is not None else b_x)
             elif typ in [EnumConvertType.VEC2, EnumConvertType.VEC2INT]:
-                val_a = parse_type_value(typ, A, A if A is not None else a_xy)
-                val_b = parse_type_value(typ, B, B if B is not None else b_xy)
+                val_a = parse_parameter(typ, A, A if A is not None else a_xy)
+                val_b = parse_parameter(typ, B, B if B is not None else b_xy)
             elif typ in [EnumConvertType.VEC3, EnumConvertType.VEC3INT]:
-                val_a = parse_type_value(typ, A, A if A is not None else a_xyz)
-                val_b = parse_type_value(typ, B, B if B is not None else b_xyz)
+                val_a = parse_parameter(typ, A, A if A is not None else a_xyz)
+                val_b = parse_parameter(typ, B, B if B is not None else b_xyz)
             else:
-                val_a = parse_type_value(typ, A, A if A is not None else a_xyzw)
-                val_b = parse_type_value(typ, B, B if B is not None else b_xyzw)
+                val_a = parse_parameter(typ, A, A if A is not None else a_xyzw)
+                val_b = parse_parameter(typ, B, B if B is not None else b_xyzw)
 
             val_a = [float(v) for v in val_a]
             val_b = [float(v) for v in val_b]
@@ -447,7 +437,7 @@ class ValueNode(JOVBaseNode):
         pbar = ProgressBar(len(params))
         for idx, (raw, typ, x, y, z, w) in enumerate(params):
             typ = EnumConvertType[typ]
-            val = parse_type_value(typ, raw, [x, y, z, w])
+            val = parse_parameter(typ, raw, [x, y, z, w])
             # val = convert_value(typ, val)
             if isinstance(val, (set, tuple,)):
                 val = list(val)
@@ -484,9 +474,9 @@ class LerpNode(JOVBaseNode):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> tuple[Any, Any]:
-        A = parse_tuple(Lexicon.IN_A, kw, [0], EnumTupleType.FLOAT)
-        B = parse_tuple(Lexicon.IN_B, kw, [0], EnumTupleType.FLOAT)
-        alpha = parse_tuple(Lexicon.FLOAT, kw, [0], EnumTupleType.FLOAT)
+        A = parse_parameter(Lexicon.IN_A, kw, [0], EnumConvertType.FLOAT)
+        B = parse_parameter(Lexicon.IN_B, kw, [0], EnumConvertType.FLOAT)
+        alpha = parse_parameter(Lexicon.FLOAT, kw, [0], EnumConvertType.FLOAT)
         op = kw.get(Lexicon.EASE, ["NONE"])
         typ = kw.get(Lexicon.TYPE, ["NONE"])
         values = []
@@ -496,9 +486,9 @@ class LerpNode(JOVBaseNode):
             # make sure we only interpolate between the longest "stride" we can
             size = max(3, max(len(A), len(B)))
             best_type = [EnumConvertType.FLOAT, EnumConvertType.VEC2, EnumConvertType.VEC3, EnumConvertType.VEC4][size]
-            A = parse_type_value(best_type, A)
-            B = parse_type_value(best_type, B)
-            alpha = parse_type_value(best_type, alpha)
+            A = parse_parameter(best_type, A)
+            B = parse_parameter(best_type, B)
+            alpha = parse_parameter(best_type, alpha)
             if op == "NONE":
                 val = [B[x] * alpha[x] + A[x] * (1 - alpha[x]) for x in range(size)]
             else:
@@ -541,8 +531,8 @@ class SwapNode(JOVBaseNode):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor]:
-        pA = parse_tuple(Lexicon.A, kw, (0, 0, 0, 0))
-        pB = batch_extract(kw.get(Lexicon.B, None))
+        pA = parse_parameter(Lexicon.A, kw, (0, 0, 0, 0))
+        pB = parse_parameter(kw.get(Lexicon.B, None))
         swap_x = kw.get(Lexicon.SWAP_X, [EnumSwizzle.PASSTHRU])
         x = kw.get(Lexicon.X, [0])
         swap_y = kw.get(Lexicon.SWAP_Y, [EnumSwizzle.PASSTHRU])

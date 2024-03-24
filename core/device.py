@@ -22,7 +22,7 @@ from comfy.utils import ProgressBar
 
 from Jovimetrix import load_help, JOVBaseNode, JOVImageMultiple, WILDCARD, MIN_IMAGE_SIZE
 from Jovimetrix.sup.lexicon import Lexicon
-from Jovimetrix.sup.util import parse_tuple
+from Jovimetrix.sup.util import parse_parameter
 from Jovimetrix.sup.stream import camera_list, monitor_list, window_list, \
     monitor_capture, window_capture, JOV_SPOUT, \
     StreamingServer, StreamManager, MediaStreamDevice
@@ -33,7 +33,7 @@ if JOV_SPOUT:
 from Jovimetrix.sup.midi import midi_device_names, \
     MIDIMessage, MIDINoteOnFilter, MIDIServerThread
 
-from Jovimetrix.sup.image import EnumImageType, batch_extract, channel_solid, \
+from Jovimetrix.sup.image import EnumImageType, channel_solid, \
     cv2tensor, cv2tensor_full, image_convert, pixel_eval, \
     tensor2cv, image_scalefit, \
     EnumInterpolation, EnumScaleMode
@@ -62,7 +62,7 @@ class EnumStreamType(Enum):
 class StreamReaderNode(JOVImageMultiple):
     NAME = "STREAM READER (JOV) 📺"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "{JOV_CATEGORY}#-stream-reader"
+    HELP_URL = f"{JOV_CATEGORY}#-stream-reader"
     DESC = "Connect system media devices and remote streams into ComfyUI workflows."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     INPUT_IS_LIST = False
@@ -130,11 +130,11 @@ class StreamReaderNode(JOVImageMultiple):
         if wait:
             return self.__last
         images = []
-        batch_size, rate = parse_tuple(Lexicon.BATCH, kw, (1, 30), clip_min=1)[0]
+        batch_size, rate = parse_parameter(Lexicon.BATCH, kw, (1, 30), clip_min=1)[0]
         pbar = ProgressBar(batch_size)
         rate = 1. / rate
-        width, height = parse_tuple(Lexicon.WH, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,))[0]
-        matte = parse_tuple(Lexicon.MATTE, kw, (0,0,0,255))[0]
+        width, height = parse_parameter(Lexicon.WH, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,))[0]
+        matte = parse_parameter(Lexicon.MATTE, kw, (0,0,0,255))[0]
         mode = kw.get(Lexicon.MODE, EnumScaleMode.NONE)
         mode = EnumScaleMode[mode]
         sample = kw.get(Lexicon.SAMPLE, EnumInterpolation.LANCZOS4)
@@ -262,7 +262,7 @@ class StreamReaderNode(JOVImageMultiple):
 class StreamWriterNode(JOVBaseNode):
     NAME = "STREAM WRITER (JOV) 🎞️"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "{JOV_CATEGORY}#%EF%B8%8F-stream-writer"
+    HELP_URL = f"{JOV_CATEGORY}#%EF%B8%8F-stream-writer"
     DESC = "Broadcast ComfyUI Node outputs to custom webserver endpoint."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     INPUT_IS_LIST = False
@@ -300,8 +300,8 @@ class StreamWriterNode(JOVBaseNode):
     def run(self, **kw) -> tuple[torch.Tensor]:
         if self.__starting:
             return
-        matte = parse_tuple(Lexicon.MATTE, kw, (0,0,0,255))[0]
-        wihi = parse_tuple(Lexicon.WH, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), clip_min=1)[0]
+        matte = parse_parameter(Lexicon.MATTE, kw, (0,0,0,255))[0]
+        wihi = parse_parameter(Lexicon.WH, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), clip_min=1)[0]
         w, h = wihi
         img = kw.get(Lexicon.PIXEL, None)
         img = tensor2cv(img, width=w, height=h)
@@ -332,7 +332,7 @@ if JOV_SPOUT:
     class SpoutWriterNode(JOVBaseNode):
         NAME = "SPOUT WRITER (JOV) 🎥"
         CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-        HELP_URL = "DEVICE#-spout-writer"
+        HELP_URL = f"DEVICE#-spout-writer"
         DESC = "Send image data to Spout endpoints"
         DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
         RETURN_TYPES = ("IMAGE", )
@@ -364,14 +364,14 @@ if JOV_SPOUT:
             self.__sender = SpoutSender("")
 
         def run(self, **kw) -> tuple[torch.Tensor]:
-            pA = batch_extract(kw.get(Lexicon.PIXEL, None))
+            pA = parse_parameter(kw.get(Lexicon.PIXEL, None))
             host = kw.get(Lexicon.ROUTE, [""])[0]
             fps = kw.get(Lexicon.FPS, [30])[0]
             delta = 1. / float(fps)
             mode = kw.get(Lexicon.MODE, [EnumScaleMode.NONE])[0]
-            wihi = parse_tuple(Lexicon.WH, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,))[0]
+            wihi = parse_parameter(Lexicon.WH, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,))[0]
             sample = kw.get(Lexicon.SAMPLE, [EnumInterpolation.LANCZOS4])[0]
-            matte = parse_tuple(Lexicon.MATTE, kw, (0,0,0,255))[0]
+            matte = parse_parameter(Lexicon.MATTE, kw, (0,0,0,255))[0]
             images = []
             #params = [tuple(x) for x in zip_longest_fill(pA, host, delta, mode, wihi, sample, matte)]
             pbar = ProgressBar(len(pA))
@@ -393,7 +393,7 @@ if JOV_SPOUT:
 class MIDIMessageNode(JOVBaseNode):
     NAME = "MIDI MESSAGE (JOV) 🎛️"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "{JOV_CATEGORY}#%EF%B8%8F-midi-message"
+    HELP_URL = f"{JOV_CATEGORY}#%EF%B8%8F-midi-message"
     DESC = "Expands a MIDI message into its values."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     INPUT_IS_LIST = False
@@ -418,7 +418,7 @@ class MIDIMessageNode(JOVBaseNode):
 class MIDIReaderNode(JOVBaseNode):
     NAME = "MIDI READER (JOV) 🎹"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "{JOV_CATEGORY}#-midi-reader"
+    HELP_URL = f"{JOV_CATEGORY}#-midi-reader"
     DESC = "Capture MIDI devices and pass the data into Comfy."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     INPUT_IS_LIST = False
@@ -487,7 +487,7 @@ class MIDIReaderNode(JOVBaseNode):
 class MIDIFilterEZNode(JOVBaseNode):
     NAME = "MIDI FILTER EZ (JOV) ❇️"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "{JOV_CATEGORY}#%EF%B8%8F-midi-filter-ez"
+    HELP_URL = f"{JOV_CATEGORY}#%EF%B8%8F-midi-filter-ez"
     DESC = "Filter MIDI messages by channel, message type or value."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     INPUT_IS_LIST = False
@@ -537,7 +537,7 @@ class MIDIFilterEZNode(JOVBaseNode):
 class MIDIFilterNode(JOVBaseNode):
     NAME = "MIDI FILTER (JOV) ✳️"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "{JOV_CATEGORY}#%EF%B8%8F-midi-filter"
+    HELP_URL = f"{JOV_CATEGORY}#%EF%B8%8F-midi-filter"
     DESC = "Filter MIDI messages by channel, message type or value."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     INPUT_IS_LIST = False
@@ -624,7 +624,7 @@ class MIDIFilterNode(JOVBaseNode):
 class AudioDeviceNode(JOVBaseNode):
     NAME = "AUDIO DEVICE (JOV) 📺"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "{JOV_CATEGORY}#-audio-device"
+    HELP_URL = f"{JOV_CATEGORY}#-audio-device"
     DESC = "Stream from System audio devices into ComfyUI workflows"
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     INPUT_IS_LIST = False

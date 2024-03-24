@@ -28,9 +28,9 @@ from folder_paths import get_output_directory
 from Jovimetrix import comfy_message, load_help, parse_reset, JOVBaseNode, \
     WILDCARD, ROOT, MIN_IMAGE_SIZE
 from Jovimetrix.sup.lexicon import Lexicon
-from Jovimetrix.sup.util import parse_dynamic, path_next, parse_tuple, \
+from Jovimetrix.sup.util import parse_dynamic, path_next, parse_parameter, \
     zip_longest_fill
-from Jovimetrix.sup.image import batch_extract, cv2tensor,  image_convert, \
+from Jovimetrix.sup.image import  cv2tensor,  image_convert, \
     tensor2pil, tensor2cv, pil2tensor, image_load, image_formats, image_diff
 
 # =============================================================================
@@ -65,7 +65,7 @@ class AkashicData:
 class AkashicNode(JOVBaseNode):
     NAME = "AKASHIC (JOV) 📓"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "{JOV_CATEGORY}#-akashic"
+    HELP_URL = f"{JOV_CATEGORY}#-akashic"
     DESC = "Display the top level attributes of an output."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     RETURN_TYPES = (WILDCARD, 'AKASHIC', )
@@ -133,12 +133,11 @@ class AkashicNode(JOVBaseNode):
 class ValueGraphNode(JOVBaseNode):
     NAME = "VALUE GRAPH (JOV) 📈"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "{JOV_CATEGORY}#-value-graph"
+    HELP_URL = f"{JOV_CATEGORY}#-value-graph"
     DESC = "Graphs historical execution run values."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     RETURN_TYPES = ("IMAGE", )
     RETURN_NAMES = (Lexicon.IMAGE, )
-    OUTPUT_IS_LIST = (False,)
     SORT = 15
 
     @classmethod
@@ -166,7 +165,7 @@ class ValueGraphNode(JOVBaseNode):
 
     def run(self, ident, **kw) -> tuple[torch.Tensor]:
         slice = kw.get(Lexicon.VALUE, [60])
-        wihi = parse_tuple(Lexicon.WH, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), zero=0.001)[0]
+        wihi = parse_parameter(Lexicon.WH, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), zero=0.001)[0]
         accepted = [bool, int, float, np.float16, np.float32, np.float64]
         if parse_reset(ident) > 0 or kw.get(Lexicon.RESET, False):
             self.__history = []
@@ -207,7 +206,7 @@ class ValueGraphNode(JOVBaseNode):
 class RouteNode(JOVBaseNode):
     NAME = "ROUTE (JOV) 🚌"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "{JOV_CATEGORY}#-route"
+    HELP_URL = f"{JOV_CATEGORY}#-route"
     DESC = "Pass all data because the default is broken on connection."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     INPUT_IS_LIST = True
@@ -232,7 +231,7 @@ class RouteNode(JOVBaseNode):
 class QueueNode(JOVBaseNode):
     NAME = "QUEUE (JOV) 🗃"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "{JOV_CATEGORY}#-queue"
+    HELP_URL = f"{JOV_CATEGORY}#-queue"
     DESC = "Cycle lists of images files or strings for node inputs."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     INPUT_IS_LIST = False
@@ -368,7 +367,7 @@ class QueueNode(JOVBaseNode):
 class ExportNode(JOVBaseNode):
     NAME = "EXPORT (JOV) 📽"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "{JOV_CATEGORY}#-export"
+    HELP_URL = f"{JOV_CATEGORY}#-export"
     DESC = "Take your frames out static or animated (GIF)"
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     OUTPUT_NODE = True
@@ -398,7 +397,7 @@ class ExportNode(JOVBaseNode):
     SORT = 2000
 
     def run(self, **kw) -> None:
-        pA = batch_extract(kw.get(Lexicon.PIXEL, None))
+        pA = parse_parameter(kw.get(Lexicon.PIXEL, None))
         suffix = kw.get(Lexicon.PREFIX, [""])[0]
         if suffix == "":
             suffix = uuid4().hex[:16]
@@ -469,7 +468,7 @@ class ExportNode(JOVBaseNode):
 class ImageDiffNode(JOVBaseNode):
     NAME = "IMAGE DIFF (JOV) 📏"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "{JOV_CATEGORY}#-image-diff"
+    HELP_URL = f"{JOV_CATEGORY}#-image-diff"
     DESC = "Explicitly show the differences between two images via self-similarity index."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     OUTPUT_IS_LIST = (False, False, False, False, True, )
@@ -489,16 +488,16 @@ class ImageDiffNode(JOVBaseNode):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> tuple[Any, Any]:
-        a = kw.get(Lexicon.PIXEL_A, [None])
-        b = kw.get(Lexicon.PIXEL_B, [None])
+        pA = parse_parameter(kw.get(Lexicon.PIXEL_A, None))
+        pB = parse_parameter(kw.get(Lexicon.PIXEL_B, None))
         th = kw.get(Lexicon.THRESHOLD, [0])
         results = []
-        params = [tuple(x) for x in zip_longest_fill(a, b, th)]
+        params = [tuple(x) for x in zip_longest_fill(pA, pB, th)]
         pbar = ProgressBar(len(params))
-        for idx, (a, b, th) in enumerate(params):
-            a = tensor2cv(a)
-            b = tensor2cv(b)
-            a, b, d, t, s = image_diff(a, b, int(th * 255))
+        for idx, (pA, pB, th) in enumerate(params):
+            pA = tensor2cv(pA)
+            pA = tensor2cv(pB)
+            a, b, d, t, s = image_diff(pA, pB, int(th * 255))
             d = image_convert(d, 1)
             t = image_convert(t, 1)
             results.append([cv2tensor(a), cv2tensor(b), cv2tensor(d), cv2tensor(t), s])
@@ -508,7 +507,7 @@ class ImageDiffNode(JOVBaseNode):
 class ArrayNode(JOVBaseNode):
     NAME = "ARRAY (JOV) 📚"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "{JOV_CATEGORY}#-array"
+    HELP_URL = f"{JOV_CATEGORY}#-array"
     DESC = "Make, merge, splice or split a batch or list."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     INPUT_IS_LIST = False
@@ -577,7 +576,7 @@ class ArrayNode(JOVBaseNode):
             if latents[index]:
                 extract = {"samples": extract}
         elif mode == EnumBatchMode.SLICE:
-            slice_range = parse_tuple(Lexicon.RANGE, kw, (0, 0, 1))[0]
+            slice_range = parse_parameter(Lexicon.RANGE, kw, (0, 0, 1))[0]
             start, end, step = slice_range
             end = len(extract) if end == 0 else end
             data = extract[start:end:step]
@@ -632,7 +631,7 @@ class HistogramNode(JOVImageSimple):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        pA = batch_extract(kw.get(Lexicon.PIXEL, None))
+        pA = parse_parameter(kw.get(Lexicon.PIXEL, None))
         params = [tuple(x) for x in zip_longest_fill(pA,)]
         images = []
         pbar = ProgressBar(len(params))
@@ -643,3 +642,35 @@ class HistogramNode(JOVImageSimple):
             pbar.update_absolute(idx)
         return list(zip(*images))
 """
+
+class GenuflectNode(JOVBaseNode):
+    NAME = "GENUFLECT (JOV) 📏"
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
+    HELP_URL = f"{JOV_CATEGORY}#-genuflect"
+    DESC = "Shill node to test input and outputs"
+    DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
+    OUTPUT_IS_LIST = (False, )
+    RETURN_TYPES = ("IMAGE",)
+    RETURN_NAMES = (Lexicon.IN_A, )
+    SORT = 200
+
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        d = {
+        "required": {},
+        "optional": {
+            Lexicon.PIXEL_A: (WILDCARD, {}),
+        }}
+        return Lexicon._parse(d, cls.HELP_URL)
+
+    def run(self, **kw) -> tuple[Any, Any]:
+        pA = parse_parameter(kw.get(Lexicon.PIXEL_A, None))
+
+        results = []
+        params = [tuple(x) for x in zip_longest_fill(pA,)]
+        pbar = ProgressBar(len(params))
+        for idx, (pA, ) in enumerate(params):
+            pA = tensor2cv(pA)
+            results.append(cv2tensor(pA))
+            pbar.update_absolute(idx)
+        return list(zip(*results))

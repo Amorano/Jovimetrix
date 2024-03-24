@@ -18,7 +18,7 @@ from Jovimetrix import comfy_message, load_help, parse_reset, \
     ComfyAPIMessage, JOVBaseNode, TimedOutException, WILDCARD
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import parse_dynamic, zip_longest_fill
-from Jovimetrix.core.calc import EnumConvertType, parse_type_value
+from Jovimetrix.core.calc import EnumConvertType, parse_parameter
 
 # =============================================================================
 
@@ -64,7 +64,7 @@ class EnumComparison(Enum):
 class DelayNode(JOVBaseNode):
     NAME = "DELAY (JOV) ✋🏽"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "{JOV_CATEGORY}#-delay"
+    HELP_URL = f"{JOV_CATEGORY}#-delay"
     DESC = "Delay traffic. Electrons on the data bus go round."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     RETURN_TYPES = (WILDCARD,)
@@ -149,7 +149,7 @@ class DelayNode(JOVBaseNode):
 class HoldValueNode(JOVBaseNode):
     NAME = "HOLD VALUE (JOV) 🫴🏽"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "{JOV_CATEGORY}#-hold"
+    HELP_URL = f"{JOV_CATEGORY}#-hold"
     DESC = "When engaged will send the last value it had even with new values arriving."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     RETURN_TYPES = (WILDCARD,)
@@ -178,7 +178,7 @@ class HoldValueNode(JOVBaseNode):
 class ComparisonNode(JOVBaseNode):
     NAME = "COMPARISON (JOV) 🕵🏽"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "{JOV_CATEGORY}#-comparison"
+    HELP_URL = f"{JOV_CATEGORY}#-comparison"
     DESC = "Compare two inputs: A=B, A!=B, A>B, A>=B, A<B, A<=B"
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     RETURN_TYPES = (WILDCARD, WILDCARD,)
@@ -217,8 +217,8 @@ class ComparisonNode(JOVBaseNode):
                 B = [B]
             size = min(4, max(len(A), len(B))) - 1
             typ = [EnumConvertType.FLOAT, EnumConvertType.VEC2, EnumConvertType.VEC3, EnumConvertType.VEC4][size]
-            val_a = parse_type_value(typ, A, [A[-1]] * size)
-            val_b = parse_type_value(typ, B, [B[-1]] * size)
+            val_a = parse_parameter(typ, A, [A[-1]] * size)
+            val_b = parse_parameter(typ, B, [B[-1]] * size)
             if flip:
                 val_a, val_b = val_b, val_a
 
@@ -264,7 +264,7 @@ class ComparisonNode(JOVBaseNode):
 class SelectNode(JOVBaseNode):
     NAME = "SELECT (JOV) 🤏🏽"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "{JOV_CATEGORY}#-select"
+    HELP_URL = f"{JOV_CATEGORY}#-select"
     DESC = "Select an item from a user explicit list of inputs."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     INPUT_IS_LIST = False

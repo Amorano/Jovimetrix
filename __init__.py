@@ -254,13 +254,14 @@ except Exception as e:
 
 def load_help(name:str, category:str, desc:str, url:str) -> str:
     global JOV_HELP_INDEX, JOV_WEBWIKI_URL, JOV_WEBHELP_ROOT, JOV_WEBRES_ROOT
+    name = name.strip()
     parse = JOV_HELP_INDEX.get(name, "NO HELP AVAILABLE")
     parse = parse.replace("!NAME!", name).replace("!DESC!", desc).replace("!CAT!", category)
     parse = parse.replace("!URL!", f"[{name}]({JOV_WEBWIKI_URL}/{url})")
     name_raw = name.split('(JOV)')[0].lower().strip().replace(' ', '_')
     name_vid = f"![]({JOV_WEBRES_ROOT}/node/{name}/{name_raw}.gif)"
     name_vid = name_vid.replace(' ', '%20')
-    print(name_vid)
+    # print(name_vid)
     # https://raw.githubusercontent.com/Amorano/Jovimetrix-examples/master/node/BLEND%20(JOV)%20%E2%9A%97%EF%B8%8F/blend.gif
     # https://github.com/Amorano/Jovimetrix-examples/blob/master/node/BLEND%20(JOV)%20%E2%9A%97%EF%B8%8F/blend.gif
     parse = parse.replace("!URL_VID!", name_vid)

@@ -279,22 +279,6 @@ def linear2sRGB(image: TYPE_IMAGE) -> TYPE_IMAGE:
 # === IMAGE CONVERSION ===
 # =============================================================================
 
-def batch_extract(batch:Any) -> list[Any]:
-    """Projects torch batches, comfy latents and single items into lists."""
-
-    if batch is None:
-        return [None]
-    print(type(batch))
-    print(len(batch))
-    # latents are batched in the x.samples key
-    #if isinstance(batch, dict) and "samples" in batch:
-    #    return batch["samples"]
-    if isinstance(batch, (torch.Tensor, )):
-        return batch.tolist()
-    if not isinstance(batch, (list, )):
-        batch = list(batch)
-    return batch # [b for b in batch]
-
 def bgr2hsv(bgr_color: TYPE_PIXEL) -> TYPE_PIXEL:
     return cv2.cvtColor(np.uint8([[bgr_color]]), cv2.COLOR_BGR2HSV)[0, 0]
 
