@@ -44,7 +44,7 @@ class EnumCropMode(Enum):
 class TransformNode(JOVImageMultiple):
     NAME = "TRANSFORM (JOV) 🏝️"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "COMPOSE#-transform"
+    HELP_URL = f"{JOV_CATEGORY}#-transform"
     DESC = "Translate, Rotate, Scale, Tile, Mirror, Re-project and invert an input."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     SORT = 0
@@ -143,7 +143,7 @@ class TransformNode(JOVImageMultiple):
 class BlendNode(JOVImageMultiple):
     NAME = "BLEND (JOV) ⚗️"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "COMPOSE#%EF%B8%8F-blend"
+    HELP_URL = f"{JOV_CATEGORY}#%EF%B8%8F-blend"
     DESC = "Applies selected operation to 2 inputs with optional mask using a linear blend (alpha)."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     SORT = 10
@@ -217,7 +217,7 @@ class BlendNode(JOVImageMultiple):
 class PixelSplitNode(JOVImageMultiple):
     NAME = "PIXEL SPLIT (JOV) 💔"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "COMPOSE#-pixel-split"
+    HELP_URL = f"{JOV_CATEGORY}#-pixel-split"
     DESC = "Splits images into constituent R, G and B and A channels."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     RETURN_TYPES = ("MASK", "MASK", "MASK", "MASK",)
@@ -248,7 +248,7 @@ class PixelSplitNode(JOVImageMultiple):
 class PixelMergeNode(JOVImageMultiple):
     NAME = "PIXEL MERGE (JOV) 🫂"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "COMPOSE#-pixel-merge"
+    HELP_URL = f"{JOV_CATEGORY}#-pixel-merge"
     DESC = "Combine 3 or 4 inputs into a single image."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     SORT = 45
@@ -291,7 +291,7 @@ class PixelMergeNode(JOVImageMultiple):
 class PixelSwapNode(JOVImageMultiple):
     NAME = "PIXEL SWAP (JOV) 🔃"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "COMPOSE#-pixel-swap"
+    HELP_URL = f"{JOV_CATEGORY}#-pixel-swap"
     DESC = "Swap inputs of one image with another or fill its channels with solids."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     SORT = 48
@@ -362,7 +362,7 @@ class PixelSwapNode(JOVImageMultiple):
 class StackNode(JOVImageMultiple):
     NAME = "STACK (JOV) ➕"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "COMPOSE#-stack"
+    HELP_URL = f"{JOV_CATEGORY}#-stack"
     DESC = "Union multiple images horizontal, vertical or in a grid."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     SORT = 75
@@ -415,7 +415,7 @@ class StackNode(JOVImageMultiple):
 class CropNode(JOVImageMultiple):
     NAME = "CROP (JOV) ✂️"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "COMPOSE#-crop"
+    HELP_URL = f"{JOV_CATEGORY}#-crop"
     DESC = "Clip away sections of an image and backfill with optional color matte."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     SORT = 5
@@ -468,7 +468,7 @@ class CropNode(JOVImageMultiple):
 class ColorTheoryNode(JOVImageMultiple):
     NAME = "COLOR THEORY (JOV) 🛞"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "COMPOSE#-color-theory"
+    HELP_URL = f"{JOV_CATEGORY}#-color-theory"
     DESC = "Generate Complimentary, Triadic and Tetradic color sets"
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     RETURN_TYPES = ("IMAGE", "IMAGE", "IMAGE", "IMAGE", "IMAGE")

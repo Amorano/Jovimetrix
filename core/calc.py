@@ -19,7 +19,7 @@ from Jovimetrix import JOVBaseNode, WILDCARD, load_help
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import parse_tuple, zip_longest_fill, EnumTupleType
 from Jovimetrix.sup.anim import ease_op, EnumEase
-from Jovimetrix.sup.image import batch_extract, channel_solid, channel_swap, \
+from Jovimetrix.sup.image import batch_extract, channel_solid, channel_swap, cv2tensor_full, \
     tensor2cv, EnumImageType, EnumSwizzle
 
 # =============================================================================
@@ -186,7 +186,7 @@ def convert_value(typ:EnumConvertType, val:Any) -> Any:
 class CalcUnaryOPNode(JOVBaseNode):
     NAME = "CALC OP UNARY (JOV) 🎲"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "CALC#-calc-op-unary"
+    HELP_URL = f"{JOV_CATEGORY}#-calc-op-unary"
     DESC = "Perform a Unary Operation on an input."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     RETURN_TYPES = (WILDCARD,)
@@ -253,7 +253,7 @@ class CalcUnaryOPNode(JOVBaseNode):
 class CalcBinaryOPNode(JOVBaseNode):
     NAME = "CALC OP BINARY (JOV) 🌟"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "CALC#-calc-op-binary"
+    HELP_URL = f"{JOV_CATEGORY}#-calc-op-binary"
     DESC = "Perform a Binary Operation on two inputs."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     RETURN_TYPES = (WILDCARD,)
@@ -296,7 +296,7 @@ class CalcBinaryOPNode(JOVBaseNode):
                                       "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W],
                                       "tooltip":"4-value vector"}),
         }}
-        return Lexicon._parse(d, "CALC#%EF%B8%8F⃣-value")
+        return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> tuple[bool]:
         results = []
@@ -412,7 +412,7 @@ class CalcBinaryOPNode(JOVBaseNode):
 class ValueNode(JOVBaseNode):
     NAME = "VALUE (JOV) 🧬"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "CALC#-value"
+    HELP_URL = f"{JOV_CATEGORY}#-value"
     DESC = "Create a value for most types; also universal constants."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     RETURN_TYPES = (WILDCARD, )
@@ -460,7 +460,7 @@ class ValueNode(JOVBaseNode):
 class LerpNode(JOVBaseNode):
     NAME = "LERP (JOV) 🔰"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "CALC#-lerp"
+    HELP_URL = f"{JOV_CATEGORY}#-lerp"
     DESC = "Interpolate between two values with or without a smoothing."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     OUTPUT_IS_LIST = (True, )
@@ -517,7 +517,7 @@ class LerpNode(JOVBaseNode):
 class SwapNode(JOVBaseNode):
     NAME = "SWAP (JOV) 😵"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "CALC#-swap"
+    HELP_URL = f"{JOV_CATEGORY}#-swap"
     DESC = "Swap vector positions within a vector or with another vector input."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     SORT = 55
@@ -538,7 +538,7 @@ class SwapNode(JOVBaseNode):
             Lexicon.SWAP_W: (EnumSwizzle._member_names_, {"default": EnumSwizzle.A_W.name}),
             Lexicon.W: ("FLOAT", {"default": 0})
         }}
-        return Lexicon._parse(d, "/UTILITY#-swap")
+        return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor]:
         pA = parse_tuple(Lexicon.A, kw, (0, 0, 0, 0))

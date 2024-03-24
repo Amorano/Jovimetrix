@@ -26,7 +26,7 @@ JOV_CATEGORY = "ANIMATE"
 class TickNode(JOVBaseNode):
     NAME = "TICK (JOV) ⏱"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "ANIMATE#-tick"
+    HELP_URL = f"{JOV_CATEGORY}#-tick"
     DESC = "Periodic pulse with total pulse count, normalized count relative to the loop setting and fixed pulse step."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     INPUT_IS_LIST = False
@@ -119,7 +119,7 @@ class TickNode(JOVBaseNode):
 class WaveGeneratorNode(JOVBaseNode):
     NAME = "WAVE GENERATOR (JOV) 🌊"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "ANIMATE#-wave-generator"
+    HELP_URL = f"{JOV_CATEGORY}#-wave-generator"
     DESC = "Periodic and Non-Periodic Sinosodials."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     OUTPUT_IS_LIST = (True, True,)

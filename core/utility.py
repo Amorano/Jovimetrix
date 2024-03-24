@@ -65,7 +65,7 @@ class AkashicData:
 class AkashicNode(JOVBaseNode):
     NAME = "AKASHIC (JOV) 📓"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "UTILITY#-akashic"
+    HELP_URL = "{JOV_CATEGORY}#-akashic"
     DESC = "Display the top level attributes of an output."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     RETURN_TYPES = (WILDCARD, 'AKASHIC', )
@@ -80,7 +80,7 @@ class AkashicNode(JOVBaseNode):
         "optional": {
             Lexicon.PASS_IN: (WILDCARD, {})
         }}
-        return Lexicon._parse(d, "/UTILITY#-akashic")
+        return Lexicon._parse(d, cls.HELP_URL)
 
     def __parse(self, val) -> dict[str, list[Any]]:
         if isinstance(val, dict):
@@ -133,7 +133,7 @@ class AkashicNode(JOVBaseNode):
 class ValueGraphNode(JOVBaseNode):
     NAME = "VALUE GRAPH (JOV) 📈"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "UTILITY#-value-graph"
+    HELP_URL = "{JOV_CATEGORY}#-value-graph"
     DESC = "Graphs historical execution run values."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     RETURN_TYPES = ("IMAGE", )
@@ -153,7 +153,7 @@ class ValueGraphNode(JOVBaseNode):
         "hidden": {
             "ident": "UNIQUE_ID"
         }}
-        return Lexicon._parse(d, "/UTILITY#-value-graph")
+        return Lexicon._parse(d, cls.HELP_URL)
 
     @classmethod
     def IS_CHANGED(cls, **kw) -> float:
@@ -207,7 +207,7 @@ class ValueGraphNode(JOVBaseNode):
 class RouteNode(JOVBaseNode):
     NAME = "ROUTE (JOV) 🚌"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "UTILITY#-route"
+    HELP_URL = "{JOV_CATEGORY}#-route"
     DESC = "Pass all data because the default is broken on connection."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     INPUT_IS_LIST = True
@@ -223,7 +223,7 @@ class RouteNode(JOVBaseNode):
         "optional": {
             Lexicon.PASS_IN: (WILDCARD, {})
         }}
-        return Lexicon._parse(d, "/UTILITY#-route")
+        return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> tuple[Any, Any]:
         o = kw.get(Lexicon.PASS_IN, None)
@@ -232,7 +232,7 @@ class RouteNode(JOVBaseNode):
 class QueueNode(JOVBaseNode):
     NAME = "QUEUE (JOV) 🗃"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "UTILITY#-queue"
+    HELP_URL = "{JOV_CATEGORY}#-queue"
     DESC = "Cycle lists of images files or strings for node inputs."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     INPUT_IS_LIST = False
@@ -255,7 +255,7 @@ class QueueNode(JOVBaseNode):
         "hidden": {
             "ident": "UNIQUE_ID"
         }}
-        return Lexicon._parse(d, "/UTILITY#-queue")
+        return Lexicon._parse(d, cls.HELP_URL)
 
     @classmethod
     def IS_CHANGED(cls) -> float:
@@ -368,7 +368,7 @@ class QueueNode(JOVBaseNode):
 class ExportNode(JOVBaseNode):
     NAME = "EXPORT (JOV) 📽"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "UTILITY#-export"
+    HELP_URL = "{JOV_CATEGORY}#-export"
     DESC = "Take your frames out static or animated (GIF)"
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     OUTPUT_NODE = True
@@ -394,7 +394,7 @@ class ExportNode(JOVBaseNode):
             # GIF OR GIFSKI
             Lexicon.LOOP: ("INT", {"default": 0, "min": 0}),
         }}
-        return Lexicon._parse(d, "/UTILITY#-export")
+        return Lexicon._parse(d, cls.HELP_URL)
     SORT = 2000
 
     def run(self, **kw) -> None:
@@ -469,7 +469,7 @@ class ExportNode(JOVBaseNode):
 class ImageDiffNode(JOVBaseNode):
     NAME = "IMAGE DIFF (JOV) 📏"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "UTILITY#-image-diff"
+    HELP_URL = "{JOV_CATEGORY}#-image-diff"
     DESC = "Explicitly show the differences between two images via self-similarity index."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     OUTPUT_IS_LIST = (False, False, False, False, True, )
@@ -486,7 +486,7 @@ class ImageDiffNode(JOVBaseNode):
             Lexicon.PIXEL_B: (WILDCARD, {}),
             Lexicon.THRESHOLD: ("FLOAT", {"default": 0.5, "min": 0, "max": 1, "step": 0.01}),
         }}
-        return Lexicon._parse(d, "/UTILITY#-image-diff")
+        return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> tuple[Any, Any]:
         a = kw.get(Lexicon.PIXEL_A, [None])
@@ -508,7 +508,7 @@ class ImageDiffNode(JOVBaseNode):
 class ArrayNode(JOVBaseNode):
     NAME = "ARRAY (JOV) 📚"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "UTILITY#-array"
+    HELP_URL = "{JOV_CATEGORY}#-array"
     DESC = "Make, merge, splice or split a batch or list."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     INPUT_IS_LIST = False
@@ -530,7 +530,7 @@ class ArrayNode(JOVBaseNode):
             Lexicon.FLIP: ("BOOLEAN", {"default": False}),
             Lexicon.BATCH_CHUNK: ("INT", {"default": 0, "min": 0, "step": 1}),
         }}
-        return Lexicon._parse(d, "/UTILITY#-array")
+        return Lexicon._parse(d, cls.HELP_URL)
 
     @classmethod
     def batched(cls, iterable, chunk_size, expand:bool=False, fill:Any=None):
@@ -629,7 +629,7 @@ class HistogramNode(JOVImageSimple):
         "optional": {
             Lexicon.PIXEL: (WILDCARD, {}),
         }}
-        return Lexicon._parse(d, "/ADJUST#-histogram")
+        return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         pA = batch_extract(kw.get(Lexicon.PIXEL, None))

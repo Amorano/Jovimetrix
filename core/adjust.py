@@ -43,7 +43,7 @@ class EnumColorMatchMap(Enum):
 class AdjustNode(JOVImageMultiple):
     NAME = "ADJUST (JOV) 🕸️"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "ADJUST#-adjust"
+    HELP_URL = f"{JOV_CATEGORY}#-adjust"
     DESC = "Blur, Sharpen, Emboss, Levels, HSV, Edge detection."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
 
@@ -190,7 +190,7 @@ class AdjustNode(JOVImageMultiple):
 class ColorMatchNode(JOVImageMultiple):
     NAME = "COLOR MATCH (JOV) 💞"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "ADJUST#-color-match"
+    HELP_URL = f"{JOV_CATEGORY}#-colormatch"
     DESC = "Project the colors of one image  onto another or use a pre-defined color target."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
 
@@ -260,7 +260,7 @@ class ColorMatchNode(JOVImageMultiple):
 class ThresholdNode(JOVImageMultiple):
     NAME = "THRESHOLD (JOV) 📉"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "ADJUST#-threshold"
+    HELP_URL = f"{JOV_CATEGORY}#-threshold"
     DESC = "Clip an input based on a mid point value."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
 
@@ -303,7 +303,7 @@ class ThresholdNode(JOVImageMultiple):
 class ColorBlindNode(JOVImageMultiple):
     NAME = "COLOR BLIND (JOV) 👁‍🗨"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "ADJUST#-colorblind"
+    HELP_URL = f"{JOV_CATEGORY}#-colorblind"
     DESC = "Transform an image into specific color blind color space"
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
 

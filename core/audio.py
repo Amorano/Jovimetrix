@@ -26,7 +26,7 @@ JOV_CATEGORY = "AUDIO"
 class LoadWaveNode(JOVBaseNode):
     NAME = "LOAD WAVE (JOV) 🎼"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "AUDIO#-load-wave"
+    HELP_URL = f"{JOV_CATEGORY}#-load-wave"
     DESC = "Import audio waveform data"
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     RETURN_TYPES = ("WAVE",)
@@ -68,7 +68,7 @@ class LoadWaveNode(JOVBaseNode):
 class WaveGraphNode(JOVImageMultiple):
     NAME = "WAVE GRAPH (JOV) ▶ ılıılı"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "AUDIO#-wave-graph"
+    HELP_URL = f"{JOV_CATEGORY}#-wave-graph"
     DESC = "Display audio waveform data as a linear bar graph"
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
 

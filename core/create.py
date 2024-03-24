@@ -39,7 +39,7 @@ JOV_CATEGORY = "CREATE"
 class ConstantNode(JOVImageMultiple):
     NAME = "CONSTANT (JOV) 🟪"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "CREATE#-constant"
+    HELP_URL = "{JOV_CATEGORY}#-constant"
     DESC = "Create a single RGBA block of color. Useful for masks, overlays and general filtering."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
 
@@ -76,7 +76,7 @@ class ConstantNode(JOVImageMultiple):
 class ShapeNode(JOVImageMultiple):
     NAME = "SHAPE GENERATOR (JOV) ✨"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "CREATE#-shape-generator"
+    HELP_URL = "{JOV_CATEGORY}#-shape-generator"
     DESC = "Generate polyhedra for masking or texture work."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
 
@@ -161,7 +161,7 @@ class ShapeNode(JOVImageMultiple):
 class TextNode(JOVImageMultiple):
     NAME = "TEXT GENERATOR (JOV) 📝"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "CREATE#-text-generator"
+    HELP_URL = "{JOV_CATEGORY}#-text-generator"
     DESC = "Use any system font with auto-fit or manual placement."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     FONTS = font_names()
@@ -275,7 +275,7 @@ class TextNode(JOVImageMultiple):
 class StereogramNode(JOVImageMultiple):
     NAME = "STEREOGRAM (JOV) 📻"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "CREATE#-stereogram"
+    HELP_URL = "{JOV_CATEGORY}#-stereogram"
     DESC = "Make a magic eye stereograms."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     INPUT_IS_LIST = True
@@ -316,7 +316,7 @@ class StereogramNode(JOVImageMultiple):
 class GradientNode(JOVImageMultiple):
     NAME = "GRADIENT (JOV) 🍧"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "CREATE#-gradient"
+    HELP_URL = "{JOV_CATEGORY}#-gradient"
     DESC = "Make a gradient mapped to a linear or polar coordinate system."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
 

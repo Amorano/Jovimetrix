@@ -64,7 +64,7 @@ class EnumComparison(Enum):
 class DelayNode(JOVBaseNode):
     NAME = "DELAY (JOV) ✋🏽"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "FLOW#-delay"
+    HELP_URL = "{JOV_CATEGORY}#-delay"
     DESC = "Delay traffic. Electrons on the data bus go round."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     RETURN_TYPES = (WILDCARD,)
@@ -149,7 +149,7 @@ class DelayNode(JOVBaseNode):
 class HoldValueNode(JOVBaseNode):
     NAME = "HOLD VALUE (JOV) 🫴🏽"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "FLOW#-hold"
+    HELP_URL = "{JOV_CATEGORY}#-hold"
     DESC = "When engaged will send the last value it had even with new values arriving."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     RETURN_TYPES = (WILDCARD,)
@@ -178,7 +178,7 @@ class HoldValueNode(JOVBaseNode):
 class ComparisonNode(JOVBaseNode):
     NAME = "COMPARISON (JOV) 🕵🏽"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "FLOW#-comparison"
+    HELP_URL = "{JOV_CATEGORY}#-comparison"
     DESC = "Compare two inputs: A=B, A!=B, A>B, A>=B, A<B, A<=B"
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     RETURN_TYPES = (WILDCARD, WILDCARD,)
@@ -264,7 +264,7 @@ class ComparisonNode(JOVBaseNode):
 class SelectNode(JOVBaseNode):
     NAME = "SELECT (JOV) 🤏🏽"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "FLOW#-select"
+    HELP_URL = "{JOV_CATEGORY}#-select"
     DESC = "Select an item from a user explicit list of inputs."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     INPUT_IS_LIST = False

@@ -21,7 +21,7 @@ from Jovimetrix.sup.shader import GLSL, CompileException
 
 # =============================================================================
 
-JOV_CATEGORY = "JOVIMETRIX GLSL"
+JOV_CATEGORY = "JOVIMETRIX GLSL 🔺🟩🔵"
 JOV_CONFIG_GLSL = ROOT / 'glsl'
 DEFAULT_FRAGMENT = """void main() {
     vec4 texColor = texture(iChannel0, fragCoord);
@@ -66,8 +66,8 @@ class EnumPatternType(Enum):
 class GLSLNode(JOVImageMultiple):
     NAME = "GLSL (JOV) 🍩"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
+    HELP_URL = "CREATE#-glsl"
     DESC = ""
-    HELP_URL = "GLSL#-create"
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
 
     @classmethod
@@ -87,7 +87,7 @@ class GLSLNode(JOVImageMultiple):
         "hidden": {
             "ident": "UNIQUE_ID"
         }}
-        return Lexicon._parse(d, "/CREATE#-glsl")
+        return Lexicon._parse(d, cls.HELP_URL)
 
     @classmethod
     def IS_CHANGED(cls, **kw) -> float:
@@ -144,10 +144,9 @@ class GLSLNode(JOVImageMultiple):
         return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
 
 class GLSLBaseNode(JOVImageMultiple):
-    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
+    CATEGORY = JOV_CATEGORY
     HELP_URL = "GLSL#-"
     # DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
-
     FRAGMENT = ".glsl"
 
     def __init__(self, *arg, **kw) -> None:
@@ -204,11 +203,9 @@ class GLSLBaseNode(JOVImageMultiple):
 
 class GLSLSelectRange(GLSLBaseNode):
     NAME = "SELECT RANGE GLSL (JOV)"
-    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = "GLSL#-"
     DESC = ""
-    DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
-
+    DESCRIPTION = load_help(NAME, JOV_CATEGORY, DESC, HELP_URL)
     FRAGMENT = str(JOV_GLSL / "clr" / "clr-flt-range.glsl")
 
     @classmethod
@@ -222,7 +219,7 @@ class GLSLSelectRange(GLSLBaseNode):
             Lexicon.END: ("VEC3", {"default": (1., 1., 1.), "step": 0.01, "precision": 4,
                                     "round": 0.00001, "label": [Lexicon.R, Lexicon.G, Lexicon.B]}),
         }}
-        return Lexicon._parse(d, "/CREATE#-glsl-select-range")
+        return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> list[torch.Tensor]:
         kw["start"] = kw.pop(Lexicon.START, [(0., 0., 0.)])
@@ -231,10 +228,9 @@ class GLSLSelectRange(GLSLBaseNode):
 
 class GLSLColorGrayscale(GLSLBaseNode):
     NAME = "GRAYSCALE GLSL (JOV)"
-    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = "GLSL#-"
     DESC = ""
-    DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
+    DESCRIPTION = load_help(NAME, JOV_CATEGORY, DESC, HELP_URL)
 
     FRAGMENT = str(JOV_GLSL / "clr" / "clr-grayscale.glsl")
     DEFAULT = (0.299, 0.587, 0.114)
@@ -248,7 +244,7 @@ class GLSLColorGrayscale(GLSLBaseNode):
             Lexicon.RGB: ("VEC3", {"default": cls.DEFAULT, "step": 0.01, "precision": 4,
                                    "round": 0.00001, "label": [Lexicon.R, Lexicon.G, Lexicon.B]}),
         }}
-        return Lexicon._parse(d, "/CREATE#-glsl-color-grayscale")
+        return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> list[torch.Tensor]:
         rgb = kw.pop(Lexicon.RGB, self.DEFAULT)
@@ -257,10 +253,9 @@ class GLSLColorGrayscale(GLSLBaseNode):
 
 class GLSLCreateNoise(GLSLBaseNode):
     NAME = "NOISE GLSL (JOV)"
-    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = "GLSL#-"
     DESC = ""
-    DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
+    DESCRIPTION = load_help(NAME, JOV_CATEGORY, DESC, HELP_URL)
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -272,7 +267,7 @@ class GLSLCreateNoise(GLSLBaseNode):
             Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), "step": 1,
                                    "label": [Lexicon.W, Lexicon.H]})
         }}
-        return Lexicon._parse(d, "/CREATE#-glsl")
+        return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> list[torch.Tensor]:
         frags = []
@@ -300,10 +295,9 @@ class GLSLCreateNoise(GLSLBaseNode):
 
 class GLSLCreatePattern(GLSLBaseNode):
     NAME = "PATTERN GLSL (JOV)"
-    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = "GLSL#-"
     DESC = ""
-    DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
+    DESCRIPTION = load_help(NAME, JOV_CATEGORY, DESC, HELP_URL)
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -313,7 +307,7 @@ class GLSLCreatePattern(GLSLBaseNode):
             Lexicon.TYPE: (EnumPatternType._member_names_, {"default": EnumPatternType.CHECKER.name}),
             Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), "step": 1, "label": [Lexicon.W, Lexicon.H]})
         }}
-        return Lexicon._parse(d, "/CREATE#-glsl")
+        return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> list[torch.Tensor]:
         kw["frag"] = None
@@ -326,10 +320,9 @@ class GLSLCreatePattern(GLSLBaseNode):
 
 class GLSLCreatePolygon(GLSLBaseNode):
     NAME = "POLYGON GLSL (JOV)"
-    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = "GLSL#-"
     DESC = ""
-    DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
+    DESCRIPTION = load_help(NAME, JOV_CATEGORY, DESC, HELP_URL)
 
     FRAGMENT = str(JOV_GLSL / "cre" / "cre-shp-polygon.glsl")
 
@@ -342,7 +335,7 @@ class GLSLCreatePolygon(GLSLBaseNode):
             Lexicon.RADIUS: ("FLOAT", {"default": 1, "min": 0.01, "max": 4, "step": 0.01}),
             Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), "step": 1, "label": [Lexicon.W, Lexicon.H]})
         }}
-        return Lexicon._parse(d, "/CREATE#-glsl")
+        return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> list[torch.Tensor]:
         kw["sides"] = kw.pop(Lexicon.VALUE, 3)
@@ -351,10 +344,9 @@ class GLSLCreatePolygon(GLSLBaseNode):
 
 class GLSLMap(GLSLBaseNode):
     NAME = "MAP GLSL (JOV)"
-    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = "GLSL#-"
     DESC = ""
-    DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
+    DESCRIPTION = load_help(NAME, JOV_CATEGORY, DESC, HELP_URL)
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -365,7 +357,7 @@ class GLSLMap(GLSLBaseNode):
             Lexicon.TYPE: (EnumMappingType._member_names_, {"default": EnumMappingType.POLAR.name}),
             Lexicon.FLIP: ("BOOLEAN", {"default": False}),
         }}
-        return Lexicon._parse(d, "/CREATE#-glsl")
+        return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> list[torch.Tensor]:
         frag = None
@@ -384,10 +376,10 @@ class GLSLMap(GLSLBaseNode):
 
 class GLSLTRSMirror(GLSLBaseNode):
     NAME = "MIRROR GLSL (JOV)"
-    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
+
     HELP_URL = "GLSL#-"
     DESC = ""
-    DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
+    DESCRIPTION = load_help(NAME, JOV_CATEGORY, DESC, HELP_URL)
 
     FRAGMENT = str(JOV_GLSL / "trs" / "trs-mirror.glsl")
 
@@ -400,7 +392,7 @@ class GLSLTRSMirror(GLSLBaseNode):
             Lexicon.ANGLE: ("FLOAT", {"default": 0, "step": 0.01}),
             Lexicon.PIVOT: ("VEC2", {"default": (0.5, 0.5), "step": 0.01, "precision": 4, "label": [Lexicon.X, Lexicon.Y]}),
         }}
-        return Lexicon._parse(d, "/CREATE#-glsl")
+        return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> list[torch.Tensor]:
         center = parse_tuple(Lexicon.PIVOT, kw, (0.5, 0.5,), EnumTupleType.FLOAT,  0, 1)[0]
@@ -410,10 +402,10 @@ class GLSLTRSMirror(GLSLBaseNode):
 
 class GLSLTRSRotate(GLSLBaseNode):
     NAME = "ROTATE GLSL (JOV)"
-    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
+
     HELP_URL = "GLSL#-"
     DESC = ""
-    DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
+    DESCRIPTION = load_help(NAME, JOV_CATEGORY, DESC, HELP_URL)
     FRAGMENT = str(JOV_GLSL / "trs" / "trs-rotate.glsl")
 
     @classmethod
@@ -425,7 +417,7 @@ class GLSLTRSRotate(GLSLBaseNode):
             Lexicon.ANGLE: ("FLOAT", {"default": 0, "step": 0.01}),
             Lexicon.PIVOT: ("VEC2", {"default": (0.5, 0.5), "step": 0.01, "precision": 4, "label": [Lexicon.X, Lexicon.Y]}),
         }}
-        return Lexicon._parse(d, "/CREATE#-glsl")
+        return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> list[torch.Tensor]:
         center = parse_tuple(Lexicon.PIVOT, kw, (0.5, 0.5,), EnumTupleType.FLOAT,  0, 1)[0]
@@ -435,10 +427,10 @@ class GLSLTRSRotate(GLSLBaseNode):
 
 class GLSLUtilTiler(GLSLBaseNode):
     NAME = "TILER GLSL (JOV)"
-    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
+
     HELP_URL = "GLSL#-"
     DESC = ""
-    DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
+    DESCRIPTION = load_help(NAME, JOV_CATEGORY, DESC, HELP_URL)
     FRAGMENT = str(JOV_GLSL / "trs" / "trs-tiler.glsl")
 
     @classmethod
@@ -450,7 +442,7 @@ class GLSLUtilTiler(GLSLBaseNode):
             Lexicon.TILE: ("VEC2", {"default": (1., 1., ), "step": 0.1, "precision": 4,
                                      "label": [Lexicon.X, Lexicon.Y]}),
         }}
-        return Lexicon._parse(d, "/CREATE#-glsl-util-tiler")
+        return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> list[torch.Tensor]:
         kw["uTile"] = parse_tuple(Lexicon.TILE, kw, (1., 1.,), EnumTupleType.FLOAT,
@@ -460,10 +452,10 @@ class GLSLUtilTiler(GLSLBaseNode):
 
 class GLSLVFX(GLSLBaseNode):
     NAME = "VFX GLSL (JOV)"
-    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
+
     HELP_URL = "GLSL#-"
     DESC = ""
-    DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
+    DESCRIPTION = load_help(NAME, JOV_CATEGORY, DESC, HELP_URL)
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -476,7 +468,7 @@ class GLSLVFX(GLSLBaseNode):
             "center": ("VEC2", {"default": (0.5, 0.5, ), "step": 0.01, "precision": 4, "label": [Lexicon.X, Lexicon.Y]}),
             Lexicon.TYPE: (EnumVFXType._member_names_, {"default": EnumVFXType.BULGE.name})
         }}
-        return Lexicon._parse(d, "/CREATE#-glsl")
+        return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> list[torch.Tensor]:
         kw["frag"] = None

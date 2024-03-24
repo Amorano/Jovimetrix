@@ -62,7 +62,7 @@ class EnumStreamType(Enum):
 class StreamReaderNode(JOVImageMultiple):
     NAME = "STREAM READER (JOV) 📺"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "DEVICE#-stream-reader"
+    HELP_URL = "{JOV_CATEGORY}#-stream-reader"
     DESC = "Connect system media devices and remote streams into ComfyUI workflows."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     INPUT_IS_LIST = False
@@ -262,7 +262,7 @@ class StreamReaderNode(JOVImageMultiple):
 class StreamWriterNode(JOVBaseNode):
     NAME = "STREAM WRITER (JOV) 🎞️"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "DEVICE#%EF%B8%8F-stream-writer"
+    HELP_URL = "{JOV_CATEGORY}#%EF%B8%8F-stream-writer"
     DESC = "Broadcast ComfyUI Node outputs to custom webserver endpoint."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     INPUT_IS_LIST = False
@@ -393,7 +393,7 @@ if JOV_SPOUT:
 class MIDIMessageNode(JOVBaseNode):
     NAME = "MIDI MESSAGE (JOV) 🎛️"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "DEVICE#%EF%B8%8F-midi-message"
+    HELP_URL = "{JOV_CATEGORY}#%EF%B8%8F-midi-message"
     DESC = "Expands a MIDI message into its values."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     INPUT_IS_LIST = False
@@ -418,7 +418,7 @@ class MIDIMessageNode(JOVBaseNode):
 class MIDIReaderNode(JOVBaseNode):
     NAME = "MIDI READER (JOV) 🎹"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "DEVICE#-midi-reader"
+    HELP_URL = "{JOV_CATEGORY}#-midi-reader"
     DESC = "Capture MIDI devices and pass the data into Comfy."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     INPUT_IS_LIST = False
@@ -487,7 +487,7 @@ class MIDIReaderNode(JOVBaseNode):
 class MIDIFilterEZNode(JOVBaseNode):
     NAME = "MIDI FILTER EZ (JOV) ❇️"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "DEVICE#%EF%B8%8F-midi-filter-ez"
+    HELP_URL = "{JOV_CATEGORY}#%EF%B8%8F-midi-filter-ez"
     DESC = "Filter MIDI messages by channel, message type or value."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     INPUT_IS_LIST = False
@@ -537,7 +537,7 @@ class MIDIFilterEZNode(JOVBaseNode):
 class MIDIFilterNode(JOVBaseNode):
     NAME = "MIDI FILTER (JOV) ✳️"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "DEVICE#%EF%B8%8F-midi-filter"
+    HELP_URL = "{JOV_CATEGORY}#%EF%B8%8F-midi-filter"
     DESC = "Filter MIDI messages by channel, message type or value."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     INPUT_IS_LIST = False
@@ -624,7 +624,7 @@ class MIDIFilterNode(JOVBaseNode):
 class AudioDeviceNode(JOVBaseNode):
     NAME = "AUDIO DEVICE (JOV) 📺"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = "DEVICE#-audio-device"
+    HELP_URL = "{JOV_CATEGORY}#-audio-device"
     DESC = "Stream from System audio devices into ComfyUI workflows"
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     INPUT_IS_LIST = False
