@@ -20,7 +20,7 @@ from loguru import logger
 
 from comfy.utils import ProgressBar
 
-from Jovimetrix import load_help, JOVBaseNode, JOVImageMultiple, WILDCARD
+from Jovimetrix import load_help, JOVBaseNode, WILDCARD
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import parse_parameter
 from Jovimetrix.sup.stream import camera_list, monitor_list, window_list, \
@@ -59,13 +59,16 @@ class EnumStreamType(Enum):
 
 # =============================================================================
 
-class StreamReaderNode(JOVImageMultiple):
+class StreamReaderNode(JOVBaseNode):
     NAME = "STREAM READER (JOV) 📺"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = f"{JOV_CATEGORY}#-stream-reader"
     DESC = "Connect system media devices and remote streams into ComfyUI workflows."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     INPUT_IS_LIST = False
+    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK",)
+    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK,)
+    # OUTPUT_IS_LIST = ()
     SORT = 50
     CAMERAS = None
 

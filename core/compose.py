@@ -13,7 +13,7 @@ from loguru import logger
 
 from comfy.utils import ProgressBar
 
-from Jovimetrix import load_help, JOVImageMultiple, WILDCARD
+from Jovimetrix import load_help, JOVBaseNode, WILDCARD
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import parse_parameter, zip_longest_fill, \
     EnumConvertType
@@ -42,12 +42,15 @@ class EnumCropMode(Enum):
 
 # =============================================================================
 
-class TransformNode(JOVImageMultiple):
+class TransformNode(JOVBaseNode):
     NAME = "TRANSFORM (JOV) 🏝️"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = f"{JOV_CATEGORY}#-transform"
     DESC = "Translate, Rotate, Scale, Tile, Mirror, Re-project and invert an input."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
+    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK",)
+    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK,)
+    # OUTPUT_IS_LIST = ()
     SORT = 0
 
     @classmethod
@@ -141,12 +144,15 @@ class TransformNode(JOVImageMultiple):
             pbar.update_absolute(idx)
         return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
 
-class BlendNode(JOVImageMultiple):
+class BlendNode(JOVBaseNode):
     NAME = "BLEND (JOV) ⚗️"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = f"{JOV_CATEGORY}#%EF%B8%8F-blend"
     DESC = "Applies selected operation to 2 inputs with optional mask using a linear blend (alpha)."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
+    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK",)
+    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK,)
+    # OUTPUT_IS_LIST = ()
     SORT = 10
 
     @classmethod
@@ -215,7 +221,7 @@ class BlendNode(JOVImageMultiple):
             pbar.update_absolute(idx)
         return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
 
-class PixelSplitNode(JOVImageMultiple):
+class PixelSplitNode(JOVBaseNode):
     NAME = "PIXEL SPLIT (JOV) 💔"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = f"{JOV_CATEGORY}#-pixel-split"
@@ -246,12 +252,15 @@ class PixelSplitNode(JOVImageMultiple):
             pbar.update_absolute(idx)
         return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
 
-class PixelMergeNode(JOVImageMultiple):
+class PixelMergeNode(JOVBaseNode):
     NAME = "PIXEL MERGE (JOV) 🫂"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = f"{JOV_CATEGORY}#-pixel-merge"
     DESC = "Combine 3 or 4 inputs into a single image."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
+    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK",)
+    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK,)
+    # OUTPUT_IS_LIST = ()
     SORT = 45
 
     @classmethod
@@ -289,12 +298,15 @@ class PixelMergeNode(JOVImageMultiple):
             pbar.update_absolute(idx)
         return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
 
-class PixelSwapNode(JOVImageMultiple):
+class PixelSwapNode(JOVBaseNode):
     NAME = "PIXEL SWAP (JOV) 🔃"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = f"{JOV_CATEGORY}#-pixel-swap"
     DESC = "Swap inputs of one image with another or fill its channels with solids."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
+    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK",)
+    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK,)
+    # OUTPUT_IS_LIST = ()
     SORT = 48
 
     @classmethod
@@ -360,12 +372,15 @@ class PixelSwapNode(JOVImageMultiple):
             pbar.update_absolute(idx)
         return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
 
-class StackNode(JOVImageMultiple):
+class StackNode(JOVBaseNode):
     NAME = "STACK (JOV) ➕"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = f"{JOV_CATEGORY}#-stack"
     DESC = "Union multiple images horizontal, vertical or in a grid."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
+    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK",)
+    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK,)
+    # OUTPUT_IS_LIST = ()
     SORT = 75
 
     @classmethod
@@ -413,12 +428,15 @@ class StackNode(JOVImageMultiple):
             img = image_scalefit(img, w, h, mode, sample)
         return cv2tensor_full(img, matte)
 
-class CropNode(JOVImageMultiple):
+class CropNode(JOVBaseNode):
     NAME = "CROP (JOV) ✂️"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = f"{JOV_CATEGORY}#-crop"
     DESC = "Clip away sections of an image and backfill with optional color matte."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
+    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK",)
+    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK,)
+    # OUTPUT_IS_LIST = ()
     SORT = 5
 
     @classmethod
@@ -466,7 +484,7 @@ class CropNode(JOVImageMultiple):
             pbar.update_absolute(idx)
         return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
 
-class ColorTheoryNode(JOVImageMultiple):
+class ColorTheoryNode(JOVBaseNode):
     NAME = "COLOR THEORY (JOV) 🛞"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = f"{JOV_CATEGORY}#-color-theory"

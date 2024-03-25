@@ -474,9 +474,9 @@ class ImageDiffNode(JOVBaseNode):
     HELP_URL = f"{JOV_CATEGORY}#-image-diff"
     DESC = "Explicitly show the differences between two images via self-similarity index."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
-    OUTPUT_IS_LIST = (False, False, False, False, True, )
     RETURN_TYPES = ("IMAGE", "IMAGE", "MASK", "MASK", "FLOAT", )
     RETURN_NAMES = (Lexicon.IN_A, Lexicon.IN_B, Lexicon.DIFF, Lexicon.THRESHOLD, Lexicon.FLOAT, )
+    OUTPUT_IS_LIST = (False, False, False, False, True, )
     SORT = 90
 
     @classmethod
@@ -622,6 +622,9 @@ class HistogramNode(JOVImageSimple):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     DESC = "Histogram"
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
+    RETURN_TYPES = ("IMAGE", )
+    RETURN_NAMES = (Lexicon.IMAGE,)
+    OUTPUT_IS_LIST = (True,)
     SORT = 40
 
     @classmethod

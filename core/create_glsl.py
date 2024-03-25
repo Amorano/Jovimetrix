@@ -10,7 +10,7 @@ from loguru import logger
 
 from comfy.utils import ProgressBar
 
-from Jovimetrix import comfy_message, load_help, parse_reset, JOVImageMultiple, \
+from Jovimetrix import comfy_message, load_help, parse_reset, JOVBaseNode, \
     WILDCARD, ROOT, JOV_GLSL
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import parse_parameter, zip_longest_fill, \
@@ -63,12 +63,15 @@ class EnumPatternType(Enum):
 
 # =============================================================================
 
-class GLSLNode(JOVImageMultiple):
+class GLSLNode(JOVBaseNode):
     NAME = "GLSL (JOV) 🍩"
     CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
     HELP_URL = f"CREATE#-glsl"
     DESC = ""
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
+    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK",)
+    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK,)
+    # OUTPUT_IS_LIST = ()
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -143,10 +146,13 @@ class GLSLNode(JOVImageMultiple):
             pbar.update_absolute(idx)
         return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
 
-class GLSLBaseNode(JOVImageMultiple):
+class GLSLBaseNode(JOVBaseNode):
     CATEGORY = JOV_CATEGORY
     HELP_URL = f"GLSL#-"
     # DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
+    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK",)
+    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK,)
+    # OUTPUT_IS_LIST = ()
     FRAGMENT = ".glsl"
 
     def __init__(self, *arg, **kw) -> None:

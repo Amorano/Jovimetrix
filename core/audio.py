@@ -10,7 +10,7 @@ from loguru import logger
 
 from comfy.utils import ProgressBar
 
-from Jovimetrix import JOVBaseNode, JOVImageMultiple, load_help
+from Jovimetrix import JOVBaseNode, load_help
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import parse_parameter, zip_longest_fill
 from Jovimetrix.sup.image import EnumImageType, channel_solid, cv2tensor_full, MIN_IMAGE_SIZE
@@ -64,12 +64,15 @@ class LoadWaveNode(JOVBaseNode):
             pbar.update_absolute(idx)
         return waves
 
-class WaveGraphNode(JOVImageMultiple):
+class WaveGraphNode(JOVBaseNode):
     NAME = "WAVE GRAPH (JOV) ▶ ılıılı"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = f"{JOV_CATEGORY}#-wave-graph"
     DESC = "Display audio waveform data as a linear bar graph"
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
+    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK",)
+    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK,)
+    # OUTPUT_IS_LIST = ()
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:

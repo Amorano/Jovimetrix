@@ -9,7 +9,7 @@ from loguru import logger
 
 from comfy.utils import ProgressBar
 
-from Jovimetrix import load_help, JOVImageMultiple, WILDCARD
+from Jovimetrix import load_help, JOVBaseNode, WILDCARD
 
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import parse_dynamic, parse_parameter, zip_longest_fill, \
@@ -32,12 +32,15 @@ JOV_CATEGORY = "CREATE"
 
 # =============================================================================
 
-class ConstantNode(JOVImageMultiple):
+class ConstantNode(JOVBaseNode):
     NAME = "CONSTANT (JOV) 🟪"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = f"{JOV_CATEGORY}#-constant"
     DESC = "Create a single RGBA block of color. Useful for masks, overlays and general filtering."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
+    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK",)
+    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK,)
+    # OUTPUT_IS_LIST = ()
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -69,12 +72,15 @@ class ConstantNode(JOVImageMultiple):
             pbar.update_absolute(idx)
         return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
 
-class ShapeNode(JOVImageMultiple):
+class ShapeNode(JOVBaseNode):
     NAME = "SHAPE GENERATOR (JOV) ✨"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = f"{JOV_CATEGORY}#-shape-generator"
     DESC = "Generate polyhedra for masking or texture work."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
+    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK",)
+    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK,)
+    # OUTPUT_IS_LIST = ()
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -154,12 +160,15 @@ class ShapeNode(JOVImageMultiple):
             pbar.update_absolute(idx)
         return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
 
-class TextNode(JOVImageMultiple):
+class TextNode(JOVBaseNode):
     NAME = "TEXT GENERATOR (JOV) 📝"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = f"{JOV_CATEGORY}#-text-generator"
     DESC = "Use any system font with auto-fit or manual placement."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
+    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK",)
+    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK,)
+    # OUTPUT_IS_LIST = ()
     FONTS = font_names()
     FONT_NAMES = sorted(FONTS.keys())
 
@@ -268,13 +277,15 @@ class TextNode(JOVImageMultiple):
             pbar.update_absolute(idx)
         return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
 
-class StereogramNode(JOVImageMultiple):
+class StereogramNode(JOVBaseNode):
     NAME = "STEREOGRAM (JOV) 📻"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = f"{JOV_CATEGORY}#-stereogram"
     DESC = "Make a magic eye stereograms."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
-    INPUT_IS_LIST = True
+    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK",)
+    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK,)
+    # OUTPUT_IS_LIST = ()
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -309,12 +320,15 @@ class StereogramNode(JOVImageMultiple):
             pbar.update_absolute(idx)
         return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
 
-class GradientNode(JOVImageMultiple):
+class GradientNode(JOVBaseNode):
     NAME = "GRADIENT (JOV) 🍧"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = f"{JOV_CATEGORY}#-gradient"
     DESC = "Make a gradient mapped to a linear or polar coordinate system."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
+    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK",)
+    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK,)
+    # OUTPUT_IS_LIST = ()
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:

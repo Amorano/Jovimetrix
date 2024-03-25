@@ -122,20 +122,7 @@ class Singleton(type):
 # =============================================================================
 
 class JOVBaseNode:
-    @classmethod
-    def INPUT_TYPES(cls) -> dict:
-        return {"required": {}}
-    RETURN_TYPES = ()
-    OUTPUT_NODE = False
     FUNCTION = "run"
-
-class JOVImageSimple(JOVBaseNode):
-    RETURN_TYPES = ("IMAGE", )
-    RETURN_NAMES = (Lexicon.IMAGE,)
-
-class JOVImageMultiple(JOVBaseNode):
-    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK",)
-    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK,)
 
 # wildcard trick is 100% stolen from pythongossss's
 class AnyType(str):

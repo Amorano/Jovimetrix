@@ -69,7 +69,7 @@ def parse_value(val:List[Any], typ:EnumConvertType, default: Any,
     for x in range(size - pos):
         idx = pos + x
         last = val[-1] if len(val) else 0
-        val.append(default[idx] if idx < len(default) else last)
+        val.append(default[idx] if default and idx < len(default) else last)
 
     # val = [v.value if issubclass(type(v), Enum) else v for v in val]
     if typ in [EnumConvertType.FLOAT, EnumConvertType.INT,
@@ -82,7 +82,11 @@ def parse_value(val:List[Any], typ:EnumConvertType, default: Any,
                 parts = val[idx].split('.', 1)
                 if len(parts) > 1:
                     val[idx] ='.'.join(parts[:2])
-
+            elif isinstance(val[idx], (list, tuple, set, dict)):
+                val[idx] = 0
+                #if isinstance(val[idx], (dict,)):
+                #    val[idx] = 1
+                #else:
             try:
                 if typ in [EnumConvertType.FLOAT, EnumConvertType.VEC2,
                             EnumConvertType.VEC3, EnumConvertType.VEC4]:
@@ -107,10 +111,13 @@ def parse_value(val:List[Any], typ:EnumConvertType, default: Any,
         if not isinstance(val, (str,)):
             val = [", ".join([str(v) for v in val])]
     elif typ == EnumConvertType.BOOLEAN:
-        val = [bool(v) for v in val[:size]]
+        val = [True if isinstance(v, (torch.Tensor,)) else bool(v) \
+               if v is not None and isinstance(v, (bool, int, float, str, list, set, dict,)) else False for v in val]
     elif typ == EnumConvertType.DICT:
-        val = {i: v for i, v in enumerate(val[:size])}
-    if len(val) == 1:
+        val = [{i: v for i, v in enumerate(val)}]
+    if typ == EnumConvertType.LIST:
+        val = [val]
+    elif len(val) == 1:
         return val[0]
     return val
 
@@ -251,5 +258,3 @@ def path_next(pattern: str) -> str:
         c = (a + b) // 2
         a, b = (c, b) if os.path.exists(pattern % c) else (a, c)
     return pattern % b
-
-

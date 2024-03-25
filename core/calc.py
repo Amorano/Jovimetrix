@@ -407,7 +407,7 @@ class ValueNode(JOVBaseNode):
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     RETURN_TYPES = (WILDCARD, )
     RETURN_NAMES = (Lexicon.ANY, )
-    # OUTPUT_IS_LIST = (True, )
+    OUTPUT_IS_LIST = (True, )
     SORT = 1
 
     @classmethod

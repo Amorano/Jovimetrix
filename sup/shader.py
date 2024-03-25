@@ -11,7 +11,7 @@ import numpy as np
 from PIL import Image
 from loguru import logger
 
-from Jovimetrix import TYPE_IMAGE
+from Jovimetrix.sup.image import TYPE_IMAGE
 
 # =============================================================================
 

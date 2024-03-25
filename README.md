@@ -31,6 +31,30 @@ The main goal of Jovimetrix is to supplement those external workflows before the
 ** custom node colorization
 ** node favorites
 
+# COMMUNITY
+
+
+Everything here is made because I wanted to make it.
+Everything you are looking for here that you cant find doesnt exsit because I didnt make it.
+If you feel like helping with text or code contributions, please pull and send me any PRs.
+
+## CONTRIBUTIONS
+
+Feel free to contribute to this project by reporting issues or suggesting improvements. Open an issue or submit a pull request on the GitHub repository.
+
+## DONATIONS
+
+[![If you feel like donating money resource instead, you can always use my ko-fi ❤️](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/alexandermorano)
+
+## DISCORD
+There are a few places you can chat about Jovimetrix nodes.
+
+Directly on the `#jovimetrix` channel at the Banodoco discord:
+[![](https://dcbadge.vercel.app/api/server/fbpScsxF4f?style=flat-square)](https://discord.gg/fbpScsxF4f)
+
+On Purz discord (Creative Exploration):
+[![](https://dcbadge.vercel.app/api/server/AxjQCRCnxn?style=flat-square)](https://discord.gg/AxjQCRCnxn)
+
 # INSTALLATION
 
 ## COMFYUI MANAGER
@@ -229,21 +253,6 @@ Everyone mentioned here has been tireless in helping me, at some point, construc
 <img width=250/>|<img width=250/>|<img width=250/>
 
 <!---------------------------------------------------------------------------->
-
-# DONATION WARE
-
-Everything here is made because I wanted to make it.
-Everything you are looking for here that you cant find doesnt exsit because I didnt make it.
-If you feel like helping with text or code contributions, please pull and send me any PRs.
-
-## CONTRIBUTIONS
-
-Feel free to contribute to this project by reporting issues or suggesting improvements. Open an issue or submit a pull request on the GitHub repository.
-
-## DONATIONS
-
-[![If you feel like donating money resource instead, you can always use my ko-fi ❤️](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/alexandermorano)
-
 
 # LICENSE
 

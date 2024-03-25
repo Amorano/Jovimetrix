@@ -27,9 +27,9 @@ class TickNode(JOVBaseNode):
     HELP_URL = f"{JOV_CATEGORY}#-tick"
     DESC = "Periodic pulse with total pulse count, normalized count relative to the loop setting and fixed pulse step."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
-    INPUT_IS_LIST = False
     RETURN_TYPES = ("INT", "FLOAT", "FLOAT", WILDCARD)
     RETURN_NAMES = (Lexicon.VALUE, Lexicon.LINEAR, Lexicon.FPS, Lexicon.ANY)
+    OUTPUT_IS_LIST = (True, True, True, True,)
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -119,9 +119,9 @@ class WaveGeneratorNode(JOVBaseNode):
     HELP_URL = f"{JOV_CATEGORY}#-wave-generator"
     DESC = "Periodic and Non-Periodic Sinosodials."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
-    # OUTPUT_IS_LIST = (True, True,)
     RETURN_TYPES = ("FLOAT", "INT", )
     RETURN_NAMES = (Lexicon.FLOAT, Lexicon.INT, )
+    OUTPUT_IS_LIST = (True, True,)
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
