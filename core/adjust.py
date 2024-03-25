@@ -11,15 +11,14 @@ from loguru import logger
 
 from comfy.utils import ProgressBar
 
-from Jovimetrix import WILDCARD, JOVBaseNode, load_help
+from Jovimetrix import load_help, JOVBaseNode, WILDCARD
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import EnumConvertType, zip_longest_fill, parse_parameter
 from Jovimetrix.sup.image import channel_count, \
     color_match_histogram, color_match_lut, color_match_reinhard, \
     cv2tensor_full, image_color_blind, image_scalefit, tensor2cv, image_equalize, \
-    image_levels, pixel_eval, \
-    image_posterize, image_pixelate, image_quantize, image_sharpen, \
-    image_threshold, image_blend, image_invert, morph_edge_detect, \
+    image_levels, pixel_eval, image_posterize, image_pixelate, image_quantize, \
+    image_sharpen, image_threshold, image_blend, image_invert, morph_edge_detect, \
     morph_emboss, image_contrast, image_hsv, image_gamma, \
     EnumCBDefiency, EnumCBSimulator, EnumScaleMode, \
     EnumImageType, EnumColorMap, EnumAdjustOP, EnumThresholdAdapt, EnumThreshold
@@ -45,9 +44,8 @@ class AdjustNode(JOVBaseNode):
     HELP_URL = f"{JOV_CATEGORY}#-adjust"
     DESC = "Blur, Sharpen, Emboss, Levels, HSV, Edge detection."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
-    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK",)
-    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK,)
-    # OUTPUT_IS_LIST = ()
+    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
+    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -76,30 +74,32 @@ class AdjustNode(JOVBaseNode):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor]:
-        pA = parse_parameter(kw.get(Lexicon.PIXEL, None))
-        mask = parse_parameter(kw.get(Lexicon.MASK, None))
-        op = kw.get(Lexicon.FUNC, [EnumAdjustOP.BLUR])
-        radius = kw.get(Lexicon.RADIUS, [3])
-        amt = kw.get(Lexicon.VALUE, [0])
-        lohi = parse_parameter(Lexicon.LOHI, kw, (0, 1), EnumConvertType.FLOAT, clip_min=0, clip_max=1)
-        lmh = parse_parameter(Lexicon.LMH, kw, (0, 0.5, 1), EnumConvertType.FLOAT, clip_min=0, clip_max=1)
-        hsv = parse_parameter(Lexicon.HSV, kw, (0, 1, 1), EnumConvertType.FLOAT, clip_min=0, clip_max=1)
-        contrast = parse_parameter(Lexicon.CONTRAST, kw, [0], EnumConvertType.FLOAT,  clip_min=0, clip_max=1)
-        gamma = parse_parameter(Lexicon.GAMMA, kw, [1], EnumConvertType.FLOAT, clip_min=0, clip_max=1)
-        matte = parse_parameter(Lexicon.MATTE, kw, (0, 0, 0, 255), clip_min=0, clip_max=255)
-        invert = kw.get(Lexicon.INVERT, [False])
+        logger.debug(kw)
+        pA = parse_parameter(Lexicon.PIXEL, kw, None, EnumConvertType.IMAGE)
+        mask = parse_parameter(Lexicon.MASK, kw, None, EnumConvertType.IMAGE)
+        op = parse_parameter(Lexicon.FUNC, kw, EnumAdjustOP.BLUR.name, EnumConvertType.STRING)
+        radius = parse_parameter(Lexicon.RADIUS, kw, 3, EnumConvertType.INT, 3)
+        amt = parse_parameter(Lexicon.VALUE, kw, 1, EnumConvertType.FLOAT, 0)
+        lohi = parse_parameter(Lexicon.LOHI, kw, (0, 1), EnumConvertType.VEC2, 0, 1)
+        lmh = parse_parameter(Lexicon.LMH, kw, (0, 0.5, 1), EnumConvertType.VEC3, 0, 1)
+        hsv = parse_parameter(Lexicon.HSV, kw, (0, 1, 1), EnumConvertType.VEC3, 0, 1)
+        contrast = parse_parameter(Lexicon.CONTRAST, kw, 0, EnumConvertType.FLOAT, 0, 1)
+        gamma = parse_parameter(Lexicon.GAMMA, kw, 1, EnumConvertType.FLOAT, 0, 1)
+        matte = parse_parameter(Lexicon.MATTE, kw, (0, 0, 0, 255), EnumConvertType.VEC4INT, 0, 255)
+        invert = parse_parameter(Lexicon.INVERT, kw, False, EnumConvertType.BOOLEAN)
         params = [tuple(x) for x in zip_longest_fill(pA, mask, op, radius, amt, lohi,
                                                      lmh, hsv, contrast, gamma, matte, invert)]
         images = []
         pbar = ProgressBar(len(params))
-        for idx, (pA, mask, o, r, a, lohi, lmh, hsv, con, gamma, matte, invert) in enumerate(params):
+        for idx, (pA, mask, op, radius, amt, lohi, lmh, hsv, contrast, gamma, matte, invert) in enumerate(params):
+            logger.debug(radius)
             pA = tensor2cv(pA)
             if (cc := channel_count(pA)[0]) == 4:
                 alpha = pA[:,:,3]
 
-            match EnumAdjustOP[o]:
+            match EnumAdjustOP[op]:
                 case EnumAdjustOP.INVERT:
-                    img_new = image_invert(pA, a)
+                    img_new = image_invert(pA, amt)
 
                 case EnumAdjustOP.LEVELS:
                     l, m, h = lmh
@@ -108,8 +108,8 @@ class AdjustNode(JOVBaseNode):
                 case EnumAdjustOP.HSV:
                     h, s, v = hsv
                     img_new = image_hsv(pA, h, s, v)
-                    if con != 0:
-                        img_new = image_contrast(img_new, 1 - con)
+                    if contrast != 0:
+                        img_new = image_contrast(img_new, 1 - contrast)
 
                     if gamma != 0:
                         img_new = image_gamma(img_new, gamma)
@@ -119,61 +119,61 @@ class AdjustNode(JOVBaseNode):
                     img_new = morph_edge_detect(pA, low=lo, high=hi)
 
                 case EnumAdjustOP.BLUR:
-                    img_new = cv2.blur(pA, (r, r))
+                    img_new = cv2.blur(pA, (radius, radius))
 
                 case EnumAdjustOP.STACK_BLUR:
-                    r = min(r, 1399)
+                    r = min(radius, 1399)
                     if r % 2 == 0:
                         r += 1
                     img_new = cv2.stackBlur(pA, (r, r))
 
                 case EnumAdjustOP.GAUSSIAN_BLUR:
-                    r = min(r, 999)
+                    r = min(radius, 999)
                     if r % 2 == 0:
                         r += 1
-                    img_new = cv2.GaussianBlur(pA, (r, r), sigmaX=float(a))
+                    img_new = cv2.GaussianBlur(pA, (r, r), sigmaX=amt)
 
                 case EnumAdjustOP.MEDIAN_BLUR:
-                    r = min(r, 357)
+                    r = min(radius, 357)
                     if r % 2 == 0:
                         r += 1
                     img_new = cv2.medianBlur(pA, r)
 
                 case EnumAdjustOP.SHARPEN:
-                    r = min(r, 511)
+                    r = min(radius, 511)
                     if r % 2 == 0:
                         r += 1
-                    img_new = image_sharpen(pA, kernel_size=r, amount=a)
+                    img_new = image_sharpen(pA, kernel_size=r, amount=amt)
 
                 case EnumAdjustOP.EMBOSS:
-                    img_new = morph_emboss(pA, a, r)
+                    img_new = morph_emboss(pA, amt, radius)
 
                 case EnumAdjustOP.EQUALIZE:
                     img_new = image_equalize(pA)
 
                 case EnumAdjustOP.PIXELATE:
-                    img_new = image_pixelate(pA, a / 255.)
+                    img_new = image_pixelate(pA, amt / 255.)
 
                 case EnumAdjustOP.QUANTIZE:
-                    img_new = image_quantize(pA, int(a))
+                    img_new = image_quantize(pA, int(amt))
 
                 case EnumAdjustOP.POSTERIZE:
-                    img_new = image_posterize(pA, int(a))
+                    img_new = image_posterize(pA, int(amt))
 
                 case EnumAdjustOP.OUTLINE:
-                    img_new = cv2.morphologyEx(pA, cv2.MORPH_GRADIENT, (r, r))
+                    img_new = cv2.morphologyEx(pA, cv2.MORPH_GRADIENT, (radius, radius))
 
                 case EnumAdjustOP.DILATE:
-                    img_new = cv2.dilate(pA, (r, r), iterations=int(a))
+                    img_new = cv2.dilate(pA, (r, r), iterations=int(amt))
 
                 case EnumAdjustOP.ERODE:
-                    img_new = cv2.erode(pA, (r, r), iterations=int(a))
+                    img_new = cv2.erode(pA, (r, r), iterations=int(amt))
 
                 case EnumAdjustOP.OPEN:
-                    img_new = cv2.morphologyEx(pA, cv2.MORPH_OPEN, (r, r), iterations=int(a))
+                    img_new = cv2.morphologyEx(pA, cv2.MORPH_OPEN, (radius, radius), iterations=int(amt))
 
                 case EnumAdjustOP.CLOSE:
-                    img_new = cv2.morphologyEx(pA, cv2.MORPH_CLOSE, (r, r), iterations=int(a))
+                    img_new = cv2.morphologyEx(pA, cv2.MORPH_CLOSE, (radius, radius), iterations=int(amt))
 
             mask = tensor2cv(mask, chan=EnumImageType.GRAYSCALE)
             if not invert:
@@ -195,9 +195,8 @@ class ColorMatchNode(JOVBaseNode):
     HELP_URL = f"{JOV_CATEGORY}#-colormatch"
     DESC = "Project the colors of one image  onto another or use a pre-defined color target."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
-    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK",)
-    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK,)
-    # OUTPUT_IS_LIST = ()
+    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
+    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -222,15 +221,15 @@ class ColorMatchNode(JOVBaseNode):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        pA = parse_parameter(kw.get(Lexicon.PIXEL_A, None))
-        pB = parse_parameter(kw.get(Lexicon.PIXEL_B, None))
-        colormatch_mode = kw.get(Lexicon.COLORMATCH_MODE, [EnumColorMatchMode.REINHARD.name])
-        colormatch_map = kw.get(Lexicon.COLORMATCH_MAP, [EnumColorMatchMap.USER_MAP.name])
-        colormap = kw.get(Lexicon.COLORMAP, [EnumColorMap.HSV])
-        num_colors = kw.get(Lexicon.VALUE, [255])
-        flip = kw.get(Lexicon.FLIP, [False])
-        invert = kw.get(Lexicon.INVERT, [False])
-        matte = parse_parameter(Lexicon.MATTE, kw, (0, 0, 0, 255), clip_min=0, clip_max=255)
+        pA = parse_parameter(Lexicon.PIXEL_A, kw, None, EnumConvertType.IMAGE)
+        pB = parse_parameter(Lexicon.PIXEL_B, kw, None, EnumConvertType.IMAGE)
+        colormatch_mode = parse_parameter(Lexicon.COLORMATCH_MODE, kw, EnumColorMatchMode.REINHARD.name, EnumConvertType.STRING)
+        colormatch_map = parse_parameter(Lexicon.COLORMATCH_MAP, kw, EnumColorMatchMap.USER_MAP.name, EnumConvertType.STRING)
+        colormap = parse_parameter(Lexicon.COLORMAP, kw, EnumColorMap.HSV.name, EnumConvertType.STRING)
+        num_colors = parse_parameter(Lexicon.VALUE, kw, 255, EnumConvertType.INT)
+        flip = parse_parameter(Lexicon.FLIP, kw, False, EnumConvertType.BOOLEAN)
+        invert = parse_parameter(Lexicon.INVERT, kw, False, EnumConvertType.BOOLEAN)
+        matte = parse_parameter(Lexicon.MATTE, kw, (0, 0, 0, 255), EnumConvertType.VEC4INT, 0, 255)
         params = [tuple(x) for x in zip_longest_fill(pA, pB, colormap, colormatch_mode,
                                                      colormatch_map, num_colors, flip, invert, matte)]
         images = []
@@ -268,9 +267,8 @@ class ThresholdNode(JOVBaseNode):
     HELP_URL = f"{JOV_CATEGORY}#-threshold"
     DESC = "Clip an input based on a mid point value."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
-    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK",)
-    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK,)
-    # OUTPUT_IS_LIST = ()
+    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
+    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -288,12 +286,12 @@ class ThresholdNode(JOVBaseNode):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        pA = parse_parameter(kw.get(Lexicon.PIXEL, None))
-        mode = kw.get(Lexicon.FUNC, [EnumThreshold.BINARY])
-        adapt = kw.get(Lexicon.ADAPT, [EnumThresholdAdapt.ADAPT_NONE])
-        threshold = parse_parameter(Lexicon.THRESHOLD, kw, EnumConvertType.FLOAT, [1], clip_min=0, clip_max=1)
-        block = kw.get(Lexicon.SIZE, [3])
-        invert = kw.get(Lexicon.INVERT, [False])
+        pA = parse_parameter(Lexicon.PIXEL, kw, None, EnumConvertType.IMAGE)
+        mode = parse_parameter(Lexicon.FUNC, kw, EnumThreshold.BINARY.name, EnumConvertType.STRING)
+        adapt = parse_parameter(Lexicon.ADAPT, kw, EnumThresholdAdapt.ADAPT_NONE.name, EnumConvertType.STRING)
+        threshold = parse_parameter(Lexicon.THRESHOLD, kw, 1, EnumConvertType.FLOAT, 0, 1)
+        block = parse_parameter(Lexicon.SIZE, kw, 3, EnumConvertType.INT, 3)
+        invert = parse_parameter(Lexicon.INVERT, kw, False, EnumConvertType.BOOLEAN)
         params = [tuple(x) for x in zip_longest_fill(pA, mode, adapt, threshold, block, invert)]
         images = []
         pbar = ProgressBar(len(params))
@@ -314,9 +312,8 @@ class ColorBlindNode(JOVBaseNode):
     HELP_URL = f"{JOV_CATEGORY}#-colorblind"
     DESC = "Transform an image into specific color blind color space"
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
-    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK",)
-    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK,)
-    # OUTPUT_IS_LIST = ()
+    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
+    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -333,15 +330,17 @@ class ColorBlindNode(JOVBaseNode):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        pA = parse_parameter(kw.get(Lexicon.PIXEL, None))
-        defiency = kw.get(Lexicon.DEFIENCY, [EnumCBDefiency.PROTAN.name])
-        simulator = kw.get(Lexicon.SIMULATOR, [EnumCBSimulator.AUTOSELECT.name])
-        severity = kw.get(Lexicon.SIMULATOR, [1])
+        pA = parse_parameter(Lexicon.PIXEL, kw, None, EnumConvertType.IMAGE)
+        defiency = parse_parameter(Lexicon.DEFIENCY, kw, EnumCBDefiency.PROTAN.name, EnumConvertType.STRING)
+        simulator = parse_parameter(Lexicon.SIMULATOR, kw, EnumCBSimulator.AUTOSELECT.name, EnumConvertType.STRING)
+        severity = parse_parameter(Lexicon.VALUE, kw, 1, EnumConvertType.FLOAT)
         params = [tuple(x) for x in zip_longest_fill(pA, defiency, simulator, severity)]
         images = []
         pbar = ProgressBar(len(params))
         for idx, (pA, defiency, simulator, severity) in enumerate(params):
             pA = tensor2cv(pA)
+            defiency = EnumCBDefiency[defiency]
+            simulator = EnumCBSimulator[simulator]
             pA = image_color_blind(pA, defiency, simulator, severity)
             images.append(cv2tensor_full(pA))
             pbar.update_absolute(idx)

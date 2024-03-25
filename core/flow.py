@@ -67,6 +67,7 @@ class DelayNode(JOVBaseNode):
     HELP_URL = f"{JOV_CATEGORY}#-delay"
     DESC = "Delay traffic. Electrons on the data bus go round."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
+    # INPUT_IS_LIST = False
     RETURN_TYPES = (WILDCARD,)
     RETURN_NAMES = (Lexicon.ROUTE,)
 
@@ -121,9 +122,9 @@ class DelayNode(JOVBaseNode):
         self.__delay = 0
 
     def run(self, ident, **kw) -> tuple[Any]:
-        o = kw.get(Lexicon.PASS_IN, [None])
-        wait = kw.get(Lexicon.WAIT, [False])[0]
-        delay = min(kw.get(Lexicon.TIMER, 0), [JOVI_DELAY_MAX])[0]
+        o = parse_parameter(Lexicon.PASS_IN, kw, None, EnumConvertType.ANY)
+        wait = parse_parameter(Lexicon.WAIT, kw, False, EnumConvertType.BOOLEAN)[0]
+        delay = min(parse_parameter(Lexicon.TIMER, kw, 0, EnumConvertType.INT)[0], JOVI_DELAY_MAX)
 
         if wait:
             cancel = False
@@ -146,6 +147,7 @@ class DelayNode(JOVBaseNode):
             cancel = DelayNode.parse_q(ident, loops)
         return o
 
+"""
 class HoldValueNode(JOVBaseNode):
     NAME = "HOLD VALUE (JOV) 🫴🏽"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
@@ -170,10 +172,22 @@ class HoldValueNode(JOVBaseNode):
         self.__last_value = None
 
     def run(self, **kw) -> tuple[Any]:
-        o = kw.get(Lexicon.PASS_IN, [None])
-        if self.__last_value is None or not kw.get(Lexicon.WAIT, [False]):
-            self.__last_value = o
+        obj = parse_parameter(Lexicon.PASS_IN, kw, None, EnumConvertType.ANY)
+        hold = parse_parameter(Lexicon.WAIT, kw, False, EnumConvertType.BOOLEAN)
+        params = [tuple(x) for x in zip_longest_fill(obj, hold)]
+        pbar = ProgressBar(len(params))
+        results = []
+        for idx, (obj, hold) in enumerate(params):
+            if self.__last_value is None or hold:
+                self.__last_value = o
+            vals.append(val)
+            results.append(good if all(val) else fail)
+            pbar.update_absolute(idx)
+        return results,
+
+
         return (self.__last_value,)
+"""
 
 class ComparisonNode(JOVBaseNode):
     NAME = "COMPARISON (JOV) 🕵🏽"
@@ -200,12 +214,12 @@ class ComparisonNode(JOVBaseNode):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> tuple[bool]:
-        A = kw.get(Lexicon.IN_A, [0])
-        B = kw.get(Lexicon.IN_B, [0])
-        good = kw.get(Lexicon.COMP_A, [None])
-        fail = kw.get(Lexicon.COMP_B, [None])
-        flip = kw.get(Lexicon.FLIP, [None])
-        op = kw.get(Lexicon.COMPARE, [None])
+        A = parse_parameter(Lexicon.IN_A, kw, None, EnumConvertType.ANY)
+        B = parse_parameter(Lexicon.IN_B, kw, None, EnumConvertType.ANY)
+        good = parse_parameter(Lexicon.COMP_A, kw, None, EnumConvertType.ANY)
+        fail = parse_parameter(Lexicon.COMP_B, kw, None, EnumConvertType.ANY)
+        flip = parse_parameter(Lexicon.FLIP, kw, False, EnumConvertType.BOOLEAN)
+        op = parse_parameter(Lexicon.COMPARE, kw, EnumComparison.EQUAL.name, EnumConvertType.STRING)
         params = [tuple(x) for x in zip_longest_fill(A, B, op, flip)]
         pbar = ProgressBar(len(params))
         vals = []
@@ -260,60 +274,3 @@ class ComparisonNode(JOVBaseNode):
             results.append(good if all(val) else fail)
             pbar.update_absolute(idx)
         return results, vals,
-
-class SelectNode(JOVBaseNode):
-    NAME = "SELECT (JOV) 🤏🏽"
-    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = f"{JOV_CATEGORY}#-select"
-    DESC = "Select an item from a user explicit list of inputs."
-    DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
-    INPUT_IS_LIST = False
-    RETURN_TYPES = (WILDCARD, "STRING", "INT", "INT", )
-    RETURN_NAMES = (Lexicon.ANY, Lexicon.QUEUE, Lexicon.VALUE, Lexicon.TOTAL, )
-    OUTPUT_IS_LIST = (False, False, False, False, )
-    SORT = 70
-
-    @classmethod
-    def INPUT_TYPES(cls) -> dict:
-        d = {
-        "required": {},
-        "optional": {
-            #  -1: Random; 0: Sequential; 1..N: explicitly use index
-            Lexicon.SELECT: ("INT", {"default": 0, "min": -1, "step": 1}),
-            Lexicon.RESET: ("BOOLEAN", {"default": False}),
-        },
-        "hidden": {
-            "ident": "UNIQUE_ID"
-        }}
-        return Lexicon._parse(d, cls.HELP_URL)
-
-    @classmethod
-    def IS_CHANGED(cls) -> float:
-        return float("nan")
-
-    def __init__(self, *arg, **kw) -> None:
-        super().__init__(*arg, **kw)
-        self.__index = 0
-
-    def run(self, ident, **kw) -> None:
-        if parse_reset(ident) > 0 or kw.get(Lexicon.RESET, False):
-            self.__index = 0
-        vals = parse_dynamic(Lexicon.UNKNOWN, kw)
-        count = len(vals)
-        select = kw.get(Lexicon.SELECT, 0)
-        # clip the index in case it went out of range.
-        index = max(0, min(count - 1, self.__index))
-        val = None
-        if select < 1:
-            if select < 0:
-                index = int(random.random() * count)
-                val = vals[index]
-            else:
-                val = vals[index]
-            index += 1
-            if index >= count:
-                index = 0
-        elif select < count:
-            val = vals[index]
-        self.__index = index
-        return val, vals, self.__index + 1, count,

@@ -605,6 +605,7 @@ def shape_body(func: str, width: int, height: int, sizeX:float=1., sizeY:float=1
     sizeX = max(0.5, sizeX / 2 + 0.5)
     sizeY = max(0.5, sizeY / 2 + 0.5)
     xy = [(width * (1. - sizeX), height * (1. - sizeY)),(width * sizeX, height * sizeY)]
+    back = pixel_eval(back, EnumImageType.RGB)
     image = Image.new("RGB", (width, height), back)
     d = ImageDraw.Draw(image)
     func = getattr(d, func)

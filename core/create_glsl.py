@@ -69,8 +69,8 @@ class GLSLNode(JOVBaseNode):
     HELP_URL = f"CREATE#-glsl"
     DESC = ""
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
-    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK",)
-    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK,)
+    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
+    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
     # OUTPUT_IS_LIST = ()
 
     @classmethod
@@ -103,13 +103,13 @@ class GLSLNode(JOVBaseNode):
         self.__last_good = [torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 4), dtype=torch.uint8, device="cpu")]
 
     def run(self, ident, **kw) -> list[torch.Tensor]:
-        batch = parse_parameter(Lexicon.BATCH, kw, (1, 30), clip_min=1)
-        fragment = kw.get(Lexicon.FRAGMENT, [DEFAULT_FRAGMENT])
-        param = kw.get(Lexicon.PARAM, [{}])
-        wihi = parse_parameter(Lexicon.WH, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), clip_min=1)
-        pA = parse_parameter(kw.get(Lexicon.PIXEL, None))
-        hold = kw.get(Lexicon.WAIT, [False])
-        reset = kw.get(Lexicon.RESET, [False])
+        batch = parse_parameter(Lexicon.BATCH, kw, (1, 30), EnumConvertType.VEC2INT, 1)
+        fragment = parse_parameter(Lexicon.FRAGMENT, kw, DEFAULT_FRAGMENT, EnumConvertType.STRING)
+        param = parse_parameter(Lexicon.PARAM, kw, {}, EnumConvertType.DICT)
+        wihi = parse_parameter(Lexicon.WH, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), EnumConvertType.VEC2INT, 1)
+        pA = parse_parameter(Lexicon.PIXEL, kw, None, EnumConvertType.IMAGE)
+        hold = parse_parameter(Lexicon.WAIT, kw, False, EnumConvertType.BOOLEAN)
+        reset = parse_parameter(Lexicon.RESET, kw, False, EnumConvertType.BOOLEAN)
         params = [tuple(x) for x in zip_longest_fill(batch, fragment, param, wihi, pA, hold, reset)]
         images = []
         pbar = ProgressBar(len(params))
@@ -150,9 +150,8 @@ class GLSLBaseNode(JOVBaseNode):
     CATEGORY = JOV_CATEGORY
     HELP_URL = f"GLSL#-"
     # DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
-    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK",)
-    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK,)
-    # OUTPUT_IS_LIST = ()
+    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
+    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
     FRAGMENT = ".glsl"
 
     def __init__(self, *arg, **kw) -> None:
@@ -161,9 +160,9 @@ class GLSLBaseNode(JOVBaseNode):
         self.__glsl = None
 
     def run(self, **kw) -> list[torch.Tensor]:
-        pA = parse_parameter(kw.get(Lexicon.PIXEL_A, None))
-        pB = parse_parameter(kw.get(Lexicon.PIXEL_B, None))
-        wihi = parse_parameter(Lexicon.WH, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), clip_min=1)
+        pA = parse_parameter(Lexicon.PIXEL_A, kw, None, EnumConvertType.IMAGE)
+        pB = parse_parameter(Lexicon.PIXEL_B, kw, None, EnumConvertType.IMAGE)
+        wihi = parse_parameter(Lexicon.WH, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), EnumConvertType.VEC2INT, 1)
         kw.pop(Lexicon.WH, None)
         frag = kw.pop("frag", [self.FRAGMENT])
         # clear any junk, since the rest are 'params'

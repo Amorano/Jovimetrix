@@ -122,6 +122,8 @@ class Singleton(type):
 # =============================================================================
 
 class JOVBaseNode:
+    INPUT_IS_LIST = True
+    RETURN_TYPES = ()
     FUNCTION = "run"
 
 # wildcard trick is 100% stolen from pythongossss's

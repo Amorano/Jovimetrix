@@ -11,7 +11,7 @@ from PIL import Image, ImageFont, ImageDraw
 
 from loguru import logger
 
-from Jovimetrix.sup.image import pil2cv, TYPE_IMAGE, TYPE_PIXEL
+from Jovimetrix.sup.image import EnumImageType, pil2cv, TYPE_IMAGE, TYPE_PIXEL, pixel_eval
 
 # =============================================================================
 
@@ -173,6 +173,7 @@ def text_draw(full_text: str, font: ImageFont, width: int, height: int,
         y = (height - height_max) / 2
     y = min(height, max(0, y))
 
+    color = pixel_eval(color, EnumImageType.RGBA)
     for line in text_lines:
         line_width = text_size(draw, line, font)[0]
         if justify == EnumJustify.LEFT:

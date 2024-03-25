@@ -30,8 +30,9 @@ class EnumConvertType(Enum):
     LIST = 2
     DICT = 3
     IMAGE = 4
-    #LATENT = 5
+    LATENT = 5
     #MASK = 6
+    ANY = 9
 
 # =============================================================================
 # === SUPPORT ===
@@ -64,12 +65,14 @@ def parse_value(val:List[Any], typ:EnumConvertType, default: Any,
     if typ != EnumConvertType.IMAGE and isinstance(val, (torch.Tensor,)):
         val = list(val.size())[1:4] + [val[0]]
 
-    pos = len(val)
-    size = max(1, int(typ.value / 10))
-    for x in range(size - pos):
-        idx = pos + x
-        last = val[-1] if len(val) else 0
-        val.append(default[idx] if default and idx < len(default) else last)
+    size = len(val)
+    if not isinstance(val, (str,)):
+        pos = size
+        size = max(1, int(typ.value / 10))
+        for x in range(size - pos):
+            idx = pos + x
+            last = val[-1] if len(val) else 0
+            val.append(default[idx] if default and idx < len(default) else last)
 
     # val = [v.value if issubclass(type(v), Enum) else v for v in val]
     if typ in [EnumConvertType.FLOAT, EnumConvertType.INT,

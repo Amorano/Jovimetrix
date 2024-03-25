@@ -15,7 +15,7 @@ from comfy.utils import ProgressBar
 
 from Jovimetrix import load_help, JOVBaseNode, WILDCARD
 from Jovimetrix.sup.lexicon import Lexicon
-from Jovimetrix.sup.util import parse_parameter, zip_longest_fill, \
+from Jovimetrix.sup.util import parse_dynamic, parse_parameter, zip_longest_fill, \
     EnumConvertType
 from Jovimetrix.sup.image import  channel_merge, \
     channel_solid, channel_swap, cv2tensor_full, \
@@ -48,8 +48,8 @@ class TransformNode(JOVBaseNode):
     HELP_URL = f"{JOV_CATEGORY}#-transform"
     DESC = "Translate, Rotate, Scale, Tile, Mirror, Re-project and invert an input."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
-    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK",)
-    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK,)
+    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
+    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
     # OUTPUT_IS_LIST = ()
     SORT = 0
 
@@ -78,22 +78,22 @@ class TransformNode(JOVBaseNode):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        pA = parse_parameter(kw.get(Lexicon.PIXEL, None))
-        offset = parse_parameter(Lexicon.XY, kw, (0., 0.,), EnumConvertType.FLOAT)
-        angle = kw.get(Lexicon.ANGLE, [0])
-        size = parse_parameter(Lexicon.SIZE, kw, (1., 1.,), EnumConvertType.FLOAT, zero=0.001)
-        edge = kw.get(Lexicon.EDGE, [EnumEdge.CLIP])
-        mirror = kw.get(Lexicon.MIRROR, [EnumMirrorMode.NONE])
-        mirror_pivot = parse_parameter(Lexicon.PIVOT, kw, (0.5, 0.5,), EnumConvertType.FLOAT, 0, 1)
-        tile_xy = parse_parameter(Lexicon.TILE, kw, (1., 1.), EnumConvertType.FLOAT, clip_min=1)
-        proj = kw.get(Lexicon.PROJECTION, [EnumProjection.NORMAL])
-        tltr = parse_parameter(Lexicon.TLTR, kw, (0, 0, 1, 0,), EnumConvertType.FLOAT, 0, 1)
-        blbr = parse_parameter(Lexicon.BLBR, kw, (0, 1, 1, 1,), EnumConvertType.FLOAT, 0, 1)
-        strength = kw.get(Lexicon.STRENGTH, [1])
-        mode = kw.get(Lexicon.MODE,[EnumScaleMode.NONE])
-        wihi = parse_parameter(Lexicon.WH, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
-        sample = kw.get(Lexicon.SAMPLE, [EnumInterpolation.LANCZOS4])
-        matte = parse_parameter(Lexicon.MATTE, kw, (0, 0, 0, 255), clip_min=0, clip_max=255)
+        pA = parse_parameter(Lexicon.PIXEL_A, kw, None, EnumConvertType.IMAGE)
+        offset = parse_parameter(Lexicon.XY, kw, (0, 0), EnumConvertType.FLOAT)
+        angle = parse_parameter(Lexicon.ANGLE, kw, 1, EnumConvertType.FLOAT)
+        size = parse_parameter(Lexicon.SIZE, kw, (1, 1), EnumConvertType.FLOAT, zero=0.001)
+        edge = parse_parameter(Lexicon.EDGE, kw, EnumEdge.CLIP.name, EnumConvertType.STRING)
+        mirror = parse_parameter(Lexicon.MIRROR, kw, EnumMirrorMode.NONE.name, EnumConvertType.STRING)
+        mirror_pivot = parse_parameter(Lexicon.PIVOT, kw, (0.5, 0.5), EnumConvertType.VEC2, 0, 1)
+        tile_xy = parse_parameter(Lexicon.TILE, kw, (1, 1), EnumConvertType.VEC2INT, 1)
+        proj = parse_parameter(Lexicon.PROJECTION, kw, EnumProjection.NORMAL.name, EnumConvertType.STRING)
+        tltr = parse_parameter(Lexicon.TLTR, kw, (0, 0, 1, 0), EnumConvertType.VEC4, 0, 1)
+        blbr = parse_parameter(Lexicon.BLBR, kw, (0, 1, 1, 1), EnumConvertType.VEC4, 0, 1)
+        strength = parse_parameter(Lexicon.STRENGTH, kw, 1, EnumConvertType.FLOAT, 0, 1)
+        mode = parse_parameter(Lexicon.MODE, kw, EnumScaleMode.NONE.name, EnumConvertType.STRING)
+        wihi = parse_parameter(Lexicon.WH, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), EnumConvertType.VEC2INT, 1)
+        sample = parse_parameter(Lexicon.SAMPLE, kw, EnumInterpolation.LANCZOS4.name, EnumConvertType.STRING)
+        matte = parse_parameter(Lexicon.MATTE, kw, (0, 0, 0, 255), EnumConvertType.VEC4INT, 0, 255)
         params = [tuple(x) for x in zip_longest_fill(pA, offset, angle, size, edge, tile_xy, mirror, mirror_pivot, proj, strength, tltr, blbr, mode, wihi, sample, matte)]
         images = []
         pbar = ProgressBar(len(params))
@@ -150,8 +150,8 @@ class BlendNode(JOVBaseNode):
     HELP_URL = f"{JOV_CATEGORY}#%EF%B8%8F-blend"
     DESC = "Applies selected operation to 2 inputs with optional mask using a linear blend (alpha)."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
-    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK",)
-    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK,)
+    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
+    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
     # OUTPUT_IS_LIST = ()
     SORT = 10
 
@@ -175,17 +175,17 @@ class BlendNode(JOVBaseNode):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        pA = parse_parameter(kw.get(Lexicon.PIXEL_A, None))
-        pB = parse_parameter(kw.get(Lexicon.PIXEL_B, None))
-        mask = parse_parameter(kw.get(Lexicon.MASK, None))
-        func = kw.get(Lexicon.FUNC, [EnumBlendType.NORMAL])
-        alpha = kw.get(Lexicon.A, [1])
-        flip = kw.get(Lexicon.FLIP, [False])
-        mode = kw.get(Lexicon.MODE, [EnumScaleMode.NONE])
-        wihi = parse_parameter(Lexicon.WH, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
-        sample = kw.get(Lexicon.SAMPLE, [EnumInterpolation.LANCZOS4])
-        matte = parse_parameter(Lexicon.MATTE, kw, (0, 0, 0), clip_min=0, clip_max=255)
-        invert = kw.get(Lexicon.INVERT, [False])
+        pA = parse_parameter(Lexicon.PIXEL_A, kw, None, EnumConvertType.IMAGE)
+        pB = parse_parameter(Lexicon.PIXEL_B, kw, None, EnumConvertType.IMAGE)
+        mask = parse_parameter(Lexicon.MASK, kw, None, EnumConvertType.IMAGE)
+        func = parse_parameter(Lexicon.FUNC, kw, EnumBlendType.NORMAL.name, EnumConvertType.STRING)
+        alpha = parse_parameter(Lexicon.A, kw, 1, EnumConvertType.FLOAT, 0, 1)
+        flip = parse_parameter(Lexicon.FLIP, kw, False, EnumConvertType.BOOLEAN)
+        mode = parse_parameter(Lexicon.MODE, kw, EnumScaleMode.NONE.name, EnumConvertType.STRING)
+        wihi = parse_parameter(Lexicon.WH, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), EnumConvertType.VEC2INT, 1)
+        sample = parse_parameter(Lexicon.SAMPLE, kw, EnumInterpolation.LANCZOS4.name, EnumConvertType.STRING)
+        matte = parse_parameter(Lexicon.MATTE, kw, (0, 0, 0), EnumConvertType.VEC3INT, 0, 255)
+        invert = parse_parameter(Lexicon.INVERT, kw, False, EnumConvertType.BOOLEAN)
         params = [tuple(x) for x in zip_longest_fill(pA, pB, mask, func, alpha, flip, mode, wihi, sample, matte, invert)]
         images = []
         pbar = ProgressBar(len(params))
@@ -242,7 +242,7 @@ class PixelSplitNode(JOVBaseNode):
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         images = []
-        pA = parse_parameter(kw.get(Lexicon.PIXEL, None))
+        pA = parse_parameter(Lexicon.PIXEL, kw, None, EnumConvertType.IMAGE)
         pbar = ProgressBar(len(pA))
         for idx, (pA,) in enumerate(pA):
             pA = tensor2cv(pA)
@@ -258,9 +258,8 @@ class PixelMergeNode(JOVBaseNode):
     HELP_URL = f"{JOV_CATEGORY}#-pixel-merge"
     DESC = "Combine 3 or 4 inputs into a single image."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
-    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK",)
-    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK,)
-    # OUTPUT_IS_LIST = ()
+    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
+    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
     SORT = 45
 
     @classmethod
@@ -277,14 +276,14 @@ class PixelMergeNode(JOVBaseNode):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor]:
-        R = kw.get(Lexicon.R, [None])
-        G = kw.get(Lexicon.G, [None])
-        B = kw.get(Lexicon.B, [None])
-        A = kw.get(Lexicon.A, [None])
+        R = parse_parameter(Lexicon.R, kw, None, EnumConvertType.IMAGE)
+        G = parse_parameter(Lexicon.G, kw, None, EnumConvertType.IMAGE)
+        B = parse_parameter(Lexicon.B, kw, None, EnumConvertType.IMAGE)
+        A = parse_parameter(Lexicon.A, kw, None, EnumConvertType.IMAGE)
         if len(R)+len(B)+len(G)+len(A) == 0:
             img = channel_solid(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 0, EnumImageType.BGRA)
             return list(cv2tensor_full(img, matte))
-        matte = parse_parameter(Lexicon.MATTE, kw, (0, 0, 0), clip_min=0, clip_max=255)
+        matte = parse_parameter(Lexicon.MATTE, kw, (0, 0, 0), EnumConvertType.VEC3INT, 0, 255)
         params = [tuple(x) for x in zip_longest_fill(R, G, B, A, matte)]
         images = []
         pbar = ProgressBar(len(params))
@@ -304,8 +303,8 @@ class PixelSwapNode(JOVBaseNode):
     HELP_URL = f"{JOV_CATEGORY}#-pixel-swap"
     DESC = "Swap inputs of one image with another or fill its channels with solids."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
-    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK",)
-    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK,)
+    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
+    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
     # OUTPUT_IS_LIST = ()
     SORT = 48
 
@@ -332,16 +331,16 @@ class PixelSwapNode(JOVBaseNode):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor]:
-        pA = parse_parameter(kw.get(Lexicon.PIXEL_A, None))
-        pB = parse_parameter(kw.get(Lexicon.PIXEL_B, None))
-        swap_r = kw.get(Lexicon.SWAP_R, [EnumPixelSwizzle.RED_A])
-        r = kw.get(Lexicon.R, [0])
-        swap_g = kw.get(Lexicon.SWAP_G, [EnumPixelSwizzle.GREEN_A])
-        g = kw.get(Lexicon.G, [0])
-        swap_b = kw.get(Lexicon.SWAP_B, [EnumPixelSwizzle.BLUE_A])
-        b = kw.get(Lexicon.B, [0])
-        swap_a = kw.get(Lexicon.SWAP_A, [EnumPixelSwizzle.ALPHA_A])
-        a = kw.get(Lexicon.A, [0])
+        pA = parse_parameter(Lexicon.PIXEL_A, kw, None, EnumConvertType.IMAGE)
+        pB = parse_parameter(Lexicon.PIXEL_B, kw, None, EnumConvertType.IMAGE)
+        swap_r = parse_parameter(Lexicon.SWAP_R, kw, EnumPixelSwizzle.RED_A.name, EnumConvertType.STRING)
+        r = parse_parameter(Lexicon.R, kw, 0, EnumConvertType.INT, 0, 255)
+        swap_g = parse_parameter(Lexicon.SWAP_G, kw, EnumPixelSwizzle.GREEN_A.name, EnumConvertType.STRING)
+        g = parse_parameter(Lexicon.G, kw, 0, EnumConvertType.INT, 0, 255)
+        swap_b = parse_parameter(Lexicon.SWAP_B, kw, EnumPixelSwizzle.BLUE_A.name, EnumConvertType.STRING)
+        b = parse_parameter(Lexicon.B, kw, 0, EnumConvertType.INT, 0, 255)
+        swap_a = parse_parameter(Lexicon.SWAP_A, kw, EnumPixelSwizzle.ALPHA_A.name, EnumConvertType.STRING)
+        a = parse_parameter(Lexicon.A, kw, 0, EnumConvertType.INT, 0, 255)
         params = [tuple(x) for x in zip_longest_fill(pA, pB, r, swap_r, g, swap_g,
                                                      b, swap_b, a, swap_a)]
         images = []
@@ -378,9 +377,9 @@ class StackNode(JOVBaseNode):
     HELP_URL = f"{JOV_CATEGORY}#-stack"
     DESC = "Union multiple images horizontal, vertical or in a grid."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
-    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK",)
-    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK,)
-    # OUTPUT_IS_LIST = ()
+    INPUT_IS_LIST = False
+    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
+    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
     SORT = 75
 
     @classmethod
@@ -399,26 +398,18 @@ class StackNode(JOVBaseNode):
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         images = []
-        idx = 1
-        while 1:
-            who = f"{Lexicon.PIXEL}_{idx}"
-            if (val := kw.get(who, None)) is None:
-                break
-            images.extend(parse_parameter(val))
-            idx += 1
-
+        images.extend([r for r in parse_dynamic(Lexicon.PIXEL, kw)])
         if len(images) == 0:
             logger.warning("no images to stack")
             return
-
-        axis = kw.get(Lexicon.AXIS, [EnumOrientation.GRID])[0]
+        axis = parse_parameter(Lexicon.AXIS, kw, EnumOrientation.GRID.name, EnumConvertType.STRING)[0]
         axis = EnumOrientation[axis]
-        stride = kw.get(Lexicon.STEP, [1])[0]
-        mode = kw.get(Lexicon.MODE, [EnumScaleMode.NONE])[0]
+        stride = parse_parameter(Lexicon.STEP, 1, EnumConvertType.INT)[0]
+        mode = parse_parameter(Lexicon.MODE, kw, EnumScaleMode.NONE.name, EnumConvertType.STRING)[0]
         mode = EnumScaleMode[mode]
-        wihi = parse_parameter(Lexicon.WH, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), clip_min=1)[0]
-        sample = kw.get(Lexicon.SAMPLE, [EnumInterpolation.LANCZOS4])[0]
-        matte = parse_parameter(Lexicon.MATTE, kw, (0, 0, 0, 255), clip_min=0, clip_max=255)[0]
+        wihi = parse_parameter(Lexicon.WH, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), EnumConvertType.VEC2INT, 1)[0]
+        sample = parse_parameter(Lexicon.SAMPLE, kw, EnumInterpolation.LANCZOS4.name, EnumConvertType.STRING)[0]
+        matte = parse_parameter(Lexicon.MATTE, kw, (0, 0, 0, 255), EnumConvertType.VEC4INT, 0, 255)[0]
         matte = pixel_eval(matte, EnumImageType.BGRA)
         images = [tensor2cv(img) for img in images]
         img = image_stack(images, axis, stride, matte)
@@ -434,9 +425,8 @@ class CropNode(JOVBaseNode):
     HELP_URL = f"{JOV_CATEGORY}#-crop"
     DESC = "Clip away sections of an image and backfill with optional color matte."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
-    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK",)
-    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK,)
-    # OUTPUT_IS_LIST = ()
+    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
+    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
     SORT = 5
 
     @classmethod
@@ -455,14 +445,14 @@ class CropNode(JOVBaseNode):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> tuple[list[torch.Tensor], list[torch.Tensor]]:
-        pA = parse_parameter(kw.get(Lexicon.PIXEL, None))
-        func = kw.get(Lexicon.FUNC, [EnumCropMode.CENTER])
+        pA = parse_parameter(Lexicon.PIXEL, kw, None, EnumConvertType.IMAGE)
+        func = parse_parameter(Lexicon.FUNC, kw, EnumCropMode.CENTER.name, EnumConvertType.STRING)
         # if less than 1 then use as scalar, over 1 = int(size)
-        xy = parse_parameter(Lexicon.XY, kw, (0, 0,), EnumConvertType.FLOAT, 1)
-        wihi = parse_parameter(Lexicon.WH, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), clip_min=1)
-        tltr = parse_parameter(Lexicon.TLTR, kw, (0, 0, 0, 1,), EnumConvertType.FLOAT, 0, 1)
-        blbr = parse_parameter(Lexicon.BLBR, kw, (1, 0, 1, 1,), EnumConvertType.FLOAT, 0, 1)
-        color = parse_parameter(Lexicon.RGB, kw, (0, 0, 0,), clip_min=0, clip_max=255)
+        xy = parse_parameter(Lexicon.XY, kw, (0, 0,), EnumConvertType.VEC2, 1)
+        wihi = parse_parameter(Lexicon.WH, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), EnumConvertType.VEC2INT, 1)
+        tltr = parse_parameter(Lexicon.TLTR, kw, (0, 0, 0, 1,), EnumConvertType.VEC4, 0, 1)
+        blbr = parse_parameter(Lexicon.BLBR, kw, (1, 0, 1, 1,), EnumConvertType.VEC4, 0, 1)
+        color = parse_parameter(Lexicon.RGB, kw, (0, 0, 0,), EnumConvertType.VEC3INT, 0, 255)
         params = [tuple(x) for x in zip_longest_fill(pA, func, xy, wihi, tltr, blbr, color)]
         images = []
         pbar = ProgressBar(len(params))
@@ -507,10 +497,10 @@ class ColorTheoryNode(JOVBaseNode):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> tuple[list[torch.Tensor], list[torch.Tensor]]:
-        pA = parse_parameter(kw.get(Lexicon.PIXEL, None))
-        scheme = kw.get(Lexicon.SCHEME, [EnumColorTheory.COMPLIMENTARY])
+        pA = parse_parameter(Lexicon.PIXEL, kw, None, EnumConvertType.IMAGE)
+        scheme = parse_parameter(Lexicon.SCHEME, [EnumColorTheory.COMPLIMENTARY])
         user = parse_parameter(Lexicon.VALUE, kw, EnumConvertType.INT, [0], clip_min=-180, clip_max=180)
-        invert = kw.get(Lexicon.INVERT, [False])
+        invert = parse_parameter(Lexicon.INVERT, kw, False, EnumConvertType.BOOLEAN)
         params = [tuple(x) for x in zip_longest_fill(pA, scheme, user, invert)]
         images = []
         pbar = ProgressBar(len(params))
