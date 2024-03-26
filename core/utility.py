@@ -212,7 +212,6 @@ class RouteNode(JOVBaseNode):
     HELP_URL = f"{JOV_CATEGORY}#-route"
     DESC = "Pass all data because the default is broken on connection."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
-    INPUT_IS_LIST = True
     OUTPUT_IS_LIST = (True, )
     RETURN_TYPES = (WILDCARD, )
     RETURN_NAMES = (Lexicon.PASS_OUT, )
@@ -324,18 +323,18 @@ class QueueNode(JOVBaseNode):
             return self.__last_q_value.get(q_data, q_data)
 
         # should work headless as well
-        if parse_reset(ident) > 0 or parse_parameter(Lexicon.RESET, kw, False, EnumConvertType.BOOLEAN):
+        if parse_reset(ident) > 0 or parse_parameter(Lexicon.RESET, kw, False, EnumConvertType.BOOLEAN)[0]:
             self.__q = None
             self.__index = 0
 
-        if (new_val := parse_parameter(Lexicon.VALUE, kw, self.__index, EnumConvertType.INT, 0)) > 0:
+        if (new_val := parse_parameter(Lexicon.VALUE, kw, self.__index, EnumConvertType.INT, 0)[0]) > 0:
             self.__index = new_val
 
         if self.__q is None:
             # process Q into ...
             # check if folder first, file, then string.
             # entry is: data, <filter if folder:*.png,*.jpg>, <repeats:1+>
-            q = parse_parameter(Lexicon.QUEUE, kw, "", EnumConvertType.STRING)
+            q = parse_parameter(Lexicon.QUEUE, kw, "", EnumConvertType.STRING)[0]
             self.__q = self.__parse(q)
             self.__len = len(self.__q)
             self.__index_last = 0
@@ -343,7 +342,7 @@ class QueueNode(JOVBaseNode):
             if self.__previous:
                 self.__previous = process(self.__previous)
 
-        if (wait := parse_parameter(Lexicon.WAIT, kw, False, EnumConvertType.BOOLEAN)) == True:
+        if (wait := parse_parameter(Lexicon.WAIT, kw, False, EnumConvertType.BOOLEAN)[0]) == True:
             self.__index = self.__index_last
 
         self.__index = max(0, self.__index) % self.__len
@@ -540,9 +539,9 @@ class ArrayNode(JOVBaseNode):
 
     def run(self, **kw) -> tuple[int, list]:
         batch = parse_dynamic(Lexicon.UNKNOWN, kw, None, EnumConvertType.ANY)
-        mode = parse_parameter(Lexicon.BATCH_MODE, kw, EnumBatchMode.MERGE.name, EnumConvertType.STRING)
-        flip = parse_parameter(Lexicon.FLIP, kw, False, EnumConvertType.BOOLEAN)
-        chunk = parse_parameter(Lexicon.BATCH_CHUNK, kw, 0, EnumConvertType.INT)
+        mode = parse_parameter(Lexicon.BATCH_MODE, kw, EnumBatchMode.MERGE.name, EnumConvertType.STRING)[0]
+        flip = parse_parameter(Lexicon.FLIP, kw, False, EnumConvertType.BOOLEAN)[0]
+        chunk = parse_parameter(Lexicon.BATCH_CHUNK, kw, 0, EnumConvertType.INT)[0]
         extract = []
         # track latents since they need to be added back to dict['samples']
         latents = []
@@ -648,11 +647,11 @@ class SelectNode(JOVBaseNode):
         self.__index = 0
 
     def run(self, ident, **kw) -> None:
-        if parse_reset(ident) > 0 or parse_parameter(Lexicon.RESET, kw, False, EnumConvertType.BOOLEAN):
+        if parse_reset(ident) > 0 or parse_parameter(Lexicon.RESET, kw, False, EnumConvertType.BOOLEAN)[0]:
             self.__index = 0
         vals = parse_dynamic(Lexicon.UNKNOWN, kw)
         count = len(vals)
-        select = parse_parameter(Lexicon.SELECT, kw, 0, EnumConvertType.INT, 0)
+        select = parse_parameter(Lexicon.SELECT, kw, 0, EnumConvertType.INT, 0)[0]
         # clip the index in case it went out of range.
         index = max(0, min(count - 1, self.__index))
         val = None
@@ -721,12 +720,12 @@ class GenuflectNode(JOVBaseNode):
         d = {
         "required": {},
         "optional": {
-            Lexicon.PIXEL_A: (WILDCARD, {}),
+            Lexicon.PIXEL: (WILDCARD, {}),
         }}
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> tuple[Any, Any]:
-        pA = parse_parameter(Lexicon.PIXEL_A, kw, None, EnumConvertType.IMAGE)
+        pA = parse_parameter(Lexicon.PIXEL, kw, None, EnumConvertType.IMAGE)
 
         results = []
         params = [tuple(x) for x in zip_longest_fill(pA,)]

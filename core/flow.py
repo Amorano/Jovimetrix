@@ -67,7 +67,6 @@ class DelayNode(JOVBaseNode):
     HELP_URL = f"{JOV_CATEGORY}#-delay"
     DESC = "Delay traffic. Electrons on the data bus go round."
     DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
-    # INPUT_IS_LIST = False
     RETURN_TYPES = (WILDCARD,)
     RETURN_NAMES = (Lexicon.ROUTE,)
 

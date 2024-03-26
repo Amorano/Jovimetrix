@@ -95,7 +95,7 @@ app.registerExtension({
                 if (inputType == "COMBO") {
                     // can link the "same" list -- user breaks it past that, their problem atm.
                     const widget = inputNode.widgets.find(w => w.name === inputSlot.name);
-                    if (this.outputs[0].name != '*' && this.widget_queue.value != widget.options.values.join('\n')) {
+                    if (this.outputs[0].name != '🔮' && this.widget_queue.value != widget.options.values.join('\n')) {
                         return false;
                     }
                 }
@@ -109,6 +109,9 @@ app.registerExtension({
             if (slot == 0 && side == 2) {
                 if (connected) {
                     const node = app.graph.getNodeById(link_info.target_id);
+                    if (node === undefined) {
+                        return;
+                    }
                     const target = node.inputs[link_info.target_slot];
                     if (target === undefined) {
                         return;
@@ -118,9 +121,9 @@ app.registerExtension({
                     if (widget === undefined) {
                         return;
                     }
-                    if (this.outputs[0].name == '*') {
+                    //if (this.outputs[0].name == '🔮') {
                         this.outputs[0].name = widget.name;
-                    }
+                    //}
                     // console.info(widget);
                     if (widget?.origType == "combo" || widget.type == "COMBO") {
                         const values = widget.options.values;
@@ -129,7 +132,7 @@ app.registerExtension({
                         update_list(this);
                     }
                 } else {
-                    this.outputs[0].name = '*';
+                    this.outputs[0].name = '🔮';
                 }
             }
             return onConnectionsChange?.apply(this, arguments);

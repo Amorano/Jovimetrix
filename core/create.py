@@ -57,7 +57,7 @@ class ConstantNode(JOVBaseNode):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        pA = parse_parameter(Lexicon.PIXEL_A, kw, None, EnumConvertType.IMAGE)
+        pA = parse_parameter(Lexicon.PIXEL, kw, None, EnumConvertType.IMAGE)
         wihi = parse_parameter(Lexicon.WH, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), EnumConvertType.VEC2INT, 1)
         matte = parse_parameter(Lexicon.RGBA_A, kw, (0, 0, 0, 255), EnumConvertType.VEC4INT, 0, 255)
         images = []
@@ -107,14 +107,14 @@ class ShapeNode(JOVBaseNode):
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         shape = parse_parameter(Lexicon.SHAPE, kw, EnumShapes.CIRCLE.name, EnumConvertType.STRING)
-        sides = parse_parameter(Lexicon.SIDES, kw, 3, EnumConvertType.INT, clip_min=3, clip_max=512)
+        sides = parse_parameter(Lexicon.SIDES, kw, 3, EnumConvertType.INT, 3, 512)
         angle = parse_parameter(Lexicon.ANGLE, kw, 0, EnumConvertType.FLOAT)
         edge = parse_parameter(Lexicon.EDGE, kw, EnumEdge.CLIP.name, EnumConvertType.STRING)
-        offset = parse_parameter(Lexicon.XY, kw, (0., 0.,), EnumConvertType.VEC2, )
-        size = parse_parameter(Lexicon.SIZE, kw, (1., 1.,), EnumConvertType.VEC2, )
-        wihi = parse_parameter(Lexicon.WH, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), EnumConvertType.VEC2INT)
-        color = parse_parameter(Lexicon.RGBA_A, kw, (255, 255, 255, 255), EnumConvertType.VEC4INT)
-        matte = parse_parameter(Lexicon.MATTE, kw, (0, 0, 0, 255), EnumConvertType.VEC4INT)
+        offset = parse_parameter(Lexicon.XY, kw, (0, 0), EnumConvertType.VEC2)
+        size = parse_parameter(Lexicon.SIZE, kw, (1, 1,), EnumConvertType.VEC2, zero=0.001)
+        wihi = parse_parameter(Lexicon.WH, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), EnumConvertType.VEC2INT, 1)
+        color = parse_parameter(Lexicon.RGBA_A, kw, (255, 255, 255, 255), EnumConvertType.VEC4INT, 0, 255)
+        matte = parse_parameter(Lexicon.MATTE, kw, (0, 0, 0, 255), EnumConvertType.VEC4INT, 0, 255)
         params = [tuple(x) for x in zip_longest_fill(shape, sides, offset, angle, edge,
                                                      size, wihi, color, matte)]
         images = []
@@ -204,12 +204,11 @@ class TextNode(JOVBaseNode):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        logger.debug(kw)
         full_text = parse_parameter(Lexicon.STRING, kw, "", EnumConvertType.STRING)
         font_idx = parse_parameter(Lexicon.FONT, kw, self.FONT_NAMES[0], EnumConvertType.STRING)
         autosize = parse_parameter(Lexicon.AUTOSIZE, kw, False, EnumConvertType.BOOLEAN)
         letter = parse_parameter(Lexicon.LETTER, kw, False, EnumConvertType.BOOLEAN)
-        color = parse_parameter(Lexicon.RGBA_A, kw, (255, 255, 255, 255), EnumConvertType.VEC4INT)
+        color = parse_parameter(Lexicon.RGBA_A, kw, (255, 255, 255, 255), EnumConvertType.VEC4INT, 0, 255)
         matte = parse_parameter(Lexicon.MATTE, kw, (0, 0, 0), EnumConvertType.VEC3INT, 0, 255)
         columns = parse_parameter(Lexicon.COLUMNS, kw, 0, EnumConvertType.INT, 1)
         font_size = parse_parameter(Lexicon.FONT_SIZE, kw, 16, EnumConvertType.INT, 1)

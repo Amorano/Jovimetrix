@@ -53,7 +53,7 @@ class TickNode(JOVBaseNode):
             # manual total = 0
             Lexicon.RESET: ("BOOLEAN", {"default": False}),
             # how many frames to dump....
-            Lexicon.BATCH: ("INT", {"min": 1, "default": 1, "step": 1, "tooltip": "Number of frames wanted"}),
+            Lexicon.BATCH: ("INT", {"min": 1, "default": 1, "step": 1, "max": 32767, "tooltip": "Number of frames wanted"}),
         },
         "hidden": {
             "ident": "UNIQUE_ID"
@@ -142,14 +142,14 @@ class WaveGeneratorNode(JOVBaseNode):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> tuple[float, int]:
-        op = parse_parameter(Lexicon.WAVE, kw, [EnumWave.SIN.name], EnumConvertType.STRING)
-        freq = parse_parameter(Lexicon.FREQ, kw, [1.], EnumConvertType.FLOAT, clip_min=0)
-        amp = parse_parameter(Lexicon.AMP, kw, [1.], EnumConvertType.FLOAT, clip_min=0)
-        phase = parse_parameter(Lexicon.PHASE, kw, [0], EnumConvertType.FLOAT)
-        shift = parse_parameter(Lexicon.OFFSET, kw, [0], EnumConvertType.FLOAT)
-        delta_time = parse_parameter(Lexicon.TIME, kw, [0], EnumConvertType.FLOAT, clip_min=0)
-        invert = parse_parameter(Lexicon.INVERT, kw, [False], EnumConvertType.BOOLEAN)
-        abs = parse_parameter(Lexicon.ABSOLUTE, kw, [False], EnumConvertType.BOOLEAN)
+        op = parse_parameter(Lexicon.WAVE, kw, EnumWave.SIN.name, EnumConvertType.STRING)
+        freq = parse_parameter(Lexicon.FREQ, kw, 1, EnumConvertType.FLOAT, 0)
+        amp = parse_parameter(Lexicon.AMP, kw, 1, EnumConvertType.FLOAT, 0)
+        phase = parse_parameter(Lexicon.PHASE, kw, 0, EnumConvertType.FLOAT)
+        shift = parse_parameter(Lexicon.OFFSET, kw, 0, EnumConvertType.FLOAT)
+        delta_time = parse_parameter(Lexicon.TIME, kw, 0, EnumConvertType.FLOAT, 0)
+        invert = parse_parameter(Lexicon.INVERT, kw, False, EnumConvertType.BOOLEAN)
+        abs = parse_parameter(Lexicon.ABSOLUTE, kw, False, EnumConvertType.BOOLEAN)
         results = []
         params = [tuple(x) for x in zip_longest_fill(op, freq, amp, phase, shift, delta_time, invert, abs)]
         pbar = ProgressBar(len(params))

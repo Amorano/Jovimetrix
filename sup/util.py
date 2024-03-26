@@ -6,6 +6,7 @@ UTIL support
 import os
 import math
 from enum import Enum
+from re import L
 from typing import Any, List, Generator, Optional, Tuple, Union
 
 import torch
@@ -17,22 +18,33 @@ from loguru import logger
 # =============================================================================
 
 class EnumConvertType(Enum):
-    STRING = 0
     BOOLEAN = 1
+    FLOAT = 10
     INT = 12
-    FLOAT = 14
     VEC2 = 20
     VEC2INT = 25
     VEC3 = 30
     VEC3INT = 35
     VEC4 = 40
     VEC4INT = 45
+    STRING = 0
     LIST = 2
     DICT = 3
     IMAGE = 4
     LATENT = 5
     #MASK = 6
     ANY = 9
+
+class EnumSwizzle(Enum):
+    A_X = 0
+    A_Y = 10
+    A_Z = 20
+    A_W = 30
+    B_X = 9
+    B_Y = 11
+    B_Z = 21
+    B_W = 31
+    CONSTANT = 40
 
 # =============================================================================
 # === SUPPORT ===
@@ -46,33 +58,45 @@ def parse_dynamic(who, data) -> list:
         count += 1
     return vals
 
+def list_param(val) -> List[Any]:
+    if isinstance(val, (str, set, list,)):
+        return val
+    if isinstance(val, (dict,)):
+        if 'samples' in val:
+            # latents....
+            val = val["samples"]
+        else:
+            val = list(val.values())
+    elif isinstance(val, (tuple, )):
+        val = list(val)
+    else:
+        val = [val]
+    return val
+
 def parse_value(val:List[Any], typ:EnumConvertType, default: Any,
                 clip_min: Optional[float]=None, clip_max: Optional[float]=None,
                 zero:int=0) -> Any:
-    """Convert target list of values into the new specified type."""
-    if not isinstance(val, (str, set, list,)):
-        if isinstance(val, (dict,)):
-            if 'samples' in val:
-                # latents....
-                val = val["samples"]
-            else:
-                val = list(val.values())
-        elif isinstance(val, (tuple, )):
-            val = list(val)
-        else:
-            val = [val]
 
+    """Convert target list of values into the new specified type."""
     if typ != EnumConvertType.IMAGE and isinstance(val, (torch.Tensor,)):
         val = list(val.size())[1:4] + [val[0]]
 
-    size = len(val)
-    if not isinstance(val, (str,)):
-        pos = size
+    default = list_param(default)
+    val = list_param(val)
+    if isinstance(val, (str,)):
+        val = [val]
+    size = 1
+    if typ in [EnumConvertType.VEC2, EnumConvertType.VEC2INT,
+               EnumConvertType.VEC3, EnumConvertType.VEC3INT,
+               EnumConvertType.VEC4, EnumConvertType.VEC4INT]:
+
+        pos = len(val)
         size = max(1, int(typ.value / 10))
         for x in range(size - pos):
             idx = pos + x
-            last = val[-1] if len(val) else 0
-            val.append(default[idx] if default and idx < len(default) else last)
+            last = default[-1] if len(default) else val[-1]
+            v = default[idx] if idx < len(default) else last
+            val.append(v)
 
     # val = [v.value if issubclass(type(v), Enum) else v for v in val]
     if typ in [EnumConvertType.FLOAT, EnumConvertType.INT,
@@ -87,25 +111,27 @@ def parse_value(val:List[Any], typ:EnumConvertType, default: Any,
                     val[idx] ='.'.join(parts[:2])
             elif isinstance(val[idx], (list, tuple, set, dict)):
                 val[idx] = 0
-                #if isinstance(val[idx], (dict,)):
-                #    val[idx] = 1
-                #else:
             try:
+                v = val[idx] if val[idx] is not None else default[idx] if idx < len(default) else val[-1]
                 if typ in [EnumConvertType.FLOAT, EnumConvertType.VEC2,
                             EnumConvertType.VEC3, EnumConvertType.VEC4]:
-                    val[idx] = round(float(val[idx]), 12)
+                    val[idx] = round(float(v), 12)
                 else:
-                    val[idx] = int(val[idx])
-            except ValueError as _:
-                val = [0] * size
-                break
+                    val[idx] = int(v)
 
-            if clip_min is not None:
-                val[idx] = max(val[idx], clip_min)
-            if clip_max is not None:
-                val[idx] = min(val[idx], clip_max)
-            if val[idx] == 0:
-                val[idx] = zero
+                if clip_min is not None:
+                    val[idx] = max(val[idx], clip_min)
+                if clip_max is not None:
+                    val[idx] = min(val[idx], clip_max)
+                if val[idx] == 0:
+                    val[idx] = zero
+            except Exception as _:
+                try:
+                    val[idx] = ord(v)
+                except:
+                    logger.warning(f"value not converted well {val[idx]} == 0")
+                    val[idx] = 0
+
         val = val[:size]
     elif typ == EnumConvertType.IMAGE:
         if isinstance(val, (torch.Tensor,)):
@@ -137,7 +163,26 @@ def parse_parameter(key: str, data: Union[dict, List[dict]], default: Any,
         unified = [unified]
     if len(unified) == 0:
         unified = [default[0] if len(default) else 0]
+    # logger.debug(unified)
     return [parse_value(u, typ, default, clip_min, clip_max, zero) for u in unified]
+
+def vector_swap(pA: Any, pB: Any, swap_x: EnumSwizzle, x:float, swap_y:EnumSwizzle, y:float,
+                swap_z:EnumSwizzle, z:float, swap_w:EnumSwizzle, w:float) -> List[float]:
+    """Swap out a vector's values with another vector's values, or a constant fill."""
+    def parse(target, targetB, swap, val) -> float:
+        if swap == EnumSwizzle.CONSTANT:
+            return val
+        if swap in [EnumSwizzle.B_X, EnumSwizzle.B_Y, EnumSwizzle.B_Z, EnumSwizzle.B_W]:
+            target = targetB
+        swap = int(swap.value / 10)
+        return target[swap]
+
+    return [
+        parse(pA, pB, swap_x, x),
+        parse(pA, pB, swap_y, y),
+        parse(pA, pB, swap_z, z),
+        parse(pA, pB, swap_w, w)
+    ]
 
 def update_nested_dict(d, path, value) -> None:
     keys = path.split('.')

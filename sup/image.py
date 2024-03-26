@@ -238,17 +238,6 @@ class EnumPixelSwizzle(Enum):
     ALPHA_B = 31
     CONSTANT = 50
 
-class EnumSwizzle(Enum):
-    A_X = 10
-    A_Y = 11
-    A_Z = 12
-    A_W = 13
-    B_X = 20
-    B_Y = 21
-    B_Z = 22
-    B_W = 23
-    CONSTANT = 40
-
 class EnumCBSimulator(Enum):
     AUTOSELECT = 0
     BRETTEL1997 = 1

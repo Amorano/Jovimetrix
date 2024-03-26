@@ -78,10 +78,10 @@ class TransformNode(JOVBaseNode):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        pA = parse_parameter(Lexicon.PIXEL_A, kw, None, EnumConvertType.IMAGE)
-        offset = parse_parameter(Lexicon.XY, kw, (0, 0), EnumConvertType.FLOAT)
+        pA = parse_parameter(Lexicon.PIXEL, kw, None, EnumConvertType.IMAGE)
+        offset = parse_parameter(Lexicon.XY, kw, (0, 0), EnumConvertType.VEC2)
         angle = parse_parameter(Lexicon.ANGLE, kw, 1, EnumConvertType.FLOAT)
-        size = parse_parameter(Lexicon.SIZE, kw, (1, 1), EnumConvertType.FLOAT, zero=0.001)
+        size = parse_parameter(Lexicon.SIZE, kw, (1, 1), EnumConvertType.VEC2, zero=0.001)
         edge = parse_parameter(Lexicon.EDGE, kw, EnumEdge.CLIP.name, EnumConvertType.STRING)
         mirror = parse_parameter(Lexicon.MIRROR, kw, EnumMirrorMode.NONE.name, EnumConvertType.STRING)
         mirror_pivot = parse_parameter(Lexicon.PIVOT, kw, (0.5, 0.5), EnumConvertType.VEC2, 0, 1)
@@ -404,7 +404,7 @@ class StackNode(JOVBaseNode):
             return
         axis = parse_parameter(Lexicon.AXIS, kw, EnumOrientation.GRID.name, EnumConvertType.STRING)[0]
         axis = EnumOrientation[axis]
-        stride = parse_parameter(Lexicon.STEP, 1, EnumConvertType.INT)[0]
+        stride = parse_parameter(Lexicon.STEP, kw, 1, EnumConvertType.INT)[0]
         mode = parse_parameter(Lexicon.MODE, kw, EnumScaleMode.NONE.name, EnumConvertType.STRING)[0]
         mode = EnumScaleMode[mode]
         wihi = parse_parameter(Lexicon.WH, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), EnumConvertType.VEC2INT, 1)[0]
@@ -498,8 +498,8 @@ class ColorTheoryNode(JOVBaseNode):
 
     def run(self, **kw) -> tuple[list[torch.Tensor], list[torch.Tensor]]:
         pA = parse_parameter(Lexicon.PIXEL, kw, None, EnumConvertType.IMAGE)
-        scheme = parse_parameter(Lexicon.SCHEME, [EnumColorTheory.COMPLIMENTARY])
-        user = parse_parameter(Lexicon.VALUE, kw, EnumConvertType.INT, [0], clip_min=-180, clip_max=180)
+        scheme = parse_parameter(Lexicon.SCHEME, kw, EnumColorTheory.COMPLIMENTARY.name, EnumConvertType.STRING)
+        user = parse_parameter(Lexicon.VALUE, kw, 0, EnumConvertType.INT, -180, 180)
         invert = parse_parameter(Lexicon.INVERT, kw, False, EnumConvertType.BOOLEAN)
         params = [tuple(x) for x in zip_longest_fill(pA, scheme, user, invert)]
         images = []

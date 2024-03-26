@@ -236,7 +236,6 @@ class GLSLColorGrayscale(GLSLBaseNode):
     HELP_URL = f"GLSL#-"
     DESC = ""
     DESCRIPTION = load_help(NAME, JOV_CATEGORY, DESC, HELP_URL)
-
     FRAGMENT = str(JOV_GLSL / "clr" / "clr-grayscale.glsl")
     DEFAULT = (0.299, 0.587, 0.114)
 
@@ -450,8 +449,7 @@ class GLSLUtilTiler(GLSLBaseNode):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> list[torch.Tensor]:
-        kw["uTile"] = parse_parameter(Lexicon.TILE, kw, (1., 1.,), EnumConvertType.FLOAT,
-                                  1)
+        kw["uTile"] = parse_parameter(Lexicon.TILE, kw, (1, 1), EnumConvertType.VEC2, 1)
         kw.pop(Lexicon.TILE)
         return super().run(**kw)
 

@@ -74,7 +74,7 @@ class AdjustNode(JOVBaseNode):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor]:
-        logger.debug(kw)
+        # logger.debug(kw)
         pA = parse_parameter(Lexicon.PIXEL, kw, None, EnumConvertType.IMAGE)
         mask = parse_parameter(Lexicon.MASK, kw, None, EnumConvertType.IMAGE)
         op = parse_parameter(Lexicon.FUNC, kw, EnumAdjustOP.BLUR.name, EnumConvertType.STRING)
@@ -92,7 +92,7 @@ class AdjustNode(JOVBaseNode):
         images = []
         pbar = ProgressBar(len(params))
         for idx, (pA, mask, op, radius, amt, lohi, lmh, hsv, contrast, gamma, matte, invert) in enumerate(params):
-            logger.debug(radius)
+            # logger.debug(radius)
             pA = tensor2cv(pA)
             if (cc := channel_count(pA)[0]) == 4:
                 alpha = pA[:,:,3]

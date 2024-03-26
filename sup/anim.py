@@ -218,8 +218,8 @@ def ease_op(op: EnumEase,
     Returns:
         TYPE_NUMBER: Eased value(s)
     """
-    if (func := getattr(MODULE, f"ease_{op.lower()}", None)) is None:
-        raise BadOperatorException(str(op))
+    if (func := getattr(MODULE, f"ease_{op.name.lower()}", None)) is None:
+        raise BadOperatorException(op.name)
     t = clip[0] * (1 - alpha) + clip[1] * alpha
     duration = max(min(duration, 1), 0)
     t /= duration

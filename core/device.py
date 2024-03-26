@@ -128,7 +128,7 @@ class StreamReaderNode(JOVBaseNode):
         self.__last = [(a, e, m,)]
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        wait = parse_parameter(Lexicon.WAIT, kw, False, EnumConvertType.BOOLEAN)
+        wait = parse_parameter(Lexicon.WAIT, kw, False, EnumConvertType.BOOLEAN)[0]
         if wait:
             return self.__last
         images = []
@@ -137,15 +137,15 @@ class StreamReaderNode(JOVBaseNode):
         rate = 1. / rate
         width, height = parse_parameter(Lexicon.WH, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), EnumConvertType.VEC2INT)[0]
         matte = parse_parameter(Lexicon.MATTE, kw, (0,0,0,255), EnumConvertType.VEC4INT, 0, 255)[0]
-        mode = parse_parameter(Lexicon.MODE, kw, EnumScaleMode.NONE.name, EnumConvertType.STRING)
+        mode = parse_parameter(Lexicon.MODE, kw, EnumScaleMode.NONE.name, EnumConvertType.STRING)[0]
         mode = EnumScaleMode[mode]
-        sample = parse_parameter(Lexicon.SAMPLE, kw, EnumInterpolation.LANCZOS4.name, EnumConvertType.STRING)
+        sample = parse_parameter(Lexicon.SAMPLE, kw, EnumInterpolation.LANCZOS4.name, EnumConvertType.STRING)[0]
         sample = EnumInterpolation[sample]
-        source = parse_parameter(Lexicon.SOURCE, kw, EnumStreamType.URL.name, EnumConvertType.STRING)
+        source = parse_parameter(Lexicon.SOURCE, kw, EnumStreamType.URL.name, EnumConvertType.STRING)[0]
         source = EnumStreamType[source]
         if source == EnumStreamType.MONITOR:
             self.__deviceType = EnumStreamType.MONITOR
-            which = parse_parameter(Lexicon.MONITOR, kw, "0", EnumConvertType.STRING)
+            which = parse_parameter(Lexicon.MONITOR, kw, "0", EnumConvertType.STRING)[0]
             which = int(which.split('-')[0].strip()) + 1
             for idx in range(batch_size):
                 img = monitor_capture(which)
@@ -161,9 +161,9 @@ class StreamReaderNode(JOVBaseNode):
 
         elif source == EnumStreamType.WINDOW:
             self.__deviceType = EnumStreamType.WINDOW
-            if (which := parse_parameter(Lexicon.WINDOW, kw, "NONE", EnumConvertType.STRING)) != "NONE":
+            if (which := parse_parameter(Lexicon.WINDOW, kw, "NONE", EnumConvertType.STRING)[0]) != "NONE":
                 which = int(which.split('-')[-1].strip())
-                dpi = parse_parameter(Lexicon.DPI, kw, True, EnumConvertType.BOOLEAN)
+                dpi = parse_parameter(Lexicon.DPI, kw, True, EnumConvertType.BOOLEAN)[0]
                 for idx in range(batch_size):
                     img = window_capture(which, dpi=dpi)
                     if img is None:
@@ -176,9 +176,9 @@ class StreamReaderNode(JOVBaseNode):
                         time.sleep(rate)
 
         elif source in [EnumStreamType.URL, EnumStreamType.CAMERA]:
-            url = parse_parameter(Lexicon.URL, kw, "", EnumConvertType.STRING)
+            url = parse_parameter(Lexicon.URL, kw, "", EnumConvertType.STRING)[0]
             if source == EnumStreamType.CAMERA:
-                url = parse_parameter(Lexicon.CAMERA, kw, "", EnumConvertType.STRING)
+                url = parse_parameter(Lexicon.CAMERA, kw, "", EnumConvertType.STRING)[0]
                 url = url.split('-')[0].strip()
                 try:
                     _ = int(url)
@@ -211,14 +211,14 @@ class StreamReaderNode(JOVBaseNode):
                 else:
                     self.__device.play()
 
-                fps = parse_parameter(Lexicon.FPS, kw, 30, EnumConvertType.INT)
+                fps = parse_parameter(Lexicon.FPS, kw, 30, EnumConvertType.INT)[0]
                 # if self.__device.fps != fps:
                 self.__device.fps = fps
 
                 if type(self.__device) == MediaStreamDevice:
-                    self.__device.zoom = parse_parameter(Lexicon.ZOOM, kw, 0, EnumConvertType.INT)
+                    self.__device.zoom = parse_parameter(Lexicon.ZOOM, kw, 0, EnumConvertType.INT)[0]
 
-                orient = parse_parameter(Lexicon.ORIENT, kw, EnumCanvasOrientation.NORMAL.name, EnumConvertType.STRING)
+                orient = parse_parameter(Lexicon.ORIENT, kw, EnumCanvasOrientation.NORMAL.name, EnumConvertType.STRING)[0]
                 # orient = EnumCanvasOrientation[orient]
                 for idx in range(batch_size):
                     img = self.__device.frame
@@ -237,13 +237,13 @@ class StreamReaderNode(JOVBaseNode):
                         time.sleep(rate)
 
         elif source == EnumStreamType.SPOUT:
-            url = parse_parameter(Lexicon.URL, kw, "", EnumConvertType.STRING)
+            url = parse_parameter(Lexicon.URL, kw, "", EnumConvertType.STRING)[0]
             if self.__device is None or self.__deviceType != EnumStreamType.SPOUT:
                 self.__device = MediaStreamSpout(url)
             self.__deviceType = EnumStreamType.SPOUT
             if self.__device:
                 self.__device.url = url
-                fps = parse_parameter(Lexicon.FPS, kw, 30, EnumConvertType.INT)
+                fps = parse_parameter(Lexicon.FPS, kw, 30, EnumConvertType.INT)[0]
                 self.__device.fps = fps
                 for idx in range(batch_size):
                     img = self.__device.frame
@@ -301,12 +301,12 @@ class StreamWriterNode(JOVBaseNode):
     def run(self, **kw) -> tuple[torch.Tensor]:
         if self.__starting:
             return
-        matte = parse_parameter(Lexicon.MATTE, kw, (0,0,0,255))[0]
+        matte = parse_parameter(Lexicon.MATTE, kw, (0,0,0,255), EnumConvertType.VEC4INT, 0, 255)[0]
         wihi = parse_parameter(Lexicon.WH, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), EnumConvertType.VEC2INT, 1)[0]
         w, h = wihi
         img = parse_parameter(Lexicon.PIXEL, kw, None, EnumConvertType.IMAGE)
-        img = tensor2cv(img, width=w, height=h)
-        route = parse_parameter(Lexicon.ROUTE, kw, "/stream", EnumConvertType.STRING)
+        img = tensor2cv(img, width=w, height=h, matte=matte)
+        route = parse_parameter(Lexicon.ROUTE, kw, "/stream", EnumConvertType.STRING)[0]
         if route != self.__route:
             self.__starting = True
             # close old, if any
@@ -317,14 +317,12 @@ class StreamWriterNode(JOVBaseNode):
             StreamingServer().endpointAdd(route, self.__device)
             StreamWriterNode.OUT_MAP[route] = self.__device
             self.__route = route
-            # logger.debug("{} {}", "START", route)
 
         self.__starting = False
         matte = pixel_eval(matte, EnumImageType.BGRA)
         if self.__device is not None:
-            mode = parse_parameter(Lexicon.MODE, kw, EnumScaleMode.NONE.name, EnumConvertType.STRING)
-            sample = parse_parameter(Lexicon.SAMPLE, kw, EnumInterpolation.LANCZOS4.name, EnumConvertType.STRING)
-            #img = image_scalefit(img, w, h, EnumScaleMode.NONE)
+            mode = parse_parameter(Lexicon.MODE, kw, EnumScaleMode.NONE.name, EnumConvertType.STRING)[0]
+            sample = parse_parameter(Lexicon.SAMPLE, kw, EnumInterpolation.LANCZOS4.name, EnumConvertType.STRING)[0]
             img = image_scalefit(img, w, h, mode, sample, matte)
             self.__device.image = img
         return ()
@@ -520,10 +518,10 @@ class MIDIFilterEZNode(JOVBaseNode):
         message = parse_parameter(Lexicon.MIDI, kw, None, EnumConvertType.ANY)[0]
         if message is None:
             logger.warning('no midi message. connected?')
-            return (message, False, )
+            return (None, False, )
 
         # empty values mean pass-thru (no filter)
-        val = parse_parameter(Lexicon.MODE, kw, MIDINoteOnFilter.IGNORE.name, EnumConvertType.STRING)
+        val = parse_parameter(Lexicon.MODE, kw, MIDINoteOnFilter.IGNORE.name, EnumConvertType.STRING)[0]
         val = MIDINoteOnFilter[val]
         if val != MIDINoteOnFilter.IGNORE:
             if val == MIDINoteOnFilter.NOTE_ON and message.note_on != True:
