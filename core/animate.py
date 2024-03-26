@@ -10,7 +10,7 @@ import numpy as np
 
 from comfy.utils import ProgressBar
 
-from Jovimetrix import comfy_message, load_help, parse_reset, JOVBaseNode, WILDCARD
+from Jovimetrix import JOV_WEB_RES_ROOT, comfy_message, parse_reset, JOVBaseNode, WILDCARD
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.anim import EnumWave, wave_op
 from Jovimetrix.sup.util import EnumConvertType, parse_parameter, zip_longest_fill
@@ -23,10 +23,11 @@ JOV_CATEGORY = "ANIMATE"
 
 class TickNode(JOVBaseNode):
     NAME = "TICK (JOV) ⏱"
+    NAME_URL = "COMPARISON 🕵🏽"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = f"{JOV_CATEGORY}#-tick"
+    DESCRIPTION = f"[{NAME_URL}]({JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md)"
+    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     DESC = "Periodic pulse with total pulse count, normalized count relative to the loop setting and fixed pulse step."
-    DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     INPUT_IS_LIST = False
     RETURN_TYPES = ("INT", "FLOAT", "FLOAT", WILDCARD)
     RETURN_NAMES = (Lexicon.VALUE, Lexicon.LINEAR, Lexicon.FPS, Lexicon.ANY)
@@ -117,10 +118,11 @@ class TickNode(JOVBaseNode):
 
 class WaveGeneratorNode(JOVBaseNode):
     NAME = "WAVE GENERATOR (JOV) 🌊"
+    NAME_URL = "COMPARISON 🕵🏽"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = f"{JOV_CATEGORY}#-wave-generator"
+    DESCRIPTION = f"[{NAME_URL}]({JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md)"
+    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     DESC = "Periodic and Non-Periodic Sinosodials."
-    DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     RETURN_TYPES = ("FLOAT", "INT", )
     RETURN_NAMES = (Lexicon.FLOAT, Lexicon.INT, )
     OUTPUT_IS_LIST = (True, True,)

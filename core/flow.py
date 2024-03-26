@@ -4,8 +4,6 @@ Logic and Code flow nodes
 """
 
 import os
-import random
-import time
 from enum import Enum
 from typing import Any
 
@@ -14,10 +12,10 @@ from loguru import logger
 from comfy.utils import ProgressBar
 from nodes import interrupt_processing
 
-from Jovimetrix import comfy_message, load_help, parse_reset, \
-    ComfyAPIMessage, JOVBaseNode, TimedOutException, WILDCARD
+from Jovimetrix import comfy_message, \
+    ComfyAPIMessage, JOVBaseNode, TimedOutException, JOV_WEB_RES_ROOT, WILDCARD
 from Jovimetrix.sup.lexicon import Lexicon
-from Jovimetrix.sup.util import parse_dynamic, zip_longest_fill
+from Jovimetrix.sup.util import zip_longest_fill
 from Jovimetrix.core.calc import EnumConvertType, parse_parameter
 
 # =============================================================================
@@ -25,14 +23,14 @@ from Jovimetrix.core.calc import EnumConvertType, parse_parameter
 JOV_CATEGORY = "FLOW"
 
 # min amount of time before showing the cancel dialog
-JOV_DELAY_MIN = 1
+JOV_DELAY_MIN = 5
 try: JOV_DELAY_MIN = int(os.getenv("JOV_DELAY_MIN", JOV_DELAY_MIN))
 except: pass
 JOV_DELAY_MIN = max(1, JOV_DELAY_MIN)
 
 # max 10 minutes to start
-JOVI_DELAY_MAX = 600
-try: JOVI_DELAY_MAX = int(os.getenv("JOVI_DELAY_MAX", JOVI_DELAY_MAX))
+JOV_DELAY_MAX = 600
+try: JOV_DELAY_MAX = int(os.getenv("JOV_DELAY_MAX", JOV_DELAY_MAX))
 except: pass
 
 # =============================================================================
@@ -63,16 +61,13 @@ class EnumComparison(Enum):
 
 class DelayNode(JOVBaseNode):
     NAME = "DELAY (JOV) ✋🏽"
+    NAME_URL = "DELAY ✋🏽"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = f"{JOV_CATEGORY}#-delay"
-    DESC = "Delay traffic. Electrons on the data bus go round."
-    DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
+    DESCRIPTION = f"[{NAME_URL}]({JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md)"
+    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = (WILDCARD,)
     RETURN_NAMES = (Lexicon.ROUTE,)
-
-    @classmethod
-    def IS_CHANGED(cls, **kw) -> float:
-        return float("nan")
+    OUTPUT_IS_LIST = (True,)
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -80,71 +75,35 @@ class DelayNode(JOVBaseNode):
         "required": {},
         "optional": {
             Lexicon.PASS_IN: (WILDCARD, {"default": None}),
-            Lexicon.TIMER: ("INT", {"step": 1, "default" : 0}),
-            Lexicon.WAIT: ("BOOLEAN", {"default": False}),
+            Lexicon.TIMER: ("INT", {"step": 1, "default" : 0, "min": -1}),
         },
         "hidden": {
             "ident": "UNIQUE_ID"
         }}
         return Lexicon._parse(d, cls.HELP_URL)
 
-    @staticmethod
-    def parse_q(ident, delay: int, forced:bool=False)-> bool:
-        pbar = ProgressBar(delay)
-        # if longer than X seconds, pop up the "cancel continue"
-        if delay > JOV_DELAY_MIN or forced:
-            comfy_message(ident, "jovi-delay-user", {"id": ident, "timeout": delay})
-
-        step = 0
-        while (step := step + 1) <= delay:
-            try:
-                if delay > JOV_DELAY_MIN or forced:
-                    data = ComfyAPIMessage.poll(ident, timeout=1)
-                    if data.get('cancel', None):
-                        interrupt_processing(True)
-                        logger.warning(f"render cancelled delay: {ident}")
-                    else:
-                        logger.info(f"render continued delay: {ident}")
-                    return True
-                else:
-                    time.sleep(1)
-                    raise TimedOutException()
-            except TimedOutException as e:
-                pbar.update_absolute(step)
-            except Exception as e:
-                logger.error(str(e))
-                return True
-        return False
-
-    def __init__(self, *arg, **kw) -> None:
-        super().__init__(*arg, **kw)
-        self.__delay = 0
-
     def run(self, ident, **kw) -> tuple[Any]:
-        o = parse_parameter(Lexicon.PASS_IN, kw, None, EnumConvertType.ANY)
-        wait = parse_parameter(Lexicon.WAIT, kw, False, EnumConvertType.BOOLEAN)[0]
-        delay = min(parse_parameter(Lexicon.TIMER, kw, 0, EnumConvertType.INT)[0], JOVI_DELAY_MAX)
-
-        if wait:
-            cancel = False
-            while not cancel:
-                loop_delay = delay
-                if loop_delay == 0:
-                    loop_delay = JOVI_DELAY_MAX
-                cancel = DelayNode.parse_q(ident, loop_delay, True)
-            return o
-
-        if delay != self.__delay:
-            self.__delay = delay
-            self.__delay = max(0, min(self.__delay, JOVI_DELAY_MAX))
-
-        loops = int(self.__delay)
-        if (remainder := self.__delay - loops) > 0:
-            time.sleep(remainder)
-
-        if loops > 0:
-            cancel = DelayNode.parse_q(ident, loops)
-        return o
+        delay = parse_parameter(Lexicon.TIMER, kw, 0, EnumConvertType.INT, -1, JOV_DELAY_MAX)[0]
+        if delay < 0:
+            delay = JOV_DELAY_MAX
+        if delay > JOV_DELAY_MIN:
+            comfy_message(ident, "jovi-delay-user", {"id": ident, "timeout": delay})
+        step = 1
+        pbar = ProgressBar(delay)
+        while step <= delay:
+            # comfy_message(ident, "jovi-delay-update", {"id": ident, "timeout": step})
+            try:
+                data = ComfyAPIMessage.poll(ident, timeout=1)
+                if data.get('cancel', True):
+                    interrupt_processing(True)
+                    logger.warning(f"delay [cancelled] ({step}): {ident}")
+                    break
+            except TimedOutException as _:
+                if step % 10 == 0:
+                    logger.info(f"delay [continue] ({step}): {ident}")
+            pbar.update_absolute(step)
+            step += 1
+        return (kw[Lexicon.PASS_IN], )
 
 """
 class HoldValueNode(JOVBaseNode):
@@ -152,7 +111,6 @@ class HoldValueNode(JOVBaseNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     HELP_URL = f"{JOV_CATEGORY}#-hold"
     DESC = "When engaged will send the last value it had even with new values arriving."
-    DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     RETURN_TYPES = (WILDCARD,)
     RETURN_NAMES = (Lexicon.ROUTE,)
 
@@ -190,10 +148,11 @@ class HoldValueNode(JOVBaseNode):
 
 class ComparisonNode(JOVBaseNode):
     NAME = "COMPARISON (JOV) 🕵🏽"
+    NAME_URL = "COMPARISON 🕵🏽"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = f"{JOV_CATEGORY}#-comparison"
-    DESC = "Compare two inputs: A=B, A!=B, A>B, A>=B, A<B, A<=B"
-    DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
+    DESCRIPTION = f"[{NAME_URL}]({JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md)"
+    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
+    # DESC = "Compare two inputs: A=B, A!=B, A>B, A>=B, A<B, A<=B"
     RETURN_TYPES = (WILDCARD, WILDCARD,)
     RETURN_NAMES = (Lexicon.ANY, Lexicon.VEC, )
     OUTPUT_IS_LIST = (True, True, )

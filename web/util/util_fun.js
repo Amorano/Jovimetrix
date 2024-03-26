@@ -153,7 +153,7 @@ export const bubbles = function() {
 
         if (window.bubbles_alive) {
             requestAnimationFrame(animate);
-            if (Math.random() > 0.975) {
+            if (Math.random() > 0.5) {
                 const particle = new Particle(mouseX, mouseY);
                 particleArray.push(particle);
             }

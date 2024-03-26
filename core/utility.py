@@ -25,7 +25,7 @@ from loguru import logger
 from comfy.utils import ProgressBar
 from folder_paths import get_output_directory
 
-from Jovimetrix import comfy_message, load_help, parse_reset, JOVBaseNode, \
+from Jovimetrix import JOV_WEB_RES_ROOT, comfy_message, parse_reset, JOVBaseNode, \
     WILDCARD, ROOT
 
 from Jovimetrix.sup.lexicon import Lexicon
@@ -67,11 +67,12 @@ class AkashicData:
 
 class AkashicNode(JOVBaseNode):
     NAME = "AKASHIC (JOV) 📓"
+    NAME_URL = "COMPARISON 🕵🏽"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = f"{JOV_CATEGORY}#-akashic"
+    DESCRIPTION = f"[{NAME_URL}]({JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md)"
+    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     DESC = "Display the top level attributes of an output."
-    DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
-    RETURN_TYPES = (WILDCARD, 'AKASHIC', )
+        RETURN_TYPES = (WILDCARD, 'AKASHIC', )
     RETURN_NAMES = (Lexicon.PASS_OUT, Lexicon.IO)
     OUTPUT_NODE = True
     SORT = 10
@@ -135,11 +136,12 @@ class AkashicNode(JOVBaseNode):
 
 class ValueGraphNode(JOVBaseNode):
     NAME = "VALUE GRAPH (JOV) 📈"
+    NAME_URL = "COMPARISON 🕵🏽"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = f"{JOV_CATEGORY}#-value-graph"
+    DESCRIPTION = f"[{NAME_URL}]({JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md)"
+    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     DESC = "Graphs historical execution run values."
-    DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
-    RETURN_TYPES = ("IMAGE", )
+        RETURN_TYPES = ("IMAGE", )
     RETURN_NAMES = (Lexicon.IMAGE, )
     SORT = 15
 
@@ -208,11 +210,12 @@ class ValueGraphNode(JOVBaseNode):
 
 class RouteNode(JOVBaseNode):
     NAME = "ROUTE (JOV) 🚌"
+    NAME_URL = "COMPARISON 🕵🏽"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = f"{JOV_CATEGORY}#-route"
+    DESCRIPTION = f"[{NAME_URL}]({JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md)"
+    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     DESC = "Pass all data because the default is broken on connection."
-    DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
-    OUTPUT_IS_LIST = (True, )
+        OUTPUT_IS_LIST = (True, )
     RETURN_TYPES = (WILDCARD, )
     RETURN_NAMES = (Lexicon.PASS_OUT, )
     SORT = 5
@@ -232,11 +235,12 @@ class RouteNode(JOVBaseNode):
 
 class QueueNode(JOVBaseNode):
     NAME = "QUEUE (JOV) 🗃"
+    NAME_URL = "COMPARISON 🕵🏽"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = f"{JOV_CATEGORY}#-queue"
+    DESCRIPTION = f"[{NAME_URL}]({JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md)"
+    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     DESC = "Cycle lists of images files or strings for node inputs."
-    DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
-    INPUT_IS_LIST = False
+        INPUT_IS_LIST = False
     RETURN_TYPES = (WILDCARD, WILDCARD, "STRING", "INT", "INT", )
     RETURN_NAMES = (Lexicon.ANY, Lexicon.QUEUE, Lexicon.CURRENT, Lexicon.INDEX, Lexicon.TOTAL, )
     OUTPUT_IS_LIST = (False, True, False, False, False, )
@@ -368,11 +372,12 @@ class QueueNode(JOVBaseNode):
 
 class ExportNode(JOVBaseNode):
     NAME = "EXPORT (JOV) 📽"
+    NAME_URL = "COMPARISON 🕵🏽"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = f"{JOV_CATEGORY}#-export"
+    DESCRIPTION = f"[{NAME_URL}]({JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md)"
+    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     DESC = "Take your frames out static or animated (GIF)"
-    DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
-    INPUT_IS_LIST = False
+        INPUT_IS_LIST = False
     OUTPUT_NODE = True
     SORT = 80
 
@@ -465,11 +470,12 @@ class ExportNode(JOVBaseNode):
 
 class ImageDiffNode(JOVBaseNode):
     NAME = "IMAGE DIFF (JOV) 📏"
+    NAME_URL = "COMPARISON 🕵🏽"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = f"{JOV_CATEGORY}#-image-diff"
+    DESCRIPTION = f"[{NAME_URL}]({JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md)"
+    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     DESC = "Explicitly show the differences between two images via self-similarity index."
-    DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
-    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK", "MASK", "FLOAT", )
+        RETURN_TYPES = ("IMAGE", "IMAGE", "MASK", "MASK", "FLOAT", )
     RETURN_NAMES = (Lexicon.IN_A, Lexicon.IN_B, Lexicon.DIFF, Lexicon.THRESHOLD, Lexicon.FLOAT, )
     OUTPUT_IS_LIST = (False, False, False, False, True, )
     SORT = 90
@@ -504,11 +510,12 @@ class ImageDiffNode(JOVBaseNode):
 
 class ArrayNode(JOVBaseNode):
     NAME = "ARRAY (JOV) 📚"
+    NAME_URL = "COMPARISON 🕵🏽"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = f"{JOV_CATEGORY}#-array"
+    DESCRIPTION = f"[{NAME_URL}]({JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md)"
+    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     DESC = "Make, merge, splice or split a batch or list."
-    DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
-    INPUT_IS_LIST = False
+        INPUT_IS_LIST = False
     OUTPUT_IS_LIST = (False, False, True,)
     RETURN_TYPES = ("INT", WILDCARD, WILDCARD,)
     RETURN_NAMES = (Lexicon.VALUE, Lexicon.ANY, Lexicon.LIST,)
@@ -614,11 +621,12 @@ class ArrayNode(JOVBaseNode):
 """
 class SelectNode(JOVBaseNode):
     NAME = "SELECT (JOV) 🤏🏽"
+    NAME_URL = "COMPARISON 🕵🏽"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = f"{JOV_CATEGORY}#-select"
+    DESCRIPTION = f"[{NAME_URL}]({JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md)"
+    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     DESC = "Select an item from a user explicit list of inputs."
-    DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
-    INPUT_IS_LIST = False
+        INPUT_IS_LIST = False
     RETURN_TYPES = (WILDCARD, "STRING", "INT", "INT", )
     RETURN_NAMES = (Lexicon.ANY, Lexicon.QUEUE, Lexicon.VALUE, Lexicon.TOTAL, )
     OUTPUT_IS_LIST = (False, False, False, False, )
@@ -673,10 +681,12 @@ class SelectNode(JOVBaseNode):
 """
 class HistogramNode(JOVImageSimple):
     NAME = "HISTOGRAM (JOV) 👁‍🗨"
+    NAME_URL = "COMPARISON 🕵🏽"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
+    DESCRIPTION = f"[{NAME_URL}]({JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md)"
+    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     DESC = "Histogram"
-    DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
-    RETURN_TYPES = ("IMAGE", )
+        RETURN_TYPES = ("IMAGE", )
     RETURN_NAMES = (Lexicon.IMAGE,)
     OUTPUT_IS_LIST = (True,)
     SORT = 40
@@ -706,11 +716,12 @@ class HistogramNode(JOVImageSimple):
 """
 class GenuflectNode(JOVBaseNode):
     NAME = "GENUFLECT (JOV) 📏"
+    NAME_URL = "COMPARISON 🕵🏽"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = f"{JOV_CATEGORY}#-genuflect"
+    DESCRIPTION = f"[{NAME_URL}]({JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md)"
+    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     DESC = "Shill node to test input and outputs"
-    DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
-    OUTPUT_IS_LIST = (False, )
+        OUTPUT_IS_LIST = (False, )
     RETURN_TYPES = ("IMAGE",)
     RETURN_NAMES = (Lexicon.IN_A, )
     SORT = 200

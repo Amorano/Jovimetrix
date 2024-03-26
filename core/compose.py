@@ -13,7 +13,7 @@ from loguru import logger
 
 from comfy.utils import ProgressBar
 
-from Jovimetrix import load_help, JOVBaseNode, WILDCARD
+from Jovimetrix import JOV_WEB_RES_ROOT, JOVBaseNode, WILDCARD
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import parse_dynamic, parse_parameter, zip_longest_fill, \
     EnumConvertType
@@ -44,10 +44,11 @@ class EnumCropMode(Enum):
 
 class TransformNode(JOVBaseNode):
     NAME = "TRANSFORM (JOV) 🏝️"
+    NAME_URL = "COMPARISON 🕵🏽"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = f"{JOV_CATEGORY}#-transform"
+    DESCRIPTION = f"[{NAME_URL}]({JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md)"
+    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     DESC = "Translate, Rotate, Scale, Tile, Mirror, Re-project and invert an input."
-    DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
     # OUTPUT_IS_LIST = ()
@@ -146,10 +147,11 @@ class TransformNode(JOVBaseNode):
 
 class BlendNode(JOVBaseNode):
     NAME = "BLEND (JOV) ⚗️"
+    NAME_URL = "COMPARISON 🕵🏽"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = f"{JOV_CATEGORY}#%EF%B8%8F-blend"
+    DESCRIPTION = f"[{NAME_URL}]({JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md)"
+    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     DESC = "Applies selected operation to 2 inputs with optional mask using a linear blend (alpha)."
-    DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
     # OUTPUT_IS_LIST = ()
@@ -223,10 +225,11 @@ class BlendNode(JOVBaseNode):
 
 class PixelSplitNode(JOVBaseNode):
     NAME = "PIXEL SPLIT (JOV) 💔"
+    NAME_URL = "COMPARISON 🕵🏽"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = f"{JOV_CATEGORY}#-pixel-split"
+    DESCRIPTION = f"[{NAME_URL}]({JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md)"
+    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     DESC = "Splits images into constituent R, G and B and A channels."
-    DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     RETURN_TYPES = ("MASK", "MASK", "MASK", "MASK",)
     RETURN_NAMES = (Lexicon.RI, Lexicon.GI, Lexicon.BI, Lexicon.MI)
     SORT = 40
@@ -254,10 +257,11 @@ class PixelSplitNode(JOVBaseNode):
 
 class PixelMergeNode(JOVBaseNode):
     NAME = "PIXEL MERGE (JOV) 🫂"
+    NAME_URL = "COMPARISON 🕵🏽"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = f"{JOV_CATEGORY}#-pixel-merge"
+    DESCRIPTION = f"[{NAME_URL}]({JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md)"
+    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     DESC = "Combine 3 or 4 inputs into a single image."
-    DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
     SORT = 45
@@ -299,10 +303,11 @@ class PixelMergeNode(JOVBaseNode):
 
 class PixelSwapNode(JOVBaseNode):
     NAME = "PIXEL SWAP (JOV) 🔃"
+    NAME_URL = "COMPARISON 🕵🏽"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = f"{JOV_CATEGORY}#-pixel-swap"
+    DESCRIPTION = f"[{NAME_URL}]({JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md)"
+    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     DESC = "Swap inputs of one image with another or fill its channels with solids."
-    DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
     # OUTPUT_IS_LIST = ()
@@ -373,10 +378,11 @@ class PixelSwapNode(JOVBaseNode):
 
 class StackNode(JOVBaseNode):
     NAME = "STACK (JOV) ➕"
+    NAME_URL = "COMPARISON 🕵🏽"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = f"{JOV_CATEGORY}#-stack"
+    DESCRIPTION = f"[{NAME_URL}]({JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md)"
+    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     DESC = "Union multiple images horizontal, vertical or in a grid."
-    DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     INPUT_IS_LIST = False
     RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
@@ -421,10 +427,11 @@ class StackNode(JOVBaseNode):
 
 class CropNode(JOVBaseNode):
     NAME = "CROP (JOV) ✂️"
+    NAME_URL = "COMPARISON 🕵🏽"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = f"{JOV_CATEGORY}#-crop"
+    DESCRIPTION = f"[{NAME_URL}]({JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md)"
+    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     DESC = "Clip away sections of an image and backfill with optional color matte."
-    DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
     SORT = 5
@@ -476,10 +483,11 @@ class CropNode(JOVBaseNode):
 
 class ColorTheoryNode(JOVBaseNode):
     NAME = "COLOR THEORY (JOV) 🛞"
+    NAME_URL = "COMPARISON 🕵🏽"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = f"{JOV_CATEGORY}#-color-theory"
+    DESCRIPTION = f"[{NAME_URL}]({JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md)"
+    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     DESC = "Generate Complimentary, Triadic and Tetradic color sets"
-    DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     RETURN_TYPES = ("IMAGE", "IMAGE", "IMAGE", "IMAGE", "IMAGE")
     RETURN_NAMES = (Lexicon.C1, Lexicon.C2, Lexicon.C3, Lexicon.C4, Lexicon.C5)
     SORT = 100

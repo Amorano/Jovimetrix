@@ -10,7 +10,7 @@ from loguru import logger
 
 from comfy.utils import ProgressBar
 
-from Jovimetrix import load_help, JOVBaseNode
+from Jovimetrix import JOV_WEB_RES_ROOT, JOVBaseNode
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import EnumConvertType, parse_parameter, zip_longest_fill
 from Jovimetrix.sup.image import channel_solid, cv2tensor_full, EnumImageType, \
@@ -25,10 +25,11 @@ JOV_CATEGORY = "AUDIO"
 
 class LoadWaveNode(JOVBaseNode):
     NAME = "LOAD WAVE (JOV) 🎼"
+    NAME_URL = "COMPARISON 🕵🏽"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = f"{JOV_CATEGORY}#-load-wave"
+    DESCRIPTION = f"[{NAME_URL}]({JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md)"
+    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     DESC = "Import audio waveform data"
-    DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     RETURN_TYPES = ("WAVE",)
     RETURN_NAMES = (Lexicon.WAVE,)
 
@@ -67,11 +68,12 @@ class LoadWaveNode(JOVBaseNode):
 
 class WaveGraphNode(JOVBaseNode):
     NAME = "WAVE GRAPH (JOV) ▶ ılıılı"
+    NAME_URL = "COMPARISON 🕵🏽"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = f"{JOV_CATEGORY}#-wave-graph"
+    DESCRIPTION = f"[{NAME_URL}]({JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md)"
+    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     DESC = "Display audio waveform data as a linear bar graph"
-    DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
-    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
+        RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
     # OUTPUT_IS_LIST = ()
 

@@ -10,7 +10,7 @@ from loguru import logger
 
 from comfy.utils import ProgressBar
 
-from Jovimetrix import comfy_message, load_help, parse_reset, JOVBaseNode, \
+from Jovimetrix import JOV_WEB_RES_ROOT, comfy_message, parse_reset, JOVBaseNode, \
     WILDCARD, ROOT, JOV_GLSL
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import parse_parameter, zip_longest_fill, \
@@ -65,10 +65,11 @@ class EnumPatternType(Enum):
 
 class GLSLNode(JOVBaseNode):
     NAME = "GLSL (JOV) 🍩"
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/CREATE"
-    HELP_URL = f"CREATE#-glsl"
+    NAME_URL = "COMPARISON 🕵🏽"
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
+    DESCRIPTION = f"[{NAME_URL}]({JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md)"
+    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     DESC = ""
-    DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
     RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
     # OUTPUT_IS_LIST = ()
@@ -147,9 +148,10 @@ class GLSLNode(JOVBaseNode):
         return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
 
 class GLSLBaseNode(JOVBaseNode):
-    CATEGORY = JOV_CATEGORY
-    HELP_URL = f"GLSL#-"
-    # DESCRIPTION = load_help(NAME, CATEGORY, DESC, HELP_URL)
+    NAME_URL = "COMPARISON 🕵🏽"
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
+    DESCRIPTION = f"[{NAME_URL}]({JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md)"
+    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
     FRAGMENT = ".glsl"
@@ -208,9 +210,11 @@ class GLSLBaseNode(JOVBaseNode):
 
 class GLSLSelectRange(GLSLBaseNode):
     NAME = "SELECT RANGE GLSL (JOV)"
-    HELP_URL = f"GLSL#-"
-    DESC = ""
-    DESCRIPTION = load_help(NAME, JOV_CATEGORY, DESC, HELP_URL)
+    NAME_URL = "COMPARISON 🕵🏽"
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
+    DESCRIPTION = f"[{NAME_URL}]({JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md)"
+    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
+
     FRAGMENT = str(JOV_GLSL / "clr" / "clr-flt-range.glsl")
 
     @classmethod
@@ -233,9 +237,11 @@ class GLSLSelectRange(GLSLBaseNode):
 
 class GLSLColorGrayscale(GLSLBaseNode):
     NAME = "GRAYSCALE GLSL (JOV)"
-    HELP_URL = f"GLSL#-"
-    DESC = ""
-    DESCRIPTION = load_help(NAME, JOV_CATEGORY, DESC, HELP_URL)
+    NAME_URL = "COMPARISON 🕵🏽"
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
+    DESCRIPTION = f"[{NAME_URL}]({JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md)"
+    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
+
     FRAGMENT = str(JOV_GLSL / "clr" / "clr-grayscale.glsl")
     DEFAULT = (0.299, 0.587, 0.114)
 
@@ -257,9 +263,11 @@ class GLSLColorGrayscale(GLSLBaseNode):
 
 class GLSLCreateNoise(GLSLBaseNode):
     NAME = "NOISE GLSL (JOV)"
-    HELP_URL = f"GLSL#-"
-    DESC = ""
-    DESCRIPTION = load_help(NAME, JOV_CATEGORY, DESC, HELP_URL)
+    NAME_URL = "COMPARISON 🕵🏽"
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
+    DESCRIPTION = f"[{NAME_URL}]({JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md)"
+    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
+
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -299,9 +307,11 @@ class GLSLCreateNoise(GLSLBaseNode):
 
 class GLSLCreatePattern(GLSLBaseNode):
     NAME = "PATTERN GLSL (JOV)"
-    HELP_URL = f"GLSL#-"
-    DESC = ""
-    DESCRIPTION = load_help(NAME, JOV_CATEGORY, DESC, HELP_URL)
+    NAME_URL = "COMPARISON 🕵🏽"
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
+    DESCRIPTION = f"[{NAME_URL}]({JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md)"
+    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
+
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -324,9 +334,11 @@ class GLSLCreatePattern(GLSLBaseNode):
 
 class GLSLCreatePolygon(GLSLBaseNode):
     NAME = "POLYGON GLSL (JOV)"
-    HELP_URL = f"GLSL#-"
-    DESC = ""
-    DESCRIPTION = load_help(NAME, JOV_CATEGORY, DESC, HELP_URL)
+    NAME_URL = "COMPARISON 🕵🏽"
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
+    DESCRIPTION = f"[{NAME_URL}]({JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md)"
+    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
+
 
     FRAGMENT = str(JOV_GLSL / "cre" / "cre-shp-polygon.glsl")
 
@@ -348,9 +360,11 @@ class GLSLCreatePolygon(GLSLBaseNode):
 
 class GLSLMap(GLSLBaseNode):
     NAME = "MAP GLSL (JOV)"
-    HELP_URL = f"GLSL#-"
-    DESC = ""
-    DESCRIPTION = load_help(NAME, JOV_CATEGORY, DESC, HELP_URL)
+    NAME_URL = "COMPARISON 🕵🏽"
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
+    DESCRIPTION = f"[{NAME_URL}]({JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md)"
+    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
+
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -380,10 +394,11 @@ class GLSLMap(GLSLBaseNode):
 
 class GLSLTRSMirror(GLSLBaseNode):
     NAME = "MIRROR GLSL (JOV)"
+    NAME_URL = "COMPARISON 🕵🏽"
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
+    DESCRIPTION = f"[{NAME_URL}]({JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md)"
+    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
 
-    HELP_URL = f"GLSL#-"
-    DESC = ""
-    DESCRIPTION = load_help(NAME, JOV_CATEGORY, DESC, HELP_URL)
 
     FRAGMENT = str(JOV_GLSL / "trs" / "trs-mirror.glsl")
 
@@ -406,10 +421,11 @@ class GLSLTRSMirror(GLSLBaseNode):
 
 class GLSLTRSRotate(GLSLBaseNode):
     NAME = "ROTATE GLSL (JOV)"
+    NAME_URL = "COMPARISON 🕵🏽"
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
+    DESCRIPTION = f"[{NAME_URL}]({JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md)"
+    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
 
-    HELP_URL = f"GLSL#-"
-    DESC = ""
-    DESCRIPTION = load_help(NAME, JOV_CATEGORY, DESC, HELP_URL)
     FRAGMENT = str(JOV_GLSL / "trs" / "trs-rotate.glsl")
 
     @classmethod
@@ -431,10 +447,11 @@ class GLSLTRSRotate(GLSLBaseNode):
 
 class GLSLUtilTiler(GLSLBaseNode):
     NAME = "TILER GLSL (JOV)"
+    NAME_URL = "COMPARISON 🕵🏽"
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
+    DESCRIPTION = f"[{NAME_URL}]({JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md)"
+    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
 
-    HELP_URL = f"GLSL#-"
-    DESC = ""
-    DESCRIPTION = load_help(NAME, JOV_CATEGORY, DESC, HELP_URL)
     FRAGMENT = str(JOV_GLSL / "trs" / "trs-tiler.glsl")
 
     @classmethod
@@ -455,10 +472,10 @@ class GLSLUtilTiler(GLSLBaseNode):
 
 class GLSLVFX(GLSLBaseNode):
     NAME = "VFX GLSL (JOV)"
-
-    HELP_URL = f"GLSL#-"
-    DESC = ""
-    DESCRIPTION = load_help(NAME, JOV_CATEGORY, DESC, HELP_URL)
+    NAME_URL = "COMPARISON 🕵🏽"
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
+    DESCRIPTION = f"[{NAME_URL}]({JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md)"
+    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:

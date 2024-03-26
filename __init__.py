@@ -98,7 +98,7 @@ JOV_GLSL = ROOT / 'res' / 'glsl'
 
 JOV_WEBWIKI_URL = "https://github.com/Amorano/Jovimetrix/wiki"
 JOV_WEBHELP_ROOT = "https://github.com/Amorano/Jovimetrix-examples/blob/master"
-JOV_WEBRES_ROOT = "https://raw.githubusercontent.com/Amorano/Jovimetrix-examples/master"
+JOV_WEB_RES_ROOT = "https://raw.githubusercontent.com/Amorano/Jovimetrix-examples/master"
 
 JOV_LOG_LEVEL = os.getenv("JOV_LOG_LEVEL", "WARNING")
 logger.configure(handlers=[{"sink": sys.stdout, "level": JOV_LOG_LEVEL}])
@@ -219,21 +219,6 @@ except Exception as e:
 # == SUPPORT FUNCTIONS
 # =============================================================================
 
-def load_help(name:str, category:str, desc:str, url:str) -> str:
-    global JOV_HELP_INDEX, JOV_WEBWIKI_URL, JOV_WEBHELP_ROOT, JOV_WEBRES_ROOT
-    name = name.strip()
-    parse = JOV_HELP_INDEX.get(name, "NO HELP AVAILABLE")
-    parse = parse.replace("!NAME!", name).replace("!DESC!", desc).replace("!CAT!", category)
-    parse = parse.replace("!URL!", f"[{name}]({JOV_WEBWIKI_URL}/{url})")
-    name_raw = name.split('(JOV)')[0].lower().strip().replace(' ', '_')
-    name_vid = f"![]({JOV_WEBRES_ROOT}/node/{name}/{name_raw}.gif)"
-    name_vid = name_vid.replace(' ', '%20')
-    # logger.debug(name_vid)
-    # https://raw.githubusercontent.com/Amorano/Jovimetrix-examples/master/node/BLEND%20(JOV)%20%E2%9A%97%EF%B8%8F/blend.gif
-    # https://github.com/Amorano/Jovimetrix-examples/blob/master/node/BLEND%20(JOV)%20%E2%9A%97%EF%B8%8F/blend.gif
-    parse = parse.replace("!URL_VID!", name_vid)
-    return parse
-
 def parse_reset(ident:str) -> int:
     try:
         data = ComfyAPIMessage.poll(ident, timeout=0)
@@ -282,29 +267,6 @@ class Session(metaclass=Singleton):
             except:
                 raise Exception("MAJOR 😿😰😬🥟 BLUNDERCATS 🥟😬😰😿")
 
-        help_count = 0
-        footer = "help system powered by [MelMass](https://github.com/melMass) and the [comfy_mtb](https://github.com/melMass/comfy_mtb) project"
-        global JOV_HELP_ROOT, JOV_HELP_INDEX
-        for f in (JOV_HELP_ROOT).iterdir():
-            if f.suffix != ".md":
-                continue
-            if len(data := configLoad(f, as_json=False)) > 0:
-                JOV_HELP_INDEX[f.stem] = '\n'.join(data)
-            else:
-                JOV_HELP_INDEX[f.stem] = """
-!NAME! || !CAT!
-
-!DESC!
-
-WIKI: !URL!
-
-!URL_VID!
-"""
-            JOV_HELP_INDEX[f.stem] = JOV_HELP_INDEX[f.stem] + f'\n\n{footer}'
-            help_count += 1
-        if help_count > 0:
-            logger.info(f"{help_count} help files loaded")
-
         if JOV_IGNORE_NODE.exists():
             JOV_IGNORE_NODE = configLoad(JOV_IGNORE_NODE, False)
         else:
@@ -338,16 +300,7 @@ WIKI: !URL!
                         Session.CLASS_MAPPINGS_WIP[name] = class_object
                     else:
                         Session.CLASS_MAPPINGS[name] = class_object
-
-                    if JOV_HELP_INDEX.get(name, None) is None:
-                        if hasattr(class_object, 'DESCRIPTION'):
-                            JOV_HELP_INDEX[name] = class_object.DESCRIPTION
-                        else:
-                            JOV_HELP_INDEX[name] = "NO HELP AVAILABLE"
-                            logger.debug(f"{name} missing help")
-
                     node_count += 1
-
             logger.info(f"✅ {module.__name__}")
         logger.info(f"{node_count} nodes loaded")
 

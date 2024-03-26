@@ -156,6 +156,7 @@ export function showModal(innerHTML, eventCallback, timeout=null) {
             }
         };
         modalContent.addEventListener("click", handleEvent);
+        modalContent.addEventListener("dblclick", handleEvent);
 
         if (timeout) {
             timeout *= 1000;
@@ -164,5 +165,9 @@ export function showModal(innerHTML, eventCallback, timeout=null) {
                 reject(new Error("TIMEOUT"));
             }, timeout);
         }
+
+        //setTimeout(() => {
+        //    modal.dispatchEvent(new Event('tick'));
+        //}, 1000);
     });
 }

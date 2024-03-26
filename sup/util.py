@@ -78,7 +78,7 @@ def parse_value(val:List[Any], typ:EnumConvertType, default: Any,
                 zero:int=0) -> Any:
 
     """Convert target list of values into the new specified type."""
-    if typ != EnumConvertType.IMAGE and isinstance(val, (torch.Tensor,)):
+    if typ not in [EnumConvertType.ANY, EnumConvertType.IMAGE] and isinstance(val, (torch.Tensor,)):
         val = list(val.size())[1:4] + [val[0]]
 
     default = list_param(default)
@@ -156,10 +156,12 @@ def parse_parameter(key: str, data: Union[dict, List[dict]], default: Any,
     """Convert all inputs, regardless of structure, into a list of parameters."""
     # should be operating on a list of values, all times
     # typ = EnumConvertType[typ]
-    if not isinstance(default, (list, tuple,)):
+    if not isinstance(default, (list, tuple, torch.Tensor)):
         default = [default]
     unified = data.get(key, default)
-    if not isinstance(unified, (list, )):
+    if isinstance(unified, (torch.Tensor,)):
+        unified = unified.tolist()
+    if not isinstance(unified, (list,)):
         unified = [unified]
     if len(unified) == 0:
         unified = [default[0] if len(default) else 0]
