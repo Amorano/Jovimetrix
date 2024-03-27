@@ -4,8 +4,9 @@
  */
 
 import { app } from "../../../scripts/app.js"
-import { addDocumentation } from '../util/util_help.js'
 import { CONFIG_USER } from '../util/util_config.js'
+import { node_cleanup } from '../util/util.js'
+import "../extern/shodown.min.js"
 
 const JOV_WEBWIKI_URL = "https://github.com/Amorano/Jovimetrix/wiki";
 
@@ -14,6 +15,62 @@ const TOOLTIP_WIDTH_MAX = 225;
 const TOOLTIP_WIDTH_OFFSET = 10;
 const TOOLTIP_HEIGHT_MAX = LiteGraph.NODE_SLOT_HEIGHT * 0.65;
 const FONT_SIZE = 7;
+
+const dataCache = {};
+
+const create_documentation_stylesheet = () => {
+    const tag = 'mtb-documentation-stylesheet'
+    let styleTag = document.head.querySelector(tag)
+    if (styleTag) {
+        return;
+    }
+    styleTag = document.createElement('style')
+    styleTag.type = 'text/css'
+    styleTag.id = tag
+
+    styleTag.innerHTML = `
+    .documentation-popup {
+        background: var(--bg-color);
+        position: absolute;
+        color: var(--fg-color);
+        font: 12px monospace;
+        line-height: 1.25em;
+        padding: 2px;
+        border-radius: 3px;
+        pointer-events: "inherit";
+        z-index: 11111111;
+        overflow:scroll;
+    }
+    .documentation-popup img {
+        max-width: 100%;
+    }
+    .documentation-popup table {
+        border-collapse: collapse;
+        border: 1px var(--border-color) solid;
+    }
+    .documentation-popup th,
+    .documentation-popup td {
+        border: 1px var(--border-color) solid;
+    }
+    .documentation-popup th {
+        background-color: var(--comfy-input-bg);
+    }
+        `
+    document.head.appendChild(styleTag)
+}
+
+const documentationConverter = new showdown.Converter({
+    tables: true,
+    strikethrough: true,
+    emoji: true,
+    ghCodeBlocks: true,
+    tasklists: true,
+    ghMentions: true,
+    smoothLivePreview: true,
+    simplifiedAutoLink: true,
+    parseImgDimensions: true,
+    openLinksInNewWindow: true,
+});
 
 /*
 * wraps a single text line into maxWidth chunks
@@ -79,98 +136,239 @@ app.registerExtension({
         };
     },
 	beforeRegisterNodeDef(nodeType, nodeData) {
-        const self = this;
-        const onDrawForeground = nodeType.prototype.onDrawForeground;
-        nodeType.prototype.onDrawForeground = function (ctx) {
-            const me = onDrawForeground?.apply?.(this, arguments);
-            if (!self.tooltips_visible || this.flags.collapsed) {
-                return me;
-            }
-            const TOOLTIP_COLOR = CONFIG_USER.color.tooltips;
-            let alpha = TOOLTIP_COLOR.length > 6 ? TOOLTIP_COLOR.slice(-2) : "FF";
-            for (const selectedNode of Object.values(app.canvas.selected_nodes)) {
-                if (selectedNode !== this) {
-                    continue
-                }
-                const widget_tooltip = (selectedNode.widgets || [])
-                    .find(widget => widget.type === 'JTOOLTIP');
-                if (!widget_tooltip) {
-                    continue;
-                }
-                const tips = widget_tooltip.options.default || {};
-                let visible = [];
-                let offset = TOOLTIP_HEIGHT_MAX / 4;
-                for(const item of this.inputs || []) {
-                    if (!item.hidden || item.hidden == false) {
-                        const data = {
-                            name: item.name,
-                            y: offset
-                        }
-                        offset += TOOLTIP_HEIGHT_MAX * 1.45;
-                        visible.push(data);
-                    }
-                };
-                for(const item of this.widgets || []) {
-                    if (!item.hidden || item.hidden == false) {
-                        const data = {
-                            name: item.name,
-                            options: item.options,
-                            y: item.y || item.last_y ||
-                                visible[visible.length-1]?.y ||
-                                visible[visible.length-1]?.last_y
-                        }
-                        visible.push(data);
-                    }
-                };
-                if (visible.length == 0) {
-                    continue;
-                }
-                ctx.save();
-                ctx.lineWidth = 1
-                ctx.fillStyle = LiteGraph.WIDGET_BGCOLOR; //"#333333" + alpha; // LiteGraph.WIDGET_BGCOLOR
-                const offset_y = visible[0].y;
-                const height = this.size[1] - offset_y;
-                ctx.roundRect(-TOOLTIP_WIDTH_MAX-TOOLTIP_WIDTH_OFFSET,
-                    offset_y - TOOLTIP_HEIGHT_MAX / 2,
-                    TOOLTIP_WIDTH_MAX + 4, height, 8);
-                ctx.fill();
-                ctx.fillStyle = LiteGraph.WIDGET_OUTLINE_COLOR;
-                ctx.roundRect(-TOOLTIP_WIDTH_MAX-TOOLTIP_WIDTH_OFFSET,
-                    offset_y- TOOLTIP_HEIGHT_MAX / 2,
-                    TOOLTIP_WIDTH_MAX + 4, height, 8);
-                ctx.stroke();
+        if (!nodeData?.category?.startsWith("JOVIMETRIX")) {
+            return;
+        }
 
-                let index = 0;
-                for(const item of visible) {
-                    let text = tips[item.name] || item.options?.tooltip || item.name;
-                    text = text.slice(0, TOOLTIP_LENGTH).toUpperCase();
-                    const size = text.length;
-                    let wrap = 50;
-                    if (size > 45) {
-                        wrap = 50;
-                    } else if (size > 80) {
-                        wrap = 52;
-                    }
-                    var lines = wrapText(text, wrap).slice(0, 3);
-                    ctx.font = FONT_SIZE - lines.length / 2 + "px sans-serif";
-                    ctx.fillStyle = TOOLTIP_COLOR.slice(0, 7) + alpha;
-                    const offset = TOOLTIP_HEIGHT_MAX * 2 / (lines.length+1);
-                    let idx = 1;
-                    for (const line of lines) {
-                        const sz = ctx.measureText(line);
-                        const left = Math.max(-TOOLTIP_WIDTH_MAX, -TOOLTIP_WIDTH_OFFSET-sz.width);
-                        ctx.fillText(line, left, item.y + idx * offset);
-                        idx += 1;
-                    }
-                    index += 1
+        let opts = { icon_size: 14, icon_margin: 3 }
+        const iconSize = opts.icon_size ? opts.icon_size : 14;
+        const iconMargin = opts.icon_margin ? opts.icon_margin : 3;
+
+        const onNodeCreated = nodeType.prototype.onNodeCreated;
+        nodeType.prototype.onNodeCreated = async function () {
+            const me = onNodeCreated?.apply(this);
+            this.docElement = null;
+            this.offsetX = 0;
+            this.offsetY = 0;
+            this.show_doc = false;
+            this.onRemoved = function () {
+                node_cleanup(this);
+                if (this.docElement) {
+                    this.docElement.parentNode.removeChild(this.docElement)
+                    this.docElement = null;
                 }
-                ctx.restore();
             }
             return me;
         }
 
-        if (nodeData?.category?.startsWith("JOVIMETRIX")) {
-            addDocumentation(nodeData, nodeType);
+        const self = this;
+        const onDrawForeground = nodeType.prototype.onDrawForeground;
+        nodeType.prototype.onDrawForeground = function (ctx) {
+            const me = onDrawForeground?.apply?.(this, arguments);
+            if (this.flags.collapsed) return me;
+
+            if (self.tooltips_visible) {
+                const TOOLTIP_COLOR = CONFIG_USER.color.tooltips;
+                let alpha = TOOLTIP_COLOR.length > 6 ? TOOLTIP_COLOR.slice(-2) : "FF";
+                for (const selectedNode of Object.values(app.canvas.selected_nodes)) {
+                    if (selectedNode !== this) {
+                        continue
+                    }
+                    const widget_tooltip = (selectedNode.widgets || [])
+                        .find(widget => widget.type === 'JTOOLTIP');
+                    if (!widget_tooltip) {
+                        continue;
+                    }
+                    const tips = widget_tooltip.options.default || {};
+                    let visible = [];
+                    let offset = TOOLTIP_HEIGHT_MAX / 4;
+                    for(const item of this.inputs || []) {
+                        if (!item.hidden || item.hidden == false) {
+                            const data = {
+                                name: item.name,
+                                y: offset
+                            }
+                            offset += TOOLTIP_HEIGHT_MAX * 1.45;
+                            visible.push(data);
+                        }
+                    };
+                    for(const item of this.widgets || []) {
+                        if (!item.hidden || item.hidden == false) {
+                            const data = {
+                                name: item.name,
+                                options: item.options,
+                                y: item.y || item.last_y ||
+                                    visible[visible.length-1]?.y ||
+                                    visible[visible.length-1]?.last_y
+                            }
+                            visible.push(data);
+                        }
+                    };
+                    if (visible.length == 0) {
+                        continue;
+                    }
+                    ctx.save();
+                    ctx.lineWidth = 1
+                    ctx.fillStyle = LiteGraph.WIDGET_BGCOLOR; //"#333333" + alpha; // LiteGraph.WIDGET_BGCOLOR
+                    const offset_y = visible[0].y;
+                    const height = this.size[1] - offset_y;
+                    ctx.roundRect(-TOOLTIP_WIDTH_MAX-TOOLTIP_WIDTH_OFFSET,
+                        offset_y - TOOLTIP_HEIGHT_MAX / 2,
+                        TOOLTIP_WIDTH_MAX + 4, height, 8);
+                    ctx.fill();
+                    ctx.fillStyle = LiteGraph.WIDGET_OUTLINE_COLOR;
+                    ctx.roundRect(-TOOLTIP_WIDTH_MAX-TOOLTIP_WIDTH_OFFSET,
+                        offset_y- TOOLTIP_HEIGHT_MAX / 2,
+                        TOOLTIP_WIDTH_MAX + 4, height, 8);
+                    ctx.stroke();
+
+                    let index = 0;
+                    for(const item of visible) {
+                        let text = tips[item.name] || item.options?.tooltip || item.name;
+                        text = text.slice(0, TOOLTIP_LENGTH).toUpperCase();
+                        const size = text.length;
+                        let wrap = 50;
+                        if (size > 45) {
+                            wrap = 50;
+                        } else if (size > 80) {
+                            wrap = 52;
+                        }
+                        var lines = wrapText(text, wrap).slice(0, 3);
+                        ctx.font = FONT_SIZE - lines.length / 2 + "px sans-serif";
+                        ctx.fillStyle = TOOLTIP_COLOR.slice(0, 7) + alpha;
+                        const offset = TOOLTIP_HEIGHT_MAX * 2 / (lines.length+1);
+                        let idx = 1;
+                        for (const line of lines) {
+                            const sz = ctx.measureText(line);
+                            const left = Math.max(-TOOLTIP_WIDTH_MAX, -TOOLTIP_WIDTH_OFFSET-sz.width);
+                            ctx.fillText(line, left, item.y + idx * offset);
+                            idx += 1;
+                        }
+                        index += 1
+                    }
+                    ctx.restore();
+                }
+            }
+
+            const x = this.size[0] - iconSize - iconMargin
+            if (this.show_doc && this.docElement === null) {
+                create_documentation_stylesheet();
+                this.docElement = document.createElement('div');
+                this.docElement.classList.add('documentation-popup');
+                if (!(nodeData.name in dataCache)) {
+                    // Load data from URL asynchronously if it ends with .md
+                    if (nodeData.description.endsWith('.md')) {
+                        // Check if data is already cached
+                        // Fetch data from URL
+                        fetch(nodeData.description)
+                            .then(response => {
+                                if (!response.ok) {
+                                    this.docElement.innerHTML = `Failed to load documentation\n\n${response}`
+                                }
+                                return response.text();
+                            })
+                            .then(data => {
+                                // Cache the fetched data
+                                dataCache[nodeData.name] = documentationConverter.makeHtml(data);
+                                this.docElement.innerHTML = dataCache[nodeData.name];
+                            })
+                            .catch(error => {
+                                this.docElement.innerHTML = `Failed to load documentation\n\n${error}`
+                                console.error('Error:', error);
+                            });
+                    } else {
+                        // If description does not end with .md, set data directly
+                        dataCache[nodeData.name] = documentationConverter.makeHtml(dataCache[nodeData.name]);
+                        this.docElement.innerHTML = dataCache[nodeData.name];
+                    }
+                } else {
+                    this.docElement.innerHTML = dataCache[nodeData.name];
+                }
+
+                // resize handle
+                const resizeHandle = document.createElement('div');
+                resizeHandle.style.width = '10px';
+                resizeHandle.style.height = '10px';
+                resizeHandle.style.background = 'gray';
+                resizeHandle.style.position = 'absolute';
+                resizeHandle.style.bottom = '0';
+                resizeHandle.style.right = '0';
+                resizeHandle.style.cursor = 'se-resize';
+
+                // TODO: fix resize logic
+                this.docElement.appendChild(resizeHandle)
+                let isResizing = false;
+                let startX, startY, startWidth, startHeight;
+
+                resizeHandle.addEventListener('mousedown', function (e) {
+                    e.stopPropagation()
+                    isResizing = true;
+                    startX = e.clientX;
+                    startY = e.clientY;
+                    startWidth = parseInt(
+                        document.defaultView.getComputedStyle(this.docElement).width,
+                        10,
+                    );
+                    startHeight = parseInt(
+                        document.defaultView.getComputedStyle(this.docElement).height,
+                        10,
+                    );
+                })
+
+                document.addEventListener('mousemove', function (e) {
+                    if (!isResizing) return;
+                    const newWidth = startWidth + e.clientX - startX;
+                    const newHeight = startHeight + e.clientY - startY;
+                    offsetX += newWidth - startWidth;
+                    offsetY += newHeight - startHeight;
+                    startWidth = newWidth;
+                    startHeight = newHeight;
+                })
+
+                document.addEventListener('mouseup', function () {
+                    isResizing = false;
+                })
+                document.body.appendChild(this.docElement)
+            }
+
+            if (!this.show_doc && this.docElement !== null) {
+                this.docElement.parentNode.removeChild(this.docElement)
+                this.docElement = null;
+                return
+            }
+
+            if (this.show_doc && this.docElement !== null) {
+                const rect = ctx.canvas.getBoundingClientRect()
+                const scaleX = rect.width / ctx.canvas.width
+                const scaleY = rect.height / ctx.canvas.height
+                const transform = new DOMMatrix()
+                    .scaleSelf(scaleX, scaleY)
+                    .multiplySelf(ctx.getTransform())
+                    .translateSelf(this.size[0] + 10, -32)
+
+                const scale = new DOMMatrix().scaleSelf(transform.a, transform.d);
+                Object.assign(this.docElement.style, {
+                    transformOrigin: '0 0',
+                    transform: scale,
+                    left: `${transform.a + transform.e}px`,
+                    top: `${transform.d + transform.f}px`,
+                    width: `${this.size[0] * 2}px`,
+                    height: `${this.size[1] || this.parent?.inputHeight || 32}px`,
+                })
+            }
+
+            ctx.save()
+            ctx.translate(x, iconSize - 34) // Position the icon on the canvas
+            ctx.scale(iconSize / 32, iconSize / 32) // Scale the icon to the desired size
+            ctx.strokeStyle = 'rgba(255,255,255,0.3)'
+            ctx.lineCap = 'round'
+            ctx.lineJoin = 'round'
+            ctx.lineWidth = 2.4
+            // ctx.stroke(questionMark);
+            ctx.font = '36px monospace'
+            ctx.fillText('?', 0, 24)
+            ctx.restore()
+            return me;
         }
 
         // HELP!
@@ -200,6 +398,30 @@ app.registerExtension({
                 options.push(...help_menu, null);
             }
             return me;
+        }
+
+        // ? clicked
+        const mouseDown = nodeType.prototype.onMouseDown
+        nodeType.prototype.onMouseDown = function (e, localPos, canvas) {
+            const r = mouseDown ? mouseDown.apply(this, arguments) : undefined
+            const iconX = this.size[0] - iconSize - iconMargin
+            const iconY = iconSize - 34
+            if (
+                localPos[0] > iconX &&
+                localPos[0] < iconX + iconSize &&
+                localPos[1] > iconY &&
+                localPos[1] < iconY + iconSize
+            ) {
+                // Pencil icon was clicked, open the editor
+                // this.openEditorDialog();
+                if (this.show_doc === undefined) {
+                    this.show_doc = true;
+                } else {
+                    this.show_doc = !this.show_doc;
+                }
+                return true; // Return true to indicate the event was handled
+            }
+            return r;
         }
 	}
 })

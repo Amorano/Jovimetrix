@@ -4,7 +4,6 @@
  */
 
 import { app } from "../../../scripts/app.js"
-import { node_cleanup } from '../util/util.js'
 import { CONVERTED_TYPE, convertToInput } from '../util/util_widget.js'
 import { inner_value_change } from '../util/util_dom.js'
 import { hex2rgb, rgb2hex } from '../util/util_color.js'
@@ -231,15 +230,6 @@ app.registerExtension({
 
             // CLEANUP ON REMOVE
             if (matchingTypes.length > 0) {
-                const onNodeCreated = nodeType.prototype.onNodeCreated;
-                nodeType.prototype.onNodeCreated = function () {
-                    const me = onNodeCreated?.apply(this, arguments);
-                    this.onRemoved = function () {
-                        node_cleanup(this);
-                    };
-                    return me;
-                };
-
                 // MENU CONVERSIONS
                 const getExtraMenuOptions = nodeType.prototype.getExtraMenuOptions;
                 nodeType.prototype.getExtraMenuOptions = function (_, options) {

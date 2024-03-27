@@ -67,7 +67,7 @@ app.registerExtension({
                     const varTypeTarget = (varType === "bool") ? "toggle" : (["float", "int"].includes(varType) ? "number" : varType);
 
                     if (exist && exist.type !== varTypeTarget) {
-                        console.info("remove", exist.type, varType, varTypeTarget);
+                        // console.info("remove", exist.type, varType, varTypeTarget);
                         widget_remove(self, exist);
                         exist = undefined;
                     }

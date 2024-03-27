@@ -7,7 +7,8 @@
 import { app } from "../../../scripts/app.js"
 import { $el } from "../../../scripts/ui.js"
 import { api_post } from '../util/util_api.js'
-import { color_contrast, node_color_all, node_color_get} from '../util/util_color.js'
+import { node_cleanup } from '../util/util.js'
+import { color_contrast, node_color_all, node_color_get } from '../util/util_color.js'
 import * as util_config from '../util/util_config.js'
 import { JovimetrixConfigDialog } from "./core_config.js"
 import "../extern/jsColorPicker.js"
@@ -139,7 +140,7 @@ app.registerExtension({
             if (colors?.body) {
                 this['bgcolor'] = colors.body
             }
-            return me
+            return me;
         }
     }
 })

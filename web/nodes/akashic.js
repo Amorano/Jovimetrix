@@ -5,7 +5,7 @@
  */
 
 import { app } from "../../../scripts/app.js"
-import { fitHeight, node_cleanup } from '../util/util.js'
+import { fitHeight } from '../util/util.js'
 import { escapeHtml } from '../util/util_dom.js'
 import { JImageWidget } from '../widget/widget_jimage.js'
 import { JStringWidget } from '../widget/widget_jstring.js'
@@ -52,17 +52,7 @@ app.registerExtension({
             } else {
                 console.debug("unknown message", message)
             }
-
             fitHeight(this);
-            this.onRemoved = function () {
-                for (let y in this.widgets) {
-                    if (this.widgets[y].canvas) {
-                        this.widgets[y].canvas.remove()
-                    }
-                    node_cleanup(this)
-                    this.widgets[y].onRemoved?.()
-                }
-            }
         }
     }
 })

@@ -335,7 +335,7 @@ class CalcBinaryOPNode(JOVBaseNode):
                 val_a = parse_value(A, EnumConvertType.VEC4, A if A is not None else a_xyzw)
                 val_b = parse_value(B, EnumConvertType.VEC4, B if B is not None else b_xyzw)
             else:
-                print('val', A, B)
+                # logger.debug('val', A, B)
                 val_a = parse_value(A, EnumConvertType.VEC4, A if A is not None else a_x)
                 val_b = parse_value(B, EnumConvertType.VEC4, B if B is not None else a_x)
 
@@ -346,7 +346,7 @@ class CalcBinaryOPNode(JOVBaseNode):
             size = max(1, int(typ.value / 10))
             val_a = val_a[:size]
             val_b = val_b[:size]
-            print('val_a', val_a, val_b)
+            # logger.debug('val_a', val_a, val_b)
 
             match EnumBinaryOperation[op]:
                 # VECTOR

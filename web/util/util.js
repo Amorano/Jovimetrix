@@ -4,6 +4,13 @@
  *
  */
 
+
+/*
+parse a json into a graph
+const workflow = JSON.parse(json);
+await this.loadGraphData(workflow);
+*/
+
 export const TypeSlot = {
     Input: 1,
     Output: 2,
@@ -19,15 +26,8 @@ export function getConfig(widgetName) {
 	return nodeData?.input?.required[widgetName] ?? nodeData?.input?.optional?.[widgetName];
 }
 
-export const node_has_widgets = (node) => {
-    if (!node.widgets || !node.widgets?.[Symbol.iterator]) {
-      return false
-    }
-    return true
-}
-
 export const node_cleanup = (node) => {
-    if (!node_has_widgets(node)) {
+    if (!node.widgets || !node.widgets?.[Symbol.iterator]) {
         return
     }
     for (const w of node.widgets) {

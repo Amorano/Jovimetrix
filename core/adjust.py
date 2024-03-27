@@ -164,10 +164,10 @@ class AdjustNode(JOVBaseNode):
                     img_new = cv2.morphologyEx(pA, cv2.MORPH_GRADIENT, (radius, radius))
 
                 case EnumAdjustOP.DILATE:
-                    img_new = cv2.dilate(pA, (r, r), iterations=int(amt))
+                    img_new = cv2.dilate(pA, (radius, radius), iterations=int(amt))
 
                 case EnumAdjustOP.ERODE:
-                    img_new = cv2.erode(pA, (r, r), iterations=int(amt))
+                    img_new = cv2.erode(pA, (radius, radius), iterations=int(amt))
 
                 case EnumAdjustOP.OPEN:
                     img_new = cv2.morphologyEx(pA, cv2.MORPH_OPEN, (radius, radius), iterations=int(amt))
