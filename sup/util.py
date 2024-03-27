@@ -54,6 +54,11 @@ def parse_dynamic(who, data) -> list:
     vals = []
     count = 1
     while (val := data.get(f"{who}_{count}", None)) is not None:
+        if not isinstance(val, (list, )):
+            if isinstance(val, (torch.Tensor,)):
+                val = val.tolist()
+            else:
+                val = [val]
         vals.append(val)
         count += 1
     return vals
@@ -211,25 +216,25 @@ def zip_longest_fill(*iterables: Any) -> Generator[Tuple[Any, ...], None, None]:
     except Exception as e:
         logger.error(iterables)
         logger.error(str(e))
+    else:
+        while True:
+            values = [next(iterator, None) for iterator in iterators]
 
-    while True:
-        values = [next(iterator, None) for iterator in iterators]
+            # Check if all iterators are exhausted
+            if all(value is None for value in values):
+                break
 
-        # Check if all iterators are exhausted
-        if all(value is None for value in values):
-            break
+            # Fill in the last values of exhausted iterators with their own last values
+            for i, _ in enumerate(iterators):
+                if values[i] is None:
+                    iterator_copy = iter(iterables[i])
+                    while True:
+                        current_value = next(iterator_copy, None)
+                        if current_value is None:
+                            break
+                        values[i] = current_value
 
-        # Fill in the last values of exhausted iterators with their own last values
-        for i, _ in enumerate(iterators):
-            if values[i] is None:
-                iterator_copy = iter(iterables[i])
-                while True:
-                    current_value = next(iterator_copy, None)
-                    if current_value is None:
-                        break
-                    values[i] = current_value
-
-        yield tuple(values)
+            yield tuple(values)
 
 def deep_merge_dict(*dicts: dict) -> dict:
     """

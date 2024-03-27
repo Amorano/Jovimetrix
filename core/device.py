@@ -61,11 +61,10 @@ class EnumStreamType(Enum):
 
 class StreamReaderNode(JOVBaseNode):
     NAME = "STREAM READER (JOV) 📺"
-    NAME_URL = "COMPARISON 🕵🏽"
+    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"[{NAME_URL}]({JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md)"
+    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
-    DESC = "Connect system media devices and remote streams into ComfyUI workflows."
     INPUT_IS_LIST = False
     RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
@@ -263,12 +262,10 @@ class StreamReaderNode(JOVBaseNode):
 
 class StreamWriterNode(JOVBaseNode):
     NAME = "STREAM WRITER (JOV) 🎞️"
-    NAME_URL = "COMPARISON 🕵🏽"
+    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"[{NAME_URL}]({JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md)"
+    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
-    DESC = "Broadcast ComfyUI Node outputs to custom webserver endpoint."
-
     INPUT_IS_LIST = False
     OUTPUT_NODE = True
     SORT = 70
@@ -333,12 +330,10 @@ class StreamWriterNode(JOVBaseNode):
 if JOV_SPOUT:
     class SpoutWriterNode(JOVBaseNode):
         NAME = "SPOUT WRITER (JOV) 🎥"
-        NAME_URL = "COMPARISON 🕵🏽"
+        NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
         CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-        DESCRIPTION = f"[{NAME_URL}]({JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md)"
+        DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
         HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
-        DESC = "Send image data to Spout endpoints"
-
         INPUT_IS_LIST = False
         RETURN_TYPES = ("IMAGE", )
         RETURN_NAMES = (Lexicon.IMAGE,)
@@ -397,11 +392,10 @@ if JOV_SPOUT:
 
 class MIDIMessageNode(JOVBaseNode):
     NAME = "MIDI MESSAGE (JOV) 🎛️"
-    NAME_URL = "COMPARISON 🕵🏽"
+    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"[{NAME_URL}]({JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md)"
+    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
-    DESC = "Expands a MIDI message into its values."
 
     RETURN_TYPES = ('JMIDIMSG', 'BOOLEAN', 'INT', 'INT', 'INT', 'FLOAT', 'FLOAT', )
     RETURN_NAMES = (Lexicon.MIDI, Lexicon.ON, Lexicon.CHANNEL, Lexicon.CONTROL, Lexicon.NOTE, Lexicon.VALUE, Lexicon.NORMALIZE, )
@@ -432,11 +426,10 @@ class MIDIMessageNode(JOVBaseNode):
 
 class MIDIReaderNode(JOVBaseNode):
     NAME = "MIDI READER (JOV) 🎹"
-    NAME_URL = "COMPARISON 🕵🏽"
+    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"[{NAME_URL}]({JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md)"
+    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
-    DESC = "Capture MIDI devices and pass the data into Comfy."
 
     RETURN_TYPES = ('JMIDIMSG', 'BOOLEAN', 'INT', 'INT', 'INT', 'FLOAT', 'FLOAT',)
     RETURN_NAMES = (Lexicon.MIDI, Lexicon.ON, Lexicon.CHANNEL, Lexicon.CONTROL, Lexicon.NOTE, Lexicon.VALUE, Lexicon.NORMALIZE,)
@@ -499,11 +492,10 @@ class MIDIReaderNode(JOVBaseNode):
 
 class MIDIFilterEZNode(JOVBaseNode):
     NAME = "MIDI FILTER EZ (JOV) ❇️"
-    NAME_URL = "COMPARISON 🕵🏽"
+    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"[{NAME_URL}]({JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md)"
+    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
-    DESC = "Filter MIDI messages by channel, message type or value."
 
     INPUT_IS_LIST = False
     RETURN_TYPES = ('JMIDIMSG', 'BOOLEAN',)
@@ -554,11 +546,10 @@ class MIDIFilterEZNode(JOVBaseNode):
 
 class MIDIFilterNode(JOVBaseNode):
     NAME = "MIDI FILTER (JOV) ✳️"
-    NAME_URL = "COMPARISON 🕵🏽"
+    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"[{NAME_URL}]({JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md)"
+    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
-    DESC = "Filter MIDI messages by channel, message type or value."
 
     INPUT_IS_LIST = False
     RETURN_TYPES = ('JMIDIMSG', 'BOOLEAN', )
@@ -645,11 +636,10 @@ class MIDIFilterNode(JOVBaseNode):
 
 class AudioDeviceNode(JOVBaseNode):
     NAME = "AUDIO DEVICE (JOV) 📺"
-    NAME_URL = "COMPARISON 🕵🏽"
+    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"[{NAME_URL}]({JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md)"
+    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
-    DESC = "Stream from System audio devices into ComfyUI workflows"
 
     INPUT_IS_LIST = False
     RETURN_TYPES = ('WAVE',)

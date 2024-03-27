@@ -23,11 +23,10 @@ JOV_CATEGORY = "ANIMATE"
 
 class TickNode(JOVBaseNode):
     NAME = "TICK (JOV) ⏱"
-    NAME_URL = "COMPARISON 🕵🏽"
+    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"[{NAME_URL}]({JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md)"
+    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
-    DESC = "Periodic pulse with total pulse count, normalized count relative to the loop setting and fixed pulse step."
     INPUT_IS_LIST = False
     RETURN_TYPES = ("INT", "FLOAT", "FLOAT", WILDCARD)
     RETURN_NAMES = (Lexicon.VALUE, Lexicon.LINEAR, Lexicon.FPS, Lexicon.ANY)
@@ -94,20 +93,18 @@ class TickNode(JOVBaseNode):
         if parse_reset(ident) > 0 or reset:
             self.__frame = 0
             self.__fixed_step = 0
-        lin = self.__frame
         trigger = None
         pbar = ProgressBar(batch)
         for idx in range(batch):
             if passthru is not None:
                 trigger = passthru if trigger else None
+            lin = self.__frame if loop == 0 else self.__frame / loop
             results.append([self.__frame, lin, self.__fixed_step, trigger])
             if not hold:
                 self.__frame += 1
                 self.__fixed_step += step
-                lin = self.__frame
                 if loop > 0:
                     self.__frame %= loop
-                    lin /= loop
                 self.__fixed_step %= fps
                 trigger = self.__frame % beat == 0
             pbar.update_absolute(idx)
@@ -118,11 +115,10 @@ class TickNode(JOVBaseNode):
 
 class WaveGeneratorNode(JOVBaseNode):
     NAME = "WAVE GENERATOR (JOV) 🌊"
-    NAME_URL = "COMPARISON 🕵🏽"
+    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"[{NAME_URL}]({JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md)"
+    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
-    DESC = "Periodic and Non-Periodic Sinosodials."
     RETURN_TYPES = ("FLOAT", "INT", )
     RETURN_NAMES = (Lexicon.FLOAT, Lexicon.INT, )
     OUTPUT_IS_LIST = (True, True,)

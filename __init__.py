@@ -90,14 +90,11 @@ JOV_CONFIG = {}
 JOV_WEB = ROOT / 'web'
 JOV_DEFAULT = JOV_WEB / 'default.json'
 JOV_CONFIG_FILE = JOV_WEB / 'config.json'
-JOV_HELP_INDEX = {}
-JOV_HELP_ROOT = ROOT / 'help'
+
 # nodes to skip on import; for online systems; skip Export, Streamreader, etc...
 JOV_IGNORE_NODE = ROOT / 'ignore.txt'
 JOV_GLSL = ROOT / 'res' / 'glsl'
-
-JOV_WEBWIKI_URL = "https://github.com/Amorano/Jovimetrix/wiki"
-JOV_WEBHELP_ROOT = "https://github.com/Amorano/Jovimetrix-examples/blob/master"
+# JOV_WEBHELP_ROOT = "https://github.com/Amorano/Jovimetrix-examples/blob/master"
 JOV_WEB_RES_ROOT = "https://raw.githubusercontent.com/Amorano/Jovimetrix-examples/master"
 
 JOV_LOG_LEVEL = os.getenv("JOV_LOG_LEVEL", "WARNING")

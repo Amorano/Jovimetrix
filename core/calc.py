@@ -174,11 +174,10 @@ def convert_value(typ:EnumConvertType, val:Any) -> Any:
 
 class CalcUnaryOPNode(JOVBaseNode):
     NAME = "CALC OP UNARY (JOV) 🎲"
-    NAME_URL = "COMPARISON 🕵🏽"
+    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"[{NAME_URL}]({JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md)"
+    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
-    DESC = "Perform a Unary Operation on an input."
     RETURN_TYPES = (WILDCARD,)
     RETURN_NAMES = (Lexicon.UNKNOWN,)
     OUTPUT_IS_LIST = (True,)
@@ -257,11 +256,10 @@ class CalcUnaryOPNode(JOVBaseNode):
 
 class CalcBinaryOPNode(JOVBaseNode):
     NAME = "CALC OP BINARY (JOV) 🌟"
-    NAME_URL = "COMPARISON 🕵🏽"
+    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"[{NAME_URL}]({JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md)"
+    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
-    DESC = "Perform a Binary Operation on two inputs."
     RETURN_TYPES = (WILDCARD,)
     RETURN_NAMES = (Lexicon.UNKNOWN,)
     OUTPUT_IS_LIST = (True,)
@@ -422,11 +420,10 @@ class CalcBinaryOPNode(JOVBaseNode):
 
 class ValueNode(JOVBaseNode):
     NAME = "VALUE (JOV) 🧬"
-    NAME_URL = "COMPARISON 🕵🏽"
+    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"[{NAME_URL}]({JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md)"
+    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
-    DESC = "Create a value for most types; also universal constants."
     RETURN_TYPES = (WILDCARD,)
     RETURN_NAMES = (Lexicon.ANY,)
     OUTPUT_IS_LIST = (True,)
@@ -466,11 +463,10 @@ class ValueNode(JOVBaseNode):
 
 class LerpNode(JOVBaseNode):
     NAME = "LERP (JOV) 🔰"
-    NAME_URL = "COMPARISON 🕵🏽"
+    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"[{NAME_URL}]({JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md)"
+    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
-    DESC = "Interpolate between two values with or without a smoothing."
     OUTPUT_IS_LIST = (True,)
     RETURN_TYPES = (WILDCARD,)
     RETURN_NAMES = (Lexicon.ANY )
@@ -522,11 +518,10 @@ class LerpNode(JOVBaseNode):
 
 class SwapNode(JOVBaseNode):
     NAME = "SWAP (JOV) 😵"
-    NAME_URL = "COMPARISON 🕵🏽"
+    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"[{NAME_URL}]({JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md)"
+    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
-    DESC = "Swap vector positions within a vector or with another vector input."
 
     OUTPUT_IS_LIST = (True,)
     RETURN_TYPES = (WILDCARD,)

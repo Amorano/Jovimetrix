@@ -67,12 +67,11 @@ class AkashicData:
 
 class AkashicNode(JOVBaseNode):
     NAME = "AKASHIC (JOV) 📓"
-    NAME_URL = "COMPARISON 🕵🏽"
+    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"[{NAME_URL}]({JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md)"
+    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
-    DESC = "Display the top level attributes of an output."
-        RETURN_TYPES = (WILDCARD, 'AKASHIC', )
+    RETURN_TYPES = (WILDCARD, 'AKASHIC', )
     RETURN_NAMES = (Lexicon.PASS_OUT, Lexicon.IO)
     OUTPUT_NODE = True
     SORT = 10
@@ -136,12 +135,12 @@ class AkashicNode(JOVBaseNode):
 
 class ValueGraphNode(JOVBaseNode):
     NAME = "VALUE GRAPH (JOV) 📈"
-    NAME_URL = "COMPARISON 🕵🏽"
+    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"[{NAME_URL}]({JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md)"
+    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
-    DESC = "Graphs historical execution run values."
-        RETURN_TYPES = ("IMAGE", )
+    OUTPUT_NODE = True
+    RETURN_TYPES = ("IMAGE", )
     RETURN_NAMES = (Lexicon.IMAGE, )
     SORT = 15
 
@@ -159,10 +158,6 @@ class ValueGraphNode(JOVBaseNode):
         }}
         return Lexicon._parse(d, cls.HELP_URL)
 
-    @classmethod
-    def IS_CHANGED(cls, **kw) -> float:
-        return float("nan")
-
     def __init__(self, *arg, **kw) -> None:
         super().__init__(*arg, **kw)
         self.__history = []
@@ -176,9 +171,9 @@ class ValueGraphNode(JOVBaseNode):
             self.__history = []
         longest_edge = 0
         dynamic = parse_dynamic(Lexicon.UNKNOWN, kw)
-        params = [tuple(x) for x in zip_longest_fill(dynamic, slice)]
-        pbar = ProgressBar(len(params))
-        for idx, (val, slice) in enumerate(params):
+        # params = [tuple(x) for x in zip_longest_fill(dynamic,)]
+        # pbar = ProgressBar(len(dynamic))
+        for idx, val in enumerate(dynamic):
             if isinstance(val, (set, tuple,)):
                 val = list(val)
             if not isinstance(val, (list, )):
@@ -190,7 +185,7 @@ class ValueGraphNode(JOVBaseNode):
             stride = max(0, -slice + len(self.__history[idx]) + 1)
             longest_edge = max(longest_edge, stride)
             self.__history[idx] = self.__history[idx][stride:]
-            pbar.update_absolute(idx)
+            # pbar.update_absolute(idx)
 
         self.__history = self.__history[:idx+1]
         self.__ax.clear()
@@ -210,12 +205,11 @@ class ValueGraphNode(JOVBaseNode):
 
 class RouteNode(JOVBaseNode):
     NAME = "ROUTE (JOV) 🚌"
-    NAME_URL = "COMPARISON 🕵🏽"
+    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"[{NAME_URL}]({JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md)"
+    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
-    DESC = "Pass all data because the default is broken on connection."
-        OUTPUT_IS_LIST = (True, )
+    OUTPUT_IS_LIST = (True, )
     RETURN_TYPES = (WILDCARD, )
     RETURN_NAMES = (Lexicon.PASS_OUT, )
     SORT = 5
@@ -235,12 +229,11 @@ class RouteNode(JOVBaseNode):
 
 class QueueNode(JOVBaseNode):
     NAME = "QUEUE (JOV) 🗃"
-    NAME_URL = "COMPARISON 🕵🏽"
+    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"[{NAME_URL}]({JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md)"
+    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
-    DESC = "Cycle lists of images files or strings for node inputs."
-        INPUT_IS_LIST = False
+    INPUT_IS_LIST = False
     RETURN_TYPES = (WILDCARD, WILDCARD, "STRING", "INT", "INT", )
     RETURN_NAMES = (Lexicon.ANY, Lexicon.QUEUE, Lexicon.CURRENT, Lexicon.INDEX, Lexicon.TOTAL, )
     OUTPUT_IS_LIST = (False, True, False, False, False, )
@@ -372,12 +365,11 @@ class QueueNode(JOVBaseNode):
 
 class ExportNode(JOVBaseNode):
     NAME = "EXPORT (JOV) 📽"
-    NAME_URL = "COMPARISON 🕵🏽"
+    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"[{NAME_URL}]({JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md)"
+    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
-    DESC = "Take your frames out static or animated (GIF)"
-        INPUT_IS_LIST = False
+    INPUT_IS_LIST = False
     OUTPUT_NODE = True
     SORT = 80
 
@@ -470,12 +462,11 @@ class ExportNode(JOVBaseNode):
 
 class ImageDiffNode(JOVBaseNode):
     NAME = "IMAGE DIFF (JOV) 📏"
-    NAME_URL = "COMPARISON 🕵🏽"
+    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"[{NAME_URL}]({JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md)"
+    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
-    DESC = "Explicitly show the differences between two images via self-similarity index."
-        RETURN_TYPES = ("IMAGE", "IMAGE", "MASK", "MASK", "FLOAT", )
+    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK", "MASK", "FLOAT", )
     RETURN_NAMES = (Lexicon.IN_A, Lexicon.IN_B, Lexicon.DIFF, Lexicon.THRESHOLD, Lexicon.FLOAT, )
     OUTPUT_IS_LIST = (False, False, False, False, True, )
     SORT = 90
@@ -510,12 +501,10 @@ class ImageDiffNode(JOVBaseNode):
 
 class ArrayNode(JOVBaseNode):
     NAME = "ARRAY (JOV) 📚"
-    NAME_URL = "COMPARISON 🕵🏽"
+    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"[{NAME_URL}]({JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md)"
+    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
-    DESC = "Make, merge, splice or split a batch or list."
-        INPUT_IS_LIST = False
     OUTPUT_IS_LIST = (False, False, True,)
     RETURN_TYPES = ("INT", WILDCARD, WILDCARD,)
     RETURN_NAMES = (Lexicon.VALUE, Lexicon.ANY, Lexicon.LIST,)
@@ -545,7 +534,7 @@ class ArrayNode(JOVBaseNode):
         # return iter(lambda: tuple(islice(iterator, chunk_size)), tuple())
 
     def run(self, **kw) -> tuple[int, list]:
-        batch = parse_dynamic(Lexicon.UNKNOWN, kw, None, EnumConvertType.ANY)
+        batch = parse_dynamic(Lexicon.UNKNOWN, kw)
         mode = parse_parameter(Lexicon.BATCH_MODE, kw, EnumBatchMode.MERGE.name, EnumConvertType.STRING)[0]
         flip = parse_parameter(Lexicon.FLIP, kw, False, EnumConvertType.BOOLEAN)[0]
         chunk = parse_parameter(Lexicon.BATCH_CHUNK, kw, 0, EnumConvertType.INT)[0]
@@ -621,12 +610,11 @@ class ArrayNode(JOVBaseNode):
 """
 class SelectNode(JOVBaseNode):
     NAME = "SELECT (JOV) 🤏🏽"
-    NAME_URL = "COMPARISON 🕵🏽"
+    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"[{NAME_URL}]({JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md)"
+    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
-    DESC = "Select an item from a user explicit list of inputs."
-        INPUT_IS_LIST = False
+            INPUT_IS_LIST = False
     RETURN_TYPES = (WILDCARD, "STRING", "INT", "INT", )
     RETURN_NAMES = (Lexicon.ANY, Lexicon.QUEUE, Lexicon.VALUE, Lexicon.TOTAL, )
     OUTPUT_IS_LIST = (False, False, False, False, )
@@ -681,11 +669,10 @@ class SelectNode(JOVBaseNode):
 """
 class HistogramNode(JOVImageSimple):
     NAME = "HISTOGRAM (JOV) 👁‍🗨"
-    NAME_URL = "COMPARISON 🕵🏽"
+    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"[{NAME_URL}]({JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md)"
+    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
-    DESC = "Histogram"
         RETURN_TYPES = ("IMAGE", )
     RETURN_NAMES = (Lexicon.IMAGE,)
     OUTPUT_IS_LIST = (True,)
@@ -716,12 +703,11 @@ class HistogramNode(JOVImageSimple):
 """
 class GenuflectNode(JOVBaseNode):
     NAME = "GENUFLECT (JOV) 📏"
-    NAME_URL = "COMPARISON 🕵🏽"
+    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"[{NAME_URL}]({JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md)"
+    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
-    DESC = "Shill node to test input and outputs"
-        OUTPUT_IS_LIST = (False, )
+            OUTPUT_IS_LIST = (False, )
     RETURN_TYPES = ("IMAGE",)
     RETURN_NAMES = (Lexicon.IN_A, )
     SORT = 200

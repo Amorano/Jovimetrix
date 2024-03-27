@@ -25,11 +25,10 @@ JOV_CATEGORY = "AUDIO"
 
 class LoadWaveNode(JOVBaseNode):
     NAME = "LOAD WAVE (JOV) 🎼"
-    NAME_URL = "COMPARISON 🕵🏽"
+    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"[{NAME_URL}]({JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md)"
+    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
-    DESC = "Import audio waveform data"
     RETURN_TYPES = ("WAVE",)
     RETURN_NAMES = (Lexicon.WAVE,)
 
@@ -68,12 +67,11 @@ class LoadWaveNode(JOVBaseNode):
 
 class WaveGraphNode(JOVBaseNode):
     NAME = "WAVE GRAPH (JOV) ▶ ılıılı"
-    NAME_URL = "COMPARISON 🕵🏽"
+    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"[{NAME_URL}]({JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md)"
+    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
-    DESC = "Display audio waveform data as a linear bar graph"
-        RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
+    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
     # OUTPUT_IS_LIST = ()
 
