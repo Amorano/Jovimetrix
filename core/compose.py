@@ -194,11 +194,16 @@ class BlendNode(JOVBaseNode):
             if flip:
                 pA, pB = pB, pA
 
-            w, h = wihi
-            pB = tensor2cv(pB)
+            w, h = MIN_IMAGE_SIZE, MIN_IMAGE_SIZE
+            if pA is not None:
+                h, w = pA.size()[2:]
+            elif pB is not None:
+                h, w = pB.size()[2:]
+
             matte = pixel_eval(matte, EnumImageType.BGRA)
             pA = tensor2cv(pA, width=w, height=h)
             pA = image_matte(pA, matte)
+            pB = tensor2cv(pB, width=w, height=h)
 
             if mask is None:
                 mask = image_mask(pB)

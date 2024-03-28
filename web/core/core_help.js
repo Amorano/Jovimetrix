@@ -161,13 +161,12 @@ app.registerExtension({
             return me;
         }
 
-        const self = this;
         const onDrawForeground = nodeType.prototype.onDrawForeground;
         nodeType.prototype.onDrawForeground = function (ctx) {
             const me = onDrawForeground?.apply?.(this, arguments);
             if (this.flags.collapsed) return me;
 
-            if (self.tooltips_visible) {
+            if (this.tooltips_visible) {
                 const TOOLTIP_COLOR = CONFIG_USER.color.tooltips;
                 let alpha = TOOLTIP_COLOR.length > 6 ? TOOLTIP_COLOR.slice(-2) : "FF";
                 for (const selectedNode of Object.values(app.canvas.selected_nodes)) {
@@ -346,14 +345,16 @@ app.registerExtension({
                     .multiplySelf(ctx.getTransform())
                     .translateSelf(this.size[0] + 10, -32)
 
+                const width = Math.min(512,  2 * this.size[0] - LiteGraph.NODE_MIN_WIDTH);
+                const height = (this.size[1] || this.parent?.inputHeight || 0) + 48;
                 const scale = new DOMMatrix().scaleSelf(transform.a, transform.d);
                 Object.assign(this.docElement.style, {
                     transformOrigin: '0 0',
                     transform: scale,
                     left: `${transform.a + transform.e}px`,
-                    top: `${transform.d + transform.f}px`,
-                    width: `${this.size[0] * 2}px`,
-                    height: `${this.size[1] || this.parent?.inputHeight || 32}px`,
+                    top: `${transform.d + transform.f - 8}px`,
+                    width: `${width}px`,
+                    height: `${height}px`,
                 })
             }
 
@@ -374,7 +375,6 @@ app.registerExtension({
         // HELP!
         const getExtraMenuOptions = nodeType.prototype.getExtraMenuOptions;
         nodeType.prototype.getExtraMenuOptions = function (_, options) {
-            const self = this;
             const me = getExtraMenuOptions?.apply(this, arguments);
             const widget_tooltip = (this.widgets || [])
                 .find(widget => widget.type === 'JTOOLTIP');
@@ -391,7 +391,7 @@ app.registerExtension({
                 callback: () => {
                     LiteGraph.closeAllContextMenus();
                     window.open(`${JOV_WEBWIKI_URL}/${url}`, '_blank');
-                    self.setDirtyCanvas(true, true);
+                    this.setDirtyCanvas(true, true);
                 }
             }];
             if (help_menu.length) {
