@@ -10,8 +10,7 @@ import moderngl
 import numpy as np
 from PIL import Image
 from loguru import logger
-
-from Jovimetrix.sup.image import TYPE_IMAGE
+from sympy import false
 
 # =============================================================================
 
@@ -60,6 +59,9 @@ class CompileException(Exception): pass
 # =============================================================================
 
 class GLSL:
+    CTX = None
+    VBO = None
+
     @classmethod
     def instant(cls, fpath: str, texture1:Image=None, width:int=None, height:int=None, param:dict=None) -> Image:
         width = width or MIN_IMAGE_SIZE
@@ -77,13 +79,25 @@ class GLSL:
         return img
 
     def __init__(self, fragment:str, width:int=128, height:int=128, param:dict=None) -> None:
+        # single initialize for all
+        if GLSL.CTX is None:
+            GLSL.CTX = moderngl.create_context(standalone=True)
+            vertices = np.array([
+                -1.0, -1.0,
+                1.0, -1.0,
+                -1.0,  1.0,
+                1.0, -1.0,
+                1.0,  1.0,
+                -1.0,  1.0
+            ], dtype='f4')
+            GLSL.VBO = GLSL.CTX.buffer(vertices.tobytes())
+
         if os.path.isfile(fragment):
             with open(fragment, 'r', encoding='utf8') as f:
                 fragment = f.read()
         self.__fragment: str = FRAGMENT_HEADER + fragment
-        self.__ctx = moderngl.create_context(standalone=True)
         try:
-            self.__prog = self.__ctx.program(
+            self.__prog = GLSL.CTX.program(
                 vertex_shader=VERTEX,
                 fragment_shader=self.__fragment,
             )
@@ -117,21 +131,11 @@ class GLSL:
                 logger.warning(k)
                 logger.warning(v)
 
-        vertices = np.array([
-            -1.0, -1.0,
-             1.0, -1.0,
-            -1.0,  1.0,
-             1.0, -1.0,
-             1.0,  1.0,
-            -1.0,  1.0
-        ], dtype='f4')
-
-        self.__vbo = self.__ctx.buffer(vertices.tobytes())
-        self.__vao = self.__ctx.simple_vertex_array(self.__prog, self.__vbo, "iPosition")
+        self.__vao = GLSL.CTX.simple_vertex_array(self.__prog, GLSL.VBO, "iPosition")
         self.__width = width
         self.__height = height
-        self.__texture = self.__ctx.texture((width, height), 4)
-        self.__fbo = self.__ctx.framebuffer(
+        self.__texture = GLSL.CTX.texture((width, height), 4)
+        self.__fbo = GLSL.CTX.framebuffer(
             color_attachments=[self.__texture]
         )
 
@@ -146,6 +150,7 @@ class GLSL:
         self.__frame_count: int = 0
         self.__time_last: float = time.perf_counter()
 
+    """
     def __del__(self) -> None:
         try:
             if self.__vao is not None:
@@ -155,9 +160,9 @@ class GLSL:
             pass
 
         try:
-            if self.__vbo is not None:
-                self.__vbo.release()
-                self.__vbo = None
+            if GLSL.VBO is not None:
+                GLSL.VBO.release()
+                GLSL.VBO = None
         except:
             pass
 
@@ -176,11 +181,12 @@ class GLSL:
             pass
 
         try:
-            if self.__ctx is not None:
-                self.__ctx.release()
-                self.__ctx.gc()
+            if GLSL.CTX is not None:
+                GLSL.CTX.release()
+                GLSL.CTX.gc()
         except:
             pass
+    """
 
     def reset(self) -> None:
         self.__runtime = 0
@@ -198,15 +204,15 @@ class GLSL:
             self.__texture = None
 
         if self.__texture is None:
-            self.__texture = self.__ctx.texture((self.__width, self.__height), 4)
+            self.__texture = GLSL.CTX.texture((self.__width, self.__height), 4)
 
         try:
-            self.__fbo = self.__ctx.framebuffer(
+            self.__fbo = GLSL.CTX.framebuffer(
                 color_attachments=[self.__texture]
             )
         except Exception as e:
             logger.error(str(e))
-            logger.debug(self.__ctx)
+            logger.debug(GLSL.CTX)
             logger.debug(self.__width)
             logger.debug(self.__height)
 
@@ -268,11 +274,11 @@ class GLSL:
         return self.__iChannel0
 
     @channel0.setter
-    def channel0(self, val:TYPE_IMAGE) -> None:
+    def channel0(self, val:np.ndarray) -> None:
         if self.__iChannel0 is not None:
             if len(val.mode) != 4:
                 val = val.convert("RGBA")
-            self.__channel0_texture = self.__ctx.texture(val.size, components=4, data=val.tobytes())
+            self.__channel0_texture = GLSL.CTX.texture(val.size, components=4, data=val.tobytes())
             self.__channel0_texture.use(location=0)
 
     def __set_uniforms(self) -> None:

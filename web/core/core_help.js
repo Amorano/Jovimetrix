@@ -283,50 +283,6 @@ app.registerExtension({
                 } else {
                     this.docElement.innerHTML = dataCache[nodeData.name];
                 }
-
-                // resize handle
-                const resizeHandle = document.createElement('div');
-                resizeHandle.style.width = '10px';
-                resizeHandle.style.height = '10px';
-                resizeHandle.style.background = 'gray';
-                resizeHandle.style.position = 'absolute';
-                resizeHandle.style.bottom = '0';
-                resizeHandle.style.right = '0';
-                resizeHandle.style.cursor = 'se-resize';
-
-                // TODO: fix resize logic
-                this.docElement.appendChild(resizeHandle)
-                let isResizing = false;
-                let startX, startY, startWidth, startHeight;
-
-                resizeHandle.addEventListener('mousedown', function (e) {
-                    e.stopPropagation()
-                    isResizing = true;
-                    startX = e.clientX;
-                    startY = e.clientY;
-                    startWidth = parseInt(
-                        document.defaultView.getComputedStyle(this.docElement).width,
-                        10,
-                    );
-                    startHeight = parseInt(
-                        document.defaultView.getComputedStyle(this.docElement).height,
-                        10,
-                    );
-                })
-
-                document.addEventListener('mousemove', function (e) {
-                    if (!isResizing) return;
-                    const newWidth = startWidth + e.clientX - startX;
-                    const newHeight = startHeight + e.clientY - startY;
-                    offsetX += newWidth - startWidth;
-                    offsetY += newHeight - startHeight;
-                    startWidth = newWidth;
-                    startHeight = newHeight;
-                })
-
-                document.addEventListener('mouseup', function () {
-                    isResizing = false;
-                })
                 document.body.appendChild(this.docElement)
             }
 
