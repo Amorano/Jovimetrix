@@ -144,9 +144,10 @@ def text_autosize(text:str, font:str, width:int, height:int, columns:int=0) -> t
 
     size = (1, 1, 1)
     font_size = 1
+    test_text = text if columns == 0 else ' ' * columns
     while 1:
         ttf = ImageFont.truetype(font, font_size)
-        w, h = text_size(draw, text, ttf)
+        w, h = text_size(draw, test_text, ttf)
         if w >= width or h >= height:
             break
         size = (font_size, w, h)

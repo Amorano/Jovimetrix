@@ -3,6 +3,7 @@ Jovimetrix - http://www.github.com/amorano/jovimetrix
 Utility
 """
 
+
 import io
 import os
 import json
@@ -10,6 +11,7 @@ import glob
 import base64
 import random
 import shutil
+import requests
 from enum import Enum
 from typing import Any
 from pathlib import Path
@@ -607,129 +609,78 @@ class ArrayNode(JOVBaseNode):
             extract = [e for e in self.batched(extract, chunk)]
         return (len(extract), extract, full,)
 
-"""
-class SelectNode(JOVBaseNode):
-    NAME = "SELECT (JOV) 🤏🏽"
+'''
+class RESTNode:
+    """Make requests and process the responses."""
+    NAME = "REST (JOV) 😴"
     NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
-            INPUT_IS_LIST = False
-    RETURN_TYPES = (WILDCARD, "STRING", "INT", "INT", )
-    RETURN_NAMES = (Lexicon.ANY, Lexicon.QUEUE, Lexicon.VALUE, Lexicon.TOTAL, )
-    OUTPUT_IS_LIST = (False, False, False, False, )
-    SORT = 70
+    OUTPUT_IS_LIST = (True, True, True,)
+    RETURN_TYPES = ("JSON", "INT", "STRING")
+    RETURN_NAMES = ("RESPONSE", "LENGTH", "TOKEN")
+    SORT = 80
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {
         "required": {},
         "optional": {
-            #  -1: Random; 0: Sequential; 1..N: explicitly use index
-            Lexicon.SELECT: ("INT", {"default": 0, "min": -1, "step": 1}),
-            Lexicon.RESET: ("BOOLEAN", {"default": False}),
-        },
-        "hidden": {
-            "ident": "UNIQUE_ID"
+            Lexicon.API: ("STRING", {"default": ""}),
+            Lexicon.URL: ("STRING", {"default": ""}),
+            Lexicon.ATTRIBUTE: ("STRING", {"default": ""}),
+            Lexicon.AUTH: ("STRING", {"multiline": True, "dynamic": False}),
+            Lexicon.PATH: ("STRING", {"default": ""}),
+            "iteration_index": ("INT", {"default": 0, "min": 0, "max": 9999, "step": 1})
         }}
         return Lexicon._parse(d, cls.HELP_URL)
 
-    @classmethod
-    def IS_CHANGED(cls) -> float:
-        return float("nan")
+    def authenticate(self, auth_url, auth_body, token_attribute_name):
+        try:
+            response = requests.post(auth_url, json=auth_body)
+            response.raise_for_status()
+            return response.json().get(token_attribute_name)
+        except requests.exceptions.RequestException as e:
+            logger.error(f"error obtaining bearer token - {e}")
 
-    def __init__(self, *arg, **kw) -> None:
-        super().__init__(*arg, **kw)
-        self.__index = 0
-
-    def run(self, ident, **kw) -> None:
-        if parse_reset(ident) > 0 or parse_parameter(Lexicon.RESET, kw, False, EnumConvertType.BOOLEAN)[0]:
-            self.__index = 0
-        vals = parse_dynamic(Lexicon.UNKNOWN, kw)
-        count = len(vals)
-        select = parse_parameter(Lexicon.SELECT, kw, 0, EnumConvertType.INT, 0)[0]
-        # clip the index in case it went out of range.
-        index = max(0, min(count - 1, self.__index))
-        val = None
-        if select < 1:
-            if select < 0:
-                index = int(random.random() * count)
-                val = vals[index]
-            else:
-                val = vals[index]
-            index += 1
-            if index >= count:
-                index = 0
-        elif select < count:
-            val = vals[index]
-        self.__index = index
-        return val, vals, self.__index + 1, count,
-"""
-
-"""
-class HistogramNode(JOVImageSimple):
-    NAME = "HISTOGRAM (JOV) 👁‍🗨"
-    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
-    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
-    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
-        RETURN_TYPES = ("IMAGE", )
-    RETURN_NAMES = (Lexicon.IMAGE,)
-    OUTPUT_IS_LIST = (True,)
-    SORT = 40
-
-    @classmethod
-    def INPUT_TYPES(cls) -> dict:
-        d = {
-        "required": {},
-        "optional": {
-            Lexicon.PIXEL: (WILDCARD, {}),
-        }}
-        return Lexicon._parse(d, cls.HELP_URL)
-
-    def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        pA = parse_parameter(Lexicon.PIXEL, kw, None, EnumConvertType.IMAGE)
-        params = [tuple(x) for x in zip_longest_fill(pA,)]
-        images = []
-        pbar = ProgressBar(len(params))
-        for idx, (pA, ) in enumerate(params):
-            pA = image_histogram(pA)
-            pA = image_histogram_normalize(pA)
-            images.append(cv2tensor(pA))
-            pbar.update_absolute(idx)
-        return list(zip(*images))
-"""
-
-"""
-class GenuflectNode(JOVBaseNode):
-    NAME = "GENUFLECT (JOV) 📏"
-    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
-    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
-    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
-            OUTPUT_IS_LIST = (False, )
-    RETURN_TYPES = ("IMAGE",)
-    RETURN_NAMES = (Lexicon.IN_A, )
-    SORT = 200
-
-    @classmethod
-    def INPUT_TYPES(cls) -> dict:
-        d = {
-        "required": {},
-        "optional": {
-            Lexicon.PIXEL: (WILDCARD, {}),
-        }}
-        return Lexicon._parse(d, cls.HELP_URL)
-
-    def run(self, **kw) -> tuple[Any, Any]:
-        pA = parse_parameter(Lexicon.PIXEL, kw, None, EnumConvertType.IMAGE)
-
+    def run(self, **kw):
+        auth_body_text = parse_parameter(Lexicon.AUTH, kw, "", EnumConvertType.STRING)
+        api_url = parse_parameter(Lexicon.URL, kw, "", EnumConvertType.STRING)
+        attribute = parse_parameter(Lexicon.ATTRIBUTE, kw, "", EnumConvertType.STRING)
+        array_path = parse_parameter(Lexicon.PATH, kw, "", EnumConvertType.STRING)
         results = []
-        params = [tuple(x) for x in zip_longest_fill(pA,)]
+        params = [tuple(x) for x in zip_longest_fill(auth_body_text, api_url, attribute, array_path)]
         pbar = ProgressBar(len(params))
-        for idx, (pA, ) in enumerate(params):
-            pA = tensor2cv(pA)
-            results.append(cv2tensor(pA))
+        for idx, (auth_body_text, api_url, attribute, array_path) in enumerate(params):
+            auth_body = None
+            if auth_body_text:
+                try:
+                    auth_body = json.loads("{" + auth_body_text + "}")
+                except json.JSONDecodeError as e:
+                    logger.error(f"Error parsing JSON input: {e}")
+                    results.append([None, None, None])
+                    pbar.update_absolute(idx)
+                    continue
+
+            headers = {}
+            if api_url:
+                token = self.authenticate(api_url, auth_body, attribute)
+                headers = {'Authorization': f'Bearer {token}'}
+
+            try:
+                response_data = requests.get(api_url, headers=headers, params={})
+                response_data.raise_for_status()
+                response_data = response_data.json()
+            except requests.exceptions.RequestException as e:
+                logger.error(f"API request: {e}")
+                return {}, None, ""
+
+            target_data = []
+            for key in array_path.split('.'):
+                target_data = target_data.get(key, [])
+            array_data = target_data if isinstance(target_data, list) else []
+            results.append([array_data, len(array_data), f'Bearer {token}'])
             pbar.update_absolute(idx)
         return [list(a) for a in zip(*results)]
-"""
+'''

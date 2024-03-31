@@ -22,7 +22,8 @@ from comfy.utils import ProgressBar
 
 from Jovimetrix import JOV_WEB_RES_ROOT, JOVBaseNode, WILDCARD
 from Jovimetrix.sup.lexicon import Lexicon
-from Jovimetrix.sup.util import EnumConvertType, parse_parameter
+from Jovimetrix.sup.util import EnumConvertType, parse_parameter, parse_value, \
+    zip_longest_fill
 from Jovimetrix.sup.stream import camera_list, monitor_list, window_list, \
     monitor_capture, window_capture, JOV_SPOUT, \
     StreamingServer, StreamManager, MediaStreamDevice
@@ -34,7 +35,7 @@ from Jovimetrix.sup.midi import midi_device_names, \
     MIDIMessage, MIDINoteOnFilter, MIDIServerThread
 
 from Jovimetrix.sup.image import EnumImageType, channel_solid, \
-    cv2tensor, cv2tensor_full, image_convert, pixel_eval, \
+    cv2tensor, cv2tensor_full, pixel_eval, \
     tensor2cv, image_scalefit, \
     EnumInterpolation, EnumScaleMode, MIN_IMAGE_SIZE
 
@@ -266,7 +267,6 @@ class StreamWriterNode(JOVBaseNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
-    INPUT_IS_LIST = False
     OUTPUT_NODE = True
     SORT = 70
     OUT_MAP = {}
@@ -281,7 +281,7 @@ class StreamWriterNode(JOVBaseNode):
             Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
             Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), "step": 1, "label": [Lexicon.W, Lexicon.H]}),
             Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
-            Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
+            Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 0), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
         }}
         return Lexicon._parse(d, cls.HELP_URL)
 
@@ -295,36 +295,37 @@ class StreamWriterNode(JOVBaseNode):
         super().__init__(*arg, **kw)
         self.__route = ""
         self.__unique = uuid.uuid4()
-        self.__device = None
-        self.__starting = False
+        self.__device = StreamManager().capture(self.__unique, static=True)
 
     def run(self, **kw) -> tuple[torch.Tensor]:
-        if self.__starting:
-            return
-        matte = parse_parameter(Lexicon.MATTE, kw, (0,0,0,255), EnumConvertType.VEC4INT, 0, 255)[0]
-        wihi = parse_parameter(Lexicon.WH, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), EnumConvertType.VEC2INT, 1)[0]
-        w, h = wihi
-        img = parse_parameter(Lexicon.PIXEL, kw, None, EnumConvertType.IMAGE)
-        img = tensor2cv(img, width=w, height=h, matte=matte)
-        route = parse_parameter(Lexicon.ROUTE, kw, "/stream", EnumConvertType.STRING)[0]
-        if route != self.__route:
-            self.__starting = True
-            # close old, if any
-            if self.__device:
-                self.__device.release()
-            # startup server
-            self.__device = StreamManager().capture(self.__unique, static=True)
-            StreamingServer().endpointAdd(route, self.__device)
-            StreamWriterNode.OUT_MAP[route] = self.__device
-            self.__route = route
+        route = parse_parameter(Lexicon.ROUTE, kw, "/stream", EnumConvertType.STRING)
+        images = parse_parameter(Lexicon.PIXEL, kw, None, EnumConvertType.IMAGE)
+        wihi = parse_parameter(Lexicon.WH, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), EnumConvertType.VEC2INT, 1)
+        matte = parse_parameter(Lexicon.MATTE, kw, (0,0,0,0), EnumConvertType.VEC4INT, 0, 255)
+        mode = parse_parameter(Lexicon.MODE, kw, EnumScaleMode.NONE.name, EnumConvertType.STRING)
+        sample = parse_parameter(Lexicon.SAMPLE, kw, EnumInterpolation.LANCZOS4.name, EnumConvertType.STRING)
+        params = [tuple(x) for x in zip_longest_fill(route, images, wihi, matte, mode, sample)]
+        pbar = ProgressBar(len(params))
+        for idx, (route, images, wihi, matte, mode, sample) in enumerate(params):
+            if route != self.__route:
+                try:
+                    StreamingServer().endpointAdd(route, self.__device)
+                except Exception as e:
+                    logger.error(e)
+                StreamWriterNode.OUT_MAP[route] = self.__device
+                self.__route = route
 
-        self.__starting = False
-        matte = pixel_eval(matte, EnumImageType.BGRA)
-        if self.__device is not None:
-            mode = parse_parameter(Lexicon.MODE, kw, EnumScaleMode.NONE.name, EnumConvertType.STRING)[0]
-            sample = parse_parameter(Lexicon.SAMPLE, kw, EnumInterpolation.LANCZOS4.name, EnumConvertType.STRING)[0]
-            img = image_scalefit(img, w, h, mode, sample, matte)
-            self.__device.image = img
+            if self.__device is not None:
+                # w, h = wihi
+                matte = pixel_eval(matte, EnumImageType.BGRA)
+                images = parse_value(images, EnumConvertType.LIST, images)
+                for img in images:
+                    loop_time = time.perf_counter_ns()
+                    img = tensor2cv(img)
+                    self.__device.image = image_scalefit(img, *wihi, mode, sample, matte)
+                    delta = max(0, delta - (time.perf_counter_ns() - loop_time))
+                    time.sleep(delta)
+            pbar.update_absolute(idx)
         return ()
 
 if JOV_SPOUT:
@@ -334,8 +335,7 @@ if JOV_SPOUT:
         CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
         DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
         HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
-        INPUT_IS_LIST = False
-        RETURN_TYPES = ("IMAGE", )
+        RETURN_TYPES = ("IMAGE",)
         RETURN_NAMES = (Lexicon.IMAGE,)
         OUTPUT_NODE = True
         SORT = 90
@@ -347,7 +347,7 @@ if JOV_SPOUT:
             "optional": {
                 Lexicon.PIXEL: (WILDCARD, {}),
                 Lexicon.ROUTE: ("STRING", {"default": "Spout Sender"}),
-                Lexicon.FPS: ("INT", {"min": 1, "max": 60, "default": 30}),
+                Lexicon.FPS: ("INT", {"min": 0, "max": 60, "default": 30}),
                 Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
                 Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), "step": 1, "label": [Lexicon.W, Lexicon.H]}),
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
@@ -364,31 +364,34 @@ if JOV_SPOUT:
             self.__sender = SpoutSender("")
 
         def run(self, **kw) -> tuple[torch.Tensor]:
-            pA = parse_parameter(Lexicon.PIXEL, kw, None, EnumConvertType.IMAGE)
-            host = parse_parameter(Lexicon.ROUTE, kw, "", EnumConvertType.STRING)[0]
-            fps = parse_parameter(Lexicon.FPS, kw, 30, EnumConvertType.INT)[0]
-            delta = 1. / float(fps)
-            mode = parse_parameter(Lexicon.MODE, kw, EnumScaleMode.NONE.name, EnumConvertType.STRING)[0]
-            wihi = parse_parameter(Lexicon.WH, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), EnumConvertType.VEC2INT, 1)[0]
-            sample = parse_parameter(Lexicon.SAMPLE, kw, EnumInterpolation.LANCZOS4.name, EnumConvertType.STRING)[0]
-            matte = parse_parameter(Lexicon.MATTE, kw, (0,0,0,255), EnumConvertType.VEC4INT, 0, 255)[0]
-            images = []
-            #params = [tuple(x) for x in zip_longest_fill(pA, host, delta, mode, wihi, sample, matte)]
-            pbar = ProgressBar(len(pA))
-            for idx, pA in enumerate(pA):
+            images = parse_parameter(Lexicon.PIXEL, kw, None, EnumConvertType.IMAGE)
+            host = parse_parameter(Lexicon.ROUTE, kw, "", EnumConvertType.STRING)
+            fps = parse_parameter(Lexicon.FPS, kw, 30, EnumConvertType.INT)
+
+            mode = parse_parameter(Lexicon.MODE, kw, EnumScaleMode.NONE.name, EnumConvertType.STRING)
+            wihi = parse_parameter(Lexicon.WH, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), EnumConvertType.VEC2INT, 1)
+            sample = parse_parameter(Lexicon.SAMPLE, kw, EnumInterpolation.LANCZOS4.name, EnumConvertType.STRING)
+            matte = parse_parameter(Lexicon.MATTE, kw, (0,0,0,0), EnumConvertType.VEC4INT, 0, 255)
+            results = []
+            params = [tuple(x) for x in zip_longest_fill(images, host, fps, mode, wihi, sample, matte)]
+            pbar = ProgressBar(len(params))
+            for idx, (images, host, fps, mode, wihi, sample, matte) in enumerate(params):
                 self.__sender.host = host
-                width, height = wihi
                 matte = pixel_eval(matte, EnumImageType.BGRA)
-                image = tensor2cv(pA)
-                image = image_scalefit(image, width, height, mode, sample, matte)
-                image = image_convert(image, 4)
-                images.append(cv2tensor(image))
-                if pA is not None:
-                    image[:, :, [0, 2]] = image[:, :, [2, 0]]
-                    self.__sender.frame = image
-                time.sleep(delta)
+                images = parse_value(images, EnumConvertType.IMAGE, images)
+                delta_desired = 1. / float(fps) if fps > 0 else 0
+                for img in images:
+                    loop_time = time.perf_counter_ns()
+                    img = tensor2cv(img)
+                    w, h = wihi
+                    img = image_scalefit(img, w, h, mode, sample, matte)
+                    results.append(cv2tensor(img))
+                    img[:, :, [0, 2]] = img[:, :, [2, 0]]
+                    self.__sender.frame = img
+                    delta = max(0, delta_desired - (time.perf_counter_ns() - loop_time))
+                    time.sleep(delta)
                 pbar.update_absolute(idx)
-            return images
+            return [torch.stack(results, dim=0).squeeze(1)]
 
 class MIDIMessageNode(JOVBaseNode):
     NAME = "MIDI MESSAGE (JOV) 🎛️"

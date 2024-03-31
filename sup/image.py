@@ -17,10 +17,10 @@ import numpy as np
 from numba import jit
 from daltonlens import simulate
 from sklearn.cluster import MiniBatchKMeans
-
+from scipy import ndimage
 from skimage import exposure
 from skimage.metrics import structural_similarity as ssim
-from PIL import Image, ImageDraw, ImageOps
+from PIL import Image, ImageDraw, ImageOps, ImageChops
 from blendmodes.blend import blendLayers, BlendType
 
 from loguru import logger
@@ -790,6 +790,12 @@ def image_diff(imageA: TYPE_IMAGE, imageB: TYPE_IMAGE, threshold:int=0, color:TY
     imageB = cv2.addWeighted(imageB, 0.0, high_b, 1, 0)
     return imageA, imageB, diff, thresh, score
 
+def image_disparity(imageA: np.ndarray) -> np.ndarray:
+    imageA = imageA.astype(np.float32) / 255.
+    imageA = cv2.normalize(imageA, None, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX)
+    disparity_map = np.divide(1.0, imageA, where=imageA != 0)
+    return np.where(imageA == 0, 1, disparity_map)
+
 def image_edge_wrap(image: TYPE_IMAGE, tileX: float=1., tileY: float=1., edge:EnumEdge=EnumEdge.WRAP) -> TYPE_IMAGE:
     """TILING."""
     height, width = image.shape[:2]
@@ -1082,8 +1088,8 @@ def image_matte(image:TYPE_IMAGE, color:TYPE_PIXEL=(0,0,0,255),
     # save the old alpha channel
     mask = image_mask(image)
     if imageB is not None:
-        matte = image_convert(imageB, 4)
         matte = image_scalefit(matte, width, height, EnumScaleMode.FIT)
+        matte = image_convert(imageB, 4)
     else:
         matte = channel_solid(width, height, color, EnumImageType.BGRA)
     alpha = mask[:,:,0]
@@ -1220,7 +1226,7 @@ def image_scale(image: TYPE_IMAGE, scale:TYPE_COORD=(1.0, 1.0), sample:EnumInter
 def image_scalefit(image: TYPE_IMAGE, width: int, height:int,
                  mode:EnumScaleMode=EnumScaleMode.NONE,
                  sample:EnumInterpolation=EnumInterpolation.LANCZOS4,
-                 matte:TYPE_PIXEL=(0,0,0,255)) -> TYPE_IMAGE:
+                 matte:TYPE_PIXEL=(0,0,0,0)) -> TYPE_IMAGE:
 
     match mode:
         case EnumScaleMode.MATTE:
@@ -1340,6 +1346,31 @@ def image_stereogram(image: TYPE_IMAGE, depth: TYPE_IMAGE, divisions:int=8, mix:
                 # pos = max(-pattern_width, min(pattern_width, pos))
                 out[y, x] = out[y, pos]
     return out
+
+def image_stereo_shift(image: TYPE_IMAGE, depth: TYPE_IMAGE, shift:float=10) -> TYPE_IMAGE:
+    # Ensure base image has alpha
+    image = image_convert(image, 4)
+    depth = image_convert(depth, 1)
+    deltas = np.array((depth / 255.0) * float(shift), dtype=int)
+    shifted_data = np.zeros_like(image)
+    _, width = image.shape[:2]
+    for y, row in enumerate(deltas):
+        for x, dx in enumerate(row):
+            x2 = x + dx
+            if (x2 >= width) or (x2 < 0):
+                continue
+            shifted_data[y][x2] = image[y][x]
+
+    shifted_image = cv2pil(shifted_data)
+    alphas_image = Image.fromarray(
+        ndimage.binary_fill_holes(
+            ImageChops.invert(
+                shifted_image.getchannel("A")
+            )
+        )
+    ).convert("1")
+    shifted_image.putalpha(ImageChops.invert(alphas_image))
+    return pil2cv(shifted_image)
 
 def image_threshold(image:TYPE_IMAGE, threshold:float=0.5,
                      mode:EnumThreshold=EnumThreshold.BINARY,

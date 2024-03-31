@@ -50,7 +50,6 @@ class TransformNode(JOVBaseNode):
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
-    # OUTPUT_IS_LIST = ()
     SORT = 0
 
     @classmethod
@@ -110,11 +109,14 @@ class TransformNode(JOVBaseNode):
             if mirror != EnumMirrorMode.NONE:
                 mpx, mpy = mirror_pivot
                 pA = image_mirror(pA, mirror, mpx, mpy)
+                print(pA.shape)
+                pA = image_scalefit(pA, w, h, EnumScaleMode.FIT, sample)
+                print(pA.shape)
 
             tx, ty = tile_xy
             if tx != 1. or ty != 1.:
                 pA = image_edge_wrap(pA, tx / 2 - 0.5, ty / 2 - 0.5)
-                pA = image_scalefit(pA, w, h, EnumScaleMode.FIT, sample, matte)
+                pA = image_scalefit(pA, w, h, EnumScaleMode.FIT, sample)
 
             proj = EnumProjection[proj]
             match proj:
@@ -133,12 +135,12 @@ class TransformNode(JOVBaseNode):
                     pA = remap_polar(pA)
 
             if proj != EnumProjection.NORMAL:
-                pA = image_scalefit(pA, w, h, EnumScaleMode.FIT, sample, matte)
+                pA = image_scalefit(pA, w, h, EnumScaleMode.FIT, sample)
 
             mode = EnumScaleMode[mode]
             if mode != EnumScaleMode.NONE:
                 w, h = wihi
-                pA = image_scalefit(pA, w, h, mode, sample, matte)
+                pA = image_scalefit(pA, w, h, mode, sample)
 
             images.append(cv2tensor_full(pA, matte))
             pbar.update_absolute(idx)
@@ -219,7 +221,7 @@ class BlendNode(JOVBaseNode):
             if mode != EnumScaleMode.NONE:
                 w, h = wihi
                 sample = EnumInterpolation[sample]
-                img = image_scalefit(img, w, h, mode, sample, matte)
+                img = image_scalefit(img, w, h, mode, sample)
             img = cv2tensor_full(img, matte)
             images.append(img)
             pbar.update_absolute(idx)
@@ -517,3 +519,37 @@ class ColorTheoryNode(JOVBaseNode):
             images.append([cv2tensor(a) for a in img])
             pbar.update_absolute(idx)
         return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
+
+"""
+class HistogramNode(JOVImageSimple):
+    NAME = "HISTOGRAM (JOV) 👁‍🗨"
+    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
+    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
+    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
+        RETURN_TYPES = ("IMAGE", )
+    RETURN_NAMES = (Lexicon.IMAGE,)
+    OUTPUT_IS_LIST = (True,)
+    SORT = 40
+
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        d = {
+        "required": {},
+        "optional": {
+            Lexicon.PIXEL: (WILDCARD, {}),
+        }}
+        return Lexicon._parse(d, cls.HELP_URL)
+
+    def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        pA = parse_parameter(Lexicon.PIXEL, kw, None, EnumConvertType.IMAGE)
+        params = [tuple(x) for x in zip_longest_fill(pA,)]
+        images = []
+        pbar = ProgressBar(len(params))
+        for idx, (pA, ) in enumerate(params):
+            pA = image_histogram(pA)
+            pA = image_histogram_normalize(pA)
+            images.append(cv2tensor(pA))
+            pbar.update_absolute(idx)
+        return list(zip(*images))
+"""

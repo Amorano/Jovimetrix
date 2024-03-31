@@ -1,23 +1,18 @@
-#define PI 3.14159265358979323846
-#define TAU PI * 2.0
+//
+// Mirror Input
+//
 
-uniform vec2 u_resolution;
-uniform float u_time;
-
-float fill(float _st, float _pct, float _antia){
-  return smoothstep( _pct - _antia, _pct, _st);
-}
-
-vec2 mirrorTile(vec2 _st, float _zoom){
-    _st *= _zoom;
-    if (fract(_st.y * 0.5) > 0.5){
-        _st.y = 1.0 - _st.y;
-    }
-    return fract(_st);
-}
+uniform float uZoom;
+uniform vec2 center;
 
 void main(){
-  vec2 st = mirrorTile(fragCoord, 1.0);
-  vec3 color = vec3(fill(st.y, 0.5 + sin(st.x * TAU) * 0.45, 0.02));
-  gl_FragColor = vec4( color, 1.0 );
+  vec2 st = fragCoord;
+  if (fract(st.x * 0.5) > center.x) {
+    st.x = 1.0 - st.x;
+  }
+  if (fract(st.y * 0.5) > center.y) {
+    st.y = 1.0 - st.y;
+  }
+  st = fract(st) * uZoom;
+  fragColor = texture(iChannel0, st);
 }

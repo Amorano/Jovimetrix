@@ -249,8 +249,8 @@ class ColorMatchNode(JOVBaseNode):
                     colormap = EnumColorMap[colormap]
                     pA = color_match_lut(pA, colormap.value, pB, num_colors)
                 case EnumColorMatchMode.HISTOGRAM:
-                    pB = image_scalefit(pB, w, h, EnumScaleMode.CROP, (0,0,0,0))
-                    pB = image_scalefit(pB, w, h, EnumScaleMode.MATTE, (0,0,0,0))
+                    pB = image_scalefit(pB, w, h, EnumScaleMode.CROP)
+                    pB = image_scalefit(pB, w, h, EnumScaleMode.MATTE)
                     pA = color_match_histogram(pA, pB)
                 case EnumColorMatchMode.REINHARD:
                     pA = color_match_reinhard(pA, pB)

@@ -33,9 +33,7 @@ export const VectorWidget = (app, inputName, options, initial, desc='') => {
 
     widget.draw = function(ctx, node, width, Y, height) {
         if (this.type !== options[0] && app.canvas.ds.scale > 0.5) return
-
         const precision = widget.options?.precision !== undefined ? widget.options.precision : 0;
-
         ctx.save()
         ctx.beginPath()
         ctx.lineWidth = 2
@@ -108,42 +106,40 @@ export const VectorWidget = (app, inputName, options, initial, desc='') => {
 
     widget.mouse = function (e, pos, node) {
         let delta = 0;
-        if (e.type === 'pointerdown') {
-            if (isDragging === undefined) {
-                const x = pos[0] - label_full
-                const size = Object.keys(this.value).length
-                const element_width = (node.size[0] - label_full - widget_padding * 1.25) / size
-                const index = Math.floor(x / element_width)
-                if (index >= 0 && index < size) {
-                    isDragging = { name: this.name, idx: index}
-                } else if (this.options.rgb) {
-                    const rgba = Object.values(this?.value || []);
-                    let color = rgb2hex(rgba.slice(0, 3));
-                    if (index == size) {
-                        if (!picker) {
-                            picker = $el("input", {
-                                type: "color",
-                                parent: document.body,
-                                style: {
-                                    display: "none",
-                                },
-                            });
-                            picker.onchange = () => {
-                                if (picker.value) {
-                                    this.value = hex2rgb(picker.value);
-                                    if (rgba.length > 3) {
-                                        this.value.push(rgba[3])
-                                    }
+        if (e.type === 'pointerdown' & isDragging === undefined) {
+            const x = pos[0] - label_full
+            const size = Object.keys(this.value).length
+            const element_width = (node.size[0] - label_full - widget_padding * 1.25) / size
+            const index = Math.floor(x / element_width)
+            if (index >= 0 && index < size) {
+                isDragging = { name: this.name, idx: index}
+            } else if (this.options.rgb) {
+                const rgba = Object.values(this?.value || []);
+                let color = rgb2hex(rgba.slice(0, 3));
+                if (index == size) {
+                    if (!picker) {
+                        picker = $el("input", {
+                            type: "color",
+                            parent: document.body,
+                            style: {
+                                display: "none",
+                            },
+                        });
+                        picker.onchange = () => {
+                            if (picker.value) {
+                                this.value = hex2rgb(picker.value);
+                                if (rgba.length > 3) {
+                                    this.value.push(rgba[3])
                                 }
-                            };
-                        }
-                        picker.value = color;
-                        picker.click();
-                    } else if (x < 0 && rgba.length > 2) {
-                        const target = Object.values(rgba.map(item => 255 - item)).slice(0, 3);
-                        this.value = Object.values(this.value);
-                        this.value.splice(0, 3, ...target);
+                            }
+                        };
                     }
+                    picker.value = color;
+                    picker.click();
+                } else if (x < 0 && rgba.length > 2) {
+                    const target = Object.values(rgba.map(item => 255 - item)).slice(0, 3);
+                    this.value = Object.values(this.value);
+                    this.value.splice(0, 3, ...target);
                 }
             }
         }
@@ -156,6 +152,7 @@ export const VectorWidget = (app, inputName, options, initial, desc='') => {
                 v += this.options.step * Math.sign(e.deltaX)
                 clamp(this, v, idx)
             } else if (e.type === 'pointerup') {
+                isDragging = undefined
                 if (e.click_time < 200 && delta == 0) {
                     const label = this.options?.label ? this.name + '➖' + this.options.label?.[idx] : this.name;
                     LGraphCanvas.active_canvas.prompt(label, this.value[idx], function(v) {
@@ -181,7 +178,6 @@ export const VectorWidget = (app, inputName, options, initial, desc='') => {
                             inner_value_change(this, this.value, e)
                         }.bind(this), 20)
                 }
-                isDragging = undefined
                 app.canvas.setDirty(true)
             }
         }

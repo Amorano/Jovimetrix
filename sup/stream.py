@@ -28,6 +28,7 @@ if JOV_SPOUT:
     try:
         import SpoutGL
         from OpenGL import GL
+        logger.info("SPOUT GL SUPPORT")
     except Exception as e:
         logger.error("NO SPOUT GL SUPPORT")
         logger.error(e)

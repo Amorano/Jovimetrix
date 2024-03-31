@@ -15,7 +15,7 @@ from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import parse_dynamic, parse_parameter, zip_longest_fill, \
     EnumConvertType
 
-from Jovimetrix.sup.image import  cv2tensor_full, \
+from Jovimetrix.sup.image import  cv2tensor, cv2tensor_full, \
     image_gradient, image_grayscale, image_invert, image_mask_add, image_matte, \
     image_rotate, image_stereogram, image_transform, image_translate, pil2cv, \
     pixel_eval, tensor2cv, shape_ellipse, shape_polygon, shape_quad, \
@@ -210,7 +210,7 @@ class TextNode(JOVBaseNode):
         letter = parse_parameter(Lexicon.LETTER, kw, False, EnumConvertType.BOOLEAN)
         color = parse_parameter(Lexicon.RGBA_A, kw, (255, 255, 255, 255), EnumConvertType.VEC4INT, 0, 255)
         matte = parse_parameter(Lexicon.MATTE, kw, (0, 0, 0), EnumConvertType.VEC3INT, 0, 255)
-        columns = parse_parameter(Lexicon.COLUMNS, kw, 0, EnumConvertType.INT, 1)
+        columns = parse_parameter(Lexicon.COLUMNS, kw, 0, EnumConvertType.INT, 0)
         font_size = parse_parameter(Lexicon.FONT_SIZE, kw, 16, EnumConvertType.INT, 1)
         align = parse_parameter(Lexicon.ALIGN, kw, EnumAlignment.CENTER.name, EnumConvertType.STRING)
         justify = parse_parameter(Lexicon.JUSTIFY, kw, EnumJustify.CENTER.name, EnumConvertType.STRING)
@@ -352,3 +352,42 @@ class GradientNode(JOVBaseNode):
             images.append(cv2tensor_full(image))
             pbar.update_absolute(idx)
         return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
+
+class StereoscopicNode(JOVBaseNode):
+    NAME = "STEREOSCOPIC (JOV) 🕶️"
+    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
+    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
+    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
+    RETURN_TYPES = ("IMAGE", )
+    RETURN_NAMES = (Lexicon.IMAGE, )
+
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        d = {
+        "required": {},
+        "optional": {
+            Lexicon.PIXEL: (WILDCARD, {"tooltip":"Optional Image to Matte with Selected Color"}),
+            Lexicon.INT: ("FLOAT", {"default": 0.1, "min": 0, "max": 1, "step": 0.01, "tooltip":"Baseline"}),
+            Lexicon.VALUE: ("FLOAT", {"default": 500, "min": 0, "step": 0.01, "tooltip":"Focal length"}),
+        }}
+        return Lexicon._parse(d, cls.HELP_URL)
+
+    def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
+        pA = parse_parameter(Lexicon.PIXEL, kw, None, EnumConvertType.IMAGE)
+        baseline = parse_parameter(Lexicon.INT, kw, 0.1, EnumConvertType.FLOAT, 1)
+        focal_length = parse_dynamic(Lexicon.VALUE, kw, EnumConvertType.FLOAT)
+        images = []
+        params = [tuple(x) for x in zip_longest_fill(pA, baseline, focal_length)]
+        pbar = ProgressBar(len(params))
+        for idx, (pA, wihi, clr) in enumerate(params):
+            pA = tensor2cv(pA, EnumImageType.GRAYSCALE)
+
+            # Convert depth image to disparity map
+            disparity_map = np.divide(1.0, pA.astype(np.float32), where=pA!=0)
+            # Compute disparity values based on baseline and focal length
+            disparity_map *= baseline * focal_length
+
+            images.append(cv2tensor(pA))
+            pbar.update_absolute(idx)
+        return list(zip(*images)) # [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]

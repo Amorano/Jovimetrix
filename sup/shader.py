@@ -150,44 +150,6 @@ class GLSL:
         self.__frame_count: int = 0
         self.__time_last: float = time.perf_counter()
 
-    """
-    def __del__(self) -> None:
-        try:
-            if self.__vao is not None:
-                self.__vao.release()
-                self.__vao = None
-        except:
-            pass
-
-        try:
-            if GLSL.VBO is not None:
-                GLSL.VBO.release()
-                GLSL.VBO = None
-        except:
-            pass
-
-        try:
-            if self.__fbo is not None:
-                self.__fbo.release()
-                self.__fbo = None
-        except:
-            pass
-
-        try:
-            if self.__texture is not None:
-                self.__texture.release()
-                self.__texture = None
-        except:
-            pass
-
-        try:
-            if GLSL.CTX is not None:
-                GLSL.CTX.release()
-                GLSL.CTX.gc()
-        except:
-            pass
-    """
-
     def reset(self) -> None:
         self.__runtime = 0
         self.__delta = 0
