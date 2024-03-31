@@ -27,10 +27,8 @@ class TickNode(JOVBaseNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
-    INPUT_IS_LIST = False
     RETURN_TYPES = ("INT", "FLOAT", "FLOAT", WILDCARD)
     RETURN_NAMES = (Lexicon.VALUE, Lexicon.LINEAR, Lexicon.FPS, Lexicon.ANY)
-    OUTPUT_IS_LIST = (True, True, True, True,)
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -111,7 +109,8 @@ class TickNode(JOVBaseNode):
         if loop > 0:
             self.__frame = 0
         comfy_message(ident, "jovi-tick", {"i": self.__frame})
-        return [list(a) for a in zip(*results)]
+        data = list(zip(*results))
+        return data #[0]
 
 class WaveGeneratorNode(JOVBaseNode):
     NAME = "WAVE GENERATOR (JOV) 🌊"
@@ -119,9 +118,10 @@ class WaveGeneratorNode(JOVBaseNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
+    # INPUT_IS_LIST = False
     RETURN_TYPES = ("FLOAT", "INT", )
     RETURN_NAMES = (Lexicon.FLOAT, Lexicon.INT, )
-    OUTPUT_IS_LIST = (True, True,)
+    # OUTPUT_IS_LIST = (True, True,)
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -146,6 +146,7 @@ class WaveGeneratorNode(JOVBaseNode):
         phase = parse_parameter(Lexicon.PHASE, kw, 0, EnumConvertType.FLOAT)
         shift = parse_parameter(Lexicon.OFFSET, kw, 0, EnumConvertType.FLOAT)
         delta_time = parse_parameter(Lexicon.TIME, kw, 0, EnumConvertType.FLOAT, 0)
+        # print(kw[Lexicon.TIME], delta_time)
         invert = parse_parameter(Lexicon.INVERT, kw, False, EnumConvertType.BOOLEAN)
         abs = parse_parameter(Lexicon.ABSOLUTE, kw, False, EnumConvertType.BOOLEAN)
         results = []
@@ -161,4 +162,4 @@ class WaveGeneratorNode(JOVBaseNode):
                 val = np.abs(val)
             results.append([val, int(val)])
             pbar.update_absolute(idx)
-        return [list(a) for a in zip(*results)]
+        return list(zip(*results))

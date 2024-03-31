@@ -6,7 +6,6 @@ UTIL support
 import os
 import math
 from enum import Enum
-from re import L
 from typing import Any, List, Generator, Optional, Tuple, Union
 
 import torch
@@ -161,12 +160,16 @@ def parse_parameter(key: str, data: Union[dict, List[dict]], default: Any,
                     clip_max: Optional[float]=None, zero:int=0) -> tuple[List[Any]]:
     """Convert all inputs, regardless of structure, into a list of parameters."""
     # should be operating on a list of values, all times
-    if not isinstance(default, (list, tuple, torch.Tensor)):
+    if isinstance(default, (tuple,)):
+        default = list(default)
+    if not isinstance(default, (list, torch.Tensor)):
         default = [default]
     #
     unified = data.get(key, default)
     if isinstance(unified, (torch.Tensor,)):
         unified = unified.tolist()
+    elif isinstance(unified, (tuple,)):
+        unified = list(unified)
     if not isinstance(unified, (list,)):
         unified = [unified]
     if len(unified) == 0:

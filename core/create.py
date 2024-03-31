@@ -4,12 +4,14 @@ Creation
 """
 
 import torch
+import numpy as np
 from PIL import ImageFont
+
 from loguru import logger
 
 from comfy.utils import ProgressBar
 
-from Jovimetrix import JOV_WEB_RES_ROOT, JOVBaseNode, WILDCARD
+from Jovimetrix import JOVBaseNode, JOV_WEB_RES_ROOT, WILDCARD
 
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import parse_dynamic, parse_parameter, zip_longest_fill, \
@@ -23,8 +25,6 @@ from Jovimetrix.sup.image import  cv2tensor, cv2tensor_full, \
 
 from Jovimetrix.sup.text import font_names, text_autosize, text_draw, \
     EnumAlignment, EnumJustify, EnumShapes
-
-from Jovimetrix.sup.fractal import EnumNoise
 
 # =============================================================================
 

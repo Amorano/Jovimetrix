@@ -134,12 +134,14 @@ app.registerExtension({
         } else {
             this.tooltips_visible = false;
         };
+        console.log(this)
     },
 	beforeRegisterNodeDef(nodeType, nodeData) {
         if (!nodeData?.category?.startsWith("JOVIMETRIX")) {
             return;
         }
 
+        const self = this;
         let opts = { icon_size: 14, icon_margin: 3 }
         const iconSize = opts.icon_size ? opts.icon_size : 14;
         const iconMargin = opts.icon_margin ? opts.icon_margin : 3;
@@ -165,8 +167,7 @@ app.registerExtension({
         nodeType.prototype.onDrawForeground = function (ctx) {
             const me = onDrawForeground?.apply?.(this, arguments);
             if (this.flags.collapsed) return me;
-
-            if (this.tooltips_visible) {
+            if (self.tooltips_visible) {
                 const TOOLTIP_COLOR = CONFIG_USER.color.tooltips;
                 let alpha = TOOLTIP_COLOR.length > 6 ? TOOLTIP_COLOR.slice(-2) : "FF";
                 for (const selectedNode of Object.values(app.canvas.selected_nodes)) {

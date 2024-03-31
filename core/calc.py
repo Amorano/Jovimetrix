@@ -426,7 +426,6 @@ class ValueNode(JOVBaseNode):
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = (WILDCARD,)
     RETURN_NAMES = (Lexicon.ANY,)
-    OUTPUT_IS_LIST = (True,)
     SORT = 1
 
     @classmethod
