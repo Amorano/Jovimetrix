@@ -316,15 +316,12 @@ class StreamWriterNode(JOVBaseNode):
                 self.__route = route
 
             if self.__device is not None:
-                # w, h = wihi
+                w, h = wihi
                 matte = pixel_eval(matte, EnumImageType.BGRA)
-                images = parse_value(images, EnumConvertType.LIST, images)
+                images = parse_value(images, EnumConvertType.IMAGE, images)
                 for img in images:
-                    loop_time = time.perf_counter_ns()
                     img = tensor2cv(img)
-                    self.__device.image = image_scalefit(img, *wihi, mode, sample, matte)
-                    delta = max(0, delta - (time.perf_counter_ns() - loop_time))
-                    time.sleep(delta)
+                    self.__device.image = image_scalefit(img, w, h, mode, sample, matte)
             pbar.update_absolute(idx)
         return ()
 
@@ -335,8 +332,6 @@ if JOV_SPOUT:
         CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
         DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
         HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
-        RETURN_TYPES = ("IMAGE",)
-        RETURN_NAMES = (Lexicon.IMAGE,)
         OUTPUT_NODE = True
         SORT = 90
 
@@ -366,32 +361,31 @@ if JOV_SPOUT:
         def run(self, **kw) -> tuple[torch.Tensor]:
             images = parse_parameter(Lexicon.PIXEL, kw, None, EnumConvertType.IMAGE)
             host = parse_parameter(Lexicon.ROUTE, kw, "", EnumConvertType.STRING)
-            fps = parse_parameter(Lexicon.FPS, kw, 30, EnumConvertType.INT)
-
+            # fps = parse_parameter(Lexicon.FPS, kw, 30, EnumConvertType.INT)
             mode = parse_parameter(Lexicon.MODE, kw, EnumScaleMode.NONE.name, EnumConvertType.STRING)
             wihi = parse_parameter(Lexicon.WH, kw, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), EnumConvertType.VEC2INT, 1)
             sample = parse_parameter(Lexicon.SAMPLE, kw, EnumInterpolation.LANCZOS4.name, EnumConvertType.STRING)
             matte = parse_parameter(Lexicon.MATTE, kw, (0,0,0,0), EnumConvertType.VEC4INT, 0, 255)
-            results = []
-            params = [tuple(x) for x in zip_longest_fill(images, host, fps, mode, wihi, sample, matte)]
+            # results = []
+            params = [tuple(x) for x in zip_longest_fill(images, host, mode, wihi, sample, matte)]
             pbar = ProgressBar(len(params))
-            for idx, (images, host, fps, mode, wihi, sample, matte) in enumerate(params):
+            for idx, (images, host, mode, wihi, sample, matte) in enumerate(params):
                 self.__sender.host = host
                 matte = pixel_eval(matte, EnumImageType.BGRA)
                 images = parse_value(images, EnumConvertType.IMAGE, images)
-                delta_desired = 1. / float(fps) if fps > 0 else 0
+                # delta_desired = 1. / float(fps) if fps > 0 else 0
                 for img in images:
-                    loop_time = time.perf_counter_ns()
+                    # loop_time = time.perf_counter_ns()
                     img = tensor2cv(img)
                     w, h = wihi
                     img = image_scalefit(img, w, h, mode, sample, matte)
-                    results.append(cv2tensor(img))
+                    # results.append(cv2tensor(img))
                     img[:, :, [0, 2]] = img[:, :, [2, 0]]
                     self.__sender.frame = img
-                    delta = max(0, delta_desired - (time.perf_counter_ns() - loop_time))
-                    time.sleep(delta)
+                    # delta = max(0, delta_desired - (time.perf_counter_ns() - loop_time))
+                    # time.sleep(delta)
                 pbar.update_absolute(idx)
-            return [torch.stack(results, dim=0).squeeze(1)]
+            return () # [torch.stack(results, dim=0).squeeze(1)]
 
 class MIDIMessageNode(JOVBaseNode):
     NAME = "MIDI MESSAGE (JOV) 🎛️"
