@@ -164,7 +164,6 @@ class TextNode(JOVBaseNode):
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
-    # OUTPUT_IS_LIST = ()
     FONTS = font_names()
     FONT_NAMES = sorted(FONTS.keys())
 

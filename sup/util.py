@@ -140,7 +140,8 @@ def parse_value(val:List[Any], typ:EnumConvertType, default: Any,
         val = val[:size]
     elif typ == EnumConvertType.IMAGE:
         if isinstance(val, (torch.Tensor,)):
-            val = val.tolist()
+            if val.shape[0] > 1:
+                val = val.tolist()
     elif typ == EnumConvertType.STRING:
         if not isinstance(val, (str,)):
             val = [", ".join([str(v) for v in val])]
@@ -160,9 +161,9 @@ def parse_parameter(key: str, data: Union[dict, List[dict]], default: Any,
                     clip_max: Optional[float]=None, zero:int=0) -> tuple[List[Any]]:
     """Convert all inputs, regardless of structure, into a list of parameters."""
     # should be operating on a list of values, all times
-    # typ = EnumConvertType[typ]
     if not isinstance(default, (list, tuple, torch.Tensor)):
         default = [default]
+    #
     unified = data.get(key, default)
     if isinstance(unified, (torch.Tensor,)):
         unified = unified.tolist()
@@ -170,7 +171,6 @@ def parse_parameter(key: str, data: Union[dict, List[dict]], default: Any,
         unified = [unified]
     if len(unified) == 0:
         unified = [default[0] if len(default) else 0]
-    # logger.debug(unified)
     return [parse_value(u, typ, default, clip_min, clip_max, zero) for u in unified]
 
 def vector_swap(pA: Any, pB: Any, swap_x: EnumSwizzle, x:float, swap_y:EnumSwizzle, y:float,

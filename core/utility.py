@@ -34,7 +34,7 @@ from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import EnumConvertType, parse_dynamic, path_next, parse_parameter, \
     zip_longest_fill
 
-from Jovimetrix.sup.image import  cv2tensor,  image_convert, \
+from Jovimetrix.sup.image import  cv2pil, cv2tensor,  image_convert, \
     tensor2pil, tensor2cv, pil2tensor, image_load, image_formats, image_diff, \
     MIN_IMAGE_SIZE
 
@@ -173,8 +173,6 @@ class ValueGraphNode(JOVBaseNode):
             self.__history = []
         longest_edge = 0
         dynamic = parse_dynamic(Lexicon.UNKNOWN, kw)
-        # params = [tuple(x) for x in zip_longest_fill(dynamic,)]
-        # pbar = ProgressBar(len(dynamic))
         for idx, val in enumerate(dynamic):
             if isinstance(val, (set, tuple,)):
                 val = list(val)
@@ -373,6 +371,8 @@ class ExportNode(JOVBaseNode):
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     INPUT_IS_LIST = False
     OUTPUT_NODE = True
+    RETURN_TYPES = ("IMAGE", )
+    RETURN_NAMES = (Lexicon.IMAGE, )
     SORT = 80
 
     @classmethod
@@ -383,7 +383,7 @@ class ExportNode(JOVBaseNode):
             Lexicon.PIXEL: (WILDCARD, {}),
             Lexicon.PASS_OUT: ("STRING", {"default": get_output_directory()}),
             Lexicon.FORMAT: (FORMATS, {"default": FORMATS[0]}),
-            Lexicon.PREFIX: ("STRING", {"default": ""}),
+            Lexicon.PREFIX: ("STRING", {"default": "jovi"}),
             Lexicon.OVERWRITE: ("BOOLEAN", {"default": False}),
             # GIF ONLY
             Lexicon.OPTIMIZE: ("BOOLEAN", {"default": False}),
@@ -399,7 +399,7 @@ class ExportNode(JOVBaseNode):
     SORT = 2000
 
     def run(self, **kw) -> None:
-        pA = parse_parameter(Lexicon.PIXEL, kw, None, EnumConvertType.IMAGE)
+        images = parse_parameter(Lexicon.PIXEL, kw, None, EnumConvertType.IMAGE)
         suffix = parse_parameter(Lexicon.PREFIX, kw, uuid4().hex[:16], EnumConvertType.STRING)[0]
         output_dir = parse_parameter(Lexicon.PASS_OUT, kw, "", EnumConvertType.STRING)[0]
         format = parse_parameter(Lexicon.FORMAT, kw, "gif", EnumConvertType.STRING)[0]
@@ -411,6 +411,7 @@ class ExportNode(JOVBaseNode):
         loop = parse_parameter(Lexicon.LOOP, kw, 0, EnumConvertType.INT, 0)[0]
         output_dir = Path(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
+
         def output(extension) -> Path:
             path = output_dir / f"{suffix}.{extension}"
             if not overwrite and os.path.isfile(path):
@@ -418,10 +419,12 @@ class ExportNode(JOVBaseNode):
                 path = path_next(path)
             return path
 
+        images = [tensor2cv(i) for i in images]
         empty = Image.new("RGB", (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE))
-        images = [tensor2pil(i).convert("RGB") if i is not None else empty for i in pA]
+        images = [cv2pil(i) for i in images]
         if format == "gifski":
             root = output_dir / f"{suffix}_{uuid4().hex[:16]}"
+            print(root)
             try:
                 root.mkdir(parents=True, exist_ok=True)
                 for idx, i in enumerate(images):
@@ -431,20 +434,20 @@ class ExportNode(JOVBaseNode):
                 logger.warning(output_dir)
                 logger.error(str(e))
                 return
+            else:
+                out = output('gif')
+                fps = f"--fps {fps}" if fps > 0 else ""
+                q = f"--quality {quality}"
+                mq = f"--motion-quality {motion}"
+                cmd = f"{JOV_GIFSKI} -o {out} {q} {mq} {fps} {str(root)}/{suffix}_*.png"
+                logger.info(cmd)
+                try:
+                    os.system(cmd)
+                except Exception as e:
+                    logger.warning(cmd)
+                    logger.error(str(e))
 
-            out = output('gif')
-            fps = f"--fps {fps}" if fps > 0 else ""
-            q = f"--quality {quality}"
-            mq = f"--motion-quality {motion}"
-            cmd = f"{JOV_GIFSKI} -o {out} {q} {mq} {fps} {str(root)}/{suffix}_*.png"
-            logger.info(cmd)
-            try:
-                os.system(cmd)
-            except Exception as e:
-                logger.warning(cmd)
-                logger.error(str(e))
-
-            shutil.rmtree(root)
+                # shutil.rmtree(root)
 
         elif format == "gif":
             images[0].save(
@@ -459,8 +462,8 @@ class ExportNode(JOVBaseNode):
         else:
             for img in images:
                 img.save(output(format), optimize=optimize)
-
-        return ()
+        images = [pil2tensor(r) for r in images]
+        return [torch.stack(images, dim=0).squeeze(1)]
 
 class ImageDiffNode(JOVBaseNode):
     NAME = "IMAGE DIFF (JOV) 📏"

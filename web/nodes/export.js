@@ -21,7 +21,7 @@ app.registerExtension({
         nodeType.prototype.onNodeCreated = function () {
             const me = onNodeCreated?.apply(this)
             const self = this;
-            let opt = this.widgets.find(w => w.name === 'PREFIX');
+            let opt = this.widgets.find(w => w.name === 'OPT');
             let quality = this.widgets.find(w => w.name === 'QUALITY');
             let quality_m = this.widgets.find(w => w.name === 'MOTION');
             let fps = this.widgets.find(w => w.name === '🏎️');
@@ -44,6 +44,9 @@ app.registerExtension({
                         widget_show(quality_m);
                         widget_show(fps);
                         widget_show(loop);
+                        break;
+                    default:
+                        widget_show(opt);
                         break;
                 }
                 self.onResize?.(self.size);
