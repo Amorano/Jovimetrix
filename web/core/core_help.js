@@ -302,7 +302,7 @@ app.registerExtension({
                     .multiplySelf(ctx.getTransform())
                     .translateSelf(this.size[0] + 10, -32)
 
-                const width = Math.min(512,  2 * this.size[0] - LiteGraph.NODE_MIN_WIDTH);
+                const width = Math.min(512, 2 * this.size[0] - LiteGraph.NODE_MIN_WIDTH);
                 const height = (this.size[1] || this.parent?.inputHeight || 0) + 48;
                 const scale = new DOMMatrix().scaleSelf(transform.a, transform.d);
                 Object.assign(this.docElement.style, {

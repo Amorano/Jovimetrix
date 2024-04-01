@@ -119,7 +119,7 @@ class Singleton(type):
 # =============================================================================
 
 class JOVBaseNode:
-    # INPUT_IS_LIST = True
+    INPUT_IS_LIST = True
     RETURN_TYPES = ()
     FUNCTION = "run"
 

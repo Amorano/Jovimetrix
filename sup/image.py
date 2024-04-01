@@ -1205,7 +1205,7 @@ def image_save_gif(fpath:str, images: list[Image.Image], fps: int=0,
     images[0].save(
         fpath,
         append_images=images[1:],
-        duration=3,  # int(100.0 / fps),
+        duration=3, # int(100.0 / fps),
         loop=loop,
         optimize=optimize,
         save_all=True
@@ -1435,9 +1435,9 @@ def morph_edge_detect(image: TYPE_IMAGE,
 def morph_emboss(image: TYPE_IMAGE, amount: float=1., kernel: int=2) -> TYPE_IMAGE:
     kernel = max(2, kernel)
     kernel = np.array([
-        [-kernel,    -kernel+1,     0],
-        [-kernel+1,    kernel-1,      1],
-        [kernel-2,     kernel-1,      2]
+        [-kernel,   -kernel+1,    0],
+        [-kernel+1,   kernel-1,     1],
+        [kernel-2,    kernel-1,     2]
     ]) * amount
     return cv2.filter2D(src=image, ddepth=-1, kernel=kernel)
 
@@ -1479,9 +1479,9 @@ def kernel(stride: int) -> TYPE_IMAGE:
 
     Example:
     >>> KERNEL(3)
-    array([[ 0,  1,  1],
-           [-1,  0,  1],
-           [-1, -1,  0]], dtype=int8)
+    array([[ 0, 1, 1],
+           [-1, 0, 1],
+           [-1, -1, 0]], dtype=int8)
     """
     # Create an initial matrix of zeros
     kernel = np.zeros((stride, stride), dtype=np.int8)

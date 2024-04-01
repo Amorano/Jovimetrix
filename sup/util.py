@@ -6,7 +6,7 @@ UTIL support
 import os
 import math
 from enum import Enum
-from typing import Any, List, Generator, Optional, Tuple, Union
+from typing import Any, List, Generator, Optional, Tuple
 
 import torch
 
@@ -63,118 +63,132 @@ def parse_dynamic(who, data) -> list:
     return vals
 
 def list_param(val) -> List[Any]:
-    if isinstance(val, (str, set, list,)):
+    ""
+    if isinstance(val, (str,)):
+        return [val]
+    if isinstance(val, (list,)):
         return val
     if isinstance(val, (dict,)):
         if 'samples' in val:
             # latents....
-            val = val["samples"]
-        else:
-            val = list(val.values())
-    elif isinstance(val, (tuple, )):
-        val = list(val)
-    else:
+            return [v for v in val["samples"]]
+        return tuple(list(val.values()))
+    if isinstance(val, (torch.Tensor,)):
+        if val.shape[0] > 1:
+            return [t for t in val]
+    if isinstance(val, (float, int,)):
         val = [val]
     return val
 
-def parse_value(val:List[Any], typ:EnumConvertType, default: Any,
+def parse_value(val:Any, typ:EnumConvertType, default: Any,
                 clip_min: Optional[float]=None, clip_max: Optional[float]=None,
-                zero:int=0) -> Any:
-
+                zero:int=0) -> List[Any]:
     """Convert target list of values into the new specified type."""
+    if isinstance(val, (torch.Tensor,)):
+        val = [v for v in val]
+    elif isinstance(val, (tuple,)):
+        val = [list(val)]
+    elif not isinstance(val, (list,)):
+        val = [val]
+    return [parse_value_single(v, typ, default, clip_min, clip_max, zero) for v in val]
+
+def parse_value_single(val:Any, typ:EnumConvertType, default: Any,
+                clip_min: Optional[float]=None, clip_max: Optional[float]=None,
+                zero:int=0) -> List[Any]:
+    """Convert target list of values into the new specified type."""
+    if val is None:
+        if default is not None:
+            return parse_value_single(default, typ, default, clip_min, clip_max, zero)
+        return None
+
     if typ not in [EnumConvertType.ANY, EnumConvertType.IMAGE] and isinstance(val, (torch.Tensor,)):
         val = list(val.size())[1:4] + [val[0]]
 
-    default = list_param(default)
+    # default = list_param(default)
+    #if isinstance(default, (tuple,)):
+    #   default = list(default)
     val = list_param(val)
-    if isinstance(val, (str,)):
-        val = [val]
+    default = list_param(default)
+    # if not isinstance(default, (list, )):
+
     size = 1
-    if typ in [EnumConvertType.VEC2, EnumConvertType.VEC2INT,
-               EnumConvertType.VEC3, EnumConvertType.VEC3INT,
-               EnumConvertType.VEC4, EnumConvertType.VEC4INT]:
+    new_val = []
+    if typ in [EnumConvertType.FLOAT, EnumConvertType.INT,
+            EnumConvertType.VEC2, EnumConvertType.VEC2INT,
+            EnumConvertType.VEC3, EnumConvertType.VEC3INT,
+            EnumConvertType.VEC4, EnumConvertType.VEC4INT]:
 
-        pos = len(val)
+        last = val[0]
         size = max(1, int(typ.value / 10))
-        for x in range(size - pos):
-            idx = pos + x
-            last = default[-1] if len(default) else val[-1]
-            v = default[idx] if idx < len(default) else last
-            val.append(v)
+        for idx in range(size):
+            v = val[idx] if idx < len(val) else None
+            d = v
+            # if isinstance(default, (list, tuple, set)):
+            if idx < len(default):
+                d = default[idx]
+            else:
+                d = default[-1]
+            last = v if v is not None else d
+            new_val.append(last)
+    else:
+        new_val = val
 
-    # val = [v.value if issubclass(type(v), Enum) else v for v in val]
     if typ in [EnumConvertType.FLOAT, EnumConvertType.INT,
                 EnumConvertType.VEC2, EnumConvertType.VEC2INT,
                 EnumConvertType.VEC3, EnumConvertType.VEC3INT,
                 EnumConvertType.VEC4, EnumConvertType.VEC4INT]:
 
         for idx in range(size):
-            if isinstance(val[idx], str):
-                parts = val[idx].split('.', 1)
+            if isinstance(new_val[idx], str):
+                parts = new_val[idx].split('.', 1)
                 if len(parts) > 1:
-                    val[idx] ='.'.join(parts[:2])
-            elif isinstance(val[idx], (list, tuple, set, dict)):
-                val[idx] = 0
+                    new_val[idx] ='.'.join(parts[:2])
+            elif isinstance(new_val[idx], (list, tuple, set, dict)):
+                new_val[idx] = 0
             try:
-                v = val[idx] if val[idx] is not None else default[idx] if idx < len(default) else val[-1]
                 if typ in [EnumConvertType.FLOAT, EnumConvertType.VEC2,
                             EnumConvertType.VEC3, EnumConvertType.VEC4]:
-                    val[idx] = round(float(v), 12)
+                    new_val[idx] = round(float(new_val[idx]), 12)
                 else:
-                    val[idx] = int(v)
+                    new_val[idx] = int(new_val[idx])
 
                 if clip_min is not None:
-                    val[idx] = max(val[idx], clip_min)
+                    new_val[idx] = max(new_val[idx], clip_min)
                 if clip_max is not None:
-                    val[idx] = min(val[idx], clip_max)
-                if val[idx] == 0:
-                    val[idx] = zero
+                    new_val[idx] = min(new_val[idx], clip_max)
+                if new_val[idx] == 0:
+                    new_val[idx] = zero
             except Exception as _:
                 try:
-                    val[idx] = ord(v)
+                    new_val[idx] = ord(v)
                 except:
-                    logger.warning(f"value not converted well {val[idx]} == 0")
-                    val[idx] = 0
-
-        val = val[:size]
+                    logger.debug(f"value not converted well {val} ... {new_val[idx]} == 0")
+                    new_val[idx] = 0
+        new_val = new_val[:size]
+        if size == 1:
+            new_val = new_val[0]
+        else:
+            new_val = tuple(new_val)
     elif typ == EnumConvertType.IMAGE:
-        if isinstance(val, (torch.Tensor,)):
-            if val.shape[0] > 1:
-                val = val.tolist()
+        if isinstance(new_val, (torch.Tensor,)):
+            if new_val.shape[0] > 1:
+                new_val = [t for t in new_val]
+        else:
+            # convert whatever into an tensor...
+            new_val = torch.empty((1, 3, 512, 512), dtype=torch.uint8)
     elif typ == EnumConvertType.STRING:
-        if not isinstance(val, (str,)):
-            val = [", ".join([str(v) for v in val])]
+        if not isinstance(new_val, (str,)):
+            new_val = [", ".join([str(v) for v in new_val])]
     elif typ == EnumConvertType.BOOLEAN:
-        val = [True if isinstance(v, (torch.Tensor,)) else bool(v) \
-               if v is not None and isinstance(v, (bool, int, float, str, list, set, dict,)) else False for v in val]
+        new_val = True if isinstance(new_val[0], (torch.Tensor,)) else bool(new_val[0]) \
+            if new_val[0] is not None and isinstance(new_val[0], (bool, int, float, str,)) else False
     elif typ == EnumConvertType.DICT:
-        val = [{i: v for i, v in enumerate(val)}]
-    if typ == EnumConvertType.LIST:
-        val = [val]
-    elif len(val) == 1:
-        return val[0]
-    return val
-
-def parse_parameter(key: str, data: Union[dict, List[dict]], default: Any,
-                    typ: EnumConvertType, clip_min: Optional[float]=None,
-                    clip_max: Optional[float]=None, zero:int=0) -> tuple[List[Any]]:
-    """Convert all inputs, regardless of structure, into a list of parameters."""
-    # should be operating on a list of values, all times
-    if isinstance(default, (tuple,)):
-        default = list(default)
-    if not isinstance(default, (list, torch.Tensor)):
-        default = [default]
-    #
-    unified = data.get(key, default)
-    if isinstance(unified, (torch.Tensor,)):
-        unified = unified.tolist()
-    elif isinstance(unified, (tuple,)):
-        unified = list(unified)
-    if not isinstance(unified, (list,)):
-        unified = [unified]
-    if len(unified) == 0:
-        unified = [default[0] if len(default) else 0]
-    return [parse_value(u, typ, default, clip_min, clip_max, zero) for u in unified]
+        new_val = [{i: v for i, v in enumerate(new_val)}]
+    elif typ == EnumConvertType.LIST:
+        new_val = [new_val]
+    if new_val == None:
+        return None
+    return new_val
 
 def vector_swap(pA: Any, pB: Any, swap_x: EnumSwizzle, x:float, swap_y:EnumSwizzle, y:float,
                 swap_z:EnumSwizzle, z:float, swap_w:EnumSwizzle, w:float) -> List[float]:

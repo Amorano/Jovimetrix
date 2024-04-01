@@ -85,10 +85,10 @@ class GLSL:
             vertices = np.array([
                 -1.0, -1.0,
                 1.0, -1.0,
-                -1.0,  1.0,
+                -1.0, 1.0,
                 1.0, -1.0,
-                1.0,  1.0,
-                -1.0,  1.0
+                1.0, 1.0,
+                -1.0, 1.0
             ], dtype='f4')
             GLSL.VBO = GLSL.CTX.buffer(vertices.tobytes())
 

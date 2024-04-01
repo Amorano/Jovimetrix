@@ -3,6 +3,7 @@ Jovimetrix - http://www.github.com/amorano/jovimetrix
 Animate
 """
 
+import math
 from typing import Any
 
 from loguru import logger
@@ -13,7 +14,7 @@ from comfy.utils import ProgressBar
 from Jovimetrix import JOV_WEB_RES_ROOT, comfy_message, parse_reset, JOVBaseNode, WILDCARD
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.anim import EnumWave, wave_op
-from Jovimetrix.sup.util import EnumConvertType, parse_parameter, zip_longest_fill
+from Jovimetrix.sup.util import EnumConvertType, parse_value, zip_longest_fill
 
 # =============================================================================
 
@@ -27,6 +28,7 @@ class TickNode(JOVBaseNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
+    # INPUT_IS_LIST = False
     RETURN_TYPES = ("INT", "FLOAT", "FLOAT", WILDCARD)
     RETURN_NAMES = (Lexicon.VALUE, Lexicon.LINEAR, Lexicon.FPS, Lexicon.ANY)
 
@@ -70,24 +72,23 @@ class TickNode(JOVBaseNode):
         self.__fixed_step = 0
 
     def run(self, ident, **kw) -> tuple[int, float, float, Any]:
-        passthru = parse_parameter(Lexicon.ANY, kw, None, EnumConvertType.ANY)[0]
-        # how many frames before reset to 0 -- 0 = run continuous
-        loop = parse_parameter(Lexicon.LOOP, kw, 0, EnumConvertType.INT)[0]
-        # current frame
-        self.__frame = parse_parameter(Lexicon.VALUE, kw, self.__frame, EnumConvertType.INT)[0]
+        passthru = parse_value(kw.get(Lexicon.ANY, None), EnumConvertType.ANY, None)[0]
+        loop = parse_value(kw.get(Lexicon.LOOP, None), EnumConvertType.INT, 0)[0]
+        self.__frame = parse_value(kw.get(Lexicon.VALUE, None), EnumConvertType.INT, self.__frame)[0]
         if loop > 0:
             self.__frame = min(loop, self.__frame)
         self.__frame = max(0, self.__frame)
-        hold = parse_parameter(Lexicon.WAIT, kw, False, EnumConvertType.BOOLEAN)[0]
-        fps = parse_parameter(Lexicon.FPS, kw, 24, EnumConvertType.INT, clip_min=1)[0]
-        bpm = parse_parameter(Lexicon.BPM, kw, 120, EnumConvertType.INT, clip_min=1)[0]
-        divisor = parse_parameter(Lexicon.NOTE, kw, 4, EnumConvertType.INT, clip_min=1)[0]
-        beat = 240000. / max(1, int(bpm))
-        beat = round(beat / divisor)
-        batch = parse_parameter(Lexicon.BATCH, kw, 1, EnumConvertType.INT, clip_min=1)[0]
+        hold = parse_value(kw.get(Lexicon.WAIT, None), EnumConvertType.BOOLEAN, False)[0]
+        fps = parse_value(kw.get(Lexicon.FPS, None), EnumConvertType.INT, 24, 1)[0]
+        bpm = parse_value(kw.get(Lexicon.BPM, None), EnumConvertType.INT, 120, 1)[0]
+        divisor = parse_value(kw.get(Lexicon.NOTE, None), EnumConvertType.INT, 4, 1)[0]
+        beat = int(fps) * 60 / max(1, int(bpm))
+        beat = beat / divisor
+        batch = parse_value(kw.get(Lexicon.BATCH, None), EnumConvertType.INT, 1, 1)[0]
         results = []
         step = 1. / max(1, int(fps))
-        reset = parse_parameter(Lexicon.BATCH, kw, False, EnumConvertType.BOOLEAN)[0]
+        reset = parse_value(kw.get(Lexicon.RESET, None), EnumConvertType.BOOLEAN, False)[0]
+        print(reset)
         if parse_reset(ident) > 0 or reset:
             self.__frame = 0
             self.__fixed_step = 0
@@ -103,8 +104,8 @@ class TickNode(JOVBaseNode):
                 self.__fixed_step += step
                 if loop > 0:
                     self.__frame %= loop
-                self.__fixed_step %= fps
-                trigger = self.__frame % beat == 0
+                self.__fixed_step = math.fmod(self.__fixed_step, fps)
+                trigger = math.fmod(self.__fixed_step, beat) == 0
             pbar.update_absolute(idx)
         if loop > 0:
             self.__frame = 0
@@ -118,10 +119,8 @@ class WaveGeneratorNode(JOVBaseNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
-    # INPUT_IS_LIST = False
     RETURN_TYPES = ("FLOAT", "INT", )
     RETURN_NAMES = (Lexicon.FLOAT, Lexicon.INT, )
-    # OUTPUT_IS_LIST = (True, True,)
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -140,15 +139,15 @@ class WaveGeneratorNode(JOVBaseNode):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> tuple[float, int]:
-        op = parse_parameter(Lexicon.WAVE, kw, EnumWave.SIN.name, EnumConvertType.STRING)
-        freq = parse_parameter(Lexicon.FREQ, kw, 1, EnumConvertType.FLOAT, 0)
-        amp = parse_parameter(Lexicon.AMP, kw, 1, EnumConvertType.FLOAT, 0)
-        phase = parse_parameter(Lexicon.PHASE, kw, 0, EnumConvertType.FLOAT)
-        shift = parse_parameter(Lexicon.OFFSET, kw, 0, EnumConvertType.FLOAT)
-        delta_time = parse_parameter(Lexicon.TIME, kw, 0, EnumConvertType.FLOAT, 0)
-        # print(kw[Lexicon.TIME], delta_time)
-        invert = parse_parameter(Lexicon.INVERT, kw, False, EnumConvertType.BOOLEAN)
-        abs = parse_parameter(Lexicon.ABSOLUTE, kw, False, EnumConvertType.BOOLEAN)
+        logger.debug(kw)
+        op = parse_value(kw.get(Lexicon.WAVE, None), EnumConvertType.STRING, EnumWave.SIN.name)
+        freq = parse_value(kw.get(Lexicon.FREQ, None), EnumConvertType.FLOAT, 1, 0)
+        amp = parse_value(kw.get(Lexicon.AMP, None), EnumConvertType.FLOAT, 1, 0)
+        phase = parse_value(kw.get(Lexicon.PHASE, None), EnumConvertType.FLOAT, 0)
+        shift = parse_value(kw.get(Lexicon.OFFSET, None), EnumConvertType.FLOAT, 0)
+        delta_time = parse_value(kw.get(Lexicon.TIME, None), 0, 0, EnumConvertType.FLOAT)
+        invert = parse_value(kw.get(Lexicon.INVERT, None), EnumConvertType.BOOLEAN, False)
+        abs = parse_value(kw.get(Lexicon.ABSOLUTE, None), EnumConvertType.BOOLEAN, False)
         results = []
         params = [tuple(x) for x in zip_longest_fill(op, freq, amp, phase, shift, delta_time, invert, abs)]
         pbar = ProgressBar(len(params))
