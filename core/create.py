@@ -14,7 +14,7 @@ from comfy.utils import ProgressBar
 from Jovimetrix import JOVBaseNode, JOV_WEB_RES_ROOT, WILDCARD
 
 from Jovimetrix.sup.lexicon import Lexicon
-from Jovimetrix.sup.util import parse_dynamic, parse_value, zip_longest_fill, \
+from Jovimetrix.sup.util import parse_dynamic, parse_list_value, zip_longest_fill, \
     EnumConvertType
 
 from Jovimetrix.sup.image import  cv2tensor, cv2tensor_full, \
@@ -57,14 +57,15 @@ class ConstantNode(JOVBaseNode):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        pA = parse_value(kw.get(Lexicon.PIXEL, None), EnumConvertType.IMAGE, None)
-        wihi = parse_value(kw.get(Lexicon.WH, None), EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), MIN_IMAGE_SIZE)
-        matte = parse_value(kw.get(Lexicon.RGBA_A, None), EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
+        pA = parse_list_value(kw.get(Lexicon.PIXEL, None), EnumConvertType.IMAGE, None)
+        wihi = parse_list_value(kw.get(Lexicon.WH, None), EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), MIN_IMAGE_SIZE)
+        matte = parse_list_value(kw.get(Lexicon.RGBA_A, None), EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
         images = []
-        params = [tuple(x) for x in zip_longest_fill(pA, wihi, matte)]
+        params = zip_longest_fill(pA, wihi, matte)
         pbar = ProgressBar(len(params))
         for idx, (pA, wihi, matte) in enumerate(params):
             width, height = wihi
+            print(wihi, matte)
             matte = pixel_eval(matte, EnumImageType.BGRA)
             pA = tensor2cv(pA, EnumImageType.BGRA, width, height, matte)
             images.append(cv2tensor_full(pA, matte))
@@ -106,19 +107,18 @@ class ShapeNode(JOVBaseNode):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        shape = parse_value(kw.get(Lexicon.SHAPE, None), EnumConvertType.STRING, EnumShapes.CIRCLE.name)
-        sides = parse_value(kw.get(Lexicon.SIDES, None), EnumConvertType.INT, 3, 3, 512)
-        angle = parse_value(kw.get(Lexicon.ANGLE, None), EnumConvertType.FLOAT, 0)
-        edge = parse_value(kw.get(Lexicon.EDGE, None), EnumConvertType.STRING, EnumEdge.CLIP.name)
-        offset = parse_value(kw.get(Lexicon.XY, None), EnumConvertType.VEC2, (0, 0))
-        size = parse_value(kw.get(Lexicon.SIZE, None), EnumConvertType.VEC2, (1, 1,), zero=0.001)
+        shape = parse_list_value(kw.get(Lexicon.SHAPE, None), EnumConvertType.STRING, EnumShapes.CIRCLE.name)
+        sides = parse_list_value(kw.get(Lexicon.SIDES, None), EnumConvertType.INT, 3, 3, 512)
+        angle = parse_list_value(kw.get(Lexicon.ANGLE, None), EnumConvertType.FLOAT, 0)
+        edge = parse_list_value(kw.get(Lexicon.EDGE, None), EnumConvertType.STRING, EnumEdge.CLIP.name)
+        offset = parse_list_value(kw.get(Lexicon.XY, None), EnumConvertType.VEC2, (0, 0))
+        size = parse_list_value(kw.get(Lexicon.SIZE, None), EnumConvertType.VEC2, (1, 1,), zero=0.001)
         print(kw.get(Lexicon.WH, None))
-        wihi = parse_value(kw.get(Lexicon.WH, None), EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), MIN_IMAGE_SIZE)
+        wihi = parse_list_value(kw.get(Lexicon.WH, None), EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), MIN_IMAGE_SIZE)
         print(wihi)
-        color = parse_value(kw.get(Lexicon.RGBA_A, None), EnumConvertType.VEC4INT, (255, 255, 255, 255), 0, 255)
-        matte = parse_value(kw.get(Lexicon.MATTE, None), EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
-        params = [tuple(x) for x in zip_longest_fill(shape, sides, offset, angle, edge,
-                                                     size, wihi, color, matte)]
+        color = parse_list_value(kw.get(Lexicon.RGBA_A, None), EnumConvertType.VEC4INT, (255, 255, 255, 255), 0, 255)
+        matte = parse_list_value(kw.get(Lexicon.MATTE, None), EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
+        params = zip_longest_fill(shape, sides, offset, angle, edge, size, wihi, color, matte)
         images = []
         pbar = ProgressBar(len(params))
         for idx, (shape, sides, offset, angle, edge, size, wihi, color, matte) in enumerate(params):
@@ -205,29 +205,27 @@ class TextNode(JOVBaseNode):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        full_text = parse_value(kw.get(Lexicon.STRING, None), EnumConvertType.STRING, "")
-        font_idx = parse_value(kw.get(Lexicon.FONT, None), EnumConvertType.STRING, self.FONT_NAMES[0])
-        autosize = parse_value(kw.get(Lexicon.AUTOSIZE, None), EnumConvertType.BOOLEAN, False)
-        letter = parse_value(kw.get(Lexicon.LETTER, None), EnumConvertType.BOOLEAN, False)
-        color = parse_value(kw.get(Lexicon.RGBA_A, None), 255, (255, 255, 255, 255), EnumConvertType.VEC4INT, 0)
-        matte = parse_value(kw.get(Lexicon.MATTE, None), 255, (0, 0, 0), EnumConvertType.VEC3INT, 0)
-        columns = parse_value(kw.get(Lexicon.COLUMNS, None), 0, 0, EnumConvertType.INT)
-        font_size = parse_value(kw.get(Lexicon.FONT_SIZE, None), 1, 16, EnumConvertType.INT)
-        align = parse_value(kw.get(Lexicon.ALIGN, None), EnumConvertType.STRING, EnumAlignment.CENTER.name)
-        justify = parse_value(kw.get(Lexicon.JUSTIFY, None), EnumConvertType.STRING, EnumJustify.CENTER.name)
-        margin = parse_value(kw.get(Lexicon.MARGIN, None), 0, 0, EnumConvertType.INT)
-        line_spacing = parse_value(kw.get(Lexicon.SPACING, None), 0, 25, EnumConvertType.INT)
-        wihi = parse_value(kw.get(Lexicon.WH, None), 1, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), EnumConvertType.VEC2INT)
-        pos = parse_value(kw.get(Lexicon.XY, None), 1, (0, 0), EnumConvertType.VEC2, -1)
-        angle = parse_value(kw.get(Lexicon.ANGLE, None), EnumConvertType.INT, 0)
-        edge = parse_value(kw.get(Lexicon.EDGE, None), EnumConvertType.STRING, EnumEdge.CLIP.name)
-        invert = parse_value(kw.get(Lexicon.INVERT, None), EnumConvertType.BOOLEAN, False)
+        full_text = parse_list_value(kw.get(Lexicon.STRING, None), EnumConvertType.STRING, "")
+        font_idx = parse_list_value(kw.get(Lexicon.FONT, None), EnumConvertType.STRING, self.FONT_NAMES[0])
+        autosize = parse_list_value(kw.get(Lexicon.AUTOSIZE, None), EnumConvertType.BOOLEAN, False)
+        letter = parse_list_value(kw.get(Lexicon.LETTER, None), EnumConvertType.BOOLEAN, False)
+        color = parse_list_value(kw.get(Lexicon.RGBA_A, None), 255, (255, 255, 255, 255), EnumConvertType.VEC4INT, 0)
+        matte = parse_list_value(kw.get(Lexicon.MATTE, None), 255, (0, 0, 0), EnumConvertType.VEC3INT, 0)
+        columns = parse_list_value(kw.get(Lexicon.COLUMNS, None), 0, 0, EnumConvertType.INT)
+        font_size = parse_list_value(kw.get(Lexicon.FONT_SIZE, None), 1, 16, EnumConvertType.INT)
+        align = parse_list_value(kw.get(Lexicon.ALIGN, None), EnumConvertType.STRING, EnumAlignment.CENTER.name)
+        justify = parse_list_value(kw.get(Lexicon.JUSTIFY, None), EnumConvertType.STRING, EnumJustify.CENTER.name)
+        margin = parse_list_value(kw.get(Lexicon.MARGIN, None), 0, 0, EnumConvertType.INT)
+        line_spacing = parse_list_value(kw.get(Lexicon.SPACING, None), 0, 25, EnumConvertType.INT)
+        wihi = parse_list_value(kw.get(Lexicon.WH, None), 1, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), EnumConvertType.VEC2INT)
+        pos = parse_list_value(kw.get(Lexicon.XY, None), 1, (0, 0), EnumConvertType.VEC2, -1)
+        angle = parse_list_value(kw.get(Lexicon.ANGLE, None), EnumConvertType.INT, 0)
+        edge = parse_list_value(kw.get(Lexicon.EDGE, None), EnumConvertType.STRING, EnumEdge.CLIP.name)
+        invert = parse_list_value(kw.get(Lexicon.INVERT, None), EnumConvertType.BOOLEAN, False)
         images = []
-        params = [tuple(x) for x in zip_longest_fill(full_text, font_idx, autosize,
-                                                     letter, color, matte, columns,
-                                                     font_size, align, justify,
-                                                     margin, line_spacing, wihi,
-                                                     pos, angle, edge, invert)]
+        params = zip_longest_fill(full_text, font_idx, autosize, letter, color,
+                                  matte, columns, font_size, align, justify, margin,
+                                  line_spacing, wihi, pos, angle, edge, invert)
 
         pbar = ProgressBar(len(params))
         for idx, (full_text, font_idx, autosize, letter, color, matte, columns,
@@ -297,14 +295,13 @@ class StereogramNode(JOVBaseNode):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        pA = parse_value(kw.get(Lexicon.PIXEL, None), EnumConvertType.IMAGE, None)
-        depth = parse_value(kw.get(Lexicon.DEPTH, None), EnumConvertType.IMAGE, None)
-        divisions = parse_value(kw.get(Lexicon.TILE, None), 1, 8, EnumConvertType.INT)
-        noise = parse_value(kw.get(Lexicon.NOISE, None), 1, 0.33, EnumConvertType.FLOAT, 0)
-        gamma = parse_value(kw.get(Lexicon.GAMMA, None), 1, 0.33, EnumConvertType.FLOAT, 0)
-        shift = parse_value(kw.get(Lexicon.SHIFT, None), 1, 1, EnumConvertType.FLOAT, -1)
-        params = [tuple(x) for x in zip_longest_fill(pA, depth, divisions, noise,
-                                                     gamma, shift)]
+        pA = parse_list_value(kw.get(Lexicon.PIXEL, None), EnumConvertType.IMAGE, None)
+        depth = parse_list_value(kw.get(Lexicon.DEPTH, None), EnumConvertType.IMAGE, None)
+        divisions = parse_list_value(kw.get(Lexicon.TILE, None), 1, 8, EnumConvertType.INT)
+        noise = parse_list_value(kw.get(Lexicon.NOISE, None), 1, 0.33, EnumConvertType.FLOAT, 0)
+        gamma = parse_list_value(kw.get(Lexicon.GAMMA, None), 1, 0.33, EnumConvertType.FLOAT, 0)
+        shift = parse_list_value(kw.get(Lexicon.SHIFT, None), 1, 1, EnumConvertType.FLOAT, -1)
+        params = zip_longest_fill(pA, depth, divisions, noise, gamma, shift)
         images = []
         pbar = ProgressBar(len(params))
         for idx, (pA, depth, divisions, noise, gamma, shift) in enumerate(params):
@@ -337,11 +334,11 @@ class GradientNode(JOVBaseNode):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        pA = parse_value(kw.get(Lexicon.PIXEL, None), EnumConvertType.IMAGE, None)
-        wihi = parse_value(kw.get(Lexicon.WH, None), 1, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), EnumConvertType.VEC2INT)
+        pA = parse_list_value(kw.get(Lexicon.PIXEL, None), EnumConvertType.IMAGE, None)
+        wihi = parse_list_value(kw.get(Lexicon.WH, None), 1, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), EnumConvertType.VEC2INT)
         colors = parse_dynamic(Lexicon.COLOR, kw)
         images = []
-        params = [tuple(x) for x in zip_longest_fill(pA, wihi, colors)]
+        params = zip_longest_fill(pA, wihi, colors)
         pbar = ProgressBar(len(params))
         for idx, (pA, wihi, clr) in enumerate(params):
             # colors = [(0,0,0,255) if c is None else pixel_eval(c, EnumImageType.BGRA) for c in clr]
@@ -375,11 +372,11 @@ class StereoscopicNode(JOVBaseNode):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        pA = parse_value(kw.get(Lexicon.PIXEL, None), EnumConvertType.IMAGE, None)
-        baseline = parse_value(kw.get(Lexicon.INT, None), 1, 0.1, EnumConvertType.FLOAT)
+        pA = parse_list_value(kw.get(Lexicon.PIXEL, None), EnumConvertType.IMAGE, None)
+        baseline = parse_list_value(kw.get(Lexicon.INT, None), 1, 0.1, EnumConvertType.FLOAT)
         focal_length = parse_dynamic(Lexicon.VALUE, kw, EnumConvertType.FLOAT)
         images = []
-        params = [tuple(x) for x in zip_longest_fill(pA, baseline, focal_length)]
+        params = zip_longest_fill(pA, baseline, focal_length)
         pbar = ProgressBar(len(params))
         for idx, (pA, wihi, clr) in enumerate(params):
             pA = tensor2cv(pA, EnumImageType.GRAYSCALE)

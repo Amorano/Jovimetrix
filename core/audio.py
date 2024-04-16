@@ -12,7 +12,7 @@ from comfy.utils import ProgressBar
 
 from Jovimetrix import JOV_WEB_RES_ROOT, JOVBaseNode
 from Jovimetrix.sup.lexicon import Lexicon
-from Jovimetrix.sup.util import EnumConvertType, parse_value, zip_longest_fill
+from Jovimetrix.sup.util import EnumConvertType, parse_list_value, zip_longest_fill
 from Jovimetrix.sup.image import channel_solid, cv2tensor_full, EnumImageType, \
     MIN_IMAGE_SIZE
 from Jovimetrix.sup.audio import load_audio, graph_sausage
@@ -46,8 +46,8 @@ class LoadWaveNode(JOVBaseNode):
         self.__cache = {}
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        filen = parse_value(kw.get(Lexicon.FILEN, None), EnumConvertType.STRING, "")
-        params = [tuple(x) for x in zip_longest_fill(filen)]
+        filen = parse_list_value(kw.get(Lexicon.FILEN, None), EnumConvertType.STRING, "")
+        params = zip_longest_fill(filen)
         waves = []
         pbar = ProgressBar(len(params))
         for idx, (filen,) in enumerate(params):
@@ -73,7 +73,6 @@ class WaveGraphNode(JOVBaseNode):
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
-    # OUTPUT_IS_LIST = ()
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -93,13 +92,13 @@ class WaveGraphNode(JOVBaseNode):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        wave = parse_value(kw.get(Lexicon.WAVE, None), EnumConvertType.ANY, None)
-        bars = parse_value(kw.get(Lexicon.VALUE, None), EnumConvertType.INT, 100, 1, 8192)
-        thick = parse_value(kw.get(Lexicon.THICK, None), EnumConvertType.FLOAT, 0.72, 0, 1)
-        wihi = parse_value(kw.get(Lexicon.WH, None), EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), MIN_IMAGE_SIZE)
-        rgb_a = parse_value(kw.get(Lexicon.RGBA_A, None), EnumConvertType.VEC4INT, (128, 128, 0, 255), 0, 255)
-        matte = parse_value(kw.get(Lexicon.RGBA_B, None), EnumConvertType.VEC4INT, (0, 128, 128, 255), 0, 255)
-        params = [tuple(x) for x in zip_longest_fill(wave, bars, wihi, thick, rgb_a, matte)]
+        wave = parse_list_value(kw.get(Lexicon.WAVE, None), EnumConvertType.ANY, None)
+        bars = parse_list_value(kw.get(Lexicon.VALUE, None), EnumConvertType.INT, 100, 1, 8192)
+        thick = parse_list_value(kw.get(Lexicon.THICK, None), EnumConvertType.FLOAT, 0.72, 0, 1)
+        wihi = parse_list_value(kw.get(Lexicon.WH, None), EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), MIN_IMAGE_SIZE)
+        rgb_a = parse_list_value(kw.get(Lexicon.RGBA_A, None), EnumConvertType.VEC4INT, (128, 128, 0, 255), 0, 255)
+        matte = parse_list_value(kw.get(Lexicon.RGBA_B, None), EnumConvertType.VEC4INT, (0, 128, 128, 255), 0, 255)
+        params = zip_longest_fill(wave, bars, wihi, thick, rgb_a, matte)
         images = []
         pbar = ProgressBar(len(params))
         for idx, (wave, bars, wihi, thick, rgb_a, matte) in enumerate(params):

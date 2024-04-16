@@ -15,8 +15,8 @@ from nodes import interrupt_processing
 from Jovimetrix import comfy_message, \
     ComfyAPIMessage, JOVBaseNode, TimedOutException, JOV_WEB_RES_ROOT, WILDCARD
 from Jovimetrix.sup.lexicon import Lexicon
-from Jovimetrix.sup.util import parse_value, zip_longest_fill
-from Jovimetrix.core.calc import EnumConvertType, parse_value
+from Jovimetrix.sup.util import parse_list_value, zip_longest_fill
+from Jovimetrix.core.calc import EnumConvertType, parse_list_value
 
 # =============================================================================
 
@@ -67,7 +67,6 @@ class DelayNode(JOVBaseNode):
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = (WILDCARD,)
     RETURN_NAMES = (Lexicon.ROUTE,)
-    OUTPUT_IS_LIST = (True,)
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -83,7 +82,7 @@ class DelayNode(JOVBaseNode):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, ident, **kw) -> tuple[Any]:
-        delay = parse_value(kw.get(Lexicon.TIMER, None), JOV_DELAY_MAX, 0, EnumConvertType.INT, -1)[0]
+        delay = parse_list_value(kw.get(Lexicon.TIMER, None), JOV_DELAY_MAX, 0, EnumConvertType.INT, -1)[0]
         if delay < 0:
             delay = JOV_DELAY_MAX
         if delay > JOV_DELAY_MIN:
@@ -128,9 +127,9 @@ class HoldValueNode(JOVBaseNode):
         self.__last_value = None
 
     def run(self, **kw) -> tuple[Any]:
-        obj = parse_value(kw.get(Lexicon.PASS_IN, None), EnumConvertType.ANY, None)
-        hold = parse_value(kw.get(Lexicon.WAIT, None), EnumConvertType.BOOLEAN, False)
-        params = [tuple(x) for x in zip_longest_fill(obj, hold)]
+        obj = parse_list_value(kw.get(Lexicon.PASS_IN, None), EnumConvertType.ANY, None)
+        hold = parse_list_value(kw.get(Lexicon.WAIT, None), EnumConvertType.BOOLEAN, False)
+        params = zip_longest_fill(obj, hold)
         pbar = ProgressBar(len(params))
         results = []
         for idx, (obj, hold) in enumerate(params):
@@ -153,7 +152,7 @@ class ComparisonNode(JOVBaseNode):
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     #     RETURN_TYPES = (WILDCARD, WILDCARD,)
     RETURN_NAMES = (Lexicon.ANY, Lexicon.VEC, )
-    OUTPUT_IS_LIST = (True, True, )
+    # OUTPUT_IS_LIST = (True, True, )
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -170,13 +169,13 @@ class ComparisonNode(JOVBaseNode):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> tuple[bool]:
-        A = parse_value(kw.get(Lexicon.IN_A, None), EnumConvertType.ANY, None)
-        B = parse_value(kw.get(Lexicon.IN_B, None), EnumConvertType.ANY, None)
-        good = parse_value(kw.get(Lexicon.COMP_A, None), EnumConvertType.ANY, None)
-        fail = parse_value(kw.get(Lexicon.COMP_B, None), EnumConvertType.ANY, None)
-        flip = parse_value(kw.get(Lexicon.FLIP, None), EnumConvertType.BOOLEAN, False)
-        op = parse_value(kw.get(Lexicon.COMPARE, None), EnumConvertType.STRING, EnumComparison.EQUAL.name)
-        params = [tuple(x) for x in zip_longest_fill(A, B, op, flip)]
+        A = parse_list_value(kw.get(Lexicon.IN_A, None), EnumConvertType.ANY, None)
+        B = parse_list_value(kw.get(Lexicon.IN_B, None), EnumConvertType.ANY, None)
+        good = parse_list_value(kw.get(Lexicon.COMP_A, None), EnumConvertType.ANY, None)
+        fail = parse_list_value(kw.get(Lexicon.COMP_B, None), EnumConvertType.ANY, None)
+        flip = parse_list_value(kw.get(Lexicon.FLIP, None), EnumConvertType.BOOLEAN, False)
+        op = parse_list_value(kw.get(Lexicon.COMPARE, None), EnumConvertType.STRING, EnumComparison.EQUAL.name)
+        params = zip_longest_fill(A, B, op, flip)
         pbar = ProgressBar(len(params))
         vals = []
         results = []
@@ -187,8 +186,8 @@ class ComparisonNode(JOVBaseNode):
                 B = [B]
             size = min(4, max(len(A), len(B))) - 1
             typ = [EnumConvertType.FLOAT, EnumConvertType.VEC2, EnumConvertType.VEC3, EnumConvertType.VEC4][size]
-            val_a = parse_value(A, typ, [A[-1]] * size)
-            val_b = parse_value(B, typ, [B[-1]] * size)
+            val_a = parse_list_value(A, typ, [A[-1]] * size)
+            val_b = parse_list_value(B, typ, [B[-1]] * size)
             if flip:
                 val_a, val_b = val_b, val_a
 

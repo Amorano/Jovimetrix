@@ -13,7 +13,7 @@ from comfy.utils import ProgressBar
 
 from Jovimetrix import JOV_WEB_RES_ROOT, JOVBaseNode, WILDCARD
 from Jovimetrix.sup.lexicon import Lexicon
-from Jovimetrix.sup.util import EnumConvertType, parse_value, zip_longest_fill
+from Jovimetrix.sup.util import EnumConvertType, parse_list_value, zip_longest_fill
 from Jovimetrix.sup.image import channel_count, \
     color_match_histogram, color_match_lut, color_match_reinhard, \
     cv2tensor_full, image_color_blind, image_scalefit, tensor2cv, image_equalize, \
@@ -75,20 +75,20 @@ class AdjustNode(JOVBaseNode):
 
     def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor]:
         # logger.debug(kw)
-        pA = parse_value(kw.get(Lexicon.PIXEL, None), EnumConvertType.IMAGE, None)
-        mask = parse_value(kw.get(Lexicon.MASK, None), EnumConvertType.IMAGE, None)
-        op = parse_value(kw.get(Lexicon.FUNC, None), EnumConvertType.STRING, EnumAdjustOP.BLUR.name)
-        radius = parse_value(kw.get(Lexicon.RADIUS, None), EnumConvertType.INT, 3, 3)
-        amt = parse_value(kw.get(Lexicon.VALUE, None), EnumConvertType.FLOAT, 0, 0, 1)
-        lohi = parse_value(kw.get(Lexicon.LOHI, None), EnumConvertType.VEC2, (0, 1), 0, 1)
-        lmh = parse_value(kw.get(Lexicon.LMH, None), EnumConvertType.VEC3, (0, 0.5, 1), 0, 1)
-        hsv = parse_value(kw.get(Lexicon.HSV, None), EnumConvertType.VEC3, (0, 1, 1), 0, 1)
-        contrast = parse_value(kw.get(Lexicon.CONTRAST, None), EnumConvertType.FLOAT, 1, 0, 0)
-        gamma = parse_value(kw.get(Lexicon.GAMMA, None), EnumConvertType.FLOAT, 1, 0, 1)
-        matte = parse_value(kw.get(Lexicon.MATTE, None), EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
-        invert = parse_value(kw.get(Lexicon.INVERT, None), EnumConvertType.BOOLEAN, False)
-        params = [tuple(x) for x in zip_longest_fill(pA, mask, op, radius, amt, lohi,
-                                                     lmh, hsv, contrast, gamma, matte, invert)]
+        pA = parse_list_value(kw.get(Lexicon.PIXEL, None), EnumConvertType.IMAGE, None)
+        mask = parse_list_value(kw.get(Lexicon.MASK, None), EnumConvertType.IMAGE, None)
+        op = parse_list_value(kw.get(Lexicon.FUNC, None), EnumConvertType.STRING, EnumAdjustOP.BLUR.name)
+        radius = parse_list_value(kw.get(Lexicon.RADIUS, None), EnumConvertType.INT, 3, 3)
+        amt = parse_list_value(kw.get(Lexicon.VALUE, None), EnumConvertType.FLOAT, 0, 0, 1)
+        lohi = parse_list_value(kw.get(Lexicon.LOHI, None), EnumConvertType.VEC2, (0, 1), 0, 1)
+        lmh = parse_list_value(kw.get(Lexicon.LMH, None), EnumConvertType.VEC3, (0, 0.5, 1), 0, 1)
+        hsv = parse_list_value(kw.get(Lexicon.HSV, None), EnumConvertType.VEC3, (0, 1, 1), 0, 1)
+        contrast = parse_list_value(kw.get(Lexicon.CONTRAST, None), EnumConvertType.FLOAT, 1, 0, 0)
+        gamma = parse_list_value(kw.get(Lexicon.GAMMA, None), EnumConvertType.FLOAT, 1, 0, 1)
+        matte = parse_list_value(kw.get(Lexicon.MATTE, None), EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
+        invert = parse_list_value(kw.get(Lexicon.INVERT, None), EnumConvertType.BOOLEAN, False)
+        params = zip_longest_fill(pA, mask, op, radius, amt, lohi,
+                                                     lmh, hsv, contrast, gamma, matte, invert)
         images = []
         pbar = ProgressBar(len(params))
         for idx, (pA, mask, op, radius, amt, lohi, lmh, hsv, contrast, gamma, matte, invert) in enumerate(params):
@@ -221,17 +221,16 @@ class ColorMatchNode(JOVBaseNode):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        pA = parse_value(kw.get(Lexicon.PIXEL_A, None), EnumConvertType.IMAGE, None)
-        pB = parse_value(kw.get(Lexicon.PIXEL_B, None), EnumConvertType.IMAGE, None)
-        colormatch_mode = parse_value(kw.get(Lexicon.COLORMATCH_MODE, None), EnumConvertType.STRING, EnumColorMatchMode.REINHARD.name)
-        colormatch_map = parse_value(kw.get(Lexicon.COLORMATCH_MAP, None), EnumConvertType.STRING, EnumColorMatchMap.USER_MAP.name)
-        colormap = parse_value(kw.get(Lexicon.COLORMAP, None), EnumConvertType.STRING, EnumColorMap.HSV.name)
-        num_colors = parse_value(kw.get(Lexicon.VALUE, None), EnumConvertType.INT, 255)
-        flip = parse_value(kw.get(Lexicon.FLIP, None), EnumConvertType.BOOLEAN, False)
-        invert = parse_value(kw.get(Lexicon.INVERT, None), EnumConvertType.BOOLEAN, False)
-        matte = parse_value(kw.get(Lexicon.MATTE, None), EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
-        params = [tuple(x) for x in zip_longest_fill(pA, pB, colormap, colormatch_mode,
-                                                     colormatch_map, num_colors, flip, invert, matte)]
+        pA = parse_list_value(kw.get(Lexicon.PIXEL_A, None), EnumConvertType.IMAGE, None)
+        pB = parse_list_value(kw.get(Lexicon.PIXEL_B, None), EnumConvertType.IMAGE, None)
+        colormatch_mode = parse_list_value(kw.get(Lexicon.COLORMATCH_MODE, None), EnumConvertType.STRING, EnumColorMatchMode.REINHARD.name)
+        colormatch_map = parse_list_value(kw.get(Lexicon.COLORMATCH_MAP, None), EnumConvertType.STRING, EnumColorMatchMap.USER_MAP.name)
+        colormap = parse_list_value(kw.get(Lexicon.COLORMAP, None), EnumConvertType.STRING, EnumColorMap.HSV.name)
+        num_colors = parse_list_value(kw.get(Lexicon.VALUE, None), EnumConvertType.INT, 255)
+        flip = parse_list_value(kw.get(Lexicon.FLIP, None), EnumConvertType.BOOLEAN, False)
+        invert = parse_list_value(kw.get(Lexicon.INVERT, None), EnumConvertType.BOOLEAN, False)
+        matte = parse_list_value(kw.get(Lexicon.MATTE, None), EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
+        params = zip_longest_fill(pA, pB, colormap, colormatch_mode, colormatch_map, num_colors, flip, invert, matte)
         images = []
         pbar = ProgressBar(len(params))
         for idx, (pA, pB, colormap, mode, cmap, num_colors, flip, invert, matte) in enumerate(params):
@@ -286,13 +285,13 @@ class ThresholdNode(JOVBaseNode):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        pA = parse_value(kw.get(Lexicon.PIXEL, None), EnumConvertType.IMAGE, None)
-        mode = parse_value(kw.get(Lexicon.FUNC, None), EnumConvertType.STRING, EnumThreshold.BINARY.name)
-        adapt = parse_value(kw.get(Lexicon.ADAPT, None), EnumConvertType.STRING, EnumThresholdAdapt.ADAPT_NONE.name)
-        threshold = parse_value(kw.get(Lexicon.THRESHOLD, None), EnumConvertType.FLOAT, 1, 0, 1)
-        block = parse_value(kw.get(Lexicon.SIZE, None), 3, 3, EnumConvertType.INT)
-        invert = parse_value(kw.get(Lexicon.INVERT, None), EnumConvertType.BOOLEAN, False)
-        params = [tuple(x) for x in zip_longest_fill(pA, mode, adapt, threshold, block, invert)]
+        pA = parse_list_value(kw.get(Lexicon.PIXEL, None), EnumConvertType.IMAGE, None)
+        mode = parse_list_value(kw.get(Lexicon.FUNC, None), EnumConvertType.STRING, EnumThreshold.BINARY.name)
+        adapt = parse_list_value(kw.get(Lexicon.ADAPT, None), EnumConvertType.STRING, EnumThresholdAdapt.ADAPT_NONE.name)
+        threshold = parse_list_value(kw.get(Lexicon.THRESHOLD, None), EnumConvertType.FLOAT, 1, 0, 1)
+        block = parse_list_value(kw.get(Lexicon.SIZE, None), 3, 3, EnumConvertType.INT)
+        invert = parse_list_value(kw.get(Lexicon.INVERT, None), EnumConvertType.BOOLEAN, False)
+        params = zip_longest_fill(pA, mode, adapt, threshold, block, invert)
         images = []
         pbar = ProgressBar(len(params))
         for idx, (pA, mode, adapt, th, block, invert) in enumerate(params):
@@ -330,11 +329,11 @@ class ColorBlindNode(JOVBaseNode):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        pA = parse_value(kw.get(Lexicon.PIXEL, None), EnumConvertType.IMAGE, None)
-        defiency = parse_value(kw.get(Lexicon.DEFIENCY, None), EnumConvertType.STRING, EnumCBDefiency.PROTAN.name)
-        simulator = parse_value(kw.get(Lexicon.SIMULATOR, None), EnumConvertType.STRING, EnumCBSimulator.AUTOSELECT.name)
-        severity = parse_value(kw.get(Lexicon.VALUE, None), EnumConvertType.FLOAT, 1)
-        params = [tuple(x) for x in zip_longest_fill(pA, defiency, simulator, severity)]
+        pA = parse_list_value(kw.get(Lexicon.PIXEL, None), EnumConvertType.IMAGE, None)
+        defiency = parse_list_value(kw.get(Lexicon.DEFIENCY, None), EnumConvertType.STRING, EnumCBDefiency.PROTAN.name)
+        simulator = parse_list_value(kw.get(Lexicon.SIMULATOR, None), EnumConvertType.STRING, EnumCBSimulator.AUTOSELECT.name)
+        severity = parse_list_value(kw.get(Lexicon.VALUE, None), EnumConvertType.FLOAT, 1)
+        params = zip_longest_fill(pA, defiency, simulator, severity)
         images = []
         pbar = ProgressBar(len(params))
         for idx, (pA, defiency, simulator, severity) in enumerate(params):
