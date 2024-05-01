@@ -487,7 +487,7 @@ class ImageDiffNode(JOVBaseNode):
         pB = parse_list_value(kw.get(Lexicon.PIXEL_B, None), EnumConvertType.IMAGE, None)
         th = parse_list_value(kw.get(Lexicon.THRESHOLD, None), 1, 0, EnumConvertType.FLOAT, 0)
         results = []
-        params = zip_longest_fill(pA, pB, th)
+        params = list(zip_longest_fill(pA, pB, th))
         pbar = ProgressBar(len(params))
         for idx, (pA, pB, th) in enumerate(params):
             pA = tensor2cv(pA)
@@ -648,7 +648,7 @@ class RESTNode:
         attribute = parse_list_value(kw.get(Lexicon.ATTRIBUTE, None), EnumConvertType.STRING, "")
         array_path = parse_list_value(kw.get(Lexicon.PATH, None), EnumConvertType.STRING, "")
         results = []
-        params = zip_longest_fill(auth_body_text, api_url, attribute, array_path)
+        params = list(zip_longest_fill(auth_body_text, api_url, attribute, array_path))
         pbar = ProgressBar(len(params))
         for idx, (auth_body_text, api_url, attribute, array_path) in enumerate(params):
             auth_body = None

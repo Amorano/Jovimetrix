@@ -230,7 +230,7 @@ class ColorMatchNode(JOVBaseNode):
         flip = parse_list_value(kw.get(Lexicon.FLIP, None), EnumConvertType.BOOLEAN, False)
         invert = parse_list_value(kw.get(Lexicon.INVERT, None), EnumConvertType.BOOLEAN, False)
         matte = parse_list_value(kw.get(Lexicon.MATTE, None), EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
-        params = zip_longest_fill(pA, pB, colormap, colormatch_mode, colormatch_map, num_colors, flip, invert, matte)
+        params = list(zip_longest_fill(pA, pB, colormap, colormatch_mode, colormatch_map, num_colors, flip, invert, matte))
         images = []
         pbar = ProgressBar(len(params))
         for idx, (pA, pB, colormap, mode, cmap, num_colors, flip, invert, matte) in enumerate(params):
@@ -291,7 +291,7 @@ class ThresholdNode(JOVBaseNode):
         threshold = parse_list_value(kw.get(Lexicon.THRESHOLD, None), EnumConvertType.FLOAT, 1, 0, 1)
         block = parse_list_value(kw.get(Lexicon.SIZE, None), 3, 3, EnumConvertType.INT)
         invert = parse_list_value(kw.get(Lexicon.INVERT, None), EnumConvertType.BOOLEAN, False)
-        params = zip_longest_fill(pA, mode, adapt, threshold, block, invert)
+        params = list(zip_longest_fill(pA, mode, adapt, threshold, block, invert))
         images = []
         pbar = ProgressBar(len(params))
         for idx, (pA, mode, adapt, th, block, invert) in enumerate(params):
@@ -333,7 +333,7 @@ class ColorBlindNode(JOVBaseNode):
         defiency = parse_list_value(kw.get(Lexicon.DEFIENCY, None), EnumConvertType.STRING, EnumCBDefiency.PROTAN.name)
         simulator = parse_list_value(kw.get(Lexicon.SIMULATOR, None), EnumConvertType.STRING, EnumCBSimulator.AUTOSELECT.name)
         severity = parse_list_value(kw.get(Lexicon.VALUE, None), EnumConvertType.FLOAT, 1)
-        params = zip_longest_fill(pA, defiency, simulator, severity)
+        params = list(zip_longest_fill(pA, defiency, simulator, severity))
         images = []
         pbar = ProgressBar(len(params))
         for idx, (pA, defiency, simulator, severity) in enumerate(params):

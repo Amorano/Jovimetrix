@@ -47,7 +47,7 @@ class LoadWaveNode(JOVBaseNode):
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
         filen = parse_list_value(kw.get(Lexicon.FILEN, None), EnumConvertType.STRING, "")
-        params = zip_longest_fill(filen)
+        params = list(zip_longest_fill(filen))
         waves = []
         pbar = ProgressBar(len(params))
         for idx, (filen,) in enumerate(params):
@@ -98,7 +98,7 @@ class WaveGraphNode(JOVBaseNode):
         wihi = parse_list_value(kw.get(Lexicon.WH, None), EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), MIN_IMAGE_SIZE)
         rgb_a = parse_list_value(kw.get(Lexicon.RGBA_A, None), EnumConvertType.VEC4INT, (128, 128, 0, 255), 0, 255)
         matte = parse_list_value(kw.get(Lexicon.RGBA_B, None), EnumConvertType.VEC4INT, (0, 128, 128, 255), 0, 255)
-        params = zip_longest_fill(wave, bars, wihi, thick, rgb_a, matte)
+        params = list(zip_longest_fill(wave, bars, wihi, thick, rgb_a, matte))
         images = []
         pbar = ProgressBar(len(params))
         for idx, (wave, bars, wihi, thick, rgb_a, matte) in enumerate(params):

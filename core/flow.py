@@ -129,7 +129,7 @@ class HoldValueNode(JOVBaseNode):
     def run(self, **kw) -> tuple[Any]:
         obj = parse_list_value(kw.get(Lexicon.PASS_IN, None), EnumConvertType.ANY, None)
         hold = parse_list_value(kw.get(Lexicon.WAIT, None), EnumConvertType.BOOLEAN, False)
-        params = zip_longest_fill(obj, hold)
+        params = list(zip_longest_fill(obj, hold))
         pbar = ProgressBar(len(params))
         results = []
         for idx, (obj, hold) in enumerate(params):
@@ -175,7 +175,7 @@ class ComparisonNode(JOVBaseNode):
         fail = parse_list_value(kw.get(Lexicon.COMP_B, None), EnumConvertType.ANY, None)
         flip = parse_list_value(kw.get(Lexicon.FLIP, None), EnumConvertType.BOOLEAN, False)
         op = parse_list_value(kw.get(Lexicon.COMPARE, None), EnumConvertType.STRING, EnumComparison.EQUAL.name)
-        params = zip_longest_fill(A, B, op, flip)
+        params = list(zip_longest_fill(A, B, op, flip))
         pbar = ProgressBar(len(params))
         vals = []
         results = []

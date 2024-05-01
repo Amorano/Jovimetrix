@@ -302,7 +302,7 @@ class StreamWriterNode(JOVBaseNode):
         matte = parse_list_value(kw.get(Lexicon.MATTE, None),EnumConvertType.VEC4INT, (0,0,0,0), 0, 255)
         mode = parse_list_value(kw.get(Lexicon.MODE, None), EnumConvertType.STRING, EnumScaleMode.NONE.name)
         sample = parse_list_value(kw.get(Lexicon.SAMPLE, None), EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)
-        params = zip_longest_fill(route, images, wihi, matte, mode, sample)
+        params = list(zip_longest_fill(route, images, wihi, matte, mode, sample))
         pbar = ProgressBar(len(params))
         for idx, (route, images, wihi, matte, mode, sample) in enumerate(params):
             if route != self.__route:
@@ -365,7 +365,7 @@ if JOV_SPOUT:
             sample = parse_list_value(kw.get(Lexicon.SAMPLE, None), EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)
             matte = parse_list_value(kw.get(Lexicon.MATTE, None), EnumConvertType.VEC4INT, (0,0,0,0), 0, 255)
             # results = []
-            params = zip_longest_fill(images, host, mode, wihi, sample, matte)
+            params = list(zip_longest_fill(images, host, mode, wihi, sample, matte))
             pbar = ProgressBar(len(params))
             for idx, (images, host, mode, wihi, sample, matte) in enumerate(params):
                 self.__sender.host = host

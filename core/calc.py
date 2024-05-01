@@ -156,7 +156,7 @@ class CalcUnaryOPNode(JOVBaseNode):
         results = []
         A = parse_list_value(kw.get(Lexicon.IN_A, None), EnumConvertType.VEC4, 0)
         op = parse_list_value(kw.get(Lexicon.FUNC, None), EnumConvertType.STRING, EnumUnaryOperation.ABS.name)
-        params = zip_longest_fill(A, op)
+        params = list(zip_longest_fill(A, op))
         pbar = ProgressBar(len(params))
         for idx, (A, op) in enumerate(params):
             typ = EnumConvertType.ANY
@@ -409,7 +409,7 @@ class ValueNode(JOVBaseNode):
         y = parse_list_value(kw.get(Lexicon.Y, None), EnumConvertType.FLOAT, 0)
         z = parse_list_value(kw.get(Lexicon.Z, None), EnumConvertType.FLOAT, 0)
         w = parse_list_value(kw.get(Lexicon.W, None), EnumConvertType.FLOAT, 0)
-        params = zip_longest_fill(raw, typ, x, y, z, w)
+        params = list(zip_longest_fill(raw, typ, x, y, z, w))
         print(params)
         results = []
         pbar = ProgressBar(len(params))
@@ -451,7 +451,7 @@ class LerpNode(JOVBaseNode):
         op = parse_list_value(kw.get(Lexicon.EASE, None), EnumConvertType.STRING, "NONE")
         typ = parse_list_value(kw.get(Lexicon.TYPE, None), EnumConvertType.STRING, EnumNumberType.FLOAT.name)
         values = []
-        params = zip_longest_fill(A, B, alpha, op, typ)
+        params = list(zip_longest_fill(A, B, alpha, op, typ))
         pbar = ProgressBar(len(params))
         for idx, (A, B, alpha, op, typ) in enumerate(params):
             # make sure we only interpolate between the longest "stride" we can
@@ -516,7 +516,7 @@ class SwapNode(JOVBaseNode):
         z = parse_list_value(kw.get(Lexicon.Z, None), EnumConvertType.FLOAT, 0)
         swap_w = parse_list_value(kw.get(Lexicon.SWAP_W, None), EnumConvertType.STRING, EnumSwizzle.A_Z.name)
         w = parse_list_value(kw.get(Lexicon.W, None), EnumConvertType.FLOAT, 0)
-        params = zip_longest_fill(pA, pB, swap_x, x, swap_y, y, swap_z, z, swap_w, w)
+        params = list(zip_longest_fill(pA, pB, swap_x, x, swap_y, y, swap_z, z, swap_w, w))
         results = []
         pbar = ProgressBar(len(params))
         for idx, (pA, pB, swap_x, x, swap_y, y, swap_z, z, swap_w, w) in enumerate(params):

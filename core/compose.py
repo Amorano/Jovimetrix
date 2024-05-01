@@ -93,7 +93,7 @@ class TransformNode(JOVBaseNode):
         wihi = parse_list_value(kw.get(Lexicon.WH, None), EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), MIN_IMAGE_SIZE)
         sample = parse_list_value(kw.get(Lexicon.SAMPLE, None), EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)
         matte = parse_list_value(kw.get(Lexicon.MATTE, None), EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
-        params = zip_longest_fill(pA, offset, angle, size, edge, tile_xy, mirror, mirror_pivot, proj, strength, tltr, blbr, mode, wihi, sample, matte)
+        params = list(zip_longest_fill(pA, offset, angle, size, edge, tile_xy, mirror, mirror_pivot, proj, strength, tltr, blbr, mode, wihi, sample, matte))
         images = []
         pbar = ProgressBar(len(params))
         for idx, (pA, offset, angle, size, edge, tile_xy, mirror, mirror_pivot, proj, strength, tltr, blbr, mode, wihi, sample, matte) in enumerate(params):
@@ -187,7 +187,7 @@ class BlendNode(JOVBaseNode):
         sample = parse_list_value(kw.get(Lexicon.SAMPLE, None),  EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)
         matte = parse_list_value(kw.get(Lexicon.MATTE, None), EnumConvertType.VEC3INT, (0, 0, 0), 0, 255)
         invert = parse_list_value(kw.get(Lexicon.INVERT, None), EnumConvertType.BOOLEAN, False)
-        params = zip_longest_fill(pA, pB, mask, func, alpha, flip, mode, wihi, sample, matte, invert)
+        params = list(zip_longest_fill(pA, pB, mask, func, alpha, flip, mode, wihi, sample, matte, invert))
         images = []
         pbar = ProgressBar(len(params))
         for idx, (pA, pB, mask, func, alpha, flip, mode, wihi, sample, matte, invert) in enumerate(params):
@@ -290,7 +290,7 @@ class PixelMergeNode(JOVBaseNode):
             img = channel_solid(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 0, EnumImageType.BGRA)
             return list(cv2tensor_full(img, matte))
         matte = parse_list_value(kw.get(Lexicon.MATTE, None), (0, 0, 0), EnumConvertType.VEC3INT, 0, 255)
-        params = zip_longest_fill(R, G, B, A, matte)
+        params = list(zip_longest_fill(R, G, B, A, matte))
         images = []
         pbar = ProgressBar(len(params))
         for idx, (r, g, b, a, matte) in enumerate(params):
@@ -347,7 +347,7 @@ class PixelSwapNode(JOVBaseNode):
         b = parse_list_value(kw.get(Lexicon.B, None), EnumConvertType.INT, 0, 0, 255)
         swap_a = parse_list_value(kw.get(Lexicon.SWAP_A, None), EnumConvertType.STRING, EnumPixelSwizzle.ALPHA_A.name)
         a = parse_list_value(kw.get(Lexicon.A, None), EnumConvertType.INT, 0, 0, 255)
-        params = zip_longest_fill(pA, pB, r, swap_r, g, swap_g, b, swap_b, a, swap_a)
+        params = list(zip_longest_fill(pA, pB, r, swap_r, g, swap_g, b, swap_b, a, swap_a))
         images = []
         pbar = ProgressBar(len(params))
         for idx, (pA, pB, r, swap_r, g, swap_g, b, swap_b, a, swap_a) in enumerate(params):
@@ -457,7 +457,7 @@ class CropNode(JOVBaseNode):
         tltr = parse_list_value(kw.get(Lexicon.TLTR, None), EnumConvertType.VEC4, (0, 0, 0, 1,), 0, 1)
         blbr = parse_list_value(kw.get(Lexicon.BLBR, None), EnumConvertType.VEC4, (1, 0, 1, 1,), 0, 1)
         color = parse_list_value(kw.get(Lexicon.RGB, None), EnumConvertType.VEC3INT, (0, 0, 0,), 0, 255)
-        params = zip_longest_fill(pA, func, xy, wihi, tltr, blbr, color)
+        params = list(zip_longest_fill(pA, func, xy, wihi, tltr, blbr, color))
         images = []
         pbar = ProgressBar(len(params))
         for idx, (pA, func, xy, wihi, tltr, blbr, color) in enumerate(params):
@@ -505,7 +505,7 @@ class ColorTheoryNode(JOVBaseNode):
         scheme = parse_list_value(kw.get(Lexicon.SCHEME, None), EnumConvertType.STRING, EnumColorTheory.COMPLIMENTARY.name)
         user = parse_list_value(kw.get(Lexicon.VALUE, None), EnumConvertType.INT,  0, -180, 180)
         invert = parse_list_value(kw.get(Lexicon.INVERT, None), EnumConvertType.BOOLEAN, False)
-        params = zip_longest_fill(pA, scheme, user, invert)
+        params = list(zip_longest_fill(pA, scheme, user, invert))
         images = []
         pbar = ProgressBar(len(params))
         for idx, (img, target, user, invert) in enumerate(params):
@@ -541,7 +541,7 @@ class HistogramNode(JOVImageSimple):
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         pA = parse_list_value(kw.get(Lexicon.PIXEL, None), None, EnumConvertType.IMAGE)
-        params = zip_longest_fill(pA,)
+        params = list(zip_longest_fill(pA,))
         images = []
         pbar = ProgressBar(len(params))
         for idx, (pA, ) in enumerate(params):

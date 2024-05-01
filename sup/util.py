@@ -64,22 +64,6 @@ def parse_dynamic(who, data) -> list:
 
 def parse_as_list(val: Any) -> List[Any]:
     """Convert value into a list of value."""
-    if isinstance(val, (str, float, int,)):
-        return [val]
-    if isinstance(val, (dict,)):
-        # latents....
-        if 'samples' in val:
-            return [v for v in val["samples"]]
-        return tuple(list(val.values()))
-    if isinstance(val, (torch.Tensor,)):
-        if val.shape[0] > 1:
-            return [t for t in val]
-    if issubclass(type(val), (Enum,)):
-        return [[val.name]]
-    return val
-
-def parse_as_list(val: Any) -> List[Any]:
-    """Convert value into a list of value."""
     if isinstance(val, (list,)):
         return val
     if isinstance(val, (str, float, int,)):
@@ -100,8 +84,7 @@ def parse_list_value(val:List[Any]|None, typ:EnumConvertType, default: Any,
                 clip_min: Optional[float]=None, clip_max: Optional[float]=None,
                 zero:int=0, enumType:Any=None) -> List[Any]:
     """Convert list of values into a list of specified type."""
-    if val is None:
-        return [None]
+    val = default if val is None else val
     if isinstance(val, (list,)):
         val = [parse_as_list(v) for v in val]
     else:
@@ -128,7 +111,7 @@ def parse_value(val:Any, typ:EnumConvertType, default: Any,
             EnumConvertType.VEC4, EnumConvertType.VEC4INT]:
 
         new_val = []
-        if not isinstance(val, (list,)):
+        if not isinstance(val, (list, tuple,)):
             val = [val]
         last = val[0]
         size = max(1, int(typ.value / 10))

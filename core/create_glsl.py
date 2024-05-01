@@ -110,7 +110,7 @@ class GLSLNode(JOVBaseNode):
         pA = parse_list_value(kw.get(Lexicon.PIXEL, None), EnumConvertType.IMAGE, None)
         hold = parse_list_value(kw.get(Lexicon.WAIT, None), EnumConvertType.BOOLEAN, False)
         reset = parse_list_value(kw.get(Lexicon.RESET, None), EnumConvertType.BOOLEAN, False)
-        params = zip_longest_fill(batch, fragment, param, wihi, pA, hold, reset)
+        params = list(zip_longest_fill(batch, fragment, param, wihi, pA, hold, reset))
         images = []
         pbar = ProgressBar(len(params))
         for idx, (batch, fragment, param, wihi, pA, hold, reset) in enumerate(params):
@@ -177,7 +177,7 @@ class GLSLBaseNode(JOVBaseNode):
             kw.pop(x, None)
 
         images = []
-        params = zip_longest_fill(pA, pB, wihi)
+        params = list(zip_longest_fill(pA, pB, wihi))
         pbar = ProgressBar(len(params))
         for idx, (pA, pB, wihi) in enumerate(params):
             param = {k: v[idx] for k, v in kw.items()}

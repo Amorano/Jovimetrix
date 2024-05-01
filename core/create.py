@@ -57,9 +57,9 @@ class ConstantNode(JOVBaseNode):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
-        pA = parse_list_value(kw.get(Lexicon.PIXEL, None), EnumConvertType.IMAGE, None)
-        wihi = parse_list_value(kw.get(Lexicon.WH, None), EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), MIN_IMAGE_SIZE)
-        matte = parse_list_value(kw.get(Lexicon.RGBA_A, None), EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
+        pA = parse_list_value(kw.get(Lexicon.PIXEL, None), EnumConvertType.IMAGE, [None])
+        wihi = parse_list_value(kw.get(Lexicon.WH, None), EnumConvertType.VEC2INT, [(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE)], MIN_IMAGE_SIZE)
+        matte = parse_list_value(kw.get(Lexicon.RGBA_A, None), EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
         images = []
         params = zip_longest_fill(pA, wihi, matte)
         pbar = ProgressBar(len(params))
@@ -118,7 +118,7 @@ class ShapeNode(JOVBaseNode):
         print(wihi)
         color = parse_list_value(kw.get(Lexicon.RGBA_A, None), EnumConvertType.VEC4INT, (255, 255, 255, 255), 0, 255)
         matte = parse_list_value(kw.get(Lexicon.MATTE, None), EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
-        params = zip_longest_fill(shape, sides, offset, angle, edge, size, wihi, color, matte)
+        params = list(zip_longest_fill(shape, sides, offset, angle, edge, size, wihi, color, matte))
         images = []
         pbar = ProgressBar(len(params))
         for idx, (shape, sides, offset, angle, edge, size, wihi, color, matte) in enumerate(params):
@@ -301,7 +301,7 @@ class StereogramNode(JOVBaseNode):
         noise = parse_list_value(kw.get(Lexicon.NOISE, None), 1, 0.33, EnumConvertType.FLOAT, 0)
         gamma = parse_list_value(kw.get(Lexicon.GAMMA, None), 1, 0.33, EnumConvertType.FLOAT, 0)
         shift = parse_list_value(kw.get(Lexicon.SHIFT, None), 1, 1, EnumConvertType.FLOAT, -1)
-        params = zip_longest_fill(pA, depth, divisions, noise, gamma, shift)
+        params = list(zip_longest_fill(pA, depth, divisions, noise, gamma, shift))
         images = []
         pbar = ProgressBar(len(params))
         for idx, (pA, depth, divisions, noise, gamma, shift) in enumerate(params):
@@ -338,7 +338,7 @@ class GradientNode(JOVBaseNode):
         wihi = parse_list_value(kw.get(Lexicon.WH, None), 1, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), EnumConvertType.VEC2INT)
         colors = parse_dynamic(Lexicon.COLOR, kw)
         images = []
-        params = zip_longest_fill(pA, wihi, colors)
+        params = list(zip_longest_fill(pA, wihi, colors))
         pbar = ProgressBar(len(params))
         for idx, (pA, wihi, clr) in enumerate(params):
             # colors = [(0,0,0,255) if c is None else pixel_eval(c, EnumImageType.BGRA) for c in clr]
@@ -376,7 +376,7 @@ class StereoscopicNode(JOVBaseNode):
         baseline = parse_list_value(kw.get(Lexicon.INT, None), 1, 0.1, EnumConvertType.FLOAT)
         focal_length = parse_dynamic(Lexicon.VALUE, kw, EnumConvertType.FLOAT)
         images = []
-        params = zip_longest_fill(pA, baseline, focal_length)
+        params = list(zip_longest_fill(pA, baseline, focal_length))
         pbar = ProgressBar(len(params))
         for idx, (pA, wihi, clr) in enumerate(params):
             pA = tensor2cv(pA, EnumImageType.GRAYSCALE)
