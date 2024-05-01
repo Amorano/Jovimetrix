@@ -41,7 +41,11 @@ def midi_load(fn) -> None:
        logger.debug(msg)
 
 def midi_device_names() -> list[str]:
-    return mido.get_input_names()
+    try:
+        return mido.get_input_names()
+    except Exception as e:
+        logger.error("midi devices are offline")
+    return []
 
 # =============================================================================
 
