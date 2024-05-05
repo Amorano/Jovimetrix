@@ -62,7 +62,7 @@ import shutil
 import inspect
 import importlib
 from pathlib import Path
-from typing import Any, Optional, Tuple, Union
+from typing import Any
 
 try:
     from server import PromptServer
@@ -70,11 +70,7 @@ try:
 except:
     pass
 
-import torch
-import numpy as np
 from loguru import logger
-
-from Jovimetrix.sup.lexicon import Lexicon
 
 NODE_CLASS_MAPPINGS = {}
 NODE_DISPLAY_NAME_MAPPINGS = {}

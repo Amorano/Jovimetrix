@@ -80,15 +80,25 @@ def parse_as_list(val: Any) -> List[Any]:
         return [[val.name]]
     return [val]
 
-def parse_list_value(val:List[Any]|None, typ:EnumConvertType, default: Any,
+def parse_list_value(val:Any|None, typ:EnumConvertType, default: Any,
                 clip_min: Optional[float]=None, clip_max: Optional[float]=None,
                 zero:int=0, enumType:Any=None) -> List[Any]:
     """Convert list of values into a list of specified type."""
     val = default if val is None else val
-    if isinstance(val, (list,)):
+    # see if we are a Jovimetrix hacked vector blob... {0:x, 1:y, 2:z, 3:w}
+    if isinstance(val, (dict,)):
+        if (x:=val.get('0', None)) is not None and (y:=val.get('1', None)) is not None:
+            ret = [x, y]
+            if (x:=val.get('2', None)) is not None:
+                ret.append(x)
+            if (x:=val.get('3', None)) is not None:
+                ret.append(x)
+            val = (ret,)
+    elif isinstance(val, (list,)):
         val = [parse_as_list(v) for v in val]
     else:
         val = parse_as_list(val)
+    print(val)
     return [parse_value(v, typ, default, clip_min, clip_max, zero, enumType) for v in val]
 
 def parse_value(val:Any, typ:EnumConvertType, default: Any,

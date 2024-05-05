@@ -97,7 +97,6 @@ class TransformNode(JOVBaseNode):
         images = []
         pbar = ProgressBar(len(params))
         for idx, (pA, offset, angle, size, edge, tile_xy, mirror, mirror_pivot, proj, strength, tltr, blbr, mode, wihi, sample, matte) in enumerate(params):
-            print(pA.shape())
             pA = tensor2cv(pA)
             h, w = pA.shape[:2]
             edge = EnumEdge[edge]
@@ -248,7 +247,7 @@ class PixelSplitNode(JOVBaseNode):
 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
         images = []
-        pA = parse_list_value(kw.get(Lexicon.PIXEL, None), None, EnumConvertType.IMAGE)
+        pA = parse_list_value(kw.get(Lexicon.PIXEL, None), EnumConvertType.IMAGE, None)
         pbar = ProgressBar(len(pA))
         for idx, (pA,) in enumerate(pA):
             pA = tensor2cv(pA)
@@ -311,7 +310,6 @@ class PixelSwapNode(JOVBaseNode):
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
-    # OUTPUT_IS_LIST = ()
     SORT = 48
 
     @classmethod
@@ -540,7 +538,7 @@ class HistogramNode(JOVImageSimple):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        pA = parse_list_value(kw.get(Lexicon.PIXEL, None), None, EnumConvertType.IMAGE)
+        pA = parse_list_value(kw.get(Lexicon.PIXEL, None), EnumConvertType.IMAGE, None)
         params = list(zip_longest_fill(pA,))
         images = []
         pbar = ProgressBar(len(params))
