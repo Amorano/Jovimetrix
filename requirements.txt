@@ -18,7 +18,7 @@ daltonlens
 numba
 PyOpenGL
 PyOpenGL-accelerate
-SpoutGL; platform_system != "Linux"
+SpoutGL; platform_system=="Windows"
 vnoise
 stereoscopy[auto_align]
 aenum<4,>=3.1.15
