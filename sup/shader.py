@@ -5,6 +5,7 @@ GLSL Support
 
 import os
 import time
+from typing import Tuple
 
 import moderngl
 import numpy as np
@@ -103,7 +104,7 @@ class GLSL:
         except Exception as e:
             raise CompileException(e)
 
-        self.__iResolution: tuple[int, int] = self.__prog.get('iResolution', None)
+        self.__iResolution: Tuple[int, int] = self.__prog.get('iResolution', None)
         self.__iTime: float = self.__prog.get('iTime', None)
         self.__iTimeDelta: float = self.__prog.get('iTimeDelta', None)
         self.__iFrameRate: float = self.__prog.get('iFrameRate', None)

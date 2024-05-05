@@ -3,6 +3,7 @@ Jovimetrix - http://www.github.com/amorano/jovimetrix
 Audio
 """
 
+from typing import Tuple
 import torch
 import ffmpeg
 import numpy as np
@@ -45,7 +46,7 @@ class LoadWaveNode(JOVBaseNode):
         super().__init__(*arg, **kw)
         self.__cache = {}
 
-    def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
+    def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
         filen = parse_list_value(kw.get(Lexicon.FILEN, None), EnumConvertType.STRING, "")
         params = list(zip_longest_fill(filen))
         waves = []
@@ -91,7 +92,7 @@ class WaveGraphNode(JOVBaseNode):
         }}
         return Lexicon._parse(d, cls.HELP_URL)
 
-    def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
+    def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
         wave = parse_list_value(kw.get(Lexicon.WAVE, None), EnumConvertType.ANY, None)
         bars = parse_list_value(kw.get(Lexicon.VALUE, None), EnumConvertType.INT, 100, 1, 8192)
         thick = parse_list_value(kw.get(Lexicon.THICK, None), EnumConvertType.FLOAT, 0.72, 0, 1)

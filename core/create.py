@@ -3,6 +3,7 @@ Jovimetrix - http://www.github.com/amorano/jovimetrix
 Creation
 """
 
+from typing import Tuple
 import torch
 import numpy as np
 from PIL import ImageFont
@@ -56,7 +57,7 @@ class ConstantNode(JOVBaseNode):
         }}
         return Lexicon._parse(d, cls.HELP_URL)
 
-    def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
+    def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
         pA = parse_list_value(kw.get(Lexicon.PIXEL, None), EnumConvertType.IMAGE, [None])
         wihi = parse_list_value(kw.get(Lexicon.WH, None), EnumConvertType.VEC2INT, [(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE)], MIN_IMAGE_SIZE)
         matte = parse_list_value(kw.get(Lexicon.RGBA_A, None), EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
@@ -106,7 +107,7 @@ class ShapeNode(JOVBaseNode):
         }}
         return Lexicon._parse(d, cls.HELP_URL)
 
-    def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
+    def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
         shape = parse_list_value(kw.get(Lexicon.SHAPE, None), EnumConvertType.STRING, EnumShapes.CIRCLE.name)
         sides = parse_list_value(kw.get(Lexicon.SIDES, None), EnumConvertType.INT, 3, 3, 512)
         angle = parse_list_value(kw.get(Lexicon.ANGLE, None), EnumConvertType.FLOAT, 0)
@@ -204,7 +205,7 @@ class TextNode(JOVBaseNode):
         }}
         return Lexicon._parse(d, cls.HELP_URL)
 
-    def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
+    def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
         full_text = parse_list_value(kw.get(Lexicon.STRING, None), EnumConvertType.STRING, "")
         font_idx = parse_list_value(kw.get(Lexicon.FONT, None), EnumConvertType.STRING, self.FONT_NAMES[0])
         autosize = parse_list_value(kw.get(Lexicon.AUTOSIZE, None), EnumConvertType.BOOLEAN, False)
@@ -294,7 +295,7 @@ class StereogramNode(JOVBaseNode):
         }}
         return Lexicon._parse(d, cls.HELP_URL)
 
-    def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
+    def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
         pA = parse_list_value(kw.get(Lexicon.PIXEL, None), EnumConvertType.IMAGE, None)
         depth = parse_list_value(kw.get(Lexicon.DEPTH, None), EnumConvertType.IMAGE, None)
         divisions = parse_list_value(kw.get(Lexicon.TILE, None), 1, 8, EnumConvertType.INT)
@@ -333,7 +334,7 @@ class GradientNode(JOVBaseNode):
         }}
         return Lexicon._parse(d, cls.HELP_URL)
 
-    def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
+    def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
         pA = parse_list_value(kw.get(Lexicon.PIXEL, None), EnumConvertType.IMAGE, None)
         wihi = parse_list_value(kw.get(Lexicon.WH, None), 1, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), EnumConvertType.VEC2INT)
         colors = parse_dynamic(Lexicon.COLOR, kw)
@@ -371,7 +372,7 @@ class StereoscopicNode(JOVBaseNode):
         }}
         return Lexicon._parse(d, cls.HELP_URL)
 
-    def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
+    def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
         pA = parse_list_value(kw.get(Lexicon.PIXEL, None), EnumConvertType.IMAGE, None)
         baseline = parse_list_value(kw.get(Lexicon.INT, None), 1, 0.1, EnumConvertType.FLOAT)
         focal_length = parse_dynamic(Lexicon.VALUE, kw, EnumConvertType.FLOAT)

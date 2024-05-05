@@ -5,7 +5,7 @@ Calculation
 
 import math
 from enum import Enum
-from typing import Any
+from typing import Any, Tuple
 from collections import Counter
 
 import numpy as np
@@ -152,7 +152,7 @@ class CalcUnaryOPNode(JOVBaseNode):
         }}
         return Lexicon._parse(d, cls.HELP_URL)
 
-    def run(self, **kw) -> tuple[bool]:
+    def run(self, **kw) -> Tuple[bool]:
         results = []
         A = parse_list_value(kw.get(Lexicon.IN_A, None), EnumConvertType.VEC4, 0)
         op = parse_list_value(kw.get(Lexicon.FUNC, None), EnumConvertType.STRING, EnumUnaryOperation.ABS.name)
@@ -261,7 +261,7 @@ class CalcBinaryOPNode(JOVBaseNode):
         }}
         return Lexicon._parse(d, cls.HELP_URL)
 
-    def run(self, **kw) -> tuple[bool]:
+    def run(self, **kw) -> Tuple[bool]:
         results = []
         A = parse_list_value(kw.get(Lexicon.IN_A, None), EnumConvertType.ANY, None)
         B = parse_list_value(kw.get(Lexicon.IN_B, None), EnumConvertType.ANY, None)
@@ -402,7 +402,7 @@ class ValueNode(JOVBaseNode):
         }}
         return Lexicon._parse(d, cls.HELP_URL)
 
-    def run(self, **kw) -> tuple[bool]:
+    def run(self, **kw) -> Tuple[bool]:
         raw = parse_list_value(kw.get(Lexicon.IN_A, None), EnumConvertType.VEC4, None)
         typ = parse_list_value(kw.get(Lexicon.TYPE, None), EnumConvertType.STRING, EnumConvertType.BOOLEAN.name)
         x = parse_list_value(kw.get(Lexicon.X, None), EnumConvertType.FLOAT, 0)
@@ -444,7 +444,7 @@ class LerpNode(JOVBaseNode):
         }}
         return Lexicon._parse(d, cls.HELP_URL)
 
-    def run(self, **kw) -> tuple[Any, Any]:
+    def run(self, **kw) -> Tuple[Any, Any]:
         A = parse_list_value(kw.get(Lexicon.IN_A, None), EnumConvertType.VEC4, 0)
         B = parse_list_value(kw.get(Lexicon.IN_B, None), EnumConvertType.VEC4, 1)
         alpha = parse_list_value(kw.get(Lexicon.FLOAT, None), 1, 0, EnumConvertType.FLOAT, 0)
@@ -505,7 +505,7 @@ class SwapNode(JOVBaseNode):
         }}
         return Lexicon._parse(d, cls.HELP_URL)
 
-    def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor]:
+    def run(self, **kw)  -> Tuple[torch.Tensor, torch.Tensor]:
         pA = parse_list_value(kw.get(Lexicon.IN_A, None), EnumConvertType.VEC4, 0)
         pB = parse_list_value(kw.get(Lexicon.IN_B, None), EnumConvertType.VEC4, 0)
         swap_x = parse_list_value(kw.get(Lexicon.SWAP_X, None), EnumConvertType.STRING, EnumSwizzle.A_X.name)

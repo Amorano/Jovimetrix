@@ -4,7 +4,7 @@ Animate
 """
 
 import math
-from typing import Any
+from typing import Any, Tuple
 
 from loguru import logger
 import numpy as np
@@ -70,7 +70,7 @@ class TickNode(JOVBaseNode):
         # the current frame index based on the user FPS value
         self.__fixed_step = 0
 
-    def run(self, ident, **kw) -> tuple[int, float, float, Any]:
+    def run(self, ident, **kw) -> Tuple[int, float, float, Any]:
         passthru = parse_list_value(kw.get(Lexicon.ANY, None), EnumConvertType.ANY, None)[0]
         loop = parse_list_value(kw.get(Lexicon.LOOP, None), EnumConvertType.INT, 0)[0]
         self.__frame = parse_list_value(kw.get(Lexicon.VALUE, None), EnumConvertType.INT, self.__frame)[0]
@@ -146,7 +146,7 @@ class WaveGeneratorNode(JOVBaseNode):
         }}
         return Lexicon._parse(d, cls.HELP_URL)
 
-    def run(self, **kw) -> tuple[float, int]:
+    def run(self, **kw) -> Tuple[float, int]:
         op = parse_list_value(kw.get(Lexicon.WAVE, None), EnumConvertType.STRING, EnumWave.SIN.name, enumType=EnumWave)
         freq = parse_list_value(kw.get(Lexicon.FREQ, None), EnumConvertType.FLOAT, 1, 0)
         amp = parse_list_value(kw.get(Lexicon.AMP, None), EnumConvertType.FLOAT, 1, 0)

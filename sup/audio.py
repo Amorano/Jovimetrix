@@ -8,7 +8,7 @@ import time
 import threading
 from enum import Enum
 from queue import Queue
-from typing import OrderedDict
+from typing import OrderedDict, Tuple
 from urllib.request import urlopen
 
 import ffmpeg
@@ -42,7 +42,7 @@ def load_audio(url) -> np.ndarray[np.int16]:
     return np.frombuffer(cmd[0], dtype=np.int16)
 
 def load_audio(url: str, sample_rate: int=22050, offset: float=0, mono:bool=True,
-               duration: float=None) -> tuple[np.ndarray[np.int16], float]:
+               duration: float=None) -> Tuple[np.ndarray[np.int16], float]:
 
     if duration == 0.0:
         duration = None
@@ -106,7 +106,7 @@ class AudioDevice:
         self.__thread_running = True
 
     @property
-    def buffer(self) -> tuple[np.ndarray, np.ndarray, np.ndarray] | None:
+    def buffer(self) -> Tuple[np.ndarray, np.ndarray, np.ndarray] | None:
         """The current recorded audio buffer.
         Returns the full mix with left and right channels.
         """

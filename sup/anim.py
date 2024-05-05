@@ -5,7 +5,7 @@ Animation Support
 
 import inspect
 from enum import Enum
-from typing import Union
+from typing import Tuple, Union
 
 import numpy as np
 from numba import jit
@@ -203,7 +203,7 @@ def ease_bounce_in_out(t: np.ndarray) -> np.ndarray:
 
 def ease_op(op: EnumEase,
             start: float=0, end: float=1, duration: float=1,
-            alpha: float=1., clip: tuple[int, int]=(0, 1)) -> np.ndarray:
+            alpha: float=1., clip: Tuple[int, int]=(0, 1)) -> np.ndarray:
     """
     Compute eased values.
 
@@ -213,7 +213,7 @@ def ease_op(op: EnumEase,
         end (float): Ending value.
         duration (float): Duration of the easing.
         alpha (float): Alpha values.
-        clip (tuple[int, int]): Clip range.
+        clip (Tuple[int, int]): Clip range.
 
     Returns:
         TYPE_NUMBER: Eased value(s)

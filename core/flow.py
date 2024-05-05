@@ -5,7 +5,7 @@ Logic and Code flow nodes
 
 import os
 from enum import Enum
-from typing import Any
+from typing import Any, Tuple
 
 from loguru import logger
 
@@ -81,7 +81,7 @@ class DelayNode(JOVBaseNode):
         }}
         return Lexicon._parse(d, cls.HELP_URL)
 
-    def run(self, ident, **kw) -> tuple[Any]:
+    def run(self, ident, **kw) -> Tuple[Any]:
         delay = parse_list_value(kw.get(Lexicon.TIMER, None), JOV_DELAY_MAX, 0, EnumConvertType.INT, -1)[0]
         if delay < 0:
             delay = JOV_DELAY_MAX
@@ -126,7 +126,7 @@ class HoldValueNode(JOVBaseNode):
         super().__init__(*arg, **kw)
         self.__last_value = None
 
-    def run(self, **kw) -> tuple[Any]:
+    def run(self, **kw) -> Tuple[Any]:
         obj = parse_list_value(kw.get(Lexicon.PASS_IN, None), EnumConvertType.ANY, None)
         hold = parse_list_value(kw.get(Lexicon.WAIT, None), EnumConvertType.BOOLEAN, False)
         params = list(zip_longest_fill(obj, hold))
@@ -168,7 +168,7 @@ class ComparisonNode(JOVBaseNode):
         }}
         return Lexicon._parse(d, cls.HELP_URL)
 
-    def run(self, **kw) -> tuple[bool]:
+    def run(self, **kw) -> Tuple[bool]:
         A = parse_list_value(kw.get(Lexicon.IN_A, None), EnumConvertType.ANY, None)
         B = parse_list_value(kw.get(Lexicon.IN_B, None), EnumConvertType.ANY, None)
         good = parse_list_value(kw.get(Lexicon.COMP_A, None), EnumConvertType.ANY, None)

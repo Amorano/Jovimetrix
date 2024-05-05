@@ -9,6 +9,7 @@ Device -- MIDI, WEBCAM
 
 import sys
 import time
+from typing import Tuple
 import uuid
 from math import isclose
 from queue import Queue
@@ -126,7 +127,7 @@ class StreamReaderNode(JOVBaseNode):
         self.__empty = (a, e, m,)
         self.__last = [(a, e, m,)]
 
-    def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
+    def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
         wait = parse_list_value(kw.get(Lexicon.WAIT, None), EnumConvertType.BOOLEAN, False)[0]
         if wait:
             return self.__last
@@ -295,7 +296,7 @@ class StreamWriterNode(JOVBaseNode):
         self.__unique = uuid.uuid4()
         self.__device = StreamManager().capture(self.__unique, static=True)
 
-    def run(self, **kw) -> tuple[torch.Tensor]:
+    def run(self, **kw) -> Tuple[torch.Tensor]:
         route = parse_list_value(kw.get(Lexicon.ROUTE, None), EnumConvertType.STRING, "/stream")
         images = parse_list_value(kw.get(Lexicon.PIXEL, None), EnumConvertType.IMAGE, None)
         wihi = parse_list_value(kw.get(Lexicon.WH, None), EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), MIN_IMAGE_SIZE)
@@ -356,7 +357,7 @@ if JOV_SPOUT:
             super().__init__(*arg, **kw)
             self.__sender = SpoutSender("")
 
-        def run(self, **kw) -> tuple[torch.Tensor]:
+        def run(self, **kw) -> Tuple[torch.Tensor]:
             images = parse_list_value(kw.get(Lexicon.PIXEL, None), EnumConvertType.IMAGE, None)
             host = parse_list_value(kw.get(Lexicon.ROUTE, None), EnumConvertType.STRING, "")
             # fps = parse_list_value(kw.get(Lexicon.FPS, None), EnumConvertType.INT, 30)
@@ -405,7 +406,7 @@ class MIDIMessageNode(JOVBaseNode):
         }}
         return Lexicon._parse(d, cls.HELP_URL)
 
-    def run(self, **kw) -> tuple[object, bool, int, int, int, float, float]:
+    def run(self, **kw) -> Tuple[object, bool, int, int, int, float, float]:
         message = parse_list_value(kw.get(Lexicon.MIDI, None), EnumConvertType.ANY, None)
         results = []
         pbar = ProgressBar(len(message))
@@ -476,7 +477,7 @@ class MIDIReaderNode(JOVBaseNode):
                 self.__note = data.note
                 self.__value = data.velocity
 
-    def run(self, **kw) -> tuple[bool, int, int, int]:
+    def run(self, **kw) -> Tuple[bool, int, int, int]:
         device = parse_list_value(kw.get(Lexicon.DEVICE, None), EnumConvertType.STRING, None)
         if device != self.__device:
             self.__q_in.put(device)
@@ -510,7 +511,7 @@ class MIDIFilterEZNode(JOVBaseNode):
         }}
         return Lexicon._parse(d, cls.HELP_URL)
 
-    def run(self, **kw) -> tuple[bool]:
+    def run(self, **kw) -> Tuple[bool]:
         message = parse_list_value(kw.get(Lexicon.MIDI, None), EnumConvertType.ANY, None)[0]
         if message is None:
             logger.warning('no midi message. connected?')
@@ -599,7 +600,7 @@ class MIDIFilterNode(JOVBaseNode):
                 logger.error(str(e))
         return False
 
-    def run(self, **kw) -> tuple[bool]:
+    def run(self, **kw) -> Tuple[bool]:
         message = parse_list_value(kw.get(Lexicon.MIDI, None), EnumConvertType.ANY, None)[0]
         if message is None:
             logger.warning('no midi message. connected?')
@@ -653,6 +654,6 @@ class AudioDeviceNode(JOVBaseNode):
     def IS_CHANGED(cls, **kw) -> float:
         return float("nan")
 
-    def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
+    def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
         wave = None
         return wave

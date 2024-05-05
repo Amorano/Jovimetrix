@@ -4,7 +4,7 @@ Composition
 """
 
 from enum import Enum
-from typing import Any
+from typing import Any, List, Tuple
 
 import torch
 import numpy as np
@@ -76,7 +76,7 @@ class TransformNode(JOVBaseNode):
         }}
         return Lexicon._parse(d, cls.HELP_URL)
 
-    def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
+    def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
         pA = parse_list_value(kw.get(Lexicon.PIXEL, None), EnumConvertType.IMAGE, None)
         offset = parse_list_value(kw.get(Lexicon.XY, None), EnumConvertType.VEC2, (0, 0))
         angle = parse_list_value(kw.get(Lexicon.ANGLE, None), EnumConvertType.FLOAT, 0)
@@ -175,7 +175,7 @@ class BlendNode(JOVBaseNode):
         }}
         return Lexicon._parse(d, cls.HELP_URL)
 
-    def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
+    def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
         pA = parse_list_value(kw.get(Lexicon.PIXEL_A, None), EnumConvertType.IMAGE, None)
         pB = parse_list_value(kw.get(Lexicon.PIXEL_B, None), EnumConvertType.IMAGE, None)
         mask = parse_list_value(kw.get(Lexicon.MASK, None), EnumConvertType.IMAGE, None)
@@ -246,7 +246,7 @@ class PixelSplitNode(JOVBaseNode):
         }}
         return Lexicon._parse(d, cls.HELP_URL)
 
-    def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
+    def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
         images = []
         pA = parse_list_value(kw.get(Lexicon.PIXEL, None), None, EnumConvertType.IMAGE)
         pbar = ProgressBar(len(pA))
@@ -281,7 +281,7 @@ class PixelMergeNode(JOVBaseNode):
         }}
         return Lexicon._parse(d, cls.HELP_URL)
 
-    def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor]:
+    def run(self, **kw)  -> Tuple[torch.Tensor, torch.Tensor]:
         R = parse_list_value(kw.get(Lexicon.R, None), EnumConvertType.IMAGE, None)
         G = parse_list_value(kw.get(Lexicon.G, None), EnumConvertType.IMAGE, None)
         B = parse_list_value(kw.get(Lexicon.B, None), EnumConvertType.IMAGE, None)
@@ -336,7 +336,7 @@ class PixelSwapNode(JOVBaseNode):
         }}
         return Lexicon._parse(d, cls.HELP_URL)
 
-    def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor]:
+    def run(self, **kw)  -> Tuple[torch.Tensor, torch.Tensor]:
         pA = parse_list_value(kw.get(Lexicon.PIXEL_A, None), EnumConvertType.IMAGE, None)
         pB = parse_list_value(kw.get(Lexicon.PIXEL_B, None), EnumConvertType.IMAGE, None)
         swap_r = parse_list_value(kw.get(Lexicon.SWAP_R, None), EnumConvertType.STRING, EnumPixelSwizzle.RED_A.name)
@@ -400,7 +400,7 @@ class StackNode(JOVBaseNode):
         }}
         return Lexicon._parse(d, cls.HELP_URL)
 
-    def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor]:
+    def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
         images = []
         images.extend([r for r in parse_dynamic(Lexicon.PIXEL, kw)])
         if len(images) == 0:
@@ -448,7 +448,7 @@ class CropNode(JOVBaseNode):
         }}
         return Lexicon._parse(d, cls.HELP_URL)
 
-    def run(self, **kw) -> tuple[list[torch.Tensor], list[torch.Tensor]]:
+    def run(self, **kw) -> Tuple[List[torch.Tensor], List[torch.Tensor]]:
         pA = parse_list_value(kw.get(Lexicon.PIXEL, None), EnumConvertType.IMAGE, None)
         func = parse_list_value(kw.get(Lexicon.FUNC, None), EnumConvertType.STRING, EnumCropMode.CENTER.name)
         # if less than 1 then use as scalar, over 1 = int(size)
@@ -500,7 +500,7 @@ class ColorTheoryNode(JOVBaseNode):
         }}
         return Lexicon._parse(d, cls.HELP_URL)
 
-    def run(self, **kw) -> tuple[list[torch.Tensor], list[torch.Tensor]]:
+    def run(self, **kw) -> Tuple[List[torch.Tensor], List[torch.Tensor]]:
         pA = parse_list_value(kw.get(Lexicon.PIXEL, None), EnumConvertType.IMAGE, None)
         scheme = parse_list_value(kw.get(Lexicon.SCHEME, None), EnumConvertType.STRING, EnumColorTheory.COMPLIMENTARY.name)
         user = parse_list_value(kw.get(Lexicon.VALUE, None), EnumConvertType.INT,  0, -180, 180)
@@ -539,7 +539,7 @@ class HistogramNode(JOVImageSimple):
         }}
         return Lexicon._parse(d, cls.HELP_URL)
 
-    def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         pA = parse_list_value(kw.get(Lexicon.PIXEL, None), None, EnumConvertType.IMAGE)
         params = list(zip_longest_fill(pA,))
         images = []

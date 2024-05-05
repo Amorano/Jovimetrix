@@ -7,6 +7,7 @@ import time
 import threading
 from enum import Enum
 from queue import Queue, Empty
+from typing import List, Tuple
 
 from loguru import logger
 
@@ -40,7 +41,7 @@ def midi_load(fn) -> None:
     for msg in mid.tracks[0]:
        logger.debug(msg)
 
-def midi_device_names() -> list[str]:
+def midi_device_names() -> List[str]:
     try:
         return mido.get_input_names()
     except Exception as e:
@@ -106,7 +107,7 @@ class MIDIMessage:
         self.normal = value / 127.
 
     @property
-    def flat(self) -> tuple[bool, int, int, int, float, float]:
+    def flat(self) -> Tuple[bool, int, int, int, float, float]:
         return (self.note_on, self.channel, self.control, self.note, self.value, self.normal,)
 
     def __str__(self) -> str:

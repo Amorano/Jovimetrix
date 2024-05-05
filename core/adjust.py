@@ -4,6 +4,7 @@ Adjustment
 """
 
 from enum import Enum
+from typing import Tuple
 
 import cv2
 import torch
@@ -73,7 +74,7 @@ class AdjustNode(JOVBaseNode):
         }}
         return Lexicon._parse(d, cls.HELP_URL)
 
-    def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor]:
+    def run(self, **kw)  -> Tuple[torch.Tensor, torch.Tensor]:
         # logger.debug(kw)
         pA = parse_list_value(kw.get(Lexicon.PIXEL, None), EnumConvertType.IMAGE, None)
         mask = parse_list_value(kw.get(Lexicon.MASK, None), EnumConvertType.IMAGE, None)
@@ -220,7 +221,7 @@ class ColorMatchNode(JOVBaseNode):
         }}
         return Lexicon._parse(d, cls.HELP_URL)
 
-    def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         pA = parse_list_value(kw.get(Lexicon.PIXEL_A, None), EnumConvertType.IMAGE, None)
         pB = parse_list_value(kw.get(Lexicon.PIXEL_B, None), EnumConvertType.IMAGE, None)
         colormatch_mode = parse_list_value(kw.get(Lexicon.COLORMATCH_MODE, None), EnumConvertType.STRING, EnumColorMatchMode.REINHARD.name)
@@ -284,7 +285,7 @@ class ThresholdNode(JOVBaseNode):
         }}
         return Lexicon._parse(d, cls.HELP_URL)
 
-    def run(self, **kw)  -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    def run(self, **kw)  -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         pA = parse_list_value(kw.get(Lexicon.PIXEL, None), EnumConvertType.IMAGE, None)
         mode = parse_list_value(kw.get(Lexicon.FUNC, None), EnumConvertType.STRING, EnumThreshold.BINARY.name)
         adapt = parse_list_value(kw.get(Lexicon.ADAPT, None), EnumConvertType.STRING, EnumThresholdAdapt.ADAPT_NONE.name)
@@ -328,7 +329,7 @@ class ColorBlindNode(JOVBaseNode):
         }}
         return Lexicon._parse(d, cls.HELP_URL)
 
-    def run(self, **kw) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         pA = parse_list_value(kw.get(Lexicon.PIXEL, None), EnumConvertType.IMAGE, None)
         defiency = parse_list_value(kw.get(Lexicon.DEFIENCY, None), EnumConvertType.STRING, EnumCBDefiency.PROTAN.name)
         simulator = parse_list_value(kw.get(Lexicon.SIMULATOR, None), EnumConvertType.STRING, EnumCBSimulator.AUTOSELECT.name)

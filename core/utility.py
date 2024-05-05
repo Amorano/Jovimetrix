@@ -11,7 +11,7 @@ import glob
 import base64
 import random
 from enum import Enum
-from typing import Any
+from typing import Any, Dict, List, Tuple
 from pathlib import Path
 from uuid import uuid4
 from itertools import zip_longest
@@ -85,7 +85,7 @@ class AkashicNode(JOVBaseNode):
         }}
         return Lexicon._parse(d, cls.HELP_URL)
 
-    def __parse(self, val) -> dict[str, list[Any]]:
+    def __parse(self, val) -> Dict[str, List[Any]]:
         if isinstance(val, dict):
             result = "{"
             for k, v in val.items():
@@ -118,7 +118,7 @@ class AkashicNode(JOVBaseNode):
             meh = ''.join(repr(type(val)).split("'")[1:2])
             return "text", [meh]
 
-    def run(self, **kw) -> tuple[Any, Any]:
+    def run(self, **kw) -> Tuple[Any, Any]:
         o = parse_list_value(kw.get(Lexicon.PASS_IN, None), EnumConvertType.ANY, None)
         output = {"ui": {"b64_images": [], "text": []}}
         if o is None:
@@ -163,7 +163,7 @@ class ValueGraphNode(JOVBaseNode):
         self.__history = []
         self.__fig, self.__ax = plt.subplots(figsize=(5.12, 5.12))
 
-    def run(self, ident, **kw) -> tuple[torch.Tensor]:
+    def run(self, ident, **kw) -> Tuple[torch.Tensor]:
         slice = parse_list_value(kw.get(Lexicon.VALUE, None), EnumConvertType.INT, 60)[0]
         wihi = parse_list_value(kw.get(Lexicon.WH, None), 1, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), EnumConvertType.VEC2INT)[0]
         accepted = [bool, int, float, np.float16, np.float32, np.float64]
@@ -220,7 +220,7 @@ class RouteNode(JOVBaseNode):
         }}
         return Lexicon._parse(d, cls.HELP_URL)
 
-    def run(self, **kw) -> tuple[Any, Any]:
+    def run(self, **kw) -> Tuple[Any, Any]:
         o = parse_list_value(kw.get(Lexicon.PASS_IN, None), EnumConvertType.ANY, None)
         return (o, )
 
@@ -300,7 +300,7 @@ class QueueNode(JOVBaseNode):
 
     def run(self, ident, **kw) -> None:
 
-        def process(q_data: str) -> tuple[torch.Tensor, torch.Tensor] | str | dict:
+        def process(q_data: str) -> Tuple[torch.Tensor, torch.Tensor] | str | dict:
             # single Q cache to skip loading single entries over and over
             if (val := self.__last_q_value.get(q_data, None)) is not None:
                 return val
@@ -482,7 +482,7 @@ class ImageDiffNode(JOVBaseNode):
         }}
         return Lexicon._parse(d, cls.HELP_URL)
 
-    def run(self, **kw) -> tuple[Any, Any]:
+    def run(self, **kw) -> Tuple[Any, Any]:
         pA = parse_list_value(kw.get(Lexicon.PIXEL_A, None), EnumConvertType.IMAGE, None)
         pB = parse_list_value(kw.get(Lexicon.PIXEL_B, None), EnumConvertType.IMAGE, None)
         th = parse_list_value(kw.get(Lexicon.THRESHOLD, None), 1, 0, EnumConvertType.FLOAT, 0)
@@ -533,13 +533,13 @@ class ArrayNode(JOVBaseNode):
         return [iterable[i: i + chunk_size] for i in range(0, len(iterable), chunk_size)]
         # return iter(lambda: tuple(islice(iterator, chunk_size)), tuple())
 
-    def run(self, **kw) -> tuple[int, list]:
+    def run(self, **kw) -> Tuple[int, list]:
         batch = parse_dynamic(Lexicon.UNKNOWN, kw)
         mode = parse_list_value(kw.get(Lexicon.BATCH_MODE, None), EnumConvertType.STRING, EnumBatchMode.MERGE.name)[0]
         flip = parse_list_value(kw.get(Lexicon.FLIP, None), EnumConvertType.BOOLEAN, False)[0]
         chunk = parse_list_value(kw.get(Lexicon.BATCH_CHUNK, None), EnumConvertType.INT, 0)[0]
         extract = []
-        # track latents since they need to be added back to dict['samples']
+        # track latents since they need to be added back to Dict['samples']
         latents = []
         full = []
         for b in batch:
