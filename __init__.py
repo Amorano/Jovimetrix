@@ -119,7 +119,6 @@ class Singleton(type):
 # =============================================================================
 
 class JOVBaseNode:
-    INPUT_IS_LIST = True
     RETURN_TYPES = ()
     FUNCTION = "run"
 
@@ -276,7 +275,6 @@ class Session(metaclass=Singleton):
             if f.stem in JOV_IGNORE_NODE or f.stem+'.py' in JOV_IGNORE_NODE:
                 logger.warning(f"💀 Jovimetrix.core.{f.stem}")
                 continue
-            module = importlib.import_module(f"Jovimetrix.core.{f.stem}")
             try:
                 module = importlib.import_module(f"Jovimetrix.core.{f.stem}")
             except Exception as e:

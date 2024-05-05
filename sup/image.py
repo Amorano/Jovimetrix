@@ -9,7 +9,7 @@ import urllib
 import requests
 from enum import Enum
 from io import BytesIO
-from typing import Any, Optional, Tuple, Union
+from typing import Any, List, Optional, Tuple, Union
 
 import cv2
 import torch
@@ -40,8 +40,8 @@ TAU = math.pi * 2
 # =============================================================================
 
 TYPE_COORD = Union[
-    tuple[int, int],
-    tuple[float, float]
+    Tuple[int, int],
+    Tuple[float, float]
 ]
 
 TYPE_PIXEL = Union[
@@ -328,7 +328,7 @@ def cv2tensor(image: TYPE_IMAGE) -> torch.Tensor:
                 image = image.squeeze()
     return torch.from_numpy(image.astype(np.float32) / 255).unsqueeze(0)
 
-def cv2tensor_full(image: TYPE_IMAGE, matte:TYPE_PIXEL=0) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+def cv2tensor_full(image: TYPE_IMAGE, matte:TYPE_PIXEL=0) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     mask = image_mask(image)
     #if channel_count(image)[0] != 4:
     #    image = image_convert(image, 4)
@@ -339,7 +339,7 @@ def cv2tensor_full(image: TYPE_IMAGE, matte:TYPE_PIXEL=0) -> tuple[torch.Tensor,
 def hsv2bgr(hsl_color: TYPE_PIXEL) -> TYPE_PIXEL:
     return cv2.cvtColor(np.uint8([[hsl_color]]), cv2.COLOR_HSV2BGR)[0, 0]
 
-def image2bgr(image: TYPE_IMAGE) -> tuple[int, TYPE_IMAGE, TYPE_IMAGE]:
+def image2bgr(image: TYPE_IMAGE) -> Tuple[int, TYPE_IMAGE, TYPE_IMAGE]:
     """RGB Helper function.
     Return channel count, BGR, and Alpha.
     """
@@ -430,7 +430,7 @@ def tensor2pil(tensor: torch.Tensor) -> Image.Image:
 def pixel_eval(color: TYPE_PIXEL,
             target: EnumImageType=EnumImageType.BGR,
             precision:EnumIntFloat=EnumIntFloat.INT,
-            crunch:EnumGrayscaleCrunch=EnumGrayscaleCrunch.MEAN) -> tuple[TYPE_PIXEL] | TYPE_PIXEL:
+            crunch:EnumGrayscaleCrunch=EnumGrayscaleCrunch.MEAN) -> Tuple[TYPE_PIXEL] | TYPE_PIXEL:
 
     """Evaluates R(GB)(A) pixels in range (0-255) into target target pixel type."""
 
@@ -511,7 +511,7 @@ def pixel_convert(color:TYPE_PIXEL, size:int=4, alpha:int=255) -> TYPE_PIXEL:
 # === CHANNEL ===
 # =============================================================================
 
-def channel_count(image:TYPE_IMAGE) -> tuple[int, int, int, EnumImageType]:
+def channel_count(image:TYPE_IMAGE) -> Tuple[int, int, int, EnumImageType]:
     size = image.shape[2] if len(image.shape) > 2 else 1
     if len(image.shape) > 1:
         h, w = image.shape[:2]
@@ -557,7 +557,7 @@ def channel_solid(width:int, height:int, color:TYPE_PIXEL=(0, 0, 0, 0),
         color = color[2::-1]
     return np.full((height, width, 4), color, dtype=np.uint8)
 
-def channel_merge(channel:list[TYPE_IMAGE]) -> TYPE_IMAGE:
+def channel_merge(channel:List[TYPE_IMAGE]) -> TYPE_IMAGE:
     ch = [c.shape[:2] if c is not None else (0, 0) for c in channel[:3]]
     w = max([c[1] for c in ch])
     h = max([c[0] for c in ch])
@@ -702,7 +702,7 @@ def image_convert(image: TYPE_IMAGE, channels: int) -> TYPE_IMAGE:
         return cv2.cvtColor(image, cv2.COLOR_GRAY2BGRA)
     return cv2.cvtColor(image, cv2.COLOR_BGR2BGRA)
 
-def image_crop_polygonal(image: TYPE_IMAGE, points: list[TYPE_COORD]) -> TYPE_IMAGE:
+def image_crop_polygonal(image: TYPE_IMAGE, points: List[TYPE_COORD]) -> TYPE_IMAGE:
     cc, w, h = channel_count(image)[:3]
     mask = image_mask(image, 0)
     # crop area first
@@ -727,7 +727,7 @@ def image_crop_polygonal(image: TYPE_IMAGE, points: list[TYPE_COORD]) -> TYPE_IM
         return image_convert(image, cc)
     return image
 
-def image_crop(image: TYPE_IMAGE, width:int=None, height:int=None, offset:tuple[float, float]=(0, 0)) -> TYPE_IMAGE:
+def image_crop(image: TYPE_IMAGE, width:int=None, height:int=None, offset:Tuple[float, float]=(0, 0)) -> TYPE_IMAGE:
     h, w = image.shape[:2]
     width = width if width is not None else w
     height = height if height is not None else h
@@ -749,7 +749,7 @@ def image_crop_center(image: TYPE_IMAGE, width:int=None, height:int=None) -> TYP
     points = [(x, y), (x + width - 1, y), (x + width - 1, y + height - 1), (x, y + height - 1)]
     return image_crop_polygonal(image, points)
 
-def image_diff(imageA: TYPE_IMAGE, imageB: TYPE_IMAGE, threshold:int=0, color:TYPE_PIXEL=(255, 0, 0)) -> tuple[TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE, float]:
+def image_diff(imageA: TYPE_IMAGE, imageB: TYPE_IMAGE, threshold:int=0, color:TYPE_PIXEL=(255, 0, 0)) -> Tuple[TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE, float]:
     _, w1, h1 = channel_count(imageA)[:3]
     _, w2, h2 = channel_count(imageB)[:3]
     w1 = max(w1, w2)
@@ -815,7 +815,7 @@ def image_exposure(image: TYPE_IMAGE, value: float) -> TYPE_IMAGE:
     image = np.clip(image * value, 0, 255).astype(np.uint8)
     return bgr2image(image, alpha, cc == 1)
 
-def image_filter(image:TYPE_IMAGE, matrix:list[float|int]) -> TYPE_IMAGE:
+def image_filter(image:TYPE_IMAGE, matrix:List[float|int]) -> TYPE_IMAGE:
     """Apply a scalar matrix of numbers to each channel of an image.
 
     The matrix should be formed such that all the R scalars are first, G then B.
@@ -831,7 +831,7 @@ def image_filter(image:TYPE_IMAGE, matrix:list[float|int]) -> TYPE_IMAGE:
     image[:,:,0] = (image[:,:,2] * b[0] + image[:,:,1] * b[1] + image[:,:,0] * b[2])
     return image.astype(np.uint8)
 
-def image_formats() -> list[str]:
+def image_formats() -> List[str]:
     exts = Image.registered_extensions()
     return [ex for ex, f in exts.items() if f in Image.OPEN]
 
@@ -862,7 +862,7 @@ def image_gradient(width:int, height:int, color_map:dict=None) -> TYPE_IMAGE:
     def gaussian(x, a, b, c, d=0) -> Any:
         return a * math.exp(-(x - b)**2 / (2 * c**2)) + d
 
-    def pixel(x, spread:int=1) -> tuple[int, int, int]:
+    def pixel(x, spread:int=1) -> Tuple[int, int, int]:
         ws = widthf / (spread * len(color_map))
         r = sum([gaussian(x, p[0], k * widthf, ws) for k, p in color_map.items()])
         g = sum([gaussian(x, p[1], k * widthf, ws) for k, p in color_map.items()])
@@ -887,7 +887,7 @@ def image_grayscale(image: TYPE_IMAGE) -> TYPE_IMAGE:
         image = image[:,:,:3]
     return cv2.cvtColor(image, cv2.COLOR_BGR2HSV)[:,:,2]
 
-def image_grid(data: list[TYPE_IMAGE], width: int, height: int) -> TYPE_IMAGE:
+def image_grid(data: List[TYPE_IMAGE], width: int, height: int) -> TYPE_IMAGE:
     #@TODO: makes poor assumption all images are the same dimensions.
     chunks, col, row = grid_make(data)
     frame = np.zeros((height * row, width * col, 4), dtype=np.uint8)
@@ -989,7 +989,7 @@ def image_levels(image:torch.Tensor, black_point:int=0, white_point=255,
     image = np.clip(image, 0, 255).astype(np.uint8)
     return bgr2image(image, alpha, cc == 1)
 
-def image_load(url: str) -> tuple[TYPE_IMAGE, TYPE_IMAGE]:
+def image_load(url: str) -> Tuple[TYPE_IMAGE, TYPE_IMAGE]:
     """
     if img.format == 'PSD':
         images = [pil2cv(frame.copy()) for frame in ImageSequence.Iterator(img)]
@@ -1018,7 +1018,7 @@ def image_load_data(data: str) -> TYPE_IMAGE:
     img = ImageOps.exif_transpose(data)
     return pil2cv(img)
 
-def image_load_exr(url: str) -> tuple[TYPE_IMAGE, TYPE_IMAGE]:
+def image_load_exr(url: str) -> Tuple[TYPE_IMAGE, TYPE_IMAGE]:
     """
     exr_file     = OpenEXR.InputFile(url)
     exr_header   = exr_file.header()
@@ -1198,14 +1198,14 @@ def image_rotate(image: TYPE_IMAGE, angle: float, center:TYPE_COORD=(0.5, 0.5), 
     image = image_affine_edge(image, func_rotate, edge)
     return image
 
-def image_save_gif(fpath:str, images: list[Image.Image], fps: int=0,
+def image_save_gif(fpath:str, images: List[Image.Image], fps: int=0,
                 loop:int=0, optimize:bool=False) -> None:
 
     fps = min(50, max(1, fps))
     images[0].save(
         fpath,
         append_images=images[1:],
-        duration=3,  # int(100.0 / fps),
+        duration=3, # int(100.0 / fps),
         loop=loop,
         optimize=optimize,
         save_all=True
@@ -1267,7 +1267,7 @@ def image_sharpen(image:TYPE_IMAGE, kernel_size=None, sigma:float=1.0,
         np.copyto(sharpened, image, where=low_contrast_mask)
     return sharpened
 
-def image_split(image: TYPE_IMAGE) -> tuple[TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE]:
+def image_split(image: TYPE_IMAGE) -> Tuple[TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE]:
     cc, w, h = channel_count(image)[:3]
     if cc == 4:
         b, g, r, a = cv2.split(image)
@@ -1279,7 +1279,7 @@ def image_split(image: TYPE_IMAGE) -> tuple[TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE, 
         a = np.full((h, w), 255, dtype=np.uint8)
     return r, g, b, a
 
-def image_stack(images: list[TYPE_IMAGE], axis:EnumOrientation=EnumOrientation.HORIZONTAL,
+def image_stack(images: List[TYPE_IMAGE], axis:EnumOrientation=EnumOrientation.HORIZONTAL,
                 stride:Optional[int]=None, matte:TYPE_PIXEL=(0,0,0,255)) -> TYPE_IMAGE:
 
     stack = []
@@ -1435,9 +1435,9 @@ def morph_edge_detect(image: TYPE_IMAGE,
 def morph_emboss(image: TYPE_IMAGE, amount: float=1., kernel: int=2) -> TYPE_IMAGE:
     kernel = max(2, kernel)
     kernel = np.array([
-        [-kernel,    -kernel+1,     0],
-        [-kernel+1,    kernel-1,      1],
-        [kernel-2,     kernel-1,      2]
+        [-kernel,   -kernel+1,    0],
+        [-kernel+1,   kernel-1,     1],
+        [kernel-2,    kernel-1,     2]
     ]) * amount
     return cv2.filter2D(src=image, ddepth=-1, kernel=kernel)
 
@@ -1479,9 +1479,9 @@ def kernel(stride: int) -> TYPE_IMAGE:
 
     Example:
     >>> KERNEL(3)
-    array([[ 0,  1,  1],
-           [-1,  0,  1],
-           [-1, -1,  0]], dtype=int8)
+    array([[ 0, 1, 1],
+           [-1, 0, 1],
+           [-1, -1, 0]], dtype=int8)
     """
     # Create an initial matrix of zeros
     kernel = np.zeros((stride, stride), dtype=np.int8)
@@ -1574,7 +1574,7 @@ def color_theory_complementary(color: TYPE_PIXEL) -> TYPE_PIXEL:
     color_a = pixel_hsv_adjust(color, 90, 0, 0)
     return hsv2bgr(color_a)
 
-def color_theory_monochromatic(color: TYPE_PIXEL) -> tuple[TYPE_PIXEL, TYPE_PIXEL]:
+def color_theory_monochromatic(color: TYPE_PIXEL) -> Tuple[TYPE_PIXEL, TYPE_PIXEL]:
     color = bgr2hsv(color)
     sat = 255 / 5
     val = 255 / 5
@@ -1584,13 +1584,13 @@ def color_theory_monochromatic(color: TYPE_PIXEL) -> tuple[TYPE_PIXEL, TYPE_PIXE
     color_d = pixel_hsv_adjust(color, 0, -4 * sat, -4 * val, mod_sat=True, mod_value=True)
     return hsv2bgr(color_a), hsv2bgr(color_b), hsv2bgr(color_c), hsv2bgr(color_d)
 
-def color_theory_split_complementary(color: TYPE_PIXEL) -> tuple[TYPE_PIXEL, TYPE_PIXEL]:
+def color_theory_split_complementary(color: TYPE_PIXEL) -> Tuple[TYPE_PIXEL, TYPE_PIXEL]:
     color = bgr2hsv(color)
     color_a = pixel_hsv_adjust(color, 75, 0, 0)
     color_b = pixel_hsv_adjust(color, 105, 0, 0)
     return hsv2bgr(color_a), hsv2bgr(color_b)
 
-def color_theory_analogous(color: TYPE_PIXEL) -> tuple[TYPE_PIXEL, TYPE_PIXEL, TYPE_PIXEL, TYPE_PIXEL]:
+def color_theory_analogous(color: TYPE_PIXEL) -> Tuple[TYPE_PIXEL, TYPE_PIXEL, TYPE_PIXEL, TYPE_PIXEL]:
     color = bgr2hsv(color)
     color_a = pixel_hsv_adjust(color, 30, 0, 0)
     color_b = pixel_hsv_adjust(color, 15, 0, 0)
@@ -1598,27 +1598,27 @@ def color_theory_analogous(color: TYPE_PIXEL) -> tuple[TYPE_PIXEL, TYPE_PIXEL, T
     color_d = pixel_hsv_adjust(color, 150, 0, 0)
     return hsv2bgr(color_a), hsv2bgr(color_b), hsv2bgr(color_c), hsv2bgr(color_d)
 
-def color_theory_triadic(color: TYPE_PIXEL) -> tuple[TYPE_PIXEL, TYPE_PIXEL]:
+def color_theory_triadic(color: TYPE_PIXEL) -> Tuple[TYPE_PIXEL, TYPE_PIXEL]:
     color = bgr2hsv(color)
     color_a = pixel_hsv_adjust(color, 60, 0, 0)
     color_b = pixel_hsv_adjust(color, 120, 0, 0)
     return hsv2bgr(color_a), hsv2bgr(color_b)
 
-def color_theory_compound(color: TYPE_PIXEL) -> tuple[TYPE_PIXEL, TYPE_PIXEL, TYPE_PIXEL]:
+def color_theory_compound(color: TYPE_PIXEL) -> Tuple[TYPE_PIXEL, TYPE_PIXEL, TYPE_PIXEL]:
     color = bgr2hsv(color)
     color_a = pixel_hsv_adjust(color, 90, 0, 0)
     color_b = pixel_hsv_adjust(color, 120, 0, 0)
     color_c = pixel_hsv_adjust(color, 150, 0, 0)
     return hsv2bgr(color_a), hsv2bgr(color_b), hsv2bgr(color_c)
 
-def color_theory_square(color: TYPE_PIXEL) -> tuple[TYPE_PIXEL, TYPE_PIXEL, TYPE_PIXEL]:
+def color_theory_square(color: TYPE_PIXEL) -> Tuple[TYPE_PIXEL, TYPE_PIXEL, TYPE_PIXEL]:
     color = bgr2hsv(color)
     color_a = pixel_hsv_adjust(color, 45, 0, 0)
     color_b = pixel_hsv_adjust(color, 90, 0, 0)
     color_c = pixel_hsv_adjust(color, 135, 0, 0)
     return hsv2bgr(color_a), hsv2bgr(color_b), hsv2bgr(color_c)
 
-def color_theory_tetrad_custom(color: TYPE_PIXEL, delta:int=0) -> tuple[TYPE_PIXEL, TYPE_PIXEL, TYPE_PIXEL]:
+def color_theory_tetrad_custom(color: TYPE_PIXEL, delta:int=0) -> Tuple[TYPE_PIXEL, TYPE_PIXEL, TYPE_PIXEL]:
     color = bgr2hsv(color)
 
     # modulus on neg and pos
@@ -1635,7 +1635,7 @@ def color_theory_tetrad_custom(color: TYPE_PIXEL, delta:int=0) -> tuple[TYPE_PIX
     color_d = pixel_hsv_adjust(color, 90 + delta, 0, 0)
     return hsv2bgr(color_a), hsv2bgr(color_b), hsv2bgr(color_c), hsv2bgr(color_d)
 
-def color_theory(image: TYPE_IMAGE, custom:int=0, scheme: EnumColorTheory=EnumColorTheory.COMPLIMENTARY) -> tuple[TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE]:
+def color_theory(image: TYPE_IMAGE, custom:int=0, scheme: EnumColorTheory=EnumColorTheory.COMPLIMENTARY) -> Tuple[TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE]:
 
     b = [0,0,0]
     c = [0,0,0]
@@ -1670,7 +1670,7 @@ def color_theory(image: TYPE_IMAGE, custom:int=0, scheme: EnumColorTheory=EnumCo
 
 # =============================================================================
 
-def coord_cart2polar(x, y) -> tuple[Any, Any]:
+def coord_cart2polar(x, y) -> Tuple[Any, Any]:
     r = np.sqrt(x**2 + y**2)
     theta = np.arctan2(y, x)
     return r, theta
@@ -1680,7 +1680,7 @@ def coord_polar2cart(r, theta) -> tuple:
     y = r * np.sin(theta)
     return x, y
 
-def coord_default(width:int, height:int, origin:tuple[float, float]=None) -> tuple:
+def coord_default(width:int, height:int, origin:Tuple[float, float]=None) -> tuple:
     """Creates x & y coords for the indicies in a numpy array "data".
     "origin" defaults to the center of the image. Specify origin=(0,0)
     to set the origin to the lower left corner of the image."""
@@ -1693,7 +1693,7 @@ def coord_default(width:int, height:int, origin:tuple[float, float]=None) -> tup
     y -= origin_y
     return x, y
 
-def coord_fisheye(width: int, height: int, distortion: float) -> tuple[TYPE_IMAGE, TYPE_IMAGE]:
+def coord_fisheye(width: int, height: int, distortion: float) -> Tuple[TYPE_IMAGE, TYPE_IMAGE]:
     map_x, map_y = np.meshgrid(np.linspace(0., 1., width), np.linspace(0., 1., height))
     # normalized
     xnd, ynd = (2 * map_x - 1), (2 * map_y - 1)
@@ -1704,13 +1704,13 @@ def coord_fisheye(width: int, height: int, distortion: float) -> tuple[TYPE_IMAG
     xu, yu = ((xdu + 1) * width) / 2, ((ydu + 1) * height) / 2
     return xu.astype(np.float32), yu.astype(np.float32)
 
-def coord_perspective(width: int, height: int, pts: list[TYPE_COORD]) -> TYPE_IMAGE:
+def coord_perspective(width: int, height: int, pts: List[TYPE_COORD]) -> TYPE_IMAGE:
     object_pts = np.float32([[0, 0], [width, 0], [width, height], [0, height]])
     pts = np.float32(pts)
     pts = np.column_stack([pts[:, 0], pts[:, 1]])
     return cv2.getPerspectiveTransform(object_pts, pts)
 
-def coord_sphere(width: int, height: int, radius: float) -> tuple[TYPE_IMAGE, TYPE_IMAGE]:
+def coord_sphere(width: int, height: int, radius: float) -> Tuple[TYPE_IMAGE, TYPE_IMAGE]:
     theta, phi = np.meshgrid(np.linspace(0, TAU, width), np.linspace(0, np.pi, height))
     x = radius * np.sin(phi) * np.cos(theta)
     y = radius * np.sin(phi) * np.sin(theta)

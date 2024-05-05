@@ -9,7 +9,7 @@ import json
 import time
 import array
 import threading
-from typing import Any
+from typing import Any, List, Tuple
 from itertools import repeat
 from configparser import ConfigParser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -68,7 +68,7 @@ def monitor_capture_all(width:int=None, height:int=None) -> cv2.Mat:
         return cv2.resize(img, (width, height))
     return img
 
-def monitor_capture(monitor:int=0, tlwh:tuple[int, int, int, int]=None, width:int=None, height:int=None) -> cv2.Mat:
+def monitor_capture(monitor:int=0, tlwh:Tuple[int, int, int, int]=None, width:int=None, height:int=None) -> cv2.Mat:
     with mss.mss() as sct:
         if tlwh is not None:
             region = {'top': tlwh[0], 'left': tlwh[1], 'width': tlwh[2], 'height': tlwh[3]}
@@ -244,7 +244,7 @@ class MediaStreamBase:
     def __repr__(self) -> str:
         return self.__class__.__name__
 
-    def callback(self) -> tuple[bool, Any]:
+    def callback(self) -> Tuple[bool, Any]:
         return None
 
     def capture(self) -> None:
@@ -286,7 +286,7 @@ class MediaStreamStatic(MediaStreamBase):
         self.image = None
         super().__init__()
 
-    def callback(self) -> tuple[bool, Any]:
+    def callback(self) -> Tuple[bool, Any]:
         return self.image
 
 class MediaStreamURL(MediaStreamBase):
@@ -299,7 +299,7 @@ class MediaStreamURL(MediaStreamBase):
         self.__last = None
         super().__init__(fps)
 
-    def callback(self) -> tuple[bool, Any]:
+    def callback(self) -> Tuple[bool, Any]:
         ret = False
         try:
             ret, result = self.__source.read()
@@ -442,7 +442,7 @@ class MediaStreamFile(MediaStreamBase):
         self.__image, mask = image_load(url)[0]
         super().__init__()
 
-    def callback(self) -> tuple[bool, Any]:
+    def callback(self) -> Tuple[bool, Any]:
         return True, self.__image
 
 class StreamManager(metaclass=Singleton):
@@ -453,11 +453,11 @@ class StreamManager(metaclass=Singleton):
                 del c
 
     @property
-    def streams(self) -> list[str|int]:
+    def streams(self) -> List[str|int]:
         return list(StreamManager.STREAM.keys())
 
     @property
-    def active(self) -> list[MediaStreamDevice]:
+    def active(self) -> List[MediaStreamDevice]:
         return [stream for stream in StreamManager.STREAM.values() if stream.captured]
 
     def frame(self, url: str) -> Any:

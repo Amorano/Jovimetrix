@@ -84,7 +84,7 @@ export function hex2rgb(hex) {
 }
 
 /*
-* Parse a string "255,255,255,255" or a list[255,255,255,255] into hex
+* Parse a string "255,255,255,255" or a List[255,255,255,255] into hex
 */
 export function rgb2hex(input) {
     const rgbArray = typeof input === 'string' ? input.match(/\d+/g) : input;

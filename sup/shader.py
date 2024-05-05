@@ -5,12 +5,12 @@ GLSL Support
 
 import os
 import time
+from typing import Tuple
 
 import moderngl
 import numpy as np
 from PIL import Image
 from loguru import logger
-from sympy import false
 
 # =============================================================================
 
@@ -85,10 +85,10 @@ class GLSL:
             vertices = np.array([
                 -1.0, -1.0,
                 1.0, -1.0,
-                -1.0,  1.0,
+                -1.0, 1.0,
                 1.0, -1.0,
-                1.0,  1.0,
-                -1.0,  1.0
+                1.0, 1.0,
+                -1.0, 1.0
             ], dtype='f4')
             GLSL.VBO = GLSL.CTX.buffer(vertices.tobytes())
 
@@ -104,7 +104,7 @@ class GLSL:
         except Exception as e:
             raise CompileException(e)
 
-        self.__iResolution: tuple[int, int] = self.__prog.get('iResolution', None)
+        self.__iResolution: Tuple[int, int] = self.__prog.get('iResolution', None)
         self.__iTime: float = self.__prog.get('iTime', None)
         self.__iTimeDelta: float = self.__prog.get('iTimeDelta', None)
         self.__iFrameRate: float = self.__prog.get('iFrameRate', None)

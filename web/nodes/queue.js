@@ -81,7 +81,7 @@ app.registerExtension({
                 let centerX = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
                 let centerY = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
                 // util_fun.bewm(centerX / 2, centerY / 3);
-                await flashBackgroundColor(self.widget_queue.inputEl, 650, 4,  "#995242CC");
+                await flashBackgroundColor(self.widget_queue.inputEl, 650, 4, "#995242CC");
             }
 
             api.addEventListener("jovi-queue-ping", python_queue_ping);

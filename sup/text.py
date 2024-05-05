@@ -5,6 +5,7 @@ TEXT support
 
 from enum import Enum
 import textwrap
+from typing import List, Tuple
 
 from matplotlib import font_manager
 from PIL import Image, ImageFont, ImageDraw
@@ -34,11 +35,11 @@ class EnumJustify(Enum):
 
 # =============================================================================
 
-def font_names() -> list[str]:
+def font_names() -> List[str]:
     mgr = font_manager.FontManager()
     return {font.name: font.fname for font in mgr.ttflist}
 
-def text_size(draw:ImageDraw, text:str, font:ImageFont) -> tuple[int, int]:
+def text_size(draw:ImageDraw, text:str, font:ImageFont) -> Tuple[int, int]:
     bbox = draw.textbbox((0, 0), text, font=font)
     text_width = bbox[2] - bbox[0]
     text_height = bbox[3] - bbox[1]
@@ -131,7 +132,7 @@ def wrap_text_and_calculate_height(self, text, font, max_width, line_height):
     return wrapped_text, total_height
 """
 
-def text_autosize(text:str, font:str, width:int, height:int, columns:int=0) -> tuple[str, int, int, int]:
+def text_autosize(text:str, font:str, width:int, height:int, columns:int=0) -> Tuple[str, int, int, int]:
     img = Image.new("L", (width, height))
     draw = ImageDraw.Draw(img)
     if columns != 0:
