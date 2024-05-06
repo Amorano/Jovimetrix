@@ -72,20 +72,20 @@ class TickNode(JOVBaseNode):
 
     def run(self, ident, **kw) -> Tuple[int, float, float, Any]:
         passthru = parse_list_value(kw.get(Lexicon.ANY, None), EnumConvertType.ANY, None)[0]
-        loop = parse_list_value(kw.get(Lexicon.LOOP, None), EnumConvertType.INT, 0)[0]
-        self.__frame = parse_list_value(kw.get(Lexicon.VALUE, None), EnumConvertType.INT, self.__frame)[0]
+        loop = parse_list_value(kw.get(Lexicon.LOOP, 0), EnumConvertType.INT, 0)[0]
+        self.__frame = parse_list_value(kw.get(Lexicon.VALUE, self.__frame), EnumConvertType.INT, self.__frame)[0]
         if loop > 0:
             self.__frame = min(loop, self.__frame)
         self.__frame = max(0, self.__frame)
-        hold = parse_list_value(kw.get(Lexicon.WAIT, None), EnumConvertType.BOOLEAN, False)[0]
-        fps = parse_list_value(kw.get(Lexicon.FPS, None), EnumConvertType.INT, 24, 1)[0]
-        bpm = parse_list_value(kw.get(Lexicon.BPM, None), EnumConvertType.INT, 120, 1)[0]
-        divisor = parse_list_value(kw.get(Lexicon.NOTE, None), EnumConvertType.INT, 4, 1)[0]
+        hold = parse_list_value(kw.get(Lexicon.WAIT, False), EnumConvertType.BOOLEAN, False)[0]
+        fps = parse_list_value(kw.get(Lexicon.FPS, 24), EnumConvertType.INT, 24, 1)[0]
+        bpm = parse_list_value(kw.get(Lexicon.BPM, 120), EnumConvertType.INT, 120, 1)[0]
+        divisor = parse_list_value(kw.get(Lexicon.NOTE, 4), EnumConvertType.INT, 4, 1)[0]
         beat = int(fps) * 60 / max(1, int(bpm))
         beat = beat / divisor
-        batch = parse_list_value(kw.get(Lexicon.BATCH, None), EnumConvertType.INT, 1, 1)[0]
+        batch = parse_list_value(kw.get(Lexicon.BATCH, 1), EnumConvertType.INT, 1, 1)[0]
         step = 1. / max(1, int(fps))
-        reset = parse_list_value(kw.get(Lexicon.RESET, None), EnumConvertType.BOOLEAN, False)[0]
+        reset = parse_list_value(kw.get(Lexicon.RESET, False), EnumConvertType.BOOLEAN, False)[0]
         if parse_reset(ident) > 0 or reset:
             self.__frame = 0
             self.__fixed_step = 0
@@ -147,14 +147,14 @@ class WaveGeneratorNode(JOVBaseNode):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> Tuple[float, int]:
-        op = parse_list_value(kw.get(Lexicon.WAVE, None), EnumConvertType.STRING, EnumWave.SIN.name, enumType=EnumWave)
-        freq = parse_list_value(kw.get(Lexicon.FREQ, None), EnumConvertType.FLOAT, 1, 0)
-        amp = parse_list_value(kw.get(Lexicon.AMP, None), EnumConvertType.FLOAT, 1, 0)
-        phase = parse_list_value(kw.get(Lexicon.PHASE, None), EnumConvertType.FLOAT, 0)
-        shift = parse_list_value(kw.get(Lexicon.OFFSET, None), EnumConvertType.FLOAT, 0)
-        delta_time = parse_list_value(kw.get(Lexicon.TIME, None), EnumConvertType.FLOAT, 0, 0)
-        invert = parse_list_value(kw.get(Lexicon.INVERT, None), EnumConvertType.BOOLEAN, False)
-        abs = parse_list_value(kw.get(Lexicon.ABSOLUTE, None), EnumConvertType.BOOLEAN, False)
+        op = parse_list_value(kw.get(Lexicon.WAVE, EnumWave.SIN.name), EnumConvertType.STRING, EnumWave.SIN.name, enumType=EnumWave)
+        freq = parse_list_value(kw.get(Lexicon.FREQ, 1), EnumConvertType.FLOAT, 1, 0)
+        amp = parse_list_value(kw.get(Lexicon.AMP, 1), EnumConvertType.FLOAT, 1, 0)
+        phase = parse_list_value(kw.get(Lexicon.PHASE, 0), EnumConvertType.FLOAT, 0)
+        shift = parse_list_value(kw.get(Lexicon.OFFSET, 0), EnumConvertType.FLOAT, 0)
+        delta_time = parse_list_value(kw.get(Lexicon.TIME, 0), EnumConvertType.FLOAT, 0, 0)
+        invert = parse_list_value(kw.get(Lexicon.INVERT, False), EnumConvertType.BOOLEAN, False)
+        abs = parse_list_value(kw.get(Lexicon.ABSOLUTE, False), EnumConvertType.BOOLEAN, False)
         results = []
         params = list(zip_longest_fill(op, freq, amp, phase, shift, delta_time, invert, abs))
         pbar = ProgressBar(len(params))

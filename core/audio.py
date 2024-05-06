@@ -47,7 +47,7 @@ class LoadWaveNode(JOVBaseNode):
         self.__cache = {}
 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
-        filen = parse_list_value(kw.get(Lexicon.FILEN, None), EnumConvertType.STRING, "")
+        filen = parse_list_value(kw.get(Lexicon.FILEN, ""), EnumConvertType.STRING, "")
         params = list(zip_longest_fill(filen))
         waves = []
         pbar = ProgressBar(len(params))
@@ -94,11 +94,11 @@ class WaveGraphNode(JOVBaseNode):
 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
         wave = parse_list_value(kw.get(Lexicon.WAVE, None), EnumConvertType.ANY, None)
-        bars = parse_list_value(kw.get(Lexicon.VALUE, None), EnumConvertType.INT, 100, 1, 8192)
-        thick = parse_list_value(kw.get(Lexicon.THICK, None), EnumConvertType.FLOAT, 0.72, 0, 1)
-        wihi = parse_list_value(kw.get(Lexicon.WH, None), EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), MIN_IMAGE_SIZE)
-        rgb_a = parse_list_value(kw.get(Lexicon.RGBA_A, None), EnumConvertType.VEC4INT, (128, 128, 0, 255), 0, 255)
-        matte = parse_list_value(kw.get(Lexicon.RGBA_B, None), EnumConvertType.VEC4INT, (0, 128, 128, 255), 0, 255)
+        bars = parse_list_value(kw.get(Lexicon.VALUE, 100), EnumConvertType.INT, 100, 1, 8192)
+        thick = parse_list_value(kw.get(Lexicon.THICK, 0.72), EnumConvertType.FLOAT, 0.72, 0, 1)
+        wihi = parse_list_value(kw.get(Lexicon.WH, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE)), EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), MIN_IMAGE_SIZE)
+        rgb_a = parse_list_value(kw.get(Lexicon.RGBA_A, (128, 128, 0, 255)), EnumConvertType.VEC4INT, (128, 128, 0, 255), 0, 255)
+        matte = parse_list_value(kw.get(Lexicon.RGBA_B, (0, 128, 128, 255)), EnumConvertType.VEC4INT, (0, 128, 128, 255), 0, 255)
         params = list(zip_longest_fill(wave, bars, wihi, thick, rgb_a, matte))
         images = []
         pbar = ProgressBar(len(params))

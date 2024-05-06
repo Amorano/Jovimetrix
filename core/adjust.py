@@ -75,19 +75,18 @@ class AdjustNode(JOVBaseNode):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw)  -> Tuple[torch.Tensor, torch.Tensor]:
-        # logger.debug(kw)
         pA = parse_list_value(kw.get(Lexicon.PIXEL, None), EnumConvertType.IMAGE, None)
         mask = parse_list_value(kw.get(Lexicon.MASK, None), EnumConvertType.IMAGE, None)
-        op = parse_list_value(kw.get(Lexicon.FUNC, None), EnumConvertType.STRING, EnumAdjustOP.BLUR.name)
-        radius = parse_list_value(kw.get(Lexicon.RADIUS, None), EnumConvertType.INT, 3, 3)
-        amt = parse_list_value(kw.get(Lexicon.VALUE, None), EnumConvertType.FLOAT, 0, 0, 1)
-        lohi = parse_list_value(kw.get(Lexicon.LOHI, None), EnumConvertType.VEC2, (0, 1), 0, 1)
-        lmh = parse_list_value(kw.get(Lexicon.LMH, None), EnumConvertType.VEC3, (0, 0.5, 1), 0, 1)
-        hsv = parse_list_value(kw.get(Lexicon.HSV, None), EnumConvertType.VEC3, (0, 1, 1), 0, 1)
-        contrast = parse_list_value(kw.get(Lexicon.CONTRAST, None), EnumConvertType.FLOAT, 1, 0, 0)
-        gamma = parse_list_value(kw.get(Lexicon.GAMMA, None), EnumConvertType.FLOAT, 1, 0, 1)
-        matte = parse_list_value(kw.get(Lexicon.MATTE, None), EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
-        invert = parse_list_value(kw.get(Lexicon.INVERT, None), EnumConvertType.BOOLEAN, False)
+        op = parse_list_value(kw.get(Lexicon.FUNC, EnumAdjustOP.BLUR.name), EnumConvertType.STRING, EnumAdjustOP.BLUR.name)
+        radius = parse_list_value(kw.get(Lexicon.RADIUS, 3), EnumConvertType.INT, 3, 3)
+        amt = parse_list_value(kw.get(Lexicon.VALUE, 0), EnumConvertType.FLOAT, 0, 0, 1)
+        lohi = parse_list_value(kw.get(Lexicon.LOHI, (0, 1)), EnumConvertType.VEC2, (0, 1), 0, 1)
+        lmh = parse_list_value(kw.get(Lexicon.LMH, (0, 0.5, 1)), EnumConvertType.VEC3, (0, 0.5, 1), 0, 1)
+        hsv = parse_list_value(kw.get(Lexicon.HSV, (0, 1, 1)), EnumConvertType.VEC3, (0, 1, 1), 0, 1)
+        contrast = parse_list_value(kw.get(Lexicon.CONTRAST, 1), EnumConvertType.FLOAT, 1, 0, 0)
+        gamma = parse_list_value(kw.get(Lexicon.GAMMA, 1), EnumConvertType.FLOAT, 1, 0, 1)
+        matte = parse_list_value(kw.get(Lexicon.MATTE, (0, 0, 0, 255)), EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
+        invert = parse_list_value(kw.get(Lexicon.INVERT, False), EnumConvertType.BOOLEAN, False)
         params = list(zip_longest_fill(pA, mask, op, radius, amt, lohi,
                                                      lmh, hsv, contrast, gamma, matte, invert))
         images = []
@@ -224,13 +223,13 @@ class ColorMatchNode(JOVBaseNode):
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         pA = parse_list_value(kw.get(Lexicon.PIXEL_A, None), EnumConvertType.IMAGE, None)
         pB = parse_list_value(kw.get(Lexicon.PIXEL_B, None), EnumConvertType.IMAGE, None)
-        colormatch_mode = parse_list_value(kw.get(Lexicon.COLORMATCH_MODE, None), EnumConvertType.STRING, EnumColorMatchMode.REINHARD.name)
-        colormatch_map = parse_list_value(kw.get(Lexicon.COLORMATCH_MAP, None), EnumConvertType.STRING, EnumColorMatchMap.USER_MAP.name)
-        colormap = parse_list_value(kw.get(Lexicon.COLORMAP, None), EnumConvertType.STRING, EnumColorMap.HSV.name)
-        num_colors = parse_list_value(kw.get(Lexicon.VALUE, None), EnumConvertType.INT, 255)
-        flip = parse_list_value(kw.get(Lexicon.FLIP, None), EnumConvertType.BOOLEAN, False)
-        invert = parse_list_value(kw.get(Lexicon.INVERT, None), EnumConvertType.BOOLEAN, False)
-        matte = parse_list_value(kw.get(Lexicon.MATTE, None), EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
+        colormatch_mode = parse_list_value(kw.get(Lexicon.COLORMATCH_MODE, EnumColorMatchMode.REINHARD.name), EnumConvertType.STRING, EnumColorMatchMode.REINHARD.name)
+        colormatch_map = parse_list_value(kw.get(Lexicon.COLORMATCH_MAP, EnumColorMatchMap.USER_MAP.name), EnumConvertType.STRING, EnumColorMatchMap.USER_MAP.name)
+        colormap = parse_list_value(kw.get(Lexicon.COLORMAP, EnumColorMap.HSV.name), EnumConvertType.STRING, EnumColorMap.HSV.name)
+        num_colors = parse_list_value(kw.get(Lexicon.VALUE, 255), EnumConvertType.INT, 255)
+        flip = parse_list_value(kw.get(Lexicon.FLIP, False), EnumConvertType.BOOLEAN, False)
+        invert = parse_list_value(kw.get(Lexicon.INVERT, False), EnumConvertType.BOOLEAN, False)
+        matte = parse_list_value(kw.get(Lexicon.MATTE, (0, 0, 0, 255)), EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
         params = list(zip_longest_fill(pA, pB, colormap, colormatch_mode, colormatch_map, num_colors, flip, invert, matte))
         images = []
         pbar = ProgressBar(len(params))
@@ -287,11 +286,11 @@ class ThresholdNode(JOVBaseNode):
 
     def run(self, **kw)  -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         pA = parse_list_value(kw.get(Lexicon.PIXEL, None), EnumConvertType.IMAGE, None)
-        mode = parse_list_value(kw.get(Lexicon.FUNC, None), EnumConvertType.STRING, EnumThreshold.BINARY.name)
-        adapt = parse_list_value(kw.get(Lexicon.ADAPT, None), EnumConvertType.STRING, EnumThresholdAdapt.ADAPT_NONE.name)
-        threshold = parse_list_value(kw.get(Lexicon.THRESHOLD, None), EnumConvertType.FLOAT, 1, 0, 1)
-        block = parse_list_value(kw.get(Lexicon.SIZE, None), 3, 3, EnumConvertType.INT)
-        invert = parse_list_value(kw.get(Lexicon.INVERT, None), EnumConvertType.BOOLEAN, False)
+        mode = parse_list_value(kw.get(Lexicon.FUNC, EnumThreshold.BINARY.name), EnumConvertType.STRING, EnumThreshold.BINARY.name)
+        adapt = parse_list_value(kw.get(Lexicon.ADAPT, EnumThresholdAdapt.ADAPT_NONE.name), EnumConvertType.STRING, EnumThresholdAdapt.ADAPT_NONE.name)
+        threshold = parse_list_value(kw.get(Lexicon.THRESHOLD, 1), EnumConvertType.FLOAT, 1, 0, 1)
+        block = parse_list_value(kw.get(Lexicon.SIZE, 3), EnumConvertType.INT, 3, 3)
+        invert = parse_list_value(kw.get(Lexicon.INVERT, False), EnumConvertType.BOOLEAN, False)
         params = list(zip_longest_fill(pA, mode, adapt, threshold, block, invert))
         images = []
         pbar = ProgressBar(len(params))
@@ -331,9 +330,9 @@ class ColorBlindNode(JOVBaseNode):
 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         pA = parse_list_value(kw.get(Lexicon.PIXEL, None), EnumConvertType.IMAGE, None)
-        defiency = parse_list_value(kw.get(Lexicon.DEFIENCY, None), EnumConvertType.STRING, EnumCBDefiency.PROTAN.name)
-        simulator = parse_list_value(kw.get(Lexicon.SIMULATOR, None), EnumConvertType.STRING, EnumCBSimulator.AUTOSELECT.name)
-        severity = parse_list_value(kw.get(Lexicon.VALUE, None), EnumConvertType.FLOAT, 1)
+        defiency = parse_list_value(kw.get(Lexicon.DEFIENCY, EnumCBDefiency.PROTAN.name), EnumConvertType.STRING, EnumCBDefiency.PROTAN.name)
+        simulator = parse_list_value(kw.get(Lexicon.SIMULATOR, EnumCBSimulator.AUTOSELECT.name), EnumConvertType.STRING, EnumCBSimulator.AUTOSELECT.name)
+        severity = parse_list_value(kw.get(Lexicon.VALUE, 1), EnumConvertType.FLOAT, 1)
         params = list(zip_longest_fill(pA, defiency, simulator, severity))
         images = []
         pbar = ProgressBar(len(params))

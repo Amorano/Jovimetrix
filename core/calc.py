@@ -154,8 +154,8 @@ class CalcUnaryOPNode(JOVBaseNode):
 
     def run(self, **kw) -> Tuple[bool]:
         results = []
-        A = parse_list_value(kw.get(Lexicon.IN_A, None), EnumConvertType.VEC4, 0)
-        op = parse_list_value(kw.get(Lexicon.FUNC, None), EnumConvertType.STRING, EnumUnaryOperation.ABS.name)
+        A = parse_list_value(kw.get(Lexicon.IN_A, 0), EnumConvertType.VEC4, 0)
+        op = parse_list_value(kw.get(Lexicon.FUNC, EnumUnaryOperation.ABS.name), EnumConvertType.STRING, EnumUnaryOperation.ABS.name, enumType=EnumUnaryOperation)
         params = list(zip_longest_fill(A, op))
         pbar = ProgressBar(len(params))
         for idx, (A, op) in enumerate(params):
@@ -265,17 +265,17 @@ class CalcBinaryOPNode(JOVBaseNode):
         results = []
         A = parse_list_value(kw.get(Lexicon.IN_A, None), EnumConvertType.ANY, None)
         B = parse_list_value(kw.get(Lexicon.IN_B, None), EnumConvertType.ANY, None)
-        a_x = parse_list_value(kw.get(Lexicon.X, None), EnumConvertType.FLOAT, 0)
-        a_xy = parse_list_value(kw.get(Lexicon.IN_A+"2", None), EnumConvertType.VEC2, (0, 0))
-        a_xyz = parse_list_value(kw.get(Lexicon.IN_A+"3", None), EnumConvertType.VEC3, (0, 0, 0))
-        a_xyzw = parse_list_value(kw.get(Lexicon.IN_A+"4", None), EnumConvertType.VEC4, (0, 0, 0, 0))
-        b_x = parse_list_value(kw.get(Lexicon.Y, None), EnumConvertType.FLOAT, 0)
-        b_xy = parse_list_value(kw.get(Lexicon.IN_B+"2", None), EnumConvertType.VEC2, (0, 0))
-        b_xyz = parse_list_value(kw.get(Lexicon.IN_B+"3", None), EnumConvertType.VEC3, (0, 0, 0))
-        b_xyzw = parse_list_value(kw.get(Lexicon.IN_B+"4", None), EnumConvertType.VEC4, (0, 0, 0, 0))
-        op = parse_list_value(kw.get(Lexicon.FUNC, None), EnumConvertType.STRING, EnumBinaryOperation.ADD.name)
-        typ = parse_list_value(kw.get(Lexicon.TYPE, None), EnumConvertType.STRING, EnumConvertType.FLOAT.name)
-        flip = parse_list_value(kw.get(Lexicon.FLIP, None), EnumConvertType.BOOLEAN, False)
+        a_x = parse_list_value(kw.get(Lexicon.X, 0), EnumConvertType.FLOAT, 0)
+        a_xy = parse_list_value(kw.get(Lexicon.IN_A+"2", (0, 0)), EnumConvertType.VEC2, (0, 0))
+        a_xyz = parse_list_value(kw.get(Lexicon.IN_A+"3", (0, 0, 0)), EnumConvertType.VEC3, (0, 0, 0))
+        a_xyzw = parse_list_value(kw.get(Lexicon.IN_A+"4", (0, 0, 0, 0)), EnumConvertType.VEC4, (0, 0, 0, 0))
+        b_x = parse_list_value(kw.get(Lexicon.Y, 0), EnumConvertType.FLOAT, 0)
+        b_xy = parse_list_value(kw.get(Lexicon.IN_B+"2", (0, 0)), EnumConvertType.VEC2, (0, 0))
+        b_xyz = parse_list_value(kw.get(Lexicon.IN_B+"3", (0, 0, 0)), EnumConvertType.VEC3, (0, 0, 0))
+        b_xyzw = parse_list_value(kw.get(Lexicon.IN_B+"4", (0, 0, 0, 0)), EnumConvertType.VEC4, (0, 0, 0, 0))
+        op = parse_list_value(kw.get(Lexicon.FUNC, EnumBinaryOperation.ADD.name), EnumConvertType.STRING, EnumBinaryOperation.ADD.name, enumType=EnumBinaryOperation)
+        typ = parse_list_value(kw.get(Lexicon.TYPE, EnumConvertType.FLOAT.name), EnumConvertType.STRING, EnumConvertType.FLOAT.name, enumType=EnumConvertType)
+        flip = parse_list_value(kw.get(Lexicon.FLIP, False), EnumConvertType.BOOLEAN, False)
         params = list(zip_longest_fill(A, B, a_x, a_xy, a_xyz, a_xyzw,
                                   b_x, b_xy, b_xyz, b_xyzw, op, typ, flip))
         pbar = ProgressBar(len(params))
@@ -403,12 +403,12 @@ class ValueNode(JOVBaseNode):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> Tuple[bool]:
-        raw = parse_list_value(kw.get(Lexicon.IN_A, None), EnumConvertType.VEC4, None)
-        typ = parse_list_value(kw.get(Lexicon.TYPE, None), EnumConvertType.STRING, EnumConvertType.BOOLEAN.name)
-        x = parse_list_value(kw.get(Lexicon.X, None), EnumConvertType.FLOAT, 0)
-        y = parse_list_value(kw.get(Lexicon.Y, None), EnumConvertType.FLOAT, 0)
-        z = parse_list_value(kw.get(Lexicon.Z, None), EnumConvertType.FLOAT, 0)
-        w = parse_list_value(kw.get(Lexicon.W, None), EnumConvertType.FLOAT, 0)
+        raw = parse_list_value(kw.get(Lexicon.IN_A, None), EnumConvertType.IMAGE, None)
+        typ = parse_list_value(kw.get(Lexicon.TYPE, EnumConvertType.BOOLEAN.name), EnumConvertType.STRING, EnumConvertType.BOOLEAN.name)
+        x = parse_list_value(kw.get(Lexicon.X, 0), EnumConvertType.FLOAT, 0)
+        y = parse_list_value(kw.get(Lexicon.Y, 0), EnumConvertType.FLOAT, 0)
+        z = parse_list_value(kw.get(Lexicon.Z, 0), EnumConvertType.FLOAT, 0)
+        w = parse_list_value(kw.get(Lexicon.W, 0), EnumConvertType.FLOAT, 0)
         params = list(zip_longest_fill(raw, typ, x, y, z, w))
         results = []
         pbar = ProgressBar(len(params))
@@ -444,11 +444,11 @@ class LerpNode(JOVBaseNode):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> Tuple[Any, Any]:
-        A = parse_list_value(kw.get(Lexicon.IN_A, None), EnumConvertType.VEC4, 0)
-        B = parse_list_value(kw.get(Lexicon.IN_B, None), EnumConvertType.VEC4, 1)
-        alpha = parse_list_value(kw.get(Lexicon.FLOAT, None), 1, 0, EnumConvertType.FLOAT, 0)
-        op = parse_list_value(kw.get(Lexicon.EASE, None), EnumConvertType.STRING, "NONE")
-        typ = parse_list_value(kw.get(Lexicon.TYPE, None), EnumConvertType.STRING, EnumNumberType.FLOAT.name)
+        A = parse_list_value(kw.get(Lexicon.IN_A, (0,0,0,0)), EnumConvertType.VEC4, (0,0,0,0), 0, 1)
+        B = parse_list_value(kw.get(Lexicon.IN_B, (1,1,1,1)), EnumConvertType.VEC4, (1,1,1,1), 0, 1)
+        alpha = parse_list_value(kw.get(Lexicon.FLOAT, 0), EnumConvertType.FLOAT, 0, 0, 1)
+        op = parse_list_value(kw.get(Lexicon.EASE, "NONE"), EnumConvertType.STRING, "NONE")
+        typ = parse_list_value(kw.get(Lexicon.TYPE, EnumNumberType.FLOAT.name), EnumConvertType.STRING, EnumNumberType.FLOAT.name)
         values = []
         params = list(zip_longest_fill(A, B, alpha, op, typ))
         pbar = ProgressBar(len(params))
@@ -480,8 +480,6 @@ class SwapNode(JOVBaseNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
-
-    # OUTPUT_IS_LIST = (True,)
     RETURN_TYPES = (WILDCARD,)
     RETURN_NAMES = (Lexicon.ANY )
     SORT = 65
@@ -505,16 +503,16 @@ class SwapNode(JOVBaseNode):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw)  -> Tuple[torch.Tensor, torch.Tensor]:
-        pA = parse_list_value(kw.get(Lexicon.IN_A, None), EnumConvertType.VEC4, 0)
-        pB = parse_list_value(kw.get(Lexicon.IN_B, None), EnumConvertType.VEC4, 0)
-        swap_x = parse_list_value(kw.get(Lexicon.SWAP_X, None), EnumConvertType.STRING, EnumSwizzle.A_X.name)
-        x = parse_list_value(kw.get(Lexicon.X, None), EnumConvertType.FLOAT, 0)
-        swap_y = parse_list_value(kw.get(Lexicon.SWAP_Y, None), EnumConvertType.STRING, EnumSwizzle.A_Y.name)
-        y = parse_list_value(kw.get(Lexicon.Y, None), EnumConvertType.FLOAT, 0)
-        swap_z = parse_list_value(kw.get(Lexicon.SWAP_Z, None), EnumConvertType.STRING, EnumSwizzle.A_W.name)
-        z = parse_list_value(kw.get(Lexicon.Z, None), EnumConvertType.FLOAT, 0)
-        swap_w = parse_list_value(kw.get(Lexicon.SWAP_W, None), EnumConvertType.STRING, EnumSwizzle.A_Z.name)
-        w = parse_list_value(kw.get(Lexicon.W, None), EnumConvertType.FLOAT, 0)
+        pA = parse_list_value(kw.get(Lexicon.IN_A, (0,0,0,0)), EnumConvertType.VEC4, (0,0,0,0), 0, 1)
+        pB = parse_list_value(kw.get(Lexicon.IN_B, (0,0,0,0)), EnumConvertType.VEC4, (0,0,0,0), 0, 1)
+        swap_x = parse_list_value(kw.get(Lexicon.SWAP_X, EnumSwizzle.A_X.name), EnumConvertType.STRING, EnumSwizzle.A_X.name)
+        x = parse_list_value(kw.get(Lexicon.X, 0), EnumConvertType.FLOAT, 0)
+        swap_y = parse_list_value(kw.get(Lexicon.SWAP_Y, EnumSwizzle.A_Y.name), EnumConvertType.STRING, EnumSwizzle.A_Y.name)
+        y = parse_list_value(kw.get(Lexicon.Y, 0), EnumConvertType.FLOAT, 0)
+        swap_z = parse_list_value(kw.get(Lexicon.SWAP_Z, EnumSwizzle.A_W.name), EnumConvertType.STRING, EnumSwizzle.A_W.name)
+        z = parse_list_value(kw.get(Lexicon.Z, 0), EnumConvertType.FLOAT, 0)
+        swap_w = parse_list_value(kw.get(Lexicon.SWAP_W, EnumSwizzle.A_Z.name), EnumConvertType.STRING, EnumSwizzle.A_Z.name)
+        w = parse_list_value(kw.get(Lexicon.W, 0), EnumConvertType.FLOAT, 0)
         params = list(zip_longest_fill(pA, pB, swap_x, x, swap_y, y, swap_z, z, swap_w, w))
         results = []
         pbar = ProgressBar(len(params))

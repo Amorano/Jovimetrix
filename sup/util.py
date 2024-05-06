@@ -74,7 +74,7 @@ def parse_as_list(val: Any) -> List[Any]:
             return [v for v in val["samples"]]
         return tuple(list(val.values()))
     if isinstance(val, (torch.Tensor,)):
-        if val.shape[0] > 1:
+        if len(val.shape) > 3:
             return [t for t in val]
     if issubclass(type(val), (Enum,)):
         return [[val.name]]
@@ -176,11 +176,11 @@ def parse_value(val:Any, typ:EnumConvertType, default: Any,
             new_val = tuple(new_val)
     elif typ == EnumConvertType.IMAGE:
         if isinstance(new_val, (torch.Tensor,)):
-            if new_val.shape[0] > 1:
+            if len(new_val.shape) > 3:
                 new_val = [t for t in new_val]
         else:
             # convert whatever into an tensor...
-            new_val = torch.empty((1, 3, 512, 512), dtype=torch.uint8)
+            new_val = torch.empty((4, 512, 512), dtype=torch.uint8)
     elif typ == EnumConvertType.STRING:
         if not isinstance(new_val, (str,)):
             new_val = ", ".join([str(v) for v in new_val])
