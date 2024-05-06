@@ -88,8 +88,8 @@ class AdjustNode(JOVBaseNode):
         gamma = parse_list_value(kw.get(Lexicon.GAMMA, None), EnumConvertType.FLOAT, 1, 0, 1)
         matte = parse_list_value(kw.get(Lexicon.MATTE, None), EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
         invert = parse_list_value(kw.get(Lexicon.INVERT, None), EnumConvertType.BOOLEAN, False)
-        params = zip_longest_fill(pA, mask, op, radius, amt, lohi,
-                                                     lmh, hsv, contrast, gamma, matte, invert)
+        params = list(zip_longest_fill(pA, mask, op, radius, amt, lohi,
+                                                     lmh, hsv, contrast, gamma, matte, invert))
         images = []
         pbar = ProgressBar(len(params))
         for idx, (pA, mask, op, radius, amt, lohi, lmh, hsv, contrast, gamma, matte, invert) in enumerate(params):

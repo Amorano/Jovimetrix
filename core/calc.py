@@ -276,8 +276,8 @@ class CalcBinaryOPNode(JOVBaseNode):
         op = parse_list_value(kw.get(Lexicon.FUNC, None), EnumConvertType.STRING, EnumBinaryOperation.ADD.name)
         typ = parse_list_value(kw.get(Lexicon.TYPE, None), EnumConvertType.STRING, EnumConvertType.FLOAT.name)
         flip = parse_list_value(kw.get(Lexicon.FLIP, None), EnumConvertType.BOOLEAN, False)
-        params = zip_longest_fill(A, B, a_x, a_xy, a_xyz, a_xyzw,
-                                  b_x, b_xy, b_xyz, b_xyzw, op, typ, flip)
+        params = list(zip_longest_fill(A, B, a_x, a_xy, a_xyz, a_xyzw,
+                                  b_x, b_xy, b_xyz, b_xyzw, op, typ, flip))
         pbar = ProgressBar(len(params))
         for idx, (A, B, a_x, a_xy, a_xyz, a_xyzw,
                   b_x, b_xy, b_xyz, b_xyzw, op, typ, flip) in enumerate(params):

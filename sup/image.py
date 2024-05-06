@@ -709,7 +709,7 @@ def image_crop_polygonal(image: TYPE_IMAGE, points: List[TYPE_COORD]) -> TYPE_IM
     points = np.array(points, np.int32).reshape((-1, 1, 2))
     point_mask = np.zeros((h, w, 1), dtype=np.uint8)
     point_mask = cv2.fillPoly(point_mask, [points], 255)
-    x, y, w, h = cv2.boundingRect(point_mask)
+    y, x, w, h = cv2.boundingRect(point_mask)
     point_mask = point_mask[:,:,0]
     # store any alpha channel
     if cc == 4:

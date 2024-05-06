@@ -62,7 +62,7 @@ class ConstantNode(JOVBaseNode):
         wihi = parse_list_value(kw.get(Lexicon.WH, None), EnumConvertType.VEC2INT, [(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE)], MIN_IMAGE_SIZE)
         matte = parse_list_value(kw.get(Lexicon.RGBA_A, None), EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
         images = []
-        params = zip_longest_fill(pA, wihi, matte)
+        params = list(zip_longest_fill(pA, wihi, matte))
         pbar = ProgressBar(len(params))
         for idx, (pA, wihi, matte) in enumerate(params):
             width, height = wihi
@@ -224,9 +224,9 @@ class TextNode(JOVBaseNode):
         edge = parse_list_value(kw.get(Lexicon.EDGE, None), EnumConvertType.STRING, EnumEdge.CLIP.name)
         invert = parse_list_value(kw.get(Lexicon.INVERT, None), EnumConvertType.BOOLEAN, False)
         images = []
-        params = zip_longest_fill(full_text, font_idx, autosize, letter, color,
+        params = list(zip_longest_fill(full_text, font_idx, autosize, letter, color,
                                   matte, columns, font_size, align, justify, margin,
-                                  line_spacing, wihi, pos, angle, edge, invert)
+                                  line_spacing, wihi, pos, angle, edge, invert))
 
         pbar = ProgressBar(len(params))
         for idx, (full_text, font_idx, autosize, letter, color, matte, columns,

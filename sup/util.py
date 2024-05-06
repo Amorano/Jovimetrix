@@ -94,11 +94,11 @@ def parse_list_value(val:Any|None, typ:EnumConvertType, default: Any,
             if (x:=val.get('3', None)) is not None:
                 ret.append(x)
             val = (ret,)
-    elif isinstance(val, (list,)):
+    elif isinstance(val, (list, tuple,)):
         val = [parse_as_list(v) for v in val]
     else:
         val = parse_as_list(val)
-    print(val)
+    # print(val)
     return [parse_value(v, typ, default, clip_min, clip_max, zero, enumType) for v in val]
 
 def parse_value(val:Any, typ:EnumConvertType, default: Any,
