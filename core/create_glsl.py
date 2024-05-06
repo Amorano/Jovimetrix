@@ -105,7 +105,6 @@ class GLSLNode(JOVBaseNode):
 
     def run(self, ident, **kw) -> List[torch.Tensor]:
         batch = parse_list_value(kw.get(Lexicon.BATCH, (1, 30)), EnumConvertType.VEC2INT, (1, 30), 1)
-        print(batch)
         fragment = parse_list_value(kw.get(Lexicon.FRAGMENT, DEFAULT_FRAGMENT), EnumConvertType.STRING, DEFAULT_FRAGMENT)
         param = parse_list_value(kw.get(Lexicon.PARAM, {}), EnumConvertType.DICT, {})
         wihi = parse_list_value(kw.get(Lexicon.WH, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE)), EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), MIN_IMAGE_SIZE)
@@ -146,7 +145,6 @@ class GLSLNode(JOVBaseNode):
 
             self.__last_good = images
             pbar.update_absolute(idx)
-        print(len(images))
         return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
 
 class GLSLBaseNode(JOVBaseNode):

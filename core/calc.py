@@ -410,7 +410,6 @@ class ValueNode(JOVBaseNode):
         z = parse_list_value(kw.get(Lexicon.Z, None), EnumConvertType.FLOAT, 0)
         w = parse_list_value(kw.get(Lexicon.W, None), EnumConvertType.FLOAT, 0)
         params = list(zip_longest_fill(raw, typ, x, y, z, w))
-        print(params)
         results = []
         pbar = ProgressBar(len(params))
         for idx, (raw, typ, x, y, z, w) in enumerate(params):

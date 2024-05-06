@@ -157,9 +157,6 @@ class WaveGeneratorNode(JOVBaseNode):
         abs = parse_list_value(kw.get(Lexicon.ABSOLUTE, None), EnumConvertType.BOOLEAN, False)
         results = []
         params = list(zip_longest_fill(op, freq, amp, phase, shift, delta_time, invert, abs))
-        logger.debug(kw)
-        print(op, freq, amp, phase, shift, delta_time, invert, abs)
-        logger.debug(params)
         pbar = ProgressBar(len(params))
         for idx, (op, freq, amp, phase, shift, delta_time, invert, abs) in enumerate(params):
             freq = 1. / freq

@@ -66,7 +66,6 @@ class ConstantNode(JOVBaseNode):
         pbar = ProgressBar(len(params))
         for idx, (pA, wihi, matte) in enumerate(params):
             width, height = wihi
-            print(wihi, matte)
             matte = pixel_eval(matte, EnumImageType.BGRA)
             pA = tensor2cv(pA, EnumImageType.BGRA, width, height, matte)
             images.append(cv2tensor_full(pA, matte))
@@ -114,9 +113,7 @@ class ShapeNode(JOVBaseNode):
         edge = parse_list_value(kw.get(Lexicon.EDGE, None), EnumConvertType.STRING, EnumEdge.CLIP.name)
         offset = parse_list_value(kw.get(Lexicon.XY, None), EnumConvertType.VEC2, (0, 0))
         size = parse_list_value(kw.get(Lexicon.SIZE, None), EnumConvertType.VEC2, (1, 1,), zero=0.001)
-        print(kw.get(Lexicon.WH, None))
         wihi = parse_list_value(kw.get(Lexicon.WH, None), EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), MIN_IMAGE_SIZE)
-        print(wihi)
         color = parse_list_value(kw.get(Lexicon.RGBA_A, None), EnumConvertType.VEC4INT, (255, 255, 255, 255), 0, 255)
         matte = parse_list_value(kw.get(Lexicon.MATTE, None), EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
         params = list(zip_longest_fill(shape, sides, offset, angle, edge, size, wihi, color, matte))
