@@ -44,12 +44,15 @@ const create_documentation_stylesheet = () => {
         border-color: var(--border-color);
         z-index: 25;
         overflow: hidden;
-        width: 250px;
+        width: 275px;
+        min-width: 275px;
+        min-height: 65px;
     }
     .jov-documentation-popup img {
-        max-width: 250px;
-        max-height: 250px;
-        align: center;
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+        width: 90%;
     }
     .jov-documentation-popup table {
         border-collapse: collapse;
@@ -362,10 +365,10 @@ app.registerExtension({
                 wikiButton.textContent = '🌐';
                 wikiButton.style.position = 'absolute';
                 wikiButton.style.top = '0';
-                wikiButton.style.right = '24px';
+                wikiButton.style.right = '26px';
                 wikiButton.style.cursor = 'pointer';
                 wikiButton.style.padding = '6px';
-                wikiButton.style.font = 'bold 18px monospace';
+                wikiButton.style.font = 'bold 16px monospace';
                 wikiButton.addEventListener('mousedown', (e) => {
                     e.stopPropagation();
                     const widget_tooltip = (this.widgets || [])
@@ -386,10 +389,10 @@ app.registerExtension({
                 closeButton.textContent = '❌';
                 closeButton.style.position = 'absolute';
                 closeButton.style.top = '0';
-                closeButton.style.right = '0';
+                closeButton.style.right = '4px';
                 closeButton.style.cursor = 'pointer';
                 closeButton.style.padding = '6px';
-                closeButton.style.font = 'bold 18px monospace';
+                closeButton.style.font = 'bold 16px monospace';
                 closeButton.addEventListener('mousedown', (e) => {
                         e.stopPropagation();
                         this.show_doc = !this.show_doc
@@ -450,13 +453,11 @@ app.registerExtension({
             ctx.save()
             ctx.translate(x, iconSize - 34) // Position the icon on the canvas
             ctx.scale(iconSize / 32, iconSize / 32) // Scale the icon to the desired size
-            ctx.strokeStyle = 'rgba(255,255,255,0.76)'
-            //ctx.lineCap = 'round'
-            //ctx.lineJoin = 'round'
-            //ctx.lineWidth = 2.6
-            // ctx.stroke(questionMark);
-            ctx.font = 'bold 44px monospace'
-            ctx.fillStyle = 'rgb(245, 40, 240)';
+            ctx.font = 'bold 42px monospace'
+            ctx.fillStyle = 'rgb(255, 20, 240)';
+            ctx.strokeStyle = 'rgba(255,255,255,0.80)'
+            ctx.strokeText('?', 0, 28);
+            ctx.strokeStyle = 'rgba(0,0,0,0.80)'
             ctx.strokeText('?', 0, 26);
             ctx.fillText('?', 0, 24)
             ctx.restore()
