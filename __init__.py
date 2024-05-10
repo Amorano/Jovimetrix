@@ -8,7 +8,7 @@
               Animation, Image Compositing & Procedural Creation
                     http://www.github.com/amorano/jovimetrix
 
-                    Copyright 2023 Alexander Morano (Joviex)
+                    Copyright Alexander Morano (Joviex)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
