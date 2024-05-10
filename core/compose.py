@@ -175,7 +175,6 @@ class BlendNode(JOVBaseNode):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
-        a=kw.get(Lexicon.PIXEL_A, None)
         pA = parse_list_value(kw.get(Lexicon.PIXEL_A, None), EnumConvertType.IMAGE, None)
         pB = parse_list_value(kw.get(Lexicon.PIXEL_B, None), EnumConvertType.IMAGE, None)
         mask = parse_list_value(kw.get(Lexicon.MASK, None), EnumConvertType.IMAGE, None)
