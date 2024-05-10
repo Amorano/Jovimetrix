@@ -45,6 +45,7 @@ const create_documentation_stylesheet = () => {
         z-index: 25;
         overflow: hidden;
         width: 275px;
+        height: 295px;
         min-width: 275px;
         min-height: 65px;
     }
