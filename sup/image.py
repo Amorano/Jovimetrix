@@ -383,7 +383,7 @@ def tensor2cv(tensor: torch.Tensor, chan:EnumImageType=EnumImageType.BGRA, width
     if not isinstance(tensor, (torch.Tensor,)):
         return channel_solid(width, height, matte, chan=chan)
     image = np.clip(tensor.squeeze().cpu().numpy() * 255, 0, 255).astype(np.uint8)
-    cc = 1 if len(image.shape) < 3 else image.shape[2]
+    cc = 1 if len(image.shape) < 3 else image.shape[0]
     if chan == EnumImageType.BGRA:
         if cc == 4:
             return cv2.cvtColor(image, cv2.COLOR_RGBA2BGRA)

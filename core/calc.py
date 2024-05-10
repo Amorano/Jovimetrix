@@ -403,7 +403,8 @@ class ValueNode(JOVBaseNode):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> Tuple[bool]:
-        raw = parse_list_value(kw.get(Lexicon.IN_A, None), EnumConvertType.IMAGE, None)
+        dat = kw.get(Lexicon.IN_A, None)
+        raw = parse_list_value(dat, EnumConvertType.ANY, dat)
         typ = parse_list_value(kw.get(Lexicon.TYPE, EnumConvertType.BOOLEAN.name), EnumConvertType.STRING, EnumConvertType.BOOLEAN.name)
         x = parse_list_value(kw.get(Lexicon.X, 0), EnumConvertType.FLOAT, 0)
         y = parse_list_value(kw.get(Lexicon.Y, 0), EnumConvertType.FLOAT, 0)
@@ -415,6 +416,7 @@ class ValueNode(JOVBaseNode):
         for idx, (raw, typ, x, y, z, w) in enumerate(params):
             typ = EnumConvertType[typ]
             val = parse_list_value(raw, typ, (x, y, z, w))
+            # print(raw, type(raw), val)
             results.append(val)
             pbar.update_absolute(idx)
         return (results,)
