@@ -452,15 +452,23 @@ app.registerExtension({
             }
 
             ctx.save()
-            ctx.translate(x, iconSize - 34) // Position the icon on the canvas
+            ctx.translate(x-5, iconSize - 35) // Position the icon on the canvas
             ctx.scale(iconSize / 32, iconSize / 32) // Scale the icon to the desired size
-            ctx.font = 'bold 42px monospace'
-            ctx.fillStyle = 'rgb(255, 20, 240)';
-            ctx.strokeStyle = 'rgba(255,255,255,0.80)'
-            ctx.strokeText('?', 0, 28);
-            ctx.strokeStyle = 'rgba(0,0,0,0.80)'
-            ctx.strokeText('?', 0, 26);
-            ctx.fillText('?', 0, 24)
+            ctx.font = 'bold 52px monospace'
+            ctx.fillStyle = 'rgb(255,120,240,0.50)';
+            ctx.fillText('?', 0, 32);
+            ctx.translate(1, 3) // Position the icon on the canvas
+            ctx.font = 'bold 49px monospace'
+            ctx.fillStyle = 'rgb(40,10,20,0.70)';
+            ctx.fillText('?', 0, 28);
+            //ctx.strokeStyle = 'rgba(255,255,255,0.80)'
+            //ctx.strokeText('?', 0, 26);
+            //ctx.strokeStyle = 'rgba(0,0,0,0.80)'
+            //ctx.strokeText('?', 0, 25);
+            ctx.translate(1, 3) // Position the icon on the canvas
+            ctx.fillStyle = 'rgb(250,80,250)';
+            ctx.font = 'bold 46px monospace';
+            ctx.fillText('?', 0, 24);
             ctx.restore()
             return me;
         }
