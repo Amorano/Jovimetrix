@@ -848,6 +848,15 @@ def image_gamma(image: TYPE_IMAGE, value: float) -> TYPE_IMAGE:
         # now back to the original "format"
     return bgr2image(image, alpha, cc == 1)
 
+def gradient_map2(image, gradient_map):
+    na = np.array(image)
+    grey = np.mean(na, axis=2).astype(np.uint8)
+    cmap = np.array(gradient_map.convert('RGB'))
+    result = np.zeros((*grey.shape, 3), dtype=np.uint8)
+    grey_reshaped = grey.reshape(-1)
+    np.take(cmap.reshape(-1, 3), grey_reshaped, axis=0, out=result.reshape(-1, 3))
+    return result
+
 def image_gradient(width:int, height:int, color_map:dict=None) -> TYPE_IMAGE:
     if color_map is None:
         color_map = {0: (0,0,0,255)}

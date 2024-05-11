@@ -4,6 +4,7 @@ UTIL support
 """
 
 import os
+import json
 import math
 from enum import Enum
 from typing import Any, List, Generator, Optional, Tuple
@@ -64,7 +65,7 @@ def parse_dynamic(who, data) -> list:
 
 def parse_as_list(val: Any) -> List[Any]:
     """Convert value into a list of value."""
-    if isinstance(val, (list,)):
+    if isinstance(val, (list, tuple,)):
         return val
     if isinstance(val, (str, float, int,)):
         return [val]
@@ -85,6 +86,14 @@ def parse_list_value(val:Any|None, typ:EnumConvertType, default: Any,
                 zero:int=0, enumType:Any=None) -> List[Any]:
     """Convert list of values into a list of specified type."""
     val = default if val is None else val
+
+    # could be a json encoded blob
+    if isinstance(val, (str,)):
+        try:
+            val = json.loads(val.replace("'", '"'))
+        except:
+            pass
+
     # see if we are a Jovimetrix hacked vector blob... {0:x, 1:y, 2:z, 3:w}
     if isinstance(val, (dict,)):
         if (x:=val.get('0', None)) is not None and (y:=val.get('1', None)) is not None:
@@ -92,6 +101,14 @@ def parse_list_value(val:Any|None, typ:EnumConvertType, default: Any,
             if (x:=val.get('2', None)) is not None:
                 ret.append(x)
             if (x:=val.get('3', None)) is not None:
+                ret.append(x)
+            val = (ret,)
+        # could be a kijai coord blob
+        elif (x:=val.get('x', None)) is not None and (y:=val.get('y', None)) is not None:
+            ret = [x, y]
+            if (x:=val.get('z', None)) is not None:
+                ret.append(x)
+            if (x:=val.get('w', None)) is not None:
                 ret.append(x)
             val = (ret,)
     elif isinstance(val, (list, tuple,)):

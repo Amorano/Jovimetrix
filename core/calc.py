@@ -17,8 +17,8 @@ from comfy.utils import ProgressBar
 
 from Jovimetrix import JOV_WEB_RES_ROOT, JOVBaseNode, WILDCARD
 from Jovimetrix.sup.lexicon import Lexicon
-from Jovimetrix.sup.util import parse_list_value, vector_swap, zip_longest_fill, \
-    EnumConvertType, EnumSwizzle
+from Jovimetrix.sup.util import parse_list_value, parse_value, vector_swap, \
+    zip_longest_fill, EnumConvertType, EnumSwizzle
 from Jovimetrix.sup.anim import ease_op, EnumEase
 
 # =============================================================================
@@ -174,7 +174,7 @@ class CalcUnaryOPNode(JOVBaseNode):
                 typ = EnumConvertType.DICT
             elif isinstance(A, (torch.Tensor,)):
                 typ = EnumConvertType.IMAGE
-            val = parse_list_value(A, typ, 0)
+            val = parse_value(A, typ, 0)
             val = [float(v) for v in val]
             op = EnumUnaryOperation[op]
             match op:
@@ -221,7 +221,6 @@ class CalcBinaryOPNode(JOVBaseNode):
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = (WILDCARD,)
     RETURN_NAMES = (Lexicon.UNKNOWN,)
-    # OUTPUT_IS_LIST = (True,)
     SORT = 20
 
     @classmethod
@@ -285,27 +284,24 @@ class CalcBinaryOPNode(JOVBaseNode):
             # use everything as float for precision
             typ = EnumConvertType[typ]
             if typ in [EnumConvertType.VEC2, EnumConvertType.VEC2INT]:
-                val_a = parse_list_value(A, EnumConvertType.VEC4, A if A is not None else a_xy)
-                val_b = parse_list_value(B, EnumConvertType.VEC4, B if B is not None else b_xy)
+                val_a = parse_value(A, EnumConvertType.VEC4, A if A is not None else a_xy)
+                val_b = parse_value(B, EnumConvertType.VEC4, B if B is not None else b_xy)
             elif typ in [EnumConvertType.VEC3, EnumConvertType.VEC3INT]:
-                val_a = parse_list_value(A, EnumConvertType.VEC4, A if A is not None else a_xyz)
-                val_b = parse_list_value(B, EnumConvertType.VEC4, B if B is not None else b_xyz)
+                val_a = parse_value(A, EnumConvertType.VEC4, A if A is not None else a_xyz)
+                val_b = parse_value(B, EnumConvertType.VEC4, B if B is not None else b_xyz)
             elif typ in [EnumConvertType.VEC4, EnumConvertType.VEC4INT]:
-                val_a = parse_list_value(A, EnumConvertType.VEC4, A if A is not None else a_xyzw)
-                val_b = parse_list_value(B, EnumConvertType.VEC4, B if B is not None else b_xyzw)
+                val_a = parse_value(A, EnumConvertType.VEC4, A if A is not None else a_xyzw)
+                val_b = parse_value(B, EnumConvertType.VEC4, B if B is not None else b_xyzw)
             else:
                 # logger.debug('val', A, B)
-                val_a = parse_list_value(A, EnumConvertType.VEC4, A if A is not None else a_x)
-                val_b = parse_list_value(B, EnumConvertType.VEC4, B if B is not None else a_x)
+                val_a = parse_value(A, EnumConvertType.VEC4, A if A is not None else a_x)
+                val_b = parse_value(B, EnumConvertType.VEC4, B if B is not None else a_x)
 
-            val_a = [float(v) for v in val_a]
-            val_b = [float(v) for v in val_b]
             if flip:
                 val_a, val_b = val_b, val_a
             size = max(1, int(typ.value / 10))
             val_a = val_a[:size]
             val_b = val_b[:size]
-            # logger.debug('val_a', val_a, val_b)
 
             match EnumBinaryOperation[op]:
                 # VECTOR
@@ -370,12 +366,12 @@ class CalcBinaryOPNode(JOVBaseNode):
                     val = list(set(val_a) - set(val_b))
 
             # cast into correct type....
-            val = parse_list_value(val, typ, val)
+            val = parse_value(val, typ, val)
             if len(val) == 0:
                 val = [0]
-            results.append(tuple(val))
+            results.append(val)
             pbar.update_absolute(idx)
-        return results
+        return (results,)
 
 class ValueNode(JOVBaseNode):
     NAME = "VALUE (JOV) 🧬"
@@ -415,8 +411,7 @@ class ValueNode(JOVBaseNode):
         pbar = ProgressBar(len(params))
         for idx, (raw, typ, x, y, z, w) in enumerate(params):
             typ = EnumConvertType[typ]
-            val = parse_list_value(raw, typ, (x, y, z, w))
-            # print(raw, type(raw), val)
+            val = parse_value(raw, typ, (x, y, z, w))
             results.append(val)
             pbar.update_absolute(idx)
         return (results,)
