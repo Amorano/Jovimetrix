@@ -174,7 +174,7 @@ app.registerExtension({
         } else {
             this.tooltips_visible = false;
         };
-        console.log(this)
+        // console.log(this)
     },
 	beforeRegisterNodeDef(nodeType, nodeData) {
         if (!nodeData?.category?.startsWith("JOVIMETRIX")) {
@@ -474,20 +474,17 @@ app.registerExtension({
             if (widget_tooltip) {
                 const tips = widget_tooltip.options.default || {};
                 const url = tips['_'];
-                if (url !== undefined) {
-                    window.open(`${JOV_WEBWIKI_URL}/${url}`, '_blank');
+                const help_menu = [{
+                    content: `HELP: ${this.title}`,
+                    callback: () => {
+                        LiteGraph.closeAllContextMenus();
+                        window.open(`${JOV_WEBWIKI_URL}/${url}`, '_blank');
+                        this.setDirtyCanvas(true, true);
+                    }
+                }];
+                if (help_menu.length) {
+                    options.push(...help_menu, null);
                 }
-            }
-            const help_menu = [{
-                content: `HELP: ${this.title}`,
-                callback: () => {
-                    LiteGraph.closeAllContextMenus();
-                    window.open(`${JOV_WEBWIKI_URL}/${url}`, '_blank');
-                    this.setDirtyCanvas(true, true);
-                }
-            }];
-            if (help_menu.length) {
-                options.push(...help_menu, null);
             }
             return me;
         }
@@ -518,6 +515,7 @@ app.registerExtension({
                 }
                 return true;
             }
+            console.log("here?")
             return r;
         }
 	}
