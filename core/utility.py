@@ -119,7 +119,7 @@ class AkashicNode(JOVBaseNode):
             return "text", [meh]
 
     def run(self, **kw) -> Tuple[Any, Any]:
-        o = parse_list_value(kw.get(Lexicon.PASS_IN, None), EnumConvertType.ANY, None)
+        o = parse_list_value(kw, Lexicon.PASS_IN, EnumConvertType.ANY, None)
         output = {"ui": {"b64_images": [], "text": []}}
         if o is None:
             output["ui"]["result"] = (o, {}, )
@@ -164,10 +164,10 @@ class ValueGraphNode(JOVBaseNode):
         self.__fig, self.__ax = plt.subplots(figsize=(5.12, 5.12))
 
     def run(self, ident, **kw) -> Tuple[torch.Tensor]:
-        slice = parse_list_value(kw.get(Lexicon.VALUE, None), EnumConvertType.INT, 60)[0]
-        wihi = parse_list_value(kw.get(Lexicon.WH, None), 1, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), EnumConvertType.VEC2INT)[0]
+        slice = parse_list_value(kw, Lexicon.VALUE, EnumConvertType.INT, 60)[0]
+        wihi = parse_list_value(kw, Lexicon.WH, 1, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), EnumConvertType.VEC2INT)[0]
         accepted = [bool, int, float, np.float16, np.float32, np.float64]
-        if parse_reset(ident) > 0 or parse_list_value(kw.get(Lexicon.RESET, False), False, EnumConvertType.BOOLEAN)[0]:
+        if parse_reset(ident) > 0 or parse_list_value(kw, Lexicon.RESET, False, EnumConvertType.BOOLEAN)[0]:
             self.__history = []
         longest_edge = 0
         dynamic = parse_dynamic(Lexicon.UNKNOWN, kw)
@@ -221,7 +221,7 @@ class RouteNode(JOVBaseNode):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> Tuple[Any, Any]:
-        o = parse_list_value(kw.get(Lexicon.PASS_IN, None), EnumConvertType.ANY, None)
+        o = parse_list_value(kw, Lexicon.PASS_IN, EnumConvertType.ANY, None)
         return (o, )
 
 class QueueNode(JOVBaseNode):
@@ -316,18 +316,18 @@ class QueueNode(JOVBaseNode):
             return self.__last_q_value.get(q_data, q_data)
 
         # should work headless as well
-        if parse_reset(ident) > 0 or parse_list_value(kw.get(Lexicon.RESET, False), EnumConvertType.BOOLEAN, False)[0]:
+        if parse_reset(ident) > 0 or parse_list_value(kw, Lexicon.RESET, EnumConvertType.BOOLEAN, False)[0]:
             self.__q = None
             self.__index = 0
 
-        if (new_val := parse_list_value(kw.get(Lexicon.VALUE, 0), EnumConvertType.INT, self.__index))[0] > 0:
+        if (new_val := parse_list_value(kw, Lexicon.VALUE, EnumConvertType.INT, self.__index))[0] > 0:
             self.__index = new_val
 
         if self.__q is None:
             # process Q into ...
             # check if folder first, file, then string.
             # entry is: data, <filter if folder:*.png,*.jpg>, <repeats:1+>
-            q = parse_list_value(kw.get(Lexicon.QUEUE, None), EnumConvertType.STRING, "")[0]
+            q = parse_list_value(kw, Lexicon.QUEUE, EnumConvertType.STRING, "")[0]
             self.__q = self.__parse(q)
             self.__len = len(self.__q)
             self.__index_last = 0
@@ -335,7 +335,7 @@ class QueueNode(JOVBaseNode):
             if self.__previous:
                 self.__previous = process(self.__previous)
 
-        if (wait := parse_list_value(kw.get(Lexicon.WAIT, False), EnumConvertType.BOOLEAN, False))[0] == True:
+        if (wait := parse_list_value(kw, Lexicon.WAIT, EnumConvertType.BOOLEAN, False))[0] == True:
             self.__index = self.__index_last
 
         self.__index = max(0, self.__index) % self.__len
@@ -394,16 +394,16 @@ class ExportNode(JOVBaseNode):
     SORT = 2000
 
     def run(self, **kw) -> None:
-        images = parse_list_value(kw.get(Lexicon.PIXEL, None), EnumConvertType.IMAGE, None)
-        suffix = parse_list_value(kw.get(Lexicon.PREFIX, None), EnumConvertType.STRING, uuid4().hex[:16])[0]
-        output_dir = parse_list_value(kw.get(Lexicon.PASS_OUT, None), EnumConvertType.STRING, "")[0]
-        format = parse_list_value(kw.get(Lexicon.FORMAT, None), EnumConvertType.STRING, "gif")[0]
-        overwrite = parse_list_value(kw.get(Lexicon.OVERWRITE, None), EnumConvertType.BOOLEAN, False)[0]
-        optimize = parse_list_value(kw.get(Lexicon.OPTIMIZE, None), EnumConvertType.BOOLEAN, False)[0]
-        quality = parse_list_value(kw.get(Lexicon.QUALITY, None), 100, 0, EnumConvertType.INT, 1)[0]
-        motion = parse_list_value(kw.get(Lexicon.QUALITY_M, None), 100, 0, EnumConvertType.INT, 1)[0]
-        fps = parse_list_value(kw.get(Lexicon.FPS, None), 60, 24, EnumConvertType.INT, 1)[0]
-        loop = parse_list_value(kw.get(Lexicon.LOOP, None), 0, 0, EnumConvertType.INT)[0]
+        images = parse_list_value(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
+        suffix = parse_list_value(kw, Lexicon.PREFIX, EnumConvertType.STRING, uuid4().hex[:16])[0]
+        output_dir = parse_list_value(kw, Lexicon.PASS_OUT, EnumConvertType.STRING, "")[0]
+        format = parse_list_value(kw, Lexicon.FORMAT, EnumConvertType.STRING, "gif")[0]
+        overwrite = parse_list_value(kw, Lexicon.OVERWRITE, EnumConvertType.BOOLEAN, False)[0]
+        optimize = parse_list_value(kw, Lexicon.OPTIMIZE, EnumConvertType.BOOLEAN, False)[0]
+        quality = parse_list_value(kw, Lexicon.QUALITY, 100, 0, EnumConvertType.INT, 1)[0]
+        motion = parse_list_value(kw, Lexicon.QUALITY_M, 100, 0, EnumConvertType.INT, 1)[0]
+        fps = parse_list_value(kw, Lexicon.FPS, 60, 24, EnumConvertType.INT, 1)[0]
+        loop = parse_list_value(kw, Lexicon.LOOP, 0, 0, EnumConvertType.INT)[0]
         output_dir = Path(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -483,9 +483,9 @@ class ImageDiffNode(JOVBaseNode):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> Tuple[Any, Any]:
-        pA = parse_list_value(kw.get(Lexicon.PIXEL_A, None), EnumConvertType.IMAGE, None)
-        pB = parse_list_value(kw.get(Lexicon.PIXEL_B, None), EnumConvertType.IMAGE, None)
-        th = parse_list_value(kw.get(Lexicon.THRESHOLD, None), 1, 0, EnumConvertType.FLOAT, 0)
+        pA = parse_list_value(kw, Lexicon.PIXEL_A, EnumConvertType.IMAGE, None)
+        pB = parse_list_value(kw, Lexicon.PIXEL_B, EnumConvertType.IMAGE, None)
+        th = parse_list_value(kw, Lexicon.THRESHOLD, 1, 0, EnumConvertType.FLOAT, 0)
         results = []
         params = list(zip_longest_fill(pA, pB, th))
         pbar = ProgressBar(len(params))
@@ -505,7 +505,6 @@ class ArrayNode(JOVBaseNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
-    # OUTPUT_IS_LIST = (False, False, True,)
     RETURN_TYPES = ("INT", WILDCARD, WILDCARD,)
     RETURN_NAMES = (Lexicon.VALUE, Lexicon.ANY, Lexicon.LIST,)
     SORT = 50
@@ -526,7 +525,7 @@ class ArrayNode(JOVBaseNode):
         return Lexicon._parse(d, cls.HELP_URL)
 
     @classmethod
-    def batched(cls, iterable, chunk_size, expand:bool=False, fill:Any=None):
+    def batched(cls, iterable, chunk_size, expand:bool=False, fill:Any=None) -> list:
         if expand:
             iterator = iter(iterable)
             return zip_longest(*[iterator] * chunk_size, fillvalue=fill)
@@ -535,9 +534,9 @@ class ArrayNode(JOVBaseNode):
 
     def run(self, **kw) -> Tuple[int, list]:
         batch = parse_dynamic(Lexicon.UNKNOWN, kw)
-        mode = parse_list_value(kw.get(Lexicon.BATCH_MODE, None), EnumConvertType.STRING, EnumBatchMode.MERGE.name)[0]
-        flip = parse_list_value(kw.get(Lexicon.FLIP, None), EnumConvertType.BOOLEAN, False)[0]
-        chunk = parse_list_value(kw.get(Lexicon.BATCH_CHUNK, None), EnumConvertType.INT, 0)[0]
+        mode = parse_list_value(kw, Lexicon.BATCH_MODE, EnumConvertType.STRING, EnumBatchMode.MERGE.name)[0]
+        flip = parse_list_value(kw, Lexicon.FLIP, EnumConvertType.BOOLEAN, False)[0]
+        chunk = parse_list_value(kw, Lexicon.BATCH_CHUNK, EnumConvertType.INT, 0)[0]
         extract = []
         # track latents since they need to be added back to Dict['samples']
         latents = []
@@ -564,13 +563,13 @@ class ArrayNode(JOVBaseNode):
                 latents.append(False)
 
         if mode == EnumBatchMode.PICK:
-            index = parse_list_value(kw.get(Lexicon.BATCH_CHUNK, None), 0, 0, EnumConvertType.INT)
+            index = parse_list_value(kw, Lexicon.BATCH_CHUNK, 0, 0, EnumConvertType.INT)
             index = index if index < len(extract) else -1
             extract = [extract[index]]
             if latents[index]:
                 extract = {"samples": extract}
         elif mode == EnumBatchMode.SLICE:
-            slice_range = parse_list_value(kw.get(Lexicon.RANGE, None), EnumConvertType.VEC3INT, (0, 0, 1))[0]
+            slice_range = parse_list_value(kw, Lexicon.RANGE, EnumConvertType.VEC3INT, (0, 0, 1))[0]
             start, end, step = slice_range
             end = len(extract) if end == 0 else end
             data = extract[start:end:step]
@@ -582,7 +581,7 @@ class ArrayNode(JOVBaseNode):
                     dat = {"samples": [dat]}
                 extract.append(dat)
         elif mode == EnumBatchMode.RANDOM:
-            seed = parse_list_value(kw.get(Lexicon.SEED, None), EnumConvertType.INT, 0)
+            seed = parse_list_value(kw, Lexicon.SEED, EnumConvertType.INT, 0)
             random.seed(seed)
             full = random.choices(full)
             idx = random.randrange(0, len(extract))
@@ -590,7 +589,7 @@ class ArrayNode(JOVBaseNode):
             if latents[idx]:
                 extract = {"samples": extract}
         elif mode == EnumBatchMode.INDEX_LIST:
-            indices = parse_list_value(kw.get(Lexicon.STRING, None), ", "", EnumConvertType.STRING).split(")
+            indices = parse_list_value(kw, Lexicon.STRING, ", "", EnumConvertType.STRING).split(")
             data = [extract[i:j] for i, j in zip([0]+indices, indices+[None])]
             latents = [latents[i:j] for i, j in zip([0]+indices, indices+[None])]
             extract = []
@@ -643,10 +642,10 @@ class RESTNode:
             logger.error(f"error obtaining bearer token - {e}")
 
     def run(self, **kw):
-        auth_body_text = parse_list_value(kw.get(Lexicon.AUTH, None), EnumConvertType.STRING, "")
-        api_url = parse_list_value(kw.get(Lexicon.URL, None), EnumConvertType.STRING, "")
-        attribute = parse_list_value(kw.get(Lexicon.ATTRIBUTE, None), EnumConvertType.STRING, "")
-        array_path = parse_list_value(kw.get(Lexicon.PATH, None), EnumConvertType.STRING, "")
+        auth_body_text = parse_list_value(kw, Lexicon.AUTH, EnumConvertType.STRING, "")
+        api_url = parse_list_value(kw, Lexicon.URL, EnumConvertType.STRING, "")
+        attribute = parse_list_value(kw, Lexicon.ATTRIBUTE, EnumConvertType.STRING, "")
+        array_path = parse_list_value(kw, Lexicon.PATH, EnumConvertType.STRING, "")
         results = []
         params = list(zip_longest_fill(auth_body_text, api_url, attribute, array_path))
         pbar = ProgressBar(len(params))

@@ -128,24 +128,24 @@ class StreamReaderNode(JOVBaseNode):
         self.__last = [(a, e, m,)]
 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
-        wait = parse_list_value(kw.get(Lexicon.WAIT, None), EnumConvertType.BOOLEAN, False)[0]
+        wait = parse_list_value(kw, Lexicon.WAIT, EnumConvertType.BOOLEAN, False)[0]
         if wait:
             return self.__last
         images = []
-        batch_size, rate = parse_list_value(kw.get(Lexicon.BATCH, None), EnumConvertType.VEC2INT, (1, 30), 1)[0]
+        batch_size, rate = parse_list_value(kw, Lexicon.BATCH, EnumConvertType.VEC2INT, (1, 30), 1)[0]
         pbar = ProgressBar(batch_size)
         rate = 1. / rate
-        width, height = parse_list_value(kw.get(Lexicon.WH, None), EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE))[0]
-        matte = parse_list_value(kw.get(Lexicon.MATTE, None), EnumConvertType.VEC4INT, (0,0,0,255), 0, 255)[0]
-        mode = parse_list_value(kw.get(Lexicon.MODE, None), EnumConvertType.STRING, EnumScaleMode.NONE.name)[0]
+        width, height = parse_list_value(kw, Lexicon.WH, EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE))[0]
+        matte = parse_list_value(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0,0,0,255), 0, 255)[0]
+        mode = parse_list_value(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.NONE.name)[0]
         mode = EnumScaleMode[mode]
-        sample = parse_list_value(kw.get(Lexicon.SAMPLE, None), EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)[0]
+        sample = parse_list_value(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)[0]
         sample = EnumInterpolation[sample]
-        source = parse_list_value(kw.get(Lexicon.SOURCE, None), EnumConvertType.STRING, EnumStreamType.URL.name)[0]
+        source = parse_list_value(kw, Lexicon.SOURCE, EnumConvertType.STRING, EnumStreamType.URL.name)[0]
         source = EnumStreamType[source]
         if source == EnumStreamType.MONITOR:
             self.__deviceType = EnumStreamType.MONITOR
-            which = parse_list_value(kw.get(Lexicon.MONITOR, None), EnumConvertType.STRING, "0")[0]
+            which = parse_list_value(kw, Lexicon.MONITOR, EnumConvertType.STRING, "0")[0]
             which = int(which.split('-')[0].strip()) + 1
             for idx in range(batch_size):
                 img = monitor_capture(which)
@@ -161,9 +161,9 @@ class StreamReaderNode(JOVBaseNode):
 
         elif source == EnumStreamType.WINDOW:
             self.__deviceType = EnumStreamType.WINDOW
-            if (which := parse_list_value(kw.get(Lexicon.WINDOW, None), EnumConvertType.STRING, "NONE")[0]) != "NONE":
+            if (which := parse_list_value(kw, Lexicon.WINDOW, EnumConvertType.STRING, "NONE")[0]) != "NONE":
                 which = int(which.split('-')[-1].strip())
-                dpi = parse_list_value(kw.get(Lexicon.DPI, None), EnumConvertType.BOOLEAN, True)[0]
+                dpi = parse_list_value(kw, Lexicon.DPI, EnumConvertType.BOOLEAN, True)[0]
                 for idx in range(batch_size):
                     img = window_capture(which, dpi=dpi)
                     if img is None:
@@ -176,9 +176,9 @@ class StreamReaderNode(JOVBaseNode):
                         time.sleep(rate)
 
         elif source in [EnumStreamType.URL, EnumStreamType.CAMERA]:
-            url = parse_list_value(kw.get(Lexicon.URL, None), EnumConvertType.STRING, "")[0]
+            url = parse_list_value(kw, Lexicon.URL, EnumConvertType.STRING, "")[0]
             if source == EnumStreamType.CAMERA:
-                url = parse_list_value(kw.get(Lexicon.CAMERA, None), EnumConvertType.STRING, "")[0]
+                url = parse_list_value(kw, Lexicon.CAMERA, EnumConvertType.STRING, "")[0]
                 url = url.split('-')[0].strip()
                 try:
                     _ = int(url)
@@ -211,14 +211,14 @@ class StreamReaderNode(JOVBaseNode):
                 else:
                     self.__device.play()
 
-                fps = parse_list_value(kw.get(Lexicon.FPS, None), EnumConvertType.INT, 30)[0]
+                fps = parse_list_value(kw, Lexicon.FPS, EnumConvertType.INT, 30)[0]
                 # if self.__device.fps != fps:
                 self.__device.fps = fps
 
                 if type(self.__device) == MediaStreamDevice:
-                    self.__device.zoom = parse_list_value(kw.get(Lexicon.ZOOM, None), EnumConvertType.INT, 0)[0]
+                    self.__device.zoom = parse_list_value(kw, Lexicon.ZOOM, EnumConvertType.INT, 0)[0]
 
-                orient = parse_list_value(kw.get(Lexicon.ORIENT, None), EnumConvertType.STRING, EnumCanvasOrientation.NORMAL.name)[0]
+                orient = parse_list_value(kw, Lexicon.ORIENT, EnumConvertType.STRING, EnumCanvasOrientation.NORMAL.name)[0]
                 # orient = EnumCanvasOrientation[orient]
                 for idx in range(batch_size):
                     img = self.__device.frame
@@ -237,13 +237,13 @@ class StreamReaderNode(JOVBaseNode):
                         time.sleep(rate)
 
         elif source == EnumStreamType.SPOUT:
-            url = parse_list_value(kw.get(Lexicon.URL, None), EnumConvertType.STRING, "")[0]
+            url = parse_list_value(kw, Lexicon.URL, EnumConvertType.STRING, "")[0]
             if self.__device is None or self.__deviceType != EnumStreamType.SPOUT:
                 self.__device = MediaStreamSpout(url)
             self.__deviceType = EnumStreamType.SPOUT
             if self.__device:
                 self.__device.url = url
-                fps = parse_list_value(kw.get(Lexicon.FPS, None), EnumConvertType.INT, 30)[0]
+                fps = parse_list_value(kw, Lexicon.FPS, EnumConvertType.INT, 30)[0]
                 self.__device.fps = fps
                 for idx in range(batch_size):
                     img = self.__device.frame
@@ -297,12 +297,12 @@ class StreamWriterNode(JOVBaseNode):
         self.__device = StreamManager().capture(self.__unique, static=True)
 
     def run(self, **kw) -> Tuple[torch.Tensor]:
-        route = parse_list_value(kw.get(Lexicon.ROUTE, None), EnumConvertType.STRING, "/stream")
-        images = parse_list_value(kw.get(Lexicon.PIXEL, None), EnumConvertType.IMAGE, None)
-        wihi = parse_list_value(kw.get(Lexicon.WH, None), EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), MIN_IMAGE_SIZE)
-        matte = parse_list_value(kw.get(Lexicon.MATTE, None),EnumConvertType.VEC4INT, (0,0,0,0), 0, 255)
-        mode = parse_list_value(kw.get(Lexicon.MODE, None), EnumConvertType.STRING, EnumScaleMode.NONE.name)
-        sample = parse_list_value(kw.get(Lexicon.SAMPLE, None), EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)
+        route = parse_list_value(kw, Lexicon.ROUTE, EnumConvertType.STRING, "/stream")
+        images = parse_list_value(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
+        wihi = parse_list_value(kw, Lexicon.WH, EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), MIN_IMAGE_SIZE)
+        matte = parse_list_value(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0,0,0,0), 0, 255)
+        mode = parse_list_value(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.NONE.name)
+        sample = parse_list_value(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)
         params = list(zip_longest_fill(route, images, wihi, matte, mode, sample))
         pbar = ProgressBar(len(params))
         for idx, (route, images, wihi, matte, mode, sample) in enumerate(params):
@@ -358,13 +358,13 @@ if JOV_SPOUT:
             self.__sender = SpoutSender("")
 
         def run(self, **kw) -> Tuple[torch.Tensor]:
-            images = parse_list_value(kw.get(Lexicon.PIXEL, None), EnumConvertType.IMAGE, None)
-            host = parse_list_value(kw.get(Lexicon.ROUTE, None), EnumConvertType.STRING, "")
-            # fps = parse_list_value(kw.get(Lexicon.FPS, None), EnumConvertType.INT, 30)
-            mode = parse_list_value(kw.get(Lexicon.MODE, None), EnumConvertType.STRING, EnumScaleMode.NONE.name)
-            wihi = parse_list_value(kw.get(Lexicon.WH, None), EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), MIN_IMAGE_SIZE)
-            sample = parse_list_value(kw.get(Lexicon.SAMPLE, None), EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)
-            matte = parse_list_value(kw.get(Lexicon.MATTE, None), EnumConvertType.VEC4INT, (0,0,0,0), 0, 255)
+            images = parse_list_value(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
+            host = parse_list_value(kw, Lexicon.ROUTE, EnumConvertType.STRING, "")
+            # fps = parse_list_value(kw, Lexicon.FPS, EnumConvertType.INT, 30)
+            mode = parse_list_value(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.NONE.name)
+            wihi = parse_list_value(kw, Lexicon.WH, EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), MIN_IMAGE_SIZE)
+            sample = parse_list_value(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)
+            matte = parse_list_value(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0,0,0,0), 0, 255)
             # results = []
             params = list(zip_longest_fill(images, host, mode, wihi, sample, matte))
             pbar = ProgressBar(len(params))
@@ -407,7 +407,7 @@ class MIDIMessageNode(JOVBaseNode):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> Tuple[object, bool, int, int, int, float, float]:
-        message = parse_list_value(kw.get(Lexicon.MIDI, None), EnumConvertType.ANY, None)
+        message = parse_list_value(kw, Lexicon.MIDI, EnumConvertType.ANY, None)
         results = []
         pbar = ProgressBar(len(message))
         for idx, (message,) in enumerate(message):
@@ -478,7 +478,7 @@ class MIDIReaderNode(JOVBaseNode):
                 self.__value = data.velocity
 
     def run(self, **kw) -> Tuple[bool, int, int, int]:
-        device = parse_list_value(kw.get(Lexicon.DEVICE, None), EnumConvertType.STRING, None)
+        device = parse_list_value(kw, Lexicon.DEVICE, EnumConvertType.STRING, None)
         if device != self.__device:
             self.__q_in.put(device)
             self.__device = device
@@ -512,13 +512,13 @@ class MIDIFilterEZNode(JOVBaseNode):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> Tuple[bool]:
-        message = parse_list_value(kw.get(Lexicon.MIDI, None), EnumConvertType.ANY, None)[0]
+        message = parse_list_value(kw, Lexicon.MIDI, EnumConvertType.ANY, None)[0]
         if message is None:
             logger.warning('no midi message. connected?')
             return (None, False, )
 
         # empty values mean pass-thru (no filter)
-        val = parse_list_value(kw.get(Lexicon.MODE, None), EnumConvertType.STRING, MIDINoteOnFilter.IGNORE.name)[0]
+        val = parse_list_value(kw, Lexicon.MODE, EnumConvertType.STRING, MIDINoteOnFilter.IGNORE.name)[0]
         val = MIDINoteOnFilter[val]
         if val != MIDINoteOnFilter.IGNORE:
             if val == MIDINoteOnFilter.NOTE_ON and message.note_on != True:
@@ -526,15 +526,15 @@ class MIDIFilterEZNode(JOVBaseNode):
             if val == MIDINoteOnFilter.NOTE_OFF and message.note_on != False:
                 return (message, False, )
 
-        if (val := parse_list_value(kw.get(Lexicon.CHANNEL, None), EnumConvertType.INT, -1)[0]) != -1 and val != message.channel:
+        if (val := parse_list_value(kw, Lexicon.CHANNEL, EnumConvertType.INT, -1)[0]) != -1 and val != message.channel:
             return (message, False, )
-        if (val := parse_list_value(kw.get(Lexicon.CONTROL, None), EnumConvertType.INT, -1)[0]) != -1 and val != message.control:
+        if (val := parse_list_value(kw, Lexicon.CONTROL, EnumConvertType.INT, -1)[0]) != -1 and val != message.control:
             return (message, False, )
-        if (val := parse_list_value(kw.get(Lexicon.NOTE, None), EnumConvertType.INT, -1)[0]) != -1 and val != message.note:
+        if (val := parse_list_value(kw, Lexicon.NOTE, EnumConvertType.INT, -1)[0]) != -1 and val != message.note:
             return (message, False, )
-        if (val := parse_list_value(kw.get(Lexicon.VALUE, None), EnumConvertType.INT, -1)[0]) != -1 and val != message.value:
+        if (val := parse_list_value(kw, Lexicon.VALUE, EnumConvertType.INT, -1)[0]) != -1 and val != message.value:
             return (message, False, )
-        if (val := parse_list_value(kw.get(Lexicon.NORMALIZE, None), EnumConvertType.INT, -1)[0]) != -1 and isclose(message.normal):
+        if (val := parse_list_value(kw, Lexicon.NORMALIZE, EnumConvertType.INT, -1)[0]) != -1 and isclose(message.normal):
             return (message, False, )
         return (message, True, )
 
@@ -601,13 +601,13 @@ class MIDIFilterNode(JOVBaseNode):
         return False
 
     def run(self, **kw) -> Tuple[bool]:
-        message = parse_list_value(kw.get(Lexicon.MIDI, None), EnumConvertType.ANY, None)[0]
+        message = parse_list_value(kw, Lexicon.MIDI, EnumConvertType.ANY, None)[0]
         if message is None:
             logger.warning('no midi message. connected?')
             return (message, False, )
 
         # empty values mean pass-thru (no filter)
-        val = parse_list_value(kw.get(Lexicon.ON, None), EnumConvertType.STRING, MIDINoteOnFilter.IGNORE.name)[0]
+        val = parse_list_value(kw, Lexicon.ON, EnumConvertType.STRING, MIDINoteOnFilter.IGNORE.name)[0]
         val = MIDINoteOnFilter[val]
         if val != MIDINoteOnFilter.IGNORE:
             if val == "TRUE" and message.note_on != True:
@@ -615,15 +615,15 @@ class MIDIFilterNode(JOVBaseNode):
             if val == "FALSE" and message.note_on != False:
                 return (message, False, )
 
-        if self.__filter(message.channel, parse_list_value(kw.get(Lexicon.CHANNEL, None), EnumConvertType.BOOLEAN, False)[0]) == False:
+        if self.__filter(message.channel, parse_list_value(kw, Lexicon.CHANNEL, EnumConvertType.BOOLEAN, False)[0]) == False:
             return (message, False, )
-        if self.__filter(message.control, parse_list_value(kw.get(Lexicon.CONTROL, None), EnumConvertType.BOOLEAN, False)[0]) == False:
+        if self.__filter(message.control, parse_list_value(kw, Lexicon.CONTROL, EnumConvertType.BOOLEAN, False)[0]) == False:
             return (message, False, )
-        if self.__filter(message.note, parse_list_value(kw.get(Lexicon.NOTE, None), EnumConvertType.BOOLEAN, False)[0]) == False:
+        if self.__filter(message.note, parse_list_value(kw, Lexicon.NOTE, EnumConvertType.BOOLEAN, False)[0]) == False:
             return (message, False, )
-        if self.__filter(message.value, parse_list_value(kw.get(Lexicon.VALUE, None), EnumConvertType.BOOLEAN, False)[0]) == False:
+        if self.__filter(message.value, parse_list_value(kw, Lexicon.VALUE, EnumConvertType.BOOLEAN, False)[0]) == False:
             return (message, False, )
-        if self.__filter(message.normal, parse_list_value(kw.get(Lexicon.NORMALIZE, None), EnumConvertType.BOOLEAN, False)[0]) == False:
+        if self.__filter(message.normal, parse_list_value(kw, Lexicon.NORMALIZE, EnumConvertType.BOOLEAN, False)[0]) == False:
             return (message, False, )
         return (message, True, )
 

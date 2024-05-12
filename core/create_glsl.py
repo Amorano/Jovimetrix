@@ -104,13 +104,13 @@ class GLSLNode(JOVBaseNode):
         self.__last_good = [torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 4), dtype=torch.uint8, device="cpu")]
 
     def run(self, ident, **kw) -> List[torch.Tensor]:
-        batch = parse_list_value(kw.get(Lexicon.BATCH, (1, 30)), EnumConvertType.VEC2INT, (1, 30), 1)
-        fragment = parse_list_value(kw.get(Lexicon.FRAGMENT, DEFAULT_FRAGMENT), EnumConvertType.STRING, DEFAULT_FRAGMENT)
-        param = parse_list_value(kw.get(Lexicon.PARAM, {}), EnumConvertType.DICT, {})
-        wihi = parse_list_value(kw.get(Lexicon.WH, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE)), EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), MIN_IMAGE_SIZE)
-        pA = parse_list_value(kw.get(Lexicon.PIXEL, None), EnumConvertType.IMAGE, None)
-        hold = parse_list_value(kw.get(Lexicon.WAIT, False), EnumConvertType.BOOLEAN, False)
-        reset = parse_list_value(kw.get(Lexicon.RESET, False), EnumConvertType.BOOLEAN, False)
+        batch = parse_list_value(kw, Lexicon.BATCH, EnumConvertType.VEC2INT, [(1, 30)], 1)
+        fragment = parse_list_value(kw, Lexicon.FRAGMENT, EnumConvertType.STRING, DEFAULT_FRAGMENT)
+        param = parse_list_value(kw, Lexicon.PARAM, EnumConvertType.DICT, {})
+        wihi = parse_list_value(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE)], MIN_IMAGE_SIZE)
+        pA = parse_list_value(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
+        hold = parse_list_value(kw, Lexicon.WAIT, EnumConvertType.BOOLEAN, False)
+        reset = parse_list_value(kw, Lexicon.RESET, EnumConvertType.BOOLEAN, False)
         params = list(zip_longest_fill(batch, fragment, param, wihi, pA, hold, reset))
         images = []
         pbar = ProgressBar(len(params))
@@ -164,11 +164,11 @@ class GLSLBaseNode(JOVBaseNode):
         self.__glsl = None
 
     def run(self, **kw) -> List[torch.Tensor]:
-        pA = parse_list_value(kw.get(Lexicon.PIXEL_A, None), EnumConvertType.IMAGE, None)
+        pA = parse_list_value(kw, Lexicon.PIXEL_A, EnumConvertType.IMAGE, None)
         kw.pop(Lexicon.PIXEL_A, None)
-        pB = parse_list_value(kw.get(Lexicon.PIXEL_B, None), EnumConvertType.IMAGE, None)
+        pB = parse_list_value(kw, Lexicon.PIXEL_B, EnumConvertType.IMAGE, None)
         kw.pop(Lexicon.PIXEL_B, None)
-        wihi = parse_list_value(kw.get(Lexicon.WH, None), EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), MIN_IMAGE_SIZE)
+        wihi = parse_list_value(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE)], MIN_IMAGE_SIZE)
         kw.pop(Lexicon.WH, None)
         kw.pop(Lexicon.FRAGMENT, None)
         # clear any junk, since the rest are 'params'
@@ -230,9 +230,9 @@ class GLSLSelectRange(GLSLBaseNode):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> List[torch.Tensor]:
-        kw["start"] = parse_list_value(kw.get(Lexicon.START, None), EnumConvertType.VEC3, (0, 0, 0), 0, 1)
+        kw["start"] = parse_list_value(kw, Lexicon.START, EnumConvertType.VEC3, (0, 0, 0), 0, 1)
         kw.pop(Lexicon.START, None)
-        kw["end"] = parse_list_value(kw.get(Lexicon.END, None), EnumConvertType.VEC3, (1, 1, 1), 0, 1)
+        kw["end"] = parse_list_value(kw, Lexicon.END, EnumConvertType.VEC3, (1, 1, 1), 0, 1)
         kw.pop(Lexicon.END, None)
         return super().run(**kw)
 
@@ -257,7 +257,7 @@ class GLSLColorGrayscale(GLSLBaseNode):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> List[torch.Tensor]:
-        kw["conversion"] = parse_list_value(kw.get(Lexicon.RGB, None), EnumConvertType.VEC3, self.DEFAULT, 0, 1)
+        kw["conversion"] = parse_list_value(kw, Lexicon.RGB, EnumConvertType.VEC3, self.DEFAULT, 0, 1)
         kw.pop(Lexicon.RGB, None)
         return super().run(**kw)
 
@@ -282,7 +282,7 @@ class GLSLCreateNoise(GLSLBaseNode):
 
     def run(self, **kw) -> List[torch.Tensor]:
         kw[Lexicon.FRAGMENT] = []
-        typ = parse_list_value(kw.get(Lexicon.TYPE, None), EnumConvertType.STRING, EnumNoiseType.VALUE.name)
+        typ = parse_list_value(kw, Lexicon.TYPE, EnumConvertType.STRING, EnumNoiseType.VALUE.name)
         kw.pop(Lexicon.TYPE, None)
         for t in typ:
             match EnumNoiseType[t]:
@@ -299,7 +299,7 @@ class GLSLCreateNoise(GLSLBaseNode):
                 case EnumNoiseType.VALUE:
                     frag = JOV_GLSL / "cre"/ "cre-nse-value.glsl"
             kw[Lexicon.FRAGMENT].append(frag)
-        kw["seed"] = parse_list_value(kw.get(Lexicon.SEED, None), EnumConvertType.INT, 0)
+        kw["seed"] = parse_list_value(kw, Lexicon.SEED, EnumConvertType.INT, 0)
         kw.pop(Lexicon.SEED, None)
         return super().run(**kw)
 
@@ -322,10 +322,10 @@ class GLSLCreatePattern(GLSLBaseNode):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> List[torch.Tensor]:
-        kw["uTile"] = parse_list_value(kw.get(Lexicon.TILE, None), EnumConvertType.VEC2, (1, 1), 1)
+        kw["uTile"] = parse_list_value(kw, Lexicon.TILE, EnumConvertType.VEC2, (1, 1), 1)
         kw.pop(Lexicon.TILE)
         kw[Lexicon.FRAGMENT] = []
-        typ = parse_list_value(kw.get(Lexicon.TYPE, None), EnumConvertType.STRING, EnumPatternType.CHECKER.name)
+        typ = parse_list_value(kw, Lexicon.TYPE, EnumConvertType.STRING, EnumPatternType.CHECKER.name)
         kw.pop(Lexicon.TYPE, None)
         for t in typ:
             match EnumPatternType[t]:
@@ -354,9 +354,9 @@ class GLSLCreatePolygon(GLSLBaseNode):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> List[torch.Tensor]:
-        kw["sides"] = parse_list_value(kw.get(Lexicon.VALUE, None), EnumConvertType.INT, 3, 3)
+        kw["sides"] = parse_list_value(kw, Lexicon.VALUE, EnumConvertType.INT, 3, 3)
         kw.pop(Lexicon.VALUE, None)
-        val = parse_list_value(kw.get(Lexicon.RADIUS, None), EnumConvertType.FLOAT, 1, 1)
+        val = parse_list_value(kw, Lexicon.RADIUS, EnumConvertType.FLOAT, 1, 1)
         kw["radius"] = [1. / v for v in val]
         kw.pop(Lexicon.RADIUS, None)
         return super().run(**kw)
@@ -381,7 +381,7 @@ class GLSLMap(GLSLBaseNode):
 
     def run(self, **kw) -> List[torch.Tensor]:
         kw[Lexicon.FRAGMENT] = []
-        typ = parse_list_value(kw.get(Lexicon.TYPE, None), EnumConvertType.STRING, EnumMappingType.POLAR.name)
+        typ = parse_list_value(kw, Lexicon.TYPE, EnumConvertType.STRING, EnumMappingType.POLAR.name)
         kw.pop(Lexicon.TYPE, None)
         for t in typ:
             match EnumMappingType[t]:
@@ -392,7 +392,7 @@ class GLSLMap(GLSLBaseNode):
                 case EnumMappingType.RECT_EQUAL:
                     f = JOV_GLSL / "map"/ "map-rect_equal.glsl"
             kw[Lexicon.FRAGMENT].append(f)
-        kw["flip"] = parse_list_value(kw.get(Lexicon.FLIP, None), EnumConvertType.BOOLEAN, False)
+        kw["flip"] = parse_list_value(kw, Lexicon.FLIP, EnumConvertType.BOOLEAN, False)
         kw.pop(Lexicon.FLIP, None)
         return super().run(**kw)
 
@@ -416,9 +416,9 @@ class GLSLTRSMirror(GLSLBaseNode):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> List[torch.Tensor]:
-        kw["center"] = parse_list_value(kw.get(Lexicon.PIVOT, None), EnumConvertType.VEC2, (0.5, 0.5), 0, 1)
+        kw["center"] = parse_list_value(kw, Lexicon.PIVOT, EnumConvertType.VEC2, (0.5, 0.5), 0, 1)
         kw.pop(Lexicon.PIVOT, None)
-        kw["uZoom"] = parse_list_value(kw.get(Lexicon.ANGLE, None), EnumConvertType.FLOAT, 0)
+        kw["uZoom"] = parse_list_value(kw, Lexicon.ANGLE, EnumConvertType.FLOAT, 0)
         kw["uZoom"] = [-a for a in kw["uZoom"]]
         kw.pop(Lexicon.ANGLE, None)
 
@@ -444,9 +444,9 @@ class GLSLTRSRotate(GLSLBaseNode):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> List[torch.Tensor]:
-        kw["center"] = parse_list_value(kw.get(Lexicon.PIVOT, None), EnumConvertType.VEC2, (0.5, 0.5), 0, 1)
+        kw["center"] = parse_list_value(kw, Lexicon.PIVOT, EnumConvertType.VEC2, (0.5, 0.5), 0, 1)
         kw.pop(Lexicon.PIVOT, None)
-        kw["angle"] = parse_list_value(kw.get(Lexicon.ANGLE, None), EnumConvertType.FLOAT, 0)
+        kw["angle"] = parse_list_value(kw, Lexicon.ANGLE, EnumConvertType.FLOAT, 0)
         kw["angle"] = [-a for a in kw["angle"]]
         kw.pop(Lexicon.ANGLE, None)
         return super().run(**kw)
@@ -471,7 +471,7 @@ class GLSLUtilTiler(GLSLBaseNode):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> List[torch.Tensor]:
-        kw["uTile"] = parse_list_value(kw.get(Lexicon.TILE, None), EnumConvertType.VEC2, (1, 1), 1)
+        kw["uTile"] = parse_list_value(kw, Lexicon.TILE, EnumConvertType.VEC2, (1, 1), 1)
         kw.pop(Lexicon.TILE)
         return super().run(**kw)
 
@@ -509,19 +509,19 @@ class GLSLTRSKaleidoscope(GLSLBaseNode):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> List[torch.Tensor]:
-        kw["segments"] = parse_list_value(kw.get(Lexicon.SEGMENT, None), EnumConvertType.FLOAT, 2, 2.5)
+        kw["segments"] = parse_list_value(kw, Lexicon.SEGMENT, EnumConvertType.FLOAT, 2, 2.5)
         kw.pop(Lexicon.SEGMENT)
-        kw["radius"] = parse_list_value(kw.get(Lexicon.RADIUS, None), EnumConvertType.FLOAT, 1, 0.00001, 2)
+        kw["radius"] = parse_list_value(kw, Lexicon.RADIUS, EnumConvertType.FLOAT, 1, 0.00001, 2)
         kw.pop(Lexicon.RADIUS)
-        kw["regress"] = parse_list_value(kw.get(Lexicon.ZOOM, None), EnumConvertType.FLOAT, 1, 0, 2)
+        kw["regress"] = parse_list_value(kw, Lexicon.ZOOM, EnumConvertType.FLOAT, 1, 0, 2)
         kw.pop(Lexicon.ZOOM)
-        kw["shift"] = parse_list_value(kw.get(Lexicon.OFFSET, None), EnumConvertType.VEC2, (0.5, 0.5), 0, 1)
+        kw["shift"] = parse_list_value(kw, Lexicon.OFFSET, EnumConvertType.VEC2, (0.5, 0.5), 0, 1)
         kw.pop(Lexicon.OFFSET)
-        kw["spin"] = parse_list_value(kw.get(Lexicon.ROTATE, None), EnumConvertType.FLOAT, 0)
+        kw["spin"] = parse_list_value(kw, Lexicon.ROTATE, EnumConvertType.FLOAT, 0)
         kw.pop(Lexicon.ROTATE)
-        kw["scale"] = parse_list_value(kw.get(Lexicon.SIZE, None), EnumConvertType.FLOAT, 0.5, 0.00001, 10)
+        kw["scale"] = parse_list_value(kw, Lexicon.SIZE, EnumConvertType.FLOAT, 0.5, 0.00001, 10)
         kw.pop(Lexicon.SIZE)
-        kw["skip"] = parse_list_value(kw.get(Lexicon.SKIP, None), EnumConvertType.FLOAT, 0, 0.5, -0.5)
+        kw["skip"] = parse_list_value(kw, Lexicon.SKIP, EnumConvertType.FLOAT, 0, 0.5, -0.5)
         kw.pop(Lexicon.SKIP)
         return super().run(**kw)
 
@@ -547,7 +547,7 @@ class GLSLVFX(GLSLBaseNode):
 
     def run(self, **kw) -> List[torch.Tensor]:
         kw[Lexicon.FRAGMENT] = []
-        typ = parse_list_value(kw.get(Lexicon.TYPE, None), EnumConvertType.STRING, EnumVFXType.BULGE.name)
+        typ = parse_list_value(kw, Lexicon.TYPE, EnumConvertType.STRING, EnumVFXType.BULGE.name)
         for t in typ:
             match EnumVFXType[t]:
                 case EnumVFXType.BULGE:
