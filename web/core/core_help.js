@@ -44,9 +44,9 @@ const create_documentation_stylesheet = () => {
         border-color: var(--border-color);
         z-index: 25;
         overflow: hidden;
-        width: 275px;
+        width: 315px;
         height: 295px;
-        min-width: 275px;
+        min-width: 315px;
         min-height: 65px;
     }
     .jov-documentation-popup img {
@@ -365,11 +365,11 @@ app.registerExtension({
                 const wikiButton = document.createElement('div');
                 wikiButton.textContent = '🌐';
                 wikiButton.style.position = 'absolute';
-                wikiButton.style.top = '0';
-                wikiButton.style.right = '26px';
+                wikiButton.style.top = '6px';
+                wikiButton.style.right = '22px';
                 wikiButton.style.cursor = 'pointer';
-                wikiButton.style.padding = '6px';
-                wikiButton.style.font = 'bold 16px monospace';
+                wikiButton.style.padding = '4px';
+                wikiButton.style.font = 'bold 14px monospace';
                 wikiButton.addEventListener('mousedown', (e) => {
                     e.stopPropagation();
                     const widget_tooltip = (this.widgets || [])
@@ -389,11 +389,11 @@ app.registerExtension({
                 const closeButton = document.createElement('div');
                 closeButton.textContent = '❌';
                 closeButton.style.position = 'absolute';
-                closeButton.style.top = '0';
+                closeButton.style.top = '6px';
                 closeButton.style.right = '4px';
                 closeButton.style.cursor = 'pointer';
-                closeButton.style.padding = '6px';
-                closeButton.style.font = 'bold 16px monospace';
+                closeButton.style.padding = '4px';
+                closeButton.style.font = 'bold 14px monospace';
                 closeButton.addEventListener('mousedown', (e) => {
                         e.stopPropagation();
                         this.show_doc = !this.show_doc
@@ -523,7 +523,6 @@ app.registerExtension({
                 }
                 return true;
             }
-            console.log("here?")
             return r;
         }
 	}

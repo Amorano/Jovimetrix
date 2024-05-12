@@ -330,8 +330,7 @@ def cv2tensor(image: TYPE_IMAGE) -> torch.Tensor:
 
 def cv2tensor_full(image: TYPE_IMAGE, matte:TYPE_PIXEL=0) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     mask = image_mask(image)
-    #if channel_count(image)[0] != 4:
-    #    image = image_convert(image, 4)
+    mask = image_convert(mask, 1)
     image = image_matte(image, matte)
     rgb = image_convert(image, 3)
     return cv2tensor(image), cv2tensor(rgb), cv2tensor(mask)
@@ -540,7 +539,9 @@ def channel_solid(width:int, height:int, color:TYPE_PIXEL=(0, 0, 0, 0),
 
     if chan == EnumImageType.GRAYSCALE:
         color = pixel_eval(color, EnumImageType.GRAYSCALE)
-        return np.full((height, width, 1), color, dtype=np.uint8)
+        what = np.full((height, width, 1), color, dtype=np.uint8)
+        print('what', what.shape)
+        return what
 
     if not type(color) in [list, set, tuple]:
         color = [color]
@@ -638,7 +639,7 @@ def image_blend(imageA: TYPE_IMAGE, imageB: TYPE_IMAGE, mask:Optional[TYPE_IMAGE
     imageB = image_convert(imageB, 4)
     imageB = image_crop_center(imageB, w, h)
     imageB = image_matte(imageB, (0,0,0,0), w, h)
-    old_mask = image_mask(imageB)[:,:,0]
+    old_mask = image_mask(imageB) # [:,:,0]
     if mask is not None:
         mask = image_crop_center(mask, w, h)
         mask = image_matte(mask, (0,0,0,0), w, h)
@@ -1062,8 +1063,10 @@ def image_mask(image:TYPE_IMAGE, color:TYPE_PIXEL=255) -> TYPE_IMAGE:
     """Returns a mask from an image or a default mask with the color."""
     cc, width, height = channel_count(image)[:3]
     if cc == 4:
-        return np.expand_dims(image[:,:,3], -1)
-    return channel_solid(width, height, color, EnumImageType.GRAYSCALE)
+        return image[:,:,3] # np.expand_dims(image[:,:,3], -1)
+    mask = channel_solid(width, height, color, EnumImageType.GRAYSCALE)
+    print('image_mask120', mask)
+    return mask
 
 def image_mask_add(image:TYPE_IMAGE, mask:TYPE_IMAGE=None) -> TYPE_IMAGE:
     """Places a default or custom mask into an image.
@@ -1077,7 +1080,8 @@ def image_mask_add(image:TYPE_IMAGE, mask:TYPE_IMAGE=None) -> TYPE_IMAGE:
     else:
         mask = image_grayscale(mask)
         mask = image_scalefit(mask, w, h, EnumScaleMode.FIT)
-    image[:,:,3] = mask[:,:,0]
+        mask = mask[:,:,0]
+    image[:,:,3] = mask
     return image
 
 def image_matte(image:TYPE_IMAGE, color:TYPE_PIXEL=(0,0,0,255),
@@ -1101,13 +1105,14 @@ def image_matte(image:TYPE_IMAGE, color:TYPE_PIXEL=(0,0,0,255),
         matte = image_convert(imageB, 4)
     else:
         matte = channel_solid(width, height, color, EnumImageType.BGRA)
-    alpha = mask[:,:,0]
-    matte[y1:y2, x1:x2, 3] = alpha
-    alpha = cv2.bitwise_not(alpha)
+    mask_chan = mask[:,:,0] if len(mask.shape)>2 else image_convert(mask[:,:], 1)
+    mask_chan = mask_chan[:,:,0][:,:]
+    matte[y1:y2, x1:x2, 3] = mask_chan
+    alpha = cv2.bitwise_not(mask_chan)
     alpha = cv2.cvtColor(alpha, cv2.COLOR_GRAY2BGRA) / 255.0
     matte[y1:y2, x1:x2] = cv2.convertScaleAbs(image * (1 - alpha) + matte[y1:y2, x1:x2] * alpha)
     if cc == 4:
-        matte[y1:y2, x1:x2,3] = mask[:,:,0]
+        matte[y1:y2, x1:x2, 3] = mask_chan
     return matte
 
 def image_merge(imageA: TYPE_IMAGE, imageB: TYPE_IMAGE, axis: int=0, flip: bool=False) -> TYPE_IMAGE:

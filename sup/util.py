@@ -81,6 +81,13 @@ def parse_as_list(val: Any) -> List[Any]:
         return [[val.name]]
     return [val]
 
+def parse_param(data:dict, key:str, typ:EnumConvertType, default: Any,
+                clip_min: Optional[float]=None, clip_max: Optional[float]=None,
+                zero:int=0, enumType:Any=None) -> List[Any]:
+    """Convenience because of the dictionary parameters."""
+    val = data.get(key, default)
+    return parse_list_value(val, typ, default, clip_min, clip_max, zero, enumType)
+
 def parse_list_value(val:Any|None, typ:EnumConvertType, default: Any,
                 clip_min: Optional[float]=None, clip_max: Optional[float]=None,
                 zero:int=0, enumType:Any=None) -> List[Any]:
