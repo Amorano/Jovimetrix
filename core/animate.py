@@ -14,7 +14,7 @@ from comfy.utils import ProgressBar
 from Jovimetrix import JOV_WEB_RES_ROOT, comfy_message, parse_reset, JOVBaseNode, WILDCARD
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.anim import EnumWave, wave_op
-from Jovimetrix.sup.util import EnumConvertType, parse_list_value, zip_longest_fill
+from Jovimetrix.sup.util import EnumConvertType, parse_param, zip_longest_fill
 
 # =============================================================================
 
@@ -71,21 +71,21 @@ class TickNode(JOVBaseNode):
         self.__fixed_step = 0
 
     def run(self, ident, **kw) -> Tuple[int, float, float, Any]:
-        passthru = parse_list_value(kw, Lexicon.ANY, EnumConvertType.ANY, None)[0]
-        loop = parse_list_value(kw, Lexicon.LOOP, EnumConvertType.INT, 0)[0]
-        self.__frame = parse_list_value(kw, Lexicon.VALUE, EnumConvertType.INT, self.__frame)[0]
+        passthru = parse_param(kw, Lexicon.ANY, EnumConvertType.ANY, None)[0]
+        loop = parse_param(kw, Lexicon.LOOP, EnumConvertType.INT, 0)[0]
+        self.__frame = parse_param(kw, Lexicon.VALUE, EnumConvertType.INT, self.__frame)[0]
         if loop > 0:
             self.__frame = min(loop, self.__frame)
         self.__frame = max(0, self.__frame)
-        hold = parse_list_value(kw, Lexicon.WAIT, EnumConvertType.BOOLEAN, False)[0]
-        fps = parse_list_value(kw, Lexicon.FPS, EnumConvertType.INT, 24, 1)[0]
-        bpm = parse_list_value(kw, Lexicon.BPM, EnumConvertType.INT, 120, 1)[0]
-        divisor = parse_list_value(kw, Lexicon.NOTE, EnumConvertType.INT, 4, 1)[0]
+        hold = parse_param(kw, Lexicon.WAIT, EnumConvertType.BOOLEAN, False)[0]
+        fps = parse_param(kw, Lexicon.FPS, EnumConvertType.INT, 24, 1)[0]
+        bpm = parse_param(kw, Lexicon.BPM, EnumConvertType.INT, 120, 1)[0]
+        divisor = parse_param(kw, Lexicon.NOTE, EnumConvertType.INT, 4, 1)[0]
         beat = int(fps) * 60 / max(1, int(bpm))
         beat = beat / divisor
-        batch = parse_list_value(kw, Lexicon.BATCH, EnumConvertType.INT, 1, 1)[0]
+        batch = parse_param(kw, Lexicon.BATCH, EnumConvertType.INT, 1, 1)[0]
         step = 1. / max(1, int(fps))
-        reset = parse_list_value(kw, Lexicon.RESET, EnumConvertType.BOOLEAN, False)[0]
+        reset = parse_param(kw, Lexicon.RESET, EnumConvertType.BOOLEAN, False)[0]
         if parse_reset(ident) > 0 or reset:
             self.__frame = 0
             self.__fixed_step = 0
@@ -147,14 +147,14 @@ class WaveGeneratorNode(JOVBaseNode):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> Tuple[float, int]:
-        op = parse_list_value(kw, Lexicon.WAVE, EnumConvertType.STRING, EnumWave.SIN.name, enumType=EnumWave)
-        freq = parse_list_value(kw, Lexicon.FREQ, EnumConvertType.FLOAT, 1, 0)
-        amp = parse_list_value(kw, Lexicon.AMP, EnumConvertType.FLOAT, 1, 0)
-        phase = parse_list_value(kw, Lexicon.PHASE, EnumConvertType.FLOAT, 0)
-        shift = parse_list_value(kw, Lexicon.OFFSET, EnumConvertType.FLOAT, 0)
-        delta_time = parse_list_value(kw, Lexicon.TIME, EnumConvertType.FLOAT, 0, 0)
-        invert = parse_list_value(kw, Lexicon.INVERT, EnumConvertType.BOOLEAN, False)
-        abs = parse_list_value(kw, Lexicon.ABSOLUTE, EnumConvertType.BOOLEAN, False)
+        op = parse_param(kw, Lexicon.WAVE, EnumConvertType.STRING, EnumWave.SIN.name, enumType=EnumWave)
+        freq = parse_param(kw, Lexicon.FREQ, EnumConvertType.FLOAT, 1, 0)
+        amp = parse_param(kw, Lexicon.AMP, EnumConvertType.FLOAT, 1, 0)
+        phase = parse_param(kw, Lexicon.PHASE, EnumConvertType.FLOAT, 0)
+        shift = parse_param(kw, Lexicon.OFFSET, EnumConvertType.FLOAT, 0)
+        delta_time = parse_param(kw, Lexicon.TIME, EnumConvertType.FLOAT, 0, 0)
+        invert = parse_param(kw, Lexicon.INVERT, EnumConvertType.BOOLEAN, False)
+        abs = parse_param(kw, Lexicon.ABSOLUTE, EnumConvertType.BOOLEAN, False)
         results = []
         params = list(zip_longest_fill(op, freq, amp, phase, shift, delta_time, invert, abs))
         pbar = ProgressBar(len(params))

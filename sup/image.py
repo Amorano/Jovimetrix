@@ -540,7 +540,7 @@ def channel_solid(width:int, height:int, color:TYPE_PIXEL=(0, 0, 0, 0),
     if chan == EnumImageType.GRAYSCALE:
         color = pixel_eval(color, EnumImageType.GRAYSCALE)
         what = np.full((height, width, 1), color, dtype=np.uint8)
-        print('what', what.shape)
+        # print('what', what.shape)
         return what
 
     if not type(color) in [list, set, tuple]:
@@ -1065,7 +1065,7 @@ def image_mask(image:TYPE_IMAGE, color:TYPE_PIXEL=255) -> TYPE_IMAGE:
     if cc == 4:
         return image[:,:,3] # np.expand_dims(image[:,:,3], -1)
     mask = channel_solid(width, height, color, EnumImageType.GRAYSCALE)
-    print('image_mask120', mask)
+    # print('image_mask120', mask)
     return mask
 
 def image_mask_add(image:TYPE_IMAGE, mask:TYPE_IMAGE=None) -> TYPE_IMAGE:
@@ -1079,7 +1079,7 @@ def image_mask_add(image:TYPE_IMAGE, mask:TYPE_IMAGE=None) -> TYPE_IMAGE:
         mask = image_mask(image)
     else:
         mask = image_grayscale(mask)
-        mask = image_scalefit(mask, w, h, EnumScaleMode.FIT)
+        mask = image_scalefit(mask, w, h, EnumScaleMode.CROP)
         mask = mask[:,:,0]
     image[:,:,3] = mask
     return image
@@ -1740,7 +1740,7 @@ def remap_fisheye(image: TYPE_IMAGE, distort: float) -> TYPE_IMAGE:
     map_x, map_y = coord_fisheye(width, height, distort)
     image = cv2.remap(image, map_x, map_y, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
     if cc == 1:
-        image = image[:,:,0][:,:]
+        image = image[:,:,0]
     return image
 
 def remap_perspective(image: TYPE_IMAGE, pts: list) -> TYPE_IMAGE:
@@ -1750,7 +1750,7 @@ def remap_perspective(image: TYPE_IMAGE, pts: list) -> TYPE_IMAGE:
     pts = coord_perspective(width, height, pts)
     image = cv2.warpPerspective(image, pts, (width, height))
     if cc == 1:
-        image = image[:,:,0][:,:]
+        image = image[:,:,0]
     return image
 
 def remap_polar(image: TYPE_IMAGE) -> TYPE_IMAGE:

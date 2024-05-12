@@ -159,7 +159,7 @@ class ShapeNode(JOVBaseNode):
             if blur > 0:
                 pA = (gaussian(pA, sigma=blur, channel_axis=2) * 255).astype(np.uint8)
                 mask = (gaussian(mask, sigma=blur, channel_axis=2) * 255).astype(np.uint8)
-            print(pA.shape, mask.shape)
+            # print(pA.shape, mask.shape)
             matte = pixel_eval(matte, EnumImageType.BGRA)
             images.append(cv2tensor_full(pA, matte))
             pbar.update_absolute(idx)

@@ -33,7 +33,7 @@ class EnumConvertType(Enum):
     IMAGE = 4
     LATENT = 5
     ANY = 9
-    ENUM = 6
+    # ENUM = 6
 
 class EnumSwizzle(Enum):
     A_X = 0

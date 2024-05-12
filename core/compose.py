@@ -15,11 +15,11 @@ from comfy.utils import ProgressBar
 
 from Jovimetrix import JOV_WEB_RES_ROOT, JOVBaseNode, WILDCARD
 from Jovimetrix.sup.lexicon import Lexicon
-from Jovimetrix.sup.util import parse_dynamic, parse_list_value, parse_param, zip_longest_fill, \
-    EnumConvertType
+from Jovimetrix.sup.util import parse_dynamic, parse_param, \
+    zip_longest_fill, EnumConvertType
 from Jovimetrix.sup.image import  channel_merge, \
     channel_solid, channel_swap, cv2tensor_full, \
-    image_crop, image_crop_center, image_crop_polygonal, image_grayscale, \
+    image_crop, image_crop_center, image_crop_polygonal, \
     image_mask, image_mask_add, image_matte, image_transform, \
     image_split, pixel_eval, tensor2cv, \
     image_edge_wrap, image_scalefit, cv2tensor, \
@@ -246,9 +246,9 @@ class PixelSplitNode(JOVBaseNode):
 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
         images = []
-        pA = parse_list_value(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
+        pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
         pbar = ProgressBar(len(pA))
-        for idx, (pA,) in enumerate(pA):
+        for idx, (pA,) in enumerate([pA]):
             pA = tensor2cv(pA)
             pA = image_mask_add(pA)
             pA = [cv2tensor(x) for x in image_split(pA)]
@@ -284,10 +284,10 @@ class PixelMergeNode(JOVBaseNode):
         G = parse_param(kw, Lexicon.G, EnumConvertType.IMAGE, None)
         B = parse_param(kw, Lexicon.B, EnumConvertType.IMAGE, None)
         A = parse_param(kw, Lexicon.A, EnumConvertType.IMAGE, None)
+        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
         if len(R)+len(B)+len(G)+len(A) == 0:
             img = channel_solid(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 0, EnumImageType.BGRA)
             return list(cv2tensor_full(img, matte))
-        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC3INT, [(0, 0, 0)], 0, 255)
         params = list(zip_longest_fill(R, G, B, A, matte))
         images = []
         pbar = ProgressBar(len(params))
