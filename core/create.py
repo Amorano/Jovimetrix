@@ -21,7 +21,7 @@ from Jovimetrix.sup.util import parse_dynamic, parse_param, zip_longest_fill, \
     EnumConvertType
 
 from Jovimetrix.sup.image import  cv2tensor, cv2tensor_full, \
-    image_gradient, image_grayscale, image_invert, image_mask_add, image_matte, \
+    image_grayscale, image_invert, image_mask_add, \
     image_rotate, image_stereogram, image_transform, image_translate, pil2cv, \
     pixel_eval, tensor2cv, shape_ellipse, shape_polygon, shape_quad, \
     EnumEdge, EnumImageType, MIN_IMAGE_SIZE

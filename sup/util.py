@@ -215,8 +215,8 @@ def parse_value(val:Any, typ:EnumConvertType, default: Any,
         new_val = {i: v for i, v in enumerate(new_val)}
     elif typ == EnumConvertType.LIST:
         new_val = [new_val]
-    elif typ == EnumConvertType.ENUM:
-        new_val = enumType[new_val]
+    #elif typ == EnumConvertType.ENUM:
+        #new_val = enumType[new_val]
     return new_val
 
 def vector_swap(pA: Any, pB: Any, swap_x: EnumSwizzle, x:float, swap_y:EnumSwizzle, y:float,
