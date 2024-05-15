@@ -11,10 +11,10 @@ import glob
 import base64
 import random
 from enum import Enum
-from typing import Any, Dict, List, Tuple
-from pathlib import Path
 from uuid import uuid4
+from pathlib import Path
 from itertools import zip_longest
+from typing import Any, Dict, List, Tuple
 
 import torch
 import numpy as np
@@ -25,12 +25,12 @@ from loguru import logger
 from comfy.utils import ProgressBar
 from folder_paths import get_output_directory
 
-from Jovimetrix import JOV_WEB_RES_ROOT, comfy_message, parse_reset, JOVBaseNode, \
-    WILDCARD, ROOT
+from Jovimetrix import comfy_message, parse_reset, JOVBaseNode, \
+    WILDCARD, ROOT, JOV_WEB_RES_ROOT
 
 from Jovimetrix.sup.lexicon import Lexicon
-from Jovimetrix.sup.util import EnumConvertType, parse_dynamic, path_next, parse_param, \
-    zip_longest_fill
+from Jovimetrix.sup.util import EnumConvertType, parse_dynamic, path_next, \
+    parse_param, zip_longest_fill
 
 from Jovimetrix.sup.image import  cv2pil, cv2tensor, image_convert, \
     tensor2pil, tensor2cv, pil2tensor, image_load, image_formats, image_diff, \
@@ -73,6 +73,7 @@ class AkashicNode(JOVBaseNode):
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = (WILDCARD, 'AKASHIC', )
     RETURN_NAMES = (Lexicon.PASS_OUT, Lexicon.IO)
+    OUTPUT_IS_LIST = (True, True,)
     OUTPUT_NODE = True
     SORT = 10
 
@@ -201,29 +202,6 @@ class ValueGraphNode(JOVBaseNode):
         image = Image.open(buffer)
         return (pil2tensor(image),)
 
-class RouteNode(JOVBaseNode):
-    NAME = "ROUTE (JOV) 🚌"
-    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
-    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
-    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
-    RETURN_TYPES = (WILDCARD, )
-    RETURN_NAMES = (Lexicon.PASS_OUT, )
-    SORT = 5
-
-    @classmethod
-    def INPUT_TYPES(cls) -> dict:
-        d = {
-        "required": {},
-        "optional": {
-            Lexicon.PASS_IN: (WILDCARD, {})
-        }}
-        return Lexicon._parse(d, cls.HELP_URL)
-
-    def run(self, **kw) -> Tuple[Any, Any]:
-        o = parse_param(kw, Lexicon.PASS_IN, EnumConvertType.ANY, None)
-        return (o, )
-
 class QueueNode(JOVBaseNode):
     NAME = "QUEUE (JOV) 🗃"
     NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
@@ -232,7 +210,7 @@ class QueueNode(JOVBaseNode):
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = (WILDCARD, WILDCARD, "STRING", "INT", "INT", )
     RETURN_NAMES = (Lexicon.ANY, Lexicon.QUEUE, Lexicon.CURRENT, Lexicon.INDEX, Lexicon.TOTAL, )
-    # OUTPUT_IS_LIST = (False, True, False, False, False, )
+    # OUTPUT_IS_LIST = (True, True, False, False, False, )
     VIDEO_FORMATS = ['.webm', '.mp4', '.avi', '.wmv', '.mkv', '.mov', '.mxf']
     SORT = 0
 
@@ -468,7 +446,7 @@ class ImageDiffNode(JOVBaseNode):
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = ("IMAGE", "IMAGE", "MASK", "MASK", "FLOAT", )
     RETURN_NAMES = (Lexicon.IN_A, Lexicon.IN_B, Lexicon.DIFF, Lexicon.THRESHOLD, Lexicon.FLOAT, )
-    # OUTPUT_IS_LIST = (False, False, False, False, True, )
+    OUTPUT_IS_LIST = (False, False, False, False, True, )
     SORT = 90
 
     @classmethod
@@ -507,6 +485,7 @@ class ArrayNode(JOVBaseNode):
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = ("INT", WILDCARD, WILDCARD,)
     RETURN_NAMES = (Lexicon.VALUE, Lexicon.ANY, Lexicon.LIST,)
+    OUTPUT_IS_LIST = (True, True, True,)
     SORT = 50
 
     @classmethod

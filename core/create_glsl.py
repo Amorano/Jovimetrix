@@ -3,6 +3,7 @@ Jovimetrix - http://www.github.com/amorano/jovimetrix
 Creation - GLSL
 """
 
+import sys
 from enum import Enum
 from typing import List
 
@@ -11,8 +12,8 @@ from loguru import logger
 
 from comfy.utils import ProgressBar
 
-from Jovimetrix import JOV_WEB_RES_ROOT, comfy_message, parse_reset, JOVBaseNode, \
-    WILDCARD, ROOT, JOV_GLSL
+from Jovimetrix import comfy_message, parse_reset, \
+    JOVBaseNode, WILDCARD, ROOT, JOV_GLSL, JOV_WEB_RES_ROOT
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import parse_param, zip_longest_fill, \
     EnumConvertType
@@ -410,7 +411,7 @@ class GLSLTRSMirror(GLSLBaseNode):
         "required": {},
         "optional": {
             Lexicon.PIXEL_A: (WILDCARD, {}),
-            Lexicon.ANGLE: ("FLOAT", {"default": 0, "step": 0.01}),
+            Lexicon.ANGLE: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01}),
             Lexicon.PIVOT: ("VEC2", {"default": (0.5, 0.5), "step": 0.01, "precision": 4, "label": [Lexicon.X, Lexicon.Y]}),
         }}
         return Lexicon._parse(d, cls.HELP_URL)
@@ -438,7 +439,7 @@ class GLSLTRSRotate(GLSLBaseNode):
         "required": {},
         "optional": {
             Lexicon.PIXEL_A: (WILDCARD, {}),
-            Lexicon.ANGLE: ("FLOAT", {"default": 0, "step": 0.01}),
+            Lexicon.ANGLE: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01}),
             Lexicon.PIVOT: ("VEC2", {"default": (0.5, 0.5), "step": 0.01, "precision": 4, "label": [Lexicon.X, Lexicon.Y]}),
         }}
         return Lexicon._parse(d, cls.HELP_URL)
@@ -499,7 +500,7 @@ class GLSLTRSKaleidoscope(GLSLBaseNode):
                                       "min": 0, "max": 1,
                                       "label": [Lexicon.X, Lexicon.Y]}),
             Lexicon.ROTATE: ("FLOAT", {"default": 0, "step": 0.002, "precision": 6,
-                                       "min": -1.7976931348623157e+308, "max": 1.7976931348623157e+308,
+                                       "min": -sys.maxsize, "max": sys.maxsize,
                                        "tooltip":"spin the input texture for each segment"}),
             Lexicon.SIZE: ("FLOAT", {"default": 0.5, "step": 0.002, "precision": 6,
                                      "min": 0.00001, "max": 10}),

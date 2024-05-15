@@ -4,6 +4,7 @@ Audio
 """
 
 from typing import Tuple
+
 import torch
 import ffmpeg
 import numpy as np
@@ -13,7 +14,7 @@ from comfy.utils import ProgressBar
 
 from Jovimetrix import JOV_WEB_RES_ROOT, JOVBaseNode
 from Jovimetrix.sup.lexicon import Lexicon
-from Jovimetrix.sup.util import EnumConvertType, parse_param, zip_longest_fill
+from Jovimetrix.sup.util import parse_param, zip_longest_fill, EnumConvertType
 from Jovimetrix.sup.image import channel_solid, cv2tensor_full, EnumImageType, \
     MIN_IMAGE_SIZE
 from Jovimetrix.sup.audio import load_audio, graph_sausage

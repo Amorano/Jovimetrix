@@ -8,8 +8,8 @@ import time
 import threading
 from enum import Enum
 from queue import Queue
-from typing import OrderedDict, Tuple
 from urllib.request import urlopen
+from typing import OrderedDict, Tuple
 
 import ffmpeg
 import pyaudio

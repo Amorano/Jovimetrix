@@ -12,7 +12,8 @@ from PIL import Image, ImageFont, ImageDraw
 
 from loguru import logger
 
-from Jovimetrix.sup.image import EnumImageType, pil2cv, TYPE_IMAGE, TYPE_PIXEL, pixel_eval
+from Jovimetrix.sup.image import pixel_eval, pil2cv, EnumImageType, \
+    TYPE_IMAGE, TYPE_PIXEL
 
 # =============================================================================
 

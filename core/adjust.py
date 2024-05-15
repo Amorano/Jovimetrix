@@ -8,7 +8,6 @@ from typing import Tuple
 
 import cv2
 import torch
-from loguru import logger
 
 from comfy.utils import ProgressBar
 

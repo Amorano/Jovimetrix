@@ -63,75 +63,12 @@ def parse_dynamic(who, data) -> list:
         count += 1
     return vals
 
-def parse_as_list(val: Any) -> List[Any]:
-    """Convert value into a list of value."""
-    if isinstance(val, (list, tuple,)):
-        return val
-    if isinstance(val, (str, float, int,)):
-        return [val]
-    if isinstance(val, (dict,)):
-        # latents....
-        if 'samples' in val:
-            return [v for v in val["samples"]]
-        return tuple(list(val.values()))
-    if isinstance(val, (torch.Tensor,)):
-        if len(val.shape) > 3:
-            return [t for t in val]
-    if issubclass(type(val), (Enum,)):
-        return [[val.name]]
-    return [val]
-
-def parse_param(data:dict, key:str, typ:EnumConvertType, default: Any,
-                clip_min: Optional[float]=None, clip_max: Optional[float]=None,
-                zero:int=0, enumType:Any=None) -> List[Any]:
-    """Convenience because of the dictionary parameters."""
-    val = data.get(key, default)
-    return parse_list_value(val, typ, default, clip_min, clip_max, zero, enumType)
-
-def parse_list_value(val:Any|None, typ:EnumConvertType, default: Any,
-                clip_min: Optional[float]=None, clip_max: Optional[float]=None,
-                zero:int=0, enumType:Any=None) -> List[Any]:
-    """Convert list of values into a list of specified type."""
-    val = default if val is None else val
-
-    # could be a json encoded blob
-    if isinstance(val, (str,)):
-        try:
-            val = json.loads(val.replace("'", '"'))
-        except:
-            pass
-
-    # see if we are a Jovimetrix hacked vector blob... {0:x, 1:y, 2:z, 3:w}
-    if isinstance(val, (dict,)):
-        if (x:=val.get('0', None)) is not None and (y:=val.get('1', None)) is not None:
-            ret = [x, y]
-            if (x:=val.get('2', None)) is not None:
-                ret.append(x)
-            if (x:=val.get('3', None)) is not None:
-                ret.append(x)
-            val = (ret,)
-        # could be a kijai coord blob
-        elif (x:=val.get('x', None)) is not None and (y:=val.get('y', None)) is not None:
-            ret = [x, y]
-            if (x:=val.get('z', None)) is not None:
-                ret.append(x)
-            if (x:=val.get('w', None)) is not None:
-                ret.append(x)
-            val = (ret,)
-    elif isinstance(val, (list, tuple,)):
-        val = [parse_as_list(v) for v in val]
-    else:
-        val = parse_as_list(val)
-    return [parse_value(v, typ, default, clip_min, clip_max, zero, enumType) for v in val]
-
 def parse_value(val:Any, typ:EnumConvertType, default: Any,
                 clip_min: Optional[float]=None, clip_max: Optional[float]=None,
                 zero:int=0, enumType:Any=None) -> List[Any]:
     """Convert target value into the new specified type."""
-    if val is None:
-        if default is not None:
-            return parse_value(default, typ, default, clip_min, clip_max, zero, enumType)
-        return None
+    if val is None or (isinstance(val, (list, tuple,)) and len(val) == 1 and val[0] is None):
+        return parse_value(default, typ, None, clip_min, clip_max, zero, enumType) if default is not None else None
 
     if typ not in [EnumConvertType.ANY, EnumConvertType.IMAGE] and isinstance(val, (torch.Tensor,)):
         val = list(val.size())[1:4] + [val[0]]
@@ -160,13 +97,6 @@ def parse_value(val:Any, typ:EnumConvertType, default: Any,
                         d = default[-1]
             last = v if v is not None else d
             new_val.append(last)
-        """
-        if typ in [EnumConvertType.FLOAT, EnumConvertType.INT,
-                    EnumConvertType.VEC2, EnumConvertType.VEC2INT,
-                    EnumConvertType.VEC3, EnumConvertType.VEC3INT,
-                    EnumConvertType.VEC4, EnumConvertType.VEC4INT]:
-        """
-
         for idx in range(size):
             if isinstance(new_val[idx], str):
                 parts = new_val[idx].split('.', 1)
@@ -209,15 +139,72 @@ def parse_value(val:Any, typ:EnumConvertType, default: Any,
         if not isinstance(new_val, (str,)):
             new_val = ", ".join([str(v) for v in new_val])
     elif typ == EnumConvertType.BOOLEAN:
-        new_val = True if isinstance(new_val, (torch.Tensor,)) else bool(new_val) \
-            if new_val is not None and isinstance(new_val, (bool, int, float, str,)) else False
+        ret = False
+        if isinstance(new_val, (torch.Tensor,)):
+            ret = True
+        elif (nv := new_val[0]) is not None:
+            if isinstance(nv, (bool, str,)):
+                ret = bool(nv)
+            elif isinstance(nv, (int, float,)):
+                ret = nv > 0
+        new_val = ret
     elif typ == EnumConvertType.DICT:
         new_val = {i: v for i, v in enumerate(new_val)}
     elif typ == EnumConvertType.LIST:
         new_val = [new_val]
-    #elif typ == EnumConvertType.ENUM:
-        #new_val = enumType[new_val]
     return new_val
+
+def parse_param(data:dict, key:str, typ:EnumConvertType, default: Any,
+                clip_min: Optional[float]=None, clip_max: Optional[float]=None,
+                zero:int=0, enumType:Any=None) -> List[Any]:
+    """Convenience because of the dictionary parameters.
+    Convert list of values into a list of specified type.
+    """
+    val = data.get(key, default)
+    val = default if val is None else val
+
+    # could be a json encoded blob
+    if isinstance(val, (str,)):
+        try: val = json.loads(val.replace("'", '"'))
+        except: pass
+
+    ret = []
+    # see if we are a Jovimetrix hacked vector blob... {0:x, 1:y, 2:z, 3:w}
+    if isinstance(val, (dict,)):
+        if '0' in val and '1' in val:
+            new_val = [val['0'], val['1']]
+            for idx in range(2, 4):
+                if str(idx) in val:
+                    new_val.append(val[str(idx)])
+        elif 'x' in val and 'y' in val:
+            new_val = [val['x'], val['y']]
+            for c in ['z', 'w']:
+                if c in val:
+                    new_val.append(val[c])
+        else:
+            new_val = val
+        ret.append(new_val)
+    elif val is not None:
+        if not isinstance(val, (list, tuple,)):
+            val = [val]
+        for v in val:
+            if isinstance(v, (dict,)):
+                # latents....
+                if 'samples' in val:
+                    v = [x for x in v["samples"]]
+                else:
+                    v = tuple(list(v.values()))
+            elif isinstance(v, (torch.Tensor,)):
+                if len(v.shape) > 3:
+                    v = [t for t in val]
+            elif issubclass(type(val), (Enum,)):
+                v = [[v.name]]
+            elif v is not None and not isinstance(v, (list, tuple,)):
+                v = [v]
+            ret.append(v)
+    else:
+        ret.append(None)
+    return [parse_value(v, typ, default, clip_min, clip_max, zero, enumType) for v in ret]
 
 def vector_swap(pA: Any, pB: Any, swap_x: EnumSwizzle, x:float, swap_y:EnumSwizzle, y:float,
                 swap_z:EnumSwizzle, z:float, swap_w:EnumSwizzle, w:float) -> List[float]:

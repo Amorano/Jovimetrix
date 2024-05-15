@@ -3,19 +3,20 @@ Jovimetrix - http://www.github.com/amorano/jovimetrix
 Calculation
 """
 
+import sys
 import math
 from enum import Enum
 from typing import Any, Tuple
 from collections import Counter
 
+import torch
 import numpy as np
 from scipy.special import gamma
 from loguru import logger
-import torch
 
 from comfy.utils import ProgressBar
 
-from Jovimetrix import JOV_WEB_RES_ROOT, JOVBaseNode, WILDCARD
+from Jovimetrix import JOVBaseNode, WILDCARD, JOV_WEB_RES_ROOT
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import parse_param, parse_value, vector_swap, \
     zip_longest_fill, EnumConvertType, EnumSwizzle
@@ -139,17 +140,18 @@ class CalcUnaryOPNode(JOVBaseNode):
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = (WILDCARD,)
     RETURN_NAMES = (Lexicon.UNKNOWN,)
-    # OUTPUT_IS_LIST = (True,)
+    #OUTPUT_IS_LIST = (True,)
     SORT = 10
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {
-        "required": {},
-        "optional": {
-            Lexicon.IN_A: (WILDCARD, {"default": None}),
-            Lexicon.FUNC: (EnumUnaryOperation._member_names_, {"default": EnumUnaryOperation.ABS.name})
-        }}
+            "required": {},
+            "optional": {
+                Lexicon.IN_A: (WILDCARD, {"default": None}),
+                Lexicon.FUNC: (EnumUnaryOperation._member_names_, {"default": EnumUnaryOperation.ABS.name})
+            }
+        }
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> Tuple[bool]:
@@ -221,6 +223,7 @@ class CalcBinaryOPNode(JOVBaseNode):
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = (WILDCARD,)
     RETURN_NAMES = (Lexicon.UNKNOWN,)
+    #OUTPUT_IS_LIST = (True,)
     SORT = 20
 
     @classmethod
@@ -237,7 +240,7 @@ class CalcBinaryOPNode(JOVBaseNode):
             Lexicon.TYPE: (names_convert, {"default": names_convert[2],
                                            "tooltip":"Output type desired from resultant operation"}),
             Lexicon.FLIP: ("BOOLEAN", {"default": False}),
-            Lexicon.X: ("FLOAT", {"default": 0, "tooltip":"Single value input"}),
+            Lexicon.X: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "tooltip":"Single value input"}),
             Lexicon.IN_A+"2": ("VEC2", {"default": (0,0),
                                       "label": [Lexicon.X, Lexicon.Y],
                                       "tooltip":"2-value vector"}),
@@ -247,7 +250,7 @@ class CalcBinaryOPNode(JOVBaseNode):
             Lexicon.IN_A+"4": ("VEC4", {"default": (0,0,0,0),
                                       "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W],
                                       "tooltip":"4-value vector"}),
-            Lexicon.Y: ("FLOAT", {"default": 0, "tooltip":"Single value input"}),
+            Lexicon.Y: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "tooltip":"Single value input"}),
             Lexicon.IN_B+"2": ("VEC2", {"default": (0,0),
                                       "label": [Lexicon.X, Lexicon.Y],
                                       "tooltip":"2-value vector"}),
@@ -381,6 +384,7 @@ class ValueNode(JOVBaseNode):
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = (WILDCARD,)
     RETURN_NAMES = (Lexicon.ANY,)
+    OUTPUT_IS_LIST = (False,)
     SORT = 1
 
     @classmethod
@@ -390,26 +394,27 @@ class ValueNode(JOVBaseNode):
         "optional": {
             Lexicon.IN_A: (WILDCARD, {"default": None, "tooltip":"Passes a raw value directly, or supplies defaults for any value inputs without connections"}),
             Lexicon.TYPE: (EnumConvertType._member_names_, {"default": EnumConvertType.BOOLEAN.name}),
-            Lexicon.X: ("FLOAT", {"default": 0}),
-            Lexicon.Y: ("FLOAT", {"default": 0}),
-            Lexicon.Z: ("FLOAT", {"default": 0}),
-            Lexicon.W: ("FLOAT", {"default": 0}),
+            Lexicon.X: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize}),
+            Lexicon.Y: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize}),
+            Lexicon.Z: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize}),
+            Lexicon.W: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize}),
             Lexicon.STRING: ("STRING", {"default": "", "dynamicPrompts": False, "multiline": True}),
         }}
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> Tuple[bool]:
-        raw = parse_param(kw, Lexicon.IN_A, EnumConvertType.ANY, None)
-        typ = parse_param(kw, Lexicon.TYPE, EnumConvertType.STRING, EnumConvertType.BOOLEAN.name)
         x = parse_param(kw, Lexicon.X, EnumConvertType.FLOAT, 0)
         y = parse_param(kw, Lexicon.Y, EnumConvertType.FLOAT, 0)
         z = parse_param(kw, Lexicon.Z, EnumConvertType.FLOAT, 0)
         w = parse_param(kw, Lexicon.W, EnumConvertType.FLOAT, 0)
+        raw = parse_param(kw, Lexicon.IN_A, EnumConvertType.ANY, None)
+        typ = parse_param(kw, Lexicon.TYPE, EnumConvertType.STRING, EnumConvertType.BOOLEAN.name)
         params = list(zip_longest_fill(raw, typ, x, y, z, w))
         results = []
         pbar = ProgressBar(len(params))
         for idx, (raw, typ, x, y, z, w) in enumerate(params):
             typ = EnumConvertType[typ]
+            # logger.debug(raw, (x, y, z, w))
             val = parse_value(raw, typ, (x, y, z, w))
             results.append(val)
             pbar.update_absolute(idx)
@@ -421,9 +426,9 @@ class LerpNode(JOVBaseNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
-    # OUTPUT_IS_LIST = (True,)
     RETURN_TYPES = (WILDCARD,)
-    RETURN_NAMES = (Lexicon.ANY )
+    RETURN_NAMES = (Lexicon.ANY,)
+    OUTPUT_IS_LIST = (True,)
     SORT = 45
 
     @classmethod
@@ -477,7 +482,8 @@ class SwapNode(JOVBaseNode):
     DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = (WILDCARD,)
-    RETURN_NAMES = (Lexicon.ANY )
+    RETURN_NAMES = (Lexicon.ANY,)
+    OUTPUT_IS_LIST = (True,)
     SORT = 65
 
     @classmethod
@@ -488,13 +494,13 @@ class SwapNode(JOVBaseNode):
             Lexicon.IN_A: (WILDCARD, {}),
             Lexicon.IN_B: (WILDCARD, {}),
             Lexicon.SWAP_X: (EnumSwizzle._member_names_, {"default": EnumSwizzle.A_X.name}),
-            Lexicon.X: ("FLOAT", {"default": 0}),
+            Lexicon.X: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize}),
             Lexicon.SWAP_Y: (EnumSwizzle._member_names_, {"default": EnumSwizzle.A_Y.name}),
-            Lexicon.Y: ("FLOAT", {"default": 0}),
+            Lexicon.Y: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize}),
             Lexicon.SWAP_Z: (EnumSwizzle._member_names_, {"default": EnumSwizzle.A_Z.name}),
-            Lexicon.Z: ("FLOAT", {"default": 0}),
+            Lexicon.Z: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize}),
             Lexicon.SWAP_W: (EnumSwizzle._member_names_, {"default": EnumSwizzle.A_W.name}),
-            Lexicon.W: ("FLOAT", {"default": 0})
+            Lexicon.W: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize})
         }}
         return Lexicon._parse(d, cls.HELP_URL)
 

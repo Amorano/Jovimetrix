@@ -104,55 +104,15 @@ class DelayNode(JOVBaseNode):
             step += 1
         return (kw[Lexicon.PASS_IN], )
 
-"""
-class HoldValueNode(JOVBaseNode):
-    NAME = "HOLD VALUE (JOV) 🫴🏽"
-    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    HELP_URL = f"{JOV_CATEGORY}#-hold"
-    RETURN_TYPES = (WILDCARD,)
-    RETURN_NAMES = (Lexicon.ROUTE,)
-
-    @classmethod
-    def INPUT_TYPES(cls) -> dict:
-        d = {
-        "required": {},
-        "optional": {
-            Lexicon.PASS_IN: (WILDCARD, {"default": None}),
-            Lexicon.WAIT: ("BOOLEAN", {"default": False}),
-        }}
-        return Lexicon._parse(d, cls.HELP_URL)
-
-    def __init__(self, *arg, **kw) -> None:
-        super().__init__(*arg, **kw)
-        self.__last_value = None
-
-    def run(self, **kw) -> Tuple[Any]:
-        obj = parse_param(kw, Lexicon.PASS_IN, EnumConvertType.ANY, None)
-        hold = parse_param(kw, Lexicon.WAIT, EnumConvertType.BOOLEAN, False)
-        params = list(zip_longest_fill(obj, hold))
-        pbar = ProgressBar(len(params))
-        results = []
-        for idx, (obj, hold) in enumerate(params):
-            if self.__last_value is None or hold:
-                self.__last_value = o
-            vals.append(val)
-            results.append(good if all(val) else fail)
-            pbar.update_absolute(idx)
-        return results,
-
-
-        return (self.__last_value,)
-"""
-
 class ComparisonNode(JOVBaseNode):
     NAME = "COMPARISON (JOV) 🕵🏽"
     NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
-    #     RETURN_TYPES = (WILDCARD, WILDCARD,)
-    RETURN_NAMES = (Lexicon.ANY, Lexicon.VEC, )
-    # OUTPUT_IS_LIST = (True, True, )
+    RETURN_TYPES = (WILDCARD, WILDCARD,)
+    RETURN_NAMES = (Lexicon.ANY, Lexicon.VEC,)
+    OUTPUT_IS_LIST = (True, True, )
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -168,7 +128,7 @@ class ComparisonNode(JOVBaseNode):
         }}
         return Lexicon._parse(d, cls.HELP_URL)
 
-    def run(self, **kw) -> Tuple[bool]:
+    def run(self, **kw) -> Tuple[Any, Any]:
         A = parse_param(kw, Lexicon.IN_A, EnumConvertType.ANY, None)
         B = parse_param(kw, Lexicon.IN_B, EnumConvertType.ANY, None)
         good = parse_param(kw, Lexicon.COMP_A, EnumConvertType.ANY, None)

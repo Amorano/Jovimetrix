@@ -13,7 +13,7 @@ from loguru import logger
 
 from comfy.utils import ProgressBar
 
-from Jovimetrix import JOV_WEB_RES_ROOT, JOVBaseNode, WILDCARD
+from Jovimetrix import JOVBaseNode, WILDCARD, JOV_WEB_RES_ROOT
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import parse_dynamic, parse_param, \
     zip_longest_fill, EnumConvertType

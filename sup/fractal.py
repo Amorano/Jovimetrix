@@ -4,7 +4,6 @@ Noise Support
 """
 
 from enum import Enum
-from loguru import logger
 
 # =============================================================================
 

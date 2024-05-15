@@ -10,8 +10,6 @@ import numpy as np
 from PIL import ImageFont
 from skimage.filters import gaussian
 
-from loguru import logger
-
 from comfy.utils import ProgressBar
 
 from Jovimetrix import JOVBaseNode, JOV_WEB_RES_ROOT, WILDCARD
@@ -127,7 +125,6 @@ class ShapeNode(JOVBaseNode):
         for idx, (shape, sides, offset, angle, edge, size, wihi, color, matte, blur) in enumerate(params):
             width, height = wihi
             sizeX, sizeY = size
-            sides = int(sides)
             edge = EnumEdge[edge]
             shape = EnumShapes[shape]
             match shape:
@@ -159,7 +156,7 @@ class ShapeNode(JOVBaseNode):
             if blur > 0:
                 pA = (gaussian(pA, sigma=blur, channel_axis=2) * 255).astype(np.uint8)
                 mask = (gaussian(mask, sigma=blur, channel_axis=2) * 255).astype(np.uint8)
-            # print(pA.shape, mask.shape)
+            # logger.debug(pA.shape, mask.shape)
             matte = pixel_eval(matte, EnumImageType.BGRA)
             images.append(cv2tensor_full(pA, matte))
             pbar.update_absolute(idx)

@@ -6,12 +6,12 @@ Animate
 import math
 from typing import Any, Tuple
 
-from loguru import logger
 import numpy as np
 
 from comfy.utils import ProgressBar
 
-from Jovimetrix import JOV_WEB_RES_ROOT, comfy_message, parse_reset, JOVBaseNode, WILDCARD
+from Jovimetrix import comfy_message, parse_reset, JOVBaseNode, WILDCARD, \
+    JOV_WEB_RES_ROOT
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.anim import EnumWave, wave_op
 from Jovimetrix.sup.util import EnumConvertType, parse_param, zip_longest_fill
@@ -30,6 +30,7 @@ class TickNode(JOVBaseNode):
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = ("INT", "FLOAT", "FLOAT", WILDCARD)
     RETURN_NAMES = (Lexicon.VALUE, Lexicon.LINEAR, Lexicon.FPS, Lexicon.ANY)
+    OUTPUT_IS_LIST = (True, True, True, True, )
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -129,6 +130,7 @@ class WaveGeneratorNode(JOVBaseNode):
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = ("FLOAT", "INT", )
     RETURN_NAMES = (Lexicon.FLOAT, Lexicon.INT, )
+    # OUTPUT_IS_LIST = (True, True,)
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -136,8 +138,8 @@ class WaveGeneratorNode(JOVBaseNode):
         "required": {},
         "optional": {
             Lexicon.WAVE: (EnumWave._member_names_, {"default": EnumWave.SIN.name}),
-            Lexicon.FREQ: ("FLOAT", {"default": 1, "min": 0.0, "step": 0.01}),
-            Lexicon.AMP: ("FLOAT", {"default": 1, "min": 0.0, "step": 0.01}),
+            Lexicon.FREQ: ("FLOAT", {"default": 1, "min": 0, "step": 0.01}),
+            Lexicon.AMP: ("FLOAT", {"default": 1, "min": 0, "step": 0.01}),
             Lexicon.PHASE: ("FLOAT", {"default": 0, "min": 0.0, "step": 0.001}),
             Lexicon.OFFSET: ("FLOAT", {"default": 0, "min": 0.0, "step": 0.001}),
             Lexicon.TIME: ("FLOAT", {"default": 0, "min": 0, "step": 0.000001}),
@@ -148,8 +150,8 @@ class WaveGeneratorNode(JOVBaseNode):
 
     def run(self, **kw) -> Tuple[float, int]:
         op = parse_param(kw, Lexicon.WAVE, EnumConvertType.STRING, EnumWave.SIN.name, enumType=EnumWave)
-        freq = parse_param(kw, Lexicon.FREQ, EnumConvertType.FLOAT, 1, 0)
-        amp = parse_param(kw, Lexicon.AMP, EnumConvertType.FLOAT, 1, 0)
+        freq = parse_param(kw, Lexicon.FREQ, EnumConvertType.FLOAT, 1, 0.0001)
+        amp = parse_param(kw, Lexicon.AMP, EnumConvertType.FLOAT, 1, 0.0001)
         phase = parse_param(kw, Lexicon.PHASE, EnumConvertType.FLOAT, 0)
         shift = parse_param(kw, Lexicon.OFFSET, EnumConvertType.FLOAT, 0)
         delta_time = parse_param(kw, Lexicon.TIME, EnumConvertType.FLOAT, 0, 0)

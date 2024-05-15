@@ -9,8 +9,8 @@ Device -- MIDI, WEBCAM
 
 import sys
 import time
-from typing import Tuple
 import uuid
+from typing import Tuple
 from math import isclose
 from queue import Queue
 from enum import Enum
@@ -21,13 +21,13 @@ from loguru import logger
 
 from comfy.utils import ProgressBar
 
-from Jovimetrix import JOV_WEB_RES_ROOT, JOVBaseNode, WILDCARD
+from Jovimetrix import JOVBaseNode, WILDCARD, JOV_WEB_RES_ROOT
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import EnumConvertType, parse_param, \
     zip_longest_fill
 from Jovimetrix.sup.stream import camera_list, monitor_list, window_list, \
-    monitor_capture, window_capture, JOV_SPOUT, \
-    StreamingServer, StreamManager, MediaStreamDevice
+    monitor_capture, window_capture, StreamingServer, StreamManager, \
+    MediaStreamDevice, JOV_SPOUT
 
 if JOV_SPOUT:
     from Jovimetrix.sup.stream import SpoutSender, MediaStreamSpout
@@ -392,9 +392,9 @@ class MIDIMessageNode(JOVBaseNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
-
     RETURN_TYPES = ('JMIDIMSG', 'BOOLEAN', 'INT', 'INT', 'INT', 'FLOAT', 'FLOAT', )
     RETURN_NAMES = (Lexicon.MIDI, Lexicon.ON, Lexicon.CHANNEL, Lexicon.CONTROL, Lexicon.NOTE, Lexicon.VALUE, Lexicon.NORMALIZE, )
+    OUTPUT_IS_LIST = (True, True, True, True, True, True, True,)
     SORT = 10
 
     @classmethod
@@ -429,6 +429,7 @@ class MIDIReaderNode(JOVBaseNode):
 
     RETURN_TYPES = ('JMIDIMSG', 'BOOLEAN', 'INT', 'INT', 'INT', 'FLOAT', 'FLOAT',)
     RETURN_NAMES = (Lexicon.MIDI, Lexicon.ON, Lexicon.CHANNEL, Lexicon.CONTROL, Lexicon.NOTE, Lexicon.VALUE, Lexicon.NORMALIZE,)
+    OUTPUT_IS_LIST = (True, True, True, True, True, True, True,)
     SORT = 5
     DEVICES = midi_device_names()
 
@@ -494,6 +495,7 @@ class MIDIFilterEZNode(JOVBaseNode):
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = ('JMIDIMSG', 'BOOLEAN',)
     RETURN_NAMES = (Lexicon.MIDI, Lexicon.TRIGGER,)
+    OUTPUT_IS_LIST = (True, True,)
     SORT = 25
 
     @classmethod
@@ -546,6 +548,7 @@ class MIDIFilterNode(JOVBaseNode):
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = ('JMIDIMSG', 'BOOLEAN', )
     RETURN_NAMES = (Lexicon.MIDI, Lexicon.TRIGGER,)
+    OUTPUT_IS_LIST = (True, True,)
     SORT = 20
     EPSILON = 1e-6
 

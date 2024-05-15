@@ -330,7 +330,6 @@ def cv2tensor(image: TYPE_IMAGE) -> torch.Tensor:
 
 def cv2tensor_full(image: TYPE_IMAGE, matte:TYPE_PIXEL=0) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     mask = image_mask(image)
-    mask = image_convert(mask, 1)
     image = image_matte(image, matte)
     rgb = image_convert(image, 3)
     return cv2tensor(image), cv2tensor(rgb), cv2tensor(mask)
@@ -382,35 +381,43 @@ def tensor2cv(tensor: torch.Tensor, chan:EnumImageType=EnumImageType.BGRA, width
     if not isinstance(tensor, (torch.Tensor,)):
         return channel_solid(width, height, matte, chan=chan)
     image = np.clip(tensor.squeeze().cpu().numpy() * 255, 0, 255).astype(np.uint8)
+
     cc = 1 if len(image.shape) < 3 else image.shape[2]
+    if len(image.shape) < 3:
+        # convert the greyscale to x,y,d
+        image = image_convert(image, 1)
+    # logger.debug(image.shape)
+
     if chan == EnumImageType.BGRA:
         if cc == 4:
             return cv2.cvtColor(image, cv2.COLOR_RGBA2BGRA)
-        elif cc == 3:
+        if cc == 3:
             return cv2.cvtColor(image, cv2.COLOR_RGB2BGRA)
         return cv2.cvtColor(image, cv2.COLOR_GRAY2BGRA)
     elif chan == EnumImageType.RGBA:
+        if cc == 4:
+            return image
         if cc == 3:
             return cv2.cvtColor(image, cv2.COLOR_RGB2RGBA)
-        elif cc == 1:
-            return cv2.cvtColor(image, cv2.COLOR_GRAY2RGBA)
+        return cv2.cvtColor(image, cv2.COLOR_GRAY2RGBA)
     elif chan == EnumImageType.BGR:
         if cc == 4:
             return cv2.cvtColor(image, cv2.COLOR_RGBA2BGR)
-        elif cc == 3:
+        if cc == 3:
             return cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
         return cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
     elif chan == EnumImageType.RGB:
         if cc == 4:
             return cv2.cvtColor(image, cv2.COLOR_RGBA2RGB)
-        elif cc == 1:
-            return cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
+        if cc == 3:
+            return image
+        return cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
     elif chan == EnumImageType.GRAYSCALE:
         if cc == 4:
-            image = cv2.cvtColor(image, cv2.COLOR_RGBA2GRAY)
-        elif cc == 3:
-            image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
-    return np.expand_dims(image, -1)
+            return cv2.cvtColor(image, cv2.COLOR_RGBA2GRAY)
+        if cc == 3:
+            return cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+    return image
 
 def tensor2pil(tensor: torch.Tensor) -> Image.Image:
     """Convert a torch Tensor to a PIL Image."""
@@ -540,7 +547,6 @@ def channel_solid(width:int, height:int, color:TYPE_PIXEL=(0, 0, 0, 0),
     if chan == EnumImageType.GRAYSCALE:
         color = pixel_eval(color, EnumImageType.GRAYSCALE)
         what = np.full((height, width, 1), color, dtype=np.uint8)
-        # print('what', what.shape)
         return what
 
     if not type(color) in [list, set, tuple]:
@@ -639,12 +645,12 @@ def image_blend(imageA: TYPE_IMAGE, imageB: TYPE_IMAGE, mask:Optional[TYPE_IMAGE
     imageB = image_convert(imageB, 4)
     imageB = image_crop_center(imageB, w, h)
     imageB = image_matte(imageB, (0,0,0,0), w, h)
-    old_mask = image_mask(imageB) # [:,:,0]
+    old_mask = image_mask(imageB)[:,:,0]
     if mask is not None:
         mask = image_crop_center(mask, w, h)
         mask = image_matte(mask, (0,0,0,0), w, h)
         mask = image_convert(mask, 1)
-        old_mask = cv2.bitwise_and(mask, old_mask)
+        old_mask = cv2.bitwise_and(mask[:,:,0], old_mask)
     imageB[:,:,3] = old_mask
     imageB = cv2pil(imageB)
     image = blendLayers(imageA, imageB, blendOp.value, np.clip(alpha, 0, 1))
@@ -714,7 +720,7 @@ def image_crop_polygonal(image: TYPE_IMAGE, points: List[TYPE_COORD]) -> TYPE_IM
     point_mask = point_mask[:,:,0]
     # store any alpha channel
     if cc == 4:
-        mask = image_mask(image, 0)
+        mask = image_mask(image, 0)[:,:,0]
         image = cv2.cvtColor(image, cv2.COLOR_BGRA2BGR)
     elif cc == 1:
         image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
@@ -1063,10 +1069,8 @@ def image_mask(image:TYPE_IMAGE, color:TYPE_PIXEL=255) -> TYPE_IMAGE:
     """Returns a mask from an image or a default mask with the color."""
     cc, width, height = channel_count(image)[:3]
     if cc == 4:
-        return image[:,:,3] # np.expand_dims(image[:,:,3], -1)
-    mask = channel_solid(width, height, color, EnumImageType.GRAYSCALE)
-    # print('image_mask120', mask)
-    return mask
+        return np.expand_dims(image[:,:,3], -1)
+    return channel_solid(width, height, color, EnumImageType.GRAYSCALE)
 
 def image_mask_add(image:TYPE_IMAGE, mask:TYPE_IMAGE=None) -> TYPE_IMAGE:
     """Places a default or custom mask into an image.
@@ -1080,8 +1084,7 @@ def image_mask_add(image:TYPE_IMAGE, mask:TYPE_IMAGE=None) -> TYPE_IMAGE:
     else:
         mask = image_grayscale(mask)
         mask = image_scalefit(mask, w, h, EnumScaleMode.CROP)
-        mask = mask[:,:,0]
-    image[:,:,3] = mask
+    image[:,:,3] = mask[:,:,0]
     return image
 
 def image_matte(image:TYPE_IMAGE, color:TYPE_PIXEL=(0,0,0,255),
@@ -1099,14 +1102,14 @@ def image_matte(image:TYPE_IMAGE, color:TYPE_PIXEL=(0,0,0,255),
     if cc != 4:
         image = image_convert(image, 4)
     # save the old alpha channel
-    mask = image_mask(image)
+    mask_chan = image_mask(image)[:,:,0]
     if imageB is not None:
         matte = image_scalefit(matte, width, height, EnumScaleMode.FIT)
         matte = image_convert(imageB, 4)
     else:
         matte = channel_solid(width, height, color, EnumImageType.BGRA)
-    mask_chan = mask[:,:,0] if len(mask.shape)>2 else image_convert(mask[:,:], 1)
-    mask_chan = mask_chan[:,:,0][:,:]
+    # mask_chan = np.expand_dims(mask, -1) if len(mask.shape)<3 else mask
+    # mask_chan = mask_chan[:,:,0]
     matte[y1:y2, x1:x2, 3] = mask_chan
     alpha = cv2.bitwise_not(mask_chan)
     alpha = cv2.cvtColor(alpha, cv2.COLOR_GRAY2BGRA) / 255.0
@@ -1530,7 +1533,7 @@ def color_image2lut(image: TYPE_IMAGE, num_colors:int=256) -> np.ndarray[np.uint
 def color_match_histogram(image: TYPE_IMAGE, usermap: TYPE_IMAGE) -> TYPE_IMAGE:
     """Colorize one input based on the histogram matches."""
     if (cc := channel_count(image)[0]) == 4:
-        alpha = image_mask(image)[:,:,0]
+        alpha = image_mask(image)
     image = image_convert(image, 3)
     image = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
     beta = cv2.cvtColor(usermap, cv2.COLOR_BGR2LAB)
@@ -1539,7 +1542,7 @@ def color_match_histogram(image: TYPE_IMAGE, usermap: TYPE_IMAGE) -> TYPE_IMAGE:
     image = image_blend(usermap, image, blendOp=BlendType.LUMINOSITY)
     image = image_convert(image, cc)
     if cc == 4:
-        image[:,:,3] = alpha
+        image[:,:,3] = alpha[:,:,0]
     return image
 
 def color_match_reinhard(image: TYPE_IMAGE, target: TYPE_IMAGE) -> TYPE_IMAGE:
@@ -1557,7 +1560,7 @@ def color_match_lut(image: TYPE_IMAGE, colormap:int=cv2.COLORMAP_JET,
                       usermap:TYPE_IMAGE=None, num_colors:int=255) -> TYPE_IMAGE:
     """Colorize one input based on built in cv2 color maps or a user defined image."""
     if (cc := channel_count(image)[0]) == 4:
-        alpha = image_mask(image)[:,:,0]
+        alpha = image_mask(image)
     image = image_convert(image, 3)
     image = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
     if usermap is not None:
@@ -1567,7 +1570,7 @@ def color_match_lut(image: TYPE_IMAGE, colormap:int=cv2.COLORMAP_JET,
     image = cv2.addWeighted(image, 0.5, image, 0.5, 0)
     image = image_convert(image, cc)
     if cc == 4:
-        image[:,:,3] = alpha
+        image[:,:,3] = alpha[:,:,0]
     return image
 
 def color_mean(image: TYPE_IMAGE) -> TYPE_IMAGE:
@@ -1739,8 +1742,8 @@ def remap_fisheye(image: TYPE_IMAGE, distort: float) -> TYPE_IMAGE:
         image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
     map_x, map_y = coord_fisheye(width, height, distort)
     image = cv2.remap(image, map_x, map_y, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
-    if cc == 1:
-        image = image[:,:,0]
+    #if cc == 1:
+    #    image = image[:,:,0]
     return image
 
 def remap_perspective(image: TYPE_IMAGE, pts: list) -> TYPE_IMAGE:
@@ -1749,8 +1752,8 @@ def remap_perspective(image: TYPE_IMAGE, pts: list) -> TYPE_IMAGE:
         image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
     pts = coord_perspective(width, height, pts)
     image = cv2.warpPerspective(image, pts, (width, height))
-    if cc == 1:
-        image = image[:,:,0]
+    #if cc == 1:
+    #    image = image[:,:,0]
     return image
 
 def remap_polar(image: TYPE_IMAGE) -> TYPE_IMAGE:
