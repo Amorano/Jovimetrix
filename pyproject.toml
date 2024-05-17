@@ -9,6 +9,6 @@ dependencies = ["torch", "numpy", "matplotlib", "opencv-contrib-python", "ffmpeg
 Repository = "https://github.com/Amorano/Jovimetrix"
 
 [tool.comfy]
-PublisherId = ""
+PublisherId = "amorano"
 DisplayName = "Jovimetrix"
 Icon = ""
