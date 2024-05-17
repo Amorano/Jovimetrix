@@ -29,12 +29,12 @@ from Jovimetrix import comfy_message, parse_reset, JOVBaseNode, \
     WILDCARD, ROOT, JOV_WEB_RES_ROOT
 
 from Jovimetrix.sup.lexicon import Lexicon
-from Jovimetrix.sup.util import EnumConvertType, parse_dynamic, path_next, \
-    parse_param, zip_longest_fill
+from Jovimetrix.sup.util import parse_dynamic, path_next, \
+    parse_param, zip_longest_fill, EnumConvertType
 
-from Jovimetrix.sup.image import  cv2pil, cv2tensor, image_convert, \
-    tensor2pil, tensor2cv, pil2tensor, image_load, image_formats, image_diff, \
-    MIN_IMAGE_SIZE
+from Jovimetrix.sup.image import  EnumImageType, channel_solid, cv2pil, cv2tensor, \
+    image_convert, tensor2pil, tensor2cv, pil2tensor, image_load, image_formats, \
+    image_diff, MIN_IMAGE_SIZE
 
 # =============================================================================
 
@@ -71,67 +71,66 @@ class AkashicNode(JOVBaseNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
-    RETURN_TYPES = (WILDCARD, 'AKASHIC', )
-    RETURN_NAMES = (Lexicon.PASS_OUT, Lexicon.IO)
-    OUTPUT_IS_LIST = (True, True,)
+    RETURN_TYPES = (WILDCARD, 'AKASHIC',)
+    RETURN_NAMES = (Lexicon.PASS_OUT, Lexicon.IO,)
     OUTPUT_NODE = True
     SORT = 10
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {
-        "required": {},
-        "optional": {
-            Lexicon.PASS_IN: (WILDCARD, {})
-        }}
+            "required": {},
+            "optional": {
+                Lexicon.PASS_IN: (WILDCARD, {})
+            }
+        }
         return Lexicon._parse(d, cls.HELP_URL)
-
-    def __parse(self, val) -> Dict[str, List[Any]]:
-        if isinstance(val, dict):
-            result = "{"
-            for k, v in val.items():
-                result["text"] += f"{k}:{self.__parse(v)}, "
-            return "text", [result[:-2] + "}"]
-        elif isinstance(val, (tuple, set, list,)):
-            result = "("
-            for v in val:
-                result += f"{self.__parse(v)}, "
-            return "text", [result[:-2] + ")"]
-        elif isinstance(val, str):
-             return "text", [val]
-        elif isinstance(val, bool):
-            return "text", ["True" if val else "False"]
-        elif isinstance(val, torch.Tensor):
-            # logger.debug(f"Tensor: {val.shape}")
-            ret = []
-            if not isinstance(val, (list, tuple, set,)):
-                val = [val]
-            for img in val:
-                img = tensor2pil(img)
-                buffered = io.BytesIO()
-                img.save(buffered, format="PNG")
-                img = base64.b64encode(buffered.getvalue())
-                img = "data:image/png;base64," + img.decode("utf-8")
-                ret.append(img)
-            return "b64_images", ret
-        else:
-            # no clue what I am....
-            meh = ''.join(repr(type(val)).split("'")[1:2])
-            return "text", [meh]
 
     def run(self, **kw) -> Tuple[Any, Any]:
         o = parse_param(kw, Lexicon.PASS_IN, EnumConvertType.ANY, None)
         output = {"ui": {"b64_images": [], "text": []}}
         if o is None:
-            output["ui"]["result"] = (o, {}, )
+            output["ui"]["result"] = (None, None, )
             return output
 
-        for v in kw.values():
-            who, data = self.__parse(v)
-            output["ui"][who].extend(data)
+        images = []
+
+        def __parse(val) -> None:
+            ret = val
+            if isinstance(val, dict):
+                ret = "{"
+                for k, v in val.items():
+                    ret += f"{k}:{__parse(v)}, "
+                ret += "}"
+                return ret
+            elif isinstance(val, (tuple, set, list,)):
+                return [__parse(v) for v in kw.values()]
+            elif isinstance(val, (int, float, str)):
+                return str(val)
+            elif isinstance(val, bool):
+                return "True" if val else "False"
+            elif isinstance(val, torch.Tensor):
+                ret = []
+                if not isinstance(val, (list, tuple, set,)):
+                    val = [val]
+                for img in val:
+                    img = tensor2pil(img)
+                    ret.append(str(img.size))
+                    ret += str(img.size)
+                    buffered = io.BytesIO()
+                    img.save(buffered, format="PNG")
+                    img = base64.b64encode(buffered.getvalue())
+                    img = "data:image/png;base64," + img.decode("utf-8")
+                    output["ui"]["b64_images"].append(img)
+                return ', '.join(ret)
+
+            return ''.join(repr(type(val)).split("'")[1:2])
+
+        output["ui"]["text"] = [__parse(v) for v in kw.values()]
 
         ak = AkashicData(image=output["ui"]["b64_images"], text=output["ui"]["text"] )
         output["result"] = (o, ak)
+        print(output)
         return output
 
 class ValueGraphNode(JOVBaseNode):
@@ -210,7 +209,6 @@ class QueueNode(JOVBaseNode):
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = (WILDCARD, WILDCARD, "STRING", "INT", "INT", )
     RETURN_NAMES = (Lexicon.ANY, Lexicon.QUEUE, Lexicon.CURRENT, Lexicon.INDEX, Lexicon.TOTAL, )
-    # OUTPUT_IS_LIST = (True, True, False, False, False, )
     VIDEO_FORMATS = ['.webm', '.mp4', '.avi', '.wmv', '.mkv', '.mov', '.mxf']
     SORT = 0
 
@@ -468,8 +466,8 @@ class ImageDiffNode(JOVBaseNode):
         params = list(zip_longest_fill(pA, pB, th))
         pbar = ProgressBar(len(params))
         for idx, (pA, pB, th) in enumerate(params):
-            pA = tensor2cv(pA)
-            pA = tensor2cv(pB)
+            pA = tensor2cv(pA) if pA is not None else channel_solid(chan=EnumImageType.BGRA)
+            pB = tensor2cv(pB) if pB is not None else channel_solid(chan=EnumImageType.BGRA)
             a, b, d, t, s = image_diff(pA, pB, int(th * 255))
             d = image_convert(d, 1)
             t = image_convert(t, 1)
@@ -593,7 +591,6 @@ class RESTNode:
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
-    # OUTPUT_IS_LIST = (True, True, True,)
     RETURN_TYPES = ("JSON", "INT", "STRING")
     RETURN_NAMES = ("RESPONSE", "LENGTH", "TOKEN")
     SORT = 80

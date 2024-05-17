@@ -319,7 +319,7 @@ class StreamWriterNode(JOVBaseNode):
                 matte = pixel_eval(matte, EnumImageType.BGRA)
                 images = parse_param(images, EnumConvertType.IMAGE, images)
                 for img in images:
-                    img = tensor2cv(img)
+                    img = tensor2cv(img) if img is not None else channel_solid(chan=EnumImageType.BGRA)
                     self.__device.image = image_scalefit(img, w, h, mode, sample, matte)
             pbar.update_absolute(idx)
         return ()
@@ -375,8 +375,8 @@ if JOV_SPOUT:
                 # delta_desired = 1. / float(fps) if fps > 0 else 0
                 for img in images:
                     # loop_time = time.perf_counter_ns()
-                    img = tensor2cv(img)
                     w, h = wihi
+                    img = tensor2cv(img) if img is not None else channel_solid(w, h, chan=EnumImageType.BGRA)
                     img = image_scalefit(img, w, h, mode, sample, matte)
                     # results.append(cv2tensor(img))
                     img[:, :, [0, 2]] = img[:, :, [2, 0]]

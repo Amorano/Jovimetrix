@@ -30,7 +30,7 @@ class TickNode(JOVBaseNode):
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = ("INT", "FLOAT", "FLOAT", WILDCARD)
     RETURN_NAMES = (Lexicon.VALUE, Lexicon.LINEAR, Lexicon.FPS, Lexicon.ANY)
-    OUTPUT_IS_LIST = (True, True, True, True, )
+    # OUTPUT_IS_LIST = (True, True, True, True, )
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -130,7 +130,6 @@ class WaveGeneratorNode(JOVBaseNode):
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = ("FLOAT", "INT", )
     RETURN_NAMES = (Lexicon.FLOAT, Lexicon.INT, )
-    # OUTPUT_IS_LIST = (True, True,)
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -143,7 +142,6 @@ class WaveGeneratorNode(JOVBaseNode):
             Lexicon.PHASE: ("FLOAT", {"default": 0, "min": 0.0, "step": 0.001}),
             Lexicon.OFFSET: ("FLOAT", {"default": 0, "min": 0.0, "step": 0.001}),
             Lexicon.TIME: ("FLOAT", {"default": 0, "min": 0, "step": 0.000001}),
-            # stick the current "count"
             Lexicon.INVERT: ("BOOLEAN", {"default": False}),
         }}
         return Lexicon._parse(d, cls.HELP_URL)
@@ -161,7 +159,7 @@ class WaveGeneratorNode(JOVBaseNode):
         params = list(zip_longest_fill(op, freq, amp, phase, shift, delta_time, invert, abs))
         pbar = ProgressBar(len(params))
         for idx, (op, freq, amp, phase, shift, delta_time, invert, abs) in enumerate(params):
-            freq = 1. / freq
+            # freq = 1. / freq
             if invert:
                 amp = -amp
             val = wave_op(op, phase, freq, amp, shift, delta_time)

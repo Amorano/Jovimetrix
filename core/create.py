@@ -18,7 +18,7 @@ from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import parse_dynamic, parse_param, zip_longest_fill, \
     EnumConvertType
 
-from Jovimetrix.sup.image import  cv2tensor, cv2tensor_full, \
+from Jovimetrix.sup.image import  channel_solid, cv2tensor, cv2tensor_full, \
     image_grayscale, image_invert, image_mask_add, \
     image_rotate, image_stereogram, image_transform, image_translate, pil2cv, \
     pixel_eval, tensor2cv, shape_ellipse, shape_polygon, shape_quad, \
@@ -67,7 +67,8 @@ class ConstantNode(JOVBaseNode):
         for idx, (pA, wihi, matte) in enumerate(params):
             width, height = wihi
             matte = pixel_eval(matte, EnumImageType.BGRA)
-            pA = tensor2cv(pA, EnumImageType.BGRA, width, height, matte)
+            channel_solid(width, height, matte, EnumImageType.BGRA)
+            pA = tensor2cv(pA) if pA is not None else channel_solid(width, height, matte, EnumImageType.BGRA)
             images.append(cv2tensor_full(pA, matte))
             pbar.update_absolute(idx)
         return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
@@ -113,11 +114,11 @@ class ShapeNode(JOVBaseNode):
         sides = parse_param(kw, Lexicon.SIDES, EnumConvertType.INT, 3, 3, 512)
         angle = parse_param(kw, Lexicon.ANGLE, EnumConvertType.FLOAT, 0)
         edge = parse_param(kw, Lexicon.EDGE, EnumConvertType.STRING, EnumEdge.CLIP.name)
-        offset = parse_param(kw, Lexicon.XY, EnumConvertType.VEC2, [(0, 0)])
-        size = parse_param(kw, Lexicon.SIZE, EnumConvertType.VEC2, [(1, 1,)], zero=0.001)
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE)], MIN_IMAGE_SIZE)
-        color = parse_param(kw, Lexicon.RGBA_A, EnumConvertType.VEC4INT, [(255, 255, 255, 255)], 0, 255)
-        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
+        offset = parse_param(kw, Lexicon.XY, EnumConvertType.VEC2, (0, 0))
+        size = parse_param(kw, Lexicon.SIZE, EnumConvertType.VEC2, (1, 1,), zero=0.001)
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), MIN_IMAGE_SIZE)
+        color = parse_param(kw, Lexicon.RGBA_A, EnumConvertType.VEC4INT, (255, 255, 255, 255), 0, 255)
+        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
         blur = parse_param(kw, Lexicon.BLUR, EnumConvertType.FLOAT, 0)
         params = list(zip_longest_fill(shape, sides, offset, angle, edge, size, wihi, color, matte, blur))
         images = []
@@ -308,9 +309,9 @@ class StereogramNode(JOVBaseNode):
         images = []
         pbar = ProgressBar(len(params))
         for idx, (pA, depth, divisions, noise, gamma, shift) in enumerate(params):
-            pA = tensor2cv(pA)
-            depth = tensor2cv(depth)
-            pA = image_stereogram(pA, depth, divisions, noise, gamma, shift)
+            pA = tensor2cv(pA) if pA is not None else channel_solid(chan=EnumImageType.BGRA)
+            h, w = pA.shape[:2]
+            depth = tensor2cv(depth) if depth is not None else channel_solid(w, h, chan=EnumImageType.BGRA)
             images.append(cv2tensor_full(pA))
             pbar.update_absolute(idx)
         return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
@@ -343,8 +344,7 @@ class StereoscopicNode(JOVBaseNode):
         params = list(zip_longest_fill(pA, baseline, focal_length))
         pbar = ProgressBar(len(params))
         for idx, (pA, wihi, clr) in enumerate(params):
-            pA = tensor2cv(pA, EnumImageType.GRAYSCALE)
-
+            pA = tensor2cv(pA) if pA is not None else channel_solid(chan=EnumImageType.GRAYSCALE)
             # Convert depth image to disparity map
             disparity_map = np.divide(1.0, pA.astype(np.float32), where=pA!=0)
             # Compute disparity values based on baseline and focal length

@@ -73,18 +73,16 @@ def parse_value(val:Any, typ:EnumConvertType, default: Any,
     if typ not in [EnumConvertType.ANY, EnumConvertType.IMAGE] and isinstance(val, (torch.Tensor,)):
         val = list(val.size())[1:4] + [val[0]]
 
-    size = 1
+    size = max(1, int(typ.value / 10))
     new_val = val
     if typ in [EnumConvertType.FLOAT, EnumConvertType.INT,
             EnumConvertType.VEC2, EnumConvertType.VEC2INT,
             EnumConvertType.VEC3, EnumConvertType.VEC3INT,
             EnumConvertType.VEC4, EnumConvertType.VEC4INT]:
-
         new_val = []
         if not isinstance(val, (list, tuple,)):
             val = [val]
         last = val[0]
-        size = max(1, int(typ.value / 10))
         for idx in range(size):
             v = val[idx] if idx < len(val) else None
             d = new_val[-1] if len(new_val) else val[-1]
@@ -97,12 +95,15 @@ def parse_value(val:Any, typ:EnumConvertType, default: Any,
                         d = default[-1]
             last = v if v is not None else d
             new_val.append(last)
+
         for idx in range(size):
             if isinstance(new_val[idx], str):
                 parts = new_val[idx].split('.', 1)
                 if len(parts) > 1:
                     new_val[idx] ='.'.join(parts[:2])
-            elif isinstance(new_val[idx], (list, tuple, set, dict)):
+            elif isinstance(new_val[idx], (list, tuple, set,)):
+                new_val[idx] = new_val[idx][size] if size < len(new_val[idx]) else 0
+            elif isinstance(new_val[idx], (dict,)):
                 new_val[idx] = 0
             try:
                 if typ in [EnumConvertType.FLOAT, EnumConvertType.VEC2,
@@ -110,24 +111,22 @@ def parse_value(val:Any, typ:EnumConvertType, default: Any,
                     new_val[idx] = round(float(new_val[idx]), 12)
                 else:
                     new_val[idx] = int(new_val[idx])
-
                 if clip_min is not None:
                     new_val[idx] = max(new_val[idx], clip_min)
                 if clip_max is not None:
                     new_val[idx] = min(new_val[idx], clip_max)
                 if new_val[idx] == 0:
                     new_val[idx] = zero
-            except Exception as _:
+            except Exception as e:
+                logger.error(e)
                 try:
                     new_val[idx] = ord(v)
-                except:
+                except Exception as e:
                     logger.debug(f"value not converted well {val} ... {new_val[idx]} == 0")
+                    logger.error(e)
                     new_val[idx] = 0
         if size == 1:
             new_val = new_val[0]
-        else:
-            new_val = new_val[:size]
-            new_val = tuple(new_val)
     elif typ == EnumConvertType.IMAGE:
         if isinstance(new_val, (torch.Tensor,)):
             if len(new_val.shape) > 3:

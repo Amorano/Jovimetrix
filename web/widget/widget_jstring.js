@@ -6,6 +6,36 @@
 import { app } from "../../../scripts/app.js"
 import { offsetDOMWidget } from '../util/util_dom.js'
 
+const withFont = (ctx, font, cb) => {
+    const oldFont = ctx.font
+    ctx.font = font
+    cb()
+    ctx.font = oldFont
+}
+
+const calculateTextDimensions = (ctx, value, width, fontSize = 12) => {
+    const words = value.split(' ')
+    const lines = []
+    let currentLine = ''
+    for (const word of words) {
+      const testLine = currentLine.length === 0 ? word : `${currentLine} ${word}`
+      const testWidth = ctx.measureText(testLine).width
+      if (testWidth > width) {
+        lines.push(currentLine)
+        currentLine = word
+      } else {
+        currentLine = testLine
+      }
+    }
+    if (lines.length === 0) lines.push(value)
+    const textHeight = (lines.length + 1) * fontSize
+    const maxLineWidth = lines.reduce(
+      (maxWidth, line) => Math.max(maxWidth, ctx.measureText(line).width),
+      0
+    )
+    return { textHeight, maxLineWidth }
+  }
+
 export const JStringWidget = (app, name, value) => {
     const fontSize = 16
     const w = {

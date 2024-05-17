@@ -253,6 +253,47 @@ class EnumCBDefiency(Enum):
     TRITAN = simulate.Deficiency.TRITAN
 
 # =============================================================================
+# === CONVERSION GLOBAL ===
+# =============================================================================
+
+MODE_CV2 = {
+    EnumImageType.BGRA: {
+        4: cv2.COLOR_RGBA2BGRA,
+        3: cv2.COLOR_RGB2BGRA,
+        1: cv2.COLOR_GRAY2BGRA,
+    },
+    EnumImageType.RGBA: {
+        4: lambda x: x,
+        3: cv2.COLOR_RGB2RGBA,
+        1: cv2.COLOR_GRAY2RGBA,
+    },
+    EnumImageType.BGR: {
+        4: cv2.COLOR_RGBA2BGR,
+        3: cv2.COLOR_RGB2BGR,
+        1: cv2.COLOR_GRAY2BGR,
+    },
+    EnumImageType.RGB: {
+        4: cv2.COLOR_RGBA2RGB,
+        3: lambda x: x,
+        1: cv2.COLOR_GRAY2RGB,
+    },
+    EnumImageType.GRAYSCALE: {
+        4: cv2.COLOR_RGBA2GRAY,
+        3: cv2.COLOR_RGB2GRAY,
+        1: lambda x: x,
+    }
+}
+
+MODE_PIL = {
+    4: 'RGBA',
+    3: 'RGB',
+    1: 'L',
+    'L': cv2.COLOR_GRAY2BGR,
+    'RGB': cv2.COLOR_RGB2BGR,
+    'RGBA': cv2.COLOR_RGBA2BGRA
+}
+
+# =============================================================================
 # === COLOR SPACE CONVERSION ===
 # =============================================================================
 
@@ -304,29 +345,18 @@ def b64_2_tensor(base64str: str) -> torch.Tensor:
     img = ImageOps.exif_transpose(img)
     return pil2tensor(img)
 
-def cv2pil(image: TYPE_IMAGE, chan:EnumImageType=EnumImageType.RGBA) -> Image.Image:
-    if image is None:
-        return channel_solid(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 0, chan)
-    mode = cv2.COLOR_BGR2GRAY
-    if chan == EnumImageType.RGB:
-        mode = cv2.COLOR_BGR2RGBA
-    elif chan == EnumImageType.RGBA:
-        mode = cv2.COLOR_BGRA2RGBA
-    image = cv2.cvtColor(image, mode)
+def cv2pil(image: TYPE_IMAGE) -> Image.Image:
+    """Convert a CV2 image to a PIL Image."""
+    if (cc := image.shape[2] if len(image.shape) > 2 else 1) > 1:
+        if cc == 3:
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        else:
+            image = cv2.cvtColor(image, cv2.COLOR_BGRA2RGBA)
     return Image.fromarray(image)
 
 def cv2tensor(image: TYPE_IMAGE) -> torch.Tensor:
-    """Convert a CV2 Matrix to a Torch Tensor."""
-    cc = 1 if len(image.shape) < 3 else image.shape[2]
-    match cc:
-        case 3:
-            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        case 4:
-            image = cv2.cvtColor(image, cv2.COLOR_BGRA2RGBA)
-        case 1:
-            if len(image.shape) > 2:
-                image = image.squeeze()
-    return torch.from_numpy(image.astype(np.float32) / 255).unsqueeze(0)
+    """Convert a CV2 image to a torch tensor."""
+    return torch.from_numpy(image.astype(np.float32) / 255.0).unsqueeze(0)
 
 def cv2tensor_full(image: TYPE_IMAGE, matte:TYPE_PIXEL=0) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     mask = image_mask(image)
@@ -344,90 +374,29 @@ def image2bgr(image: TYPE_IMAGE) -> Tuple[int, TYPE_IMAGE, TYPE_IMAGE]:
     alpha = image_mask(image)
     if (cc := channel_count(image)[0]) == 1:
         image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
-    elif (cc := channel_count(image)[0]) == 4:
+    elif cc == 4:
         image = cv2.cvtColor(image, cv2.COLOR_BGRA2BGR)
     return image, alpha, cc
 
-def pil2cv(image: Image.Image, chan:EnumImageType=EnumImageType.BGRA) -> TYPE_IMAGE:
+def pil2cv(image: Image.Image) -> TYPE_IMAGE:
     """Convert a PIL Image to a CV2 Matrix."""
-    mode = image.mode
+    mode = MODE_PIL.get(image.mode, cv2.COLOR_RGBA2BGRA)
     image = np.array(image).astype(np.uint8)
-    if chan == EnumImageType.BGRA:
-        if mode == 'RGBA':
-            return cv2.cvtColor(image, cv2.COLOR_RGBA2BGRA)
-        elif mode == 'RGB':
-            return cv2.cvtColor(image, cv2.COLOR_RGB2BGRA)
-        else:
-            return cv2.cvtColor(image, cv2.COLOR_GRAY2BGRA)
-    elif chan == EnumImageType.BGR:
-        if mode == 'RGBA':
-            return cv2.cvtColor(image, cv2.COLOR_RGBA2BGR)
-        elif mode == 'RGB':
-            return cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-        else:
-            return cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
-    elif chan == EnumImageType.GRAYSCALE:
-        if mode == 'RGBA':
-            return cv2.cvtColor(image, cv2.COLOR_GRAY2BGRA)
-        elif mode == 'RGB':
-            return cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
-    return image
+    return cv2.cvtColor(image, mode)
 
 def pil2tensor(image: Image.Image) -> torch.Tensor:
     """Convert a PIL Image to a Torch Tensor."""
-    return torch.from_numpy(np.array(image).astype(np.float32) / 255).unsqueeze(0)
+    image = np.array(image).astype(np.float32) / 255
+    return torch.from_numpy(image).unsqueeze(0)
 
-def tensor2cv(tensor: torch.Tensor, chan:EnumImageType=EnumImageType.BGRA, width:int=MIN_IMAGE_SIZE, height:int=MIN_IMAGE_SIZE, matte:TYPE_PIXEL=(0, 0, 0, 255)) -> TYPE_IMAGE:
-    if not isinstance(tensor, (torch.Tensor,)):
-        return channel_solid(width, height, matte, chan=chan)
-    image = np.clip(tensor.squeeze().cpu().numpy() * 255, 0, 255).astype(np.uint8)
-
-    cc = 1 if len(image.shape) < 3 else image.shape[2]
-    if len(image.shape) < 3:
-        # convert the greyscale to x,y,d
-        image = image_convert(image, 1)
-    # logger.debug(image.shape)
-
-    if chan == EnumImageType.BGRA:
-        if cc == 4:
-            return cv2.cvtColor(image, cv2.COLOR_RGBA2BGRA)
-        if cc == 3:
-            return cv2.cvtColor(image, cv2.COLOR_RGB2BGRA)
-        return cv2.cvtColor(image, cv2.COLOR_GRAY2BGRA)
-    elif chan == EnumImageType.RGBA:
-        if cc == 4:
-            return image
-        if cc == 3:
-            return cv2.cvtColor(image, cv2.COLOR_RGB2RGBA)
-        return cv2.cvtColor(image, cv2.COLOR_GRAY2RGBA)
-    elif chan == EnumImageType.BGR:
-        if cc == 4:
-            return cv2.cvtColor(image, cv2.COLOR_RGBA2BGR)
-        if cc == 3:
-            return cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-        return cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
-    elif chan == EnumImageType.RGB:
-        if cc == 4:
-            return cv2.cvtColor(image, cv2.COLOR_RGBA2RGB)
-        if cc == 3:
-            return image
-        return cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
-    elif chan == EnumImageType.GRAYSCALE:
-        if cc == 4:
-            return cv2.cvtColor(image, cv2.COLOR_RGBA2GRAY)
-        if cc == 3:
-            return cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
-    return image
+def tensor2cv(tensor: torch.Tensor) -> TYPE_IMAGE:
+    """Convert a torch Tensor to a numpy ndarray."""
+    return np.clip(255.0 * tensor.cpu().squeeze().numpy(), 0, 255).astype(np.uint8)
 
 def tensor2pil(tensor: torch.Tensor) -> Image.Image:
     """Convert a torch Tensor to a PIL Image."""
-    tensor = np.clip(255 * tensor.cpu().numpy().squeeze(), 0, 255).astype(np.uint8)
-    cc = 1 if len(tensor.shape) < 3 else tensor.shape[2]
-    if cc == 4:
-        return Image.fromarray(tensor, mode='RGBA')
-    elif cc == 3:
-        return Image.fromarray(tensor, mode='RGB')
-    return Image.fromarray(tensor, mode='L')
+    tensor = np.clip(255.0 * tensor.cpu().squeeze().numpy(), 0, 255).astype(np.uint8)
+    return Image.fromarray(tensor)
 
 # =============================================================================
 # === PIXEL ===
@@ -541,7 +510,7 @@ def channel_add(image:TYPE_IMAGE, color:TYPE_PIXEL=255) -> TYPE_IMAGE:
     new = channel_solid(w, h, color, EnumImageType.GRAYSCALE)
     return np.concatenate([image, new], axis=-1)
 
-def channel_solid(width:int, height:int, color:TYPE_PIXEL=(0, 0, 0, 0),
+def channel_solid(width:int=MIN_IMAGE_SIZE, height:int=MIN_IMAGE_SIZE, color:TYPE_PIXEL=(0, 0, 0, 255),
                   chan:EnumImageType=EnumImageType.BGR) -> TYPE_IMAGE:
 
     if chan == EnumImageType.GRAYSCALE:
@@ -649,8 +618,10 @@ def image_blend(imageA: TYPE_IMAGE, imageB: TYPE_IMAGE, mask:Optional[TYPE_IMAGE
     if mask is not None:
         mask = image_crop_center(mask, w, h)
         mask = image_matte(mask, (0,0,0,0), w, h)
-        mask = image_convert(mask, 1)
-        old_mask = cv2.bitwise_and(mask[:,:,0], old_mask)
+        if len(mask.shape) > 2:
+            print(mask.shape)
+            mask = image_convert(mask, 1)[:,:,0]
+        old_mask = cv2.bitwise_and(mask, old_mask)
     imageB[:,:,3] = old_mask
     imageB = cv2pil(imageB)
     image = blendLayers(imageA, imageB, blendOp.value, np.clip(alpha, 0, 1))
@@ -1027,7 +998,7 @@ def image_load(url: str) -> Tuple[TYPE_IMAGE, TYPE_IMAGE]:
     if img is None:
         raise Exception(f"no file {url}")
     if img.dtype != np.uint8:
-        img = np.array(img * 255, dtype=np.uint8)
+        img = np.clip(np.array(img * 255, 0, 255)).astype(dtype=np.uint8)
     return img, image_mask(img)
 
 def image_load_data(data: str) -> TYPE_IMAGE:

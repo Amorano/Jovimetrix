@@ -5,10 +5,10 @@
  */
 
 import { app } from "../../../scripts/app.js"
+import { ComfyWidgets } from '../../../scripts/widgets.js';
 import { fitHeight } from '../util/util.js'
 import { escapeHtml } from '../util/util_dom.js'
 import { JImageWidget } from '../widget/widget_jimage.js'
-import { JStringWidget } from '../widget/widget_jstring.js'
 
 const _prefix = 'jovi'
 const _id = "AKASHIC (JOV) 📓"
@@ -20,37 +20,42 @@ app.registerExtension({
             return
         }
 
-        const onExecuted = nodeType.prototype.onExecuted
+        const onNodeCreated = nodeType.prototype.onNodeCreated;
+        nodeType.prototype.onNodeCreated = async function () {
+            const me = onNodeCreated?.apply(this);
+            this.message = ComfyWidgets.STRING(this, '', [
+                    'STRING', {
+                        multiline: true,
+                    },
+                ], app).widget;
+            this.message.value = "";
+            return me;
+        }
+
+        const onExecuted = nodeType.prototype.onExecuted;
         nodeType.prototype.onExecuted = function (message) {
             onExecuted?.apply(this, arguments)
             if (this.widgets) {
-                for (let i = 0; i < this.widgets.length; i++) {
+                for (let i = 1; i < this.widgets.length; i++) {
                     this.widgets[i].onRemoved?.()
                 }
-                this.widgets.length = 1
             }
 
-            let index = 0
-            console.debug("unknown message", message)
-            if (message.text && message.txt != "") {
-                for (const txt of message.text) {
-                    const w = this.addCustomWidget(
-                        JStringWidget(app, `${_prefix}_${index}`, escapeHtml(txt))
-                    )
-                    w.parent = this
-                    index++
-                }
+            this.message.value = "";
+            if (message.text != null) {
+                let new_val = message.text.map((txt, index) => `${index}: ${txt}`).join('\n');
+                //console.info(new_val);
+                this.message.value = new_val;
             }
-            else if (message.b64_images) {
+            let index = 0;
+            if (message.b64_images) {
                 for (const img of message.b64_images) {
                     const w = this.addCustomWidget(
                         JImageWidget(app, `${_prefix}_${index}`, img)
                     )
-                    w.parent = this
-                    index++
+                    w.parent = this;
+                    index++;
                 }
-            } else {
-                console.debug("unknown message", message)
             }
             fitHeight(this);
         }

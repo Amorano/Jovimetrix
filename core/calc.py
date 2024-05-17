@@ -140,7 +140,6 @@ class CalcUnaryOPNode(JOVBaseNode):
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = (WILDCARD,)
     RETURN_NAMES = (Lexicon.UNKNOWN,)
-    #OUTPUT_IS_LIST = (True,)
     SORT = 10
 
     @classmethod
@@ -223,7 +222,6 @@ class CalcBinaryOPNode(JOVBaseNode):
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = (WILDCARD,)
     RETURN_NAMES = (Lexicon.UNKNOWN,)
-    #OUTPUT_IS_LIST = (True,)
     SORT = 20
 
     @classmethod
@@ -384,7 +382,6 @@ class ValueNode(JOVBaseNode):
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = (WILDCARD,)
     RETURN_NAMES = (Lexicon.ANY,)
-    OUTPUT_IS_LIST = (False,)
     SORT = 1
 
     @classmethod

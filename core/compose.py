@@ -19,7 +19,7 @@ from Jovimetrix.sup.util import parse_dynamic, parse_param, \
     zip_longest_fill, EnumConvertType
 from Jovimetrix.sup.image import  channel_merge, \
     channel_solid, channel_swap, cv2tensor_full, \
-    image_crop, image_crop_center, image_crop_polygonal, \
+    image_crop, image_crop_center, image_crop_polygonal, image_grayscale, \
     image_mask, image_mask_add, image_matte, image_transform, \
     image_split, pixel_eval, tensor2cv, \
     image_edge_wrap, image_scalefit, cv2tensor, \
@@ -97,7 +97,9 @@ class TransformNode(JOVBaseNode):
         images = []
         pbar = ProgressBar(len(params))
         for idx, (pA, offset, angle, size, edge, tile_xy, mirror, mirror_pivot, proj, strength, tltr, blbr, mode, wihi, sample, matte) in enumerate(params):
-            pA = tensor2cv(pA)
+            print(pA.shape)
+            pA = tensor2cv(pA) if pA is not None else channel_solid(chan=EnumImageType.BGRA)
+            print(pA.shape)
             h, w = pA.shape[:2]
             edge = EnumEdge[edge]
             sample = EnumInterpolation[sample]
@@ -200,15 +202,16 @@ class BlendNode(JOVBaseNode):
                 h, w = pB.shape[:2]
 
             matte = pixel_eval(matte, EnumImageType.BGRA)
-            pA = tensor2cv(pA, width=w, height=h)
+            pA = tensor2cv(pA) if pA is not None else channel_solid(w, h, chan=EnumImageType.BGRA)
+            print(pA.shape, matte)
             pA = image_matte(pA, matte)
-            pB = tensor2cv(pB, width=w, height=h)
+            pB = tensor2cv(pB) if pB is not None else channel_solid(w, h, chan=EnumImageType.BGRA)
 
             if mask is None:
                 mask = image_mask(pB)
             else:
                 h, w = pB.shape[:2]
-                mask = tensor2cv(mask, EnumImageType.GRAYSCALE, w, h)
+                mask = tensor2cv(mask) if mask is not None else channel_solid(w, h, chan=EnumImageType.GRAYSCALE)
 
             if invert:
                 mask = 255 - mask
@@ -249,7 +252,7 @@ class PixelSplitNode(JOVBaseNode):
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
         pbar = ProgressBar(len(pA))
         for idx, (pA,) in enumerate([pA]):
-            pA = tensor2cv(pA)
+            pA = tensor2cv(pA) if pA is not None else channel_solid(chan=EnumImageType.BGRA)
             pA = image_mask_add(pA)
             pA = [cv2tensor(x) for x in image_split(pA)]
             images.append(pA)
@@ -292,10 +295,14 @@ class PixelMergeNode(JOVBaseNode):
         images = []
         pbar = ProgressBar(len(params))
         for idx, (r, g, b, a, matte) in enumerate(params):
-            r = tensor2cv(r, EnumImageType.GRAYSCALE)
-            g = tensor2cv(g, EnumImageType.GRAYSCALE)
-            b = tensor2cv(b, EnumImageType.GRAYSCALE)
-            mask = tensor2cv(a, EnumImageType.GRAYSCALE)
+            r = tensor2cv(r) if r is not None else channel_solid()
+            r = image_grayscale(r)
+            g = tensor2cv(g) if g is not None else channel_solid()
+            g = image_grayscale(g)
+            b = tensor2cv(b) if b is not None else channel_solid()
+            b = image_grayscale(b)
+            mask = tensor2cv(a) if a is not None else channel_solid()
+            mask = image_grayscale(mask)
             img = channel_merge([b, g, r, mask])
             images.append(cv2tensor_full(img, matte))
             pbar.update_absolute(idx)
@@ -348,9 +355,9 @@ class PixelSwapNode(JOVBaseNode):
         images = []
         pbar = ProgressBar(len(params))
         for idx, (pA, pB, r, swap_r, g, swap_g, b, swap_b, a, swap_a) in enumerate(params):
-            pA = tensor2cv(pA)
+            pA = tensor2cv(pA) if pA is not None else channel_solid(chan=EnumImageType.BGRA)
             h, w = pA.shape[:2]
-            pB = tensor2cv(pB, width=w, height=h)
+            pB = tensor2cv(pB) if pB is not None else channel_solid(w, h, chan=EnumImageType.BGRA)
             out = channel_solid(w, h, (r,g,b,a), EnumImageType.BGRA)
 
             def swapper(swap_out:EnumPixelSwizzle, swap_in:EnumPixelSwizzle) -> np.ndarray[Any]:
@@ -459,7 +466,7 @@ class CropNode(JOVBaseNode):
         pbar = ProgressBar(len(params))
         for idx, (pA, func, xy, wihi, tltr, blbr, color) in enumerate(params):
             width, height = wihi
-            pA = tensor2cv(pA, width=width, height=height)
+            pA = tensor2cv(pA) if pA is not None else channel_solid(width, height)
             func = EnumCropMode[func]
             if func == EnumCropMode.FREE:
                 y1, x1, y2, x2 = tltr
@@ -506,7 +513,7 @@ class ColorTheoryNode(JOVBaseNode):
         images = []
         pbar = ProgressBar(len(params))
         for idx, (img, target, user, invert) in enumerate(params):
-            img = tensor2cv(img)
+            img = tensor2cv(img) if img is not None else channel_solid(chan=EnumImageType.BGRA)
             target = EnumColorTheory[target]
             img = color_theory(img, user, target)
             if invert:
@@ -524,7 +531,6 @@ class HistogramNode(JOVImageSimple):
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
         RETURN_TYPES = ("IMAGE", )
     RETURN_NAMES = (Lexicon.IMAGE,)
-    # OUTPUT_IS_LIST = (True,)
     SORT = 40
 
     @classmethod

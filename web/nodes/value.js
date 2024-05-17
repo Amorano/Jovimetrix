@@ -37,7 +37,7 @@ app.registerExtension({
                 const widget_z = this.widgets.find(w => w.name === '🇿');
                 const widget_w = this.widgets.find(w => w.name === '🇼');
                 //
-                const visible = widget_a.link === null;
+                const visible = true; //widget_a.link === null;
                 widget_hide(this, widget_x, "-jovi");
                 widget_hide(this, widget_y, "-jovi");
                 widget_hide(this, widget_z, "-jovi");

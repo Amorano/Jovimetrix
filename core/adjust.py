@@ -14,9 +14,9 @@ from comfy.utils import ProgressBar
 from Jovimetrix import JOV_WEB_RES_ROOT, JOVBaseNode, WILDCARD
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import EnumConvertType, parse_param, zip_longest_fill
-from Jovimetrix.sup.image import channel_count, \
+from Jovimetrix.sup.image import MIN_IMAGE_SIZE, channel_count, channel_solid, \
     color_match_histogram, color_match_lut, color_match_reinhard, \
-    cv2tensor_full, image_color_blind, image_scalefit, tensor2cv, image_equalize, \
+    cv2tensor_full, image_color_blind, image_convert, image_grayscale, image_scalefit, tensor2cv, image_equalize, \
     image_levels, pixel_eval, image_posterize, image_pixelate, image_quantize, \
     image_sharpen, image_threshold, image_blend, image_invert, morph_edge_detect, \
     morph_emboss, image_contrast, image_hsv, image_gamma, \
@@ -91,8 +91,7 @@ class AdjustNode(JOVBaseNode):
         images = []
         pbar = ProgressBar(len(params))
         for idx, (pA, mask, op, radius, amt, lohi, lmh, hsv, contrast, gamma, matte, invert) in enumerate(params):
-            # logger.debug(radius)
-            pA = tensor2cv(pA)
+            pA = tensor2cv(pA) if pA is not None else channel_solid(chan=EnumImageType.BGRA)
             if (cc := channel_count(pA)[0]) == 4:
                 alpha = pA[:,:,3]
 
@@ -174,7 +173,8 @@ class AdjustNode(JOVBaseNode):
                 case EnumAdjustOP.CLOSE:
                     img_new = cv2.morphologyEx(pA, cv2.MORPH_CLOSE, (radius, radius), iterations=int(amt))
 
-            mask = tensor2cv(mask, chan=EnumImageType.GRAYSCALE)
+            mask = tensor2cv(mask) if mask is not None else channel_solid()
+            mask = image_grayscale(mask)
             if not invert:
                 mask = 255 - mask
 
@@ -235,9 +235,9 @@ class ColorMatchNode(JOVBaseNode):
         for idx, (pA, pB, colormap, mode, cmap, num_colors, flip, invert, matte) in enumerate(params):
             if flip == True:
                 pA, pB = pB, pA
-            pA = tensor2cv(pA)
+            pA = tensor2cv(pA) if pA is not None else channel_solid(chan=EnumImageType.BGRA)
             h, w = pA.shape[:2]
-            pB = tensor2cv(pB, width=w, height=h)
+            pB = tensor2cv(pB) if pB is not None else channel_solid(w, h, chan=EnumImageType.BGRA)
             mode = EnumColorMatchMode[mode]
             match mode:
                 case EnumColorMatchMode.LUT:
@@ -294,7 +294,7 @@ class ThresholdNode(JOVBaseNode):
         images = []
         pbar = ProgressBar(len(params))
         for idx, (pA, mode, adapt, th, block, invert) in enumerate(params):
-            pA = tensor2cv(pA)
+            pA = tensor2cv(pA) if pA is not None else channel_solid(chan=EnumImageType.BGRA)
             mode = EnumThreshold[mode]
             adapt = EnumThresholdAdapt[adapt]
             pA = image_threshold(pA, th, mode, adapt, block)
@@ -336,7 +336,7 @@ class ColorBlindNode(JOVBaseNode):
         images = []
         pbar = ProgressBar(len(params))
         for idx, (pA, defiency, simulator, severity) in enumerate(params):
-            pA = tensor2cv(pA)
+            pA = tensor2cv(pA) if pA is not None else channel_solid(chan=EnumImageType.BGRA)
             defiency = EnumCBDefiency[defiency]
             simulator = EnumCBSimulator[simulator]
             pA = image_color_blind(pA, defiency, simulator, severity)
