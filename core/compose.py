@@ -97,9 +97,7 @@ class TransformNode(JOVBaseNode):
         images = []
         pbar = ProgressBar(len(params))
         for idx, (pA, offset, angle, size, edge, tile_xy, mirror, mirror_pivot, proj, strength, tltr, blbr, mode, wihi, sample, matte) in enumerate(params):
-            print(pA.shape)
             pA = tensor2cv(pA) if pA is not None else channel_solid(chan=EnumImageType.BGRA)
-            print(pA.shape)
             h, w = pA.shape[:2]
             edge = EnumEdge[edge]
             sample = EnumInterpolation[sample]
@@ -203,7 +201,6 @@ class BlendNode(JOVBaseNode):
 
             matte = pixel_eval(matte, EnumImageType.BGRA)
             pA = tensor2cv(pA) if pA is not None else channel_solid(w, h, chan=EnumImageType.BGRA)
-            print(pA.shape, matte)
             pA = image_matte(pA, matte)
             pB = tensor2cv(pB) if pB is not None else channel_solid(w, h, chan=EnumImageType.BGRA)
 

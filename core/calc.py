@@ -386,17 +386,23 @@ class ValueNode(JOVBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
+        typ = EnumConvertType._member_names_
+        try: typ.pop(typ.index('IMAGE'))
+        except: pass
+        try: typ.pop(typ.index('LATENT'))
+        except: pass
         d = {
-        "required": {},
-        "optional": {
-            Lexicon.IN_A: (WILDCARD, {"default": None, "tooltip":"Passes a raw value directly, or supplies defaults for any value inputs without connections"}),
-            Lexicon.TYPE: (EnumConvertType._member_names_, {"default": EnumConvertType.BOOLEAN.name}),
-            Lexicon.X: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize}),
-            Lexicon.Y: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize}),
-            Lexicon.Z: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize}),
-            Lexicon.W: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize}),
-            Lexicon.STRING: ("STRING", {"default": "", "dynamicPrompts": False, "multiline": True}),
-        }}
+            "required": {},
+            "optional": {
+                Lexicon.IN_A: (WILDCARD, {"default": None, "tooltip":"Passes a raw value directly, or supplies defaults for any value inputs without connections"}),
+                Lexicon.TYPE: (EnumConvertType._member_names_, {"default": EnumConvertType.BOOLEAN.name}),
+                Lexicon.X: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize}),
+                Lexicon.Y: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize}),
+                Lexicon.Z: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize}),
+                Lexicon.W: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize}),
+                Lexicon.STRING: ("STRING", {"default": "", "dynamicPrompts": False, "multiline": True}),
+            }
+        }
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> Tuple[bool]:
@@ -411,7 +417,6 @@ class ValueNode(JOVBaseNode):
         pbar = ProgressBar(len(params))
         for idx, (raw, typ, x, y, z, w) in enumerate(params):
             typ = EnumConvertType[typ]
-            # logger.debug(raw, (x, y, z, w))
             val = parse_value(raw, typ, (x, y, z, w))
             results.append(val)
             pbar.update_absolute(idx)

@@ -93,18 +93,14 @@ class AkashicNode(JOVBaseNode):
             output["ui"]["result"] = (None, None, )
             return output
 
-        images = []
-
-        def __parse(val) -> None:
+        def __parse(val) -> str:
             ret = val
             if isinstance(val, dict):
-                ret = "{"
-                for k, v in val.items():
-                    ret += f"{k}:{__parse(v)}, "
-                ret += "}"
-                return ret
+                ret = ', '.join(f"{k}:{__parse(v)}" for k, v in val.items())
+                return f"{{{ret}}}"
             elif isinstance(val, (tuple, set, list,)):
-                return [__parse(v) for v in kw.values()]
+                ret = ', '.join(__parse(v) for v in val)
+                return f"({ret})"
             elif isinstance(val, (int, float, str)):
                 return str(val)
             elif isinstance(val, bool):
@@ -114,6 +110,7 @@ class AkashicNode(JOVBaseNode):
                 if not isinstance(val, (list, tuple, set,)):
                     val = [val]
                 for img in val:
+                    logger.debug(img.shape)
                     img = tensor2pil(img)
                     ret.append(str(img.size))
                     ret += str(img.size)
@@ -122,15 +119,13 @@ class AkashicNode(JOVBaseNode):
                     img = base64.b64encode(buffered.getvalue())
                     img = "data:image/png;base64," + img.decode("utf-8")
                     output["ui"]["b64_images"].append(img)
-                return ', '.join(ret)
-
+                return [', '.join(ret)]
             return ''.join(repr(type(val)).split("'")[1:2])
 
-        output["ui"]["text"] = [__parse(v) for v in kw.values()]
-
+        for x in o:
+            output["ui"]["text"].append(__parse(x))
         ak = AkashicData(image=output["ui"]["b64_images"], text=output["ui"]["text"] )
         output["result"] = (o, ak)
-        print(output)
         return output
 
 class ValueGraphNode(JOVBaseNode):

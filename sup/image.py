@@ -619,7 +619,6 @@ def image_blend(imageA: TYPE_IMAGE, imageB: TYPE_IMAGE, mask:Optional[TYPE_IMAGE
         mask = image_crop_center(mask, w, h)
         mask = image_matte(mask, (0,0,0,0), w, h)
         if len(mask.shape) > 2:
-            print(mask.shape)
             mask = image_convert(mask, 1)[:,:,0]
         old_mask = cv2.bitwise_and(mask, old_mask)
     imageB[:,:,3] = old_mask
