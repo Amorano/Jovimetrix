@@ -75,7 +75,7 @@ class AdjustNode(JOVBaseNode):
 
     def run(self, **kw)  -> Tuple[torch.Tensor, torch.Tensor]:
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
-        mask = parse_param(kw, Lexicon.MASK, EnumConvertType.IMAGE, None)
+        mask = parse_param(kw, Lexicon.MASK, EnumConvertType.MASK, None)
         op = parse_param(kw, Lexicon.FUNC, EnumConvertType.STRING, EnumAdjustOP.BLUR.name)
         radius = parse_param(kw, Lexicon.RADIUS, EnumConvertType.INT, 3, 3)
         amt = parse_param(kw, Lexicon.VALUE, EnumConvertType.FLOAT, 0, 0, 1)

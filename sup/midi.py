@@ -61,40 +61,32 @@ class MIDIServerThread(threading.Thread):
     def __init__(self, q_in, device, callback, *arg, **kw) -> None:
         super().__init__(*arg, **kw)
         self.__q_in = q_in
-        # self.__q_out = q_out
         self.__device = device
         self.__callback = callback
 
-    def __run(self) -> None:
-        with mido.open_input(self.__device, callback=self.__callback) as inport:
+    def run(self) -> None:
+        old_device = None
+        while True:
+            logger.debug(f"waiting for device")
             while True:
                 try:
-                    cmd = self.__q_in.get_nowait()
-                    if (cmd):
-                        self.__device = cmd
+                    if (cmd := self.__q_in.get_nowait()):
+                        old_device = self.__device = cmd
                         break
                 except Empty as _:
                     time.sleep(0.01)
                 except Exception as e:
                     logger.error(str(e))
+                    pass
 
-    def run(self) -> None:
-        while True:
-            logger.debug(f"started device loop {self.__device}")
-            try:
-                self.__run()
-            except Exception as e:
-                if self.__device is None:
-                    try:
-                        cmd = self.__q_in.get_nowait()
-                        if (cmd):
-                            self.__device = cmd
-                            break
-                    except Empty as _:
-                        time.sleep(0.01)
-                    except Exception as e:
-                        logger.error(str(e))
-                logger.error(str(e))
+            # device is not null....
+            logger.debug(f"starting device loop {self.__device}")
+
+            with mido.open_input(self.__device, callback=self.__callback) as inport:
+                while True:
+                    if self.__device != old_device:
+                        logger.debug(f"device loop ended {old_device}")
+                        break
 
 class MIDIMessage:
     """Snap shot of a message from Midi device."""
@@ -124,6 +116,7 @@ if __name__ == "__main__":
         note = 0
         control = 0
         note_on = False
+        print(data.type)
         match data.type:
             case "control_change":
                 # control=8 value=14 time=0
@@ -142,11 +135,11 @@ if __name__ == "__main__":
         value /= 127.
         # logger.debug("{} {} {} {} {}", note_on, channel, control, note, value)
 
-    device= mido.get_input_names()[0]
-    # logger.debug(device)
     q_in = Queue()
-    q_out = Queue()
-    server = MIDIServerThread(q_in, device, process, daemon=True)
+    server = MIDIServerThread(q_in, None, process, daemon=True)
     server.start()
+    device = midi_device_names()[0]
+    logger.debug(device)
+    q_in.put(device)
     while True:
         time.sleep(0.01)

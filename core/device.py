@@ -394,7 +394,6 @@ class MIDIMessageNode(JOVBaseNode):
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = ('JMIDIMSG', 'BOOLEAN', 'INT', 'INT', 'INT', 'FLOAT', 'FLOAT', )
     RETURN_NAMES = (Lexicon.MIDI, Lexicon.ON, Lexicon.CHANNEL, Lexicon.CONTROL, Lexicon.NOTE, Lexicon.VALUE, Lexicon.NORMALIZE, )
-    OUTPUT_IS_LIST = (True, True, True, True, True, True, True,)
     SORT = 10
 
     @classmethod
@@ -429,7 +428,6 @@ class MIDIReaderNode(JOVBaseNode):
 
     RETURN_TYPES = ('JMIDIMSG', 'BOOLEAN', 'INT', 'INT', 'INT', 'FLOAT', 'FLOAT',)
     RETURN_NAMES = (Lexicon.MIDI, Lexicon.ON, Lexicon.CHANNEL, Lexicon.CONTROL, Lexicon.NOTE, Lexicon.VALUE, Lexicon.NORMALIZE,)
-    OUTPUT_IS_LIST = (True, True, True, True, True, True, True,)
     SORT = 5
     DEVICES = midi_device_names()
 
@@ -449,15 +447,13 @@ class MIDIReaderNode(JOVBaseNode):
     def __init__(self, *arg, **kw) -> None:
         super().__init__(*arg, **kw)
         self.__q_in = Queue()
-        self.__q_out = Queue()
         self.__device = None
         self.__note = 0
         self.__note_on = False
         self.__channel = 0
         self.__control = 0
         self.__value = 0
-        MIDIReaderNode.DEVICES = midi_device_names()
-        self.__SERVER = MIDIServerThread(self.__q_in, self.__device, self.__process, daemon=True)
+        self.__SERVER = MIDIServerThread(self.__q_in, None, self.__process, daemon=True)
         self.__SERVER.start()
 
     def __process(self, data) -> None:
@@ -478,8 +474,8 @@ class MIDIReaderNode(JOVBaseNode):
                 self.__note = data.note
                 self.__value = data.velocity
 
-    def run(self, **kw) -> Tuple[bool, int, int, int]:
-        device = parse_param(kw, Lexicon.DEVICE, EnumConvertType.STRING, None)
+    def run(self, **kw) -> Tuple[MIDIMessage, bool, int, int, int, int, float]:
+        device = parse_param(kw, Lexicon.DEVICE, EnumConvertType.STRING, None)[0]
         if device != self.__device:
             self.__q_in.put(device)
             self.__device = device
@@ -495,7 +491,6 @@ class MIDIFilterEZNode(JOVBaseNode):
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = ('JMIDIMSG', 'BOOLEAN',)
     RETURN_NAMES = (Lexicon.MIDI, Lexicon.TRIGGER,)
-    OUTPUT_IS_LIST = (True, True,)
     SORT = 25
 
     @classmethod
@@ -513,7 +508,7 @@ class MIDIFilterEZNode(JOVBaseNode):
         }}
         return Lexicon._parse(d, cls.HELP_URL)
 
-    def run(self, **kw) -> Tuple[bool]:
+    def run(self, **kw) -> Tuple[MIDIMessage, bool]:
         message = parse_param(kw, Lexicon.MIDI, EnumConvertType.ANY, None)[0]
         if message is None:
             logger.warning('no midi message. connected?')
@@ -548,7 +543,6 @@ class MIDIFilterNode(JOVBaseNode):
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = ('JMIDIMSG', 'BOOLEAN', )
     RETURN_NAMES = (Lexicon.MIDI, Lexicon.TRIGGER,)
-    OUTPUT_IS_LIST = (True, True,)
     SORT = 20
     EPSILON = 1e-6
 

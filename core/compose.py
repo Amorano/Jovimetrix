@@ -177,7 +177,7 @@ class BlendNode(JOVBaseNode):
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
         pA = parse_param(kw, Lexicon.PIXEL_A, EnumConvertType.IMAGE, None)
         pB = parse_param(kw, Lexicon.PIXEL_B, EnumConvertType.IMAGE, None)
-        mask = parse_param(kw, Lexicon.MASK, EnumConvertType.IMAGE, None)
+        mask = parse_param(kw, Lexicon.MASK, EnumConvertType.MASK, None)
         func = parse_param(kw, Lexicon.FUNC, EnumConvertType.STRING, EnumBlendType.NORMAL.name)
         alpha = parse_param(kw, Lexicon.A, EnumConvertType.FLOAT, 1, 0, 1)
         flip = parse_param(kw, Lexicon.FLIP, EnumConvertType.BOOLEAN, False)

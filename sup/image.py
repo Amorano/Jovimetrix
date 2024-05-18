@@ -866,12 +866,13 @@ def image_grayscale(image: TYPE_IMAGE) -> TYPE_IMAGE:
         image = np.clip(image * 255, 0, 255).astype(np.uint8)
     cc = channel_count(image)[0]
     if cc == 1:
-        if len(image.shape) == 2:
+        while len(image.shape) < 3:
             image = np.expand_dims(image, -1)
         return image
     if cc == 4:
         image = image[:,:,:3]
-    return cv2.cvtColor(image, cv2.COLOR_BGR2HSV)[:,:,2]
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)[:,:,2]
+    return np.expand_dims(image, -1)
 
 def image_grid(data: List[TYPE_IMAGE], width: int, height: int) -> TYPE_IMAGE:
     #@TODO: makes poor assumption all images are the same dimensions.

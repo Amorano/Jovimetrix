@@ -30,7 +30,6 @@ class TickNode(JOVBaseNode):
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = ("INT", "FLOAT", "FLOAT", WILDCARD)
     RETURN_NAMES = (Lexicon.VALUE, Lexicon.LINEAR, Lexicon.FPS, Lexicon.ANY)
-    # OUTPUT_IS_LIST = (True, True, True, True, )
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:

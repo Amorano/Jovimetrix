@@ -430,7 +430,6 @@ class LerpNode(JOVBaseNode):
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = (WILDCARD,)
     RETURN_NAMES = (Lexicon.ANY,)
-    OUTPUT_IS_LIST = (True,)
     SORT = 45
 
     @classmethod
@@ -485,7 +484,6 @@ class SwapNode(JOVBaseNode):
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = (WILDCARD,)
     RETURN_NAMES = (Lexicon.ANY,)
-    OUTPUT_IS_LIST = (True,)
     SORT = 65
 
     @classmethod

@@ -35,6 +35,7 @@ class EnumConvertType(Enum):
     # ENUM = 6
     COORD2D = 22
     ANY = 9
+    MASK = 7
 
 class EnumSwizzle(Enum):
     A_X = 0
@@ -72,9 +73,7 @@ def parse_value(val:Any, typ:EnumConvertType, default: Any,
         val = default
 
     if isinstance(val, torch.Tensor) and typ not in [EnumConvertType.ANY, EnumConvertType.IMAGE, EnumConvertType.LATENT]:
-        val = list(val.shape)
-    #elif isinstance(val, (list, tuple)) and len(val) > 0 and val[0] is None:
-    #    val = [default] * len(val)
+        val = val.shape
 
     new_val = val
     if typ in [EnumConvertType.FLOAT, EnumConvertType.INT,
@@ -83,12 +82,13 @@ def parse_value(val:Any, typ:EnumConvertType, default: Any,
             EnumConvertType.VEC4, EnumConvertType.VEC4INT,
             EnumConvertType.COORD2D]:
         size = max(1, int(typ.value / 10))
+        # print(val, type(val))
         new_val = []
         for idx in range(size):
-            if not isinstance(default, (int, float,)):
+            if isinstance(default, (list, tuple,)):
                 d = default[idx] if idx < len(default) else 0
             else:
-                d = [default]
+                d = default
             v = val[idx] if idx < len(val) else d
             try:
                 if typ in [EnumConvertType.FLOAT, EnumConvertType.VEC2, EnumConvertType.VEC3, EnumConvertType.VEC4]:
@@ -102,7 +102,7 @@ def parse_value(val:Any, typ:EnumConvertType, default: Any,
                 if v == 0:
                     v = zero
             except Exception as e:
-                logger.exception(f"Error converting value: {e}")
+                logger.error(f"Error converting value: {e}")
                 v = 0
             new_val.append(v)
         new_val = new_val[0] if size == 1 else tuple(new_val)
@@ -132,10 +132,24 @@ def parse_value(val:Any, typ:EnumConvertType, default: Any,
             new_val = {'samples': new_val}
     elif typ == EnumConvertType.IMAGE:
         # covert image into image? just skip if already an image
-        if not isinstance(new_val, (torch.Tensor,)):
-            # convert whatever into an tensor...
+        if new_val is None or not isinstance(new_val, (torch.Tensor,)):
             color = parse_value(new_val, EnumConvertType.VEC4INT, (0,0,0,255), 0, 255)
-            new_val = torch.fill((4,512,512), color).unsqueeze(0)
+            color = torch.tensor(color, dtype=torch.int32).tolist()
+            new_val = torch.empty((512, 512, 4), dtype=torch.uint8)
+            new_val[0,:,:] = color[0]
+            new_val[1,:,:] = color[1]
+            new_val[2,:,:] = color[2]
+            new_val[3,:,:] = color[3]
+            # new_val = new_val.unsqueeze(0)
+    elif typ == EnumConvertType.MASK:
+        # @TODO: FIX FOR MULTI-CHAN?
+        if new_val is None or not isinstance(new_val, (torch.Tensor,)):
+            color = parse_value(new_val, EnumConvertType.INT, 0, 0, 255)
+            color = torch.tensor(color, dtype=torch.int32).tolist()
+            new_val = torch.empty((512, 512, 1), dtype=torch.uint8)
+            new_val[0,:,:] = color
+            # new_val = new_val.unsqueeze(0)
+        logger.debug(new_val.shape)
     if typ == EnumConvertType.COORD2D:
         new_val = {'x': new_val[0], 'y': new_val[1]}
     return new_val
@@ -162,7 +176,7 @@ def parse_param(data:dict, key:str, typ:EnumConvertType, default: Any,
             val = [val.get(c, 0) for c in 'rgba']
         ret.append(val)
     elif val is not None:
-        if not isinstance(val, (list, tuple,)):
+        if not isinstance(val, (list, tuple, torch.Tensor,)):
             val = [val]
         for v in val:
             if isinstance(v, (dict,)):
@@ -174,7 +188,8 @@ def parse_param(data:dict, key:str, typ:EnumConvertType, default: Any,
                     v = [t for t in val]
             elif issubclass(type(val), (Enum,)):
                 v = [str(v.name)]
-            elif v is not None and not isinstance(v, (list, tuple,)):
+            elif v is not None and not isinstance(v, (list, tuple, str)):
+                print(type(v), v)
                 v = [v]
             ret.append(v)
     else:

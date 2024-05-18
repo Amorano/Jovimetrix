@@ -112,7 +112,6 @@ class ComparisonNode(JOVBaseNode):
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = (WILDCARD, WILDCARD,)
     RETURN_NAMES = (Lexicon.ANY, Lexicon.VEC,)
-    OUTPUT_IS_LIST = (True, True, )
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:

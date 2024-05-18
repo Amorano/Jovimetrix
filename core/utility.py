@@ -439,7 +439,6 @@ class ImageDiffNode(JOVBaseNode):
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = ("IMAGE", "IMAGE", "MASK", "MASK", "FLOAT", )
     RETURN_NAMES = (Lexicon.IN_A, Lexicon.IN_B, Lexicon.DIFF, Lexicon.THRESHOLD, Lexicon.FLOAT, )
-    OUTPUT_IS_LIST = (False, False, False, False, True, )
     SORT = 90
 
     @classmethod
@@ -478,7 +477,6 @@ class ArrayNode(JOVBaseNode):
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = ("INT", WILDCARD, WILDCARD,)
     RETURN_NAMES = (Lexicon.VALUE, Lexicon.ANY, Lexicon.LIST,)
-    OUTPUT_IS_LIST = (True, True, True,)
     SORT = 50
 
     @classmethod
