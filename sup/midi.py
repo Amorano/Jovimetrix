@@ -116,7 +116,6 @@ if __name__ == "__main__":
         note = 0
         control = 0
         note_on = False
-        print(data.type)
         match data.type:
             case "control_change":
                 # control=8 value=14 time=0

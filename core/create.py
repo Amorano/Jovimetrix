@@ -65,11 +65,14 @@ class ConstantNode(JOVBaseNode):
         params = list(zip_longest_fill(pA, wihi, matte))
         pbar = ProgressBar(len(params))
         for idx, (pA, wihi, matte) in enumerate(params):
-            width, height = wihi
-            matte = pixel_eval(matte, EnumImageType.BGRA)
-            channel_solid(width, height, matte, EnumImageType.BGRA)
-            pA = tensor2cv(pA) if pA is not None else channel_solid(width, height, matte, EnumImageType.BGRA)
-            images.append(cv2tensor_full(pA, matte))
+            if pA is None:
+                width, height = wihi
+                pA = channel_solid(width, height, matte, EnumImageType.BGRA)
+                images.append(cv2tensor_full(pA))
+            else:
+                pA = tensor2cv(pA)
+                matte = pixel_eval(matte, EnumImageType.BGRA)
+                images.append(cv2tensor_full(pA, matte))
             pbar.update_absolute(idx)
         return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
 
@@ -128,26 +131,30 @@ class ShapeNode(JOVBaseNode):
             sizeX, sizeY = size
             edge = EnumEdge[edge]
             shape = EnumShapes[shape]
+            color = pixel_eval(color, EnumImageType.BGRA)
+            matte = pixel_eval(matte, EnumImageType.BGRA)
+            alpha_c = int(color[3])
+            alpha_m = int(matte[3])
             match shape:
                 case EnumShapes.SQUARE:
-                    pA = shape_quad(width, height, sizeX, sizeX, fill=color, back=matte)
-                    mask = shape_quad(width, height, sizeX, sizeX, fill=color[3])
+                    pA = shape_quad(width, height, sizeX, sizeX, fill=color[:3], back=matte[:3])
+                    mask = shape_quad(width, height, sizeX, sizeX, fill=alpha_c, back=alpha_m)
 
                 case EnumShapes.ELLIPSE:
-                    pA = shape_ellipse(width, height, sizeX, sizeY, fill=color, back=matte)
-                    mask = shape_ellipse(width, height, sizeX, sizeY, fill=color[3])
+                    pA = shape_ellipse(width, height, sizeX, sizeY, fill=color[:3], back=matte[:3])
+                    mask = shape_ellipse(width, height, sizeX, sizeY, fill=alpha_c, back=alpha_m)
 
                 case EnumShapes.RECTANGLE:
-                    pA = shape_quad(width, height, sizeX, sizeY, fill=color, back=matte)
-                    mask = shape_quad(width, height, sizeX, sizeY, fill=color[3])
+                    pA = shape_quad(width, height, sizeX, sizeY, fill=color[:3], back=matte[:3])
+                    mask = shape_quad(width, height, sizeX, sizeY, fill=alpha_c, back=alpha_m)
 
                 case EnumShapes.POLYGON:
-                    pA = shape_polygon(width, height, sizeX, sides, fill=color, back=matte)
-                    mask = shape_polygon(width, height, sizeX, sides, fill=color[3])
+                    pA = shape_polygon(width, height, sizeX, sides, fill=color[:3], back=matte[:3])
+                    mask = shape_polygon(width, height, sizeX, sides, fill=alpha_c, back=alpha_m)
 
                 case EnumShapes.CIRCLE:
-                    pA = shape_ellipse(width, height, sizeX, sizeX, fill=color, back=matte)
-                    mask = shape_ellipse(width, height, sizeX, sizeX, fill=color[3])
+                    pA = shape_ellipse(width, height, sizeX, sizeX, fill=color[:3], back=matte[:3])
+                    mask = shape_ellipse(width, height, sizeX, sizeX, fill=alpha_c, back=alpha_m)
 
             pA = pil2cv(pA)
             mask = pil2cv(mask)
@@ -155,11 +162,10 @@ class ShapeNode(JOVBaseNode):
             pA = image_mask_add(pA, mask)
             pA = image_transform(pA, offset, angle, (1,1), edge=edge)
             if blur > 0:
+                # @TODO: Do blur on larger canvas to remove wrap bleed.
                 pA = (gaussian(pA, sigma=blur, channel_axis=2) * 255).astype(np.uint8)
                 mask = (gaussian(mask, sigma=blur, channel_axis=2) * 255).astype(np.uint8)
-            # logger.debug(pA.shape, mask.shape)
-            matte = pixel_eval(matte, EnumImageType.BGRA)
-            images.append(cv2tensor_full(pA, matte))
+            images.append(cv2tensor_full(pA))
             pbar.update_absolute(idx)
         return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
 

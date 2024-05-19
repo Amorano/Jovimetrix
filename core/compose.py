@@ -108,9 +108,7 @@ class TransformNode(JOVBaseNode):
             if mirror != EnumMirrorMode.NONE:
                 mpx, mpy = mirror_pivot
                 pA = image_mirror(pA, mirror, mpx, mpy)
-                logger.debug(pA.shape)
                 pA = image_scalefit(pA, w, h, EnumScaleMode.FIT, sample)
-                logger.debug(pA.shape)
 
             tx, ty = tile_xy
             if tx != 1. or ty != 1.:
@@ -203,12 +201,10 @@ class BlendNode(JOVBaseNode):
             pA = tensor2cv(pA) if pA is not None else channel_solid(w, h, chan=EnumImageType.BGRA)
             pA = image_matte(pA, matte)
             pB = tensor2cv(pB) if pB is not None else channel_solid(w, h, chan=EnumImageType.BGRA)
-
+            mask = tensor2cv(mask) if mask is not None else image_mask(pB)
             if mask is None:
-                mask = image_mask(pB)
-            else:
                 h, w = pB.shape[:2]
-                mask = tensor2cv(mask) if mask is not None else channel_solid(w, h, chan=EnumImageType.GRAYSCALE)
+                mask = channel_solid(w, h, 255, chan=EnumImageType.GRAYSCALE)
 
             if invert:
                 mask = 255 - mask

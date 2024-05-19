@@ -77,7 +77,7 @@ def monitor_capture(monitor:int=0, tlwh:Tuple[int, int, int, int]=None, width:in
             monitor = sct.monitors[monitor]
             img = sct.grab(monitor)
 
-        img = np.array(img, dtype=np.uint8)
+        img = cv2.cvtColor(np.array(img, dtype=np.uint8), cv2.COLOR_RGB2BGR)
         if height is not None and width is not None:
             img = cv2.resize(img, (width, height))
         return img
@@ -142,7 +142,7 @@ if sys.platform.startswith('win'):
         im = Image.frombuffer(
             'RGB',
             (bmpinfo['bmWidth'], bmpinfo['bmHeight']),
-            bmpstr, 'raw', 'BGRX', 0, 1)
+            bmpstr, 'raw', 'RGBX', 0, 1)
         im = pil2cv(im)
 
         win32gui.DeleteObject(saveBitMap.GetHandle())

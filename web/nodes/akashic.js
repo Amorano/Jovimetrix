@@ -36,8 +36,10 @@ app.registerExtension({
         nodeType.prototype.onExecuted = function (message) {
             onExecuted?.apply(this, arguments)
             if (this.widgets) {
-                for (let i = 1; i < this.widgets.length; i++) {
-                    this.widgets[i].onRemoved?.()
+                for (let i = 2; i < this.widgets.length; i++) {
+                    if (this.widgets[i].name.startsWith("jovi_")) {
+                        this.widgets[i].onRemoved?.();
+                    }
                 }
             }
 
@@ -50,6 +52,7 @@ app.registerExtension({
             let index = 0;
             if (message.b64_images) {
                 for (const img of message.b64_images) {
+                    continue;
                     const w = this.addCustomWidget(
                         JImageWidget(app, `${_prefix}_${index}`, img)
                     )

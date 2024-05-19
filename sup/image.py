@@ -358,11 +358,17 @@ def cv2tensor(image: TYPE_IMAGE) -> torch.Tensor:
     """Convert a CV2 image to a torch tensor."""
     return torch.from_numpy(image.astype(np.float32) / 255.0).unsqueeze(0)
 
+def cv2mask(image: TYPE_IMAGE) -> torch.Tensor:
+    """Convert a CV2 Matrix to a Torch Tensor (Mask)."""
+    if len(image.shape) > 2:
+        image = image[:,:,0][:,:]
+    return torch.from_numpy(image.astype(np.float32) / 255.0)
+
 def cv2tensor_full(image: TYPE_IMAGE, matte:TYPE_PIXEL=0) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     mask = image_mask(image)
     image = image_matte(image, matte)
     rgb = image_convert(image, 3)
-    return cv2tensor(image), cv2tensor(rgb), cv2tensor(mask)
+    return cv2tensor(image), cv2tensor(rgb), cv2tensor(mask).squeeze()
 
 def hsv2bgr(hsl_color: TYPE_PIXEL) -> TYPE_PIXEL:
     return cv2.cvtColor(np.uint8([[hsl_color]]), cv2.COLOR_HSV2BGR)[0, 0]
@@ -570,11 +576,9 @@ def shape_body(func: str, width: int, height: int, sizeX:float=1., sizeY:float=1
     sizeX = max(0.5, sizeX / 2 + 0.5)
     sizeY = max(0.5, sizeY / 2 + 0.5)
     xy = [(width * (1. - sizeX), height * (1. - sizeY)),(width * sizeX, height * sizeY)]
-    back = pixel_eval(back, EnumImageType.RGB)
     image = Image.new("RGB", (width, height), back)
     d = ImageDraw.Draw(image)
     func = getattr(d, func)
-    fill = pixel_eval(fill, EnumImageType.RGBA)
     func(xy, fill=fill)
     return image
 

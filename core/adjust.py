@@ -173,7 +173,7 @@ class AdjustNode(JOVBaseNode):
                 case EnumAdjustOP.CLOSE:
                     img_new = cv2.morphologyEx(pA, cv2.MORPH_CLOSE, (radius, radius), iterations=int(amt))
 
-            mask = tensor2cv(mask) if mask is not None else channel_solid()
+            mask = tensor2cv(mask) if mask is not None else channel_solid(color=255)
             mask = image_grayscale(mask)
             if not invert:
                 mask = 255 - mask

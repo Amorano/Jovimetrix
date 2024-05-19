@@ -23,7 +23,7 @@ from comfy.utils import ProgressBar
 
 from Jovimetrix import JOVBaseNode, WILDCARD, JOV_WEB_RES_ROOT
 from Jovimetrix.sup.lexicon import Lexicon
-from Jovimetrix.sup.util import EnumConvertType, parse_param, \
+from Jovimetrix.sup.util import EnumConvertType, parse_param, parse_value, \
     zip_longest_fill
 from Jovimetrix.sup.stream import camera_list, monitor_list, window_list, \
     monitor_capture, window_capture, StreamingServer, StreamManager, \
@@ -90,25 +90,27 @@ class StreamReaderNode(JOVBaseNode):
         if not JOV_SPOUT:
             names.pop()
 
-        d = {"required": {},
-             "optional": {
-            Lexicon.SOURCE: (names, {"default": EnumStreamType.URL.name}),
-            Lexicon.URL: ("STRING", {"default": "", "dynamicPrompts": False}),
-            Lexicon.CAMERA: (cls.CAMERAS, {"default": camera_default}),
-            Lexicon.MONITOR: (monitor, {"default": monitor[0]}),
-            Lexicon.WINDOW: (window, {"default": window_default}),
-            Lexicon.DPI: ("BOOLEAN", {"default": True}),
-            Lexicon.BBOX: ("VEC4", {"default": (0, 0, 1, 1), "step": 0.01, "precision": 4, "round": 0.00001, "label": [Lexicon.TOP, Lexicon.LEFT, Lexicon.BOTTOM, Lexicon.RIGHT]}),
-            Lexicon.FPS: ("INT", {"min": 1, "max": 60, "default": 30}),
-            Lexicon.WAIT: ("BOOLEAN", {"default": False}),
-            Lexicon.BATCH: ("VEC2", {"default": (1, 30), "step": 1, "label": ["COUNT", "FPS"]}),
-            Lexicon.ORIENT: (EnumCanvasOrientation._member_names_, {"default": EnumCanvasOrientation.NORMAL.name}),
-            Lexicon.ZOOM: ("FLOAT", {"min": 0, "max": 1, "step": 0.005, "default": 0}),
-            Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
-            Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), "step": 1, "label": [Lexicon.W, Lexicon.H]}),
-            Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
-            Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
-        }}
+        d = {
+            "required": {},
+            "optional": {
+                Lexicon.SOURCE: (names, {"default": EnumStreamType.URL.name}),
+                Lexicon.URL: ("STRING", {"default": "", "dynamicPrompts": False}),
+                Lexicon.CAMERA: (cls.CAMERAS, {"default": camera_default}),
+                Lexicon.MONITOR: (monitor, {"default": monitor[0]}),
+                Lexicon.WINDOW: (window, {"default": window_default}),
+                Lexicon.DPI: ("BOOLEAN", {"default": True}),
+                Lexicon.BBOX: ("VEC4", {"default": (0, 0, 1, 1), "step": 0.01, "precision": 4, "round": 0.00001, "label": [Lexicon.TOP, Lexicon.LEFT, Lexicon.BOTTOM, Lexicon.RIGHT]}),
+                Lexicon.FPS: ("INT", {"min": 1, "max": 60, "default": 30}),
+                Lexicon.WAIT: ("BOOLEAN", {"default": False}),
+                Lexicon.BATCH: ("VEC2", {"default": (1, 30), "step": 1, "label": ["COUNT", "FPS"]}),
+                Lexicon.ORIENT: (EnumCanvasOrientation._member_names_, {"default": EnumCanvasOrientation.NORMAL.name}),
+                Lexicon.ZOOM: ("FLOAT", {"min": 0, "max": 1, "step": 0.005, "default": 0}),
+                Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
+                Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), "step": 1, "label": [Lexicon.W, Lexicon.H]}),
+                Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
+                Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
+            }
+        }
         return Lexicon._parse(d, cls.HELP_URL)
 
     @classmethod
@@ -225,6 +227,7 @@ class StreamReaderNode(JOVBaseNode):
                     if img is None:
                         images.append(self.__empty)
                     else:
+                        img = cv2.cvtColor(img, cv2.COLOR_RGB2BGRA)
                         if type(self.__device) == MediaStreamDevice:
                             if orient in [EnumCanvasOrientation.FLIPX, EnumCanvasOrientation.FLIPXY]:
                                 img = cv2.flip(img, 1)
@@ -317,10 +320,15 @@ class StreamWriterNode(JOVBaseNode):
             if self.__device is not None:
                 w, h = wihi
                 matte = pixel_eval(matte, EnumImageType.BGRA)
-                images = parse_param(images, EnumConvertType.IMAGE, images)
-                for img in images:
-                    img = tensor2cv(img) if img is not None else channel_solid(chan=EnumImageType.BGRA)
-                    self.__device.image = image_scalefit(img, w, h, mode, sample, matte)
+                # images = parse_value(images, EnumConvertType.IMAGE, images)
+                # for img in images:
+                if images is None:
+                    img = channel_solid(w, h, matte, EnumImageType.RGBA)
+                else:
+                    img = tensor2cv(images)
+                    img = image_scalefit(img, w, h, mode, sample, matte)
+                    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+                self.__device.image = img
             pbar.update_absolute(idx)
         return ()
 
@@ -371,7 +379,7 @@ if JOV_SPOUT:
             for idx, (images, host, mode, wihi, sample, matte) in enumerate(params):
                 self.__sender.host = host
                 matte = pixel_eval(matte, EnumImageType.BGRA)
-                images = parse_param(images, EnumConvertType.IMAGE, images)
+                images = parse_value(images, EnumConvertType.IMAGE, images)
                 # delta_desired = 1. / float(fps) if fps > 0 else 0
                 for img in images:
                     # loop_time = time.perf_counter_ns()

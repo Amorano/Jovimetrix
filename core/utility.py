@@ -16,6 +16,7 @@ from pathlib import Path
 from itertools import zip_longest
 from typing import Any, Dict, List, Tuple
 
+import cv2
 import torch
 import numpy as np
 from PIL import Image
@@ -110,15 +111,14 @@ class AkashicNode(JOVBaseNode):
                 if not isinstance(val, (list, tuple, set,)):
                     val = [val]
                 for img in val:
-                    logger.debug(img.shape)
-                    img = tensor2pil(img)
-                    ret.append(str(img.size))
-                    ret += str(img.size)
-                    buffered = io.BytesIO()
-                    img.save(buffered, format="PNG")
-                    img = base64.b64encode(buffered.getvalue())
-                    img = "data:image/png;base64," + img.decode("utf-8")
-                    output["ui"]["b64_images"].append(img)
+                    #img = tensor2pil(img)
+                    ret.append(f"img [{'x'.join([str(x) for x in img.shape])}]")
+                    #ret += str(img.size)
+                    #buffered = io.BytesIO()
+                    #img.save(buffered, format="PNG")
+                    #img = base64.b64encode(buffered.getvalue())
+                    #img = "data:image/png;base64," + img.decode("utf-8")
+                    #output["ui"]["b64_images"].append(img)
                 return [', '.join(ret)]
             return ''.join(repr(type(val)).split("'")[1:2])
 
@@ -280,6 +280,8 @@ class QueueNode(JOVBaseNode):
             _, ext = os.path.splitext(q_data)
             if ext in image_formats():
                 data = image_load(q_data)[0]
+                # why do I need to flip this?
+                data = cv2.cvtColor(data, cv2.COLOR_RGBA2BGRA)
                 self.__last_q_value[q_data] = cv2tensor(data)
             elif ext == '.json':
                 with open(q_data, 'r', encoding='utf-8') as f:
@@ -390,7 +392,7 @@ class ExportNode(JOVBaseNode):
         images = [cv2pil(i) for i in images]
         if format == "gifski":
             root = output_dir / f"{suffix}_{uuid4().hex[:16]}"
-            logger.debug(root)
+            # logger.debug(root)
             try:
                 root.mkdir(parents=True, exist_ok=True)
                 for idx, i in enumerate(images):
