@@ -155,7 +155,7 @@ class CalcUnaryOPNode(JOVBaseNode):
 
     def run(self, **kw) -> Tuple[bool]:
         results = []
-        A = parse_param(kw, Lexicon.IN_A, EnumConvertType.VEC4, 0)
+        A = parse_param(kw, Lexicon.IN_A, EnumConvertType.ANY, None)
         op = parse_param(kw, Lexicon.FUNC, EnumConvertType.STRING, EnumUnaryOperation.ABS.name, enumType=EnumUnaryOperation)
         params = list(zip_longest_fill(A, op))
         pbar = ProgressBar(len(params))
@@ -176,6 +176,8 @@ class CalcUnaryOPNode(JOVBaseNode):
             elif isinstance(A, (torch.Tensor,)):
                 typ = EnumConvertType.IMAGE
             val = parse_value(A, typ, 0)
+            if not isinstance(val, (list, tuple, )):
+                val = [val]
             val = [float(v) for v in val]
             op = EnumUnaryOperation[op]
             match op:
@@ -210,7 +212,9 @@ class CalcUnaryOPNode(JOVBaseNode):
                         ret.append(v)
                     val = ret
             convert = int if isinstance(A, (bool, int, np.uint8, np.uint16, np.uint32, np.uint64)) else float
-            results.append([convert(v) for v in val])
+            val = [convert(v) for v in val]
+            val = parse_value(val, typ, 0)
+            results.append(val)
             pbar.update_absolute(idx)
         return (results,)
 
@@ -396,10 +400,10 @@ class ValueNode(JOVBaseNode):
             "optional": {
                 Lexicon.IN_A: (WILDCARD, {"default": None, "tooltip":"Passes a raw value directly, or supplies defaults for any value inputs without connections"}),
                 Lexicon.TYPE: (EnumConvertType._member_names_, {"default": EnumConvertType.BOOLEAN.name}),
-                Lexicon.X: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize}),
-                Lexicon.Y: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize}),
-                Lexicon.Z: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize}),
-                Lexicon.W: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize}),
+                Lexicon.X: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "precision": 6}),
+                Lexicon.Y: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "precision": 6}),
+                Lexicon.Z: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "precision": 6}),
+                Lexicon.W: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "precision": 6}),
                 Lexicon.STRING: ("STRING", {"default": "", "dynamicPrompts": False, "multiline": True}),
             }
         }

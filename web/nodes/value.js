@@ -61,7 +61,7 @@ app.registerExtension({
                     process_value(in_x, widget_x, 1, visible)
                 } else if (combo.value == "INT") {
                     process_value(in_x, widget_x, 0, visible)
-                } else if (combo.value == "VEC2") {
+                } else if (combo.value == "VEC2" || combo.value == "COORD2D") {
                     process_value(in_x, widget_x, 1, visible)
                     process_value(in_y, widget_y, 1, visible)
                 } else if (combo.value == "VEC2INT") {

@@ -180,9 +180,9 @@ class BlendNode(JOVBaseNode):
         alpha = parse_param(kw, Lexicon.A, EnumConvertType.FLOAT, 1, 0, 1)
         flip = parse_param(kw, Lexicon.FLIP, EnumConvertType.BOOLEAN, False)
         mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.NONE.name)
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE)], MIN_IMAGE_SIZE)
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), MIN_IMAGE_SIZE)
         sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)
-        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC3INT, [(0, 0, 0)], 0, 255)
+        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC3INT, (0, 0, 0), 0, 255)
         invert = parse_param(kw, Lexicon.INVERT, EnumConvertType.BOOLEAN, False)
         params = list(zip_longest_fill(pA, pB, mask, func, alpha, flip, mode, wihi, sample, matte, invert))
         images = []
@@ -197,9 +197,9 @@ class BlendNode(JOVBaseNode):
             elif pB is not None:
                 h, w = pB.shape[:2]
 
-            matte = pixel_eval(matte, EnumImageType.BGRA)
+            matted = pixel_eval(matte, EnumImageType.BGRA)
             pA = tensor2cv(pA) if pA is not None else channel_solid(w, h, chan=EnumImageType.BGRA)
-            pA = image_matte(pA, matte)
+            pA = image_matte(pA, matted)
             pB = tensor2cv(pB) if pB is not None else channel_solid(w, h, chan=EnumImageType.BGRA)
             mask = tensor2cv(mask) if mask is not None else image_mask(pB)
             if mask is None:
@@ -399,7 +399,7 @@ class StackNode(JOVBaseNode):
 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
         images = []
-        images.extend([r for r in parse_dynamic(Lexicon.PIXEL, kw)])
+        images.extend([r for r in parse_dynamic(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)])
         if len(images) == 0:
             logger.warning("no images to stack")
             return

@@ -72,8 +72,7 @@ class AkashicNode(JOVBaseNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
-    RETURN_TYPES = (WILDCARD, 'AKASHIC',)
-    RETURN_NAMES = (Lexicon.PASS_OUT, Lexicon.IO,)
+    RETURN_NAMES = ()
     OUTPUT_NODE = True
     SORT = 10
 
@@ -96,36 +95,42 @@ class AkashicNode(JOVBaseNode):
 
         def __parse(val) -> str:
             ret = val
+            typ = ''.join(repr(type(val)).split("'")[1:2])
             if isinstance(val, dict):
-                ret = ', '.join(f"{k}:{__parse(v)}" for k, v in val.items())
-                return f"{{{ret}}}"
+                ret = ', '.join(f"{k}:{v}" for k, v in val.items())
+                return f"{{{ret}}} [{typ}]"
             elif isinstance(val, (tuple, set, list,)):
-                ret = ', '.join(__parse(v) for v in val)
-                return f"({ret})"
+                if len(val) < 2:
+                    ret = val[0]
+                    typ = ''.join(repr(type(ret)).split("'")[1:2])
+                    return f"{ret} [{typ}]"
+                ret = ', '.join(str(v) for v in val)
+                return f"({ret}) [{typ}]"
             elif isinstance(val, (int, float, str)):
-                return str(val)
+                return f"{val} [{typ}]"
             elif isinstance(val, bool):
-                return "True" if val else "False"
+                val = "True" if val else "False"
+                return f"{val} [{typ}]"
             elif isinstance(val, torch.Tensor):
                 ret = []
                 if not isinstance(val, (list, tuple, set,)):
                     val = [val]
                 for img in val:
                     #img = tensor2pil(img)
-                    ret.append(f"img [{'x'.join([str(x) for x in img.shape])}]")
+                    ret.append(f"({'x'.join([str(x) for x in img.shape])}) [{typ}]")
                     #ret += str(img.size)
                     #buffered = io.BytesIO()
                     #img.save(buffered, format="PNG")
                     #img = base64.b64encode(buffered.getvalue())
                     #img = "data:image/png;base64," + img.decode("utf-8")
                     #output["ui"]["b64_images"].append(img)
-                return [', '.join(ret)]
-            return ''.join(repr(type(val)).split("'")[1:2])
+                return ', '.join(ret)
+            return f"unknown [{typ}]"
 
         for x in o:
             output["ui"]["text"].append(__parse(x))
-        ak = AkashicData(image=output["ui"]["b64_images"], text=output["ui"]["text"] )
-        output["result"] = (o, ak)
+        #ak = AkashicData(image=output["ui"]["b64_images"], text=output["ui"]["text"] )
+        #output["result"] = (o, ak)
         return output
 
 class ValueGraphNode(JOVBaseNode):
@@ -160,26 +165,22 @@ class ValueGraphNode(JOVBaseNode):
 
     def run(self, ident, **kw) -> Tuple[torch.Tensor]:
         slice = parse_param(kw, Lexicon.VALUE, EnumConvertType.INT, 60)[0]
-        wihi = parse_param(kw, Lexicon.WH, 1, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), EnumConvertType.VEC2INT)[0]
-        accepted = [bool, int, float, np.float16, np.float32, np.float64]
-        if parse_reset(ident) > 0 or parse_param(kw, Lexicon.RESET, False, EnumConvertType.BOOLEAN)[0]:
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), 1)[0]
+        if parse_reset(ident) > 0 or parse_param(kw, Lexicon.RESET, EnumConvertType.BOOLEAN, False)[0]:
             self.__history = []
         longest_edge = 0
-        dynamic = parse_dynamic(Lexicon.UNKNOWN, kw)
+        dynamic = parse_dynamic(kw, Lexicon.UNKNOWN, EnumConvertType.FLOAT, 0)
         for idx, val in enumerate(dynamic):
             if isinstance(val, (set, tuple,)):
                 val = list(val)
             if not isinstance(val, (list, )):
                 val = [val]
-            val = [v if type(v) in accepted else 0 for v in val]
             while len(self.__history) <= idx:
                 self.__history.append([])
             self.__history[idx].extend(val)
             stride = max(0, -slice + len(self.__history[idx]) + 1)
             longest_edge = max(longest_edge, stride)
             self.__history[idx] = self.__history[idx][stride:]
-            # pbar.update_absolute(idx)
-
         self.__history = self.__history[:idx+1]
         self.__ax.clear()
         for i, h in enumerate(self.__history):

@@ -52,15 +52,11 @@ class EnumSwizzle(Enum):
 # === SUPPORT ===
 # =============================================================================
 
-def parse_dynamic(who, data) -> list:
+def parse_dynamic(data:dict, key:str, typ:EnumConvertType, default: Any) -> list:
     vals = []
     count = 1
-    while (val := data.get(f"{who}_{count}", None)) is not None:
-        if not isinstance(val, (list, )):
-            if isinstance(val, (torch.Tensor,)):
-                val = val.tolist()
-            else:
-                val = [val]
+    while data.get((who := f"{key}_{count}"), None) is not None:
+        val = parse_param(data, who, typ, default)
         vals.append(val)
         count += 1
     return vals
