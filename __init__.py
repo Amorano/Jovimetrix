@@ -297,11 +297,9 @@ class Session(metaclass=Singleton):
 
         # 🔗 ⚓ 📀 🍿 🎪 🐘 🤯 😱 💀 ⛓️ 🔒 🔑 🪀 🪁 🔮 🧿 🧙🏽 🧙🏽‍♀️ 🧯 🦚
 
-        NODE_DISPLAY_NAME_MAPPINGS = {k: k for k, _ in Session.CLASS_MAPPINGS.items()}
+        NODE_DISPLAY_NAME_MAPPINGS = {k: v.NAME_PRETTY if hasattr(v, 'NAME_PRETTY') else k for k, v in Session.CLASS_MAPPINGS.items()}
         Session.CLASS_MAPPINGS.update({k: v for k, v in Session.CLASS_MAPPINGS_WIP.items()})
-
-        NODE_DISPLAY_NAME_MAPPINGS.update({k: k for k, _ in Session.CLASS_MAPPINGS_WIP.items()})
-
+        NODE_DISPLAY_NAME_MAPPINGS.update({k: k for k in Session.CLASS_MAPPINGS_WIP.keys()})
         Session.CLASS_MAPPINGS = {x[0] : x[1] for x in sorted(Session.CLASS_MAPPINGS.items(),
                                                               key=lambda item: getattr(item[1], 'SORT', 0))}
         # now sort the categories...
@@ -314,7 +312,7 @@ class Session(metaclass=Singleton):
                 if v.CATEGORY.endswith(c):
                     NODE_CLASS_MAPPINGS[k] = v
                     Session.CLASS_MAPPINGS.pop(k)
-                    # logger.debug("✅ {}", k)
+                    logger.debug(f"✅ {k}::{NODE_DISPLAY_NAME_MAPPINGS[k]}")
 
         # anything we dont know about sort last...
         for k, v in Session.CLASS_MAPPINGS.items():

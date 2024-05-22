@@ -354,21 +354,18 @@ def cv2pil(image: TYPE_IMAGE) -> Image.Image:
             image = cv2.cvtColor(image, cv2.COLOR_BGRA2RGBA)
     return Image.fromarray(image)
 
-def cv2tensor(image: TYPE_IMAGE) -> torch.Tensor:
+def cv2tensor(image: TYPE_IMAGE, mask:bool=False) -> torch.Tensor:
     """Convert a CV2 image to a torch tensor."""
+    if (cc := len(image.shape)) > 2 or mask:
+        if cc > 2 and (mask or image.shape[2] == 1):
+            image = image[:,:,0][:,:]
     return torch.from_numpy(image.astype(np.float32) / 255.0).unsqueeze(0)
-
-def cv2mask(image: TYPE_IMAGE) -> torch.Tensor:
-    """Convert a CV2 Matrix to a Torch Tensor (Mask)."""
-    if len(image.shape) > 2:
-        image = image[:,:,0][:,:]
-    return torch.from_numpy(image.astype(np.float32) / 255.0)
 
 def cv2tensor_full(image: TYPE_IMAGE, matte:TYPE_PIXEL=0) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     mask = image_mask(image)
     image = image_matte(image, matte)
     rgb = image_convert(image, 3)
-    return cv2tensor(image), cv2tensor(rgb), cv2tensor(mask).squeeze()
+    return cv2tensor(image), cv2tensor(rgb), cv2tensor(mask, True) #.squeeze()
 
 def hsv2bgr(hsl_color: TYPE_PIXEL) -> TYPE_PIXEL:
     return cv2.cvtColor(np.uint8([[hsl_color]]), cv2.COLOR_HSV2BGR)[0, 0]
@@ -397,12 +394,19 @@ def pil2tensor(image: Image.Image) -> torch.Tensor:
 
 def tensor2cv(tensor: torch.Tensor) -> TYPE_IMAGE:
     """Convert a torch Tensor to a numpy ndarray."""
-    return np.clip(255.0 * tensor.cpu().squeeze().numpy(), 0, 255).astype(np.uint8)
+    tensor = tensor.cpu().squeeze().numpy()
+    if len(tensor.shape) < 3:
+        tensor = np.expand_dims(tensor, -1)
+    return np.clip(255.0 * tensor, 0, 255).astype(np.uint8)
 
 def tensor2pil(tensor: torch.Tensor) -> Image.Image:
-    """Convert a torch Tensor to a PIL Image."""
+    """Convert a torch Tensor to a PIL Image.
+    Tensor should be HxWxC [no batch].
+    """
+    cc = tensor.shape[2]
+    mode = MODE_PIL[cc]
     tensor = np.clip(255.0 * tensor.cpu().squeeze().numpy(), 0, 255).astype(np.uint8)
-    return Image.fromarray(tensor)
+    return Image.fromarray(tensor, mode=mode)
 
 # =============================================================================
 # === PIXEL ===
@@ -616,7 +620,10 @@ def image_blend(imageA: TYPE_IMAGE, imageB: TYPE_IMAGE, mask:Optional[TYPE_IMAGE
     imageA = image_convert(imageA, 4)
     imageA = cv2pil(imageA)
     imageB = image_convert(imageB, 4)
-    imageB = image_crop_center(imageB, w, h)
+    h2, w2 = imageB.shape[:2]
+    w2 = min(w, w2)
+    h2 = min(h, h2)
+    imageB = image_crop_center(imageB, w2, h2)
     imageB = image_matte(imageB, (0,0,0,0), w, h)
     old_mask = image_mask(imageB)[:,:,0]
     if len(old_mask.shape) > 2:
@@ -687,28 +694,24 @@ def image_convert(image: TYPE_IMAGE, channels: int) -> TYPE_IMAGE:
 
 def image_crop_polygonal(image: TYPE_IMAGE, points: List[TYPE_COORD]) -> TYPE_IMAGE:
     cc, w, h = channel_count(image)[:3]
-    mask = image_mask(image, 0)
-    # crop area first
+    point_mask = np.zeros((h, w), dtype=np.uint8)
     points = np.array(points, np.int32).reshape((-1, 1, 2))
-    point_mask = np.zeros((h, w, 1), dtype=np.uint8)
     point_mask = cv2.fillPoly(point_mask, [points], 255)
-    y, x, w, h = cv2.boundingRect(point_mask)
-    point_mask = point_mask[:,:,0]
-    # store any alpha channel
+    x, y, w, h = cv2.boundingRect(point_mask)
+    cropped_image = image[y:y+h, x:x+w]
+    # Apply the mask to the cropped image
+    point_mask_cropped = point_mask[y:y+h, x:x+w]
     if cc == 4:
-        mask = image_mask(image, 0)[:,:,0]
-        image = cv2.cvtColor(image, cv2.COLOR_BGRA2BGR)
+        mask = image_mask(image, 0)
+        alpha_channel = mask[y:y+h, x:x+w]
+        cropped_image = cv2.cvtColor(cropped_image, cv2.COLOR_BGRA2BGR)
+        cropped_image = cv2.bitwise_and(cropped_image, cropped_image, mask=point_mask_cropped)
+        return image_mask_add(cropped_image, alpha_channel)
     elif cc == 1:
-        image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
-    # crop with the point_mask
-    image = cv2.bitwise_and(image, image, mask=point_mask)
-    image = image[y:y+h, x:x+w, :3]
-    # replace old alpha channel
-    if cc == 4:
-        return image_mask_add(image, mask[y:y+h, x:x+w])
-    elif cc == 1:
-        return image_convert(image, cc)
-    return image
+        cropped_image = cv2.cvtColor(cropped_image, cv2.COLOR_GRAY2BGR)
+        cropped_image = cv2.bitwise_and(cropped_image, cropped_image, mask=point_mask_cropped)
+        return image_convert(cropped_image, cc)
+    return cv2.bitwise_and(cropped_image, cropped_image, mask=point_mask_cropped)
 
 def image_crop(image: TYPE_IMAGE, width:int=None, height:int=None, offset:Tuple[float, float]=(0, 0)) -> TYPE_IMAGE:
     h, w = image.shape[:2]
@@ -725,11 +728,15 @@ def image_crop(image: TYPE_IMAGE, width:int=None, height:int=None, offset:Tuple[
 def image_crop_center(image: TYPE_IMAGE, width:int=None, height:int=None) -> TYPE_IMAGE:
     """Helper crop function to find the "center" of the area of interest."""
     h, w = image.shape[:2]
-    width = width if width is not None else w
-    height = height if height is not None else h
-    y = max(0, int((h - height) / 2))
-    x = max(0, int((w - width)/ 2))
-    points = [(x, y), (x + width - 1, y), (x + width - 1, y + height - 1), (x, y + height - 1)]
+    cx = w // 2
+    cy = h // 2
+    width = w if width is None else width
+    height = h if height is None else height
+    x1 = max(0, int(cx - width // 2))
+    y1 = max(0, int(cy - height // 2))
+    x2 = min(w, int(cx + width // 2)) - 1
+    y2 = min(h, int(cy + height // 2)) - 1
+    points = [(x1, y1), (x2, y1), (x2, y2), (x1, y2)]
     return image_crop_polygonal(image, points)
 
 def image_diff(imageA: TYPE_IMAGE, imageB: TYPE_IMAGE, threshold:int=0, color:TYPE_PIXEL=(255, 0, 0)) -> Tuple[TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE, float]:
@@ -990,17 +997,20 @@ def image_load(url: str) -> Tuple[TYPE_IMAGE, TYPE_IMAGE]:
     """
     try:
         img = cv2.imread(url, cv2.IMREAD_UNCHANGED)
-    except Exception as e:
+        if img is None:
+            raise ValueError()
+        if len(img.shape) == 3:
+            if img.shape[2] == 4:
+                img = cv2.cvtColor(img, cv2.COLOR_RGBA2BGRA)
+            else:
+                img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+    except Exception as _:
         try:
             img = Image.open(url)
             img = ImageOps.exif_transpose(img)
             img = pil2cv(img)
         except Exception as e:
             logger.error(str(e))
-            img = np.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=np.uint8)
-            mask = np.full((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), 255, dtype=np.uint8)
-            return img, mask
-
     if img is None:
         raise Exception(f"no file {url}")
     if img.dtype != np.uint8:
@@ -1085,8 +1095,6 @@ def image_matte(image:TYPE_IMAGE, color:TYPE_PIXEL=(0,0,0,255),
         matte = image_convert(imageB, 4)
     else:
         matte = channel_solid(width, height, color, EnumImageType.BGRA)
-    # mask_chan = np.expand_dims(mask, -1) if len(mask.shape)<3 else mask
-    # mask_chan = mask_chan[:,:,0]
     matte[y1:y2, x1:x2, 3] = mask_chan
     alpha = cv2.bitwise_not(mask_chan)
     alpha = cv2.cvtColor(alpha, cv2.COLOR_GRAY2BGRA) / 255.0

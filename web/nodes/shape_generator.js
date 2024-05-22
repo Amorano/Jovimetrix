@@ -8,7 +8,7 @@ import { app } from "../../../scripts/app.js"
 import { fitHeight } from '../util/util.js'
 import { widget_hide, widget_show } from '../util/util_widget.js'
 
-const _id = "SHAPE GENERATOR (JOV) ✨"
+const _id = "SHAPE GEN (JOV) ✨"
 
 app.registerExtension({
 	name: 'jovimetrix.node.' + _id,

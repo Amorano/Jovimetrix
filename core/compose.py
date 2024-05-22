@@ -175,7 +175,7 @@ class BlendNode(JOVBaseNode):
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
         pA = parse_param(kw, Lexicon.PIXEL_A, EnumConvertType.IMAGE, None)
         pB = parse_param(kw, Lexicon.PIXEL_B, EnumConvertType.IMAGE, None)
-        mask = parse_param(kw, Lexicon.MASK, EnumConvertType.MASK, None)
+        mask = parse_param(kw, Lexicon.MASK, EnumConvertType.IMAGE, None)
         func = parse_param(kw, Lexicon.FUNC, EnumConvertType.STRING, EnumBlendType.NORMAL.name)
         alpha = parse_param(kw, Lexicon.A, EnumConvertType.FLOAT, 1, 0, 1)
         flip = parse_param(kw, Lexicon.FLIP, EnumConvertType.BOOLEAN, False)
@@ -196,19 +196,16 @@ class BlendNode(JOVBaseNode):
                 h, w = pA.shape[:2]
             elif pB is not None:
                 h, w = pB.shape[:2]
-
-            matted = pixel_eval(matte, EnumImageType.BGRA)
-            pA = tensor2cv(pA) if pA is not None else channel_solid(w, h, chan=EnumImageType.BGRA)
-            pA = image_matte(pA, matted)
-            pB = tensor2cv(pB) if pB is not None else channel_solid(w, h, chan=EnumImageType.BGRA)
-            mask = tensor2cv(mask) if mask is not None else image_mask(pB)
-            if mask is None:
-                h, w = pB.shape[:2]
-                mask = channel_solid(w, h, 255, chan=EnumImageType.GRAYSCALE)
-
+            if pA is None:
+                pA = channel_solid(w, h, matte, chan=EnumImageType.BGRA)
+            else:
+                pA = tensor2cv(pA)
+                matted = pixel_eval(matte, EnumImageType.BGRA)
+                pA = image_matte(pA, matted)
+            pB = channel_solid(w, h, chan=EnumImageType.BGRA) if pB is None else tensor2cv(pB)
+            mask = image_mask(pB) if mask is None else tensor2cv(mask)
             if invert:
                 mask = 255 - mask
-
             func = EnumBlendType[func]
             img = image_blend(pA, pB, mask, func, alpha)
             mode = EnumScaleMode[mode]

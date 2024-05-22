@@ -3,22 +3,18 @@ Jovimetrix - http://www.github.com/amorano/jovimetrix
 Utility
 """
 
-
 import io
 import os
 import json
 import glob
-import base64
 import random
 from enum import Enum
 from uuid import uuid4
 from pathlib import Path
 from itertools import zip_longest
-from typing import Any, Dict, List, Tuple
+from typing import Any, Tuple
 
-import cv2
 import torch
-import numpy as np
 from PIL import Image
 import matplotlib.pyplot as plt
 from loguru import logger
@@ -33,9 +29,9 @@ from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import parse_dynamic, path_next, \
     parse_param, zip_longest_fill, EnumConvertType
 
-from Jovimetrix.sup.image import  EnumImageType, channel_solid, cv2pil, cv2tensor, \
-    image_convert, tensor2pil, tensor2cv, pil2tensor, image_load, image_formats, \
-    image_diff, MIN_IMAGE_SIZE
+from Jovimetrix.sup.image import channel_solid, cv2pil, \
+    cv2tensor, image_convert, tensor2cv, pil2tensor, image_load, image_formats, \
+    image_diff, EnumImageType, MIN_IMAGE_SIZE
 
 # =============================================================================
 
@@ -134,7 +130,7 @@ class AkashicNode(JOVBaseNode):
         return output
 
 class ValueGraphNode(JOVBaseNode):
-    NAME = "VALUE GRAPH (JOV) 📈"
+    NAME = "GRAPH (JOV) 📈"
     NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
@@ -281,9 +277,12 @@ class QueueNode(JOVBaseNode):
             _, ext = os.path.splitext(q_data)
             if ext in image_formats():
                 data = image_load(q_data)[0]
-                # why do I need to flip this?
-                data = cv2.cvtColor(data, cv2.COLOR_RGBA2BGRA)
-                self.__last_q_value[q_data] = cv2tensor(data)
+                if len(data.shape) == 3:
+                    h, w, cc = data.shape
+                    data = cv2tensor(data)
+                    if cc == 1:
+                        data = data.unsqueeze(-1)
+                self.__last_q_value[q_data] = data
             elif ext == '.json':
                 with open(q_data, 'r', encoding='utf-8') as f:
                     self.__last_q_value[q_data] = json.load(f)
@@ -440,8 +439,8 @@ class ImageDiffNode(JOVBaseNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
-    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK", "MASK", "FLOAT", )
-    RETURN_NAMES = (Lexicon.IN_A, Lexicon.IN_B, Lexicon.DIFF, Lexicon.THRESHOLD, Lexicon.FLOAT, )
+    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK", "MASK", ) #"FLOAT", )
+    RETURN_NAMES = (Lexicon.IN_A, Lexicon.IN_B, Lexicon.DIFF, Lexicon.THRESHOLD) #, Lexicon.FLOAT, )
     SORT = 90
 
     @classmethod
@@ -458,18 +457,21 @@ class ImageDiffNode(JOVBaseNode):
     def run(self, **kw) -> Tuple[Any, Any]:
         pA = parse_param(kw, Lexicon.PIXEL_A, EnumConvertType.IMAGE, None)
         pB = parse_param(kw, Lexicon.PIXEL_B, EnumConvertType.IMAGE, None)
-        th = parse_param(kw, Lexicon.THRESHOLD, 1, 0, EnumConvertType.FLOAT, 0)
+        th = parse_param(kw, Lexicon.THRESHOLD, EnumConvertType.FLOAT, 0.5, 0, 1)
+        print(th)
         results = []
         params = list(zip_longest_fill(pA, pB, th))
         pbar = ProgressBar(len(params))
         for idx, (pA, pB, th) in enumerate(params):
-            pA = tensor2cv(pA) if pA is not None else channel_solid(chan=EnumImageType.BGRA)
-            pB = tensor2cv(pB) if pB is not None else channel_solid(chan=EnumImageType.BGRA)
+            pA = channel_solid(chan=EnumImageType.BGRA) if pA is None else tensor2cv(pA)
+            pB = channel_solid(chan=EnumImageType.BGRA) if pB is None else tensor2cv(pB)
+            print(th)
             a, b, d, t, s = image_diff(pA, pB, int(th * 255))
             d = image_convert(d, 1)
             t = image_convert(t, 1)
-            results.append([cv2tensor(a), cv2tensor(b), cv2tensor(d), cv2tensor(t), s])
+            results.append([cv2tensor(a), cv2tensor(b), cv2tensor(d), cv2tensor(t)])
             pbar.update_absolute(idx)
+        return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*results))]
         return [list(a) for a in zip(*results)]
 
 class ArrayNode(JOVBaseNode):

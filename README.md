@@ -143,8 +143,8 @@ The audio nodes require FFMPEG. You can find the official [FFMPEG](https://ffmpe
 [CREATE](https://github.com/Amorano/Jovimetrix/wiki/CREATE#create) | &nbsp;
 ---|---
 [CONSTANT 🟪](https://github.com/Amorano/Jovimetrix/wiki/CREATE#-constant)|Create a single RGBA block of color. Useful for masks, overlays and general filtering.
-[SHAPE GENERATOR ✨](https://github.com/Amorano/Jovimetrix/wiki/CREATE#-shape-generator)|Generate polyhedra for masking or texture work.
-[TEXT GENERATOR 📝](https://github.com/Amorano/Jovimetrix/wiki/CREATE#-text-generator)|Uses any system font with auto-fit or manual placement.
+[SHAPE GEN ✨](https://github.com/Amorano/Jovimetrix/wiki/CREATE#-shape-generator)|Generate polyhedra for masking or texture work.
+[TEXT GEN 📝](https://github.com/Amorano/Jovimetrix/wiki/CREATE#-text-generator)|Uses any system font with auto-fit or manual placement.
 [STEREOGRAM 📻](https://github.com/Amorano/Jovimetrix/wiki/CREATE#-stereogram)|Make a magic eye stereograms.
 [GLSL 🍩](https://github.com/Amorano/Jovimetrix/wiki/CREATE#-glsl)|GLSL Shader support
 <img width=225/>|<img width=800/>
@@ -171,15 +171,15 @@ The audio nodes require FFMPEG. You can find the official [FFMPEG](https://ffmpe
 ---|---
 [VALUE #️⃣](https://github.com/Amorano/Jovimetrix/wiki/CALC#%EF%B8%8F%E2%83%A3-value)|Create a value for most types; also universal constants.
 [CONVERT🧬](https://github.com/Amorano/Jovimetrix/wiki/CALC#-convert)|Convert INT, FLOAT, VEC*, STRING and BOOL.
-[CALC OP UNARY 🎲](https://github.com/Amorano/Jovimetrix/wiki/CALC#-calc-op-unary)|Perform a Unary Operation on an input.
-[CALC OP BINARY 🌟](https://github.com/Amorano/Jovimetrix/wiki/CALC#-calc-op-binary)|Perform a Binary Operation on two inputs.
+[OP UNARY 🎲](https://github.com/Amorano/Jovimetrix/wiki/CALC#-calc-op-unary)|Perform a Unary Operation on an input.
+[OP BINARY 🌟](https://github.com/Amorano/Jovimetrix/wiki/CALC#-calc-op-binary)|Perform a Binary Operation on two inputs.
 [LERP 🔰](https://github.com/Amorano/Jovimetrix/wiki/CALC#-lerp)|Interpolate between two values with or without a smoothing.
 <img width=225/>|<img width=800/>
 
 [ANIMATE](https://github.com/Amorano/Jovimetrix/wiki/ANIMATE) | &nbsp;
 ---|---
 [TICK ⏱](https://github.com/Amorano/Jovimetrix/wiki/ANIMATE#-tick)|Periodic pulse exporting normalized, delta since last pulse and count.
-[WAVE GENERATOR 🌊](https://github.com/Amorano/Jovimetrix/wiki/ANIMATE#-wave_generator)|Periodic and Non-Periodic Sinosodials.
+[WAVE GEN 🌊](https://github.com/Amorano/Jovimetrix/wiki/ANIMATE#-wave_generator)|Periodic and Non-Periodic Sinosodials.
 <img width=225/>|<img width=800/>
 
 [FLOW](https://github.com/Amorano/Jovimetrix/wiki/FLOW) | &nbsp;

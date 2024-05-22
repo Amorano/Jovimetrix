@@ -122,7 +122,8 @@ class TickNode(JOVBaseNode):
         return list(zip(*results))
 
 class WaveGeneratorNode(JOVBaseNode):
-    NAME = "WAVE GENERATOR (JOV) 🌊"
+    NAME = "WAVE GEN (JOV) 🌊"
+    NAME_PRETTY = "WAVE GEN (JOV) 🌊"
     NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"

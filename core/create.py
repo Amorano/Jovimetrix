@@ -77,7 +77,7 @@ class ConstantNode(JOVBaseNode):
         return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
 
 class ShapeNode(JOVBaseNode):
-    NAME = "SHAPE GENERATOR (JOV) ✨"
+    NAME = "SHAPE GEN (JOV) ✨"
     NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
@@ -133,44 +133,47 @@ class ShapeNode(JOVBaseNode):
             shape = EnumShapes[shape]
             color = pixel_eval(color, EnumImageType.BGRA)
             matte = pixel_eval(matte, EnumImageType.BGRA)
-            alpha_c = int(color[3])
             alpha_m = int(matte[3])
             match shape:
                 case EnumShapes.SQUARE:
                     pA = shape_quad(width, height, sizeX, sizeX, fill=color[:3], back=matte[:3])
-                    mask = shape_quad(width, height, sizeX, sizeX, fill=alpha_c, back=alpha_m)
+                    mask = shape_quad(width, height, sizeX, sizeX, fill=alpha_m)
 
                 case EnumShapes.ELLIPSE:
                     pA = shape_ellipse(width, height, sizeX, sizeY, fill=color[:3], back=matte[:3])
-                    mask = shape_ellipse(width, height, sizeX, sizeY, fill=alpha_c, back=alpha_m)
+                    mask = shape_ellipse(width, height, sizeX, sizeY, fill=alpha_m)
 
                 case EnumShapes.RECTANGLE:
                     pA = shape_quad(width, height, sizeX, sizeY, fill=color[:3], back=matte[:3])
-                    mask = shape_quad(width, height, sizeX, sizeY, fill=alpha_c, back=alpha_m)
+                    mask = shape_quad(width, height, sizeX, sizeY, fill=alpha_m)
 
                 case EnumShapes.POLYGON:
                     pA = shape_polygon(width, height, sizeX, sides, fill=color[:3], back=matte[:3])
-                    mask = shape_polygon(width, height, sizeX, sides, fill=alpha_c, back=alpha_m)
+                    mask = shape_polygon(width, height, sizeX, sides, fill=alpha_m)
 
                 case EnumShapes.CIRCLE:
                     pA = shape_ellipse(width, height, sizeX, sizeX, fill=color[:3], back=matte[:3])
-                    mask = shape_ellipse(width, height, sizeX, sizeX, fill=alpha_c, back=alpha_m)
+                    mask = shape_ellipse(width, height, sizeX, sizeX, fill=alpha_m)
 
             pA = pil2cv(pA)
             mask = pil2cv(mask)
             mask = image_grayscale(mask)
-            pA = image_mask_add(pA, mask)
+            # pA = image_mask_add(pA, mask)
             pA = image_transform(pA, offset, angle, (1,1), edge=edge)
+            pB = image_mask_add(pA, mask)
+            mask = image_transform(mask, offset, angle, (1,1), edge=edge)
             if blur > 0:
                 # @TODO: Do blur on larger canvas to remove wrap bleed.
                 pA = (gaussian(pA, sigma=blur, channel_axis=2) * 255).astype(np.uint8)
+                pB = (gaussian(pB, sigma=blur, channel_axis=2) * 255).astype(np.uint8)
                 mask = (gaussian(mask, sigma=blur, channel_axis=2) * 255).astype(np.uint8)
-            images.append(cv2tensor_full(pA))
+            # images.append(cv2tensor_full(pA))
+            images.append([cv2tensor(pA), cv2tensor(pB), cv2tensor(mask)])
             pbar.update_absolute(idx)
         return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
 
 class TextNode(JOVBaseNode):
-    NAME = "TEXT GENERATOR (JOV) 📝"
+    NAME = "TEXT GEN (JOV) 📝"
     NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"

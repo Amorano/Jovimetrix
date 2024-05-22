@@ -133,7 +133,7 @@ OP_UNARY = {
 # =============================================================================
 
 class CalcUnaryOPNode(JOVBaseNode):
-    NAME = "CALC OP UNARY (JOV) 🎲"
+    NAME = "OP UNARY (JOV) 🎲"
     NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
@@ -219,7 +219,7 @@ class CalcUnaryOPNode(JOVBaseNode):
         return (results,)
 
 class CalcBinaryOPNode(JOVBaseNode):
-    NAME = "CALC OP BINARY (JOV) 🌟"
+    NAME = "OP BINARY (JOV) 🌟"
     NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"

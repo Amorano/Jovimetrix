@@ -14,9 +14,9 @@ from comfy.utils import ProgressBar
 from Jovimetrix import JOV_WEB_RES_ROOT, JOVBaseNode, WILDCARD
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import EnumConvertType, parse_param, zip_longest_fill
-from Jovimetrix.sup.image import MIN_IMAGE_SIZE, channel_count, channel_solid, \
-    color_match_histogram, color_match_lut, color_match_reinhard, \
-    cv2tensor_full, image_color_blind, image_convert, image_grayscale, image_scalefit, tensor2cv, image_equalize, \
+from Jovimetrix.sup.image import channel_count, channel_solid, \
+    color_match_histogram, color_match_lut, color_match_reinhard, cv2tensor_full, \
+    image_color_blind, image_grayscale, image_scalefit, tensor2cv, image_equalize, \
     image_levels, pixel_eval, image_posterize, image_pixelate, image_quantize, \
     image_sharpen, image_threshold, image_blend, image_invert, morph_edge_detect, \
     morph_emboss, image_contrast, image_hsv, image_gamma, \
@@ -75,8 +75,8 @@ class AdjustNode(JOVBaseNode):
 
     def run(self, **kw)  -> Tuple[torch.Tensor, torch.Tensor]:
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
-        mask = parse_param(kw, Lexicon.MASK, EnumConvertType.MASK, None)
-        op = parse_param(kw, Lexicon.FUNC, EnumConvertType.STRING, EnumAdjustOP.BLUR.name)
+        mask = parse_param(kw, Lexicon.MASK, EnumConvertType.IMAGE, None)
+        op = parse_param(kw, Lexicon.FUNC, EnumConvertType.STRING, EnumAdjustOP.BLUR.name, enumType=EnumAdjustOP)
         radius = parse_param(kw, Lexicon.RADIUS, EnumConvertType.INT, 3, 3)
         amt = parse_param(kw, Lexicon.VALUE, EnumConvertType.FLOAT, 0, 0, 1)
         lohi = parse_param(kw, Lexicon.LOHI, EnumConvertType.VEC2, [(0, 1)], 0, 1)
@@ -173,17 +173,14 @@ class AdjustNode(JOVBaseNode):
                 case EnumAdjustOP.CLOSE:
                     img_new = cv2.morphologyEx(pA, cv2.MORPH_CLOSE, (radius, radius), iterations=int(amt))
 
-            mask = tensor2cv(mask) if mask is not None else channel_solid(color=255)
+            h, w, cc = pA.shape
+            mask = channel_solid(w, h, 255) if mask is None else tensor2cv(mask)
             mask = image_grayscale(mask)
-            if not invert:
+            if invert:
                 mask = 255 - mask
-
-            if (wh := pA.shape[:2]) != mask.shape[:2]:
-                mask = cv2.resize(mask, wh[::-1])
             pA = image_blend(pA, img_new, mask)
             if cc == 4:
                 pA[:,:,3] = alpha
-            matte = pixel_eval(matte, EnumImageType.BGRA)
             images.append(cv2tensor_full(pA, matte))
             pbar.update_absolute(idx)
         return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
