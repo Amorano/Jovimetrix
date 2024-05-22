@@ -462,9 +462,9 @@ class LerpNode(JOVBaseNode):
             # make sure we only interpolate between the longest "stride" we can
             size = min(3, max(len(A), len(B)))
             best_type = [EnumConvertType.FLOAT, EnumConvertType.VEC2, EnumConvertType.VEC3, EnumConvertType.VEC4][size]
-            A = parse_param(A, best_type, A)
-            B = parse_param(B, best_type, B)
-            alpha = parse_param(alpha, best_type, [alpha])
+            A = parse_value(A, best_type, A)
+            B = parse_value(B, best_type, B)
+            alpha = parse_value(alpha, best_type, [alpha])
             if op == "NONE":
                 val = [B[x] * alpha[x] + A[x] * (1 - alpha[x]) for x in range(size)]
             else:

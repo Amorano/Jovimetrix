@@ -373,10 +373,10 @@ class ExportNode(JOVBaseNode):
         format = parse_param(kw, Lexicon.FORMAT, EnumConvertType.STRING, "gif")[0]
         overwrite = parse_param(kw, Lexicon.OVERWRITE, EnumConvertType.BOOLEAN, False)[0]
         optimize = parse_param(kw, Lexicon.OPTIMIZE, EnumConvertType.BOOLEAN, False)[0]
-        quality = parse_param(kw, Lexicon.QUALITY, 100, 0, EnumConvertType.INT, 1)[0]
-        motion = parse_param(kw, Lexicon.QUALITY_M, 100, 0, EnumConvertType.INT, 1)[0]
-        fps = parse_param(kw, Lexicon.FPS, 60, 24, EnumConvertType.INT, 1)[0]
-        loop = parse_param(kw, Lexicon.LOOP, 0, 0, EnumConvertType.INT)[0]
+        quality = parse_param(kw, Lexicon.QUALITY, EnumConvertType.INT, 100, 0, 1)[0]
+        motion = parse_param(kw, Lexicon.QUALITY_M, EnumConvertType.INT, 100, 0, 1)[0]
+        fps = parse_param(kw, Lexicon.FPS, EnumConvertType.INT, 60, 1, 24)[0]
+        loop = parse_param(kw, Lexicon.LOOP, EnumConvertType.INT, 0, 0)[0]
         output_dir = Path(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -538,7 +538,7 @@ class ArrayNode(JOVBaseNode):
                 latents.append(False)
 
         if mode == EnumBatchMode.PICK:
-            index = parse_param(kw, Lexicon.BATCH_CHUNK, 0, 0, EnumConvertType.INT)
+            index = parse_param(kw, Lexicon.BATCH_CHUNK, EnumConvertType.INT, 0, 0)
             index = index if index < len(extract) else -1
             extract = [extract[index]]
             if latents[index]:
@@ -564,7 +564,7 @@ class ArrayNode(JOVBaseNode):
             if latents[idx]:
                 extract = {"samples": extract}
         elif mode == EnumBatchMode.INDEX_LIST:
-            indices = parse_param(kw, Lexicon.STRING, ", "", EnumConvertType.STRING).split(")
+            indices = parse_param(kw, Lexicon.STRING, EnumConvertType.STRING, "")
             data = [extract[i:j] for i, j in zip([0]+indices, indices+[None])]
             latents = [latents[i:j] for i, j in zip([0]+indices, indices+[None])]
             extract = []

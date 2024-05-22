@@ -347,7 +347,7 @@ class StereoscopicNode(JOVBaseNode):
 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
-        baseline = parse_param(kw, Lexicon.INT, 1, 0.1, EnumConvertType.FLOAT)
+        baseline = parse_param(kw, Lexicon.INT, EnumConvertType.FLOAT, 0, 0.1, 1)
         focal_length = parse_dynamic(Lexicon.VALUE, kw, EnumConvertType.FLOAT)
         images = []
         params = list(zip_longest_fill(pA, baseline, focal_length))
