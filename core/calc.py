@@ -372,8 +372,8 @@ class CalcBinaryOPNode(JOVBaseNode):
 
             # cast into correct type....
             val = parse_value(val, typ, val)
-            if len(val) == 0:
-                val = [0]
+            if isinstance(val, (list, tuple,)) and len(val) == 0:
+                val = val[0]
             results.append(val)
             pbar.update_absolute(idx)
         return (results,)

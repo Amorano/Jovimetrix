@@ -160,15 +160,15 @@ class ShapeNode(JOVBaseNode):
             mask = image_grayscale(mask)
             # pA = image_mask_add(pA, mask)
             pA = image_transform(pA, offset, angle, (1,1), edge=edge)
-            pB = image_mask_add(pA, mask)
             mask = image_transform(mask, offset, angle, (1,1), edge=edge)
+            pB = image_mask_add(pA, mask)
             if blur > 0:
                 # @TODO: Do blur on larger canvas to remove wrap bleed.
                 pA = (gaussian(pA, sigma=blur, channel_axis=2) * 255).astype(np.uint8)
                 pB = (gaussian(pB, sigma=blur, channel_axis=2) * 255).astype(np.uint8)
                 mask = (gaussian(mask, sigma=blur, channel_axis=2) * 255).astype(np.uint8)
             # images.append(cv2tensor_full(pA))
-            images.append([cv2tensor(pA), cv2tensor(pB), cv2tensor(mask)])
+            images.append([cv2tensor(pB), cv2tensor(pA), cv2tensor(mask)])
             pbar.update_absolute(idx)
         return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
 
