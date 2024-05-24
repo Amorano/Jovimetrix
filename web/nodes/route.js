@@ -1,15 +1,14 @@
 /**
- * File: gradient.js
+ * File: route.js
  * Project: Jovimetrix
  *
  */
 
 import { app } from "../../../scripts/app.js"
-import { node_add_dynamic } from '../util/util.js'
-import { api_cmd_jovian } from '../util/util_api.js'
+import { node_add_dynamic2 } from '../util/util.js'
 
-const _id = "GRADIENT (JOV) 🍧"
-const _prefix = '❔'
+const _id = "ROUTE (JOV) 🚌"
+const _prefix = '🔮'
 
 app.registerExtension({
 	name: 'jovimetrix.node.' + _id,
@@ -17,6 +16,6 @@ app.registerExtension({
         if (nodeData.name !== _id) {
             return;
         }
-        nodeType = node_add_dynamic(nodeType, _prefix);
+        nodeType = node_add_dynamic2(nodeType, _prefix, '*', 1);
 	}
 })

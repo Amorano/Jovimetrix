@@ -30,7 +30,7 @@ app.registerExtension({
                 const in_y = this.inputs.find(w => w.name === '🇾') != undefined;
                 const in_z = this.inputs.find(w => w.name === '🇿') != undefined;
                 const in_w = this.inputs.find(w => w.name === '🇼') != undefined;
-                const widget_a = this.inputs.find(w => w.name === '🅰️');
+                //const widget_a = this.inputs.find(w => w.name === '🅰️');
                 //
                 const widget_x = this.widgets.find(w => w.name === '🇽');
                 const widget_y = this.widgets.find(w => w.name === '🇾');
@@ -43,7 +43,15 @@ app.registerExtension({
                 widget_hide(this, widget_z, "-jovi");
                 widget_hide(this, widget_w, "-jovi");
                 widget_hide(this, widget_str, "-jovi");
-                // console.info(this);
+                // outputs?
+                const out_x = this.outputs.find(w => w.name === '\u{1F1FD}');
+                const out_y = this.outputs.find(w => w.name === '\u{1F1FE}');
+                const out_z = this.outputs.find(w => w.name === '\u{1F1FF}');
+                const out_w = this.outputs.find(w => w.name === '\u{1F1FC}');
+                widget_hide(this, out_x, "-jovi2");
+                widget_hide(this, out_y, "-jovi2");
+                widget_hide(this, out_z, "-jovi2");
+                widget_hide(this, out_w, "-jovi2");
                 //
                 if (combo.value == "BOOLEAN") {
                     if (!in_x && visible) {
@@ -64,6 +72,8 @@ app.registerExtension({
                 } else if (combo.value == "VEC2" || combo.value == "COORD2D") {
                     process_value(in_x, widget_x, 1, visible)
                     process_value(in_y, widget_y, 1, visible)
+                    process_value(in_x, out_x, 1, false)
+                    process_value(in_y, out_y, 1, true)
                 } else if (combo.value == "VEC2INT") {
                     process_value(in_x, widget_x, 0, visible)
                     process_value(in_y, widget_y, 0, visible)

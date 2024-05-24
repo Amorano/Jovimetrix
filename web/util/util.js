@@ -118,6 +118,54 @@ export function node_add_dynamic(nodeType, prefix, type='*', count=-1) {
     return nodeType;
 }
 
+export function node_add_dynamic2(nodeType, prefix, dynamic_type='*', index_start=0) {
+    /*
+    this one should just put the "prefix" as the last empty entry.
+    Means we have to pay attention not to collide key names in the
+    input list.
+    */
+    index_start = Math.max(0, index_start);
+    const onNodeCreated = nodeType.prototype.onNodeCreated
+    nodeType.prototype.onNodeCreated = function () {
+        const me = onNodeCreated?.apply(this);
+        this.addInput(prefix, dynamic_type);
+		this.addOutput(prefix, dynamic_type);
+        return me;
+    }
+
+    const onConnectionsChange = nodeType.prototype.onConnectionsChange
+    nodeType.prototype.onConnectionsChange = function (slotType, slot, event, link_info, data) {
+        const me = onConnectionsChange?.apply(this, arguments)
+        if (slotType === TypeSlot.Input) {
+            slot = this.inputs[slot];
+            const who = slot.name;
+            const wIndex = this.inputs.findIndex((w) => w.name === who);
+            if (wIndex >= index_start) {
+                const wo = this.outputs[wIndex];
+                if (event == TypeSlotEvent.Disconnect) {
+                    this.removeOutput(wo);
+                    this.removeInput(slot);
+                } else if (event === TypeSlotEvent.Connect && link_info) {
+                    const fromNode = this.graph._nodes.find(
+                        (otherNode) => otherNode.id == link_info.origin_id
+                    )
+                    if (fromNode) {
+                        const parent_link = fromNode.outputs[link_info.origin_slot];
+                        slot.type = parent_link.type;
+                        slot.name = parent_link.name;
+                        wo.type = parent_link.type;
+                        wo.name = `[${parent_link.type}]`;
+                        this.addInput(prefix, dynamic_type);
+                        this.addOutput(prefix, dynamic_type);
+                    }
+                }
+            }
+        }
+        return me;
+    }
+    return nodeType;
+}
+
 export function convertArrayToObject(values, length, parseFn) {
     const result = {};
     for (let i = 0; i < length; i++) {

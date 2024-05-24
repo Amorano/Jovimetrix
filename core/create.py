@@ -251,7 +251,7 @@ class TextNode(JOVBaseNode):
             align = EnumAlignment[align]
             justify = EnumJustify[justify]
             edge = EnumEdge[edge]
-            matte = pixel_eval(matte)
+            # matte = pixel_eval(matte)
             full_text = str(full_text)
             wm = width-margin * 2
             hm = height-margin * 2 - line_spacing
@@ -348,17 +348,16 @@ class StereoscopicNode(JOVBaseNode):
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
         baseline = parse_param(kw, Lexicon.INT, EnumConvertType.FLOAT, 0, 0.1, 1)
-        focal_length = parse_dynamic(Lexicon.VALUE, kw, EnumConvertType.FLOAT)
+        focal_length = parse_param(kw, Lexicon.VALUE, EnumConvertType.FLOAT, 500, 0)
         images = []
         params = list(zip_longest_fill(pA, baseline, focal_length))
         pbar = ProgressBar(len(params))
-        for idx, (pA, wihi, clr) in enumerate(params):
+        for idx, (pA, baseline, focal_length) in enumerate(params):
             pA = tensor2cv(pA) if pA is not None else channel_solid(chan=EnumImageType.GRAYSCALE)
             # Convert depth image to disparity map
             disparity_map = np.divide(1.0, pA.astype(np.float32), where=pA!=0)
             # Compute disparity values based on baseline and focal length
             disparity_map *= baseline * focal_length
-
             images.append(cv2tensor(pA))
             pbar.update_absolute(idx)
-        return list(zip(*images)) # [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
+        return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]

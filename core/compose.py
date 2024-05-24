@@ -138,7 +138,7 @@ class TransformNode(JOVBaseNode):
             if mode != EnumScaleMode.NONE:
                 w, h = wihi
                 pA = image_scalefit(pA, w, h, mode, sample)
-            matte = pixel_eval(matte, EnumImageType.BGRA)
+            # matte = pixel_eval(matte, EnumImageType.BGRA)
             images.append(cv2tensor_full(pA, matte))
             pbar.update_absolute(idx)
         return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
@@ -408,7 +408,7 @@ class StackNode(JOVBaseNode):
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE)], MIN_IMAGE_SIZE)[0]
         sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)[0]
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)[0]
-        matte = pixel_eval(matte, EnumImageType.BGRA)
+        # matte = pixel_eval(matte, EnumImageType.BGRA)
         images = [tensor2cv(img) for img in images]
         img = image_stack(images, axis, stride, matte)
         w, h = wihi

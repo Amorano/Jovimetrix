@@ -82,11 +82,10 @@ def parse_value(val:Any, typ:EnumConvertType, default: Any,
         size = max(1, int(typ.value / 10))
         new_val = []
         for idx in range(size):
+            d = default
             if isinstance(default, (list, tuple,)):
                 d = default[idx] if idx < len(default) else 0
-            else:
-                d = default
-            v = val[idx] if idx < len(val) else d
+            v = val[idx] if isinstance(val, (list, tuple,)) and idx < len(val) else d
             try:
                 if typ in [EnumConvertType.FLOAT, EnumConvertType.VEC2, EnumConvertType.VEC3, EnumConvertType.VEC4]:
                     v = round(float(v), 12)

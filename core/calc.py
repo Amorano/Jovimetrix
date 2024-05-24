@@ -109,13 +109,13 @@ OP_UNARY = {
     EnumUnaryOperation.CEIL: lambda x: math.ceil(x),
     EnumUnaryOperation.SQRT: lambda x: math.sqrt(x),
     EnumUnaryOperation.SQUARE: lambda x: math.pow(x, 2),
-    EnumUnaryOperation.LOG: lambda x: math.log(x),
-    EnumUnaryOperation.LOG10: lambda x: math.log10(x),
+    EnumUnaryOperation.LOG: lambda x: math.log(x) if x != 0 else -math.inf,
+    EnumUnaryOperation.LOG10: lambda x: math.log10(x) if x != 0 else -math.inf,
     EnumUnaryOperation.SIN: lambda x: math.sin(x),
     EnumUnaryOperation.COS: lambda x: math.cos(x),
     EnumUnaryOperation.TAN: lambda x: math.tan(x),
     EnumUnaryOperation.NEGATE: lambda x: -x,
-    EnumUnaryOperation.RECIPROCAL: lambda x: 1 / x,
+    EnumUnaryOperation.RECIPROCAL: lambda x: 1 / x if x != 0 else 0,
     EnumUnaryOperation.FACTORIAL: lambda x: math.factorial(int(x)),
     EnumUnaryOperation.EXP: lambda x: math.exp(x),
     EnumUnaryOperation.NOT: lambda x: not x,
@@ -127,7 +127,7 @@ OP_UNARY = {
     EnumUnaryOperation.TAN_H: lambda x: math.tanh(x),
     EnumUnaryOperation.RADIANS: lambda x: math.radians(x),
     EnumUnaryOperation.DEGREES: lambda x: math.degrees(x),
-    EnumUnaryOperation.GAMMA: lambda x: gamma(x)
+    EnumUnaryOperation.GAMMA: lambda x: gamma(x) if x > 0 else 0,
 }
 
 # =============================================================================
@@ -195,7 +195,10 @@ class CalcUnaryOPNode(JOVBaseNode):
                         val = [1]
                     else:
                         m = math.sqrt(sum(x ** 2 for x in val))
-                        val = [v / m for v in val]
+                        if m > 0:
+                            val = [v / m for v in val]
+                        else:
+                            val = [0] * len(val)
                 case EnumUnaryOperation.MAXIMUM:
                     val = [max(val)]
                 case EnumUnaryOperation.MINIMUM:
@@ -207,7 +210,7 @@ class CalcUnaryOPNode(JOVBaseNode):
                         try:
                             v = OP_UNARY[op](v)
                         except Exception as e:
-                            logger.error(str(e))
+                            logger.error(f"{e} :: {op}")
                             v = 0
                         ret.append(v)
                     val = ret
@@ -384,8 +387,8 @@ class ValueNode(JOVBaseNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
     HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
-    RETURN_TYPES = (WILDCARD,)
-    RETURN_NAMES = (Lexicon.ANY,)
+    RETURN_TYPES = (WILDCARD, WILDCARD, WILDCARD, WILDCARD, WILDCARD, )
+    RETURN_NAMES = (Lexicon.ANY, Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W,)
     SORT = 1
 
     @classmethod
@@ -422,9 +425,10 @@ class ValueNode(JOVBaseNode):
         for idx, (raw, typ, x, y, z, w) in enumerate(params):
             typ = EnumConvertType[typ]
             val = parse_value(raw, typ, (x, y, z, w))
-            results.append(val)
+            extra = parse_value(val, EnumConvertType.VEC4, (x, y, z, w))
+            results.append((val,) + extra)
             pbar.update_absolute(idx)
-        return (results,)
+        return list(zip(*results))
 
 class LerpNode(JOVBaseNode):
     NAME = "LERP (JOV) 🔰"
@@ -450,8 +454,8 @@ class LerpNode(JOVBaseNode):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> Tuple[Any, Any]:
-        A = parse_param(kw, Lexicon.IN_A, EnumConvertType.VEC4, [(0,0,0,0)], 0, 1)
-        B = parse_param(kw, Lexicon.IN_B, EnumConvertType.VEC4, [(1,1,1,1)], 0, 1)
+        A = parse_param(kw, Lexicon.IN_A, EnumConvertType.ANY, (0,0,0,0), 0, 1)
+        B = parse_param(kw, Lexicon.IN_B, EnumConvertType.ANY, (1,1,1,1), 0, 1)
         alpha = parse_param(kw, Lexicon.FLOAT,EnumConvertType.FLOAT, 0, 0, 1)
         op = parse_param(kw, Lexicon.EASE, EnumConvertType.STRING, "NONE")
         typ = parse_param(kw, Lexicon.TYPE, EnumConvertType.STRING, EnumNumberType.FLOAT.name)
@@ -464,7 +468,7 @@ class LerpNode(JOVBaseNode):
             best_type = [EnumConvertType.FLOAT, EnumConvertType.VEC2, EnumConvertType.VEC3, EnumConvertType.VEC4][size]
             A = parse_value(A, best_type, A)
             B = parse_value(B, best_type, B)
-            alpha = parse_value(alpha, best_type, [alpha])
+            alpha = parse_value(alpha, best_type, alpha)
             if op == "NONE":
                 val = [B[x] * alpha[x] + A[x] * (1 - alpha[x]) for x in range(size)]
             else:

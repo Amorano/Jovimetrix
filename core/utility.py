@@ -14,9 +14,12 @@ from pathlib import Path
 from itertools import zip_longest
 from typing import Any, Tuple
 
+import cv2
+import numpy as np
 import torch
 from PIL import Image
 import matplotlib.pyplot as plt
+import colorsys
 from loguru import logger
 
 from comfy.utils import ProgressBar
@@ -30,8 +33,8 @@ from Jovimetrix.sup.util import parse_dynamic, path_next, \
     parse_param, zip_longest_fill, EnumConvertType
 
 from Jovimetrix.sup.image import channel_solid, cv2pil, \
-    cv2tensor, image_convert, tensor2cv, pil2tensor, image_load, image_formats, \
-    image_diff, EnumImageType, MIN_IMAGE_SIZE
+    cv2tensor, cv2tensor_full, image_convert, tensor2cv, pil2tensor, image_load, \
+    image_formats, image_diff, EnumImageType, MIN_IMAGE_SIZE
 
 # =============================================================================
 
@@ -154,6 +157,10 @@ class ValueGraphNode(JOVBaseNode):
         }}
         return Lexicon._parse(d, cls.HELP_URL)
 
+    @classmethod
+    def IS_CHANGED(cls) -> float:
+        return float("nan")
+
     def __init__(self, *arg, **kw) -> None:
         super().__init__(*arg, **kw)
         self.__history = []
@@ -174,9 +181,10 @@ class ValueGraphNode(JOVBaseNode):
             while len(self.__history) <= idx:
                 self.__history.append([])
             self.__history[idx].extend(val)
-            stride = max(0, -slice + len(self.__history[idx]) + 1)
-            longest_edge = max(longest_edge, stride)
-            self.__history[idx] = self.__history[idx][stride:]
+            if slice > 0:
+                stride = max(1, -slice + len(self.__history[idx]) + 1)
+                longest_edge = max(longest_edge, stride)
+                self.__history[idx] = self.__history[idx][stride:]
         self.__history = self.__history[:idx+1]
         self.__ax.clear()
         for i, h in enumerate(self.__history):
@@ -472,7 +480,6 @@ class ImageDiffNode(JOVBaseNode):
             results.append([cv2tensor(a), cv2tensor(b), cv2tensor(d), cv2tensor(t)])
             pbar.update_absolute(idx)
         return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*results))]
-        return [list(a) for a in zip(*results)]
 
 class ArrayNode(JOVBaseNode):
     NAME = "ARRAY (JOV) 📚"
@@ -580,6 +587,89 @@ class ArrayNode(JOVBaseNode):
         if chunk > 0:
             extract = [e for e in self.batched(extract, chunk)]
         return (len(extract), extract, full,)
+
+class RouteNode(JOVBaseNode):
+    NAME = "ROUTE (JOV) 🚌"
+    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
+    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
+    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
+    RETURN_TYPES = (WILDCARD,)
+    SORT = 900
+
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        d = {
+            "required": {},
+            "optional": {
+                Lexicon.PASS_IN: (WILDCARD, {})
+            }
+        }
+        return Lexicon._parse(d, cls.HELP_URL)
+
+    def run(self, **kw) -> Tuple[Any, ...]:
+        passthru = parse_param(kw, Lexicon.PASS_IN, EnumConvertType.ANY, None)
+        kw.pop(Lexicon.PASS_IN, None)
+        o = list(kw.values())
+        print(o)
+        print(type(o))
+        data = (passthru, ) + zip(*kw.values())
+        print(data)
+        return data
+
+class FilterMaskNode(JOVBaseNode):
+    NAME = "FILTER MASK (JOV) 🤿"
+    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
+    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
+    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
+    RETURN_TYPES = ("IMAGE", "MASK",)
+    SORT = 700
+
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        d = {
+            "required": {},
+            "optional": {
+                Lexicon.PIXEL_A: (WILDCARD, {}),
+                Lexicon.START: ("VEC3", {"default": (200, 190, 0), "step": 1, "rgb": True}),
+                # Lexicon.END: ("VEC3", {"default": (255, 255, 0), "step": 1, "rgb": True}),
+                Lexicon.FLOAT: ("FLOAT", {"default": 0, "min":0, "max":1, "step": 0.01, "tooltip": "the fuzziness to add to the start and end range"})
+            }
+        }
+        return Lexicon._parse(d, cls.HELP_URL)
+
+    def run(self, **kw) -> Tuple[Any, ...]:
+        pA = parse_param(kw, Lexicon.PIXEL_A, EnumConvertType.IMAGE, None)
+        start = parse_param(kw, Lexicon.START, EnumConvertType.VEC3, 0, 0, 255)
+        #end = parse_param(kw, Lexicon.END, EnumConvertType.VEC3, 0, 0, 1)
+        fuzz = parse_param(kw, Lexicon.FLOAT, EnumConvertType.FLOAT, 0, 0, 1)
+        params = list(zip_longest_fill(pA, start, fuzz))
+        images = []
+        pbar = ProgressBar(len(params))
+        for idx, (pA, start, fuzz) in enumerate(params):
+            pA = tensor2cv(pA) if pA is not None else channel_solid(chan=EnumImageType.BGRA)
+            hsv = cv2.cvtColor(pA, cv2.COLOR_BGR2HSV)
+            start = list(colorsys.rgb_to_hsv(*start))
+            end = list(start)
+            start[0] = int(max(0., start[0] * 180 - 90 * fuzz))
+            start[1] = int(max(0., start[1] * 255 - 127.5 * fuzz))
+            start[2] = int(max(0., start[2] - 127.5 * fuzz))
+            print(start)
+            end[0] = int(min(180., end[0] * 180 + 90 * fuzz))
+            end[1] = int(min(255., end[1] * 255 + 127.5 * fuzz))
+            end[2] = int(min(255., end[2] + 127.5 * fuzz))
+            print(end)
+            for i in range(3):
+                l = min(start[i], end[i])
+                h = max(start[i], end[i])
+                start[i], end[i] = l, h
+            print(start, end)
+            mask = cv2.inRange(hsv, np.array(start), np.array(end))
+            img = cv2.bitwise_and(pA, pA, mask=mask)
+            images.append([cv2tensor(img), cv2tensor(mask, True)])
+            pbar.update_absolute(idx)
+        return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
 
 '''
 class RESTNode:

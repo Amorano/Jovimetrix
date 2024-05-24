@@ -72,13 +72,15 @@ export function process_value(input, widget, precision=0, visible=false, typ="nu
             widget.type = typ;
         }
     }
-    widget.options.precision = precision;
-    if (precision == 0) {
-        widget.options.step = 10;
-        widget.options.round = 1;
-    } else {
-        widget.options.step = 1;
-        widget.options.round =  0.1;
+    if (widget?.options) {
+        widget.options.precision = precision;
+        if (precision == 0) {
+            widget.options.step = 10;
+            widget.options.round = 1;
+        } else {
+            widget.options.step = 1;
+            widget.options.round =  0.1;
+        }
     }
 }
 
