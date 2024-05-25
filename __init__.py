@@ -159,6 +159,7 @@ def comfy_message(ident:str, route:str, data:dict) -> None:
     PromptServer.instance.send_sync(route, data)
 
 try:
+
     @PromptServer.instance.routes.post("/jovimetrix/message")
     async def jovimetrix_message(request) -> Any:
         json_data = await request.json()

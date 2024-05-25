@@ -6,6 +6,7 @@ Composition
 from enum import Enum
 from typing import Any, List, Tuple
 
+import cv2
 import torch
 import numpy as np
 
@@ -18,7 +19,7 @@ from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import parse_dynamic, parse_param, \
     zip_longest_fill, EnumConvertType
 from Jovimetrix.sup.image import  channel_merge, \
-    channel_solid, channel_swap, cv2tensor_full, \
+    channel_solid, channel_swap, cv2tensor_full, image_convert, \
     image_crop, image_crop_center, image_crop_polygonal, image_grayscale, \
     image_mask, image_mask_add, image_matte, image_transform, \
     image_split, pixel_eval, tensor2cv, \
@@ -395,27 +396,32 @@ class StackNode(JOVBaseNode):
         return Lexicon._parse(d, cls.HELP_URL)
 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
-        images = []
-        images.extend([r for r in parse_dynamic(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)])
+        pA = []
+        pA.extend([r for r in parse_dynamic(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)])
         if len(images) == 0:
             logger.warning("no images to stack")
             return
-        axis = parse_param(kw, Lexicon.AXIS, EnumConvertType.STRING, EnumOrientation.GRID.name)[0]
-        axis = EnumOrientation[axis]
-        stride = parse_param(kw, Lexicon.STEP, EnumConvertType.INT, 1)[0]
-        mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.NONE.name)[0]
-        mode = EnumScaleMode[mode]
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE)], MIN_IMAGE_SIZE)[0]
-        sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)[0]
-        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)[0]
-        # matte = pixel_eval(matte, EnumImageType.BGRA)
+        axis = parse_param(kw, Lexicon.AXIS, EnumConvertType.STRING, EnumOrientation.GRID.name)
+        stride = parse_param(kw, Lexicon.STEP, EnumConvertType.INT, 1)
+        mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.NONE.name)
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE)], MIN_IMAGE_SIZE)
+        sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)
+        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
         images = [tensor2cv(img) for img in images]
-        img = image_stack(images, axis, stride, matte)
-        w, h = wihi
-        if mode != EnumScaleMode.NONE:
-            sample = EnumInterpolation[sample]
-            img = image_scalefit(img, w, h, mode, sample)
-        return cv2tensor_full(img, matte)
+        params = list(zip_longest_fill(axis, stride, mode, wihi, sample, matte))
+        images = []
+        pbar = ProgressBar(len(params))
+        for idx, (mode, wihi, sample, matte) in enumerate(params):
+            axis = EnumOrientation[axis]
+            img = image_stack(pA, axis, stride, matte)
+            w, h = wihi
+            mode = EnumScaleMode[mode]
+            if mode != EnumScaleMode.NONE:
+                sample = EnumInterpolation[sample]
+                img = image_scalefit(img, w, h, mode, sample)
+            images.append(cv2tensor_full(img, matte))
+            pbar.update_absolute(idx)
+        return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
 
 class CropNode(JOVBaseNode):
     NAME = "CROP (JOV) ✂️"
@@ -509,6 +515,108 @@ class ColorTheoryNode(JOVBaseNode):
             if invert:
                 img = (image_invert(s, 1) for s in img)
             images.append([cv2tensor(a) for a in img])
+            pbar.update_absolute(idx)
+        return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
+
+class ImageFlatten(JOVBaseNode):
+    NAME = "FLATTEN (JOV) ⬇️"
+    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
+    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
+    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
+    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
+    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
+    SORT = 500
+
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        d = {
+        "required": {},
+        "optional": {
+            Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
+            Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), "step": 1, "label": [Lexicon.W, Lexicon.H]}),
+            Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
+            Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
+        }}
+        return Lexicon._parse(d, cls.HELP_URL)
+
+    def run(self, **kw) -> torch.Tensor:
+        pA = []
+        pA.extend([r for r in parse_dynamic(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)])
+        if len(pA) == 0:
+            logger.error("no images to flatten")
+            return ()
+        pA = [image_convert(tensor2cv(img), 4) for img in pA]
+        mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.NONE.name)
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE)], MIN_IMAGE_SIZE)
+        sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)
+        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
+        images = []
+        params = list(zip_longest_fill(mode, wihi, sample, matte))
+        pbar = ProgressBar(len(params))
+        for idx, (mode, wihi, sample, matte) in enumerate(params):
+            current = pA[0]
+            if len(pA) > 1:
+                for x in pA:
+                    # mask = image_grayscale(x)[:,:]
+                    current = cv2.add(current, x) #, mask=mask)
+            mode = EnumScaleMode[mode]
+            w, h = wihi
+            if mode != EnumScaleMode.NONE:
+                sample = EnumInterpolation[sample]
+                img = image_scalefit(img, w, h, mode, sample)
+            images.append(cv2tensor_full(current, matte))
+            pbar.update_absolute(idx)
+        return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
+
+class FilterMaskNode(JOVBaseNode):
+    NAME = "FILTER MASK (JOV) 🤿"
+    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
+    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
+    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
+    RETURN_TYPES = ("IMAGE", "MASK",)
+    SORT = 700
+
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        d = {
+            "required": {},
+            "optional": {
+                Lexicon.PIXEL_A: (WILDCARD, {}),
+                Lexicon.START: ("VEC3", {"default": (128, 128, 128), "step": 1, "rgb": True}),
+                Lexicon.BOOLEAN: ("BOOLEAN", {"default": False}),
+                Lexicon.END: ("VEC3", {"default": (255, 255, 255), "step": 1, "rgb": True}),
+                Lexicon.FLOAT: ("FLOAT", {"default": 0.5, "min":0, "max":1, "step": 0.01, "tooltip": "the fuzziness to add to the start and end range"})
+            }
+        }
+        return Lexicon._parse(d, cls.HELP_URL)
+
+    def run(self, **kw) -> Tuple[Any, ...]:
+        pA = parse_param(kw, Lexicon.PIXEL_A, EnumConvertType.IMAGE, None)
+        start = parse_param(kw, Lexicon.START, EnumConvertType.VEC3, 0, 0, 255)
+        toggle_size = parse_param(kw, Lexicon.BOOLEAN, EnumConvertType.VEC3, 0, 0, 255)
+        end = parse_param(kw, Lexicon.END, EnumConvertType.VEC3, 0, 0, 1)
+        fuzz = parse_param(kw, Lexicon.FLOAT, EnumConvertType.FLOAT, 0, 0, 1)
+        toggle_size = parse_param(kw, Lexicon.BOOLEAN, EnumConvertType.VEC3, 0, 0, 255)
+        params = list(zip_longest_fill(pA, start, toggle_size, end, fuzz))
+        images = []
+        pbar = ProgressBar(len(params))
+        for idx, (pA, start, toggle_size, end, fuzz) in enumerate(params):
+            img = tensor2cv(pA) if pA is not None else channel_solid(chan=EnumImageType.BGRA)
+            start = torch.tensor(start)
+            l = (start - fuzz * 128).clamp(min=0).view(1, 1, 1, 3)
+            if toggle_size:
+                end = torch.tensor(end)
+                h = (end + fuzz * 128).clamp(max=255).view(1, 1, 1, 3)
+            else:
+                h = (start + fuzz * 128).clamp(max=255).view(1, 1, 1, 3)
+            print(l, h)
+            mask = (torch.clamp(pA, 0, 1.0) * 255.0).round().to(torch.int)
+            mask = ((mask >= l) & (mask <= h)).all(dim=-1)
+            alpha = tensor2cv(mask)
+            img = cv2.bitwise_and(img, img, mask=alpha)
+            images.append([cv2tensor(img), mask.float()])
             pbar.update_absolute(idx)
         return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
 

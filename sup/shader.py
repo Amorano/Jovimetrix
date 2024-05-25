@@ -11,6 +11,7 @@ import moderngl
 import numpy as np
 from PIL import Image
 from loguru import logger
+from Jovimetrix.sup.image import MIN_IMAGE_SIZE
 
 # =============================================================================
 
@@ -49,8 +50,6 @@ uniform sampler2D iChannel2;
 //#define texture2D texture
 layout(location = 0) out vec4 fragColor;
 """
-
-MIN_IMAGE_SIZE = 128
 
 # =============================================================================
 

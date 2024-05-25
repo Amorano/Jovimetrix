@@ -31,7 +31,7 @@ from Jovimetrix.sup.util import grid_make
 # === GLOBAL ===
 # =============================================================================
 
-MIN_IMAGE_SIZE = 512
+MIN_IMAGE_SIZE = 32
 HALFPI = math.pi / 2
 TAU = math.pi * 2
 

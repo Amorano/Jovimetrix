@@ -20,7 +20,7 @@ app.registerExtension({
 
         const onNodeCreated = nodeType.prototype.onNodeCreated
         nodeType.prototype.onNodeCreated = function () {
-            const me = onNodeCreated?.apply(this)
+            const me = onNodeCreated?.apply(this);
             const self = this;
             hook_widget_size_mode(this);
             const pivot = this.widgets.find(w => w.name === 'PIVOT');
@@ -51,6 +51,11 @@ app.registerExtension({
 
             setTimeout(() => { mirror.callback(); }, 10);
             setTimeout(() => { proj.callback(); }, 10);
+
+            const old_compute = this.getTitle;
+            this.getTitle = function() {
+                return `${old_compute?.apply(this)}  `;
+            }
             return me;
         }
 	}
