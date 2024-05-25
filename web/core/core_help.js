@@ -5,6 +5,7 @@
  */
 
 import { app } from "../../../scripts/app.js"
+import { CONVERTED_TYPE } from '../util/util_widget.js'
 import { CONFIG_USER } from '../util/util_config.js'
 import { node_cleanup } from '../util/util.js'
 import "../extern/shodown.min.js"
@@ -227,17 +228,17 @@ app.registerExtension({
                     let visible = [];
                     let offset = TOOLTIP_HEIGHT_MAX / 4;
                     for(const item of this.inputs || []) {
-                        if (!item.hidden || item.hidden == false) {
+                        if (item.hidden == undefined || item?.hidden == false) {
                             const data = {
                                 name: item.name,
                                 y: offset
                             }
-                            offset += TOOLTIP_HEIGHT_MAX * 1.45;
                             visible.push(data);
                         }
+                        offset += TOOLTIP_HEIGHT_MAX * 1.45;
                     };
                     for(const item of this.widgets || []) {
-                        if (!item.hidden || item.hidden == false) {
+                        if ((item.type != CONVERTED_TYPE) && (item.hidden == undefined || item?.hidden == false)) {
                             const data = {
                                 name: item.name,
                                 options: item.options,

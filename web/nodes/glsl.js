@@ -8,15 +8,10 @@ import { api } from "../../../scripts/api.js";
 import { app } from "../../../scripts/app.js";
 import { ComfyWidgets } from "../../../scripts/widgets.js"
 import { api_cmd_jovian } from '../util/util_api.js'
-import { widget_remove, widget_hide } from '../util/util_widget.js'
+import { widget_remove, widget_hide, CONVERTED_TYPE } from '../util/util_widget.js'
 import { flashBackgroundColor } from '../util/util_fun.js'
-// import { VectorWidget } from '../widget/widget_vector.js'
 
 const _id = "GLSL (JOV) 🍩"
-// uniform vec3 conversion; // 114)
-// uniform ivec3 conversion2;// 0.299, 0.587, 0.114
-// uniform bvec3 conversion3;//099
-// uniform bvec2 conversion3;//true,false,099
 
 const re_variable = /^uniform\s*(bool|int|float|[i|b]?vec[2-4]|mat[2-4])\s*([A-Za-z][A-Za-z0-9_]+)\s*;[\/\/\s]*\(?((?:\-?[0-9.\s,]+)+|(?:(?:true|false)\s*,?)+)/gm;
 
@@ -155,7 +150,7 @@ app.registerExtension({
                 if (event.detail.id != self.id) {
                     return;
                 }
-                if (widget_time.type != "converted-widget") {
+                if (widget_time.type != CONVERTED_TYPE) {
                     widget_time.value = event.detail.t;
                     app.canvas.setDirty(true);
                 }

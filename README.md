@@ -33,10 +33,17 @@ The main goal of Jovimetrix is to supplement those external workflows before the
 
 # COMMUNITY
 
-
 Everything here is made because I wanted to make it.
-Everything you are looking for here that you cant find doesnt exsit because I didnt make it.
+Everything you are looking for here that you cant find doesn't exist because I didn't make it.
 If you feel like helping with text or code contributions, please pull and send me any PRs.
+
+## VISUAL AIDS AND EXAMPLES
+
+[![YouTube](./res/YouTube.svg)](https://www.youtube.com/channel/UCseaPIn-a2ji3LzVmnEF0Xw)
+
+## WORKFLOW EXAMPLES
+
+TBD
 
 ## CONTRIBUTIONS
 
@@ -97,7 +104,7 @@ Allows the system to auto-scan for any devices, so that it can populate the devi
 
 The [STREAM READER📺](https://github.com/Amorano/Jovimetrix/wiki/DEVICE#-stream-reader) is able to load media from local media, web media dna also system devices such as (virtual) web cameras and monitors. By default, the scan for web cameras is off.
 
-If you wish to engage the auto-scan on ComfyUI statrt-up, set the JOV_SCAN_DEVICES variable to 1 or True.
+If you wish to engage the auto-scan on ComfyUI start-up, set the JOV_SCAN_DEVICES variable to 1 or True.
 
 JOV_SCAN_DEVICES=1
 
