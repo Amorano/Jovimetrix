@@ -96,7 +96,9 @@ The logger can be controlled via the JOV_LOG_LEVEL variable. It can be set to on
 * ERROR (40)
 * CRITICAL (50)
 
-The default is WARNING (30); i.e. SET JOV_LOG_LEVEL=WARNING
+The default is WARNING (30); i.e.:
+
+`SET JOV_LOG_LEVEL=WARNING`
 
 ### SYSTEM DEVICE SCAN
 
@@ -106,7 +108,22 @@ The [STREAM READER📺](https://github.com/Amorano/Jovimetrix/wiki/DEVICE#-strea
 
 If you wish to engage the auto-scan on ComfyUI start-up, set the JOV_SCAN_DEVICES variable to 1 or True.
 
-JOV_SCAN_DEVICES=1
+`SET JOV_SCAN_DEVICES=1`
+
+### HELP SYSTEM
+
+The main help system is made possible by [Mel Massadian](https://github.com/melMass). It is located on the top right of each node (?). This will present a window which is loaded from the [main help repository for Jovimetrix](https://github.com/Amorano/Jovimetrix-examples/)
+
+You can build all the help locally by loading Comfy and surfing to the local URL:
+
+`http://127.0.0.1:8188/jovimetrix/doc`
+
+This will build all the help stub files (.md) inside the main Jovimetrix folder under a folder named `_md`
+
+If you wish to re-direct those outputs, you can set the ENV varible `JOV_SIDECAR`.
+
+e.g.
+`SET JOV_SIDECAR=C:/dev/jvx/help`
 
 ### GIFSKI SUPPORT
 
@@ -114,7 +131,7 @@ If you have [GIFSKI](https://gif.ski/) installed you can enable the option for t
 
 You will need to add an environment var so it knows you have it installed and where:
 
-set JOV_GIFSKI=[path to gifski]
+`SET JOV_GIFSKI=[path to gifski]`
 
 Once set the GIFSKI option should appear in the Export Node drop down list of output target formats.
 
@@ -128,7 +145,7 @@ In short:
 
 ### SPOUT (WINDOWS ONLY)
 
-If you are on Linux or Mac, Spout will not be installed from the requirements.txt.
+If you are on Linux or Mac, `Spout` will not be installed from the requirements.txt.
 
 By default, [Spout](https://leadedge.github.io/), a system for GPU accelerated sharing
 of graphics between applications, is on for all platforms.
@@ -137,7 +154,7 @@ If you are on Mac or Linux, this will only amount to a message at startup about 
 
 If you want to fully turn off the initial startup attempt to import Spout, you can use the environment variable:
 
-JOV_SPOUT=0
+`SET JOV_SPOUT=0`
 
 ## FFMEPG
 
@@ -177,7 +194,6 @@ The audio nodes require FFMPEG. You can find the official [FFMPEG](https://ffmpe
 [CALC](https://github.com/Amorano/Jovimetrix/wiki/CALC) | &nbsp;
 ---|---
 [VALUE #️⃣](https://github.com/Amorano/Jovimetrix/wiki/CALC#%EF%B8%8F%E2%83%A3-value)|Create a value for most types; also universal constants.
-[CONVERT🧬](https://github.com/Amorano/Jovimetrix/wiki/CALC#-convert)|Convert INT, FLOAT, VEC*, STRING and BOOL.
 [OP UNARY 🎲](https://github.com/Amorano/Jovimetrix/wiki/CALC#-calc-op-unary)|Perform a Unary Operation on an input.
 [OP BINARY 🌟](https://github.com/Amorano/Jovimetrix/wiki/CALC#-calc-op-binary)|Perform a Binary Operation on two inputs.
 [LERP 🔰](https://github.com/Amorano/Jovimetrix/wiki/CALC#-lerp)|Interpolate between two values with or without a smoothing.
@@ -193,7 +209,6 @@ The audio nodes require FFMPEG. You can find the official [FFMPEG](https://ffmpe
 ---|---
 [COMPARISON 🕵🏽](https://github.com/Amorano/Jovimetrix/wiki/FLOW#-comparison)|Compare two inputs: A=B, A!=B, A>B, A>=B, A<B, A<=B
 [DELAY ✋🏽](https://github.com/Amorano/Jovimetrix/wiki/FLOW#-delay)|Delay traffic. Electrons on the data bus go round.
-[HOLD VALUE 🫴🏽](https://github.com/Amorano/Jovimetrix/wiki/FLOW#-hold-value)|When engaged will send the last value it had even with new values arriving.
 <img width=225/>|<img width=800/>
 
 [DEVICE](https://github.com/Amorano/Jovimetrix/wiki/DEVICE) | &nbsp;
@@ -213,7 +228,7 @@ The audio nodes require FFMPEG. You can find the official [FFMPEG](https://ffmpe
 
 [UTILITY](https://github.com/Amorano/Jovimetrix/wiki/UTILITY) | &nbsp;
 ---|---
-[VALUE GRAPH📈](https://github.com/Amorano/Jovimetrix/wiki/UTILITY#-value-graph)|Graphs historical execution run values
+[GRAPH📈](https://github.com/Amorano/Jovimetrix/wiki/UTILITY#-value-graph)|Graphs historical execution run values
 [AKASHIC📓](https://github.com/Amorano/Jovimetrix/wiki/UTILITY#-akashic)|Display the top level attributes of an output
 [QUEUE🗃](https://github.com/Amorano/Jovimetrix/wiki/UTILITY#-queue)|Cycle lists of images files or strings for node inputs.
 [SELECT🤏🏽](https://github.com/Amorano/Jovimetrix/wiki/UTILITY#-select)|Select an item from a user explicit list of inputs.

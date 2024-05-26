@@ -90,6 +90,7 @@ JOV_CONFIG_FILE = JOV_WEB / 'config.json'
 # nodes to skip on import; for online systems; skip Export, Streamreader, etc...
 JOV_IGNORE_NODE = ROOT / 'ignore.txt'
 JOV_GLSL = ROOT / 'res' / 'glsl'
+JOV_SIDECAR = os.getenv("JOV_SIDECAR", str(ROOT / "_md"))
 
 JOV_LOG_LEVEL = os.getenv("JOV_LOG_LEVEL", "WARNING")
 logger.configure(handlers=[{"sink": sys.stdout, "level": JOV_LOG_LEVEL}])
@@ -214,8 +215,7 @@ try:
             data[k] = get_node_info(ret)
             data[k]['.md'] = json2markdown(data[k])
             fname = display_name.split(" (JOV)")[0]
-            # path = ROOT / f"_md/{fname}.md"
-            path = Path(f"C:/dev/_diffusion/workflows/jvx/node/{fname}")
+            path = Path(JOV_SIDECAR.replace("{name}", fname))
             path.mkdir(parents=True, exist_ok=True)
             with open(str(path / f"{fname}.md"), "w", encoding='utf-8') as f:
                 f.write(data[k]['.md'])
