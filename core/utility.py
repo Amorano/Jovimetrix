@@ -511,14 +511,19 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
         # return iter(lambda: tuple(islice(iterator, chunk_size)), tuple())
 
     def run(self, **kw) -> Tuple[int, list]:
-        batch = parse_dynamic(Lexicon.UNKNOWN, kw)
-        mode = parse_param(kw, Lexicon.BATCH_MODE, EnumConvertType.STRING, EnumBatchMode.MERGE.name)[0]
-        flip = parse_param(kw, Lexicon.FLIP, EnumConvertType.BOOLEAN, False)[0]
-        chunk = parse_param(kw, Lexicon.BATCH_CHUNK, EnumConvertType.INT, 0)[0]
+        batch = parse_dynamic(kw, Lexicon.UNKNOWN, EnumConvertType.ANY, None)
+        mode = parse_param(kw, Lexicon.BATCH_MODE, EnumConvertType.STRING, EnumBatchMode.MERGE.name)
+        index = parse_param(kw, Lexicon.INDEX, EnumConvertType.INT, EnumBatchMode.MERGE.name)
+        slice_range = parse_param(kw, Lexicon.RANGE, EnumConvertType.VEC3INT, (0, 0, 1))
+        indices = parse_param(kw, Lexicon.STRING, EnumConvertType.STRING, "")
+        seed = parse_param(kw, Lexicon.SEED, EnumConvertType.INT, 0)
+        flip = parse_param(kw, Lexicon.FLIP, EnumConvertType.BOOLEAN, False)
+        batch_chunk = parse_param(kw, Lexicon.BATCH_CHUNK, EnumConvertType.INT, 0, 0)
         extract = []
         # track latents since they need to be added back to Dict['samples']
         latents = []
         full = []
+
         for b in batch:
             if isinstance(b, dict) and "samples" in b:
                 # latents are batched in the x.samples key
@@ -540,49 +545,52 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
                 extract.append(b)
                 latents.append(False)
 
-        if mode == EnumBatchMode.PICK:
-            index = parse_param(kw, Lexicon.BATCH_CHUNK, EnumConvertType.INT, 0, 0)
-            index = index if index < len(extract) else -1
-            extract = [extract[index]]
-            if latents[index]:
-                extract = {"samples": extract}
-        elif mode == EnumBatchMode.SLICE:
-            slice_range = parse_param(kw, Lexicon.RANGE, EnumConvertType.VEC3INT, (0, 0, 1))[0]
-            start, end, step = slice_range
-            end = len(extract) if end == 0 else end
-            data = extract[start:end:step]
-            latents = latents[start:end:step]
-            extract = []
-            for i, lat in enumerate(latents):
-                dat = data[i]
-                if lat:
-                    dat = {"samples": [dat]}
-                extract.append(dat)
-        elif mode == EnumBatchMode.RANDOM:
-            seed = parse_param(kw, Lexicon.SEED, EnumConvertType.INT, 0)
-            random.seed(seed)
-            full = random.choices(full)
-            idx = random.randrange(0, len(extract))
-            extract = [extract[idx]]
-            if latents[idx]:
-                extract = {"samples": extract}
-        elif mode == EnumBatchMode.INDEX_LIST:
-            indices = parse_param(kw, Lexicon.STRING, EnumConvertType.STRING, "")
-            data = [extract[i:j] for i, j in zip([0]+indices, indices+[None])]
-            latents = [latents[i:j] for i, j in zip([0]+indices, indices+[None])]
-            extract = []
-            for i, lat in enumerate(latents):
-                dat = data[i]
-                if lat:
-                    dat = {"samples": [dat]}
-                extract.append(dat)
+        ret = []
+        params = list(zip_longest_fill(mode, index, slice_range, indices, seed, flip, batch_chunk))
+        pbar = ProgressBar(len(params))
+        for idx, (mode, index, slice_range, indices, seed, flip, batch_chunk) in enumerate(params):
+            mode = EnumBatchMode[mode]
+            if mode == EnumBatchMode.PICK:
+                index = index if index < len(extract) else -1
+                extract = [extract[index]]
+                if latents[index]:
+                    extract = {"samples": extract}
+            elif mode == EnumBatchMode.SLICE:
+                start, end, step = slice_range
+                end = len(extract) if end == 0 else end
+                data = extract[start:end:step]
+                latents = latents[start:end:step]
+                extract = []
+                for i, lat in enumerate(latents):
+                    dat = data[i]
+                    if lat:
+                        dat = {"samples": [dat]}
+                    extract.append(dat)
+            elif mode == EnumBatchMode.RANDOM:
+                random.seed(seed)
+                full = random.choices(full)
+                index = random.randrange(0, len(extract))
+                extract = [extract[index]]
+                if latents[index]:
+                    extract = {"samples": extract}
+            elif mode == EnumBatchMode.INDEX_LIST:
+                indices = indices.split(',')
+                data = [extract[i:j] for i, j in zip([0]+indices, indices+[None])]
+                latents = [latents[i:j] for i, j in zip([0]+indices, indices+[None])]
+                extract = []
+                for i, lat in enumerate(latents):
+                    dat = data[i]
+                    if lat:
+                        dat = {"samples": [dat]}
+                    extract.append(dat)
 
-        if flip and len(extract) > 1:
-            extract = extract[::-1]
-
-        if chunk > 0:
-            extract = [e for e in self.batched(extract, chunk)]
-        return (len(extract), extract, full,)
+            if flip and len(extract) > 1:
+                extract = extract[::-1]
+            if batch_chunk > 0:
+                extract = [e for e in self.batched(extract, batch_chunk)]
+            ret.append([len(extract), extract, full])
+            pbar.update_absolute(idx)
+        return list(zip(*ret))
 
 class RouteNode(JOVBaseNode):
     NAME = "ROUTE (JOV) 🚌"
