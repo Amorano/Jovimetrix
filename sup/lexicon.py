@@ -226,7 +226,7 @@ class Lexicon(metaclass=LexiconMeta):
     UNKNOWN = '❔', "Unknown"
     URL = '🌐', "URL"
     V = '🇻', "Value"
-    VALUE = '#️⃣', "Value"
+    VALUE = 'VALUE', "Value"
     VEC = 'VECTOR', "Compound value of type float, vec2, vec3 or vec4"
     W = '🇼', "Width"
     WAIT = '✋🏽', "Wait"
@@ -357,7 +357,7 @@ def json2markdown(json_dict):
                 continue
             ret += f"#### {k.upper()}\n\n"
             ret += f"name|type|desc|default|meta\n"
-            ret += f":---:|:---:|---|---|---\n"
+            ret += f":---:|:---:|---|:---:|---\n"
             for param_key, param_meta in v.items():
                 typ = param_meta.get('type','UNKNOWN').upper()
                 tool = param_meta.get('tooltip','').lower()
@@ -365,7 +365,7 @@ def json2markdown(json_dict):
                 default = param_meta.get('default','')
                 ch = ", ".join(param_meta.get('choice', []))
                 ch = "<br>".join(textwrap.wrap(ch, 45))
-                ret += f"{param_key}|{typ}|{tool}|{default}|{ch}\n"
+                ret += f"{param_key}| {typ} | {tool} | {default} | {ch}\n"
     else:
         ret += 'NONE\n'
     ret += f"\n### OUTPUT\n\n"
@@ -375,7 +375,7 @@ def json2markdown(json_dict):
         for k, v in json_dict['output_parameters'].items():
             if (tool := Lexicon._tooltipsDB.get(k, "")) != "":
                 tool = "<br>".join(textwrap.wrap(tool, 40))
-            ret += f"{k}|{tool}|{v}\n"
+            ret += f"{k}| {v} | {tool} \n"
     else:
         ret += 'NONE\n'
     ret += "\nhelp powered by [MelMass](https://github.com/melMass) & [comfy_mtb](https://github.com/melMass/comfy_mtb) project"

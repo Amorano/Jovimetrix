@@ -214,8 +214,10 @@ try:
             data[k] = get_node_info(ret)
             data[k]['.md'] = json2markdown(data[k])
             fname = display_name.split(" (JOV)")[0]
-            path = ROOT / f"_md/{fname}.md"
-            with open(str(path), "w", encoding='utf-8') as f:
+            # path = ROOT / f"_md/{fname}.md"
+            path = Path(f"C:/dev/_diffusion/workflows/jvx/node/{fname}")
+            path.mkdir(parents=True, exist_ok=True)
+            with open(str(path / f"{fname}.md"), "w", encoding='utf-8') as f:
                 f.write(data[k]['.md'])
         return web.json_response(data)
 

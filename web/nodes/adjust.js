@@ -22,7 +22,7 @@ app.registerExtension({
             const me = onNodeCreated?.apply(this);
             const self = this;
             const radius = this.widgets.find(w => w.name === '🅡');
-            const amount = this.widgets.find(w => w.name === '#️⃣');
+            const amount = this.widgets.find(w => w.name === 'VALUE');
             const lohi = this.widgets.find(w => w.name === 'LoHi');
             const lmh = this.widgets.find(w => w.name === 'LMH');
             const hsv = this.widgets.find(w => w.name === '🇭🇸\u200c🇻');
