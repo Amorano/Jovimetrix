@@ -49,11 +49,8 @@ class Lexicon(metaclass=LexiconMeta):
     B = '🟦', "Blue"
     BATCH = 'BATCH', "Process multiple images"
     BATCH_CHUNK = 'CHUNK', "How many items to put per output. Default (0) is all items"
-    BATCH_LIST = 'AS LIST', "Process each entry as a list"
     BATCH_MODE = 'MODE', "Make, merge, splice or split a batch or list"
-    BATCH_SELECT = 'SELECT', "How to pick items from the list -- by index or randomly"
     BBOX = '🔲', "Bounding box"
-    BEAT = '🥁', "Beats per minute"
     BI = '💙', "Blue Channel"
     BLACK = '⬛', "Black Channel"
     BLBR = 'BL-BR', "Bottom Left - Bottom Right"
@@ -61,11 +58,11 @@ class Lexicon(metaclass=LexiconMeta):
     BOOLEAN = '🇴', "Boolean"
     BOTTOM = '🔽', "Bottom"
     BPM = 'BPM', "The number of Beats Per Minute"
-    C1 = '🔵', "Color Scheme 1"
-    C2 = '🟡', "Color Scheme 2"
-    C3 = '🟣', "Color Scheme 3"
-    C4 = '⚫️', "Color Scheme 4"
-    C5 = '⚪', "Color Scheme 5"
+    C1 = '🔵', "Color Scheme Result 1"
+    C2 = '🟡', "Color Scheme Result 2"
+    C3 = '🟣', "Color Scheme Result 3"
+    C4 = '⚫️', "Color Scheme Result 4"
+    C5 = '⚪', "Color Scheme Result 5"
     CAMERA = '📹', "Camera"
     CHANNEL = 'CHAN', "Channel"
     COLOR = '©️', "Color Entry for Gradient"
@@ -188,7 +185,7 @@ class Lexicon(metaclass=LexiconMeta):
     S = '🇸', "Saturation"
     SAMPLE = '🎞️', "Sampling Method to apply when Rescaling"
     SCHEME = 'SCHEME', "Scheme"
-    SEED = 'SEED', "Seed"
+    SEED = 'SEED', "Random generator's initial value"
     SEGMENT = 'SEGMENT', "Number of parts which the input image should be split"
     SELECT = 'SELECT', "Select"
     SHAPE = '🇸🇴', "Circle, Square or Polygonal forms"
@@ -289,8 +286,8 @@ def match_combo(lst: List[Any] | Tuple[Any]):
         "str": "STRING", "float": "FLOAT", "int": "INT", "bool": "BOOLEAN"
     }
     if len(lst) > 0:
-        return f"COMBO[{types_matcher.get(type(lst[0]).__name__, 'STRING')}]"
-    return "COMBO[STRING]"
+        return f"{types_matcher.get(type(lst[0]).__name__, 'STRING')}"
+    return "STRING"
 
 def get_node_info(node_info: Dict[str, Any]) -> Dict[str, Any]:
     """Collects available information from node class to use in the pipeline."""
@@ -356,26 +353,26 @@ def json2markdown(json_dict):
             if len(v.items()) == 0:
                 continue
             ret += f"#### {k.upper()}\n\n"
-            ret += f"name|type|desc|default|meta\n"
+            ret += f"name | type | desc | default | meta\n"
             ret += f":---:|:---:|---|:---:|---\n"
             for param_key, param_meta in v.items():
                 typ = param_meta.get('type','UNKNOWN').upper()
                 tool = param_meta.get('tooltip','').lower()
-                tool = "<br>".join(textwrap.wrap(tool, 35))
+                tool = "<br>".join(textwrap.wrap(tool, 32))
                 default = param_meta.get('default','')
                 ch = ", ".join(param_meta.get('choice', []))
-                ch = "<br>".join(textwrap.wrap(ch, 45))
-                ret += f"{param_key}| {typ} | {tool} | {default} | {ch}\n"
+                ch = "<br>".join(textwrap.wrap(ch, 32))
+                ret += f"{param_key} | {typ} | {tool} | {default} | {ch}\n"
     else:
         ret += 'NONE\n'
     ret += f"\n### OUTPUT\n\n"
     if len(json_dict['output_parameters']) > 0:
-        ret += f"name|type|desc\n"
+        ret += f"name | type | desc\n"
         ret += f":---:|:---:|---\n"
         for k, v in json_dict['output_parameters'].items():
             if (tool := Lexicon._tooltipsDB.get(k, "")) != "":
                 tool = "<br>".join(textwrap.wrap(tool, 40))
-            ret += f"{k}| {v} | {tool} \n"
+            ret += f"{k} | {v} | {tool} \n"
     else:
         ret += 'NONE\n'
     ret += "\nhelp powered by [MelMass](https://github.com/melMass) & [comfy_mtb](https://github.com/melMass/comfy_mtb) project"
