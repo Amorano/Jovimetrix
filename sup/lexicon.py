@@ -313,7 +313,7 @@ def get_node_info(node_info: Dict[str, Any]) -> Dict[str, Any]:
                 }
                 meta = v0[1]
                 if lst is not None:
-                    input_parameters[k][k0]["choice"] = lst[0]
+                    input_parameters[k][k0]["choice"] = [x.replace('_', ' ') for x in lst[0]]
                     meta.update(lst[1])
                 # only stuff that makes sense...
                 junk = ['default', 'min', 'max']
