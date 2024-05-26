@@ -3,8 +3,6 @@
  * Project: Jovimetrix
  *
  */
-
-
 /*
 parse a json into a graph
 const workflow = JSON.parse(json);

@@ -28,5 +28,3 @@ class EnumFractal(Enum):
     PINGPONG = 40
     WARP = 60
     WARP_PROGRESSIVE = 50
-
-

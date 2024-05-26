@@ -10,8 +10,7 @@ import numpy as np
 
 from comfy.utils import ProgressBar
 
-from Jovimetrix import comfy_message, parse_reset, JOVBaseNode, WILDCARD, \
-    JOV_WEB_RES_ROOT
+from Jovimetrix import comfy_message, parse_reset, JOVBaseNode, WILDCARD
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.anim import EnumWave, wave_op
 from Jovimetrix.sup.util import EnumConvertType, parse_param, zip_longest_fill
@@ -24,12 +23,12 @@ JOV_CATEGORY = "ANIMATE"
 
 class TickNode(JOVBaseNode):
     NAME = "TICK (JOV) ⏱"
-    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
-    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = ("INT", "FLOAT", "FLOAT", WILDCARD)
     RETURN_NAMES = (Lexicon.VALUE, Lexicon.LINEAR, Lexicon.FPS, Lexicon.ANY)
+    DESCRIPTION = """
+The `Tick` node acts as a timer and frame counter, emitting pulses or signals based on time intervals or BPM settings. It allows precise synchronization and control over animation sequences, with options to adjust FPS, BPM, and loop points. This node is useful for generating time-based events or driving animations with rhythmic precision.
+"""
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -57,7 +56,7 @@ class TickNode(JOVBaseNode):
         "hidden": {
             "ident": "UNIQUE_ID"
         }}
-        return Lexicon._parse(d, cls.HELP_URL)
+        return Lexicon._parse(d, cls)
 
     '''
     @classmethod
@@ -126,12 +125,12 @@ class TickNode(JOVBaseNode):
 class WaveGeneratorNode(JOVBaseNode):
     NAME = "WAVE GEN (JOV) 🌊"
     NAME_PRETTY = "WAVE GEN (JOV) 🌊"
-    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
-    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = ("FLOAT", "INT", )
     RETURN_NAMES = (Lexicon.FLOAT, Lexicon.INT, )
+    DESCRIPTION = """
+The `Wave Generator` node produces waveforms like sine, square, or sawtooth with adjustable frequency, amplitude, phase, and offset. It's handy for creating oscillating patterns or controlling animation dynamics. This node emits both continuous floating-point values and integer representations of the generated waves.
+"""
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -146,7 +145,7 @@ class WaveGeneratorNode(JOVBaseNode):
             Lexicon.TIME: ("FLOAT", {"default": 0, "min": 0, "step": 0.000001}),
             Lexicon.INVERT: ("BOOLEAN", {"default": False}),
         }}
-        return Lexicon._parse(d, cls.HELP_URL)
+        return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[float, int]:
         op = parse_param(kw, Lexicon.WAVE, EnumConvertType.STRING, EnumWave.SIN.name, enumType=EnumWave)

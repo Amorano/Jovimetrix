@@ -16,7 +16,7 @@ from loguru import logger
 
 from comfy.utils import ProgressBar
 
-from Jovimetrix import JOVBaseNode, WILDCARD, JOV_WEB_RES_ROOT
+from Jovimetrix import JOVBaseNode, WILDCARD
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import parse_param, parse_value, vector_swap, \
     zip_longest_fill, EnumConvertType, EnumSwizzle
@@ -134,13 +134,13 @@ OP_UNARY = {
 
 class CalcUnaryOPNode(JOVBaseNode):
     NAME = "OP UNARY (JOV) 🎲"
-    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
-    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = (WILDCARD,)
     RETURN_NAMES = (Lexicon.UNKNOWN,)
     SORT = 10
+    DESCRIPTION = """
+The Unary Operation node performs unary operations like absolute value, mean, median, mode, magnitude, normalization, maximum, or minimum on input values.
+"""
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -151,7 +151,7 @@ class CalcUnaryOPNode(JOVBaseNode):
                 Lexicon.FUNC: (EnumUnaryOperation._member_names_, {"default": EnumUnaryOperation.ABS.name})
             }
         }
-        return Lexicon._parse(d, cls.HELP_URL)
+        return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[bool]:
         results = []
@@ -223,13 +223,13 @@ class CalcUnaryOPNode(JOVBaseNode):
 
 class CalcBinaryOPNode(JOVBaseNode):
     NAME = "OP BINARY (JOV) 🌟"
-    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
-    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = (WILDCARD,)
     RETURN_NAMES = (Lexicon.UNKNOWN,)
     SORT = 20
+    DESCRIPTION = """
+The Binary Operation node executes binary operations like addition, subtraction, multiplication, division, and bitwise operations on input values, supporting various data types and vector sizes.
+"""
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -266,7 +266,7 @@ class CalcBinaryOPNode(JOVBaseNode):
                                       "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W],
                                       "tooltip":"4-value vector"}),
         }}
-        return Lexicon._parse(d, cls.HELP_URL)
+        return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[bool]:
         results = []
@@ -383,13 +383,13 @@ class CalcBinaryOPNode(JOVBaseNode):
 
 class ValueNode(JOVBaseNode):
     NAME = "VALUE (JOV) 🧬"
-    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
-    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = (WILDCARD, WILDCARD, WILDCARD, WILDCARD, WILDCARD, )
     RETURN_NAMES = (Lexicon.ANY, Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W,)
     SORT = 1
+    DESCRIPTION = """
+The Value Node supplies raw or default values for various data types, supporting vector input with components for X, Y, Z, and W. It also provides a string input option.
+"""
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -410,7 +410,7 @@ class ValueNode(JOVBaseNode):
                 Lexicon.STRING: ("STRING", {"default": "", "dynamicPrompts": False, "multiline": True}),
             }
         }
-        return Lexicon._parse(d, cls.HELP_URL)
+        return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[bool]:
         x = parse_param(kw, Lexicon.X, EnumConvertType.FLOAT, 0)
@@ -432,13 +432,13 @@ class ValueNode(JOVBaseNode):
 
 class LerpNode(JOVBaseNode):
     NAME = "LERP (JOV) 🔰"
-    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
-    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = (WILDCARD,)
     RETURN_NAMES = (Lexicon.ANY,)
     SORT = 45
+    DESCRIPTION = """
+The Lerp Node performs linear interpolation between two values or vectors based on a blending factor. It supports easing functions for smoother transitions and outputs the result as either floats or integers.
+"""
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -451,7 +451,7 @@ class LerpNode(JOVBaseNode):
             Lexicon.EASE: (["NONE"] + EnumEase._member_names_, {"default": "NONE"}),
             Lexicon.TYPE: (EnumNumberType._member_names_, {"default": EnumNumberType.FLOAT.name, "tooltip": "Output As"})
         }}
-        return Lexicon._parse(d, cls.HELP_URL)
+        return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[Any, Any]:
         A = parse_param(kw, Lexicon.IN_A, EnumConvertType.ANY, (0,0,0,0), 0, 1)
@@ -486,13 +486,13 @@ class LerpNode(JOVBaseNode):
 
 class SwapNode(JOVBaseNode):
     NAME = "SWAP (JOV) 😵"
-    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
-    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = (WILDCARD,)
     RETURN_NAMES = (Lexicon.ANY,)
     SORT = 65
+    DESCRIPTION = """
+The Swap Node swaps components between two vectors based on specified swizzle patterns and values. It provides flexibility in rearranging vector elements dynamically.
+"""
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -510,7 +510,7 @@ class SwapNode(JOVBaseNode):
             Lexicon.SWAP_W: (EnumSwizzle._member_names_, {"default": EnumSwizzle.A_W.name}),
             Lexicon.W: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize})
         }}
-        return Lexicon._parse(d, cls.HELP_URL)
+        return Lexicon._parse(d, cls)
 
     def run(self, **kw)  -> Tuple[torch.Tensor, torch.Tensor]:
         pA = parse_param(kw, Lexicon.IN_A, EnumConvertType.VEC4, [(0,0,0,0)], 0, 1)

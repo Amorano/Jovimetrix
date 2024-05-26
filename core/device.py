@@ -21,7 +21,7 @@ from loguru import logger
 
 from comfy.utils import ProgressBar
 
-from Jovimetrix import JOVBaseNode, WILDCARD, JOV_WEB_RES_ROOT
+from Jovimetrix import JOVBaseNode, WILDCARD
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import EnumConvertType, parse_param, parse_value, \
     zip_longest_fill
@@ -62,14 +62,14 @@ class EnumStreamType(Enum):
 
 class StreamReaderNode(JOVBaseNode):
     NAME = "STREAM READER (JOV) 📺"
-    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
-    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
     SORT = 50
     CAMERAS = None
+    DESCRIPTION = """
+The Stream Reader node captures frames from various sources such as URLs, cameras, monitors, windows, or Spout streams. It supports batch processing, allowing multiple frames to be captured simultaneously. The node provides options for configuring the source, resolution, frame rate, zoom, orientation, and interpolation method. Additionally, it supports capturing frames from multiple monitors or windows simultaneously. The captured frames are returned as tensors, enabling further processing downstream.
+"""
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -111,7 +111,7 @@ class StreamReaderNode(JOVBaseNode):
                 Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
             }
         }
-        return Lexicon._parse(d, cls.HELP_URL)
+        return Lexicon._parse(d, cls)
 
     @classmethod
     def IS_CHANGED(cls, **kw) -> float:
@@ -265,13 +265,13 @@ class StreamReaderNode(JOVBaseNode):
 
 class StreamWriterNode(JOVBaseNode):
     NAME = "STREAM WRITER (JOV) 🎞️"
-    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
-    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     OUTPUT_NODE = True
     SORT = 70
     OUT_MAP = {}
+    DESCRIPTION = """
+The Stream Writer node sends frames to a specified route, typically for live streaming or recording purposes. It accepts tensors representing images and allows configuration of parameters such as route, resolution, scaling mode, interpolation method, and matte color. The node continuously streams frames to the specified route, enabling real-time visualization or recording of processed video data.
+"""
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -285,7 +285,7 @@ class StreamWriterNode(JOVBaseNode):
             Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
             Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 0), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
         }}
-        return Lexicon._parse(d, cls.HELP_URL)
+        return Lexicon._parse(d, cls)
 
     """
     @classmethod
@@ -337,25 +337,27 @@ if JOV_SPOUT:
         NAME = "SPOUT WRITER (JOV) 🎥"
         NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
         CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-        DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
-        HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
         OUTPUT_NODE = True
         SORT = 90
+        DESCRIPTION = """
+The Spout Writer node sends frames to a specified Spout receiver application for real-time video sharing. It accepts tensors representing images and allows configuration of parameters such as the Spout host, frame rate, resolution, scaling mode, interpolation method, and matte color. The node continuously streams frames to the specified Spout host, enabling real-time visualization or integration with other applications that support Spout.
+"""
 
         @classmethod
         def INPUT_TYPES(cls) -> dict:
             d = {
-            "required": {} ,
-            "optional": {
-                Lexicon.PIXEL: (WILDCARD, {}),
-                Lexicon.ROUTE: ("STRING", {"default": "Spout Sender"}),
-                Lexicon.FPS: ("INT", {"min": 0, "max": 60, "default": 30}),
-                Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
-                Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), "step": 1, "label": [Lexicon.W, Lexicon.H]}),
-                Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
-                Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
-            }}
-            return Lexicon._parse(d, cls.HELP_URL)
+                "required": {} ,
+                "optional": {
+                    Lexicon.PIXEL: (WILDCARD, {}),
+                    Lexicon.ROUTE: ("STRING", {"default": "Spout Sender"}),
+                    Lexicon.FPS: ("INT", {"min": 0, "max": 60, "default": 30}),
+                    Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
+                    Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), "step": 1, "label": [Lexicon.W, Lexicon.H]}),
+                    Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
+                    Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
+                }
+            }
+            return Lexicon._parse(d, cls)
 
         @classmethod
         def IS_CHANGED(cls, **kw) -> float:
@@ -396,22 +398,23 @@ if JOV_SPOUT:
 
 class MIDIMessageNode(JOVBaseNode):
     NAME = "MIDI MESSAGE (JOV) 🎛️"
-    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
-    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = ('JMIDIMSG', 'BOOLEAN', 'INT', 'INT', 'INT', 'FLOAT', 'FLOAT', )
     RETURN_NAMES = (Lexicon.MIDI, Lexicon.ON, Lexicon.CHANNEL, Lexicon.CONTROL, Lexicon.NOTE, Lexicon.VALUE, Lexicon.NORMALIZE, )
     SORT = 10
+    DESCRIPTION = """
+The MIDI Message node processes MIDI messages received from an external MIDI controller or device. It accepts MIDI messages as input and returns various attributes of the MIDI message, including whether the message is valid, the MIDI channel, control number, note number, value, and normalized value. This node is useful for integrating MIDI control into creative projects, allowing users to respond to MIDI input in real-time.
+"""
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {
-            "required": {} ,
-            "optional": {
-            Lexicon.MIDI: ('JMIDIMSG', {"default": None})
-        }}
-        return Lexicon._parse(d, cls.HELP_URL)
+                "required": {} ,
+                "optional": {
+                Lexicon.MIDI: ('JMIDIMSG', {"default": None})
+            }
+        }
+        return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[object, bool, int, int, int, float, float]:
         message = parse_param(kw, Lexicon.MIDI, EnumConvertType.ANY, None)
@@ -429,24 +432,24 @@ class MIDIMessageNode(JOVBaseNode):
 
 class MIDIReaderNode(JOVBaseNode):
     NAME = "MIDI READER (JOV) 🎹"
-    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
-    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
-
     RETURN_TYPES = ('JMIDIMSG', 'BOOLEAN', 'INT', 'INT', 'INT', 'FLOAT', 'FLOAT',)
     RETURN_NAMES = (Lexicon.MIDI, Lexicon.ON, Lexicon.CHANNEL, Lexicon.CONTROL, Lexicon.NOTE, Lexicon.VALUE, Lexicon.NORMALIZE,)
     SORT = 5
     DEVICES = midi_device_names()
+    DESCRIPTION = """
+The MIDI Reader node captures MIDI messages from an external MIDI device or controller. It monitors MIDI input and provides information about the received MIDI messages, including whether a note is being played, the MIDI channel, control number, note number, value, and a normalized value. This node is essential for integrating MIDI control into various applications, such as music production, live performances, and interactive installations.
+"""
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {
-            "required": {} ,
-            "optional": {
-            Lexicon.DEVICE : (cls.DEVICES, {"default": cls.DEVICES[0] if len(cls.DEVICES) > 0 else None})
-        }}
-        return Lexicon._parse(d, cls.HELP_URL)
+                "required": {} ,
+                "optional": {
+                Lexicon.DEVICE : (cls.DEVICES, {"default": cls.DEVICES[0] if len(cls.DEVICES) > 0 else None})
+            }
+        }
+        return Lexicon._parse(d, cls)
 
     @classmethod
     def IS_CHANGED(cls) -> float:
@@ -493,28 +496,29 @@ class MIDIReaderNode(JOVBaseNode):
 
 class MIDIFilterEZNode(JOVBaseNode):
     NAME = "MIDI FILTER EZ (JOV) ❇️"
-    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
-    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = ('JMIDIMSG', 'BOOLEAN',)
     RETURN_NAMES = (Lexicon.MIDI, Lexicon.TRIGGER,)
     SORT = 25
+    DESCRIPTION = """
+The MIDI Filter EZ node allows you to filter MIDI messages based on various criteria, including MIDI mode (such as note on or note off), MIDI channel, control number, note number, value, and normalized value. This node is useful for processing MIDI input and selectively passing through only the desired messages. It helps simplify MIDI data handling by allowing you to focus on specific types of MIDI events.
+"""
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {
             "required": {} ,
             "optional": {
-            Lexicon.MIDI: ('JMIDIMSG', {"default": None}),
-            Lexicon.MODE: (MIDINoteOnFilter._member_names_, {"default": MIDINoteOnFilter.IGNORE.name}),
-            Lexicon.CHANNEL: ("INT", {"default": -1, "min": -1, "max": 127, "step": 1}),
-            Lexicon.CONTROL: ("INT", {"default": -1, "min": -1, "max": 127, "step": 1}),
-            Lexicon.NOTE: ("INT", {"default": -1, "min": -1, "max": 127, "step": 1}),
-            Lexicon.VALUE: ("INT", {"default": -1, "min": -1, "max": 127, "step": 1}),
-            Lexicon.NORMALIZE: ("FLOAT", {"default": -1, "min": -1, "max": 1, "step": 0.01})
-        }}
-        return Lexicon._parse(d, cls.HELP_URL)
+                Lexicon.MIDI: ('JMIDIMSG', {"default": None}),
+                Lexicon.MODE: (MIDINoteOnFilter._member_names_, {"default": MIDINoteOnFilter.IGNORE.name}),
+                Lexicon.CHANNEL: ("INT", {"default": -1, "min": -1, "max": 127, "step": 1}),
+                Lexicon.CONTROL: ("INT", {"default": -1, "min": -1, "max": 127, "step": 1}),
+                Lexicon.NOTE: ("INT", {"default": -1, "min": -1, "max": 127, "step": 1}),
+                Lexicon.VALUE: ("INT", {"default": -1, "min": -1, "max": 127, "step": 1}),
+                Lexicon.NORMALIZE: ("FLOAT", {"default": -1, "min": -1, "max": 1, "step": 0.01})
+            }
+        }
+        return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[MIDIMessage, bool]:
         message = parse_param(kw, Lexicon.MIDI, EnumConvertType.ANY, None)[0]
@@ -545,29 +549,30 @@ class MIDIFilterEZNode(JOVBaseNode):
 
 class MIDIFilterNode(JOVBaseNode):
     NAME = "MIDI FILTER (JOV) ✳️"
-    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
-    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = ('JMIDIMSG', 'BOOLEAN', )
     RETURN_NAMES = (Lexicon.MIDI, Lexicon.TRIGGER,)
     SORT = 20
     EPSILON = 1e-6
+    DESCRIPTION = """
+The MIDI Filter node provides advanced filtering capabilities for MIDI messages based on various criteria, including MIDI mode (such as note on or note off), MIDI channel, control number, note number, value, and normalized value. It allows you to filter out unwanted MIDI events and selectively process only the desired ones. This node offers flexibility in MIDI data processing, enabling precise control over which MIDI messages are passed through for further processing.
+"""
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {
             "required": {} ,
             "optional": {
-            Lexicon.MIDI: ('JMIDIMSG', {"default": None}),
-            Lexicon.ON: (MIDINoteOnFilter._member_names_, {"default": MIDINoteOnFilter.IGNORE.name}),
-            Lexicon.CHANNEL: ("STRING", {"default": ""}),
-            Lexicon.CONTROL: ("STRING", {"default": ""}),
-            Lexicon.NOTE: ("STRING", {"default": ""}),
-            Lexicon.VALUE: ("STRING", {"default": ""}),
-            Lexicon.NORMALIZE: ("STRING", {"default": ""})
-        }}
-        return Lexicon._parse(d, cls.HELP_URL)
+                Lexicon.MIDI: ('JMIDIMSG', {"default": None}),
+                Lexicon.ON: (MIDINoteOnFilter._member_names_, {"default": MIDINoteOnFilter.IGNORE.name}),
+                Lexicon.CHANNEL: ("STRING", {"default": ""}),
+                Lexicon.CONTROL: ("STRING", {"default": ""}),
+                Lexicon.NOTE: ("STRING", {"default": ""}),
+                Lexicon.VALUE: ("STRING", {"default": ""}),
+                Lexicon.NORMALIZE: ("STRING", {"default": ""})
+            }
+        }
+        return Lexicon._parse(d, cls)
 
     def __filter(self, data: str, value: float) -> bool:
         if not data:
@@ -634,13 +639,13 @@ class MIDIFilterNode(JOVBaseNode):
 
 class AudioDeviceNode(JOVBaseNode):
     NAME = "AUDIO DEVICE (JOV) 📺"
-    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
-    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = ('WAVE',)
     RETURN_NAMES = (Lexicon.WAVE,)
     SORT = 90
+    DESCRIPTION = """
+The Audio Device node allows you to interact with audio input devices to capture audio data. It provides options to select the audio input device, control automatic recording triggered by the Q system, and manually adjust the recording state. This node enables integration with external audio hardware and facilitates audio data acquisition for processing within the JOVIMETRIX environment.
+"""
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -649,11 +654,12 @@ class AudioDeviceNode(JOVBaseNode):
         d = {
             "required": {} ,
             "optional": {
-            Lexicon.DEVICE: (dev_list, {"default": next(iter(dev_list))}),
-            Lexicon.TRIGGER: ("BOOLEAN", {"default": True, "tooltip":"Auto-record when executed by the Q"}),
-            Lexicon.RECORD: ("BOOLEAN", {"default": True, "tooltip":"Control to manually adjust when the selected device is recording"}),
-        }}
-        return Lexicon._parse(d, cls.HELP_URL)
+                Lexicon.DEVICE: (dev_list, {"default": next(iter(dev_list))}),
+                Lexicon.TRIGGER: ("BOOLEAN", {"default": True, "tooltip":"Auto-record when executed by the Q"}),
+                Lexicon.RECORD: ("BOOLEAN", {"default": True, "tooltip":"Control to manually adjust when the selected device is recording"}),
+            }
+        }
+        return Lexicon._parse(d, cls)
 
     @classmethod
     def IS_CHANGED(cls, **kw) -> float:

@@ -99,8 +99,6 @@ def text_draw(full_text: str, font: ImageFont, width:int, height:int, align:Enum
         text_process_line(line, font, y)
         y += max_height
     return pil2cv(img)
-
-
 """
 def wrap_text_and_calculate_height(self, text, font, max_width, line_height):
     wrapped_lines = []

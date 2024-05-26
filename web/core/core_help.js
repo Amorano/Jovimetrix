@@ -11,6 +11,7 @@ import { node_cleanup } from '../util/util.js'
 import "../extern/shodown.min.js"
 
 const JOV_WEBWIKI_URL = "https://github.com/Amorano/Jovimetrix/wiki";
+const JOV_HELP_URL = "https://raw.githubusercontent.com/Amorano/Jovimetrix-examples/master";
 
 const TOOLTIP_LENGTH = 155;
 const TOOLTIP_WIDTH_MAX = 225;
@@ -304,29 +305,37 @@ app.registerExtension({
                 docElement.classList.add('jov-documentation-popup');
                 if (!(nodeData.name in dataCache)) {
                     // Load data from URL asynchronously if it ends with .md
-                    if (nodeData.description.endsWith('.md')) {
-                        // Check if data is already cached
-                        // Fetch data from URL
-                        fetch(nodeData.description)
-                            .then(response => {
-                                if (!response.ok) {
-                                    contentWrapper.innerHTML = `Failed to load documentation\n\n${response}`
-                                }
-                                return response.text();
-                            })
-                            .then(data => {
-                                // Cache the fetched data
-                                dataCache[nodeData.name] = documentationConverter.makeHtml(data);
-                                contentWrapper.innerHTML = dataCache[nodeData.name];
-                            })
-                            .catch(error => {
-                                contentWrapper.innerHTML = `Failed to load documentation\n\n${error}`
-                                console.error('Error:', error);
-                            });
-                    } else {
-                        // If description does not end with .md, set data directly
-                        dataCache[nodeData.name] = documentationConverter.makeHtml(dataCache[nodeData.name]);
-                        contentWrapper.innerHTML = dataCache[nodeData.name];
+                    const widget_tooltip = (this.widgets || [])
+                        .find(widget => widget.type === 'JTOOLTIP');
+                    if (widget_tooltip) {
+                        const tips = widget_tooltip.options.default || {};
+                        let url = tips['*'];
+                        if (url.endsWith('.md')) {
+                            url = `${JOV_HELP_URL}/${url}`;
+                            console.log(url)
+                            // Check if data is already cached
+                            // Fetch data from URL
+                            fetch(url)
+                                .then(response => {
+                                    if (!response.ok) {
+                                        contentWrapper.innerHTML = `Failed to load documentation\n\n${response}`
+                                    }
+                                    return response.text();
+                                })
+                                .then(data => {
+                                    // Cache the fetched data
+                                    dataCache[nodeData.name] = documentationConverter.makeHtml(data);
+                                    contentWrapper.innerHTML = dataCache[nodeData.name];
+                                })
+                                .catch(error => {
+                                    contentWrapper.innerHTML = `Failed to load documentation\n\n${error}`
+                                    console.error('Error:', error);
+                                });
+                        } else {
+                            // If description does not end with .md, set data directly
+                            dataCache[nodeData.name] = documentationConverter.makeHtml(dataCache[nodeData.name]);
+                            contentWrapper.innerHTML = dataCache[nodeData.name];
+                        }
                     }
                 } else {
                     contentWrapper.innerHTML = dataCache[nodeData.name];

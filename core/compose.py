@@ -14,7 +14,7 @@ from loguru import logger
 
 from comfy.utils import ProgressBar
 
-from Jovimetrix import JOVBaseNode, WILDCARD, JOV_WEB_RES_ROOT
+from Jovimetrix import JOVBaseNode, WILDCARD
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import parse_dynamic, parse_param, \
     zip_longest_fill, EnumConvertType
@@ -45,13 +45,13 @@ class EnumCropMode(Enum):
 
 class TransformNode(JOVBaseNode):
     NAME = "TRANSFORM (JOV) 🏝️"
-    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
-    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
     SORT = 0
+    DESCRIPTION = """
+The Transform Node applies various geometric transformations to images, including translation, rotation, scaling, mirroring, tiling, perspective projection, and more. It offers extensive control over image manipulation to achieve desired visual effects.
+"""
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -75,7 +75,7 @@ class TransformNode(JOVBaseNode):
             Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
             Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
         }}
-        return Lexicon._parse(d, cls.HELP_URL)
+        return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
@@ -146,13 +146,13 @@ class TransformNode(JOVBaseNode):
 
 class BlendNode(JOVBaseNode):
     NAME = "BLEND (JOV) ⚗️"
-    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
-    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
     SORT = 10
+    DESCRIPTION = """
+The Blend Node combines two input images using various blending modes, such as normal, screen, multiply, overlay, etc. It also supports alpha blending and masking to achieve complex compositing effects. This node is essential for creating layered compositions and adding visual richness to images.
+"""
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -171,7 +171,7 @@ class BlendNode(JOVBaseNode):
             Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
             Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
         }}
-        return Lexicon._parse(d, cls.HELP_URL)
+        return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
         pA = parse_param(kw, Lexicon.PIXEL_A, EnumConvertType.IMAGE, None)
@@ -221,13 +221,13 @@ class BlendNode(JOVBaseNode):
 
 class PixelSplitNode(JOVBaseNode):
     NAME = "PIXEL SPLIT (JOV) 💔"
-    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
-    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = ("MASK", "MASK", "MASK", "MASK",)
     RETURN_NAMES = (Lexicon.RI, Lexicon.GI, Lexicon.BI, Lexicon.MI)
     SORT = 40
+    DESCRIPTION = """
+The Pixel Split Node takes an input image and splits it into its individual color channels (red, green, blue), along with a mask channel. This node is useful for separating different color components of an image for further processing or analysis.
+"""
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -236,7 +236,7 @@ class PixelSplitNode(JOVBaseNode):
         "optional": {
             Lexicon.PIXEL: (WILDCARD, {})
         }}
-        return Lexicon._parse(d, cls.HELP_URL)
+        return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
         images = []
@@ -252,13 +252,13 @@ class PixelSplitNode(JOVBaseNode):
 
 class PixelMergeNode(JOVBaseNode):
     NAME = "PIXEL MERGE (JOV) 🫂"
-    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
-    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
     SORT = 45
+    DESCRIPTION = """
+The Pixel Merge Node combines individual color channels (red, green, blue) along with an optional mask channel to create a composite image. This node is useful for merging separate color components into a single image for visualization or further processing.
+"""
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -271,7 +271,7 @@ class PixelMergeNode(JOVBaseNode):
             Lexicon.A: (WILDCARD, {}),
             Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
         }}
-        return Lexicon._parse(d, cls.HELP_URL)
+        return Lexicon._parse(d, cls)
 
     def run(self, **kw)  -> Tuple[torch.Tensor, torch.Tensor]:
         R = parse_param(kw, Lexicon.R, EnumConvertType.IMAGE, None)
@@ -301,13 +301,13 @@ class PixelMergeNode(JOVBaseNode):
 
 class PixelSwapNode(JOVBaseNode):
     NAME = "PIXEL SWAP (JOV) 🔃"
-    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
-    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
     SORT = 48
+    DESCRIPTION = """
+The Pixel Swap Node swaps pixel values between two input images based on the specified channel swizzle operations. Each channel of the output image is determined by a separate swizzle operation, allowing for flexible pixel manipulation and composition.
+"""
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -329,7 +329,7 @@ class PixelSwapNode(JOVBaseNode):
                              {"default": EnumPixelSwizzle.ALPHA_A.name}),
             Lexicon.A: ("INT", {"default": 0, "step": 1, "min": 0, "max": 255}),
         }}
-        return Lexicon._parse(d, cls.HELP_URL)
+        return Lexicon._parse(d, cls)
 
     def run(self, **kw)  -> Tuple[torch.Tensor, torch.Tensor]:
         pA = parse_param(kw, Lexicon.PIXEL_A, EnumConvertType.IMAGE, None)
@@ -373,27 +373,28 @@ class PixelSwapNode(JOVBaseNode):
 
 class StackNode(JOVBaseNode):
     NAME = "STACK (JOV) ➕"
-    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
-    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
     SORT = 75
+    DESCRIPTION = """
+The Stack Node combines multiple input images into a single output image along a specified axis. It stacks the images together, optionally with a specified stride, to create a new image. This node is useful for creating composite images or preparing data for further processing.
+"""
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {
-        "required": {},
-        "optional": {
-            Lexicon.AXIS: (EnumOrientation._member_names_, {"default": EnumOrientation.GRID.name}),
-            Lexicon.STEP: ("INT", {"min": 1, "step": 1, "default": 1}),
-            Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
-            Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), "step": 1, "label": [Lexicon.W, Lexicon.H]}),
-            Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
-            Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
-        }}
-        return Lexicon._parse(d, cls.HELP_URL)
+            "required": {},
+            "optional": {
+                Lexicon.AXIS: (EnumOrientation._member_names_, {"default": EnumOrientation.GRID.name}),
+                Lexicon.STEP: ("INT", {"min": 1, "step": 1, "default": 1}),
+                Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
+                Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), "step": 1, "label": [Lexicon.W, Lexicon.H]}),
+                Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
+                Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
+            }
+        }
+        return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
         pA = []
@@ -425,13 +426,13 @@ class StackNode(JOVBaseNode):
 
 class CropNode(JOVBaseNode):
     NAME = "CROP (JOV) ✂️"
-    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
-    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
     SORT = 5
+    DESCRIPTION = """
+The Crop Node extracts a portion of an input image or resizes it to a specified size. It supports various cropping modes, including center cropping, custom XY cropping, and freeform polygonal cropping. This node is useful for preparing image data for specific tasks or extracting regions of interest.
+"""
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -446,7 +447,7 @@ class CropNode(JOVBaseNode):
             Lexicon.BLBR: ("VEC4", {"default": (1, 0, 1, 1), "step": 0.01, "precision": 5, "round": 0.000001, "label": [Lexicon.BOTTOM, Lexicon.LEFT, Lexicon.BOTTOM, Lexicon.RIGHT]}),
             Lexicon.RGB: ("VEC3", {"default": (0, 0, 0),  "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B], "rgb": True})
         }}
-        return Lexicon._parse(d, cls.HELP_URL)
+        return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[List[torch.Tensor], List[torch.Tensor]]:
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
@@ -480,13 +481,13 @@ class CropNode(JOVBaseNode):
 
 class ColorTheoryNode(JOVBaseNode):
     NAME = "COLOR THEORY (JOV) 🛞"
-    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
-    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = ("IMAGE", "IMAGE", "IMAGE", "IMAGE", "IMAGE")
     RETURN_NAMES = (Lexicon.C1, Lexicon.C2, Lexicon.C3, Lexicon.C4, Lexicon.C5)
     SORT = 100
+    DESCRIPTION = """
+The Color Theory Node applies various color harmony schemes to an input image, generating multiple color variants based on the selected scheme. It supports schemes such as complimentary, analogous, triadic, tetradic, and more. Additionally, users can specify a custom angle of separation for color calculation, offering flexibility in color manipulation. This node is useful for exploring different color palettes and creating visually appealing compositions.
+"""
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -498,7 +499,7 @@ class ColorTheoryNode(JOVBaseNode):
             Lexicon.VALUE: ("INT", {"default": 45, "min": -90, "max": 90, "step": 1, "tooltip": "Custom angle of separation to use when calculating colors"}),
             Lexicon.INVERT: ("BOOLEAN", {"default": False})
         }}
-        return Lexicon._parse(d, cls.HELP_URL)
+        return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[List[torch.Tensor], List[torch.Tensor]]:
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
@@ -520,13 +521,13 @@ class ColorTheoryNode(JOVBaseNode):
 
 class ImageFlatten(JOVBaseNode):
     NAME = "FLATTEN (JOV) ⬇️"
-    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
-    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
     SORT = 500
+    DESCRIPTION = """
+The Flatten Node combines multiple input images into a single image by summing their pixel values. This operation is useful for merging multiple layers or images into one composite image, such as combining different elements of a design or merging masks. Users can specify the blending mode and interpolation method to control how the images are combined. Additionally, a matte can be applied to adjust the transparency of the final composite image.
+"""
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -538,7 +539,7 @@ class ImageFlatten(JOVBaseNode):
             Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
             Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
         }}
-        return Lexicon._parse(d, cls.HELP_URL)
+        return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> torch.Tensor:
         pA = []
@@ -569,67 +570,16 @@ class ImageFlatten(JOVBaseNode):
             pbar.update_absolute(idx)
         return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
 
-class FilterMaskNode(JOVBaseNode):
-    NAME = "FILTER MASK (JOV) 🤿"
-    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
-    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
-    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
-    RETURN_TYPES = ("IMAGE", "MASK",)
-    SORT = 700
-
-    @classmethod
-    def INPUT_TYPES(cls) -> dict:
-        d = {
-            "required": {},
-            "optional": {
-                Lexicon.PIXEL_A: (WILDCARD, {}),
-                Lexicon.START: ("VEC3", {"default": (128, 128, 128), "step": 1, "rgb": True}),
-                Lexicon.BOOLEAN: ("BOOLEAN", {"default": False}),
-                Lexicon.END: ("VEC3", {"default": (255, 255, 255), "step": 1, "rgb": True}),
-                Lexicon.FLOAT: ("FLOAT", {"default": 0.5, "min":0, "max":1, "step": 0.01, "tooltip": "the fuzziness to add to the start and end range"})
-            }
-        }
-        return Lexicon._parse(d, cls.HELP_URL)
-
-    def run(self, **kw) -> Tuple[Any, ...]:
-        pA = parse_param(kw, Lexicon.PIXEL_A, EnumConvertType.IMAGE, None)
-        start = parse_param(kw, Lexicon.START, EnumConvertType.VEC3, 0, 0, 255)
-        toggle_size = parse_param(kw, Lexicon.BOOLEAN, EnumConvertType.VEC3, 0, 0, 255)
-        end = parse_param(kw, Lexicon.END, EnumConvertType.VEC3, 0, 0, 1)
-        fuzz = parse_param(kw, Lexicon.FLOAT, EnumConvertType.FLOAT, 0, 0, 1)
-        toggle_size = parse_param(kw, Lexicon.BOOLEAN, EnumConvertType.VEC3, 0, 0, 255)
-        params = list(zip_longest_fill(pA, start, toggle_size, end, fuzz))
-        images = []
-        pbar = ProgressBar(len(params))
-        for idx, (pA, start, toggle_size, end, fuzz) in enumerate(params):
-            img = tensor2cv(pA) if pA is not None else channel_solid(chan=EnumImageType.BGRA)
-            start = torch.tensor(start)
-            l = (start - fuzz * 128).clamp(min=0).view(1, 1, 1, 3)
-            if toggle_size:
-                end = torch.tensor(end)
-                h = (end + fuzz * 128).clamp(max=255).view(1, 1, 1, 3)
-            else:
-                h = (start + fuzz * 128).clamp(max=255).view(1, 1, 1, 3)
-            print(l, h)
-            mask = (torch.clamp(pA, 0, 1.0) * 255.0).round().to(torch.int)
-            mask = ((mask >= l) & (mask <= h)).all(dim=-1)
-            alpha = tensor2cv(mask)
-            img = cv2.bitwise_and(img, img, mask=alpha)
-            images.append([cv2tensor(img), mask.float()])
-            pbar.update_absolute(idx)
-        return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
-
-"""
+'''
 class HistogramNode(JOVImageSimple):
     NAME = "HISTOGRAM (JOV) 👁‍🗨"
-    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
-    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
         RETURN_TYPES = ("IMAGE", )
     RETURN_NAMES = (Lexicon.IMAGE,)
     SORT = 40
+    DESCRIPTION = """
+The Histogram Node generates a histogram representation of the input image, showing the distribution of pixel intensity values across different bins. This visualization is useful for understanding the overall brightness and contrast characteristics of an image. Additionally, the node performs histogram normalization, which adjusts the pixel values to enhance the contrast of the image. Histogram normalization can be helpful for improving the visual quality of images or preparing them for further image processing tasks.
+"""
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -638,7 +588,7 @@ class HistogramNode(JOVImageSimple):
         "optional": {
             Lexicon.PIXEL: (WILDCARD, {}),
         }}
-        return Lexicon._parse(d, cls.HELP_URL)
+        return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         pA = parse_param(kw, Lexicon.PIXEL, None), EnumConvertType.IMAGE, None)
@@ -651,4 +601,4 @@ class HistogramNode(JOVImageSimple):
             images.append(cv2tensor(pA))
             pbar.update_absolute(idx)
         return list(zip(*images))
-"""
+'''

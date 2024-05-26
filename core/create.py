@@ -12,15 +12,15 @@ from skimage.filters import gaussian
 
 from comfy.utils import ProgressBar
 
-from Jovimetrix import JOVBaseNode, JOV_WEB_RES_ROOT, WILDCARD
+from Jovimetrix import JOVBaseNode, WILDCARD
 
 from Jovimetrix.sup.lexicon import Lexicon
-from Jovimetrix.sup.util import parse_dynamic, parse_param, zip_longest_fill, \
+from Jovimetrix.sup.util import parse_param, zip_longest_fill, \
     EnumConvertType
 
 from Jovimetrix.sup.image import  channel_solid, cv2tensor, cv2tensor_full, \
     image_grayscale, image_invert, image_mask_add, \
-    image_rotate, image_stereogram, image_transform, image_translate, pil2cv, \
+    image_rotate, image_transform, image_translate, pil2cv, \
     pixel_eval, tensor2cv, shape_ellipse, shape_polygon, shape_quad, \
     EnumEdge, EnumImageType, MIN_IMAGE_SIZE
 
@@ -35,12 +35,12 @@ JOV_CATEGORY = "CREATE"
 
 class ConstantNode(JOVBaseNode):
     NAME = "CONSTANT (JOV) 🟪"
-    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
-    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
+    DESCRIPTION = """
+The Constant node generates constant images or masks of a specified size and color. It can be used to create solid color backgrounds or matte images for compositing with other visual elements. The node allows you to define the desired width and height of the output and specify the RGBA color value for the constant output. Additionally, you can input an optional image to use as a matte with the selected color.
+"""
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -55,7 +55,7 @@ class ConstantNode(JOVBaseNode):
                                   "label": [Lexicon.W, Lexicon.H],
                                   "tooltip": "Desired Width and Height of the Color Output"})
         }}
-        return Lexicon._parse(d, cls.HELP_URL)
+        return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
@@ -78,12 +78,12 @@ class ConstantNode(JOVBaseNode):
 
 class ShapeNode(JOVBaseNode):
     NAME = "SHAPE GEN (JOV) ✨"
-    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
-    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
+    DESCRIPTION = """
+The Shape Generation node creates images representing various shapes such as circles, squares, rectangles, ellipses, and polygons. These shapes can be customized by adjusting parameters such as size, color, position, rotation angle, and edge blur. The node provides options to specify the shape type, the number of sides for polygons, the RGBA color value for the main shape, and the RGBA color value for the background. Additionally, you can control the width and height of the output images, the position offset, and the amount of edge blur applied to the shapes.
+"""
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -110,7 +110,7 @@ class ShapeNode(JOVBaseNode):
             Lexicon.BLUR: ("FLOAT", {"default": 0, "min": 0, "step": 0.01, "precision": 4,
                                     "round": 0.00001, "tooltip": "Edge blur amount (Gaussian blur)"}),
         }}
-        return Lexicon._parse(d, cls.HELP_URL)
+        return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
         shape = parse_param(kw, Lexicon.SHAPE, EnumConvertType.STRING, EnumShapes.CIRCLE.name)
@@ -177,14 +177,14 @@ class ShapeNode(JOVBaseNode):
 
 class TextNode(JOVBaseNode):
     NAME = "TEXT GEN (JOV) 📝"
-    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
-    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
     FONTS = font_names()
     FONT_NAMES = sorted(FONTS.keys())
+    DESCRIPTION = """
+The Text Generation node generates images containing text based on user-defined parameters such as font, size, alignment, color, and position. Users can input custom text messages, select fonts from a list of available options, adjust font size, and specify the alignment and justification of the text. Additionally, the node provides options for auto-sizing text to fit within specified dimensions, controlling letter-by-letter rendering, and applying edge effects such as clipping and inversion.
+"""
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -219,7 +219,7 @@ class TextNode(JOVBaseNode):
             Lexicon.EDGE: (EnumEdge._member_names_, {"default": EnumEdge.CLIP.name}),
             Lexicon.INVERT: ("BOOLEAN", {"default": False, "tooltip": "Invert the mask input"})
         }}
-        return Lexicon._parse(d, cls.HELP_URL)
+        return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
         full_text = parse_param(kw, Lexicon.STRING, EnumConvertType.STRING, "")
@@ -289,12 +289,12 @@ class TextNode(JOVBaseNode):
 
 class StereogramNode(JOVBaseNode):
     NAME = "STEREOGRAM (JOV) 📻"
-    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
-    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
+    DESCRIPTION = """
+The Stereogram node creates stereograms, generating 3D images from 2D input. Set tile divisions, noise, gamma, and shift parameters to control the stereogram's appearance.
+"""
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -308,7 +308,7 @@ class StereogramNode(JOVBaseNode):
             Lexicon.GAMMA: ("FLOAT", {"default": 0.33, "min": 0, "max": 1, "step": 0.01}),
             Lexicon.SHIFT: ("FLOAT", {"default": 1., "min": -1, "max": 1, "step": 0.01}),
         }}
-        return Lexicon._parse(d, cls.HELP_URL)
+        return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
@@ -330,13 +330,12 @@ class StereogramNode(JOVBaseNode):
 
 class StereoscopicNode(JOVBaseNode):
     NAME = "STEREOSCOPIC (JOV) 🕶️"
-    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
-    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = ("IMAGE", )
     RETURN_NAMES = (Lexicon.IMAGE, )
-
+    DESCRIPTION = """
+The Stereoscopic node simulates depth perception in images by generating stereoscopic views. It accepts an optional input image for color matte. Adjust baseline and focal length for customized depth effects.
+"""
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {
@@ -346,7 +345,7 @@ class StereoscopicNode(JOVBaseNode):
             Lexicon.INT: ("FLOAT", {"default": 0.1, "min": 0, "max": 1, "step": 0.01, "tooltip":"Baseline"}),
             Lexicon.VALUE: ("FLOAT", {"default": 500, "min": 0, "step": 0.01, "tooltip":"Focal length"}),
         }}
-        return Lexicon._parse(d, cls.HELP_URL)
+        return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)

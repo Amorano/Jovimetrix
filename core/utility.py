@@ -23,14 +23,14 @@ from comfy.utils import ProgressBar
 from folder_paths import get_output_directory
 
 from Jovimetrix import comfy_message, parse_reset, JOVBaseNode, \
-    WILDCARD, ROOT, JOV_WEB_RES_ROOT
+    WILDCARD, ROOT
 
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import parse_dynamic, path_next, \
     parse_param, zip_longest_fill, EnumConvertType
 
 from Jovimetrix.sup.image import channel_solid, cv2pil, \
-    cv2tensor, cv2tensor_full, image_convert, tensor2cv, pil2tensor, image_load, \
+    cv2tensor, image_convert, tensor2cv, pil2tensor, image_load, \
     image_formats, image_diff, EnumImageType, MIN_IMAGE_SIZE
 
 # =============================================================================
@@ -64,13 +64,13 @@ class AkashicData:
 
 class AkashicNode(JOVBaseNode):
     NAME = "AKASHIC (JOV) 📓"
-    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
-    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_NAMES = ()
     OUTPUT_NODE = True
     SORT = 10
+    DESCRIPTION = """
+The Akashic node processes input data and prepares it for visualization. It accepts various types of data, including images, text, and other types. If no input is provided, it returns an empty result. The output consists of a dictionary containing UI-related information, such as base64-encoded images and text representations of the input data.
+"""
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -80,7 +80,7 @@ class AkashicNode(JOVBaseNode):
                 Lexicon.PASS_IN: (WILDCARD, {})
             }
         }
-        return Lexicon._parse(d, cls.HELP_URL)
+        return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[Any, Any]:
         o = parse_param(kw, Lexicon.PASS_IN, EnumConvertType.ANY, None)
@@ -131,14 +131,14 @@ class AkashicNode(JOVBaseNode):
 
 class ValueGraphNode(JOVBaseNode):
     NAME = "GRAPH (JOV) 📈"
-    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
-    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     OUTPUT_NODE = True
     RETURN_TYPES = ("IMAGE", )
     RETURN_NAMES = (Lexicon.IMAGE, )
     SORT = 15
+    DESCRIPTION = """
+The Graph node visualizes a series of data points over time. It accepts a dynamic number of values to graph and display, with options to reset the graph or specify the number of values. The output is an image displaying the graph, allowing users to analyze trends and patterns.
+"""
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -152,7 +152,7 @@ class ValueGraphNode(JOVBaseNode):
         "hidden": {
             "ident": "UNIQUE_ID"
         }}
-        return Lexicon._parse(d, cls.HELP_URL)
+        return Lexicon._parse(d, cls)
 
     @classmethod
     def IS_CHANGED(cls) -> float:
@@ -200,14 +200,14 @@ class ValueGraphNode(JOVBaseNode):
 
 class QueueNode(JOVBaseNode):
     NAME = "QUEUE (JOV) 🗃"
-    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
-    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = (WILDCARD, WILDCARD, "STRING", "INT", "INT", )
     RETURN_NAMES = (Lexicon.ANY, Lexicon.QUEUE, Lexicon.CURRENT, Lexicon.INDEX, Lexicon.TOTAL, )
     VIDEO_FORMATS = ['.webm', '.mp4', '.avi', '.wmv', '.mkv', '.mov', '.mxf']
     SORT = 0
+    DESCRIPTION = """
+The Queue node manages a queue of items, such as file paths or data. It supports various formats including images, videos, text files, and JSON files. Users can specify the current index for the queue item, enable pausing the queue, or reset it back to the first index. The node outputs the current item in the queue, the entire queue, the current index, and the total number of items in the queue.
+"""
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -222,7 +222,7 @@ class QueueNode(JOVBaseNode):
         "hidden": {
             "ident": "UNIQUE_ID"
         }}
-        return Lexicon._parse(d, cls.HELP_URL)
+        return Lexicon._parse(d, cls)
 
     @classmethod
     def IS_CHANGED(cls) -> float:
@@ -339,14 +339,14 @@ class QueueNode(JOVBaseNode):
 
 class ExportNode(JOVBaseNode):
     NAME = "EXPORT (JOV) 📽"
-    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
-    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     OUTPUT_NODE = True
     RETURN_TYPES = ("IMAGE", )
     RETURN_NAMES = (Lexicon.IMAGE, )
     SORT = 80
+    DESCRIPTION = """
+The Export node is responsible for saving images or animations to disk. It supports various output formats such as GIF and GIFSKI. Users can specify the output directory, filename prefix, image quality, frame rate, and other parameters. Additionally, it allows overwriting existing files or generating unique filenames to avoid conflicts. The node outputs the saved images or animation as a tensor.
+"""
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -368,7 +368,7 @@ class ExportNode(JOVBaseNode):
             # GIF OR GIFSKI
             Lexicon.LOOP: ("INT", {"default": 0, "min": 0}),
         }}
-        return Lexicon._parse(d, cls.HELP_URL)
+        return Lexicon._parse(d, cls)
     SORT = 2000
 
     def run(self, **kw) -> None:
@@ -440,13 +440,13 @@ class ExportNode(JOVBaseNode):
 
 class ImageDiffNode(JOVBaseNode):
     NAME = "IMAGE DIFF (JOV) 📏"
-    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
-    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = ("IMAGE", "IMAGE", "MASK", "MASK", ) #"FLOAT", )
     RETURN_NAMES = (Lexicon.IN_A, Lexicon.IN_B, Lexicon.DIFF, Lexicon.THRESHOLD) #, Lexicon.FLOAT, )
     SORT = 90
+    DESCRIPTION = """
+The Image Diff node compares two input images pixel by pixel to identify differences between them. It takes two images as input, labeled as Image A and Image B. The node then calculates the absolute difference between the two images, producing two additional outputs: a difference mask and a threshold mask. The threshold parameter determines the sensitivity of the comparison, with higher values indicating more tolerance for differences. The node returns Image A, Image B, the difference mask, and the threshold mask.
+"""
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -457,7 +457,7 @@ class ImageDiffNode(JOVBaseNode):
             Lexicon.PIXEL_B: (WILDCARD, {}),
             Lexicon.THRESHOLD: ("FLOAT", {"default": 0.5, "min": 0, "max": 1, "step": 0.01}),
         }}
-        return Lexicon._parse(d, cls.HELP_URL)
+        return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[Any, Any]:
         pA = parse_param(kw, Lexicon.PIXEL_A, EnumConvertType.IMAGE, None)
@@ -480,14 +480,13 @@ class ImageDiffNode(JOVBaseNode):
 
 class ArrayNode(JOVBaseNode):
     NAME = "ARRAY (JOV) 📚"
-    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
-    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = ("INT", WILDCARD, WILDCARD,)
     RETURN_NAMES = (Lexicon.VALUE, Lexicon.ANY, Lexicon.LIST,)
     SORT = 50
-
+    DESCRIPTION = """
+Processes a batch of data based on the selected mode, such as merging, picking, slicing, random selection, or indexing. Allows for flipping the order of processed items and dividing the data into chunks.
+"""
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {
@@ -501,7 +500,7 @@ class ArrayNode(JOVBaseNode):
             Lexicon.FLIP: ("BOOLEAN", {"default": False}),
             Lexicon.BATCH_CHUNK: ("INT", {"default": 0, "min": 0, "step": 1}),
         }}
-        return Lexicon._parse(d, cls.HELP_URL)
+        return Lexicon._parse(d, cls)
 
     @classmethod
     def batched(cls, iterable, chunk_size, expand:bool=False, fill:Any=None) -> list:
@@ -587,12 +586,12 @@ class ArrayNode(JOVBaseNode):
 
 class RouteNode(JOVBaseNode):
     NAME = "ROUTE (JOV) 🚌"
-    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
-    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = (WILDCARD,)
     SORT = 900
+    DESCRIPTION = """
+Routes the input data from the optional input ports to the output port, preserving the order of inputs. The `PASS_IN` optional input is directly passed through to the output, while other optional inputs are collected and returned as tuples, preserving the order of insertion.
+"""
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -602,7 +601,7 @@ class RouteNode(JOVBaseNode):
                 Lexicon.PASS_IN: (WILDCARD, {})
             }
         }
-        return Lexicon._parse(d, cls.HELP_URL)
+        return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[Any, ...]:
         passthru = parse_param(kw, Lexicon.PASS_IN, EnumConvertType.ANY, None)
@@ -618,13 +617,13 @@ class RouteNode(JOVBaseNode):
 class RESTNode:
     """Make requests and process the responses."""
     NAME = "REST (JOV) 😴"
-    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
-    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = ("JSON", "INT", "STRING")
     RETURN_NAMES = ("RESPONSE", "LENGTH", "TOKEN")
     SORT = 80
+    DESCRIPTION = """
+Make requests to a RESTful API endpoint and process the responses. It supports authentication with bearer tokens. The input parameters include the API URL, authentication details, request attribute, and JSON path for array extraction. The node returns the JSON response, the length of the extracted array, and the bearer token.
+"""
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -638,7 +637,7 @@ class RESTNode:
             Lexicon.PATH: ("STRING", {"default": ""}),
             "iteration_index": ("INT", {"default": 0, "min": 0, "max": 9999, "step": 1})
         }}
-        return Lexicon._parse(d, cls.HELP_URL)
+        return Lexicon._parse(d, cls)
 
     def authenticate(self, auth_url, auth_body, token_attribute_name):
         try:

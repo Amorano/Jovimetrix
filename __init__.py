@@ -90,8 +90,6 @@ JOV_CONFIG_FILE = JOV_WEB / 'config.json'
 # nodes to skip on import; for online systems; skip Export, Streamreader, etc...
 JOV_IGNORE_NODE = ROOT / 'ignore.txt'
 JOV_GLSL = ROOT / 'res' / 'glsl'
-# JOV_WEBHELP_ROOT = "https://github.com/Amorano/Jovimetrix-examples/blob/master"
-JOV_WEB_RES_ROOT = "https://raw.githubusercontent.com/Amorano/Jovimetrix-examples/master"
 
 JOV_LOG_LEVEL = os.getenv("JOV_LOG_LEVEL", "WARNING")
 logger.configure(handlers=[{"sink": sys.stdout, "level": JOV_LOG_LEVEL}])
@@ -205,6 +203,22 @@ try:
             json.dump(JOV_CONFIG, f)
         return web.json_response(json_data)
 
+    @PromptServer.instance.routes.get("/jovimetrix/doc")
+    async def jovimetrix_doc(request) -> Any:
+        from Jovimetrix.sup.lexicon import get_node_info, json2markdown
+        data = {}
+        global NODE_CLASS_MAPPINGS, NODE_DISPLAY_NAME_MAPPINGS
+        for k, v in NODE_CLASS_MAPPINGS.items():
+            display_name = NODE_DISPLAY_NAME_MAPPINGS[k]
+            ret = {"class": v, "display_name": display_name}
+            data[k] = get_node_info(ret)
+            data[k]['.md'] = json2markdown(data[k])
+            fname = display_name.split(" (JOV)")[0]
+            path = ROOT / f"_md/{fname}.md"
+            with open(str(path), "w", encoding='utf-8') as f:
+                f.write(data[k]['.md'])
+        return web.json_response(data)
+
 except Exception as e:
     logger.error(e)
 
@@ -246,7 +260,7 @@ class Session(metaclass=Singleton):
         return [x for x in files if x.endswith('.json') or x.endswith('.html')]
 
     def __init__(self, *arg, **kw) -> None:
-        global JOV_CONFIG, JOV_IGNORE_NODE
+        global JOV_CONFIG, JOV_IGNORE_NODE, NODE_CLASS_MAPPINGS, NODE_DISPLAY_NAME_MAPPINGS
         found = False
         if JOV_CONFIG_FILE.exists():
             JOV_CONFIG = configLoad(JOV_CONFIG_FILE)

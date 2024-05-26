@@ -4,18 +4,18 @@ Adjustment
 """
 
 from enum import Enum
-from typing import Tuple
+from typing import Any, Tuple
 
 import cv2
 import torch
 
 from comfy.utils import ProgressBar
 
-from Jovimetrix import JOV_WEB_RES_ROOT, JOVBaseNode, WILDCARD
+from Jovimetrix import JOVBaseNode, WILDCARD
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import EnumConvertType, parse_param, zip_longest_fill
 from Jovimetrix.sup.image import channel_count, channel_solid, \
-    color_match_histogram, color_match_lut, color_match_reinhard, cv2tensor_full, \
+    color_match_histogram, color_match_lut, color_match_reinhard, cv2tensor, cv2tensor_full, \
     image_color_blind, image_grayscale, image_scalefit, tensor2cv, image_equalize, \
     image_levels, pixel_eval, image_posterize, image_pixelate, image_quantize, \
     image_sharpen, image_threshold, image_blend, image_invert, morph_edge_detect, \
@@ -40,38 +40,45 @@ class EnumColorMatchMap(Enum):
 
 class AdjustNode(JOVBaseNode):
     NAME = "ADJUST (JOV) 🕸️"
-    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
-    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
-
+    DESCRIPTION = """
+The `Adjust Node` lets you enhance and modify images with various effects.
+You can apply blurring, sharpening, color tweaks, and edge detection.
+Customize parameters like radius, value, and contrast, and use masks for
+selective effects. Advanced options include pixelation, quantization, and
+morphological operations like dilation and erosion. Handle transparency easily,
+ensuring seamless blending of effects. Perfect for simple adjustments and
+complex image transformations.
+"""
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {
-        "required": {},
-        "optional": {
-            Lexicon.PIXEL: (WILDCARD, {}),
-            Lexicon.MASK: (WILDCARD, {}),
-            Lexicon.FUNC: (EnumAdjustOP._member_names_, {"default": EnumAdjustOP.BLUR.name}),
-            Lexicon.RADIUS: ("INT", {"default": 3, "min": 3, "step": 1}),
-            Lexicon.VALUE: ("FLOAT", {"default": 1, "min": 0, "step": 0.1}),
-            Lexicon.LOHI: ("VEC2", {"default": (0, 1), "step": 0.01, "precision": 4,
-                                    "round": 0.00001, "label": [Lexicon.LO, Lexicon.HI]}),
-            Lexicon.LMH: ("VEC3", {"default": (0, 0.5, 1), "step": 0.01, "precision": 4,
-                                    "round": 0.00001, "label": [Lexicon.LO, Lexicon.MID, Lexicon.HI]}),
-            Lexicon.HSV: ("VEC3",{"default": (0, 1, 1), "step": 0.01, "precision": 4,
-                                    "round": 0.00001, "label": [Lexicon.H, Lexicon.S, Lexicon.V]}),
-            Lexicon.CONTRAST: ("FLOAT", {"default": 0, "min": 0, "max": 1, "step": 0.01,
+            "required": {},
+            "optional": {
+                Lexicon.PIXEL: (WILDCARD, {}),
+                Lexicon.MASK: (WILDCARD, {}),
+                Lexicon.FUNC: (EnumAdjustOP._member_names_, {"default": EnumAdjustOP.BLUR.name,
+                                                             "tooltip":"Type of adjustment (e.g., blur, sharpen, invert)"}),
+                Lexicon.RADIUS: ("INT", {"default": 3, "min": 3, "step": 1}),
+                Lexicon.VALUE: ("FLOAT", {"default": 1, "min": 0, "step": 0.1}),
+                Lexicon.LOHI: ("VEC2", {"default": (0, 1), "step": 0.01, "precision": 4,
+                                        "round": 0.00001, "label": [Lexicon.LO, Lexicon.HI]}),
+                Lexicon.LMH: ("VEC3", {"default": (0, 0.5, 1), "step": 0.01, "precision": 4,
+                                        "round": 0.00001, "label": [Lexicon.LO, Lexicon.MID, Lexicon.HI]}),
+                Lexicon.HSV: ("VEC3",{"default": (0, 1, 1), "step": 0.01, "precision": 4,
+                                        "round": 0.00001, "label": [Lexicon.H, Lexicon.S, Lexicon.V]}),
+                Lexicon.CONTRAST: ("FLOAT", {"default": 0, "min": 0, "max": 1, "step": 0.01,
+                                                "precision": 4, "round": 0.00001}),
+                Lexicon.GAMMA: ("FLOAT", {"default": 1, "min": 0.00001, "max": 1, "step": 0.01,
                                             "precision": 4, "round": 0.00001}),
-            Lexicon.GAMMA: ("FLOAT", {"default": 1, "min": 0.00001, "max": 1, "step": 0.01,
-                                        "precision": 4, "round": 0.00001}),
-            Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1,
-                                        "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True}),
-            Lexicon.INVERT: ("BOOLEAN", {"default": False, "tooltip": "Invert the mask input"})
-        }}
-        return Lexicon._parse(d, cls.HELP_URL)
+                Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1,
+                                            "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True}),
+                Lexicon.INVERT: ("BOOLEAN", {"default": False, "tooltip": "Invert the mask input"})
+            }
+        }
+        return Lexicon._parse(d, cls)
 
     def run(self, **kw)  -> Tuple[torch.Tensor, torch.Tensor]:
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
@@ -187,12 +194,12 @@ class AdjustNode(JOVBaseNode):
 
 class ColorMatchNode(JOVBaseNode):
     NAME = "COLOR MATCH (JOV) 💞"
-    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
-    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
+    DESCRIPTION = """
+The `Color Match` node allows you to adjust the color scheme of one image to match another using various methods. You can choose from different color matching modes such as LUT, Histogram, and Reinhard. Additionally, you can specify options like color maps, the number of colors, and whether to flip or invert the images. This node supports the creation of seamless and cohesive visuals by matching colors accurately, making it ideal for texture work or masking in motion graphics and design projects.
+"""
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -214,7 +221,7 @@ class ColorMatchNode(JOVBaseNode):
             Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1,
                                         "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True}),
         }}
-        return Lexicon._parse(d, cls.HELP_URL)
+        return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         pA = parse_param(kw, Lexicon.PIXEL_A, EnumConvertType.IMAGE, None)
@@ -258,13 +265,12 @@ class ColorMatchNode(JOVBaseNode):
 
 class ThresholdNode(JOVBaseNode):
     NAME = "THRESHOLD (JOV) 📉"
-    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
-    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
-
+    DESCRIPTION = """
+The `Threshold` node enables you to apply thresholding techniques to images, useful for segmentation and feature extraction. It offers various thresholding modes such as binary and adaptive, along with options to adjust the threshold value and block size. Additionally, you can invert the resulting mask if needed, making it versatile for image processing tasks.
+"""
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {
@@ -278,7 +284,7 @@ class ThresholdNode(JOVBaseNode):
             Lexicon.SIZE: ("INT", {"default": 3, "min": 3, "max": 103, "step": 1}),
             Lexicon.INVERT: ("BOOLEAN", {"default": False, "tooltip": "Invert the mask input"})
         }}
-        return Lexicon._parse(d, cls.HELP_URL)
+        return Lexicon._parse(d, cls)
 
     def run(self, **kw)  -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
@@ -303,12 +309,12 @@ class ThresholdNode(JOVBaseNode):
 
 class ColorBlindNode(JOVBaseNode):
     NAME = "COLOR BLIND (JOV) 👁‍🗨"
-    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
-    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
+    DESCRIPTION = """
+The `Color Blind` node facilitates the simulation of color blindness effects on images, aiding in accessibility testing and design adjustments. It offers options to simulate various types of color deficiencies, adjust the severity of the effect, and apply the simulation using different simulators. This node is valuable for ensuring inclusivity in visual content and design processes.
+"""
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -322,7 +328,7 @@ class ColorBlindNode(JOVBaseNode):
                                         {"default": EnumCBSimulator.AUTOSELECT.name}),
             Lexicon.VALUE: ("FLOAT", {"default": 1, "min": 0, "max": 1, "step": 0.001}),
         }}
-        return Lexicon._parse(d, cls.HELP_URL)
+        return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
@@ -338,5 +344,56 @@ class ColorBlindNode(JOVBaseNode):
             simulator = EnumCBSimulator[simulator]
             pA = image_color_blind(pA, defiency, simulator, severity)
             images.append(cv2tensor_full(pA))
+            pbar.update_absolute(idx)
+        return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
+
+class FilterMaskNode(JOVBaseNode):
+    NAME = "FILTER MASK (JOV) 🤿"
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
+    RETURN_TYPES = ("IMAGE", "MASK",)
+    SORT = 700
+    DESCRIPTION = """
+The `Filter Mask` node allows you to create masks based on color ranges within an image, ideal for selective filtering and masking tasks. You can specify the color range using start and end values along with an optional fuzziness factor to adjust the range. This node provides flexibility in defining precise color-based masks for various image processing applications.
+"""
+
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        d = {
+            "required": {},
+            "optional": {
+                Lexicon.PIXEL_A: (WILDCARD, {}),
+                Lexicon.START: ("VEC3", {"default": (128, 128, 128), "step": 1, "rgb": True}),
+                Lexicon.BOOLEAN: ("BOOLEAN", {"default": False}),
+                Lexicon.END: ("VEC3", {"default": (255, 255, 255), "step": 1, "rgb": True}),
+                Lexicon.FLOAT: ("FLOAT", {"default": 0.5, "min":0, "max":1, "step": 0.01, "tooltip": "the fuzziness to add to the start and end range"})
+            }
+        }
+        return Lexicon._parse(d, cls)
+
+    def run(self, **kw) -> Tuple[Any, ...]:
+        pA = parse_param(kw, Lexicon.PIXEL_A, EnumConvertType.IMAGE, None)
+        start = parse_param(kw, Lexicon.START, EnumConvertType.VEC3, 0, 0, 255)
+        toggle_size = parse_param(kw, Lexicon.BOOLEAN, EnumConvertType.VEC3, 0, 0, 255)
+        end = parse_param(kw, Lexicon.END, EnumConvertType.VEC3, 0, 0, 1)
+        fuzz = parse_param(kw, Lexicon.FLOAT, EnumConvertType.FLOAT, 0, 0, 1)
+        toggle_size = parse_param(kw, Lexicon.BOOLEAN, EnumConvertType.VEC3, 0, 0, 255)
+        params = list(zip_longest_fill(pA, start, toggle_size, end, fuzz))
+        images = []
+        pbar = ProgressBar(len(params))
+        for idx, (pA, start, toggle_size, end, fuzz) in enumerate(params):
+            img = tensor2cv(pA) if pA is not None else channel_solid(chan=EnumImageType.BGRA)
+            start = torch.tensor(start)
+            l = (start - fuzz * 128).clamp(min=0).view(1, 1, 1, 3)
+            if toggle_size:
+                end = torch.tensor(end)
+                h = (end + fuzz * 128).clamp(max=255).view(1, 1, 1, 3)
+            else:
+                h = (start + fuzz * 128).clamp(max=255).view(1, 1, 1, 3)
+            print(l, h)
+            mask = (torch.clamp(pA, 0, 1.0) * 255.0).round().to(torch.int)
+            mask = ((mask >= l) & (mask <= h)).all(dim=-1)
+            alpha = tensor2cv(mask)
+            img = cv2.bitwise_and(img, img, mask=alpha)
+            images.append([cv2tensor(img), mask.float()])
             pbar.update_absolute(idx)
         return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]

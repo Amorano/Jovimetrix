@@ -6,7 +6,9 @@ EMOJI OCD Support
 # 🔗 ⚓ 📀 🧹 🍿 ➕ 📽️ 🦄 📑 📺 🎪 🐘 🚦 🤯 😱 💀 ⛓️ 🔒 🪀 🪁 🧿 🧙🏽 🧙🏽‍♀️
 # 🧯 🦚 ♻️  ⤴️ ⚜️ 🅱️ 🅾️ ⬆️ ↔️ ↕️ 〰️ ☐ 🚮 🤲🏽 👍 ✳️ ✌🏽 ☝🏽
 
-from typing import Any
+import re
+import textwrap
+from typing import Any, Dict, List, Tuple
 from loguru import logger
 
 class LexiconMeta(type):
@@ -131,7 +133,7 @@ class Lexicon(metaclass=LexiconMeta):
     LOOP = '🔄', "Loop"
     M = '🖤', "Alpha Channel"
     MARGIN = 'MARGIN', "Whitespace padding around canvas"
-    MASK = '😷', "Mask or Image to use as Mask"
+    MASK = '😷', "Mask or Image to use as Mask to control where adjustments are applied"
     MATTE = 'MATTE', "Background Color"
     MAX = 'MAX', "Maximum"
     MI = '🤍', "Alpha Channel"
@@ -187,7 +189,7 @@ class Lexicon(metaclass=LexiconMeta):
     SAMPLE = '🎞️', "Sampling Method to apply when Rescaling"
     SCHEME = 'SCHEME', "Scheme"
     SEED = 'SEED', "Seed"
-    SEGMENT = 'SEGEMENT', "Number of parts which the input image should be split"
+    SEGMENT = 'SEGMENT', "Number of parts which the input image should be split"
     SELECT = 'SELECT', "Select"
     SHAPE = '🇸🇴', "Circle, Square or Polygonal forms"
     SHIFT = 'SHIFT', "Shift"
@@ -240,12 +242,11 @@ class Lexicon(metaclass=LexiconMeta):
     ZOOM = '🔎', "ZOOM"
 
     @classmethod
-    def _parse(cls, node: dict, url: str=None) -> dict:
-        data = {}
-        if url is not None:
-            data["_"] = url
-
-        # the node defines...
+    def _parse(cls, node: dict, node_cls: object) -> dict:
+        name_url = node_cls.NAME.split(" (JOV)")[0]
+        url = name_url.replace(" ", "%20")
+        cat = node_cls.CATEGORY.split('/')[1]
+        data = {"_": f"{cat}#-{url}", "*": f"node/{name_url}/{name_url}.md"}
         for cat, entry in node.items():
             if cat not in ['optional', 'required']:
                 continue
@@ -255,6 +256,127 @@ class Lexicon(metaclass=LexiconMeta):
                         logger.warning(f"no {k}")
                         continue
                 data[k] = tip
-
         node["optional"]["tooltips"] = ("JTOOLTIP", {"default": data})
         return node
+
+"""
+JUDICIOUS BORROWING FROM SALT.AI DOCUMENTATION PROJECT:
+https://github.com/get-salt-AI/SaltAI_Documentation_Tools
+"""
+
+def collapse_repeating_parameters(params_dict: Dict[str, Any]) -> Dict[str, Any]:
+    """Collapses repeating parameters like `input_blocks.0`,...`input_blocks.10` into 1 parameter `input_blocks.i`."""
+    collapsed = {}
+    pattern_seen = {}
+    for param_category in params_dict:
+        collapsed[param_category] = {}
+        for param_name, param_type in params_dict[param_category].items():
+            pattern = r"\.\d+"
+            generic_pattern, n = re.subn(pattern, ".{}", param_name)
+            if n > 0:
+                letters = (letter for letter in "ijklmnopqrstuvwxyzabcdefgh")
+                generic_pattern = re.sub(r"\{\}", lambda _: next(letters), generic_pattern)
+                if generic_pattern not in pattern_seen:
+                    pattern_seen[generic_pattern] = True
+                    collapsed[param_category][generic_pattern] = param_type
+            else:
+                collapsed[param_category][param_name] = param_type
+    return collapsed
+
+def match_combo(lst: List[Any] | Tuple[Any]):
+    """Detects comfy dtype for a combo parameter."""
+    types_matcher = {
+        "str": "STRING", "float": "FLOAT", "int": "INT", "bool": "BOOLEAN"
+    }
+    if len(lst) > 0:
+        return f"COMBO[{types_matcher.get(type(lst[0]).__name__, 'STRING')}]"
+    return "COMBO[STRING]"
+
+def get_node_info(node_info: Dict[str, Any]) -> Dict[str, Any]:
+    """Collects available information from node class to use in the pipeline."""
+    node_class = node_info["class"]
+    input_parameters, output_parameters = {}, {}
+    for k, v in node_class.INPUT_TYPES().items():
+        if k in ["required", "optional"]:
+            input_parameters[k] = {}
+            for k0, v0 in v.items():
+                # skip list
+                if k0 in ['tooltips']:
+                    continue
+                lst = None
+                typ = v0[0]
+                if isinstance(typ, list):
+                    typ = match_combo(typ)
+                    lst = v0
+                input_parameters[k][k0] = {
+                    "type": typ
+                }
+                meta = v0[1]
+                if lst is not None:
+                    input_parameters[k][k0]["choice"] = lst[0]
+                    meta.update(lst[1])
+                # only stuff that makes sense...
+                junk = ['default', 'min', 'max']
+                if (val := Lexicon._tooltipsDB.get(k0, None)) is not None:
+                    input_parameters[k][k0]['tooltip'] = val
+                else:
+                    junk.append('tooltip')
+                for scrape in junk:
+                    if (val := meta.get(scrape, None)) is not None and val != "":
+                        input_parameters[k][k0][scrape] = val
+
+    return_types = [
+        match_combo(x) if isinstance(x, list) or isinstance(x, tuple) else x for x in node_class.RETURN_TYPES
+    ]
+    return_names = getattr(node_class, "RETURN_NAMES", [t.lower() for t in return_types])
+    for t, n in zip(return_types, return_names):
+        output_parameters[n] = t
+    return {
+        "class": repr(node_class).split("'")[1],
+        "input_parameters": collapse_repeating_parameters(input_parameters),
+        "output_parameters": output_parameters,
+        "display_name": node_info["display_name"],
+        "output_node": str(getattr(node_class, "OUTPUT_NODE", False)),
+        "category": str(getattr(node_class, "CATEGORY", "")),
+        "documentation": str(getattr(node_class, "DESCRIPTION", "")),
+    }
+
+def json2markdown(json_dict):
+    """Example of json to markdown converter. You are welcome to change formatting per specific request."""
+    name = json_dict['display_name']
+    ret = f"# {name}\n\n"
+    ret += f"## {json_dict['category']}\n"
+    ret += f"{json_dict['documentation']}\n"
+    #name = name.split(" (JOV)")[0].replace(" ", "%20")
+    # ret += f"![](https://raw.githubusercontent.com/Amorano/Jovimetrix-examples/master/node/{name}/{name}.gif)\n\n"
+    ret += f"#### OUTPUT NODE?: `{json_dict['output_node']}`\n\n"
+    ret += f"### INPUT\n\n"
+    if len(json_dict['output_parameters']) > 0:
+        for k, v in json_dict['input_parameters'].items():
+            if len(v.items()) == 0:
+                continue
+            ret += f"#### {k.upper()}\n\n"
+            ret += f"name|type|desc|default|meta\n"
+            ret += f":---:|:---:|---|---|---\n"
+            for param_key, param_meta in v.items():
+                typ = param_meta.get('type','UNKNOWN').upper()
+                tool = param_meta.get('tooltip','').lower()
+                tool = "<br>".join(textwrap.wrap(tool, 35))
+                default = param_meta.get('default','')
+                ch = ", ".join(param_meta.get('choice', []))
+                ch = "<br>".join(textwrap.wrap(ch, 45))
+                ret += f"{param_key}|{typ}|{tool}|{default}|{ch}\n"
+    else:
+        ret += 'NONE\n'
+    ret += f"\n### OUTPUT\n\n"
+    if len(json_dict['output_parameters']) > 0:
+        ret += f"name|type|desc\n"
+        ret += f":---:|:---:|---\n"
+        for k, v in json_dict['output_parameters'].items():
+            if (tool := Lexicon._tooltipsDB.get(k, "")) != "":
+                tool = "<br>".join(textwrap.wrap(tool, 40))
+            ret += f"{k}|{tool}|{v}\n"
+    else:
+        ret += 'NONE\n'
+    ret += "\nhelp powered by [MelMass](https://github.com/melMass) & [comfy_mtb](https://github.com/melMass/comfy_mtb) project"
+    return ret

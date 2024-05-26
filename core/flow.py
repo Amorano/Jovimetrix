@@ -13,7 +13,7 @@ from comfy.utils import ProgressBar
 from nodes import interrupt_processing
 
 from Jovimetrix import comfy_message, \
-    ComfyAPIMessage, JOVBaseNode, TimedOutException, JOV_WEB_RES_ROOT, WILDCARD
+    ComfyAPIMessage, JOVBaseNode, TimedOutException, WILDCARD
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import parse_param, parse_value, zip_longest_fill
 from Jovimetrix.core.calc import EnumConvertType
@@ -61,12 +61,12 @@ class EnumComparison(Enum):
 
 class DelayNode(JOVBaseNode):
     NAME = "DELAY (JOV) ✋🏽"
-    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
-    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = (WILDCARD,)
     RETURN_NAMES = (Lexicon.ROUTE,)
+    DESCRIPTION = """
+Delay node used to introduce pauses in the workflow. It accepts an optional input to pass through and a timer parameter to specify the duration of the delay. If no timer is provided, it defaults to a maximum delay. During the delay, it periodically checks for messages to interrupt the delay. Once the delay is completed, it returns the input passed to it.
+"""
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -79,7 +79,7 @@ class DelayNode(JOVBaseNode):
         "hidden": {
             "ident": "UNIQUE_ID"
         }}
-        return Lexicon._parse(d, cls.HELP_URL)
+        return Lexicon._parse(d, cls)
 
     def run(self, ident, **kw) -> Tuple[Any]:
         delay = parse_param(kw, Lexicon.TIMER, EnumConvertType.INT, -1, 0, JOV_DELAY_MAX)[0]
@@ -106,12 +106,12 @@ class DelayNode(JOVBaseNode):
 
 class ComparisonNode(JOVBaseNode):
     NAME = "COMPARISON (JOV) 🕵🏽"
-    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
-    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = (WILDCARD, WILDCARD,)
     RETURN_NAMES = (Lexicon.ANY, Lexicon.VEC,)
+    DESCRIPTION = """
+The Comparison node evaluates two inputs based on a specified comparison operation. It accepts two inputs (A and B), comparison operators, and optional values for successful and failed comparisons. The node performs the specified comparison operation element-wise between corresponding elements of A and B. If the comparison is successful for all elements, it returns the success value; otherwise, it returns the failure value. The node supports various comparison operators such as EQUAL, GREATER_THAN, LESS_THAN, AND, OR, IS, IN, etc.
+"""
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -125,7 +125,7 @@ class ComparisonNode(JOVBaseNode):
             Lexicon.COMPARE: (EnumComparison._member_names_, {"default": EnumComparison.EQUAL.name}),
             Lexicon.FLIP: ("BOOLEAN", {"default": False}),
         }}
-        return Lexicon._parse(d, cls.HELP_URL)
+        return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[Any, Any]:
         A = parse_param(kw, Lexicon.IN_A, EnumConvertType.ANY, None)

@@ -12,7 +12,7 @@ from loguru import logger
 
 from comfy.utils import ProgressBar
 
-from Jovimetrix import JOV_WEB_RES_ROOT, JOVBaseNode
+from Jovimetrix import JOVBaseNode
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import parse_param, zip_longest_fill, EnumConvertType
 from Jovimetrix.sup.image import channel_solid, cv2tensor_full, EnumImageType, \
@@ -27,12 +27,12 @@ JOV_CATEGORY = "AUDIO"
 
 class LoadWaveNode(JOVBaseNode):
     NAME = "LOAD WAVE (JOV) 🎼"
-    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
-    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = ("WAVE",)
     RETURN_NAMES = (Lexicon.WAVE,)
+    DESCRIPTION = """
+The Load Wave node imports audio files, converting them to waveforms. Specify the file path to load the audio data.
+"""
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -41,7 +41,7 @@ class LoadWaveNode(JOVBaseNode):
             "optional": {
                 Lexicon.FILEN: ("STRING", {"default": ""})
         }}
-        return Lexicon._parse(d, cls.HELP_URL)
+        return Lexicon._parse(d, cls)
 
     def __init__(self, *arg, **kw) -> None:
         super().__init__(*arg, **kw)
@@ -69,12 +69,12 @@ class LoadWaveNode(JOVBaseNode):
 
 class WaveGraphNode(JOVBaseNode):
     NAME = "WAVE GRAPH (JOV) ▶ ılıılı"
-    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
-    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
+    DESCRIPTION = """
+The Wave Graph node visualizes audio waveforms as bars. Adjust parameters like the number of bars, bar thickness, and colors.
+"""
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -91,7 +91,7 @@ class WaveGraphNode(JOVBaseNode):
             Lexicon.MATTE: ("VEC4", {"default": (0, 128, 128, 255), "step": 1,
                                      "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
         }}
-        return Lexicon._parse(d, cls.HELP_URL)
+        return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
         wave = parse_param(kw, Lexicon.WAVE, EnumConvertType.ANY, None)

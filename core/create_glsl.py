@@ -13,7 +13,7 @@ from loguru import logger
 from comfy.utils import ProgressBar
 
 from Jovimetrix import comfy_message, parse_reset, \
-    JOVBaseNode, WILDCARD, ROOT, JOV_GLSL, JOV_WEB_RES_ROOT
+    JOVBaseNode, WILDCARD, ROOT, JOV_GLSL
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import parse_param, zip_longest_fill, \
     EnumConvertType
@@ -67,13 +67,13 @@ class EnumPatternType(Enum):
 
 class GLSLNode(JOVBaseNode):
     NAME = "GLSL (JOV) 🍩"
-    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
-    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
     SORT = 1
+    DESCRIPTION = """
+The GLSL Node executes custom GLSL (OpenGL Shading Language) fragment shaders to generate images or apply effects. GLSL is a high-level shading language used for graphics programming, particularly in the context of rendering images or animations. This node allows for real-time rendering of shader effects, providing flexibility and creative control over image processing pipelines. It takes advantage of GPU acceleration for efficient computation, enabling the rapid generation of complex visual effects.
+"""
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -92,7 +92,7 @@ class GLSLNode(JOVBaseNode):
         "hidden": {
             "ident": "UNIQUE_ID"
         }}
-        return Lexicon._parse(d, cls.HELP_URL)
+        return Lexicon._parse(d, cls)
 
     @classmethod
     def IS_CHANGED(cls, **kw) -> float:
@@ -150,10 +150,7 @@ class GLSLNode(JOVBaseNode):
 
 class GLSLBaseNode(JOVBaseNode):
     NAME = ""
-    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
-    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
     FRAGMENT = ".glsl"
@@ -211,11 +208,11 @@ class GLSLBaseNode(JOVBaseNode):
 
 class GLSLSelectRange(GLSLBaseNode):
     NAME = "SELECT RANGE GLSL (JOV)"
-    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
-    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     FRAGMENT = str(JOV_GLSL / "clr" / "clr-flt-range.glsl")
+    DESCRIPTION = """
+The SELECT RANGE GLSL (JOV) node applies a GLSL shader to select a specific range of colors within the input image. This node allows users to define the start and end points of the color range using RGB values, providing precise control over color selection. The GLSL shader used for this operation is loaded from the specified fragment file, enabling customizable color range selection for various image processing tasks.
+"""
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -228,7 +225,7 @@ class GLSLSelectRange(GLSLBaseNode):
             Lexicon.END: ("VEC3", {"default": (1., 1., 1.), "step": 0.01, "precision": 4,
                                     "round": 0.00001, "label": [Lexicon.R, Lexicon.G, Lexicon.B]}),
         }}
-        return Lexicon._parse(d, cls.HELP_URL)
+        return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> List[torch.Tensor]:
         kw["start"] = parse_param(kw, Lexicon.START, EnumConvertType.VEC3, (0, 0, 0), 0, 1)
@@ -239,12 +236,12 @@ class GLSLSelectRange(GLSLBaseNode):
 
 class GLSLColorGrayscale(GLSLBaseNode):
     NAME = "GRAYSCALE GLSL (JOV)"
-    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
-    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     FRAGMENT = str(JOV_GLSL / "clr" / "clr-grayscale.glsl")
     DEFAULT = (0.299, 0.587, 0.114)
+    DESCRIPTION = """
+The GRAYSCALE GLSL (JOV) node converts the input image to grayscale using a GLSL shader. This node applies a customizable grayscale conversion formula to each pixel of the input image, allowing users to specify the RGB weights for the conversion. The GLSL shader used for this operation is loaded from the specified fragment file, providing flexibility in grayscale conversion methods for different image processing requirements.
+"""
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -255,7 +252,7 @@ class GLSLColorGrayscale(GLSLBaseNode):
             Lexicon.RGB: ("VEC3", {"default": cls.DEFAULT, "step": 0.01, "precision": 4,
                                    "round": 0.00001, "label": [Lexicon.R, Lexicon.G, Lexicon.B]}),
         }}
-        return Lexicon._parse(d, cls.HELP_URL)
+        return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> List[torch.Tensor]:
         kw["conversion"] = parse_param(kw, Lexicon.RGB, EnumConvertType.VEC3, self.DEFAULT, 0, 1)
@@ -264,10 +261,10 @@ class GLSLColorGrayscale(GLSLBaseNode):
 
 class GLSLCreateNoise(GLSLBaseNode):
     NAME = "NOISE GLSL (JOV)"
-    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
-    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
+    DESCRIPTION = """
+The NOISE GLSL (JOV) node generates noise using GLSL shaders, providing various types of noise patterns for image processing applications. Users can select from different noise types, including Brownian, Gradient, Mosaic, Perlin 2D, Simplex 2D, and Value noise. The generated noise patterns can be customized further by specifying parameters such as seed and image dimensions. GLSL shaders corresponding to each noise type are loaded dynamically based on the user's selection, allowing for flexible and efficient noise generation in the image processing pipeline.
+"""
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -279,7 +276,7 @@ class GLSLCreateNoise(GLSLBaseNode):
             Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), "step": 1,
                                    "label": [Lexicon.W, Lexicon.H]})
         }}
-        return Lexicon._parse(d, cls.HELP_URL)
+        return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> List[torch.Tensor]:
         kw[Lexicon.FRAGMENT] = []
@@ -306,10 +303,10 @@ class GLSLCreateNoise(GLSLBaseNode):
 
 class GLSLCreatePattern(GLSLBaseNode):
     NAME = "PATTERN GLSL (JOV)"
-    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
-    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
+    DESCRIPTION = """
+The PATTERN GLSL (JOV) node generates patterns using GLSL shaders, providing a variety of pattern types for image processing tasks. Users can select from different pattern types, including the checkerboard pattern. The generated patterns can be customized further by specifying parameters such as tile size and image dimensions. GLSL shaders corresponding to each pattern type are loaded dynamically based on the user's selection, enabling flexible and efficient pattern generation in the image processing pipeline.
+"""
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -320,7 +317,7 @@ class GLSLCreatePattern(GLSLBaseNode):
             Lexicon.TILE: ("VEC2", {"default": (1, 1), "step": 0.02, "precision": 6, "min": 1, "label": [Lexicon.X, Lexicon.Y]}),
             Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), "step": 1, "label": [Lexicon.W, Lexicon.H]})
         }}
-        return Lexicon._parse(d, cls.HELP_URL)
+        return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> List[torch.Tensor]:
         kw["uTile"] = parse_param(kw, Lexicon.TILE, EnumConvertType.VEC2, (1, 1), 1)
@@ -337,11 +334,11 @@ class GLSLCreatePattern(GLSLBaseNode):
 
 class GLSLCreatePolygon(GLSLBaseNode):
     NAME = "POLYGON GLSL (JOV)"
-    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
-    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     FRAGMENT = str(JOV_GLSL / "cre" / "cre-shp-polygon.glsl")
+    DESCRIPTION = """
+The POLYGON GLSL (JOV) node generates polygonal shapes using GLSL shaders. Users can specify the number of sides for the polygon and its radius, allowing for the creation of various polygonal shapes such as triangles, squares, pentagons, and more. The generated shapes can be further processed within the image processing pipeline. GLSL shaders corresponding to polygon generation are dynamically loaded, enabling efficient shape generation and manipulation.
+"""
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -352,7 +349,7 @@ class GLSLCreatePolygon(GLSLBaseNode):
             Lexicon.RADIUS: ("FLOAT", {"default": 1, "min": 0.01, "max": 4, "step": 0.01}),
             Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), "step": 1, "label": [Lexicon.W, Lexicon.H]})
         }}
-        return Lexicon._parse(d, cls.HELP_URL)
+        return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> List[torch.Tensor]:
         kw["sides"] = parse_param(kw, Lexicon.VALUE, EnumConvertType.INT, 3, 3)
@@ -364,10 +361,10 @@ class GLSLCreatePolygon(GLSLBaseNode):
 
 class GLSLMap(GLSLBaseNode):
     NAME = "MAP GLSL (JOV)"
-    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
-    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
+    DESCRIPTION = """
+The MAP GLSL (JOV) node applies mapping transformations to input images using GLSL shaders. It offers various mapping types such as polar mapping, Mercator projection, and rectangular equal-area projection. Users can choose the desired mapping type and optionally flip the output image. GLSL shaders corresponding to different mapping transformations are dynamically loaded, enabling efficient image mapping operations within the image processing pipeline.
+"""
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -378,7 +375,7 @@ class GLSLMap(GLSLBaseNode):
             Lexicon.TYPE: (EnumMappingType._member_names_, {"default": EnumMappingType.POLAR.name}),
             Lexicon.FLIP: ("BOOLEAN", {"default": False}),
         }}
-        return Lexicon._parse(d, cls.HELP_URL)
+        return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> List[torch.Tensor]:
         kw[Lexicon.FRAGMENT] = []
@@ -399,10 +396,7 @@ class GLSLMap(GLSLBaseNode):
 
 class GLSLTRSMirror(GLSLBaseNode):
     NAME = "MIRROR GLSL (JOV)"
-    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
-    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     FRAGMENT = str(JOV_GLSL / "trs" / "trs-mirror.glsl")
 
     @classmethod
@@ -414,7 +408,7 @@ class GLSLTRSMirror(GLSLBaseNode):
             Lexicon.ANGLE: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01}),
             Lexicon.PIVOT: ("VEC2", {"default": (0.5, 0.5), "step": 0.01, "precision": 4, "label": [Lexicon.X, Lexicon.Y]}),
         }}
-        return Lexicon._parse(d, cls.HELP_URL)
+        return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> List[torch.Tensor]:
         kw["center"] = parse_param(kw, Lexicon.PIVOT, EnumConvertType.VEC2, (0.5, 0.5), 0, 1)
@@ -422,15 +416,11 @@ class GLSLTRSMirror(GLSLBaseNode):
         kw["uZoom"] = parse_param(kw, Lexicon.ANGLE, EnumConvertType.FLOAT, 0)
         kw["uZoom"] = [-a for a in kw["uZoom"]]
         kw.pop(Lexicon.ANGLE, None)
-
         return super().run(**kw)
 
 class GLSLTRSRotate(GLSLBaseNode):
     NAME = "ROTATE GLSL (JOV)"
-    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
-    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     FRAGMENT = str(JOV_GLSL / "trs" / "trs-rotate.glsl")
 
     @classmethod
@@ -442,7 +432,7 @@ class GLSLTRSRotate(GLSLBaseNode):
             Lexicon.ANGLE: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01}),
             Lexicon.PIVOT: ("VEC2", {"default": (0.5, 0.5), "step": 0.01, "precision": 4, "label": [Lexicon.X, Lexicon.Y]}),
         }}
-        return Lexicon._parse(d, cls.HELP_URL)
+        return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> List[torch.Tensor]:
         kw["center"] = parse_param(kw, Lexicon.PIVOT, EnumConvertType.VEC2, (0.5, 0.5), 0, 1)
@@ -454,10 +444,7 @@ class GLSLTRSRotate(GLSLBaseNode):
 
 class GLSLUtilTiler(GLSLBaseNode):
     NAME = "TILER GLSL (JOV)"
-    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
-    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     FRAGMENT = str(JOV_GLSL / "trs" / "trs-tiler.glsl")
 
     @classmethod
@@ -466,10 +453,10 @@ class GLSLUtilTiler(GLSLBaseNode):
         "required": {},
         "optional": {
             Lexicon.PIXEL_A: (WILDCARD, {}),
-            Lexicon.TILE: ("VEC2", {"default": (1., 1., ), "step": 0.1, "precision": 4,
+            Lexicon.TILE: ("VEC2", {"default": (1., 1., ), "min": 1, "step": 0.1, "precision": 4,
                                      "label": [Lexicon.X, Lexicon.Y]}),
         }}
-        return Lexicon._parse(d, cls.HELP_URL)
+        return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> List[torch.Tensor]:
         kw["uTile"] = parse_param(kw, Lexicon.TILE, EnumConvertType.VEC2, (1, 1), 1)
@@ -478,10 +465,7 @@ class GLSLUtilTiler(GLSLBaseNode):
 
 class GLSLTRSKaleidoscope(GLSLBaseNode):
     NAME = "KALEIDOSCOPE GLSL (JOV)"
-    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
-    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
     FRAGMENT = str(JOV_GLSL / "trs" / "trs-kaleidoscope.glsl")
 
     @classmethod
@@ -507,7 +491,7 @@ class GLSLTRSKaleidoscope(GLSLBaseNode):
             Lexicon.SKIP: ("FLOAT", {"default": 0, "step": 0.002, "precision": 6,
                                      "min": -0.5, "max": 0.5}),
         }}
-        return Lexicon._parse(d, cls.HELP_URL)
+        return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> List[torch.Tensor]:
         kw["segments"] = parse_param(kw, Lexicon.SEGMENT, EnumConvertType.FLOAT, 2, 2.5)
@@ -528,10 +512,7 @@ class GLSLTRSKaleidoscope(GLSLBaseNode):
 
 class GLSLVFX(GLSLBaseNode):
     NAME = "VFX GLSL (JOV)"
-    NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = f"{JOV_WEB_RES_ROOT}/node/{NAME_URL}/{NAME_URL}.md"
-    HELP_URL = f"{JOV_CATEGORY}#-{NAME_URL}"
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -541,10 +522,10 @@ class GLSLVFX(GLSLBaseNode):
             Lexicon.PIXEL_A: (WILDCARD, {}),
             "radius": ("FLOAT", {"default": 2., "min": 0.0001, "step": 0.01}),
             "strength": ("FLOAT", {"default": 1., "min": 0., "step": 0.01}),
-            "center": ("VEC2", {"default": (0.5, 0.5, ), "step": 0.01, "precision": 4, "label": [Lexicon.X, Lexicon.Y]}),
+            "center": ("VEC2", {"default": (0.5, 0.5,), "min": 0, "max": 1, "step": 0.01, "precision": 4, "label": [Lexicon.X, Lexicon.Y]}),
             Lexicon.TYPE: (EnumVFXType._member_names_, {"default": EnumVFXType.BULGE.name})
         }}
-        return Lexicon._parse(d, cls.HELP_URL)
+        return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> List[torch.Tensor]:
         kw[Lexicon.FRAGMENT] = []
