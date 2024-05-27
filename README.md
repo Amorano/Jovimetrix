@@ -100,6 +100,23 @@ The default is WARNING (30); i.e.:
 
 `SET JOV_LOG_LEVEL=WARNING`
 
+### IGNORE NODES
+
+Because there are a number of nodes that have overlapping functionality with other node packages, I have provided a mechanism to ignore loading of specific nodes.
+
+If you create a file called `ignore.txt` inside the Jovimetrix root folder \(`.../ComfyUI/custom_nodes/Jovimetrix`\), it will skip loading any nodes included.
+
+#### USAGE
+
+Each entry should be on a separate line using the full node class name (the default name of the node). For example, in ignore.txt:
+
+`CONSTANT (JOV) 🟪`
+
+Will ignore the Constant node for use in ComfyUI.
+
+This will *NOT* prevent the module from loading the imports, but this can help reduce your visual space while working within ComfyUI if you do not require looking at an additional 60+ nodes.
+
+
 ### SYSTEM DEVICE SCAN
 
 Allows the system to auto-scan for any devices, so that it can populate the device list in the Stream Reader Node.
