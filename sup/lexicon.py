@@ -310,19 +310,22 @@ def get_node_info(node_info: Dict[str, Any]) -> Dict[str, Any]:
                 input_parameters[k][k0] = {
                     "type": typ
                 }
-                meta = v0[1]
-                if lst is not None:
-                    input_parameters[k][k0]["choice"] = [x.replace('_', ' ') for x in lst[0]]
-                    meta.update(lst[1])
-                # only stuff that makes sense...
-                junk = ['default', 'min', 'max']
-                if (val := Lexicon._tooltipsDB.get(k0, None)) is not None:
-                    input_parameters[k][k0]['tooltip'] = val
-                else:
-                    junk.append('tooltip')
-                for scrape in junk:
-                    if (val := meta.get(scrape, None)) is not None and val != "":
-                        input_parameters[k][k0][scrape] = val
+                try:
+                    meta = v0[1]
+                    if lst is not None:
+                        input_parameters[k][k0]["choice"] = [x.replace('_', ' ') for x in lst[0]]
+                        meta.update(lst[1])
+                    # only stuff that makes sense...
+                    junk = ['default', 'min', 'max']
+                    if (val := Lexicon._tooltipsDB.get(k0, None)) is not None:
+                        input_parameters[k][k0]['tooltip'] = val
+                    else:
+                        junk.append('tooltip')
+                    for scrape in junk:
+                        if (val := meta.get(scrape, None)) is not None and val != "":
+                            input_parameters[k][k0][scrape] = val
+                except IndexError:
+                    pass
 
     return_types = [
         match_combo(x) if isinstance(x, list) or isinstance(x, tuple) else x for x in node_class.RETURN_TYPES
@@ -364,6 +367,7 @@ def json2markdown(json_dict):
                 default = param_meta.get('default','')
                 ch = ", ".join(param_meta.get('choice', []))
                 ch = "<br>".join(textwrap.wrap(ch, 32))
+                param_key = param_key.replace('#', r'\#')
                 ret += f"{param_key} | {typ} | {tool} | {default} | {ch}\n"
     else:
         ret += 'NONE\n'
@@ -374,6 +378,7 @@ def json2markdown(json_dict):
         for k, v in json_dict['output_parameters'].items():
             if (tool := Lexicon._tooltipsDB.get(k, "")) != "":
                 tool = "<br>".join(textwrap.wrap(tool, 40))
+            k = k.replace('#', r'\#')
             ret += f"{k} | {v} | {tool} \n"
     else:
         ret += 'NONE\n'
