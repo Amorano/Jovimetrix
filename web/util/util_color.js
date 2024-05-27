@@ -50,9 +50,12 @@ export function node_color_get(node) {
 export function node_color_reset(node, refresh=true) {
     const data = node_color_get(node);
     if (data) {
-        node.bgcolor = data.body;
-        node.color = data.title;
-        // console.info(node, data)
+        if (node.bgcolor === undefined) {
+            node.bgcolor = data.body;
+        }
+        if (node.color === undefined) {
+            node.color = data.title;
+        }
         if (refresh) {
             node.setDirtyCanvas(true, true);
         }

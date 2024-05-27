@@ -389,7 +389,6 @@ The `Filter Mask` node allows you to create masks based on color ranges within a
                 h = (end + fuzz * 128).clamp(max=255).view(1, 1, 1, 3)
             else:
                 h = (start + fuzz * 128).clamp(max=255).view(1, 1, 1, 3)
-            print(l, h)
             mask = (torch.clamp(pA, 0, 1.0) * 255.0).round().to(torch.int)
             mask = ((mask >= l) & (mask <= h)).all(dim=-1)
             alpha = tensor2cv(mask)

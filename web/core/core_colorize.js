@@ -7,7 +7,6 @@
 import { app } from "../../../scripts/app.js"
 import { $el } from "../../../scripts/ui.js"
 import { api_post } from '../util/util_api.js'
-import { node_cleanup } from '../util/util.js'
 import { color_contrast, node_color_all, node_color_get } from '../util/util_color.js'
 import * as util_config from '../util/util_config.js'
 import { JovimetrixConfigDialog } from "./core_config.js"
@@ -67,8 +66,8 @@ app.registerExtension({
         LGraphCanvas.prototype.drawNodeShape = function() {
             const contrast = localStorage["Comfy.Settings.jov." + util_config.USER + '.color.contrast'] || false;
             if (contrast) {
-                var color = this.current_node.color || LiteGraph.NODE_TITLE_COLOR;
-                var bgcolor = this.current_node.bgcolor || LiteGraph.WIDGET_BGCOLOR;
+                var color = this.color || LiteGraph.NODE_TITLE_COLOR;
+                var bgcolor = this.bgcolor || LiteGraph.WIDGET_BGCOLOR;
                 this.node_title_color = color_contrast(color);
                 LiteGraph.NODE_TEXT_COLOR = color_contrast(bgcolor);
             } else {
@@ -129,16 +128,18 @@ app.registerExtension({
         }
     },
     async beforeRegisterNodeDef(nodeType, nodeData) {
-        const onNodeCreated = nodeType.prototype.onNodeCreated
+        const onNodeCreated = nodeType.prototype.onNodeCreated;
         nodeType.prototype.onNodeCreated = function () {
-            const me = onNodeCreated?.apply(this, arguments)
+            const me = onNodeCreated?.apply(this, arguments);
             let colors = node_color_get(nodeData);
-
-            if (colors?.title) {
-                this['color'] = colors.title
+            if (this.color === undefined && colors?.title) {
+                console.info('1')
+                this.color = colors.title;
             }
-            if (colors?.body) {
-                this['bgcolor'] = colors.body
+            if (this.bgcolor === undefined && colors?.body) {
+                this.bgcolor = colors.body;
+            } else {
+                console.info(this.bgcolor)
             }
             return me;
         }

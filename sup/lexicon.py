@@ -253,6 +253,8 @@ class Lexicon(metaclass=LexiconMeta):
                         logger.warning(f"no {k}")
                         continue
                 data[k] = tip
+        if node.get("optional", None) is None:
+            node["optional"] = {}
         node["optional"]["tooltips"] = ("JTOOLTIP", {"default": data})
         return node
 

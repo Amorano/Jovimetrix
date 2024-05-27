@@ -15,7 +15,9 @@ from itertools import zip_longest
 from typing import Any, Tuple
 
 import torch
+import numpy as np
 from PIL import Image
+from PIL.PngImagePlugin import PngInfo
 import matplotlib.pyplot as plt
 from loguru import logger
 
@@ -463,14 +465,12 @@ The Image Diff node compares two input images pixel by pixel to identify differe
         pA = parse_param(kw, Lexicon.PIXEL_A, EnumConvertType.IMAGE, None)
         pB = parse_param(kw, Lexicon.PIXEL_B, EnumConvertType.IMAGE, None)
         th = parse_param(kw, Lexicon.THRESHOLD, EnumConvertType.FLOAT, 0.5, 0, 1)
-        print(th)
         results = []
         params = list(zip_longest_fill(pA, pB, th))
         pbar = ProgressBar(len(params))
         for idx, (pA, pB, th) in enumerate(params):
             pA = channel_solid(chan=EnumImageType.BGRA) if pA is None else tensor2cv(pA)
             pB = channel_solid(chan=EnumImageType.BGRA) if pB is None else tensor2cv(pB)
-            print(th)
             a, b, d, t, s = image_diff(pA, pB, int(th * 255))
             d = image_convert(d, 1)
             t = image_convert(t, 1)
@@ -509,6 +509,10 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
             return zip_longest(*[iterator] * chunk_size, fillvalue=fill)
         return [iterable[i: i + chunk_size] for i in range(0, len(iterable), chunk_size)]
         # return iter(lambda: tuple(islice(iterator, chunk_size)), tuple())
+
+    def __init__(self, *arg, **kw) -> None:
+        super().__init__(*arg, **kw)
+        self.__seed = None
 
     def run(self, **kw) -> Tuple[int, list]:
         batch = parse_dynamic(kw, Lexicon.UNKNOWN, EnumConvertType.ANY, None)
@@ -567,16 +571,31 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
                         dat = {"samples": [dat]}
                     extract.append(dat)
             elif mode == EnumBatchMode.RANDOM:
-                random.seed(seed)
+                if self.__seed is None or self.__seed != seed:
+                    random.seed(seed)
+                    self.__seed = seed
                 full = random.choices(full)
                 index = random.randrange(0, len(extract))
                 extract = [extract[index]]
                 if latents[index]:
                     extract = {"samples": extract}
             elif mode == EnumBatchMode.INDEX_LIST:
-                indices = indices.split(',')
-                data = [extract[i:j] for i, j in zip([0]+indices, indices+[None])]
-                latents = [latents[i:j] for i, j in zip([0]+indices, indices+[None])]
+                junk = []
+                for x in indices.strip().split(','):
+                    if '-' in x:
+                        x = x.split('-')
+                        x = list(range(x[0], x[1]))
+                    else:
+                        x = [x]
+                    for i in x:
+                        try:
+                            junk.append(int(i))
+                        except ValueError:
+                            logger.warning(f"bad integer format {i}")
+                        except Exception as e:
+                            logger.error(e)
+                data = [extract[i:j] for i, j in zip([0]+junk, junk+[None])]
+                latents = [latents[i:j] for i, j in zip([0]+junk, junk+[None])]
                 extract = []
                 for i, lat in enumerate(latents):
                     dat = data[i]
@@ -604,22 +623,86 @@ Routes the input data from the optional input ports to the output port, preservi
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {
-            "required": {},
-            "optional": {
-                Lexicon.PASS_IN: (WILDCARD, {})
-            }
+            "required": {}
         }
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[Any, ...]:
-        passthru = parse_param(kw, Lexicon.PASS_IN, EnumConvertType.ANY, None)
-        kw.pop(Lexicon.PASS_IN, None)
-        o = list(kw.values())
-        print(o)
-        print(type(o))
-        data = (passthru, ) + zip(*kw.values())
-        print(data)
-        return data
+        #passthru = parse_param(kw, Lexicon.PASS_IN, EnumConvertType.ANY, None)
+        #kw.pop(Lexicon.PASS_IN, None)
+        return zip(*kw.values())
+
+class SaveOutput(JOVBaseNode):
+    NAME = "SAVE OUTPUT 💾"
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
+    OUTPUT_NODE = True
+    RETURN_TYPES = ()
+    SORT = 85
+    DESCRIPTION = """
+    """
+
+    @classmethod
+    def INPUT_TYPES(cls) -> None:
+        return {
+            "required": {},
+            "optional": {
+                "image": ("IMAGE",),
+                "path": ("STRING", {"default": "", "dynamicPrompts":False}),
+                "fname": ("STRING", {"default": "output", "dynamicPrompts":False}),
+                "metadata": ("JSON", {}),
+                "usermeta": ("STRING", {"multiline": True, "dynamicPrompts":False,
+                                        "default": json.dumps({"extra": "data"})}),
+            },
+            "hidden": {
+                "prompt": "PROMPT",
+                "extra_pnginfo": "EXTRA_PNGINFO",
+            },
+        }
+
+    def run(self, **kw) -> dict[str, Any]:
+        image = parse_param(kw, 'image', EnumConvertType.IMAGE, None)
+        metadata = parse_param(kw, 'metadata', EnumConvertType.DICT, {})
+        usermeta = parse_param(kw, 'usermeta', EnumConvertType.DICT, {})
+        path = parse_param(kw, 'path', EnumConvertType.STRING, "")
+        fname = parse_param(kw, 'fname', EnumConvertType.STRING, "output")
+        prompt = parse_param(kw, 'prompt', EnumConvertType.STRING, "")
+        pnginfo = parse_param(kw, 'extra_pnginfo', EnumConvertType.DICT, {})
+        params = list(zip_longest_fill(image, path, fname, metadata, usermeta, prompt, pnginfo))
+        pbar = ProgressBar(len(params))
+        for idx, (image, path, fname, metadata, usermeta, prompt, pnginfo) in enumerate(params):
+            if image is None:
+                logger.warning("no image")
+                image = torch.zeros((32, 32, 4), dtype=torch.uint8, device="cpu")
+
+            try:
+                if not isinstance(usermeta, (dict,)):
+                    usermeta = json.loads(usermeta)
+                metadata.update(usermeta)
+            except Exception as e:
+                logger.error(e)
+                logger.error(usermeta)
+            metadata["prompt"] = prompt
+            metadata["workflow"] = json.dumps(pnginfo)
+            image = tensor2cv(image)
+            image = Image.fromarray(np.clip(image, 0, 255).astype(np.uint8))
+            meta_png = PngInfo()
+            for x in metadata:
+                try:
+                    data = json.dumps(metadata[x])
+                    meta_png.add_text(x, data)
+                except Exception as e:
+                    logger.error(e)
+                    logger.error(x)
+
+            root = Path(path)
+            if not root.exists():
+                root = Path(get_output_directory())
+            root.mkdir(parents=True, exist_ok=True)
+            fname = (root / fname).with_suffix(".png")
+            logger.info(fname)
+            image.save(fname, pnginfo=meta_png)
+            pbar.update_absolute(idx)
+        return ()
 
 '''
 class RESTNode:

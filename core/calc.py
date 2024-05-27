@@ -419,12 +419,14 @@ The Value Node supplies raw or default values for various data types, supporting
         w = parse_param(kw, Lexicon.W, EnumConvertType.FLOAT, 0)
         raw = parse_param(kw, Lexicon.IN_A, EnumConvertType.ANY, None)
         typ = parse_param(kw, Lexicon.TYPE, EnumConvertType.STRING, EnumConvertType.BOOLEAN.name)
+        x_str = parse_param(kw, Lexicon.STRING, EnumConvertType.STRING, "")
         params = list(zip_longest_fill(raw, typ, x, y, z, w))
         results = []
         pbar = ProgressBar(len(params))
         for idx, (raw, typ, x, y, z, w) in enumerate(params):
             typ = EnumConvertType[typ]
-            val = parse_value(raw, typ, (x, y, z, w))
+            default = x_str if typ not in [] else (x, y, z, w)
+            val = parse_value(raw, typ, default)
             extra = parse_value(val, EnumConvertType.VEC4, (x, y, z, w))
             results.append((val,) + extra)
             pbar.update_absolute(idx)
