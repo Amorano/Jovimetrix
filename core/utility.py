@@ -31,9 +31,9 @@ from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import parse_dynamic, path_next, \
     parse_param, zip_longest_fill, EnumConvertType
 
-from Jovimetrix.sup.image import channel_solid, cv2pil, \
-    cv2tensor, cv2tensor_full, image_convert, tensor2cv, pil2tensor, image_load, \
-    image_formats, image_diff, EnumImageType, MIN_IMAGE_SIZE
+from Jovimetrix.sup.image import channel_solid, cv2pil, cv2tensor, cv2tensor_full, \
+    image_convert, image_scalefit, tensor2cv, pil2tensor, image_load, image_formats, image_diff, \
+    EnumInterpolation, EnumScaleMode, EnumImageType, MIN_IMAGE_SIZE
 
 # =============================================================================
 
@@ -712,48 +712,47 @@ class BatchLoadNode(JOVBaseNode):
     VIDEO_FORMATS = ['.webm', '.mp4', '.avi', '.wmv', '.mkv', '.mov', '.mxf']
     SORT = 0
     DESCRIPTION = """
-    Batch Load node to process multiple image, video, or JSON files based on a queue. Supports various file formats.
+    Process multiple image or video files into a single batch.
     """
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {
             "required": {},
             "optional": {
-                Lexicon.QUEUE: ("STRING", {"multiline": True, "default": "./res/img/anim/*.png"})
+                Lexicon.QUEUE: ("STRING", {"multiline": True, "default": "./res/img/anim/*.png"}),
+                Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
+                Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), "step": 1, "label": [Lexicon.W, Lexicon.H]}),
+                Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
+                Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
             }
         }
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> None:
-
-        def process(q_data: str) -> Tuple[torch.Tensor, torch.Tensor] | str | dict:
-            if not os.path.isfile(q_data):
-                return q_data
-            _, ext = os.path.splitext(q_data)
-            if ext in image_formats():
-                data = image_load(q_data)[0]
-                if len(data.shape) == 3:
-                    cc = data.shape[2]
-                    data = cv2tensor(data)
-                    if cc == 1:
-                        data = data.unsqueeze(-1)
-                self.__last_q_value[q_data] = data
-            elif ext == '.json':
-                with open(q_data, 'r', encoding='utf-8') as f:
-                    self.__last_q_value[q_data] = json.load(f)
-            return self.__last_q_value.get(q_data, q_data)
-
         q = parse_param(kw, Lexicon.QUEUE, EnumConvertType.STRING, "")
+        mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.NONE.name)
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), MIN_IMAGE_SIZE)
+        sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)
+        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
+        params = list(zip_longest_fill(q, mode, wihi, sample, matte))
         images = []
-        pbar = ProgressBar(len(q))
-        for idx, q in enumerate(q):
-            for item in q.split('\n'):
-                data = process(item)
-                try:
-                    images.append(cv2tensor_full(data))
-                except Exception as e:
-                    logger.error(e)
-                    images.append([None, None, None])
+        pbar = ProgressBar(len(params))
+        for idx, (q, mode, wihi, sample, matte) in enumerate(params):
+            for pA in q.split('\n'):
+                w, h = wihi
+                path = Path(pA) if Path(pA).is_file() else Path(ROOT / pA)
+                if not path.is_file():
+                    logger.error(f"bad file: [{pA}]")
+                    pA = channel_solid(w, h)
+                elif path.suffix in image_formats():
+                    pA = image_load(str(path))[0]
+                    mode = EnumScaleMode[mode]
+                    if mode != EnumScaleMode.NONE:
+                        pA = image_scalefit(pA, w, h, mode, sample)
+                else:
+                    pA = channel_solid(w, h)
+                print(pA.shape)
+                images.append(cv2tensor_full(pA, matte))
             pbar.update_absolute(idx)
         return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
 

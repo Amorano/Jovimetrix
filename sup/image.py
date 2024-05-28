@@ -361,7 +361,7 @@ def cv2tensor(image: TYPE_IMAGE, mask:bool=False) -> torch.Tensor:
             image = image[:,:,0][:,:]
     return torch.from_numpy(image.astype(np.float32) / 255.0).unsqueeze(0)
 
-def cv2tensor_full(image: TYPE_IMAGE, matte:TYPE_PIXEL=0) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+def cv2tensor_full(image: TYPE_IMAGE, matte:TYPE_PIXEL=0) -> Tuple[torch.Tensor, ...]:
     mask = image_mask(image)
     image = image_matte(image, matte)
     rgb = image_convert(image, 3)
