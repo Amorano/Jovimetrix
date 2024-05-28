@@ -541,30 +541,34 @@ The Flatten Node combines multiple input images into a single image by summing t
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> torch.Tensor:
-        pA = []
-        pA.extend([r for r in parse_dynamic(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)])
+        pA = parse_dynamic(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
+        print(len(pA))
+        pA = [item for sublist in pA for item in sublist]
+        print(len(pA))
         if len(pA) == 0:
             logger.error("no images to flatten")
             return ()
         pA = [image_convert(tensor2cv(img), 4) for img in pA]
         mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.NONE.name)
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE)], MIN_IMAGE_SIZE)
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), MIN_IMAGE_SIZE)
         sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)
-        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
+        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
         images = []
         params = list(zip_longest_fill(mode, wihi, sample, matte))
         pbar = ProgressBar(len(params))
         for idx, (mode, wihi, sample, matte) in enumerate(params):
-            current = pA[0]
-            if len(pA) > 1:
-                for x in pA:
-                    # mask = image_grayscale(x)[:,:]
-                    current = cv2.add(current, x) #, mask=mask)
-            mode = EnumScaleMode[mode]
             w, h = wihi
-            if mode != EnumScaleMode.NONE:
-                sample = EnumInterpolation[sample]
-                img = image_scalefit(img, w, h, mode, sample)
+            current = pA[0]
+            mode = EnumScaleMode[mode]
+            if mode == EnumScaleMode.NONE:
+                mode = EnumScaleMode.CROP
+                h, w = pA[0].shape[:2]
+            if len(pA) > 1:
+                for x in pA[1:]:
+                    sample = EnumInterpolation[sample]
+                    x = image_scalefit(x, w, h, mode, sample)
+                    #@TODO: ADD VARIOUS COMP OPS?
+                    current = cv2.add(current, x)
             images.append(cv2tensor_full(current, matte))
             pbar.update_absolute(idx)
         return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]

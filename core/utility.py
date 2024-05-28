@@ -172,6 +172,8 @@ The Graph node visualizes a series of data points over time. It accepts a dynami
             self.__history = []
         longest_edge = 0
         dynamic = parse_dynamic(kw, Lexicon.UNKNOWN, EnumConvertType.FLOAT, 0)
+        # each of the plugs
+        self.__ax.clear()
         for idx, val in enumerate(dynamic):
             if isinstance(val, (set, tuple,)):
                 val = list(val)
@@ -184,15 +186,13 @@ The Graph node visualizes a series of data points over time. It accepts a dynami
                 stride = max(1, -slice + len(self.__history[idx]) + 1)
                 longest_edge = max(longest_edge, stride)
                 self.__history[idx] = self.__history[idx][stride:]
-        self.__history = self.__history[:idx+1]
-        self.__ax.clear()
-        for i, h in enumerate(self.__history):
-            self.__ax.plot(h, color="rgbcymk"[i])
+            self.__ax.plot(self.__history[idx], color="rgbcymk"[idx])
 
+        self.__history = self.__history[:idx+1]
         width, height = wihi
-        wihi = (width / 100., height / 100.)
-        self.__fig.set_figwidth(wihi[0])
-        self.__fig.set_figheight(wihi[1])
+        width, height = (width / 100., height / 100.)
+        self.__fig.set_figwidth(width)
+        self.__fig.set_figheight(height)
         self.__fig.canvas.draw_idle()
         buffer = io.BytesIO()
         self.__fig.savefig(buffer, format="png")

@@ -77,7 +77,7 @@ class Lexicon(metaclass=LexiconMeta):
     CONTROL = '🎚️', "Control"
     CURRENT = 'CURRENT', "Current"
     DATA = '📓', "Data"
-    DEFIENCY = 'DEFIENCY', "The type of color blindness: Red-Blind/Protanopia, Green-Blind/Deuteranopia or Blue-Blind/Tritanopia"
+    DEFICIENCY = 'DEFICIENCY', "Type of color deficiency: Red (Protanopia), Green (Deuteranopia), Blue (Tritanopia)"
     DELAY = '✋🏽', "Delay"
     DELTA = '🔺', "Delta"
     DEPTH = 'DEPTH', "Grayscale image representing a depth map"
@@ -191,7 +191,7 @@ class Lexicon(metaclass=LexiconMeta):
     SHAPE = '🇸🇴', "Circle, Square or Polygonal forms"
     SHIFT = 'SHIFT', "Shift"
     SIDES = '♾️', "Number of sides polygon has (3-100)"
-    SIMULATOR = 'SIMULATOR', "The solver to use when translating color space"
+    SIMULATOR = 'SIMULATOR', "Solver to use when translating to new color space"
     SIZE = '📏', "Scalar by which to scale the input"
     SKIP = 'SKIP', "Interval between segments"
     SOURCE = 'SRC', "Source"
@@ -357,7 +357,7 @@ def json2markdown(json_dict):
     ret += f"{json_dict['documentation']}\n"
     boop = name.split('(JOV)')[0].strip()
     boop2 = boop.replace(" ", "%20")
-    ret += f"![{boop}](./{boop2}.png)\n\n"
+    ret += f"![{boop}](https://raw.githubusercontent.com/Amorano/Jovimetrix-examples/master/node/{boop2}/{boop2}.png)\n\n"
     ret += f"#### OUTPUT NODE?: `{json_dict['output_node']}`\n\n"
     ret += f"### INPUT\n\n"
     if len(json_dict['output_parameters']) > 0:

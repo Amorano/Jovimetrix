@@ -52,13 +52,17 @@ class EnumSwizzle(Enum):
 # === SUPPORT ===
 # =============================================================================
 
-def parse_dynamic(data:dict, key:str, typ:EnumConvertType, default: Any) -> list:
+def parse_dynamic(data:dict, key:str, typ:EnumConvertType, default: Any) -> List[Any]:
     vals = []
     count = 1
     while data.get((who := f"{key}_{count}"), None) is not None:
         val = parse_param(data, who, typ, default)
+        if not isinstance(val, (list,)):
+            val = [val]
         vals.append(val)
         count += 1
+    if len(vals) == 0:
+        vals.append([])
     return vals
 
 def parse_value(val:Any, typ:EnumConvertType, default: Any,

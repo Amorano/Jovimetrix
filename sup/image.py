@@ -247,9 +247,9 @@ class EnumCBSimulator(Enum):
     VIENOT1999 = 5
     VISCHECK = 6
 
-class EnumCBDefiency(Enum):
-    DEUTAN = simulate.Deficiency.DEUTAN
+class EnumCBDeficiency(Enum):
     PROTAN = simulate.Deficiency.PROTAN
+    DEUTAN = simulate.Deficiency.DEUTAN
     TRITAN = simulate.Deficiency.TRITAN
 
 # =============================================================================
@@ -497,6 +497,8 @@ def pixel_convert(color:TYPE_PIXEL, size:int=4, alpha:int=255) -> TYPE_PIXEL:
 # =============================================================================
 
 def channel_count(image:TYPE_IMAGE) -> Tuple[int, int, int, EnumImageType]:
+    """channels, width, height, mode
+    """
     size = image.shape[2] if len(image.shape) > 2 else 1
     if len(image.shape) > 1:
         h, w = image.shape[:2]
@@ -640,7 +642,7 @@ def image_blend(imageA: TYPE_IMAGE, imageB: TYPE_IMAGE, mask:Optional[TYPE_IMAGE
     image = pil2cv(image)
     return image_crop_center(image, w, h)
 
-def image_color_blind(image: TYPE_IMAGE, deficiency:EnumCBDefiency,
+def image_color_blind(image: TYPE_IMAGE, deficiency:EnumCBDeficiency,
                       simulator:EnumCBSimulator=EnumCBSimulator.AUTOSELECT,
                       severity:float=1.0) -> TYPE_IMAGE:
 

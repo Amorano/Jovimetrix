@@ -16,11 +16,11 @@ from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import EnumConvertType, parse_param, zip_longest_fill
 from Jovimetrix.sup.image import MIN_IMAGE_SIZE, channel_count, channel_solid, \
     color_match_histogram, color_match_lut, color_match_reinhard, cv2tensor, cv2tensor_full, \
-    image_color_blind, image_convert, image_grayscale, image_mask_add, image_matte, image_scalefit, tensor2cv, image_equalize, \
+    image_color_blind, image_convert, image_grayscale, image_mask, image_mask_add, image_matte, image_scalefit, tensor2cv, image_equalize, \
     image_levels, pixel_eval, image_posterize, image_pixelate, image_quantize, \
     image_sharpen, image_threshold, image_blend, image_invert, morph_edge_detect, \
     morph_emboss, image_contrast, image_hsv, image_gamma, \
-    EnumCBDefiency, EnumCBSimulator, EnumScaleMode, \
+    EnumCBDeficiency, EnumCBSimulator, EnumScaleMode, \
     EnumImageType, EnumColorMap, EnumAdjustOP, EnumThresholdAdapt, EnumThreshold
 
 # =============================================================================
@@ -239,10 +239,13 @@ The `Color Match` node allows you to adjust the color scheme of one image to mat
         for idx, (pA, pB, colormap, mode, cmap, num_colors, flip, invert, matte) in enumerate(params):
             if flip == True:
                 pA, pB = pB, pA
+            cc = 3
             if pA is None:
                 pA = channel_solid(chan=EnumImageType.BGRA)
             else:
                 pA = tensor2cv(pA)
+                if (cc := pA.shape[2] if len(pA.shape) > 2 else 1) == 4:
+                    mask = image_mask(pA)
                 pA = image_convert(pA, 4)
             h, w = pA.shape[:2]
             if pB is None:
@@ -266,7 +269,8 @@ The `Color Match` node allows you to adjust the color scheme of one image to mat
                     pA = color_match_reinhard(pA, pB)
             if invert == True:
                 pA = image_invert(pA, 1)
-            matte = pixel_eval(matte, EnumImageType.BGRA)
+            if cc == 4:
+                pA = image_mask_add(pA, mask)
             images.append(cv2tensor_full(pA, matte))
             pbar.update_absolute(idx)
         return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
@@ -330,27 +334,27 @@ The `Color Blind` node facilitates the simulation of color blindness effects on 
         "required": {},
         "optional": {
             Lexicon.PIXEL: (WILDCARD, {}),
-            Lexicon.COLORMATCH_MODE: (EnumCBDefiency._member_names_,
-                                        {"default": EnumCBDefiency.PROTAN.name}),
-            Lexicon.COLORMATCH_MAP: (EnumCBSimulator._member_names_,
+            Lexicon.DEFICIENCY: (EnumCBDeficiency._member_names_,
+                                        {"default": EnumCBDeficiency.PROTAN.name}),
+            Lexicon.SIMULATOR: (EnumCBSimulator._member_names_,
                                         {"default": EnumCBSimulator.AUTOSELECT.name}),
-            Lexicon.VALUE: ("FLOAT", {"default": 1, "min": 0, "max": 1, "step": 0.001}),
+            Lexicon.VALUE: ("FLOAT", {"default": 1, "min": 0, "max": 1, "step": 0.001, "tooltip":"alpha blending"}),
         }}
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
-        defiency = parse_param(kw, Lexicon.DEFIENCY, EnumConvertType.STRING, EnumCBDefiency.PROTAN.name)
+        deficiency = parse_param(kw, Lexicon.DEFICIENCY, EnumConvertType.STRING, EnumCBDeficiency.PROTAN.name)
         simulator = parse_param(kw, Lexicon.SIMULATOR, EnumConvertType.STRING, EnumCBSimulator.AUTOSELECT.name)
         severity = parse_param(kw, Lexicon.VALUE, EnumConvertType.FLOAT, 1)
-        params = list(zip_longest_fill(pA, defiency, simulator, severity))
+        params = list(zip_longest_fill(pA, deficiency, simulator, severity))
         images = []
         pbar = ProgressBar(len(params))
-        for idx, (pA, defiency, simulator, severity) in enumerate(params):
-            pA = tensor2cv(pA) if pA is not None else channel_solid(chan=EnumImageType.BGRA)
-            defiency = EnumCBDefiency[defiency]
+        for idx, (pA, deficiency, simulator, severity) in enumerate(params):
+            pA = channel_solid(chan=EnumImageType.BGRA) if pA is None else tensor2cv(pA)
+            deficiency = EnumCBDeficiency[deficiency]
             simulator = EnumCBSimulator[simulator]
-            pA = image_color_blind(pA, defiency, simulator, severity)
+            pA = image_color_blind(pA, deficiency, simulator, severity)
             images.append(cv2tensor_full(pA))
             pbar.update_absolute(idx)
         return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
