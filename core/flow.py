@@ -110,7 +110,7 @@ class ComparisonNode(JOVBaseNode):
     RETURN_TYPES = (WILDCARD, WILDCARD,)
     RETURN_NAMES = (Lexicon.ANY, Lexicon.VEC,)
     DESCRIPTION = """
-The Comparison node evaluates two inputs based on a specified comparison operation. It accepts two inputs (A and B), comparison operators, and optional values for successful and failed comparisons. The node performs the specified comparison operation element-wise between corresponding elements of A and B. If the comparison is successful for all elements, it returns the success value; otherwise, it returns the failure value. The node supports various comparison operators such as EQUAL, GREATER_THAN, LESS_THAN, AND, OR, IS, IN, etc.
+The Comparison node evaluates two inputs based on a specified operation. It accepts two inputs (A and B), comparison operators, and optional values for successful and failed comparisons. The node performs the specified operation element-wise between corresponding elements of A and B. If the comparison is successful for all elements, it returns the success value; otherwise, it returns the failure value. The node supports various comparison operators such as EQUAL, GREATER_THAN, LESS_THAN, AND, OR, IS, IN, etc.
 """
 
     @classmethod
@@ -150,6 +150,11 @@ The Comparison node evaluates two inputs based on a specified comparison operati
             if flip:
                 val_a, val_b = val_b, val_a
 
+            if not isinstance(val_a, (list, tuple)):
+                val_a = [val_a]
+            if not isinstance(val_b, (list, tuple)):
+                val_b = [val_b]
+
             op = EnumComparison[op]
             match op:
                 case EnumComparison.EQUAL:
@@ -174,6 +179,10 @@ The Comparison node evaluates two inputs based on a specified comparison operati
                     val = [a or b for a, b in zip(val_a, val_b)]
                 case EnumComparison.NOR:
                     val = [not(a or b) for a, b in zip(val_a, val_b)]
+                case EnumComparison.XOR:
+                    val = [(a and not b) or (not a and b) for a, b in zip(val_a, val_b)]
+                case EnumComparison.XNOR:
+                    val = [not((a and not b) or (not a and b)) for a, b in zip(val_a, val_b)]
                 # IDENTITY
                 case EnumComparison.IS:
                     val = [a is b for a, b in zip(val_a, val_b)]
@@ -185,6 +194,6 @@ The Comparison node evaluates two inputs based on a specified comparison operati
                 case EnumComparison.NOT_IN:
                     val = [a not in val_b for a in val_a]
             vals.append(val)
-            results.append(good if all(val) else fail)
+            results.append(good if all([bool(v) for v in val]) else fail)
             pbar.update_absolute(idx)
         return results, vals,

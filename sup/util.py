@@ -88,9 +88,9 @@ def parse_value(val:Any, typ:EnumConvertType, default: Any,
             v = val[idx] if isinstance(val, (list, tuple,)) and idx < len(val) else d
             try:
                 if typ in [EnumConvertType.FLOAT, EnumConvertType.VEC2, EnumConvertType.VEC3, EnumConvertType.VEC4]:
-                    v = round(float(v), 12)
+                    v = round(float(v or 0), 12)
                 else:
-                    v = int(v)
+                    v = int(v or 0)
                 if clip_min is not None:
                     v = max(v, clip_min)
                 if clip_max is not None:

@@ -398,6 +398,9 @@ class GLSLTRSMirror(GLSLBaseNode):
     NAME = "MIRROR GLSL (JOV)"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     FRAGMENT = str(JOV_GLSL / "trs" / "trs-mirror.glsl")
+    DESCRIPTION = """
+Applies a mirror transformation to an image using GLSL. Allows for setting the angle of mirroring and the pivot point.
+"""
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -422,7 +425,9 @@ class GLSLTRSRotate(GLSLBaseNode):
     NAME = "ROTATE GLSL (JOV)"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     FRAGMENT = str(JOV_GLSL / "trs" / "trs-rotate.glsl")
-
+    DESCRIPTION = """
+Applies a rotation transformation to an image using GLSL. Allows for setting the angle of rotation and the pivot point.
+"""
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {
@@ -446,6 +451,9 @@ class GLSLUtilTiler(GLSLBaseNode):
     NAME = "TILER GLSL (JOV)"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     FRAGMENT = str(JOV_GLSL / "trs" / "trs-tiler.glsl")
+    DESCRIPTION = """
+Applies a tiling effect to an image using GLSL. Allows for setting the number of tiles in the x and y directions.
+"""
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -467,6 +475,9 @@ class GLSLTRSKaleidoscope(GLSLBaseNode):
     NAME = "KALEIDOSCOPE GLSL (JOV)"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     FRAGMENT = str(JOV_GLSL / "trs" / "trs-kaleidoscope.glsl")
+    DESCRIPTION = """
+Applies a kaleidoscope effect to an image using GLSL. Allows for adjusting various parameters such as segments, radius, zoom, offset, rotation, size, and skip to create intricate patterns.
+"""
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -513,6 +524,9 @@ class GLSLTRSKaleidoscope(GLSLBaseNode):
 class GLSLVFX(GLSLBaseNode):
     NAME = "VFX GLSL (JOV)"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
+    DESCRIPTION = """
+Applies various visual effects to an image using GLSL. The effects include bulge, chromatic aberration, cross-hatch, CRT, film grain, frosted glass, pixelation, sepia, and VHS. Each effect can be customized with parameters such as radius, strength, and center.
+"""
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:

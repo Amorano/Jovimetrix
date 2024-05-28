@@ -319,7 +319,8 @@ def get_node_info(node_info: Dict[str, Any]) -> Dict[str, Any]:
                         else:
                             input_parameters[k][k0]["choice"] = [choice_list]
                             meta['default'] = 'dynamic'
-
+                    elif (default_top := meta.get('default_top', None)) is not None:
+                        meta['default'] = default_top
                     # only stuff that makes sense...
                     junk = ['default', 'min', 'max']
                     if (val := Lexicon._tooltipsDB.get(k0, None)) is not None:

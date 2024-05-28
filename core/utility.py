@@ -32,7 +32,7 @@ from Jovimetrix.sup.util import parse_dynamic, path_next, \
     parse_param, zip_longest_fill, EnumConvertType
 
 from Jovimetrix.sup.image import channel_solid, cv2pil, \
-    cv2tensor, image_convert, tensor2cv, pil2tensor, image_load, \
+    cv2tensor, cv2tensor_full, image_convert, tensor2cv, pil2tensor, image_load, \
     image_formats, image_diff, EnumImageType, MIN_IMAGE_SIZE
 
 # =============================================================================
@@ -216,7 +216,7 @@ The Queue node manages a queue of items, such as file paths or data. It supports
         d = {
         "required": {},
         "optional": {
-            Lexicon.QUEUE: ("STRING", {"multiline": True, "default": ""}),
+            Lexicon.QUEUE: ("STRING", {"multiline": True, "default": "./res/img/test-a.png"}),
             Lexicon.VALUE: ("INT", {"min": 0, "default": 0, "step": 1, "tooltip": "the current index for the current queue item"}),
             Lexicon.WAIT: ("BOOLEAN", {"default": False, "tooltip":"Hold the item at the current queue index"}),
             Lexicon.RESET: ("BOOLEAN", {"default": False, "tooltip":"reset the queue back to index 1"}),
@@ -343,8 +343,7 @@ class ExportNode(JOVBaseNode):
     NAME = "EXPORT (JOV) 📽"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     OUTPUT_NODE = True
-    RETURN_TYPES = ("IMAGE", )
-    RETURN_NAMES = (Lexicon.IMAGE, )
+    RETURN_TYPES = ()
     SORT = 80
     DESCRIPTION = """
 The Export node is responsible for saving images or animations to disk. It supports various output formats such as GIF and GIFSKI. Users can specify the output directory, filename prefix, image quality, frame rate, and other parameters. Additionally, it allows overwriting existing files or generating unique filenames to avoid conflicts. The node outputs the saved images or animation as a tensor.
@@ -356,7 +355,7 @@ The Export node is responsible for saving images or animations to disk. It suppo
         "required": {},
         "optional": {
             Lexicon.PIXEL: (WILDCARD, {}),
-            Lexicon.PASS_OUT: ("STRING", {"default": get_output_directory()}),
+            Lexicon.PASS_OUT: ("STRING", {"default": get_output_directory(), "default_top":"<comfy output dir>"}),
             Lexicon.FORMAT: (FORMATS, {"default": FORMATS[0]}),
             Lexicon.PREFIX: ("STRING", {"default": "jovi"}),
             Lexicon.OVERWRITE: ("BOOLEAN", {"default": False}),
@@ -366,7 +365,7 @@ The Export node is responsible for saving images or animations to disk. It suppo
             Lexicon.QUALITY: ("INT", {"default": 90, "min": 1, "max": 100}),
             Lexicon.QUALITY_M: ("INT", {"default": 100, "min": 1, "max": 100}),
             # GIF OR GIFSKI
-            Lexicon.FPS: ("INT", {"default": 20, "min": 1, "max": 60}),
+            Lexicon.FPS: ("INT", {"default": 24, "min": 1, "max": 60}),
             # GIF OR GIFSKI
             Lexicon.LOOP: ("INT", {"default": 0, "min": 0}),
         }}
@@ -380,9 +379,9 @@ The Export node is responsible for saving images or animations to disk. It suppo
         format = parse_param(kw, Lexicon.FORMAT, EnumConvertType.STRING, "gif")[0]
         overwrite = parse_param(kw, Lexicon.OVERWRITE, EnumConvertType.BOOLEAN, False)[0]
         optimize = parse_param(kw, Lexicon.OPTIMIZE, EnumConvertType.BOOLEAN, False)[0]
-        quality = parse_param(kw, Lexicon.QUALITY, EnumConvertType.INT, 100, 0, 1)[0]
-        motion = parse_param(kw, Lexicon.QUALITY_M, EnumConvertType.INT, 100, 0, 1)[0]
-        fps = parse_param(kw, Lexicon.FPS, EnumConvertType.INT, 60, 1, 24)[0]
+        quality = parse_param(kw, Lexicon.QUALITY, EnumConvertType.INT, 90, 0, 100)[0]
+        motion = parse_param(kw, Lexicon.QUALITY_M, EnumConvertType.INT, 100, 0, 100)[0]
+        fps = parse_param(kw, Lexicon.FPS, EnumConvertType.INT, 24, 1, 60)[0]
         loop = parse_param(kw, Lexicon.LOOP, EnumConvertType.INT, 0, 0)[0]
         output_dir = Path(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
@@ -395,7 +394,7 @@ The Export node is responsible for saving images or animations to disk. It suppo
             return path
 
         images = [tensor2cv(i) for i in images]
-        empty = Image.new("RGB", (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE))
+        # empty = Image.new("RGB", (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE))
         images = [cv2pil(i) for i in images]
         if format == "gifski":
             root = output_dir / f"{suffix}_{uuid4().hex[:16]}"
@@ -437,8 +436,8 @@ The Export node is responsible for saving images or animations to disk. It suppo
         else:
             for img in images:
                 img.save(output(format), optimize=optimize)
-        images = [pil2tensor(r) for r in images]
-        return [torch.stack(images, dim=0).squeeze(1)]
+        #images = [pil2tensor(r) for r in images]
+        return () #[torch.stack(images, dim=0).squeeze(1)]
 
 class ImageDiffNode(JOVBaseNode):
     NAME = "IMAGE DIFF (JOV) 📏"
@@ -639,7 +638,8 @@ class SaveOutput(JOVBaseNode):
     RETURN_TYPES = ()
     SORT = 85
     DESCRIPTION = """
-    """
+Save the output image along with its metadata to the specified path. Supports saving additional user metadata and prompt information.
+"""
 
     @classmethod
     def INPUT_TYPES(cls) -> None:
@@ -703,6 +703,59 @@ class SaveOutput(JOVBaseNode):
             image.save(fname, pnginfo=meta_png)
             pbar.update_absolute(idx)
         return ()
+
+class BatchLoadNode(JOVBaseNode):
+    NAME = "BATCH LOAD (JOV) 🗃"
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
+    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
+    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
+    VIDEO_FORMATS = ['.webm', '.mp4', '.avi', '.wmv', '.mkv', '.mov', '.mxf']
+    SORT = 0
+    DESCRIPTION = """
+    Batch Load node to process multiple image, video, or JSON files based on a queue. Supports various file formats.
+    """
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        d = {
+            "required": {},
+            "optional": {
+                Lexicon.QUEUE: ("STRING", {"multiline": True, "default": "./res/img/anim/*.png"})
+            }
+        }
+        return Lexicon._parse(d, cls)
+
+    def run(self, **kw) -> None:
+
+        def process(q_data: str) -> Tuple[torch.Tensor, torch.Tensor] | str | dict:
+            if not os.path.isfile(q_data):
+                return q_data
+            _, ext = os.path.splitext(q_data)
+            if ext in image_formats():
+                data = image_load(q_data)[0]
+                if len(data.shape) == 3:
+                    cc = data.shape[2]
+                    data = cv2tensor(data)
+                    if cc == 1:
+                        data = data.unsqueeze(-1)
+                self.__last_q_value[q_data] = data
+            elif ext == '.json':
+                with open(q_data, 'r', encoding='utf-8') as f:
+                    self.__last_q_value[q_data] = json.load(f)
+            return self.__last_q_value.get(q_data, q_data)
+
+        q = parse_param(kw, Lexicon.QUEUE, EnumConvertType.STRING, "")
+        images = []
+        pbar = ProgressBar(len(q))
+        for idx, q in enumerate(q):
+            for item in q.split('\n'):
+                data = process(item)
+                try:
+                    images.append(cv2tensor_full(data))
+                except Exception as e:
+                    logger.error(e)
+                    images.append([None, None, None])
+            pbar.update_absolute(idx)
+        return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
 
 '''
 class RESTNode:

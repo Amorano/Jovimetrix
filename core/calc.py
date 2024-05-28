@@ -425,7 +425,7 @@ The Value Node supplies raw or default values for various data types, supporting
         pbar = ProgressBar(len(params))
         for idx, (raw, typ, x, y, z, w) in enumerate(params):
             typ = EnumConvertType[typ]
-            default = x_str if typ not in [] else (x, y, z, w)
+            default = x_str if typ in [EnumConvertType.STRING] else (x, y, z, w)
             val = parse_value(raw, typ, default)
             extra = parse_value(val, EnumConvertType.VEC4, (x, y, z, w))
             results.append((val,) + extra)

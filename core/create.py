@@ -18,11 +18,11 @@ from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import parse_param, zip_longest_fill, \
     EnumConvertType
 
-from Jovimetrix.sup.image import  channel_solid, cv2tensor, cv2tensor_full, \
+from Jovimetrix.sup.image import EnumScaleMode, channel_solid, cv2tensor, cv2tensor_full, \
     image_grayscale, image_invert, image_mask_add, \
-    image_rotate, image_transform, image_translate, pil2cv, \
+    image_rotate, image_scalefit, image_transform, image_translate, pil2cv, \
     pixel_eval, tensor2cv, shape_ellipse, shape_polygon, shape_quad, \
-    EnumEdge, EnumImageType, MIN_IMAGE_SIZE
+    EnumInterpolation, EnumEdge, EnumImageType, MIN_IMAGE_SIZE
 
 from Jovimetrix.sup.text import font_names, text_autosize, text_draw, \
     EnumAlignment, EnumJustify, EnumShapes
@@ -53,25 +53,33 @@ The Constant node generates constant images or masks of a specified size and col
                                       "rgb": True, "tooltip": "Constant Color to Output"}),
             Lexicon.WH: ("VEC2", {"default": (512, 512), "step": 1,
                                   "label": [Lexicon.W, Lexicon.H],
-                                  "tooltip": "Desired Width and Height of the Color Output"})
+                                  "tooltip": "Desired Width and Height of the Color Output"}),
+            Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
+            Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
         }}
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE)], MIN_IMAGE_SIZE)
-        matte = parse_param(kw, Lexicon.RGBA_A, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
+        matte = parse_param(kw, Lexicon.RGBA_A, EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), MIN_IMAGE_SIZE)
+        mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.NONE.name)
+        sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)
         images = []
-        params = list(zip_longest_fill(pA, wihi, matte))
+        params = list(zip_longest_fill(pA, matte, wihi, mode, sample))
         pbar = ProgressBar(len(params))
-        for idx, (pA, wihi, matte) in enumerate(params):
+        for idx, (pA, matte, wihi, mode, sample) in enumerate(params):
+            width, height = wihi
             if pA is None:
-                width, height = wihi
                 pA = channel_solid(width, height, matte, EnumImageType.BGRA)
                 images.append(cv2tensor_full(pA))
             else:
                 pA = tensor2cv(pA)
                 matte = pixel_eval(matte, EnumImageType.BGRA)
+                mode = EnumScaleMode[mode]
+                if mode != EnumScaleMode.NONE:
+                    sample = EnumInterpolation[sample]
+                    pA = image_scalefit(pA, width, height, mode, sample)
                 images.append(cv2tensor_full(pA, matte))
             pbar.update_absolute(idx)
         return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]

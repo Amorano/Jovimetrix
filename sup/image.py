@@ -693,17 +693,17 @@ def image_convert(image: TYPE_IMAGE, channels: int) -> TYPE_IMAGE:
     return cv2.cvtColor(image, cv2.COLOR_BGR2BGRA)
 
 def image_crop_polygonal(image: TYPE_IMAGE, points: List[TYPE_COORD]) -> TYPE_IMAGE:
-    cc, w, h = channel_count(image)[:3]
-    point_mask = np.zeros((h, w), dtype=np.uint8)
+    cc, width, height = channel_count(image)[:3]
+    point_mask = np.zeros((height, width), dtype=np.uint8)
     points = np.array(points, np.int32).reshape((-1, 1, 2))
     point_mask = cv2.fillPoly(point_mask, [points], 255)
     x, y, w, h = cv2.boundingRect(point_mask)
-    cropped_image = image[y:y+h, x:x+w]
+    cropped_image = cv2.resize(image[y:y+h, x:x+w], (w, h))
     # Apply the mask to the cropped image
-    point_mask_cropped = point_mask[y:y+h, x:x+w]
+    point_mask_cropped = cv2.resize(point_mask[y:y+h, x:x+w], (w, h))
     if cc == 4:
         mask = image_mask(image, 0)
-        alpha_channel = mask[y:y+h, x:x+w]
+        alpha_channel = cv2.resize(mask[y:y+h, x:x+w], (w, h))
         cropped_image = cv2.cvtColor(cropped_image, cv2.COLOR_BGRA2BGR)
         cropped_image = cv2.bitwise_and(cropped_image, cropped_image, mask=point_mask_cropped)
         return image_mask_add(cropped_image, alpha_channel)
@@ -1004,6 +1004,12 @@ def image_load(url: str) -> Tuple[TYPE_IMAGE, TYPE_IMAGE]:
                 img = cv2.cvtColor(img, cv2.COLOR_RGBA2BGRA)
             else:
                 img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+        if len(img.shape) < 3:
+            img = np.expand_dims(img, axis=2)
+            print('expand')
+        if img.shape[2] == 1:
+            print('convert')
+            img = image_convert(img, 3)
     except Exception as _:
         try:
             img = Image.open(url)
@@ -1245,7 +1251,7 @@ def image_scalefit(image: TYPE_IMAGE, width: int, height:int,
             image = cv2.resize(image, None, fx=ratio, fy=ratio, interpolation=sample.value)
 
         case EnumScaleMode.CROP:
-            image = image_crop_center(image, width, height)
+            image = cv2.resize(image_crop_center(image, width, height), (width, height))
 
         case EnumScaleMode.FIT:
             image = cv2.resize(image, (width, height), interpolation=sample.value)
