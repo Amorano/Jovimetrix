@@ -355,8 +355,9 @@ def json2markdown(json_dict):
     ret = f"# {name}\n\n"
     ret += f"## {json_dict['category']}\n"
     ret += f"{json_dict['documentation']}\n"
-    #name = name.split(" (JOV)")[0].replace(" ", "%20")
-    # ret += f"![](https://raw.githubusercontent.com/Amorano/Jovimetrix-examples/master/node/{name}/{name}.gif)\n\n"
+    boop = name.split('(JOV)')[0].strip()
+    boop2 = boop.replace(" ", "%20")
+    ret += f"![{boop}](./{boop2}.png)\n\n"
     ret += f"#### OUTPUT NODE?: `{json_dict['output_node']}`\n\n"
     ret += f"### INPUT\n\n"
     if len(json_dict['output_parameters']) > 0:
