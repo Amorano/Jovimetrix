@@ -139,7 +139,6 @@ The Transform Node applies various geometric transformations to images, includin
             if mode != EnumScaleMode.NONE:
                 w, h = wihi
                 pA = image_scalefit(pA, w, h, mode, sample)
-            # matte = pixel_eval(matte, EnumImageType.BGRA)
             images.append(cv2tensor_full(pA, matte))
             pbar.update_absolute(idx)
         return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]

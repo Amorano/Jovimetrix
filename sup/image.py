@@ -1006,9 +1006,7 @@ def image_load(url: str) -> Tuple[TYPE_IMAGE, TYPE_IMAGE]:
                 img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
         if len(img.shape) < 3:
             img = np.expand_dims(img, axis=2)
-            print('expand')
         if img.shape[2] == 1:
-            print('convert')
             img = image_convert(img, 3)
     except Exception as _:
         try:

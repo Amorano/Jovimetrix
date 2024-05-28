@@ -127,9 +127,7 @@ The Shape Generation node creates images representing various shapes such as cir
         edge = parse_param(kw, Lexicon.EDGE, EnumConvertType.STRING, EnumEdge.CLIP.name)
         offset = parse_param(kw, Lexicon.XY, EnumConvertType.VEC2, (0, 0))
         size = parse_param(kw, Lexicon.SIZE, EnumConvertType.VEC2, (1, 1,), zero=0.001)
-        print(kw[Lexicon.WH])
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), MIN_IMAGE_SIZE)
-        print(wihi)
         color = parse_param(kw, Lexicon.RGBA_A, EnumConvertType.VEC4INT, (255, 255, 255, 255), 0, 255)
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
         blur = parse_param(kw, Lexicon.BLUR, EnumConvertType.FLOAT, 0)
@@ -139,7 +137,6 @@ The Shape Generation node creates images representing various shapes such as cir
         for idx, (shape, sides, offset, angle, edge, size, wihi, color, matte, blur) in enumerate(params):
             width, height = wihi
             sizeX, sizeY = size
-            print(width, height, sizeX, sizeY)
             edge = EnumEdge[edge]
             shape = EnumShapes[shape]
             color = pixel_eval(color, EnumImageType.BGRA)

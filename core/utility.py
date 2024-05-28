@@ -632,7 +632,7 @@ Routes the input data from the optional input ports to the output port, preservi
         return zip(*kw.values())
 
 class SaveOutput(JOVBaseNode):
-    NAME = "SAVE OUTPUT 💾"
+    NAME = "SAVE OUTPUT (JOV) 💾"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     OUTPUT_NODE = True
     RETURN_TYPES = ()
@@ -751,7 +751,6 @@ class BatchLoadNode(JOVBaseNode):
                         pA = image_scalefit(pA, w, h, mode, sample)
                 else:
                     pA = channel_solid(w, h)
-                print(pA.shape)
                 images.append(cv2tensor_full(pA, matte))
             pbar.update_absolute(idx)
         return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
