@@ -24,7 +24,7 @@ from loguru import logger
 from comfy.utils import ProgressBar
 from folder_paths import get_output_directory
 
-from Jovimetrix import comfy_message, parse_reset, JOVBaseNode, \
+from Jovimetrix import ROOT_COMFY, comfy_message, parse_reset, JOVBaseNode, \
     WILDCARD, ROOT
 
 from Jovimetrix.sup.lexicon import Lexicon
@@ -291,7 +291,7 @@ The Queue node manages a queue of items, such as file paths or data. It supports
             self.__q = None
             self.__index = 0
 
-        if (new_val := parse_param(kw, Lexicon.VALUE, EnumConvertType.INT, self.__index))[0] > 0:
+        if (new_val := parse_param(kw, Lexicon.VALUE, EnumConvertType.INT, self.__index)[0]) > 0:
             self.__index = new_val
 
         if self.__q is None:
@@ -437,6 +437,8 @@ class ImageDiffNode(JOVBaseNode):
     RETURN_NAMES = (Lexicon.IN_A, Lexicon.IN_B, Lexicon.DIFF, Lexicon.THRESHOLD)
     SORT = 90
     DESCRIPTION = """
+☣️💣☣️💣☣️💣☣️💣 THIS NODE IS A WORK IN PROGRESS ☣️💣☣️💣☣️💣☣️💣
+
 The Image Diff node compares two input images pixel by pixel to identify differences between them. It takes two images as input, labeled as Image A and Image B. The node then calculates the absolute difference between the two images, producing two additional outputs: a difference mask and a threshold mask. The threshold parameter determines the sensitivity of the comparison, with higher values indicating more tolerance for differences. The node returns Image A, Image B, the difference mask, and the threshold mask.
 """
 
@@ -607,9 +609,10 @@ class RouteNode(JOVBaseNode):
     RETURN_TYPES = ()
     SORT = 900
     DESCRIPTION = """
+☣️💣☣️💣☣️💣☣️💣 THIS NODE IS A WORK IN PROGRESS ☣️💣☣️💣☣️💣☣️💣
+
 Routes the input data from the optional input ports to the output port, preserving the order of inputs. The `PASS_IN` optional input is directly passed through to the output, while other optional inputs are collected and returned as tuples, preserving the order of insertion.
 """
-    CATEGORY = "JOVIMETRIX 🔺🟩🔵/WIP ☣️💣"
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -641,7 +644,7 @@ Save the output image along with its metadata to the specified path. Supports sa
                 "fname": ("STRING", {"default": "output", "dynamicPrompts":False}),
                 "metadata": ("JSON", {}),
                 "usermeta": ("STRING", {"multiline": True, "dynamicPrompts":False,
-                                        "default": json.dumps({"extra": "data"})}),
+                                        "default": ""}),
             },
             "hidden": {
                 "prompt": "PROMPT",
@@ -663,11 +666,12 @@ Save the output image along with its metadata to the specified path. Supports sa
             if image is None:
                 logger.warning("no image")
                 image = torch.zeros((32, 32, 4), dtype=torch.uint8, device="cpu")
-
             try:
                 if not isinstance(usermeta, (dict,)):
                     usermeta = json.loads(usermeta)
                 metadata.update(usermeta)
+            except json.decoder.JSONDecodeError:
+                pass
             except Exception as e:
                 logger.error(e)
                 logger.error(usermeta)
@@ -683,13 +687,14 @@ Save the output image along with its metadata to the specified path. Supports sa
                 except Exception as e:
                     logger.error(e)
                     logger.error(x)
-
+            if path == "" or path is None:
+                path = get_output_directory()
             root = Path(path)
             if not root.exists():
                 root = Path(get_output_directory())
             root.mkdir(parents=True, exist_ok=True)
             fname = (root / fname).with_suffix(".png")
-            logger.info(fname)
+            logger.info(f"wrote file: {fname}")
             image.save(fname, pnginfo=meta_png)
             pbar.update_absolute(idx)
         return ()

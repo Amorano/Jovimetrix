@@ -375,12 +375,10 @@ The Spout Writer node sends frames to a specified Spout receiver application for
                 for img in images:
                     # loop_time = time.perf_counter_ns()
                     w, h = wihi
-                    img = tensor2cv(img) if img is not None else channel_solid(w, h, chan=EnumImageType.BGRA)
+                    img = channel_solid(w, h, chan=EnumImageType.BGRA) if img is None else tensor2cv(img)
                     img = image_scalefit(img, w, h, mode, sample, matte)
-                    # results.append(cv2tensor(img))
-                    img[:, :, [0, 2]] = img[:, :, [2, 0]]
+                    if len(img.shape) > 2 and img.shape[2] > 2:
+                        img[:, :, [0, 2]] = img[:, :, [2, 0]]
                     self.__sender.frame = img
-                    # delta = max(0, delta_desired - (time.perf_counter_ns() - loop_time))
-                    # time.sleep(delta)
                 pbar.update_absolute(idx)
-            return () # [torch.stack(results, dim=0).squeeze(1)]
+            return ()

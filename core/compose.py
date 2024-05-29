@@ -292,7 +292,7 @@ The Pixel Merge Node combines individual color channels (red, green, blue) along
         pbar = ProgressBar(len(params))
         for idx, (r, g, b, a, mode, wihi, sample, matte) in enumerate(params):
             w, h = wihi
-            ret = [channel_solid(w, h, chan=EnumImageType.GRAYSCALE) if x is None else image_grayscale(tensor2cv(x)) for x in (r, g, b, a)]
+            ret = [channel_solid(w, h, chan=EnumImageType.GRAYSCALE) if x is None else image_grayscale(tensor2cv(x)) for x in (b, g, r, a)]
             h, w = ret[0].shape[:2]
             ret = [cv2.resize(r, (w, h)) for r in ret]
             img = channel_merge(ret)
@@ -403,31 +403,36 @@ The Stack Node combines multiple input images into a single output image along a
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
-        pA = []
-        pA.extend([r for r in parse_dynamic(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)])
+        ret = parse_dynamic(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
+        images = []
+        for i in ret:
+            images.extend(i)
         if len(images) == 0:
             logger.warning("no images to stack")
             return
-        axis = parse_param(kw, Lexicon.AXIS, EnumConvertType.STRING, EnumOrientation.GRID.name)
-        stride = parse_param(kw, Lexicon.STEP, EnumConvertType.INT, 1)
-        mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.NONE.name)
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE)], MIN_IMAGE_SIZE)
-        sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)
-        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
+        axis = parse_param(kw, Lexicon.AXIS, EnumConvertType.STRING, EnumOrientation.GRID.name)[0]
+        stride = parse_param(kw, Lexicon.STEP, EnumConvertType.INT, 1, 1)[0]
+        mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.NONE.name)[0]
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), MIN_IMAGE_SIZE)[0]
+        sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)[0]
+        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)[0]
         images = [tensor2cv(img) for img in images]
-        params = list(zip_longest_fill(axis, stride, mode, wihi, sample, matte))
-        images = []
-        pbar = ProgressBar(len(params))
-        for idx, (mode, wihi, sample, matte) in enumerate(params):
-            axis = EnumOrientation[axis]
-            img = image_stack(pA, axis, stride, matte)
-            w, h = wihi
-            mode = EnumScaleMode[mode]
-            if mode != EnumScaleMode.NONE:
-                sample = EnumInterpolation[sample]
-                img = image_scalefit(img, w, h, mode, sample)
-            images.append(cv2tensor_full(img, matte))
-            pbar.update_absolute(idx)
+        #params = list(zip_longest_fill(axis, stride, mode, wihi, sample, matte))
+        #images = []
+        #pbar = ProgressBar(len(params))
+        #print(params)
+        #for idx, (axis, stride, mode, wihi, sample, matte) in enumerate(params):
+
+        axis = EnumOrientation[axis]
+        img = image_stack(images, axis, stride, matte)
+        w, h = wihi
+        mode = EnumScaleMode[mode]
+        if mode != EnumScaleMode.NONE:
+            sample = EnumInterpolation[sample]
+            img = image_scalefit(img, w, h, mode, sample)
+        # images.append(cv2tensor_full(img, matte))
+        return cv2tensor_full(img, matte)
+        #pbar.update_absolute(idx)
         return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
 
 class CropNode(JOVBaseNode):

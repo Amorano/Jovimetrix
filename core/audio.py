@@ -31,6 +31,8 @@ class LoadWaveNode(JOVBaseNode):
     RETURN_TYPES = ("WAVE",)
     RETURN_NAMES = (Lexicon.WAVE,)
     DESCRIPTION = """
+☣️💣☣️💣☣️💣☣️💣 THIS NODE IS A WORK IN PROGRESS ☣️💣☣️💣☣️💣☣️💣
+
 The Load Wave node imports audio files, converting them to waveforms. Specify the file path to load the audio data.
 """
 
@@ -95,11 +97,11 @@ The Wave Graph node visualizes audio waveforms as bars. Adjust parameters like t
 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
         wave = parse_param(kw, Lexicon.WAVE, EnumConvertType.ANY, None)
-        bars = parse_param(kw, Lexicon.VALUE, EnumConvertType.INT, 100, 1, 8192)
-        thick = parse_param(kw, Lexicon.THICK, EnumConvertType.FLOAT, 0.72, 0, 1)
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE)], MIN_IMAGE_SIZE)
-        rgb_a = parse_param(kw, Lexicon.RGBA_A, EnumConvertType.VEC4INT, [(128, 128, 0, 255)], 0, 255)
-        matte = parse_param(kw, Lexicon.RGBA_B, EnumConvertType.VEC4INT, [(0, 128, 128, 255)], 0, 255)
+        bars = parse_param(kw, Lexicon.VALUE, EnumConvertType.INT, 50, 1, 8192)
+        thick = parse_param(kw, Lexicon.THICK, EnumConvertType.FLOAT, 0.75, 0, 1)
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), MIN_IMAGE_SIZE)
+        rgb_a = parse_param(kw, Lexicon.RGBA_A, EnumConvertType.VEC4INT, (196, 0, 196), 0, 255)
+        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (42, 12, 42), 0, 255)
         params = list(zip_longest_fill(wave, bars, wihi, thick, rgb_a, matte))
         images = []
         pbar = ProgressBar(len(params))
@@ -108,8 +110,7 @@ The Wave Graph node visualizes audio waveforms as bars. Adjust parameters like t
             if wave is None:
                 img = channel_solid(width, height, matte, EnumImageType.BGRA)
             else:
-                img = graph_sausage(wave, bars, width, height, thickness=thick, color_line=rgb_a, color_back=matte)
-            img = cv2tensor_full(img)
-            images.append(img)
+                img = graph_sausage(wave[0], bars, width, height, thickness=thick, color_line=rgb_a, color_back=matte)
+            images.append(cv2tensor_full(img))
             pbar.update_absolute(idx)
-        return list(zip(*images))
+        return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]

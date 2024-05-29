@@ -19,7 +19,7 @@ from PIL import Image, ImageDraw
 
 from loguru import logger
 
-from Jovimetrix.sup.image import EnumScaleMode, image_scalefit, pil2cv, TYPE_PIXEL
+from Jovimetrix.sup.image import EnumImageType, EnumScaleMode, image_scalefit, pil2cv, TYPE_PIXEL, pixel_convert, pixel_eval
 
 # =============================================================================
 
@@ -70,14 +70,16 @@ def graph_sausage(data: np.ndarray, bar_count:int, width:int, height:int,
     highest_line = max_array.max()
     line_width = (width + bar_count) // bar_count
     line_ratio = highest_line / height
-    image = Image.new('RGBA', (bar_count * line_width, height), color_back)
+    color_line = pixel_eval(color_line, EnumImageType.BGR)
+    color_back = pixel_eval(color_back, EnumImageType.BGR)
+    image = Image.new('RGBA', (bar_count * line_width, height), color_line)
     draw = ImageDraw.Draw(image)
     for i, item in enumerate(max_array):
         item_height = item / line_ratio
         current_x = int((i + offset) * line_width)
         current_y = int((height - item_height) / 2)
         draw.line((current_x, current_y, current_x, current_y + item_height),
-                  fill=color_line, width=int(thickness * line_width))
+                  fill=color_back, width=int(thickness * line_width))
     image = pil2cv(image)
     return image_scalefit(image, width, height, EnumScaleMode.FIT)
 

@@ -107,7 +107,16 @@ def parse_value(val:Any, typ:EnumConvertType, default: Any,
             new_val.append(v)
         new_val = new_val[0] if size == 1 else tuple(new_val)
     elif typ == EnumConvertType.DICT:
-        new_val = {i: v for i, v in enumerate(new_val)}
+        try:
+            if isinstance(new_val, (str,)):
+                try:
+                    new_val = json.loads(new_val)
+                except json.decoder.JSONDecodeError:
+                    new_val = {}
+            else:
+                new_val = {i: v for i, v in enumerate(new_val)}
+        except Exception as e:
+            logger.exception(e)
     elif typ == EnumConvertType.LIST:
         new_val = list(new_val)
     elif typ == EnumConvertType.STRING:

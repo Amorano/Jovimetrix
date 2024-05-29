@@ -20,7 +20,7 @@ from Jovimetrix.sup.util import parse_param, zip_longest_fill, \
 
 from Jovimetrix.sup.image import EnumScaleMode, channel_solid, cv2tensor, cv2tensor_full, \
     image_grayscale, image_invert, image_mask_add, \
-    image_rotate, image_scalefit, image_transform, image_translate, pil2cv, \
+    image_rotate, image_scalefit, image_stereogram, image_transform, image_translate, pil2cv, \
     pixel_eval, tensor2cv, shape_ellipse, shape_polygon, shape_quad, \
     EnumInterpolation, EnumEdge, EnumImageType, MIN_IMAGE_SIZE
 
@@ -188,6 +188,8 @@ class TextNode(JOVBaseNode):
     FONTS = font_names()
     FONT_NAMES = sorted(FONTS.keys())
     DESCRIPTION = """
+☣️💣☣️💣☣️💣☣️💣 THIS NODE IS A WORK IN PROGRESS ☣️💣☣️💣☣️💣☣️💣
+
 The Text Generation node generates images containing text based on user-defined parameters such as font, size, alignment, color, and position. Users can input custom text messages, select fonts from a list of available options, adjust font size, and specify the alignment and justification of the text. Additionally, the node provides options for auto-sizing text to fit within specified dimensions, controlling letter-by-letter rendering, and applying edge effects such as clipping and inversion.
 """
 
@@ -312,6 +314,7 @@ The Stereogram node creates stereograms, generating 3D images from 2D input. Set
             Lexicon.NOISE: ("FLOAT", {"default": 0.33, "min": 0, "max": 1, "step": 0.01}),
             Lexicon.GAMMA: ("FLOAT", {"default": 0.33, "min": 0, "max": 1, "step": 0.01}),
             Lexicon.SHIFT: ("FLOAT", {"default": 1., "min": -1, "max": 1, "step": 0.01}),
+            Lexicon.INVERT: ("BOOLEAN", {"default": False}),
         }}
         return Lexicon._parse(d, cls)
 
@@ -322,13 +325,17 @@ The Stereogram node creates stereograms, generating 3D images from 2D input. Set
         noise = parse_param(kw, Lexicon.NOISE, EnumConvertType.FLOAT, 1, 0)
         gamma = parse_param(kw, Lexicon.GAMMA, EnumConvertType.FLOAT, 1, 0)
         shift = parse_param(kw, Lexicon.SHIFT, EnumConvertType.FLOAT, 0, 1, -1)
-        params = list(zip_longest_fill(pA, depth, divisions, noise, gamma, shift))
+        invert = parse_param(kw, Lexicon.INVERT, EnumConvertType.BOOLEAN, False)
+        params = list(zip_longest_fill(pA, depth, divisions, noise, gamma, shift, invert))
         images = []
         pbar = ProgressBar(len(params))
-        for idx, (pA, depth, divisions, noise, gamma, shift) in enumerate(params):
-            pA = tensor2cv(pA) if pA is not None else channel_solid(chan=EnumImageType.BGRA)
+        for idx, (pA, depth, divisions, noise, gamma, shift, invert) in enumerate(params):
+            pA = channel_solid(chan=EnumImageType.BGRA) if pA is None else tensor2cv(pA)
             h, w = pA.shape[:2]
-            depth = tensor2cv(depth) if depth is not None else channel_solid(w, h, chan=EnumImageType.BGRA)
+            depth = channel_solid(w, h, chan=EnumImageType.BGRA) if depth is None else tensor2cv(depth)
+            if invert:
+                depth = image_invert(depth, 1.0)
+            pA = image_stereogram(pA, depth, divisions, noise, gamma, shift)
             images.append(cv2tensor_full(pA))
             pbar.update_absolute(idx)
         return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]

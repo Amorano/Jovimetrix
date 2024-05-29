@@ -1303,6 +1303,7 @@ def image_stack(images: List[TYPE_IMAGE], axis:EnumOrientation=EnumOrientation.H
                 stride = np.ceil(np.sqrt(count))
                 stride = int(stride)
             stride = min(stride, count)
+            stride = max(stride, 1)
 
             rows = []
             for i in range(0, count, stride):
