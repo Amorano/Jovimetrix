@@ -65,7 +65,7 @@ The Load Wave node imports audio files, converting them to waveforms. Specify th
                     logger.error(str(e))
             waves.append(data)
             pbar.update_absolute(idx)
-        return waves
+        return (waves,)
 
 class WaveGraphNode(JOVBaseNode):
     NAME = "WAVE GRAPH (JOV) ▶ ılıılı"

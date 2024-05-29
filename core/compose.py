@@ -268,6 +268,9 @@ The Pixel Merge Node combines individual color channels (red, green, blue) along
             Lexicon.G: (WILDCARD, {}),
             Lexicon.B: (WILDCARD, {}),
             Lexicon.A: (WILDCARD, {}),
+            Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
+            Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), "step": 1, "label": [Lexicon.W, Lexicon.H]}),
+            Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
             Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
         }}
         return Lexicon._parse(d, cls)
@@ -277,23 +280,27 @@ The Pixel Merge Node combines individual color channels (red, green, blue) along
         G = parse_param(kw, Lexicon.G, EnumConvertType.IMAGE, None)
         B = parse_param(kw, Lexicon.B, EnumConvertType.IMAGE, None)
         A = parse_param(kw, Lexicon.A, EnumConvertType.IMAGE, None)
-        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
+        mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.NONE.name)
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), MIN_IMAGE_SIZE)
+        sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)
+        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC3INT, (0, 0, 0), 0, 255)
         if len(R)+len(B)+len(G)+len(A) == 0:
             img = channel_solid(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 0, EnumImageType.BGRA)
             return list(cv2tensor_full(img, matte))
-        params = list(zip_longest_fill(R, G, B, A, matte))
+        params = list(zip_longest_fill(R, G, B, A, mode, wihi, sample, matte))
         images = []
         pbar = ProgressBar(len(params))
-        for idx, (r, g, b, a, matte) in enumerate(params):
-            r = tensor2cv(r) if r is not None else channel_solid()
-            r = image_grayscale(r)
-            g = tensor2cv(g) if g is not None else channel_solid()
-            g = image_grayscale(g)
-            b = tensor2cv(b) if b is not None else channel_solid()
-            b = image_grayscale(b)
-            mask = tensor2cv(a) if a is not None else channel_solid()
-            mask = image_grayscale(mask)
-            img = channel_merge([b, g, r, mask])
+        for idx, (r, g, b, a, mode, wihi, sample, matte) in enumerate(params):
+            w, h = wihi
+            ret = [channel_solid(w, h, chan=EnumImageType.GRAYSCALE) if x is None else image_grayscale(tensor2cv(x)) for x in (r, g, b, a)]
+            h, w = ret[0].shape[:2]
+            ret = [cv2.resize(r, (w, h)) for r in ret]
+            img = channel_merge(ret)
+            mode = EnumScaleMode[mode]
+            if mode != EnumScaleMode.NONE:
+                w, h = wihi
+                sample = EnumInterpolation[sample]
+                img = image_scalefit(img, w, h, mode, sample)
             images.append(cv2tensor_full(img, matte))
             pbar.update_absolute(idx)
         return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
@@ -542,9 +549,7 @@ The Flatten Node combines multiple input images into a single image by summing t
 
     def run(self, **kw) -> torch.Tensor:
         pA = parse_dynamic(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
-        print(len(pA))
         pA = [item for sublist in pA for item in sublist]
-        print(len(pA))
         if len(pA) == 0:
             logger.error("no images to flatten")
             return ()

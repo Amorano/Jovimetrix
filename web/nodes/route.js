@@ -16,6 +16,6 @@ app.registerExtension({
         if (nodeData.name !== _id) {
             return;
         }
-        nodeType = node_add_dynamic2(nodeType, _prefix, '*', 1);
+        nodeType = node_add_dynamic2(nodeType, _prefix, '*', 0);
 	}
 })

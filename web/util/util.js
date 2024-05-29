@@ -139,7 +139,7 @@ export function node_add_dynamic2(nodeType, prefix, dynamic_type='*', index_star
             const who = slot.name;
             const wIndex = this.inputs.findIndex((w) => w.name === who);
             if (wIndex >= index_start) {
-                const wo = this.outputs[wIndex];
+                let wo = this.outputs[wIndex];
                 if (event == TypeSlotEvent.Disconnect) {
                     this.removeOutput(wo);
                     this.removeInput(slot);

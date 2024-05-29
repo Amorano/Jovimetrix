@@ -340,7 +340,7 @@ The Binary Operation node executes binary operations like addition, subtraction,
                 case EnumBinaryOperation.MODULUS:
                     val = [a % b if b != 0 else 0 for a, b in zip(val_a, val_b)]
                 case EnumBinaryOperation.POWER:
-                    val = [a ** b for a, b in zip(val_a, val_b)]
+                    val = [a ** b if b >= 0 else 0 for a, b in zip(val_a, val_b)]
                 case EnumBinaryOperation.MAXIMUM:
                     val = max(val_a, val_b)
                 case EnumBinaryOperation.MINIMUM:
@@ -361,9 +361,9 @@ The Binary Operation node executes binary operations like addition, subtraction,
                 case EnumBinaryOperation.BIT_XNOR:
                     val = [not(int(a) ^ int(b)) for a, b in zip(val_a, val_b)]
                 case EnumBinaryOperation.BIT_LSHIFT:
-                    val = [int(a) << int(b) for a, b in zip(val_a, val_b)]
+                    val = [int(a) << int(b) if b >= 0 else 0 for a, b in zip(val_a, val_b)]
                 case EnumBinaryOperation.BIT_RSHIFT:
-                    val = [int(a) >> int(b) for a, b in zip(val_a, val_b)]
+                    val = [int(a) >> int(b) if b >= 0 else 0 for a, b in zip(val_a, val_b)]
 
                 # GROUP
                 case EnumBinaryOperation.UNION:

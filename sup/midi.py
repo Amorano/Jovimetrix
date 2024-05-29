@@ -90,13 +90,13 @@ class MIDIServerThread(threading.Thread):
 
 class MIDIMessage:
     """Snap shot of a message from Midi device."""
-    def __init__(self, note_on, channel, control, note, value) -> None:
+    def __init__(self, note_on:bool, channel:int, control:int, note:int, value:int) -> None:
         self.note_on = note_on
         self.channel = channel
         self.control = control
         self.note = note
         self.value = value
-        self.normal = value / 127.
+        self.normal: float = value / 127.
 
     @property
     def flat(self) -> Tuple[bool, int, int, int, float, float]:

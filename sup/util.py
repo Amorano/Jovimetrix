@@ -140,7 +140,6 @@ def parse_value(val:Any, typ:EnumConvertType, default: Any,
             new_val[1,:,:] = color[1]
             new_val[2,:,:] = color[2]
             new_val[3,:,:] = color[3]
-            # new_val = new_val.unsqueeze(0)
     elif typ == EnumConvertType.MASK:
         # @TODO: FIX FOR MULTI-CHAN?
         if not isinstance(new_val, (torch.Tensor,)):
@@ -148,8 +147,6 @@ def parse_value(val:Any, typ:EnumConvertType, default: Any,
             color = torch.tensor(color, dtype=torch.int32).tolist()
             new_val = torch.empty((512, 512, 1), dtype=torch.uint8)
             new_val[0,:,:] = color
-            # new_val = new_val.unsqueeze(0)
-        # logger.debug(new_val.shape)
     if typ == EnumConvertType.COORD2D:
         new_val = {'x': new_val[0], 'y': new_val[1]}
     return new_val
@@ -189,6 +186,7 @@ def parse_param(data:dict, key:str, typ:EnumConvertType, default: Any,
             elif issubclass(type(val), (Enum,)):
                 v = [str(v.name)]
             elif v is not None and not isinstance(v, (list, tuple, str)):
+                # and typ not in [EnumConvertType.ANY]
                 v = [v]
             ret.append(v)
     else:

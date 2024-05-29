@@ -742,6 +742,8 @@ def image_crop_center(image: TYPE_IMAGE, width:int=None, height:int=None) -> TYP
     return image_crop_polygonal(image, points)
 
 def image_diff(imageA: TYPE_IMAGE, imageB: TYPE_IMAGE, threshold:int=0, color:TYPE_PIXEL=(255, 0, 0)) -> Tuple[TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE, float]:
+    """imageA, imageB, diff, thresh, score
+    """
     _, w1, h1 = channel_count(imageA)[:3]
     _, w2, h2 = channel_count(imageB)[:3]
     w1 = max(w1, w2)
@@ -752,19 +754,14 @@ def image_diff(imageA: TYPE_IMAGE, imageB: TYPE_IMAGE, threshold:int=0, color:TY
     imageB = image_convert(imageB, 3)
     grayA = image_grayscale(imageA)
     grayB = image_grayscale(imageB)
-    (score, diff) = ssim(grayA, grayB, full=True)
+    (score, diff) = ssim(grayA, grayB, full=True, channel_axis=2)
     diff = (diff * 255).astype("uint8")
     diff_box = cv2.merge([diff, diff, diff])
-
     _, thresh = cv2.threshold(diff, threshold, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)
     contours = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     contours = contours[0] if len(contours) == 2 else contours[1]
-
-    # h, w = imageA.shape[:2]
     high_a = imageA.copy()
     high_a = image_convert(high_a, 3)
-    # h, w = imageB.shape[:2]
-    # high_b = np.zeros((h, w, 3), dtype=np.uint8)
     high_b = imageB.copy()
     high_b = image_convert(high_b, 3)
     for c in contours:
@@ -777,7 +774,6 @@ def image_diff(imageA: TYPE_IMAGE, imageB: TYPE_IMAGE, threshold:int=0, color:TY
         cv2.drawContours(high_a, [c], 0, color[::-1], -1)
         cv2.drawContours(high_b, [c], 0, color[::-1], -1)
         cv2.drawContours(diff_box, [c], 0, color[::-1], -1)
-
     imageA = cv2.addWeighted(imageA, 0.0, high_a, 1, 0)
     imageB = cv2.addWeighted(imageB, 0.0, high_b, 1, 0)
     return imageA, imageB, diff, thresh, score

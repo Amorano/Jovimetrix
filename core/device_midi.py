@@ -17,7 +17,7 @@ from comfy.utils import ProgressBar
 
 from Jovimetrix import JOVBaseNode
 from Jovimetrix.sup.lexicon import Lexicon
-from Jovimetrix.sup.util import EnumConvertType, parse_param
+from Jovimetrix.sup.util import EnumConvertType, parse_param, zip_longest_fill
 from Jovimetrix.sup.midi import midi_device_names, \
     MIDIMessage, MIDINoteOnFilter, MIDIServerThread
 
@@ -48,15 +48,14 @@ The MIDI Message node processes MIDI messages received from an external MIDI con
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[object, bool, int, int, int, float, float]:
-        message = parse_param(kw, Lexicon.MIDI, EnumConvertType.ANY, None)
+        message: MIDIMessage = parse_param(kw, Lexicon.MIDI, EnumConvertType.ANY, None)
         results = []
         pbar = ProgressBar(len(message))
         for idx, (message,) in enumerate(message):
-            data = [message]
             if message is None:
-                data.extend([False, -1, -1, -1, -1, -1])
+                data = [False, -1, -1, -1, -1, -1]
             else:
-                data.extend(*message.flat)
+                data = [message]
             results.append(data)
             pbar.update_absolute(idx)
         return (results,)
@@ -152,31 +151,44 @@ The MIDI Filter EZ node allows you to filter MIDI messages based on various crit
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[MIDIMessage, bool]:
-        message = parse_param(kw, Lexicon.MIDI, EnumConvertType.ANY, None)[0]
-        if message is None:
-            logger.warning('no midi message. connected?')
-            return (None, False, )
 
-        # empty values mean pass-thru (no filter)
-        val = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, MIDINoteOnFilter.IGNORE.name)[0]
-        val = MIDINoteOnFilter[val]
-        if val != MIDINoteOnFilter.IGNORE:
-            if val == MIDINoteOnFilter.NOTE_ON and message.note_on != True:
-                return (message, False, )
-            if val == MIDINoteOnFilter.NOTE_OFF and message.note_on != False:
-                return (message, False, )
-
-        if (val := parse_param(kw, Lexicon.CHANNEL, EnumConvertType.INT, -1)[0]) != -1 and val != message.channel:
-            return (message, False, )
-        if (val := parse_param(kw, Lexicon.CONTROL, EnumConvertType.INT, -1)[0]) != -1 and val != message.control:
-            return (message, False, )
-        if (val := parse_param(kw, Lexicon.NOTE, EnumConvertType.INT, -1)[0]) != -1 and val != message.note:
-            return (message, False, )
-        if (val := parse_param(kw, Lexicon.VALUE, EnumConvertType.INT, -1)[0]) != -1 and val != message.value:
-            return (message, False, )
-        if (val := parse_param(kw, Lexicon.NORMALIZE, EnumConvertType.INT, -1)[0]) != -1 and isclose(message.normal):
-            return (message, False, )
-        return (message, True, )
+        message: MIDIMessage = parse_param(kw, Lexicon.MIDI, EnumConvertType.ANY, None)
+        mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, MIDINoteOnFilter.IGNORE.name)
+        chan = parse_param(kw, Lexicon.CHANNEL, EnumConvertType.INT, -1)
+        ctrl = parse_param(kw, Lexicon.CONTROL, EnumConvertType.INT, -1)
+        note = parse_param(kw, Lexicon.NOTE, EnumConvertType.INT, -1)
+        value = parse_param(kw, Lexicon.VALUE, EnumConvertType.INT, -1)
+        normal = parse_param(kw, Lexicon.NORMALIZE, EnumConvertType.FLOAT, -1)
+        params = list(zip_longest_fill(message, mode, chan, ctrl, note, value, normal))
+        ret = []
+        pbar = ProgressBar(len(params))
+        for idx, (message, mode, chan, ctrl, note, value, normal) in enumerate(params):
+            mode = MIDINoteOnFilter[mode]
+            if mode != MIDINoteOnFilter.IGNORE:
+                if mode == MIDINoteOnFilter.NOTE_ON and message.note_on == False:
+                    ret.append((message, False, ))
+                    continue
+                elif mode == MIDINoteOnFilter.NOTE_OFF and message.note_on == False:
+                    ret.append((message, False, ))
+                    continue
+            if chan != -1 and chan != message.channel:
+                ret.append((message, False, ))
+                continue
+            if ctrl != -1 and ctrl != message.control:
+                ret.append((message, False, ))
+                continue
+            if note != -1 and note != message.note:
+                ret.append((message, False, ))
+                continue
+            if value != -1 and value != message.value:
+                ret.append((message, False, ))
+                continue
+            if normal > 0 and not isclose(message.normal):
+                ret.append((message, False, ))
+                continue
+            ret.append((message, True, ))
+            pbar.update_absolute(idx)
+        return list(zip(*ret))
 
 class MIDIFilterNode(JOVBaseNode):
     NAME = "MIDI FILTER (JOV) ✳️"
@@ -205,65 +217,72 @@ The MIDI Filter node provides advanced filtering capabilities for MIDI messages 
         }
         return Lexicon._parse(d, cls)
 
-    def __filter(self, data: str, value: float) -> bool:
-        if not data:
-            return True
-        """
-        parse string blocks of "numbers" into range(s) to compare. e.g.:
-
-        1
-        5-10
-        2
-
+    def __filter(self, data:int, value:str) -> bool:
+        """Parse strings with number ranges into number ranges.
+            1, 5-10, 2
         Would check == 1, == 2 and 5 <= x <= 10
         """
-        # can you use float for everything to compare?
-
-        try:
-            value = float(value)
-        except Exception as e:
-            value = float("nan")
-            logger.error(str(e))
-
-        for line in data.split(','):
-            if len(a_range := line.split('-')) > 1:
+        value = value.strip()
+        if value == "" or len(value) == 0 or value is None:
+            return True
+        ranges = value.split(',')
+        for item in ranges:
+            item = item.strip()
+            if '-' in item:
                 try:
-                    a, b = a_range[:2]
-                    if float(a) <= value <= float(b):
+                    a, b = map(float, item.split('-'))
+                    if a <= data <= b:
                         return True
+                except ValueError:
+                    pass
                 except Exception as e:
-                    logger.error(str(e))
-
-            try:
-                if isclose(value, float(line)):
-                    return True
-            except Exception as e:
-                logger.error(str(e))
+                    logger.error(e)
+            else:
+                try:
+                    if isclose(data, float(item)):
+                        return True
+                except ValueError:
+                    pass
+                except Exception as e:
+                    logger.error(e)
         return False
 
     def run(self, **kw) -> Tuple[bool]:
-        message = parse_param(kw, Lexicon.MIDI, EnumConvertType.ANY, None)[0]
-        if message is None:
-            logger.warning('no midi message. connected?')
-            return (message, False, )
-
-        # empty values mean pass-thru (no filter)
-        val = parse_param(kw, Lexicon.ON, EnumConvertType.STRING, MIDINoteOnFilter.IGNORE.name)[0]
-        val = MIDINoteOnFilter[val]
-        if val != MIDINoteOnFilter.IGNORE:
-            if val == "TRUE" and message.note_on != True:
-                return (message, False, )
-            if val == "FALSE" and message.note_on != False:
-                return (message, False, )
-
-        if self.__filter(message.channel, parse_param(kw, Lexicon.CHANNEL, EnumConvertType.BOOLEAN, False)[0]) == False:
-            return (message, False, )
-        if self.__filter(message.control, parse_param(kw, Lexicon.CONTROL, EnumConvertType.BOOLEAN, False)[0]) == False:
-            return (message, False, )
-        if self.__filter(message.note, parse_param(kw, Lexicon.NOTE, EnumConvertType.BOOLEAN, False)[0]) == False:
-            return (message, False, )
-        if self.__filter(message.value, parse_param(kw, Lexicon.VALUE, EnumConvertType.BOOLEAN, False)[0]) == False:
-            return (message, False, )
-        if self.__filter(message.normal, parse_param(kw, Lexicon.NORMALIZE, EnumConvertType.BOOLEAN, False)[0]) == False:
-            return (message, False, )
-        return (message, True, )
+        message: MIDIMessage = parse_param(kw, Lexicon.MIDI, EnumConvertType.ANY, None)
+        note_on = parse_param(kw, Lexicon.ON, EnumConvertType.STRING, MIDINoteOnFilter.IGNORE.name)
+        chan = parse_param(kw, Lexicon.CHANNEL, EnumConvertType.STRING, "")
+        ctrl = parse_param(kw, Lexicon.CONTROL, EnumConvertType.STRING, "")
+        note = parse_param(kw, Lexicon.NOTE, EnumConvertType.STRING, "")
+        value = parse_param(kw, Lexicon.VALUE, EnumConvertType.STRING, "")
+        normal = parse_param(kw, Lexicon.NORMALIZE, EnumConvertType.STRING, "")
+        params = list(zip_longest_fill(message, note_on, chan, ctrl, note, value, normal))
+        ret = []
+        pbar = ProgressBar(len(params))
+        for idx, (message, note_on, chan, ctrl, note, value, normal) in enumerate(params):
+            message = message[0]
+            note_on = MIDINoteOnFilter[note_on]
+            if note_on != MIDINoteOnFilter.IGNORE:
+                if note_on == "TRUE" and message.note_on != True:
+                    ret.append((message, False, ))
+                    continue
+                if note_on == "FALSE" and message.note_on != False:
+                    ret.append((message, False, ))
+                    continue
+            if self.__filter(message.channel, chan) == False:
+                ret.append((message, False, ))
+                continue
+            if self.__filter(message.control, ctrl) == False:
+                ret.append((message, False, ))
+                continue
+            if self.__filter(message.note, note) == False:
+                ret.append((message, False, ))
+                continue
+            if self.__filter(message.value, value) == False:
+                ret.append((message, False, ))
+                continue
+            if self.__filter(message.normal, normal) == False:
+                ret.append((message, False, ))
+                continue
+            ret.append((message, True, ))
+            pbar.update_absolute(idx)
+        return list(zip(*ret))

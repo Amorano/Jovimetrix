@@ -133,13 +133,10 @@ app.registerExtension({
             const me = onNodeCreated?.apply(this, arguments);
             let colors = node_color_get(nodeData);
             if (this.color === undefined && colors?.title) {
-                console.info('1')
                 this.color = colors.title;
             }
             if (this.bgcolor === undefined && colors?.body) {
                 this.bgcolor = colors.body;
-            } else {
-                console.info(this.bgcolor)
             }
             return me;
         }

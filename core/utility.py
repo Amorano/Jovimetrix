@@ -114,21 +114,12 @@ The Akashic node processes input data and prepares it for visualization. It acce
                 if not isinstance(val, (list, tuple, set,)):
                     val = [val]
                 for img in val:
-                    #img = tensor2pil(img)
                     ret.append(f"({'x'.join([str(x) for x in img.shape])}) [{typ}]")
-                    #ret += str(img.size)
-                    #buffered = io.BytesIO()
-                    #img.save(buffered, format="PNG")
-                    #img = base64.b64encode(buffered.getvalue())
-                    #img = "data:image/png;base64," + img.decode("utf-8")
-                    #output["ui"]["b64_images"].append(img)
                 return ', '.join(ret)
-            return f"unknown [{typ}]"
+            return f"{str(val)} [{typ}]"
 
         for x in o:
             output["ui"]["text"].append(__parse(x))
-        #ak = AkashicData(image=output["ui"]["b64_images"], text=output["ui"]["text"] )
-        #output["result"] = (o, ak)
         return output
 
 class ValueGraphNode(JOVBaseNode):
@@ -442,8 +433,8 @@ The Export node is responsible for saving images or animations to disk. It suppo
 class ImageDiffNode(JOVBaseNode):
     NAME = "IMAGE DIFF (JOV) 📏"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK", "MASK", ) #"FLOAT", )
-    RETURN_NAMES = (Lexicon.IN_A, Lexicon.IN_B, Lexicon.DIFF, Lexicon.THRESHOLD) #, Lexicon.FLOAT, )
+    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK", "MASK", )
+    RETURN_NAMES = (Lexicon.IN_A, Lexicon.IN_B, Lexicon.DIFF, Lexicon.THRESHOLD)
     SORT = 90
     DESCRIPTION = """
 The Image Diff node compares two input images pixel by pixel to identify differences between them. It takes two images as input, labeled as Image A and Image B. The node then calculates the absolute difference between the two images, producing two additional outputs: a difference mask and a threshold mask. The threshold parameter determines the sensitivity of the comparison, with higher values indicating more tolerance for differences. The node returns Image A, Image B, the difference mask, and the threshold mask.
@@ -470,7 +461,7 @@ The Image Diff node compares two input images pixel by pixel to identify differe
         for idx, (pA, pB, th) in enumerate(params):
             pA = channel_solid(chan=EnumImageType.BGRA) if pA is None else tensor2cv(pA)
             pB = channel_solid(chan=EnumImageType.BGRA) if pB is None else tensor2cv(pB)
-            a, b, d, t, s = image_diff(pA, pB, int(th * 255))
+            a, b, d, t, _ = image_diff(pA, pB, int(th * 255))
             d = image_convert(d, 1)
             t = image_convert(t, 1)
             results.append([cv2tensor(a), cv2tensor(b), cv2tensor(d), cv2tensor(t)])
@@ -613,11 +604,12 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
 class RouteNode(JOVBaseNode):
     NAME = "ROUTE (JOV) 🚌"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = (WILDCARD,)
+    RETURN_TYPES = ()
     SORT = 900
     DESCRIPTION = """
 Routes the input data from the optional input ports to the output port, preserving the order of inputs. The `PASS_IN` optional input is directly passed through to the output, while other optional inputs are collected and returned as tuples, preserving the order of insertion.
 """
+    CATEGORY = "JOVIMETRIX 🔺🟩🔵/WIP ☣️💣"
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -627,8 +619,6 @@ Routes the input data from the optional input ports to the output port, preservi
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[Any, ...]:
-        #passthru = parse_param(kw, Lexicon.PASS_IN, EnumConvertType.ANY, None)
-        #kw.pop(Lexicon.PASS_IN, None)
         return zip(*kw.values())
 
 class SaveOutput(JOVBaseNode):
