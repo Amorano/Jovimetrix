@@ -297,6 +297,7 @@ The Binary Operation node executes binary operations like addition, subtraction,
         for idx, (A, B, a_x, a_xy, a_xyz, a_xyzw,
                   b_x, b_xy, b_xyz, b_xyzw, op, typ, flip) in enumerate(params):
 
+            #logger.debug(f'val {A}, {B}, {a_x}, {b_x}')
             # use everything as float for precision
             typ = EnumConvertType[typ]
             if typ in [EnumConvertType.VEC2, EnumConvertType.VEC2INT]:
@@ -309,10 +310,9 @@ The Binary Operation node executes binary operations like addition, subtraction,
                 val_a = parse_value(A, EnumConvertType.VEC4, A if A is not None else a_xyzw)
                 val_b = parse_value(B, EnumConvertType.VEC4, B if B is not None else b_xyzw)
             else:
-                # logger.debug('val', A, B)
                 val_a = parse_value(A, EnumConvertType.VEC4, A if A is not None else a_x)
-                val_b = parse_value(B, EnumConvertType.VEC4, B if B is not None else a_x)
-
+                val_b = parse_value(B, EnumConvertType.VEC4, B if B is not None else b_x)
+            #logger.debug(f'val {val_a}, {val_b}')
             if flip:
                 val_a, val_b = val_b, val_a
             size = max(1, int(typ.value / 10))
