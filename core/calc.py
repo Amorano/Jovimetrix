@@ -116,7 +116,7 @@ OP_UNARY = {
     EnumUnaryOperation.TAN: lambda x: math.tan(x),
     EnumUnaryOperation.NEGATE: lambda x: -x,
     EnumUnaryOperation.RECIPROCAL: lambda x: 1 / x if x != 0 else 0,
-    EnumUnaryOperation.FACTORIAL: lambda x: math.factorial(int(x)),
+    EnumUnaryOperation.FACTORIAL: lambda x: math.factorial(math.abs(int(x))),
     EnumUnaryOperation.EXP: lambda x: math.exp(x),
     EnumUnaryOperation.NOT: lambda x: not x,
     EnumUnaryOperation.BIT_NOT: lambda x: ~int(x),
@@ -215,7 +215,15 @@ The Unary Operation node performs unary operations like absolute value, mean, me
                         ret.append(v)
                     val = ret
             convert = int if isinstance(A, (bool, int, np.uint8, np.uint16, np.uint32, np.uint64)) else float
-            val = [convert(v) for v in val]
+            ret = []
+            for v in val:
+                try:
+                    ret.append(convert(v))
+                except OverflowError:
+                    ret.append(0)
+                except Exception as e:
+                    logger.error(f"{e} :: {op}")
+                    ret.append(0)
             val = parse_value(val, typ, 0)
             results.append(val)
             pbar.update_absolute(idx)

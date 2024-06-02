@@ -1,7 +1,7 @@
 [project]
 name = "jovimetrix"
 description = "Compose like Substance Designer. Webcams, Media Streams (in/out), Tick animation, Color correction, Geometry manipulation, Pixel shader, Polygonal shape generator, Remap images gometry and color, Heavily inspired by WAS and MTB Node Suites."
-version = "1.0.3"
+version = "1.0.4"
 license = "LICENSE"
 dependencies = ["torch", "numpy", "matplotlib", "opencv-contrib-python", "ffmpeg-python", "librosa", "loguru", "moderngl", "mss", "requests", "Pillow", "pywin32==306; platform_system==\"Windows\"", "scikit-image", "blendmodes", "mido[ports-rtmidi]", "pyaudio", "daltonlens", "numba", "PyOpenGL", "PyOpenGL-accelerate", "SpoutGL; platform_system==\"Windows\"", "vnoise", "stereoscopy[auto_align]", "aenum<4,>=3.1.15"]
 
