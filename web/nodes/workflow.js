@@ -5,8 +5,6 @@
  */
 
 import { app } from "../../../scripts/app.js"
-import { fitHeight } from '../util/util.js'
-import { widget_hide, widget_show } from '../util/util_widget.js'
 
 const _id = "WORKFLOW (JOV) ➿"
 

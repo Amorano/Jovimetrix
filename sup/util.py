@@ -125,7 +125,9 @@ def parse_value(val:Any, typ:EnumConvertType, default: Any,
         ret = False
         if isinstance(new_val, (torch.Tensor,)):
             ret = True
-        elif (nv := new_val[0]) is not None:
+        elif isinstance(new_val, (dict,)):
+            ret = len(new_val.keys()) > 0
+        elif len(new_val) > 0 and (nv := new_val[0]) is not None:
             if isinstance(nv, (bool, str,)):
                 ret = bool(nv)
             elif isinstance(nv, (int, float,)):
