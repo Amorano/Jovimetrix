@@ -6,9 +6,32 @@
 
 import { app } from "../../../scripts/app.js"
 import { fitHeight, TypeSlot } from '../util/util.js'
-import { widget_hide, widget_show, process_value, widget_type_name } from '../util/util_widget.js'
+import { widget_hide, widget_show, widget_type_name } from '../util/util_widget.js'
 
 const _id = "OP BINARY (JOV) 🌟"
+
+function process_value(input, widget, precision=0, visible=false, typ="number", subtype="FLOAT") {
+    if (input === undefined) {
+        if (visible) {
+            widget_show(widget);
+            widget.origType = widget.type;
+            widget.type = typ;
+        }
+    } else {
+        input.origType = input.Type;
+        input.type = subtype;
+    }
+    if (widget?.options) {
+        widget.options.precision = precision;
+        if (precision == 0) {
+            widget.options.step = 10;
+            widget.options.round = 1;
+        } else {
+            widget.options.step = 1;
+            widget.options.round =  0.1;
+        }
+    }
+}
 
 app.registerExtension({
 	name: 'jovimetrix.node.' + _id,
@@ -26,7 +49,7 @@ app.registerExtension({
         }
 
         function show_vector(widget, inputs, what, visible, precision=0) {
-            if (!inputs.find(w => w.name === what) != undefined && visible)
+            if (inputs.find(w => w.name === what) && visible)
             {
                 widget_show(widget);
                 widget.origType = widget.type;
@@ -47,8 +70,8 @@ app.registerExtension({
             const me = onNodeCreated?.apply(this)
             const combo = this.widgets.find(w => w.name === '❓');
             combo.callback = () => {
-                const in_x = this.inputs.find(w => w.name === '🇽') != undefined;
-                const in_y = this.inputs.find(w => w.name === '🇾') != undefined;
+                const in_x = this.inputs.find(w => w.name === '🇽');
+                const in_y = this.inputs.find(w => w.name === '🇾');
                 //
                 const widget_a = this.inputs.find(w => w.name === '🅰️');
                 const widget_b = this.inputs.find(w => w.name === '🅱️');
@@ -78,29 +101,29 @@ app.registerExtension({
                     show_boolean(widget_x, in_x, visible_x);
                     show_boolean(widget_y, in_y, visible_y);
                 } else if (combo.value == "FLOAT") {
-                    process_value(in_x, widget_x, 1, visible_x)
-                    process_value(in_y, widget_y, 1, visible_y)
+                    process_value(in_x, widget_x, 1, visible_x, "number", "FLOAT");
+                    process_value(in_y, widget_y, 1, visible_y, "number", "FLOAT");
                 } else if (combo.value == "INT") {
-                    process_value(in_x, widget_x, 0, visible_x)
-                    process_value(in_y, widget_y, 0, visible_y)
+                    process_value(in_x, widget_x, 0, visible_x, "number", "INT");
+                    process_value(in_y, widget_y, 0, visible_y, "number", "INT");
                 } else if (combo.value == "VEC2INT") {
-                    show_vector(widget_xy, this.inputs, '🇽🇾', visible_x);
-                    show_vector(widget_yy, this.inputs, '🅱️2', visible_y);
+                    show_vector(widget_xy, this.inputs, '🇽🇾', visible_x, "number", "INT");
+                    show_vector(widget_yy, this.inputs, '🅱️2', visible_y, "number", "INT");
                 } else if (combo.value == "VEC2") {
-                    show_vector(widget_xy, this.inputs, '🇽🇾', visible_x, 2);
-                    show_vector(widget_yy, this.inputs, '🅱️2', visible_y, 2);
+                    show_vector(widget_xy, this.inputs, '🇽🇾', visible_x, 2, "number", "FLOAT");
+                    show_vector(widget_yy, this.inputs, '🅱️2', visible_y, 2, "number", "FLOAT");
                 } else if (combo.value == "VEC3INT") {
-                    show_vector(widget_xyz, this.inputs, '🇽🇾\u200c🇿', visible_x);
-                    show_vector(widget_yyz, this.inputs, '🅱️3', visible_y);
+                    show_vector(widget_xyz, this.inputs, '🇽🇾\u200c🇿', visible_x, "number", "INT");
+                    show_vector(widget_yyz, this.inputs, '🅱️3', visible_y, "number", "INT");
                 } else if (combo.value == "VEC3") {
-                    show_vector(widget_xyz, this.inputs, '🇽🇾\u200c🇿', visible_x, 2);
-                    show_vector(widget_yyz, this.inputs, '🅱️3', visible_y, 2);
+                    show_vector(widget_xyz, this.inputs, '🇽🇾\u200c🇿', visible_x, 2, "number", "FLOAT");
+                    show_vector(widget_yyz, this.inputs, '🅱️3', visible_y, 2, "number", "FLOAT");
                 } else if (combo.value == "VEC4INT") {
-                    show_vector(widget_xyzw, this.inputs, '🇽🇾\u200c🇿\u200c🇼', visible_x);
-                    show_vector(widget_yyzw, this.inputs, '🅱️4', visible_y);
+                    show_vector(widget_xyzw, this.inputs, '🇽🇾\u200c🇿\u200c🇼', visible_x, "number", "INT");
+                    show_vector(widget_yyzw, this.inputs, '🅱️4', visible_y, "number", "INT");
                 } else if (combo.value == "VEC4") {
-                    show_vector(widget_xyzw, this.inputs, '🇽🇾\u200c🇿\u200c🇼', visible_x, 2);
-                    show_vector(widget_yyzw, this.inputs, '🅱️4', visible_y, 2);
+                    show_vector(widget_xyzw, this.inputs, '🇽🇾\u200c🇿\u200c🇼', visible_x, 2, "number", "FLOAT");
+                    show_vector(widget_yyzw, this.inputs, '🅱️4', visible_y, 2, "number", "FLOAT");
                 }
                 this.outputs[0].name = widget_type_name(combo.value);
                 fitHeight(this);

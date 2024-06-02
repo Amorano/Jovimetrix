@@ -26,7 +26,7 @@ app.registerExtension({
                 api_cmd_jovian(self.id, "reset");
             }
 
-            self.widget_count = this.widgets.find(w => w.name === '#️⃣');
+            self.widget_count = this.widgets.find(w => w.name === 'VAL');
             async function python_tick(event) {
                 if (event.detail.id != self.id) {
                     return;

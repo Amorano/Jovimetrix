@@ -273,13 +273,13 @@ The Binary Operation node executes binary operations like addition, subtraction,
         A = parse_param(kw, Lexicon.IN_A, EnumConvertType.ANY, None)
         B = parse_param(kw, Lexicon.IN_B, EnumConvertType.ANY, None)
         a_x = parse_param(kw, Lexicon.X, EnumConvertType.FLOAT, 0)
-        a_xy = parse_param(kw, Lexicon.IN_A+"2", EnumConvertType.VEC2, [(0, 0)])
-        a_xyz = parse_param(kw, Lexicon.IN_A+"3", EnumConvertType.VEC3, [(0, 0, 0)])
-        a_xyzw = parse_param(kw, Lexicon.IN_A+"4", EnumConvertType.VEC4, [(0, 0, 0, 0)])
+        a_xy = parse_param(kw, Lexicon.IN_A+"2", EnumConvertType.VEC2, (0, 0))
+        a_xyz = parse_param(kw, Lexicon.IN_A+"3", EnumConvertType.VEC3, (0, 0, 0))
+        a_xyzw = parse_param(kw, Lexicon.IN_A+"4", EnumConvertType.VEC4, (0, 0, 0, 0))
         b_x = parse_param(kw, Lexicon.Y, EnumConvertType.FLOAT, 0)
-        b_xy = parse_param(kw, Lexicon.IN_B+"2", EnumConvertType.VEC2, [(0, 0)])
-        b_xyz = parse_param(kw, Lexicon.IN_B+"3", EnumConvertType.VEC3, [(0, 0, 0)])
-        b_xyzw = parse_param(kw, Lexicon.IN_B+"4", EnumConvertType.VEC4, [(0, 0, 0, 0)])
+        b_xy = parse_param(kw, Lexicon.IN_B+"2", EnumConvertType.VEC2, (0, 0))
+        b_xyz = parse_param(kw, Lexicon.IN_B+"3", EnumConvertType.VEC3, (0, 0, 0))
+        b_xyzw = parse_param(kw, Lexicon.IN_B+"4", EnumConvertType.VEC4, (0, 0, 0, 0))
         op = parse_param(kw, Lexicon.FUNC, EnumConvertType.STRING, EnumBinaryOperation.ADD.name, enumType=EnumBinaryOperation)
         typ = parse_param(kw, Lexicon.TYPE, EnumConvertType.STRING, EnumConvertType.FLOAT.name, enumType=EnumConvertType)
         flip = parse_param(kw, Lexicon.FLIP, EnumConvertType.BOOLEAN, False)
@@ -408,6 +408,10 @@ The Value Node supplies raw or default values for various data types, supporting
                 Lexicon.Z: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "precision": 6}),
                 Lexicon.W: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "precision": 6}),
                 Lexicon.STRING: ("STRING", {"default": "", "dynamicPrompts": False, "multiline": True}),
+                "X": ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "precision": 6, "forceInput": True}),
+                "Y": ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "precision": 6, "forceInput": True}),
+                "Z": ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "precision": 6, "forceInput": True}),
+                "W": ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "precision": 6, "forceInput": True}),
             }
         }
         return Lexicon._parse(d, cls)
@@ -420,14 +424,22 @@ The Value Node supplies raw or default values for various data types, supporting
         raw = parse_param(kw, Lexicon.IN_A, EnumConvertType.ANY, None)
         typ = parse_param(kw, Lexicon.TYPE, EnumConvertType.STRING, EnumConvertType.BOOLEAN.name)
         x_str = parse_param(kw, Lexicon.STRING, EnumConvertType.STRING, "")
-        params = list(zip_longest_fill(raw, typ, x, y, z, w))
+        r_x = parse_param(kw, "X", EnumConvertType.FLOAT, None)
+        r_y = parse_param(kw, "Y", EnumConvertType.FLOAT, None)
+        r_z = parse_param(kw, "Z", EnumConvertType.FLOAT, None)
+        r_w = parse_param(kw, "W", EnumConvertType.FLOAT, None)
+        params = list(zip_longest_fill(raw, typ, x, y, z, w, r_x, r_y, r_z, r_w))
         results = []
         pbar = ProgressBar(len(params))
-        for idx, (raw, typ, x, y, z, w) in enumerate(params):
+        for idx, (raw, typ, x, y, z, w, r_x, r_y, r_z, r_w) in enumerate(params):
             typ = EnumConvertType[typ]
-            default = x_str if typ in [EnumConvertType.STRING] else (x, y, z, w)
+            default = (x if r_x is None else r_x,
+                       y if r_y is None else r_y,
+                       z if r_z is None else r_z,
+                       w if r_w is None else r_w)
+            default = x_str if typ in [EnumConvertType.STRING] else default
             val = parse_value(raw, typ, default)
-            extra = parse_value(val, EnumConvertType.VEC4, (x, y, z, w))
+            extra = parse_value(val, EnumConvertType.VEC4, default)
             results.append((val,) + extra)
             pbar.update_absolute(idx)
         return list(zip(*results))
@@ -515,8 +527,8 @@ The Swap Node swaps components between two vectors based on specified swizzle pa
         return Lexicon._parse(d, cls)
 
     def run(self, **kw)  -> Tuple[torch.Tensor, torch.Tensor]:
-        pA = parse_param(kw, Lexicon.IN_A, EnumConvertType.VEC4, [(0,0,0,0)], 0, 1)
-        pB = parse_param(kw, Lexicon.IN_B, EnumConvertType.VEC4, [(0,0,0,0)], 0, 1)
+        pA = parse_param(kw, Lexicon.IN_A, EnumConvertType.VEC4, (0,0,0,0), 0, 1)
+        pB = parse_param(kw, Lexicon.IN_B, EnumConvertType.VEC4, (0,0,0,0), 0, 1)
         swap_x = parse_param(kw, Lexicon.SWAP_X, EnumConvertType.STRING, EnumSwizzle.A_X.name)
         x = parse_param(kw, Lexicon.X, EnumConvertType.FLOAT, 0)
         swap_y = parse_param(kw, Lexicon.SWAP_Y, EnumConvertType.STRING, EnumSwizzle.A_Y.name)

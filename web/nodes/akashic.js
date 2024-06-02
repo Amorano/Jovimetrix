@@ -7,7 +7,6 @@
 import { app } from "../../../scripts/app.js"
 import { ComfyWidgets } from '../../../scripts/widgets.js';
 import { fitHeight } from '../util/util.js'
-import { escapeHtml } from '../util/util_dom.js'
 import { JImageWidget } from '../widget/widget_jimage.js'
 
 const _prefix = 'jovi'
@@ -35,6 +34,7 @@ app.registerExtension({
         const onExecuted = nodeType.prototype.onExecuted;
         nodeType.prototype.onExecuted = function (message) {
             onExecuted?.apply(this, arguments)
+            let lineCount = 0;
             if (this.widgets) {
                 for (let i = 2; i < this.widgets.length; i++) {
                     if (this.widgets[i].name.startsWith("jovi_")) {
@@ -46,8 +46,12 @@ app.registerExtension({
             this.message.value = "";
             if (message.text != null) {
                 let new_val = message.text.map((txt, index) => `${index}: ${txt}`).join('\n');
-                //console.info(new_val);
                 this.message.value = new_val;
+                for (let char of new_val) {
+                    if (char === '\n') {
+                        lineCount++;
+                    }
+                }
             }
             let index = 0;
             if (message.b64_images) {
@@ -60,7 +64,10 @@ app.registerExtension({
                     index++;
                 }
             }
-            fitHeight(this);
+            this.onResize?.(this.size);
+            const y = this.computeSize([this.size[0], this.size[1]])[1];
+            this.setSize([this.size[0], y+lineCount * 18]);
+            this?.graph?.setDirtyCanvas(true, true);
         }
     }
 })

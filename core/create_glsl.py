@@ -105,10 +105,10 @@ The GLSL Node executes custom GLSL (OpenGL Shading Language) fragment shaders to
         self.__last_good = [torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 4), dtype=torch.uint8, device="cpu")]
 
     def run(self, ident, **kw) -> List[torch.Tensor]:
-        batch = parse_param(kw, Lexicon.BATCH, EnumConvertType.VEC2INT, [(1, 30)], 1)
+        batch = parse_param(kw, Lexicon.BATCH, EnumConvertType.VEC2INT, (1, 30), 1)
         fragment = parse_param(kw, Lexicon.FRAGMENT, EnumConvertType.STRING, DEFAULT_FRAGMENT)
         param = parse_param(kw, Lexicon.PARAM, EnumConvertType.DICT, {})
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE)], MIN_IMAGE_SIZE)
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), MIN_IMAGE_SIZE)
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
         hold = parse_param(kw, Lexicon.WAIT, EnumConvertType.BOOLEAN, False)
         reset = parse_param(kw, Lexicon.RESET, EnumConvertType.BOOLEAN, False)
@@ -166,7 +166,7 @@ class GLSLBaseNode(JOVBaseNode):
         kw.pop(Lexicon.PIXEL_A, None)
         pB = parse_param(kw, Lexicon.PIXEL_B, EnumConvertType.IMAGE, None)
         kw.pop(Lexicon.PIXEL_B, None)
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE)], MIN_IMAGE_SIZE)
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), MIN_IMAGE_SIZE)
         kw.pop(Lexicon.WH, None)
         kw.pop(Lexicon.FRAGMENT, None)
         # clear any junk, since the rest are 'params'

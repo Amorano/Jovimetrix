@@ -420,7 +420,6 @@ The Stack Node combines multiple input images into a single output image along a
         #params = list(zip_longest_fill(axis, stride, mode, wihi, sample, matte))
         #images = []
         #pbar = ProgressBar(len(params))
-        #print(params)
         #for idx, (axis, stride, mode, wihi, sample, matte) in enumerate(params):
 
         axis = EnumOrientation[axis]
@@ -464,11 +463,11 @@ The Crop Node extracts a portion of an input image or resizes it to a specified 
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
         func = parse_param(kw, Lexicon.FUNC, EnumConvertType.STRING, EnumCropMode.CENTER.name)
         # if less than 1 then use as scalar, over 1 = int(size)
-        xy = parse_param(kw, Lexicon.XY, EnumConvertType.VEC2, [(0, 0,)], 1)
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE)], MIN_IMAGE_SIZE)
-        tltr = parse_param(kw, Lexicon.TLTR, EnumConvertType.VEC4, [(0, 0, 0, 1,)], 0, 1)
-        blbr = parse_param(kw, Lexicon.BLBR, EnumConvertType.VEC4, [(1, 0, 1, 1,)], 0, 1)
-        color = parse_param(kw, Lexicon.RGB, EnumConvertType.VEC3INT, [(0, 0, 0,)], 0, 255)
+        xy = parse_param(kw, Lexicon.XY, EnumConvertType.VEC2, (0, 0,), 1)
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), MIN_IMAGE_SIZE)
+        tltr = parse_param(kw, Lexicon.TLTR, EnumConvertType.VEC4, (0, 0, 0, 1,), 0, 1)
+        blbr = parse_param(kw, Lexicon.BLBR, EnumConvertType.VEC4, (1, 0, 1, 1,), 0, 1)
+        color = parse_param(kw, Lexicon.RGB, EnumConvertType.VEC3INT, (0, 0, 0,), 0, 255)
         params = list(zip_longest_fill(pA, func, xy, wihi, tltr, blbr, color))
         images = []
         pbar = ProgressBar(len(params))
@@ -479,8 +478,8 @@ The Crop Node extracts a portion of an input image or resizes it to a specified 
             if func == EnumCropMode.FREE:
                 y1, x1, y2, x2 = tltr
                 y4, x4, y3, x3 = blbr
-                points = [(x1 * width, y1 * height), (x2 * width, y2 * height),
-                          (x3 * width, y3 * height), (x4 * width, y4 * height)]
+                points = (x1 * width, y1 * height), (x2 * width, y2 * height), \
+                    (x3 * width, y3 * height), (x4 * width, y4 * height)
                 pA = image_crop_polygonal(pA, points)
             elif func == EnumCropMode.XY:
                 pA = image_crop(pA, width, height, xy)

@@ -103,10 +103,6 @@ The `Tick` node acts as a timer and frame counter, emitting pulses or signals ba
             if passthru is not None:
                 trigger = passthru if trigger else None
             lin = self.__frame if loop == 0 else self.__frame / loop
-            #results['frame'].append(self.__frame)
-            #results['lin'].append(lin)
-            #results['fixed'].append(self.__fixed_step)
-            #results['trigger'].append(trigger)
             results.append([self.__frame, lin, self.__fixed_step, trigger])
             if not hold:
                 self.__frame += 1
@@ -119,7 +115,6 @@ The `Tick` node acts as a timer and frame counter, emitting pulses or signals ba
         if loop > 0:
             self.__frame = 0
         comfy_message(ident, "jovi-tick", {"i": self.__frame})
-        #return results["frame"], results["lin"], results["fixed"], results["trigger"]
         return list(zip(*results))
 
 class WaveGeneratorNode(JOVBaseNode):
