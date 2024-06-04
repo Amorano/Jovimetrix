@@ -29,7 +29,7 @@ app.registerExtension({
             const self = this;
 
             async function python_delay_user(event) {
-                console.info(showing, )
+                // console.info(showing, )
                 if (showing || event.detail.id != self.id) {
                     return;
                 }

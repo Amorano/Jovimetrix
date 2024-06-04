@@ -30,7 +30,7 @@ app.registerExtension({
                 }
                 fitHeight(self);
             };
-            setTimeout(() => { swap_a.callback(); }, 10);
+            setTimeout(() => { toggle.callback(); }, 10);
             return me;
         }
     }

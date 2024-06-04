@@ -116,7 +116,7 @@ export function node_add_dynamic(nodeType, prefix, type='*', count=-1) {
     return nodeType;
 }
 
-export function node_add_dynamic2(nodeType, prefix, dynamic_type='*', index_start=0) {
+export function node_add_dynamic2(nodeType, prefix, dynamic_type='*', index_start=0, shape=LiteGraph.GRID_SHAPE) {
     /*
     this one should just put the "prefix" as the last empty entry.
     Means we have to pay attention not to collide key names in the
@@ -127,7 +127,7 @@ export function node_add_dynamic2(nodeType, prefix, dynamic_type='*', index_star
     nodeType.prototype.onNodeCreated = function () {
         const me = onNodeCreated?.apply(this);
         this.addInput(prefix, dynamic_type);
-		this.addOutput(prefix, dynamic_type);
+		this.addOutput(prefix, dynamic_type, { shape: shape });
         return me;
     }
 

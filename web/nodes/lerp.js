@@ -1,5 +1,6 @@
 /**
- * File: calc_binary.js
+ * File: lerp
+ * .js
  * Project: Jovimetrix
  *
  */
@@ -8,7 +9,7 @@ import { app } from "../../../scripts/app.js"
 import { fitHeight, TypeSlot } from '../util/util.js'
 import { widget_hide, process_value, widget_type_name, show_vector, show_boolean } from '../util/util_widget.js'
 
-const _id = "OP BINARY (JOV) 🌟"
+const _id = "LERP (JOV) 🔰"
 
 app.registerExtension({
 	name: 'jovimetrix.node.' + _id,
@@ -38,7 +39,6 @@ app.registerExtension({
                 widget_yy.options.menu = false;
                 widget_yyz.options.menu = false;
                 widget_yyzw.options.menu = false;
-                //
                 widget_hide(this, widget_x, "-jovi");
                 widget_hide(this, widget_xy, "-jovi");
                 widget_hide(this, widget_xyz, "-jovi");
@@ -47,7 +47,6 @@ app.registerExtension({
                 widget_hide(this, widget_yy, "-jovi");
                 widget_hide(this, widget_yyz, "-jovi");
                 widget_hide(this, widget_yyzw, "-jovi");
-                //
                 if (combo.value == "BOOLEAN") {
                     show_boolean(widget_x);
                     show_boolean(widget_y);

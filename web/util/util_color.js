@@ -74,7 +74,6 @@ export function node_color_all() {
         node_color_reset(node, false);
     })
     app.canvas.setDirty(true);
-    // console.info("JOVI] all nodes color refreshed")
 }
 
 export function hex2rgb(hex) {
@@ -119,6 +118,5 @@ export function fade_lerp_color(colorStart, colorEnd, lerp) {
 export function color_contrast(hexColor) {
     const rgb = hex2rgb(hexColor);
     const L = 0.2126 * rgb[0] / 255. + 0.7152 * rgb[1] / 255. + 0.0722 * rgb[2] / 255.;
-    // console.info(L)
     return L > 0.790 ? "#000" : "#CCC";
 }

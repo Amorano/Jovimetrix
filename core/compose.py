@@ -357,18 +357,25 @@ The Pixel Swap Node swaps pixel values between two input images based on the spe
             pB = tensor2cv(pB) if pB is not None else channel_solid(w, h, chan=EnumImageType.BGRA)
             out = channel_solid(w, h, (r,g,b,a), EnumImageType.BGRA)
 
+            if len(pA) < 2 or pA.shape[2] < 4:
+                pA = image_convert(pA, 4)
+            if len(pB) < 2 or pB.shape[2] < 4:
+                pB = image_convert(pB, 4)
+
             def swapper(swap_out:EnumPixelSwizzle, swap_in:EnumPixelSwizzle) -> np.ndarray[Any]:
                 target = out
                 swap_in = EnumPixelSwizzle[swap_in]
                 if swap_in in [EnumPixelSwizzle.RED_A, EnumPixelSwizzle.GREEN_A,
                             EnumPixelSwizzle.BLUE_A, EnumPixelSwizzle.ALPHA_A]:
                     target = pA
-                elif swap_in != EnumPixelSwizzle.CONSTANT:
+                elif swap_in in [EnumPixelSwizzle.RED_B, EnumPixelSwizzle.GREEN_B,
+                            EnumPixelSwizzle.BLUE_B, EnumPixelSwizzle.ALPHA_B]:
                     target = pB
-                if swap_in != EnumPixelSwizzle.CONSTANT:
-                    target = channel_swap(pA, swap_out, target, swap_in)
+                elif swap_in != EnumPixelSwizzle.CONSTANT:
+                    target = channel_swap(pA, swap_out, pB, swap_in)
                 return target
 
+            logger.debug(swap_r, swap_g, swap_b, swap_a)
             out[:,:,0] = swapper(EnumPixelSwizzle.BLUE_A, swap_b)[:,:,0]
             out[:,:,1] = swapper(EnumPixelSwizzle.GREEN_A, swap_g)[:,:,1]
             out[:,:,2] = swapper(EnumPixelSwizzle.RED_A, swap_r)[:,:,2]

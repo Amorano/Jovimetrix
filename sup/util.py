@@ -12,6 +12,7 @@ from typing import Any, List, Generator, Optional, Tuple
 import torch
 
 from loguru import logger
+MIN_IMAGE_SIZE = 32
 
 # =============================================================================
 # === ENUMERATION ===
@@ -69,13 +70,32 @@ def parse_value(val:Any, typ:EnumConvertType, default: Any,
                 clip_min: Optional[float]=None, clip_max: Optional[float]=None,
                 zero:int=0, enumType:Any=None) -> List[Any]:
     """Convert target value into the new specified type."""
+
+    if isinstance(default, torch.Tensor) and typ not in [EnumConvertType.ANY, EnumConvertType.IMAGE, EnumConvertType.LATENT]:
+        h, w = default.shape[:2]
+        cc = default.shape[2] if len(default.shape) > 2 else 1
+        default = (w, h, cc)
+
     if val is None:
         if default is None:
             return None
         val = default
 
-    if isinstance(val, torch.Tensor) and typ not in [EnumConvertType.ANY, EnumConvertType.IMAGE, EnumConvertType.LATENT]:
-        val = val.shape
+    if isinstance(val, dict):
+        if ('0' in val and '1' in val) or (0 in val and 1 in val):
+            val = [val.get(i, val.get(str(i), 0)) for i in range(min(len(val), 4))]
+        elif 'x' in val and 'y' in val:
+            val = [val.get(c, 0) for c in 'xyzw']
+        elif 'r' in val and 'g' in val:
+            val = [val.get(c, 0) for c in 'rgba']
+    elif isinstance(val, torch.Tensor) and typ not in [EnumConvertType.ANY, EnumConvertType.IMAGE, EnumConvertType.LATENT]:
+        h, w = val.shape[:2]
+        cc = val.shape[2] if len(val.shape) > 2 else 1
+        val = (w, h, cc)
+
+    if val is not None:
+        if not isinstance(val, (list, tuple, torch.Tensor)):
+            val = [val]
 
     new_val = val
     if typ in [EnumConvertType.FLOAT, EnumConvertType.INT,
@@ -83,18 +103,18 @@ def parse_value(val:Any, typ:EnumConvertType, default: Any,
             EnumConvertType.VEC3, EnumConvertType.VEC3INT,
             EnumConvertType.VEC4, EnumConvertType.VEC4INT,
             EnumConvertType.COORD2D]:
+
         size = max(1, int(typ.value / 10))
         new_val = []
         for idx in range(size):
-            d = default
-            if isinstance(default, (list, tuple,)):
-                d = default[idx] if idx < len(default) else 0
-            v = val[idx] if isinstance(val, (list, tuple,)) and idx < len(val) else d
+            d = default[idx] if isinstance(default, (list, tuple,)) and idx < len(default) else 0
+            v = d if val is None else val[idx] if idx < len(val) else d
             try:
+                v = 0 if v is None else v
                 if typ in [EnumConvertType.FLOAT, EnumConvertType.VEC2, EnumConvertType.VEC3, EnumConvertType.VEC4]:
-                    v = round(float(v or 0), 12)
+                    v = round(v, 12)
                 else:
-                    v = int(v or 0)
+                    v = int(v)
                 if clip_min is not None:
                     v = max(v, clip_min)
                 if clip_max is not None:
@@ -102,6 +122,7 @@ def parse_value(val:Any, typ:EnumConvertType, default: Any,
                 if v == 0:
                     v = zero
             except Exception as e:
+                logger.exception(e)
                 logger.error(f"Error converting value: {e}")
                 v = 0
             new_val.append(v)
@@ -127,7 +148,7 @@ def parse_value(val:Any, typ:EnumConvertType, default: Any,
             ret = True
         elif isinstance(new_val, (dict,)):
             ret = len(new_val.keys()) > 0
-        elif len(new_val) > 0 and (nv := new_val[0]) is not None:
+        elif isinstance(new_val, (list, tuple,)) and len(new_val) > 0 and (nv := new_val[0]) is not None:
             if isinstance(nv, (bool, str,)):
                 ret = bool(nv)
             elif isinstance(nv, (int, float,)):
@@ -143,10 +164,10 @@ def parse_value(val:Any, typ:EnumConvertType, default: Any,
             new_val = {'samples': new_val}
     elif typ == EnumConvertType.IMAGE:
         # covert image into image? just skip if already an image
-        if new_val is None or not isinstance(new_val, (torch.Tensor,)):
+        if not isinstance(new_val, (torch.Tensor,)):
             color = parse_value(new_val, EnumConvertType.VEC4INT, (0,0,0,255), 0, 255)
             color = torch.tensor(color, dtype=torch.int32).tolist()
-            new_val = torch.empty((512, 512, 4), dtype=torch.uint8)
+            new_val = torch.empty((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 4), dtype=torch.uint8)
             new_val[0,:,:] = color[0]
             new_val[1,:,:] = color[1]
             new_val[2,:,:] = color[2]
@@ -164,7 +185,7 @@ def parse_value(val:Any, typ:EnumConvertType, default: Any,
 
 def parse_param(data:dict, key:str, typ:EnumConvertType, default: Any,
                 clip_min: Optional[float]=None, clip_max: Optional[float]=None,
-                zero:int=0, enumType:Any=None) -> List[Any]:
+                zero:int=0) -> List[Any]:
     """Convenience because of the dictionary parameters.
     Convert list of values into a list of specified type.
     """
@@ -173,36 +194,30 @@ def parse_param(data:dict, key:str, typ:EnumConvertType, default: Any,
         try: val = json.loads(val.replace("'", '"'))
         except json.JSONDecodeError: pass
 
-    ret = []
     # see if we are a Jovimetrix hacked vector blob... {0:x, 1:y, 2:z, 3:w}
     if isinstance(val, dict):
-        if '0' in val and '1' in val:
-            val = [val.get(str(i), 0) for i in range(4)]
+        # latents....
+        if 'samples' in val:
+            val = tuple(x for x in val["samples"])
+        elif ('0' in val and '1' in val) or (0 in val and 1 in val):
+            val = tuple(val.get(i, val.get(str(i), 0)) for i in range(min(len(val), 4)))
         elif 'x' in val and 'y' in val:
-            val = [val.get(c, 0) for c in 'xyzw']
+            val = tuple(val.get(c, 0) for c in 'xyzw')
         elif 'r' in val and 'g' in val:
-            val = [val.get(c, 0) for c in 'rgba']
-        ret.append(val)
-    elif val is not None:
-        if not isinstance(val, (list, tuple, torch.Tensor,)):
-            val = [val]
-        for v in val:
-            if isinstance(v, (dict,)):
-                # latents....
-                if 'samples' in val:
-                    v = [x for x in v["samples"]]
-            elif isinstance(v, (torch.Tensor,)):
-                if len(v.shape) > 3:
-                    v = [t for t in val]
-            elif issubclass(type(val), (Enum,)):
-                v = [str(v.name)]
-            elif v is not None and not isinstance(v, (list, tuple, str)):
-                # and typ not in [EnumConvertType.ANY]
-                v = [v]
-            ret.append(v)
-    else:
-        ret.append(None)
-    return [parse_value(v, typ, default, clip_min, clip_max, zero, enumType) for v in ret]
+            val = tuple(val.get(c, 0) for c in 'rgba')
+        elif len(val) == 0:
+            val = tuple(None,)
+    elif isinstance(val, (torch.Tensor,)):
+        if len(val.shape) > 3:
+            val = [t for t in val]
+    elif isinstance(val, (list, tuple, set)):
+        if len(val) == 0:
+            val = [None]
+    elif issubclass(type(val), (Enum,)):
+        val = [str(val.name)]
+    if not isinstance(val, (list,)):
+        val = [val]
+    return [parse_value(v, typ, default, clip_min, clip_max, zero) for v in val]
 
 def vector_swap(pA: Any, pB: Any, swap_x: EnumSwizzle, x:float, swap_y:EnumSwizzle, y:float,
                 swap_z:EnumSwizzle, z:float, swap_w:EnumSwizzle, w:float) -> List[float]:

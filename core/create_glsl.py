@@ -7,6 +7,7 @@ import sys
 from enum import Enum
 from typing import List
 
+import cv2
 import torch
 from loguru import logger
 
@@ -139,8 +140,10 @@ The GLSL Node executes custom GLSL (OpenGL Shading Language) fragment shaders to
 
             self.__glsl.fps = batch_fps
             for _ in range(batch_size):
-                img = self.__glsl.render(pA, param)
-                images.append(cv2tensor_full(pil2cv(img)))
+                image = self.__glsl.render(pA, param)
+                image = pil2cv(image)
+                image = cv2.cvtColor(image, cv2.COLOR_RGBA2BGRA)
+                images.append(cv2tensor_full(image))
             runtime = self.__glsl.runtime if not reset else 0
             comfy_message(ident, "jovi-glsl-time", {"id": ident, "t": runtime})
 

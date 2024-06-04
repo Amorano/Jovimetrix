@@ -98,7 +98,6 @@ app.registerExtension({
                 if (parts.length > 2) {
                     const idx = parts[1];
                     data = util_config.CONFIG_REGEX[idx];
-                    // console.info(part, data, AHEX.value)
                     data[part] = AHEX.value
                     util_config.CONFIG_REGEX[idx] = data
                     api_packet = {
@@ -123,7 +122,6 @@ app.registerExtension({
         })
 
         if (util_config.CONFIG_USER.color.overwrite) {
-            // console.info("COLORIZED")
             node_color_all()
         }
     },

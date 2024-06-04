@@ -32,7 +32,6 @@ export function foldableToggle(elementId, symbolId) {
 export function inner_value_change(widget, value, event = undefined) {
     const type = widget.type.includes("INT") ? Number : parseFloat
     widget.value = convertArrayToObject(value, Object.keys(value).length, type);
-    //console.info(widget.value)
     if (
         widget.options &&
         widget.options.property &&

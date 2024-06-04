@@ -383,13 +383,18 @@ def image2bgr(image: TYPE_IMAGE) -> Tuple[int, TYPE_IMAGE, TYPE_IMAGE]:
 
 def pil2cv(image: Image.Image) -> TYPE_IMAGE:
     """Convert a PIL Image to a CV2 Matrix."""
-    mode = MODE_PIL.get(image.mode, cv2.COLOR_RGBA2BGRA)
-    image = np.array(image).astype(np.uint8)
-    return cv2.cvtColor(image, mode)
+    new_image = np.array(image, dtype=np.uint8)
+    if new_image.ndim == 2:
+        pass
+    elif new_image.shape[2] == 3:
+        new_image = new_image[:, :, ::-1]
+    elif new_image.shape[2] == 4:
+        new_image = new_image[:, :, [2, 1, 0, 3]]
+    return new_image
 
 def pil2tensor(image: Image.Image) -> torch.Tensor:
     """Convert a PIL Image to a Torch Tensor."""
-    image = np.array(image).astype(np.float32) / 255
+    image = np.array(image).astype(np.float32) / 255.0
     return torch.from_numpy(image).unsqueeze(0)
 
 def tensor2cv(tensor: torch.Tensor) -> TYPE_IMAGE:
@@ -405,8 +410,8 @@ def tensor2pil(tensor: torch.Tensor) -> Image.Image:
     """
     cc = tensor.shape[2]
     mode = MODE_PIL[cc]
-    tensor = np.clip(255.0 * tensor.cpu().squeeze().numpy(), 0, 255).astype(np.uint8)
-    return Image.fromarray(tensor, mode=mode)
+    tensor = np.clip(255. * tensor.cpu().numpy().squeeze(), 0, 255).astype(np.uint8)
+    return Image.fromarray(tensor) #, mode=mode)
 
 # =============================================================================
 # === PIXEL ===
@@ -567,9 +572,6 @@ def channel_swap(imageA:TYPE_IMAGE, swap_ot:EnumPixelSwizzle,
     if index_in > cc_in:
         return imageA
     h, w = imageA.shape[:2]
-
-    # imageB = image_crop_center(imageB, w, h)
-    # imageB = image_matte(imageB, width=w, height=h)
     imageB = image_scalefit(imageB, w, h, EnumScaleMode.FIT)
     imageA[:,:,index_out] = imageB[:,:,index_in]
     return imageA

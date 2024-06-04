@@ -20,7 +20,6 @@ app.registerExtension({
         const onNodeCreated = nodeType.prototype.onNodeCreated;
         nodeType.prototype.onNodeCreated = async function () {
             const me = onNodeCreated?.apply(this);
-            // console.log(this.widgets);
             const letter = this.widgets.find(w => w.name === 'LETTER');
             const cols = this.widgets.find(w => w.name === 'COLS');
             const size = this.widgets.find(w => w.name === 'SIZE');

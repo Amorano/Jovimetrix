@@ -117,6 +117,66 @@ export function widget_show(widget) {
     }
 }
 
+
+export function show_boolean(widget_x) {
+    widget_show(widget_x);
+    widget_x.origType = widget_x.type;
+    widget_x.type = "toggle";
+}
+
+export function show_vector(widget, precision=0) {
+    widget_show(widget);
+    widget.origType = widget.type;
+    if (precision == 0) {
+        widget.options.step = 1;
+        widget.options.round = 1;
+        widget.options.precision = 0;
+    } else {
+        widget.options.step = 1 / (10^Math.max(1, precision-2));
+        widget.options.round =  1 / (10^Math.max(1, precision-1));
+        widget.options.precision = precision;
+    }
+}
+
+export function process_value(widget, precision=0) {
+    //widget.origType = widget.type;
+    widget_show(widget);
+    widget.type = "number";
+    if (widget?.options) {
+        widget.options.precision = precision;
+        if (precision == 0) {
+            widget.options.step = 10;
+            widget.options.round = 1;
+        } else {
+            widget.options.step = 1;
+            widget.options.round =  0.1;
+        }
+    }
+}
+
+export function process_any(widget, subtype="FLOAT") {
+    widget_show(widget);
+    //input.type = subtype;
+    if (subtype === "BOOLEAN") {
+        widget.type = "toggle";
+    } else if (subtype === "FLOAT" || subtype === "INT") {
+        widget.type = "number";
+        if (widget?.options) {
+            if (subtype=="FLOAT") {
+                widget.options.precision = 3;
+                widget.options.step = 1;
+                widget.options.round = 0.1;
+            } else {
+                widget.options.precision = 0;
+                widget.options.step = 10;
+                widget.options.round = 1;
+            }
+        }
+    } else {
+        widget.type = subtype;
+    }
+}
+
 export function convertToWidget(node, widget) {
     widget_show(widget)
     const sz = node.size
@@ -131,7 +191,6 @@ export function convertToWidget(node, widget) {
 }
 
 export function convertToInput(node, widget, config) {
-    // console.log(node, widget)
     widget_hide(node, widget)
 
     const { linkType } = widget_get_type(config)

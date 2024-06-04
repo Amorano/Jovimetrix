@@ -137,6 +137,7 @@ class CalcUnaryOPNode(JOVBaseNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = (WILDCARD,)
     RETURN_NAMES = (Lexicon.UNKNOWN,)
+    OUTPUT_IS_LIST = (True,)
     SORT = 10
     DESCRIPTION = """
 The Unary Operation node performs unary operations like absolute value, mean, median, mode, magnitude, normalization, maximum, or minimum on input values.
@@ -156,7 +157,7 @@ The Unary Operation node performs unary operations like absolute value, mean, me
     def run(self, **kw) -> Tuple[bool]:
         results = []
         A = parse_param(kw, Lexicon.IN_A, EnumConvertType.ANY, None)
-        op = parse_param(kw, Lexicon.FUNC, EnumConvertType.STRING, EnumUnaryOperation.ABS.name, enumType=EnumUnaryOperation)
+        op = parse_param(kw, Lexicon.FUNC, EnumConvertType.STRING, EnumUnaryOperation.ABS.name)
         params = list(zip_longest_fill(A, op))
         pbar = ProgressBar(len(params))
         for idx, (A, op) in enumerate(params):
@@ -234,6 +235,7 @@ class CalcBinaryOPNode(JOVBaseNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = (WILDCARD,)
     RETURN_NAMES = (Lexicon.UNKNOWN,)
+    OUTPUT_IS_LIST = (True,)
     SORT = 20
     DESCRIPTION = """
 The Binary Operation node executes binary operations like addition, subtraction, multiplication, division, and bitwise operations on input values, supporting various data types and vector sizes.
@@ -288,8 +290,8 @@ The Binary Operation node executes binary operations like addition, subtraction,
         b_xy = parse_param(kw, Lexicon.IN_B+"2", EnumConvertType.VEC2, (0, 0))
         b_xyz = parse_param(kw, Lexicon.IN_B+"3", EnumConvertType.VEC3, (0, 0, 0))
         b_xyzw = parse_param(kw, Lexicon.IN_B+"4", EnumConvertType.VEC4, (0, 0, 0, 0))
-        op = parse_param(kw, Lexicon.FUNC, EnumConvertType.STRING, EnumBinaryOperation.ADD.name, enumType=EnumBinaryOperation)
-        typ = parse_param(kw, Lexicon.TYPE, EnumConvertType.STRING, EnumConvertType.FLOAT.name, enumType=EnumConvertType)
+        op = parse_param(kw, Lexicon.FUNC, EnumConvertType.STRING, EnumBinaryOperation.ADD.name)
+        typ = parse_param(kw, Lexicon.TYPE, EnumConvertType.STRING, EnumConvertType.FLOAT.name)
         flip = parse_param(kw, Lexicon.FLIP, EnumConvertType.BOOLEAN, False)
         params = list(zip_longest_fill(A, B, a_x, a_xy, a_xyz, a_xyzw,
                                   b_x, b_xy, b_xyz, b_xyzw, op, typ, flip))
@@ -387,13 +389,14 @@ The Binary Operation node executes binary operations like addition, subtraction,
                 val = val[0]
             results.append(val)
             pbar.update_absolute(idx)
-        return (results,)
+        return results,
 
 class ValueNode(JOVBaseNode):
     NAME = "VALUE (JOV) 🧬"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = (WILDCARD, WILDCARD, WILDCARD, WILDCARD, WILDCARD, )
     RETURN_NAMES = (Lexicon.ANY, Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W,)
+    OUTPUT_IS_LIST = (True, True, True, True, True, )
     SORT = 1
     DESCRIPTION = """
 The Value Node supplies raw or default values for various data types, supporting vector input with components for X, Y, Z, and W. It also provides a string input option.
@@ -406,29 +409,32 @@ The Value Node supplies raw or default values for various data types, supporting
         except: pass
         try: typ.pop(typ.index('LATENT'))
         except: pass
+        try: typ.pop(typ.index('ANY'))
+        except: pass
+        try: typ.pop(typ.index('MASK'))
+        except: pass
         d = {
             "required": {},
             "optional": {
                 Lexicon.IN_A: (WILDCARD, {"default": None, "tooltip":"Passes a raw value directly, or supplies defaults for any value inputs without connections"}),
-                Lexicon.TYPE: (EnumConvertType._member_names_, {"default": EnumConvertType.BOOLEAN.name}),
-                Lexicon.X: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "precision": 6}),
-                Lexicon.Y: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "precision": 6}),
-                Lexicon.Z: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "precision": 6}),
-                Lexicon.W: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "precision": 6}),
+                Lexicon.TYPE: (typ, {"default": EnumConvertType.BOOLEAN.name}),
+                Lexicon.X: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "precision": 6, "forceInput": True}),
+                Lexicon.Y: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "precision": 6, "forceInput": True}),
+                Lexicon.Z: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "precision": 6, "forceInput": True}),
+                Lexicon.W: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "precision": 6, "forceInput": True}),
+                Lexicon.IN_A+"4": ("VEC4", {"default": (0,0,0,0),
+                                        "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W],
+                                        "tooltip":"4-value vector", "menu": False}),
                 Lexicon.STRING: ("STRING", {"default": "", "dynamicPrompts": False, "multiline": True}),
-                "X": ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "precision": 6, "forceInput": True}),
-                "Y": ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "precision": 6, "forceInput": True}),
-                "Z": ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "precision": 6, "forceInput": True}),
-                "W": ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "precision": 6, "forceInput": True}),
             }
         }
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[bool]:
         x = parse_param(kw, Lexicon.X, EnumConvertType.FLOAT, 0)
-        y = parse_param(kw, Lexicon.Y, EnumConvertType.FLOAT, 0)
-        z = parse_param(kw, Lexicon.Z, EnumConvertType.FLOAT, 0)
-        w = parse_param(kw, Lexicon.W, EnumConvertType.FLOAT, 0)
+        a_xy = parse_param(kw, Lexicon.IN_A+"2", EnumConvertType.VEC2, (0, 0))
+        a_xyz = parse_param(kw, Lexicon.IN_A+"3", EnumConvertType.VEC3, (0, 0, 0))
+        a_xyzw = parse_param(kw, Lexicon.IN_A+"4", EnumConvertType.VEC4, (0, 0, 0, 0))
         raw = parse_param(kw, Lexicon.IN_A, EnumConvertType.ANY, None)
         typ = parse_param(kw, Lexicon.TYPE, EnumConvertType.STRING, EnumConvertType.BOOLEAN.name)
         x_str = parse_param(kw, Lexicon.STRING, EnumConvertType.STRING, "")
@@ -436,21 +442,35 @@ The Value Node supplies raw or default values for various data types, supporting
         r_y = parse_param(kw, "Y", EnumConvertType.FLOAT, None)
         r_z = parse_param(kw, "Z", EnumConvertType.FLOAT, None)
         r_w = parse_param(kw, "W", EnumConvertType.FLOAT, None)
-        params = list(zip_longest_fill(raw, typ, x, y, z, w, r_x, r_y, r_z, r_w))
+        params = list(zip_longest_fill(raw, typ, x, a_xy, a_xyz, a_xyzw, r_x, r_y, r_z, r_w))
         results = []
         pbar = ProgressBar(len(params))
-        for idx, (raw, typ, x, y, z, w, r_x, r_y, r_z, r_w) in enumerate(params):
+        for idx, (raw, typ, x, xy, xyz, xyzw, r_x, r_y, r_z, r_w) in enumerate(params):
             typ = EnumConvertType[typ]
-            default = (x if r_x is None else r_x,
-                       y if r_y is None else r_y,
-                       z if r_z is None else r_z,
-                       w if r_w is None else r_w)
-            default = x_str if typ in [EnumConvertType.STRING] else default
+            default = x_str
+            if typ not in [EnumConvertType.STRING]:
+                a, b, c, d = x, 0, 0, 0
+                if typ in [EnumConvertType.VEC2, EnumConvertType.VEC2INT]:
+                    a, b = xy
+                elif typ in [EnumConvertType.VEC3, EnumConvertType.VEC3INT]:
+                    a, b, c = xyz
+                elif typ in [EnumConvertType.VEC4, EnumConvertType.VEC4INT]:
+                    a, b, c, d = xyzw
+                default = (a if r_x is None else r_x,
+                    b if r_y is None else r_y,
+                    c if r_z is None else r_z,
+                    d if r_w is None else r_w)
             val = parse_value(raw, typ, default)
-            extra = parse_value(val, EnumConvertType.VEC4, default)
-            results.append((val,) + extra)
+            typ = EnumConvertType.VEC4 if typ in [EnumConvertType.VEC4, EnumConvertType.VEC3, \
+                                                  EnumConvertType.VEC2, EnumConvertType.FLOAT] \
+                                                  else EnumConvertType.VEC4INT
+
+            extra = parse_value(val, typ, default)
+            ret = [val] if not isinstance(val, (list,)) else val
+            ret.extend(extra)
+            results.append(ret)
             pbar.update_absolute(idx)
-        return list(zip(*results))
+        return *(zip(*results)),
 
 class LerpNode(JOVBaseNode):
     NAME = "LERP (JOV) 🔰"
@@ -464,44 +484,88 @@ The Lerp Node performs linear interpolation between two values or vectors based 
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
+        names_convert = EnumConvertType._member_names_[:9]
         d = {
-        "required": {},
-        "optional": {
-            Lexicon.IN_A: (WILDCARD, {"tooltip": "Custom Start Point"}),
-            Lexicon.IN_B: (WILDCARD, {"tooltip": "Custom End Point"}),
-            Lexicon.FLOAT: ("FLOAT", {"default": 0., "min": 0., "max": 1.0, "step": 0.001, "precision": 4, "round": 0.00001, "tooltip": "Blend Amount. 0 = full A, 1 = full B"}),
-            Lexicon.EASE: (["NONE"] + EnumEase._member_names_, {"default": "NONE"}),
-            Lexicon.TYPE: (EnumNumberType._member_names_, {"default": EnumNumberType.FLOAT.name, "tooltip": "Output As"})
-        }}
+            "required": {},
+            "optional": {
+                Lexicon.IN_A: (WILDCARD, {"tooltip": "Custom Start Point"}),
+                Lexicon.IN_B: (WILDCARD, {"tooltip": "Custom End Point"}),
+                Lexicon.FLOAT: ("FLOAT", {"default": 0., "min": 0., "max": 1.0, "step": 0.001, "precision": 4, "round": 0.00001, "tooltip": "Blend Amount. 0 = full A, 1 = full B"}),
+                Lexicon.EASE: (["NONE"] + EnumEase._member_names_, {"default": "NONE"}),
+                Lexicon.TYPE: (names_convert, {"default": names_convert[2],
+                                            "tooltip":"Output type desired from resultant operation"}),
+                Lexicon.X: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "tooltip":"Single value input"}),
+                Lexicon.IN_A+"2": ("VEC2", {"default": (0,0),
+                                        "label": [Lexicon.X, Lexicon.Y],
+                                        "tooltip":"2-value vector"}),
+                Lexicon.IN_A+"3": ("VEC3", {"default": (0,0,0),
+                                        "label": [Lexicon.X, Lexicon.Y, Lexicon.Z],
+                                        "tooltip":"3-value vector"}),
+                Lexicon.IN_A+"4": ("VEC4", {"default": (0,0,0,0),
+                                        "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W],
+                                        "tooltip":"4-value vector"}),
+                Lexicon.Y: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "tooltip":"Single value input"}),
+                Lexicon.IN_B+"2": ("VEC2", {"default": (0,0),
+                                        "label": [Lexicon.X, Lexicon.Y],
+                                        "tooltip":"2-value vector"}),
+                Lexicon.IN_B+"3": ("VEC3", {"default": (0,0,0),
+                                        "label": [Lexicon.X, Lexicon.Y, Lexicon.Z],
+                                        "tooltip":"3-value vector"}),
+                Lexicon.IN_B+"4": ("VEC4", {"default": (0,0,0,0),
+                                        "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W],
+                                        "tooltip":"4-value vector"}),
+            }
+        }
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[Any, Any]:
         A = parse_param(kw, Lexicon.IN_A, EnumConvertType.ANY, (0,0,0,0), 0, 1)
         B = parse_param(kw, Lexicon.IN_B, EnumConvertType.ANY, (1,1,1,1), 0, 1)
+        a_x = parse_param(kw, Lexicon.X, EnumConvertType.FLOAT, 0)
+        a_xy = parse_param(kw, Lexicon.IN_A+"2", EnumConvertType.VEC2, (0, 0))
+        a_xyz = parse_param(kw, Lexicon.IN_A+"3", EnumConvertType.VEC3, (0, 0, 0))
+        a_xyzw = parse_param(kw, Lexicon.IN_A+"4", EnumConvertType.VEC4, (0, 0, 0, 0))
+        b_x = parse_param(kw, Lexicon.Y, EnumConvertType.FLOAT, 0)
+        b_xy = parse_param(kw, Lexicon.IN_B+"2", EnumConvertType.VEC2, (0, 0))
+        b_xyz = parse_param(kw, Lexicon.IN_B+"3", EnumConvertType.VEC3, (0, 0, 0))
+        b_xyzw = parse_param(kw, Lexicon.IN_B+"4", EnumConvertType.VEC4, (0, 0, 0, 0))
         alpha = parse_param(kw, Lexicon.FLOAT,EnumConvertType.FLOAT, 0, 0, 1)
         op = parse_param(kw, Lexicon.EASE, EnumConvertType.STRING, "NONE")
         typ = parse_param(kw, Lexicon.TYPE, EnumConvertType.STRING, EnumNumberType.FLOAT.name)
         values = []
-        params = list(zip_longest_fill(A, B, alpha, op, typ))
+        params = list(zip_longest_fill(A, B, a_x, a_xy, a_xyz, a_xyzw, b_x, b_xy, b_xyz, b_xyzw, alpha, op, typ))
         pbar = ProgressBar(len(params))
-        for idx, (A, B, alpha, op, typ) in enumerate(params):
+        for idx, (A, B, a_x, a_xy, a_xyz, a_xyzw, b_x, b_xy, b_xyz, b_xyzw, alpha, op, typ) in enumerate(params):
             # make sure we only interpolate between the longest "stride" we can
             size = min(3, max(len(A), len(B)))
             best_type = [EnumConvertType.FLOAT, EnumConvertType.VEC2, EnumConvertType.VEC3, EnumConvertType.VEC4][size]
             A = parse_value(A, best_type, A)
             B = parse_value(B, best_type, B)
+            typ = EnumConvertType[typ]
+            if typ in [EnumConvertType.VEC2, EnumConvertType.VEC2INT]:
+                val_a = parse_value(A, EnumConvertType.VEC4, A if A is not None else a_xy)
+                val_b = parse_value(B, EnumConvertType.VEC4, B if B is not None else b_xy)
+            elif typ in [EnumConvertType.VEC3, EnumConvertType.VEC3INT]:
+                val_a = parse_value(A, EnumConvertType.VEC4, A if A is not None else a_xyz)
+                val_b = parse_value(B, EnumConvertType.VEC4, B if B is not None else b_xyz)
+            elif typ in [EnumConvertType.VEC4, EnumConvertType.VEC4INT]:
+                val_a = parse_value(A, EnumConvertType.VEC4, A if A is not None else a_xyzw)
+                val_b = parse_value(B, EnumConvertType.VEC4, B if B is not None else b_xyzw)
+            else:
+                val_a = parse_value(A, EnumConvertType.VEC4, A if A is not None else a_x)
+                val_b = parse_value(B, EnumConvertType.VEC4, B if B is not None else b_x)
+
+            size = max(1, int(typ.value / 10))
+            val_a = val_a[:size]
+            val_b = val_b[:size]
+
             alpha = parse_value(alpha, best_type, alpha)
             if op == "NONE":
-                val = [B[x] * alpha[x] + A[x] * (1 - alpha[x]) for x in range(size)]
+                val = [val_b[x] * alpha[x] + val_a[x] * (1 - alpha[x]) for x in range(size)]
             else:
                 ease = EnumEase[op]
-                val = [ease_op(ease, A[x], B[x], alpha=alpha[x]) for x in range(size)]
+                val = [ease_op(ease, val_a[x], val_b[x], alpha=alpha[x]) for x in range(size)]
 
-            typ = EnumNumberType[typ]
-            if typ == EnumNumberType.FLOAT:
-                val = [float(v) for v in val]
-            else:
-                val = [int(v) for v in val]
             values.append(val)
             pbar.update_absolute(idx)
         return (values, )

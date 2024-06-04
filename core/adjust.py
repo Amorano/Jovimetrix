@@ -44,6 +44,7 @@ class AdjustNode(JOVBaseNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
+    OUTPUT_IS_LIST = (True, True, True,)
     DESCRIPTION = """
 The `Adjust Node` lets you enhance and modify images with various effects.
 You can apply blurring, sharpening, color tweaks, and edge detection.
@@ -53,6 +54,7 @@ morphological operations like dilation and erosion. Handle transparency easily,
 ensuring seamless blending of effects. Perfect for simple adjustments and
 complex image transformations.
 """
+
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {
@@ -84,7 +86,7 @@ complex image transformations.
     def run(self, **kw)  -> Tuple[torch.Tensor, torch.Tensor]:
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
         mask = parse_param(kw, Lexicon.MASK, EnumConvertType.IMAGE, None)
-        op = parse_param(kw, Lexicon.FUNC, EnumConvertType.STRING, EnumAdjustOP.BLUR.name, enumType=EnumAdjustOP)
+        op = parse_param(kw, Lexicon.FUNC, EnumConvertType.STRING, EnumAdjustOP.BLUR.name)
         radius = parse_param(kw, Lexicon.RADIUS, EnumConvertType.INT, 3, 3)
         amt = parse_param(kw, Lexicon.VALUE, EnumConvertType.FLOAT, 0, 0, 1)
         lohi = parse_param(kw, Lexicon.LOHI, EnumConvertType.VEC2, (0, 1), 0, 1)
@@ -191,7 +193,8 @@ complex image transformations.
                 pA[:,:,3] = alpha
             images.append(cv2tensor_full(pA, matte))
             pbar.update_absolute(idx)
-        return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
+        return [list(x) for x in (zip(*images))]
+        return *(zip(*images)),
 
 class ColorMatchNode(JOVBaseNode):
     NAME = "COLOR MATCH (JOV) 💞"

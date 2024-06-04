@@ -121,10 +121,7 @@ app.registerExtension({
                     if (widget === undefined) {
                         return;
                     }
-                    //if (this.outputs[0].name == '🔮') {
-                        this.outputs[0].name = widget.name;
-                    //}
-                    // console.info(widget);
+                    this.outputs[0].name = widget.name;
                     if (widget?.origType == "combo" || widget.type == "COMBO") {
                         const values = widget.options.values;
                         // remove all connections that don't match the list?

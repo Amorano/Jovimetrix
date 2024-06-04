@@ -41,6 +41,7 @@ class ConstantNode(JOVBaseNode):
     DESCRIPTION = """
 The Constant node generates constant images or masks of a specified size and color. It can be used to create solid color backgrounds or matte images for compositing with other visual elements. The node allows you to define the desired width and height of the output and specify the RGBA color value for the constant output. Additionally, you can input an optional image to use as a matte with the selected color.
 """
+    OUTPUT_IS_LIST = (True, True, True,)
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -82,13 +83,15 @@ The Constant node generates constant images or masks of a specified size and col
                     pA = image_scalefit(pA, width, height, mode, sample)
                 images.append(cv2tensor_full(pA, matte))
             pbar.update_absolute(idx)
-        return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
+        return [list(x) for x in (zip(*images))]
+        return *(zip(*images)),
 
 class ShapeNode(JOVBaseNode):
     NAME = "SHAPE GEN (JOV) ✨"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
+    OUTPUT_IS_LIST = (True, True, True,)
     DESCRIPTION = """
 The Shape Generation node creates images representing various shapes such as circles, squares, rectangles, ellipses, and polygons. These shapes can be customized by adjusting parameters such as size, color, position, rotation angle, and edge blur. The node provides options to specify the shape type, the number of sides for polygons, the RGBA color value for the main shape, and the RGBA color value for the background. Additionally, you can control the width and height of the output images, the position offset, and the amount of edge blur applied to the shapes.
 """
@@ -96,28 +99,29 @@ The Shape Generation node creates images representing various shapes such as cir
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {
-        "required": {},
-        "optional": {
-            Lexicon.SHAPE: (EnumShapes._member_names_, {"default": EnumShapes.CIRCLE.name}),
-            Lexicon.SIDES: ("INT", {"default": 3, "min": 3, "max": 100, "step": 1}),
-            Lexicon.RGBA_A: ("VEC4", {"default": (255, 255, 255, 255), "step": 1,
-                                      "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A],
-                                      "rgb": True, "tooltip": "Main Shape Color"}),
-            Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1,
-                                     "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A],
-                                     "rgb": True, "tooltip": "Background Color"}),
-            Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE),
-                                  "step": 1, "label": [Lexicon.W, Lexicon.H]}),
-            Lexicon.XY: ("VEC2", {"default": (0, 0,), "step": 0.01, "precision": 4,
-                                   "round": 0.00001, "label": [Lexicon.X, Lexicon.Y]}),
-            Lexicon.ANGLE: ("FLOAT", {"default": 0, "min": -180, "max": 180,
-                                      "step": 0.01, "precision": 4, "round": 0.00001}),
-            Lexicon.SIZE: ("VEC2", {"default": (1., 1.), "step": 0.01, "precision": 4,
+            "required": {},
+            "optional": {
+                Lexicon.SHAPE: (EnumShapes._member_names_, {"default": EnumShapes.CIRCLE.name}),
+                Lexicon.SIDES: ("INT", {"default": 3, "min": 3, "max": 100, "step": 1}),
+                Lexicon.RGBA_A: ("VEC4", {"default": (255, 255, 255, 255), "step": 1,
+                                        "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A],
+                                        "rgb": True, "tooltip": "Main Shape Color"}),
+                Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1,
+                                        "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A],
+                                        "rgb": True, "tooltip": "Background Color"}),
+                Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE),
+                                    "step": 1, "label": [Lexicon.W, Lexicon.H]}),
+                Lexicon.XY: ("VEC2", {"default": (0, 0,), "step": 0.01, "precision": 4,
                                     "round": 0.00001, "label": [Lexicon.X, Lexicon.Y]}),
-            Lexicon.EDGE: (EnumEdge._member_names_, {"default": EnumEdge.CLIP.name}),
-            Lexicon.BLUR: ("FLOAT", {"default": 0, "min": 0, "step": 0.01, "precision": 4,
-                                    "round": 0.00001, "tooltip": "Edge blur amount (Gaussian blur)"}),
-        }}
+                Lexicon.ANGLE: ("FLOAT", {"default": 0, "min": -180, "max": 180,
+                                        "step": 0.01, "precision": 4, "round": 0.00001}),
+                Lexicon.SIZE: ("VEC2", {"default": (1., 1.), "step": 0.01, "precision": 4,
+                                        "round": 0.00001, "label": [Lexicon.X, Lexicon.Y]}),
+                Lexicon.EDGE: (EnumEdge._member_names_, {"default": EnumEdge.CLIP.name}),
+                Lexicon.BLUR: ("FLOAT", {"default": 0, "min": 0, "step": 0.01, "precision": 4,
+                                        "round": 0.00001, "tooltip": "Edge blur amount (Gaussian blur)"}),
+            }
+        }
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
@@ -176,9 +180,9 @@ The Shape Generation node creates images representing various shapes such as cir
                 pB = (gaussian(pB, sigma=blur, channel_axis=2) * 255).astype(np.uint8)
                 mask = (gaussian(mask, sigma=blur, channel_axis=2) * 255).astype(np.uint8)
             # images.append(cv2tensor_full(pA))
-            images.append([cv2tensor(pB), cv2tensor(pA), cv2tensor(mask)])
+            images.append([cv2tensor(pB), cv2tensor(pA), cv2tensor(mask, True)])
             pbar.update_absolute(idx)
-        return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
+        return [list(x) for x in (zip(*images))]
 
 class TextNode(JOVBaseNode):
     NAME = "TEXT GEN (JOV) 📝"
@@ -261,7 +265,6 @@ The Text Generation node generates images containing text based on user-defined 
             align = EnumAlignment[align]
             justify = EnumJustify[justify]
             edge = EnumEdge[edge]
-            # matte = pixel_eval(matte)
             full_text = str(full_text)
             wm = width-margin * 2
             hm = height-margin * 2 - line_spacing

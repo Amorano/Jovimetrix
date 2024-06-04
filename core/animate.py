@@ -26,6 +26,7 @@ class TickNode(JOVBaseNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = ("INT", "FLOAT", "FLOAT", WILDCARD)
     RETURN_NAMES = (Lexicon.VALUE, Lexicon.LINEAR, Lexicon.FPS, Lexicon.ANY)
+    OUTPUT_IS_LIST = (True, True, True, True, )
     DESCRIPTION = """
 The `Tick` node acts as a timer and frame counter, emitting pulses or signals based on time intervals or BPM settings. It allows precise synchronization and control over animation sequences, with options to adjust FPS, BPM, and loop points. This node is useful for generating time-based events or driving animations with rhythmic precision.
 """
@@ -52,44 +53,41 @@ The `Tick` node acts as a timer and frame counter, emitting pulses or signals ba
             Lexicon.RESET: ("BOOLEAN", {"default": False}),
             # how many frames to dump....
             Lexicon.BATCH: ("INT", {"min": 1, "default": 1, "step": 1, "max": 32767, "tooltip": "Number of frames wanted"}),
+            Lexicon.STEP: ("INT", {"min": 1, "default": 1, "step": 1, "tooltip": "Steps/Stride between pulses -- useful to do odd or even batches"}),
         },
         "hidden": {
             "ident": "UNIQUE_ID"
         }}
         return Lexicon._parse(d, cls)
 
-    '''
     @classmethod
     def IS_CHANGED(cls) -> float:
         return float("nan")
-    '''
 
     def __init__(self, *arg, **kw) -> None:
         super().__init__(*arg, **kw)
         # how many pulses we have done -- total unless reset
         self.__frame = 0
-        # the current frame index based on the user FPS value
-        self.__fixed_step = 0
 
     def run(self, ident, **kw) -> Tuple[int, float, float, Any]:
         passthru = parse_param(kw, Lexicon.ANY, EnumConvertType.ANY, None)[0]
-        loop = parse_param(kw, Lexicon.LOOP, EnumConvertType.INT, 0)[0]
+        stride = parse_param(kw, Lexicon.STEP, EnumConvertType.INT, 1, 1)[0]
+        loop = parse_param(kw, Lexicon.LOOP, EnumConvertType.INT, 0)
+        loop = loop[0]
         self.__frame = parse_param(kw, Lexicon.VALUE, EnumConvertType.INT, self.__frame)[0]
         if loop > 0:
-            self.__frame = min(loop, self.__frame)
+            self.__frame %= loop
         self.__frame = max(0, self.__frame)
         hold = parse_param(kw, Lexicon.WAIT, EnumConvertType.BOOLEAN, False)[0]
         fps = parse_param(kw, Lexicon.FPS, EnumConvertType.INT, 24, 1)[0]
         bpm = parse_param(kw, Lexicon.BPM, EnumConvertType.INT, 120, 1)[0]
         divisor = parse_param(kw, Lexicon.NOTE, EnumConvertType.INT, 4, 1)[0]
-        beat = int(fps) * 60 / max(1, int(bpm))
-        beat = beat / divisor
+        beat = 60. / max(1., bpm) / divisor
         batch = parse_param(kw, Lexicon.BATCH, EnumConvertType.INT, 1, 1)[0]
-        step = 1. / max(1, int(fps))
+        step_fps = 1. / max(1., float(fps))
         reset = parse_param(kw, Lexicon.RESET, EnumConvertType.BOOLEAN, False)[0]
         if parse_reset(ident) > 0 or reset:
             self.__frame = 0
-            self.__fixed_step = 0
         trigger = None
         results = {
             'frame': [],
@@ -100,22 +98,22 @@ The `Tick` node acts as a timer and frame counter, emitting pulses or signals ba
         results = []
         pbar = ProgressBar(batch)
         for idx in range(batch):
-            if passthru is not None:
-                trigger = passthru if trigger else None
+            trigger = False
             lin = self.__frame if loop == 0 else self.__frame / loop
-            results.append([self.__frame, lin, self.__fixed_step, trigger])
+            fixed_step = math.fmod(self.__frame * step_fps, fps)
+            if (math.fmod(fixed_step, beat) == 0):
+                trigger = [passthru]
+            if loop > 0:
+                self.__frame %= loop
+            results.append([self.__frame, lin, float(fixed_step), trigger])
             if not hold:
-                self.__frame += 1
-                self.__fixed_step += step
-                if loop > 0:
-                    self.__frame %= loop
-                self.__fixed_step = math.fmod(self.__fixed_step, fps)
-                trigger = math.fmod(self.__fixed_step, beat) == 0
+                self.__frame += stride
             pbar.update_absolute(idx)
-        if loop > 0:
-            self.__frame = 0
-        comfy_message(ident, "jovi-tick", {"i": self.__frame})
-        return list(zip(*results))
+        if batch < 2:
+        #    self.__frame = 0
+            comfy_message(ident, "jovi-tick", {"i": self.__frame})
+        return [list(x) for x in (zip(*results))]
+        # return list(zip(*results))
 
 class WaveGeneratorNode(JOVBaseNode):
     NAME = "WAVE GEN (JOV) 🌊"
@@ -123,6 +121,7 @@ class WaveGeneratorNode(JOVBaseNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = ("FLOAT", "INT", )
     RETURN_NAMES = (Lexicon.FLOAT, Lexicon.INT, )
+    OUTPUT_IS_LIST = (True, True, )
     DESCRIPTION = """
 The `Wave Generator` node produces waveforms like sine, square, or sawtooth with adjustable frequency, amplitude, phase, and offset. It's handy for creating oscillating patterns or controlling animation dynamics. This node emits both continuous floating-point values and integer representations of the generated waves.
 """
@@ -143,7 +142,7 @@ The `Wave Generator` node produces waveforms like sine, square, or sawtooth with
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[float, int]:
-        op = parse_param(kw, Lexicon.WAVE, EnumConvertType.STRING, EnumWave.SIN.name, enumType=EnumWave)
+        op = parse_param(kw, Lexicon.WAVE, EnumConvertType.STRING, EnumWave.SIN.name)
         freq = parse_param(kw, Lexicon.FREQ, EnumConvertType.FLOAT, 1, 0.0001)
         amp = parse_param(kw, Lexicon.AMP, EnumConvertType.FLOAT, 1, 0.0001)
         phase = parse_param(kw, Lexicon.PHASE, EnumConvertType.FLOAT, 0)
@@ -163,4 +162,5 @@ The `Wave Generator` node produces waveforms like sine, square, or sawtooth with
                 val = np.abs(val)
             results.append([val, int(val)])
             pbar.update_absolute(idx)
-        return list(zip(*results))
+        return [list(x) for x in (zip(*results))]
+        #return list(zip(*results))

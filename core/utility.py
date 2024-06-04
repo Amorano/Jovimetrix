@@ -85,7 +85,9 @@ The Akashic node processes input data and prepares it for visualization. It acce
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[Any, Any]:
+        # print(kw[Lexicon.PASS_IN])
         o = parse_param(kw, Lexicon.PASS_IN, EnumConvertType.ANY, None)
+        # print(o)
         output = {"ui": {"b64_images": [], "text": []}}
         if o is None:
             output["ui"]["result"] = (None, None, )
@@ -95,8 +97,8 @@ The Akashic node processes input data and prepares it for visualization. It acce
             ret = val
             typ = ''.join(repr(type(val)).split("'")[1:2])
             if isinstance(val, dict):
-                ret = ', '.join(f"{k}:{v}" for k, v in val.items())
-                return f"{{{ret}}} [{typ}]"
+                ret = json.dumps(val, indent=3)
+                return f"{ret} [{typ}]"
             elif isinstance(val, (tuple, set, list,)):
                 if len(val) < 2:
                     ret = val[0]
@@ -110,11 +112,14 @@ The Akashic node processes input data and prepares it for visualization. It acce
                 val = "True" if val else "False"
                 return f"{val} [{typ}]"
             elif isinstance(val, torch.Tensor):
-                ret = []
-                if not isinstance(val, (list, tuple, set,)):
+                batch = val.shape[0] if len(val.shape) > 3 else 1
+                if batch == 1:
                     val = [val]
+                ret = []
                 for img in val:
-                    ret.append(f"({'x'.join([str(x) for x in img.shape])}) [{typ}]")
+                    h, w = img.shape[:2]
+                    cc = img.shape[2] if len(img.shape) > 2 else 1
+                    ret.append(f"({w}x{h}x{cc}) [{typ}]")
                 return ', '.join(ret)
             return f"{str(val)} [{typ}]"
 
@@ -196,6 +201,7 @@ class QueueNode(JOVBaseNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = (WILDCARD, WILDCARD, "STRING", "INT", "INT", )
     RETURN_NAMES = (Lexicon.ANY, Lexicon.QUEUE, Lexicon.CURRENT, Lexicon.INDEX, Lexicon.TOTAL, )
+    # OUTPUT_IS_LIST = (True,True,True,True,True,)
     VIDEO_FORMATS = ['.webm', '.mp4', '.avi', '.wmv', '.mkv', '.mov', '.mxf']
     SORT = 0
     DESCRIPTION = """
@@ -435,6 +441,7 @@ class ImageDiffNode(JOVBaseNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = ("IMAGE", "IMAGE", "MASK", "MASK", )
     RETURN_NAMES = (Lexicon.IN_A, Lexicon.IN_B, Lexicon.DIFF, Lexicon.THRESHOLD)
+    # OUTPUT_IS_LIST = (True,True,True,True,)
     SORT = 90
     DESCRIPTION = """
 ☣️💣☣️💣☣️💣☣️💣 THIS NODE IS A WORK IN PROGRESS ☣️💣☣️💣☣️💣☣️💣
@@ -475,6 +482,7 @@ class ArrayNode(JOVBaseNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = ("INT", WILDCARD, WILDCARD,)
     RETURN_NAMES = (Lexicon.VALUE, Lexicon.ANY, Lexicon.LIST,)
+    # OUTPUT_IS_LIST = (True,True,True,)
     SORT = 50
     DESCRIPTION = """
 Processes a batch of data based on the selected mode, such as merging, picking, slicing, random selection, or indexing. Allows for flipping the order of processed items and dividing the data into chunks.
