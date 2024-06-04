@@ -34,8 +34,8 @@ GO NUTS; JUST TRY NOT TO DO IT IN YOUR HEAD.
 @category: Compositing
 @tags: adjust, animate, audio, compose, compositing, composition, device, flow,
 video, mask, shape, webcam, audio, animation, logic
-@description: Webcams, GLSL shader, Media Streaming, Tick animation, Image manipulation,
-Polygonal shapes, MIDI, MP3/WAVE, Flow Logic
+@description: Webcams, GLSL shader, Media Streaming, Tick animation, Image
+manipulation, Polygonal shapes, MIDI, MP3/WAVE, Flow Logic
 @author: amorano
 @reference: https://github.com/Amorano/Jovimetrix
 @node list:

@@ -432,9 +432,7 @@ The Value Node supplies raw or default values for various data types, supporting
 
     def run(self, **kw) -> Tuple[bool]:
         x = parse_param(kw, Lexicon.X, EnumConvertType.FLOAT, 0)
-        a_xy = parse_param(kw, Lexicon.IN_A+"2", EnumConvertType.VEC2, (0, 0))
-        a_xyz = parse_param(kw, Lexicon.IN_A+"3", EnumConvertType.VEC3, (0, 0, 0))
-        a_xyzw = parse_param(kw, Lexicon.IN_A+"4", EnumConvertType.VEC4, (0, 0, 0, 0))
+        xyzw = parse_param(kw, Lexicon.IN_A+"4", EnumConvertType.VEC4, (0, 0, 0, 0))
         raw = parse_param(kw, Lexicon.IN_A, EnumConvertType.ANY, None)
         typ = parse_param(kw, Lexicon.TYPE, EnumConvertType.STRING, EnumConvertType.BOOLEAN.name)
         x_str = parse_param(kw, Lexicon.STRING, EnumConvertType.STRING, "")
@@ -442,24 +440,21 @@ The Value Node supplies raw or default values for various data types, supporting
         r_y = parse_param(kw, "Y", EnumConvertType.FLOAT, None)
         r_z = parse_param(kw, "Z", EnumConvertType.FLOAT, None)
         r_w = parse_param(kw, "W", EnumConvertType.FLOAT, None)
-        params = list(zip_longest_fill(raw, typ, x, a_xy, a_xyz, a_xyzw, r_x, r_y, r_z, r_w))
+        params = list(zip_longest_fill(raw, typ, x, xyzw, r_x, r_y, r_z, r_w))
         results = []
         pbar = ProgressBar(len(params))
-        for idx, (raw, typ, x, xy, xyz, xyzw, r_x, r_y, r_z, r_w) in enumerate(params):
+        for idx, (raw, typ, x, xyzw, r_x, r_y, r_z, r_w) in enumerate(params):
             typ = EnumConvertType[typ]
             default = x_str
-            if typ not in [EnumConvertType.STRING]:
-                a, b, c, d = x, 0, 0, 0
-                if typ in [EnumConvertType.VEC2, EnumConvertType.VEC2INT]:
-                    a, b = xy
-                elif typ in [EnumConvertType.VEC3, EnumConvertType.VEC3INT]:
-                    a, b, c = xyz
-                elif typ in [EnumConvertType.VEC4, EnumConvertType.VEC4INT]:
-                    a, b, c, d = xyzw
+            if typ not in [EnumConvertType.STRING, EnumConvertType.ANY, EnumConvertType.IMAGE, EnumConvertType.LATENT, EnumConvertType.LIST, EnumConvertType.DICT]:
+                a, b, c, d = xyzw
+                if typ in [EnumConvertType.FLOAT, EnumConvertType.INT]:
+                    a = x
                 default = (a if r_x is None else r_x,
                     b if r_y is None else r_y,
                     c if r_z is None else r_z,
                     d if r_w is None else r_w)
+            print(raw, typ, default)
             val = parse_value(raw, typ, default)
             typ = EnumConvertType.VEC4 if typ in [EnumConvertType.VEC4, EnumConvertType.VEC3, \
                                                   EnumConvertType.VEC2, EnumConvertType.FLOAT] \

@@ -478,7 +478,7 @@ app.registerExtension({
             return me;
         }
 
-        // HELP!
+        // MENU HELP!
         const getExtraMenuOptions = nodeType.prototype.getExtraMenuOptions;
         nodeType.prototype.getExtraMenuOptions = function (_, options) {
             const me = getExtraMenuOptions?.apply(this, arguments);

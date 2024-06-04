@@ -8,12 +8,14 @@ import { app } from "../../../scripts/app.js"
 import { api_get } from './util_api.js'
 
 export let NODE_LIST = await api_get("./../object_info")
-export let CONFIG_CORE = await api_get("/jovimetrix/config")
-export let CONFIG_USER = CONFIG_CORE.user.default
-export let CONFIG_COLOR = CONFIG_USER.color
-export let CONFIG_REGEX = CONFIG_COLOR.regex || []
-export let CONFIG_THEME = CONFIG_COLOR.theme
-export let USER = 'user.default'
+//export let CONFIG_CORE = await api_get("/jovimetrix/config")
+//export let CONFIG_USER = CONFIG_CORE.user.default
+//export let CONFIG_COLOR = CONFIG_USER.color
+//export let CONFIG_REGEX = CONFIG_COLOR.regex || []
+//export let CONFIG_THEME = CONFIG_COLOR.theme
+//export let USER = 'user.default'
+
+console.info(CONFIG_CORE)
 
 export async function local_get(url, d) {
     const v = localStorage.getItem(url)

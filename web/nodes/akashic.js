@@ -6,7 +6,6 @@
 
 import { app } from "../../../scripts/app.js"
 import { ComfyWidgets } from '../../../scripts/widgets.js';
-import { fitHeight } from '../util/util.js'
 import { JImageWidget } from '../widget/widget_jimage.js'
 
 const _prefix = 'jovi'

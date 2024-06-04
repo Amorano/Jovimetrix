@@ -85,9 +85,7 @@ The Akashic node processes input data and prepares it for visualization. It acce
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[Any, Any]:
-        # print(kw[Lexicon.PASS_IN])
         o = parse_param(kw, Lexicon.PASS_IN, EnumConvertType.ANY, None)
-        # print(o)
         output = {"ui": {"b64_images": [], "text": []}}
         if o is None:
             output["ui"]["result"] = (None, None, )
