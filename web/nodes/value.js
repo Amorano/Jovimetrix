@@ -21,8 +21,14 @@ app.registerExtension({
         nodeType.prototype.onNodeCreated = function () {
             const me = onNodeCreated?.apply(this)
             const widget_str = this.widgets.find(w => w.name === '📝');
-            const widget_x = this.widgets.find(w => w.name === '🇽');
+            const widget_x = this.widgets.find(w => w.name === 'X');
             const widget_xyzw = this.widgets.find(w => w.name === '🅰️4');
+
+            const output_X = this.outputs.find(w => w.name === '🇽');
+            const output_Y = this.outputs.find(w => w.name === '🇾');
+            const output_Z = this.outputs.find(w => w.name === '🇿');
+            const output_W = this.outputs.find(w => w.name === '🇼');
+
             widget_str.origComputeSize = widget_str.computeSize;
             const combo = this.widgets.find(w => w.name === '❓');
             combo.callback = () => {
@@ -39,9 +45,13 @@ app.registerExtension({
                 if (combo.value == "BOOLEAN") {
                     show_boolean(widget_x);
                 } else if (combo.value == "LIST") {
-                    process_any(widget_x, "LIST")
+                    process_any(widget_str, "LIST")
+                    widget_str.inputEl.className = "comfy-multiline-input";
+                    widget_str.computeSize = widget_str.origComputeSize;
                 } else if (combo.value == "DICT") {
-                    process_any(widget_x, "DICT")
+                    process_any(widget_str, "DICT")
+                    widget_str.inputEl.className = "comfy-multiline-input";
+                    widget_str.computeSize = widget_str.origComputeSize;
                 } else if (combo.value == "ANY") {
                     process_any(widget_x, "*")
                 } else if (combo.value == "MASK") {
@@ -58,6 +68,7 @@ app.registerExtension({
                     show_vector(widget_xyzw, 3);
                 } else if (["VEC2INT", "VEC3INT", "VEC4INT"].includes(combo.value)) {
                     show_vector(widget_xyzw);
+                    outputs()
                 }
                 this.outputs[0].name = widget_type_name(combo.value);
                 fitHeight(this);

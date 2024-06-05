@@ -181,7 +181,7 @@ export class JovimetrixConfigDialog extends ComfyDialog {
 
         // get categories to generate on the fly
         const category = []
-        const all_nodes = Object.entries(util_config.NODE_LIST);
+        const all_nodes = Object.entries(util_config?.NODE_LIST ? util_config.NODE_LIST : []);
         all_nodes.sort((a, b) => {
             const categoryComparison = a[1].category.toLowerCase().localeCompare(b[1].category.toLowerCase());
             // Move items with empty category or starting with underscore to the end

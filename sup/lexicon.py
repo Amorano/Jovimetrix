@@ -231,6 +231,7 @@ class Lexicon(metaclass=LexiconMeta):
     WH = '🇼🇭', "Width and Height"
     WINDOW = '🪟', "Window"
     X = '🇽', "X"
+    X_RAW = 'X', "X"
     XY = '🇽🇾', "X and Y"
     XYZ = '🇽🇾\u200c🇿', "X, Y and Z (VEC3)"
     XYZW = '🇽🇾\u200c🇿\u200c🇼', "X, Y, Z and W (VEC4)"

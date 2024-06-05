@@ -132,8 +132,8 @@ The `Wave Generator` node produces waveforms like sine, square, or sawtooth with
         "required": {},
         "optional": {
             Lexicon.WAVE: (EnumWave._member_names_, {"default": EnumWave.SIN.name}),
-            Lexicon.FREQ: ("FLOAT", {"default": 1, "min": 0, "step": 0.01, "max": 100000}),
-            Lexicon.AMP: ("FLOAT", {"default": 1, "min": 0, "step": 0.01, "max": math.inf}),
+            Lexicon.FREQ: ("FLOAT", {"default": 1, "min": 0, "step": 0.01, "max": 10000000000000000}),
+            Lexicon.AMP: ("FLOAT", {"default": 1, "min": 0, "step": 0.01, "max": 10000000000000000}),
             Lexicon.PHASE: ("FLOAT", {"default": 0, "min": 0.0, "step": 0.001, "max": 1.0}),
             Lexicon.OFFSET: ("FLOAT", {"default": 0, "min": 0.0, "step": 0.001, "max": 1.0}),
             Lexicon.TIME: ("FLOAT", {"default": 0, "min": 0, "step": 0.000001}),

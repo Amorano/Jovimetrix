@@ -118,5 +118,5 @@ export function fade_lerp_color(colorStart, colorEnd, lerp) {
 export function color_contrast(hexColor) {
     const rgb = hex2rgb(hexColor);
     const L = 0.2126 * rgb[0] / 255. + 0.7152 * rgb[1] / 255. + 0.0722 * rgb[2] / 255.;
-    return L > 0.790 ? "#000" : "#CCC";
+    return L > 0.790;
 }

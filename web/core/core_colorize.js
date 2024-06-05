@@ -68,8 +68,8 @@ app.registerExtension({
             if (contrast) {
                 var color = this.color || LiteGraph.NODE_TITLE_COLOR;
                 var bgcolor = this.bgcolor || LiteGraph.WIDGET_BGCOLOR;
-                this.node_title_color = color_contrast(color);
-                LiteGraph.NODE_TEXT_COLOR = color_contrast(bgcolor);
+                this.node_title_color = color_contrast(color) ? "#000" : "#CCC";;
+                LiteGraph.NODE_TEXT_COLOR = color_contrast(bgcolor) ? "#000" : "#CCC";;
             } else {
                 this.node_title_color = original_color
                 LiteGraph.NODE_TEXT_COLOR = original_color;

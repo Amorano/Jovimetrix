@@ -117,7 +117,6 @@ export function widget_show(widget) {
     }
 }
 
-
 export function show_boolean(widget_x) {
     widget_show(widget_x);
     widget_x.origType = widget_x.type;

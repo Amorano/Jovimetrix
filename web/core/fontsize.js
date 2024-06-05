@@ -1,1 +1,0 @@
-LiteGraph.NODE_TEXT_SIZE = 16;

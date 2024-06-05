@@ -6,6 +6,7 @@ UTIL support
 import os
 import json
 import math
+import numbers
 from enum import Enum
 from typing import Any, List, Generator, Optional, Tuple
 
@@ -68,7 +69,7 @@ def parse_dynamic(data:dict, key:str, typ:EnumConvertType, default: Any) -> List
 
 def parse_value(val:Any, typ:EnumConvertType, default: Any,
                 clip_min: Optional[float]=None, clip_max: Optional[float]=None,
-                zero:int=0, enumType:Any=None) -> List[Any]:
+                zero:int=0) -> List[Any]:
     """Convert target value into the new specified type."""
 
     if isinstance(default, torch.Tensor) and typ not in [EnumConvertType.ANY, EnumConvertType.IMAGE, EnumConvertType.LATENT]:
@@ -110,7 +111,7 @@ def parse_value(val:Any, typ:EnumConvertType, default: Any,
             d = default[idx] if isinstance(default, (list, tuple, set, dict, torch.Tensor)) and idx < len(default) else default
             v = d if val is None else val[idx] if idx < len(val) else d
             try:
-                v = 0 if v is None else v
+                v = v if isinstance(v, numbers.Real) else 0
                 if typ in [EnumConvertType.FLOAT, EnumConvertType.VEC2, EnumConvertType.VEC3, EnumConvertType.VEC4]:
                     v = round(v, 16)
                 else:

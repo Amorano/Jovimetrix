@@ -314,7 +314,7 @@ The Binary Operation node executes binary operations like addition, subtraction,
             else:
                 val_a = parse_value(A, EnumConvertType.VEC4, A if A is not None else a_x)
                 val_b = parse_value(B, EnumConvertType.VEC4, B if B is not None else b_x)
-            #logger.debug(f'val {val_a}, {val_b}')
+            logger.debug(f'val {val_a}, {val_b}')
             if flip:
                 val_a, val_b = val_b, val_a
             size = max(1, int(typ.value / 10))
@@ -422,6 +422,7 @@ The Value Node supplies raw or default values for various data types, supporting
                 Lexicon.Y: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "precision": 6, "forceInput": True}),
                 Lexicon.Z: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "precision": 6, "forceInput": True}),
                 Lexicon.W: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "precision": 6, "forceInput": True}),
+                Lexicon.X_RAW: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "precision": 6, "menu": False}),
                 Lexicon.IN_A+"4": ("VEC4", {"default": (0,0,0,0),
                                         "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W],
                                         "tooltip":"4-value vector", "menu": False}),
@@ -431,30 +432,30 @@ The Value Node supplies raw or default values for various data types, supporting
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[bool]:
-        x = parse_param(kw, Lexicon.X, EnumConvertType.FLOAT, 0)
-        xyzw = parse_param(kw, Lexicon.IN_A+"4", EnumConvertType.VEC4, (0, 0, 0, 0))
         raw = parse_param(kw, Lexicon.IN_A, EnumConvertType.ANY, None)
+        r_x = parse_param(kw, Lexicon.X, EnumConvertType.FLOAT, None)
+        r_y = parse_param(kw, Lexicon.Y, EnumConvertType.FLOAT, None)
+        r_z = parse_param(kw, Lexicon.Z, EnumConvertType.FLOAT, None)
+        r_w = parse_param(kw, Lexicon.W, EnumConvertType.FLOAT, None)
         typ = parse_param(kw, Lexicon.TYPE, EnumConvertType.STRING, EnumConvertType.BOOLEAN.name)
+        x = parse_param(kw, Lexicon.X_RAW, EnumConvertType.FLOAT, 0)
+        xyzw = parse_param(kw, Lexicon.IN_A+"4", EnumConvertType.VEC4, (0, 0, 0, 0))
         x_str = parse_param(kw, Lexicon.STRING, EnumConvertType.STRING, "")
-        r_x = parse_param(kw, "X", EnumConvertType.FLOAT, None)
-        r_y = parse_param(kw, "Y", EnumConvertType.FLOAT, None)
-        r_z = parse_param(kw, "Z", EnumConvertType.FLOAT, None)
-        r_w = parse_param(kw, "W", EnumConvertType.FLOAT, None)
-        params = list(zip_longest_fill(raw, typ, x, xyzw, r_x, r_y, r_z, r_w))
+        params = list(zip_longest_fill(raw, r_x, r_y, r_z, r_w, typ, x, xyzw, x_str))
         results = []
         pbar = ProgressBar(len(params))
-        for idx, (raw, typ, x, xyzw, r_x, r_y, r_z, r_w) in enumerate(params):
+        for idx, (raw, r_x, r_y, r_z, r_w, typ, x, xyzw, x_str) in enumerate(params):
             typ = EnumConvertType[typ]
-            default = x_str
-            if typ not in [EnumConvertType.STRING, EnumConvertType.ANY, EnumConvertType.IMAGE, EnumConvertType.LATENT, EnumConvertType.LIST, EnumConvertType.DICT]:
+            default = [x_str]
+            if typ not in [EnumConvertType.STRING, EnumConvertType.LIST]:
                 a, b, c, d = xyzw
-                if typ in [EnumConvertType.FLOAT, EnumConvertType.INT]:
+                if typ in [EnumConvertType.FLOAT, EnumConvertType.INT, EnumConvertType.BOOLEAN]:
                     a = x
                 default = (a if r_x is None else r_x,
                     b if r_y is None else r_y,
                     c if r_z is None else r_z,
                     d if r_w is None else r_w)
-            print(raw, typ, default)
+
             val = parse_value(raw, typ, default)
             typ = EnumConvertType.VEC4 if typ in [EnumConvertType.VEC4, EnumConvertType.VEC3, \
                                                   EnumConvertType.VEC2, EnumConvertType.FLOAT] \
