@@ -10,11 +10,17 @@ const my_map = {
     INT: "🔟",
     FLOAT: "🛟",
     VEC2: "🇽🇾",
+    COORD2D: "🇽🇾",
     VEC2INT: "🇽🇾",
     VEC3: "🇽🇾\u200c🇿",
     VEC3INT: "🇽🇾\u200c🇿",
     VEC4: "🇽🇾\u200c🇿\u200c🇼",
     VEC4INT: "🇽🇾\u200c🇿\u200c🇼",
+    LIST: "🧾",
+    DICT: "📖",
+    IMAGE: "🖼️",
+    MASK: "😷",
+
 }
 
 export const CONVERTED_TYPE = "converted-widget"

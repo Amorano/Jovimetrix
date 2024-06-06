@@ -102,7 +102,7 @@ Delay node used to introduce pauses in the workflow. It accepts an optional inpu
                     logger.info(f"delay [continue] ({step}): {ident}")
             pbar.update_absolute(step)
             step += 1
-        return (kw[Lexicon.PASS_IN], )
+        return kw[Lexicon.PASS_IN],
 
 class ComparisonNode(JOVBaseNode):
     NAME = "COMPARISON (JOV) 🕵🏽"

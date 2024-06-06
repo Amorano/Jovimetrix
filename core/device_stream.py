@@ -27,7 +27,7 @@ if JOV_SPOUT:
     from Jovimetrix.sup.stream import SpoutSender, MediaStreamSpout
 
 from Jovimetrix.sup.image import channel_solid, \
-    cv2tensor_full, pixel_eval, tensor2cv, image_scalefit, \
+    cv2tensor_full, image_convert, pixel_eval, tensor2cv, image_scalefit, \
     EnumInterpolation, EnumScaleMode, EnumImageType, MIN_IMAGE_SIZE
 
 # =============================================================================
@@ -66,9 +66,13 @@ The Stream Reader node captures frames from various sources such as URLs, camera
             cls.CAMERAS = [f"{i} - {v['w']}x{v['h']}" for i, v in enumerate(camera_list().values())]
         camera_default = cls.CAMERAS[0] if len(cls.CAMERAS) else "NONE"
 
-        monitors = monitor_list()
-        monitors.pop(0)
-        monitor = [f"{i} - {v['width']}x{v['height']}" for i, v in enumerate(monitors.values())]
+        monitor = []
+        try:
+            monitors = monitor_list()
+            monitors.pop(0)
+            monitor = [f"{i} - {v['width']}x{v['height']}" for i, v in enumerate(monitors.values())]
+        except:
+            pass
 
         window = []
         if sys.platform.startswith('win'):
@@ -324,8 +328,8 @@ The Stream Writer node sends frames to a specified route, typically for live str
 if JOV_SPOUT:
     class SpoutWriterNode(JOVBaseNode):
         NAME = "SPOUT WRITER (JOV) 🎥"
-        NAME_URL = NAME.split(" (JOV)")[0].replace(" ", "%20")
         CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
+        RETURN_TYPES = ()
         OUTPUT_NODE = True
         SORT = 90
         DESCRIPTION = """
@@ -339,7 +343,7 @@ The Spout Writer node sends frames to a specified Spout receiver application for
                 "optional": {
                     Lexicon.PIXEL: (WILDCARD, {}),
                     Lexicon.ROUTE: ("STRING", {"default": "Spout Sender"}),
-                    Lexicon.FPS: ("INT", {"min": 0, "max": 60, "default": 30}),
+                    Lexicon.FPS: ("INT", {"min": 0, "max": 60, "default": 30, "tooltip": "@@@ NOT USED @@@"}),
                     Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
                     Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), "step": 1, "label": [Lexicon.W, Lexicon.H]}),
                     Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
@@ -359,7 +363,7 @@ The Spout Writer node sends frames to a specified Spout receiver application for
         def run(self, **kw) -> Tuple[torch.Tensor]:
             images = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
             host = parse_param(kw, Lexicon.ROUTE, EnumConvertType.STRING, "")
-            # fps = parse_param(kw, Lexicon.FPS, EnumConvertType.INT, 30)
+            #fps = parse_param(kw, Lexicon.FPS, EnumConvertType.INT, 30)
             mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.NONE.name)
             wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), MIN_IMAGE_SIZE)
             sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)
@@ -367,18 +371,14 @@ The Spout Writer node sends frames to a specified Spout receiver application for
             # results = []
             params = list(zip_longest_fill(images, host, mode, wihi, sample, matte))
             pbar = ProgressBar(len(params))
-            for idx, (images, host, mode, wihi, sample, matte) in enumerate(params):
+            for idx, (img, host, mode, wihi, sample, matte) in enumerate(params):
                 self.__sender.host = host
                 matte = pixel_eval(matte, EnumImageType.BGRA)
-                images = parse_value(images, EnumConvertType.IMAGE, images)
-                # delta_desired = 1. / float(fps) if fps > 0 else 0
-                for img in images:
-                    # loop_time = time.perf_counter_ns()
-                    w, h = wihi
-                    img = channel_solid(w, h, chan=EnumImageType.BGRA) if img is None else tensor2cv(img)
+                w, h = wihi
+                img = channel_solid(w, h, chan=EnumImageType.BGRA) if img is None else tensor2cv(img)
+                if (mode := EnumScaleMode[mode]) != EnumScaleMode.NONE:
                     img = image_scalefit(img, w, h, mode, sample, matte)
-                    if len(img.shape) > 2 and img.shape[2] > 2:
-                        img[:, :, [0, 2]] = img[:, :, [2, 0]]
-                    self.__sender.frame = img
+                img = image_convert(img, 4)
+                self.__sender.frame = img
                 pbar.update_absolute(idx)
             return ()

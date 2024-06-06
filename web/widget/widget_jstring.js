@@ -53,7 +53,7 @@ export const JStringWidget = (app, name, value) => {
                 console.error(`No width ${this.parent.size}`)
             }
             let dimensions
-            withFont(app.ctx, `${fontSize}px monospace`, () => {
+            withFont(app.ctx, `${fontSize}px`, () => {
                 dimensions = calculateTextDimensions(app.ctx, this.value, width)
             })
             const widgetWidth = Math.max(width || this.width || 32, dimensions.maxLineWidth)

@@ -22,6 +22,7 @@ from skimage import exposure
 from skimage.metrics import structural_similarity as ssim
 from PIL import Image, ImageDraw, ImageOps, ImageChops
 from blendmodes.blend import blendLayers, BlendType
+import torchvision.transforms as transforms
 
 from loguru import logger
 
@@ -284,15 +285,6 @@ MODE_CV2 = {
     }
 }
 
-MODE_PIL = {
-    4: 'RGBA',
-    3: 'RGB',
-    1: 'L',
-    'L': cv2.COLOR_GRAY2BGR,
-    'RGB': cv2.COLOR_RGB2BGR,
-    'RGBA': cv2.COLOR_RGBA2BGRA
-}
-
 # =============================================================================
 # === COLOR SPACE CONVERSION ===
 # =============================================================================
@@ -408,10 +400,9 @@ def tensor2pil(tensor: torch.Tensor) -> Image.Image:
     """Convert a torch Tensor to a PIL Image.
     Tensor should be HxWxC [no batch].
     """
-    cc = tensor.shape[2]
-    mode = MODE_PIL[cc]
+    # return transforms.ToPILImage()(tensor[:,:,(2, 1, 0)])
     tensor = np.clip(255. * tensor.cpu().numpy().squeeze(), 0, 255).astype(np.uint8)
-    return Image.fromarray(tensor) #, mode=mode)
+    return Image.fromarray(tensor)
 
 # =============================================================================
 # === PIXEL ===

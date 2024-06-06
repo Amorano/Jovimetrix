@@ -45,12 +45,14 @@ app.registerExtension({
             if (!link_info || slot == this.inputs.length) {
                 return;
             }
+            let count = 0;
             for (let i = 0; i < this.inputs.length; i++) {
                 const link_id = this.inputs[i].link;
                 const link = app.graph.links[link_id];
-                if(link) {
-                    link.type = `JOV_VG_${i}`;
+                if(link && this.inputs[i].name.substring(0, _prefix.length) === _prefix) {
+                    link.type = `JOV_VG_${count}`;
                     this.inputs[i].color_on = LGraphCanvas.link_type_colors[link.type];
+                    count += 1;
                 }
             }
             app.graph.setDirtyCanvas(true, true);

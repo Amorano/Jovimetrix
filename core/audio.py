@@ -7,6 +7,7 @@ from typing import Tuple
 
 import torch
 import ffmpeg
+import librosa
 import numpy as np
 from loguru import logger
 
@@ -28,7 +29,7 @@ JOV_CATEGORY = "AUDIO"
 class LoadWaveNode(JOVBaseNode):
     NAME = "LOAD WAVE (JOV) 🎼"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = ("WAVE",)
+    RETURN_TYPES = ("AUDIO",)
     RETURN_NAMES = (Lexicon.WAVE,)
     DESCRIPTION = """
 ☣️💣☣️💣☣️💣☣️💣 THIS NODE IS A WORK IN PROGRESS ☣️💣☣️💣☣️💣☣️💣
@@ -41,7 +42,7 @@ The Load Wave node imports audio files, converting them to waveforms. Specify th
         d = {
             "required": {},
             "optional": {
-                Lexicon.FILEN: ("STRING", {"default": ""})
+                Lexicon.FILEN: ("STRING", {"default": "./res/aud/bread.wav"})
         }}
         return Lexicon._parse(d, cls)
 
@@ -81,18 +82,19 @@ The Wave Graph node visualizes audio waveforms as bars. Adjust parameters like t
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {
-        "required": {},
-        "optional": {
-            Lexicon.WAVE: ("WAVE", {"default": None, "tooltip": "Audio Wave Object"}),
-            Lexicon.VALUE: ("INT", {"default": 100, "min": 32, "max": 8192, "step": 1, "tooltip": "Number of Vertical bars to try to fit within the specified Width x Height"}),
-            Lexicon.THICK: ("FLOAT", {"default": 0.72, "min": 0, "max": 1, "step": 0.01, "tooltip": "The percentage of fullness for each bar; currently scaled from the left only"}),
-            Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE),
-                                  "step": 1, "label": [Lexicon.W, Lexicon.H], "tooltip": "Final output size of the wave bar graph"}),
-            Lexicon.RGBA_A: ("VEC4", {"default": (128, 128, 0, 255), "step": 1,
-                                      "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True, "tooltip": "Bar Color"}),
-            Lexicon.MATTE: ("VEC4", {"default": (0, 128, 128, 255), "step": 1,
-                                     "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
-        }}
+            "required": {},
+            "optional": {
+                Lexicon.WAVE: ("WAVE", {"default": None, "tooltip": "Audio Wave Object"}),
+                Lexicon.VALUE: ("INT", {"default": 100, "min": 32, "max": 8192, "step": 1, "tooltip": "Number of Vertical bars to try to fit within the specified Width x Height"}),
+                Lexicon.THICK: ("FLOAT", {"default": 0.72, "min": 0, "max": 1, "step": 0.01, "tooltip": "The percentage of fullness for each bar; currently scaled from the left only"}),
+                Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE),
+                                    "step": 1, "label": [Lexicon.W, Lexicon.H], "tooltip": "Final output size of the wave bar graph"}),
+                Lexicon.RGBA_A: ("VEC4", {"default": (128, 128, 0, 255), "step": 1,
+                                        "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True, "tooltip": "Bar Color"}),
+                Lexicon.MATTE: ("VEC4", {"default": (0, 128, 128, 255), "step": 1,
+                                        "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
+            }
+        }
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
@@ -114,3 +116,39 @@ The Wave Graph node visualizes audio waveforms as bars. Adjust parameters like t
             images.append(cv2tensor_full(img))
             pbar.update_absolute(idx)
         return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
+
+class AudioWaveFilterNode:
+    NAME = "AUDIO FILTER (JOV) 🥁"
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
+    RETURN_TYPES = ("IMAGE", )
+    RETURN_NAMES = (Lexicon.IMAGE,)
+    DESCRIPTION = """
+
+"""
+
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        d = {
+            "required": {},
+            "optional": {
+                Lexicon.WAVE: ("AUDIO", {"default": None, "tooltip": "Audio Wave Object"}),
+                Lexicon.RATE: ("INT", {"default": 22050, "min": 6000, "max": 192000, "step": 1, "tooltip": ""}),
+                Lexicon.FRAME: ("INT", {"default": 1, "min": 1, "max": 262144, "step": 1, "tooltip": ""}),
+                Lexicon.FPS: ("INT", {"default": 1, "min": 1, "max": 120, "step": 1, "tooltip": ""}),
+            }
+        }
+        return Lexicon._parse(d, cls)
+
+    def run(self, audio: torch.Tensor, sample_rate: int, frame_count: int, fps: int) -> Tuple[torch.Tensor]:
+        timestamps = np.arange(0, frame_count) * (1 / fps)
+        samples = audio.cpu().numpy()[0, :, 0]
+        tempo, beats = librosa.beat.beat_track(y=samples, sr=sample_rate, hop_length=512)
+        beat_timestamps = librosa.frames_to_time(beats, sr=sample_rate, hop_length=512)
+        matches = librosa.util.match_events(beat_timestamps, timestamps)
+        beats = np.isin(np.arange(frame_count), matches).astype(np.float32) # type: ignore
+        beats_smoothed = np.zeros_like(beats)
+        k_factor = 0.8 ** (60 / fps)
+        beats_smoothed[0] = beats[0]
+        for i in range(1, beats.shape[0]):
+            beats_smoothed[i] = max(k_factor * beats_smoothed[i - 1], beats[i])
+        return (torch.from_numpy(beats_smoothed)[:, None, None, None].expand(-1, -1, -1, 3),)

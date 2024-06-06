@@ -33,7 +33,7 @@ from Jovimetrix.sup.util import parse_dynamic, path_next, \
 
 from Jovimetrix.sup.image import channel_solid, cv2pil, cv2tensor, cv2tensor_full, \
     image_convert, image_scalefit, tensor2cv, pil2tensor, image_load, image_formats, image_diff, \
-    EnumInterpolation, EnumScaleMode, EnumImageType, MIN_IMAGE_SIZE
+    EnumInterpolation, EnumScaleMode, EnumImageType, MIN_IMAGE_SIZE, tensor2pil
 
 # =============================================================================
 
@@ -130,7 +130,7 @@ class ValueGraphNode(JOVBaseNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     OUTPUT_NODE = True
     RETURN_TYPES = ("IMAGE", )
-    RETURN_NAMES = (Lexicon.IMAGE, )
+    RETURN_NAMES = (Lexicon.IMAGE,)
     SORT = 15
     DESCRIPTION = """
 The Graph node visualizes a series of data points over time. It accepts a dynamic number of values to graph and display, with options to reset the graph or specify the number of values. The output is an image displaying the graph, allowing users to analyze trends and patterns.
@@ -139,15 +139,16 @@ The Graph node visualizes a series of data points over time. It accepts a dynami
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {
-        "required": {},
-        "optional": {
-            Lexicon.RESET: ("BOOLEAN", {"default": False}),
-            Lexicon.VALUE: ("INT", {"default": 60, "min": 0, "tooltip":"Number of values to graph and display"}),
-            Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), "step": 1, "label": [Lexicon.W, Lexicon.H]})
-        },
-        "hidden": {
-            "ident": "UNIQUE_ID"
-        }}
+            "required": {},
+            "optional": {
+                Lexicon.RESET: ("BOOLEAN", {"default": False}),
+                Lexicon.VALUE: ("INT", {"default": 60, "min": 0, "tooltip":"Number of values to graph and display"}),
+                Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), "step": 1, "label": [Lexicon.W, Lexicon.H]})
+            },
+            "hidden": {
+                "ident": "UNIQUE_ID"
+            }
+        }
         return Lexicon._parse(d, cls)
 
     @classmethod
@@ -182,7 +183,7 @@ The Graph node visualizes a series of data points over time. It accepts a dynami
                 self.__history[idx] = self.__history[idx][stride:]
             self.__ax.plot(self.__history[idx], color="rgbcymk"[idx])
 
-        self.__history = self.__history[:idx+1]
+        self.__history = self.__history[:slice+1]
         width, height = wihi
         width, height = (width / 100., height / 100.)
         self.__fig.set_figwidth(width)
@@ -199,7 +200,6 @@ class QueueNode(JOVBaseNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = (WILDCARD, WILDCARD, "STRING", "INT", "INT", )
     RETURN_NAMES = (Lexicon.ANY, Lexicon.QUEUE, Lexicon.CURRENT, Lexicon.INDEX, Lexicon.TOTAL, )
-    # OUTPUT_IS_LIST = (True,True,True,True,True,)
     VIDEO_FORMATS = ['.webm', '.mp4', '.avi', '.wmv', '.mkv', '.mov', '.mxf']
     SORT = 0
     DESCRIPTION = """
@@ -325,11 +325,12 @@ The Queue node manages a queue of items, such as file paths or data. It supports
             self.__index += 1
 
         self.__previous = data
-        msg = {"id": ident,
-               "c": current,
-               "i": self.__index_last+1,
-               "s": self.__len,
-               "l": self.__q
+        msg = {
+            "id": ident,
+            "c": current,
+            "i": self.__index_last+1,
+            "s": self.__len,
+            "l": self.__q
         }
         comfy_message(ident, "jovi-queue-ping", msg)
         return data, self.__q, current, self.__index_last+1, self.__len
@@ -388,9 +389,7 @@ The Export node is responsible for saving images or animations to disk. It suppo
                 path = path_next(path)
             return path
 
-        images = [tensor2cv(i) for i in images]
-        # empty = Image.new("RGB", (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE))
-        images = [cv2pil(i) for i in images]
+        images = [tensor2pil(i) for i in images]
         if format == "gifski":
             root = output_dir / f"{suffix}_{uuid4().hex[:16]}"
             # logger.debug(root)
@@ -439,7 +438,6 @@ class ImageDiffNode(JOVBaseNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = ("IMAGE", "IMAGE", "MASK", "MASK", )
     RETURN_NAMES = (Lexicon.IN_A, Lexicon.IN_B, Lexicon.DIFF, Lexicon.THRESHOLD)
-    # OUTPUT_IS_LIST = (True,True,True,True,)
     SORT = 90
     DESCRIPTION = """
 ☣️💣☣️💣☣️💣☣️💣 THIS NODE IS A WORK IN PROGRESS ☣️💣☣️💣☣️💣☣️💣
@@ -473,14 +471,13 @@ The Image Diff node compares two input images pixel by pixel to identify differe
             t = image_convert(t, 1)
             results.append([cv2tensor(a), cv2tensor(b), cv2tensor(d), cv2tensor(t)])
             pbar.update_absolute(idx)
-        return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*results))]
+        return [list(x) for x in (zip(*results))]
 
 class ArrayNode(JOVBaseNode):
     NAME = "ARRAY (JOV) 📚"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = ("INT", WILDCARD, WILDCARD,)
     RETURN_NAMES = (Lexicon.VALUE, Lexicon.ANY, Lexicon.LIST,)
-    # OUTPUT_IS_LIST = (True,True,True,)
     SORT = 50
     DESCRIPTION = """
 Processes a batch of data based on the selected mode, such as merging, picking, slicing, random selection, or indexing. Allows for flipping the order of processed items and dividing the data into chunks.
@@ -607,7 +604,7 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
                 extract = [e for e in self.batched(extract, batch_chunk)]
             ret.append([len(extract), extract, full])
             pbar.update_absolute(idx)
-        return list(zip(*ret))
+        return [list(x) for x in (zip(*ret))]
 
 class RouteNode(JOVBaseNode):
     NAME = "ROUTE (JOV) 🚌"

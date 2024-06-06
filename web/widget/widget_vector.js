@@ -24,7 +24,7 @@ export const VectorWidget = (app, inputName, options, initial, desc='') => {
     widget.options.step = widget.options?.step || step;
     widget.options.rgb = widget.options?.rgb || false;
 
-    const offset_y = 5;
+    const offset_y = 4;
     const widget_padding_left = 15;
     const widget_padding = 30;
     const label_full = 72;
@@ -48,7 +48,7 @@ export const VectorWidget = (app, inputName, options, initial, desc='') => {
         // label
         ctx.fillStyle = LiteGraph.WIDGET_SECONDARY_TEXT_COLOR
         ctx.fillText(inputName, label_center - (inputName.length * 1.5), Y + height / 2 + offset_y)
-        let x = label_full
+        let x = label_full + 1
 
         const fields = Object.keys(this?.value || []);
         let count = fields.length;
@@ -76,7 +76,7 @@ export const VectorWidget = (app, inputName, options, initial, desc='') => {
             const value = Number(it).toFixed(Math.min(2, precision))
             converted.push(value);
             const text = value.toString()
-            ctx.fillText(text, x + element_width2 - text.length * 3.25, Y + height/2 + offset_y)
+            ctx.fillText(text, x + element_width2 - text.length * 3.3, Y + height/2 + offset_y)
             ctx.restore()
             x += element_width
         }

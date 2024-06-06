@@ -44,7 +44,6 @@ class AdjustNode(JOVBaseNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
-    OUTPUT_IS_LIST = (True, True, True,)
     DESCRIPTION = """
 The `Adjust Node` lets you enhance and modify images with various effects.
 You can apply blurring, sharpening, color tweaks, and edge detection.
@@ -193,8 +192,7 @@ complex image transformations.
                 pA[:,:,3] = alpha
             images.append(cv2tensor_full(pA, matte))
             pbar.update_absolute(idx)
-        return [list(x) for x in (zip(*images))]
-        return *(zip(*images)),
+        return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
 
 class ColorMatchNode(JOVBaseNode):
     NAME = "COLOR MATCH (JOV) 💞"

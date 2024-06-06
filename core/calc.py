@@ -137,7 +137,6 @@ class CalcUnaryOPNode(JOVBaseNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = (WILDCARD,)
     RETURN_NAMES = (Lexicon.UNKNOWN,)
-    OUTPUT_IS_LIST = (True,)
     SORT = 10
     DESCRIPTION = """
 The Unary Operation node performs unary operations like absolute value, mean, median, mode, magnitude, normalization, maximum, or minimum on input values.
@@ -235,7 +234,6 @@ class CalcBinaryOPNode(JOVBaseNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = (WILDCARD,)
     RETURN_NAMES = (Lexicon.UNKNOWN,)
-    OUTPUT_IS_LIST = (True,)
     SORT = 20
     DESCRIPTION = """
 The Binary Operation node executes binary operations like addition, subtraction, multiplication, division, and bitwise operations on input values, supporting various data types and vector sizes.
@@ -394,9 +392,9 @@ The Binary Operation node executes binary operations like addition, subtraction,
 class ValueNode(JOVBaseNode):
     NAME = "VALUE (JOV) 🧬"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = (WILDCARD, WILDCARD, WILDCARD, WILDCARD, WILDCARD, )
-    RETURN_NAMES = (Lexicon.ANY, Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W,)
-    OUTPUT_IS_LIST = (True, True, True, True, True, )
+    RETURN_TYPES = (WILDCARD, WILDCARD, WILDCARD, WILDCARD, WILDCARD, WILDCARD)
+    RETURN_NAMES = (Lexicon.ANY, Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W, Lexicon.LIST)
+    OUTPUT_IS_LIST = (False, False, False, False, False, True,)
     SORT = 1
     DESCRIPTION = """
 The Value Node supplies raw or default values for various data types, supporting vector input with components for X, Y, Z, and W. It also provides a string input option.
@@ -443,6 +441,7 @@ The Value Node supplies raw or default values for various data types, supporting
         x_str = parse_param(kw, Lexicon.STRING, EnumConvertType.STRING, "")
         params = list(zip_longest_fill(raw, r_x, r_y, r_z, r_w, typ, x, xyzw, x_str))
         results = []
+        list_ret = []
         pbar = ProgressBar(len(params))
         for idx, (raw, r_x, r_y, r_z, r_w, typ, x, xyzw, x_str) in enumerate(params):
             typ = EnumConvertType[typ]
@@ -464,9 +463,11 @@ The Value Node supplies raw or default values for various data types, supporting
             extra = parse_value(val, typ, default)
             ret = [val] if not isinstance(val, (list,)) else val
             ret.extend(extra)
+            list_ret.append(val)
             results.append(ret)
             pbar.update_absolute(idx)
-        return *(zip(*results)),
+        return [list(x) for x in (zip(*results))], tuple(v for v in list_ret),
+        # return *(zip(*results)), tuple(v for v in list_ret),
 
 class LerpNode(JOVBaseNode):
     NAME = "LERP (JOV) 🔰"

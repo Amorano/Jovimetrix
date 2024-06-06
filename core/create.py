@@ -41,7 +41,6 @@ class ConstantNode(JOVBaseNode):
     DESCRIPTION = """
 The Constant node generates constant images or masks of a specified size and color. It can be used to create solid color backgrounds or matte images for compositing with other visual elements. The node allows you to define the desired width and height of the output and specify the RGBA color value for the constant output. Additionally, you can input an optional image to use as a matte with the selected color.
 """
-    OUTPUT_IS_LIST = (True, True, True,)
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -83,15 +82,13 @@ The Constant node generates constant images or masks of a specified size and col
                     pA = image_scalefit(pA, width, height, mode, sample)
                 images.append(cv2tensor_full(pA, matte))
             pbar.update_absolute(idx)
-        return [list(x) for x in (zip(*images))]
-        return *(zip(*images)),
+        return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
 
 class ShapeNode(JOVBaseNode):
     NAME = "SHAPE GEN (JOV) ✨"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
-    OUTPUT_IS_LIST = (True, True, True,)
     DESCRIPTION = """
 The Shape Generation node creates images representing various shapes such as circles, squares, rectangles, ellipses, and polygons. These shapes can be customized by adjusting parameters such as size, color, position, rotation angle, and edge blur. The node provides options to specify the shape type, the number of sides for polygons, the RGBA color value for the main shape, and the RGBA color value for the background. Additionally, you can control the width and height of the output images, the position offset, and the amount of edge blur applied to the shapes.
 """
@@ -182,7 +179,7 @@ The Shape Generation node creates images representing various shapes such as cir
             # images.append(cv2tensor_full(pA))
             images.append([cv2tensor(pB), cv2tensor(pA), cv2tensor(mask, True)])
             pbar.update_absolute(idx)
-        return [list(x) for x in (zip(*images))]
+        return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
 
 class TextNode(JOVBaseNode):
     NAME = "TEXT GEN (JOV) 📝"

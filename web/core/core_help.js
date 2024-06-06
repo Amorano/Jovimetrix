@@ -116,20 +116,20 @@ const documentationConverter = new showdown.Converter({
 /*
 * wraps a single text line into maxWidth chunks
 */
-function wrapText(text, maxWidth=145) {
-    let words = text.split(' ');
-    let lines = [];
+function wrapText(text, maxWidth = 145) {
+    const words = text.split(' ');
+    const lines = [];
     let currentLine = '';
-    words.forEach(word => {
-        let potentialLine = currentLine + ' ' + word;
-        if (potentialLine.trim().length <= maxWidth) {
-            currentLine = potentialLine.trim();
+    for (const word of words) {
+        const potentialLine = currentLine ? `${currentLine} ${word}` : word;
+        if (potentialLine.length <= maxWidth) {
+            currentLine = potentialLine;
         } else {
-            lines.push(currentLine);
+            if (currentLine) lines.push(currentLine);
             currentLine = word;
         }
-    });
-    lines.push(currentLine);
+    }
+    if (currentLine) lines.push(currentLine);
     return lines;
 }
 
@@ -460,19 +460,20 @@ app.registerExtension({
                 Object.assign(docElement.style, styleObject);
             }
 
-            ctx.save()
-            ctx.translate(x, iconSize - 35) // Position the icon on the canvas
+            ctx.save();
+            const size = LiteGraph.NODE_TITLE_HEIGHT * 2.25;
+            ctx.translate(x-5, -LiteGraph.NODE_TITLE_HEIGHT * 0.65); // Position the icon on the canvas
             ctx.scale(iconSize / 32, iconSize / 32) // Scale the icon to the desired size
-            ctx.font = 'bold 52px monospace'
+            ctx.font = `bold ${size}px monospace`;
             ctx.fillStyle = 'rgb(255,120,240,0.50)';
             ctx.fillText('?', 0, 32);
             ctx.translate(1, 3) // Position the icon on the canvas
-            ctx.font = 'bold 49px monospace'
+            ctx.font = `bold ${size-2}px monospace`
             ctx.fillStyle = 'rgb(40,10,20,0.70)';
             ctx.fillText('?', 0, 28);
             ctx.translate(1, 3) // Position the icon on the canvas
             ctx.fillStyle = 'rgb(250,80,250)';
-            ctx.font = 'bold 46px monospace';
+            ctx.font = `bold ${size-4}px monospace`
             ctx.fillText('?', 0, 24);
             ctx.restore()
             return me;

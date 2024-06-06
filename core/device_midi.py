@@ -58,7 +58,7 @@ The MIDI Message node processes MIDI messages received from an external MIDI con
                 data = [message]
             results.append(data)
             pbar.update_absolute(idx)
-        return (results,)
+        return [list(x) for x in (zip(*results))]
 
 class MIDIReaderNode(JOVBaseNode):
     NAME = "MIDI READER (JOV) 🎹"
@@ -122,7 +122,7 @@ The MIDI Reader node captures MIDI messages from an external MIDI device or cont
             self.__device = device
         normalize = self.__value / 127.
         msg = MIDIMessage(self.__note_on, self.__channel, self.__control, self.__note, self.__value)
-        return (msg, self.__note_on, self.__channel, self.__control, self.__note, self.__value, normalize, )
+        return msg, self.__note_on, self.__channel, self.__control, self.__note, self.__value, normalize,
 
 class MIDIFilterEZNode(JOVBaseNode):
     NAME = "MIDI FILTER EZ (JOV) ❇️"
@@ -188,7 +188,7 @@ The MIDI Filter EZ node allows you to filter MIDI messages based on various crit
                 continue
             ret.append((message, True, ))
             pbar.update_absolute(idx)
-        return list(zip(*ret))
+        return [list(x) for x in (zip(*ret))]
 
 class MIDIFilterNode(JOVBaseNode):
     NAME = "MIDI FILTER (JOV) ✳️"
@@ -285,4 +285,4 @@ The MIDI Filter node provides advanced filtering capabilities for MIDI messages 
                 continue
             ret.append((message, True, ))
             pbar.update_absolute(idx)
-        return list(zip(*ret))
+        return [list(x) for x in (zip(*results))]

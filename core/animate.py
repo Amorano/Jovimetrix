@@ -26,7 +26,6 @@ class TickNode(JOVBaseNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = ("INT", "FLOAT", "FLOAT", WILDCARD)
     RETURN_NAMES = (Lexicon.VALUE, Lexicon.LINEAR, Lexicon.FPS, Lexicon.ANY)
-    OUTPUT_IS_LIST = (True, True, True, True, )
     DESCRIPTION = """
 The `Tick` node acts as a timer and frame counter, emitting pulses or signals based on time intervals or BPM settings. It allows precise synchronization and control over animation sequences, with options to adjust FPS, BPM, and loop points. This node is useful for generating time-based events or driving animations with rhythmic precision.
 """
@@ -113,7 +112,6 @@ The `Tick` node acts as a timer and frame counter, emitting pulses or signals ba
         #    self.__frame = 0
             comfy_message(ident, "jovi-tick", {"i": self.__frame})
         return [list(x) for x in (zip(*results))]
-        # return list(zip(*results))
 
 class WaveGeneratorNode(JOVBaseNode):
     NAME = "WAVE GEN (JOV) 🌊"
@@ -121,7 +119,6 @@ class WaveGeneratorNode(JOVBaseNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = ("FLOAT", "INT", )
     RETURN_NAMES = (Lexicon.FLOAT, Lexicon.INT, )
-    OUTPUT_IS_LIST = (True, True, )
     DESCRIPTION = """
 The `Wave Generator` node produces waveforms like sine, square, or sawtooth with adjustable frequency, amplitude, phase, and offset. It's handy for creating oscillating patterns or controlling animation dynamics. This node emits both continuous floating-point values and integer representations of the generated waves.
 """
@@ -163,4 +160,3 @@ The `Wave Generator` node produces waveforms like sine, square, or sawtooth with
             results.append([val, int(val)])
             pbar.update_absolute(idx)
         return [list(x) for x in (zip(*results))]
-        #return list(zip(*results))
