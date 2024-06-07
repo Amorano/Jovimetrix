@@ -24,16 +24,16 @@ from loguru import logger
 from comfy.utils import ProgressBar
 from folder_paths import get_output_directory
 
-from Jovimetrix import ROOT_COMFY, comfy_message, parse_reset, JOVBaseNode, \
+from Jovimetrix import comfy_message, parse_reset, JOVBaseNode, \
     WILDCARD, ROOT
 
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import parse_dynamic, path_next, \
     parse_param, zip_longest_fill, EnumConvertType
 
-from Jovimetrix.sup.image import channel_solid, cv2pil, cv2tensor, cv2tensor_full, \
-    image_convert, image_scalefit, tensor2cv, pil2tensor, image_load, image_formats, image_diff, \
-    EnumInterpolation, EnumScaleMode, EnumImageType, MIN_IMAGE_SIZE, tensor2pil
+from Jovimetrix.sup.image import channel_solid, cv2tensor, cv2tensor_full, \
+    image_convert, image_scalefit, tensor2cv, pil2tensor, image_load, image_formats, image_diff, tensor2pil, \
+    EnumInterpolation, EnumScaleMode, EnumImageType, MIN_IMAGE_SIZE
 
 # =============================================================================
 
@@ -96,30 +96,34 @@ The Akashic node processes input data and prepares it for visualization. It acce
             typ = ''.join(repr(type(val)).split("'")[1:2])
             if isinstance(val, dict):
                 ret = json.dumps(val, indent=3)
-                return f"{ret} [{typ}]"
             elif isinstance(val, (tuple, set, list,)):
-                if len(val) < 2:
+                ret = ''
+                if isinstance(val, (np.ndarray,)):
+                    if len(q := q()) == 1:
+                        ret += f"{q[0]}"
+                    elif q > 1:
+                        ret += f"{q[1]}x{q[0]}"
+                    else:
+                        ret += f"{q[1]}x{q[0]}x{q[2]}"
+                elif len(val) < 2:
                     ret = val[0]
-                    typ = ''.join(repr(type(ret)).split("'")[1:2])
-                    return f"{ret} [{typ}]"
-                ret = ', '.join(str(v) for v in val)
-                return f"({ret}) [{typ}]"
-            elif isinstance(val, (int, float, str)):
-                return f"{val} [{typ}]"
+                else:
+                    ret = ', '.join(str(v) for v in val)
             elif isinstance(val, bool):
-                val = "True" if val else "False"
-                return f"{val} [{typ}]"
+                ret = "True" if val else "False"
             elif isinstance(val, torch.Tensor):
                 batch = val.shape[0] if len(val.shape) > 3 else 1
                 if batch == 1:
-                    val = [val]
+                    val = [val.squeeze(0)]
                 ret = []
                 for img in val:
                     h, w = img.shape[:2]
                     cc = img.shape[2] if len(img.shape) > 2 else 1
-                    ret.append(f"({w}x{h}x{cc}) [{typ}]")
-                return ', '.join(ret)
-            return f"{str(val)} [{typ}]"
+                    ret.append(f"{w}x{h}x{cc}")
+                ret = ', '.join(ret)
+            else:
+                val = str(val)
+            return f"({ret}) [{typ}]"
 
         for x in o:
             output["ui"]["text"].append(__parse(x))
@@ -238,9 +242,9 @@ The Queue node manages a queue of items, such as file paths or data. It supports
         for line in data.strip().split('\n'):
             parts = [part.strip() for part in line.split(',')]
             count = 1
-
-            try: count = int(parts[-1])
-            except: pass
+            if len(parts) > 2:
+                try: count = int(parts[-1])
+                except: pass
 
             data = [parts[0]]
             path = Path(parts[0])
@@ -482,19 +486,21 @@ class ArrayNode(JOVBaseNode):
     DESCRIPTION = """
 Processes a batch of data based on the selected mode, such as merging, picking, slicing, random selection, or indexing. Allows for flipping the order of processed items and dividing the data into chunks.
 """
+
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {
-        "required": {},
-        "optional": {
-            Lexicon.BATCH_MODE: (EnumBatchMode._member_names_, {"default": EnumBatchMode.MERGE.name, "tooltip":"select a single index, specific range, custom index list or randomized"}),
-            Lexicon.INDEX: ("INT", {"default": 0, "min": 0, "step": 1, "tooltip":"selected list position"}),
-            Lexicon.RANGE: ("VEC3", {"default": (0, 0, 1)}),
-            Lexicon.STRING: ("STRING", {"default": "", "tooltip":"Comma separated list of indicies to export"}),
-            Lexicon.SEED: ("INT", {"default": 0, "min": 0, "step": 1}),
-            Lexicon.FLIP: ("BOOLEAN", {"default": False}),
-            Lexicon.BATCH_CHUNK: ("INT", {"default": 0, "min": 0, "step": 1}),
-        }}
+            "required": {},
+            "optional": {
+                Lexicon.BATCH_MODE: (EnumBatchMode._member_names_, {"default": EnumBatchMode.MERGE.name, "tooltip":"select a single index, specific range, custom index list or randomized"}),
+                Lexicon.INDEX: ("INT", {"default": 0, "min": 0, "step": 1, "tooltip":"selected list position"}),
+                Lexicon.RANGE: ("VEC3", {"default": (0, 0, 1)}),
+                Lexicon.STRING: ("STRING", {"default": "", "tooltip":"Comma separated list of indicies to export"}),
+                Lexicon.SEED: ("INT", {"default": 0, "min": 0, "step": 1}),
+                Lexicon.FLIP: ("BOOLEAN", {"default": False}),
+                Lexicon.BATCH_CHUNK: ("INT", {"default": 0, "min": 0, "step": 1}),
+            }
+        }
         return Lexicon._parse(d, cls)
 
     @classmethod
@@ -503,7 +509,6 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
             iterator = iter(iterable)
             return zip_longest(*[iterator] * chunk_size, fillvalue=fill)
         return [iterable[i: i + chunk_size] for i in range(0, len(iterable), chunk_size)]
-        # return iter(lambda: tuple(islice(iterator, chunk_size)), tuple())
 
     def __init__(self, *arg, **kw) -> None:
         super().__init__(*arg, **kw)
@@ -522,6 +527,7 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
         # track latents since they need to be added back to Dict['samples']
         latents = []
         full = []
+        logger.debug(batch)
 
         for b in batch:
             if isinstance(b, dict) and "samples" in b:
@@ -530,11 +536,11 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
                 full.extend([{"samples": [i]} for i in data])
                 extract.extend(data)
                 latents.extend([True] * len(data))
-            elif isinstance(b, torch.Tensor):
-                data = [i for i in batch]
-                full.extend(data)
-                extract.extend(data)
-                latents.extend([False] * len(data))
+            elif isinstance(b, torch.Tensor) and len(b.shape) > 3:
+                b = [i for i in b]
+                full.extend(b)
+                extract.extend(b)
+                latents.extend([False] * len(b))
             elif isinstance(b, (list, set, tuple,)):
                 full.extend(b)
                 extract.extend(b)
@@ -602,7 +608,7 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
                 extract = extract[::-1]
             if batch_chunk > 0:
                 extract = [e for e in self.batched(extract, batch_chunk)]
-            ret.append([len(extract), extract, full])
+            ret.append([len(extract), extract, [*extract]])
             pbar.update_absolute(idx)
         return [list(x) for x in (zip(*ret))]
 

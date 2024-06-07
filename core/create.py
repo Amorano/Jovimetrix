@@ -9,6 +9,7 @@ import torch
 import numpy as np
 from PIL import ImageFont
 from skimage.filters import gaussian
+from loguru import logger
 
 from comfy.utils import ProgressBar
 
@@ -18,11 +19,11 @@ from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import parse_param, zip_longest_fill, \
     EnumConvertType
 
-from Jovimetrix.sup.image import EnumScaleMode, channel_solid, cv2tensor, cv2tensor_full, \
-    image_grayscale, image_invert, image_mask_add, \
-    image_rotate, image_scalefit, image_stereogram, image_transform, image_translate, pil2cv, \
+from Jovimetrix.sup.image import channel_solid, cv2tensor, cv2tensor_full, \
+    image_grayscale, image_invert, image_mask_add, pil2cv, \
+    image_rotate, image_scalefit, image_stereogram, image_transform, image_translate, \
     pixel_eval, tensor2cv, shape_ellipse, shape_polygon, shape_quad, \
-    EnumInterpolation, EnumEdge, EnumImageType, MIN_IMAGE_SIZE
+    EnumScaleMode, EnumInterpolation, EnumEdge, EnumImageType, MIN_IMAGE_SIZE
 
 from Jovimetrix.sup.text import font_names, text_autosize, text_draw, \
     EnumAlignment, EnumJustify, EnumShapes
@@ -62,7 +63,10 @@ The Constant node generates constant images or masks of a specified size and col
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
         matte = parse_param(kw, Lexicon.RGBA_A, EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
+        # ((512, 512),)
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), MIN_IMAGE_SIZE)
+        logger.debug(kw[Lexicon.WH], wihi)
+        # ((512, 512),)
         mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.NONE.name)
         sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)
         images = []

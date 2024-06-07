@@ -3,19 +3,19 @@ Jovimetrix - http://www.github.com/amorano/jovimetrix
 Audio
 """
 
+from pathlib import Path
 from typing import Tuple
 
 import torch
-import ffmpeg
 import librosa
 import numpy as np
 from loguru import logger
 
 from comfy.utils import ProgressBar
 
-from Jovimetrix import JOVBaseNode
+from Jovimetrix import ROOT, JOVBaseNode
 from Jovimetrix.sup.lexicon import Lexicon
-from Jovimetrix.sup.util import parse_param, zip_longest_fill, EnumConvertType
+from Jovimetrix.sup.util import EnumConvertType, parse_param, zip_longest_fill
 from Jovimetrix.sup.image import channel_solid, cv2tensor_full, EnumImageType, \
     MIN_IMAGE_SIZE
 from Jovimetrix.sup.audio import load_audio, graph_sausage
@@ -56,16 +56,20 @@ The Load Wave node imports audio files, converting them to waveforms. Specify th
         waves = []
         pbar = ProgressBar(len(params))
         for idx, (filen,) in enumerate(params):
-            data = self.__cache.get(filen, None)
+            path = Path(filen)
+            if not path.is_file():
+                path = Path(ROOT / filen)
+                if not path.is_file():
+                    logger.error(f"LoadWave :: bad file {filen}")
+                    waves.append(())
+                    continue
+            path = str(path)
+            logger.info(f"LoadWave {path}")
+            data = self.__cache.get(path, None)
             if data is None:
-                try:
-                    data, rate = load_audio(filen)
-                    data = data.astype(np.float32) / 32767.0
-                    self.__cache[filen] = data
-                except ffmpeg._run.Error as _:
-                    pass
-                except Exception as e:
-                    logger.error(str(e))
+                data, rate = load_audio(path)
+                data = data.astype(np.float32) / 32767.0
+                self.__cache[path] = data
             waves.append(data)
             pbar.update_absolute(idx)
         return (waves,)
@@ -117,13 +121,13 @@ The Wave Graph node visualizes audio waveforms as bars. Adjust parameters like t
             pbar.update_absolute(idx)
         return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
 
-class AudioWaveFilterNode:
+class AudioWaveFilterNode(JOVBaseNode):
     NAME = "AUDIO FILTER (JOV) 🥁"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = ("IMAGE", )
     RETURN_NAMES = (Lexicon.IMAGE,)
     DESCRIPTION = """
-
+This is the template documentation comment.
 """
 
     @classmethod
@@ -139,16 +143,27 @@ class AudioWaveFilterNode:
         }
         return Lexicon._parse(d, cls)
 
-    def run(self, audio: torch.Tensor, sample_rate: int, frame_count: int, fps: int) -> Tuple[torch.Tensor]:
-        timestamps = np.arange(0, frame_count) * (1 / fps)
-        samples = audio.cpu().numpy()[0, :, 0]
-        tempo, beats = librosa.beat.beat_track(y=samples, sr=sample_rate, hop_length=512)
-        beat_timestamps = librosa.frames_to_time(beats, sr=sample_rate, hop_length=512)
-        matches = librosa.util.match_events(beat_timestamps, timestamps)
-        beats = np.isin(np.arange(frame_count), matches).astype(np.float32) # type: ignore
-        beats_smoothed = np.zeros_like(beats)
-        k_factor = 0.8 ** (60 / fps)
-        beats_smoothed[0] = beats[0]
-        for i in range(1, beats.shape[0]):
-            beats_smoothed[i] = max(k_factor * beats_smoothed[i - 1], beats[i])
-        return (torch.from_numpy(beats_smoothed)[:, None, None, None].expand(-1, -1, -1, 3),)
+    def run(self, **kw) -> Tuple[torch.Tensor]:
+        wave = parse_param(kw, Lexicon.WAVE, EnumConvertType.ANY, None)
+        sample_rate = parse_param(kw, Lexicon.RATE, EnumConvertType.INT, 22050, 6000, 192000)
+        frame_count = parse_param(kw, Lexicon.FRAME, EnumConvertType.INT, 1, 1, 262144)
+        fps = parse_param(kw, Lexicon.FPS, EnumConvertType.INT, 1, 1, 120)
+        params = list(zip_longest_fill(wave, sample_rate, frame_count, fps))
+        waves = []
+        pbar = ProgressBar(len(params))
+        for idx, (wave, sample_rate, frame_count, fps) in enumerate(params):
+            timestamps = np.arange(0, frame_count) * (1 / fps)
+            samples = wave.cpu().numpy()[0, :, 0]
+            tempo, beats = librosa.beat.beat_track(y=samples, sr=sample_rate, hop_length=512)
+            beat_timestamps = librosa.frames_to_time(beats, sr=sample_rate, hop_length=512)
+            matches = librosa.util.match_events(beat_timestamps, timestamps)
+            beats = np.isin(np.arange(frame_count), matches).astype(np.float32) # type: ignore
+            beats_smoothed = np.zeros_like(beats)
+            k_factor = 0.8 ** (60 / fps)
+            beats_smoothed[0] = beats[0]
+            for i in range(1, beats.shape[0]):
+                beats_smoothed[i] = max(k_factor * beats_smoothed[i - 1], beats[i])
+            ret = (torch.from_numpy(beats_smoothed)[:, None, None, None].expand(-1, -1, -1, 3),)
+            waves.append(ret)
+            pbar.update_absolute(idx)
+        return [*(zip(*waves)),]

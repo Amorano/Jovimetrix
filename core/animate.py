@@ -12,8 +12,8 @@ from comfy.utils import ProgressBar
 
 from Jovimetrix import comfy_message, parse_reset, JOVBaseNode, WILDCARD
 from Jovimetrix.sup.lexicon import Lexicon
-from Jovimetrix.sup.anim import EnumWave, wave_op
-from Jovimetrix.sup.util import EnumConvertType, parse_param, zip_longest_fill
+from Jovimetrix.sup.anim import wave_op, EnumWave
+from Jovimetrix.sup.util import parse_param, zip_longest_fill, EnumConvertType
 
 # =============================================================================
 

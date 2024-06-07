@@ -66,7 +66,7 @@ The Stream Reader node captures frames from various sources such as URLs, camera
             cls.CAMERAS = [f"{i} - {v['w']}x{v['h']}" for i, v in enumerate(camera_list().values())]
         camera_default = cls.CAMERAS[0] if len(cls.CAMERAS) else "NONE"
 
-        monitor = []
+        monitor = ["NONE"]
         try:
             monitors = monitor_list()
             monitors.pop(0)
@@ -140,19 +140,19 @@ The Stream Reader node captures frames from various sources such as URLs, camera
         source = EnumStreamType[source]
         if source == EnumStreamType.MONITOR:
             self.__deviceType = EnumStreamType.MONITOR
-            which = parse_param(kw, Lexicon.MONITOR, EnumConvertType.STRING, "0")[0]
-            which = int(which.split('-')[0].strip()) + 1
-            for idx in range(batch_size):
-                img = monitor_capture(which)
-                if img is None:
-                    img = channel_solid(width, height, matte)
-                else:
-                    img = image_scalefit(img, width, height, mode, sample, matte)
+            if (which := parse_param(kw, Lexicon.MONITOR, EnumConvertType.STRING, "NONE")[0]) != "NONE":
+                which = int(which.split('-')[0].strip()) + 1
+                for idx in range(batch_size):
+                    img = monitor_capture(which)
+                    if img is None:
+                        img = channel_solid(width, height, matte)
+                    else:
+                        img = image_scalefit(img, width, height, mode, sample, matte)
 
-                images.append(cv2tensor_full(img))
-                if batch_size > 1:
-                    pbar.update_absolute(idx)
-                    time.sleep(rate)
+                    images.append(cv2tensor_full(img))
+                    if batch_size > 1:
+                        pbar.update_absolute(idx)
+                        time.sleep(rate)
 
         elif source == EnumStreamType.WINDOW:
             self.__deviceType = EnumStreamType.WINDOW

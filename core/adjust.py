@@ -14,7 +14,7 @@ from comfy.utils import ProgressBar
 from Jovimetrix import JOVBaseNode, WILDCARD
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import EnumConvertType, parse_param, zip_longest_fill
-from Jovimetrix.sup.image import MIN_IMAGE_SIZE, channel_count, channel_solid, \
+from Jovimetrix.sup.image import channel_count, channel_solid, \
     color_match_histogram, color_match_lut, color_match_reinhard, cv2tensor, \
     cv2tensor_full, image_mask, image_mask_add, image_matte, tensor2cv, \
     image_color_blind, image_convert, image_grayscale, image_scalefit, image_equalize, \
@@ -22,7 +22,8 @@ from Jovimetrix.sup.image import MIN_IMAGE_SIZE, channel_count, channel_solid, \
     image_sharpen, image_threshold, image_blend, image_invert, morph_edge_detect, \
     morph_emboss, image_contrast, image_hsv, image_gamma, \
     EnumCBDeficiency, EnumCBSimulator, EnumScaleMode, \
-    EnumImageType, EnumColorMap, EnumAdjustOP, EnumThresholdAdapt, EnumThreshold
+    EnumImageType, EnumColorMap, EnumAdjustOP, EnumThresholdAdapt, EnumThreshold,\
+    MIN_IMAGE_SIZE
 
 # =============================================================================
 

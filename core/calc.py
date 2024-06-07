@@ -456,6 +456,7 @@ The Value Node supplies raw or default values for various data types, supporting
                     d if r_w is None else r_w)
 
             val = parse_value(raw, typ, default)
+            list_ret.append(val)
             typ = EnumConvertType.VEC4 if typ in [EnumConvertType.VEC4, EnumConvertType.VEC3, \
                                                   EnumConvertType.VEC2, EnumConvertType.FLOAT] \
                                                   else EnumConvertType.VEC4INT
@@ -463,11 +464,13 @@ The Value Node supplies raw or default values for various data types, supporting
             extra = parse_value(val, typ, default)
             ret = [val] if not isinstance(val, (list,)) else val
             ret.extend(extra)
-            list_ret.append(val)
             results.append(ret)
             pbar.update_absolute(idx)
-        return [list(x) for x in (zip(*results))], tuple(v for v in list_ret),
-        # return *(zip(*results)), tuple(v for v in list_ret),
+        return *(zip(*results)), tuple([v] for v in list_ret),
+        # worksish - return *[list(x) for x in (zip(*results))], tuple([v] for v in list_ret),
+        return *(zip(*results)), tuple([v] for v in list_ret),
+
+
 
 class LerpNode(JOVBaseNode):
     NAME = "LERP (JOV) 🔰"

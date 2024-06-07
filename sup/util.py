@@ -61,7 +61,7 @@ def parse_dynamic(data:dict, key:str, typ:EnumConvertType, default: Any) -> List
         val = parse_param(data, who, typ, default)
         if not isinstance(val, (list,)):
             val = [val]
-        vals.append(val)
+        vals.extend(val)
         count += 1
     if len(vals) == 0:
         vals.append([])
@@ -111,7 +111,6 @@ def parse_value(val:Any, typ:EnumConvertType, default: Any,
             d = default[idx] if isinstance(default, (list, tuple, set, dict, torch.Tensor)) and idx < len(default) else default
             v = d if val is None else val[idx] if idx < len(val) else d
             try:
-                v = v if isinstance(v, numbers.Real) else 0
                 if typ in [EnumConvertType.FLOAT, EnumConvertType.VEC2, EnumConvertType.VEC3, EnumConvertType.VEC4]:
                     v = round(v, 16)
                 else:
@@ -207,7 +206,8 @@ def parse_param(data:dict, key:str, typ:EnumConvertType, default: Any,
         elif 'r' in val and 'g' in val:
             val = tuple(val.get(c, 0) for c in 'rgba')
         elif len(val) == 0:
-            val = tuple(None,)
+            logger.debug(f"[parse_param] {val}")
+            val = tuple()
     elif isinstance(val, (torch.Tensor,)):
         if len(val.shape) > 3:
             val = [t for t in val]
