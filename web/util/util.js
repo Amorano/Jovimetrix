@@ -52,71 +52,10 @@ export function fitHeight(node) {
     node?.graph?.setDirtyCanvas(true, true);
 }
 
-export function node_add_dynamic(nodeType, prefix, type='*', count=-1) {
-    const onNodeCreated = nodeType.prototype.onNodeCreated
-    nodeType.prototype.onNodeCreated = function () {
-        const me = onNodeCreated?.apply(this)
-        this.addInput(`${prefix}_1`, type);
-        return me
-    }
-
-    const onConnectionsChange = nodeType.prototype.onConnectionsChange
-    nodeType.prototype.onConnectionsChange = function (slotType, slot, event, link_info, data) {
-        const me = onConnectionsChange?.apply(this, arguments)
-        if (slotType === TypeSlot.Input) {
-            if (!this.inputs[slot].name.startsWith(prefix)) {
-                return
-            }
-
-            // remove all non connected inputs
-            if (event == TypeSlotEvent.Disconnect && this.inputs.length > 1) {
-                if (this.widgets) {
-                    const w = this.widgets.find((w) => w.name === this.inputs[slot].name)
-                    if (w) {
-                        w.onRemoved?.()
-                        this.widgets.length = this.widgets.length - 1
-                    }
-                }
-                this.removeInput(slot)
-
-                // make inputs sequential again
-                for (let i = 0; i < this.inputs.length; i++) {
-                    const name = `${prefix}_${i + 1}`
-                    this.inputs[i].label = name
-                    this.inputs[i].name = name
-                }
-            }
-
-            // add an extra input
-            if (count-1 < 0) {
-                count = 1000;
-            }
-            const length = this.inputs.length - 1;
-            if (length < count-1 && this.inputs[length].link != undefined) {
-                const nextIndex = this.inputs.length
-                const name = `${prefix}_${nextIndex + 1}`
-                this.addInput(name, type)
-            }
-
-            if (event === TypeSlotEvent.Connect && link_info) {
-                const fromNode = this.graph._nodes.find(
-                    (otherNode) => otherNode.id == link_info.origin_id
-                )
-                if (fromNode) {
-                    const old_type = fromNode.outputs[link_info.origin_slot].type;
-                    this.inputs[slot].type = old_type;
-                }
-            } else if (event === TypeSlotEvent.Disconnect) {
-                this.inputs[slot].type = type
-                this.inputs[slot].label = `${prefix}_${slot + 1}`
-            }
-        }
-        return me;
-    }
-    return nodeType;
-}
-
-export function node_add_dynamic2(nodeType, prefix, dynamic_type='*', index_start=0, shape=LiteGraph.GRID_SHAPE) {
+/**
+ * Manage the slots on a node to allow a dynamic number of inputs
+*/
+export function node_add_dynamic(nodeType, prefix, dynamic_type='*', index_start=0, shape=LiteGraph.GRID_SHAPE, match_output=false) {
     /*
     this one should just put the "prefix" as the last empty entry.
     Means we have to pay attention not to collide key names in the
@@ -127,38 +66,67 @@ export function node_add_dynamic2(nodeType, prefix, dynamic_type='*', index_star
     nodeType.prototype.onNodeCreated = function () {
         const me = onNodeCreated?.apply(this);
         this.addInput(prefix, dynamic_type);
-		this.addOutput(prefix, dynamic_type, { shape: shape });
+        if (match_output) {
+		    this.addOutput(prefix, dynamic_type, { shape: shape });
+        }
+        this.match_output = match_output;
         return me;
     }
 
     const onConnectionsChange = nodeType.prototype.onConnectionsChange
-    nodeType.prototype.onConnectionsChange = function (slotType, slot, event, link_info, data) {
-        const me = onConnectionsChange?.apply(this, arguments)
+    nodeType.prototype.onConnectionsChange = function (slotType, slot_idx, event, link_info, node_slot) {
+        const node = slotType;
+        const me = onConnectionsChange?.apply(this, arguments);
         if (slotType === TypeSlot.Input) {
-            slot = this.inputs[slot];
-            const who = slot.name;
-            const wIndex = this.inputs.findIndex((w) => w.name === who);
-            if (wIndex >= index_start) {
-                let wo = this.outputs[wIndex];
-                if (event == TypeSlotEvent.Disconnect) {
-                    this.removeOutput(wo);
-                    this.removeInput(slot);
-                } else if (event === TypeSlotEvent.Connect && link_info) {
+            if (slot_idx >= index_start && link_info) {
+                if (event === TypeSlotEvent.Connect) {
                     const fromNode = this.graph._nodes.find(
                         (otherNode) => otherNode.id == link_info.origin_id
                     )
                     if (fromNode) {
                         const parent_link = fromNode.outputs[link_info.origin_slot];
-                        slot.type = parent_link.type;
-                        slot.name = parent_link.name;
-                        wo.type = parent_link.type;
-                        wo.name = `[${parent_link.type}]`;
-                        this.addInput(prefix, dynamic_type);
-                        this.addOutput(prefix, dynamic_type);
+                        node_slot.type = parent_link.type;
+                        node_slot.name = parent_link.name;
+                        if (match_output) {
+                            const slot_out = this.outputs[slot_idx];
+                            slot_out.type = parent_link.type;
+                            slot_out.name = `[${parent_link.type}]`;
+                        }
                     }
                 }
             }
+            // check that the last slot is a dynamic entry....
+            let last = this.inputs[this.inputs.length-1];
+            if (last.type != dynamic_type || last.name != prefix) {
+                this.addInput(prefix, dynamic_type);
+            }
+            if (this.match_output) {
+                last = this.outputs[this.outputs.length-1];
+                if (last.type != dynamic_type || last.name != prefix) {
+                    this.addOutput(prefix, dynamic_type);
+                }
+            }
         }
+
+        setTimeout(() => {
+            // clean off missing slot connects
+            if (this.graph === undefined) {
+                return;
+            }
+            let idx = index_start;
+            while (idx < this.inputs.length-1) {
+                const slot = this.inputs[idx];
+                if (slot.link == null) {
+                    if (node.match_output) {
+                        this.removeOutput(slot_idx);
+                    }
+                    this.removeInput(slot_idx);
+                } else {
+                    idx += 1;
+                }
+            }
+         }, 25);
+
         return me;
     }
     return nodeType;

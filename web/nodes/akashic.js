@@ -63,10 +63,10 @@ app.registerExtension({
                     index++;
                 }
             }
-            this.onResize?.(this.size);
-            const y = this.computeSize([this.size[0], this.size[1]])[1];
-            this.setSize([this.size[0], Math.min(250, y+lineCount * 17)]);
-            this?.graph?.setDirtyCanvas(true, true);
+            //this.onResize?.(this.size);
+            //const y = this.computeSize([this.size[0], this.size[1]])[1];
+            //this.setSize([this.size[0], Math.min(250, y+lineCount * 17)]);
+            //this?.graph?.setDirtyCanvas(true, true);
         }
     }
 })

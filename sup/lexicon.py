@@ -41,6 +41,7 @@ class Lexicon(metaclass=LexiconMeta):
     AMP = '🔊', "Amplitude"
     ANGLE = '📐', "Rotation Angle"
     ANY = '🔮', "Any Type"
+    ANY_OUT = '🦄', "Any Type"
     API = 'API', "API URL route"
     ATTRIBUTE = 'ATTRIBUTE', "The token attribute to use for authenticating"
     AUTH = 'AUTH', "Authentication Bearer Token"
@@ -217,6 +218,7 @@ class Lexicon(metaclass=LexiconMeta):
     TIME = '🕛', "Time"
     TIMER = '⏱', "Timer"
     TLTR = 'TL-TR', "Top Left - Top Right"
+    TOGGLE = 'TOGGLE', "Toggle"
     TOP = '🔼', "Top"
     TOTAL = 'TOTAL', "Total items in the current Queue List"
     TRIGGER = '⚡', "Trigger"
@@ -251,7 +253,7 @@ class Lexicon(metaclass=LexiconMeta):
             if cat not in ['optional', 'required']:
                 continue
             for k, v in entry.items():
-                if (tip := v[1].get('tooltip', None)) is None:
+                if len(v) > 1 and (tip := v[1].get('tooltip', None)) is None:
                     if (tip := cls._tooltipsDB.get(k), None) is None:
                         logger.warning(f"no {k}")
                         continue

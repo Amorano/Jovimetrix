@@ -254,7 +254,7 @@ The Stream Reader node captures frames from various sources such as URLs, camera
 
         if len(images) == 0:
             images.append(self.__empty)
-        return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
+        return [torch.cat(i, dim=0) for i in list(zip(*images))]
 
 class StreamWriterNode(JOVBaseNode):
     NAME = "STREAM WRITER (JOV) 🎞️"

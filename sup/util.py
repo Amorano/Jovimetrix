@@ -94,7 +94,7 @@ def parse_value(val:Any, typ:EnumConvertType, default: Any,
         cc = val.shape[2] if len(val.shape) > 2 else 1
         val = (w, h, cc)
 
-    if val is not None:
+    if val is not None and typ not in [EnumConvertType.ANY]:
         if not isinstance(val, (list, tuple, torch.Tensor)):
             val = [val]
 
@@ -126,7 +126,7 @@ def parse_value(val:Any, typ:EnumConvertType, default: Any,
                 logger.error(f"Error converting value: {e}")
                 v = 0
             new_val.append(v)
-        new_val = new_val[0] if size == 1 else tuple(new_val)
+        new_val = [new_val[0]] if size == 1 else tuple(new_val)
     elif typ == EnumConvertType.DICT:
         try:
             if isinstance(new_val, (str,)):
@@ -193,9 +193,8 @@ def parse_param(data:dict, key:str, typ:EnumConvertType, default: Any,
     if isinstance(val, (str,)):
         try: val = json.loads(val.replace("'", '"'))
         except json.JSONDecodeError: pass
-
     # see if we are a Jovimetrix hacked vector blob... {0:x, 1:y, 2:z, 3:w}
-    if isinstance(val, dict):
+    elif isinstance(val, dict):
         # latents....
         if 'samples' in val:
             val = tuple(x for x in val["samples"])
@@ -209,13 +208,28 @@ def parse_param(data:dict, key:str, typ:EnumConvertType, default: Any,
             logger.debug(f"[parse_param] {val}")
             val = tuple()
     elif isinstance(val, (torch.Tensor,)):
-        if len(val.shape) > 3:
+        if (size := len(val.shape)) > 3:
             val = [t for t in val]
+        #elif size == 3:
+        #    val = [t.unsqueeze(-1) for t in val]
+        elif size == 2:
+            val = val.unsqueeze(-1)
+
     elif isinstance(val, (list, tuple, set)):
         if len(val) == 0:
             val = [None]
+        else:
+            # val = [*list(r) if isinstance(r, (list,)) else r for r in val]
+            ret = []
+            for x in val:
+                if isinstance(x, (list,)):
+                    ret.extend(x)
+                else:
+                    ret.append(x)
+            val = ret
     elif issubclass(type(val), (Enum,)):
         val = [str(val.name)]
+
     if not isinstance(val, (list,)):
         val = [val]
     return [parse_value(v, typ, default, clip_min, clip_max, zero) for v in val]

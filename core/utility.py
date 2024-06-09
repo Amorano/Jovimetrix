@@ -98,7 +98,7 @@ The Akashic node processes input data and prepares it for visualization. It acce
                 ret = json.dumps(val, indent=3)
             elif isinstance(val, (tuple, set, list,)):
                 ret = ''
-                if isinstance(val, (np.ndarray,)):
+                if type(val) == np.ndarray:
                     if len(q := q()) == 1:
                         ret += f"{q[0]}"
                     elif q > 1:
@@ -203,7 +203,7 @@ class QueueNode(JOVBaseNode):
     NAME = "QUEUE (JOV) 🗃"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = (WILDCARD, WILDCARD, "STRING", "INT", "INT", )
-    RETURN_NAMES = (Lexicon.ANY, Lexicon.QUEUE, Lexicon.CURRENT, Lexicon.INDEX, Lexicon.TOTAL, )
+    RETURN_NAMES = (Lexicon.ANY_OUT, Lexicon.QUEUE, Lexicon.CURRENT, Lexicon.INDEX, Lexicon.TOTAL, )
     VIDEO_FORMATS = ['.webm', '.mp4', '.avi', '.wmv', '.mkv', '.mov', '.mxf']
     SORT = 0
     DESCRIPTION = """
@@ -481,7 +481,7 @@ class ArrayNode(JOVBaseNode):
     NAME = "ARRAY (JOV) 📚"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = ("INT", WILDCARD, WILDCARD,)
-    RETURN_NAMES = (Lexicon.VALUE, Lexicon.ANY, Lexicon.LIST,)
+    RETURN_NAMES = (Lexicon.VALUE, Lexicon.ANY_OUT, Lexicon.LIST,)
     SORT = 50
     DESCRIPTION = """
 Processes a batch of data based on the selected mode, such as merging, picking, slicing, random selection, or indexing. Allows for flipping the order of processed items and dividing the data into chunks.
@@ -610,12 +610,13 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
                 extract = [e for e in self.batched(extract, batch_chunk)]
             ret.append([len(extract), extract, [*extract]])
             pbar.update_absolute(idx)
-        return [list(x) for x in (zip(*ret))]
+        return *(list(x) for x in (zip(*ret))),
 
 class RouteNode(JOVBaseNode):
     NAME = "ROUTE (JOV) 🚌"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = ()
+    RETURN_TYPES = ("BUS",)
+    RETURN_NAMES = (Lexicon.ROUTE,)
     SORT = 900
     DESCRIPTION = """
 ☣️💣☣️💣☣️💣☣️💣 THIS NODE IS A WORK IN PROGRESS ☣️💣☣️💣☣️💣☣️💣
@@ -626,12 +627,16 @@ Routes the input data from the optional input ports to the output port, preservi
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {
-            "required": {}
+            "required": {},
+            "optional": {
+                Lexicon.ROUTE: ("BUS", {"default": None}),
+            }
         }
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[Any, ...]:
-        return zip(*kw.values())
+        inout = parse_param(kw, Lexicon.ROUTE, EnumConvertType.ANY, None)
+        return [inout] + list(zip(*kw.values()))
 
 class SaveOutput(JOVBaseNode):
     NAME = "SAVE OUTPUT (JOV) 💾"
@@ -757,7 +762,7 @@ class BatchLoadNode(JOVBaseNode):
                     pA = channel_solid(w, h)
                 images.append(cv2tensor_full(pA, matte))
             pbar.update_absolute(idx)
-        return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
+        return [torch.cat(i, dim=0) for i in list(zip(*images))]
 
 '''
 class RESTNode:

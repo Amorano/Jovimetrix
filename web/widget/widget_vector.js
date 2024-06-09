@@ -234,7 +234,6 @@ app.registerExtension({
                     for (const w of matchingTypes) {
                         const widget = Object.values(this.widgets).find(m => m.name === w[0]);
                         if (widget.type !== CONVERTED_TYPE && myTypes.includes(widget.type) && (widget.options?.forceInput === undefined || widget.options?.forceInput === false) && widget.options?.menu !== false) {
-                            console.info(widget.options?.menu)
                             const who = matchingTypes.find(w => w[0] === widget.name)
                             const convertToInputObject = {
                                 content: `Convert ${widget.name} to input`,

@@ -141,7 +141,7 @@ The Transform Node applies various geometric transformations to images, includin
                 pA = image_scalefit(pA, w, h, mode, sample)
             images.append(cv2tensor_full(pA, matte))
             pbar.update_absolute(idx)
-        return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
+        return [torch.cat(i, dim=0) for i in list(zip(*images))]
 
 class BlendNode(JOVBaseNode):
     NAME = "BLEND (JOV) ⚗️"
@@ -216,7 +216,9 @@ The Blend Node combines two input images using various blending modes, such as n
             img = cv2tensor_full(img, matte)
             images.append(img)
             pbar.update_absolute(idx)
+        return [torch.stack(i, dim=0) for i in list(zip(*images))]
         return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
+        return [torch.cat(i, dim=0) for i in list(zip(*images))]
 
 class PixelSplitNode(JOVBaseNode):
     NAME = "PIXEL SPLIT (JOV) 💔"
@@ -247,7 +249,7 @@ The Pixel Split Node takes an input image and splits it into its individual colo
             pA = [cv2tensor(x) for x in image_split(pA)]
             images.append(pA)
             pbar.update_absolute(idx)
-        return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
+        return [torch.cat(i, dim=0) for i in list(zip(*images))]
 
 class PixelMergeNode(JOVBaseNode):
     NAME = "PIXEL MERGE (JOV) 🫂"
@@ -303,7 +305,7 @@ The Pixel Merge Node combines individual color channels (red, green, blue) along
                 img = image_scalefit(img, w, h, mode, sample)
             images.append(cv2tensor_full(img, matte))
             pbar.update_absolute(idx)
-        return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
+        return [torch.cat(i, dim=0) for i in list(zip(*images))]
 
 class PixelSwapNode(JOVBaseNode):
     NAME = "PIXEL SWAP (JOV) 🔃"
@@ -382,7 +384,7 @@ The Pixel Swap Node swaps pixel values between two input images based on the spe
             out[:,:,3] = swapper(EnumPixelSwizzle.ALPHA_A, swap_a)[:,:,3]
             images.append(cv2tensor_full(out))
             pbar.update_absolute(idx)
-        return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
+        return [torch.cat(i, dim=0) for i in list(zip(*images))]
 
 class StackNode(JOVBaseNode):
     NAME = "STACK (JOV) ➕"
@@ -439,7 +441,7 @@ The Stack Node combines multiple input images into a single output image along a
         # images.append(cv2tensor_full(img, matte))
         return cv2tensor_full(img, matte)
         #pbar.update_absolute(idx)
-        return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
+        return [torch.cat(i, dim=0) for i in list(zip(*images))]
 
 class CropNode(JOVBaseNode):
     NAME = "CROP (JOV) ✂️"
@@ -494,7 +496,7 @@ The Crop Node extracts a portion of an input image or resizes it to a specified 
                 pA = image_crop_center(pA, width, height)
             images.append(cv2tensor_full(pA, color))
             pbar.update_absolute(idx)
-        return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
+        return [torch.cat(i, dim=0) for i in list(zip(*images))]
 
 class ColorTheoryNode(JOVBaseNode):
     NAME = "COLOR THEORY (JOV) 🛞"
@@ -534,7 +536,7 @@ The Color Theory Node applies various color harmony schemes to an input image, g
                 img = (image_invert(s, 1) for s in img)
             images.append([cv2tensor(a) for a in img])
             pbar.update_absolute(idx)
-        return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
+        return [torch.cat(i, dim=0) for i in list(zip(*images))]
 
 class ImageFlatten(JOVBaseNode):
     NAME = "FLATTEN (JOV) ⬇️"
@@ -587,7 +589,7 @@ The Flatten Node combines multiple input images into a single image by summing t
                     current = cv2.add(current, x)
             images.append(cv2tensor_full(current, matte))
             pbar.update_absolute(idx)
-        return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
+        return [torch.cat(i, dim=0) for i in list(zip(*images))]
 
 '''
 class HistogramNode(JOVImageSimple):

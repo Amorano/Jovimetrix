@@ -387,14 +387,13 @@ The Binary Operation node executes binary operations like addition, subtraction,
                 val = val[0]
             results.append(val)
             pbar.update_absolute(idx)
-        return results,
+        return (results,)
 
 class ValueNode(JOVBaseNode):
     NAME = "VALUE (JOV) 🧬"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = (WILDCARD, WILDCARD, WILDCARD, WILDCARD, WILDCARD, WILDCARD)
-    RETURN_NAMES = (Lexicon.ANY, Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W, Lexicon.LIST)
-    OUTPUT_IS_LIST = (False, False, False, False, False, True,)
+    RETURN_TYPES = (WILDCARD, WILDCARD, WILDCARD, WILDCARD, WILDCARD,)
+    RETURN_NAMES = (Lexicon.ANY, Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W)
     SORT = 1
     DESCRIPTION = """
 The Value Node supplies raw or default values for various data types, supporting vector input with components for X, Y, Z, and W. It also provides a string input option.
@@ -416,10 +415,10 @@ The Value Node supplies raw or default values for various data types, supporting
             "optional": {
                 Lexicon.IN_A: (WILDCARD, {"default": None, "tooltip":"Passes a raw value directly, or supplies defaults for any value inputs without connections"}),
                 Lexicon.TYPE: (typ, {"default": EnumConvertType.BOOLEAN.name}),
-                Lexicon.X: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "precision": 6, "forceInput": True}),
-                Lexicon.Y: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "precision": 6, "forceInput": True}),
-                Lexicon.Z: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "precision": 6, "forceInput": True}),
-                Lexicon.W: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "precision": 6, "forceInput": True}),
+                Lexicon.X: (WILDCARD, {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "precision": 6, "forceInput": True}),
+                Lexicon.Y: (WILDCARD, {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "precision": 6, "forceInput": True}),
+                Lexicon.Z: (WILDCARD, {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "precision": 6, "forceInput": True}),
+                Lexicon.W: (WILDCARD, {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "precision": 6, "forceInput": True}),
                 Lexicon.X_RAW: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "precision": 6, "menu": False}),
                 Lexicon.IN_A+"4": ("VEC4", {"default": (0,0,0,0),
                                         "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W],
@@ -441,7 +440,6 @@ The Value Node supplies raw or default values for various data types, supporting
         x_str = parse_param(kw, Lexicon.STRING, EnumConvertType.STRING, "")
         params = list(zip_longest_fill(raw, r_x, r_y, r_z, r_w, typ, x, xyzw, x_str))
         results = []
-        list_ret = []
         pbar = ProgressBar(len(params))
         for idx, (raw, r_x, r_y, r_z, r_w, typ, x, xyzw, x_str) in enumerate(params):
             typ = EnumConvertType[typ]
@@ -456,7 +454,6 @@ The Value Node supplies raw or default values for various data types, supporting
                     d if r_w is None else r_w)
 
             val = parse_value(raw, typ, default)
-            list_ret.append(val)
             typ = EnumConvertType.VEC4 if typ in [EnumConvertType.VEC4, EnumConvertType.VEC3, \
                                                   EnumConvertType.VEC2, EnumConvertType.FLOAT] \
                                                   else EnumConvertType.VEC4INT
@@ -466,17 +463,13 @@ The Value Node supplies raw or default values for various data types, supporting
             ret.extend(extra)
             results.append(ret)
             pbar.update_absolute(idx)
-        return *(zip(*results)), tuple([v] for v in list_ret),
-        # worksish - return *[list(x) for x in (zip(*results))], tuple([v] for v in list_ret),
-        return *(zip(*results)), tuple([v] for v in list_ret),
-
-
+        return [[x] for x in zip(*results)]
 
 class LerpNode(JOVBaseNode):
     NAME = "LERP (JOV) 🔰"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = (WILDCARD,)
-    RETURN_NAMES = (Lexicon.ANY,)
+    RETURN_NAMES = (Lexicon.ANY_OUT,)
     SORT = 45
     DESCRIPTION = """
 The Lerp Node performs linear interpolation between two values or vectors based on a blending factor. It supports easing functions for smoother transitions and outputs the result as either floats or integers.
@@ -537,7 +530,8 @@ The Lerp Node performs linear interpolation between two values or vectors based 
         pbar = ProgressBar(len(params))
         for idx, (A, B, a_x, a_xy, a_xyz, a_xyzw, b_x, b_xy, b_xyz, b_xyzw, alpha, op, typ) in enumerate(params):
             # make sure we only interpolate between the longest "stride" we can
-            size = min(3, max(len(A), len(B)))
+            size = min(3, max(0 if not isinstance(A, (list,)) else len(A), 0 if not isinstance(B, (list,)) else len(B)))
+
             best_type = [EnumConvertType.FLOAT, EnumConvertType.VEC2, EnumConvertType.VEC3, EnumConvertType.VEC4][size]
             A = parse_value(A, best_type, A)
             B = parse_value(B, best_type, B)
@@ -556,8 +550,13 @@ The Lerp Node performs linear interpolation between two values or vectors based 
                 val_b = parse_value(B, EnumConvertType.VEC4, B if B is not None else b_x)
 
             size = max(1, int(typ.value / 10))
+
             val_a = val_a[:size]
             val_b = val_b[:size]
+            if not isinstance(val_a, (list),):
+                val_a = [val_a]
+            if not isinstance(val_b, (list),):
+                val_b = [val_b]
 
             alpha = parse_value(alpha, best_type, alpha)
             if op == "NONE":
@@ -569,12 +568,13 @@ The Lerp Node performs linear interpolation between two values or vectors based 
             values.append(val)
             pbar.update_absolute(idx)
         return (values, )
+        return *[[x] for x in zip(*results)],
 
 class SwapNode(JOVBaseNode):
     NAME = "SWAP (JOV) 😵"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = (WILDCARD,)
-    RETURN_NAMES = (Lexicon.ANY,)
+    RETURN_NAMES = (Lexicon.ANY_OUT,)
     SORT = 65
     DESCRIPTION = """
 The Swap Node swaps components between two vectors based on specified swizzle patterns and values. It provides flexibility in rearranging vector elements dynamically.

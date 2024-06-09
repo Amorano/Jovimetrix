@@ -149,7 +149,7 @@ The GLSL Node executes custom GLSL (OpenGL Shading Language) fragment shaders to
 
             self.__last_good = images
             pbar.update_absolute(idx)
-        return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
+        return [torch.cat(i, dim=0) for i in list(zip(*images))]
 
 class GLSLBaseNode(JOVBaseNode):
     NAME = ""
@@ -205,7 +205,7 @@ class GLSLBaseNode(JOVBaseNode):
             image = pil2cv(image)
             images.append(cv2tensor_full(image))
             pbar.update_absolute(idx)
-        return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
+        return [torch.cat(i, dim=0) for i in list(zip(*images))]
 
 # =============================================================================
 

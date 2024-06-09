@@ -193,7 +193,7 @@ complex image transformations.
                 pA[:,:,3] = alpha
             images.append(cv2tensor_full(pA, matte))
             pbar.update_absolute(idx)
-        return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
+        return [torch.cat(i, dim=0) for i in list(zip(*images))]
 
 class ColorMatchNode(JOVBaseNode):
     NAME = "COLOR MATCH (JOV) 💞"
@@ -276,7 +276,7 @@ The `Color Match` node allows you to adjust the color scheme of one image to mat
                 pA = image_mask_add(pA, mask)
             images.append(cv2tensor_full(pA, matte))
             pbar.update_absolute(idx)
-        return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
+        return [torch.cat(i, dim=0) for i in list(zip(*images))]
 
 class ThresholdNode(JOVBaseNode):
     NAME = "THRESHOLD (JOV) 📉"
@@ -320,7 +320,9 @@ The `Threshold` node enables you to define a range and apply it to an image, use
                 pA = image_invert(pA, 1)
             images.append(cv2tensor_full(pA))
             pbar.update_absolute(idx)
+        return [torch.stack(i, dim=0) for i in list(zip(*images))]
         return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
+        return [torch.cat(i, dim=0) for i in list(zip(*images))]
 
 class ColorBlindNode(JOVBaseNode):
     NAME = "COLOR BLIND (JOV) 👁‍🗨"
@@ -360,7 +362,7 @@ The `Color Blind` node facilitates the simulation of color blindness effects on 
             pA = image_color_blind(pA, deficiency, simulator, severity)
             images.append(cv2tensor_full(pA))
             pbar.update_absolute(idx)
-        return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
+        return [torch.cat(i, dim=0) for i in list(zip(*images))]
 
 class FilterMaskNode(JOVBaseNode):
     NAME = "FILTER MASK (JOV) 🤿"
@@ -418,4 +420,4 @@ The `Filter Mask` node allows you to create masks based on color ranges within a
             matte = image_matte(img, matte)[:,:,:3]
             images.append([cv2tensor(img), cv2tensor(matte), mask])
             pbar.update_absolute(idx)
-        return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
+        return [torch.cat(i, dim=0) for i in list(zip(*images))]

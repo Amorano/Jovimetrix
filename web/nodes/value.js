@@ -19,62 +19,92 @@ app.registerExtension({
 
         const onNodeCreated = nodeType.prototype.onNodeCreated
         nodeType.prototype.onNodeCreated = function () {
-            const me = onNodeCreated?.apply(this)
+            const me = onNodeCreated?.apply(this);
             const widget_str = this.widgets.find(w => w.name === '📝');
             const widget_x = this.widgets.find(w => w.name === 'X');
             const widget_xyzw = this.widgets.find(w => w.name === '🅰️4');
-            const output_X = this.outputs.find(w => w.name === '🇽');
+            const output_x = this.outputs.find(w => w.name === '🇽');
+            const output_y = this.outputs.find(w => w.name === '🇾');
+            const output_z = this.outputs.find(w => w.name === '🇿');
+            const output_w = this.outputs.find(w => w.name === '🇼');
+
             widget_str.origComputeSize = widget_str.computeSize;
             const combo = this.widgets.find(w => w.name === '❓');
             combo.callback = () => {
-                const output_list = this.outputs.find(w => w.name === '🧾');
+
+                widget_x.options.menu = false;
+                widget_str.options.menu = false;
+                widget_xyzw.options.menu = false;
 
                 widget_str.inputEl.className = "jov-hidden";
                 widget_str.computeSize = () => [0, -4];
-                widget_x.options.menu = false;
-                widget_xyzw.options.menu = false;
-                widget_str.options.menu = false;
                 //
                 widget_hide(this, widget_x, "-jovi");
                 widget_hide(this, widget_xyzw, "-jovi");
                 widget_hide(this, widget_str, "-jovi");
                 //
+                output_x.type = "*";
+                output_y.type = "*";
+                output_z.type = "*";
+                output_w.type = "*";
+                //
                 if (combo.value == "BOOLEAN") {
                     show_boolean(widget_x);
-                    output_list.type = "BOOLEAN";
+                    output_x.type = "BOOLEAN";
                 } else if (combo.value == "LIST") {
                     process_any(widget_str, "LIST")
                     widget_str.inputEl.className = "comfy-multiline-input";
                     widget_str.computeSize = widget_str.origComputeSize;
-                    output_list.type = "LIST";
+                    output_x.type = "LIST";
                 } else if (combo.value == "DICT") {
                     process_any(widget_str, "DICT")
                     widget_str.inputEl.className = "comfy-multiline-input";
                     widget_str.computeSize = widget_str.origComputeSize;
-                    output_list.type = "DICT";
+                    output_x.type = "DICT";
                 } else if (combo.value == "ANY") {
                     process_any(widget_x, "*")
-                    output_list.type = "*";
                 } else if (combo.value == "MASK") {
                     process_any(widget_x, "MASK")
-                    output_list.type = "MASK";
+                    output_x.type = "MASK";
                 } else if (combo.value == "STRING") {
                     process_any(widget_str, "STRING")
                     widget_str.inputEl.className = "comfy-multiline-input";
                     widget_str.computeSize = widget_str.origComputeSize;
-                    output_list.type = "STRING";
+                    output_x.type = "STRING";
                 } else if (combo.value == "FLOAT") {
                     process_value(widget_x, 3);
-                    output_list.type = "FLOAT";
+                    output_x.type = "FLOAT";
                 } else if (combo.value == "INT") {
                     process_value(widget_x);
-                    output_list.type = "INT";
-                } else if (["VEC2", "COORD2D", "VEC3", "VEC4"].includes(combo.value)) {
+                    output_x.type = "INT";
+                } else if (combo.value == "COORD2D") {
                     show_vector(widget_xyzw, 3);
-                    output_list.type = "*";
+                    output_x.type = "FLOAT";
+                    output_y.type = "FLOAT";
+                } else if (["VEC2", "VEC3", "VEC4"].includes(combo.value)) {
+                    show_vector(widget_xyzw, 3);
+                    output_x.type = "FLOAT";
+                    if (["VEC2", "COORD2D", "VEC3", "VEC4"].includes(combo.value)) {
+                        output_y.type = "FLOAT";
+                    }
+                    if (["VEC3", "VEC4"].includes(combo.value)) {
+                        output_z.type = "FLOAT";
+                    }
+                    if ("VEC4" == combo.value) {
+                        output_w.type = "FLOAT";
+                    }
                 } else if (["VEC2INT", "VEC3INT", "VEC4INT"].includes(combo.value)) {
                     show_vector(widget_xyzw);
-                    output_list.type = "*";
+                    output_x.type = "INT";
+                    if (["VEC2INT", "COORD2DINT", "VEC3INT", "VEC4INT"].includes(combo.value)) {
+                        output_y.type = "INT";
+                    }
+                    if (["VEC3INT", "VEC4INT"].includes(combo.value)) {
+                        output_z.type = "INT";
+                    }
+                    if ("VEC4INT" == combo.value) {
+                        output_w.type = "INT";
+                    }
                 }
                 this.outputs[0].name = widget_type_name(combo.value);
                 fitHeight(this);

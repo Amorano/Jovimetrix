@@ -129,7 +129,7 @@ export function show_boolean(widget_x) {
     widget_x.type = "toggle";
 }
 
-export function show_vector(widget, precision=0) {
+export function show_vector(widget, precision=0, size=4) {
     widget_show(widget);
     widget.origType = widget.type;
     if (precision == 0) {

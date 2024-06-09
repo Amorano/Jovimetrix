@@ -48,8 +48,8 @@ const create_documentation_stylesheet = () => {
         overflow: hidden;
         width: 315px;
         height: 295px;
-        min-width: 315px;
-        min-height: 65px;
+        min-width: 215px;
+        min-height: 85px;
     }
     .jov-documentation-popup img {
         display: block;
@@ -461,20 +461,10 @@ app.registerExtension({
             }
 
             ctx.save();
-            const size = LiteGraph.NODE_TITLE_HEIGHT * 2.25;
-            ctx.translate(x-5, -LiteGraph.NODE_TITLE_HEIGHT * 0.65); // Position the icon on the canvas
+            ctx.translate(x-3, -LiteGraph.NODE_TITLE_HEIGHT * 0.65); // Position the icon on the canvas
             ctx.scale(iconSize / 32, iconSize / 32) // Scale the icon to the desired size
-            ctx.font = `bold ${size}px monospace`;
-            ctx.fillStyle = 'rgb(255,120,240,0.50)';
-            ctx.fillText('?', 0, 32);
-            ctx.translate(1, 3) // Position the icon on the canvas
-            ctx.font = `bold ${size-2}px monospace`
-            ctx.fillStyle = 'rgb(40,10,20,0.70)';
-            ctx.fillText('?', 0, 28);
-            ctx.translate(1, 3) // Position the icon on the canvas
-            ctx.fillStyle = 'rgb(250,80,250)';
-            ctx.font = `bold ${size-4}px monospace`
-            ctx.fillText('?', 0, 24);
+            ctx.font = `bold ${LiteGraph.NODE_TITLE_HEIGHT * 1.35}px monospace`;
+            ctx.fillText('🛈', 0, 24); // ℹ️
             ctx.restore()
             return me;
         }

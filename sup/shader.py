@@ -8,6 +8,8 @@ import time
 from typing import Tuple
 
 import moderngl
+import OpenGL.GL as gl
+import glfw
 import numpy as np
 from PIL import Image
 from loguru import logger
@@ -54,6 +56,85 @@ layout(location = 0) out vec4 fragColor;
 # =============================================================================
 
 class CompileException(Exception): pass
+
+def render_surface_and_context_init(width, height) -> dict:
+    if not glfw.init():
+        raise RuntimeError("GLFW did not init")
+
+    glfw.window_hint(glfw.VISIBLE, glfw.FALSE)  # hidden
+    window = glfw.create_window(width, height, "hidden", None, None)
+    if not window:
+        raise RuntimeError("GLFW did not init window")
+
+    glfw.make_context_current(window)
+    return {}
+
+def render_surface_and_context_deinit(**kwargs) -> None:
+    glfw.terminate()
+
+def compile_shader(source, shader_type):
+    shader = gl.glCreateShader(shader_type)
+    gl.glShaderSource(shader, source)
+    gl.glCompileShader(shader)
+    if gl.glGetShaderiv(shader, gl.GL_COMPILE_STATUS) != gl.GL_TRUE:
+        raise RuntimeError(gl.glGetShaderInfoLog(shader))
+    return shader
+
+def compile_program(vertex_source, fragment_source):
+    vertex_shader = compile_shader(vertex_source, gl.GL_VERTEX_SHADER)
+    fragment_shader = compile_shader(fragment_source, gl.GL_FRAGMENT_SHADER)
+    program = gl.glCreateProgram()
+    gl.glAttachShader(program, vertex_shader)
+    gl.glAttachShader(program, fragment_shader)
+    gl.glLinkProgram(program)
+    if gl.glGetProgramiv(program, gl.GL_LINK_STATUS) != gl.GL_TRUE:
+        raise RuntimeError(gl.glGetProgramInfoLog(program))
+    return program
+
+def setup_framebuffer(width, height):
+    texture = gl.glGenTextures(1)
+    gl.glBindTexture(gl.GL_TEXTURE_2D, texture)
+    gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_RGB, width, height, 0, gl.GL_RGB, gl.GL_UNSIGNED_BYTE, None)
+    gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_LINEAR)
+    gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_LINEAR)
+
+    fbo = gl.glGenFramebuffers(1)
+    gl.glBindFramebuffer(gl.GL_FRAMEBUFFER, fbo)
+    gl.glFramebufferTexture2D(gl.GL_FRAMEBUFFER, gl.GL_COLOR_ATTACHMENT0, gl.GL_TEXTURE_2D, texture, 0)
+    if gl.glCheckFramebufferStatus(gl.GL_FRAMEBUFFER) != gl.GL_FRAMEBUFFER_COMPLETE:
+        raise RuntimeError("Framebuffer is not complete")
+    return fbo, texture
+
+def setup_render_resources(width, height, fragment_source: str):
+    ctx = render_surface_and_context_init(width, height)
+    vertex_source = """
+    #version 330 core
+    void main()
+    {
+        vec2 verts[3] = vec2[](vec2(-1, -1), vec2(3, -1), vec2(-1, 3));
+        gl_Position = vec4(verts[gl_VertexID], 0, 1);
+    }
+    """
+    shader = compile_program(vertex_source, fragment_source)
+    fbo, texture = setup_framebuffer(width, height)
+    textures = gl.glGenTextures(4)
+    return (ctx, fbo, shader, textures)
+
+def render_resources_cleanup(ctx):
+    # assume all other resources get cleaned up with the context
+    render_surface_and_context_deinit(**ctx)
+
+def render(width, height, fbo, shader):
+    gl.glBindFramebuffer(gl.GL_FRAMEBUFFER, fbo)
+    gl.glClearColor(0.0, 0.0, 0.0, 1.0)
+    gl.glClear(gl.GL_COLOR_BUFFER_BIT)
+    gl.glUseProgram(shader)
+    gl.glDrawArrays(gl.GL_TRIANGLES, 0, 3)
+    data = gl.glReadPixels(0, 0, width, height, gl.GL_RGB, gl.GL_UNSIGNED_BYTE)
+    image = np.frombuffer(data, dtype=np.uint8).reshape(height, width, 3)
+    image = image[::-1, :, :]
+    image = np.array(image).astype(np.float32) / 255.0
+    return image
 
 # =============================================================================
 

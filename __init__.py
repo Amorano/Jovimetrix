@@ -51,7 +51,7 @@ manipulation, Polygonal shapes, MIDI, MP3/WAVE, Flow Logic
     DelayNode, HoldValueNode, ComparisonNode, SelectNode,
     AkashicNode, ValueGraphNode, RouteNode, QueueNode, ExportNode, ImageDiffNode,
     BatchNode
-@version: 0.9999999999999
+@version: 1.1.0
 """
 
 import os
@@ -80,7 +80,6 @@ __all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS", "WEB_DIRECTORY"]
 
 ROOT = Path(__file__).resolve().parent
 ROOT_COMFY = ROOT.parent.parent
-ROOT_COMFY_WEB = ROOT_COMFY / "web" / "extensions" / "jovimetrix"
 
 JOV_CONFIG = {}
 JOV_WEB = ROOT / 'web'

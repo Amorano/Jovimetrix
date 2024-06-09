@@ -65,7 +65,7 @@ The Constant node generates constant images or masks of a specified size and col
         matte = parse_param(kw, Lexicon.RGBA_A, EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
         # ((512, 512),)
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), MIN_IMAGE_SIZE)
-        logger.debug(kw[Lexicon.WH], wihi)
+        logger.debug(f"{kw[Lexicon.WH]}, {wihi}")
         # ((512, 512),)
         mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.NONE.name)
         sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)
@@ -86,7 +86,8 @@ The Constant node generates constant images or masks of a specified size and col
                     pA = image_scalefit(pA, width, height, mode, sample)
                 images.append(cv2tensor_full(pA, matte))
             pbar.update_absolute(idx)
-        return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
+        return [torch.cat(i, dim=0) for i in list(zip(*images))]
+        # return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
 
 class ShapeNode(JOVBaseNode):
     NAME = "SHAPE GEN (JOV) ✨"
@@ -183,7 +184,9 @@ The Shape Generation node creates images representing various shapes such as cir
             # images.append(cv2tensor_full(pA))
             images.append([cv2tensor(pB), cv2tensor(pA), cv2tensor(mask, True)])
             pbar.update_absolute(idx)
-        return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
+        return [torch.cat(i, dim=0) for i in list(zip(*images))]
+        # return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
+        # THIS ALLOWS FOR OUTPUT_IS_LIST --> [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
 
 class TextNode(JOVBaseNode):
     NAME = "TEXT GEN (JOV) 📝"
@@ -296,7 +299,7 @@ The Text Generation node generates images containing text based on user-defined 
                     img = image_invert(img, 1)
                 images.append(cv2tensor_full(img, matte))
             pbar.update_absolute(idx)
-        return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
+        return [torch.cat(i, dim=0) for i in list(zip(*images))]
 
 class StereogramNode(JOVBaseNode):
     NAME = "STEREOGRAM (JOV) 📻"
@@ -342,7 +345,7 @@ The Stereogram node creates stereograms, generating 3D images from 2D input. Set
             pA = image_stereogram(pA, depth, divisions, noise, gamma, shift)
             images.append(cv2tensor_full(pA))
             pbar.update_absolute(idx)
-        return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
+        return [torch.cat(i, dim=0) for i in list(zip(*images))]
 
 class StereoscopicNode(JOVBaseNode):
     NAME = "STEREOSCOPIC (JOV) 🕶️"
@@ -378,4 +381,4 @@ The Stereoscopic node simulates depth perception in images by generating stereos
             disparity_map *= baseline * focal_length
             images.append(cv2tensor(pA))
             pbar.update_absolute(idx)
-        return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
+        return [torch.cat(i, dim=0) for i in list(zip(*images))]

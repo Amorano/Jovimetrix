@@ -18,6 +18,7 @@ daltonlens
 numba
 PyOpenGL
 PyOpenGL-accelerate
+glfw
 SpoutGL; platform_system=="Windows"
 vnoise
 stereoscopy[auto_align]

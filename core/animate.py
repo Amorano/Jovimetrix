@@ -21,11 +21,21 @@ JOV_CATEGORY = "ANIMATE"
 
 # =============================================================================
 
+class Results(object):
+    def __init__(self, *arg, **kw) -> None:
+        self.frame = []
+        self.lin = []
+        self.fixed = []
+        self.trigger = []
+
+#
+
 class TickNode(JOVBaseNode):
     NAME = "TICK (JOV) ⏱"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = ("INT", "FLOAT", "FLOAT", WILDCARD)
-    RETURN_NAMES = (Lexicon.VALUE, Lexicon.LINEAR, Lexicon.FPS, Lexicon.ANY)
+    RETURN_TYPES = (WILDCARD, "FLOAT", "FLOAT", WILDCARD)
+    RETURN_NAMES = (Lexicon.VALUE, Lexicon.LINEAR, Lexicon.FPS, Lexicon.TRIGGER)
+    OUTPUT_IS_LIST = (True, True, True, True)
     DESCRIPTION = """
 The `Tick` node acts as a timer and frame counter, emitting pulses or signals based on time intervals or BPM settings. It allows precise synchronization and control over animation sequences, with options to adjust FPS, BPM, and loop points. This node is useful for generating time-based events or driving animations with rhythmic precision.
 """
@@ -36,7 +46,7 @@ The `Tick` node acts as a timer and frame counter, emitting pulses or signals ba
         "required": {},
         "optional": {
             # data to pass on a pulse of the loop
-            Lexicon.ANY: (WILDCARD, {"default": None, "tooltip":"Output to send when beat (BPM setting) is hit"}),
+            Lexicon.TRIGGER: (WILDCARD, {"default": None, "tooltip":"Output to send when beat (BPM setting) is hit"}),
             # forces a MOD on CYCLE
             Lexicon.VALUE: ("INT", {"min": 0, "default": 0, "step": 1, "tooltip": "the current frame number of the tick"}),
             Lexicon.LOOP: ("INT", {"min": 0, "default": 0, "step": 1, "tooltip": "number of frames before looping starts. 0 means continuous playback (no loop point)"}),
@@ -52,16 +62,18 @@ The `Tick` node acts as a timer and frame counter, emitting pulses or signals ba
             Lexicon.RESET: ("BOOLEAN", {"default": False}),
             # how many frames to dump....
             Lexicon.BATCH: ("INT", {"min": 1, "default": 1, "step": 1, "max": 32767, "tooltip": "Number of frames wanted"}),
-            Lexicon.STEP: ("INT", {"min": 1, "default": 1, "step": 1, "tooltip": "Steps/Stride between pulses -- useful to do odd or even batches"}),
+            Lexicon.STEP: ("INT", {"min": 0, "default": 0, "step": 1, "tooltip": "Steps/Stride between pulses -- useful to do odd or even batches. If set to 0 will stretch from (VAL -> LOOP) / Batch giving a linear range of values."}),
         },
         "hidden": {
             "ident": "UNIQUE_ID"
         }}
         return Lexicon._parse(d, cls)
 
+    """
     @classmethod
     def IS_CHANGED(cls) -> float:
         return float("nan")
+    """
 
     def __init__(self, *arg, **kw) -> None:
         super().__init__(*arg, **kw)
@@ -69,10 +81,9 @@ The `Tick` node acts as a timer and frame counter, emitting pulses or signals ba
         self.__frame = 0
 
     def run(self, ident, **kw) -> Tuple[int, float, float, Any]:
-        passthru = parse_param(kw, Lexicon.ANY, EnumConvertType.ANY, None)[0]
-        stride = parse_param(kw, Lexicon.STEP, EnumConvertType.INT, 1, 1)[0]
-        loop = parse_param(kw, Lexicon.LOOP, EnumConvertType.INT, 0)
-        loop = loop[0]
+        passthru = parse_param(kw, Lexicon.TRIGGER, EnumConvertType.ANY, None)[0]
+        stride = parse_param(kw, Lexicon.STEP, EnumConvertType.INT, 0, 0)[0]
+        loop = parse_param(kw, Lexicon.LOOP, EnumConvertType.INT, 0)[0]
         self.__frame = parse_param(kw, Lexicon.VALUE, EnumConvertType.INT, self.__frame)[0]
         if loop > 0:
             self.__frame %= loop
@@ -88,14 +99,9 @@ The `Tick` node acts as a timer and frame counter, emitting pulses or signals ba
         if parse_reset(ident) > 0 or reset:
             self.__frame = 0
         trigger = None
-        results = {
-            'frame': [],
-            'lin': [],
-            'fixed': [],
-            'trigger': [],
-        }
-        results = []
+        results = Results()
         pbar = ProgressBar(batch)
+        step = 1 if stride > 0 else max(1, loop / batch)
         for idx in range(batch):
             trigger = False
             lin = self.__frame if loop == 0 else self.__frame / loop
@@ -104,14 +110,16 @@ The `Tick` node acts as a timer and frame counter, emitting pulses or signals ba
                 trigger = [passthru]
             if loop > 0:
                 self.__frame %= loop
-            results.append([self.__frame, lin, float(fixed_step), trigger])
+            results.frame.append(self.__frame)
+            results.lin.append(lin)
+            results.fixed.append(float(fixed_step))
+            results.trigger.append(trigger)
             if not hold:
-                self.__frame += stride
+                self.__frame += step
             pbar.update_absolute(idx)
         if batch < 2:
-        #    self.__frame = 0
             comfy_message(ident, "jovi-tick", {"i": self.__frame})
-        return [list(x) for x in (zip(*results))]
+        return results.frame, results.lin, results.fixed, results.trigger
 
 class WaveGeneratorNode(JOVBaseNode):
     NAME = "WAVE GEN (JOV) 🌊"
@@ -159,4 +167,5 @@ The `Wave Generator` node produces waveforms like sine, square, or sawtooth with
                 val = np.abs(val)
             results.append([val, int(val)])
             pbar.update_absolute(idx)
-        return [list(x) for x in (zip(*results))]
+        return *[[x] for x in zip(*results)],
+        # return [list(x) for x in (zip(*results))]

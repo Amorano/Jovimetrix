@@ -119,7 +119,7 @@ The Wave Graph node visualizes audio waveforms as bars. Adjust parameters like t
                 img = graph_sausage(wave[0], bars, width, height, thickness=thick, color_line=rgb_a, color_back=matte)
             images.append(cv2tensor_full(img))
             pbar.update_absolute(idx)
-        return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
+        return [torch.cat(i, dim=0) for i in list(zip(*images))]
 
 class AudioWaveFilterNode(JOVBaseNode):
     NAME = "AUDIO FILTER (JOV) 🥁"
@@ -166,4 +166,4 @@ This is the template documentation comment.
             ret = (torch.from_numpy(beats_smoothed)[:, None, None, None].expand(-1, -1, -1, 3),)
             waves.append(ret)
             pbar.update_absolute(idx)
-        return [*(zip(*waves)),]
+        return list(zip(*waves))
