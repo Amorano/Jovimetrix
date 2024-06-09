@@ -63,8 +63,6 @@ def parse_dynamic(data:dict, key:str, typ:EnumConvertType, default: Any) -> List
             val = [val]
         vals.extend(val)
         count += 1
-    if len(vals) == 0:
-        vals.append([])
     return vals
 
 def parse_value(val:Any, typ:EnumConvertType, default: Any,
@@ -126,7 +124,7 @@ def parse_value(val:Any, typ:EnumConvertType, default: Any,
                 logger.error(f"Error converting value: {e}")
                 v = 0
             new_val.append(v)
-        new_val = [new_val[0]] if size == 1 else tuple(new_val)
+        new_val = new_val[0] if size == 1 else tuple(new_val)
     elif typ == EnumConvertType.DICT:
         try:
             if isinstance(new_val, (str,)):

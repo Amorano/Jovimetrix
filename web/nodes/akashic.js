@@ -7,8 +7,10 @@
 import { app } from "../../../scripts/app.js"
 import { ComfyWidgets } from '../../../scripts/widgets.js';
 import { JImageWidget } from '../widget/widget_jimage.js'
+import { node_add_dynamic } from '../util/util.js'
 
-const _prefix = 'jovi'
+const _prefix = '📥'
+const _prefix_image = 'jovi'
 const _id = "AKASHIC (JOV) 📓"
 
 app.registerExtension({
@@ -18,6 +20,7 @@ app.registerExtension({
             return
         }
 
+        nodeType = node_add_dynamic(nodeType, _prefix);
         const onNodeCreated = nodeType.prototype.onNodeCreated;
         nodeType.prototype.onNodeCreated = async function () {
             const me = onNodeCreated?.apply(this);
@@ -57,7 +60,7 @@ app.registerExtension({
                 for (const img of message.b64_images) {
                     continue;
                     const w = this.addCustomWidget(
-                        JImageWidget(app, `${_prefix}_${index}`, img)
+                        JImageWidget(app, `${_prefix_image}_${index}`, img)
                     )
                     w.parent = this;
                     index++;

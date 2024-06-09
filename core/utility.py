@@ -76,39 +76,39 @@ The Akashic node processes input data and prepares it for visualization. It acce
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {
-            "required": {},
-            "optional": {
-                Lexicon.PASS_IN: (WILDCARD, {})
-            }
-        }
+        d = {"required": {},}
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[Any, Any]:
-        o = parse_param(kw, Lexicon.PASS_IN, EnumConvertType.ANY, None)
+        logger.debug(kw)
+        o = kw.values()
+        #o = parse_dynamic(kw, Lexicon.PASS_IN, EnumConvertType.ANY, None)
+        #logger.debug(o)
         output = {"ui": {"b64_images": [], "text": []}}
-        if o is None:
+        if o is None or len(o) == 0:
             output["ui"]["result"] = (None, None, )
             return output
 
         def __parse(val) -> str:
+            logger.debug(val)
             ret = val
             typ = ''.join(repr(type(val)).split("'")[1:2])
             if isinstance(val, dict):
                 ret = json.dumps(val, indent=3)
             elif isinstance(val, (tuple, set, list,)):
                 ret = ''
-                if type(val) == np.ndarray:
-                    if len(q := q()) == 1:
-                        ret += f"{q[0]}"
-                    elif q > 1:
-                        ret += f"{q[1]}x{q[0]}"
+                if len(val) > 0:
+                    if type(val) == np.ndarray:
+                        if len(q := q()) == 1:
+                            ret += f"{q[0]}"
+                        elif q > 1:
+                            ret += f"{q[1]}x{q[0]}"
+                        else:
+                            ret += f"{q[1]}x{q[0]}x{q[2]}"
+                    elif len(val) < 2:
+                        ret = val[0]
                     else:
-                        ret += f"{q[1]}x{q[0]}x{q[2]}"
-                elif len(val) < 2:
-                    ret = val[0]
-                else:
-                    ret = ', '.join(str(v) for v in val)
+                        ret = ', '.join(str(v) for v in val)
             elif isinstance(val, bool):
                 ret = "True" if val else "False"
             elif isinstance(val, torch.Tensor):

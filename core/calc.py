@@ -459,11 +459,12 @@ The Value Node supplies raw or default values for various data types, supporting
                                                   else EnumConvertType.VEC4INT
 
             extra = parse_value(val, typ, default)
-            ret = [val] if not isinstance(val, (list,)) else val
+            ret = [val] #if not isinstance(val, (list,)) else val
             ret.extend(extra)
             results.append(ret)
             pbar.update_absolute(idx)
-        return [[x] for x in zip(*results)]
+        return list(zip(*results))
+        #(results,) #*list(zip(*results)),
 
 class LerpNode(JOVBaseNode):
     NAME = "LERP (JOV) 🔰"
@@ -568,7 +569,7 @@ The Lerp Node performs linear interpolation between two values or vectors based 
             values.append(val)
             pbar.update_absolute(idx)
         return (values, )
-        return *[[x] for x in zip(*results)],
+        return *list(zip(*results)),
 
 class SwapNode(JOVBaseNode):
     NAME = "SWAP (JOV) 😵"

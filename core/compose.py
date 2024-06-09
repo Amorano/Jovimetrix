@@ -216,8 +216,6 @@ The Blend Node combines two input images using various blending modes, such as n
             img = cv2tensor_full(img, matte)
             images.append(img)
             pbar.update_absolute(idx)
-        return [torch.stack(i, dim=0) for i in list(zip(*images))]
-        return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
         return [torch.cat(i, dim=0) for i in list(zip(*images))]
 
 class PixelSplitNode(JOVBaseNode):

@@ -62,7 +62,7 @@ The `Tick` node acts as a timer and frame counter, emitting pulses or signals ba
             Lexicon.RESET: ("BOOLEAN", {"default": False}),
             # how many frames to dump....
             Lexicon.BATCH: ("INT", {"min": 1, "default": 1, "step": 1, "max": 32767, "tooltip": "Number of frames wanted"}),
-            Lexicon.STEP: ("INT", {"min": 0, "default": 0, "step": 1, "tooltip": "Steps/Stride between pulses -- useful to do odd or even batches. If set to 0 will stretch from (VAL -> LOOP) / Batch giving a linear range of values."}),
+            Lexicon.STEP: ("INT", {"default": 0, "step": 1, "tooltip": "Steps/Stride between pulses -- useful to do odd or even batches. If set to 0 will stretch from (VAL -> LOOP) / Batch giving a linear range of values."}),
         },
         "hidden": {
             "ident": "UNIQUE_ID"
@@ -85,7 +85,7 @@ The `Tick` node acts as a timer and frame counter, emitting pulses or signals ba
         stride = parse_param(kw, Lexicon.STEP, EnumConvertType.INT, 0, 0)[0]
         loop = parse_param(kw, Lexicon.LOOP, EnumConvertType.INT, 0)[0]
         self.__frame = parse_param(kw, Lexicon.VALUE, EnumConvertType.INT, self.__frame)[0]
-        if loop > 0:
+        if loop != 0:
             self.__frame %= loop
         self.__frame = max(0, self.__frame)
         hold = parse_param(kw, Lexicon.WAIT, EnumConvertType.BOOLEAN, False)[0]
@@ -101,14 +101,14 @@ The `Tick` node acts as a timer and frame counter, emitting pulses or signals ba
         trigger = None
         results = Results()
         pbar = ProgressBar(batch)
-        step = 1 if stride > 0 else max(1, loop / batch)
+        step = stride if stride != 0 else max(1, loop / batch)
         for idx in range(batch):
             trigger = False
             lin = self.__frame if loop == 0 else self.__frame / loop
             fixed_step = math.fmod(self.__frame * step_fps, fps)
             if (math.fmod(fixed_step, beat) == 0):
                 trigger = [passthru]
-            if loop > 0:
+            if loop != 0:
                 self.__frame %= loop
             results.frame.append(self.__frame)
             results.lin.append(lin)
@@ -167,5 +167,5 @@ The `Wave Generator` node produces waveforms like sine, square, or sawtooth with
                 val = np.abs(val)
             results.append([val, int(val)])
             pbar.update_absolute(idx)
-        return *[[x] for x in zip(*results)],
+        return *list(zip(*results)),
         # return [list(x) for x in (zip(*results))]

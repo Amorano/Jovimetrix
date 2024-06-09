@@ -121,6 +121,16 @@ app.registerExtension({
             }
             return onConnectionsChange?.apply(this, arguments);
         }
-        return nodeType;
+
+        const onExecuted = nodeType.prototype.onExecuted;
+        nodeType.prototype.onExecuted = function(message) {
+            const me = onExecuted?.apply(this,arguments);
+            console.info(2, message);
+            let values = message["text"].toString().map(Number);
+            this.outputs[1]["name"] = values[1] + " width"
+            this.outputs[2]["name"] = values[2] + " height"
+            this.outputs[3]["name"] = values[0] + " count"
+            return me;
+        }
 	}
 })
