@@ -19,40 +19,14 @@ from PIL import Image, ImageDraw
 
 from loguru import logger
 
-from Jovimetrix.sup.image import EnumImageType, EnumScaleMode, image_scalefit, pil2cv, TYPE_PIXEL, pixel_convert, pixel_eval
+from Jovimetrix.sup.image import pixel_eval, image_scalefit, pil2cv, \
+    EnumImageType, EnumScaleMode, TYPE_PIXEL
 
 # =============================================================================
 
 class EnumGraphType(Enum):
     NORMAL = 0
     SOUNDCLOUD = 1
-
-# =============================================================================
-# === LOADERS ===
-# =============================================================================
-
-# FFMPEG... dont love
-def load_audio(url) -> np.ndarray[np.int16]:
-    cmd = (
-        ffmpeg.input(url)
-        .output('-', format='s16le', acodec='pcm_s16le', ac=1)
-        .run(input=None, capture_stdout=False, capture_stderr=False)
-    )
-    # logger.debug(url)
-    return np.frombuffer(cmd[0], dtype=np.int16)
-
-def load_audio(url: str, sample_rate: int=22050, offset: float=0, mono:bool=True,
-               duration: float=None) -> Tuple[np.ndarray[np.int16], float]:
-
-    if duration == 0.0:
-        duration = None
-
-    if url.startswith("http"):
-        url = io.BytesIO(urlopen(url).read())
-
-    audio, rate = librosa.load(url, sr=sample_rate, offset=offset, duration=duration)
-    # audio = torch.from_numpy(audio)[None, :, None]
-    return audio, rate
 
 # =============================================================================
 # === VISUALIZE ===
