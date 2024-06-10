@@ -17,7 +17,8 @@ app.registerExtension({
         if (nodeData.name !== _id) {
             return;
         }
-        nodeType = node_add_dynamic(nodeType, _prefix);
+        nodeType = node_add_dynamic(nodeType, _prefix, '*');
+
         const onNodeCreated = nodeType.prototype.onNodeCreated;
         nodeType.prototype.onNodeCreated = async function () {
             const me = onNodeCreated?.apply(this);

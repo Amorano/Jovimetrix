@@ -82,7 +82,7 @@ The Akashic node processes input data and prepares it for visualization. It acce
     def run(self, **kw) -> Tuple[Any, Any]:
         logger.debug(kw)
         o = kw.values()
-        #o = parse_dynamic(kw, Lexicon.PASS_IN, EnumConvertType.ANY, None)
+        #o = parse_dynamic(kw, 0, EnumConvertType.ANY, None)
         #logger.debug(o)
         output = {"ui": {"b64_images": [], "text": []}}
         if o is None or len(o) == 0:
@@ -170,7 +170,7 @@ The Graph node visualizes a series of data points over time. It accepts a dynami
         if parse_reset(ident) > 0 or parse_param(kw, Lexicon.RESET, EnumConvertType.BOOLEAN, False)[0]:
             self.__history = []
         longest_edge = 0
-        dynamic = parse_dynamic(kw, Lexicon.UNKNOWN, EnumConvertType.FLOAT, 0)
+        dynamic = parse_dynamic(kw, 0, EnumConvertType.FLOAT, 0)
         # each of the plugs
         self.__ax.clear()
         for idx, val in enumerate(dynamic):
@@ -515,7 +515,7 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
         self.__seed = None
 
     def run(self, **kw) -> Tuple[int, list]:
-        batch = parse_dynamic(kw, Lexicon.UNKNOWN, EnumConvertType.ANY, None)
+        batch = parse_dynamic(kw, 0, EnumConvertType.ANY, None)
         mode = parse_param(kw, Lexicon.BATCH_MODE, EnumConvertType.STRING, EnumBatchMode.MERGE.name)
         index = parse_param(kw, Lexicon.INDEX, EnumConvertType.INT, EnumBatchMode.MERGE.name)
         slice_range = parse_param(kw, Lexicon.RANGE, EnumConvertType.VEC3INT, (0, 0, 1))
@@ -527,6 +527,7 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
         # track latents since they need to be added back to Dict['samples']
         latents = []
         full = []
+
         logger.debug(batch)
 
         for b in batch:

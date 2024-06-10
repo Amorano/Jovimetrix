@@ -196,16 +196,30 @@ The Blend Node combines two input images using various blending modes, such as n
                 h, w = pA.shape[:2]
             elif pB is not None:
                 h, w = pB.shape[:2]
+
+            tmask = None
             if pA is None:
                 pA = channel_solid(w, h, matte, chan=EnumImageType.BGRA)
             else:
                 pA = tensor2cv(pA)
                 matted = pixel_eval(matte, EnumImageType.BGRA)
                 pA = image_matte(pA, matted)
-            pB = channel_solid(w, h, chan=EnumImageType.BGRA) if pB is None else tensor2cv(pB)
-            mask = image_mask(pB) if mask is None else tensor2cv(mask)
+                tmask = pA
+
+            if pB is None:
+                pB = channel_solid(w, h, matte, chan=EnumImageType.BGRA)
+            else:
+                pB = tensor2cv(pB)
+                tmask = pB
+
+            if mask is None:
+                mask = channel_solid(w, h, (matte[3],), EnumImageType.GRAYSCALE) if tmask is None else image_mask(tmask)
+            else:
+                mask = tensor2cv(mask)
+
             if invert:
                 mask = 255 - mask
+
             func = EnumBlendType[func]
             img = image_blend(pA, pB, mask, func, alpha)
             mode = EnumScaleMode[mode]
@@ -410,7 +424,7 @@ The Stack Node combines multiple input images into a single output image along a
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
-        ret = parse_dynamic(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
+        ret = parse_dynamic(kw, 0, EnumConvertType.IMAGE, None)
         images = []
         for i in ret:
             images.extend(i)
@@ -559,7 +573,7 @@ The Flatten Node combines multiple input images into a single image by summing t
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> torch.Tensor:
-        pA = parse_dynamic(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
+        pA = parse_dynamic(kw, 0, EnumConvertType.IMAGE, None)
         pA = [item for sublist in pA for item in sublist]
         if len(pA) == 0:
             logger.error("no images to flatten")

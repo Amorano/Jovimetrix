@@ -54,11 +54,14 @@ class EnumSwizzle(Enum):
 # === SUPPORT ===
 # =============================================================================
 
-def parse_dynamic(data:dict, key:str, typ:EnumConvertType, default: Any) -> List[Any]:
+def parse_dynamic(data:dict, index:int, typ:EnumConvertType, default: Any) -> List[Any]:
     vals = []
-    count = 1
-    while data.get((who := f"{key}_{count}"), None) is not None:
-        val = parse_param(data, who, typ, default)
+    count = index
+    for k in data:
+        name = k.split('_')
+        try: val = int(name[0])
+        except: continue
+        val = parse_param(data, k, typ, default)
         if not isinstance(val, (list,)):
             val = [val]
         vals.extend(val)
