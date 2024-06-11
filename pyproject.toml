@@ -1,9 +1,34 @@
 [project]
 name = "jovimetrix"
 description = "Compose like Substance Designer. Webcams, Media Streams (in/out), Tick animation, Color correction, Geometry manipulation, Pixel shader, Polygonal shape generator, Remap images gometry and color, Heavily inspired by WAS and MTB Node Suites."
-version = "1.1.0"
-license = "LICENSE"
-dependencies = ["torch", "numpy", "matplotlib", "opencv-contrib-python", "ffmpeg-python", "librosa", "loguru", "moderngl", "mss", "requests", "Pillow", "pywin32==306; platform_system==\"Windows\"", "scikit-image", "blendmodes", "mido[ports-rtmidi]", "pyaudio", "daltonlens", "numba", "PyOpenGL", "PyOpenGL-accelerate", "SpoutGL; platform_system==\"Windows\"", "vnoise", "stereoscopy[auto_align]", "aenum<4,>=3.1.15"]
+version = "1.1.1"
+license = "MIT"
+dependencies = [
+    "aenum<4,>=3.1.15",
+    "blendmodes>=2024.1",
+    "numpy>=1.26.4",
+    "matplotlib>=3.8.3",
+    "opencv-contrib-python>=4.9.0.80",
+    "ffmpeg-python>=0.2.0",
+    "librosa>=0.10.2",
+    "loguru>=0.7.2",
+    "moderngl>=5.10.0",
+    "mss>=9.0.1",
+    "requests>=2.31.0",
+    "pillow>=10.2.0",
+    "pywin32>=306; platform_system==\"Windows\"",
+    "scikit-image>=0.22.0",
+    "mido[ports-rtmidi]>=1.3.2",
+    "PyAudio>=0.2.14",
+    "daltonlens>=0.1.5",
+    "numba>=0.59.0",
+    "PyOpenGL>=3.1.7",
+    "PyOpenGL-accelerate>=3.1.7",
+    "glfw>=2.7.0",
+    "SpoutGL>=0.0.6; platform_system==\"Windows\"",
+    "vnoise>=0.1.0",
+    "stereoscopy[auto_align]>=2.0.1"
+]
 
 [project.urls]
 Repository = "https://github.com/Amorano/Jovimetrix"

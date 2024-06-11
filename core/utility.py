@@ -108,7 +108,7 @@ The Akashic node processes input data and prepares it for visualization. It acce
                     elif len(val) < 2:
                         ret = val[0]
                     else:
-                        ret = ', '.join(str(v) for v in val)
+                        ret = '\n\t'.join(str(v) for v in val)
             elif isinstance(val, bool):
                 ret = "True" if val else "False"
             elif isinstance(val, torch.Tensor):
@@ -618,7 +618,7 @@ class RouteNode(JOVBaseNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = ("BUS",)
     RETURN_NAMES = (Lexicon.ROUTE,)
-    SORT = 900
+    SORT = 850
     DESCRIPTION = """
 ☣️💣☣️💣☣️💣☣️💣 THIS NODE IS A WORK IN PROGRESS ☣️💣☣️💣☣️💣☣️💣
 
@@ -764,6 +764,30 @@ class BatchLoadNode(JOVBaseNode):
                 images.append(cv2tensor_full(pA, matte))
             pbar.update_absolute(idx)
         return [torch.cat(i, dim=0) for i in list(zip(*images))]
+
+class DynamicOutputNode(JOVBaseNode):
+    NAME = "DYNAMIC (JOV) 💥"
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
+    RETURN_TYPES = ()
+    RETURN_NAMES = ()
+    SORT = 1100
+    DESCRIPTION = """
+☣️💣☣️💣☣️💣☣️💣 THIS NODE IS A WORK IN PROGRESS ☣️💣☣️💣☣️💣☣️💣
+
+"""
+
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        d = {
+            "required": {},
+            "optional": {}
+        }
+        return Lexicon._parse(d, cls)
+
+    def run(self, **kw) -> Tuple[Any, ...]:
+        # inout = parse_param(kw, Lexicon.ROUTE, EnumConvertType.ANY, None)
+        values = [1, 2, 3]
+        return (*values,)
 
 '''
 class RESTNode:

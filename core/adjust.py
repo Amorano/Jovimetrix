@@ -321,8 +321,6 @@ The `Threshold` node enables you to define a range and apply it to an image, use
             images.append(cv2tensor_full(pA))
             pbar.update_absolute(idx)
         return [torch.stack(i, dim=0) for i in list(zip(*images))]
-        return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
-        return [torch.cat(i, dim=0) for i in list(zip(*images))]
 
 class ColorBlindNode(JOVBaseNode):
     NAME = "COLOR BLIND (JOV) 👁‍🗨"
@@ -401,20 +399,21 @@ The `Filter Mask` node allows you to create masks based on color ranges within a
         images = []
         pbar = ProgressBar(len(params))
         for idx, (pA, start, toggle_size, end, fuzz, matte) in enumerate(params):
-            start = torch.tensor(start)
-            l = (start - fuzz * 128).clamp(min=0).view(1, 1, 1, 3)
+            start = torch.tensor(start).float() / 255.
+            print(start)
+            l = (start - fuzz * 0.5).clamp(min=0).view(1, 1, 1, 3)
             if toggle_size:
-                end = torch.tensor(end)
-                h = (end + fuzz * 128).clamp(max=255).view(1, 1, 1, 3)
+                end = torch.tensor(end).float() / 255.
+                print(end)
+                h = (end  + fuzz * 0.5).clamp(max=1).view(1, 1, 1, 3)
             else:
-                h = (start + fuzz * 128).clamp(max=255).view(1, 1, 1, 3)
-            img = torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8, device="cpu") if pA is None else pA
+                h = (start + fuzz * 0.5).clamp(max=1).view(1, 1, 1, 3)
+            img = torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8, device="cpu") if pA is None else tensor2cv(img)
             if img.shape[2] == 4:
                 img = img[:, :, :3]
-            mask = (torch.clamp(img, 0, 1.0) * 255.0).round().to(torch.int)
-            mask = ((mask >= l) & (mask <= h)).all(dim=-1)
-            mask = (~mask).float()
-            img = tensor2cv(img)
+            # mask = (torch.clamp(img, 0, 1.0) * 255.0).round().to(torch.int)
+            mask = ((img >= l) & (img <= h)).all(dim=-1)
+            mask = (~mask) #.float()
             img = cv2.bitwise_and(img, img, mask=tensor2cv(mask))
             img = image_mask_add(img, tensor2cv(mask))
             matte = image_matte(img, matte)[:,:,:3]

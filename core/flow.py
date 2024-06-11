@@ -63,7 +63,7 @@ class DelayNode(JOVBaseNode):
     NAME = "DELAY (JOV) ✋🏽"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = (WILDCARD,)
-    RETURN_NAMES = (Lexicon.ROUTE,)
+    RETURN_NAMES = (Lexicon.PASS_OUT,)
     DESCRIPTION = """
 Delay node used to introduce pauses in the workflow. It accepts an optional input to pass through and a timer parameter to specify the duration of the delay. If no timer is provided, it defaults to a maximum delay. During the delay, it periodically checks for messages to interrupt the delay. Once the delay is completed, it returns the input passed to it.
 """

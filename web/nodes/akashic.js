@@ -6,11 +6,9 @@
 
 import { app } from "../../../scripts/app.js"
 import { ComfyWidgets } from '../../../scripts/widgets.js';
-import { JImageWidget } from '../widget/widget_jimage.js'
 import { node_add_dynamic } from '../util/util.js'
 
 const _prefix = '📥'
-const _prefix_image = 'jovi'
 const _id = "AKASHIC (JOV) 📓"
 
 app.registerExtension({
@@ -27,9 +25,11 @@ app.registerExtension({
             this.message = ComfyWidgets.STRING(this, '', [
                     'STRING', {
                         multiline: true,
+                        dynamicPrompts: false
                     },
                 ], app).widget;
             this.message.value = "";
+            this.message.computeSize = () => [0, this.widgets.length * LiteGraph.NODE_TITLE_HEIGHT];
             return me;
         }
 
@@ -55,21 +55,12 @@ app.registerExtension({
                     }
                 }
             }
-            let index = 0;
-            if (message.b64_images) {
-                for (const img of message.b64_images) {
-                    continue;
-                    const w = this.addCustomWidget(
-                        JImageWidget(app, `${_prefix_image}_${index}`, img)
-                    )
-                    w.parent = this;
-                    index++;
-                }
-            }
-            //this.onResize?.(this.size);
-            //const y = this.computeSize([this.size[0], this.size[1]])[1];
-            //this.setSize([this.size[0], Math.min(250, y+lineCount * 17)]);
-            //this?.graph?.setDirtyCanvas(true, true);
+
+            this.onResize?.(this.size);
+            const y = this.computeSize([this.size[0], this.size[1]])[1];
+            const new_y = Math.min(250, lineCount * LiteGraph.NODE_TITLE_HEIGHT)
+            this.setSize([this.size[0], Math.min(y, new_y)]);
+            this?.graph?.setDirtyCanvas(true, true);
         }
     }
 })
