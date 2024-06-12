@@ -113,7 +113,7 @@ def parse_value(val:Any, typ:EnumConvertType, default: Any,
             v = d if val is None else val[idx] if idx < len(val) else d
             try:
                 if typ in [EnumConvertType.FLOAT, EnumConvertType.VEC2, EnumConvertType.VEC3, EnumConvertType.VEC4]:
-                    v = round(v, 16)
+                    v = round(float(v), 16)
                 else:
                     v = int(v)
                 if clip_min is not None:

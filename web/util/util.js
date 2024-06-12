@@ -46,16 +46,18 @@ export function node_mouse_pos(app, node) {
 	];
 }
 
-export function fitHeight(node) {
+export function fitHeight(node, skipSize=false) {
     node.onResize?.(node.size);
-    node.setSize([node.size[0], node.computeSize([node.size[0], node.size[1]])[1]])
+    if (!skipSize) {
+        node.setSize([node.size[0], node.computeSize([node.size[0], node.size[1]])[1]]);
+    }
     node?.graph?.setDirtyCanvas(true, true);
 }
 
 /**
  * Manage the slots on a node to allow a dynamic number of inputs
 */
-export function node_add_dynamic(nodeType, prefix, dynamic_type='*', index_start=0, match_output=false) {
+export function node_add_dynamic(nodeType, prefix, dynamic_type='*', index_start=0, match_output=false, refresh=true) {
     /*
     this one should just put the "prefix" as the last empty entry.
     Means we have to pay attention not to collide key names in the
@@ -69,19 +71,22 @@ export function node_add_dynamic(nodeType, prefix, dynamic_type='*', index_start
         }
 
         let idx = index_start;
-        while (idx < self.inputs.length-1) {
+        let count = self.inputs.length;
+        while (idx < self.inputs.length-1 && count > 0) {
             const slot = self.inputs[idx];
             if (slot === undefined || slot.link == null) {
-                if (match_output) {
+                if (match_output && slot_idx < self.outputs?.length) {
                     self.removeOutput(slot_idx);
                 }
-                console.info(slot_idx)
-                self.removeInput(slot_idx);
+                if (slot_idx < self.inputs?.length) {
+                    self.removeInput(slot_idx);
+                }
             } else {
                 const name = self.inputs[idx].name.split('_').slice(1).join('_');
                 self.inputs[idx].name = `${idx}_${name}`;
                 idx += 1;
             }
+            count -= 1;
         }
     }
 
@@ -100,39 +105,45 @@ export function node_add_dynamic(nodeType, prefix, dynamic_type='*', index_start
     nodeType.prototype.onConnectionsChange = function (slotType, slot_idx, event, link_info, node_slot) {
         const me = onConnectionsChange?.apply(this, arguments);
         if (slotType === TypeSlot.Input) {
-            if (slot_idx >= index_start && link_info) {
+            if (slot_idx >= index_start) {
+                if (link_info) {
                 if (event === TypeSlotEvent.Connect) {
                     const fromNode = this.graph._nodes.find(
                         (otherNode) => otherNode.id == link_info.origin_id
                     )
                     if (fromNode) {
                         const parent_link = fromNode.outputs[link_info.origin_slot];
-                        node_slot.type = parent_link.type;
-                        node_slot.name = `${slot_idx}_${parent_link.name}`;
-                        if (match_output) {
-                            const slot_out = this.outputs[slot_idx];
-                            slot_out.type = parent_link.type;
-                            slot_out.name = `${parent_link.type}`;
+                        if (parent_link) {
+                            node_slot.type = parent_link.type;
+                            node_slot.name = `${slot_idx}_${parent_link.name}`;
+                            if (match_output) {
+                                const slot_out = this.outputs[slot_idx];
+                                slot_out.type = parent_link.type;
+                                slot_out.name = `${parent_link.type}`;
+                            }
                         }
                     }
                 }
-            }
-
-            // check that the last slot is a dynamic entry....
-            let last = this.inputs[this.inputs.length-1];
-            if (last.type != dynamic_type || last.name != prefix) {
-                this.addInput(prefix, dynamic_type);
-            }
-            if (match_output) {
-                last = this.outputs[this.outputs.length-1];
-                if (last.type != dynamic_type || last.name != prefix) {
-                    this.addOutput(prefix, dynamic_type);
                 }
-            };
 
-            setTimeout(() => {
-                clean_inputs(this, slot_idx);
-            }, 15);
+                // check that the last slot is a dynamic entry....
+                let last = this.inputs[this.inputs.length-1];
+                if (last.type != dynamic_type || last.name != prefix) {
+                    this.addInput(prefix, dynamic_type);
+                }
+                if (match_output) {
+                    last = this.outputs[this.outputs.length-1];
+                    if (last.type != dynamic_type || last.name != prefix) {
+                        this.addOutput(prefix, dynamic_type);
+                    }
+                };
+
+                if (refresh) {
+                    setTimeout(() => {
+                        clean_inputs(this, slot_idx);
+                    }, 15);
+                }
+            }
         }
         return me;
     }

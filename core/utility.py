@@ -108,7 +108,7 @@ The Akashic node processes input data and prepares it for visualization. It acce
                     elif len(val) < 2:
                         ret = val[0]
                     else:
-                        ret = '\n\t'.join(str(v) for v in val)
+                        ret = '\n\t' + '\n\t'.join(str(v) for v in val)
             elif isinstance(val, bool):
                 ret = "True" if val else "False"
             elif isinstance(val, torch.Tensor):
@@ -780,14 +780,24 @@ class DynamicOutputNode(JOVBaseNode):
     def INPUT_TYPES(cls) -> dict:
         d = {
             "required": {},
-            "optional": {}
+            "optional": {
+                Lexicon.ANY_OUT: (WILDCARD, {"tooltip":"A bundle of items that need to be split into X outputs."}),
+                Lexicon.VALUE: ("INT", {"default": 1, "min": 1, "max": 32, "step": 1, "tooltip":"Number of outputs desired for node."})
+            }
         }
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[Any, ...]:
-        # inout = parse_param(kw, Lexicon.ROUTE, EnumConvertType.ANY, None)
-        values = [1, 2, 3]
-        return (*values,)
+        inputs = parse_param(kw, Lexicon.ANY_OUT, EnumConvertType.ANY, None)
+        outputs = parse_param(kw, Lexicon.VALUE, EnumConvertType.INT, 1, 1, 32)
+        ret = []
+        params = list(zip_longest_fill(inputs, outputs))
+        pbar = ProgressBar(len(params))
+        for idx, (inputs, outputs) in enumerate(params):
+            outputs = [inputs] * outputs
+            ret.append(outputs)
+            pbar.update_absolute(idx)
+        return (*outputs,)
 
 '''
 class RESTNode:

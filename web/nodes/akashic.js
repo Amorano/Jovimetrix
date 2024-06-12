@@ -6,7 +6,7 @@
 
 import { app } from "../../../scripts/app.js"
 import { ComfyWidgets } from '../../../scripts/widgets.js';
-import { node_add_dynamic } from '../util/util.js'
+import { fitHeight, node_add_dynamic } from '../util/util.js'
 
 const _prefix = '📥'
 const _id = "AKASHIC (JOV) 📓"
@@ -18,7 +18,15 @@ app.registerExtension({
             return
         }
 
-        nodeType = node_add_dynamic(nodeType, _prefix);
+        nodeType = node_add_dynamic(nodeType, _prefix, '*', 0, false);
+
+        const onComputeSize = nodeType.prototype.computeSize;
+        noteType.computeSize = () => {
+            const size = onComputeSize?.apply(this);
+            console.info(size);
+            return [0, 4];
+        }
+
         const onNodeCreated = nodeType.prototype.onNodeCreated;
         nodeType.prototype.onNodeCreated = async function () {
             const me = onNodeCreated?.apply(this);
@@ -29,7 +37,7 @@ app.registerExtension({
                     },
                 ], app).widget;
             this.message.value = "";
-            this.message.computeSize = () => [0, this.widgets.length * LiteGraph.NODE_TITLE_HEIGHT];
+            //this.message.computeSize = () => [0, this.widgets.length * LiteGraph.NODE_TITLE_HEIGHT];
             return me;
         }
 
@@ -55,12 +63,7 @@ app.registerExtension({
                     }
                 }
             }
-
-            this.onResize?.(this.size);
-            const y = this.computeSize([this.size[0], this.size[1]])[1];
-            const new_y = Math.min(250, lineCount * LiteGraph.NODE_TITLE_HEIGHT)
-            this.setSize([this.size[0], Math.min(y, new_y)]);
-            this?.graph?.setDirtyCanvas(true, true);
+            // fitHeight(this);
         }
     }
 })

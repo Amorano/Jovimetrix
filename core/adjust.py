@@ -7,6 +7,7 @@ from enum import Enum
 from typing import Any, Tuple
 
 import cv2
+import numpy as np
 import torch
 
 from comfy.utils import ProgressBar
@@ -16,7 +17,7 @@ from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import EnumConvertType, parse_param, zip_longest_fill
 from Jovimetrix.sup.image import channel_count, channel_solid, \
     color_match_histogram, color_match_lut, color_match_reinhard, cv2tensor, \
-    cv2tensor_full, image_mask, image_mask_add, image_matte, tensor2cv, \
+    cv2tensor_full, image_filter, image_mask, image_mask_add, image_matte, tensor2cv, \
     image_color_blind, image_convert, image_grayscale, image_scalefit, image_equalize, \
     image_levels, image_posterize, image_pixelate, image_quantize, \
     image_sharpen, image_threshold, image_blend, image_invert, morph_edge_detect, \
@@ -378,10 +379,10 @@ The `Filter Mask` node allows you to create masks based on color ranges within a
             "required": {},
             "optional": {
                 Lexicon.PIXEL_A: (WILDCARD, {}),
-                Lexicon.START: ("VEC3", {"default": (128, 128, 128), "step": 1, "rgb": True}),
-                Lexicon.BOOLEAN: ("BOOLEAN", {"default": False}),
-                Lexicon.END: ("VEC3", {"default": (255, 255, 255), "step": 1, "rgb": True}),
-                Lexicon.FLOAT: ("FLOAT", {"default": 0.5, "min":0, "max":1, "step": 0.01, "tooltip": "the fuzziness to add to the start and end range"}),
+                Lexicon.START: ("VEC3", {"default": (128, 128, 128), "min":0, "max":255, "step": 1, "rgb": True}),
+                Lexicon.BOOLEAN: ("BOOLEAN", {"default": False, "tooltip": "use an end point (start->end) when calculating the filter range"}),
+                Lexicon.END: ("VEC3", {"default": (128, 128, 128), "min":0, "max":255, "step": 1, "rgb": True}),
+                Lexicon.FLOAT: ("VEC3", {"default": (0.5,0.5,0.5), "min":0, "max":1, "step": 0.01, "precision": 4, "tooltip": "the fuzziness use to extend the start and end range(s)"}),
                 Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1,
                                          "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True}),
             }
@@ -390,33 +391,19 @@ The `Filter Mask` node allows you to create masks based on color ranges within a
 
     def run(self, **kw) -> Tuple[Any, ...]:
         pA = parse_param(kw, Lexicon.PIXEL_A, EnumConvertType.IMAGE, None)
-        start = parse_param(kw, Lexicon.START, EnumConvertType.VEC3, 0, 0, 255)
-        toggle_size = parse_param(kw, Lexicon.BOOLEAN, EnumConvertType.VEC3, 0, 0, 255)
-        end = parse_param(kw, Lexicon.END, EnumConvertType.VEC3, 0, 0, 1)
-        fuzz = parse_param(kw, Lexicon.FLOAT, EnumConvertType.FLOAT, 0, 0, 1)
+        start = parse_param(kw, Lexicon.START, EnumConvertType.VEC3INT, 128, 0, 255)
+        use_range = parse_param(kw, Lexicon.BOOLEAN, EnumConvertType.VEC3, 0, 0, 255)
+        end = parse_param(kw, Lexicon.END, EnumConvertType.VEC3INT, 128, 0, 255)
+        fuzz = parse_param(kw, Lexicon.FLOAT, EnumConvertType.VEC3, 0.5, 0, 1)
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
-        params = list(zip_longest_fill(pA, start, toggle_size, end, fuzz, matte))
+        params = list(zip_longest_fill(pA, start, use_range, end, fuzz, matte))
         images = []
         pbar = ProgressBar(len(params))
-        for idx, (pA, start, toggle_size, end, fuzz, matte) in enumerate(params):
-            start = torch.tensor(start).float() / 255.
-            print(start)
-            l = (start - fuzz * 0.5).clamp(min=0).view(1, 1, 1, 3)
-            if toggle_size:
-                end = torch.tensor(end).float() / 255.
-                print(end)
-                h = (end  + fuzz * 0.5).clamp(max=1).view(1, 1, 1, 3)
-            else:
-                h = (start + fuzz * 0.5).clamp(max=1).view(1, 1, 1, 3)
-            img = torch.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=torch.uint8, device="cpu") if pA is None else tensor2cv(img)
-            if img.shape[2] == 4:
-                img = img[:, :, :3]
-            # mask = (torch.clamp(img, 0, 1.0) * 255.0).round().to(torch.int)
-            mask = ((img >= l) & (img <= h)).all(dim=-1)
-            mask = (~mask) #.float()
-            img = cv2.bitwise_and(img, img, mask=tensor2cv(mask))
-            img = image_mask_add(img, tensor2cv(mask))
+        for idx, (pA, start, use_range, end, fuzz, matte) in enumerate(params):
+            img = np.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=np.uint8) if pA is None else tensor2cv(pA)
+            img, mask = image_filter(img, start, end, fuzz, use_range)
             matte = image_matte(img, matte)[:,:,:3]
-            images.append([cv2tensor(img), cv2tensor(matte), mask])
+            print(img.shape, type(img), matte.shape)
+            images.append([cv2tensor(img), cv2tensor(matte), cv2tensor(mask, True)])
             pbar.update_absolute(idx)
         return [torch.cat(i, dim=0) for i in list(zip(*images))]

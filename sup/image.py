@@ -673,6 +673,8 @@ def image_contrast(image: TYPE_IMAGE, value: float) -> TYPE_IMAGE:
 
 def image_convert(image: TYPE_IMAGE, channels: int) -> TYPE_IMAGE:
     """Force image format to number of channels chosen."""
+    if len(image.shape) < 3:
+        image = np.expand_dims(image, -1).astype(dtype=np.uint8)
     ncc = max(1, min(4, channels))
     if ncc < 3:
         return image_grayscale(image)
@@ -796,21 +798,62 @@ def image_exposure(image: TYPE_IMAGE, value: float) -> TYPE_IMAGE:
     image = np.clip(image * value, 0, 255).astype(np.uint8)
     return bgr2image(image, alpha, cc == 1)
 
-def image_filter(image:TYPE_IMAGE, matrix:List[float|int]) -> TYPE_IMAGE:
-    """Apply a scalar matrix of numbers to each channel of an image.
+def image_filter(image:TYPE_IMAGE, start:Tuple[int]=(128,128,128), end:Tuple[int]=(128,128,128), fuzz:Tuple[float]=(0.5,0.5,0.5), use_range:bool=False) -> Tuple[TYPE_IMAGE, TYPE_IMAGE]:
+    """Filter an image based on a range threshold.
+    It can use a start point with fuzziness factor and/or a start and end point with fuzziness on both points.
 
-    The matrix should be formed such that all the R scalars are first, G then B.
+    Args:
+        image (np.ndarray): Input image in the form of a NumPy array.
+        start (tuple): The lower bound of the color range to be filtered.
+        end (tuple): The upper bound of the color range to be filtered.
+        fuzz (float): A factor for adding fuzziness (tolerance) to the color range.
+        use_range (bool): Boolean indicating whether to use a start and end range or just the start point with fuzziness.
+
+    Returns:
+        Tuple[np.ndarray, np.ndarray]: A tuple containing the filtered image and the mask.
     """
-    if channel_count(image)[0] < 3:
-        image = image_convert(image, 3)
-    image = image.astype(float)
-    r = matrix[:3]
-    g = matrix[3:6]
-    b = matrix[6:]
-    image[:,:,2] = (image[:,:,2] * r[0] + image[:,:,1] * r[1] + image[:,:,0] * r[2])
-    image[:,:,1] = (image[:,:,2] * g[0] + image[:,:,1] * g[1] + image[:,:,0] * g[2])
-    image[:,:,0] = (image[:,:,2] * b[0] + image[:,:,1] * b[1] + image[:,:,0] * b[2])
-    return image.astype(np.uint8)
+    old_alpha = None
+    image: torch.tensor = cv2tensor(image)
+    cc = image.shape[2]
+    if cc == 4:
+        old_alpha = image[:,:,3]
+        new_image = image[:, :, :3]
+    elif cc == 1:
+        new_image = np.repeat(image, 3, axis=2)
+    else:
+        new_image = image
+
+    fuzz = torch.tensor(fuzz, dtype=torch.float64, device="cpu")
+    start = torch.tensor(start, dtype=torch.float64, device="cpu") / 255.
+    end = torch.tensor(end, dtype=torch.float64, device="cpu") / 255.
+    if not use_range:
+        end = start
+    start -= fuzz
+    end += fuzz
+    start = torch.clamp(start, 0.0, 1.0)
+    end = torch.clamp(end, 0.0, 1.0)
+
+    print(start, end, fuzz)
+    mask = ((new_image[..., 0] > start[0]) & (new_image[..., 0] < end[0]))
+    #mask |= ((new_image[..., 1] > start[1]) & (new_image[..., 1] < end[1]))
+    #mask |= ((new_image[..., 2] > start[2]) & (new_image[..., 2] < end[2]))
+    mask = ((new_image[..., 0] >= start[0]) & (new_image[..., 0] <= end[0]) &
+            (new_image[..., 1] >= start[1]) & (new_image[..., 1] <= end[1]) &
+            (new_image[..., 2] >= start[2]) & (new_image[..., 2] <= end[2]))
+
+    output_image = torch.zeros_like(new_image)
+    output_image[mask] = new_image[mask]
+
+    if old_alpha is not None:
+        output_image = torch.cat([output_image, old_alpha.unsqueeze(2)], dim=2)
+
+    return tensor2cv(output_image), mask.cpu().numpy().astype(np.uint8) * 255
+    output_image = torch.zeros_like(image)
+    #mask = (mask)
+    output_image[mask] = new_image[mask]
+    if old_alpha is not None:
+        output_image[:,:,3] = old_alpha
+    return tensor2cv(output_image), tensor2cv(mask)
 
 def image_formats() -> List[str]:
     exts = Image.registered_extensions()
