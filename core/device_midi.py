@@ -256,33 +256,25 @@ The MIDI Filter node provides advanced filtering capabilities for MIDI messages 
         value = parse_param(kw, Lexicon.VALUE, EnumConvertType.STRING, "")
         normal = parse_param(kw, Lexicon.NORMALIZE, EnumConvertType.STRING, "")
         params = list(zip_longest_fill(message, note_on, chan, ctrl, note, value, normal))
-        ret = []
+        results = []
         pbar = ProgressBar(len(params))
         for idx, (message, note_on, chan, ctrl, note, value, normal) in enumerate(params):
-            message = message[0]
             note_on = MIDINoteOnFilter[note_on]
             if note_on != MIDINoteOnFilter.IGNORE:
                 if note_on == "TRUE" and message.note_on != True:
-                    ret.append((message, False, ))
-                    continue
+                    results.append((message, False, ))
                 if note_on == "FALSE" and message.note_on != False:
-                    ret.append((message, False, ))
-                    continue
-            if self.__filter(message.channel, chan) == False:
-                ret.append((message, False, ))
-                continue
-            if self.__filter(message.control, ctrl) == False:
-                ret.append((message, False, ))
-                continue
-            if self.__filter(message.note, note) == False:
-                ret.append((message, False, ))
-                continue
-            if self.__filter(message.value, value) == False:
-                ret.append((message, False, ))
-                continue
-            if self.__filter(message.normal, normal) == False:
-                ret.append((message, False, ))
-                continue
-            ret.append((message, True, ))
+                    results.append((message, False, ))
+            elif self.__filter(message.channel, chan) == False:
+                results.append((message, False, ))
+            elif self.__filter(message.control, ctrl) == False:
+                results.append((message, False, ))
+            elif self.__filter(message.note, note) == False:
+                results.append((message, False, ))
+            elif self.__filter(message.value, value) == False:
+                results.append((message, False, ))
+            elif self.__filter(message.normal, normal) == False:
+                results.append((message, False, ))
+            results.append((message, True, ))
             pbar.update_absolute(idx)
         return [list(x) for x in (zip(*results))]

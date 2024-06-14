@@ -21,7 +21,7 @@ app.registerExtension({
         nodeType = node_add_dynamic(nodeType, _prefix, '*', 0, false);
 
         const onComputeSize = nodeType.prototype.computeSize;
-        noteType.computeSize = () => {
+        nodeType.computeSize = () => {
             const size = onComputeSize?.apply(this);
             console.info(size);
             return [0, 4];

@@ -389,7 +389,7 @@ The Pixel Swap Node swaps pixel values between two input images based on the spe
                     target = channel_swap(pA, swap_out, pB, swap_in)
                 return target
 
-            logger.debug(swap_r, swap_g, swap_b, swap_a)
+            # logger.debug(swap_r, swap_g, swap_b, swap_a)
             out[:,:,0] = swapper(EnumPixelSwizzle.BLUE_A, swap_b)[:,:,0]
             out[:,:,1] = swapper(EnumPixelSwizzle.GREEN_A, swap_g)[:,:,1]
             out[:,:,2] = swapper(EnumPixelSwizzle.RED_A, swap_r)[:,:,2]
@@ -566,7 +566,6 @@ The Flatten Node combines multiple input images into a single image by summing t
         "required": {},
         "optional": {
             Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
-            Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), "step": 1, "label": [Lexicon.W, Lexicon.H]}),
             Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
             Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
         }}
@@ -580,23 +579,20 @@ The Flatten Node combines multiple input images into a single image by summing t
             return ()
         pA = [image_convert(tensor2cv(img), 4) for img in pA]
         mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.NONE.name)
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), MIN_IMAGE_SIZE)
         sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
         images = []
-        params = list(zip_longest_fill(mode, wihi, sample, matte))
+        params = list(zip_longest_fill(mode, sample, matte))
         pbar = ProgressBar(len(params))
-        for idx, (mode, wihi, sample, matte) in enumerate(params):
-            w, h = wihi
+        for idx, (mode, sample, matte) in enumerate(params):
             current = pA[0]
+            h, w = pA[0].shape[:2]
             mode = EnumScaleMode[mode]
-            if mode == EnumScaleMode.NONE:
-                mode = EnumScaleMode.CROP
-                h, w = pA[0].shape[:2]
             if len(pA) > 1:
                 for x in pA[1:]:
-                    sample = EnumInterpolation[sample]
-                    x = image_scalefit(x, w, h, mode, sample)
+                    if mode != EnumScaleMode.NONE:
+                        x = image_scalefit(x, w, h, mode, sample)
+                    x = image_scalefit(x, w, h, EnumScaleMode.CROP, sample)
                     #@TODO: ADD VARIOUS COMP OPS?
                     current = cv2.add(current, x)
             images.append(cv2tensor_full(current, matte))

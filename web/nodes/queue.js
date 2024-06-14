@@ -11,6 +11,7 @@ import { api_cmd_jovian } from '../util/util_api.js'
 import { flashBackgroundColor } from '../util/util_fun.js'
 
 const _id = "QUEUE (JOV) 🗃"
+const _prefix = '🦄'
 
 app.registerExtension({
 	name: 'jovimetrix.node.' + _id,
@@ -95,7 +96,7 @@ app.registerExtension({
                 if (inputType == "COMBO") {
                     // can link the "same" list -- user breaks it past that, their problem atm.
                     const widget = inputNode.widgets.find(w => w.name === inputSlot.name);
-                    if (this.outputs[0].name != '🔮' && this.widget_queue.value != widget.options.values.join('\n')) {
+                    if (this.outputs[0].name != _prefix && this.widget_queue.value != widget.options.values.join('\n')) {
                         return false;
                     }
                 }
@@ -129,7 +130,7 @@ app.registerExtension({
                         update_list(this);
                     }
                 } else {
-                    this.outputs[0].name = '🔮';
+                    this.outputs[0].name = _prefix;
                 }
             }
             return onConnectionsChange?.apply(this, arguments);

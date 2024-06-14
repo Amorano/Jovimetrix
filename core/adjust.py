@@ -404,6 +404,6 @@ The `Filter Mask` node allows you to create masks based on color ranges within a
             img, mask = image_filter(img, start, end, fuzz, use_range)
             matte = image_matte(img, matte)[:,:,:3]
             print(img.shape, type(img), matte.shape)
-            images.append([cv2tensor(img), cv2tensor(matte), cv2tensor(mask, True)])
+            images.append([cv2tensor(img), cv2tensor(matte), cv2tensor(mask)])
             pbar.update_absolute(idx)
         return [torch.cat(i, dim=0) for i in list(zip(*images))]

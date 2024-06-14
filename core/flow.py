@@ -7,6 +7,8 @@ import os
 from enum import Enum
 from typing import Any, Tuple
 
+import torch
+
 from loguru import logger
 
 from comfy.utils import ProgressBar
@@ -108,7 +110,7 @@ class ComparisonNode(JOVBaseNode):
     NAME = "COMPARISON (JOV) 🕵🏽"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = (WILDCARD, WILDCARD,)
-    RETURN_NAMES = (Lexicon.ANY, Lexicon.VEC,)
+    RETURN_NAMES = (Lexicon.TRIGGER, Lexicon.VALUE,)
     DESCRIPTION = """
 The Comparison node evaluates two inputs based on a specified operation. It accepts two inputs (A and B), comparison operators, and optional values for successful and failed comparisons. The node performs the specified operation element-wise between corresponding elements of A and B. If the comparison is successful for all elements, it returns the success value; otherwise, it returns the failure value. The node supports various comparison operators such as EQUAL, GREATER_THAN, LESS_THAN, AND, OR, IS, IN, etc.
 """
@@ -134,11 +136,11 @@ The Comparison node evaluates two inputs based on a specified operation. It acce
         fail = parse_param(kw, Lexicon.COMP_B, EnumConvertType.ANY, None)
         flip = parse_param(kw, Lexicon.FLIP, EnumConvertType.BOOLEAN, False)
         op = parse_param(kw, Lexicon.COMPARE, EnumConvertType.STRING, EnumComparison.EQUAL.name)
-        params = list(zip_longest_fill(A, B, op, flip))
+        params = list(zip_longest_fill(A, B, good, fail, flip, op))
         pbar = ProgressBar(len(params))
         vals = []
         results = []
-        for idx, (A, B, op, flip) in enumerate(params):
+        for idx, (A, B, good, fail, flip, op) in enumerate(params):
             if not isinstance(A, (list, set, tuple)):
                 A = [A]
             if not isinstance(B, (list, set, tuple)):
@@ -193,7 +195,17 @@ The Comparison node evaluates two inputs based on a specified operation. It acce
                     val = [a in val_b for a in val_a]
                 case EnumComparison.NOT_IN:
                     val = [a not in val_b for a in val_a]
-            vals.append(val)
-            results.append(good if all([bool(v) for v in val]) else fail)
+
+            output = good if all([bool(v) for v in val]) else fail
+            results.append([output, val])
             pbar.update_absolute(idx)
-        return results, vals,
+
+        outs, vals = zip(*results)
+        if isinstance(outs[0], (torch.Tensor,)):
+            if len(outs) > 1:
+                outs = torch.cat(outs, dim=0)
+            else:
+                outs = outs[0].unsqueeze(0)
+        else:
+            outs = list(outs)
+        return outs, list(vals)

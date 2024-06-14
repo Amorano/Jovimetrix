@@ -80,7 +80,7 @@ The Akashic node processes input data and prepares it for visualization. It acce
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[Any, Any]:
-        logger.debug(kw)
+        # logger.debug(kw)
         o = kw.values()
         #o = parse_dynamic(kw, 0, EnumConvertType.ANY, None)
         #logger.debug(o)
@@ -90,7 +90,7 @@ The Akashic node processes input data and prepares it for visualization. It acce
             return output
 
         def __parse(val) -> str:
-            logger.debug(val)
+            # logger.debug(val)
             ret = val
             typ = ''.join(repr(type(val)).split("'")[1:2])
             if isinstance(val, dict):
@@ -171,6 +171,7 @@ The Graph node visualizes a series of data points over time. It accepts a dynami
             self.__history = []
         longest_edge = 0
         dynamic = parse_dynamic(kw, 0, EnumConvertType.FLOAT, 0)
+        print(dynamic)
         # each of the plugs
         self.__ax.clear()
         for idx, val in enumerate(dynamic):
@@ -213,16 +214,18 @@ The Queue node manages a queue of items, such as file paths or data. It supports
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = {
-        "required": {},
-        "optional": {
-            Lexicon.QUEUE: ("STRING", {"multiline": True, "default": "./res/img/test-a.png"}),
-            Lexicon.VALUE: ("INT", {"min": 0, "default": 0, "step": 1, "tooltip": "the current index for the current queue item"}),
-            Lexicon.WAIT: ("BOOLEAN", {"default": False, "tooltip":"Hold the item at the current queue index"}),
-            Lexicon.RESET: ("BOOLEAN", {"default": False, "tooltip":"reset the queue back to index 1"}),
-        },
-        "hidden": {
-            "ident": "UNIQUE_ID"
-        }}
+            "required": {},
+            "optional": {
+                Lexicon.QUEUE: ("STRING", {"multiline": True, "default": "./res/img/test-a.png"}),
+                Lexicon.VALUE: ("INT", {"min": 0, "default": 0, "step": 1, "tooltip": "the current index for the current queue item"}),
+                Lexicon.WAIT: ("BOOLEAN", {"default": False, "tooltip":"Hold the item at the current queue index"}),
+                Lexicon.RESET: ("BOOLEAN", {"default": False, "tooltip":"reset the queue back to index 1"}),
+            },
+            "hidden": {
+                "ident": "UNIQUE_ID",
+
+            }
+        }
         return Lexicon._parse(d, cls)
 
     @classmethod
@@ -437,46 +440,6 @@ The Export node is responsible for saving images or animations to disk. It suppo
         #images = [pil2tensor(r) for r in images]
         return () #[torch.stack(images, dim=0).squeeze(1)]
 
-class ImageDiffNode(JOVBaseNode):
-    NAME = "IMAGE DIFF (JOV) 📏"
-    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK", "MASK", )
-    RETURN_NAMES = (Lexicon.IN_A, Lexicon.IN_B, Lexicon.DIFF, Lexicon.THRESHOLD)
-    SORT = 90
-    DESCRIPTION = """
-☣️💣☣️💣☣️💣☣️💣 THIS NODE IS A WORK IN PROGRESS ☣️💣☣️💣☣️💣☣️💣
-
-The Image Diff node compares two input images pixel by pixel to identify differences between them. It takes two images as input, labeled as Image A and Image B. The node then calculates the absolute difference between the two images, producing two additional outputs: a difference mask and a threshold mask. The threshold parameter determines the sensitivity of the comparison, with higher values indicating more tolerance for differences. The node returns Image A, Image B, the difference mask, and the threshold mask.
-"""
-
-    @classmethod
-    def INPUT_TYPES(cls) -> dict:
-        d = {
-        "required": {},
-        "optional": {
-            Lexicon.PIXEL_A: (WILDCARD, {}),
-            Lexicon.PIXEL_B: (WILDCARD, {}),
-            Lexicon.THRESHOLD: ("FLOAT", {"default": 0.5, "min": 0, "max": 1, "step": 0.01}),
-        }}
-        return Lexicon._parse(d, cls)
-
-    def run(self, **kw) -> Tuple[Any, Any]:
-        pA = parse_param(kw, Lexicon.PIXEL_A, EnumConvertType.IMAGE, None)
-        pB = parse_param(kw, Lexicon.PIXEL_B, EnumConvertType.IMAGE, None)
-        th = parse_param(kw, Lexicon.THRESHOLD, EnumConvertType.FLOAT, 0.5, 0, 1)
-        results = []
-        params = list(zip_longest_fill(pA, pB, th))
-        pbar = ProgressBar(len(params))
-        for idx, (pA, pB, th) in enumerate(params):
-            pA = channel_solid(chan=EnumImageType.BGRA) if pA is None else tensor2cv(pA)
-            pB = channel_solid(chan=EnumImageType.BGRA) if pB is None else tensor2cv(pB)
-            a, b, d, t, _ = image_diff(pA, pB, int(th * 255))
-            d = image_convert(d, 1)
-            t = image_convert(t, 1)
-            results.append([cv2tensor(a), cv2tensor(b), cv2tensor(d), cv2tensor(t)])
-            pbar.update_absolute(idx)
-        return [list(x) for x in (zip(*results))]
-
 class ArrayNode(JOVBaseNode):
     NAME = "ARRAY (JOV) 📚"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
@@ -528,7 +491,7 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
         latents = []
         full = []
 
-        logger.debug(batch)
+        # logger.debug(batch)
 
         for b in batch:
             if isinstance(b, dict) and "samples" in b:
@@ -551,7 +514,7 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
                 extract.append(b)
                 latents.append(False)
 
-        ret = []
+        results = []
         params = list(zip_longest_fill(mode, index, slice_range, indices, seed, flip, batch_chunk))
         pbar = ProgressBar(len(params))
         for idx, (mode, index, slice_range, indices, seed, flip, batch_chunk) in enumerate(params):
@@ -609,9 +572,9 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
                 extract = extract[::-1]
             if batch_chunk > 0:
                 extract = [e for e in self.batched(extract, batch_chunk)]
-            ret.append([len(extract), extract, [*extract]])
+            results.append([len(extract), extract, [*extract]])
             pbar.update_absolute(idx)
-        return *(list(x) for x in (zip(*ret))),
+        return list(zip(*results))
 
 class RouteNode(JOVBaseNode):
     NAME = "ROUTE (JOV) 🚌"

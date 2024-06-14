@@ -5,7 +5,7 @@
  */
 
 import { app } from "../../../scripts/app.js"
-import * as util_config from './util_config.js'
+import { CONFIG_REGEX, CONFIG_THEME, NODE_LIST } from '../util/util_config.js'
 
 // gets the CONFIG entry for name
 export function node_color_get(node) {
@@ -14,7 +14,7 @@ export function node_color_get(node) {
         return
     }
     // First look to regex....
-    for (const colors of util_config.CONFIG_REGEX) {
+    for (const colors of CONFIG_REGEX) {
         if (colors.regex == "") {
             continue
         }
@@ -25,17 +25,17 @@ export function node_color_get(node) {
         }
     }
     // now look to theme
-    let color = util_config.CONFIG_THEME[find_me]
+    let color = CONFIG_THEME[find_me]
     if (color) {
         return color
     }
-    color = util_config.NODE_LIST[find_me]
+    color = NODE_LIST[find_me]
     // now look to category theme
     if (color && color.category) {
         const segments = color.category.split('/')
         let k = segments.join('/')
         while (k) {
-            const found = util_config.CONFIG_THEME[k]
+            const found = CONFIG_THEME[k]
             if (found) {
                 return found
             }
@@ -48,16 +48,16 @@ export function node_color_get(node) {
 
 // refresh the color of a node
 export function node_color_reset(node, refresh=true) {
-    const data = node_color_get(node);
-    if (data) {
-        if (node.bgcolor === undefined) {
-            node.bgcolor = data.body;
+    const color = node_color_get(node);
+    if (color) {
+        if (color.body) {
+            node.bgcolor = color.body;
         }
-        if (node.color === undefined) {
-            node.color = data.title;
+        if (color.title) {
+            node.color = color.title;
         }
         if (refresh) {
-            node.setDirtyCanvas(true, true);
+            node?.graph?.setDirtyCanvas(true, true);
         }
     }
 }
@@ -71,9 +71,10 @@ export function node_color_list(nodes) {
 
 export function node_color_all() {
     app.graph._nodes.forEach((node) => {
-        node_color_reset(node, false);
+        node_color_reset(node);
     })
     app.canvas.setDirty(true);
+    // console.info("JOVI] all nodes color refreshed")
 }
 
 export function hex2rgb(hex) {
@@ -118,5 +119,6 @@ export function fade_lerp_color(colorStart, colorEnd, lerp) {
 export function color_contrast(hexColor) {
     const rgb = hex2rgb(hexColor);
     const L = 0.2126 * rgb[0] / 255. + 0.7152 * rgb[1] / 255. + 0.0722 * rgb[2] / 255.;
-    return L > 0.790;
+    // console.info(L)
+    return L > 0.790 ? "#000" : "#CCC";
 }

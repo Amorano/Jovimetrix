@@ -7,8 +7,9 @@
 import { app } from "../../../scripts/app.js"
 import { $el } from "../../../scripts/ui.js"
 import { api_post } from '../util/util_api.js'
-import { color_contrast, node_color_all, node_color_get } from '../util/util_color.js'
+import { color_contrast, node_color_all, node_color_reset } from '../util/util_color.js'
 import * as util_config from '../util/util_config.js'
+//import { CONFIG_REGEX, USER, CONFIG_USER, CONFIG_THEME, CONFIG_COLOR, NODE_LIST } from '../util/util_config.js'
 import { JovimetrixConfigDialog } from "./core_config.js"
 import "../extern/jsColorPicker.js"
 
@@ -114,27 +115,23 @@ app.registerExtension({
                         v: util_config.CONFIG_THEME[name]
                     }
                 }
-                api_post("/jovimetrix/config", api_packet)
+                api_post("/jovimetrix/config", api_packet);
                 if (util_config.CONFIG_COLOR.overwrite) {
-                    node_color_all()
+                    node_color_all();
                 }
             }
         })
 
         if (util_config.CONFIG_USER.color.overwrite) {
-            node_color_all()
+            node_color_all();
         }
     },
     async beforeRegisterNodeDef(nodeType, nodeData) {
         const onNodeCreated = nodeType.prototype.onNodeCreated;
         nodeType.prototype.onNodeCreated = function () {
             const me = onNodeCreated?.apply(this, arguments);
-            let colors = node_color_get(nodeData);
-            if (this.color === undefined && colors?.title) {
-                this.color = colors.title;
-            }
-            if (this.bgcolor === undefined && colors?.body) {
-                this.bgcolor = colors.body;
+            if (this) {
+                node_color_reset(this, false);
             }
             return me;
         }
