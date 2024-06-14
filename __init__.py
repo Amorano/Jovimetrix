@@ -169,7 +169,8 @@ try:
     @PromptServer.instance.routes.get("/jovimetrix/config")
     async def jovimetrix_config(request) -> Any:
         global JOV_CONFIG, JOV_CONFIG_FILE
-        configLoad(JOV_CONFIG_FILE)
+        if len(JOV_CONFIG) == 0:
+            JOV_CONFIG = configLoad(JOV_CONFIG_FILE)
         return web.json_response(JOV_CONFIG)
 
     @PromptServer.instance.routes.post("/jovimetrix/config")

@@ -53,12 +53,11 @@ The MIDI Message node processes MIDI messages received from an external MIDI con
         pbar = ProgressBar(len(message))
         for idx, (message,) in enumerate(message):
             if message is None:
-                data = [False, -1, -1, -1, -1, -1]
+                results.append([False, -1, -1, -1, -1, -1])
             else:
-                data = [message]
-            results.append(data)
+                results.append([message, *message.flat])
             pbar.update_absolute(idx)
-        return [list(x) for x in (zip(*results))]
+        return list(zip(*results))
 
 class MIDIReaderNode(JOVBaseNode):
     NAME = "MIDI READER (JOV) 🎹"

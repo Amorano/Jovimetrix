@@ -95,7 +95,7 @@ def parse_value(val:Any, typ:EnumConvertType, default: Any,
         cc = val.shape[2] if len(val.shape) > 2 else 1
         val = (w, h, cc)
 
-    if val is not None and typ not in [EnumConvertType.ANY]:
+    if val is not None: #and typ not in [EnumConvertType.ANY]:
         if not isinstance(val, (list, tuple, torch.Tensor)):
             val = [val]
 
