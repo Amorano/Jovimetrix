@@ -8,7 +8,7 @@
               Animation, Image Compositing & Procedural Creation
                     http://www.github.com/amorano/jovimetrix
 
-                    Copyright Alexander Morano (Joviex)
+                    Copyright Alexander G. Morano (Joviex)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -31,27 +31,34 @@ SOFTWARE.
 GO NUTS; JUST TRY NOT TO DO IT IN YOUR HEAD.
 
 @title: Jovimetrix
-@category: Compositing
-@tags: adjust, animate, audio, compose, compositing, composition, device, flow,
-video, mask, shape, webcam, audio, animation, logic
-@description: Webcams, GLSL shader, Media Streaming, Tick animation, Image
-manipulation, Polygonal shapes, MIDI, MP3/WAVE, Flow Logic
 @author: amorano
+@category: Compositing
 @reference: https://github.com/Amorano/Jovimetrix
+@tags: adjust, animate, compose, compositing, composition, device, flow,
+       video, mask, shape, webcam, animation, logic
+@description: Jovimetrix integrates Webcam, MIDI, Spout and GLSL shader support.
+              Animation via tick. Parameter manipulation with wave generator.
+              Math operations with Unary and Binary support. Value converstion
+              for all major types (int, string, list, dict, Image, Mask). Shape
+              mask generation, image stacking and channel ops, batch splitting,
+              merging and randomizing, load images and video from anywhere,
+              dynamic bus routing with a single node, export support for GIPHY,
+              save output anywhere! flatten, crop, transform; check colorblindness,
+              make stereogram or stereoscopic images, or liner interpolate values.
+              Plus much more.
 @node list:
-    AdjustNode, ColorMatchNode, ThresholdNode, ColorBlindNode,
+    ConstantNode, ConstantNode, ShapeNode, StereogramNode, StereoscopicNode, TextNode, WaveGraphNode,
+    AdjustNode, ColorBlindNode, ColorMatchNode, FilterMaskNode, ThresholdNode,
+    BlendNode, ColorTheoryNode, CropNode, FlattenNode, PixelMergeNode, PixelSplitNode,
+    PixelSwapNode, StackNode, TransformNode
+    CalcUnaryOPNode, CalcBinaryOPNode, ValueNode, ConvertNode, LerpNode, DelayNode,
+    ComparisonNode,
     TickNode, WaveGeneratorNode,
-    LoadWaveNode, GraphWaveNode,
-    CalcUnaryOPNode, CalcBinaryOPNode, ValueNode, ConvertNode, LerpNode,
-    TransformNode, BlendNode, PixelSplitNode, PixelMergeNode, PixelSwapNode,
-    StackNode, CropNode, ColorTheoryNode,
-    ConstantNode, ShapeNode, TextNode, StereogramNode, GLSLNode, NoiseNode,
-    StreamReaderNode, StreamWriterNode, MIDIMessageNode, MIDIReaderNode,
-    MIDIFilterEZNode, MIDIFilterNode, AudioDeviceNode,
-    DelayNode, HoldValueNode, ComparisonNode, SelectNode,
-    AkashicNode, ValueGraphNode, RouteNode, QueueNode, ExportNode, ImageDiffNode,
-    BatchNode
-@version: 1.1.0
+    MIDIMessageNode, MIDIReaderNode, MIDIFilterEZNode, MIDIFilterNode,
+    StreamReaderNode, StreamWriterNode, SpoutWriter,
+    AkashicNode, ArrayNode, BatchLoadNode, DynamicNode, ValueGraphNode, ExportNode, QueueNode,
+    RouteNode, SaveOutputNode
+@version: 1.2.0
 """
 
 import os

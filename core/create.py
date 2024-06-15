@@ -89,7 +89,6 @@ The Constant node generates constant images or masks of a specified size and col
                 images.append(cv2tensor_full(pA, matte))
             pbar.update_absolute(idx)
         return [torch.cat(i, dim=0) for i in list(zip(*images))]
-        # return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
 
 class ShapeNode(JOVBaseNode):
     NAME = "SHAPE GEN (JOV) ✨"
@@ -187,8 +186,6 @@ The Shape Generation node creates images representing various shapes such as cir
             images.append([cv2tensor(pB), cv2tensor(pA), cv2tensor(mask, True)])
             pbar.update_absolute(idx)
         return [torch.cat(i, dim=0) for i in list(zip(*images))]
-        # return [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
-        # THIS ALLOWS FOR OUTPUT_IS_LIST --> [torch.stack(i, dim=0).squeeze(1) for i in list(zip(*images))]
 
 class TextNode(JOVBaseNode):
     NAME = "TEXT GEN (JOV) 📝"
@@ -399,7 +396,7 @@ The Wave Graph node visualizes audio waveforms as bars. Adjust parameters like t
         d = {
             "required": {},
             "optional": {
-                Lexicon.WAVE: ("WAVE", {"default": None, "tooltip": "Audio Wave Object"}),
+                Lexicon.WAVE: ("AUDIO", {"default": None, "tooltip": "Audio Wave Object"}),
                 Lexicon.VALUE: ("INT", {"default": 100, "min": 32, "max": 8192, "step": 1, "tooltip": "Number of Vertical bars to try to fit within the specified Width x Height"}),
                 Lexicon.THICK: ("FLOAT", {"default": 0.72, "min": 0, "max": 1, "step": 0.01, "tooltip": "The percentage of fullness for each bar; currently scaled from the left only"}),
                 Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE),

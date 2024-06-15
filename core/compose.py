@@ -50,7 +50,7 @@ class TransformNode(JOVBaseNode):
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
     SORT = 0
     DESCRIPTION = """
-The Transform Node applies various geometric transformations to images, including translation, rotation, scaling, mirroring, tiling, perspective projection, and more. It offers extensive control over image manipulation to achieve desired visual effects.
+Applies various geometric transformations to images, including translation, rotation, scaling, mirroring, tiling, perspective projection, and more. It offers extensive control over image manipulation to achieve desired visual effects.
 """
 
     @classmethod
@@ -150,7 +150,7 @@ class BlendNode(JOVBaseNode):
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
     SORT = 10
     DESCRIPTION = """
-The Blend Node combines two input images using various blending modes, such as normal, screen, multiply, overlay, etc. It also supports alpha blending and masking to achieve complex compositing effects. This node is essential for creating layered compositions and adding visual richness to images.
+Combines two input images using various blending modes, such as normal, screen, multiply, overlay, etc. It also supports alpha blending and masking to achieve complex compositing effects. This node is essential for creating layered compositions and adding visual richness to images.
 """
 
     @classmethod
@@ -239,7 +239,7 @@ class PixelSplitNode(JOVBaseNode):
     RETURN_NAMES = (Lexicon.RI, Lexicon.GI, Lexicon.BI, Lexicon.MI)
     SORT = 40
     DESCRIPTION = """
-The Pixel Split Node takes an input image and splits it into its individual color channels (red, green, blue), along with a mask channel. This node is useful for separating different color components of an image for further processing or analysis.
+Takes an input image and splits it into its individual color channels (red, green, blue), along with a mask channel. This node is useful for separating different color components of an image for further processing or analysis.
 """
 
     @classmethod
@@ -270,7 +270,7 @@ class PixelMergeNode(JOVBaseNode):
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
     SORT = 45
     DESCRIPTION = """
-The Pixel Merge Node combines individual color channels (red, green, blue) along with an optional mask channel to create a composite image. This node is useful for merging separate color components into a single image for visualization or further processing.
+Combines individual color channels (red, green, blue) along with an optional mask channel to create a composite image. This node is useful for merging separate color components into a single image for visualization or further processing.
 """
 
     @classmethod
@@ -326,7 +326,7 @@ class PixelSwapNode(JOVBaseNode):
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
     SORT = 48
     DESCRIPTION = """
-The Pixel Swap Node swaps pixel values between two input images based on the specified channel swizzle operations. Each channel of the output image is determined by a separate swizzle operation, allowing for flexible pixel manipulation and composition.
+Swap pixel values between two input images based on specified channel swizzle operations. Options include pixel inputs, swap operations for red, green, blue, and alpha channels, and constant values for each channel. The swap operations allow for flexible pixel manipulation by determining the source of each channel in the output image, whether it be from the first image, the second image, or a constant value.
 """
 
     @classmethod
@@ -376,6 +376,9 @@ The Pixel Swap Node swaps pixel values between two input images based on the spe
             if len(pB) < 2 or pB.shape[2] < 4:
                 pB = image_convert(pB, 4)
 
+            # crop fit?
+            pB = image_scalefit(pB, w, h, EnumScaleMode.CROP)
+
             def swapper(swap_out:EnumPixelSwizzle, swap_in:EnumPixelSwizzle) -> np.ndarray[Any]:
                 target = out
                 swap_in = EnumPixelSwizzle[swap_in]
@@ -405,7 +408,7 @@ class StackNode(JOVBaseNode):
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
     SORT = 75
     DESCRIPTION = """
-The Stack Node combines multiple input images into a single output image along a specified axis. It stacks the images together, optionally with a specified stride, to create a new image. This node is useful for creating composite images or preparing data for further processing.
+Merge multiple input images into a single composite image by stacking them along a specified axis. Options include axis, stride, scaling mode, width and height, interpolation method, and matte color. The axis parameter allows for horizontal, vertical, or grid stacking of images, while stride controls the spacing between them.
 """
 
     @classmethod
@@ -413,8 +416,8 @@ The Stack Node combines multiple input images into a single output image along a
         d = {
             "required": {},
             "optional": {
-                Lexicon.AXIS: (EnumOrientation._member_names_, {"default": EnumOrientation.GRID.name}),
-                Lexicon.STEP: ("INT", {"min": 1, "step": 1, "default": 1}),
+                Lexicon.AXIS: (EnumOrientation._member_names_, {"default": EnumOrientation.GRID.name, "tooltip":"Choose the direction in which to stack the images. Options include horizontal, vertical, or a grid layout"}),
+                Lexicon.STEP: ("INT", {"min": 1, "step": 1, "default": 1, "tooltip":"Specify the spacing between each stacked image. This determines how far apart the images are from each other"}),
                 Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
                 Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), "step": 1, "label": [Lexicon.W, Lexicon.H]}),
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
@@ -424,10 +427,7 @@ The Stack Node combines multiple input images into a single output image along a
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
-        ret = parse_dynamic(kw, 0, EnumConvertType.IMAGE, None)
-        images = []
-        for i in ret:
-            images.extend(i)
+        images = parse_dynamic(kw, 0, EnumConvertType.IMAGE, None)
         if len(images) == 0:
             logger.warning("no images to stack")
             return
@@ -438,22 +438,14 @@ The Stack Node combines multiple input images into a single output image along a
         sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)[0]
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)[0]
         images = [tensor2cv(img) for img in images]
-        #params = list(zip_longest_fill(axis, stride, mode, wihi, sample, matte))
-        #images = []
-        #pbar = ProgressBar(len(params))
-        #for idx, (axis, stride, mode, wihi, sample, matte) in enumerate(params):
-
         axis = EnumOrientation[axis]
         img = image_stack(images, axis, stride, matte)
-        w, h = wihi
         mode = EnumScaleMode[mode]
         if mode != EnumScaleMode.NONE:
+            w, h = wihi
             sample = EnumInterpolation[sample]
             img = image_scalefit(img, w, h, mode, sample)
-        # images.append(cv2tensor_full(img, matte))
         return cv2tensor_full(img, matte)
-        #pbar.update_absolute(idx)
-        return [torch.cat(i, dim=0) for i in list(zip(*images))]
 
 class CropNode(JOVBaseNode):
     NAME = "CROP (JOV) ✂️"
@@ -462,7 +454,7 @@ class CropNode(JOVBaseNode):
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
     SORT = 5
     DESCRIPTION = """
-The Crop Node extracts a portion of an input image or resizes it to a specified size. It supports various cropping modes, including center cropping, custom XY cropping, and freeform polygonal cropping. This node is useful for preparing image data for specific tasks or extracting regions of interest.
+Extract a portion of an input image or resize it. It supports various cropping modes, including center cropping, custom XY cropping, and freeform polygonal cropping. This node is useful for preparing image data for specific tasks or extracting regions of interest.
 """
 
     @classmethod
@@ -517,7 +509,7 @@ class ColorTheoryNode(JOVBaseNode):
     RETURN_NAMES = (Lexicon.C1, Lexicon.C2, Lexicon.C3, Lexicon.C4, Lexicon.C5)
     SORT = 100
     DESCRIPTION = """
-The Color Theory Node applies various color harmony schemes to an input image, generating multiple color variants based on the selected scheme. It supports schemes such as complimentary, analogous, triadic, tetradic, and more. Additionally, users can specify a custom angle of separation for color calculation, offering flexibility in color manipulation. This node is useful for exploring different color palettes and creating visually appealing compositions.
+Apply various color harmony schemes to an input image using the Color Theory Node, generating multiple color variants based on the selected scheme. Supported schemes include complimentary, analogous, triadic, tetradic, and more. Users can customize the angle of separation for color calculations, offering flexibility in color manipulation and exploration of different color palettes.
 """
 
     @classmethod
@@ -557,7 +549,7 @@ class ImageFlatten(JOVBaseNode):
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
     SORT = 500
     DESCRIPTION = """
-The Flatten Node combines multiple input images into a single image by summing their pixel values. This operation is useful for merging multiple layers or images into one composite image, such as combining different elements of a design or merging masks. Users can specify the blending mode and interpolation method to control how the images are combined. Additionally, a matte can be applied to adjust the transparency of the final composite image.
+Combine multiple input images into a single image by summing their pixel values. This operation is useful for merging multiple layers or images into one composite image, such as combining different elements of a design or merging masks. Users can specify the blending mode and interpolation method to control how the images are combined. Additionally, a matte can be applied to adjust the transparency of the final composite image.
 """
 
     @classmethod

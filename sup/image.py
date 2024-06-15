@@ -1319,19 +1319,20 @@ def image_split(image: TYPE_IMAGE) -> Tuple[TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE, 
         a = np.full((h, w), 255, dtype=np.uint8)
     return r, g, b, a
 
-def image_stack(images: List[TYPE_IMAGE], axis:EnumOrientation=EnumOrientation.HORIZONTAL,
+def image_stack(image_list: List[TYPE_IMAGE], axis:EnumOrientation=EnumOrientation.HORIZONTAL,
                 stride:Optional[int]=None, matte:TYPE_PIXEL=(0,0,0,255)) -> TYPE_IMAGE:
 
-    stack = []
+    count = 0
+    images = []
     width, height = 0, 0
-    for i in images:
+    for i in image_list:
         h, w = i.shape[:2]
         width = max(width, w)
         height = max(height, h)
-        stack.append(i)
+        images.append(i)
+        count += 1
 
-    images = [image_matte(image_convert(i, 4), matte, width, height) for i in stack]
-    count = len(images)
+    images = [image_matte(image_convert(i, 4), matte, width, height) for i in images]
     matte = pixel_convert(matte, 4)
     match axis:
         case EnumOrientation.GRID:
@@ -1360,7 +1361,11 @@ def image_stack(images: List[TYPE_IMAGE], axis:EnumOrientation=EnumOrientation.H
             image = np.hstack(images)
 
         case EnumOrientation.VERTICAL:
+            for i in images:
+                print(i.shape)
             image = np.vstack(images)
+
+    print(image.shape)
 
     return image
 

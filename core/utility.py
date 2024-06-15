@@ -437,8 +437,7 @@ The Export node is responsible for saving images or animations to disk. It suppo
         else:
             for img in images:
                 img.save(output(format), optimize=optimize)
-        #images = [pil2tensor(r) for r in images]
-        return () #[torch.stack(images, dim=0).squeeze(1)]
+        return ()
 
 class ArrayNode(JOVBaseNode):
     NAME = "ARRAY (JOV) 📚"

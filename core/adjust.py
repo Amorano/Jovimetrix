@@ -47,13 +47,7 @@ class AdjustNode(JOVBaseNode):
     RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
     DESCRIPTION = """
-The `Adjust Node` lets you enhance and modify images with various effects.
-You can apply blurring, sharpening, color tweaks, and edge detection.
-Customize parameters like radius, value, and contrast, and use masks for
-selective effects. Advanced options include pixelation, quantization, and
-morphological operations like dilation and erosion. Handle transparency easily,
-ensuring seamless blending of effects. Perfect for simple adjustments and
-complex image transformations.
+Enhance and modify images with various effects using the Adjust Node. Apply effects such as blurring, sharpening, color tweaks, and edge detection. Customize parameters like radius, value, and contrast, and use masks for selective effects. Advanced options include pixelation, quantization, and morphological operations like dilation and erosion. Handle transparency effortlessly to ensure seamless blending of effects. This node is ideal for simple adjustments and complex image transformations.
 """
 
     @classmethod
@@ -202,7 +196,7 @@ class ColorMatchNode(JOVBaseNode):
     RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
     DESCRIPTION = """
-The `Color Match` node allows you to adjust the color scheme of one image to match another using various methods. You can choose from different color matching modes such as LUT, Histogram, and Reinhard. Additionally, you can specify options like color maps, the number of colors, and whether to flip or invert the images. This node supports the creation of seamless and cohesive visuals by matching colors accurately, making it ideal for texture work or masking in motion graphics and design projects.
+Adjust the color scheme of one image to match another with the Color Match Node. Choose from various color matching modes, including LUT, Histogram, and Reinhard. You can specify options like color maps, the number of colors, and whether to flip or invert the images. This node allows for the creation of seamless and cohesive visuals, making it ideal for texture work or masking in motion graphics and design projects.
 """
 
     @classmethod
@@ -285,7 +279,7 @@ class ThresholdNode(JOVBaseNode):
     RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
     DESCRIPTION = """
-The `Threshold` node enables you to define a range and apply it to an image, useful for segmentation and feature extraction. It offers various threshold modes such as binary and adaptive, along with options to adjust the threshold value and block size. Additionally, you can invert the resulting mask if needed, making it versatile for image processing tasks.
+Use the Threshold Node to define a range and apply it to an image for segmentation and feature extraction. Choose from various threshold modes, such as binary and adaptive, and adjust the threshold value and block size to suit your needs. You can also invert the resulting mask if necessary. This node is versatile for a variety of image processing tasks.
 """
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -321,7 +315,7 @@ The `Threshold` node enables you to define a range and apply it to an image, use
                 pA = image_invert(pA, 1)
             images.append(cv2tensor_full(pA))
             pbar.update_absolute(idx)
-        return [torch.stack(i, dim=0) for i in list(zip(*images))]
+        return [torch.cat(i, dim=0) for i in list(zip(*images))]
 
 class ColorBlindNode(JOVBaseNode):
     NAME = "COLOR BLIND (JOV) 👁‍🗨"
@@ -329,7 +323,7 @@ class ColorBlindNode(JOVBaseNode):
     RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
     DESCRIPTION = """
-The `Color Blind` node facilitates the simulation of color blindness effects on images, aiding in accessibility testing and design adjustments. It offers options to simulate various types of color deficiencies, adjust the severity of the effect, and apply the simulation using different simulators. This node is valuable for ensuring inclusivity in visual content and design processes.
+Use the Color Blind Node to simulate color blindness effects on images. You can select various types of color deficiencies, adjust the severity of the effect, and apply the simulation using different simulators. This node is ideal for accessibility testing and design adjustments, ensuring inclusivity in your visual content.
 """
 
     @classmethod
@@ -370,7 +364,7 @@ class FilterMaskNode(JOVBaseNode):
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
     SORT = 700
     DESCRIPTION = """
-The `Filter Mask` node allows you to create masks based on color ranges within an image, ideal for selective filtering and masking tasks. You can specify the color range using start and end values along with an optional fuzziness factor to adjust the range. This node provides flexibility in defining precise color-based masks for various image processing applications.
+Create masks based on specific color ranges within an image. Specify the color range using start and end values and an optional fuzziness factor to adjust the range. This node allows for precise color-based mask creation, ideal for tasks like object isolation, background removal, or targeted color adjustments.
 """
 
     @classmethod

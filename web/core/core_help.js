@@ -171,7 +171,7 @@ app.registerExtension({
         create_documentation_stylesheet();
 	},
     handleKeydown(e) {
-        if ((e.altKey && e.shiftKey) || (e.ctrlKey && e.shiftKey)) {
+        if ((e.ctrlKey && e.altKey)) {
             this.tooltips_visible = true;
         } else {
             this.tooltips_visible = false;

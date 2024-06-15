@@ -415,14 +415,42 @@ The Value Node supplies raw or default values for various data types, supporting
             "optional": {
                 Lexicon.IN_A: (WILDCARD, {"default": None, "tooltip":"Passes a raw value directly, or supplies defaults for any value inputs without connections"}),
                 Lexicon.TYPE: (typ, {"default": EnumConvertType.BOOLEAN.name}),
-                Lexicon.X: (WILDCARD, {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "precision": 6, "forceInput": True}),
-                Lexicon.Y: (WILDCARD, {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "precision": 6, "forceInput": True}),
-                Lexicon.Z: (WILDCARD, {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "precision": 6, "forceInput": True}),
-                Lexicon.W: (WILDCARD, {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "precision": 6, "forceInput": True}),
-                Lexicon.X_RAW: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "precision": 6, "menu": False}),
+                Lexicon.X: (WILDCARD, {"default": 0, "min": -sys.maxsize,
+                                       "max": sys.maxsize, "step": 0.01, "precision": 6,
+                                       "forceInput": True}),
+                Lexicon.Y: (WILDCARD, {"default": 0, "min": -sys.maxsize,
+                                       "max": sys.maxsize, "step": 0.01, "precision": 6,
+                                       "forceInput": True}),
+                Lexicon.Z: (WILDCARD, {"default": 0, "min": -sys.maxsize,
+                                       "max": sys.maxsize, "step": 0.01, "precision": 6,
+                                       "forceInput": True}),
+                Lexicon.W: (WILDCARD, {"default": 0, "min": -sys.maxsize,
+                                       "max": sys.maxsize, "step": 0.01, "precision": 6,
+                                       "forceInput": True}),
+                Lexicon.X_RAW: ("FLOAT", {"default": 0, "min": -sys.maxsize,
+                                          "max": sys.maxsize, "step": 0.01, "precision": 6,
+                                          "menu": False}),
                 Lexicon.IN_A+"4": ("VEC4", {"default": (0,0,0,0),
                                         "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W],
                                         "tooltip":"4-value vector", "menu": False}),
+                Lexicon.IN_A+"2": ("VEC2", {"default": (0,0),
+                                        "label": [Lexicon.X, Lexicon.Y],
+                                        "tooltip":"2-value vector", "menu": False}),
+                Lexicon.IN_A+"3": ("VEC3", {"default": (0,0,0),
+                                        "label": [Lexicon.X, Lexicon.Y, Lexicon.Z],
+                                        "tooltip":"3-value vector", "menu": False}),
+                Lexicon.RANDOM: ("BOOLEAN", {"default": False}),
+                Lexicon.Y_RAW: ("FLOAT", {"default": 0, "min": -sys.maxsize,
+                                          "max": sys.maxsize, "tooltip":"Single value input"}),
+                Lexicon.IN_B+"2": ("VEC2", {"default": (0,0),
+                                      "label": [Lexicon.X, Lexicon.Y],
+                                      "tooltip":"2-value vector"}),
+                Lexicon.IN_B+"3": ("VEC3", {"default": (0,0,0),
+                                      "label": [Lexicon.X, Lexicon.Y, Lexicon.Z],
+                                      "tooltip":"3-value vector"}),
+                Lexicon.IN_B+"4": ("VEC4", {"default": (0,0,0,0),
+                                      "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W],
+                                      "tooltip":"4-value vector"}),
                 Lexicon.STRING: ("STRING", {"default": "", "dynamicPrompts": False, "multiline": True}),
             }
         }
@@ -436,35 +464,59 @@ The Value Node supplies raw or default values for various data types, supporting
         r_w = parse_param(kw, Lexicon.W, EnumConvertType.FLOAT, None)
         typ = parse_param(kw, Lexicon.TYPE, EnumConvertType.STRING, EnumConvertType.BOOLEAN.name)
         x = parse_param(kw, Lexicon.X_RAW, EnumConvertType.FLOAT, 0)
+        xy = parse_param(kw, Lexicon.IN_A+"2", EnumConvertType.VEC2, (0, 0))
+        xyz = parse_param(kw, Lexicon.IN_A+"3", EnumConvertType.VEC3, (0, 0, 0))
         xyzw = parse_param(kw, Lexicon.IN_A+"4", EnumConvertType.VEC4, (0, 0, 0, 0))
+        use_rand = parse_param(kw, Lexicon.RANDOM, EnumConvertType.BOOLEAN, False)
+        y = parse_param(kw, Lexicon.Y_RAW, EnumConvertType.FLOAT, 0)
+        yy = parse_param(kw, Lexicon.IN_B+"2", EnumConvertType.VEC2, (0, 0))
+        yyz = parse_param(kw, Lexicon.IN_B+"3", EnumConvertType.VEC3, (0, 0, 0))
+        yyzw = parse_param(kw, Lexicon.IN_B+"4", EnumConvertType.VEC4, (0, 0, 0, 0))
         x_str = parse_param(kw, Lexicon.STRING, EnumConvertType.STRING, "")
-        params = list(zip_longest_fill(raw, r_x, r_y, r_z, r_w, typ, x, xyzw, x_str))
+        params = list(zip_longest_fill(raw, r_x, r_y, r_z, r_w, typ, x, xy, xyz, xyzw, use_rand, y, yy, yyz, yyzw, x_str))
         results = []
         pbar = ProgressBar(len(params))
-        for idx, (raw, r_x, r_y, r_z, r_w, typ, x, xyzw, x_str) in enumerate(params):
+        for idx, (raw, r_x, r_y, r_z, r_w, typ, x, xy, xyz, xyzw, use_rand, y, yy, yyz, yyzw, x_str) in enumerate(params):
             typ = EnumConvertType[typ]
             default = [x_str]
+            default2 = None
             if typ not in [EnumConvertType.STRING, EnumConvertType.LIST]:
-                a, b, c, d = xyzw
-                if typ in [EnumConvertType.FLOAT, EnumConvertType.INT, EnumConvertType.BOOLEAN]:
-                    a = x
+                match typ:
+                    case EnumConvertType.FLOAT, EnumConvertType.INT, EnumConvertType.BOOLEAN:
+                        a = x
+                        a2 = y
+                    case EnumConvertType.VEC2, EnumConvertType.VEC2INT:
+                        a, b = xy
+                        a2, b2 = yy
+                    case EnumConvertType.VEC3, EnumConvertType.VEC3INT:
+                        a, b, c = xyz
+                        a2, b2, c2 = yyz
+                    case _:
+                        a, b, c, d = xyzw
+                        a2, b2, c2, d2 = yyzw
+
                 default = (a if r_x is None else r_x,
                     b if r_y is None else r_y,
                     c if r_z is None else r_z,
                     d if r_w is None else r_w)
 
+                default2 = (a if r_x is None else r_x,
+                    b if r_y is None else r_y,
+                    c if r_z is None else r_z,
+                    d if r_w is None else r_w)
+
             val = parse_value(raw, typ, default)
+            val2 = parse_value(default2, typ, default2)
             typ = EnumConvertType.VEC4 if typ in [EnumConvertType.VEC4, EnumConvertType.VEC3, \
                                                   EnumConvertType.VEC2, EnumConvertType.FLOAT] \
                                                   else EnumConvertType.VEC4INT
 
             extra = parse_value(val, typ, default)
-            ret = [val] #if not isinstance(val, (list,)) else val
+            ret = [val]
             ret.extend(extra)
             results.append(ret)
             pbar.update_absolute(idx)
         return list(zip(*results))
-        #(results,) #*list(zip(*results)),
 
 class LerpNode(JOVBaseNode):
     NAME = "LERP (JOV) 🔰"
@@ -473,7 +525,7 @@ class LerpNode(JOVBaseNode):
     RETURN_NAMES = (Lexicon.ANY_OUT,)
     SORT = 45
     DESCRIPTION = """
-The Lerp Node performs linear interpolation between two values or vectors based on a blending factor. It supports easing functions for smoother transitions and outputs the result as either floats or integers.
+The Lerp Node calculates linear interpolation between two values or vectors based on a blending factor (alpha). The node accepts optional start (IN_A) and end (IN_B) points, a blending factor (FLOAT), and various input types for both start and end points, such as single values (X, Y), 2-value vectors (IN_A2, IN_B2), 3-value vectors (IN_A3, IN_B3), and 4-value vectors (IN_A4, IN_B4). Additionally, you can specify the easing function (EASE) and the desired output type (TYPE). It supports various easing functions for smoother transitions.
 """
 
     @classmethod
@@ -536,6 +588,11 @@ The Lerp Node performs linear interpolation between two values or vectors based 
             best_type = [EnumConvertType.FLOAT, EnumConvertType.VEC2, EnumConvertType.VEC3, EnumConvertType.VEC4][size]
             A = parse_value(A, best_type, A)
             B = parse_value(B, best_type, B)
+            if not isinstance(A, (list),):
+                A = [A]
+            if not isinstance(B, (list),):
+                B = [B]
+
             typ = EnumConvertType[typ]
             if typ in [EnumConvertType.VEC2, EnumConvertType.VEC2INT]:
                 val_a = parse_value(A, EnumConvertType.VEC4, A if A is not None else a_xy)
@@ -554,10 +611,6 @@ The Lerp Node performs linear interpolation between two values or vectors based 
 
             val_a = val_a[:size]
             val_b = val_b[:size]
-            if not isinstance(val_a, (list),):
-                val_a = [val_a]
-            if not isinstance(val_b, (list),):
-                val_b = [val_b]
 
             alpha = parse_value(alpha, best_type, alpha)
             if op == "NONE":
@@ -569,10 +622,9 @@ The Lerp Node performs linear interpolation between two values or vectors based 
             values.append(val)
             pbar.update_absolute(idx)
         return (values, )
-        return *list(zip(*results)),
 
-class SwapNode(JOVBaseNode):
-    NAME = "SWAP (JOV) 😵"
+class SwizzleNode(JOVBaseNode):
+    NAME = "SWIZZLE (JOV) 😵"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = (WILDCARD,)
     RETURN_NAMES = (Lexicon.ANY_OUT,)
@@ -621,4 +673,4 @@ The Swap Node swaps components between two vectors based on specified swizzle pa
             val = vector_swap(pA, pB, swap_x, x, swap_y, y, swap_z, z, swap_w, w)
             results.append(val)
             pbar.update_absolute(idx)
-        return (results,)
+        return results

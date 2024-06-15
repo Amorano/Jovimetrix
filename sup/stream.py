@@ -418,7 +418,7 @@ if JOV_SPOUT:
             result = self.__spout.receiveImage(self.__buffer, GL.GL_RGBA, False, 0)
             if self.__buffer is not None and result: # and not SpoutGL.helpers.isBufferEmpty(self.__buffer):
                 self.__last = np.asarray(self.__buffer, dtype=np.uint8).reshape((self.__height, self.__width, 4))
-                self.__last[:, :, [0, 2]] = self.__last[:, :, [2, 0]]
+                # self.__last[:, :, [0, 2]] = self.__last[:, :, [2, 0]]
             return self.__last
 
         @property
