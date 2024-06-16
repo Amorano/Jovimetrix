@@ -188,7 +188,7 @@ class Lexicon(metaclass=LexiconMeta):
     S = '🇸', "Saturation"
     SAMPLE = '🎞️', "Select the method for resizing images. Options range from nearest neighbor to advanced methods like Lanczos, ensuring the best quality for the specific use case"
     SCHEME = 'SCHEME', "Scheme"
-    SEED = 'SEED', "Random generator's initial value"
+    SEED = 'seed', "Random generator's initial value"
     SEGMENT = 'SEGMENT', "Number of parts which the input image should be split"
     SELECT = 'SELECT', "Select"
     SHAPE = '🇸🇴', "Circle, Square or Polygonal forms"
@@ -254,11 +254,12 @@ class Lexicon(metaclass=LexiconMeta):
             if cat not in ['optional', 'required']:
                 continue
             for k, v in entry.items():
-                if len(v) > 1 and (tip := v[1].get('tooltip', None)) is None:
-                    if (tip := cls._tooltipsDB.get(k), None) is None:
-                        logger.warning(f"no {k}")
-                        continue
-                data[k] = tip
+                if len(v) > 1:
+                    if (tip := v[1].get('tooltip', None)) is None:
+                        if (tip := cls._tooltipsDB.get(k), None) is None:
+                            logger.warning(f"no {k}")
+                            continue
+                    data[k] = tip
         if node.get("optional", None) is None:
             node["optional"] = {}
         node["optional"]["tooltips"] = ("JTOOLTIP", {"default": data})

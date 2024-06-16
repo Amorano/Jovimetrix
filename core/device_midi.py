@@ -39,12 +39,12 @@ The MIDI Message node processes MIDI messages received from an external MIDI con
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {
-                "required": {} ,
-                "optional": {
+        d = super().INPUT_TYPES()
+        d.update({
+            "optional": {
                 Lexicon.MIDI: ('JMIDIMSG', {"default": None})
             }
-        }
+        })
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[object, bool, int, int, int, float, float]:
@@ -72,12 +72,12 @@ The MIDI Reader node captures MIDI messages from an external MIDI device or cont
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {
-                "required": {} ,
-                "optional": {
+        d = super().INPUT_TYPES()
+        d.update({
+            "optional": {
                 Lexicon.DEVICE : (cls.DEVICES, {"default": cls.DEVICES[0] if len(cls.DEVICES) > 0 else None})
             }
-        }
+        })
         return Lexicon._parse(d, cls)
 
     @classmethod
@@ -135,8 +135,8 @@ The MIDI Filter EZ node allows you to filter MIDI messages based on various crit
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {
-            "required": {} ,
+        d = super().INPUT_TYPES()
+        d.update({
             "optional": {
                 Lexicon.MIDI: ('JMIDIMSG', {"default": None}),
                 Lexicon.MODE: (MIDINoteOnFilter._member_names_, {"default": MIDINoteOnFilter.IGNORE.name}),
@@ -146,7 +146,7 @@ The MIDI Filter EZ node allows you to filter MIDI messages based on various crit
                 Lexicon.VALUE: ("INT", {"default": -1, "min": -1, "max": 127, "step": 1}),
                 Lexicon.NORMALIZE: ("FLOAT", {"default": -1, "min": -1, "max": 1, "step": 0.01})
             }
-        }
+        })
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[MIDIMessage, bool]:
@@ -202,8 +202,8 @@ The MIDI Filter node provides advanced filtering capabilities for MIDI messages 
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {
-            "required": {} ,
+        d = super().INPUT_TYPES()
+        d.update({
             "optional": {
                 Lexicon.MIDI: ('JMIDIMSG', {"default": None}),
                 Lexicon.ON: (MIDINoteOnFilter._member_names_, {"default": MIDINoteOnFilter.IGNORE.name}),
@@ -213,7 +213,7 @@ The MIDI Filter node provides advanced filtering capabilities for MIDI messages 
                 Lexicon.VALUE: ("STRING", {"default": ""}),
                 Lexicon.NORMALIZE: ("STRING", {"default": ""})
             }
-        }
+        })
         return Lexicon._parse(d, cls)
 
     def __filter(self, data:int, value:str) -> bool:

@@ -122,6 +122,22 @@ class Singleton(type):
 class JOVBaseNode:
     RETURN_TYPES = ()
     FUNCTION = "run"
+    # instance map for caching
+    INSTANCE = {}
+
+    @classmethod
+    def INPUT_TYPES(cls, prompt:bool=False, extra_png:bool=False) -> dict:
+        data = {
+            "required": {},
+            "hidden": {
+                "ident": "UNIQUE_ID"
+            }
+        }
+        if prompt:
+            data["hidden"]["prompt"] = "PROMPT"
+        if extra_png:
+            data["hidden"]["extra_pnginfo"] = "EXTRA_PNGINFO"
+        return data
 
 # wildcard trick is 100% stolen from pythongossss's
 class AnyType(str):

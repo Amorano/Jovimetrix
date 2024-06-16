@@ -25,7 +25,7 @@ app.registerExtension({
             const widget_xy = this.widgets.find(w => w.name === '🅰️2');
             const widget_xyz = this.widgets.find(w => w.name === '🅰️3');
             const widget_xyzw = this.widgets.find(w => w.name === '🅰️4');
-            const widget_rng = this.widgets.find(w => w.name === 'RNG');
+            const widget_rng = this.widgets.find(w => w.name === 'seed');
             const widget_y = this.widgets.find(w => w.name === 'Y');
             const widget_yy = this.widgets.find(w => w.name === '🅱️2');
             const widget_yyz = this.widgets.find(w => w.name === '🅱️3');
@@ -44,44 +44,10 @@ app.registerExtension({
             widget_yyz.options.menu = false;
             widget_yyzw.options.menu = false;
             widget_str.options.menu = false;
-
             widget_str.origComputeSize = widget_str.computeSize;
-            const combo = this.widgets.find(w => w.name === '❓');
 
-            /*
-            widget_rng.callback = () => {
-                widget_hide(this, widget_y, "-jovi");
-                widget_hide(this, widget_yy, "-jovi");
-                widget_hide(this, widget_yyz, "-jovi");
-                widget_hide(this, widget_yyzw, "-jovi");
-                if (combo.value == "FLOAT" && widget_rng.value === true) {
-                    process_value(widget_y, 3);
-                } else if (combo.value == "INT" && widget_rng.value === true) {
-                    process_value(widget_y);
-                } else if (combo.value == "COORD2D" && widget_rng.value === true) {
-                    show_vector(widget_yy, 3);
-                } else if (["VEC2", "VEC3", "VEC4"].includes(combo.value)) {
-                    if (["VEC2"].includes(combo.value) && widget_rng.value === true) {
-                        show_vector(widget_yy, 3);
-                    } else if (["VEC3"].includes(combo.value) && widget_rng.value === true) {
-                        show_vector(widget_yyz, 3);
-                    } else if (["VEC4"].includes(combo.value) && widget_rng.value === true) {
-                        show_vector(widget_yyzw, 3);
-                    }
-                } else if (["VEC2INT", "VEC3INT", "VEC4INT"].includes(combo.value)) {
-                    if (["VEC2INT"].includes(combo.value) && widget_rng.value === true) {
-                        show_vector(widget_yy);
-                    } else if (["VEC3INT"].includes(combo.value) && widget_rng.value === true) {
-                        show_vector(widget_yyz);
-                    } else if (["VEC4INT"].includes(combo.value) && widget_rng.value === true) {
-                        show_vector(widget_yyzw);
-                    }
-                }
-                fitHeight(this);
-            }
-            */
-
-            combo.callback = () => {
+            const widget_combo = this.widgets.find(w => w.name === '❓');
+            widget_combo.callback = () => {
                 widget_hide(this, widget_x, "-jovi");
                 widget_hide(this, widget_xy, "-jovi");
                 widget_hide(this, widget_xyz, "-jovi");
@@ -101,109 +67,128 @@ app.registerExtension({
                 output_z.type = "*";
                 output_w.type = "*";
                 //
-                if (combo.value == "BOOLEAN") {
+                function set_output(what) {
+                    output_x.type = what;
+                    output_y.type = what;
+                    output_z.type = what;
+                    output_w.type = what;
+                }
+
+                //
+                if (widget_combo.value == "BOOLEAN") {
                     show_boolean(widget_x);
-                    show_boolean(widget_y);
                     widget_show(widget_rng);
-                    output_x.type = "BOOLEAN";
-                } else if (combo.value == "LIST") {
+                    if (widget_rng.value > 0) {
+                        widget_show(widget_y);
+                    }
+                    set_output("BOOLEAN");
+                } else if (widget_combo.value == "LIST") {
                     process_any(widget_str, "LIST")
                     widget_str.inputEl.className = "comfy-multiline-input";
                     widget_str.computeSize = widget_str.origComputeSize;
-                    output_x.type = "LIST";
-                } else if (combo.value == "DICT") {
+                    set_output("LIST");
+                } else if (widget_combo.value == "DICT") {
                     process_any(widget_str, "DICT")
                     widget_str.inputEl.className = "comfy-multiline-input";
                     widget_str.computeSize = widget_str.origComputeSize;
-                    output_x.type = "DICT";
-                } else if (combo.value == "ANY") {
+                    set_output("DICT");
+                } else if (widget_combo.value == "ANY") {
                     process_any(widget_x, "*")
-                } else if (combo.value == "MASK") {
+                } else if (widget_combo.value == "MASK") {
                     process_any(widget_x, "MASK")
-                    output_x.type = "MASK";
-                } else if (combo.value == "STRING") {
+                    set_output("MASK");
+                } else if (widget_combo.value == "STRING") {
                     process_any(widget_str, "STRING")
                     widget_str.inputEl.className = "comfy-multiline-input";
                     widget_str.computeSize = widget_str.origComputeSize;
-                    output_x.type = "STRING";
-                } else if (combo.value == "FLOAT") {
+                    set_output("STRING");
+                } else if (widget_combo.value == "FLOAT") {
                     process_value(widget_x, 3);
                     widget_show(widget_rng);
-                    if (widget_rng.value === true) {
+                    if (widget_rng.value > 0) {
                         process_value(widget_y, 3);
-                    }
-                    output_x.type = "FLOAT";
-                } else if (combo.value == "INT") {
+                                       }
+                    set_output("FLOAT");
+                } else if (widget_combo.value == "INT") {
                     process_value(widget_x);
                     widget_show(widget_rng);
-                    if (widget_rng.value === true) {
+                    if (widget_rng.value > 0) {
                         process_value(widget_y);
                     }
-                    output_x.type = "INT";
-                } else if (combo.value == "COORD2D") {
-                    show_vector(widget_xy, 3);
+                    set_output("INT");
+                } else if (["VEC2", "COORD2D", "VEC3", "VEC4", "VEC2INT", "VEC3INT", "VEC4INT"].includes(widget_combo.value)) {
                     widget_show(widget_rng);
-                    if (widget_rng.value === true) {
-                        show_vector(widget_yy, 3);
+                    let precision = 0;
+                    if (["FLOAT", "COORD2D", "VEC2", "VEC3", "VEC4"].includes(widget_combo.value)) {
+                        precision = 3;
+                        set_output("FLOAT");
+                    } else {
+                        set_output("INT");
                     }
-                    output_x.type = "FLOAT";
-                    output_y.type = "FLOAT";
-                } else if (["VEC2", "VEC3", "VEC4"].includes(combo.value)) {
-                    output_x.type = "FLOAT";
-                    widget_show(widget_rng);
-                    if (["VEC2"].includes(combo.value)) {
-                        show_vector(widget_xy, 3);
-                        if (widget_rng.value === true) {
-                            show_vector(widget_yy, 3);
+                    if (["COORD2D", "VEC2", "VEC2INT"].includes(widget_combo.value)) {
+                        show_vector(widget_xy, precision);
+                        if (widget_rng.value > 0) {
+                            show_vector(widget_yy, precision);
                         }
-                        output_y.type = "FLOAT";
-                    } else if (["VEC3"].includes(combo.value)) {
-                        show_vector(widget_xyz, 3);
-                        if (widget_rng.value === true) {
-                            show_vector(widget_yyz, 3);
+                    } else if (["VEC3", "VEC3INT"].includes(widget_combo.value)) {
+                        show_vector(widget_xyz, precision);
+                        if (widget_rng.value > 0) {
+                            show_vector(widget_yyz, precision);
                         }
-                        output_z.type = "FLOAT";
-                    } else if (["VEC4"].includes(combo.value)) {
-                        show_vector(widget_xyzw, 3);
-                        if (widget_rng.value === true) {
-                            show_vector(widget_yyzw, 3);
+                    } else if (["VEC4", "VEC4INT"].includes(widget_combo.value)) {
+                        show_vector(widget_xyzw, precision);
+                        if (widget_rng.value > 0) {
+                            show_vector(widget_yyzw, precision);
                         }
-                        output_z.type = "FLOAT";
-                        output_w.type = "FLOAT";
-                    }
-                } else if (["VEC2INT", "VEC3INT", "VEC4INT"].includes(combo.value)) {
-                    output_x.type = "INT";
-                    widget_show(widget_rng);
-                    if (["VEC2INT"].includes(combo.value)) {
-                        show_vector(widget_xy);
-                        show_vector(widget_yy);
-                        output_y.type = "INT";
-                    } else if (["VEC3INT"].includes(combo.value)) {
-                        show_vector(widget_xyz);
-                        show_vector(widget_yyz);
-                        output_z.type = "INT";
-                    } else if (["VEC4INT"].includes(combo.value)) {
-                        output_z.type = "INT";
-                        output_w.type = "INT";
-                        show_vector(widget_xyzw);
-                        show_vector(widget_yyzw);
+                    } else if (["INT", "FLOAT"].includes(widget_combo.value)) {
+                        process_value(widget_x, precision);
+                        if (widget_rng.value > 0) {
+                            process_value(widget_y, precision);
+                        }
                     }
                 }
-                this.outputs[0].name = widget_type_name(combo.value);
+                this.outputs[0].name = widget_type_name(widget_combo.value);
+                fitHeight(this);
+            }
+
+            widget_rng.callback = () => {
+                widget_hide(this, widget_y, "-jovi");
+                widget_hide(this, widget_yy, "-jovi");
+                widget_hide(this, widget_yyz, "-jovi");
+                widget_hide(this, widget_yyzw, "-jovi");
+                if (widget_rng.value > 0) {
+                    let precision = 0;
+                    if (["FLOAT", "VEC2", "VEC3", "VEC4"].includes(widget_combo.value)) {
+                        precision = 3;
+                    }
+                    if (["BOOLEAN", "INT", "FLOAT"].includes(widget_combo.value)) {
+                        process_value(widget_y, precision);
+                    } else if (["VEC2", "VEC2INT"].includes(widget_combo.value)) {
+                        show_vector(widget_yy, precision);
+                    } else if (["VEC3", "VEC3INT"].includes(widget_combo.value)) {
+                        show_vector(widget_yyz, precision);
+                    } else if (["VEC4", "VEC4INT"].includes(widget_combo.value)) {
+                        show_vector(widget_yyzw, precision);
+                    }
+                }
                 fitHeight(this);
             }
 
             setTimeout(() => {
-                combo.callback();
+                widget_combo.callback();
+            }, 10);
+            setTimeout(() => {
+                widget_rng.callback();
             }, 10);
             return me;
         }
 
+        /*
         const onConnectionsChange = nodeType.prototype.onConnectionsChange
         nodeType.prototype.onConnectionsChange = function (slotType, slot, event, link_info, data) {
             if (slotType === TypeSlot.Input) {
-                const combo = this.widgets.find(w => w.name === '❓');
-                setTimeout(() => { combo.callback(); }, 10);
+                const widget_combo = this.widgets.find(w => w.name === '❓');
+                setTimeout(() => { widget_combo.callback(); }, 10);
             }
             return onConnectionsChange?.apply(this, arguments);
         }
@@ -211,12 +196,11 @@ app.registerExtension({
         const onExecuted = nodeType.prototype.onExecuted;
         nodeType.prototype.onExecuted = function(message) {
             const me = onExecuted?.apply(this,arguments);
-            console.info(2, message);
             let values = message["text"].toString().map(Number);
             this.outputs[1]["name"] = values[1] + " width"
             this.outputs[2]["name"] = values[2] + " height"
             this.outputs[3]["name"] = values[0] + " count"
             return me;
-        }
-	}
+        }*/
+    }
 })

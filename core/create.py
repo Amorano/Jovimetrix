@@ -47,28 +47,26 @@ The Constant node generates constant images or masks of a specified size and col
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {
-        "required": {},
-        "optional": {
-            Lexicon.PIXEL: (WILDCARD, {"tooltip":"Optional Image to Matte with Selected Color"}),
-            Lexicon.RGBA_A: ("VEC4", {"default": (0, 0, 0, 255), "step": 1,
-                                      "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A],
-                                      "rgb": True, "tooltip": "Constant Color to Output"}),
-            Lexicon.WH: ("VEC2", {"default": (512, 512), "step": 1,
-                                  "label": [Lexicon.W, Lexicon.H],
-                                  "tooltip": "Desired Width and Height of the Color Output"}),
-            Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
-            Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
-        }}
+        d = super().INPUT_TYPES()
+        d.update({
+            "optional": {
+                Lexicon.PIXEL: (WILDCARD, {"tooltip":"Optional Image to Matte with Selected Color"}),
+                Lexicon.RGBA_A: ("VEC4", {"default": (0, 0, 0, 255), "step": 1,
+                                        "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A],
+                                        "rgb": True, "tooltip": "Constant Color to Output"}),
+                Lexicon.WH: ("VEC2", {"default": (512, 512), "step": 1,
+                                    "label": [Lexicon.W, Lexicon.H],
+                                    "tooltip": "Desired Width and Height of the Color Output"}),
+                Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
+                Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
+            }
+        })
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
-        matte = parse_param(kw, Lexicon.RGBA_A, EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
-        # ((512, 512),)
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), MIN_IMAGE_SIZE)
-        # logger.debug(f"{kw[Lexicon.WH]}, {wihi}")
-        # ((512, 512),)
+        matte = parse_param(kw, Lexicon.RGBA_A, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE)], MIN_IMAGE_SIZE)
         mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.NONE.name)
         sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)
         images = []
@@ -101,8 +99,8 @@ The Shape Generation node creates images representing various shapes such as cir
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {
-            "required": {},
+        d = super().INPUT_TYPES()
+        d.update({
             "optional": {
                 Lexicon.SHAPE: (EnumShapes._member_names_, {"default": EnumShapes.CIRCLE.name}),
                 Lexicon.SIDES: ("INT", {"default": 3, "min": 3, "max": 100, "step": 1}),
@@ -124,7 +122,7 @@ The Shape Generation node creates images representing various shapes such as cir
                 Lexicon.BLUR: ("FLOAT", {"default": 0, "min": 0, "step": 0.01, "precision": 4,
                                         "round": 0.00001, "tooltip": "Edge blur amount (Gaussian blur)"}),
             }
-        }
+        })
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
@@ -132,11 +130,11 @@ The Shape Generation node creates images representing various shapes such as cir
         sides = parse_param(kw, Lexicon.SIDES, EnumConvertType.INT, 3, 3, 512)
         angle = parse_param(kw, Lexicon.ANGLE, EnumConvertType.FLOAT, 0)
         edge = parse_param(kw, Lexicon.EDGE, EnumConvertType.STRING, EnumEdge.CLIP.name)
-        offset = parse_param(kw, Lexicon.XY, EnumConvertType.VEC2, (0, 0,))
-        size = parse_param(kw, Lexicon.SIZE, EnumConvertType.VEC2, (1, 1,), zero=0.001)
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,), MIN_IMAGE_SIZE)
-        color = parse_param(kw, Lexicon.RGBA_A, EnumConvertType.VEC4INT, (255, 255, 255, 255), 0, 255)
-        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
+        offset = parse_param(kw, Lexicon.XY, EnumConvertType.VEC2, [(0, 0,)])
+        size = parse_param(kw, Lexicon.SIZE, EnumConvertType.VEC2, [(1, 1,)], zero=0.001)
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,)], MIN_IMAGE_SIZE)
+        color = parse_param(kw, Lexicon.RGBA_A, EnumConvertType.VEC4INT, [(255, 255, 255, 255)], 0, 255)
+        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
         blur = parse_param(kw, Lexicon.BLUR, EnumConvertType.FLOAT, 0)
         params = list(zip_longest_fill(shape, sides, offset, angle, edge, size, wihi, color, matte, blur))
         images = []
@@ -173,7 +171,6 @@ The Shape Generation node creates images representing various shapes such as cir
             pA = pil2cv(pA)
             mask = pil2cv(mask)
             mask = image_grayscale(mask)
-            # pA = image_mask_add(pA, mask)
             pA = image_transform(pA, offset, angle, (1,1), edge=edge)
             mask = image_transform(mask, offset, angle, (1,1), edge=edge)
             pB = image_mask_add(pA, mask)
@@ -182,7 +179,7 @@ The Shape Generation node creates images representing various shapes such as cir
                 pA = (gaussian(pA, sigma=blur, channel_axis=2) * 255).astype(np.uint8)
                 pB = (gaussian(pB, sigma=blur, channel_axis=2) * 255).astype(np.uint8)
                 mask = (gaussian(mask, sigma=blur, channel_axis=2) * 255).astype(np.uint8)
-            # images.append(cv2tensor_full(pA))
+
             images.append([cv2tensor(pB), cv2tensor(pA), cv2tensor(mask, True)])
             pbar.update_absolute(idx)
         return [torch.cat(i, dim=0) for i in list(zip(*images))]
@@ -202,37 +199,38 @@ The Text Generation node generates images containing text based on user-defined 
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {
-        "required": {},
-        "optional": {
-            Lexicon.STRING: ("STRING", {"default": "", "multiline": True,
-                                        "dynamicPrompts": False,
-                                        "tooltip": "Your Message"}),
-            Lexicon.FONT: (cls.FONT_NAMES, {"default": cls.FONT_NAMES[0]}),
-            Lexicon.LETTER: ("BOOLEAN", {"default": False}),
-            Lexicon.AUTOSIZE: ("BOOLEAN", {"default": False}),
-            Lexicon.RGBA_A: ("VEC3", {"default": (255, 255, 255, 255), "step": 1,
-                                      "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A],
-                                      "rgb": True, "tooltip": "Color of the letters"}),
-            Lexicon.MATTE: ("VEC3", {"default": (0, 0, 0), "step": 1,
-                                     "label": [Lexicon.R, Lexicon.G, Lexicon.B], "rgb": True}),
-            Lexicon.COLUMNS: ("INT", {"default": 0, "min": 0, "step": 1}),
-            # if auto on, hide these...
-            Lexicon.FONT_SIZE: ("INT", {"default": 16, "min": 1, "step": 1}),
-            Lexicon.ALIGN: (EnumAlignment._member_names_, {"default": EnumAlignment.CENTER.name}),
-            Lexicon.JUSTIFY: (EnumJustify._member_names_, {"default": EnumJustify.CENTER.name}),
-            Lexicon.MARGIN: ("INT", {"default": 0, "min": -1024, "max": 1024}),
-            Lexicon.SPACING: ("INT", {"default": 25, "min": -1024, "max": 1024}),
-            Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE),
-                                  "step": 1, "label": [Lexicon.W, Lexicon.H]}),
-            Lexicon.XY: ("VEC2", {"default": (0, 0,), "step": 0.01, "precision": 4,
-                                  "round": 0.00001, "label": [Lexicon.X, Lexicon.Y],
-                                  "tooltip":"Offset the position"}),
-            Lexicon.ANGLE: ("FLOAT", {"default": 0, "min": -180, "max": 180,
-                                      "step": 0.01, "precision": 4, "round": 0.00001}),
-            Lexicon.EDGE: (EnumEdge._member_names_, {"default": EnumEdge.CLIP.name}),
-            Lexicon.INVERT: ("BOOLEAN", {"default": False, "tooltip": "Invert the mask input"})
-        }}
+        d = super().INPUT_TYPES()
+        d.update({
+            "optional": {
+                Lexicon.STRING: ("STRING", {"default": "", "multiline": True,
+                                            "dynamicPrompts": False,
+                                            "tooltip": "Your Message"}),
+                Lexicon.FONT: (cls.FONT_NAMES, {"default": cls.FONT_NAMES[0]}),
+                Lexicon.LETTER: ("BOOLEAN", {"default": False}),
+                Lexicon.AUTOSIZE: ("BOOLEAN", {"default": False}),
+                Lexicon.RGBA_A: ("VEC3", {"default": (255, 255, 255, 255), "step": 1,
+                                        "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A],
+                                        "rgb": True, "tooltip": "Color of the letters"}),
+                Lexicon.MATTE: ("VEC3", {"default": (0, 0, 0), "step": 1,
+                                        "label": [Lexicon.R, Lexicon.G, Lexicon.B], "rgb": True}),
+                Lexicon.COLUMNS: ("INT", {"default": 0, "min": 0, "step": 1}),
+                # if auto on, hide these...
+                Lexicon.FONT_SIZE: ("INT", {"default": 16, "min": 1, "step": 1}),
+                Lexicon.ALIGN: (EnumAlignment._member_names_, {"default": EnumAlignment.CENTER.name}),
+                Lexicon.JUSTIFY: (EnumJustify._member_names_, {"default": EnumJustify.CENTER.name}),
+                Lexicon.MARGIN: ("INT", {"default": 0, "min": -1024, "max": 1024}),
+                Lexicon.SPACING: ("INT", {"default": 25, "min": -1024, "max": 1024}),
+                Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE),
+                                    "step": 1, "label": [Lexicon.W, Lexicon.H]}),
+                Lexicon.XY: ("VEC2", {"default": (0, 0,), "step": 0.01, "precision": 4,
+                                    "round": 0.00001, "label": [Lexicon.X, Lexicon.Y],
+                                    "tooltip":"Offset the position"}),
+                Lexicon.ANGLE: ("FLOAT", {"default": 0, "min": -180, "max": 180,
+                                        "step": 0.01, "precision": 4, "round": 0.00001}),
+                Lexicon.EDGE: (EnumEdge._member_names_, {"default": EnumEdge.CLIP.name}),
+                Lexicon.INVERT: ("BOOLEAN", {"default": False, "tooltip": "Invert the mask input"})
+            }
+        })
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
@@ -240,16 +238,16 @@ The Text Generation node generates images containing text based on user-defined 
         font_idx = parse_param(kw, Lexicon.FONT, EnumConvertType.STRING, self.FONT_NAMES[0])
         autosize = parse_param(kw, Lexicon.AUTOSIZE, EnumConvertType.BOOLEAN, False)
         letter = parse_param(kw, Lexicon.LETTER, EnumConvertType.BOOLEAN, False)
-        color = parse_param(kw, Lexicon.RGBA_A, EnumConvertType.VEC4INT, (255, 255, 255, 255), 0, 255)
-        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC3INT, 0, 255)
+        color = parse_param(kw, Lexicon.RGBA_A, EnumConvertType.VEC4INT, [(255,255,255,255)], 0, 255)
+        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC3INT, [(0,0,0)], 0, 255)
         columns = parse_param(kw, Lexicon.COLUMNS, EnumConvertType.INT, 0)
         font_size = parse_param(kw, Lexicon.FONT_SIZE, EnumConvertType.INT, 1)
         align = parse_param(kw, Lexicon.ALIGN, EnumConvertType.STRING, EnumAlignment.CENTER.name)
         justify = parse_param(kw, Lexicon.JUSTIFY, EnumConvertType.STRING, EnumJustify.CENTER.name)
         margin = parse_param(kw, Lexicon.MARGIN, EnumConvertType.INT, 0)
         line_spacing = parse_param(kw, Lexicon.SPACING, EnumConvertType.INT, 25)
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), MIN_IMAGE_SIZE)
-        pos = parse_param(kw, Lexicon.XY, EnumConvertType.VEC2, (0, 0), 1,  -1)
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE)], MIN_IMAGE_SIZE)
+        pos = parse_param(kw, Lexicon.XY, EnumConvertType.VEC2, [(0, 0)], 1,  -1)
         angle = parse_param(kw, Lexicon.ANGLE, EnumConvertType.INT, 0)
         edge = parse_param(kw, Lexicon.EDGE, EnumConvertType.STRING, EnumEdge.CLIP.name)
         invert = parse_param(kw, Lexicon.INVERT, EnumConvertType.BOOLEAN, False)
@@ -311,17 +309,18 @@ The Stereogram node creates stereograms, generating 3D images from 2D input. Set
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {
-        "required": {},
-        "optional": {
-            Lexicon.PIXEL: (WILDCARD, {}),
-            Lexicon.DEPTH: (WILDCARD, {}),
-            Lexicon.TILE: ("INT", {"default": 8, "min": 1}),
-            Lexicon.NOISE: ("FLOAT", {"default": 0.33, "min": 0, "max": 1, "step": 0.01}),
-            Lexicon.GAMMA: ("FLOAT", {"default": 0.33, "min": 0, "max": 1, "step": 0.01}),
-            Lexicon.SHIFT: ("FLOAT", {"default": 1., "min": -1, "max": 1, "step": 0.01}),
-            Lexicon.INVERT: ("BOOLEAN", {"default": False}),
-        }}
+        d = super().INPUT_TYPES()
+        d.update({
+            "optional": {
+                Lexicon.PIXEL: (WILDCARD, {}),
+                Lexicon.DEPTH: (WILDCARD, {}),
+                Lexicon.TILE: ("INT", {"default": 8, "min": 1}),
+                Lexicon.NOISE: ("FLOAT", {"default": 0.33, "min": 0, "max": 1, "step": 0.01}),
+                Lexicon.GAMMA: ("FLOAT", {"default": 0.33, "min": 0, "max": 1, "step": 0.01}),
+                Lexicon.SHIFT: ("FLOAT", {"default": 1., "min": -1, "max": 1, "step": 0.01}),
+                Lexicon.INVERT: ("BOOLEAN", {"default": False}),
+            }
+        })
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
@@ -356,13 +355,14 @@ The Stereoscopic node simulates depth perception in images by generating stereos
 """
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {
-        "required": {},
-        "optional": {
-            Lexicon.PIXEL: (WILDCARD, {"tooltip":"Optional Image to Matte with Selected Color"}),
-            Lexicon.INT: ("FLOAT", {"default": 0.1, "min": 0, "max": 1, "step": 0.01, "tooltip":"Baseline"}),
-            Lexicon.VALUE: ("FLOAT", {"default": 500, "min": 0, "step": 0.01, "tooltip":"Focal length"}),
-        }}
+        d = super().INPUT_TYPES()
+        d.update({
+            "optional": {
+                Lexicon.PIXEL: (WILDCARD, {"tooltip":"Optional Image to Matte with Selected Color"}),
+                Lexicon.INT: ("FLOAT", {"default": 0.1, "min": 0, "max": 1, "step": 0.01, "tooltip":"Baseline"}),
+                Lexicon.VALUE: ("FLOAT", {"default": 500, "min": 0, "step": 0.01, "tooltip":"Focal length"}),
+            }
+        })
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
@@ -393,8 +393,8 @@ The Wave Graph node visualizes audio waveforms as bars. Adjust parameters like t
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {
-            "required": {},
+        d = super().INPUT_TYPES()
+        d.update({
             "optional": {
                 Lexicon.WAVE: ("AUDIO", {"default": None, "tooltip": "Audio Wave Object"}),
                 Lexicon.VALUE: ("INT", {"default": 100, "min": 32, "max": 8192, "step": 1, "tooltip": "Number of Vertical bars to try to fit within the specified Width x Height"}),
@@ -406,16 +406,16 @@ The Wave Graph node visualizes audio waveforms as bars. Adjust parameters like t
                 Lexicon.MATTE: ("VEC4", {"default": (0, 128, 128, 255), "step": 1,
                                         "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
             }
-        }
+        })
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
         wave = parse_param(kw, Lexicon.WAVE, EnumConvertType.ANY, None)
         bars = parse_param(kw, Lexicon.VALUE, EnumConvertType.INT, 50, 1, 8192)
         thick = parse_param(kw, Lexicon.THICK, EnumConvertType.FLOAT, 0.75, 0, 1)
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), MIN_IMAGE_SIZE)
-        rgb_a = parse_param(kw, Lexicon.RGBA_A, EnumConvertType.VEC4INT, (196, 0, 196), 0, 255)
-        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (42, 12, 42), 0, 255)
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE)], MIN_IMAGE_SIZE)
+        rgb_a = parse_param(kw, Lexicon.RGBA_A, EnumConvertType.VEC4INT, [(196, 0, 196)], 0, 255)
+        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(42, 12, 42)], 0, 255)
         params = list(zip_longest_fill(wave, bars, wihi, thick, rgb_a, matte))
         images = []
         pbar = ProgressBar(len(params))

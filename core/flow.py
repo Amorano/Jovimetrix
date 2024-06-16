@@ -72,15 +72,13 @@ Delay node used to introduce pauses in the workflow. It accepts an optional inpu
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {
-        "required": {},
-        "optional": {
-            Lexicon.PASS_IN: (WILDCARD, {"default": None}),
-            Lexicon.TIMER: ("INT", {"step": 1, "default" : 0, "min": -1}),
-        },
-        "hidden": {
-            "ident": "UNIQUE_ID"
-        }}
+        d = super().INPUT_TYPES()
+        d.update({
+            "optional": {
+                Lexicon.PASS_IN: (WILDCARD, {"default": None}),
+                Lexicon.TIMER: ("INT", {"step": 1, "default" : 0, "min": -1}),
+            }
+        })
         return Lexicon._parse(d, cls)
 
     def run(self, ident, **kw) -> Tuple[Any]:
@@ -117,16 +115,17 @@ The Comparison node evaluates two inputs based on a specified operation. It acce
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {
-        "required": {},
-        "optional": {
-            Lexicon.IN_A: (WILDCARD, {"default": None, "tooltip":"Master Comparator"}),
-            Lexicon.IN_B: (WILDCARD, {"default": None, "tooltip":"Secondary Comparator"}),
-            Lexicon.COMP_A: (WILDCARD, {"default": None}),
-            Lexicon.COMP_B: (WILDCARD, {"default": None}),
-            Lexicon.COMPARE: (EnumComparison._member_names_, {"default": EnumComparison.EQUAL.name}),
-            Lexicon.FLIP: ("BOOLEAN", {"default": False}),
-        }}
+        d = super().INPUT_TYPES()
+        d.update({
+            "optional": {
+                Lexicon.IN_A: (WILDCARD, {"default": None, "tooltip":"Master Comparator"}),
+                Lexicon.IN_B: (WILDCARD, {"default": None, "tooltip":"Secondary Comparator"}),
+                Lexicon.COMP_A: (WILDCARD, {"default": None}),
+                Lexicon.COMP_B: (WILDCARD, {"default": None}),
+                Lexicon.COMPARE: (EnumComparison._member_names_, {"default": EnumComparison.EQUAL.name}),
+                Lexicon.FLIP: ("BOOLEAN", {"default": False}),
+            }
+        })
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[Any, Any]:

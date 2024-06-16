@@ -42,31 +42,29 @@ The `Tick` node acts as a timer and frame counter, emitting pulses or signals ba
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {
-        "required": {},
-        "optional": {
-            # data to pass on a pulse of the loop
-            Lexicon.TRIGGER: (WILDCARD, {"default": None, "tooltip":"Output to send when beat (BPM setting) is hit"}),
-            # forces a MOD on CYCLE
-            Lexicon.VALUE: ("INT", {"min": 0, "default": 0, "step": 1, "tooltip": "the current frame number of the tick"}),
-            Lexicon.LOOP: ("INT", {"min": 0, "default": 0, "step": 1, "tooltip": "number of frames before looping starts. 0 means continuous playback (no loop point)"}),
-            #
-            Lexicon.FPS: ("INT", {"min": 1, "default": 24, "step": 1, "tooltip": "Fixed frame step rate based on FPS (1/FPS)"}),
-            Lexicon.BPM: ("FLOAT", {"min": 1, "max": 60000, "default": 120, "step": 1,
-                                    "tooltip": "BPM trigger rate to send the input. If input is empty, TRUE is sent on trigger"}),
-            Lexicon.NOTE: ("INT", {"default": 4, "min": 1, "max": 256, "step": 1,
-                                   "tooltip":"Number of beats per measure. Quarter note is 4, Eighth is 8, 16 is 16, etc."}),
-            # stick the current "count"
-            Lexicon.WAIT: ("BOOLEAN", {"default": False}),
-            # manual total = 0
-            Lexicon.RESET: ("BOOLEAN", {"default": False}),
-            # how many frames to dump....
-            Lexicon.BATCH: ("INT", {"min": 1, "default": 1, "step": 1, "max": 32767, "tooltip": "Number of frames wanted"}),
-            Lexicon.STEP: ("INT", {"default": 0, "step": 1, "tooltip": "Steps/Stride between pulses -- useful to do odd or even batches. If set to 0 will stretch from (VAL -> LOOP) / Batch giving a linear range of values."}),
-        },
-        "hidden": {
-            "ident": "UNIQUE_ID"
-        }}
+        d = super().INPUT_TYPES()
+        d.update({
+            "optional": {
+                # data to pass on a pulse of the loop
+                Lexicon.TRIGGER: (WILDCARD, {"default": None, "tooltip":"Output to send when beat (BPM setting) is hit"}),
+                # forces a MOD on CYCLE
+                Lexicon.VALUE: ("INT", {"min": 0, "default": 0, "step": 1, "tooltip": "the current frame number of the tick"}),
+                Lexicon.LOOP: ("INT", {"min": 0, "default": 0, "step": 1, "tooltip": "number of frames before looping starts. 0 means continuous playback (no loop point)"}),
+                #
+                Lexicon.FPS: ("INT", {"min": 1, "default": 24, "step": 1, "tooltip": "Fixed frame step rate based on FPS (1/FPS)"}),
+                Lexicon.BPM: ("FLOAT", {"min": 1, "max": 60000, "default": 120, "step": 1,
+                                        "tooltip": "BPM trigger rate to send the input. If input is empty, TRUE is sent on trigger"}),
+                Lexicon.NOTE: ("INT", {"default": 4, "min": 1, "max": 256, "step": 1,
+                                    "tooltip":"Number of beats per measure. Quarter note is 4, Eighth is 8, 16 is 16, etc."}),
+                # stick the current "count"
+                Lexicon.WAIT: ("BOOLEAN", {"default": False}),
+                # manual total = 0
+                Lexicon.RESET: ("BOOLEAN", {"default": False}),
+                # how many frames to dump....
+                Lexicon.BATCH: ("INT", {"min": 1, "default": 1, "step": 1, "max": 32767, "tooltip": "Number of frames wanted"}),
+                Lexicon.STEP: ("INT", {"default": 0, "step": 1, "tooltip": "Steps/Stride between pulses -- useful to do odd or even batches. If set to 0 will stretch from (VAL -> LOOP) / Batch giving a linear range of values."}),
+            }
+        })
         return Lexicon._parse(d, cls)
 
     """
@@ -133,17 +131,18 @@ The `Wave Generator` node produces waveforms like sine, square, or sawtooth with
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {
-        "required": {},
-        "optional": {
-            Lexicon.WAVE: (EnumWave._member_names_, {"default": EnumWave.SIN.name}),
-            Lexicon.FREQ: ("FLOAT", {"default": 1, "min": 0, "step": 0.01, "max": 10000000000000000}),
-            Lexicon.AMP: ("FLOAT", {"default": 1, "min": 0, "step": 0.01, "max": 10000000000000000}),
-            Lexicon.PHASE: ("FLOAT", {"default": 0, "min": 0.0, "step": 0.001, "max": 1.0}),
-            Lexicon.OFFSET: ("FLOAT", {"default": 0, "min": 0.0, "step": 0.001, "max": 1.0}),
-            Lexicon.TIME: ("FLOAT", {"default": 0, "min": 0, "step": 0.000001}),
-            Lexicon.INVERT: ("BOOLEAN", {"default": False}),
-        }}
+        d = super().INPUT_TYPES()
+        d.update({
+            "optional": {
+                Lexicon.WAVE: (EnumWave._member_names_, {"default": EnumWave.SIN.name}),
+                Lexicon.FREQ: ("FLOAT", {"default": 1, "min": 0, "step": 0.01, "max": 10000000000000000}),
+                Lexicon.AMP: ("FLOAT", {"default": 1, "min": 0, "step": 0.01, "max": 10000000000000000}),
+                Lexicon.PHASE: ("FLOAT", {"default": 0, "min": 0.0, "step": 0.001, "max": 1.0}),
+                Lexicon.OFFSET: ("FLOAT", {"default": 0, "min": 0.0, "step": 0.001, "max": 1.0}),
+                Lexicon.TIME: ("FLOAT", {"default": 0, "min": 0, "step": 0.000001}),
+                Lexicon.INVERT: ("BOOLEAN", {"default": False}),
+            }
+        })
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[float, int]:

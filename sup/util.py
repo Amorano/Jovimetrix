@@ -166,7 +166,7 @@ def parse_value(val:Any, typ:EnumConvertType, default: Any,
     elif typ == EnumConvertType.IMAGE:
         # covert image into image? just skip if already an image
         if not isinstance(new_val, (torch.Tensor,)):
-            color = parse_value(new_val, EnumConvertType.VEC4INT, (0,0,0,255), 0, 255)
+            color = parse_value(new_val, EnumConvertType.VEC4INT, [(0,0,0,255)], 0, 255)
             color = torch.tensor(color, dtype=torch.int32).tolist()
             new_val = torch.empty((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 4), dtype=torch.uint8)
             new_val[0,:,:] = color[0]
@@ -244,7 +244,7 @@ def vector_swap(pA: Any, pB: Any, swap_x: EnumSwizzle, x:float, swap_y:EnumSwizz
         if swap in [EnumSwizzle.B_X, EnumSwizzle.B_Y, EnumSwizzle.B_Z, EnumSwizzle.B_W]:
             target = targetB
         swap = int(swap.value / 10)
-        return target[swap]
+        return target[swap] if swap < len(target) else 0
 
     return [
         parse(pA, pB, swap_x, x),

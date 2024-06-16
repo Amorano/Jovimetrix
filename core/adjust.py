@@ -25,6 +25,7 @@ from Jovimetrix.sup.image import channel_count, channel_solid, \
     EnumCBDeficiency, EnumCBSimulator, EnumScaleMode, \
     EnumImageType, EnumColorMap, EnumAdjustOP, EnumThresholdAdapt, EnumThreshold,\
     MIN_IMAGE_SIZE
+from loguru import logger
 
 # =============================================================================
 
@@ -52,8 +53,8 @@ Enhance and modify images with various effects using the Adjust Node. Apply effe
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {
-            "required": {},
+        d = super().INPUT_TYPES()
+        d.update({
             "optional": {
                 Lexicon.PIXEL: (WILDCARD, {}),
                 Lexicon.MASK: (WILDCARD, {}),
@@ -75,7 +76,7 @@ Enhance and modify images with various effects using the Adjust Node. Apply effe
                                             "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True}),
                 Lexicon.INVERT: ("BOOLEAN", {"default": False, "tooltip": "Invert the mask input"})
             }
-        }
+        })
         return Lexicon._parse(d, cls)
 
     def run(self, **kw)  -> Tuple[torch.Tensor, torch.Tensor]:
@@ -84,12 +85,12 @@ Enhance and modify images with various effects using the Adjust Node. Apply effe
         op = parse_param(kw, Lexicon.FUNC, EnumConvertType.STRING, EnumAdjustOP.BLUR.name)
         radius = parse_param(kw, Lexicon.RADIUS, EnumConvertType.INT, 3, 3)
         amt = parse_param(kw, Lexicon.VALUE, EnumConvertType.FLOAT, 0, 0, 1)
-        lohi = parse_param(kw, Lexicon.LOHI, EnumConvertType.VEC2, (0, 1), 0, 1)
-        lmh = parse_param(kw, Lexicon.LMH, EnumConvertType.VEC3, (0, 0.5, 1), 0, 1)
-        hsv = parse_param(kw, Lexicon.HSV, EnumConvertType.VEC3, (0, 1, 1), 0, 1)
+        lohi = parse_param(kw, Lexicon.LOHI, EnumConvertType.VEC2, [(0, 1)], 0, 1)
+        lmh = parse_param(kw, Lexicon.LMH, EnumConvertType.VEC3, [(0, 0.5, 1)], 0, 1)
+        hsv = parse_param(kw, Lexicon.HSV, EnumConvertType.VEC3, [(0, 1, 1)], 0, 1)
         contrast = parse_param(kw, Lexicon.CONTRAST, EnumConvertType.FLOAT, 1, 0, 0)
         gamma = parse_param(kw, Lexicon.GAMMA, EnumConvertType.FLOAT, 1, 0, 1)
-        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
+        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
         invert = parse_param(kw, Lexicon.INVERT, EnumConvertType.BOOLEAN, False)
         params = list(zip_longest_fill(pA, mask, op, radius, amt, lohi,
                                                      lmh, hsv, contrast, gamma, matte, invert))
@@ -201,24 +202,25 @@ Adjust the color scheme of one image to match another with the Color Match Node.
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {
-        "required": {} ,
-        "optional": {
-            Lexicon.PIXEL_A: (WILDCARD, {}),
-            Lexicon.PIXEL_B: (WILDCARD, {}),
-            Lexicon.COLORMATCH_MODE: (EnumColorMatchMode._member_names_,
-                                        {"default": EnumColorMatchMode.REINHARD.name}),
-            Lexicon.COLORMATCH_MAP: (EnumColorMatchMap._member_names_,
-                                        {"default": EnumColorMatchMap.USER_MAP.name}),
-            Lexicon.COLORMAP: (EnumColorMap._member_names_,
-                                {"default": EnumColorMap.HSV.name}),
-            Lexicon.VALUE: ("INT", {"default": 255, "min": 0, "max": 255}),
-            Lexicon.FLIP: ("BOOLEAN", {"default": False}),
-            Lexicon.INVERT: ("BOOLEAN", {"default": False,
-                                            "tooltip": "Invert the color match output"}),
-            Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1,
-                                        "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True}),
-        }}
+        d = super().INPUT_TYPES()
+        d.update({
+            "optional": {
+                Lexicon.PIXEL_A: (WILDCARD, {}),
+                Lexicon.PIXEL_B: (WILDCARD, {}),
+                Lexicon.COLORMATCH_MODE: (EnumColorMatchMode._member_names_,
+                                            {"default": EnumColorMatchMode.REINHARD.name}),
+                Lexicon.COLORMATCH_MAP: (EnumColorMatchMap._member_names_,
+                                            {"default": EnumColorMatchMap.USER_MAP.name}),
+                Lexicon.COLORMAP: (EnumColorMap._member_names_,
+                                    {"default": EnumColorMap.HSV.name}),
+                Lexicon.VALUE: ("INT", {"default": 255, "min": 0, "max": 255}),
+                Lexicon.FLIP: ("BOOLEAN", {"default": False}),
+                Lexicon.INVERT: ("BOOLEAN", {"default": False,
+                                                "tooltip": "Invert the color match output"}),
+                Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1,
+                                            "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True}),
+            }
+        })
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
@@ -230,7 +232,7 @@ Adjust the color scheme of one image to match another with the Color Match Node.
         num_colors = parse_param(kw, Lexicon.VALUE, EnumConvertType.INT, 255)
         flip = parse_param(kw, Lexicon.FLIP, EnumConvertType.BOOLEAN, False)
         invert = parse_param(kw, Lexicon.INVERT, EnumConvertType.BOOLEAN, False)
-        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
+        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
         params = list(zip_longest_fill(pA, pB, colormap, colormatch_mode, colormatch_map, num_colors, flip, invert, matte))
         images = []
         pbar = ProgressBar(len(params))
@@ -283,17 +285,18 @@ Use the Threshold Node to define a range and apply it to an image for segmentati
 """
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {
-        "required": {} ,
-        "optional": {
-            Lexicon.PIXEL: (WILDCARD, {}),
-            Lexicon.ADAPT: ( EnumThresholdAdapt._member_names_,
-                            {"default": EnumThresholdAdapt.ADAPT_NONE.name}),
-            Lexicon.FUNC: ( EnumThreshold._member_names_, {"default": EnumThreshold.BINARY.name}),
-            Lexicon.THRESHOLD: ("FLOAT", {"default": 0.5, "min": 0, "max": 1, "step": 0.005}),
-            Lexicon.SIZE: ("INT", {"default": 3, "min": 3, "max": 103, "step": 1}),
-            Lexicon.INVERT: ("BOOLEAN", {"default": False, "tooltip": "Invert the mask input"})
-        }}
+        d = super().INPUT_TYPES()
+        d.update({
+            "optional": {
+                Lexicon.PIXEL: (WILDCARD, {}),
+                Lexicon.ADAPT: ( EnumThresholdAdapt._member_names_,
+                                {"default": EnumThresholdAdapt.ADAPT_NONE.name}),
+                Lexicon.FUNC: ( EnumThreshold._member_names_, {"default": EnumThreshold.BINARY.name}),
+                Lexicon.THRESHOLD: ("FLOAT", {"default": 0.5, "min": 0, "max": 1, "step": 0.005}),
+                Lexicon.SIZE: ("INT", {"default": 3, "min": 3, "max": 103, "step": 1}),
+                Lexicon.INVERT: ("BOOLEAN", {"default": False, "tooltip": "Invert the mask input"})
+            }
+        })
         return Lexicon._parse(d, cls)
 
     def run(self, **kw)  -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
@@ -328,16 +331,17 @@ Use the Color Blind Node to simulate color blindness effects on images. You can 
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {
-        "required": {},
-        "optional": {
-            Lexicon.PIXEL: (WILDCARD, {}),
-            Lexicon.DEFICIENCY: (EnumCBDeficiency._member_names_,
-                                        {"default": EnumCBDeficiency.PROTAN.name}),
-            Lexicon.SIMULATOR: (EnumCBSimulator._member_names_,
-                                        {"default": EnumCBSimulator.AUTOSELECT.name}),
-            Lexicon.VALUE: ("FLOAT", {"default": 1, "min": 0, "max": 1, "step": 0.001, "tooltip":"alpha blending"}),
-        }}
+        d = super().INPUT_TYPES()
+        d.update({
+            "optional": {
+                Lexicon.PIXEL: (WILDCARD, {}),
+                Lexicon.DEFICIENCY: (EnumCBDeficiency._member_names_,
+                                            {"default": EnumCBDeficiency.PROTAN.name}),
+                Lexicon.SIMULATOR: (EnumCBSimulator._member_names_,
+                                            {"default": EnumCBSimulator.AUTOSELECT.name}),
+                Lexicon.VALUE: ("FLOAT", {"default": 1, "min": 0, "max": 1, "step": 0.001, "tooltip":"alpha blending"}),
+            }
+        })
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
@@ -369,8 +373,8 @@ Create masks based on specific color ranges within an image. Specify the color r
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {
-            "required": {},
+        d = super().INPUT_TYPES()
+        d.update({
             "optional": {
                 Lexicon.PIXEL_A: (WILDCARD, {}),
                 Lexicon.START: ("VEC3", {"default": (128, 128, 128), "min":0, "max":255, "step": 1, "rgb": True}),
@@ -380,16 +384,16 @@ Create masks based on specific color ranges within an image. Specify the color r
                 Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1,
                                          "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True}),
             }
-        }
+        })
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[Any, ...]:
         pA = parse_param(kw, Lexicon.PIXEL_A, EnumConvertType.IMAGE, None)
-        start = parse_param(kw, Lexicon.START, EnumConvertType.VEC3INT, 128, 0, 255)
-        use_range = parse_param(kw, Lexicon.BOOLEAN, EnumConvertType.VEC3, 0, 0, 255)
-        end = parse_param(kw, Lexicon.END, EnumConvertType.VEC3INT, 128, 0, 255)
-        fuzz = parse_param(kw, Lexicon.FLOAT, EnumConvertType.VEC3, 0.5, 0, 1)
-        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
+        start = parse_param(kw, Lexicon.START, EnumConvertType.VEC3INT, [(128,128,128)], 0, 255)
+        use_range = parse_param(kw, Lexicon.BOOLEAN, EnumConvertType.VEC3, [(0,0,0)], 0, 255)
+        end = parse_param(kw, Lexicon.END, EnumConvertType.VEC3INT, [(128,128,128)], 0, 255)
+        fuzz = parse_param(kw, Lexicon.FLOAT, EnumConvertType.VEC3, [(0.5,0.5,0.5)], 0, 1)
+        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
         params = list(zip_longest_fill(pA, start, use_range, end, fuzz, matte))
         images = []
         pbar = ProgressBar(len(params))
@@ -397,7 +401,7 @@ Create masks based on specific color ranges within an image. Specify the color r
             img = np.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=np.uint8) if pA is None else tensor2cv(pA)
             img, mask = image_filter(img, start, end, fuzz, use_range)
             matte = image_matte(img, matte)[:,:,:3]
-            print(img.shape, type(img), matte.shape)
+            logger.debug(f"{img.shape}, {type(img)}, {matte.shape}")
             images.append([cv2tensor(img), cv2tensor(matte), cv2tensor(mask)])
             pbar.update_absolute(idx)
         return [torch.cat(i, dim=0) for i in list(zip(*images))]

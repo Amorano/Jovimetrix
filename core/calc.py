@@ -3,6 +3,7 @@ Jovimetrix - http://www.github.com/amorano/jovimetrix
 Calculation
 """
 
+import random
 import sys
 import math
 from enum import Enum
@@ -144,13 +145,13 @@ The Unary Operation node performs unary operations like absolute value, mean, me
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {
-            "required": {},
+        d = super().INPUT_TYPES()
+        d.update({
             "optional": {
                 Lexicon.IN_A: (WILDCARD, {"default": None}),
                 Lexicon.FUNC: (EnumUnaryOperation._member_names_, {"default": EnumUnaryOperation.ABS.name})
             }
-        }
+        })
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[bool]:
@@ -200,7 +201,7 @@ The Unary Operation node performs unary operations like absolute value, mean, me
                         else:
                             val = [0] * len(val)
                 case EnumUnaryOperation.MAXIMUM:
-                    val = [max(val)]
+                    val = [max(v)]
                 case EnumUnaryOperation.MINIMUM:
                     val = [min(val)]
                 case _:
@@ -227,7 +228,7 @@ The Unary Operation node performs unary operations like absolute value, mean, me
             val = parse_value(val, typ, 0)
             results.append(val)
             pbar.update_absolute(idx)
-        return (results,)
+        return results
 
 class CalcBinaryOPNode(JOVBaseNode):
     NAME = "OP BINARY (JOV) 🌟"
@@ -242,52 +243,53 @@ The Binary Operation node executes binary operations like addition, subtraction,
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         names_convert = EnumConvertType._member_names_[:9]
-        d = {
-        "required": {},
-        "optional": {
-            Lexicon.IN_A: (WILDCARD, {"default": None,
-                                      "tooltip":"Passes a raw value directly, or supplies defaults for any value inputs without connections"}),
-            Lexicon.IN_B: (WILDCARD, {"default": None,
-                                      "tooltip":"Passes a raw value directly, or supplies defaults for any value inputs without connections"}),
-            Lexicon.FUNC: (EnumBinaryOperation._member_names_, {"default": EnumBinaryOperation.ADD.name, "tooltip":"Arithmetic operation to perform"}),
-            Lexicon.TYPE: (names_convert, {"default": names_convert[2],
-                                           "tooltip":"Output type desired from resultant operation"}),
-            Lexicon.FLIP: ("BOOLEAN", {"default": False}),
-            Lexicon.X: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "tooltip":"Single value input"}),
-            Lexicon.IN_A+"2": ("VEC2", {"default": (0,0),
-                                      "label": [Lexicon.X, Lexicon.Y],
-                                      "tooltip":"2-value vector"}),
-            Lexicon.IN_A+"3": ("VEC3", {"default": (0,0,0),
-                                      "label": [Lexicon.X, Lexicon.Y, Lexicon.Z],
-                                      "tooltip":"3-value vector"}),
-            Lexicon.IN_A+"4": ("VEC4", {"default": (0,0,0,0),
-                                      "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W],
-                                      "tooltip":"4-value vector"}),
-            Lexicon.Y: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "tooltip":"Single value input"}),
-            Lexicon.IN_B+"2": ("VEC2", {"default": (0,0),
-                                      "label": [Lexicon.X, Lexicon.Y],
-                                      "tooltip":"2-value vector"}),
-            Lexicon.IN_B+"3": ("VEC3", {"default": (0,0,0),
-                                      "label": [Lexicon.X, Lexicon.Y, Lexicon.Z],
-                                      "tooltip":"3-value vector"}),
-            Lexicon.IN_B+"4": ("VEC4", {"default": (0,0,0,0),
-                                      "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W],
-                                      "tooltip":"4-value vector"}),
-        }}
+        d = super().INPUT_TYPES()
+        d.update({
+            "optional": {
+                Lexicon.IN_A: (WILDCARD, {"default": None,
+                                        "tooltip":"Passes a raw value directly, or supplies defaults for any value inputs without connections"}),
+                Lexicon.IN_B: (WILDCARD, {"default": None,
+                                        "tooltip":"Passes a raw value directly, or supplies defaults for any value inputs without connections"}),
+                Lexicon.FUNC: (EnumBinaryOperation._member_names_, {"default": EnumBinaryOperation.ADD.name, "tooltip":"Arithmetic operation to perform"}),
+                Lexicon.TYPE: (names_convert, {"default": names_convert[2],
+                                            "tooltip":"Output type desired from resultant operation"}),
+                Lexicon.FLIP: ("BOOLEAN", {"default": False}),
+                Lexicon.X: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "tooltip":"Single value input"}),
+                Lexicon.IN_A+"2": ("VEC2", {"default": (0,0),
+                                        "label": [Lexicon.X, Lexicon.Y],
+                                        "tooltip":"2-value vector"}),
+                Lexicon.IN_A+"3": ("VEC3", {"default": (0,0,0),
+                                        "label": [Lexicon.X, Lexicon.Y, Lexicon.Z],
+                                        "tooltip":"3-value vector"}),
+                Lexicon.IN_A+"4": ("VEC4", {"default": (0,0,0,0),
+                                        "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W],
+                                        "tooltip":"4-value vector"}),
+                Lexicon.Y: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "tooltip":"Single value input"}),
+                Lexicon.IN_B+"2": ("VEC2", {"default": (0,0),
+                                        "label": [Lexicon.X, Lexicon.Y],
+                                        "tooltip":"2-value vector"}),
+                Lexicon.IN_B+"3": ("VEC3", {"default": (0,0,0),
+                                        "label": [Lexicon.X, Lexicon.Y, Lexicon.Z],
+                                        "tooltip":"3-value vector"}),
+                Lexicon.IN_B+"4": ("VEC4", {"default": (0,0,0,0),
+                                        "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W],
+                                        "tooltip":"4-value vector"}),
+            }
+        })
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[bool]:
         results = []
-        A = parse_param(kw, Lexicon.IN_A, EnumConvertType.ANY, None)
-        B = parse_param(kw, Lexicon.IN_B, EnumConvertType.ANY, None)
+        A = parse_param(kw, Lexicon.IN_A, EnumConvertType.ANY, [None])
+        B = parse_param(kw, Lexicon.IN_B, EnumConvertType.ANY, [None])
         a_x = parse_param(kw, Lexicon.X, EnumConvertType.FLOAT, 0)
-        a_xy = parse_param(kw, Lexicon.IN_A+"2", EnumConvertType.VEC2, (0, 0))
-        a_xyz = parse_param(kw, Lexicon.IN_A+"3", EnumConvertType.VEC3, (0, 0, 0))
-        a_xyzw = parse_param(kw, Lexicon.IN_A+"4", EnumConvertType.VEC4, (0, 0, 0, 0))
+        a_xy = parse_param(kw, Lexicon.IN_A+"2", EnumConvertType.VEC2, [(0, 0)])
+        a_xyz = parse_param(kw, Lexicon.IN_A+"3", EnumConvertType.VEC3, [(0, 0, 0)])
+        a_xyzw = parse_param(kw, Lexicon.IN_A+"4", EnumConvertType.VEC4, [(0, 0, 0, 0)])
         b_x = parse_param(kw, Lexicon.Y, EnumConvertType.FLOAT, 0)
-        b_xy = parse_param(kw, Lexicon.IN_B+"2", EnumConvertType.VEC2, (0, 0))
-        b_xyz = parse_param(kw, Lexicon.IN_B+"3", EnumConvertType.VEC3, (0, 0, 0))
-        b_xyzw = parse_param(kw, Lexicon.IN_B+"4", EnumConvertType.VEC4, (0, 0, 0, 0))
+        b_xy = parse_param(kw, Lexicon.IN_B+"2", EnumConvertType.VEC2, [(0, 0)])
+        b_xyz = parse_param(kw, Lexicon.IN_B+"3", EnumConvertType.VEC3, [(0, 0, 0)])
+        b_xyzw = parse_param(kw, Lexicon.IN_B+"4", EnumConvertType.VEC4, [(0, 0, 0, 0)])
         op = parse_param(kw, Lexicon.FUNC, EnumConvertType.STRING, EnumBinaryOperation.ADD.name)
         typ = parse_param(kw, Lexicon.TYPE, EnumConvertType.STRING, EnumConvertType.FLOAT.name)
         flip = parse_param(kw, Lexicon.FLIP, EnumConvertType.BOOLEAN, False)
@@ -350,9 +352,10 @@ The Binary Operation node executes binary operations like addition, subtraction,
                 case EnumBinaryOperation.POWER:
                     val = [a ** b if b >= 0 else 0 for a, b in zip(val_a, val_b)]
                 case EnumBinaryOperation.MAXIMUM:
-                    val = max(val_a, val_b)
+                    val = [max(a, val_b[i]) for i, a in enumerate(val_a)]
                 case EnumBinaryOperation.MINIMUM:
-                    val = min(val_a, val_b)
+                    # val = min(val_a, val_b)
+                    val = [min(a, val_b[i]) for i, a in enumerate(val_a)]
 
                 # BITS
                 # case EnumBinaryOperation.BIT_NOT:
@@ -387,13 +390,13 @@ The Binary Operation node executes binary operations like addition, subtraction,
                 val = val[0]
             results.append(val)
             pbar.update_absolute(idx)
-        return (results,)
+        return results
 
 class ValueNode(JOVBaseNode):
     NAME = "VALUE (JOV) 🧬"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = (WILDCARD, WILDCARD, WILDCARD, WILDCARD, WILDCARD,)
-    RETURN_NAMES = (Lexicon.ANY, Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W)
+    RETURN_NAMES = (Lexicon.ANY_OUT, Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W)
     SORT = 1
     DESCRIPTION = """
 The Value Node supplies raw or default values for various data types, supporting vector input with components for X, Y, Z, and W. It also provides a string input option.
@@ -401,6 +404,8 @@ The Value Node supplies raw or default values for various data types, supporting
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
+        d = super().INPUT_TYPES()
+
         typ = EnumConvertType._member_names_
         try: typ.pop(typ.index('IMAGE'))
         except: pass
@@ -410,8 +415,7 @@ The Value Node supplies raw or default values for various data types, supporting
         except: pass
         try: typ.pop(typ.index('MASK'))
         except: pass
-        d = {
-            "required": {},
+        d.update({
             "optional": {
                 Lexicon.IN_A: (WILDCARD, {"default": None, "tooltip":"Passes a raw value directly, or supplies defaults for any value inputs without connections"}),
                 Lexicon.TYPE: (typ, {"default": EnumConvertType.BOOLEAN.name}),
@@ -439,7 +443,7 @@ The Value Node supplies raw or default values for various data types, supporting
                 Lexicon.IN_A+"3": ("VEC3", {"default": (0,0,0),
                                         "label": [Lexicon.X, Lexicon.Y, Lexicon.Z],
                                         "tooltip":"3-value vector", "menu": False}),
-                Lexicon.RANDOM: ("BOOLEAN", {"default": False}),
+                Lexicon.SEED: ("INT", {"default": 0, "min": 0, "max": sys.maxsize, "step": 1}),
                 Lexicon.Y_RAW: ("FLOAT", {"default": 0, "min": -sys.maxsize,
                                           "max": sys.maxsize, "tooltip":"Single value input"}),
                 Lexicon.IN_B+"2": ("VEC2", {"default": (0,0),
@@ -453,7 +457,7 @@ The Value Node supplies raw or default values for various data types, supporting
                                       "tooltip":"4-value vector"}),
                 Lexicon.STRING: ("STRING", {"default": "", "dynamicPrompts": False, "multiline": True}),
             }
-        }
+        })
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[bool]:
@@ -464,31 +468,35 @@ The Value Node supplies raw or default values for various data types, supporting
         r_w = parse_param(kw, Lexicon.W, EnumConvertType.FLOAT, None)
         typ = parse_param(kw, Lexicon.TYPE, EnumConvertType.STRING, EnumConvertType.BOOLEAN.name)
         x = parse_param(kw, Lexicon.X_RAW, EnumConvertType.FLOAT, 0)
-        xy = parse_param(kw, Lexicon.IN_A+"2", EnumConvertType.VEC2, (0, 0))
-        xyz = parse_param(kw, Lexicon.IN_A+"3", EnumConvertType.VEC3, (0, 0, 0))
-        xyzw = parse_param(kw, Lexicon.IN_A+"4", EnumConvertType.VEC4, (0, 0, 0, 0))
-        use_rand = parse_param(kw, Lexicon.RANDOM, EnumConvertType.BOOLEAN, False)
+        xy = parse_param(kw, Lexicon.IN_A+"2", EnumConvertType.VEC2, [(0, 0)])
+        xyz = parse_param(kw, Lexicon.IN_A+"3", EnumConvertType.VEC3, [(0, 0, 0)])
+        xyzw = parse_param(kw, Lexicon.IN_A+"4", EnumConvertType.VEC4, [(0, 0, 0, 0)])
+        seed = parse_param(kw, Lexicon.RANDOM, EnumConvertType.INT, 0, 0)
         y = parse_param(kw, Lexicon.Y_RAW, EnumConvertType.FLOAT, 0)
-        yy = parse_param(kw, Lexicon.IN_B+"2", EnumConvertType.VEC2, (0, 0))
-        yyz = parse_param(kw, Lexicon.IN_B+"3", EnumConvertType.VEC3, (0, 0, 0))
-        yyzw = parse_param(kw, Lexicon.IN_B+"4", EnumConvertType.VEC4, (0, 0, 0, 0))
+        yy = parse_param(kw, Lexicon.IN_B+"2", EnumConvertType.VEC2, [(0, 0)])
+        yyz = parse_param(kw, Lexicon.IN_B+"3", EnumConvertType.VEC3, [(0, 0, 0)])
+        yyzw = parse_param(kw, Lexicon.IN_B+"4", EnumConvertType.VEC4, [(0, 0, 0, 0)])
         x_str = parse_param(kw, Lexicon.STRING, EnumConvertType.STRING, "")
-        params = list(zip_longest_fill(raw, r_x, r_y, r_z, r_w, typ, x, xy, xyz, xyzw, use_rand, y, yy, yyz, yyzw, x_str))
+        params = list(zip_longest_fill(raw, r_x, r_y, r_z, r_w, typ, x, xy, xyz, xyzw, seed, y, yy, yyz, yyzw, x_str))
         results = []
         pbar = ProgressBar(len(params))
-        for idx, (raw, r_x, r_y, r_z, r_w, typ, x, xy, xyz, xyzw, use_rand, y, yy, yyz, yyzw, x_str) in enumerate(params):
+        for idx, (raw, r_x, r_y, r_z, r_w, typ, x, xy, xyz, xyzw, seed, y, yy, yyz, yyzw, x_str) in enumerate(params):
             typ = EnumConvertType[typ]
             default = [x_str]
             default2 = None
-            if typ not in [EnumConvertType.STRING, EnumConvertType.LIST]:
+            if typ not in [EnumConvertType.STRING, EnumConvertType.LIST, \
+                           EnumConvertType.DICT,\
+                           EnumConvertType.IMAGE, EnumConvertType.LATENT, EnumConvertType.ANY, EnumConvertType.MASK]:
+                a, b, c, d = 0, 0, 0, 0
+                a2, b2, c2, d2 = 0, 0, 0, 0
                 match typ:
-                    case EnumConvertType.FLOAT, EnumConvertType.INT, EnumConvertType.BOOLEAN:
+                    case EnumConvertType.FLOAT | EnumConvertType.INT | EnumConvertType.BOOLEAN:
                         a = x
                         a2 = y
-                    case EnumConvertType.VEC2, EnumConvertType.VEC2INT:
+                    case EnumConvertType.COORD2D | EnumConvertType.VEC2 | EnumConvertType.VEC2INT:
                         a, b = xy
                         a2, b2 = yy
-                    case EnumConvertType.VEC3, EnumConvertType.VEC3INT:
+                    case EnumConvertType.VEC3 | EnumConvertType.VEC3INT:
                         a, b, c = xyz
                         a2, b2, c2 = yyz
                     case _:
@@ -499,17 +507,27 @@ The Value Node supplies raw or default values for various data types, supporting
                     b if r_y is None else r_y,
                     c if r_z is None else r_z,
                     d if r_w is None else r_w)
-
-                default2 = (a if r_x is None else r_x,
-                    b if r_y is None else r_y,
-                    c if r_z is None else r_z,
-                    d if r_w is None else r_w)
+                default2 = (a2, b2, c2, d2)
 
             val = parse_value(raw, typ, default)
             val2 = parse_value(default2, typ, default2)
             typ = EnumConvertType.VEC4 if typ in [EnumConvertType.VEC4, EnumConvertType.VEC3, \
                                                   EnumConvertType.VEC2, EnumConvertType.FLOAT] \
                                                   else EnumConvertType.VEC4INT
+
+            # check if set to randomize....
+            if seed != 0:
+                val = list(val)
+                val2 = list(val2)
+                default = list(default)
+                for i, x in enumerate(val):
+                    mx = max(val[i], val2[i])
+                    mn = min(val[i], val2[i])
+                    logger.debug(f"{i}, {x}, {mx}, {mn}")
+                    if typ == EnumConvertType.VEC4:
+                        val[i] = default[i] = mn + random.random() * (mx - mn)
+                    else:
+                        val[i] = default[i] = random.randrange(mn, mx)
 
             extra = parse_value(val, typ, default)
             ret = [val]
@@ -530,9 +548,9 @@ The Lerp Node calculates linear interpolation between two values or vectors base
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
+        d = super().INPUT_TYPES()
         names_convert = EnumConvertType._member_names_[:9]
-        d = {
-            "required": {},
+        d.update({
             "optional": {
                 Lexicon.IN_A: (WILDCARD, {"tooltip": "Custom Start Point"}),
                 Lexicon.IN_B: (WILDCARD, {"tooltip": "Custom End Point"}),
@@ -561,20 +579,20 @@ The Lerp Node calculates linear interpolation between two values or vectors base
                                         "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W],
                                         "tooltip":"4-value vector"}),
             }
-        }
+        })
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[Any, Any]:
-        A = parse_param(kw, Lexicon.IN_A, EnumConvertType.ANY, (0,0,0,0), 0, 1)
-        B = parse_param(kw, Lexicon.IN_B, EnumConvertType.ANY, (1,1,1,1), 0, 1)
+        A = parse_param(kw, Lexicon.IN_A, EnumConvertType.ANY, [(0,0,0,0)], 0, 1)
+        B = parse_param(kw, Lexicon.IN_B, EnumConvertType.ANY, [(1,1,1,1)], 0, 1)
         a_x = parse_param(kw, Lexicon.X, EnumConvertType.FLOAT, 0)
-        a_xy = parse_param(kw, Lexicon.IN_A+"2", EnumConvertType.VEC2, (0, 0))
-        a_xyz = parse_param(kw, Lexicon.IN_A+"3", EnumConvertType.VEC3, (0, 0, 0))
-        a_xyzw = parse_param(kw, Lexicon.IN_A+"4", EnumConvertType.VEC4, (0, 0, 0, 0))
+        a_xy = parse_param(kw, Lexicon.IN_A+"2", EnumConvertType.VEC2, [(0, 0)])
+        a_xyz = parse_param(kw, Lexicon.IN_A+"3", EnumConvertType.VEC3, [(0, 0, 0)])
+        a_xyzw = parse_param(kw, Lexicon.IN_A+"4", EnumConvertType.VEC4, [(0, 0, 0, 0)])
         b_x = parse_param(kw, Lexicon.Y, EnumConvertType.FLOAT, 0)
-        b_xy = parse_param(kw, Lexicon.IN_B+"2", EnumConvertType.VEC2, (0, 0))
-        b_xyz = parse_param(kw, Lexicon.IN_B+"3", EnumConvertType.VEC3, (0, 0, 0))
-        b_xyzw = parse_param(kw, Lexicon.IN_B+"4", EnumConvertType.VEC4, (0, 0, 0, 0))
+        b_xy = parse_param(kw, Lexicon.IN_B+"2", EnumConvertType.VEC2, [(0, 0)])
+        b_xyz = parse_param(kw, Lexicon.IN_B+"3", EnumConvertType.VEC3, [(0, 0, 0)])
+        b_xyzw = parse_param(kw, Lexicon.IN_B+"4", EnumConvertType.VEC4, [(0, 0, 0, 0)])
         alpha = parse_param(kw, Lexicon.FLOAT,EnumConvertType.FLOAT, 0, 0, 1)
         op = parse_param(kw, Lexicon.EASE, EnumConvertType.STRING, "NONE")
         typ = parse_param(kw, Lexicon.TYPE, EnumConvertType.STRING, EnumNumberType.FLOAT.name)
@@ -635,25 +653,26 @@ The Swap Node swaps components between two vectors based on specified swizzle pa
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {
-        "required": {},
-        "optional": {
-            Lexicon.IN_A: (WILDCARD, {}),
-            Lexicon.IN_B: (WILDCARD, {}),
-            Lexicon.SWAP_X: (EnumSwizzle._member_names_, {"default": EnumSwizzle.A_X.name}),
-            Lexicon.X: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize}),
-            Lexicon.SWAP_Y: (EnumSwizzle._member_names_, {"default": EnumSwizzle.A_Y.name}),
-            Lexicon.Y: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize}),
-            Lexicon.SWAP_Z: (EnumSwizzle._member_names_, {"default": EnumSwizzle.A_Z.name}),
-            Lexicon.Z: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize}),
-            Lexicon.SWAP_W: (EnumSwizzle._member_names_, {"default": EnumSwizzle.A_W.name}),
-            Lexicon.W: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize})
-        }}
+        d = super().INPUT_TYPES()
+        d.update({
+            "optional": {
+                Lexicon.IN_A: (WILDCARD, {}),
+                Lexicon.IN_B: (WILDCARD, {}),
+                Lexicon.SWAP_X: (EnumSwizzle._member_names_, {"default": EnumSwizzle.A_X.name}),
+                Lexicon.X: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize}),
+                Lexicon.SWAP_Y: (EnumSwizzle._member_names_, {"default": EnumSwizzle.A_Y.name}),
+                Lexicon.Y: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize}),
+                Lexicon.SWAP_Z: (EnumSwizzle._member_names_, {"default": EnumSwizzle.A_Z.name}),
+                Lexicon.Z: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize}),
+                Lexicon.SWAP_W: (EnumSwizzle._member_names_, {"default": EnumSwizzle.A_W.name}),
+                Lexicon.W: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize})
+            }
+        })
         return Lexicon._parse(d, cls)
 
     def run(self, **kw)  -> Tuple[torch.Tensor, torch.Tensor]:
-        pA = parse_param(kw, Lexicon.IN_A, EnumConvertType.VEC4, (0,0,0,0), 0, 1)
-        pB = parse_param(kw, Lexicon.IN_B, EnumConvertType.VEC4, (0,0,0,0), 0, 1)
+        pA = parse_param(kw, Lexicon.IN_A, EnumConvertType.VEC4, [(0,0,0,0)], 0, 1)
+        pB = parse_param(kw, Lexicon.IN_B, EnumConvertType.VEC4, [(0,0,0,0)], 0, 1)
         swap_x = parse_param(kw, Lexicon.SWAP_X, EnumConvertType.STRING, EnumSwizzle.A_X.name)
         x = parse_param(kw, Lexicon.X, EnumConvertType.FLOAT, 0)
         swap_y = parse_param(kw, Lexicon.SWAP_Y, EnumConvertType.STRING, EnumSwizzle.A_Y.name)

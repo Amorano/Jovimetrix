@@ -5,6 +5,7 @@ Utility
 
 import io
 import os
+import sys
 import json
 import glob
 import random
@@ -32,8 +33,8 @@ from Jovimetrix.sup.util import parse_dynamic, path_next, \
     parse_param, zip_longest_fill, EnumConvertType
 
 from Jovimetrix.sup.image import channel_solid, cv2tensor, cv2tensor_full, \
-    image_convert, image_scalefit, tensor2cv, pil2tensor, image_load, image_formats, image_diff, tensor2pil, \
-    EnumInterpolation, EnumScaleMode, EnumImageType, MIN_IMAGE_SIZE
+    image_scalefit, tensor2cv, pil2tensor, image_load, image_formats, tensor2pil, \
+    EnumInterpolation, EnumScaleMode, MIN_IMAGE_SIZE
 
 # =============================================================================
 
@@ -76,7 +77,7 @@ The Akashic node processes input data and prepares it for visualization. It acce
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {"required": {},}
+        d = super().INPUT_TYPES()
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[Any, Any]:
@@ -142,17 +143,14 @@ The Graph node visualizes a series of data points over time. It accepts a dynami
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {
-            "required": {},
+        d = super().INPUT_TYPES()
+        d.update({
             "optional": {
                 Lexicon.RESET: ("BOOLEAN", {"default": False}),
                 Lexicon.VALUE: ("INT", {"default": 60, "min": 0, "tooltip":"Number of values to graph and display"}),
                 Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), "step": 1, "label": [Lexicon.W, Lexicon.H]})
-            },
-            "hidden": {
-                "ident": "UNIQUE_ID"
             }
-        }
+        })
         return Lexicon._parse(d, cls)
 
     @classmethod
@@ -166,7 +164,7 @@ The Graph node visualizes a series of data points over time. It accepts a dynami
 
     def run(self, ident, **kw) -> Tuple[torch.Tensor]:
         slice = parse_param(kw, Lexicon.VALUE, EnumConvertType.INT, 60)[0]
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), 1)[0]
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE)], 1)[0]
         if parse_reset(ident) > 0 or parse_param(kw, Lexicon.RESET, EnumConvertType.BOOLEAN, False)[0]:
             self.__history = []
         longest_edge = 0
@@ -213,19 +211,15 @@ The Queue node manages a queue of items, such as file paths or data. It supports
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {
-            "required": {},
+        d = super().INPUT_TYPES()
+        d.update({
             "optional": {
                 Lexicon.QUEUE: ("STRING", {"multiline": True, "default": "./res/img/test-a.png"}),
                 Lexicon.VALUE: ("INT", {"min": 0, "default": 0, "step": 1, "tooltip": "the current index for the current queue item"}),
                 Lexicon.WAIT: ("BOOLEAN", {"default": False, "tooltip":"Hold the item at the current queue index"}),
                 Lexicon.RESET: ("BOOLEAN", {"default": False, "tooltip":"reset the queue back to index 1"}),
-            },
-            "hidden": {
-                "ident": "UNIQUE_ID",
-
             }
-        }
+        })
         return Lexicon._parse(d, cls)
 
     @classmethod
@@ -347,33 +341,33 @@ class ExportNode(JOVBaseNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     OUTPUT_NODE = True
     RETURN_TYPES = ()
-    SORT = 80
+    SORT = 2000
     DESCRIPTION = """
 The Export node is responsible for saving images or animations to disk. It supports various output formats such as GIF and GIFSKI. Users can specify the output directory, filename prefix, image quality, frame rate, and other parameters. Additionally, it allows overwriting existing files or generating unique filenames to avoid conflicts. The node outputs the saved images or animation as a tensor.
 """
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {
-        "required": {},
-        "optional": {
-            Lexicon.PIXEL: (WILDCARD, {}),
-            Lexicon.PASS_OUT: ("STRING", {"default": get_output_directory(), "default_top":"<comfy output dir>"}),
-            Lexicon.FORMAT: (FORMATS, {"default": FORMATS[0]}),
-            Lexicon.PREFIX: ("STRING", {"default": "jovi"}),
-            Lexicon.OVERWRITE: ("BOOLEAN", {"default": False}),
-            # GIF ONLY
-            Lexicon.OPTIMIZE: ("BOOLEAN", {"default": False}),
-            # GIFSKI ONLY
-            Lexicon.QUALITY: ("INT", {"default": 90, "min": 1, "max": 100}),
-            Lexicon.QUALITY_M: ("INT", {"default": 100, "min": 1, "max": 100}),
-            # GIF OR GIFSKI
-            Lexicon.FPS: ("INT", {"default": 24, "min": 1, "max": 60}),
-            # GIF OR GIFSKI
-            Lexicon.LOOP: ("INT", {"default": 0, "min": 0}),
-        }}
+        d = super().INPUT_TYPES()
+        d.update({
+            "optional": {
+                Lexicon.PIXEL: (WILDCARD, {}),
+                Lexicon.PASS_OUT: ("STRING", {"default": get_output_directory(), "default_top":"<comfy output dir>"}),
+                Lexicon.FORMAT: (FORMATS, {"default": FORMATS[0]}),
+                Lexicon.PREFIX: ("STRING", {"default": "jovi"}),
+                Lexicon.OVERWRITE: ("BOOLEAN", {"default": False}),
+                # GIF ONLY
+                Lexicon.OPTIMIZE: ("BOOLEAN", {"default": False}),
+                # GIFSKI ONLY
+                Lexicon.QUALITY: ("INT", {"default": 90, "min": 1, "max": 100}),
+                Lexicon.QUALITY_M: ("INT", {"default": 100, "min": 1, "max": 100}),
+                # GIF OR GIFSKI
+                Lexicon.FPS: ("INT", {"default": 24, "min": 1, "max": 60}),
+                # GIF OR GIFSKI
+                Lexicon.LOOP: ("INT", {"default": 0, "min": 0}),
+            }
+        })
         return Lexicon._parse(d, cls)
-    SORT = 2000
 
     def run(self, **kw) -> None:
         images = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
@@ -451,18 +445,18 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {
-            "required": {},
+        d = super().INPUT_TYPES()
+        d.update({
             "optional": {
                 Lexicon.BATCH_MODE: (EnumBatchMode._member_names_, {"default": EnumBatchMode.MERGE.name, "tooltip":"select a single index, specific range, custom index list or randomized"}),
                 Lexicon.INDEX: ("INT", {"default": 0, "min": 0, "step": 1, "tooltip":"selected list position"}),
                 Lexicon.RANGE: ("VEC3", {"default": (0, 0, 1)}),
                 Lexicon.STRING: ("STRING", {"default": "", "tooltip":"Comma separated list of indicies to export"}),
-                Lexicon.SEED: ("INT", {"default": 0, "min": 0, "step": 1}),
+                Lexicon.SEED: ("INT", {"default": 0, "min": 0, "max": sys.maxsize, "step": 1}),
                 Lexicon.FLIP: ("BOOLEAN", {"default": False}),
                 Lexicon.BATCH_CHUNK: ("INT", {"default": 0, "min": 0, "step": 1}),
             }
-        }
+        })
         return Lexicon._parse(d, cls)
 
     @classmethod
@@ -480,7 +474,7 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
         batch = parse_dynamic(kw, 0, EnumConvertType.ANY, None)
         mode = parse_param(kw, Lexicon.BATCH_MODE, EnumConvertType.STRING, EnumBatchMode.MERGE.name)
         index = parse_param(kw, Lexicon.INDEX, EnumConvertType.INT, EnumBatchMode.MERGE.name)
-        slice_range = parse_param(kw, Lexicon.RANGE, EnumConvertType.VEC3INT, (0, 0, 1))
+        slice_range = parse_param(kw, Lexicon.RANGE, EnumConvertType.VEC3INT, [(0, 0, 1)])
         indices = parse_param(kw, Lexicon.STRING, EnumConvertType.STRING, "")
         seed = parse_param(kw, Lexicon.SEED, EnumConvertType.INT, 0)
         flip = parse_param(kw, Lexicon.FLIP, EnumConvertType.BOOLEAN, False)
@@ -582,19 +576,17 @@ class RouteNode(JOVBaseNode):
     RETURN_NAMES = (Lexicon.ROUTE,)
     SORT = 850
     DESCRIPTION = """
-☣️💣☣️💣☣️💣☣️💣 THIS NODE IS A WORK IN PROGRESS ☣️💣☣️💣☣️💣☣️💣
-
 Routes the input data from the optional input ports to the output port, preserving the order of inputs. The `PASS_IN` optional input is directly passed through to the output, while other optional inputs are collected and returned as tuples, preserving the order of insertion.
 """
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {
-            "required": {},
+        d = super().INPUT_TYPES()
+        d.update({
             "optional": {
                 Lexicon.ROUTE: ("BUS", {"default": None}),
             }
-        }
+        })
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[Any, ...]:
@@ -612,9 +604,9 @@ Save the output image along with its metadata to the specified path. Supports sa
 """
 
     @classmethod
-    def INPUT_TYPES(cls) -> None:
-        return {
-            "required": {},
+    def INPUT_TYPES(cls) -> dict:
+        d = super().INPUT_TYPES(True, True)
+        d.update({
             "optional": {
                 "image": ("IMAGE",),
                 "path": ("STRING", {"default": "", "dynamicPrompts":False}),
@@ -622,12 +614,9 @@ Save the output image along with its metadata to the specified path. Supports sa
                 "metadata": ("JSON", {}),
                 "usermeta": ("STRING", {"multiline": True, "dynamicPrompts":False,
                                         "default": ""}),
-            },
-            "hidden": {
-                "prompt": "PROMPT",
-                "extra_pnginfo": "EXTRA_PNGINFO",
-            },
-        }
+            }
+        })
+        return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> dict[str, Any]:
         image = parse_param(kw, 'image', EnumConvertType.IMAGE, None)
@@ -686,10 +675,11 @@ class BatchLoadNode(JOVBaseNode):
     DESCRIPTION = """
     Process multiple image or video files into a single batch.
     """
+
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {
-            "required": {},
+        d = super().INPUT_TYPES()
+        d.update({
             "optional": {
                 Lexicon.QUEUE: ("STRING", {"multiline": True, "default": "./res/img/anim/*.png"}),
                 Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
@@ -697,15 +687,15 @@ class BatchLoadNode(JOVBaseNode):
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
                 Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
             }
-        }
+        })
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> None:
         q = parse_param(kw, Lexicon.QUEUE, EnumConvertType.STRING, "")
         mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.NONE.name)
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), MIN_IMAGE_SIZE)
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE)], MIN_IMAGE_SIZE)
         sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)
-        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
+        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
         params = list(zip_longest_fill(q, mode, wihi, sample, matte))
         images = []
         pbar = ProgressBar(len(params))
@@ -740,13 +730,13 @@ class DynamicOutputNode(JOVBaseNode):
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {
-            "required": {},
+        d = super().INPUT_TYPES()
+        d.update({
             "optional": {
                 Lexicon.ANY_OUT: (WILDCARD, {"tooltip":"A bundle of items that need to be split into X outputs."}),
                 Lexicon.VALUE: ("INT", {"default": 1, "min": 1, "max": 32, "step": 1, "tooltip":"Number of outputs desired for node."})
             }
-        }
+        })
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[Any, ...]:
@@ -775,16 +765,17 @@ Make requests to a RESTful API endpoint and process the responses. It supports a
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = {
-        "required": {},
-        "optional": {
-            Lexicon.API: ("STRING", {"default": ""}),
-            Lexicon.URL: ("STRING", {"default": ""}),
-            Lexicon.ATTRIBUTE: ("STRING", {"default": ""}),
-            Lexicon.AUTH: ("STRING", {"multiline": True, "dynamic": False}),
-            Lexicon.PATH: ("STRING", {"default": ""}),
-            "iteration_index": ("INT", {"default": 0, "min": 0, "max": 9999, "step": 1})
-        }}
+        d = super().INPUT_TYPES()
+        d.update({
+            "optional": {
+                Lexicon.API: ("STRING", {"default": ""}),
+                Lexicon.URL: ("STRING", {"default": ""}),
+                Lexicon.ATTRIBUTE: ("STRING", {"default": ""}),
+                Lexicon.AUTH: ("STRING", {"multiline": True, "dynamic": False}),
+                Lexicon.PATH: ("STRING", {"default": ""}),
+                "iteration_index": ("INT", {"default": 0, "min": 0, "max": 9999, "step": 1})
+            }
+        }
         return Lexicon._parse(d, cls)
 
     def authenticate(self, auth_url, auth_body, token_attribute_name):
