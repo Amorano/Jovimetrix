@@ -62,6 +62,8 @@ export function node_add_dynamic(nodeType, prefix, dynamic_type='*', index_start
     this one should just put the "prefix" as the last empty entry.
     Means we have to pay attention not to collide key names in the
     input list.
+
+    Also need to make sure that we keep any non-dynamic ports.
     */
 
     // clean off missing slot connects
@@ -71,23 +73,35 @@ export function node_add_dynamic(nodeType, prefix, dynamic_type='*', index_start
         }
 
         let idx = index_start;
+        let slot_count = index_start;
         let count = self.inputs.length;
         while (idx < self.inputs.length-1 && count > 0) {
             const slot = self.inputs[idx];
-            if (slot === undefined || slot.link == null) {
-                if (match_output && slot_idx < self.outputs?.length) {
-                    self.removeOutput(slot_idx);
+            console.info(slot, count)
+            if (slot) {
+                const parts = slot.name.split('_');
+                // a dynamic jovian slot prefix_
+                if (parts.length > 1) {
+                    if (slot.link == null) {
+                        if (match_output && slot_idx < self.outputs?.length) {
+                            self.removeOutput(slot_idx);
+                        }
+                        if (slot_idx < self.inputs?.length) {
+                            self.removeInput(slot_idx);
+                        }
+                    } else {
+                        const name = parts.slice(1).join('_');
+                        self.inputs[idx].name = `${slot_count}_${name}`;
+                        slot_count += 1;
+                        idx += 1;
+                    }
+                } else {
+                    idx += 1;
                 }
-                if (slot_idx < self.inputs?.length) {
-                    self.removeInput(slot_idx);
-                }
-            } else {
-                const name = self.inputs[idx].name.split('_').slice(1).join('_');
-                self.inputs[idx].name = `${idx}_${name}`;
-                idx += 1;
             }
             count -= 1;
         }
+        console.info(idx)
     }
 
     index_start = Math.max(0, index_start);
@@ -115,7 +129,7 @@ export function node_add_dynamic(nodeType, prefix, dynamic_type='*', index_start
                         const parent_link = fromNode.outputs[link_info.origin_slot];
                         if (parent_link) {
                             node_slot.type = parent_link.type;
-                            node_slot.name = `${slot_idx}_${parent_link.name}`;
+                            node_slot.name = `_${parent_link.name}`;
                             if (match_output) {
                                 const slot_out = this.outputs[slot_idx];
                                 slot_out.type = parent_link.type;
@@ -141,7 +155,7 @@ export function node_add_dynamic(nodeType, prefix, dynamic_type='*', index_start
                 if (refresh) {
                     setTimeout(() => {
                         clean_inputs(this, slot_idx);
-                    }, 15);
+                    }, 5);
                 }
             }
         }

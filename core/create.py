@@ -130,9 +130,9 @@ The Shape Generation node creates images representing various shapes such as cir
         sides = parse_param(kw, Lexicon.SIDES, EnumConvertType.INT, 3, 3, 512)
         angle = parse_param(kw, Lexicon.ANGLE, EnumConvertType.FLOAT, 0)
         edge = parse_param(kw, Lexicon.EDGE, EnumConvertType.STRING, EnumEdge.CLIP.name)
-        offset = parse_param(kw, Lexicon.XY, EnumConvertType.VEC2, [(0, 0,)])
-        size = parse_param(kw, Lexicon.SIZE, EnumConvertType.VEC2, [(1, 1,)], zero=0.001)
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE,)], MIN_IMAGE_SIZE)
+        offset = parse_param(kw, Lexicon.XY, EnumConvertType.VEC2, [(0, 0)])
+        size = parse_param(kw, Lexicon.SIZE, EnumConvertType.VEC2, [(1, 1)], zero=0.001)
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE)], MIN_IMAGE_SIZE)
         color = parse_param(kw, Lexicon.RGBA_A, EnumConvertType.VEC4INT, [(255, 255, 255, 255)], 0, 255)
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
         blur = parse_param(kw, Lexicon.BLUR, EnumConvertType.FLOAT, 0)
@@ -144,8 +144,8 @@ The Shape Generation node creates images representing various shapes such as cir
             sizeX, sizeY = size
             edge = EnumEdge[edge]
             shape = EnumShapes[shape]
-            color = pixel_eval(color, EnumImageType.BGRA)
-            matte = pixel_eval(matte, EnumImageType.BGRA)
+            #color = pixel_eval(color, EnumImageType.BGRA)
+            #matte = pixel_eval(matte, EnumImageType.BGRA)
             alpha_m = int(matte[3])
             match shape:
                 case EnumShapes.SQUARE:
@@ -192,8 +192,6 @@ class TextNode(JOVBaseNode):
     FONTS = font_names()
     FONT_NAMES = sorted(FONTS.keys())
     DESCRIPTION = """
-☣️💣☣️💣☣️💣☣️💣 THIS NODE IS A WORK IN PROGRESS ☣️💣☣️💣☣️💣☣️💣
-
 The Text Generation node generates images containing text based on user-defined parameters such as font, size, alignment, color, and position. Users can input custom text messages, select fonts from a list of available options, adjust font size, and specify the alignment and justification of the text. Additionally, the node provides options for auto-sizing text to fit within specified dimensions, controlling letter-by-letter rendering, and applying edge effects such as clipping and inversion.
 """
 
@@ -226,7 +224,7 @@ The Text Generation node generates images containing text based on user-defined 
                                     "round": 0.00001, "label": [Lexicon.X, Lexicon.Y],
                                     "tooltip":"Offset the position"}),
                 Lexicon.ANGLE: ("FLOAT", {"default": 0, "min": -180, "max": 180,
-                                        "step": 0.01, "precision": 4, "round": 0.00001}),
+                                          "step": 0.01, "precision": 4, "round": 0.00001}),
                 Lexicon.EDGE: (EnumEdge._member_names_, {"default": EnumEdge.CLIP.name}),
                 Lexicon.INVERT: ("BOOLEAN", {"default": False, "tooltip": "Invert the mask input"})
             }

@@ -37,8 +37,12 @@ class EnumJustify(Enum):
 # =============================================================================
 
 def font_names() -> List[str]:
-    mgr = font_manager.FontManager()
-    return {font.name: font.fname for font in mgr.ttflist}
+    try:
+        mgr = font_manager.FontManager()
+        return {font.name: font.fname for font in mgr.ttflist}
+    except Exception as e:
+        logger.debug(e)
+    return {}
 
 def text_size(draw:ImageDraw, text:str, font:ImageFont) -> Tuple[int, int]:
     bbox = draw.textbbox((0, 0), text, font=font)
@@ -174,7 +178,7 @@ def text_draw(full_text: str, font: ImageFont, width: int, height: int,
         y = (height - height_max) / 2
     y = min(height, max(0, y))
 
-    color = pixel_eval(color, EnumImageType.RGBA)
+    # color = pixel_eval(color, EnumImageType.RGBA)
     for line in text_lines:
         line_width = text_size(draw, line, font)[0]
         if justify == EnumJustify.LEFT:

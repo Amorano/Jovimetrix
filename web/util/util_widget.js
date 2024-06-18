@@ -24,7 +24,6 @@ const my_map = {
 }
 
 export const CONVERTED_TYPE = "converted-widget"
-export const CONVERTED_JOV_TYPE = "converted-widget-jovi"
 
 // return the internal mapping type name
 export function widget_type_name(type) { return my_map[type];}

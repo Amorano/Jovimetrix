@@ -32,9 +32,8 @@ from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import parse_dynamic, path_next, \
     parse_param, zip_longest_fill, EnumConvertType
 
-from Jovimetrix.sup.image import channel_solid, cv2tensor, cv2tensor_full, \
-    image_scalefit, tensor2cv, pil2tensor, image_load, image_formats, tensor2pil, \
-    EnumInterpolation, EnumScaleMode, MIN_IMAGE_SIZE
+from Jovimetrix.sup.image import cv2tensor, tensor2cv, pil2tensor, image_load, \
+    image_formats, tensor2pil, MIN_IMAGE_SIZE
 
 # =============================================================================
 
@@ -57,6 +56,7 @@ class EnumBatchMode(Enum):
     SLICE = 15
     INDEX_LIST = 20
     RANDOM = 5
+    CARTESIAN = 40
 
 # =============================================================================
 
@@ -81,17 +81,14 @@ The Akashic node processes input data and prepares it for visualization. It acce
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[Any, Any]:
-        # logger.debug(kw)
+        kw.pop('ident', None)
         o = kw.values()
-        #o = parse_dynamic(kw, 0, EnumConvertType.ANY, None)
-        #logger.debug(o)
         output = {"ui": {"b64_images": [], "text": []}}
         if o is None or len(o) == 0:
             output["ui"]["result"] = (None, None, )
             return output
 
         def __parse(val) -> str:
-            # logger.debug(val)
             ret = val
             typ = ''.join(repr(type(val)).split("'")[1:2])
             if isinstance(val, dict):
@@ -113,15 +110,12 @@ The Akashic node processes input data and prepares it for visualization. It acce
             elif isinstance(val, bool):
                 ret = "True" if val else "False"
             elif isinstance(val, torch.Tensor):
-                batch = val.shape[0] if len(val.shape) > 3 else 1
-                if batch == 1:
-                    val = [val.squeeze(0)]
-                ret = []
-                for img in val:
-                    h, w = img.shape[:2]
-                    cc = img.shape[2] if len(img.shape) > 2 else 1
-                    ret.append(f"{w}x{h}x{cc}")
-                ret = ', '.join(ret)
+                if len(val.shape) > 3:
+                    b, h, w, cc = val.shape
+                else:
+                    b = 1
+                    h, w, cc = val.shape
+                ret = f"{b}x{w}x{h}x{cc}"
             else:
                 val = str(val)
             return f"({ret}) [{typ}]"
@@ -130,7 +124,240 @@ The Akashic node processes input data and prepares it for visualization. It acce
             output["ui"]["text"].append(__parse(x))
         return output
 
-class ValueGraphNode(JOVBaseNode):
+class ArrayNode(JOVBaseNode):
+    NAME = "ARRAY (JOV) 📚"
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
+    RETURN_TYPES = (WILDCARD, WILDCARD,"INT", )
+    RETURN_NAMES = (Lexicon.ANY_OUT, Lexicon.LIST, Lexicon.VALUE)
+    SORT = 50
+    DESCRIPTION = """
+Processes a batch of data based on the selected mode, such as merging, picking, slicing, random selection, or indexing. Allows for flipping the order of processed items and dividing the data into chunks.
+"""
+
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        d = super().INPUT_TYPES()
+        d.update({
+            "optional": {
+                Lexicon.BATCH_MODE: (EnumBatchMode._member_names_, {"default": EnumBatchMode.MERGE.name, "tooltip":"select a single index, specific range, custom index list or randomized"}),
+                Lexicon.INDEX: ("INT", {"default": 0, "min": 0, "step": 1, "tooltip":"selected list position"}),
+                Lexicon.RANGE: ("VEC3", {"default": (0, 0, 1)}),
+                Lexicon.STRING: ("STRING", {"default": "", "tooltip":"Comma separated list of indicies to export"}),
+                Lexicon.SEED: ("INT", {"default": 0, "min": 0, "max": sys.maxsize, "step": 1}),
+                Lexicon.COUNT: ("INT", {"default": 1, "min": 1, "max": sys.maxsize, "step": 1, "tooltip":"How many items to return"}),
+                Lexicon.FLIP: ("BOOLEAN", {"default": False, "tooltip":"invert the calculated output list"}),
+                Lexicon.BATCH_CHUNK: ("INT", {"default": 0, "min": 0, "step": 1}),
+            }
+        })
+        return Lexicon._parse(d, cls)
+
+    @classmethod
+    def batched(cls, iterable, chunk_size, expand:bool=False, fill:Any=None) -> list:
+        if expand:
+            iterator = iter(iterable)
+            return zip_longest(*[iterator] * chunk_size, fillvalue=fill)
+        return [iterable[i: i + chunk_size] for i in range(0, len(iterable), chunk_size)]
+
+    def __init__(self, *arg, **kw) -> None:
+        super().__init__(*arg, **kw)
+        self.__seed = None
+
+    def run(self, **kw) -> Tuple[int, list]:
+        data_list = parse_dynamic(kw, 0, EnumConvertType.ANY, None)
+        mode = parse_param(kw, Lexicon.BATCH_MODE, EnumConvertType.STRING, EnumBatchMode.MERGE.name)
+        index = parse_param(kw, Lexicon.INDEX, EnumConvertType.INT, EnumBatchMode.MERGE.name)
+        slice_range = parse_param(kw, Lexicon.RANGE, EnumConvertType.VEC3INT, [(0, 0, 1)])
+        indices = parse_param(kw, Lexicon.STRING, EnumConvertType.STRING, "")
+        seed = parse_param(kw, Lexicon.SEED, EnumConvertType.INT, 0)
+        # print(seed)
+        count = parse_param(kw, Lexicon.COUNT, EnumConvertType.INT, 1, 1)
+        flip = parse_param(kw, Lexicon.FLIP, EnumConvertType.BOOLEAN, False)
+        batch_chunk = parse_param(kw, Lexicon.BATCH_CHUNK, EnumConvertType.INT, 0, 0)
+        extract = []
+        # track latents since they need to be added back to Dict['samples']
+        output_is_image = False
+        output_is_latent = False
+        for b in data_list:
+            if isinstance(b, dict) and "samples" in b:
+                # latents are batched in the x.samples key
+                data = b["samples"]
+                extract.extend(data)
+                output_is_latent = True
+            elif isinstance(b, torch.Tensor):
+                if len(b.shape) > 3:
+                    b = [i for i in b]
+                else:
+                    b = [b]
+                extract.extend(b)
+                output_is_image = True
+            elif isinstance(b, (list, set, tuple,)):
+                extract.extend(b)
+            else:
+                extract.append(b)
+
+        results = []
+        params = list(zip_longest_fill(mode, index, slice_range, indices, seed, flip, batch_chunk, count))
+        pbar = ProgressBar(len(params))
+        for idx, (mode, index, slice_range, indices, seed, flip, batch_chunk, count) in enumerate(params):
+            loop_extract = extract.copy()
+            if len(loop_extract) == 0:
+                results.append([None, None, 0])
+                pbar.update_absolute(idx)
+                continue
+
+            if flip and len(loop_extract) > 1:
+                loop_extract = loop_extract[::-1]
+
+            mode = EnumBatchMode[mode]
+            if mode == EnumBatchMode.PICK:
+                index = index if index < len(loop_extract) else -1
+                loop_extract = loop_extract[index]
+            elif mode == EnumBatchMode.SLICE:
+                start, end, step = slice_range
+                end = len(loop_extract) if end == 0 else end
+                loop_extract = loop_extract[start:end:step]
+            elif mode == EnumBatchMode.RANDOM:
+                if self.__seed is None or self.__seed != seed:
+                    random.seed(seed)
+                    self.__seed = seed
+                val = []
+                for i in range(count):
+                    index = random.randrange(0, len(loop_extract))
+                    val.append(loop_extract[index])
+                loop_extract = val
+            elif mode == EnumBatchMode.INDEX_LIST:
+                junk = []
+                for x in indices.strip().split(','):
+                    if '-' in x:
+                        x = x.split('-')
+                        x = list(range(x[0], x[1]))
+                    else:
+                        x = [x]
+                    for i in x:
+                        try:
+                            junk.append(int(i))
+                        except Exception as e:
+                            logger.error(e)
+                loop_extract = [loop_extract[i:j] for i, j in zip([0]+junk, junk+[None])]
+            elif mode == EnumBatchMode.CARTESIAN:
+                logger.warning("NOT IMPLEMENTED - CARTESIAN")
+
+            if not isinstance(loop_extract, (list,)):
+                loop_extract = [loop_extract]
+
+            if len(loop_extract) == 0:
+                loop_extract = extract.copy()
+
+            if batch_chunk > 0:
+                loop_extract = self.batched(loop_extract, batch_chunk)
+            if not output_is_image:
+                results.append([loop_extract, loop_extract, len(loop_extract)])
+            else:
+                img = [torch.stack(loop_extract, dim=0)]
+                results.append([loop_extract, len(loop_extract)])
+            pbar.update_absolute(idx)
+        if not output_is_image:
+            return list(zip(*results))
+        return *img, list(zip(*results))
+
+class ExportNode(JOVBaseNode):
+    NAME = "EXPORT (JOV) 📽"
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
+    OUTPUT_NODE = True
+    RETURN_TYPES = ()
+    SORT = 2000
+    DESCRIPTION = """
+The Export node is responsible for saving images or animations to disk. It supports various output formats such as GIF and GIFSKI. Users can specify the output directory, filename prefix, image quality, frame rate, and other parameters. Additionally, it allows overwriting existing files or generating unique filenames to avoid conflicts. The node outputs the saved images or animation as a tensor.
+"""
+
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        d = super().INPUT_TYPES()
+        d.update({
+            "optional": {
+                Lexicon.PIXEL: (WILDCARD, {}),
+                Lexicon.PASS_OUT: ("STRING", {"default": get_output_directory(), "default_top":"<comfy output dir>"}),
+                Lexicon.FORMAT: (FORMATS, {"default": FORMATS[0]}),
+                Lexicon.PREFIX: ("STRING", {"default": "jovi"}),
+                Lexicon.OVERWRITE: ("BOOLEAN", {"default": False}),
+                # GIF ONLY
+                Lexicon.OPTIMIZE: ("BOOLEAN", {"default": False}),
+                # GIFSKI ONLY
+                Lexicon.QUALITY: ("INT", {"default": 90, "min": 1, "max": 100}),
+                Lexicon.QUALITY_M: ("INT", {"default": 100, "min": 1, "max": 100}),
+                # GIF OR GIFSKI
+                Lexicon.FPS: ("INT", {"default": 24, "min": 1, "max": 60}),
+                # GIF OR GIFSKI
+                Lexicon.LOOP: ("INT", {"default": 0, "min": 0}),
+            }
+        })
+        return Lexicon._parse(d, cls)
+
+    def run(self, **kw) -> None:
+        images = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
+        suffix = parse_param(kw, Lexicon.PREFIX, EnumConvertType.STRING, uuid4().hex[:16])[0]
+        output_dir = parse_param(kw, Lexicon.PASS_OUT, EnumConvertType.STRING, "")[0]
+        format = parse_param(kw, Lexicon.FORMAT, EnumConvertType.STRING, "gif")[0]
+        overwrite = parse_param(kw, Lexicon.OVERWRITE, EnumConvertType.BOOLEAN, False)[0]
+        optimize = parse_param(kw, Lexicon.OPTIMIZE, EnumConvertType.BOOLEAN, False)[0]
+        quality = parse_param(kw, Lexicon.QUALITY, EnumConvertType.INT, 90, 0, 100)[0]
+        motion = parse_param(kw, Lexicon.QUALITY_M, EnumConvertType.INT, 100, 0, 100)[0]
+        fps = parse_param(kw, Lexicon.FPS, EnumConvertType.INT, 24, 1, 60)[0]
+        loop = parse_param(kw, Lexicon.LOOP, EnumConvertType.INT, 0, 0)[0]
+        output_dir = Path(output_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        def output(extension) -> Path:
+            path = output_dir / f"{suffix}.{extension}"
+            if not overwrite and os.path.isfile(path):
+                path = str(output_dir / f"{suffix}_%s.{extension}")
+                path = path_next(path)
+            return path
+
+        images = [tensor2pil(i) for i in images]
+        if format == "gifski":
+            root = output_dir / f"{suffix}_{uuid4().hex[:16]}"
+            # logger.debug(root)
+            try:
+                root.mkdir(parents=True, exist_ok=True)
+                for idx, i in enumerate(images):
+                    fname = str(root / f"{suffix}_{idx}.png")
+                    i.save(fname)
+            except Exception as e:
+                logger.warning(output_dir)
+                logger.error(str(e))
+                return
+            else:
+                out = output('gif')
+                fps = f"--fps {fps}" if fps > 0 else ""
+                q = f"--quality {quality}"
+                mq = f"--motion-quality {motion}"
+                cmd = f"{JOV_GIFSKI} -o {out} {q} {mq} {fps} {str(root)}/{suffix}_*.png"
+                logger.info(cmd)
+                try:
+                    os.system(cmd)
+                except Exception as e:
+                    logger.warning(cmd)
+                    logger.error(str(e))
+
+                # shutil.rmtree(root)
+
+        elif format == "gif":
+            images[0].save(
+                output('gif'),
+                append_images=images[1:],
+                disposal=2,
+                duration=1 / fps * 1000 if fps else 0,
+                loop=loop,
+                optimize=optimize,
+                save_all=True,
+            )
+        else:
+            for img in images:
+                img.save(output(format), optimize=optimize)
+        return ()
+
+class GraphNode(JOVBaseNode):
     NAME = "GRAPH (JOV) 📈"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     OUTPUT_NODE = True
@@ -169,7 +396,6 @@ The Graph node visualizes a series of data points over time. It accepts a dynami
             self.__history = []
         longest_edge = 0
         dynamic = parse_dynamic(kw, 0, EnumConvertType.FLOAT, 0)
-        print(dynamic)
         # each of the plugs
         self.__ax.clear()
         for idx, val in enumerate(dynamic):
@@ -197,6 +423,35 @@ The Graph node visualizes a series of data points over time. It accepts a dynami
         buffer.seek(0)
         image = Image.open(buffer)
         return (pil2tensor(image),)
+
+'''
+def run(self, **kw) -> None:
+    q = parse_param(kw, Lexicon.QUEUE, EnumConvertType.STRING, "")
+    mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.NONE.name)
+    wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE)], MIN_IMAGE_SIZE)
+    sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)
+    matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
+    params = list(zip_longest_fill(q, mode, wihi, sample, matte))
+    images = []
+    pbar = ProgressBar(len(params))
+    for idx, (q, mode, wihi, sample, matte) in enumerate(params):
+        for pA in q.split('\n'):
+            w, h = wihi
+            path = Path(pA) if Path(pA).is_file() else Path(ROOT / pA)
+            if not path.is_file():
+                logger.error(f"bad file: [{pA}]")
+                pA = channel_solid(w, h)
+            elif path.suffix in image_formats():
+                pA = image_load(str(path))[0]
+                mode = EnumScaleMode[mode]
+                if mode != EnumScaleMode.NONE:
+                    pA = image_scalefit(pA, w, h, mode, sample)
+            else:
+                pA = channel_solid(w, h)
+            images.append(cv2tensor_full(pA, matte))
+        pbar.update_absolute(idx)
+    return [torch.cat(i, dim=0) for i in list(zip(*images))]
+'''
 
 class QueueNode(JOVBaseNode):
     NAME = "QUEUE (JOV) 🗃"
@@ -336,239 +591,6 @@ The Queue node manages a queue of items, such as file paths or data. It supports
         comfy_message(ident, "jovi-queue-ping", msg)
         return data, self.__q, current, self.__index_last+1, self.__len
 
-class ExportNode(JOVBaseNode):
-    NAME = "EXPORT (JOV) 📽"
-    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    OUTPUT_NODE = True
-    RETURN_TYPES = ()
-    SORT = 2000
-    DESCRIPTION = """
-The Export node is responsible for saving images or animations to disk. It supports various output formats such as GIF and GIFSKI. Users can specify the output directory, filename prefix, image quality, frame rate, and other parameters. Additionally, it allows overwriting existing files or generating unique filenames to avoid conflicts. The node outputs the saved images or animation as a tensor.
-"""
-
-    @classmethod
-    def INPUT_TYPES(cls) -> dict:
-        d = super().INPUT_TYPES()
-        d.update({
-            "optional": {
-                Lexicon.PIXEL: (WILDCARD, {}),
-                Lexicon.PASS_OUT: ("STRING", {"default": get_output_directory(), "default_top":"<comfy output dir>"}),
-                Lexicon.FORMAT: (FORMATS, {"default": FORMATS[0]}),
-                Lexicon.PREFIX: ("STRING", {"default": "jovi"}),
-                Lexicon.OVERWRITE: ("BOOLEAN", {"default": False}),
-                # GIF ONLY
-                Lexicon.OPTIMIZE: ("BOOLEAN", {"default": False}),
-                # GIFSKI ONLY
-                Lexicon.QUALITY: ("INT", {"default": 90, "min": 1, "max": 100}),
-                Lexicon.QUALITY_M: ("INT", {"default": 100, "min": 1, "max": 100}),
-                # GIF OR GIFSKI
-                Lexicon.FPS: ("INT", {"default": 24, "min": 1, "max": 60}),
-                # GIF OR GIFSKI
-                Lexicon.LOOP: ("INT", {"default": 0, "min": 0}),
-            }
-        })
-        return Lexicon._parse(d, cls)
-
-    def run(self, **kw) -> None:
-        images = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
-        suffix = parse_param(kw, Lexicon.PREFIX, EnumConvertType.STRING, uuid4().hex[:16])[0]
-        output_dir = parse_param(kw, Lexicon.PASS_OUT, EnumConvertType.STRING, "")[0]
-        format = parse_param(kw, Lexicon.FORMAT, EnumConvertType.STRING, "gif")[0]
-        overwrite = parse_param(kw, Lexicon.OVERWRITE, EnumConvertType.BOOLEAN, False)[0]
-        optimize = parse_param(kw, Lexicon.OPTIMIZE, EnumConvertType.BOOLEAN, False)[0]
-        quality = parse_param(kw, Lexicon.QUALITY, EnumConvertType.INT, 90, 0, 100)[0]
-        motion = parse_param(kw, Lexicon.QUALITY_M, EnumConvertType.INT, 100, 0, 100)[0]
-        fps = parse_param(kw, Lexicon.FPS, EnumConvertType.INT, 24, 1, 60)[0]
-        loop = parse_param(kw, Lexicon.LOOP, EnumConvertType.INT, 0, 0)[0]
-        output_dir = Path(output_dir)
-        output_dir.mkdir(parents=True, exist_ok=True)
-
-        def output(extension) -> Path:
-            path = output_dir / f"{suffix}.{extension}"
-            if not overwrite and os.path.isfile(path):
-                path = str(output_dir / f"{suffix}_%s.{extension}")
-                path = path_next(path)
-            return path
-
-        images = [tensor2pil(i) for i in images]
-        if format == "gifski":
-            root = output_dir / f"{suffix}_{uuid4().hex[:16]}"
-            # logger.debug(root)
-            try:
-                root.mkdir(parents=True, exist_ok=True)
-                for idx, i in enumerate(images):
-                    fname = str(root / f"{suffix}_{idx}.png")
-                    i.save(fname)
-            except Exception as e:
-                logger.warning(output_dir)
-                logger.error(str(e))
-                return
-            else:
-                out = output('gif')
-                fps = f"--fps {fps}" if fps > 0 else ""
-                q = f"--quality {quality}"
-                mq = f"--motion-quality {motion}"
-                cmd = f"{JOV_GIFSKI} -o {out} {q} {mq} {fps} {str(root)}/{suffix}_*.png"
-                logger.info(cmd)
-                try:
-                    os.system(cmd)
-                except Exception as e:
-                    logger.warning(cmd)
-                    logger.error(str(e))
-
-                # shutil.rmtree(root)
-
-        elif format == "gif":
-            images[0].save(
-                output('gif'),
-                append_images=images[1:],
-                disposal=2,
-                duration=1 / fps * 1000 if fps else 0,
-                loop=loop,
-                optimize=optimize,
-                save_all=True,
-            )
-        else:
-            for img in images:
-                img.save(output(format), optimize=optimize)
-        return ()
-
-class ArrayNode(JOVBaseNode):
-    NAME = "ARRAY (JOV) 📚"
-    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = ("INT", WILDCARD, WILDCARD,)
-    RETURN_NAMES = (Lexicon.VALUE, Lexicon.ANY_OUT, Lexicon.LIST,)
-    SORT = 50
-    DESCRIPTION = """
-Processes a batch of data based on the selected mode, such as merging, picking, slicing, random selection, or indexing. Allows for flipping the order of processed items and dividing the data into chunks.
-"""
-
-    @classmethod
-    def INPUT_TYPES(cls) -> dict:
-        d = super().INPUT_TYPES()
-        d.update({
-            "optional": {
-                Lexicon.BATCH_MODE: (EnumBatchMode._member_names_, {"default": EnumBatchMode.MERGE.name, "tooltip":"select a single index, specific range, custom index list or randomized"}),
-                Lexicon.INDEX: ("INT", {"default": 0, "min": 0, "step": 1, "tooltip":"selected list position"}),
-                Lexicon.RANGE: ("VEC3", {"default": (0, 0, 1)}),
-                Lexicon.STRING: ("STRING", {"default": "", "tooltip":"Comma separated list of indicies to export"}),
-                Lexicon.SEED: ("INT", {"default": 0, "min": 0, "max": sys.maxsize, "step": 1}),
-                Lexicon.FLIP: ("BOOLEAN", {"default": False}),
-                Lexicon.BATCH_CHUNK: ("INT", {"default": 0, "min": 0, "step": 1}),
-            }
-        })
-        return Lexicon._parse(d, cls)
-
-    @classmethod
-    def batched(cls, iterable, chunk_size, expand:bool=False, fill:Any=None) -> list:
-        if expand:
-            iterator = iter(iterable)
-            return zip_longest(*[iterator] * chunk_size, fillvalue=fill)
-        return [iterable[i: i + chunk_size] for i in range(0, len(iterable), chunk_size)]
-
-    def __init__(self, *arg, **kw) -> None:
-        super().__init__(*arg, **kw)
-        self.__seed = None
-
-    def run(self, **kw) -> Tuple[int, list]:
-        batch = parse_dynamic(kw, 0, EnumConvertType.ANY, None)
-        mode = parse_param(kw, Lexicon.BATCH_MODE, EnumConvertType.STRING, EnumBatchMode.MERGE.name)
-        index = parse_param(kw, Lexicon.INDEX, EnumConvertType.INT, EnumBatchMode.MERGE.name)
-        slice_range = parse_param(kw, Lexicon.RANGE, EnumConvertType.VEC3INT, [(0, 0, 1)])
-        indices = parse_param(kw, Lexicon.STRING, EnumConvertType.STRING, "")
-        seed = parse_param(kw, Lexicon.SEED, EnumConvertType.INT, 0)
-        flip = parse_param(kw, Lexicon.FLIP, EnumConvertType.BOOLEAN, False)
-        batch_chunk = parse_param(kw, Lexicon.BATCH_CHUNK, EnumConvertType.INT, 0, 0)
-        extract = []
-        # track latents since they need to be added back to Dict['samples']
-        latents = []
-        full = []
-
-        # logger.debug(batch)
-
-        for b in batch:
-            if isinstance(b, dict) and "samples" in b:
-                # latents are batched in the x.samples key
-                data = b["samples"]
-                full.extend([{"samples": [i]} for i in data])
-                extract.extend(data)
-                latents.extend([True] * len(data))
-            elif isinstance(b, torch.Tensor) and len(b.shape) > 3:
-                b = [i for i in b]
-                full.extend(b)
-                extract.extend(b)
-                latents.extend([False] * len(b))
-            elif isinstance(b, (list, set, tuple,)):
-                full.extend(b)
-                extract.extend(b)
-                latents.extend([False] * len(b))
-            else:
-                full.append(b)
-                extract.append(b)
-                latents.append(False)
-
-        results = []
-        params = list(zip_longest_fill(mode, index, slice_range, indices, seed, flip, batch_chunk))
-        pbar = ProgressBar(len(params))
-        for idx, (mode, index, slice_range, indices, seed, flip, batch_chunk) in enumerate(params):
-            mode = EnumBatchMode[mode]
-            if mode == EnumBatchMode.PICK:
-                index = index if index < len(extract) else -1
-                extract = [extract[index]]
-                if latents[index]:
-                    extract = {"samples": extract}
-            elif mode == EnumBatchMode.SLICE:
-                start, end, step = slice_range
-                end = len(extract) if end == 0 else end
-                data = extract[start:end:step]
-                latents = latents[start:end:step]
-                extract = []
-                for i, lat in enumerate(latents):
-                    dat = data[i]
-                    if lat:
-                        dat = {"samples": [dat]}
-                    extract.append(dat)
-            elif mode == EnumBatchMode.RANDOM:
-                if self.__seed is None or self.__seed != seed:
-                    random.seed(seed)
-                    self.__seed = seed
-                full = random.choices(full)
-                index = random.randrange(0, len(extract))
-                extract = [extract[index]]
-                if latents[index]:
-                    extract = {"samples": extract}
-            elif mode == EnumBatchMode.INDEX_LIST:
-                junk = []
-                for x in indices.strip().split(','):
-                    if '-' in x:
-                        x = x.split('-')
-                        x = list(range(x[0], x[1]))
-                    else:
-                        x = [x]
-                    for i in x:
-                        try:
-                            junk.append(int(i))
-                        except ValueError:
-                            logger.warning(f"bad integer format {i}")
-                        except Exception as e:
-                            logger.error(e)
-                data = [extract[i:j] for i, j in zip([0]+junk, junk+[None])]
-                latents = [latents[i:j] for i, j in zip([0]+junk, junk+[None])]
-                extract = []
-                for i, lat in enumerate(latents):
-                    dat = data[i]
-                    if lat:
-                        dat = {"samples": [dat]}
-                    extract.append(dat)
-
-            if flip and len(extract) > 1:
-                extract = extract[::-1]
-            if batch_chunk > 0:
-                extract = [e for e in self.batched(extract, batch_chunk)]
-            results.append([len(extract), extract, [*extract]])
-            pbar.update_absolute(idx)
-        return list(zip(*results))
-
 class RouteNode(JOVBaseNode):
     NAME = "ROUTE (JOV) 🚌"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
@@ -664,92 +686,6 @@ Save the output image along with its metadata to the specified path. Supports sa
             image.save(fname, pnginfo=meta_png)
             pbar.update_absolute(idx)
         return ()
-
-class BatchLoadNode(JOVBaseNode):
-    NAME = "BATCH LOAD (JOV) 🗃"
-    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
-    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
-    VIDEO_FORMATS = ['.webm', '.mp4', '.avi', '.wmv', '.mkv', '.mov', '.mxf']
-    SORT = 0
-    DESCRIPTION = """
-    Process multiple image or video files into a single batch.
-    """
-
-    @classmethod
-    def INPUT_TYPES(cls) -> dict:
-        d = super().INPUT_TYPES()
-        d.update({
-            "optional": {
-                Lexicon.QUEUE: ("STRING", {"multiline": True, "default": "./res/img/anim/*.png"}),
-                Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
-                Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), "step": 1, "label": [Lexicon.W, Lexicon.H]}),
-                Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
-                Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
-            }
-        })
-        return Lexicon._parse(d, cls)
-
-    def run(self, **kw) -> None:
-        q = parse_param(kw, Lexicon.QUEUE, EnumConvertType.STRING, "")
-        mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.NONE.name)
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE)], MIN_IMAGE_SIZE)
-        sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)
-        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
-        params = list(zip_longest_fill(q, mode, wihi, sample, matte))
-        images = []
-        pbar = ProgressBar(len(params))
-        for idx, (q, mode, wihi, sample, matte) in enumerate(params):
-            for pA in q.split('\n'):
-                w, h = wihi
-                path = Path(pA) if Path(pA).is_file() else Path(ROOT / pA)
-                if not path.is_file():
-                    logger.error(f"bad file: [{pA}]")
-                    pA = channel_solid(w, h)
-                elif path.suffix in image_formats():
-                    pA = image_load(str(path))[0]
-                    mode = EnumScaleMode[mode]
-                    if mode != EnumScaleMode.NONE:
-                        pA = image_scalefit(pA, w, h, mode, sample)
-                else:
-                    pA = channel_solid(w, h)
-                images.append(cv2tensor_full(pA, matte))
-            pbar.update_absolute(idx)
-        return [torch.cat(i, dim=0) for i in list(zip(*images))]
-
-class DynamicOutputNode(JOVBaseNode):
-    NAME = "DYNAMIC (JOV) 💥"
-    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = ()
-    RETURN_NAMES = ()
-    SORT = 1100
-    DESCRIPTION = """
-☣️💣☣️💣☣️💣☣️💣 THIS NODE IS A WORK IN PROGRESS ☣️💣☣️💣☣️💣☣️💣
-
-"""
-
-    @classmethod
-    def INPUT_TYPES(cls) -> dict:
-        d = super().INPUT_TYPES()
-        d.update({
-            "optional": {
-                Lexicon.ANY_OUT: (WILDCARD, {"tooltip":"A bundle of items that need to be split into X outputs."}),
-                Lexicon.VALUE: ("INT", {"default": 1, "min": 1, "max": 32, "step": 1, "tooltip":"Number of outputs desired for node."})
-            }
-        })
-        return Lexicon._parse(d, cls)
-
-    def run(self, **kw) -> Tuple[Any, ...]:
-        inputs = parse_param(kw, Lexicon.ANY_OUT, EnumConvertType.ANY, None)
-        outputs = parse_param(kw, Lexicon.VALUE, EnumConvertType.INT, 1, 1, 32)
-        ret = []
-        params = list(zip_longest_fill(inputs, outputs))
-        pbar = ProgressBar(len(params))
-        for idx, (inputs, outputs) in enumerate(params):
-            outputs = [inputs] * outputs
-            ret.append(outputs)
-            pbar.update_absolute(idx)
-        return (*outputs,)
 
 '''
 class RESTNode:

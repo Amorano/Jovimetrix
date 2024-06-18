@@ -833,7 +833,6 @@ def image_filter(image:TYPE_IMAGE, start:Tuple[int]=(128,128,128), end:Tuple[int
     start = torch.clamp(start, 0.0, 1.0)
     end = torch.clamp(end, 0.0, 1.0)
 
-    print(start, end, fuzz)
     mask = ((new_image[..., 0] > start[0]) & (new_image[..., 0] < end[0]))
     #mask |= ((new_image[..., 1] > start[1]) & (new_image[..., 1] < end[1]))
     #mask |= ((new_image[..., 2] > start[2]) & (new_image[..., 2] < end[2]))
@@ -1361,12 +1360,7 @@ def image_stack(image_list: List[TYPE_IMAGE], axis:EnumOrientation=EnumOrientati
             image = np.hstack(images)
 
         case EnumOrientation.VERTICAL:
-            for i in images:
-                print(i.shape)
             image = np.vstack(images)
-
-    print(image.shape)
-
     return image
 
 def image_stereogram(image: TYPE_IMAGE, depth: TYPE_IMAGE, divisions:int=8, mix:float=0.33, gamma:float=0.33, shift:float=1.) -> TYPE_IMAGE:
