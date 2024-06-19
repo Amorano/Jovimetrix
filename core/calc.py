@@ -326,6 +326,7 @@ The Binary Operation node executes binary operations like addition, subtraction,
         results = []
         A = parse_param(kw, Lexicon.IN_A, EnumConvertType.ANY, [None])
         B = parse_param(kw, Lexicon.IN_B, EnumConvertType.ANY, [None])
+        print(A, '-', B)
         a_x = parse_param(kw, Lexicon.X, EnumConvertType.FLOAT, 0)
         a_xy = parse_param(kw, Lexicon.IN_A+"2", EnumConvertType.VEC2, [(0, 0)])
         a_xyz = parse_param(kw, Lexicon.IN_A+"3", EnumConvertType.VEC3, [(0, 0, 0)])
@@ -750,7 +751,6 @@ class TickNode(JOVBaseNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = (WILDCARD, "FLOAT", "FLOAT", WILDCARD)
     RETURN_NAMES = (Lexicon.VALUE, Lexicon.LINEAR, Lexicon.FPS, Lexicon.TRIGGER)
-    # OUTPUT_IS_LIST = (True, True, True, True)
     DESCRIPTION = """
 The `Tick` node acts as a timer and frame counter, emitting pulses or signals based on time intervals or BPM settings. It allows precise synchronization and control over animation sequences, with options to adjust FPS, BPM, and loop points. This node is useful for generating time-based events or driving animations with rhythmic precision.
 """
@@ -800,7 +800,7 @@ The `Tick` node acts as a timer and frame counter, emitting pulses or signals ba
         self.__frame = parse_param(kw, Lexicon.VALUE, EnumConvertType.INT, self.__frame)[0]
         if loop != 0:
             self.__frame %= loop
-        self.__frame = max(0, self.__frame)
+        # start_frame = max(0, start_frame)
         hold = parse_param(kw, Lexicon.WAIT, EnumConvertType.BOOLEAN, False)[0]
         fps = parse_param(kw, Lexicon.FPS, EnumConvertType.INT, 24, 1)[0]
         bpm = parse_param(kw, Lexicon.BPM, EnumConvertType.INT, 120, 1)[0]
@@ -809,7 +809,7 @@ The `Tick` node acts as a timer and frame counter, emitting pulses or signals ba
         batch = parse_param(kw, Lexicon.BATCH, EnumConvertType.INT, 1, 1)[0]
         step_fps = 1. / max(1., float(fps))
         reset = parse_param(kw, Lexicon.RESET, EnumConvertType.BOOLEAN, False)[0]
-        if parse_reset(ident) > 0 or reset:
+        if loop == 0 and (parse_reset(ident) > 0 or reset):
             self.__frame = 0
         trigger = None
         results = Results()
@@ -832,7 +832,7 @@ The `Tick` node acts as a timer and frame counter, emitting pulses or signals ba
             pbar.update_absolute(idx)
         if batch < 2:
             comfy_message(ident, "jovi-tick", {"i": self.__frame})
-        return results.frame, results.lin, results.fixed, results.trigger
+        return (results.frame, results.lin, results.fixed, results.trigger,)
 
 class ValueNode(JOVBaseNode):
     NAME = "VALUE (JOV) 🧬"

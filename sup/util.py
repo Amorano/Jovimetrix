@@ -54,18 +54,32 @@ class EnumSwizzle(Enum):
 # === SUPPORT ===
 # =============================================================================
 
-def parse_dynamic(data:dict, index:int, typ:EnumConvertType, default: Any) -> List[Any]:
+def parse_dynamic(data:dict, prefix:str, typ:EnumConvertType, default: Any, with_prefix:bool=False) -> List[Any]:
+    """Convert iterated input field(s) based on a s into a single compound list of entries.
+
+    The default will just look for all keys as integer:
+
+        #_<field name>
+
+    If prefix is non-null, then the format for the key entry is:
+
+    #_<prefix>_<field name>
+
+    This will return N entries in a list based on the prefix pattern or not.
+
+    """
     vals = []
-    count = index
     for k in data:
         name = k.split('_')
-        try: val = int(name[0])
-        except: continue
-        val = parse_param(data, k, typ, default)
-        if not isinstance(val, (list,)):
-            val = [val]
-        vals.extend(val)
-        count += 1
+        # do we need the prefix (in the case of more than one dynamic param)
+        if (not with_prefix and len(name)== 2) or (with_prefix and len(name) == 3 and name[1] != prefix):
+            # check the index is valid number
+            try: val = int(name[0])
+            except: continue
+            val = parse_param(data, k, typ, default)
+            #if not isinstance(val, (list,)):
+            #    val = [val]
+            vals.append(val)
     return vals
 
 def parse_value(val:Any, typ:EnumConvertType, default: Any,

@@ -163,7 +163,7 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
         self.__seed = None
 
     def run(self, **kw) -> Tuple[int, list]:
-        data_list = parse_dynamic(kw, 0, EnumConvertType.ANY, None)
+        data_list = parse_dynamic(kw, Lexicon.UNKNOWN, EnumConvertType.ANY, None)
         mode = parse_param(kw, Lexicon.BATCH_MODE, EnumConvertType.STRING, EnumBatchMode.MERGE.name)
         index = parse_param(kw, Lexicon.INDEX, EnumConvertType.INT, EnumBatchMode.MERGE.name)
         slice_range = parse_param(kw, Lexicon.RANGE, EnumConvertType.VEC3INT, [(0, 0, 1)])
@@ -395,10 +395,12 @@ The Graph node visualizes a series of data points over time. It accepts a dynami
         if parse_reset(ident) > 0 or parse_param(kw, Lexicon.RESET, EnumConvertType.BOOLEAN, False)[0]:
             self.__history = []
         longest_edge = 0
-        dynamic = parse_dynamic(kw, 0, EnumConvertType.FLOAT, 0)
+        dynamic = parse_dynamic(kw, Lexicon.UNKNOWN, EnumConvertType.FLOAT, 0)
         # each of the plugs
         self.__ax.clear()
         for idx, val in enumerate(dynamic):
+            logger.debug(idx)
+            logger.debug(val)
             if isinstance(val, (set, tuple,)):
                 val = list(val)
             if not isinstance(val, (list, )):
@@ -425,6 +427,7 @@ The Graph node visualizes a series of data points over time. It accepts a dynami
         return (pil2tensor(image),)
 
 '''
+# OLD LOAD BATCH NODE -- add to queue?
 def run(self, **kw) -> None:
     q = parse_param(kw, Lexicon.QUEUE, EnumConvertType.STRING, "")
     mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.NONE.name)

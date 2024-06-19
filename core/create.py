@@ -206,7 +206,7 @@ The Text Generation node generates images containing text based on user-defined 
                 Lexicon.FONT: (cls.FONT_NAMES, {"default": cls.FONT_NAMES[0]}),
                 Lexicon.LETTER: ("BOOLEAN", {"default": False}),
                 Lexicon.AUTOSIZE: ("BOOLEAN", {"default": False}),
-                Lexicon.RGBA_A: ("VEC3", {"default": (255, 255, 255, 255), "step": 1,
+                Lexicon.RGBA_A: ("VEC4", {"default": (255, 255, 255, 255), "step": 1,
                                         "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A],
                                         "rgb": True, "tooltip": "Color of the letters"}),
                 Lexicon.MATTE: ("VEC3", {"default": (0, 0, 0), "step": 1,
@@ -426,3 +426,34 @@ The Wave Graph node visualizes audio waveforms as bars. Adjust parameters like t
             images.append(cv2tensor_full(img))
             pbar.update_absolute(idx)
         return [torch.cat(i, dim=0) for i in list(zip(*images))]
+
+
+'''
+class PurzNode(JOVBaseNode):
+    NAME = "PURZ (JOV) 🟪"
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/PURZ"
+    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
+    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
+    DESCRIPTION = """
+"""
+
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        d = super().INPUT_TYPES()
+        d.update({
+            "optional": {
+                Lexicon.PIXEL: (WILDCARD, {"tooltip":"🫥 🥰 🫳 📍 😵‍💫 😃 🥲 🪯"}),
+                "🐪": (WILDCARD, {"tooltip": "🐪 🙋 💬 😀 🇧🇦 🤣 🥯 👣 🥴 😍 🅾️ 🧞 🙊"}),
+                Lexicon.WH: ("VEC2", {"default": (512, 512), "tooltip": "🥯 👣 🥰 🫳 💬 🥴 😀 📍"}),
+                "🙋": (["😍", "😀", "🤣", "🥴"], {"default": ["😍"]}),
+                "📍": ("INT", {"default": 256}),
+                "🧞": ("INT", {"default": 256}),
+                "🙊": ("VEC4", {"default": (255, 255, 255, 255), "step": 1, "rgb": True})
+
+            }
+        })
+        return Lexicon._parse(d, cls)
+
+    def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
+        return ()
+'''

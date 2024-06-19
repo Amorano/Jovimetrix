@@ -26,7 +26,8 @@ app.registerExtension({
         if (nodeData.name !== _id) {
             return;
         }
-        nodeType = node_add_dynamic(nodeType, _prefix, "*", 7);
+        nodeType = node_add_dynamic(nodeType, _prefix);
+
         const onNodeCreated = nodeType.prototype.onNodeCreated;
         nodeType.prototype.onNodeCreated = async function () {
             const me = onNodeCreated?.apply(this);
@@ -49,8 +50,12 @@ app.registerExtension({
             for (let i = 0; i < this.inputs.length; i++) {
                 const link_id = this.inputs[i].link;
                 const link = app.graph.links[link_id];
-                if(link && this.inputs[i].name.substring(0, _prefix.length) === _prefix) {
+                const nameParts = this.inputs[i].name.split('_');
+                const isInteger = nameParts.length > 1 && !isNaN(nameParts[0]) && Number.isInteger(parseFloat(nameParts[0]));
+                if (link && isInteger && nameParts[1].substring(0, _prefix.length) === _prefix) {
+                //if(link && this.inputs[i].name.substring(0, _prefix.length) === _prefix) {
                     link.type = `JOV_VG_${count}`;
+                    console.info(count)
                     this.inputs[i].color_on = LGraphCanvas.link_type_colors[link.type];
                     count += 1;
                 }

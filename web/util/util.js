@@ -77,7 +77,7 @@ export function node_add_dynamic(nodeType, prefix, dynamic_type='*', index_start
         let count = self.inputs.length;
         while (idx < self.inputs.length-1 && count > 0) {
             const slot = self.inputs[idx];
-            console.info(slot, count)
+            // console.info(slot, count)
             if (slot) {
                 const parts = slot.name.split('_');
                 // a dynamic jovian slot prefix_
@@ -101,7 +101,7 @@ export function node_add_dynamic(nodeType, prefix, dynamic_type='*', index_start
             }
             count -= 1;
         }
-        console.info(idx)
+        //console.info(idx)
     }
 
     index_start = Math.max(0, index_start);

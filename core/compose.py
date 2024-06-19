@@ -584,7 +584,7 @@ Combine multiple input images into a single image by summing their pixel values.
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> torch.Tensor:
-        pA = parse_dynamic(kw, 0, EnumConvertType.IMAGE, None)
+        pA = parse_dynamic(kw, Lexicon.IMAGE, EnumConvertType.IMAGE, None)
         #pA = [item for sublist in pA for item in sublist]
         if len(pA) == 0:
             logger.error("no images to flatten")
@@ -809,7 +809,7 @@ Merge multiple input images into a single composite image by stacking them along
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
-        images = parse_dynamic(kw, 0, EnumConvertType.IMAGE, None)
+        images = parse_dynamic(kw, Lexicon.IMAGE, EnumConvertType.IMAGE, None)
         if len(images) == 0:
             logger.warning("no images to stack")
             return
