@@ -128,11 +128,11 @@ The Stream Reader node captures frames from various sources such as URLs, camera
         if wait:
             return self.__last
         images = []
-        batch_size, rate = parse_param(kw, Lexicon.BATCH, EnumConvertType.VEC2INT, [(1, 30)], 1)[0]
+        batch_size, rate = parse_param(kw, Lexicon.BATCH, EnumConvertType.VEC2INT, (1, 30), 1)[0]
         pbar = ProgressBar(batch_size)
         rate = 1. / rate
-        width, height = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE)])[0]
-        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0,0,0,255)], 0, 255)[0]
+        width, height = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE))[0]
+        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0,0,0,255), 0, 255)[0]
         mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.NONE.name)[0]
         mode = EnumScaleMode[mode]
         sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)[0]
@@ -297,8 +297,8 @@ The Stream Writer node sends frames to a specified route, typically for live str
     def run(self, **kw) -> Tuple[torch.Tensor]:
         route = parse_param(kw, Lexicon.ROUTE, EnumConvertType.STRING, "/stream")
         images = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE)], MIN_IMAGE_SIZE)
-        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0,0,0,0)], 0, 255)
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), MIN_IMAGE_SIZE)
+        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0,0,0,0), 0, 255)
         mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.NONE.name)
         sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)
         params = list(zip_longest_fill(route, images, wihi, matte, mode, sample))
@@ -367,9 +367,9 @@ The Spout Writer node sends frames to a specified Spout receiver application for
             host = parse_param(kw, Lexicon.ROUTE, EnumConvertType.STRING, "")
             #fps = parse_param(kw, Lexicon.FPS, EnumConvertType.INT, 30)
             mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.NONE.name)
-            wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE)], MIN_IMAGE_SIZE)
+            wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), MIN_IMAGE_SIZE)
             sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)
-            matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0,0,0,0)], 0, 255)
+            matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0,0,0,0), 0, 255)
             # results = []
             params = list(zip_longest_fill(images, host, mode, wihi, sample, matte))
             pbar = ProgressBar(len(params))

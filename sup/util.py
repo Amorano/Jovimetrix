@@ -180,7 +180,7 @@ def parse_value(val:Any, typ:EnumConvertType, default: Any,
     elif typ == EnumConvertType.IMAGE:
         # covert image into image? just skip if already an image
         if not isinstance(new_val, (torch.Tensor,)):
-            color = parse_value(new_val, EnumConvertType.VEC4INT, [(0,0,0,255)], 0, 255)
+            color = parse_value(new_val, EnumConvertType.VEC4INT, (0,0,0,255), 0, 255)
             color = torch.tensor(color, dtype=torch.int32).tolist()
             new_val = torch.empty((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 4), dtype=torch.uint8)
             new_val[0,:,:] = color[0]
@@ -213,7 +213,7 @@ def parse_param(data:dict, key:str, typ:EnumConvertType, default: Any,
         # latents....
         if 'samples' in val:
             val = tuple(x for x in val["samples"])
-        elif ('0' in val and '1' in val) or (0 in val and 1 in val):
+        elif ('0' in val) or (0 in val):
             val = tuple(val.get(i, val.get(str(i), 0)) for i in range(min(len(val), 4)))
         elif 'x' in val and 'y' in val:
             val = tuple(val.get(c, 0) for c in 'xyzw')

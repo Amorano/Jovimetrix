@@ -4,6 +4,8 @@
  *
  */
 
+const regex = /\d/;
+
 const my_map = {
     STRING: "📝",
     BOOLEAN: "🇴",
@@ -105,17 +107,20 @@ export function widget_hide(node, widget, suffix = '') {
 export function widget_show(widget) {
     if (widget?.origType) {
         widget.type = widget.origType;
+        delete widget.origType;
     }
-    widget.computeSize = widget.origComputeSize;
-    widget.computeSize = (target_width) => [target_width, 20];
-    widget.serializeValue = widget.origSerializeValue;
-    delete widget.origType;
-    delete widget.origComputeSize;
-    delete widget.origSerializeValue;
-    widget.hidden = false;
+    if (widget?.origComputeSize) {
+        widget.computeSize = widget.origComputeSize;
+        delete widget.origComputeSize;
+    }
+    //widget.computeSize = (target_width) => [target_width, 20];
+    if (widget?.origSerializeValue) {
+        widget.serializeValue = widget.origSerializeValue;
+        delete widget.origSerializeValue;
+    }
 
-    // Hide any linked widgets, e.g. seed+seedControl
-    if (widget.linkedWidgets) {
+    widget.hidden = false;
+    if (widget?.linkedWidgets) {
       for (const w of widget.linkedWidgets) {
         widget_show(w)
       }
@@ -128,17 +133,39 @@ export function show_boolean(widget_x) {
     widget_x.type = "toggle";
 }
 
-export function show_vector(widget, precision=0, size=4) {
-    widget_show(widget);
-    widget.origType = widget.type;
-    if (precision == 0) {
-        widget.options.step = 1;
-        widget.options.round = 1;
-        widget.options.precision = 0;
+export function show_vector(widget, values={}, type=undefined, precision=6) {
+    if (["FLOAT", "INT"].includes(type)) {
+        type = "VEC1";
+    } else if (type == "BOOLEAN") {
+        type = "toggle";
+        type = "toggle";
+    }
+    if (type !== undefined) {
+        widget.type = type;
+    }
+    if (widget.type == 'toggle') {
+        widget.value = values[0] > 0 ? true : false;
     } else {
-        widget.options.step = 1 / (10^Math.max(1, precision-2));
-        widget.options.round =  1 / (10^Math.max(1, precision-1));
-        widget.options.precision = precision;
+        let size = 1;
+        const match = regex.exec(widget.type);
+        if (match) {
+            size = match[0];
+        }
+        if (widget.type.endsWith('INT')) {
+            widget.options.step = 1;
+            widget.options.round = 1;
+            widget.options.precision = 0;
+        } else {
+            widget.options.step = 1 / (10^Math.max(1, precision-2));
+            widget.options.round =  1 / (10^Math.max(1, precision-1));
+            widget.options.precision = precision;
+        }
+        widget.value = {};
+        for (let i = 0; i < size; i++) {
+            console.info(widget.type.endsWith('INT'))
+            widget.value[i] = widget.type.endsWith('INT') ? Math.round(values[i]) : Number(values[i]);
+            //widget.value[i] = values[i] !== undefined ? k : 0;
+        }
     }
 }
 

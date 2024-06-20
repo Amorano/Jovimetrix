@@ -29,7 +29,7 @@ export function foldableToggle(elementId, symbolId) {
     }
 }
 
-export function inner_value_change(widget, value, event = undefined) {
+export function inner_value_change(node, pos, widget, value, event=undefined) {
     const type = widget.type.includes("INT") ? Number : parseFloat
     widget.value = convertArrayToObject(value, Object.keys(value).length, type);
     if (
@@ -40,6 +40,7 @@ export function inner_value_change(widget, value, event = undefined) {
             node.setProperty(widget.options.property, widget.value)
         }
     if (widget.callback) {
+
         widget.callback(widget.value, app.canvas, node, pos, event)
     }
 }

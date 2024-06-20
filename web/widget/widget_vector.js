@@ -20,7 +20,10 @@ export const VectorWidget = (app, inputName, options, initial, desc='') => {
     }
 
     let isDragging;
-    let step = options[0].includes(['VEC', 'vec']) ? 0.01 : 1;
+    let step = 0.01;
+    if (options[0].endsWith('INT')) {
+        step = 1;
+    }
     widget.options.step = widget.options?.step || step;
     widget.options.rgb = widget.options?.rgb || false;
 
@@ -32,7 +35,7 @@ export const VectorWidget = (app, inputName, options, initial, desc='') => {
     let picker;
 
     widget.draw = function(ctx, node, width, Y, height) {
-        if (this.type !== options[0] && app.canvas.ds.scale > 0.5) return
+        if ((!this.type.startsWith("VEC") && this.type != "COORD2D") && app.canvas.ds.scale > 0.5) return;
         const precision = widget.options?.precision !== undefined ? widget.options.precision : 0;
         ctx.save()
         ctx.beginPath()
@@ -72,22 +75,22 @@ export const VectorWidget = (app, inputName, options, initial, desc='') => {
 
             // value
             ctx.fillStyle = LiteGraph.WIDGET_TEXT_COLOR
-            const it = this.value[idx.toString()]
-            const value = Number(it).toFixed(Math.min(2, precision))
+            const it = this.value[idx.toString()];
+            const value = Number(it).toFixed(Math.min(2, precision));
             converted.push(value);
-            const text = value.toString()
-            ctx.fillText(text, x + element_width2 - text.length * 3.3, Y + height/2 + offset_y)
-            ctx.restore()
-            x += element_width
+            const text = value.toString();
+            ctx.fillText(text, x + element_width2 - text.length * 3.3, Y + height/2 + offset_y);
+            ctx.restore();
+            x += element_width;
         }
 
         if (this.options.rgb) {
             try {
                 ctx.fillStyle = rgb2hex(converted);
             } catch (e) {
-                ctx.fillStyle = "#000"
+                ctx.fillStyle = "#000";
             }
-            ctx.roundRect(width - 1.15 * widget_padding, Y, 0.65 * widget_padding, height, 16)
+            ctx.roundRect(width - 1.15 * widget_padding, Y, 0.65 * widget_padding, height, 16);
             ctx.fill()
         }
         ctx.restore()
@@ -153,7 +156,7 @@ export const VectorWidget = (app, inputName, options, initial, desc='') => {
                 clamp(this, v, idx)
             } else if (e.type === 'pointerup') {
                 isDragging = undefined
-                if (e.click_time < 200 && delta == 0) {
+                if (e.click_time < 100 && delta == 0) {
                     const label = this.options?.label ? this.name + '➖' + this.options.label?.[idx] : this.name;
                     LGraphCanvas.active_canvas.prompt(label, this.value[idx], function(v) {
                         if (/^[0-9+\-*/()\s]+|\d+\.\d+$/.test(v)) {
@@ -165,7 +168,7 @@ export const VectorWidget = (app, inputName, options, initial, desc='') => {
                             setTimeout(
                                 function () {
                                     clamp(this, v, idx)
-                                    inner_value_change(this, this.value, e)
+                                    inner_value_change(node, pos, this, this.value, e)
                                 }.bind(this), 20)
                         }
                     }.bind(this), e);
@@ -174,13 +177,13 @@ export const VectorWidget = (app, inputName, options, initial, desc='') => {
                 if (old_value != this.value) {
                     setTimeout(
                         function () {
-                            //clamp(this, this.value[idx] || 0, idx)
-                            inner_value_change(this, this.value, e)
+                            inner_value_change(node, pos, this, this.value, e)
                         }.bind(this), 20)
                 }
-                app.canvas.setDirty(true)
             }
+
         }
+        app.canvas.setDirty(true, true);
     }
 
     widget.computeSize = function (width) {
@@ -188,11 +191,16 @@ export const VectorWidget = (app, inputName, options, initial, desc='') => {
     }
 
     widget.serializeValue = async () => {
-        if (typeof widget.value === 'object' && widget.value !== null && !Array.isArray(widget.value)) {
+        if (widget.value === null) {
+            return null;
+        }
+        if (typeof widget.value === 'object' && !Array.isArray(widget.value)) {
             // Check if widget.value is a dictionary
             return widget.value;
+        } else if (Array.isArray(widget.value)) {
+            return widget.value.reduce((acc, tuple, index) => ({ ...acc, [index]: tuple }), {});
         }
-        return widget.value.reduce((acc, tuple, index) => ({ ...acc, [index]: tuple }), {});
+        return widget.value;
     }
 
     widget.desc = desc
@@ -210,7 +218,7 @@ app.registerExtension({
                 widget: node.addCustomWidget(VectorWidget(app, inputName, inputData, [0, 0, 0])),
             }),
             VEC4: (node, inputName, inputData, app) => ({
-                widget: node.addCustomWidget(VectorWidget(app, inputName, inputData, [0, 0, 0, 1])),
+                widget: node.addCustomWidget(VectorWidget(app, inputName, inputData, [0, 0, 0, 0])),
             })
         }
     },

@@ -298,68 +298,34 @@ The Binary Operation node executes binary operations like addition, subtraction,
                 Lexicon.TYPE: (names_convert, {"default": names_convert[2],
                                             "tooltip":"Output type desired from resultant operation"}),
                 Lexicon.FLIP: ("BOOLEAN", {"default": False}),
-                Lexicon.X: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "tooltip":"Single value input"}),
-                Lexicon.IN_A+"2": ("VEC2", {"default": (0,0),
-                                        "label": [Lexicon.X, Lexicon.Y],
-                                        "tooltip":"2-value vector"}),
-                Lexicon.IN_A+"3": ("VEC3", {"default": (0,0,0),
-                                        "label": [Lexicon.X, Lexicon.Y, Lexicon.Z],
-                                        "tooltip":"3-value vector"}),
-                Lexicon.IN_A+"4": ("VEC4", {"default": (0,0,0,0),
+                Lexicon.IN_A+Lexicon.IN_A: ("VEC4", {"default": (0,0,0,0),
                                         "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W],
-                                        "tooltip":"4-value vector"}),
-                Lexicon.Y: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "tooltip":"Single value input"}),
-                Lexicon.IN_B+"2": ("VEC2", {"default": (0,0),
-                                        "label": [Lexicon.X, Lexicon.Y],
-                                        "tooltip":"2-value vector"}),
-                Lexicon.IN_B+"3": ("VEC3", {"default": (0,0,0),
-                                        "label": [Lexicon.X, Lexicon.Y, Lexicon.Z],
-                                        "tooltip":"3-value vector"}),
-                Lexicon.IN_B+"4": ("VEC4", {"default": (0,0,0,0),
+                                        "tooltip":"value vector"}),
+                Lexicon.IN_B+Lexicon.IN_B: ("VEC4", {"default": (0,0,0,0),
                                         "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W],
-                                        "tooltip":"4-value vector"}),
+                                        "tooltip":"value vector"}),
             }
         })
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[bool]:
         results = []
-        A = parse_param(kw, Lexicon.IN_A, EnumConvertType.ANY, [None])
-        B = parse_param(kw, Lexicon.IN_B, EnumConvertType.ANY, [None])
+        A = parse_param(kw, Lexicon.IN_A, EnumConvertType.ANY, None)
+        B = parse_param(kw, Lexicon.IN_B, EnumConvertType.ANY, None)
         print(A, '-', B)
-        a_x = parse_param(kw, Lexicon.X, EnumConvertType.FLOAT, 0)
-        a_xy = parse_param(kw, Lexicon.IN_A+"2", EnumConvertType.VEC2, [(0, 0)])
-        a_xyz = parse_param(kw, Lexicon.IN_A+"3", EnumConvertType.VEC3, [(0, 0, 0)])
-        a_xyzw = parse_param(kw, Lexicon.IN_A+"4", EnumConvertType.VEC4, [(0, 0, 0, 0)])
-        b_x = parse_param(kw, Lexicon.Y, EnumConvertType.FLOAT, 0)
-        b_xy = parse_param(kw, Lexicon.IN_B+"2", EnumConvertType.VEC2, [(0, 0)])
-        b_xyz = parse_param(kw, Lexicon.IN_B+"3", EnumConvertType.VEC3, [(0, 0, 0)])
-        b_xyzw = parse_param(kw, Lexicon.IN_B+"4", EnumConvertType.VEC4, [(0, 0, 0, 0)])
+        a_xyzw = parse_param(kw, Lexicon.IN_A+Lexicon.IN_A, EnumConvertType.VEC4, (0, 0, 0, 0))
+        b_xyzw = parse_param(kw, Lexicon.IN_B+Lexicon.IN_B, EnumConvertType.VEC4, (0, 0, 0, 0))
         op = parse_param(kw, Lexicon.FUNC, EnumConvertType.STRING, EnumBinaryOperation.ADD.name)
         typ = parse_param(kw, Lexicon.TYPE, EnumConvertType.STRING, EnumConvertType.FLOAT.name)
         flip = parse_param(kw, Lexicon.FLIP, EnumConvertType.BOOLEAN, False)
-        params = list(zip_longest_fill(A, B, a_x, a_xy, a_xyz, a_xyzw,
-                                  b_x, b_xy, b_xyz, b_xyzw, op, typ, flip))
+        params = list(zip_longest_fill(A, B, a_xyzw, b_xyzw, op, typ, flip))
         pbar = ProgressBar(len(params))
-        for idx, (A, B, a_x, a_xy, a_xyz, a_xyzw,
-                  b_x, b_xy, b_xyz, b_xyzw, op, typ, flip) in enumerate(params):
-
-            # logger.debug(f'val {A}, {B}, {a_x}, {b_x}')
-            # use everything as float for precision
+        for idx, (A, B, a_xyzw, b_xyzw, op, typ, flip) in enumerate(params):
+            logger.debug(f'val {A}, {B}, {a_xyzw}, {b_xyzw}')
             typ = EnumConvertType[typ]
-            if typ in [EnumConvertType.VEC2, EnumConvertType.VEC2INT]:
-                val_a = parse_value(A, EnumConvertType.VEC4, A if A is not None else a_xy)
-                val_b = parse_value(B, EnumConvertType.VEC4, B if B is not None else b_xy)
-            elif typ in [EnumConvertType.VEC3, EnumConvertType.VEC3INT]:
-                val_a = parse_value(A, EnumConvertType.VEC4, A if A is not None else a_xyz)
-                val_b = parse_value(B, EnumConvertType.VEC4, B if B is not None else b_xyz)
-            elif typ in [EnumConvertType.VEC4, EnumConvertType.VEC4INT]:
-                val_a = parse_value(A, EnumConvertType.VEC4, A if A is not None else a_xyzw)
-                val_b = parse_value(B, EnumConvertType.VEC4, B if B is not None else b_xyzw)
-            else:
-                val_a = parse_value(A, EnumConvertType.VEC4, A if A is not None else a_x)
-                val_b = parse_value(B, EnumConvertType.VEC4, B if B is not None else b_x)
-            # logger.debug(f'val {val_a}, {val_b}')
+            val_a = parse_value(A, EnumConvertType.VEC4, A if A is not None else a_xyzw)
+            val_b = parse_value(B, EnumConvertType.VEC4, B if B is not None else b_xyzw)
+            logger.debug(f'val {val_a}, {val_b}')
             if flip:
                 val_a, val_b = val_b, val_a
             size = max(1, int(typ.value / 10))
@@ -632,16 +598,16 @@ The Lerp Node calculates linear interpolation between two values or vectors base
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[Any, Any]:
-        A = parse_param(kw, Lexicon.IN_A, EnumConvertType.ANY, [(0,0,0,0)], 0, 1)
-        B = parse_param(kw, Lexicon.IN_B, EnumConvertType.ANY, [(1,1,1,1)], 0, 1)
+        A = parse_param(kw, Lexicon.IN_A, EnumConvertType.ANY, (0,0,0,0), 0, 1)
+        B = parse_param(kw, Lexicon.IN_B, EnumConvertType.ANY, (1,1,1,1), 0, 1)
         a_x = parse_param(kw, Lexicon.X, EnumConvertType.FLOAT, 0)
-        a_xy = parse_param(kw, Lexicon.IN_A+"2", EnumConvertType.VEC2, [(0, 0)])
-        a_xyz = parse_param(kw, Lexicon.IN_A+"3", EnumConvertType.VEC3, [(0, 0, 0)])
-        a_xyzw = parse_param(kw, Lexicon.IN_A+"4", EnumConvertType.VEC4, [(0, 0, 0, 0)])
+        a_xy = parse_param(kw, Lexicon.IN_A+"2", EnumConvertType.VEC2, (0, 0))
+        a_xyz = parse_param(kw, Lexicon.IN_A+"3", EnumConvertType.VEC3, (0, 0, 0))
+        a_xyzw = parse_param(kw, Lexicon.IN_A+"4", EnumConvertType.VEC4, (0, 0, 0, 0))
         b_x = parse_param(kw, Lexicon.Y, EnumConvertType.FLOAT, 0)
-        b_xy = parse_param(kw, Lexicon.IN_B+"2", EnumConvertType.VEC2, [(0, 0)])
-        b_xyz = parse_param(kw, Lexicon.IN_B+"3", EnumConvertType.VEC3, [(0, 0, 0)])
-        b_xyzw = parse_param(kw, Lexicon.IN_B+"4", EnumConvertType.VEC4, [(0, 0, 0, 0)])
+        b_xy = parse_param(kw, Lexicon.IN_B+"2", EnumConvertType.VEC2, (0, 0))
+        b_xyz = parse_param(kw, Lexicon.IN_B+"3", EnumConvertType.VEC3, (0, 0, 0))
+        b_xyzw = parse_param(kw, Lexicon.IN_B+"4", EnumConvertType.VEC4, (0, 0, 0, 0))
         alpha = parse_param(kw, Lexicon.FLOAT,EnumConvertType.FLOAT, 0, 0, 1)
         op = parse_param(kw, Lexicon.EASE, EnumConvertType.STRING, "NONE")
         typ = parse_param(kw, Lexicon.TYPE, EnumConvertType.STRING, EnumNumberType.FLOAT.name)
@@ -723,8 +689,8 @@ The Swap Node swaps components between two vectors based on specified swizzle pa
         return Lexicon._parse(d, cls)
 
     def run(self, **kw)  -> Tuple[torch.Tensor, torch.Tensor]:
-        pA = parse_param(kw, Lexicon.IN_A, EnumConvertType.VEC4, [(0,0,0,0)], 0, 1)
-        pB = parse_param(kw, Lexicon.IN_B, EnumConvertType.VEC4, [(0,0,0,0)], 0, 1)
+        pA = parse_param(kw, Lexicon.IN_A, EnumConvertType.VEC4, (0,0,0,0), 0, 1)
+        pB = parse_param(kw, Lexicon.IN_B, EnumConvertType.VEC4, (0,0,0,0), 0, 1)
         swap_x = parse_param(kw, Lexicon.SWAP_X, EnumConvertType.STRING, EnumSwizzle.A_X.name)
         x = parse_param(kw, Lexicon.X, EnumConvertType.FLOAT, 0)
         swap_y = parse_param(kw, Lexicon.SWAP_Y, EnumConvertType.STRING, EnumSwizzle.A_Y.name)
@@ -910,14 +876,14 @@ The Value Node supplies raw or default values for various data types, supporting
         r_w = parse_param(kw, Lexicon.W, EnumConvertType.FLOAT, None)
         typ = parse_param(kw, Lexicon.TYPE, EnumConvertType.STRING, EnumConvertType.BOOLEAN.name)
         x = parse_param(kw, Lexicon.X_RAW, EnumConvertType.FLOAT, 0)
-        xy = parse_param(kw, Lexicon.IN_A+"2", EnumConvertType.VEC2, [(0, 0)])
-        xyz = parse_param(kw, Lexicon.IN_A+"3", EnumConvertType.VEC3, [(0, 0, 0)])
-        xyzw = parse_param(kw, Lexicon.IN_A+"4", EnumConvertType.VEC4, [(0, 0, 0, 0)])
+        xy = parse_param(kw, Lexicon.IN_A+"2", EnumConvertType.VEC2, (0, 0))
+        xyz = parse_param(kw, Lexicon.IN_A+"3", EnumConvertType.VEC3, (0, 0, 0))
+        xyzw = parse_param(kw, Lexicon.IN_A+"4", EnumConvertType.VEC4, (0, 0, 0, 0))
         seed = parse_param(kw, Lexicon.RANDOM, EnumConvertType.INT, 0, 0)
         y = parse_param(kw, Lexicon.Y_RAW, EnumConvertType.FLOAT, 0)
-        yy = parse_param(kw, Lexicon.IN_B+"2", EnumConvertType.VEC2, [(0, 0)])
-        yyz = parse_param(kw, Lexicon.IN_B+"3", EnumConvertType.VEC3, [(0, 0, 0)])
-        yyzw = parse_param(kw, Lexicon.IN_B+"4", EnumConvertType.VEC4, [(0, 0, 0, 0)])
+        yy = parse_param(kw, Lexicon.IN_B+"2", EnumConvertType.VEC2, (0, 0))
+        yyz = parse_param(kw, Lexicon.IN_B+"3", EnumConvertType.VEC3, (0, 0, 0))
+        yyzw = parse_param(kw, Lexicon.IN_B+"4", EnumConvertType.VEC4, (0, 0, 0, 0))
         x_str = parse_param(kw, Lexicon.STRING, EnumConvertType.STRING, "")
         params = list(zip_longest_fill(raw, r_x, r_y, r_z, r_w, typ, x, xy, xyz, xyzw, seed, y, yy, yyz, yyzw, x_str))
         results = []
@@ -976,7 +942,7 @@ The Value Node supplies raw or default values for various data types, supporting
             ret.extend(extra)
             results.append(ret)
             pbar.update_absolute(idx)
-        return list(zip(*results))
+        return *list(zip(*results)),
 
 class WaveGeneratorNode(JOVBaseNode):
     NAME = "WAVE GEN (JOV) 🌊"
