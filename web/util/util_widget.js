@@ -77,8 +77,12 @@ export function widget_hide(node, widget, suffix = '') {
     }
     widget.origType = widget.type
     widget.hidden = true
-    widget.origComputeSize = widget.computeSize
-    widget.origSerializeValue = widget.serializeValue
+    if (widget?.origComputeSize == undefined) {
+        widget.origComputeSize = widget.computeSize;
+    }
+    if (widget?.origSerializeValue == undefined) {
+        widget.origSerializeValue = widget.serializeValue;
+    }
     widget.computeSize = () => [0, -4]
     widget.type = CONVERTED_TYPE + suffix
     widget.serializeValue = () => {
@@ -91,9 +95,7 @@ export function widget_hide(node, widget, suffix = '') {
         } catch(Exception) {
 
         }
-        return widget.origSerializeValue
-            ? widget.origSerializeValue()
-            : widget.value
+        return widget.value;
     }
 
     // Hide any linked widgets, e.g. seed+seedControl

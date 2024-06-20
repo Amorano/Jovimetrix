@@ -110,11 +110,12 @@ The Akashic node processes input data and prepares it for visualization. It acce
             elif isinstance(val, bool):
                 ret = "True" if val else "False"
             elif isinstance(val, torch.Tensor):
-                if len(val.shape) > 3:
+                size = len(val.shape)
+                if size > 3:
                     b, h, w, cc = val.shape
                 else:
-                    b = 1
-                    h, w, cc = val.shape
+                    cc = 1
+                    b, h, w = val.shape
                 ret = f"{b}x{w}x{h}x{cc}"
             else:
                 val = str(val)
@@ -169,7 +170,6 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
         slice_range = parse_param(kw, Lexicon.RANGE, EnumConvertType.VEC3INT, (0, 0, 1))
         indices = parse_param(kw, Lexicon.STRING, EnumConvertType.STRING, "")
         seed = parse_param(kw, Lexicon.SEED, EnumConvertType.INT, 0)
-        # print(seed)
         count = parse_param(kw, Lexicon.COUNT, EnumConvertType.INT, 1, 1)
         flip = parse_param(kw, Lexicon.FLIP, EnumConvertType.BOOLEAN, False)
         batch_chunk = parse_param(kw, Lexicon.BATCH_CHUNK, EnumConvertType.INT, 0, 0)
@@ -195,6 +195,7 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
             else:
                 extract.append(b)
 
+        img = []
         results = []
         params = list(zip_longest_fill(mode, index, slice_range, indices, seed, flip, batch_chunk, count))
         pbar = ProgressBar(len(params))
@@ -253,12 +254,13 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
             if not output_is_image:
                 results.append([loop_extract, loop_extract, len(loop_extract)])
             else:
-                img = [torch.stack(loop_extract, dim=0)]
+                img.extend(loop_extract)
                 results.append([loop_extract, len(loop_extract)])
             pbar.update_absolute(idx)
         if not output_is_image:
-            return list(zip(*results))
-        return *img, list(zip(*results))
+            return *list(zip(*results)),
+        ret = torch.stack(img, dim=0)
+        return ret, *list(zip(*results))
 
 class ExportNode(JOVBaseNode):
     NAME = "EXPORT (JOV) 📽"
@@ -616,7 +618,9 @@ Routes the input data from the optional input ports to the output port, preservi
 
     def run(self, **kw) -> Tuple[Any, ...]:
         inout = parse_param(kw, Lexicon.ROUTE, EnumConvertType.ANY, None)
-        return [inout] + list(zip(*kw.values()))
+        kw.pop(Lexicon.ROUTE, None)
+        kw.pop('ident', None)
+        return inout, *kw.values(),
 
 class SaveOutput(JOVBaseNode):
     NAME = "SAVE OUTPUT (JOV) 💾"

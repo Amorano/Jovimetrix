@@ -10,6 +10,7 @@ import numbers
 from enum import Enum
 from typing import Any, List, Generator, Optional, Tuple
 
+import numpy as np
 import torch
 
 from loguru import logger
@@ -79,7 +80,7 @@ def parse_dynamic(data:dict, prefix:str, typ:EnumConvertType, default: Any, with
             val = parse_param(data, k, typ, default)
             #if not isinstance(val, (list,)):
             #    val = [val]
-            vals.append(val)
+            vals.extend(val)
     return vals
 
 def parse_value(val:Any, typ:EnumConvertType, default: Any,
@@ -194,6 +195,13 @@ def parse_value(val:Any, typ:EnumConvertType, default: Any,
             color = torch.tensor(color, dtype=torch.int32).tolist()
             new_val = torch.empty((512, 512, 1), dtype=torch.uint8)
             new_val[0,:,:] = color
+        else:
+            cc, h, w = new_val.shape
+            if cc > 1:
+                weights = [0.2989, 0.5870, 0.1140]
+                new_val = np.dot(new_val[..., :3], weights)
+                new_val = new_val.reshape(512, 512, 1)
+
     if typ == EnumConvertType.COORD2D:
         new_val = {'x': new_val[0], 'y': new_val[1]}
     return new_val
@@ -223,18 +231,17 @@ def parse_param(data:dict, key:str, typ:EnumConvertType, default: Any,
             logger.debug(f"[parse_param] {val}")
             val = tuple()
     elif isinstance(val, (torch.Tensor,)):
-        if (size := len(val.shape)) > 3:
+        if val.ndim > 3:
             val = [t for t in val]
         #elif size == 3:
         #    val = [t.unsqueeze(-1) for t in val]
-        elif size == 2:
+        elif val.ndim == 2:
             val = val.unsqueeze(-1)
-
     elif isinstance(val, (list, tuple, set)):
         if len(val) == 0:
             val = [None]
+        '''
         else:
-            # val = [*list(r) if isinstance(r, (list,)) else r for r in val]
             ret = []
             for x in val:
                 if isinstance(x, (list,)):
@@ -242,9 +249,9 @@ def parse_param(data:dict, key:str, typ:EnumConvertType, default: Any,
                 else:
                     ret.append(x)
             val = ret
+        '''
     elif issubclass(type(val), (Enum,)):
         val = [str(val.name)]
-
     if not isinstance(val, (list,)):
         val = [val]
     return [parse_value(v, typ, default, clip_min, clip_max, zero) for v in val]

@@ -639,10 +639,10 @@ Combines individual color channels (red, green, blue) along with an optional mas
         return Lexicon._parse(d, cls)
 
     def run(self, **kw)  -> Tuple[torch.Tensor, torch.Tensor]:
-        R = parse_param(kw, Lexicon.R, EnumConvertType.IMAGE, None)
-        G = parse_param(kw, Lexicon.G, EnumConvertType.IMAGE, None)
-        B = parse_param(kw, Lexicon.B, EnumConvertType.IMAGE, None)
-        A = parse_param(kw, Lexicon.A, EnumConvertType.IMAGE, None)
+        R = parse_param(kw, Lexicon.R, EnumConvertType.MASK, None)
+        G = parse_param(kw, Lexicon.G, EnumConvertType.MASK, None)
+        B = parse_param(kw, Lexicon.B, EnumConvertType.MASK, None)
+        A = parse_param(kw, Lexicon.A, EnumConvertType.MASK, None)
         mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.NONE.name)
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), MIN_IMAGE_SIZE)
         sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)
@@ -654,11 +654,16 @@ Combines individual color channels (red, green, blue) along with an optional mas
         images = []
         pbar = ProgressBar(len(params))
         for idx, (r, g, b, a, mode, wihi, sample, matte) in enumerate(params):
-            w, h = wihi
-            ret = [channel_solid(w, h, chan=EnumImageType.GRAYSCALE) if x is None else image_grayscale(tensor2cv(x)) for x in (b, g, r, a)]
-            h, w = ret[0].shape[:2]
-            ret = [cv2.resize(r, (w, h)) for r in ret]
-            img = channel_merge(ret)
+            mw, mh = wihi
+            for x in (b, g, r, a):
+                if x is None:
+                    continue
+                h, w = x.shape[:2]
+                mw = max(mw, w)
+                mh = max(mh, h)
+            img = [torch.zeros((mh, mw, 1)) if x is None else x for x in (b, g, r, a)]
+            img = torch.cat(img, dim=2)
+            img = tensor2cv(img)
             mode = EnumScaleMode[mode]
             if mode != EnumScaleMode.NONE:
                 w, h = wihi
@@ -666,7 +671,7 @@ Combines individual color channels (red, green, blue) along with an optional mas
                 img = image_scalefit(img, w, h, mode, sample)
             images.append(cv2tensor_full(img, matte))
             pbar.update_absolute(idx)
-        return [torch.cat(i, dim=0) for i in list(zip(*images))]
+        return [torch.stack(i, dim=0) for i in list(zip(*images))]
 
 class PixelSplitNode(JOVBaseNode):
     NAME = "PIXEL SPLIT (JOV) 💔"
@@ -692,7 +697,7 @@ Takes an input image and splits it into its individual color channels (red, gree
         images = []
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
         pbar = ProgressBar(len(pA))
-        for idx, (pA,) in enumerate([pA]):
+        for idx, pA in enumerate(pA):
             pA = tensor2cv(pA) if pA is not None else channel_solid(chan=EnumImageType.BGRA)
             pA = image_mask_add(pA)
             pA = [cv2tensor(x) for x in image_split(pA)]

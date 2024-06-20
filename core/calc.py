@@ -312,7 +312,6 @@ The Binary Operation node executes binary operations like addition, subtraction,
         results = []
         A = parse_param(kw, Lexicon.IN_A, EnumConvertType.ANY, None)
         B = parse_param(kw, Lexicon.IN_B, EnumConvertType.ANY, None)
-        print(A, '-', B)
         a_xyzw = parse_param(kw, Lexicon.IN_A+Lexicon.IN_A, EnumConvertType.VEC4, (0, 0, 0, 0))
         b_xyzw = parse_param(kw, Lexicon.IN_B+Lexicon.IN_B, EnumConvertType.VEC4, (0, 0, 0, 0))
         op = parse_param(kw, Lexicon.FUNC, EnumConvertType.STRING, EnumBinaryOperation.ADD.name)

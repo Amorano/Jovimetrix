@@ -545,7 +545,7 @@ def channel_merge(channel:List[TYPE_IMAGE]) -> TYPE_IMAGE:
     ch = [c.shape[:2] if c is not None else (0, 0) for c in channel[:3]]
     w = max([c[1] for c in ch])
     h = max([c[0] for c in ch])
-    ch = [np.zeros((h, w), dtype=np.uint8) if c is None else c for c in channel[:3]]
+    ch = [np.zeros((h, w), dtype=np.uint8) if c is None else cv2.resize(c, (h, w)) for c in channel[:3]]
     if len(channel) == 4:
         a = channel[3] if len(channel) == 4 else np.full((h, w), 255, dtype=np.uint8)
         ch.append(a)
@@ -1316,6 +1316,10 @@ def image_split(image: TYPE_IMAGE) -> Tuple[TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE, 
     else:
         r = g = b = image
         a = np.full((h, w), 255, dtype=np.uint8)
+    r = np.expand_dims(r, -1)
+    g = np.expand_dims(g, -1)
+    b = np.expand_dims(b, -1)
+    a = np.expand_dims(a, -1)
     return r, g, b, a
 
 def image_stack(image_list: List[TYPE_IMAGE], axis:EnumOrientation=EnumOrientation.HORIZONTAL,

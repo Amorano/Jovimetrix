@@ -17,7 +17,7 @@ app.registerExtension({
             return;
         }
 
-        nodeType = node_add_dynamic(nodeType, _prefix, '*', 1, true);
+        nodeType = node_add_dynamic(nodeType, _prefix, '*', 0, true);
 
         const onConnectionsChange = nodeType.prototype.onConnectionsChange
         nodeType.prototype.onConnectionsChange = function (slotType, slot_idx, event, link_info, node_slot) {
