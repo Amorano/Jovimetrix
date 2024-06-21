@@ -100,7 +100,7 @@ The Stream Reader node captures frames from various sources such as URLs, camera
                 Lexicon.ORIENT: (EnumCanvasOrientation._member_names_, {"default": EnumCanvasOrientation.NORMAL.name}),
                 Lexicon.ZOOM: ("FLOAT", {"min": 0, "max": 1, "step": 0.005, "default": 0}),
                 Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
-                Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), "min":MIN_IMAGE_SIZE,
+                Lexicon.WH: ("VEC2", {"default": (512, 512), "min":MIN_IMAGE_SIZE,
                                       "step": 1, "label": [Lexicon.W, Lexicon.H]}),
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
                 Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
@@ -132,7 +132,7 @@ The Stream Reader node captures frames from various sources such as URLs, camera
         batch_size, rate = parse_param(kw, Lexicon.BATCH, EnumConvertType.VEC2INT, (1, 30), 1)[0]
         pbar = ProgressBar(batch_size)
         rate = 1. / rate
-        width, height = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE))[0]
+        width, height = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (512, 512))[0]
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0,0,0,255), 0, 255)[0]
         mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.NONE.name)[0]
         mode = EnumScaleMode[mode]
@@ -276,7 +276,7 @@ The Stream Writer node sends frames to a specified route, typically for live str
                 Lexicon.PIXEL: (WILDCARD, {}),
                 Lexicon.ROUTE: ("STRING", {"default": "/stream"}),
                 Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
-                Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), "min":MIN_IMAGE_SIZE,
+                Lexicon.WH: ("VEC2", {"default": (512, 512), "min":MIN_IMAGE_SIZE,
                                       "step": 1, "label": [Lexicon.W, Lexicon.H]}),
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
                 Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 0), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
@@ -299,7 +299,7 @@ The Stream Writer node sends frames to a specified route, typically for live str
     def run(self, **kw) -> Tuple[torch.Tensor]:
         route = parse_param(kw, Lexicon.ROUTE, EnumConvertType.STRING, "/stream")
         images = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), MIN_IMAGE_SIZE)
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (512, 512), MIN_IMAGE_SIZE)
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0,0,0,0), 0, 255)
         mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.NONE.name)
         sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)
@@ -349,7 +349,7 @@ The Spout Writer node sends frames to a specified Spout receiver application for
                     Lexicon.ROUTE: ("STRING", {"default": "Spout Sender"}),
                     Lexicon.FPS: ("INT", {"min": 0, "max": 60, "default": 30, "tooltip": "@@@ NOT USED @@@"}),
                     Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
-                    Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), "min":MIN_IMAGE_SIZE,
+                    Lexicon.WH: ("VEC2", {"default": (512, 512), "min":MIN_IMAGE_SIZE,
                                           "step": 1, "label": [Lexicon.W, Lexicon.H]}),
                     Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
                     Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
@@ -370,7 +370,7 @@ The Spout Writer node sends frames to a specified Spout receiver application for
             host = parse_param(kw, Lexicon.ROUTE, EnumConvertType.STRING, "")
             #fps = parse_param(kw, Lexicon.FPS, EnumConvertType.INT, 30)
             mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.NONE.name)
-            wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), MIN_IMAGE_SIZE)
+            wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (512, 512), MIN_IMAGE_SIZE)
             sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)
             matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0,0,0,0), 0, 255)
             # results = []

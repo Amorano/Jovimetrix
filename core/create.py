@@ -66,7 +66,7 @@ The Constant node generates constant images or masks of a specified size and col
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
         matte = parse_param(kw, Lexicon.RGBA_A, EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), MIN_IMAGE_SIZE)
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (512, 512), MIN_IMAGE_SIZE)
         mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.NONE.name)
         sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)
         images = []
@@ -416,7 +416,7 @@ The Wave Graph node visualizes audio waveforms as bars. Adjust parameters like t
         wave = parse_param(kw, Lexicon.WAVE, EnumConvertType.ANY, None)
         bars = parse_param(kw, Lexicon.VALUE, EnumConvertType.INT, 50, 1, 8192)
         thick = parse_param(kw, Lexicon.THICK, EnumConvertType.FLOAT, 0.75, 0, 1)
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), MIN_IMAGE_SIZE)
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (512, 512), MIN_IMAGE_SIZE)
         rgb_a = parse_param(kw, Lexicon.RGBA_A, EnumConvertType.VEC4INT, (196, 0, 196), 0, 255)
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (42, 12, 42), 0, 255)
         params = list(zip_longest_fill(wave, bars, wihi, thick, rgb_a, matte))

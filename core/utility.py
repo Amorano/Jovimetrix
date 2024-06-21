@@ -377,7 +377,7 @@ The Graph node visualizes a series of data points over time. It accepts a dynami
             "optional": {
                 Lexicon.RESET: ("BOOLEAN", {"default": False}),
                 Lexicon.VALUE: ("INT", {"default": 60, "min": 0, "tooltip":"Number of values to graph and display"}),
-                Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), "min":MIN_IMAGE_SIZE,
+                Lexicon.WH: ("VEC2", {"default": (512, 512), "min":MIN_IMAGE_SIZE,
                                       "step": 1, "label": [Lexicon.W, Lexicon.H]})
             }
         })
@@ -394,7 +394,7 @@ The Graph node visualizes a series of data points over time. It accepts a dynami
 
     def run(self, ident, **kw) -> Tuple[torch.Tensor]:
         slice = parse_param(kw, Lexicon.VALUE, EnumConvertType.INT, 60)[0]
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), 1)[0]
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (512, 512), 1)[0]
         if parse_reset(ident) > 0 or parse_param(kw, Lexicon.RESET, EnumConvertType.BOOLEAN, False)[0]:
             self.__history = []
         longest_edge = 0
@@ -434,7 +434,7 @@ The Graph node visualizes a series of data points over time. It accepts a dynami
 def run(self, **kw) -> None:
     q = parse_param(kw, Lexicon.QUEUE, EnumConvertType.STRING, "")
     mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.NONE.name)
-    wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), MIN_IMAGE_SIZE)
+    wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (512, 512), MIN_IMAGE_SIZE)
     sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)
     matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
     params = list(zip_longest_fill(q, mode, wihi, sample, matte))

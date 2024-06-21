@@ -52,7 +52,7 @@ The GLSL Node executes custom GLSL (OpenGL Shading Language) fragment shaders to
                 Lexicon.BATCH: ("VEC2", {"default": (1, 30), "step": 1, "label": ["COUNT", "FPS"], "tooltip": "Number of frames wanted and the FPS"}),
                 Lexicon.WAIT: ("BOOLEAN", {"default": False}),
                 Lexicon.RESET: ("BOOLEAN", {"default": False}),
-                Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), "min":MIN_IMAGE_SIZE, "step": 1,}),
+                Lexicon.WH: ("VEC2", {"default": (512, 512), "min":MIN_IMAGE_SIZE, "step": 1,}),
                 Lexicon.FRAGMENT: ("STRING", {"multiline": True, "default": DEFAULT_FRAGMENT, "dynamicPrompts": False}),
                 Lexicon.PARAM: ("STRING", {"default": {}})
             }
@@ -74,7 +74,7 @@ The GLSL Node executes custom GLSL (OpenGL Shading Language) fragment shaders to
         batch = parse_param(kw, Lexicon.BATCH, EnumConvertType.VEC2INT, (1, 30), 1)
         fragment = parse_param(kw, Lexicon.FRAGMENT, EnumConvertType.STRING, DEFAULT_FRAGMENT)
         param = parse_param(kw, Lexicon.PARAM, EnumConvertType.DICT, {})
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), MIN_IMAGE_SIZE)
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (512, 512), MIN_IMAGE_SIZE)
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
         hold = parse_param(kw, Lexicon.WAIT, EnumConvertType.BOOLEAN, False)
         reset = parse_param(kw, Lexicon.RESET, EnumConvertType.BOOLEAN, False)

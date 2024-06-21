@@ -227,7 +227,7 @@ Combines two input images using various blending modes, such as normal, screen, 
                 Lexicon.FLIP: ("BOOLEAN", {"default": False}),
                 Lexicon.INVERT: ("BOOLEAN", {"default": False, "tooltip": "Invert the mask input"}),
                 Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
-                Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), "min":MIN_IMAGE_SIZE,
+                Lexicon.WH: ("VEC2", {"default": (512, 512), "min":MIN_IMAGE_SIZE,
                                       "step": 1, "label": [Lexicon.W, Lexicon.H]}),
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
                 Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
@@ -243,7 +243,7 @@ Combines two input images using various blending modes, such as normal, screen, 
         alpha = parse_param(kw, Lexicon.A, EnumConvertType.FLOAT, 1, 0, 1)
         flip = parse_param(kw, Lexicon.FLIP, EnumConvertType.BOOLEAN, False)
         mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.NONE.name)
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), MIN_IMAGE_SIZE)
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (512, 512), MIN_IMAGE_SIZE)
         sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC3INT, (0, 0, 0), 0, 255)
         invert = parse_param(kw, Lexicon.INVERT, EnumConvertType.BOOLEAN, False)
@@ -478,11 +478,11 @@ Extract a portion of an input image or resize it. It supports various cropping m
             "optional": {
                 Lexicon.PIXEL: (WILDCARD, {}),
                 Lexicon.FUNC: (EnumCropMode._member_names_, {"default": EnumCropMode.CENTER.name}),
-                Lexicon.XY: ("VEC2", {"default": (0, 0), "label": [Lexicon.X, Lexicon.Y]}),
-                Lexicon.WH: ("VEC2", {"default": (512, 512), "step": 1, "label": [Lexicon.W, Lexicon.H]}),
-                Lexicon.TLTR: ("VEC4", {"default": (0, 0, 0, 1), "step": 0.01, "precision": 5, "round": 0.000001, "label": [Lexicon.TOP, Lexicon.LEFT, Lexicon.TOP, Lexicon.RIGHT]}),
-                Lexicon.BLBR: ("VEC4", {"default": (1, 0, 1, 1), "step": 0.01, "precision": 5, "round": 0.000001, "label": [Lexicon.BOTTOM, Lexicon.LEFT, Lexicon.BOTTOM, Lexicon.RIGHT]}),
-                Lexicon.RGB: ("VEC3", {"default": (0, 0, 0),  "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B], "rgb": True})
+                Lexicon.XY: ("VEC2", {"default": (0, 0), "min": 0.5, "max": 0.5, "label": [Lexicon.X, Lexicon.Y]}),
+                Lexicon.WH: ("VEC2", {"default": (512, 512), "step": 1, "min": MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
+                Lexicon.TLTR: ("VEC4", {"default": (0, 0, 0, 1), "min": 0, "max": 1, "step": 0.01, "precision": 5, "round": 0.000001, "label": [Lexicon.TOP, Lexicon.LEFT, Lexicon.TOP, Lexicon.RIGHT]}),
+                Lexicon.BLBR: ("VEC4", {"default": (1, 0, 1, 1), "min": 0, "max": 1, "step": 0.01, "precision": 5, "round": 0.000001, "label": [Lexicon.BOTTOM, Lexicon.LEFT, Lexicon.BOTTOM, Lexicon.RIGHT]}),
+                Lexicon.RGB: ("VEC3", {"default": (0, 0, 0), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B], "rgb": True})
             }
         })
         return Lexicon._parse(d, cls)
@@ -492,7 +492,7 @@ Extract a portion of an input image or resize it. It supports various cropping m
         func = parse_param(kw, Lexicon.FUNC, EnumConvertType.STRING, EnumCropMode.CENTER.name)
         # if less than 1 then use as scalar, over 1 = int(size)
         xy = parse_param(kw, Lexicon.XY, EnumConvertType.VEC2, (0, 0,), 1)
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), MIN_IMAGE_SIZE)
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (512, 512), MIN_IMAGE_SIZE)
         tltr = parse_param(kw, Lexicon.TLTR, EnumConvertType.VEC4, (0, 0, 0, 1,), 0, 1)
         blbr = parse_param(kw, Lexicon.BLBR, EnumConvertType.VEC4, (1, 0, 1, 1,), 0, 1)
         color = parse_param(kw, Lexicon.RGB, EnumConvertType.VEC3INT, (0, 0, 0,), 0, 255)
@@ -577,7 +577,10 @@ Combine multiple input images into a single image by summing their pixel values.
         d = super().INPUT_TYPES()
         d.update({
             "optional": {
+
                 Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
+                Lexicon.WH: ("VEC2", {"default": (512, 512), "min":MIN_IMAGE_SIZE,
+                                      "step": 1, "label": [Lexicon.W, Lexicon.H]}),
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
                 Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
             }
@@ -592,22 +595,23 @@ Combine multiple input images into a single image by summing their pixel values.
             return ()
         pA = [image_convert(tensor2cv(img), 4) for img in pA]
         mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.NONE.name)
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (512, 512), MIN_IMAGE_SIZE)
         sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
         images = []
-        params = list(zip_longest_fill(mode, sample, matte))
+        params = list(zip_longest_fill(mode, sample, wihi, matte))
         pbar = ProgressBar(len(params))
-        for idx, (mode, sample, matte) in enumerate(params):
-            current = pA[0]
-            h, w = pA[0].shape[:2]
+        for idx, (mode, sample, wihi, matte) in enumerate(params):
             mode = EnumScaleMode[mode]
-            if len(pA) > 1:
-                for x in pA[1:]:
-                    if mode != EnumScaleMode.NONE:
-                        x = image_scalefit(x, w, h, mode, sample)
-                    x = image_scalefit(x, w, h, EnumScaleMode.CROP, sample)
-                    #@TODO: ADD VARIOUS COMP OPS?
-                    current = cv2.add(current, x)
+            h, w = pA[0].shape[:2] if mode == EnumScaleMode.NONE else wihi[::-1]
+            current = np.full((w, h, 4), (0,0,0,0), dtype=np.uint8)
+            for x in pA:
+                if mode != EnumScaleMode.NONE:
+                    x = image_scalefit(x, w, h, mode, sample)
+                x = image_scalefit(x, w, h, EnumScaleMode.CROP, sample)
+                x = image_convert(x, 4)
+                #@TODO: ADD VARIOUS COMP OPS?
+                current = cv2.add(current, x)
             images.append(cv2tensor_full(current, matte))
             pbar.update_absolute(idx)
         return [torch.cat(i, dim=0) for i in list(zip(*images))]
@@ -632,7 +636,7 @@ Combines individual color channels (red, green, blue) along with an optional mas
                 Lexicon.B: (WILDCARD, {}),
                 Lexicon.A: (WILDCARD, {}),
                 Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
-                Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), "min":MIN_IMAGE_SIZE,
+                Lexicon.WH: ("VEC2", {"default": (512, 512), "min":MIN_IMAGE_SIZE,
                                       "step": 1, "label": [Lexicon.W, Lexicon.H]}),
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
                 Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
@@ -646,7 +650,7 @@ Combines individual color channels (red, green, blue) along with an optional mas
         B = parse_param(kw, Lexicon.B, EnumConvertType.MASK, None)
         A = parse_param(kw, Lexicon.A, EnumConvertType.MASK, None)
         mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.NONE.name)
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), MIN_IMAGE_SIZE)
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (512, 512), MIN_IMAGE_SIZE)
         sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC3INT, (0, 0, 0), 0, 255)
         if len(R)+len(B)+len(G)+len(A) == 0:
@@ -664,8 +668,7 @@ Combines individual color channels (red, green, blue) along with an optional mas
                 mw = max(mw, w)
                 mh = max(mh, h)
             img = [torch.zeros((mh, mw, 1)) if x is None else x for x in (b, g, r, a)]
-            img = torch.cat(img, dim=2)
-            img = tensor2cv(img)
+            img = torch.cat(img, dim=2).numpy()
             mode = EnumScaleMode[mode]
             if mode != EnumScaleMode.NONE:
                 w, h = wihi
@@ -674,6 +677,7 @@ Combines individual color channels (red, green, blue) along with an optional mas
             images.append(cv2tensor_full(img, matte))
             pbar.update_absolute(idx)
         return [torch.stack(i, dim=0) for i in list(zip(*images))]
+        #return list(zip(*images))
 
 class PixelSplitNode(JOVBaseNode):
     NAME = "PIXEL SPLIT (JOV) 💔"
@@ -810,7 +814,7 @@ Merge multiple input images into a single composite image by stacking them along
                 Lexicon.STEP: ("INT", {"min": 1, "step": 1, "default": 1,
                                        "tooltip":"Specify the spacing between each stacked image. This determines how far apart the images are from each other"}),
                 Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
-                Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), "min":MIN_IMAGE_SIZE,
+                Lexicon.WH: ("VEC2", {"default": (512, 512), "min":MIN_IMAGE_SIZE,
                                       "step": 1, "label": [Lexicon.W, Lexicon.H]}),
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
                 Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
@@ -826,7 +830,7 @@ Merge multiple input images into a single composite image by stacking them along
         axis = parse_param(kw, Lexicon.AXIS, EnumConvertType.STRING, EnumOrientation.GRID.name)[0]
         stride = parse_param(kw, Lexicon.STEP, EnumConvertType.INT, 1, 1)[0]
         mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.NONE.name)[0]
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), MIN_IMAGE_SIZE)[0]
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (512, 512), MIN_IMAGE_SIZE)[0]
         sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)[0]
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)[0]
         images = [tensor2cv(img) for img in images]
@@ -912,7 +916,7 @@ Applies various geometric transformations to images, including translation, rota
                 Lexicon.BLBR: ("VEC4", {"default": (0, 1, 1, 1), "step": 0.005, "precision": 4, "label": [Lexicon.BOTTOM, Lexicon.LEFT, Lexicon.BOTTOM, Lexicon.RIGHT]}),
                 Lexicon.STRENGTH: ("FLOAT", {"default": 1, "min": 0, "precision": 4, "step": 0.005}),
                 Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
-                Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), "min":MIN_IMAGE_SIZE,
+                Lexicon.WH: ("VEC2", {"default": (512, 512), "min":MIN_IMAGE_SIZE,
                                       "step": 1, "label": [Lexicon.W, Lexicon.H]}),
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
                 Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
@@ -934,7 +938,7 @@ Applies various geometric transformations to images, including translation, rota
         blbr = parse_param(kw, Lexicon.BLBR, EnumConvertType.VEC4, (0, 1, 1, 1), 0, 1)
         strength = parse_param(kw, Lexicon.STRENGTH, EnumConvertType.FLOAT, 1, 0, 1)
         mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.NONE.name)
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), MIN_IMAGE_SIZE)
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (512, 512), MIN_IMAGE_SIZE)
         sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
         params = list(zip_longest_fill(pA, offset, angle, size, edge, tile_xy, mirror, mirror_pivot, proj, strength, tltr, blbr, mode, wihi, sample, matte))

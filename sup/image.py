@@ -351,7 +351,7 @@ def cv2tensor(image: TYPE_IMAGE, mask:bool=False) -> torch.Tensor:
     if (cc := len(image.shape)) > 2 or mask:
         if cc > 2 and (mask or image.shape[2] == 1):
             image = image[:,:,0][:,:]
-    return torch.from_numpy(image.astype(np.float32) / 255.0).unsqueeze(0)
+    return torch.from_numpy(image.astype(np.float32) / 255.0) #.unsqueeze(0)
 
 def cv2tensor_full(image: TYPE_IMAGE, matte:TYPE_PIXEL=0) -> Tuple[torch.Tensor, ...]:
     mask = image_mask(image)

@@ -19,19 +19,22 @@ app.registerExtension({
 
         const onNodeCreated = nodeType.prototype.onNodeCreated
         nodeType.prototype.onNodeCreated = function () {
-            const me = onNodeCreated?.apply(this)
+            const me = onNodeCreated?.apply(this);
             const self = this;
             const xy = this.widgets.find(w => w.name === '🇽🇾');
             const wh = this.widgets.find(w => w.name === '🇼🇭');
             const tltr = this.widgets.find(w => w.name === 'TL-TR');
             const blbr = this.widgets.find(w => w.name === 'BL-BR');
             const op = this.widgets.find(w => w.name === '⚒️');
+            console.info(xy)
+            console.info(wh)
+            console.info(tltr)
+            console.info(blbr)
             op.callback = () => {
                 widget_hide(self, xy);
                 widget_hide(self, wh);
                 widget_hide(self, tltr);
                 widget_hide(self, blbr);
-
                 if (op.value == 'XY') {
                     widget_show(xy);
                     widget_show(wh);

@@ -274,6 +274,11 @@ def vector_swap(pA: Any, pB: Any, swap_x: EnumSwizzle, x:float, swap_y:EnumSwizz
         parse(pA, pB, swap_w, w)
     ]
 
+def parse_images(images:List[torch.Tensor]) -> List[torch.Tensor]:
+    if len(images) < 2:
+        return list(zip(*images))
+    return [torch.stack(i, dim=0) for i in zip(*images)]
+
 def update_nested_dict(d, path, value) -> None:
     keys = path.split('.')
     current = d
