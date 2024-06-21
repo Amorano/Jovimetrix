@@ -40,7 +40,7 @@ export const VectorWidget = (app, inputName, options, initial, desc='') => {
     let picker;
 
     widget.draw = function(ctx, node, width, Y, height) {
-        if ((!this.type.startsWith("VEC") && this.type != "COORD2D") && app.canvas.ds.scale > 0.5) return;
+        if ((app.canvas.ds.scale < 0.50) || (!this.type.startsWith("VEC") && this.type != "COORD2D")) return;
         const precision = widget.options?.precision !== undefined ? widget.options.precision : 0;
         ctx.save()
         ctx.beginPath()

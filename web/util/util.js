@@ -47,11 +47,13 @@ export function node_mouse_pos(app, node) {
 }
 
 export function fitHeight(node, skipSize=false) {
+    const { size } = node;
     node.onResize?.(node.size);
     if (!skipSize) {
-        node.setSize([node.size[0], node.computeSize([node.size[0], node.size[1]])[1]]);
+        const newHeight = node.computeSize([size[0], size[1]])[1];
+        node.setSize([size[0], newHeight]);
     }
-    node?.graph?.setDirtyCanvas(true, true);
+    node.graph?.setDirtyCanvas(true, true);
 }
 
 /**

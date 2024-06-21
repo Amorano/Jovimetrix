@@ -72,26 +72,28 @@ export function widget_remove_all(node) {
 }
 
 export function widget_hide(node, widget, suffix = '') {
-    if (widget.hidden || widget.type == CONVERTED_TYPE + suffix) {
-        return
+    if (widget.hidden || widget.type?.startsWith(CONVERTED_TYPE + suffix)) {
+        return;
     }
     widget.origType = widget.type
     widget.hidden = true;
     widget.origComputeSize = widget.computeSize;
-    widget.origSerializeValue = widget.serializeValue;
-    widget.computeSize = () => [0, -4]
-    widget.type = CONVERTED_TYPE + suffix
+    if (widget.serializeValue) {
+        widget.origSerializeValue = widget.serializeValue;
+    }
+    widget.computeSize = () => [0, -4];
+    widget.type = CONVERTED_TYPE + suffix;
     widget.serializeValue = () => {
-        // Prevent serializing the widget if we have no input linked
-        try {
-            const { link } = node.inputs.find((i) => i.widget?.name === widget.name);
-            if (link == null || link == undefined) {
-                return undefined;
-            }
-        } catch(Exception) {
+		// Prevent serializing the widget if we have no input linked
+		if (!node.inputs) {
+			return undefined;
+		}
+		let node_input = node.inputs.find((i) => i.widget?.name === widget.name);
 
-        }
-        return widget.value;
+		if (!node_input || !node_input.link) {
+			return undefined;
+		}
+		return widget.origSerializeValue ? widget.origSerializeValue() : widget.value;
     }
 
     // Hide any linked widgets, e.g. seed+seedControl
