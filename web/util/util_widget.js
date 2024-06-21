@@ -76,21 +76,17 @@ export function widget_hide(node, widget, suffix = '') {
         return
     }
     widget.origType = widget.type
-    widget.hidden = true
-    if (widget?.origComputeSize == undefined) {
-        widget.origComputeSize = widget.computeSize;
-    }
-    if (widget?.origSerializeValue == undefined) {
-        widget.origSerializeValue = widget.serializeValue;
-    }
+    widget.hidden = true;
+    widget.origComputeSize = widget.computeSize;
+    widget.origSerializeValue = widget.serializeValue;
     widget.computeSize = () => [0, -4]
     widget.type = CONVERTED_TYPE + suffix
     widget.serializeValue = () => {
         // Prevent serializing the widget if we have no input linked
         try {
-            const { link } = node.inputs.find((i) => i.widget?.name === widget.name)
+            const { link } = node.inputs.find((i) => i.widget?.name === widget.name);
             if (link == null || link == undefined) {
-                return undefined
+                return undefined;
             }
         } catch(Exception) {
 
@@ -101,7 +97,7 @@ export function widget_hide(node, widget, suffix = '') {
     // Hide any linked widgets, e.g. seed+seedControl
     if (widget.linkedWidgets) {
         for (const w of widget.linkedWidgets) {
-            widget_hide(node, w, ':' + widget.name)
+            widget_hide(node, w, ':' + widget.name);
         }
     }
 }
@@ -114,8 +110,10 @@ export function widget_show(widget) {
     if (widget?.origComputeSize) {
         widget.computeSize = widget.origComputeSize;
         delete widget.origComputeSize;
+    } else {
+        widget.computeSize = (target_width) => [target_width, 20];
     }
-    //widget.computeSize = (target_width) => [target_width, 20];
+
     if (widget?.origSerializeValue) {
         widget.serializeValue = widget.origSerializeValue;
         delete widget.origSerializeValue;
@@ -164,9 +162,7 @@ export function show_vector(widget, values={}, type=undefined, precision=6) {
         }
         widget.value = {};
         for (let i = 0; i < size; i++) {
-            console.info(widget.type.endsWith('INT'))
             widget.value[i] = widget.type.endsWith('INT') ? Math.round(values[i]) : Number(values[i]);
-            //widget.value[i] = values[i] !== undefined ? k : 0;
         }
     }
 }

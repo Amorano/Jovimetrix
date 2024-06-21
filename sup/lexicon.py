@@ -11,6 +11,9 @@ import textwrap
 from typing import Any, Dict, List, Tuple
 from loguru import logger
 
+# maximum items to show in help for combo list items
+JOV_LIST_MAX = 25
+
 class LexiconMeta(type):
     def __new__(cls, name, bases, dct) -> object:
         _tooltips = {}
@@ -96,6 +99,7 @@ class Lexicon(metaclass=LexiconMeta):
     FIXED = 'FIXED', "Fixed"
     FLIP = '🙃', "Flip Input A and Input B with each other"
     FLOAT = '🛟', "Float"
+    FOCAL = '📽️', "Focal Length"
     FOLDER = '📁', "Folder"
     FONT = 'FONT', "Available System Fonts"
     FONT_SIZE = 'SIZE', "Text Size"
@@ -322,10 +326,11 @@ def get_node_info(node_info: Dict[str, Any]) -> Dict[str, Any]:
                     meta = v0[1]
                     if lst is not None:
                         if (choice_list := meta.get('choice', None)) is None:
-                            input_parameters[k][k0]["choice"] = [x.replace('_', ' ') for x in lst[0]]
+                            data = [x.replace('_', ' ') for x in lst[0]][:JOV_LIST_MAX]
+                            input_parameters[k][k0]["choice"] = data
                             meta.update(lst[1])
                         else:
-                            input_parameters[k][k0]["choice"] = [choice_list]
+                            input_parameters[k][k0]["choice"] = [choice_list][:JOV_LIST_MAX]
                             meta['default'] = 'dynamic'
                     elif (default_top := meta.get('default_top', None)) is not None:
                         meta['default'] = default_top

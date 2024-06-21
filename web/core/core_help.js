@@ -273,10 +273,10 @@ app.registerExtension({
                         text = text.slice(0, TOOLTIP_LENGTH).toUpperCase();
                         const size = text.length;
                         let wrap = 50;
-                        if (size > 45) {
-                            wrap = 50;
-                        } else if (size > 80) {
-                            wrap = 52;
+                        if (size > 65) {
+                            wrap = 60;
+                        } else if (size > 90) {
+                            wrap = 80;
                         }
                         var lines = wrapText(text, wrap).slice(0, 3);
                         ctx.font = FONT_SIZE - lines.length / 2 + "px sans-serif";

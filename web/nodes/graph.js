@@ -55,7 +55,6 @@ app.registerExtension({
                 if (link && isInteger && nameParts[1].substring(0, _prefix.length) === _prefix) {
                 //if(link && this.inputs[i].name.substring(0, _prefix.length) === _prefix) {
                     link.type = `JOV_VG_${count}`;
-                    console.info(count)
                     this.inputs[i].color_on = LGraphCanvas.link_type_colors[link.type];
                     count += 1;
                 }

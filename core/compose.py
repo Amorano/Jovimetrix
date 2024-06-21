@@ -76,11 +76,11 @@ Enhance and modify images with various effects using the Adjust Node. Apply effe
                 Lexicon.RADIUS: ("INT", {"default": 3, "min": 3, "step": 1}),
                 Lexicon.VALUE: ("FLOAT", {"default": 1, "min": 0, "step": 0.1}),
                 Lexicon.LOHI: ("VEC2", {"default": (0, 1), "step": 0.01, "precision": 4,
-                                        "round": 0.00001, "label": [Lexicon.LO, Lexicon.HI]}),
+                                        "min": 0, "max": 1, "round": 0.00001, "label": [Lexicon.LO, Lexicon.HI]}),
                 Lexicon.LMH: ("VEC3", {"default": (0, 0.5, 1), "step": 0.01, "precision": 4,
-                                        "round": 0.00001, "label": [Lexicon.LO, Lexicon.MID, Lexicon.HI]}),
+                                        "min": 0, "max": 1, "round": 0.00001, "label": [Lexicon.LO, Lexicon.MID, Lexicon.HI]}),
                 Lexicon.HSV: ("VEC3",{"default": (0, 1, 1), "step": 0.01, "precision": 4,
-                                        "round": 0.00001, "label": [Lexicon.H, Lexicon.S, Lexicon.V]}),
+                                      "min": 0, "max": 1, "round": 0.00001, "label": [Lexicon.H, Lexicon.S, Lexicon.V]}),
                 Lexicon.CONTRAST: ("FLOAT", {"default": 0, "min": 0, "max": 1, "step": 0.01,
                                                 "precision": 4, "round": 0.00001}),
                 Lexicon.GAMMA: ("FLOAT", {"default": 1, "min": 0.00001, "max": 1, "step": 0.01,
@@ -92,7 +92,7 @@ Enhance and modify images with various effects using the Adjust Node. Apply effe
         })
         return Lexicon._parse(d, cls)
 
-    def run(self, **kw)  -> Tuple[torch.Tensor, torch.Tensor]:
+    def run(self, **kw)  -> Tuple[torch.Tensor, ...]:
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
         mask = parse_param(kw, Lexicon.MASK, EnumConvertType.IMAGE, None)
         op = parse_param(kw, Lexicon.FUNC, EnumConvertType.STRING, EnumAdjustOP.BLUR.name)
@@ -227,7 +227,8 @@ Combines two input images using various blending modes, such as normal, screen, 
                 Lexicon.FLIP: ("BOOLEAN", {"default": False}),
                 Lexicon.INVERT: ("BOOLEAN", {"default": False, "tooltip": "Invert the mask input"}),
                 Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
-                Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), "step": 1, "label": [Lexicon.W, Lexicon.H]}),
+                Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), "min":MIN_IMAGE_SIZE,
+                                      "step": 1, "label": [Lexicon.W, Lexicon.H]}),
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
                 Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
             }
@@ -631,7 +632,8 @@ Combines individual color channels (red, green, blue) along with an optional mas
                 Lexicon.B: (WILDCARD, {}),
                 Lexicon.A: (WILDCARD, {}),
                 Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
-                Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), "step": 1, "label": [Lexicon.W, Lexicon.H]}),
+                Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), "min":MIN_IMAGE_SIZE,
+                                      "step": 1, "label": [Lexicon.W, Lexicon.H]}),
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
                 Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
             }
@@ -803,10 +805,13 @@ Merge multiple input images into a single composite image by stacking them along
         d = super().INPUT_TYPES()
         d.update({
             "optional": {
-                Lexicon.AXIS: (EnumOrientation._member_names_, {"default": EnumOrientation.GRID.name, "tooltip":"Choose the direction in which to stack the images. Options include horizontal, vertical, or a grid layout"}),
-                Lexicon.STEP: ("INT", {"min": 1, "step": 1, "default": 1, "tooltip":"Specify the spacing between each stacked image. This determines how far apart the images are from each other"}),
+                Lexicon.AXIS: (EnumOrientation._member_names_, {"default": EnumOrientation.GRID.name,
+                                                                "tooltip":"Choose the direction in which to stack the images. Options include horizontal, vertical, or a grid layout"}),
+                Lexicon.STEP: ("INT", {"min": 1, "step": 1, "default": 1,
+                                       "tooltip":"Specify the spacing between each stacked image. This determines how far apart the images are from each other"}),
                 Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
-                Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), "step": 1, "label": [Lexicon.W, Lexicon.H]}),
+                Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), "min":MIN_IMAGE_SIZE,
+                                      "step": 1, "label": [Lexicon.W, Lexicon.H]}),
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
                 Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
             }
@@ -907,7 +912,8 @@ Applies various geometric transformations to images, including translation, rota
                 Lexicon.BLBR: ("VEC4", {"default": (0, 1, 1, 1), "step": 0.005, "precision": 4, "label": [Lexicon.BOTTOM, Lexicon.LEFT, Lexicon.BOTTOM, Lexicon.RIGHT]}),
                 Lexicon.STRENGTH: ("FLOAT", {"default": 1, "min": 0, "precision": 4, "step": 0.005}),
                 Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
-                Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), "step": 1, "label": [Lexicon.W, Lexicon.H]}),
+                Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), "min":MIN_IMAGE_SIZE,
+                                      "step": 1, "label": [Lexicon.W, Lexicon.H]}),
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
                 Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
             }

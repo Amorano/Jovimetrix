@@ -23,7 +23,6 @@ app.registerExtension({
         const onComputeSize = nodeType.prototype.computeSize;
         nodeType.computeSize = () => {
             const size = onComputeSize?.apply(this);
-            // console.info(size);
             return [0, 4];
         }
 

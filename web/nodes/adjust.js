@@ -20,7 +20,6 @@ app.registerExtension({
         const onNodeCreated = nodeType.prototype.onNodeCreated;
         nodeType.prototype.onNodeCreated = async function () {
             const me = onNodeCreated?.apply(this);
-            const self = this;
             const radius = this.widgets.find(w => w.name === '🅡');
             const amount = this.widgets.find(w => w.name === 'VAL');
             const lohi = this.widgets.find(w => w.name === 'LoHi');
@@ -54,7 +53,7 @@ app.registerExtension({
                     widget_show(radius);
                     widget_show(amount);
                 }
-                fitHeight(self);
+                fitHeight(this);
             };
             setTimeout(() => { op.callback(); }, 10);
             return me;

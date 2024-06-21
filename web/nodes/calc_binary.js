@@ -28,18 +28,17 @@ app.registerExtension({
             let bool_y = {0:false}
             let track_xyzw = {0:0, 1:0, 2:0, 3:0};
             let track_yyzw = {0:0, 1:0, 2:0, 3:0};
-            const combo = this.widgets.find(w => w.name === '❓');
-            combo.callback = () => {
-                const data_x = (combo.value === "BOOLEAN") ? bool_x : track_xyzw;
-                const data_y = (combo.value === "BOOLEAN") ? bool_y : track_yyzw;
-                show_vector(widget_x4, data_x, combo.value);
-                show_vector(widget_y4, data_y, combo.value);
-                this.outputs[0].name = widget_type_name(combo.value);
+            const widget_combo = this.widgets.find(w => w.name === '❓');
+            widget_combo.callback = () => {
+                const data_x = (widget_combo.value === "BOOLEAN") ? bool_x : track_xyzw;
+                const data_y = (widget_combo.value === "BOOLEAN") ? bool_y : track_yyzw;
+                show_vector(widget_x4, data_x, widget_combo.value);
+                show_vector(widget_y4, data_y, widget_combo.value);
+                this.outputs[0].name = widget_type_name(widget_combo.value);
                 fitHeight(this);
             }
 
             widget_x4.callback = () => {
-                console.info('callback')
                 if (widget_x4.type === "toggle") {
                     bool_x[0] = widget_x4.value;
                 } else {
@@ -58,16 +57,15 @@ app.registerExtension({
                     });
                 }
             }
-            setTimeout(() => { combo.callback(); }, 10);
+            setTimeout(() => { widget_combo.callback(); }, 10);
             return me;
         }
 
         const onConnectionsChange = nodeType.prototype.onConnectionsChange
         nodeType.prototype.onConnectionsChange = function (slotType, slot, event, link_info, data) {
             if (slotType === TypeSlot.Input) {
-                const combo = this.widgets.find(w => w.name === '❓');
-                setTimeout(() => { combo.callback(); }, 10);
-
+                const widget_combo = this.widgets.find(w => w.name === '❓');
+                setTimeout(() => { widget_combo.callback(); }, 10);
             }
             return onConnectionsChange?.apply(this, arguments);
         }

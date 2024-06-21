@@ -568,30 +568,20 @@ The Lerp Node calculates linear interpolation between two values or vectors base
             "optional": {
                 Lexicon.IN_A: (WILDCARD, {"tooltip": "Custom Start Point"}),
                 Lexicon.IN_B: (WILDCARD, {"tooltip": "Custom End Point"}),
-                Lexicon.FLOAT: ("FLOAT", {"default": 0., "min": 0., "max": 1.0, "step": 0.001, "precision": 4, "round": 0.00001, "tooltip": "Blend Amount. 0 = full A, 1 = full B"}),
+                Lexicon.FLOAT: ("FLOAT", {"default": 0., "min": 0., "max": 1.0,
+                                          "step": 0.001, "precision": 4, "round": 0.00001,
+                                          "tooltip": "Blend Amount. 0 = full A, 1 = full B"}),
                 Lexicon.EASE: (["NONE"] + EnumEase._member_names_, {"default": "NONE"}),
                 Lexicon.TYPE: (names_convert, {"default": names_convert[2],
                                             "tooltip":"Output type desired from resultant operation"}),
-                Lexicon.X: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "tooltip":"Single value input"}),
-                Lexicon.IN_A+"2": ("VEC2", {"default": (0,0),
+                Lexicon.IN_A+Lexicon.IN_A: ("VEC4", {"default": (0, 0, 0, 0),
+                                        #"min": -sys.maxsize, "max": sys.maxsize,
                                         "label": [Lexicon.X, Lexicon.Y],
-                                        "tooltip":"2-value vector"}),
-                Lexicon.IN_A+"3": ("VEC3", {"default": (0,0,0),
-                                        "label": [Lexicon.X, Lexicon.Y, Lexicon.Z],
-                                        "tooltip":"3-value vector"}),
-                Lexicon.IN_A+"4": ("VEC4", {"default": (0,0,0,0),
+                                        "tooltip":"default value vector for A"}),
+                Lexicon.IN_B+Lexicon.IN_B: ("VEC4", {"default": (0,0,0,0),
+                                        #"min": -sys.maxsize, "max": sys.maxsize,
                                         "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W],
-                                        "tooltip":"4-value vector"}),
-                Lexicon.Y: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "tooltip":"Single value input"}),
-                Lexicon.IN_B+"2": ("VEC2", {"default": (0,0),
-                                        "label": [Lexicon.X, Lexicon.Y],
-                                        "tooltip":"2-value vector"}),
-                Lexicon.IN_B+"3": ("VEC3", {"default": (0,0,0),
-                                        "label": [Lexicon.X, Lexicon.Y, Lexicon.Z],
-                                        "tooltip":"3-value vector"}),
-                Lexicon.IN_B+"4": ("VEC4", {"default": (0,0,0,0),
-                                        "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W],
-                                        "tooltip":"4-value vector"}),
+                                        "tooltip":"default value vector for B"}),
             }
         })
         return Lexicon._parse(d, cls)
@@ -599,24 +589,17 @@ The Lerp Node calculates linear interpolation between two values or vectors base
     def run(self, **kw) -> Tuple[Any, Any]:
         A = parse_param(kw, Lexicon.IN_A, EnumConvertType.ANY, (0,0,0,0), 0, 1)
         B = parse_param(kw, Lexicon.IN_B, EnumConvertType.ANY, (1,1,1,1), 0, 1)
-        a_x = parse_param(kw, Lexicon.X, EnumConvertType.FLOAT, 0)
-        a_xy = parse_param(kw, Lexicon.IN_A+"2", EnumConvertType.VEC2, (0, 0))
-        a_xyz = parse_param(kw, Lexicon.IN_A+"3", EnumConvertType.VEC3, (0, 0, 0))
-        a_xyzw = parse_param(kw, Lexicon.IN_A+"4", EnumConvertType.VEC4, (0, 0, 0, 0))
-        b_x = parse_param(kw, Lexicon.Y, EnumConvertType.FLOAT, 0)
-        b_xy = parse_param(kw, Lexicon.IN_B+"2", EnumConvertType.VEC2, (0, 0))
-        b_xyz = parse_param(kw, Lexicon.IN_B+"3", EnumConvertType.VEC3, (0, 0, 0))
-        b_xyzw = parse_param(kw, Lexicon.IN_B+"4", EnumConvertType.VEC4, (0, 0, 0, 0))
+        a_xyzw = parse_param(kw, Lexicon.IN_A+Lexicon.IN_A, EnumConvertType.VEC4, (0, 0, 0, 0))
+        b_xyzw = parse_param(kw, Lexicon.IN_B+Lexicon.IN_B, EnumConvertType.VEC4, (0, 0, 0, 0))
         alpha = parse_param(kw, Lexicon.FLOAT,EnumConvertType.FLOAT, 0, 0, 1)
         op = parse_param(kw, Lexicon.EASE, EnumConvertType.STRING, "NONE")
         typ = parse_param(kw, Lexicon.TYPE, EnumConvertType.STRING, EnumNumberType.FLOAT.name)
         values = []
-        params = list(zip_longest_fill(A, B, a_x, a_xy, a_xyz, a_xyzw, b_x, b_xy, b_xyz, b_xyzw, alpha, op, typ))
+        params = list(zip_longest_fill(A, B, a_xyzw, b_xyzw, alpha, op, typ))
         pbar = ProgressBar(len(params))
-        for idx, (A, B, a_x, a_xy, a_xyz, a_xyzw, b_x, b_xy, b_xyz, b_xyzw, alpha, op, typ) in enumerate(params):
+        for idx, (A, B, a_xyzw, b_xyzw, alpha, op, typ) in enumerate(params):
             # make sure we only interpolate between the longest "stride" we can
             size = min(3, max(0 if not isinstance(A, (list,)) else len(A), 0 if not isinstance(B, (list,)) else len(B)))
-
             best_type = [EnumConvertType.FLOAT, EnumConvertType.VEC2, EnumConvertType.VEC3, EnumConvertType.VEC4][size]
             A = parse_value(A, best_type, A)
             B = parse_value(B, best_type, B)
@@ -626,19 +609,8 @@ The Lerp Node calculates linear interpolation between two values or vectors base
                 B = [B]
 
             typ = EnumConvertType[typ]
-            if typ in [EnumConvertType.VEC2, EnumConvertType.VEC2INT]:
-                val_a = parse_value(A, EnumConvertType.VEC4, A if A is not None else a_xy)
-                val_b = parse_value(B, EnumConvertType.VEC4, B if B is not None else b_xy)
-            elif typ in [EnumConvertType.VEC3, EnumConvertType.VEC3INT]:
-                val_a = parse_value(A, EnumConvertType.VEC4, A if A is not None else a_xyz)
-                val_b = parse_value(B, EnumConvertType.VEC4, B if B is not None else b_xyz)
-            elif typ in [EnumConvertType.VEC4, EnumConvertType.VEC4INT]:
-                val_a = parse_value(A, EnumConvertType.VEC4, A if A is not None else a_xyzw)
-                val_b = parse_value(B, EnumConvertType.VEC4, B if B is not None else b_xyzw)
-            else:
-                val_a = parse_value(A, EnumConvertType.VEC4, A if A is not None else a_x)
-                val_b = parse_value(B, EnumConvertType.VEC4, B if B is not None else b_x)
-
+            val_a = parse_value(A, EnumConvertType.VEC4, A if A is not None else a_xyzw)
+            val_b = parse_value(B, EnumConvertType.VEC4, B if B is not None else b_xyzw)
             size = max(1, int(typ.value / 10))
             if size > 1:
                 val_a = val_a[:size]
@@ -838,30 +810,15 @@ The Value Node supplies raw or default values for various data types, supporting
                 Lexicon.W: (WILDCARD, {"default": 0, "min": -sys.maxsize,
                                        "max": sys.maxsize, "step": 0.01, "precision": 6,
                                        "forceInput": True}),
-                Lexicon.X_RAW: ("FLOAT", {"default": 0, "min": -sys.maxsize,
-                                          "max": sys.maxsize, "step": 0.01, "precision": 6,
-                                          "menu": False}),
-                Lexicon.IN_A+"4": ("VEC4", {"default": (0,0,0,0),
-                                        "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W],
-                                        "tooltip":"4-value vector", "menu": False}),
-                Lexicon.IN_A+"2": ("VEC2", {"default": (0,0),
+                Lexicon.IN_A+Lexicon.IN_A: ("VEC4", {"default": (0, 0, 0, 0),
+                                        #"min": -sys.maxsize, "max": sys.maxsize,
                                         "label": [Lexicon.X, Lexicon.Y],
-                                        "tooltip":"2-value vector", "menu": False}),
-                Lexicon.IN_A+"3": ("VEC3", {"default": (0,0,0),
-                                        "label": [Lexicon.X, Lexicon.Y, Lexicon.Z],
-                                        "tooltip":"3-value vector", "menu": False}),
+                                        "tooltip":"default value vector for A"}),
                 Lexicon.SEED: ("INT", {"default": 0, "min": 0, "max": sys.maxsize, "step": 1}),
-                Lexicon.Y_RAW: ("FLOAT", {"default": 0, "min": -sys.maxsize,
-                                          "max": sys.maxsize, "tooltip":"Single value input"}),
-                Lexicon.IN_B+"2": ("VEC2", {"default": (0,0),
-                                      "label": [Lexicon.X, Lexicon.Y],
-                                      "tooltip":"2-value vector"}),
-                Lexicon.IN_B+"3": ("VEC3", {"default": (0,0,0),
-                                      "label": [Lexicon.X, Lexicon.Y, Lexicon.Z],
-                                      "tooltip":"3-value vector"}),
-                Lexicon.IN_B+"4": ("VEC4", {"default": (0,0,0,0),
-                                      "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W],
-                                      "tooltip":"4-value vector"}),
+                Lexicon.IN_B+Lexicon.IN_B: ("VEC4", {"default": (0,0,0,0),
+                                        #"min": -sys.maxsize, "max": sys.maxsize,
+                                        "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W],
+                                        "tooltip":"default value vector for B"}),
                 Lexicon.STRING: ("STRING", {"default": "", "dynamicPrompts": False, "multiline": True}),
             }
         })
@@ -874,42 +831,22 @@ The Value Node supplies raw or default values for various data types, supporting
         r_z = parse_param(kw, Lexicon.Z, EnumConvertType.FLOAT, None)
         r_w = parse_param(kw, Lexicon.W, EnumConvertType.FLOAT, None)
         typ = parse_param(kw, Lexicon.TYPE, EnumConvertType.STRING, EnumConvertType.BOOLEAN.name)
-        x = parse_param(kw, Lexicon.X_RAW, EnumConvertType.FLOAT, 0)
-        xy = parse_param(kw, Lexicon.IN_A+"2", EnumConvertType.VEC2, (0, 0))
-        xyz = parse_param(kw, Lexicon.IN_A+"3", EnumConvertType.VEC3, (0, 0, 0))
-        xyzw = parse_param(kw, Lexicon.IN_A+"4", EnumConvertType.VEC4, (0, 0, 0, 0))
+        xyzw = parse_param(kw, Lexicon.IN_A+Lexicon.IN_A, EnumConvertType.VEC4, (0, 0, 0, 0))
         seed = parse_param(kw, Lexicon.RANDOM, EnumConvertType.INT, 0, 0)
-        y = parse_param(kw, Lexicon.Y_RAW, EnumConvertType.FLOAT, 0)
-        yy = parse_param(kw, Lexicon.IN_B+"2", EnumConvertType.VEC2, (0, 0))
-        yyz = parse_param(kw, Lexicon.IN_B+"3", EnumConvertType.VEC3, (0, 0, 0))
-        yyzw = parse_param(kw, Lexicon.IN_B+"4", EnumConvertType.VEC4, (0, 0, 0, 0))
+        yyzw = parse_param(kw, Lexicon.IN_B+Lexicon.IN_B, EnumConvertType.VEC4, (0, 0, 0, 0))
         x_str = parse_param(kw, Lexicon.STRING, EnumConvertType.STRING, "")
-        params = list(zip_longest_fill(raw, r_x, r_y, r_z, r_w, typ, x, xy, xyz, xyzw, seed, y, yy, yyz, yyzw, x_str))
+        params = list(zip_longest_fill(raw, r_x, r_y, r_z, r_w, typ, xyzw, seed, yyzw, x_str))
         results = []
         pbar = ProgressBar(len(params))
-        for idx, (raw, r_x, r_y, r_z, r_w, typ, x, xy, xyz, xyzw, seed, y, yy, yyz, yyzw, x_str) in enumerate(params):
+        for idx, (raw, r_x, r_y, r_z, r_w, typ, xyzw, seed, yyzw, x_str) in enumerate(params):
             typ = EnumConvertType[typ]
             default = [x_str]
             default2 = None
             if typ not in [EnumConvertType.STRING, EnumConvertType.LIST, \
                            EnumConvertType.DICT,\
                            EnumConvertType.IMAGE, EnumConvertType.LATENT, EnumConvertType.ANY, EnumConvertType.MASK]:
-                a, b, c, d = 0, 0, 0, 0
-                a2, b2, c2, d2 = 0, 0, 0, 0
-                match typ:
-                    case EnumConvertType.FLOAT | EnumConvertType.INT | EnumConvertType.BOOLEAN:
-                        a = x
-                        a2 = y
-                    case EnumConvertType.COORD2D | EnumConvertType.VEC2 | EnumConvertType.VEC2INT:
-                        a, b = xy
-                        a2, b2 = yy
-                    case EnumConvertType.VEC3 | EnumConvertType.VEC3INT:
-                        a, b, c = xyz
-                        a2, b2, c2 = yyz
-                    case _:
-                        a, b, c, d = xyzw
-                        a2, b2, c2, d2 = yyzw
-
+                a, b, c, d = xyzw
+                a2, b2, c2, d2 = yyzw
                 default = (a if r_x is None else r_x,
                     b if r_y is None else r_y,
                     c if r_z is None else r_z,

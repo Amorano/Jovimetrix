@@ -110,8 +110,9 @@ The Shape Generation node creates images representing various shapes such as cir
                 Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1,
                                         "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A],
                                         "rgb": True, "tooltip": "Background Color"}),
-                Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE),
-                                    "step": 1, "label": [Lexicon.W, Lexicon.H]}),
+                Lexicon.WH: ("VEC2", {"default": (256, 256),
+                                    "step": 1, "min":MIN_IMAGE_SIZE,
+                                    "label": [Lexicon.W, Lexicon.H]}),
                 Lexicon.XY: ("VEC2", {"default": (0, 0,), "step": 0.01, "precision": 4,
                                     "round": 0.00001, "label": [Lexicon.X, Lexicon.Y]}),
                 Lexicon.ANGLE: ("FLOAT", {"default": 0, "min": -180, "max": 180,
@@ -132,7 +133,7 @@ The Shape Generation node creates images representing various shapes such as cir
         edge = parse_param(kw, Lexicon.EDGE, EnumConvertType.STRING, EnumEdge.CLIP.name)
         offset = parse_param(kw, Lexicon.XY, EnumConvertType.VEC2, (0, 0))
         size = parse_param(kw, Lexicon.SIZE, EnumConvertType.VEC2, (1, 1), zero=0.001)
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), MIN_IMAGE_SIZE)
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (256, 256), MIN_IMAGE_SIZE)
         color = parse_param(kw, Lexicon.RGBA_A, EnumConvertType.VEC4INT, (255, 255, 255, 255), 0, 255)
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
         blur = parse_param(kw, Lexicon.BLUR, EnumConvertType.FLOAT, 0)
@@ -181,118 +182,6 @@ The Shape Generation node creates images representing various shapes such as cir
                 mask = (gaussian(mask, sigma=blur, channel_axis=2) * 255).astype(np.uint8)
 
             images.append([cv2tensor(pB), cv2tensor(pA), cv2tensor(mask, True)])
-            pbar.update_absolute(idx)
-        return [torch.cat(i, dim=0) for i in list(zip(*images))]
-
-class TextNode(JOVBaseNode):
-    NAME = "TEXT GEN (JOV) 📝"
-    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
-    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
-    FONTS = font_names()
-    FONT_NAMES = sorted(FONTS.keys())
-    DESCRIPTION = """
-The Text Generation node generates images containing text based on user-defined parameters such as font, size, alignment, color, and position. Users can input custom text messages, select fonts from a list of available options, adjust font size, and specify the alignment and justification of the text. Additionally, the node provides options for auto-sizing text to fit within specified dimensions, controlling letter-by-letter rendering, and applying edge effects such as clipping and inversion.
-"""
-
-    @classmethod
-    def INPUT_TYPES(cls) -> dict:
-        d = super().INPUT_TYPES()
-        d.update({
-            "optional": {
-                Lexicon.STRING: ("STRING", {"default": "", "multiline": True,
-                                            "dynamicPrompts": False,
-                                            "tooltip": "Your Message"}),
-                Lexicon.FONT: (cls.FONT_NAMES, {"default": cls.FONT_NAMES[0]}),
-                Lexicon.LETTER: ("BOOLEAN", {"default": False}),
-                Lexicon.AUTOSIZE: ("BOOLEAN", {"default": False}),
-                Lexicon.RGBA_A: ("VEC4", {"default": (255, 255, 255, 255), "step": 1,
-                                        "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A],
-                                        "rgb": True, "tooltip": "Color of the letters"}),
-                Lexicon.MATTE: ("VEC3", {"default": (0, 0, 0), "step": 1,
-                                        "label": [Lexicon.R, Lexicon.G, Lexicon.B], "rgb": True}),
-                Lexicon.COLUMNS: ("INT", {"default": 0, "min": 0, "step": 1}),
-                # if auto on, hide these...
-                Lexicon.FONT_SIZE: ("INT", {"default": 16, "min": 1, "step": 1}),
-                Lexicon.ALIGN: (EnumAlignment._member_names_, {"default": EnumAlignment.CENTER.name}),
-                Lexicon.JUSTIFY: (EnumJustify._member_names_, {"default": EnumJustify.CENTER.name}),
-                Lexicon.MARGIN: ("INT", {"default": 0, "min": -1024, "max": 1024}),
-                Lexicon.SPACING: ("INT", {"default": 25, "min": -1024, "max": 1024}),
-                Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE),
-                                    "step": 1, "label": [Lexicon.W, Lexicon.H]}),
-                Lexicon.XY: ("VEC2", {"default": (0, 0,), "step": 0.01, "precision": 4,
-                                    "round": 0.00001, "label": [Lexicon.X, Lexicon.Y],
-                                    "tooltip":"Offset the position"}),
-                Lexicon.ANGLE: ("FLOAT", {"default": 0, "min": -180, "max": 180,
-                                          "step": 0.01, "precision": 4, "round": 0.00001}),
-                Lexicon.EDGE: (EnumEdge._member_names_, {"default": EnumEdge.CLIP.name}),
-                Lexicon.INVERT: ("BOOLEAN", {"default": False, "tooltip": "Invert the mask input"})
-            }
-        })
-        return Lexicon._parse(d, cls)
-
-    def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
-        full_text = parse_param(kw, Lexicon.STRING, EnumConvertType.STRING, "")
-        font_idx = parse_param(kw, Lexicon.FONT, EnumConvertType.STRING, self.FONT_NAMES[0])
-        autosize = parse_param(kw, Lexicon.AUTOSIZE, EnumConvertType.BOOLEAN, False)
-        letter = parse_param(kw, Lexicon.LETTER, EnumConvertType.BOOLEAN, False)
-        color = parse_param(kw, Lexicon.RGBA_A, EnumConvertType.VEC4INT, (255,255,255,255), 0, 255)
-        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC3INT, (0,0,0), 0, 255)
-        columns = parse_param(kw, Lexicon.COLUMNS, EnumConvertType.INT, 0)
-        font_size = parse_param(kw, Lexicon.FONT_SIZE, EnumConvertType.INT, 1)
-        align = parse_param(kw, Lexicon.ALIGN, EnumConvertType.STRING, EnumAlignment.CENTER.name)
-        justify = parse_param(kw, Lexicon.JUSTIFY, EnumConvertType.STRING, EnumJustify.CENTER.name)
-        margin = parse_param(kw, Lexicon.MARGIN, EnumConvertType.INT, 0)
-        line_spacing = parse_param(kw, Lexicon.SPACING, EnumConvertType.INT, 25)
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), MIN_IMAGE_SIZE)
-        pos = parse_param(kw, Lexicon.XY, EnumConvertType.VEC2, (0, 0), 1,  -1)
-        angle = parse_param(kw, Lexicon.ANGLE, EnumConvertType.INT, 0)
-        edge = parse_param(kw, Lexicon.EDGE, EnumConvertType.STRING, EnumEdge.CLIP.name)
-        invert = parse_param(kw, Lexicon.INVERT, EnumConvertType.BOOLEAN, False)
-        images = []
-        params = list(zip_longest_fill(full_text, font_idx, autosize, letter, color,
-                                  matte, columns, font_size, align, justify, margin,
-                                  line_spacing, wihi, pos, angle, edge, invert))
-
-        pbar = ProgressBar(len(params))
-        for idx, (full_text, font_idx, autosize, letter, color, matte, columns,
-                  font_size, align, justify, margin, line_spacing, wihi, pos,
-                  angle, edge, invert) in enumerate(params):
-
-            width, height = wihi
-            font_name = self.FONTS[font_idx]
-            align = EnumAlignment[align]
-            justify = EnumJustify[justify]
-            edge = EnumEdge[edge]
-            full_text = str(full_text)
-            wm = width-margin * 2
-            hm = height-margin * 2 - line_spacing
-            if letter:
-                full_text = full_text.replace('\n', '')
-                if autosize:
-                    w, h = text_autosize(full_text, font_name, wm, hm)[2:]
-                    w /= len(full_text) * 1.25 # kerning?
-                    font_size = (w + h) * 0.5
-                font_size *= 10
-                font = ImageFont.truetype(font_name, int(font_size))
-                for ch in full_text:
-                    img = text_draw(ch, font, width, height, align, justify, color=color)
-                    img = image_rotate(img, angle, edge=edge)
-                    img = image_translate(img, pos, edge=edge)
-                    if invert:
-                        img = image_invert(img, 1)
-                    images.append(cv2tensor_full(img, matte))
-            else:
-                if autosize:
-                    full_text, font_size = text_autosize(full_text, font_name, wm, hm, columns)[:2]
-                font = ImageFont.truetype(font_name, font_size)
-                img = text_draw(full_text, font, width, height, align, justify,
-                                margin, line_spacing, color)
-                img = image_rotate(img, angle, edge=edge)
-                img = image_translate(img, pos, edge=edge)
-                if invert:
-                    img = image_invert(img, 1)
-                images.append(cv2tensor_full(img, matte))
             pbar.update_absolute(idx)
         return [torch.cat(i, dim=0) for i in list(zip(*images))]
 
@@ -358,7 +247,7 @@ The Stereoscopic node simulates depth perception in images by generating stereos
             "optional": {
                 Lexicon.PIXEL: (WILDCARD, {"tooltip":"Optional Image to Matte with Selected Color"}),
                 Lexicon.INT: ("FLOAT", {"default": 0.1, "min": 0, "max": 1, "step": 0.01, "tooltip":"Baseline"}),
-                Lexicon.VALUE: ("FLOAT", {"default": 500, "min": 0, "step": 0.01, "tooltip":"Focal length"}),
+                Lexicon.FOCAL: ("FLOAT", {"default": 500, "min": 0, "step": 0.01}),
             }
         })
         return Lexicon._parse(d, cls)
@@ -378,6 +267,119 @@ The Stereoscopic node simulates depth perception in images by generating stereos
             disparity_map *= baseline * focal_length
             images.append(cv2tensor(pA))
             pbar.update_absolute(idx)
+        return torch.cat(images, dim=0)
+
+class TextNode(JOVBaseNode):
+    NAME = "TEXT GEN (JOV) 📝"
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
+    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
+    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
+    FONTS = font_names()
+    FONT_NAMES = sorted(FONTS.keys())
+    DESCRIPTION = """
+The Text Generation node generates images containing text based on user-defined parameters such as font, size, alignment, color, and position. Users can input custom text messages, select fonts from a list of available options, adjust font size, and specify the alignment and justification of the text. Additionally, the node provides options for auto-sizing text to fit within specified dimensions, controlling letter-by-letter rendering, and applying edge effects such as clipping and inversion.
+"""
+
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        d = super().INPUT_TYPES()
+        d.update({
+            "optional": {
+                Lexicon.STRING: ("STRING", {"default": "", "multiline": True,
+                                            "dynamicPrompts": False,
+                                            "tooltip": "Your Message"}),
+                Lexicon.FONT: (cls.FONT_NAMES, {"default": cls.FONT_NAMES[0]}),
+                Lexicon.LETTER: ("BOOLEAN", {"default": False}),
+                Lexicon.AUTOSIZE: ("BOOLEAN", {"default": False}),
+                Lexicon.RGBA_A: ("VEC4", {"default": (255, 255, 255, 255), "step": 1,
+                                        "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A],
+                                        "rgb": True, "tooltip": "Color of the letters"}),
+                Lexicon.MATTE: ("VEC3", {"default": (0, 0, 0), "step": 1,
+                                        "label": [Lexicon.R, Lexicon.G, Lexicon.B], "rgb": True}),
+                Lexicon.COLUMNS: ("INT", {"default": 0, "min": 0, "step": 1}),
+                # if auto on, hide these...
+                Lexicon.FONT_SIZE: ("INT", {"default": 16, "min": 1, "step": 1}),
+                Lexicon.ALIGN: (EnumAlignment._member_names_, {"default": EnumAlignment.CENTER.name}),
+                Lexicon.JUSTIFY: (EnumJustify._member_names_, {"default": EnumJustify.CENTER.name}),
+                Lexicon.MARGIN: ("INT", {"default": 0, "min": -1024, "max": 1024}),
+                Lexicon.SPACING: ("INT", {"default": 25, "min": -1024, "max": 1024}),
+                Lexicon.WH: ("VEC2", {"default": (256, 256),
+                                    "min":MIN_IMAGE_SIZE, "step": 1,
+                                    "label": [Lexicon.W, Lexicon.H]}),
+                Lexicon.XY: ("VEC2", {"default": (0, 0,), "step": 0.01, "precision": 4,
+                                    "round": 0.00001, "label": [Lexicon.X, Lexicon.Y],
+                                    "tooltip":"Offset the position"}),
+                Lexicon.ANGLE: ("FLOAT", {"default": 0, "min": -180, "max": 180,
+                                          "step": 0.01, "precision": 4, "round": 0.00001}),
+                Lexicon.EDGE: (EnumEdge._member_names_, {"default": EnumEdge.CLIP.name}),
+                Lexicon.INVERT: ("BOOLEAN", {"default": False, "tooltip": "Invert the mask input"})
+            }
+        })
+        return Lexicon._parse(d, cls)
+
+    def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
+        full_text = parse_param(kw, Lexicon.STRING, EnumConvertType.STRING, "")
+        font_idx = parse_param(kw, Lexicon.FONT, EnumConvertType.STRING, self.FONT_NAMES[0])
+        autosize = parse_param(kw, Lexicon.AUTOSIZE, EnumConvertType.BOOLEAN, False)
+        letter = parse_param(kw, Lexicon.LETTER, EnumConvertType.BOOLEAN, False)
+        color = parse_param(kw, Lexicon.RGBA_A, EnumConvertType.VEC4INT, (255,255,255,255), 0, 255)
+        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC3INT, (0,0,0), 0, 255)
+        columns = parse_param(kw, Lexicon.COLUMNS, EnumConvertType.INT, 0)
+        font_size = parse_param(kw, Lexicon.FONT_SIZE, EnumConvertType.INT, 1)
+        align = parse_param(kw, Lexicon.ALIGN, EnumConvertType.STRING, EnumAlignment.CENTER.name)
+        justify = parse_param(kw, Lexicon.JUSTIFY, EnumConvertType.STRING, EnumJustify.CENTER.name)
+        margin = parse_param(kw, Lexicon.MARGIN, EnumConvertType.INT, 0)
+        line_spacing = parse_param(kw, Lexicon.SPACING, EnumConvertType.INT, 25)
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (256, 256), MIN_IMAGE_SIZE)
+        pos = parse_param(kw, Lexicon.XY, EnumConvertType.VEC2, (0, 0), 1,  -1)
+        angle = parse_param(kw, Lexicon.ANGLE, EnumConvertType.INT, 0)
+        edge = parse_param(kw, Lexicon.EDGE, EnumConvertType.STRING, EnumEdge.CLIP.name)
+        invert = parse_param(kw, Lexicon.INVERT, EnumConvertType.BOOLEAN, False)
+        images = []
+        params = list(zip_longest_fill(full_text, font_idx, autosize, letter, color,
+                                  matte, columns, font_size, align, justify, margin,
+                                  line_spacing, wihi, pos, angle, edge, invert))
+
+        pbar = ProgressBar(len(params))
+        for idx, (full_text, font_idx, autosize, letter, color, matte, columns,
+                  font_size, align, justify, margin, line_spacing, wihi, pos,
+                  angle, edge, invert) in enumerate(params):
+
+            width, height = wihi
+            font_name = self.FONTS[font_idx]
+            align = EnumAlignment[align]
+            justify = EnumJustify[justify]
+            edge = EnumEdge[edge]
+            full_text = str(full_text)
+            wm = width-margin * 2
+            hm = height-margin * 2 - line_spacing
+            if letter:
+                full_text = full_text.replace('\n', '')
+                if autosize:
+                    w, h = text_autosize(full_text, font_name, wm, hm)[2:]
+                    w /= len(full_text) * 1.25 # kerning?
+                    font_size = (w + h) * 0.5
+                font_size *= 10
+                font = ImageFont.truetype(font_name, int(font_size))
+                for ch in full_text:
+                    img = text_draw(ch, font, width, height, align, justify, color=color)
+                    img = image_rotate(img, angle, edge=edge)
+                    img = image_translate(img, pos, edge=edge)
+                    if invert:
+                        img = image_invert(img, 1)
+                    images.append(cv2tensor_full(img, matte))
+            else:
+                if autosize:
+                    full_text, font_size = text_autosize(full_text, font_name, wm, hm, columns)[:2]
+                font = ImageFont.truetype(font_name, font_size)
+                img = text_draw(full_text, font, width, height, align, justify,
+                                margin, line_spacing, color)
+                img = image_rotate(img, angle, edge=edge)
+                img = image_translate(img, pos, edge=edge)
+                if invert:
+                    img = image_invert(img, 1)
+                images.append(cv2tensor_full(img, matte))
+            pbar.update_absolute(idx)
         return [torch.cat(i, dim=0) for i in list(zip(*images))]
 
 class WaveGraphNode(JOVBaseNode):
@@ -395,10 +397,13 @@ The Wave Graph node visualizes audio waveforms as bars. Adjust parameters like t
         d.update({
             "optional": {
                 Lexicon.WAVE: ("AUDIO", {"default": None, "tooltip": "Audio Wave Object"}),
-                Lexicon.VALUE: ("INT", {"default": 100, "min": 32, "max": 8192, "step": 1, "tooltip": "Number of Vertical bars to try to fit within the specified Width x Height"}),
-                Lexicon.THICK: ("FLOAT", {"default": 0.72, "min": 0, "max": 1, "step": 0.01, "tooltip": "The percentage of fullness for each bar; currently scaled from the left only"}),
-                Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE),
-                                    "step": 1, "label": [Lexicon.W, Lexicon.H], "tooltip": "Final output size of the wave bar graph"}),
+                Lexicon.VALUE: ("INT", {"default": 100, "min": 32, "max": 8192, "step": 1,
+                                        "tooltip": "Number of Vertical bars to try to fit within the specified Width x Height"}),
+                Lexicon.THICK: ("FLOAT", {"default": 0.72, "min": 0, "max": 1, "step": 0.01,
+                                          "tooltip": "The percentage of fullness for each bar; currently scaled from the left only"}),
+                Lexicon.WH: ("VEC2", {"default": (256, 256),
+                                    "step": 1, "min":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H],
+                                    "tooltip": "Final output size of the wave bar graph"}),
                 Lexicon.RGBA_A: ("VEC4", {"default": (128, 128, 0, 255), "step": 1,
                                         "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True, "tooltip": "Bar Color"}),
                 Lexicon.MATTE: ("VEC4", {"default": (0, 128, 128, 255), "step": 1,
@@ -426,7 +431,6 @@ The Wave Graph node visualizes audio waveforms as bars. Adjust parameters like t
             images.append(cv2tensor_full(img))
             pbar.update_absolute(idx)
         return [torch.cat(i, dim=0) for i in list(zip(*images))]
-
 
 '''
 class PurzNode(JOVBaseNode):

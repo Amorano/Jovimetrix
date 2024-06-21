@@ -26,6 +26,11 @@ export const VectorWidget = (app, inputName, options, initial, desc='') => {
     }
     widget.options.step = widget.options?.step || step;
     widget.options.rgb = widget.options?.rgb || false;
+    if (widget.options.rgb) {
+        widget.options.max = 255;
+        widget.options.min = 0;
+        widget.options.step = 1;
+    }
 
     const offset_y = 4;
     const widget_padding_left = 15;
@@ -103,6 +108,7 @@ export const VectorWidget = (app, inputName, options, initial, desc='') => {
         if (w.options?.min !== undefined) {
             v = Math.max(v, w.options.min)
         }
+        //console.info(w.options)
         const precision = widget.options?.precision !== undefined ? widget.options.precision : 0;
         w.value[idx] = (precision == 0) ? Number(v) : parseFloat(v).toFixed(precision)
     }
@@ -151,18 +157,18 @@ export const VectorWidget = (app, inputName, options, initial, desc='') => {
             const idx = isDragging.idx
             const old_value = { ...this.value };
             if (e.type === 'pointermove' && e.deltaX) {
-                let v = parseFloat(this.value[idx])
-                v += this.options.step * Math.sign(e.deltaX)
-                clamp(this, v, idx)
+                let v = parseFloat(this.value[idx]);
+                v += this.options.step * Math.sign(e.deltaX);
+                clamp(this, v, idx);
             } else if (e.type === 'pointerup') {
                 isDragging = undefined
-                if (e.click_time < 100 && delta == 0) {
+                if (e.click_time < 150 && delta == 0) {
                     const label = this.options?.label ? this.name + '➖' + this.options.label?.[idx] : this.name;
                     LGraphCanvas.active_canvas.prompt(label, this.value[idx], function(v) {
                         if (/^[0-9+\-*/()\s]+|\d+\.\d+$/.test(v)) {
                             try {
                                 v = eval(v);
-                            } catch (e) {}
+                            } catch (err) {}
                         }
                         if (this.value[idx] != v) {
                             setTimeout(

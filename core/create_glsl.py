@@ -52,7 +52,7 @@ The GLSL Node executes custom GLSL (OpenGL Shading Language) fragment shaders to
                 Lexicon.BATCH: ("VEC2", {"default": (1, 30), "step": 1, "label": ["COUNT", "FPS"], "tooltip": "Number of frames wanted and the FPS"}),
                 Lexicon.WAIT: ("BOOLEAN", {"default": False}),
                 Lexicon.RESET: ("BOOLEAN", {"default": False}),
-                Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), "step": 1,}),
+                Lexicon.WH: ("VEC2", {"default": (MIN_IMAGE_SIZE, MIN_IMAGE_SIZE), "min":MIN_IMAGE_SIZE, "step": 1,}),
                 Lexicon.FRAGMENT: ("STRING", {"multiline": True, "default": DEFAULT_FRAGMENT, "dynamicPrompts": False}),
                 Lexicon.PARAM: ("STRING", {"default": {}})
             }

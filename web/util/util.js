@@ -67,41 +67,48 @@ export function node_add_dynamic(nodeType, prefix, dynamic_type='*', index_start
     */
 
     // clean off missing slot connects
-    function clean_inputs(self, slot_idx) {
+    function clean_inputs(self) {
         if (self.graph === undefined) {
             return;
         }
 
         let idx = index_start;
-        let slot_count = index_start;
-        let count = self.inputs.length;
-        while (idx < self.inputs.length-1 && count > 0) {
+        if (match_output) {
+            while (self.outputs.length > index_start) {
+                self.removeOutput(self.outputs.length-1);
+            }
+        }
+
+        idx = index_start
+        let slot_count = 0;
+        while (idx < self.inputs.length-1) {
             const slot = self.inputs[idx];
-            // console.info(slot, count)
-            if (slot) {
-                const parts = slot.name.split('_');
-                // a dynamic jovian slot prefix_
-                if (parts.length > 1) {
-                    if (slot.link == null) {
-                        if (match_output && slot_idx < self.outputs?.length) {
-                            self.removeOutput(slot_idx);
-                        }
-                        if (slot_idx < self.inputs?.length) {
-                            self.removeInput(slot_idx);
-                        }
-                    } else {
-                        const name = parts.slice(1).join('_');
-                        self.inputs[idx].name = `${slot_count}_${name}`;
-                        slot_count += 1;
-                        idx += 1;
+            const parts = slot.name.split('_');
+            if (parts.length == 2) {
+                if (slot.link == null) {
+                    if (match_output) {
+                        self.removeOutput(idx);
+                    }
+                    if (idx < self.inputs.length) {
+                        self.removeInput(idx);
                     }
                 } else {
+                    const name = parts.slice(1).join('_');
+                    self.inputs[idx].name = `${slot_count}_${name}`;
+                    if (match_output) {
+                        while(self.outputs.length-1 < idx) {
+                            self.addOutput(prefix, dynamic_type);
+                        }
+                        self.outputs[idx].name = parts[1];
+                    }
+                    slot_count += 1;
                     idx += 1;
                 }
+            } else {
+                idx += 1;
             }
-            count -= 1;
+
         }
-        //console.info(idx)
     }
 
     index_start = Math.max(0, index_start);
@@ -109,56 +116,39 @@ export function node_add_dynamic(nodeType, prefix, dynamic_type='*', index_start
     nodeType.prototype.onNodeCreated = function () {
         const me = onNodeCreated?.apply(this);
         this.addInput(prefix, dynamic_type);
-        if (match_output) {
-		    this.addOutput(prefix, dynamic_type); //, { shape: shape });
-        }
         return me;
     }
 
     const onConnectionsChange = nodeType.prototype.onConnectionsChange
     nodeType.prototype.onConnectionsChange = function (slotType, slot_idx, event, link_info, node_slot) {
         const me = onConnectionsChange?.apply(this, arguments);
-        if (slotType === TypeSlot.Input) {
-            if (slot_idx >= index_start) {
-                if (link_info) {
-                if (event === TypeSlotEvent.Connect) {
-                    const fromNode = this.graph._nodes.find(
-                        (otherNode) => otherNode.id == link_info.origin_id
-                    )
-                    if (fromNode) {
-                        const parent_link = fromNode.outputs[link_info.origin_slot];
-                        if (parent_link) {
-                            node_slot.type = parent_link.type;
-                            node_slot.name = `_${parent_link.name}`;
-                            if (match_output) {
-                                const slot_out = this.outputs[slot_idx];
-                                slot_out.type = parent_link.type;
-                                slot_out.name = `${parent_link.type}`;
-                            }
-                        }
+        if (slotType === TypeSlot.Input && slot_idx >= index_start) {
+            if (link_info && event === TypeSlotEvent.Connect) {
+                const fromNode = this.graph._nodes.find(
+                    (otherNode) => otherNode.id == link_info.origin_id
+                )
+                if (fromNode) {
+                    const parent_link = fromNode.outputs[link_info.origin_slot];
+                    if (parent_link) {
+                        node_slot.type = parent_link.type;
+                        node_slot.name = `_${parent_link.name}`;
                     }
-                }
-                }
-
-                // check that the last slot is a dynamic entry....
-                let last = this.inputs[this.inputs.length-1];
-                if (last.type != dynamic_type || last.name != prefix) {
-                    this.addInput(prefix, dynamic_type);
-                }
-                if (match_output) {
-                    last = this.outputs[this.outputs.length-1];
-                    if (last.type != dynamic_type || last.name != prefix) {
-                        this.addOutput(prefix, dynamic_type);
-                    }
-                };
-
-                if (refresh) {
-                    setTimeout(() => {
-                        clean_inputs(this, slot_idx);
-                    }, 5);
                 }
             }
+
+            // check that the last slot is a dynamic entry....
+            let last = this.inputs[this.inputs.length-1];
+            if (last.type != dynamic_type || last.name != prefix) {
+                this.addInput(prefix, dynamic_type);
+            }
         }
+
+        if (refresh) {
+            setTimeout(() => {
+                clean_inputs(this);
+            }, 5);
+        }
+        fitHeight(this);
         return me;
     }
     return nodeType;

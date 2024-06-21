@@ -29,7 +29,6 @@ app.registerExtension({
             const self = this;
 
             async function python_delay_user(event) {
-                // console.info(showing, )
                 if (showing || event.detail.id != self.id) {
                     return;
                 }
@@ -55,7 +54,6 @@ app.registerExtension({
                 try {
                     value = await delay_modal;
                 } catch (e) {
-                    console.info("timeout", widget_time.value)
                     if (e.message !== "TIMEOUT") {
                         console.error(e);
                     }
