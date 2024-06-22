@@ -6,7 +6,6 @@ UTIL support
 import os
 import json
 import math
-import numbers
 from enum import Enum
 from typing import Any, List, Generator, Optional, Tuple
 
@@ -14,6 +13,7 @@ import numpy as np
 import torch
 
 from loguru import logger
+
 MIN_IMAGE_SIZE = 32
 
 # =============================================================================
@@ -55,32 +55,35 @@ class EnumSwizzle(Enum):
 # === SUPPORT ===
 # =============================================================================
 
-def parse_dynamic(data:dict, prefix:str, typ:EnumConvertType, default: Any, with_prefix:bool=False) -> List[Any]:
+def parse_dynamic(data:dict, prefix:str, typ:EnumConvertType, default: Any) -> List[Any]:
     """Convert iterated input field(s) based on a s into a single compound list of entries.
 
     The default will just look for all keys as integer:
 
-        #_<field name>
-
-    If prefix is non-null, then the format for the key entry is:
-
-    #_<prefix>_<field name>
+        `#_<field name>` or `#_<prefix>_<field name>`
 
     This will return N entries in a list based on the prefix pattern or not.
 
     """
     vals = []
-    for k in data:
-        name = k.split('_')
-        # do we need the prefix (in the case of more than one dynamic param)
-        if (not with_prefix and len(name)== 2) or (with_prefix and len(name) == 3 and name[1] != prefix):
-            # check the index is valid number
-            try: val = int(name[0])
-            except: continue
-            val = parse_param(data, k, typ, default)
-            #if not isinstance(val, (list,)):
-            #    val = [val]
-            vals.extend(val)
+    fail = 0
+    keys = data.keys()
+    for i in range(100):
+        if fail > 2:
+            break
+
+        found = None
+        for k in keys:
+            if k.startswith(f"{i}_") or k.startswith(f"{i}_{prefix}_"):
+                found = k
+                break
+
+        if found is None:
+            fail += 1
+            continue
+
+        val = parse_param(data, found, typ, default)
+        vals.append(val)
     return vals
 
 def parse_value(val:Any, typ:EnumConvertType, default: Any,
@@ -233,25 +236,16 @@ def parse_param(data:dict, key:str, typ:EnumConvertType, default: Any,
     elif isinstance(val, (torch.Tensor,)):
         if val.ndim > 3:
             val = [t for t in val]
-        #elif size == 3:
-        #    val = [t.unsqueeze(-1) for t in val]
-        elif val.ndim == 2:
-            val = val.unsqueeze(-1)
+        else:
+            while (val.ndim < 3):
+                val = val.unsqueeze(-1)
     elif isinstance(val, (list, tuple, set)):
         if len(val) == 0:
             val = [None]
-        '''
-        else:
-            ret = []
-            for x in val:
-                if isinstance(x, (list,)):
-                    ret.extend(x)
-                else:
-                    ret.append(x)
-            val = ret
-        '''
     elif issubclass(type(val), (Enum,)):
         val = [str(val.name)]
+    if typ == EnumConvertType.ANY:
+        return [val]
     if not isinstance(val, (list,)):
         val = [val]
     return [parse_value(v, typ, default, clip_min, clip_max, zero) for v in val]
@@ -273,11 +267,6 @@ def vector_swap(pA: Any, pB: Any, swap_x: EnumSwizzle, x:float, swap_y:EnumSwizz
         parse(pA, pB, swap_z, z),
         parse(pA, pB, swap_w, w)
     ]
-
-def parse_images(images:List[torch.Tensor]) -> List[torch.Tensor]:
-    if len(images) < 2:
-        return list(zip(*images))
-    return [torch.stack(i, dim=0) for i in zip(*images)]
 
 def update_nested_dict(d, path, value) -> None:
     keys = path.split('.')

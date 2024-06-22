@@ -46,14 +46,50 @@ export function node_mouse_pos(app, node) {
 	];
 }
 
-export function fitHeight(node, skipSize=false) {
-    const { size } = node;
-    node.onResize?.(node.size);
-    if (!skipSize) {
-        const newHeight = node.computeSize([size[0], size[1]])[1];
-        node.setSize([size[0], newHeight]);
+export function isInsideRectangle(x, y, left, top, width, height) {
+    if (left < x && left + width > x && top < y && top + height > y) {
+        return true;
     }
-    node.graph?.setDirtyCanvas(true, true);
+    return false;
+}
+
+export function node_isOverInput(node, canvas_x, canvas_y) {
+    if (node.inputs) {
+        for (var i = 0, l = node.inputs.length; i < l; ++i) {
+            var link_pos = node.getConnectionPos(true, i);
+            console.info(link_pos);
+            var is_inside = false;
+            if (node.horizontal) {
+                is_inside = isInsideRectangle(
+                    canvas_x,
+                    canvas_y,
+                    link_pos[0] - 5,
+                    link_pos[1] - 10,
+                    10,
+                    20
+                );
+            } else {
+                is_inside = isInsideRectangle(
+                    canvas_x,
+                    canvas_y,
+                    link_pos[0] - 10,
+                    link_pos[1] - 5,
+                    40,
+                    10
+                );
+            }
+            if (is_inside) {
+                return i;
+            }
+        }
+    }
+    return -1;
+};
+
+export function fitHeight(node) {
+    const size = node.computeSize([node.size[0], node.size[1]]);
+    node.setSize([node.size[0], size[1]]);
+    node?.graph?.setDirtyCanvas(true);
 }
 
 /**

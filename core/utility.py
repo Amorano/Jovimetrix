@@ -142,7 +142,7 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
             "optional": {
                 Lexicon.BATCH_MODE: (EnumBatchMode._member_names_, {"default": EnumBatchMode.MERGE.name, "tooltip":"select a single index, specific range, custom index list or randomized"}),
                 Lexicon.INDEX: ("INT", {"default": 0, "min": 0, "step": 1, "tooltip":"selected list position"}),
-                Lexicon.RANGE: ("VEC3", {"default": (0, 0, 1)}),
+                Lexicon.RANGE: ("VEC3", {"default": (0, 0, 1), "min": 0, "step": 1}),
                 Lexicon.STRING: ("STRING", {"default": "", "tooltip":"Comma separated list of indicies to export"}),
                 Lexicon.SEED: ("INT", {"default": 0, "min": 0, "max": sys.maxsize, "step": 1}),
                 Lexicon.COUNT: ("INT", {"default": 1, "min": 1, "max": sys.maxsize, "step": 1, "tooltip":"How many items to return"}),
@@ -399,6 +399,7 @@ The Graph node visualizes a series of data points over time. It accepts a dynami
             self.__history = []
         longest_edge = 0
         dynamic = parse_dynamic(kw, Lexicon.UNKNOWN, EnumConvertType.FLOAT, 0)
+        print(dynamic)
         # each of the plugs
         self.__ax.clear()
         for idx, val in enumerate(dynamic):
@@ -479,6 +480,7 @@ The Queue node manages a queue of items, such as file paths or data. It supports
                 Lexicon.VALUE: ("INT", {"min": 0, "default": 0, "step": 1, "tooltip": "the current index for the current queue item"}),
                 Lexicon.WAIT: ("BOOLEAN", {"default": False, "tooltip":"Hold the item at the current queue index"}),
                 Lexicon.RESET: ("BOOLEAN", {"default": False, "tooltip":"reset the queue back to index 1"}),
+                Lexicon.BATCH: ("BOOLEAN", {"default": False, "tooltip":"load all items, if they are loadable items, i.e. batch load images from the Queue's list"}),
             }
         })
         return Lexicon._parse(d, cls)
@@ -541,11 +543,7 @@ The Queue node manages a queue of items, such as file paths or data. It supports
             _, ext = os.path.splitext(q_data)
             if ext in image_formats():
                 data = image_load(q_data)[0]
-                if len(data.shape) == 3:
-                    h, w, cc = data.shape
-                    data = cv2tensor(data)
-                    if cc == 1:
-                        data = data.unsqueeze(-1)
+                data = cv2tensor(data)
                 self.__last_q_value[q_data] = data
             elif ext == '.json':
                 with open(q_data, 'r', encoding='utf-8') as f:
@@ -583,8 +581,17 @@ The Queue node manages a queue of items, such as file paths or data. It supports
         if wait == True:
             info += f" PAUSED"
         else:
-            data = process(self.__q[self.__index])
-            self.__index += 1
+            if parse_param(kw, Lexicon.BATCH, EnumConvertType.BOOLEAN, False)[0] == True:
+                data = []
+                for _ in range(self.__len):
+                    ret = process(self.__q[self.__index])
+                    data.append(ret)
+                    self.__index = max(0, self.__index + 1) % self.__len
+                if isinstance(data[0], (torch.Tensor,)):
+                    data = torch.cat(data, dim=0)
+            else:
+                data = process(self.__q[self.__index])
+                self.__index += 1
 
         self.__previous = data
         msg = {

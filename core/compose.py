@@ -18,7 +18,7 @@ from Jovimetrix import JOVBaseNode, WILDCARD
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import parse_dynamic, parse_param, \
     zip_longest_fill, EnumConvertType
-from Jovimetrix.sup.image import  channel_count, channel_merge, \
+from Jovimetrix.sup.image import  \
     channel_solid, channel_swap, color_match_histogram, color_match_lut, \
     color_match_reinhard, cv2tensor_full, image_color_blind, image_contrast,\
     image_crop, image_crop_center, image_crop_polygonal, image_equalize, \
@@ -111,9 +111,11 @@ Enhance and modify images with various effects using the Adjust Node. Apply effe
         pbar = ProgressBar(len(params))
         for idx, (pA, mask, op, radius, amt, lohi, lmh, hsv, contrast, gamma, matte, invert) in enumerate(params):
             pA = tensor2cv(pA) if pA is not None else channel_solid(chan=EnumImageType.BGRA)
-            if (cc := channel_count(pA)[0]) == 4:
+            cc = pA.shape[2] if pA.ndim == 3 else 1
+            if cc == 4:
                 alpha = pA[:,:,3]
 
+            print(op, radius, amt, lohi, lmh, hsv, contrast, gamma, matte, invert)
             match EnumAdjustOP[op]:
                 case EnumAdjustOP.INVERT:
                     img_new = image_invert(pA, amt)
@@ -192,7 +194,7 @@ Enhance and modify images with various effects using the Adjust Node. Apply effe
                 case EnumAdjustOP.CLOSE:
                     img_new = cv2.morphologyEx(pA, cv2.MORPH_CLOSE, (radius, radius), iterations=int(amt))
 
-            h, w, cc = pA.shape
+            h, w = pA.shape[:2]
             mask = channel_solid(w, h, 255) if mask is None else tensor2cv(mask)
             mask = image_grayscale(mask)
             if invert:
@@ -259,6 +261,8 @@ Combines two input images using various blending modes, such as normal, screen, 
                 h, w = pA.shape[:2]
             elif pB is not None:
                 h, w = pB.shape[:2]
+            elif mask is not None:
+                h, w = mask.shape[:2]
 
             tmask = None
             if pA is None:
@@ -279,6 +283,11 @@ Combines two input images using various blending modes, such as normal, screen, 
                 mask = channel_solid(w, h, (matte[3],), EnumImageType.GRAYSCALE) if tmask is None else image_mask(tmask)
             else:
                 mask = tensor2cv(mask)
+                cc = mask.shape[2] if mask.ndim == 3 else 1
+                if cc == 4:
+                    mask = image_mask(mask)
+                else:
+                    mask = image_grayscale(mask)
 
             if invert:
                 mask = 255 - mask
@@ -588,12 +597,13 @@ Combine multiple input images into a single image by summing their pixel values.
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> torch.Tensor:
-        pA = parse_dynamic(kw, Lexicon.IMAGE, EnumConvertType.IMAGE, None)
-        #pA = [item for sublist in pA for item in sublist]
+        imgs = parse_dynamic(kw, Lexicon.IMAGE, EnumConvertType.IMAGE, None)
+        pA = []
+        for img in imgs:
+            pA.extend([image_convert(tensor2cv(i), 4) for i in img])
         if len(pA) == 0:
             logger.error("no images to flatten")
             return ()
-        pA = [image_convert(tensor2cv(img), 4) for img in pA]
         mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.NONE.name)
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (512, 512), MIN_IMAGE_SIZE)
         sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)
@@ -661,14 +671,18 @@ Combines individual color channels (red, green, blue) along with an optional mas
         pbar = ProgressBar(len(params))
         for idx, (r, g, b, a, mode, wihi, sample, matte) in enumerate(params):
             mw, mh = wihi
+            chan = []
             for x in (b, g, r, a):
                 if x is None:
+                    chan.append(None)
                     continue
+                x = tensor2cv(x)
+                chan.append(x)
                 h, w = x.shape[:2]
                 mw = max(mw, w)
                 mh = max(mh, h)
-            img = [torch.zeros((mh, mw, 1)) if x is None else x for x in (b, g, r, a)]
-            img = torch.cat(img, dim=2).numpy()
+            img = [np.zeros((mh, mw, 1)) if x is None else x for x in chan]
+            img = np.concatenate(img, 2)
             mode = EnumScaleMode[mode]
             if mode != EnumScaleMode.NONE:
                 w, h = wihi
@@ -676,8 +690,7 @@ Combines individual color channels (red, green, blue) along with an optional mas
                 img = image_scalefit(img, w, h, mode, sample)
             images.append(cv2tensor_full(img, matte))
             pbar.update_absolute(idx)
-        return [torch.stack(i, dim=0) for i in list(zip(*images))]
-        #return list(zip(*images))
+        return [torch.cat(i, dim=0) for i in list(zip(*images))]
 
 class PixelSplitNode(JOVBaseNode):
     NAME = "PIXEL SPLIT (JOV) 💔"

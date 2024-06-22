@@ -26,10 +26,6 @@ app.registerExtension({
             const tltr = this.widgets.find(w => w.name === 'TL-TR');
             const blbr = this.widgets.find(w => w.name === 'BL-BR');
             const op = this.widgets.find(w => w.name === '⚒️');
-            console.info(xy)
-            console.info(wh)
-            console.info(tltr)
-            console.info(blbr)
             op.callback = () => {
                 widget_hide(self, xy);
                 widget_hide(self, wh);

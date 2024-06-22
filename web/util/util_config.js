@@ -5,7 +5,7 @@
  */
 
 import { app } from "../../../scripts/app.js"
-import { api_get } from './util_api.js'
+import { api_get, api_post } from './util_api.js'
 
 export let NODE_LIST = await api_get("/object_info");
 export let CONFIG_CORE = await api_get("/jovimetrix/config")
@@ -27,17 +27,30 @@ export async function local_set(url, v) {
     localStorage.setItem(url, v)
 }
 
-export function setting_make(id, name, type, tip, value, callback=undefined) {
+export function setting_store(id, val) {
+    var data = { id: id, v: val }
+    api_post('/jovimetrix/config', data);
+    CONFIG_USER[id] = val;
+    localStorage[`Comfy.Settings.${id}`] = val;
+}
+
+export function setting_make(id, pretty, type, tip, value,) {
+    const key = `user.default.${id}`
+    const setting_root = `Comfy.Settings.jov.${key}`;
+    const local = localStorage[setting_root];
+    value = local ? local : CONFIG_USER?.[key] ? CONFIG_USER[key] : value;
+
     app.ui.settings.addSetting({
-        id: id,
-        name: name,
+        id: key,
+        name: pretty,
         type: type,
         tooltip: tip,
         defaultValue: value,
-        onChange(v) {
-            if (callback !== undefined) {
-                callback(v)
-            }
+        onChange(val) {
+            var data = { id: key, v: val }
+            api_post('/jovimetrix/config', data);
+            CONFIG_USER[id] = val;
+            localStorage[setting_root] = val;
         },
     })
 }

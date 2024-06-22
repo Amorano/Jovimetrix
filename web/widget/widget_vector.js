@@ -33,7 +33,7 @@ export const VectorWidget = (app, inputName, options, initial, desc='') => {
     }
 
     const offset_y = 4;
-    const widget_padding_left = 15;
+    const widget_padding_left = 13;
     const widget_padding = 30;
     const label_full = 72;
     const label_center = label_full/2;
@@ -44,13 +44,13 @@ export const VectorWidget = (app, inputName, options, initial, desc='') => {
         const precision = widget.options?.precision !== undefined ? widget.options.precision : 0;
         ctx.save()
         ctx.beginPath()
-        ctx.lineWidth = 2
+        ctx.lineWidth = 1
         ctx.fillStyle = LiteGraph.WIDGET_OUTLINE_COLOR
-        ctx.roundRect(widget_padding_left, Y, width - widget_padding, height, 16)
+        ctx.roundRect(widget_padding_left+2, Y, width - widget_padding, height, 15)
         ctx.stroke()
         ctx.lineWidth = 1
         ctx.fillStyle = LiteGraph.WIDGET_BGCOLOR
-        ctx.roundRect(widget_padding_left, Y, width - widget_padding, height, 16)
+        ctx.roundRect(widget_padding_left+2, Y, width - widget_padding, height, 15)
         ctx.fill()
 
         // label
@@ -95,7 +95,7 @@ export const VectorWidget = (app, inputName, options, initial, desc='') => {
             } catch (e) {
                 ctx.fillStyle = "#000";
             }
-            ctx.roundRect(width - 1.15 * widget_padding, Y, 0.65 * widget_padding, height, 16);
+            ctx.roundRect(width - 1.17 * widget_padding, Y+1, 19, height-2, 16);
             ctx.fill()
         }
         ctx.restore()
@@ -200,13 +200,12 @@ export const VectorWidget = (app, inputName, options, initial, desc='') => {
         if (widget.value === null) {
             return null;
         }
-        if (typeof widget.value === 'object' && !Array.isArray(widget.value)) {
-            // Check if widget.value is a dictionary
-            return widget.value;
-        } else if (Array.isArray(widget.value)) {
-            return widget.value.reduce((acc, tuple, index) => ({ ...acc, [index]: tuple }), {});
+        let value = widget.value;
+        if (Array.isArray(widget.value)) {
+            value = widget.value.reduce((acc, tuple, index) => ({ ...acc, [index]: tuple }), {});
         }
-        return widget.value;
+
+        return value;
     }
 
     widget.desc = desc

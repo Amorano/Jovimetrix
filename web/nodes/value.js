@@ -5,8 +5,8 @@
  */
 
 import { app } from "../../../scripts/app.js"
-import { fitHeight, TypeSlot } from '../util/util.js'
-import { widget_show, widget_hide, process_any, process_value, widget_type_name, show_vector, show_boolean } from '../util/util_widget.js'
+import { fitHeight } from '../util/util.js'
+import { widget_show, widget_hide, process_any, widget_type_name, show_vector } from '../util/util_widget.js'
 
 const _id = "VALUE (JOV) 🧬"
 
@@ -106,7 +106,7 @@ app.registerExtension({
                 widget_hide(this, widget_y4, "-jovi");
                 if (widget_rng.value > 0 && !["STRING", "DICT", "LIST"].includes(widget_combo.value)) {
                     widget_show(widget_y4)
-                    show_vector(widget_y4, data_y, widget_combo.value);
+                    show_vector(widget_y4, widget_combo.value);
                 }
                 fitHeight(this);
             }

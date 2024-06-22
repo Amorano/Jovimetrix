@@ -41,6 +41,8 @@ export function widget_get_type(config) {
     return { type, linkType }
 }
 
+export const widget_find = (widgets, name) => widgets.find(w => w.name === name);
+
 export function widget_remove(node, widgetOrSlot) {
     let index = 0;
     if (typeof widgetOrSlot === 'number') {

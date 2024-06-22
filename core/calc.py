@@ -395,9 +395,10 @@ The Binary Operation node executes binary operations like addition, subtraction,
                     val = list(set(val_a) - set(val_b))
 
             # cast into correct type....
-            val = parse_value(val, typ, val)
-            if isinstance(val, (list, tuple,)) and len(val) == 0:
-                val = val[0]
+            default = val
+            if len(val) == 0:
+                default = [0]
+            val = parse_value(val, typ, default)
             results.append(val)
             pbar.update_absolute(idx)
         return results
@@ -578,7 +579,7 @@ The Lerp Node calculates linear interpolation between two values or vectors base
                                         #"min": -sys.maxsize, "max": sys.maxsize,
                                         "label": [Lexicon.X, Lexicon.Y],
                                         "tooltip":"default value vector for A"}),
-                Lexicon.IN_B+Lexicon.IN_B: ("VEC4", {"default": (0,0,0,0),
+                Lexicon.IN_B+Lexicon.IN_B: ("VEC4", {"default": (1,1,1,1),
                                         #"min": -sys.maxsize, "max": sys.maxsize,
                                         "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W],
                                         "tooltip":"default value vector for B"}),
@@ -588,29 +589,29 @@ The Lerp Node calculates linear interpolation between two values or vectors base
 
     def run(self, **kw) -> Tuple[Any, Any]:
         A = parse_param(kw, Lexicon.IN_A, EnumConvertType.ANY, (0,0,0,0), 0, 1)
-        B = parse_param(kw, Lexicon.IN_B, EnumConvertType.ANY, (1,1,1,1), 0, 1)
+        B = parse_param(kw, Lexicon.IN_B, EnumConvertType.ANY, (0,0,0,0), 0, 1)
         a_xyzw = parse_param(kw, Lexicon.IN_A+Lexicon.IN_A, EnumConvertType.VEC4, (0, 0, 0, 0))
-        b_xyzw = parse_param(kw, Lexicon.IN_B+Lexicon.IN_B, EnumConvertType.VEC4, (0, 0, 0, 0))
+        b_xyzw = parse_param(kw, Lexicon.IN_B+Lexicon.IN_B, EnumConvertType.VEC4, (1, 1, 1, 1))
         alpha = parse_param(kw, Lexicon.FLOAT,EnumConvertType.FLOAT, 0, 0, 1)
         op = parse_param(kw, Lexicon.EASE, EnumConvertType.STRING, "NONE")
         typ = parse_param(kw, Lexicon.TYPE, EnumConvertType.STRING, EnumNumberType.FLOAT.name)
         values = []
         params = list(zip_longest_fill(A, B, a_xyzw, b_xyzw, alpha, op, typ))
         pbar = ProgressBar(len(params))
+        print(A, a_xyzw)
+        print(B, b_xyzw)
         for idx, (A, B, a_xyzw, b_xyzw, alpha, op, typ) in enumerate(params):
             # make sure we only interpolate between the longest "stride" we can
             size = min(3, max(0 if not isinstance(A, (list,)) else len(A), 0 if not isinstance(B, (list,)) else len(B)))
             best_type = [EnumConvertType.FLOAT, EnumConvertType.VEC2, EnumConvertType.VEC3, EnumConvertType.VEC4][size]
-            A = parse_value(A, best_type, A)
-            B = parse_value(B, best_type, B)
-            if not isinstance(A, (list),):
-                A = [A]
-            if not isinstance(B, (list),):
-                B = [B]
-
+            val_a = parse_value(A, EnumConvertType.VEC4, a_xyzw)
+            val_b = parse_value(B, EnumConvertType.VEC4, b_xyzw)
+            alpha = parse_value(alpha, EnumConvertType.VEC4, alpha)
+            # val_a = parse_value(A, EnumConvertType.VEC4, A if A is not None else a_xyzw)
+            # val_b = parse_value(B, EnumConvertType.VEC4, B if B is not None else b_xyzw)
+            # alpha = parse_value(alpha, EnumConvertType.VEC4, alpha)
+            print(val_a, val_b, alpha)
             typ = EnumConvertType[typ]
-            val_a = parse_value(A, EnumConvertType.VEC4, A if A is not None else a_xyzw)
-            val_b = parse_value(B, EnumConvertType.VEC4, B if B is not None else b_xyzw)
             size = max(1, int(typ.value / 10))
             if size > 1:
                 val_a = val_a[:size]
@@ -619,7 +620,6 @@ The Lerp Node calculates linear interpolation between two values or vectors base
                 val_a = [val_a[0]]
                 val_b = [val_b[0]]
 
-            alpha = parse_value(alpha, best_type, alpha)
             if op == "NONE":
                 val = [val_b[x] * alpha[x] + val_a[x] * (1 - alpha[x]) for x in range(size)]
             else:

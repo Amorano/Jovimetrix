@@ -39,38 +39,17 @@ app.registerExtension({
 
         const original_color = LiteGraph.NODE_TEXT_COLOR;
 
-        function setting_make(id, pretty, type, tip, key, value,) {
-            const _id = 'jov.' + id;
-            const local = localStorage["Comfy.Settings.jov." + id]
-            value = local ? local : util_config.CONFIG_USER.color[key] ? util_config.CONFIG_USER.color[key] : value;
-            util_config.setting_make(_id, pretty, type, tip, value, (val) => {
-                var data = { id: id, v: val }
-                api_post('/jovimetrix/config', data);
-                util_config.CONFIG_USER.color[key] = val;
-            });
-        }
-
-        setting_make(util_config.USER + '.color.tooltips', '🇯 🎨 Tooltip Color ', 'text', 'Color to display tooltip text on ctrl-shift', 'tooltips', '#72FF27')
-
-        setting_make(util_config.USER + '.color.titleA', '🇯 🎨 Group Title A ', 'text', 'Alternative title color for separating groups in the color configuration panel', 'titleA', '#302929')
-
-        setting_make(util_config.USER + '.color.backA', '🇯 🎨 Group Back A ', 'text', 'Alternative color for separating groups in the color configuration panel', 'backA', '#050303');
-
-        setting_make(util_config.USER + '.color.titleB', '🇯 🎨 Group Title B', 'text', 'Alternative title color for separating groups in the color configuration panel', 'titleB', '#293029');
-
-        setting_make(util_config.USER + '.color.backB', '🇯 🎨 Group Back B', 'text', 'Alternative color for separating groups in the color configuration panel', 'backB', '#030503');
-
-        setting_make(util_config.USER + '.color.contrast', '🇯 🎨 Auto-Contrast Text', 'boolean', 'Auto-contrast the title text for all nodes for better readability', 'contrast', true);
+        util_config.setting_make('color.contrast', '🇯 🎨 Auto-Contrast Text', 'boolean', 'Auto-contrast the title text for all nodes for better readability', true);
 
         // Option for user to contrast text for better readability
         const drawNodeShape = LGraphCanvas.prototype.drawNodeShape;
         LGraphCanvas.prototype.drawNodeShape = function() {
-            const contrast = localStorage["Comfy.Settings.jov." + util_config.USER + '.color.contrast'] || false;
-            if (contrast) {
+            const contrast = localStorage["Comfy.Settings.jov.user.default.color.contrast"] || false;
+            if (contrast == true) {
                 var color = this.color || LiteGraph.NODE_TITLE_COLOR;
                 var bgcolor = this.bgcolor || LiteGraph.WIDGET_BGCOLOR;
-                this.node_title_color = color_contrast(color) ? "#000" : "#CCC";;
-                LiteGraph.NODE_TEXT_COLOR = color_contrast(bgcolor) ? "#000" : "#CCC";;
+                this.node_title_color = color_contrast(color) ? "#000" : "#FFF";
+                LiteGraph.NODE_TEXT_COLOR = color_contrast(bgcolor) ? "#000" : "#FFF";
             } else {
                 this.node_title_color = original_color
                 LiteGraph.NODE_TEXT_COLOR = original_color;

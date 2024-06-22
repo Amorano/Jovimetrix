@@ -38,9 +38,9 @@ app.registerExtension({
                 fitHeight(this);
             }
 
-            widget_x4.callback = () => {
+            widget_x4.callback = (value) => {
                 if (widget_x4.type === "toggle") {
-                    bool_x[0] = widget_x4.value;
+                    bool_x[0] = value;
                 } else {
                     Object.keys(widget_x4.value).forEach((key) => {
                         track_xyzw[key] = widget_x4.value[key];
