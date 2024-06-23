@@ -114,4 +114,4 @@ The GLSL Node executes custom GLSL (OpenGL Shading Language) fragment shaders to
 
             self.__last_good = images
             pbar.update_absolute(idx)
-        return [torch.cat(i, dim=0) for i in list(zip(*images))]
+        return [torch.cat(i, dim=0) for i in zip(*images)]

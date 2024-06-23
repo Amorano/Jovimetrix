@@ -399,7 +399,6 @@ The Graph node visualizes a series of data points over time. It accepts a dynami
             self.__history = []
         longest_edge = 0
         dynamic = parse_dynamic(kw, Lexicon.UNKNOWN, EnumConvertType.FLOAT, 0)
-        print(dynamic)
         # each of the plugs
         self.__ax.clear()
         for idx, val in enumerate(dynamic):
@@ -457,7 +456,7 @@ def run(self, **kw) -> None:
                 pA = channel_solid(w, h)
             images.append(cv2tensor_full(pA, matte))
         pbar.update_absolute(idx)
-    return [torch.cat(i, dim=0) for i in list(zip(*images))]
+    return [torch.cat(i, dim=0) for i in zip(*images)]
 '''
 
 class QueueNode(JOVBaseNode):

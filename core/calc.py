@@ -245,7 +245,7 @@ The Unary Operation node performs unary operations like absolute value, mean, me
                         else:
                             val = [0] * len(val)
                 case EnumUnaryOperation.MAXIMUM:
-                    val = [max(v)]
+                    val = [max(val)]
                 case EnumUnaryOperation.MINIMUM:
                     val = [min(val)]
                 case _:
@@ -598,8 +598,6 @@ The Lerp Node calculates linear interpolation between two values or vectors base
         values = []
         params = list(zip_longest_fill(A, B, a_xyzw, b_xyzw, alpha, op, typ))
         pbar = ProgressBar(len(params))
-        print(A, a_xyzw)
-        print(B, b_xyzw)
         for idx, (A, B, a_xyzw, b_xyzw, alpha, op, typ) in enumerate(params):
             # make sure we only interpolate between the longest "stride" we can
             size = min(3, max(0 if not isinstance(A, (list,)) else len(A), 0 if not isinstance(B, (list,)) else len(B)))
@@ -610,7 +608,6 @@ The Lerp Node calculates linear interpolation between two values or vectors base
             # val_a = parse_value(A, EnumConvertType.VEC4, A if A is not None else a_xyzw)
             # val_b = parse_value(B, EnumConvertType.VEC4, B if B is not None else b_xyzw)
             # alpha = parse_value(alpha, EnumConvertType.VEC4, alpha)
-            print(val_a, val_b, alpha)
             typ = EnumConvertType[typ]
             size = max(1, int(typ.value / 10))
             if size > 1:

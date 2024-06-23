@@ -86,7 +86,7 @@ The Constant node generates constant images or masks of a specified size and col
                     pA = image_scalefit(pA, width, height, mode, sample)
                 images.append(cv2tensor_full(pA, matte))
             pbar.update_absolute(idx)
-        return [torch.cat(i, dim=0) for i in list(zip(*images))]
+        return [torch.cat(i, dim=0) for i in zip(*images)]
 
 class ShapeNode(JOVBaseNode):
     NAME = "SHAPE GEN (JOV) ✨"
@@ -128,6 +128,7 @@ The Shape Generation node creates images representing various shapes such as cir
 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
         shape = parse_param(kw, Lexicon.SHAPE, EnumConvertType.STRING, EnumShapes.CIRCLE.name)
+        print(kw[Lexicon.SIDES])
         sides = parse_param(kw, Lexicon.SIDES, EnumConvertType.INT, 3, 3, 512)
         angle = parse_param(kw, Lexicon.ANGLE, EnumConvertType.FLOAT, 0)
         edge = parse_param(kw, Lexicon.EDGE, EnumConvertType.STRING, EnumEdge.CLIP.name)
@@ -148,6 +149,7 @@ The Shape Generation node creates images representing various shapes such as cir
             #color = pixel_eval(color, EnumImageType.BGRA)
             #matte = pixel_eval(matte, EnumImageType.BGRA)
             alpha_m = int(matte[3])
+            print(sides)
             match shape:
                 case EnumShapes.SQUARE:
                     pA = shape_quad(width, height, sizeX, sizeX, fill=color[:3], back=matte[:3])
@@ -183,7 +185,7 @@ The Shape Generation node creates images representing various shapes such as cir
 
             images.append([cv2tensor(pB), cv2tensor(pA), cv2tensor(mask, True)])
             pbar.update_absolute(idx)
-        return [torch.cat(i, dim=0) for i in list(zip(*images))]
+        return [torch.cat(i, dim=0) for i in zip(*images)]
 
 class StereogramNode(JOVBaseNode):
     NAME = "STEREOGRAM (JOV) 📻"
@@ -230,7 +232,7 @@ The Stereogram node creates stereograms, generating 3D images from 2D input. Set
             pA = image_stereogram(pA, depth, divisions, noise, gamma, shift)
             images.append(cv2tensor_full(pA))
             pbar.update_absolute(idx)
-        return [torch.cat(i, dim=0) for i in list(zip(*images))]
+        return [torch.cat(i, dim=0) for i in zip(*images)]
 
 class StereoscopicNode(JOVBaseNode):
     NAME = "STEREOSCOPIC (JOV) 🕶️"
@@ -380,7 +382,7 @@ The Text Generation node generates images containing text based on user-defined 
                     img = image_invert(img, 1)
                 images.append(cv2tensor_full(img, matte))
             pbar.update_absolute(idx)
-        return [torch.cat(i, dim=0) for i in list(zip(*images))]
+        return [torch.cat(i, dim=0) for i in zip(*images)]
 
 class WaveGraphNode(JOVBaseNode):
     NAME = "WAVE GRAPH (JOV) ▶ ılıılı"
@@ -430,7 +432,7 @@ The Wave Graph node visualizes audio waveforms as bars. Adjust parameters like t
                 img = graph_sausage(wave[0], bars, width, height, thickness=thick, color_line=rgb_a, color_back=matte)
             images.append(cv2tensor_full(img))
             pbar.update_absolute(idx)
-        return [torch.cat(i, dim=0) for i in list(zip(*images))]
+        return [torch.cat(i, dim=0) for i in zip(*images)]
 
 '''
 class PurzNode(JOVBaseNode):

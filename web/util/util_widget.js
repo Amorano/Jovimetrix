@@ -85,6 +85,7 @@ export function widget_hide(node, widget, suffix = '') {
     }
     widget.computeSize = () => [0, -4];
     widget.type = CONVERTED_TYPE + suffix;
+
     widget.serializeValue = () => {
 		// Prevent serializing the widget if we have no input linked
 		if (!node.inputs) {

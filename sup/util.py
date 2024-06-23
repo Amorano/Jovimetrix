@@ -202,8 +202,7 @@ def parse_value(val:Any, typ:EnumConvertType, default: Any,
             cc, h, w = new_val.shape
             if cc > 1:
                 weights = [0.2989, 0.5870, 0.1140]
-                new_val = np.dot(new_val[..., :3], weights)
-                new_val = new_val.reshape(512, 512, 1)
+                new_val = torch.dot(new_val[..., :3], weights)[:,:,0]
 
     if typ == EnumConvertType.COORD2D:
         new_val = {'x': new_val[0], 'y': new_val[1]}

@@ -565,14 +565,23 @@ def channel_solid(width:int=MIN_IMAGE_SIZE, height:int=MIN_IMAGE_SIZE, color:TYP
     return np.full((height, width, 4), color, dtype=np.uint8)
 
 def channel_merge(channel:List[TYPE_IMAGE]) -> TYPE_IMAGE:
-    ch = [c.shape[:2] if c is not None else (0, 0) for c in channel[:3]]
-    w = max([c[1] for c in ch])
-    h = max([c[0] for c in ch])
-    ch = [np.zeros((h, w), dtype=np.uint8) if c is None else cv2.resize(c, (h, w)) for c in channel[:3]]
-    if len(channel) == 4:
-        a = channel[3] if len(channel) == 4 else np.full((h, w), 255, dtype=np.uint8)
-        ch.append(a)
-    return cv2.merge(ch)
+    ch_sizes = [c.shape[:2] if c is not None else (0, 0) for c in channel]
+    ch_sizes.append([MIN_IMAGE_SIZE, MIN_IMAGE_SIZE])
+    max_width = max([c[1] for c in ch_sizes])
+    max_height = max([c[0] for c in ch_sizes])
+    img = channel_solid(max_width, max_height, chan=EnumImageType.BGRA)
+    for i, ch in enumerate(channel):
+        if ch is None:
+            continue
+        if ch.shape[:2] != (max_height, max_width):
+            ch = cv2.resize(ch, (max_width, max_height))
+        if ch.ndim > 2:
+            ch = ch[:,:,0]
+        img[:,:,i] = ch
+
+    if len(channel) == 3:
+        img = img[:, :, :3]
+    return img
 
 def channel_swap(imageA:TYPE_IMAGE, swap_ot:EnumPixelSwizzle,
                  imageB:TYPE_IMAGE, swap_in:EnumPixelSwizzle) -> TYPE_IMAGE:

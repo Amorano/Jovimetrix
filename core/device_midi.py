@@ -121,7 +121,6 @@ The MIDI Reader node captures MIDI messages from an external MIDI device or cont
             self.__device = device
         normalize = self.__value / 127.
         msg = MIDIMessage(self.__note_on, self.__channel, self.__control, self.__note, self.__value)
-        print(msg)
         return msg, self.__note_on, self.__channel, self.__control, self.__note, self.__value, normalize,
 
 class MIDIFilterEZNode(JOVBaseNode):
@@ -249,7 +248,6 @@ The MIDI Filter node provides advanced filtering capabilities for MIDI messages 
 
     def run(self, **kw) -> Tuple[bool]:
         message: MIDIMessage = parse_param(kw, Lexicon.MIDI, EnumConvertType.ANY, None)
-        print(message)
         note_on = parse_param(kw, Lexicon.ON, EnumConvertType.STRING, MIDINoteOnFilter.IGNORE.name)
         chan = parse_param(kw, Lexicon.CHANNEL, EnumConvertType.STRING, "")
         ctrl = parse_param(kw, Lexicon.CONTROL, EnumConvertType.STRING, "")
@@ -260,7 +258,6 @@ The MIDI Filter node provides advanced filtering capabilities for MIDI messages 
         results = []
         pbar = ProgressBar(len(params))
         for idx, (message, note_on, chan, ctrl, note, value, normal) in enumerate(params):
-            print(message)
             note_on = MIDINoteOnFilter[note_on]
             if note_on != MIDINoteOnFilter.IGNORE:
                 if note_on == "TRUE" and message.note_on != True:
