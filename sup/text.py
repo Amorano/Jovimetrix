@@ -159,10 +159,10 @@ def text_autosize(text:str, font:str, width:int, height:int, columns:int=0) -> T
     return text, *size
 
 def text_draw(full_text: str, font: ImageFont, width: int, height: int,
-              align: EnumAlignment=EnumAlignment.CENTER,
-              justify: EnumJustify=EnumJustify.CENTER,
-              margin: int=0, line_spacing: int=0,
-              color: TYPE_PIXEL=(255,255,255,255)) -> TYPE_IMAGE:
+            align: EnumAlignment=EnumAlignment.CENTER,
+            justify: EnumJustify=EnumJustify.CENTER,
+            margin: int=0, line_spacing: int=0,
+            color: TYPE_PIXEL=(255,255,255,255)) -> TYPE_IMAGE:
 
     img = Image.new("RGBA", (width, height))
     draw = ImageDraw.Draw(img)

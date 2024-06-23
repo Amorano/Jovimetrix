@@ -570,8 +570,8 @@ The Lerp Node calculates linear interpolation between two values or vectors base
                 Lexicon.IN_A: (WILDCARD, {"tooltip": "Custom Start Point"}),
                 Lexicon.IN_B: (WILDCARD, {"tooltip": "Custom End Point"}),
                 Lexicon.FLOAT: ("FLOAT", {"default": 0., "min": 0., "max": 1.0,
-                                          "step": 0.001, "precision": 4, "round": 0.00001,
-                                          "tooltip": "Blend Amount. 0 = full A, 1 = full B"}),
+                                        "step": 0.001, "precision": 4, "round": 0.00001,
+                                        "tooltip": "Blend Amount. 0 = full A, 1 = full B"}),
                 Lexicon.EASE: (["NONE"] + EnumEase._member_names_, {"default": "NONE"}),
                 Lexicon.TYPE: (names_convert, {"default": names_convert[2],
                                             "tooltip":"Output type desired from resultant operation"}),
@@ -796,17 +796,17 @@ The Value Node supplies raw or default values for various data types, supporting
                 Lexicon.IN_A: (WILDCARD, {"default": None, "tooltip":"Passes a raw value directly, or supplies defaults for any value inputs without connections"}),
                 Lexicon.TYPE: (typ, {"default": EnumConvertType.BOOLEAN.name}),
                 Lexicon.X: (WILDCARD, {"default": 0, "min": -sys.maxsize,
-                                       "max": sys.maxsize, "step": 0.01, "precision": 6,
-                                       "forceInput": True}),
+                                    "max": sys.maxsize, "step": 0.01, "precision": 6,
+                                    "forceInput": True}),
                 Lexicon.Y: (WILDCARD, {"default": 0, "min": -sys.maxsize,
-                                       "max": sys.maxsize, "step": 0.01, "precision": 6,
-                                       "forceInput": True}),
+                                    "max": sys.maxsize, "step": 0.01, "precision": 6,
+                                    "forceInput": True}),
                 Lexicon.Z: (WILDCARD, {"default": 0, "min": -sys.maxsize,
-                                       "max": sys.maxsize, "step": 0.01, "precision": 6,
-                                       "forceInput": True}),
+                                    "max": sys.maxsize, "step": 0.01, "precision": 6,
+                                    "forceInput": True}),
                 Lexicon.W: (WILDCARD, {"default": 0, "min": -sys.maxsize,
-                                       "max": sys.maxsize, "step": 0.01, "precision": 6,
-                                       "forceInput": True}),
+                                    "max": sys.maxsize, "step": 0.01, "precision": 6,
+                                    "forceInput": True}),
                 Lexicon.IN_A+Lexicon.IN_A: ("VEC4", {"default": (0, 0, 0, 0),
                                         #"min": -sys.maxsize, "max": sys.maxsize,
                                         "label": [Lexicon.X, Lexicon.Y],
@@ -840,8 +840,8 @@ The Value Node supplies raw or default values for various data types, supporting
             default = [x_str]
             default2 = None
             if typ not in [EnumConvertType.STRING, EnumConvertType.LIST, \
-                           EnumConvertType.DICT,\
-                           EnumConvertType.IMAGE, EnumConvertType.LATENT, EnumConvertType.ANY, EnumConvertType.MASK]:
+                        EnumConvertType.DICT,\
+                        EnumConvertType.IMAGE, EnumConvertType.LATENT, EnumConvertType.ANY, EnumConvertType.MASK]:
                 a, b, c, d = xyzw
                 a2, b2, c2, d2 = yyzw
                 default = (a if r_x is None else r_x,
@@ -853,8 +853,8 @@ The Value Node supplies raw or default values for various data types, supporting
             val = parse_value(raw, typ, default)
             val2 = parse_value(default2, typ, default2)
             typ = EnumConvertType.VEC4 if typ in [EnumConvertType.VEC4, EnumConvertType.VEC3, \
-                                                  EnumConvertType.VEC2, EnumConvertType.FLOAT] \
-                                                  else EnumConvertType.VEC4INT
+                                                EnumConvertType.VEC2, EnumConvertType.FLOAT] \
+                                                else EnumConvertType.VEC4INT
 
             # check if set to randomize....
             if seed != 0:

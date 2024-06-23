@@ -84,37 +84,37 @@ class EnumAdjustOP(Enum):
     CLOSE = 74
 
 class EnumBlendType(Enum):
-	"""Rename the blend type names."""
-	NORMAL = BlendType.NORMAL
-	ADDITIVE = BlendType.ADDITIVE
-	NEGATION = BlendType.NEGATION
-	DIFFERENCE = BlendType.DIFFERENCE
-	MULTIPLY = BlendType.MULTIPLY
-	DIVIDE = BlendType.DIVIDE
-	LIGHTEN = BlendType.LIGHTEN
-	DARKEN = BlendType.DARKEN
-	SCREEN = BlendType.SCREEN
-	BURN = BlendType.COLOURBURN
-	DODGE = BlendType.COLOURDODGE
-	OVERLAY = BlendType.OVERLAY
-	HUE = BlendType.HUE
-	SATURATION = BlendType.SATURATION
-	LUMINOSITY = BlendType.LUMINOSITY
-	COLOR = BlendType.COLOUR
-	SOFT = BlendType.SOFTLIGHT
-	HARD = BlendType.HARDLIGHT
-	PIN = BlendType.PINLIGHT
-	VIVID = BlendType.VIVIDLIGHT
-	EXCLUSION = BlendType.EXCLUSION
-	REFLECT = BlendType.REFLECT
-	GLOW = BlendType.GLOW
-	XOR = BlendType.XOR
-	EXTRACT = BlendType.GRAINEXTRACT
-	MERGE = BlendType.GRAINMERGE
-	DESTIN = BlendType.DESTIN
-	DESTOUT = BlendType.DESTOUT
-	SRCATOP = BlendType.SRCATOP
-	DESTATOP = BlendType.DESTATOP
+    """Rename the blend type names."""
+    NORMAL = BlendType.NORMAL
+    ADDITIVE = BlendType.ADDITIVE
+    NEGATION = BlendType.NEGATION
+    DIFFERENCE = BlendType.DIFFERENCE
+    MULTIPLY = BlendType.MULTIPLY
+    DIVIDE = BlendType.DIVIDE
+    LIGHTEN = BlendType.LIGHTEN
+    DARKEN = BlendType.DARKEN
+    SCREEN = BlendType.SCREEN
+    BURN = BlendType.COLOURBURN
+    DODGE = BlendType.COLOURDODGE
+    OVERLAY = BlendType.OVERLAY
+    HUE = BlendType.HUE
+    SATURATION = BlendType.SATURATION
+    LUMINOSITY = BlendType.LUMINOSITY
+    COLOR = BlendType.COLOUR
+    SOFT = BlendType.SOFTLIGHT
+    HARD = BlendType.HARDLIGHT
+    PIN = BlendType.PINLIGHT
+    VIVID = BlendType.VIVIDLIGHT
+    EXCLUSION = BlendType.EXCLUSION
+    REFLECT = BlendType.REFLECT
+    GLOW = BlendType.GLOW
+    XOR = BlendType.XOR
+    EXTRACT = BlendType.GRAINEXTRACT
+    MERGE = BlendType.GRAINMERGE
+    DESTIN = BlendType.DESTIN
+    DESTOUT = BlendType.DESTOUT
+    SRCATOP = BlendType.SRCATOP
+    DESTATOP = BlendType.DESTATOP
 
 class EnumColorMap(Enum):
     AUTUMN = cv2.COLORMAP_AUTUMN
@@ -542,7 +542,7 @@ def channel_add(image:TYPE_IMAGE, color:TYPE_PIXEL=255) -> TYPE_IMAGE:
     return np.concatenate([image, new], axis=-1)
 
 def channel_solid(width:int=MIN_IMAGE_SIZE, height:int=MIN_IMAGE_SIZE, color:TYPE_PIXEL=(0, 0, 0, 255),
-                  chan:EnumImageType=EnumImageType.BGR) -> TYPE_IMAGE:
+                chan:EnumImageType=EnumImageType.BGR) -> TYPE_IMAGE:
 
     if chan == EnumImageType.GRAYSCALE:
         color = pixel_eval(color, EnumImageType.GRAYSCALE)
@@ -584,7 +584,7 @@ def channel_merge(channel:List[TYPE_IMAGE]) -> TYPE_IMAGE:
     return img
 
 def channel_swap(imageA:TYPE_IMAGE, swap_ot:EnumPixelSwizzle,
-                 imageB:TYPE_IMAGE, swap_in:EnumPixelSwizzle) -> TYPE_IMAGE:
+                imageB:TYPE_IMAGE, swap_in:EnumPixelSwizzle) -> TYPE_IMAGE:
     index_out = int(swap_ot.value / 10)
     cc_out = imageA.shape[2] if imageA.ndim == 3 else 1
     # swap channel is out of range of image size
@@ -668,8 +668,8 @@ def image_blend(imageA: TYPE_IMAGE, imageB: TYPE_IMAGE, mask:Optional[TYPE_IMAGE
     return image_crop_center(image, w, h)
 
 def image_color_blind(image: TYPE_IMAGE, deficiency:EnumCBDeficiency,
-                      simulator:EnumCBSimulator=EnumCBSimulator.AUTOSELECT,
-                      severity:float=1.0) -> TYPE_IMAGE:
+                    simulator:EnumCBSimulator=EnumCBSimulator.AUTOSELECT,
+                    severity:float=1.0) -> TYPE_IMAGE:
 
     cc = image.shape[2] if image.ndim == 3 else 1
     if cc == 4:
@@ -1019,9 +1019,9 @@ def image_invert(image: TYPE_IMAGE, value: float) -> TYPE_IMAGE:
     return bgr2image(image, alpha, cc == 1)
 
 def image_lerp(imageA:TYPE_IMAGE,
-              imageB:TYPE_IMAGE,
-              mask:TYPE_IMAGE=None,
-              alpha:float=1.) -> TYPE_IMAGE:
+            imageB:TYPE_IMAGE,
+            mask:TYPE_IMAGE=None,
+            alpha:float=1.) -> TYPE_IMAGE:
 
     imageA = imageA.astype(np.float32)
     imageB = imageB.astype(np.float32)
@@ -1301,9 +1301,9 @@ def image_scale(image: TYPE_IMAGE, scale:TYPE_COORD=(1.0, 1.0), sample:EnumInter
     return image_affine_edge(image, scale_func, edge)
 
 def image_scalefit(image: TYPE_IMAGE, width: int, height:int,
-                 mode:EnumScaleMode=EnumScaleMode.NONE,
-                 sample:EnumInterpolation=EnumInterpolation.LANCZOS4,
-                 matte:TYPE_PIXEL=(0,0,0,0)) -> TYPE_IMAGE:
+                mode:EnumScaleMode=EnumScaleMode.NONE,
+                sample:EnumInterpolation=EnumInterpolation.LANCZOS4,
+                matte:TYPE_PIXEL=(0,0,0,0)) -> TYPE_IMAGE:
 
     match mode:
         case EnumScaleMode.MATTE:
@@ -1330,7 +1330,7 @@ def image_scalefit(image: TYPE_IMAGE, width: int, height:int,
     return image
 
 def image_sharpen(image:TYPE_IMAGE, kernel_size=None, sigma:float=1.0,
-                   amount:float=1.0, threshold:float=0) -> TYPE_IMAGE:
+                amount:float=1.0, threshold:float=0) -> TYPE_IMAGE:
     """Return a sharpened version of the image, using an unsharp mask."""
 
     kernel_size = (kernel_size, kernel_size) if kernel_size else (5, 5)
@@ -1456,9 +1456,9 @@ def image_stereo_shift(image: TYPE_IMAGE, depth: TYPE_IMAGE, shift:float=10) -> 
     return pil2cv(shifted_image)
 
 def image_threshold(image:TYPE_IMAGE, threshold:float=0.5,
-                     mode:EnumThreshold=EnumThreshold.BINARY,
-                     adapt:EnumThresholdAdapt=EnumThresholdAdapt.ADAPT_NONE,
-                     block:int=3, const:float=0.) -> TYPE_IMAGE:
+                    mode:EnumThreshold=EnumThreshold.BINARY,
+                    adapt:EnumThresholdAdapt=EnumThresholdAdapt.ADAPT_NONE,
+                    block:int=3, const:float=0.) -> TYPE_IMAGE:
 
     const = max(-100, min(100, const))
     block = max(3, block if block % 2 == 1 else block + 1)
@@ -1505,9 +1505,9 @@ def image_transform(image: TYPE_IMAGE, offset:TYPE_COORD=(0.0, 0.0), angle:float
 # MORPHOLOGY
 
 def morph_edge_detect(image: TYPE_IMAGE,
-                      ksize: int=3,
-                      low: float=0.27,
-                      high:float=0.6) -> TYPE_IMAGE:
+                    ksize: int=3,
+                    low: float=0.27,
+                    high:float=0.6) -> TYPE_IMAGE:
 
     image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     ksize = max(3, ksize)
@@ -1563,8 +1563,8 @@ def kernel(stride: int) -> TYPE_IMAGE:
     Example:
     >>> KERNEL(3)
     array([[ 0, 1, 1],
-           [-1, 0, 1],
-           [-1, -1, 0]], dtype=int8)
+        [-1, 0, 1],
+        [-1, -1, 0]], dtype=int8)
     """
     # Create an initial matrix of zeros
     kernel = np.zeros((stride, stride), dtype=np.int8)
@@ -1624,7 +1624,7 @@ def color_match_reinhard(image: TYPE_IMAGE, target: TYPE_IMAGE) -> TYPE_IMAGE:
     return cv2.cvtColor(lab_tar, cv2.COLOR_Lab2BGR)
 
 def color_match_lut(image: TYPE_IMAGE, colormap:int=cv2.COLORMAP_JET,
-                      usermap:TYPE_IMAGE=None, num_colors:int=255) -> TYPE_IMAGE:
+                    usermap:TYPE_IMAGE=None, num_colors:int=255) -> TYPE_IMAGE:
     """Colorize one input based on built in cv2 color maps or a user defined image."""
     cc = image.shape[2] if image.ndim == 3 else 1
     if cc == 4:

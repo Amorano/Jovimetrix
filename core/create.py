@@ -312,7 +312,7 @@ The Text Generation node generates images containing text based on user-defined 
                                     "round": 0.00001, "label": [Lexicon.X, Lexicon.Y],
                                     "tooltip":"Offset the position"}),
                 Lexicon.ANGLE: ("FLOAT", {"default": 0, "min": -180, "max": 180,
-                                          "step": 0.01, "precision": 4, "round": 0.00001}),
+                                        "step": 0.01, "precision": 4, "round": 0.00001}),
                 Lexicon.EDGE: (EnumEdge._member_names_, {"default": EnumEdge.CLIP.name}),
                 Lexicon.INVERT: ("BOOLEAN", {"default": False, "tooltip": "Invert the mask input"})
             }
@@ -339,13 +339,13 @@ The Text Generation node generates images containing text based on user-defined 
         invert = parse_param(kw, Lexicon.INVERT, EnumConvertType.BOOLEAN, False)
         images = []
         params = list(zip_longest_fill(full_text, font_idx, autosize, letter, color,
-                                  matte, columns, font_size, align, justify, margin,
-                                  line_spacing, wihi, pos, angle, edge, invert))
+                                matte, columns, font_size, align, justify, margin,
+                                line_spacing, wihi, pos, angle, edge, invert))
 
         pbar = ProgressBar(len(params))
         for idx, (full_text, font_idx, autosize, letter, color, matte, columns,
-                  font_size, align, justify, margin, line_spacing, wihi, pos,
-                  angle, edge, invert) in enumerate(params):
+                font_size, align, justify, margin, line_spacing, wihi, pos,
+                angle, edge, invert) in enumerate(params):
 
             width, height = wihi
             font_name = self.FONTS[font_idx]
@@ -402,7 +402,7 @@ The Wave Graph node visualizes audio waveforms as bars. Adjust parameters like t
                 Lexicon.VALUE: ("INT", {"default": 100, "min": 32, "max": 8192, "step": 1,
                                         "tooltip": "Number of Vertical bars to try to fit within the specified Width x Height"}),
                 Lexicon.THICK: ("FLOAT", {"default": 0.72, "min": 0, "max": 1, "step": 0.01,
-                                          "tooltip": "The percentage of fullness for each bar; currently scaled from the left only"}),
+                                        "tooltip": "The percentage of fullness for each bar; currently scaled from the left only"}),
                 Lexicon.WH: ("VEC2", {"default": (256, 256),
                                     "step": 1, "min":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H],
                                     "tooltip": "Final output size of the wave bar graph"}),

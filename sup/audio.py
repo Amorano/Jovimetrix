@@ -44,6 +44,6 @@ def graph_sausage(data: np.ndarray, bar_count:int, width:int, height:int,
         current_x = int((i + offset) * line_width)
         current_y = int((height - item_height) / 2)
         draw.line((current_x, current_y, current_x, current_y + item_height),
-                  fill=color_back, width=int(thickness * line_width))
+                fill=color_back, width=int(thickness * line_width))
     image = pil2cv(image)
     return image_scalefit(image, width, height, EnumScaleMode.FIT)

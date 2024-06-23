@@ -378,7 +378,7 @@ The Graph node visualizes a series of data points over time. It accepts a dynami
                 Lexicon.RESET: ("BOOLEAN", {"default": False}),
                 Lexicon.VALUE: ("INT", {"default": 60, "min": 0, "tooltip":"Number of values to graph and display"}),
                 Lexicon.WH: ("VEC2", {"default": (512, 512), "min":MIN_IMAGE_SIZE,
-                                      "step": 1, "label": [Lexicon.W, Lexicon.H]})
+                                    "step": 1, "label": [Lexicon.W, Lexicon.H]})
             }
         })
         return Lexicon._parse(d, cls)

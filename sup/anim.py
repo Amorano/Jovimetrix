@@ -249,47 +249,47 @@ class EnumWave(Enum):
 
 @jit(cache=True)
 def wave_sin(phase: float, frequency: float, amplitude: float, offset: float,
-             timestep: float) -> float:
+            timestep: float) -> float:
     return amplitude * np.sin(frequency * np.pi * 2 * timestep + phase) + offset
 
 @jit(cache=True)
 def wave_cos(phase: float, frequency: float, amplitude: float, offset: float,
-             timestep: float) -> float:
+            timestep: float) -> float:
     return amplitude * np.cos(frequency * np.pi * 2 * timestep + phase) + offset
 
 @jit(cache=True)
 def wave_tan(phase: float, frequency: float, amplitude: float, offset: float,
-             timestep: float) -> float:
+            timestep: float) -> float:
     return amplitude * np.tan(frequency * np.pi * 2 * timestep + phase) + offset
 
 @jit(cache=True)
 def wave_sawtooth(phase: float, frequency: float, amplitude: float, offset: float,
-                  timestep: float) -> float:
+                timestep: float) -> float:
     return amplitude * (2 * (frequency * timestep + phase) % 1 - 0.5) + offset
 
 @jit(cache=True)
 def wave_triangle(phase: float, frequency: float, amplitude: float, offset: float,
-                  timestep: float) -> float:
+                timestep: float) -> float:
     return amplitude * (4 * np.abs((frequency * timestep + phase) % 1 - 0.5) - 1) + offset
 
 @jit(cache=True)
 def wave_ramp(phase: float, frequency: float, amplitude: float, offset: float,
-              timestep: float) -> float:
+            timestep: float) -> float:
     return amplitude * (frequency * timestep + phase % 1) + offset
 
 @jit(cache=True)
 def wave_step(phase: float, frequency: float, amplitude: float, offset: float,
-              timestep: float) -> float:
+            timestep: float) -> float:
     return amplitude * np.heaviside(frequency * timestep + phase, 1) + offset
 
 @jit(cache=True)
 def wave_haversine(phase: float, frequency: float, amplitude: float, offset: float,
-                   timestep: float) -> float:
+                timestep: float) -> float:
     return amplitude * (1 - np.cos(frequency * np.pi * 2 * (timestep + phase))) + offset
 
 @jit(cache=True)
 def wave_noise(phase: float, frequency: float, amplitude: float, offset: float,
-               timestep: float) -> float:
+            timestep: float) -> float:
     return amplitude * np.random.uniform(-1, 1) + offset
 
 # =============================================================================
@@ -303,29 +303,29 @@ def wave_square(phase: float, frequency: float, amplitude: float, offset: float,
 
 @jit(cache=True)
 def wave_exponential(phase: float, frequency: float, amplitude: float,
-                     offset: float, timestep: float) -> float:
+                    offset: float, timestep: float) -> float:
     return amplitude * np.exp(-frequency * (timestep + phase)) + offset
 
 @jit(cache=True)
 def wave_rectangular_pulse(phase: float, frequency: float, amplitude: float,
-                           offset: float, timestep: float) -> float:
+                        offset: float, timestep: float) -> float:
     return amplitude * np.heaviside(timestep + phase, 1) * np.heaviside(-(timestep + phase) + frequency, 1) + offset
 
 @jit(cache=True)
 def wave_logarithmic(phase: float, frequency: float, amplitude: float, offset: float,
-                     timestep: float) -> float:
+                    timestep: float) -> float:
     return amplitude * np.log10(timestep + phase) / np.max(1, np.log10(frequency)) + offset
 
 @jit(cache=True)
 def wave_chirp(phase: float, frequency: float, amplitude: float, offset: float,
-               timestep: float) -> float:
+            timestep: float) -> float:
     return amplitude * np.sin(np.pi * 2 * frequency * (timestep + phase)**2) + offset
 
 ####
 
 @jit(cache=True)
 def wave_gaussian(phase: float, mean: float, amplitude: float, offset: float,
-                  timestep: float, std_dev: float = 1) -> float:
+                timestep: float, std_dev: float = 1) -> float:
     return amplitude * np.exp(-0.5 * ((timestep + phase - mean) / std_dev)**2) + offset
 
 def wave_op(op: EnumEase, phase: float, frequency: float, amplitude: float,

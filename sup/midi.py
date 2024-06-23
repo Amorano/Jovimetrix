@@ -39,7 +39,7 @@ def midi_load(fn) -> None:
     mid = MidiFile(fn, clip=True)
     logger.debug(mid)
     for msg in mid.tracks[0]:
-       logger.debug(msg)
+        logger.debug(msg)
 
 def midi_device_names() -> List[str]:
     try:
