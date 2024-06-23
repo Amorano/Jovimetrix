@@ -192,10 +192,6 @@ export const VectorWidget = (app, inputName, options, initial, desc='') => {
         app.canvas.setDirty(true, true);
     }
 
-    widget.computeSize = function (width) {
-        return [width, LiteGraph.NODE_WIDGET_HEIGHT]
-    }
-
     widget.serializeValue = async () => {
         if (widget.value === null) {
             return null;

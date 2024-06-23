@@ -7,16 +7,6 @@
 import { app } from "../../../scripts/app.js"
 import * as util_config from '../util/util_config.js'
 import { hex2rgb } from '../util/util_color.js'
-import { $el } from "../../../scripts/ui.js"
-import { node_isOverInput } from '../util/util.js'
-
-const style = `
-.tooltips {
-    object-fit: absolute;
-    width: var(--comfy-img-preview-width);
-    height: var(--comfy-img-preview-height);
-}
-`;
 
 let g_color_style;
 let g_thickness = 1;
@@ -24,7 +14,7 @@ let g_highlight;
 
 app.registerExtension({
     name: "jovimetrix.cozy.fields",
-    init() {
+    setup() {
         let id = "user.default.color.style"
         app.ui.settings.addSetting({
             id: `jov.${id}`,
@@ -67,30 +57,6 @@ app.registerExtension({
                 g_highlight = val;
             },
         });
-    },
-    async setup() {
-        $el(
-            'div',
-            {
-                id: "jov-tooltip",
-                parent: document.body,
-            },
-            [
-                $el("table", [
-                    $el(
-                        "caption",
-                        { textContent: "Settings" },
-                    ),
-                    $el("button", {
-                        type: "button",
-                        textContent: "Close",
-                        style: {
-                            cursor: "pointer",
-                        },
-                    }),
-                ]),
-            ]
-        );
     },
     async nodeCreated(node) {
         const onDrawForeground = node.onDrawForeground;
@@ -136,50 +102,6 @@ app.registerExtension({
                 ctx.restore();
             }
             return me;
-        }
-
-        const widget_tooltip = (node.widgets || [])
-            .find(widget => widget.type === 'JTOOLTIP');
-        if (widget_tooltip) {
-            let hoverTimeout = null;
-            let last_control = null;
-            const tips = widget_tooltip.options.default || {};
-            const hoverThreshold = 220;
-            const onMouseMove = node.onMouseMove;
-            node.onMouseMove = function (e, pos, graph) {
-                const me = onMouseMove?.apply(this, arguments);
-                if (hoverTimeout) {
-                    clearTimeout(hoverTimeout);
-                    hoverTimeout = null;
-                }
-
-                if (!node.flags.collapsed) {
-                    const slot = node.getSlotInPosition(pos[0] + node.pos[0], pos[1] + node.pos[1]);
-                    hoverTimeout = setTimeout(() => {
-                        if (slot) {
-                            if (last_control != slot) {
-                                let tip;
-                                if (slot.input) {
-                                    tip = tips?.[slot.input.name];
-                                } else if (slot.output) {
-                                    tip = tips?.[slot.output.name];
-                                } else if (slot.widgets) {
-                                    tip = tips?.[slot.widgets.name];
-                                }
-                                if (tip) {
-                                    console.info(tip)
-                                    //tooltip.style.left = `${e.clientX}px`;
-                                    //tooltip.style.top = `${e.clientY + 20}px`;
-                                    //tooltip.style.display = 'block';
-                                    //tooltip.innerHTML = 'Hovered over target for more than 1 second';
-                                }
-                            }
-                            last_control = slot;
-                        }
-                    }, hoverThreshold);
-                }
-                return me;
-            }
         }
     },
 })

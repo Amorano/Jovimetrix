@@ -53,39 +53,6 @@ export function isInsideRectangle(x, y, left, top, width, height) {
     return false;
 }
 
-export function node_isOverInput(node, canvas_x, canvas_y) {
-    if (node.inputs) {
-        for (var i = 0, l = node.inputs.length; i < l; ++i) {
-            var link_pos = node.getConnectionPos(true, i);
-            console.info(link_pos);
-            var is_inside = false;
-            if (node.horizontal) {
-                is_inside = isInsideRectangle(
-                    canvas_x,
-                    canvas_y,
-                    link_pos[0] - 5,
-                    link_pos[1] - 10,
-                    10,
-                    20
-                );
-            } else {
-                is_inside = isInsideRectangle(
-                    canvas_x,
-                    canvas_y,
-                    link_pos[0] - 10,
-                    link_pos[1] - 5,
-                    40,
-                    10
-                );
-            }
-            if (is_inside) {
-                return i;
-            }
-        }
-    }
-    return -1;
-};
-
 export function fitHeight(node) {
     const size = node.computeSize([node.size[0], node.size[1]]);
     node.setSize([node.size[0], size[1]]);
@@ -244,4 +211,24 @@ export function showModal(innerHTML, eventCallback, timeout=null) {
         //    modal.dispatchEvent(new Event('tick'));
         //}, 1000);
     });
+}
+
+/*
+* wraps a single text line into maxWidth chunks
+*/
+function wrapText(text, maxWidth = 145) {
+    const words = text.split(' ');
+    const lines = [];
+    let currentLine = '';
+    for (const word of words) {
+        const potentialLine = currentLine ? `${currentLine} ${word}` : word;
+        if (potentialLine.length <= maxWidth) {
+            currentLine = potentialLine;
+        } else {
+            if (currentLine) lines.push(currentLine);
+            currentLine = word;
+        }
+    }
+    if (currentLine) lines.push(currentLine);
+    return lines;
 }

@@ -5,19 +5,11 @@
  */
 
 import { app } from "../../../scripts/app.js"
-import { CONVERTED_TYPE } from '../util/util_widget.js'
-import { CONFIG_USER } from '../util/util_config.js'
 import { node_cleanup } from '../util/util.js'
 import "../extern/shodown.min.js"
 
 const JOV_WEBWIKI_URL = "https://github.com/Amorano/Jovimetrix/wiki";
 const JOV_HELP_URL = "https://raw.githubusercontent.com/Amorano/Jovimetrix-examples/master";
-
-const TOOLTIP_LENGTH = 155;
-const TOOLTIP_WIDTH_MAX = 225;
-const TOOLTIP_WIDTH_OFFSET = 10;
-const TOOLTIP_HEIGHT_MAX = LiteGraph.NODE_SLOT_HEIGHT * 0.65;
-const FONT_SIZE = 7;
 
 const dataCache = {};
 
@@ -113,76 +105,15 @@ const documentationConverter = new showdown.Converter({
     openLinksInNewWindow: true,
 });
 
-/*
-* wraps a single text line into maxWidth chunks
-*/
-function wrapText(text, maxWidth = 145) {
-    const words = text.split(' ');
-    const lines = [];
-    let currentLine = '';
-    for (const word of words) {
-        const potentialLine = currentLine ? `${currentLine} ${word}` : word;
-        if (potentialLine.length <= maxWidth) {
-            currentLine = potentialLine;
-        } else {
-            if (currentLine) lines.push(currentLine);
-            currentLine = word;
-        }
-    }
-    if (currentLine) lines.push(currentLine);
-    return lines;
-}
-
-export const JTooltipWidget = (app, name, opts) => {
-    let options = opts || {};
-    options.serialize = false;
-    const w = {
-        name: name,
-        type: "JTOOLTIP",
-        hidden: true,
-        options: options,
-        draw: function (ctx, node, width, Y, height) {
-            return;
-        },
-        computeSize: function (width) {
-            return [width, 0];
-        }
-    }
-    return w
-}
-
 app.registerExtension({
     name: "jovimetrix.help",
-    async getCustomWidgets(app) {
-        return {
-            JTOOLTIP: (node, inputName, inputData, app) => ({
-                widget: node.addCustomWidget(JTooltipWidget(app, inputName, inputData[1]))
-            })
-        }
-    },
     init() {
-        this.tooltips_visible = false;
-        window.addEventListener("keydown", (e) => {
-            this.handleKeydown(e);
-        });
-        window.addEventListener("keyup", (e) => {
-            this.handleKeydown(e);
-        });
         create_documentation_stylesheet();
 	},
-    handleKeydown(e) {
-        if ((e.ctrlKey && e.altKey)) {
-            this.tooltips_visible = true;
-        } else {
-            this.tooltips_visible = false;
-        };
-    },
 	beforeRegisterNodeDef(nodeType, nodeData) {
         if (!nodeData?.category?.startsWith("JOVIMETRIX")) {
             return;
         }
-
-        const self = this;
         let opts = { icon_size: 14, icon_margin: 3 }
         const iconSize = opts.icon_size ? opts.icon_size : 14;
         const iconMargin = opts.icon_margin ? opts.icon_margin : 3;
@@ -212,88 +143,6 @@ app.registerExtension({
         nodeType.prototype.onDrawForeground = function (ctx) {
             const me = onDrawForeground?.apply?.(this, arguments);
             if (this.flags.collapsed) return me;
-            if (self.tooltips_visible) {
-                const TOOLTIP_COLOR = CONFIG_USER.color.tooltips;
-                let alpha = TOOLTIP_COLOR.length > 6 ? TOOLTIP_COLOR.slice(-2) : "FF";
-                for (const selectedNode of Object.values(app.canvas.selected_nodes)) {
-                    if (selectedNode !== this) {
-                        continue
-                    }
-                    const widget_tooltip = (selectedNode.widgets || [])
-                        .find(widget => widget.type === 'JTOOLTIP');
-                    if (!widget_tooltip) {
-                        continue;
-                    }
-                    const tips = widget_tooltip.options.default || {};
-                    let visible = [];
-                    let offset = TOOLTIP_HEIGHT_MAX / 4;
-                    for(const item of this.inputs || []) {
-                        if (item.hidden == undefined || item?.hidden == false) {
-                            const data = {
-                                name: item.name,
-                                y: offset
-                            }
-                            visible.push(data);
-                        }
-                        offset += TOOLTIP_HEIGHT_MAX * 1.45;
-                    };
-                    for(const item of this.widgets || []) {
-                        if ((item.type != CONVERTED_TYPE) && (item.hidden == undefined || item?.hidden == false)) {
-                            const data = {
-                                name: item.name,
-                                options: item.options,
-                                y: item.y || item.last_y ||
-                                    visible[visible.length-1]?.y ||
-                                    visible[visible.length-1]?.last_y
-                            }
-                            visible.push(data);
-                        }
-                    };
-                    if (visible.length == 0) {
-                        continue;
-                    }
-                    ctx.save();
-                    ctx.lineWidth = 1
-                    ctx.fillStyle = LiteGraph.WIDGET_BGCOLOR; //"#333333" + alpha; // LiteGraph.WIDGET_BGCOLOR
-                    const offset_y = visible[0].y;
-                    const height = this.size[1] - offset_y;
-                    ctx.roundRect(-TOOLTIP_WIDTH_MAX-TOOLTIP_WIDTH_OFFSET,
-                        offset_y - TOOLTIP_HEIGHT_MAX / 2,
-                        TOOLTIP_WIDTH_MAX + 4, height, 8);
-                    ctx.fill();
-                    ctx.fillStyle = LiteGraph.WIDGET_OUTLINE_COLOR;
-                    ctx.roundRect(-TOOLTIP_WIDTH_MAX-TOOLTIP_WIDTH_OFFSET,
-                        offset_y- TOOLTIP_HEIGHT_MAX / 2,
-                        TOOLTIP_WIDTH_MAX + 4, height, 8);
-                    ctx.stroke();
-
-                    let index = 0;
-                    for(const item of visible) {
-                        let text = tips[item.name] || item.options?.tooltip || item.name;
-                        text = text.slice(0, TOOLTIP_LENGTH).toUpperCase();
-                        const size = text.length;
-                        let wrap = 50;
-                        if (size > 65) {
-                            wrap = 60;
-                        } else if (size > 90) {
-                            wrap = 80;
-                        }
-                        var lines = wrapText(text, wrap).slice(0, 3);
-                        ctx.font = FONT_SIZE - lines.length / 2 + "px sans-serif";
-                        ctx.fillStyle = TOOLTIP_COLOR.slice(0, 7) + alpha;
-                        const offset = TOOLTIP_HEIGHT_MAX * 2 / (lines.length+1);
-                        let idx = 1;
-                        for (const line of lines) {
-                            const sz = ctx.measureText(line);
-                            const left = Math.max(-TOOLTIP_WIDTH_MAX, -TOOLTIP_WIDTH_OFFSET-sz.width);
-                            ctx.fillText(line, left, item.y + idx * offset);
-                            idx += 1;
-                        }
-                        index += 1
-                    }
-                    ctx.restore();
-                }
-            }
 
             const x = this.size[0] - iconSize - iconMargin
             if (this.show_doc && docElement === null) {

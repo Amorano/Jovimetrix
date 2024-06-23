@@ -583,6 +583,9 @@ The Lerp Node calculates linear interpolation between two values or vectors base
                                         #"min": -sys.maxsize, "max": sys.maxsize,
                                         "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W],
                                         "tooltip":"default value vector for B"}),
+            },
+            "outputs": {
+                Lexicon.ANY_OUT: {"tooltip":"testing the output tool tips"}
             }
         })
         return Lexicon._parse(d, cls)
@@ -695,12 +698,16 @@ The `Tick` node acts as a timer and frame counter, emitting pulses or signals ba
         d.update({
             "optional": {
                 # data to pass on a pulse of the loop
-                Lexicon.TRIGGER: (WILDCARD, {"default": None, "tooltip":"Output to send when beat (BPM setting) is hit"}),
+                Lexicon.TRIGGER: (WILDCARD, {"default": None,
+                                             "tooltip":"Output to send when beat (BPM setting) is hit"}),
                 # forces a MOD on CYCLE
-                Lexicon.VALUE: ("INT", {"min": 0, "default": 0, "step": 1, "tooltip": "the current frame number of the tick"}),
-                Lexicon.LOOP: ("INT", {"min": 0, "default": 0, "step": 1, "tooltip": "number of frames before looping starts. 0 means continuous playback (no loop point)"}),
+                Lexicon.VALUE: ("INT", {"min": 0, "default": 0, "step": 1,
+                                        "tooltip": "the current frame number of the tick"}),
+                Lexicon.LOOP: ("INT", {"min": 0, "default": 0, "step": 1,
+                                       "tooltip": "number of frames before looping starts. 0 means continuous playback (no loop point)"}),
                 #
-                Lexicon.FPS: ("INT", {"min": 1, "default": 24, "step": 1, "tooltip": "Fixed frame step rate based on FPS (1/FPS)"}),
+                Lexicon.FPS: ("INT", {"min": 1, "default": 24, "step": 1,
+                                      "tooltip": "Fixed frame step rate based on FPS (1/FPS)"}),
                 Lexicon.BPM: ("FLOAT", {"min": 1, "max": 60000, "default": 120, "step": 1,
                                         "tooltip": "BPM trigger rate to send the input. If input is empty, TRUE is sent on trigger"}),
                 Lexicon.NOTE: ("INT", {"default": 4, "min": 1, "max": 256, "step": 1,
@@ -793,8 +800,10 @@ The Value Node supplies raw or default values for various data types, supporting
         except: pass
         d.update({
             "optional": {
-                Lexicon.IN_A: (WILDCARD, {"default": None, "tooltip":"Passes a raw value directly, or supplies defaults for any value inputs without connections"}),
-                Lexicon.TYPE: (typ, {"default": EnumConvertType.BOOLEAN.name}),
+                Lexicon.IN_A: (WILDCARD, {"default": None,
+                                        "tooltip":"Passes a raw value directly, or supplies defaults for any value inputs without connections"}),
+                Lexicon.TYPE: (typ, {"default": EnumConvertType.BOOLEAN.name,
+                                    "tooltip":"Take the input and convert it into the selected type."}),
                 Lexicon.X: (WILDCARD, {"default": 0, "min": -sys.maxsize,
                                     "max": sys.maxsize, "step": 0.01, "precision": 6,
                                     "forceInput": True}),
@@ -808,14 +817,14 @@ The Value Node supplies raw or default values for various data types, supporting
                                     "max": sys.maxsize, "step": 0.01, "precision": 6,
                                     "forceInput": True}),
                 Lexicon.IN_A+Lexicon.IN_A: ("VEC4", {"default": (0, 0, 0, 0),
-                                        #"min": -sys.maxsize, "max": sys.maxsize,
-                                        "label": [Lexicon.X, Lexicon.Y],
-                                        "tooltip":"default value vector for A"}),
+                                    #"min": -sys.maxsize, "max": sys.maxsize,
+                                    "label": [Lexicon.X, Lexicon.Y],
+                                    "tooltip":"default value vector for A"}),
                 Lexicon.SEED: ("INT", {"default": 0, "min": 0, "max": sys.maxsize, "step": 1}),
-                Lexicon.IN_B+Lexicon.IN_B: ("VEC4", {"default": (0,0,0,0),
-                                        #"min": -sys.maxsize, "max": sys.maxsize,
-                                        "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W],
-                                        "tooltip":"default value vector for B"}),
+                Lexicon.IN_B+Lexicon.IN_B: ("VEC4", {"default": (1,1,1,1),
+                                    #"min": -sys.maxsize, "max": sys.maxsize,
+                                    "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W],
+                                    "tooltip":"default value vector for B"}),
                 Lexicon.STRING: ("STRING", {"default": "", "dynamicPrompts": False, "multiline": True}),
             }
         })
@@ -830,7 +839,7 @@ The Value Node supplies raw or default values for various data types, supporting
         typ = parse_param(kw, Lexicon.TYPE, EnumConvertType.STRING, EnumConvertType.BOOLEAN.name)
         xyzw = parse_param(kw, Lexicon.IN_A+Lexicon.IN_A, EnumConvertType.VEC4, (0, 0, 0, 0))
         seed = parse_param(kw, Lexicon.RANDOM, EnumConvertType.INT, 0, 0)
-        yyzw = parse_param(kw, Lexicon.IN_B+Lexicon.IN_B, EnumConvertType.VEC4, (0, 0, 0, 0))
+        yyzw = parse_param(kw, Lexicon.IN_B+Lexicon.IN_B, EnumConvertType.VEC4, (1, 1, 1, 1))
         x_str = parse_param(kw, Lexicon.STRING, EnumConvertType.STRING, "")
         params = list(zip_longest_fill(raw, r_x, r_y, r_z, r_w, typ, xyzw, seed, yyzw, x_str))
         results = []

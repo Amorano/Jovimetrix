@@ -242,3 +242,29 @@ export function convertToInput(node, widget, config) {
     // Restore original size but grow if needed
     node.setSize([Math.max(sz[0], node.size[0]), Math.max(sz[1], node.size[1])])
 }
+
+export function getHoveredWidget() {
+	const node = app.canvas.node_over;
+	if (!node.widgets) return;
+
+	const graphPos = app.canvas.graph_mouse;
+
+	const x = graphPos[0] - node.pos[0];
+	const y = graphPos[1] - node.pos[1];
+
+	for (const w of node.widgets) {
+		let widgetWidth, widgetHeight;
+		if (w.computeSize) {
+			const sz = w.computeSize();
+			widgetWidth = sz[0];
+			widgetHeight = sz[1];
+		} else {
+			widgetWidth = w.width || node.size[0];
+			widgetHeight = LiteGraph.NODE_WIDGET_HEIGHT;
+		}
+        console.info(w.name, w)
+		if (w.last_y !== undefined && x >= 6 && x <= widgetWidth - 12 && y >= w.last_y && y <= w.last_y + widgetHeight) {
+			return w;
+		}
+	}
+}

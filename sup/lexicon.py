@@ -254,9 +254,9 @@ class Lexicon(metaclass=LexiconMeta):
         name_url = node_cls.NAME.split(" (JOV)")[0]
         url = name_url.replace(" ", "%20")
         cat = node_cls.CATEGORY.split('/')[1]
-        data = {"_": f"{cat}#-{url}", "*": f"node/{name_url}/{name_url}.md"}
+        data = {"_": f"{cat}#-{url}", "*": f"node/{name_url}/{name_url}.md", "outputs": {}}
         for cat, entry in node.items():
-            if cat not in ['optional', 'required']:
+            if cat not in ['optional', 'required', 'outputs']:
                 continue
             for k, v in entry.items():
                 if len(v) > 1:
@@ -264,7 +264,10 @@ class Lexicon(metaclass=LexiconMeta):
                         if (tip := cls._tooltipsDB.get(k), None) is None:
                             logger.warning(f"no {k}")
                             continue
-                    data[k] = tip
+                    if cat == 'outputs':
+                        data['outputs'][k] = tip
+                    else:
+                        data[k] = tip
         if node.get("optional", None) is None:
             node["optional"] = {}
         node["optional"]["tooltips"] = ("JTOOLTIP", {"default": data})
