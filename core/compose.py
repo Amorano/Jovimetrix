@@ -54,11 +54,26 @@ class EnumCropMode(Enum):
 
 # =============================================================================
 
-class AdjustNode(JOVBaseNode):
-    NAME = "ADJUST (JOV) 🕸️"
-    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
+class JOVImageNode(JOVBaseNode):
     RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        d = super().INPUT_TYPES()
+        d.update({
+            "outputs": {
+                0: ("IMAGE", {"tooltip":"Full channel [RGBA] image. If there is an alpha, the image will be masked out with it when using this output."}),
+                1: ("IMAGE", {"tooltip":"Three channel [RGB] image. There will be no alpha."}),
+                2: ("MASK", {"tooltip":"Single channel mask output."}),
+            }
+        })
+        return Lexicon._parse(d, cls)
+
+# =============================================================================
+
+class AdjustNode(JOVImageNode):
+    NAME = "ADJUST (JOV) 🕸️"
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     DESCRIPTION = """
 Enhance and modify images with various effects using the Adjust Node. Apply effects such as blurring, sharpening, color tweaks, and edge detection. Customize parameters like radius, value, and contrast, and use masks for selective effects. Advanced options include pixelation, quantization, and morphological operations like dilation and erosion. Handle transparency effortlessly to ensure seamless blending of effects. This node is ideal for simple adjustments and complex image transformations.
 """
@@ -204,11 +219,9 @@ Enhance and modify images with various effects using the Adjust Node. Apply effe
             pbar.update_absolute(idx)
         return [torch.cat(i, dim=0) for i in zip(*images)]
 
-class BlendNode(JOVBaseNode):
+class BlendNode(JOVImageNode):
     NAME = "BLEND (JOV) ⚗️"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
-    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
     SORT = 10
     DESCRIPTION = """
 Combines two input images using various blending modes, such as normal, screen, multiply, overlay, etc. It also supports alpha blending and masking to achieve complex compositing effects. This node is essential for creating layered compositions and adding visual richness to images.
@@ -302,11 +315,9 @@ Combines two input images using various blending modes, such as normal, screen, 
             pbar.update_absolute(idx)
         return [torch.cat(i, dim=0) for i in zip(*images)]
 
-class ColorBlindNode(JOVBaseNode):
+class ColorBlindNode(JOVImageNode):
     NAME = "COLOR BLIND (JOV) 👁‍🗨"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
-    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
     DESCRIPTION = """
 Use the Color Blind Node to simulate color blindness effects on images. You can select various types of color deficiencies, adjust the severity of the effect, and apply the simulation using different simulators. This node is ideal for accessibility testing and design adjustments, ensuring inclusivity in your visual content.
 """
@@ -343,11 +354,9 @@ Use the Color Blind Node to simulate color blindness effects on images. You can 
             pbar.update_absolute(idx)
         return [torch.cat(i, dim=0) for i in zip(*images)]
 
-class ColorMatchNode(JOVBaseNode):
+class ColorMatchNode(JOVImageNode):
     NAME = "COLOR MATCH (JOV) 💞"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
-    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
     DESCRIPTION = """
 Adjust the color scheme of one image to match another with the Color Match Node. Choose from various color matching modes, including LUT, Histogram, and Reinhard. You can specify options like color maps, the number of colors, and whether to flip or invert the images. This node allows for the creation of seamless and cohesive visuals, making it ideal for texture work or masking in motion graphics and design projects.
 """
@@ -468,11 +477,9 @@ Apply various color harmony schemes to an input image using the Color Theory Nod
             pbar.update_absolute(idx)
         return [torch.cat(i, dim=0) for i in zip(*images)]
 
-class CropNode(JOVBaseNode):
+class CropNode(JOVImageNode):
     NAME = "CROP (JOV) ✂️"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
-    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
     SORT = 5
     DESCRIPTION = """
 Extract a portion of an input image or resize it. It supports various cropping modes, including center cropping, custom XY cropping, and freeform polygonal cropping. This node is useful for preparing image data for specific tasks or extracting regions of interest.
@@ -524,11 +531,9 @@ Extract a portion of an input image or resize it. It supports various cropping m
             pbar.update_absolute(idx)
         return [torch.cat(i, dim=0) for i in zip(*images)]
 
-class FilterMaskNode(JOVBaseNode):
+class FilterMaskNode(JOVImageNode):
     NAME = "FILTER MASK (JOV) 🤿"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
-    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
     SORT = 700
     DESCRIPTION = """
 Create masks based on specific color ranges within an image. Specify the color range using start and end values and an optional fuzziness factor to adjust the range. This node allows for precise color-based mask creation, ideal for tasks like object isolation, background removal, or targeted color adjustments.
@@ -569,11 +574,9 @@ Create masks based on specific color ranges within an image. Specify the color r
             pbar.update_absolute(idx)
         return [torch.cat(i, dim=0) for i in zip(*images)]
 
-class Flatten(JOVBaseNode):
+class Flatten(JOVImageNode):
     NAME = "FLATTEN (JOV) ⬇️"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
-    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
     SORT = 500
     DESCRIPTION = """
 Combine multiple input images into a single image by summing their pixel values. This operation is useful for merging multiple layers or images into one composite image, such as combining different elements of a design or merging masks. Users can specify the blending mode and interpolation method to control how the images are combined. Additionally, a matte can be applied to adjust the transparency of the final composite image.
@@ -624,11 +627,9 @@ Combine multiple input images into a single image by summing their pixel values.
             pbar.update_absolute(idx)
         return [torch.cat(i, dim=0) for i in zip(*images)]
 
-class PixelMergeNode(JOVBaseNode):
+class PixelMergeNode(JOVImageNode):
     NAME = "PIXEL MERGE (JOV) 🫂"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
-    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
     SORT = 45
     DESCRIPTION = """
 Combines individual color channels (red, green, blue) along with an optional mask channel to create a composite image. This node is useful for merging separate color components into a single image for visualization or further processing.
@@ -702,20 +703,21 @@ Takes an input image and splits it into its individual color channels (red, gree
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
         images = []
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
+        print(pA[0].shape)
         pbar = ProgressBar(len(pA))
         for idx, pA in enumerate(pA):
             pA = channel_solid(chan=EnumImageType.BGRA) if pA is None else tensor2cv(pA)
+            print(pA.shape)
             pA = image_mask_add(pA)
+            print(pA.shape)
             pA = [cv2tensor(x, True) for x in image_split(pA)]
             images.append(pA)
             pbar.update_absolute(idx)
         return [torch.cat(i, dim=0) for i in zip(*images)]
 
-class PixelSwapNode(JOVBaseNode):
+class PixelSwapNode(JOVImageNode):
     NAME = "PIXEL SWAP (JOV) 🔃"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
-    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
     SORT = 48
     DESCRIPTION = """
 Swap pixel values between two input images based on specified channel swizzle operations. Options include pixel inputs, swap operations for red, green, blue, and alpha channels, and constant values for each channel. The swap operations allow for flexible pixel manipulation by determining the source of each channel in the output image, whether it be from the first image, the second image, or a constant value.
@@ -794,11 +796,9 @@ Swap pixel values between two input images based on specified channel swizzle op
             pbar.update_absolute(idx)
         return [torch.cat(i, dim=0) for i in zip(*images)]
 
-class StackNode(JOVBaseNode):
+class StackNode(JOVImageNode):
     NAME = "STACK (JOV) ➕"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
-    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
     SORT = 75
     DESCRIPTION = """
 Merge multiple input images into a single composite image by stacking them along a specified axis. Options include axis, stride, scaling mode, width and height, interpolation method, and matte color. The axis parameter allows for horizontal, vertical, or grid stacking of images, while stride controls the spacing between them.
@@ -811,7 +811,7 @@ Merge multiple input images into a single composite image by stacking them along
             "optional": {
                 Lexicon.AXIS: (EnumOrientation._member_names_, {"default": EnumOrientation.GRID.name,
                                                                 "tooltip":"Choose the direction in which to stack the images. Options include horizontal, vertical, or a grid layout"}),
-                Lexicon.STEP: ("INT", {"min": 1, "step": 1, "default": 1,
+                Lexicon.STEP: ("INT", {"min": 0, "step": 1, "default": 1,
                                     "tooltip":"Specify the spacing between each stacked image. This determines how far apart the images are from each other"}),
                 Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
                 Lexicon.WH: ("VEC2", {"default": (512, 512), "min":MIN_IMAGE_SIZE,
@@ -827,15 +827,19 @@ Merge multiple input images into a single composite image by stacking them along
         if len(images) == 0:
             logger.warning("no images to stack")
             return
+
         axis = parse_param(kw, Lexicon.AXIS, EnumConvertType.STRING, EnumOrientation.GRID.name)[0]
-        stride = parse_param(kw, Lexicon.STEP, EnumConvertType.INT, 1, 1)[0]
+        stride = parse_param(kw, Lexicon.STEP, EnumConvertType.INT, 1)[0]
         mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.NONE.name)[0]
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (512, 512), MIN_IMAGE_SIZE)[0]
         sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)[0]
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)[0]
-        images = [tensor2cv(img) for img in images]
+        data = []
+        for i in images:
+            data.extend(i)
+        images = [tensor2cv(i) for i in data]
         axis = EnumOrientation[axis]
-        img = image_stack(images, axis, stride, matte)
+        img = image_stack(images, axis, stride) #, matte)
         mode = EnumScaleMode[mode]
         if mode != EnumScaleMode.NONE:
             w, h = wihi
@@ -843,11 +847,9 @@ Merge multiple input images into a single composite image by stacking them along
             img = image_scalefit(img, w, h, mode, sample)
         return cv2tensor_full(img, matte)
 
-class ThresholdNode(JOVBaseNode):
+class ThresholdNode(JOVImageNode):
     NAME = "THRESHOLD (JOV) 📉"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
-    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
     DESCRIPTION = """
 Use the Threshold Node to define a range and apply it to an image for segmentation and feature extraction. Choose from various threshold modes, such as binary and adaptive, and adjust the threshold value and block size to suit your needs. You can also invert the resulting mask if necessary. This node is versatile for a variety of image processing tasks.
 """
@@ -888,11 +890,9 @@ Use the Threshold Node to define a range and apply it to an image for segmentati
             pbar.update_absolute(idx)
         return [torch.cat(i, dim=0) for i in zip(*images)]
 
-class TransformNode(JOVBaseNode):
+class TransformNode(JOVImageNode):
     NAME = "TRANSFORM (JOV) 🏝️"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
-    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
     SORT = 0
     DESCRIPTION = """
 Applies various geometric transformations to images, including translation, rotation, scaling, mirroring, tiling, perspective projection, and more. It offers extensive control over image manipulation to achieve desired visual effects.

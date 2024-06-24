@@ -264,8 +264,8 @@ class Lexicon(metaclass=LexiconMeta):
                         if (tip := cls._tooltipsDB.get(k), None) is None:
                             logger.warning(f"no {k}")
                             continue
-                    if cat == 'outputs':
-                        data['outputs'][k] = tip
+                    if cat == "outputs":
+                        data["outputs"][k] = tip
                     else:
                         data[k] = tip
         if node.get("optional", None) is None:

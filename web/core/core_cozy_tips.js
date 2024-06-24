@@ -20,7 +20,7 @@ const JTooltipWidget = (app, name, opts) => {
             return;
         },
         computeSize: function (width) {
-            return [width, 0];
+            return [0, 0];
         }
     }
     return w
@@ -83,34 +83,36 @@ app.registerExtension({
             if (!widget_tooltip) return;
             const tips = widget_tooltip.options.default || {};
 
-            // core tooltip
-            //const tooltips = node.constructor.nodeData?.tooltips;
-            //if (!tooltips) return;
-
             const inputSlot = this.isOverNodeInput(node, this.graph_mouse[0], this.graph_mouse[1], [0, 0]);
             if (inputSlot !== -1) {
-                let tip = tips?.[node.inputs[inputSlot].name];
+                const slot = node.inputs[inputSlot];
+                let tip = tips?.[slot.name];
+                if (slot.widget) {
+                    const widget = node.widgets.find(w => w.name === slot.name);
+                    if (widget && widget.type.startsWith('converted-widget')) {
+                        const def = widget.options?.default;
+                        if (def) {
+                            tip += ` (default: ${def})`;
+                        }
+                    }
+                }
                 return showTooltip(tip);
-                // return showTooltip(tooltips.input?.[node.inputs[inputSlot].name]);
             }
 
             const outputSlot = this.isOverNodeOutput(node, this.graph_mouse[0], this.graph_mouse[1], [0, 0]);
             if (outputSlot !== -1) {
-                let tip = tips?.[node.outputs[outputSlot].name];
+                let tip = tips?.['outputs']?.[outputSlot];
                 return showTooltip(tip);
-                // return showTooltip(tooltips.output?.[outputSlot]);
             }
 
             const widget = getHoveredWidget();
             if (widget && !widget.element) {
-                console.info(widget)
                 let tip = tips?.[widget.name];
-                const def = widget.options.default;
+                const def = widget.options?.default;
                 if (def) {
                     tip += ` (default: ${def})`;
                 }
                 return showTooltip(tip);
-                //return showTooltip(tooltips.input?.[widget.name]);
             }
         }.bind(app.canvas);
 

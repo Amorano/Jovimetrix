@@ -1362,7 +1362,7 @@ def image_split(image: TYPE_IMAGE) -> Tuple[TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE, 
     return r, g, b, a
 
 def image_stack(image_list: List[TYPE_IMAGE], axis:EnumOrientation=EnumOrientation.HORIZONTAL,
-                stride:Optional[int]=None, matte:TYPE_PIXEL=(0,0,0,255)) -> TYPE_IMAGE:
+                stride:int=0, matte:TYPE_PIXEL=(0,0,0,255)) -> TYPE_IMAGE:
 
     count = 0
     images = []
@@ -1373,7 +1373,7 @@ def image_stack(image_list: List[TYPE_IMAGE], axis:EnumOrientation=EnumOrientati
         height = max(height, h)
         images.append(i)
         count += 1
-
+    print('stride:', stride)
     images = [image_matte(image_convert(i, 4), matte, width, height) for i in images]
     matte = pixel_convert(matte, 4)
     match axis:
@@ -1386,6 +1386,7 @@ def image_stack(image_list: List[TYPE_IMAGE], axis:EnumOrientation=EnumOrientati
 
             rows = []
             for i in range(0, count, stride):
+                print(i)
                 row = images[i:i + stride]
                 row_stacked = np.hstack(row)
                 rows.append(row_stacked)

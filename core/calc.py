@@ -408,6 +408,7 @@ class ComparisonNode(JOVBaseNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = (WILDCARD, WILDCARD,)
     RETURN_NAMES = (Lexicon.TRIGGER, Lexicon.VALUE,)
+    SORT = 130
     DESCRIPTION = """
 The Comparison node evaluates two inputs based on a specified operation. It accepts two inputs (A and B), comparison operators, and optional values for successful and failed comparisons. The node performs the specified operation element-wise between corresponding elements of A and B. If the comparison is successful for all elements, it returns the success value; otherwise, it returns the failure value. The node supports various comparison operators such as EQUAL, GREATER_THAN, LESS_THAN, AND, OR, IS, IN, etc.
 """
@@ -513,6 +514,7 @@ class DelayNode(JOVBaseNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = (WILDCARD,)
     RETURN_NAMES = (Lexicon.PASS_OUT,)
+    SORT = 240
     DESCRIPTION = """
 Delay node used to introduce pauses in the workflow. It accepts an optional input to pass through and a timer parameter to specify the duration of the delay. If no timer is provided, it defaults to a maximum delay. During the delay, it periodically checks for messages to interrupt the delay. Once the delay is completed, it returns the input passed to it.
 """
@@ -556,7 +558,7 @@ class LerpNode(JOVBaseNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = (WILDCARD,)
     RETURN_NAMES = (Lexicon.ANY_OUT,)
-    SORT = 45
+    SORT = 30
     DESCRIPTION = """
 The Lerp Node calculates linear interpolation between two values or vectors based on a blending factor (alpha). The node accepts optional start (IN_A) and end (IN_B) points, a blending factor (FLOAT), and various input types for both start and end points, such as single values (X, Y), 2-value vectors (IN_A2, IN_B2), 3-value vectors (IN_A3, IN_B3), and 4-value vectors (IN_A4, IN_B4). Additionally, you can specify the easing function (EASE) and the desired output type (TYPE). It supports various easing functions for smoother transitions.
 """
@@ -585,7 +587,7 @@ The Lerp Node calculates linear interpolation between two values or vectors base
                                         "tooltip":"default value vector for B"}),
             },
             "outputs": {
-                Lexicon.ANY_OUT: {"tooltip":"testing the output tool tips"}
+                0: (WILDCARD, {"tooltip":f"Output can vary depending on the type chosen in the {Lexicon.TYPE} parameter."}),
             }
         })
         return Lexicon._parse(d, cls)
@@ -635,7 +637,7 @@ class SwizzleNode(JOVBaseNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = (WILDCARD,)
     RETURN_NAMES = (Lexicon.ANY_OUT,)
-    SORT = 65
+    SORT = 40
     DESCRIPTION = """
 The Swap Node swaps components between two vectors based on specified swizzle patterns and values. It provides flexibility in rearranging vector elements dynamically.
 """
@@ -660,8 +662,8 @@ The Swap Node swaps components between two vectors based on specified swizzle pa
         return Lexicon._parse(d, cls)
 
     def run(self, **kw)  -> Tuple[torch.Tensor, torch.Tensor]:
-        pA = parse_param(kw, Lexicon.IN_A, EnumConvertType.VEC4, (0,0,0,0), 0, 1)
-        pB = parse_param(kw, Lexicon.IN_B, EnumConvertType.VEC4, (0,0,0,0), 0, 1)
+        pA = parse_param(kw, Lexicon.IN_A, EnumConvertType.VEC4, (0,0,0,0))
+        pB = parse_param(kw, Lexicon.IN_B, EnumConvertType.VEC4, (0,0,0,0))
         swap_x = parse_param(kw, Lexicon.SWAP_X, EnumConvertType.STRING, EnumSwizzle.A_X.name)
         x = parse_param(kw, Lexicon.X, EnumConvertType.FLOAT, 0)
         swap_y = parse_param(kw, Lexicon.SWAP_Y, EnumConvertType.STRING, EnumSwizzle.A_Y.name)
@@ -673,7 +675,9 @@ The Swap Node swaps components between two vectors based on specified swizzle pa
         params = list(zip_longest_fill(pA, pB, swap_x, x, swap_y, y, swap_z, z, swap_w, w))
         results = []
         pbar = ProgressBar(len(params))
+        print(pA, pB, swap_x, x, swap_y, y, swap_z, z, swap_w, w)
         for idx, (pA, pB, swap_x, x, swap_y, y, swap_z, z, swap_w, w) in enumerate(params):
+            print(pA, pB, swap_x, x, swap_y, y, swap_z, z, swap_w, w)
             swap_x = EnumSwizzle[swap_x]
             swap_y = EnumSwizzle[swap_y]
             swap_z = EnumSwizzle[swap_z]
@@ -688,6 +692,7 @@ class TickNode(JOVBaseNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = (WILDCARD, "FLOAT", "FLOAT", WILDCARD)
     RETURN_NAMES = (Lexicon.VALUE, Lexicon.LINEAR, Lexicon.FPS, Lexicon.TRIGGER)
+    SORT = 50
     DESCRIPTION = """
 The `Tick` node acts as a timer and frame counter, emitting pulses or signals based on time intervals or BPM settings. It allows precise synchronization and control over animation sequences, with options to adjust FPS, BPM, and loop points. This node is useful for generating time-based events or driving animations with rhythmic precision.
 """
@@ -780,7 +785,7 @@ class ValueNode(JOVBaseNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = (WILDCARD, WILDCARD, WILDCARD, WILDCARD, WILDCARD,)
     RETURN_NAMES = (Lexicon.ANY_OUT, Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W)
-    SORT = 1
+    SORT = 5
     DESCRIPTION = """
 The Value Node supplies raw or default values for various data types, supporting vector input with components for X, Y, Z, and W. It also provides a string input option.
 """
@@ -892,6 +897,7 @@ class WaveGeneratorNode(JOVBaseNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = ("FLOAT", "INT", )
     RETURN_NAMES = (Lexicon.FLOAT, Lexicon.INT, )
+    SORT = 90
     DESCRIPTION = """
 The `Wave Generator` node produces waveforms like sine, square, or sawtooth with adjustable frequency, amplitude, phase, and offset. It's handy for creating oscillating patterns or controlling animation dynamics. This node emits both continuous floating-point values and integer representations of the generated waves.
 """
@@ -942,6 +948,7 @@ class ParameterNode(JOVBaseNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = ()
     RETURN_NAMES = ()
+    SORT = 100
     DESCRIPTION = """
 
 """
