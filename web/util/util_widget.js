@@ -4,6 +4,8 @@
  *
  */
 
+import { app } from "../../../scripts/app.js"
+
 const regex = /\d/;
 
 const my_map = {
@@ -74,6 +76,7 @@ export function widget_remove_all(node) {
 }
 
 export function widget_hide(node, widget, suffix = '') {
+    //console.info(widget)
     if (widget.hidden || widget.type?.startsWith(CONVERTED_TYPE + suffix)) {
         return;
     }
@@ -116,12 +119,14 @@ export function widget_show(widget) {
         widget.computeSize = widget.origComputeSize;
         delete widget.origComputeSize;
     } else {
-        widget.computeSize = (target_width) => [target_width, 20];
+        delete widget.computeSize; // = (target_width) => [target_width, 20];
     }
 
     if (widget?.origSerializeValue) {
         widget.serializeValue = widget.origSerializeValue;
         delete widget.origSerializeValue;
+    } else {
+        delete widget.serializeValue;
     }
 
     widget.hidden = false;
@@ -139,6 +144,7 @@ export function show_boolean(widget_x) {
 }
 
 export function show_vector(widget, values={}, type=undefined, precision=6) {
+    widget_show(widget);
     if (["FLOAT", "INT"].includes(type)) {
         type = "VEC1";
     } else if (type == "BOOLEAN") {
@@ -244,6 +250,9 @@ export function convertToInput(node, widget, config) {
 }
 
 export function getHoveredWidget() {
+    if (typeof app === 'undefined')
+        return;
+
 	const node = app.canvas.node_over;
 	if (!node.widgets) return;
 
@@ -252,19 +261,26 @@ export function getHoveredWidget() {
 	const x = graphPos[0] - node.pos[0];
 	const y = graphPos[1] - node.pos[1];
 
+    let pos_y;
 	for (const w of node.widgets) {
 		let widgetWidth, widgetHeight;
 		if (w.computeSize) {
 			const sz = w.computeSize();
-			widgetWidth = sz[0];
-			widgetHeight = sz[1];
+			widgetWidth = sz[0] || 0;
+			widgetHeight = sz[1] || 0;
 		} else {
-			widgetWidth = w.width || node.size[0];
+			widgetWidth = w.width || node.size[0] || 0;
 			widgetHeight = LiteGraph.NODE_WIDGET_HEIGHT;
 		}
-        console.info(w.name, w)
-		if (w.last_y !== undefined && x >= 6 && x <= widgetWidth - 12 && y >= w.last_y && y <= w.last_y + widgetHeight) {
+        if (pos_y === undefined) {
+            pos_y = w.last_y || 0;
+        };
+        //console.info(w)
+        // console.info(w.last_y, x, y, pos_y)
+		if (widgetHeight > 0 && widgetWidth > 0 && w.last_y !== undefined && x >= 6 && x <= widgetWidth - 12 && y >= w.last_y && y <= w.last_y  + widgetHeight) {
+        //if (widgetHeight > 0 && widgetWidth > 0 && x >= 6 && x <= widgetWidth - 12 && y >= pos_y && y <= pos_y + widgetHeight)
+        //{
 			return w;
-		}
-	}
+        }
+    }
 }

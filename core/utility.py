@@ -399,11 +399,9 @@ The Graph node visualizes a series of data points over time. It accepts a dynami
             self.__history = []
         longest_edge = 0
         dynamic = parse_dynamic(kw, Lexicon.UNKNOWN, EnumConvertType.FLOAT, 0)
-        # each of the plugs
+        dynamic = [i[0] for i in dynamic]
         self.__ax.clear()
         for idx, val in enumerate(dynamic):
-            logger.debug(idx)
-            logger.debug(val)
             if isinstance(val, (set, tuple,)):
                 val = list(val)
             if not isinstance(val, (list, )):
@@ -412,7 +410,7 @@ The Graph node visualizes a series of data points over time. It accepts a dynami
                 self.__history.append([])
             self.__history[idx].extend(val)
             if slice > 0:
-                stride = max(1, -slice + len(self.__history[idx]) + 1)
+                stride = max(0, -slice + len(self.__history[idx]) + 1)
                 longest_edge = max(longest_edge, stride)
                 self.__history[idx] = self.__history[idx][stride:]
             self.__ax.plot(self.__history[idx], color="rgbcymk"[idx])

@@ -128,8 +128,7 @@ The Shape Generation node creates images representing various shapes such as cir
 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
         shape = parse_param(kw, Lexicon.SHAPE, EnumConvertType.STRING, EnumShapes.CIRCLE.name)
-        print(kw[Lexicon.SIDES])
-        sides = parse_param(kw, Lexicon.SIDES, EnumConvertType.INT, 3, 3, 512)
+        sides = parse_param(kw, Lexicon.SIDES, EnumConvertType.INT, 3, 3, 100)
         angle = parse_param(kw, Lexicon.ANGLE, EnumConvertType.FLOAT, 0)
         edge = parse_param(kw, Lexicon.EDGE, EnumConvertType.STRING, EnumEdge.CLIP.name)
         offset = parse_param(kw, Lexicon.XY, EnumConvertType.VEC2, (0, 0))
@@ -146,10 +145,7 @@ The Shape Generation node creates images representing various shapes such as cir
             sizeX, sizeY = size
             edge = EnumEdge[edge]
             shape = EnumShapes[shape]
-            #color = pixel_eval(color, EnumImageType.BGRA)
-            #matte = pixel_eval(matte, EnumImageType.BGRA)
             alpha_m = int(matte[3])
-            print(sides)
             match shape:
                 case EnumShapes.SQUARE:
                     pA = shape_quad(width, height, sizeX, sizeX, fill=color[:3], back=matte[:3])

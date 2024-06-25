@@ -7,6 +7,7 @@ import os
 import json
 import math
 from enum import Enum
+from re import L
 from typing import Any, List, Generator, Optional, Tuple
 
 import numpy as np
@@ -75,15 +76,14 @@ def parse_dynamic(data:dict, prefix:str, typ:EnumConvertType, default: Any) -> L
         found = None
         for k in keys:
             if k.startswith(f"{i}_") or k.startswith(f"{i}_{prefix}_"):
-                found = k
+                val = parse_param(data, k, typ, default)
+                vals.append(val)
+                found = True
                 break
 
         if found is None:
             fail += 1
-            continue
 
-        val = parse_param(data, found, typ, default)
-        vals.append(val)
     return vals
 
 def parse_value(val:Any, typ:EnumConvertType, default: Any,
@@ -141,7 +141,7 @@ def parse_value(val:Any, typ:EnumConvertType, default: Any,
                 if v == 0:
                     v = zero
             except Exception as e:
-                logger.exception(e)
+                # logger.exception(e)
                 logger.error(f"Error converting value: {e}")
                 v = 0
             new_val.append(v)
@@ -241,10 +241,14 @@ def parse_param(data:dict, key:str, typ:EnumConvertType, default: Any,
     elif isinstance(val, (list, tuple, set)):
         if len(val) == 0:
             val = [None]
+        if isinstance(val, (tuple, set,)):
+            val = list(val)
     elif issubclass(type(val), (Enum,)):
         val = [str(val.name)]
     if typ == EnumConvertType.ANY:
-        return [val]
+        if not isinstance(val, (list, tuple, set)):
+            return [val]
+        return val
     if not isinstance(val, (list,)):
         val = [val]
     return [parse_value(v, typ, default, clip_min, clip_max, zero) for v in val]

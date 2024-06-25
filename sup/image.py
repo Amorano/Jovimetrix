@@ -348,15 +348,17 @@ def cv2pil(image: TYPE_IMAGE) -> Image.Image:
 def cv2tensor(image: TYPE_IMAGE, mask:bool=False) -> torch.Tensor:
     """Convert a CV2 image to a torch tensor."""
     if mask or len(image.shape) == 2:
-        image = image_mask(image)
-        image = image[:,:,0][:,:]
-        # image = np.expand_dims(image, -1)
-    return torch.from_numpy(image.astype(np.float32) / 255.0).unsqueeze(0)
+        image = image_grayscale(image)
+    ret = torch.from_numpy(image.astype(np.float32) / 255.0).unsqueeze(0)
+    if mask:
+        ret = ret.squeeze(-1)
+    return ret
 
 def cv2tensor_full(image: TYPE_IMAGE, matte:TYPE_PIXEL=0) -> Tuple[torch.Tensor, ...]:
     mask = image_mask(image)
     mask = mask[:,:,0][:,:]
     mask = torch.from_numpy(mask.astype(np.float32) / 255.0).unsqueeze(0)
+    #
     image = image_matte(image, matte)
     rgb = image_convert(image, 3)
     image = torch.from_numpy(image.astype(np.float32) / 255.0).unsqueeze(0)
@@ -1373,7 +1375,7 @@ def image_stack(image_list: List[TYPE_IMAGE], axis:EnumOrientation=EnumOrientati
         height = max(height, h)
         images.append(i)
         count += 1
-    print('stride:', stride)
+
     images = [image_matte(image_convert(i, 4), matte, width, height) for i in images]
     matte = pixel_convert(matte, 4)
     match axis:
@@ -1386,7 +1388,6 @@ def image_stack(image_list: List[TYPE_IMAGE], axis:EnumOrientation=EnumOrientati
 
             rows = []
             for i in range(0, count, stride):
-                print(i)
                 row = images[i:i + stride]
                 row_stacked = np.hstack(row)
                 rows.append(row_stacked)

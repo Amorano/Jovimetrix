@@ -321,10 +321,20 @@ The Binary Operation node executes binary operations like addition, subtraction,
         pbar = ProgressBar(len(params))
         for idx, (A, B, a_xyzw, b_xyzw, op, typ, flip) in enumerate(params):
             logger.debug(f'val {A}, {B}, {a_xyzw}, {b_xyzw}')
+            # [[0.008793391303918097, 0.008793391303918097, 0.008793391303918097]], [[0.008793391303918097, 0.008793391303918097, 0.008793391303918097]], (0, 0, 0, 0), (0, 0, 0, 0)
             typ = EnumConvertType[typ]
+
+            size = min(3, max(0 if not isinstance(A, (list,)) else len(A), 0 if not isinstance(B, (list,)) else len(B)))
+            best_type = [EnumConvertType.FLOAT, EnumConvertType.VEC2, EnumConvertType.VEC3, EnumConvertType.VEC4][size]
+            val_a = parse_value(A, best_type, a_xyzw)
+            val_a = parse_value(val_a, EnumConvertType.VEC4, a_xyzw)
+            val_b = parse_value(B, best_type, b_xyzw)
+            val_b = parse_value(val_b, EnumConvertType.VEC4, b_xyzw)
+
             val_a = parse_value(A, EnumConvertType.VEC4, A if A is not None else a_xyzw)
             val_b = parse_value(B, EnumConvertType.VEC4, B if B is not None else b_xyzw)
             logger.debug(f'val {val_a}, {val_b}')
+            # (0, 0, 0, 0), (0, 0, 0, 0)
             if flip:
                 val_a, val_b = val_b, val_a
             size = max(1, int(typ.value / 10))
@@ -571,7 +581,7 @@ The Lerp Node calculates linear interpolation between two values or vectors base
             "optional": {
                 Lexicon.IN_A: (WILDCARD, {"tooltip": "Custom Start Point"}),
                 Lexicon.IN_B: (WILDCARD, {"tooltip": "Custom End Point"}),
-                Lexicon.FLOAT: ("FLOAT", {"default": 0., "min": 0., "max": 1.0,
+                Lexicon.FLOAT: ("FLOAT", {"default": 0.5, "min": 0., "max": 1.0,
                                         "step": 0.001, "precision": 4, "round": 0.00001,
                                         "tooltip": "Blend Amount. 0 = full A, 1 = full B"}),
                 Lexicon.EASE: (["NONE"] + EnumEase._member_names_, {"default": "NONE"}),
@@ -593,11 +603,12 @@ The Lerp Node calculates linear interpolation between two values or vectors base
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[Any, Any]:
-        A = parse_param(kw, Lexicon.IN_A, EnumConvertType.ANY, (0,0,0,0), 0, 1)
-        B = parse_param(kw, Lexicon.IN_B, EnumConvertType.ANY, (0,0,0,0), 0, 1)
+        A = parse_param(kw, Lexicon.IN_A, EnumConvertType.ANY, None)
+        B = parse_param(kw, Lexicon.IN_B, EnumConvertType.ANY, None)
+        print(A, B)
         a_xyzw = parse_param(kw, Lexicon.IN_A+Lexicon.IN_A, EnumConvertType.VEC4, (0, 0, 0, 0))
         b_xyzw = parse_param(kw, Lexicon.IN_B+Lexicon.IN_B, EnumConvertType.VEC4, (1, 1, 1, 1))
-        alpha = parse_param(kw, Lexicon.FLOAT,EnumConvertType.FLOAT, 0, 0, 1)
+        alpha = parse_param(kw, Lexicon.FLOAT,EnumConvertType.FLOAT, 0.5, 0, 1)
         op = parse_param(kw, Lexicon.EASE, EnumConvertType.STRING, "NONE")
         typ = parse_param(kw, Lexicon.TYPE, EnumConvertType.STRING, EnumNumberType.FLOAT.name)
         values = []
@@ -607,12 +618,11 @@ The Lerp Node calculates linear interpolation between two values or vectors base
             # make sure we only interpolate between the longest "stride" we can
             size = min(3, max(0 if not isinstance(A, (list,)) else len(A), 0 if not isinstance(B, (list,)) else len(B)))
             best_type = [EnumConvertType.FLOAT, EnumConvertType.VEC2, EnumConvertType.VEC3, EnumConvertType.VEC4][size]
-            val_a = parse_value(A, EnumConvertType.VEC4, a_xyzw)
-            val_b = parse_value(B, EnumConvertType.VEC4, b_xyzw)
+            val_a = parse_value(A, best_type, a_xyzw)
+            val_a = parse_value(val_a, EnumConvertType.VEC4, a_xyzw)
+            val_b = parse_value(B, best_type, b_xyzw)
+            val_b = parse_value(val_b, EnumConvertType.VEC4, b_xyzw)
             alpha = parse_value(alpha, EnumConvertType.VEC4, alpha)
-            # val_a = parse_value(A, EnumConvertType.VEC4, A if A is not None else a_xyzw)
-            # val_b = parse_value(B, EnumConvertType.VEC4, B if B is not None else b_xyzw)
-            # alpha = parse_value(alpha, EnumConvertType.VEC4, alpha)
             typ = EnumConvertType[typ]
             size = max(1, int(typ.value / 10))
             if size > 1:
@@ -675,9 +685,7 @@ The Swap Node swaps components between two vectors based on specified swizzle pa
         params = list(zip_longest_fill(pA, pB, swap_x, x, swap_y, y, swap_z, z, swap_w, w))
         results = []
         pbar = ProgressBar(len(params))
-        print(pA, pB, swap_x, x, swap_y, y, swap_z, z, swap_w, w)
         for idx, (pA, pB, swap_x, x, swap_y, y, swap_z, z, swap_w, w) in enumerate(params):
-            print(pA, pB, swap_x, x, swap_y, y, swap_z, z, swap_w, w)
             swap_x = EnumSwizzle[swap_x]
             swap_y = EnumSwizzle[swap_y]
             swap_z = EnumSwizzle[swap_z]
@@ -789,6 +797,7 @@ class ValueNode(JOVBaseNode):
     DESCRIPTION = """
 The Value Node supplies raw or default values for various data types, supporting vector input with components for X, Y, Z, and W. It also provides a string input option.
 """
+    UPDATE = False
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -835,6 +844,12 @@ The Value Node supplies raw or default values for various data types, supporting
         })
         return Lexicon._parse(d, cls)
 
+    @classmethod
+    def IS_CHANGED(cls) -> float:
+        if cls.UPDATE:
+            return float("nan")
+        return super().IS_CHANGED()
+
     def run(self, **kw) -> Tuple[bool]:
         raw = parse_param(kw, Lexicon.IN_A, EnumConvertType.ANY, None)
         r_x = parse_param(kw, Lexicon.X, EnumConvertType.FLOAT, None)
@@ -843,7 +858,7 @@ The Value Node supplies raw or default values for various data types, supporting
         r_w = parse_param(kw, Lexicon.W, EnumConvertType.FLOAT, None)
         typ = parse_param(kw, Lexicon.TYPE, EnumConvertType.STRING, EnumConvertType.BOOLEAN.name)
         xyzw = parse_param(kw, Lexicon.IN_A+Lexicon.IN_A, EnumConvertType.VEC4, (0, 0, 0, 0))
-        seed = parse_param(kw, Lexicon.RANDOM, EnumConvertType.INT, 0, 0)
+        seed = parse_param(kw, Lexicon.SEED, EnumConvertType.INT, 0, 0)
         yyzw = parse_param(kw, Lexicon.IN_B+Lexicon.IN_B, EnumConvertType.VEC4, (1, 1, 1, 1))
         x_str = parse_param(kw, Lexicon.STRING, EnumConvertType.STRING, "")
         params = list(zip_longest_fill(raw, r_x, r_y, r_z, r_w, typ, xyzw, seed, yyzw, x_str))
@@ -855,7 +870,8 @@ The Value Node supplies raw or default values for various data types, supporting
             default2 = None
             if typ not in [EnumConvertType.STRING, EnumConvertType.LIST, \
                         EnumConvertType.DICT,\
-                        EnumConvertType.IMAGE, EnumConvertType.LATENT, EnumConvertType.ANY, EnumConvertType.MASK]:
+                        EnumConvertType.IMAGE, EnumConvertType.LATENT, \
+                        EnumConvertType.ANY, EnumConvertType.MASK]:
                 a, b, c, d = xyzw
                 a2, b2, c2, d2 = yyzw
                 default = (a if r_x is None else r_x,
@@ -871,25 +887,30 @@ The Value Node supplies raw or default values for various data types, supporting
                                                 else EnumConvertType.VEC4INT
 
             # check if set to randomize....
-            if seed != 0:
-                val = list(val)
-                val2 = list(val2)
-                default = list(default)
-                for i, x in enumerate(val):
+            self.UPDATE = False
+            if seed != 0 and isinstance(val, (tuple, list,)) and isinstance(val2, (tuple, list,)):
+                self.UPDATE = True
+                # val = list(val) if isinstance(val, (tuple, list,)) else [val]
+                # val2 = list(val2) if isinstance(val2, (tuple, list,)) else [val2]
+                for i in range(len(val)):
                     mx = max(val[i], val2[i])
                     mn = min(val[i], val2[i])
-                    logger.debug(f"{i}, {x}, {mx}, {mn}")
-                    if typ == EnumConvertType.VEC4:
-                        val[i] = default[i] = mn + random.random() * (mx - mn)
+                    if mn == mx:
+                        val[i] = mn
                     else:
-                        val[i] = default[i] = random.randrange(mn, mx)
+                        random.seed(seed)
+                        if typ == EnumConvertType.VEC4:
+                            val[i] = mn + random.random() * (mx - mn)
+                        else:
+                            logger.debug(f"{i}, {mx}, {mn}")
+                            val[i] = random.randint(mn, mx)
 
-            extra = parse_value(val, typ, default)
+            extra = parse_value(val, typ, val)
             ret = [val]
             ret.extend(extra)
             results.append(ret)
             pbar.update_absolute(idx)
-        return *list(zip(*results)),
+        return [x for x in zip(*results)]
 
 class WaveGeneratorNode(JOVBaseNode):
     NAME = "WAVE GEN (JOV) 🌊"

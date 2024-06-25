@@ -9,6 +9,7 @@ import { app } from "../../../scripts/app.js";
 import { ComfyWidgets } from "../../../scripts/widgets.js"
 import { api_cmd_jovian } from '../util/util_api.js'
 import { flashBackgroundColor } from '../util/util_fun.js'
+import { fitHeight, TypeSlotEvent, TypeSlot } from '../util/util.js'
 
 const _id = "QUEUE (JOV) 🗃"
 const _prefix = '🦄'
@@ -105,29 +106,35 @@ app.registerExtension({
         }
 
         const onConnectionsChange = nodeType.prototype.onConnectionsChange;
-        nodeType.prototype.onConnectionsChange = function (side, slot, connected, link_info)
+        nodeType.prototype.onConnectionsChange = function (slotType, slot, event, link_info, data)
+        //side, slot, connected, link_info
         {
-            if (slot == 0 && side == 2) {
-                if (connected) {
-                    const node = app.graph.getNodeById(link_info.target_id);
-                    if (node === undefined) {
-                        return;
-                    }
-                    const target = node.inputs[link_info.target_slot];
-                    if (target === undefined) {
-                        return;
-                    }
+            // console.info(slotType, slot, event, link_info, data)
+            if (slotType === TypeSlot.Output && slot == 0) {
+                if (link_info){
+                    if (event === TypeSlotEvent.Connect) {
+                        const node = app.graph.getNodeById(link_info.target_id);
+                        if (node === undefined) {
+                            return;
+                        }
+                        const target = node.inputs[link_info.target_slot];
+                        if (target === undefined) {
+                            return;
+                        }
 
-                    const widget = node.widgets?.find(w => w.name === target.name);
-                    if (widget === undefined) {
-                        return;
-                    }
-                    this.outputs[0].name = widget.name;
-                    if (widget?.origType == "combo" || widget.type == "COMBO") {
-                        const values = widget.options.values;
-                        // remove all connections that don't match the list?
-                        this.widget_queue.value = values.join('\n');
-                        update_list(this);
+                        const widget = node.widgets?.find(w => w.name === target.name);
+                        if (widget === undefined) {
+                            return;
+                        }
+                        this.outputs[0].name = widget.name;
+                        if (widget?.origType == "combo" || widget.type == "COMBO") {
+                            const values = widget.options.values;
+                            // remove all connections that don't match the list?
+                            this.widget_queue.value = values.join('\n');
+                            update_list(this);
+                        }
+                    } else {
+                        this.outputs[0].name = _prefix;
                     }
                 } else {
                     this.outputs[0].name = _prefix;

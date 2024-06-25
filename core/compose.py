@@ -703,13 +703,10 @@ Takes an input image and splits it into its individual color channels (red, gree
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
         images = []
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
-        print(pA[0].shape)
         pbar = ProgressBar(len(pA))
         for idx, pA in enumerate(pA):
             pA = channel_solid(chan=EnumImageType.BGRA) if pA is None else tensor2cv(pA)
-            print(pA.shape)
             pA = image_mask_add(pA)
-            print(pA.shape)
             pA = [cv2tensor(x, True) for x in image_split(pA)]
             images.append(pA)
             pbar.update_absolute(idx)
@@ -827,6 +824,10 @@ Merge multiple input images into a single composite image by stacking them along
         if len(images) == 0:
             logger.warning("no images to stack")
             return
+        data = []
+        for i in images:
+            data.extend(i)
+        images = [tensor2cv(i) for i in data]
 
         axis = parse_param(kw, Lexicon.AXIS, EnumConvertType.STRING, EnumOrientation.GRID.name)[0]
         stride = parse_param(kw, Lexicon.STEP, EnumConvertType.INT, 1)[0]
@@ -834,10 +835,6 @@ Merge multiple input images into a single composite image by stacking them along
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (512, 512), MIN_IMAGE_SIZE)[0]
         sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)[0]
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)[0]
-        data = []
-        for i in images:
-            data.extend(i)
-        images = [tensor2cv(i) for i in data]
         axis = EnumOrientation[axis]
         img = image_stack(images, axis, stride) #, matte)
         mode = EnumScaleMode[mode]

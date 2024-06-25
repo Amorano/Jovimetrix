@@ -6,8 +6,7 @@
  */
 
 import { app } from "../../../scripts/app.js"
-import { fitHeight, TypeSlot } from '../util/util.js'
-import { widget_type_name, show_vector } from '../util/util_widget.js'
+import { widget_type_name } from '../util/util_widget.js'
 import { hook_widget_AB } from '../util/util_jov.js'
 
 const _id = "LERP (JOV) 🔰"
@@ -31,5 +30,6 @@ app.registerExtension({
             return me;
         }
         return nodeType;
+
 	}
 })

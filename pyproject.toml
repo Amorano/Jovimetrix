@@ -1,7 +1,7 @@
 [project]
 name = "jovimetrix"
 description = "Compose like Substance Designer. Webcams, Media Streams (in/out), Tick animation, Color correction, Geometry manipulation, Pixel shader, Polygonal shape generator, Remap images gometry and color, Heavily inspired by WAS and MTB Node Suites."
-version = "1.1.1"
+version = "1.2"
 license = "MIT"
 dependencies = [
     "aenum<4,>=3.1.15",
