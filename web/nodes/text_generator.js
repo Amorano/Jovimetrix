@@ -27,8 +27,8 @@ app.registerExtension({
             const spacing = this.widgets.find(w => w.name === 'SPACING');
             const autosize = this.widgets.find(w => w.name === 'AUTOSIZE');
             autosize.callback = () => {
-                widget_hide(this, cols);
-                widget_hide(this, size);
+                widget_hide(this, cols, "-jov");
+                widget_hide(this, size, "-jov");
                 if (!autosize.value) {
                     widget_show(size);
 
@@ -39,9 +39,9 @@ app.registerExtension({
             }
 
             letter.callback = () => {
-                widget_hide(this, cols);
-                widget_hide(this, margin);
-                widget_hide(this, spacing);
+                widget_hide(this, cols, "-jov");
+                widget_hide(this, margin, "-jov");
+                widget_hide(this, spacing, "-jov");
                 if(!letter.value) {
                     widget_show(margin);
                     widget_show(spacing);

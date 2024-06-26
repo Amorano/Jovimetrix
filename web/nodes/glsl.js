@@ -36,7 +36,7 @@ app.registerExtension({
             widget_param.serializeValue = async () =>
                 self.widgets.slice(8).reduce((result, widget) =>
                     ({ ...result, [widget.name]: widget.value }), {});
-            widget_hide(this, widget_param);
+            widget_hide(this, widget_param, "-jov");
 
             // parse this for vars... check existing vars and "types" and keep
             // or ignore as is the case -- I should stick to a common set of

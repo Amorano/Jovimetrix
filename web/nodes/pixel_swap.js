@@ -27,7 +27,7 @@ app.registerExtension({
             const a = this.widgets.find(w => w.name === '⬜');
             const swap_r = this.widgets.find(w => w.name === 'SWAP R');
             swap_r.callback = () => {
-                widget_hide(this, r);
+                widget_hide(this, r, "-jov");
                 if (swap_r.value == "CONSTANT") {
                     widget_show(r);
                 }
@@ -35,7 +35,7 @@ app.registerExtension({
             };
             const swap_g = this.widgets.find(w => w.name === 'SWAP G');
             swap_g.callback = () => {
-                widget_hide(this, g);
+                widget_hide(this, g, "-jov");
                 if (swap_g.value == "CONSTANT") {
                     widget_show(g);
                 }
@@ -43,7 +43,7 @@ app.registerExtension({
             };
             const swap_b = this.widgets.find(w => w.name === 'SWAP B');
             swap_b.callback = () => {
-                widget_hide(this, b);
+                widget_hide(this, b, "-jov");
                 if (swap_b.value == "CONSTANT") {
                     widget_show(b);
                 }
@@ -51,7 +51,7 @@ app.registerExtension({
             };
             const swap_a = this.widgets.find(w => w.name === 'SWAP A');
             swap_a.callback = () => {
-                widget_hide(this, a);
+                widget_hide(this, a, "-jov");
                 if (swap_a.value == "CONSTANT") {
                     widget_show(a);
                 }

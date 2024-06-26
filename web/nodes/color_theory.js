@@ -22,7 +22,7 @@ app.registerExtension({
             const num_color = this.widgets.find(w => w.name === 'VAL');
             const scheme = this.widgets.find(w => w.name === 'SCHEME');
             scheme.callback = () => {
-                widget_hide(this, num_color);
+                widget_hide(this, num_color, "-jov");
                 if (scheme.value == "CUSTOM_TETRAD") {
                     widget_show(num_color);
                 }

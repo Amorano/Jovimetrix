@@ -92,6 +92,7 @@ The Akashic node processes input data and prepares it for visualization. It acce
             ret = val
             typ = ''.join(repr(type(val)).split("'")[1:2])
             if isinstance(val, dict):
+                print(val)
                 ret = json.dumps(val, indent=3)
             elif isinstance(val, (tuple, set, list,)):
                 ret = ''
@@ -252,13 +253,14 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
             if batch_chunk > 0:
                 loop_extract = self.batched(loop_extract, batch_chunk)
             if not output_is_image:
-                results.append([loop_extract, loop_extract, len(loop_extract)])
+                loop_extract = *loop_extract,
+                results.append([*loop_extract, loop_extract, len(loop_extract)])
             else:
                 img.extend(loop_extract)
                 results.append([loop_extract, len(loop_extract)])
             pbar.update_absolute(idx)
         if not output_is_image:
-            return *list(zip(*results)),
+            return list(zip(*results))
         ret = torch.stack(img, dim=0)
         return ret, *list(zip(*results))
 
@@ -462,7 +464,7 @@ class QueueNode(JOVBaseNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = (WILDCARD, WILDCARD, "STRING", "INT", "INT", )
     RETURN_NAMES = (Lexicon.ANY_OUT, Lexicon.QUEUE, Lexicon.CURRENT, Lexicon.INDEX, Lexicon.TOTAL, )
-    VIDEO_FORMATS = ['.webm', '.mp4', '.avi', '.wmv', '.mkv', '.mov', '.mxf']
+    VIDEO_FORMATS = ['.wav', '.mp3', '.webm', '.mp4', '.avi', '.wmv', '.mkv', '.mov', '.mxf']
     SORT = 0
     DESCRIPTION = """
 The Queue node manages a queue of items, such as file paths or data. It supports various formats including images, videos, text files, and JSON files. Users can specify the current index for the queue item, enable pausing the queue, or reset it back to the first index. The node outputs the current item in the queue, the entire queue, the current index, and the total number of items in the queue.
@@ -523,28 +525,33 @@ The Queue node manages a queue of items, such as file paths or data. It supports
                 else:
                     data = [path]
             elif len(results := glob.glob(str(path2))) > 0:
-                data = [x.replace('\\\\', '/') for x in results]
+                data = [x.replace('\\', '/') for x in results]
 
             if len(data) and count > 0:
-                entries.extend(data * count)
+                ret = []
+                for x in data:
+                    try: ret.append(float(x))
+                    except: ret.append(x)
+                entries.extend(ret * count)
         return entries
 
     def run(self, ident, **kw) -> None:
 
-        def process(q_data: str) -> Tuple[torch.Tensor, torch.Tensor] | str | dict:
+        def process(q_data: Any) -> Tuple[torch.Tensor, torch.Tensor] | str | dict:
             # single Q cache to skip loading single entries over and over
             if (val := self.__last_q_value.get(q_data, None)) is not None:
                 return val
-            if not os.path.isfile(q_data):
-                return q_data
-            _, ext = os.path.splitext(q_data)
-            if ext in image_formats():
-                data = image_load(q_data)[0]
-                data = cv2tensor(data)
-                self.__last_q_value[q_data] = data
-            elif ext == '.json':
-                with open(q_data, 'r', encoding='utf-8') as f:
-                    self.__last_q_value[q_data] = json.load(f)
+            if isinstance(q_data, (str,)):
+                if not os.path.isfile(q_data):
+                    return q_data
+                _, ext = os.path.splitext(q_data)
+                if ext in image_formats():
+                    data = image_load(q_data)[0]
+                    data = cv2tensor(data)
+                    self.__last_q_value[q_data] = data
+                elif ext == '.json':
+                    with open(q_data, 'r', encoding='utf-8') as f:
+                        self.__last_q_value[q_data] = json.load(f)
             return self.__last_q_value.get(q_data, q_data)
 
         # should work headless as well

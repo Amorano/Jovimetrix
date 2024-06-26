@@ -37,7 +37,7 @@ app.registerExtension({
             const oldCallback = ab_data.combo.callback;
             ab_data.combo.callback = () => {
                 oldCallback?.apply(this, arguments);
-                widget_hide(this, widget_str, "-jovi");
+                widget_hide(this, widget_str, "-jov");
                 widget_str.inputEl.className = "jov-hidden";
                 widget_str.computeSize = () => [0, -4];
 

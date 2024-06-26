@@ -114,7 +114,7 @@ app.registerExtension({
                 if (link_info){
                     if (event === TypeSlotEvent.Connect) {
                         const node = app.graph.getNodeById(link_info.target_id);
-                        if (node === undefined) {
+                        if (node === undefined || node.inputs === undefined) {
                             return;
                         }
                         const target = node.inputs[link_info.target_slot];

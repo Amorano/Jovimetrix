@@ -26,8 +26,8 @@ app.registerExtension({
             const mode = this.widgets.find(w => w.name === 'MODE');
             const map = this.widgets.find(w => w.name === 'MAP');
             map.callback = () => {
-                widget_hide(this, color_map);
-                widget_hide(this, num_color);
+                widget_hide(this, color_map, "-jov");
+                widget_hide(this, num_color, "-jov");
                 if (mode.value == "LUT") {
                     if (map.value == "USER_MAP") {
                         widget_show(num_color);
@@ -38,7 +38,7 @@ app.registerExtension({
                 fitHeight(self);
             };
             mode.callback = () => {
-                widget_hide(this, map);
+                widget_hide(this, map, "-jov");
                 if (mode.value == "LUT") {
                     widget_show(map);
                 }
