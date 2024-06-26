@@ -951,9 +951,11 @@ def image_grayscale(image: TYPE_IMAGE) -> TYPE_IMAGE:
         while len(image.shape) < 3:
             image = np.expand_dims(image, -1)
         return image
-    if cc == 4:
-        image = image[:,:,:3]
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)[:,:,2]
+    if cc > 2:
+        if cc == 4:
+            image = image[:,:,:3]
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)[:,:,2]
+    # elif cc == 1:
     return np.expand_dims(image, -1)
 
 def image_grid(data: List[TYPE_IMAGE], width: int, height: int) -> TYPE_IMAGE:
@@ -1184,6 +1186,21 @@ def image_merge(imageA: TYPE_IMAGE, imageB: TYPE_IMAGE, axis: int=0, flip: bool=
         imageA, imageB = imageB, imageA
     axis = 1 if axis == "HORIZONTAL" else 0
     return np.concatenate((imageA, imageB), axis=axis)
+
+def image_minmax(image:List[TYPE_IMAGE]) -> Tuple[int, int, int, int]:
+    h_min = w_min = 100000000000
+    h_max = w_max = MIN_IMAGE_SIZE
+    for img in image:
+        if img is None:
+            continue
+        h, w = img.shape[:2]
+        h_max = max(h, h_max)
+        w_max = max(w, w_max)
+        h_min = min(h, h_min)
+        w_min = min(w, w_min)
+
+    # x,y - x+width, y+height
+    return w_min, h_min, w_max, h_max
 
 def image_mirror(image: TYPE_IMAGE, mode:EnumMirrorMode, x:float=0.5, y:float=0.5) -> TYPE_IMAGE:
     cc = image.shape[2] if image.ndim == 3 else 1

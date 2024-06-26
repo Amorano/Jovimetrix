@@ -167,7 +167,7 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
         data_list = parse_dynamic(kw, Lexicon.UNKNOWN, EnumConvertType.ANY, None)
         mode = parse_param(kw, Lexicon.BATCH_MODE, EnumConvertType.STRING, EnumBatchMode.MERGE.name)
         index = parse_param(kw, Lexicon.INDEX, EnumConvertType.INT, EnumBatchMode.MERGE.name)
-        slice_range = parse_param(kw, Lexicon.RANGE, EnumConvertType.VEC3INT, (0, 0, 1))
+        slice_range = parse_param(kw, Lexicon.RANGE, EnumConvertType.VEC3INT, [(0, 0, 1)])
         indices = parse_param(kw, Lexicon.STRING, EnumConvertType.STRING, "")
         seed = parse_param(kw, Lexicon.SEED, EnumConvertType.INT, 0)
         count = parse_param(kw, Lexicon.COUNT, EnumConvertType.INT, 1, 1)
@@ -394,7 +394,7 @@ The Graph node visualizes a series of data points over time. It accepts a dynami
 
     def run(self, ident, **kw) -> Tuple[torch.Tensor]:
         slice = parse_param(kw, Lexicon.VALUE, EnumConvertType.INT, 60)[0]
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (512, 512), 1)[0]
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], 1)[0]
         if parse_reset(ident) > 0 or parse_param(kw, Lexicon.RESET, EnumConvertType.BOOLEAN, False)[0]:
             self.__history = []
         longest_edge = 0
@@ -432,9 +432,9 @@ The Graph node visualizes a series of data points over time. It accepts a dynami
 def run(self, **kw) -> None:
     q = parse_param(kw, Lexicon.QUEUE, EnumConvertType.STRING, "")
     mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.NONE.name)
-    wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (512, 512), MIN_IMAGE_SIZE)
+    wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)
     sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)
-    matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
+    matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
     params = list(zip_longest_fill(q, mode, wihi, sample, matte))
     images = []
     pbar = ProgressBar(len(params))

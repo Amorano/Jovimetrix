@@ -28,7 +28,6 @@ export function hook_widget_size_mode(node, wh_hide=true) {
 }
 
 export function hook_widget_AB(node, control_key) {
-    const initializeBool = (value) => ({ 0: value[0] !== 0 });
     const initializeTrack = (widget) => {
         const track = {};
         for (let i = 0; i < 4; i++) {
@@ -38,11 +37,11 @@ export function hook_widget_AB(node, control_key) {
         return track;
     };
 
-    const setCallback = (widget, boolKey, trackKey) => {
+    const setCallback = (widget, trackKey) => {
         widget.options.menu = false;
         widget.callback = () => {
             if (widget.type === "toggle") {
-                boolKey[0] = widget.value;
+                trackKey[0] = 1 ? widget.value : 0;
             } else {
                 Object.keys(widget.value).forEach((key) => {
                     trackKey[key] = widget.value[key];
@@ -61,8 +60,6 @@ export function hook_widget_AB(node, control_key) {
     }
 
     const data = {
-        bool_x: initializeBool(A.value),
-        bool_y: initializeBool(B.value),
         track_xyzw: initializeTrack(A),
         track_yyzw: initializeTrack(B),
         A,
@@ -70,21 +67,22 @@ export function hook_widget_AB(node, control_key) {
         combo
     };
 
+    const oldCallback = combo.callback;
     combo.callback = () => {
+        oldCallback?.apply(this, arguments);
         widget_hide(node, A, "-jovi");
         widget_hide(node, B, "-jovi");
         if (["VEC2", "VEC2INT", "COORD2D", "VEC3", "VEC3INT", "VEC4", "VEC4INT", "BOOLEAN", "INT", "FLOAT"].includes(combo.value)) {
-            const data_x = (combo.value === "BOOLEAN") ? data.bool_x : data.track_xyzw;
-            const data_y = (combo.value === "BOOLEAN") ? data.bool_y : data.track_yyzw;
-            show_vector(A, data_x, combo.value);
-            show_vector(B, data_y, combo.value);
+            show_vector(A, data.track_xyzw, combo.value);
+            show_vector(B, data.track_yyzw, combo.value);
         }
         fitHeight(node);
     }
+    console.info(data.combo)
 
     setTimeout(() => { combo.callback(); }, 10);
-    setCallback(A, data.bool_x, data.track_xyzw);
-    setCallback(B, data.bool_y, data.track_yyzw);
+    setCallback(A, data.track_xyzw);
+    setCallback(B, data.track_yyzw);
     return data;
 }
 

@@ -24,18 +24,18 @@ app.registerExtension({
             const amount = this.widgets.find(w => w.name === 'VAL');
             const lohi = this.widgets.find(w => w.name === 'LoHi');
             const lmh = this.widgets.find(w => w.name === 'LMH');
-            const hsv = this.widgets.find(w => w.name === '🇭🇸\u200c🇻');
+            const hsv = this.widgets.find(w => w.name === 'HSV');
             const contrast = this.widgets.find(w => w.name === '🌓');
             const gamma = this.widgets.find(w => w.name === '🔆');
             const op = this.widgets.find(w => w.name === '⚒️');
             op.callback = () => {
-                widget_hide(this, radius);
-                widget_hide(this, amount);
-                widget_hide(this, lohi);
-                widget_hide(this, lmh);
-                widget_hide(this, hsv);
-                widget_hide(this, contrast);
-                widget_hide(this, gamma);
+                widget_hide(this, radius, "-jov");
+                widget_hide(this, amount, "-jov");
+                widget_hide(this, lohi, "-jov");
+                widget_hide(this, lmh, "-jov");
+                widget_hide(this, hsv, "-jov");
+                widget_hide(this, contrast, "-jov");
+                widget_hide(this, gamma, "-jov");
                 if (["BLUR", "STACK_BLUR", "MEDIAN_BLUR", "OUTLINE"].includes(op.value)) {
                     widget_show(radius);
                 } else if (["PIXELATE", "QUANTIZE", "POSTERIZE"].includes(op.value)) {

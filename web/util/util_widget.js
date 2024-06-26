@@ -76,13 +76,15 @@ export function widget_remove_all(node) {
 }
 
 export function widget_hide(node, widget, suffix = '') {
-    //console.info(widget)
     if (widget.hidden || widget.type?.startsWith(CONVERTED_TYPE + suffix)) {
         return;
     }
-    widget.origType = widget.type
+    console.info('hide', widget)
+    widget.origType = widget.type;
     widget.hidden = true;
-    widget.origComputeSize = widget.computeSize;
+    if (widget.computeSize) {
+        widget.origComputeSize = widget.computeSize;
+    }
     if (widget.serializeValue) {
         widget.origSerializeValue = widget.serializeValue;
     }
@@ -115,18 +117,17 @@ export function widget_show(widget) {
         widget.type = widget.origType;
         delete widget.origType;
     }
+
+    delete widget.computeSize;
     if (widget?.origComputeSize) {
         widget.computeSize = widget.origComputeSize;
         delete widget.origComputeSize;
-    } else {
-        delete widget.computeSize; // = (target_width) => [target_width, 20];
     }
 
+    delete widget.serializeValue;
     if (widget?.origSerializeValue) {
         widget.serializeValue = widget.origSerializeValue;
         delete widget.origSerializeValue;
-    } else {
-        delete widget.serializeValue;
     }
 
     widget.hidden = false;
@@ -135,6 +136,7 @@ export function widget_show(widget) {
         widget_show(w)
       }
     }
+    console.info('show', widget)
 }
 
 export function show_boolean(widget_x) {
@@ -143,7 +145,7 @@ export function show_boolean(widget_x) {
     widget_x.type = "toggle";
 }
 
-export function show_vector(widget, values={}, type=undefined, precision=6) {
+export function show_vector(widget, values={}, type=undefined, precision=4) {
     widget_show(widget);
     if (["FLOAT", "INT"].includes(type)) {
         type = "VEC1";
@@ -151,11 +153,18 @@ export function show_vector(widget, values={}, type=undefined, precision=6) {
         type = "toggle";
         type = "toggle";
     }
+
     if (type !== undefined) {
         widget.type = type;
     }
+
+    if (widget.value === undefined) {
+        widget.value = widget.options?.default || {};
+    }
+    console.info(1, widget.value)
+
     if (widget.type == 'toggle') {
-        widget.value = values[0] > 0 ? true : false;
+        widget.value[0] = values[0] > 0 ? true : false;
     } else {
         let size = 1;
         const match = regex.exec(widget.type);
@@ -171,10 +180,13 @@ export function show_vector(widget, values={}, type=undefined, precision=6) {
             widget.options.round =  1 / (10^Math.max(1, precision-1));
             widget.options.precision = precision;
         }
-        widget.value = {};
-        for (let i = 0; i < size; i++) {
-            widget.value[i] = widget.type.endsWith('INT') ? Math.round(values[i]) : Number(values[i]);
+        if (widget.value.length < size) {
+            for (let i = widget.value.length; i < size; i++) {
+                widget.value[i] = widget.type.endsWith('INT') ? Math.round(values[i]) : Number(values[i]);
+            }
         }
+        console.info(widget.value)
+        widget.value = widget.value.slice(0, size);
     }
 }
 
