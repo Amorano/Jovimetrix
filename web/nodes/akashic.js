@@ -21,7 +21,7 @@ app.registerExtension({
         nodeType = node_add_dynamic(nodeType, _prefix);
 
         const onComputeSize = nodeType.prototype.computeSize;
-        nodeType.computeSize = () => {
+        nodeType.computeSize = async () => {
             const size = onComputeSize?.apply(this);
             return [0, 4];
         }
@@ -41,7 +41,7 @@ app.registerExtension({
         }
 
         const onExecuted = nodeType.prototype.onExecuted;
-        nodeType.prototype.onExecuted = function (message) {
+        nodeType.prototype.onExecuted = async function (message) {
             onExecuted?.apply(this, arguments)
             let lineCount = 0;
             if (this.widgets) {
@@ -62,7 +62,7 @@ app.registerExtension({
                     }
                 }
             }
-            // fitHeight(this);
+            fitHeight(this);
         }
     }
 })

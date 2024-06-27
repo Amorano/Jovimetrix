@@ -107,7 +107,7 @@ app.registerExtension({
     },
     async beforeRegisterNodeDef(nodeType, nodeData) {
         const onNodeCreated = nodeType.prototype.onNodeCreated;
-        nodeType.prototype.onNodeCreated = function () {
+        nodeType.prototype.onNodeCreated = async function () {
             const me = onNodeCreated?.apply(this, arguments);
             if (this) {
                 node_color_reset(this, false);

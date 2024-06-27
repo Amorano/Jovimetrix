@@ -58,7 +58,20 @@ app.registerExtension({
             },
         });
     },
+    async beforeRegisterNodeDef(nodeType, nodeData, app) {
+        const onNodeCreated = nodeType.prototype.onNodeCreated;
+        nodeType.prototype.onNodeCreated = async function () {
+            const me = onNodeCreated.apply(this, arguments);
+            for (const widget of this.widgets) {
+                if (widget.name === "control_after_generate") {
+                    widget.value = "fixed";
+                }
+            }
+            return me;
+        }
+    },
     async nodeCreated(node) {
+
         const onDrawForeground = node.onDrawForeground;
         node.onDrawForeground = function (ctx, area) {
             // console.info(node)

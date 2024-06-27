@@ -110,7 +110,7 @@ app.registerExtension({
     init() {
         create_documentation_stylesheet();
 	},
-	beforeRegisterNodeDef(nodeType, nodeData) {
+	async beforeRegisterNodeDef(nodeType, nodeData) {
         if (!nodeData?.category?.startsWith("JOVIMETRIX")) {
             return;
         }
