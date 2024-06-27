@@ -27,10 +27,10 @@ app.registerExtension({
             const blbr = this.widgets.find(w => w.name === 'BL-BR');
             const op = this.widgets.find(w => w.name === '⚒️');
             op.callback = () => {
-                widget_hide(self, xy);
-                widget_hide(self, wh);
-                widget_hide(self, tltr);
-                widget_hide(self, blbr);
+                widget_hide(self, xy, "-jov");
+                widget_hide(self, wh, "-jov");
+                widget_hide(self, tltr, "-jov");
+                widget_hide(self, blbr, "-jov");
                 if (op.value == 'XY') {
                     widget_show(xy);
                     widget_show(wh);

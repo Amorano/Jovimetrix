@@ -79,7 +79,6 @@ export function widget_hide(node, widget, suffix = '') {
     if (widget.hidden || widget.type?.startsWith(CONVERTED_TYPE + suffix)) {
         return;
     }
-    console.info('hide', widget)
     widget.origType = widget.type;
     widget.hidden = true;
     if (widget.computeSize) {
@@ -136,7 +135,6 @@ export function widget_show(widget) {
         widget_show(w)
       }
     }
-    console.info('show', widget)
 }
 
 export function show_boolean(widget_x) {
@@ -161,7 +159,6 @@ export function show_vector(widget, values={}, type=undefined, precision=4) {
     if (widget.value === undefined) {
         widget.value = widget.options?.default || {};
     }
-    console.info(1, widget.value)
 
     if (widget.type == 'toggle') {
         widget.value[0] = values[0] > 0 ? true : false;
@@ -185,7 +182,6 @@ export function show_vector(widget, values={}, type=undefined, precision=4) {
                 widget.value[i] = widget.type.endsWith('INT') ? Math.round(values[i]) : Number(values[i]);
             }
         }
-        console.info(widget.value)
         widget.value = widget.value.slice(0, size);
     }
 }
@@ -243,7 +239,7 @@ export function convertToWidget(node, widget) {
 }
 
 export function convertToInput(node, widget, config) {
-    widget_hide(node, widget)
+    widget_hide(node, widget, "-jov")
 
     const { linkType } = widget_get_type(config)
 

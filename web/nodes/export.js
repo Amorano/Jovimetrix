@@ -28,11 +28,11 @@ app.registerExtension({
             let loop = this.widgets.find(w => w.name === '🔄');
             let combo = this.widgets.find(w => w.name === 'FORMAT');
             combo.callback = () => {
-                widget_hide(self, opt);
-                widget_hide(self, quality);
-                widget_hide(self, quality_m);
-                widget_hide(self, fps);
-                widget_hide(self, loop);
+                widget_hide(self, opt, "-jov");
+                widget_hide(self, quality, "-jov");
+                widget_hide(self, quality_m, "-jov");
+                widget_hide(self, fps, "-jov");
+                widget_hide(self, loop, "-jov");
                 switch (combo.value) {
                     case "gif":
                         widget_show(opt);

@@ -20,7 +20,8 @@ from Jovimetrix.sup.util import parse_dynamic, parse_param, \
     zip_longest_fill, EnumConvertType
 from Jovimetrix.sup.image import  \
     channel_merge, channel_solid, channel_swap, color_match_histogram, \
-    color_match_lut, image_filter, image_minmax,  image_quantize, image_scalefit, \
+    color_match_lut, image_filter, image_gradient_map, image_minmax,  \
+    image_quantize, image_scalefit, \
     color_match_reinhard, cv2tensor_full, image_color_blind, image_contrast,\
     image_crop, image_crop_center, image_crop_polygonal, image_equalize, \
     image_gamma, image_grayscale, image_hsv, image_levels, image_convert, \
@@ -588,7 +589,6 @@ Combine multiple input images into a single image by summing their pixel values.
         d = super().INPUT_TYPES()
         d.update({
             "optional": {
-
                 Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
                 Lexicon.WH: ("VEC2", {"default": (512, 512), "min":MIN_IMAGE_SIZE,
                                     "step": 1, "label": [Lexicon.W, Lexicon.H]}),
@@ -599,7 +599,7 @@ Combine multiple input images into a single image by summing their pixel values.
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> torch.Tensor:
-        imgs = parse_dynamic(kw, Lexicon.IMAGE, EnumConvertType.IMAGE, None)
+        imgs = parse_dynamic(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
         pA = []
         for img in imgs:
             pA.extend([image_convert(tensor2cv(i), 4) for i in img])
@@ -625,6 +625,57 @@ Combine multiple input images into a single image by summing their pixel values.
                 #@TODO: ADD VARIOUS COMP OPS?
                 current = cv2.add(current, x)
             images.append(cv2tensor_full(current, matte))
+            pbar.update_absolute(idx)
+        return [torch.cat(i, dim=0) for i in zip(*images)]
+
+class GradientMap(JOVImageNode):
+    NAME = "GRADIENT MAP (JOV) 🇲🇺"
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
+    SORT = 550
+    DESCRIPTION = """
+Remaps an input image using a gradient lookup table (LUT) to allow precise control over color mapping by applying the gradient to the input image. The gradient image will be translated into a single row lookup table. This node is useful for artistic effects, color grading, and mapping specific color ranges to achieve desired visual effects.
+"""
+
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        d = super().INPUT_TYPES()
+        d.update({
+            "optional": {
+                Lexicon.PIXEL: (WILDCARD, {"tooltip":"Image to remap with gradient input"}),
+                Lexicon.GRADIENT: (WILDCARD, {"tooltip":f"Look up table (LUT) to remap the input image in `{Lexicon.PIXEL}`"}),
+                Lexicon.FLIP: ("BOOLEAN", {"default":False, "tooltip":"Reverse the gradient from left-to-right "}),
+                Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
+                Lexicon.WH: ("VEC2", {"default": (512, 512), "min":MIN_IMAGE_SIZE,
+                                    "step": 1, "label": [Lexicon.W, Lexicon.H]}),
+                Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
+                Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
+            }
+        })
+        return Lexicon._parse(d, cls)
+
+    def run(self, **kw) -> torch.Tensor:
+        pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
+        gradient = parse_param(kw, Lexicon.GRADIENT, EnumConvertType.IMAGE, None)
+        flip = parse_param(kw, Lexicon.FLIP, EnumConvertType.BOOLEAN, False)
+        mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.NONE.name)
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)
+        sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)
+        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
+        images = []
+        params = list(zip_longest_fill(pA, gradient, flip, mode, sample, wihi, matte))
+        pbar = ProgressBar(len(params))
+        for idx, (pA, gradient, flip, mode, sample, wihi, matte) in enumerate(params):
+            pA = channel_solid(chan=EnumImageType.BGRA) if pA is None else tensor2cv(pA)
+            gradient = channel_solid(chan=EnumImageType.BGRA) if gradient is None else tensor2cv(gradient)
+            pA = image_gradient_map(pA, gradient)
+            # @TODO: pattern o' scale... when make it a lambda?
+            mode = EnumScaleMode[mode]
+            if mode != EnumScaleMode.NONE:
+                w, h = wihi
+                sample = EnumInterpolation[sample]
+                pA = image_scalefit(pA, w, h, mode, sample)
+            #
+            images.append(cv2tensor_full(pA, matte))
             pbar.update_absolute(idx)
         return [torch.cat(i, dim=0) for i in zip(*images)]
 

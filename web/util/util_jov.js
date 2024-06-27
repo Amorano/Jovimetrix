@@ -13,9 +13,9 @@ export function hook_widget_size_mode(node, wh_hide=true) {
     const mode = widget_find(node.widgets, 'MODE');
     mode.callback = () => {
         if (wh_hide) {
-            widget_hide(node, wh);
+            widget_hide(node, wh, "-jov");
         }
-        widget_hide(node, samp);
+        widget_hide(node, samp, "-jov");
         if (!['NONE'].includes(mode.value)) {
             widget_show(wh);
         }
@@ -78,7 +78,6 @@ export function hook_widget_AB(node, control_key) {
         }
         fitHeight(node);
     }
-    console.info(data.combo)
 
     setTimeout(() => { combo.callback(); }, 10);
     setCallback(A, data.track_xyzw);

@@ -883,12 +883,6 @@ def image_filter(image:TYPE_IMAGE, start:Tuple[int]=(128,128,128), end:Tuple[int
         output_image = torch.cat([output_image, old_alpha.unsqueeze(2)], dim=2)
 
     return tensor2cv(output_image), mask.cpu().numpy().astype(np.uint8) * 255
-    output_image = torch.zeros_like(image)
-    #mask = (mask)
-    output_image[mask] = new_image[mask]
-    if old_alpha is not None:
-        output_image[:,:,3] = old_alpha
-    return tensor2cv(output_image), tensor2cv(mask)
 
 def image_formats() -> List[str]:
     exts = Image.registered_extensions()
@@ -943,19 +937,27 @@ def image_gradient(width:int, height:int, color_map:dict=None) -> TYPE_IMAGE:
             draw[x, y] = r, g, b
     return pil2cv(image)
 
-def image_grayscale(image: TYPE_IMAGE) -> TYPE_IMAGE:
+# Adapted from WAS Suite -- gradient_map
+# https://github.com/WASasquatch/was-node-suite-comfyui
+def image_gradient_map(image:TYPE_IMAGE, gradient_map:TYPE_IMAGE, reverse:bool=False) -> TYPE_IMAGE:
+    if reverse:
+        gradient_map = gradient_map[:,:,::-1]
+    grey = image_grayscale(image)
+    cmap = image_convert(gradient_map, 3)
+    cmap = cv2.resize(cmap, (256, 256))
+    cmap = cmap[0,:,:].reshape((256, 1, 3)).astype(np.uint8)
+    return cv2.applyColorMap(grey, cmap)
+
+def image_grayscale(image:TYPE_IMAGE) -> TYPE_IMAGE:
     if image.dtype in [np.float16, np.float32, np.float64]:
         image = np.clip(image * 255, 0, 255).astype(np.uint8)
     cc = image.shape[2] if image.ndim == 3 else 1
     if cc == 1:
-        while len(image.shape) < 3:
-            image = np.expand_dims(image, -1)
         return image
-    if cc > 2:
-        if cc == 4:
-            image = image[:,:,:3]
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)[:,:,2]
-    # elif cc == 1:
+    if cc == 4:
+        image = image[:,:,:3]
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)[:,:,2]
+    # WxH to WxHx1
     return np.expand_dims(image, -1)
 
 def image_grid(data: List[TYPE_IMAGE], width: int, height: int) -> TYPE_IMAGE:
@@ -1071,15 +1073,15 @@ def image_load(url: str) -> Tuple[TYPE_IMAGE, TYPE_IMAGE]:
         img = cv2.imread(url, cv2.IMREAD_UNCHANGED)
         if img is None:
             raise ValueError()
-        if len(img.shape) == 3:
+        if img.ndim == 3:
             if img.shape[2] == 4:
                 img = cv2.cvtColor(img, cv2.COLOR_RGBA2BGRA)
             else:
                 img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-        if len(img.shape) < 3:
+        if img.ndim < 3:
             img = np.expand_dims(img, axis=2)
-        if img.shape[2] == 1:
-            img = image_convert(img, 3)
+        #if img.shape[2] == 1:
+        #    img = image_convert(img, 3)
     except Exception as _:
         try:
             img = Image.open(url)
@@ -1090,7 +1092,7 @@ def image_load(url: str) -> Tuple[TYPE_IMAGE, TYPE_IMAGE]:
     if img is None:
         raise Exception(f"no file {url}")
     if img.dtype != np.uint8:
-        img = np.clip(np.array(img * 255, 0, 255)).astype(dtype=np.uint8)
+        img = np.clip(np.array(img * 255), 0, 255).astype(dtype=np.uint8)
     return img, image_mask(img)
 
 def image_load_data(data: str) -> TYPE_IMAGE:

@@ -62,18 +62,19 @@ app.registerExtension({
         const onNodeCreated = nodeType.prototype.onNodeCreated;
         nodeType.prototype.onNodeCreated = async function () {
             const me = onNodeCreated.apply(this, arguments);
-            for (const widget of this.widgets) {
-                if (widget.name === "control_after_generate") {
-                    widget.value = "fixed";
+            if (this.widgets) {
+                for (const widget of this.widgets) {
+                    if (widget.name === "control_after_generate") {
+                        widget.value = "fixed";
+                    }
                 }
             }
             return me;
         }
     },
     async nodeCreated(node) {
-
         const onDrawForeground = node.onDrawForeground;
-        node.onDrawForeground = function (ctx, area) {
+        node.onDrawForeground = async function (ctx, area) {
             // console.info(node)
             const me = onDrawForeground?.apply(this, arguments);
             if (this.widgets) {

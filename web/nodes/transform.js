@@ -19,34 +19,34 @@ app.registerExtension({
         }
 
         const onNodeCreated = nodeType.prototype.onNodeCreated
-        nodeType.prototype.onNodeCreated = function () {
+        nodeType.prototype.onNodeCreated = async function () {
             const me = onNodeCreated?.apply(this);
-            const self = this;
             hook_widget_size_mode(this);
             const pivot = this.widgets.find(w => w.name === 'PIVOT');
             const mirror = this.widgets.find(w => w.name === '🪞');
             mirror.callback = () => {
-                widget_hide(self, pivot);
+                widget_hide(this, pivot, "-jov");
                 if (mirror.value != 'NONE') {
                     widget_show(pivot);
                 }
-                fitHeight(self);
+                fitHeight(this);
             }
+
             const tltr = this.widgets.find(w => w.name === 'TL-TR');
             const blbr = this.widgets.find(w => w.name === 'BL-BR');
             const str = this.widgets.find(w => w.name === '💪🏽');
             const proj = this.widgets.find(w => w.name === 'PROJ');
             proj.callback = () => {
-                widget_hide(self, str);
-                widget_hide(self, tltr);
-                widget_hide(self, blbr);
+                widget_hide(this, str, "-jov");
+                widget_hide(this, tltr, "-jov");
+                widget_hide(this, blbr, "-jov");
                 if (['SPHERICAL', 'FISHEYE'].includes(proj.value)) {
                     widget_show(str);
                 } else if (['PERSPECTIVE'].includes(proj.value)) {
                     widget_show(tltr);
                     widget_show(blbr);
                 }
-                fitHeight(self);
+                fitHeight(this);
             }
 
             setTimeout(() => { mirror.callback(); }, 10);
