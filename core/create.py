@@ -15,7 +15,7 @@ from comfy.utils import ProgressBar
 
 from Jovimetrix import JOVBaseNode, WILDCARD
 
-from Jovimetrix.sup.lexicon import Lexicon
+from Jovimetrix.sup.lexicon import JOVImageNode, Lexicon
 from Jovimetrix.sup.util import parse_param, zip_longest_fill, \
     EnumConvertType
 
@@ -36,7 +36,7 @@ JOV_CATEGORY = "CREATE"
 
 # =============================================================================
 
-class ConstantNode(JOVBaseNode):
+class ConstantNode(JOVImageNode):
     NAME = "CONSTANT (JOV) 🟪"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
@@ -88,7 +88,7 @@ The Constant node generates constant images or masks of a specified size and col
             pbar.update_absolute(idx)
         return [torch.cat(i, dim=0) for i in zip(*images)]
 
-class ShapeNode(JOVBaseNode):
+class ShapeNode(JOVImageNode):
     NAME = "SHAPE GEN (JOV) ✨"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
@@ -183,7 +183,7 @@ The Shape Generation node creates images representing various shapes such as cir
             pbar.update_absolute(idx)
         return [torch.cat(i, dim=0) for i in zip(*images)]
 
-class StereogramNode(JOVBaseNode):
+class StereogramNode(JOVImageNode):
     NAME = "STEREOGRAM (JOV) 📻"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
@@ -267,7 +267,7 @@ The Stereoscopic node simulates depth perception in images by generating stereos
             pbar.update_absolute(idx)
         return torch.cat(images, dim=0)
 
-class TextNode(JOVBaseNode):
+class TextNode(JOVImageNode):
     NAME = "TEXT GEN (JOV) 📝"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
@@ -380,7 +380,7 @@ The Text Generation node generates images containing text based on user-defined 
             pbar.update_absolute(idx)
         return [torch.cat(i, dim=0) for i in zip(*images)]
 
-class WaveGraphNode(JOVBaseNode):
+class WaveGraphNode(JOVImageNode):
     NAME = "WAVE GRAPH (JOV) ▶ ılıılı"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")

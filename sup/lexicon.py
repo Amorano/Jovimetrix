@@ -9,6 +9,7 @@ EMOJI OCD Support
 import re
 import textwrap
 from typing import Any, Dict, List, Tuple
+from Jovimetrix import JOVBaseNode
 from loguru import logger
 
 # maximum items to show in help for combo list items
@@ -272,6 +273,21 @@ class Lexicon(metaclass=LexiconMeta):
             node["optional"] = {}
         node["optional"]["tooltips"] = ("JTOOLTIP", {"default": data})
         return node
+
+class JOVImageNode(JOVBaseNode):
+    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
+    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        d = super().INPUT_TYPES()
+        d.update({
+            "outputs": {
+                0: ("IMAGE", {"tooltip":"Full channel [RGBA] image. If there is an alpha, the image will be masked out with it when using this output."}),
+                1: ("IMAGE", {"tooltip":"Three channel [RGB] image. There will be no alpha."}),
+                2: ("MASK", {"tooltip":"Single channel mask output."}),
+            }
+        })
+        return Lexicon._parse(d, cls)
 
 """
 JUDICIOUS BORROWING FROM SALT.AI DOCUMENTATION PROJECT:

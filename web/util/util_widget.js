@@ -145,10 +145,11 @@ export function show_boolean(widget_x) {
 
 export function show_vector(widget, values={}, type=undefined, precision=4) {
     widget_show(widget);
-    if (["FLOAT", "INT"].includes(type)) {
+    if (["FLOAT"].includes(type)) {
         type = "VEC1";
+    } else if (["INT"].includes(type)) {
+        type = "VEC1INT";
     } else if (type == "BOOLEAN") {
-        type = "toggle";
         type = "toggle";
     }
 
@@ -160,9 +161,16 @@ export function show_vector(widget, values={}, type=undefined, precision=4) {
         widget.value = widget.options?.default || {};
     }
 
-    if (widget.type == 'toggle') {
-        widget.value[0] = values[0] > 0 ? true : false;
-    } else {
+    // convert widget.value to pure dict/object
+    if (Array.isArray(widget.value)) {
+        let new_val = {};
+        for (let i = 0; i < widget.value.length; i++) {
+            new_val[i] = widget.value[i];
+        }
+        widget.value = new_val;
+    }
+
+    if (widget.type != 'toggle') {
         let size = 1;
         const match = regex.exec(widget.type);
         if (match) {
@@ -172,17 +180,15 @@ export function show_vector(widget, values={}, type=undefined, precision=4) {
             widget.options.step = 1;
             widget.options.round = 1;
             widget.options.precision = 0;
-        } else {
+        } else if (widget.type != 'BOOLEAN') {
             widget.options.step = 1 / (10^Math.max(1, precision-2));
             widget.options.round =  1 / (10^Math.max(1, precision-1));
             widget.options.precision = precision;
         }
-        if (widget.value.length < size) {
-            for (let i = widget.value.length; i < size; i++) {
-                widget.value[i] = widget.type.endsWith('INT') ? Math.round(values[i]) : Number(values[i]);
-            }
+        for (let i = 0; i < values.length; i++) {
+            widget.value[i] = widget.type.endsWith('INT') ? Math.round(values[i]) : Number(values[i]);
         }
-        widget.value = widget.value.slice(0, size);
+        // widget.value = widget.value.slice(0, size);
     }
 }
 
