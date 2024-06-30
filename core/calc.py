@@ -202,6 +202,7 @@ The Unary Operation node performs unary operations like absolute value, mean, me
         results = []
         A = parse_param(kw, Lexicon.IN_A, EnumConvertType.ANY, None)
         op = parse_param(kw, Lexicon.FUNC, EnumConvertType.STRING, EnumUnaryOperation.ABS.name)
+        logger.debug(A, op)
         params = list(zip_longest_fill(A, op))
         pbar = ProgressBar(len(params))
         for idx, (A, op) in enumerate(params):
@@ -220,6 +221,7 @@ The Unary Operation node performs unary operations like absolute value, mean, me
                 typ = EnumConvertType.DICT
             elif isinstance(A, (torch.Tensor,)):
                 typ = EnumConvertType.IMAGE
+
             val = parse_value(A, typ, 0)
             if not isinstance(val, (list, tuple, )):
                 val = [val]
@@ -259,6 +261,7 @@ The Unary Operation node performs unary operations like absolute value, mean, me
                             v = 0
                         ret.append(v)
                     val = ret
+
             convert = int if isinstance(A, (bool, int, np.uint8, np.uint16, np.uint32, np.uint64)) else float
             ret = []
             for v in val:
@@ -272,7 +275,8 @@ The Unary Operation node performs unary operations like absolute value, mean, me
             val = parse_value(val, typ, 0)
             results.append(val)
             pbar.update_absolute(idx)
-        return results
+        print(results)
+        return (results,)
 
 class CalcBinaryOPNode(JOVBaseNode):
     NAME = "OP BINARY (JOV) 🌟"
@@ -715,7 +719,7 @@ The `Tick` node acts as a timer and frame counter, emitting pulses or signals ba
                 # forces a MOD on CYCLE
                 Lexicon.VALUE: ("INT", {"min": 0, "default": 0, "step": 1,
                                         "tooltip": "the current frame number of the tick"}),
-                Lexicon.LOOP: ("INT", {"min": 0, "default": 0, "step": 1,
+                Lexicon.LOOP: ("INT", {"min": 0, "max": 32767, "default": 0, "step": 1,
                                        "tooltip": "number of frames before looping starts. 0 means continuous playback (no loop point)"}),
                 #
                 Lexicon.FPS: ("INT", {"min": 1, "default": 24, "step": 1,

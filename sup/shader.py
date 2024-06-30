@@ -1,113 +1,74 @@
 """
 Jovimetrix - http://www.github.com/amorano/jovimetrix
 GLSL Support
+
+Blended from old ModernGL implementation + Audio_Scheduler & Fill Node Pack
 """
 
-import os
 import time
 from typing import Tuple
 
-import moderngl
-import OpenGL.GL as gl
 import glfw
 import numpy as np
-from PIL import Image
+import OpenGL.GL as gl
+
 from loguru import logger
-from Jovimetrix.sup.image import MIN_IMAGE_SIZE
 
 # =============================================================================
 
+MIN_IMAGE_SIZE = 32
 MAX_WIDTH = 8192
 MAX_HEIGHT = 8192
-
-VERTEX = """
-#version 330
-in vec2 iPosition;
-out vec2 fragCoord;
-
-void main() {
-    gl_Position = vec4(iPosition, 0.0, 1.0);
-    fragCoord = iPosition / 2.0 + 0.5;
-}"""
-
-FRAGMENT_HEADER = """
-#version 330
-#ifdef GL_ES
-precision mediump float;
-#else
-precision highp float;
-#endif
-
-in vec2 fragCoord;
-uniform vec2 iResolution;
-uniform float iTime;
-uniform float iTimeDelta;
-uniform float iFrameRate;
-uniform int iFrame;
-
-uniform sampler2D iChannel0;
-uniform sampler2D iChannel1;
-uniform sampler2D iChannel2;
-
-//#define texture2D texture
-layout(location = 0) out vec4 fragColor;
-"""
 
 # =============================================================================
 
 class CompileException(Exception): pass
 
-def render_surface_and_context_init(width, height) -> dict:
-    if not glfw.init():
-        raise RuntimeError("GLFW did not init")
+class GLSLShader():
+    PROG_HEADER = """
+    #version 440
 
-    glfw.window_hint(glfw.VISIBLE, glfw.FALSE)  # hidden
-    window = glfw.create_window(width, height, "hidden", None, None)
-    if not window:
-        raise RuntimeError("GLFW did not init window")
+    precision highp float;
 
-    glfw.make_context_current(window)
-    return {}
+    uniform vec3	iResolution;
+    uniform vec4	iMouse;
+    uniform float	iTime;
+    uniform float	iTimeDelta;
+    uniform float	iFrameRate;
+    uniform int	    iFrame;
 
-def render_surface_and_context_deinit(**kwargs) -> None:
-    glfw.terminate()
+    uniform sampler2D   iChannel0;
+    uniform sampler2D   iChannel1;
+    uniform sampler2D   iChannel2;
+    uniform sampler2D   iChannel3;
 
-def compile_shader(source, shader_type):
-    shader = gl.glCreateShader(shader_type)
-    gl.glShaderSource(shader, source)
-    gl.glCompileShader(shader)
-    if gl.glGetShaderiv(shader, gl.GL_COMPILE_STATUS) != gl.GL_TRUE:
-        raise RuntimeError(gl.glGetShaderInfoLog(shader))
-    return shader
+    #define texture2D texture
+    """
 
-def compile_program(vertex_source, fragment_source):
-    vertex_shader = compile_shader(vertex_source, gl.GL_VERTEX_SHADER)
-    fragment_shader = compile_shader(fragment_source, gl.GL_FRAGMENT_SHADER)
-    program = gl.glCreateProgram()
-    gl.glAttachShader(program, vertex_shader)
-    gl.glAttachShader(program, fragment_shader)
-    gl.glLinkProgram(program)
-    if gl.glGetProgramiv(program, gl.GL_LINK_STATUS) != gl.GL_TRUE:
-        raise RuntimeError(gl.glGetProgramInfoLog(program))
-    return program
+    PROG_FOOTER = """
+    layout(location = 0) out vec4 _fragColor;
 
-def setup_framebuffer(width, height):
-    texture = gl.glGenTextures(1)
-    gl.glBindTexture(gl.GL_TEXTURE_2D, texture)
-    gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_RGB, width, height, 0, gl.GL_RGB, gl.GL_UNSIGNED_BYTE, None)
-    gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_LINEAR)
-    gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_LINEAR)
+    void main()
+    {
+        mainImage(_fragColor, gl_FragCoord.xy);
+    }
+    """
 
-    fbo = gl.glGenFramebuffers(1)
-    gl.glBindFramebuffer(gl.GL_FRAMEBUFFER, fbo)
-    gl.glFramebufferTexture2D(gl.GL_FRAMEBUFFER, gl.GL_COLOR_ATTACHMENT0, gl.GL_TEXTURE_2D, texture, 0)
-    if gl.glCheckFramebufferStatus(gl.GL_FRAMEBUFFER) != gl.GL_FRAMEBUFFER_COMPLETE:
-        raise RuntimeError("Framebuffer is not complete")
-    return fbo, texture
+    PROG_FRAGMENT = """
+    void mainImage( out vec4 fragColor, in vec2 fragCoord )
+    {
+        // Normalized pixel coordinates (from 0 to 1)
+        vec2 uv = fragCoord/iResolution.xy;
 
-def setup_render_resources(width, height, fragment_source: str):
-    ctx = render_surface_and_context_init(width, height)
-    vertex_source = """
+        // Time varying pixel color
+        vec3 col = 0.5 + 0.5*cos(iTime+uv.xyx+vec3(0,2,4));
+
+        // Output to screen
+        fragColor = vec4(col,1.0);
+    }
+    """
+
+    PROG_VERTEX = """
     #version 330 core
     void main()
     {
@@ -115,48 +76,200 @@ def setup_render_resources(width, height, fragment_source: str):
         gl_Position = vec4(verts[gl_VertexID], 0, 1);
     }
     """
-    shader = compile_program(vertex_source, fragment_source)
-    fbo, texture = setup_framebuffer(width, height)
-    textures = gl.glGenTextures(4)
-    return (ctx, fbo, shader, textures)
 
-def render_resources_cleanup(ctx):
-    # assume all other resources get cleaned up with the context
-    render_surface_and_context_deinit(**ctx)
+    def __init__(self, width:int=MIN_IMAGE_SIZE, height:int=MIN_IMAGE_SIZE) -> None:
+        if not glfw.init():
+            raise RuntimeError("GLFW did not init")
+        glfw.window_hint(glfw.VISIBLE, glfw.FALSE)  # hidden
+        window = glfw.create_window(width, height, "hidden", None, None)
+        if not window:
+            raise RuntimeError("GLFW did not init window")
+        glfw.make_context_current(window)
+        #
+        self.__fbo = None
+        self.__program = None
+        self.__source_vertex = None
+        self.__source_vertex_raw: str = self.PROG_VERTEX
+        self.__source_fragment = None
+        self.__source_fragment_raw: str = self.PROG_HEADER + self.PROG_FRAGMENT + self.PROG_FOOTER
+        #
+        self.__size: Tuple[int, int] = (width, height)
+        self.__textures = None
+        self.__runtime: float = 0
+        self.__delta: float = 0
+        self.__fps: int = 30
+        self.__frame: int = 0
+        self.__frame_count: int = 0
+        self.__time_last: float = time.perf_counter()
+        self.__compile()
 
-def render(width, height, fbo, shader):
-    gl.glBindFramebuffer(gl.GL_FRAMEBUFFER, fbo)
-    gl.glClearColor(0.0, 0.0, 0.0, 1.0)
-    gl.glClear(gl.GL_COLOR_BUFFER_BIT)
-    gl.glUseProgram(shader)
-    gl.glDrawArrays(gl.GL_TRIANGLES, 0, 3)
-    data = gl.glReadPixels(0, 0, width, height, gl.GL_RGB, gl.GL_UNSIGNED_BYTE)
-    image = np.frombuffer(data, dtype=np.uint8).reshape(height, width, 3)
-    image = image[::-1, :, :]
-    image = np.array(image).astype(np.float32) / 255.0
-    return image
+    def __compile_shader(self, source:str, shader_type:str) -> None:
+        shader = gl.glCreateShader(shader_type)
+        gl.glShaderSource(shader, source)
+        gl.glCompileShader(shader)
+        if gl.glGetShaderiv(shader, gl.GL_COMPILE_STATUS) != gl.GL_TRUE:
+            raise RuntimeError(gl.glGetShaderInfoLog(shader))
+        logger.debug(f"{shader_type} compiled")
+        return shader
+
+    def __compile(self) -> None:
+        self.__program = gl.glCreateProgram()
+        gl.glAttachShader(self.__program, self.__source_vertex)
+        gl.glAttachShader(self.__program, self.__source_fragment)
+        gl.glLinkProgram(self.__program)
+        if gl.glGetProgramiv(self.__program, gl.GL_LINK_STATUS) != gl.GL_TRUE:
+            raise RuntimeError(gl.glGetProgramInfoLog(self.__program))
+
+        # MAKE FRAMEBUFFER
+        texture = gl.glGenTextures(1)
+        gl.glBindTexture(gl.GL_TEXTURE_2D, texture)
+        gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_RGBA, self.__size[0], self.__size[1], 0, gl.GL_RGBA, gl.GL_UNSIGNED_BYTE, None)
+        gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_LINEAR)
+        gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_LINEAR)
+        self.__fbo = gl.glGenFramebuffers(1)
+        gl.glBindFramebuffer(gl.GL_FRAMEBUFFER, self.__fbo)
+        gl.glFramebufferTexture2D(gl.GL_FRAMEBUFFER, gl.GL_COLOR_ATTACHMENT0, gl.GL_TEXTURE_2D, texture, 0)
+        if gl.glCheckFramebufferStatus(gl.GL_FRAMEBUFFER) != gl.GL_FRAMEBUFFER_COMPLETE:
+            raise RuntimeError("Framebuffer is not complete")
+
+        #
+        self.__textures = gl.glGenTextures(4)
+        gl.glUseProgram(self.__program)
+
+    def __del__(self) -> None:
+        # assume all other resources get cleaned up with the context
+        glfw.terminate()
+
+    @property
+    def vertex(self) -> str:
+        return self.__source_vertex
+
+    @vertex.setter
+    def vertex(self, vertex_source:str) -> None:
+        if vertex_source != self.__source_vertex_raw:
+            self.__source_vertex = self.__compile_shader(vertex_source, gl.GL_VERTEX_SHADER)
+            self.__source_vertex_raw = vertex_source
+            self.__compile()
+
+    @property
+    def fragment(self) -> str:
+        return self.__source_fragment
+
+    @fragment.setter
+    def fragment(self, fragment_source:str) -> None:
+        fragment_source = self.PROG_HEADER + fragment_source + self.PROG_FOOTER
+        if fragment_source != self.__source_fragment_raw:
+            self.__source_fragment = self.__compile_shader(fragment_source, gl.GL_FRAGMENT_SHADER)
+            self.__source_fragment_raw = fragment_source
+            self.__compile()
+
+    @property
+    def size(self) -> Tuple[int, int]:
+        return self.__size
+
+    @size.setter
+    def size(self, size:Tuple[int, int]) -> None:
+        print(self.__program)
+        iResolution_location = gl.glGetUniformLocation(self.__program, "iResolution")
+        gl.glUniform3f(iResolution_location, size[0], size[1], 0)
+        self.__size = size
+
+    @property
+    def runtime(self) -> float:
+        return self.__runtime
+
+    @runtime.setter
+    def runtime(self, runtime:float) -> None:
+        iTime_location = gl.glGetUniformLocation(self.__program, "iTime")
+        gl.glUniform1f(iTime_location, runtime)
+        self.__runtime = runtime
+
+        frame = runtime * self.__fps
+        iFrame_location = gl.glGetUniformLocation(self.__program, "iFrame")
+        gl.glUniform1i(iFrame_location, frame)
+        self.__frame = frame
+
+    @property
+    def fps(self) -> float:
+        return self.__fps
+
+    @fps.setter
+    def fps(self, fps:float) -> None:
+        fps = max(1, min(120, fps))
+        iFrameRate_location = gl.glGetUniformLocation(self.__program, "iFrameRate")
+        gl.glUniform1f(iFrameRate_location, fps)
+        self.__fps = fps
+        self.__delta = 1.0 / fps
+
+    @property
+    def mouse(self) -> Tuple[int, int]:
+        return self.__mouse
+
+    @mouse.setter
+    def mouse(self, pos:Tuple[int, int]) -> None:
+        iMouse_location = gl.glGetUniformLocation(self.__program, "iMouse")
+        gl.glUniform4f(iMouse_location, pos[0], pos[1], 0, 0)
+        self.__mouse = pos
+
+    @property
+    def delta(self) -> float:
+        return self.__delta
+
+    @property
+    def frame(self) -> float:
+        return self.__frame
+
+    def update_texture(self, texture, image) -> None:
+        image = image[::-1,:,:]
+        gl.glBindTexture(gl.GL_TEXTURE_2D, texture)
+        gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_RGBA, image.shape[1], image.shape[0], 0, gl.GL_RGBA, gl.GL_FLOAT, image)
+        gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_LINEAR)
+        gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_LINEAR)
+        gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_S, gl.GL_CLAMP_TO_EDGE)
+        gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_T, gl.GL_CLAMP_TO_EDGE)
+
+    def render(self, time_delta:float=0.) -> np.ndarray:
+        gl.glBindFramebuffer(gl.GL_FRAMEBUFFER, self.__fbo)
+        gl.glClearColor(0.0, 0.0, 0.0, 1.0)
+        gl.glClear(gl.GL_COLOR_BUFFER_BIT)
+        gl.glUseProgram(self.__program)
+
+        # bind textures...
+        #for i in range(4):
+        #    gl.glActiveTexture(gl.GL_TEXTURE0 + i)  # type: ignore
+        #    gl.glBindTexture(gl.GL_TEXTURE_2D, self.__textures[i])
+        #    iChannel_location = gl.glGetUniformLocation(self.__program, f"iVar{i}")
+        #    gl.glUniform1i(iChannel_location, i)
+
+        gl.glDrawArrays(gl.GL_TRIANGLES, 0, 3)
+        data = gl.glReadPixels(0, 0, self.__size[0], self.__size[1], gl.GL_RGBA, gl.GL_UNSIGNED_BYTE)
+        image = np.frombuffer(data, dtype=np.uint8).reshape(self.__size[1], self.__size[0], 4)
+        image = image[0:2:-1, :, :]
+        image = np.array(image).astype(np.float32) / 255.0
+
+        '''
+        pixels = self.__fbo.color_attachments[0].read()
+        self.__frame = Image.frombytes(
+            "RGBA", self.__fbo.size, pixels,
+            "raw", "RGBA", 0, -1
+        )
+        self.__frame = self.__frame.transpose(Image.FLIP_TOP_BOTTOM)
+        '''
+
+        # step frame
+        if not self.__hold:
+            self.__frame_count += 1
+            self.__delta = max(0, self.__fps) if self.__fps > 0 else time.perf_counter() - self.__time_last
+            self.__runtime += self.__delta
+            self.__time_last = time.perf_counter()
+        return image
 
 # =============================================================================
 
+'''
 class GLSL:
     CTX = None
     VBO = None
-
-    @classmethod
-    def instant(cls, fpath: str, texture1:Image=None, width:int=None, height:int=None, param:dict=None) -> Image:
-        width = width or MIN_IMAGE_SIZE
-        height = height or MIN_IMAGE_SIZE
-        if texture1 is not None:
-            width, height = texture1.size
-
-        with open(fpath, 'r', encoding='utf8') as f:
-            program = f.read()
-
-        # fire and forget
-        glsl = GLSL(program, width, height, param=param)
-        img = glsl.render(texture1)
-        del glsl
-        return img
 
     def __init__(self, fragment:str, width:int=128, height:int=128, param:dict=None) -> None:
         # single initialize for all
@@ -175,7 +288,8 @@ class GLSL:
         if os.path.isfile(fragment):
             with open(fragment, 'r', encoding='utf8') as f:
                 fragment = f.read()
-        self.__fragment: str = FRAGMENT_HEADER + fragment
+        self.__fragment: str =
+        + fragment
         try:
             self.__prog = GLSL.CTX.program(
                 vertex_shader=VERTEX,
@@ -371,3 +485,7 @@ class GLSL:
             self.__time_last = time.perf_counter()
 
         return self.__frame
+'''
+
+# =============================================================================
+
