@@ -98,7 +98,7 @@ The Stream Reader node captures frames from various sources such as URLs, camera
                 Lexicon.WAIT: ("BOOLEAN", {"default": False}),
                 Lexicon.BATCH: ("VEC2", {"default": (1, 30), "step": 1, "label": ["COUNT", "FPS"], "tooltip": "Number of frames wanted and the FPS"}),
                 Lexicon.ORIENT: (EnumCanvasOrientation._member_names_, {"default": EnumCanvasOrientation.NORMAL.name}),
-                Lexicon.ZOOM: ("FLOAT", {"min": 0, "max": 1, "step": 0.005, "default": 0}),
+                Lexicon.ZOOM: ("FLOAT", {"min": 0, "max": 1, "step": 0.005, "default": 0., "precision":4}),
                 Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
                 Lexicon.WH: ("VEC2", {"default": (512, 512), "min":MIN_IMAGE_SIZE,
                                     "step": 1, "label": [Lexicon.W, Lexicon.H]}),
@@ -213,7 +213,7 @@ The Stream Reader node captures frames from various sources such as URLs, camera
                 self.__device.fps = fps
 
                 if type(self.__device) == MediaStreamDevice:
-                    self.__device.zoom = parse_param(kw, Lexicon.ZOOM, EnumConvertType.INT, 0)[0]
+                    self.__device.zoom = parse_param(kw, Lexicon.ZOOM, EnumConvertType.FLOAT, 0, 0, 1)[0]
 
                 orient = parse_param(kw, Lexicon.ORIENT, EnumConvertType.STRING, EnumCanvasOrientation.NORMAL.name)[0]
                 # orient = EnumCanvasOrientation[orient]

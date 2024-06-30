@@ -141,8 +141,9 @@ def parse_value(val:Any, typ:EnumConvertType, default: Any,
                 if v == 0:
                     v = zero
             except Exception as e:
-                # logger.exception(e)
-                logger.error(f"Error converting value: {e}")
+                logger.exception(e)
+                logger.error(f"Error converting value: {val} -- {v}")
+                raise Exception(e)
                 v = 0
             new_val.append(v)
         new_val = new_val[0] if size == 1 else tuple(new_val)

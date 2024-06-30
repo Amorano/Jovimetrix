@@ -113,6 +113,7 @@ class Lexicon(metaclass=LexiconMeta):
     G = '🟩', "Green"
     GAMMA = '🔆', "Gamma"
     GI = '💚', "Green Channel"
+    GLSL = 'iVar', "GL Shader Input"
     GRADIENT = '🇲🇺', "Gradient"
     H = '🇭', "Hue"
     HI = 'HI', "High / Top of range"
