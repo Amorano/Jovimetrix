@@ -25,28 +25,27 @@ const create_documentation_stylesheet = () => {
 
     styleTag.innerHTML = `
     .jov-documentation-popup {
-        background: var(--bg-color);
+        background: var(--comfy-menu-bg);
         position: absolute;
         color: var(--fg-color);
-        font: 10px monospace;
-        line-height: 1.25em;
-        padding: 2px;
+        font: 12px monospace;
+        line-height: 1.5em;
+        padding: 4px;
         border-radius: 7px;
-        pointer-events: "inherit";
         border-style: solid;
         border-width: medium;
         border-color: var(--border-color);
         z-index: 25;
-        overflow: hidden;
         width: 315px;
         height: 295px;
         min-width: 215px;
         min-height: 85px;
+        overflow: hidden;
     }
     .jov-documentation-popup img {
         display: block;
-        margin-left: auto;
-        margin-right: auto;
+        margin-left: 10px;
+        margin-right: 10px;
         width: 90%;
     }
     .jov-documentation-popup table {
@@ -62,7 +61,7 @@ const create_documentation_stylesheet = () => {
     }
     .content-wrapper {
         overflow: auto;
-        max-height: 100%;
+        max-height: 90%;
         /* Scrollbar styling for Chrome */
         &::-webkit-scrollbar {
            width: 6px;
@@ -140,7 +139,7 @@ app.registerExtension({
         }
 
         const onDrawForeground = nodeType.prototype.onDrawForeground;
-        nodeType.prototype.onDrawForeground = function (ctx) {
+        nodeType.prototype.onDrawForeground = async function (ctx) {
             const me = onDrawForeground?.apply?.(this, arguments);
             if (this.flags.collapsed) return me;
 
@@ -149,6 +148,7 @@ app.registerExtension({
                 docElement = document.createElement('div')
                 contentWrapper = document.createElement('div');
                 docElement.appendChild(contentWrapper);
+                //create_documentation_stylesheet();
                 contentWrapper.classList.add('content-wrapper');
                 docElement.classList.add('jov-documentation-popup');
                 if (!(nodeData.name in dataCache)) {
@@ -185,9 +185,8 @@ app.registerExtension({
                             contentWrapper.innerHTML = dataCache[nodeData.name];
                         }
                     }
-                } else {
-                    contentWrapper.innerHTML = dataCache[nodeData.name];
                 }
+                contentWrapper.innerHTML = dataCache[nodeData.name];
 
                 // resize handle
                 const resizeHandle = document.createElement('div');
@@ -198,6 +197,7 @@ app.registerExtension({
                 resizeHandle.style.right = '0';
                 resizeHandle.style.cursor = 'se-resize';
                 const borderColor = getComputedStyle(document.documentElement).getPropertyValue('--border-color').trim();
+
                 resizeHandle.style.borderTop = '5px solid transparent';
                 resizeHandle.style.borderLeft = '5px solid transparent';
                 resizeHandle.style.borderBottom = `5px solid ${borderColor}`;
@@ -310,8 +310,8 @@ app.registerExtension({
             }
 
             ctx.save();
-            ctx.translate(x-3, -LiteGraph.NODE_TITLE_HEIGHT * 0.65); // Position the icon on the canvas
-            ctx.scale(iconSize / 32, iconSize / 32) // Scale the icon to the desired size
+            ctx.translate(x-3, -LiteGraph.NODE_TITLE_HEIGHT * 0.65);
+            ctx.scale(iconSize / 32, iconSize / 32);
             ctx.font = `bold ${LiteGraph.NODE_TITLE_HEIGHT * 1.35}px monospace`;
             ctx.fillText('🛈', 0, 24); // ℹ️
             ctx.restore()

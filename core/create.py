@@ -3,6 +3,7 @@ Jovimetrix - http://www.github.com/amorano/jovimetrix
 Creation
 """
 
+import time
 from typing import Tuple
 
 import torch
@@ -13,14 +14,14 @@ from loguru import logger
 
 from comfy.utils import ProgressBar
 
-from Jovimetrix import JOVBaseNode, WILDCARD
+from Jovimetrix import JOVBaseNode, comfy_message, parse_reset, WILDCARD, ROOT
 
 from Jovimetrix.sup.lexicon import JOVImageNode, Lexicon
-from Jovimetrix.sup.util import parse_param, zip_longest_fill, \
+from Jovimetrix.sup.util import parse_dynamic, parse_param, zip_longest_fill, \
     EnumConvertType
 
 from Jovimetrix.sup.image import channel_solid, cv2tensor, cv2tensor_full, \
-    image_grayscale, image_invert, image_mask_add, pil2cv, \
+    image_grayscale, image_invert, image_mask_add, pil2cv, tensor2pil, \
     image_rotate, image_scalefit, image_stereogram, image_transform, image_translate, \
     pixel_eval, tensor2cv, shape_ellipse, shape_polygon, shape_quad, \
     EnumScaleMode, EnumInterpolation, EnumEdge, EnumImageType, MIN_IMAGE_SIZE
@@ -29,10 +30,12 @@ from Jovimetrix.sup.text import font_names, text_autosize, text_draw, \
     EnumAlignment, EnumJustify, EnumShapes
 
 from Jovimetrix.sup.audio import graph_sausage
+from Jovimetrix.sup.shader import GLSLShader #, MAX_WIDTH, MAX_HEIGHT, CompileException
 
 # =============================================================================
 
 JOV_CATEGORY = "CREATE"
+JOV_CONFIG_GLSL = ROOT / 'glsl'
 
 # =============================================================================
 
@@ -88,11 +91,79 @@ The Constant node generates constant images or masks of a specified size and col
             pbar.update_absolute(idx)
         return [torch.cat(i, dim=0) for i in zip(*images)]
 
+class GLSLNode(JOVImageNode):
+    NAME = "GLSL (JOV) 🍩"
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
+    DESCRIPTION = """
+The GLSL Node executes custom GLSL (OpenGL Shading Language) fragment shaders to generate images or apply effects. GLSL is a high-level shading language used for graphics programming, particularly in the context of rendering images or animations. This node allows for real-time rendering of shader effects, providing flexibility and creative control over image processing pipelines. It takes advantage of GPU acceleration for efficient computation, enabling the rapid generation of complex visual effects.
+"""
+
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        d = super().INPUT_TYPES()
+        d.update({
+            "optional": {
+                Lexicon.GLSL_CHANNEL: (WILDCARD, {}),
+                Lexicon.GLSL_VAR: (WILDCARD, {}),
+                Lexicon.TIME: ("FLOAT", {"default": 0, "step": 0.0001, "min": 0, "precision": 6}),
+                Lexicon.BATCH: ("INT", {"default": 1, "step": 1, "min": 1, "max": 262144}),
+                Lexicon.FPS: ("INT", {"default": 30, "step": 1, "min": 1, "max": 120}),
+                Lexicon.WH: ("VEC2", {"default": (512, 512), "min": MIN_IMAGE_SIZE, "step": 1,}),
+                Lexicon.WAIT: ("BOOLEAN", {"default": False}),
+                Lexicon.RESET: ("BOOLEAN", {"default": False}),
+                Lexicon.FRAGMENT: ("STRING", {"default": GLSLShader.PROG_FRAGMENT, "multiline": True, "dynamicPrompts": False})
+            }
+        })
+        return Lexicon._parse(d, cls)
+
+    @classmethod
+    def IS_CHANGED(cls, **kw) -> float:
+        return float("nan")
+
+    def __init__(self, *arg, **kw) -> None:
+        super().__init__(*arg, **kw)
+        self.__glsl = GLSLShader()
+
+    def run(self, **kw) -> tuple[torch.Tensor]:
+        channels = parse_dynamic(kw, Lexicon.GLSL_CHANNEL, EnumConvertType.ANY, None)
+        variables = parse_dynamic(kw, Lexicon.GLSL_VAR, EnumConvertType.ANY, None)
+        delta = parse_param(kw, Lexicon.TIME, EnumConvertType.FLOAT, 0)
+        batch = parse_param(kw, Lexicon.BATCH, EnumConvertType.INT, 1, 1, 262144)
+        fps = parse_param(kw, Lexicon.FPS, EnumConvertType.INT, 1, 1, 120)
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)
+        fragment = parse_param(kw, Lexicon.FRAGMENT, EnumConvertType.STRING, GLSLShader.PROG_FRAGMENT)
+        wait = parse_param(kw, Lexicon.WAIT, EnumConvertType.BOOLEAN, False)
+        reset = parse_param(kw, Lexicon.RESET, EnumConvertType.BOOLEAN, False)
+        images = []
+        params = list(zip_longest_fill(channels, variables, delta, batch, fps, wihi, fragment, wait, reset))
+        pbar = ProgressBar(len(params))
+        for idx, (channels, variables, delta, batch, fps, wihi, fragment, wait, reset) in enumerate(params):
+            self.__glsl.fragment = fragment
+            self.__glsl.size = wihi
+            self.__glsl.fps = fps
+
+            # update_var(shader, width, height, frame * (1.0 / fps), (1.0 / fps), fps, frame)
+            #if channel_0 is not None: self.update_texture(textures[0], channel_0)
+            #if channel_1 is not None: self.update_texture(textures[1], channel_1)
+            #if channel_2 is not None: self.update_texture(textures[2], channel_2)
+            #if channel_3 is not None: self.update_texture(textures[3], channel_3)
+            #self.__glsl.texture_bind(shader, textures)
+            step = 1. / fps
+            for x in range(batch):
+                image = self.__glsl.render(delta)
+                images.append(image)
+
+                # step frame
+                if not self.__wait:
+                    delta += step
+                    # self.__glsl.
+
+            pbar.update_absolute(idx)
+        return [torch.cat(i, dim=0) for i in zip(*images)]
+
 class ShapeNode(JOVImageNode):
     NAME = "SHAPE GEN (JOV) ✨"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
-    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
     DESCRIPTION = """
 The Shape Generation node creates images representing various shapes such as circles, squares, rectangles, ellipses, and polygons. These shapes can be customized by adjusting parameters such as size, color, position, rotation angle, and edge blur. The node provides options to specify the shape type, the number of sides for polygons, the RGBA color value for the main shape, and the RGBA color value for the background. Additionally, you can control the width and height of the output images, the position offset, and the amount of edge blur applied to the shapes.
 """
@@ -186,8 +257,6 @@ The Shape Generation node creates images representing various shapes such as cir
 class StereogramNode(JOVImageNode):
     NAME = "STEREOGRAM (JOV) 📻"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
-    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
     DESCRIPTION = """
 The Stereogram node creates stereograms, generating 3D images from 2D input. Set tile divisions, noise, gamma, and shift parameters to control the stereogram's appearance.
 """
@@ -270,8 +339,6 @@ The Stereoscopic node simulates depth perception in images by generating stereos
 class TextNode(JOVImageNode):
     NAME = "TEXT GEN (JOV) 📝"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
-    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
     FONTS = font_names()
     FONT_NAMES = sorted(FONTS.keys())
     DESCRIPTION = """
@@ -383,8 +450,6 @@ The Text Generation node generates images containing text based on user-defined 
 class WaveGraphNode(JOVImageNode):
     NAME = "WAVE GRAPH (JOV) ▶ ılıılı"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
-    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
     DESCRIPTION = """
 The Wave Graph node visualizes audio waveforms as bars. Adjust parameters like the number of bars, bar thickness, and colors.
 """
@@ -429,33 +494,3 @@ The Wave Graph node visualizes audio waveforms as bars. Adjust parameters like t
             images.append(cv2tensor_full(img))
             pbar.update_absolute(idx)
         return [torch.cat(i, dim=0) for i in zip(*images)]
-
-'''
-class PurzNode(JOVBaseNode):
-    NAME = "PURZ (JOV) 🟪"
-    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/PURZ"
-    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
-    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
-    DESCRIPTION = """
-"""
-
-    @classmethod
-    def INPUT_TYPES(cls) -> dict:
-        d = super().INPUT_TYPES()
-        d.update({
-            "optional": {
-                Lexicon.PIXEL: (WILDCARD, {"tooltip":"🫥 🥰 🫳 📍 😵‍💫 😃 🥲 🪯"}),
-                "🐪": (WILDCARD, {"tooltip": "🐪 🙋 💬 😀 🇧🇦 🤣 🥯 👣 🥴 😍 🅾️ 🧞 🙊"}),
-                Lexicon.WH: ("VEC2", {"default": (512, 512), "tooltip": "🥯 👣 🥰 🫳 💬 🥴 😀 📍"}),
-                "🙋": (["😍", "😀", "🤣", "🥴"], {"default": ["😍"]}),
-                "📍": ("INT", {"default": 256}),
-                "🧞": ("INT", {"default": 256}),
-                "🙊": ("VEC4", {"default": (255, 255, 255, 255), "step": 1, "rgb": True})
-
-            }
-        })
-        return Lexicon._parse(d, cls)
-
-    def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
-        return ()
-'''

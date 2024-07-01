@@ -7,10 +7,8 @@ import os
 import json
 import math
 from enum import Enum
-from re import L
 from typing import Any, List, Generator, Optional, Tuple
 
-import numpy as np
 import torch
 
 from loguru import logger
@@ -91,7 +89,7 @@ def parse_value(val:Any, typ:EnumConvertType, default: Any,
                 zero:int=0) -> List[Any]:
     """Convert target value into the new specified type."""
 
-    if isinstance(default, torch.Tensor) and typ not in [EnumConvertType.ANY, EnumConvertType.IMAGE, EnumConvertType.LATENT]:
+    if isinstance(default, torch.Tensor) and typ not in [EnumConvertType.ANY, EnumConvertType.IMAGE, EnumConvertType.MASK, EnumConvertType.LATENT]:
         h, w = default.shape[:2]
         cc = default.shape[2] if len(default.shape) > 2 else 1
         default = (w, h, cc)
@@ -108,14 +106,13 @@ def parse_value(val:Any, typ:EnumConvertType, default: Any,
             val = [val.get(c, 0) for c in 'xyzw']
         elif 'r' in val and 'g' in val:
             val = [val.get(c, 0) for c in 'rgba']
-    elif isinstance(val, torch.Tensor) and typ not in [EnumConvertType.ANY, EnumConvertType.IMAGE, EnumConvertType.LATENT]:
+    elif isinstance(val, torch.Tensor) and typ not in [EnumConvertType.ANY, EnumConvertType.IMAGE, EnumConvertType.MASK, EnumConvertType.LATENT]:
         h, w = val.shape[:2]
         cc = val.shape[2] if len(val.shape) > 2 else 1
         val = (w, h, cc)
 
-    if val is not None: #and typ not in [EnumConvertType.ANY]:
-        if not isinstance(val, (list, tuple, torch.Tensor)):
-            val = [val]
+    if not isinstance(val, (list, tuple, torch.Tensor)):
+        val = [val]
 
     new_val = val
     if typ in [EnumConvertType.FLOAT, EnumConvertType.INT,
@@ -197,13 +194,8 @@ def parse_value(val:Any, typ:EnumConvertType, default: Any,
         if not isinstance(new_val, (torch.Tensor,)):
             color = parse_value(new_val, EnumConvertType.INT, 0, 0, 255)
             color = torch.tensor(color, dtype=torch.int32).tolist()
-            new_val = torch.empty((512, 512, 1), dtype=torch.uint8)
+            new_val = torch.empty((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 1), dtype=torch.uint8)
             new_val[0,:,:] = color
-        else:
-            cc, h, w = new_val.shape
-            if cc > 1:
-                weights = [0.2989, 0.5870, 0.1140]
-                new_val = torch.dot(new_val[..., :3], weights)[:,:,0]
 
     if typ == EnumConvertType.COORD2D:
         new_val = {'x': new_val[0], 'y': new_val[1]}
@@ -239,10 +231,11 @@ def parse_param(data:dict, key:str, typ:EnumConvertType, default: Any,
         else:
             while (val.ndim < 3):
                 val = val.unsqueeze(-1)
+            val = [val]
     elif isinstance(val, (list, tuple, set)):
         if len(val) == 0:
             val = [None]
-        if isinstance(val, (tuple, set,)):
+        elif isinstance(val, (tuple, set,)):
             val = list(val)
     elif issubclass(type(val), (Enum,)):
         val = [str(val.name)]

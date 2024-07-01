@@ -53,6 +53,8 @@ class EnumCropMode(Enum):
     CENTER = 20
     XY = 0
     FREE = 10
+    HEAD = 15
+    BODY = 25
 
 # =============================================================================
 
@@ -236,7 +238,7 @@ Combines two input images using various blending modes, such as normal, screen, 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
         pA = parse_param(kw, Lexicon.PIXEL_A, EnumConvertType.IMAGE, None)
         pB = parse_param(kw, Lexicon.PIXEL_B, EnumConvertType.IMAGE, None)
-        mask = parse_param(kw, Lexicon.MASK, EnumConvertType.IMAGE, None)
+        mask = parse_param(kw, Lexicon.MASK, EnumConvertType.MASK, None)
         func = parse_param(kw, Lexicon.FUNC, EnumConvertType.STRING, EnumBlendType.NORMAL.name)
         alpha = parse_param(kw, Lexicon.A, EnumConvertType.FLOAT, 1, 0, 1)
         flip = parse_param(kw, Lexicon.FLIP, EnumConvertType.BOOLEAN, False)
@@ -276,7 +278,7 @@ Combines two input images using various blending modes, such as normal, screen, 
                 tmask = pB
 
             if mask is None:
-                mask = channel_solid(w, h, (matte[3],), EnumImageType.GRAYSCALE) if tmask is None else image_mask(tmask)
+                mask = channel_solid(w, h, matte[3], EnumImageType.GRAYSCALE) if tmask is None else image_mask(tmask)
             else:
                 mask = tensor2cv(mask)
                 cc = mask.shape[2] if mask.ndim == 3 else 1
@@ -510,6 +512,10 @@ Extract a portion of an input image or resize it. It supports various cropping m
                 pA = image_crop_polygonal(pA, points)
             elif func == EnumCropMode.XY:
                 pA = image_crop(pA, width, height, xy)
+            elif func == EnumCropMode.HEAD:
+                pass
+            elif func == EnumCropMode.BODY:
+                pass
             else:
                 pA = image_crop_center(pA, width, height)
             images.append(cv2tensor_full(pA, color))
