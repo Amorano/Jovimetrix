@@ -26,7 +26,7 @@ from comfy.utils import ProgressBar
 from folder_paths import get_output_directory
 
 from Jovimetrix import comfy_message, parse_reset, JOVBaseNode, \
-    WILDCARD, ROOT
+    JOV_TYPE_ANY, ROOT
 
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import parse_dynamic, path_next, \
@@ -129,7 +129,7 @@ The Akashic node processes input data and prepares it for visualization. It acce
 class ArrayNode(JOVBaseNode):
     NAME = "ARRAY (JOV) 📚"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = (WILDCARD, WILDCARD,"INT", )
+    RETURN_TYPES = (JOV_TYPE_ANY, JOV_TYPE_ANY,"INT", )
     RETURN_NAMES = (Lexicon.ANY_OUT, Lexicon.LIST, Lexicon.VALUE)
     SORT = 50
     DESCRIPTION = """
@@ -279,7 +279,7 @@ The Export node is responsible for saving images or animations to disk. It suppo
         d = super().INPUT_TYPES()
         d.update({
             "optional": {
-                Lexicon.PIXEL: (WILDCARD, {}),
+                Lexicon.PIXEL: (JOV_TYPE_ANY, {}),
                 Lexicon.PASS_OUT: ("STRING", {"default": get_output_directory(), "default_top":"<comfy output dir>"}),
                 Lexicon.FORMAT: (FORMATS, {"default": FORMATS[0]}),
                 Lexicon.PREFIX: ("STRING", {"default": "jovi"}),
@@ -462,7 +462,7 @@ def run(self, **kw) -> None:
 class QueueNode(JOVBaseNode):
     NAME = "QUEUE (JOV) 🗃"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = (WILDCARD, WILDCARD, WILDCARD, "INT", "INT", )
+    RETURN_TYPES = (JOV_TYPE_ANY, JOV_TYPE_ANY, JOV_TYPE_ANY, "INT", "INT", )
     RETURN_NAMES = (Lexicon.ANY_OUT, Lexicon.QUEUE, Lexicon.CURRENT, Lexicon.INDEX, Lexicon.TOTAL, )
     VIDEO_FORMATS = ['.wav', '.mp3', '.webm', '.mp4', '.avi', '.wmv', '.mkv', '.mov', '.mxf']
     SORT = 0

@@ -29,13 +29,13 @@ class EnumConvertType(Enum):
     VEC3INT = 35
     VEC4 = 40
     VEC4INT = 45
+    COORD2D = 22
     STRING = 0
     LIST = 2
     DICT = 3
     IMAGE = 4
     LATENT = 5
     # ENUM = 6
-    COORD2D = 22
     ANY = 9
     MASK = 7
 

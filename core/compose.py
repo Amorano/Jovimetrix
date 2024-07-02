@@ -14,7 +14,7 @@ from loguru import logger
 
 from comfy.utils import ProgressBar
 
-from Jovimetrix import JOVBaseNode, WILDCARD
+from Jovimetrix import JOV_TYPE_IMAGE, JOVBaseNode, JOV_TYPE_ANY
 from Jovimetrix.sup.lexicon import JOVImageNode, Lexicon
 from Jovimetrix.sup.util import parse_dynamic, parse_param, \
     zip_longest_fill, EnumConvertType
@@ -70,8 +70,8 @@ Enhance and modify images with various effects using the Adjust Node. Apply effe
         d = super().INPUT_TYPES()
         d.update({
             "optional": {
-                Lexicon.PIXEL: (WILDCARD, {}),
-                Lexicon.MASK: (WILDCARD, {}),
+                Lexicon.PIXEL: (JOV_TYPE_ANY, {}),
+                Lexicon.MASK: (JOV_TYPE_ANY, {}),
                 Lexicon.FUNC: (EnumAdjustOP._member_names_, {"default": EnumAdjustOP.BLUR.name,
                                                             "tooltip":"Type of adjustment (e.g., blur, sharpen, invert)"}),
                 Lexicon.RADIUS: ("INT", {"default": 3, "min": 3, "step": 1}),
@@ -219,9 +219,9 @@ Combines two input images using various blending modes, such as normal, screen, 
         d = super().INPUT_TYPES()
         d.update({
             "optional": {
-                Lexicon.PIXEL_A: (WILDCARD, {"tooltip": "Background Plate"}),
-                Lexicon.PIXEL_B: (WILDCARD, {"tooltip": "Image to Overlay on Background Plate"}),
-                Lexicon.MASK: (WILDCARD, {"tooltip": "Optional Mask to use for Alpha Blend Operation. If empty, will use the ALPHA of B"}),
+                Lexicon.PIXEL_A: (JOV_TYPE_ANY, {"tooltip": "Background Plate"}),
+                Lexicon.PIXEL_B: (JOV_TYPE_ANY, {"tooltip": "Image to Overlay on Background Plate"}),
+                Lexicon.MASK: (JOV_TYPE_ANY, {"tooltip": "Optional Mask to use for Alpha Blend Operation. If empty, will use the ALPHA of B"}),
                 Lexicon.FUNC: (EnumBlendType._member_names_, {"default": EnumBlendType.NORMAL.name, "tooltip": "Blending Operation"}),
                 Lexicon.A: ("FLOAT", {"default": 1, "min": 0, "max": 1, "step": 0.01, "tooltip": "Amount of Blending to Perform on the Selected Operation"}),
                 Lexicon.FLIP: ("BOOLEAN", {"default": False}),
@@ -314,7 +314,7 @@ Use the Color Blind Node to simulate color blindness effects on images. You can 
         d = super().INPUT_TYPES()
         d.update({
             "optional": {
-                Lexicon.PIXEL: (WILDCARD, {}),
+                Lexicon.PIXEL: (JOV_TYPE_ANY, {}),
                 Lexicon.DEFICIENCY: (EnumCBDeficiency._member_names_,
                                             {"default": EnumCBDeficiency.PROTAN.name}),
                 Lexicon.SIMULATOR: (EnumCBSimulator._member_names_,
@@ -353,8 +353,8 @@ Adjust the color scheme of one image to match another with the Color Match Node.
         d = super().INPUT_TYPES()
         d.update({
             "optional": {
-                Lexicon.PIXEL_A: (WILDCARD, {}),
-                Lexicon.PIXEL_B: (WILDCARD, {}),
+                Lexicon.PIXEL_A: (JOV_TYPE_ANY, {}),
+                Lexicon.PIXEL_B: (JOV_TYPE_ANY, {}),
                 Lexicon.COLORMATCH_MODE: (EnumColorMatchMode._member_names_,
                                             {"default": EnumColorMatchMode.REINHARD.name}),
                 Lexicon.COLORMATCH_MAP: (EnumColorMatchMap._member_names_,
@@ -438,7 +438,7 @@ Apply various color harmony schemes to an input image using the Color Theory Nod
         d = super().INPUT_TYPES()
         d.update({
             "optional": {
-                Lexicon.PIXEL: (WILDCARD, {}),
+                Lexicon.PIXEL: (JOV_TYPE_ANY, {}),
                 Lexicon.SCHEME: (EnumColorTheory._member_names_, {"default": EnumColorTheory.COMPLIMENTARY.name}),
                 Lexicon.VALUE: ("INT", {"default": 45, "min": -90, "max": 90, "step": 1, "tooltip": "Custom angle of separation to use when calculating colors"}),
                 Lexicon.INVERT: ("BOOLEAN", {"default": False})
@@ -477,7 +477,7 @@ Extract a portion of an input image or resize it. It supports various cropping m
         d = super().INPUT_TYPES()
         d.update({
             "optional": {
-                Lexicon.PIXEL: (WILDCARD, {}),
+                Lexicon.PIXEL: (JOV_TYPE_ANY, {}),
                 Lexicon.FUNC: (EnumCropMode._member_names_, {"default": EnumCropMode.CENTER.name}),
                 Lexicon.XY: ("VEC2", {"default": (0, 0), "min": 0.5, "max": 0.5, "label": [Lexicon.X, Lexicon.Y]}),
                 Lexicon.WH: ("VEC2", {"default": (512, 512), "step": 1, "min": MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
@@ -535,7 +535,7 @@ Create masks based on specific color ranges within an image. Specify the color r
         d = super().INPUT_TYPES()
         d.update({
             "optional": {
-                Lexicon.PIXEL_A: (WILDCARD, {}),
+                Lexicon.PIXEL_A: (JOV_TYPE_ANY, {}),
                 Lexicon.START: ("VEC3", {"default": (128, 128, 128), "min":0, "max":255, "step": 1, "rgb": True}),
                 Lexicon.BOOLEAN: ("BOOLEAN", {"default": False, "tooltip": "use an end point (start->end) when calculating the filter range"}),
                 Lexicon.END: ("VEC3", {"default": (128, 128, 128), "min":0, "max":255, "step": 1, "rgb": True}),
@@ -630,8 +630,8 @@ Remaps an input image using a gradient lookup table (LUT) to allow precise contr
         d = super().INPUT_TYPES()
         d.update({
             "optional": {
-                Lexicon.PIXEL: (WILDCARD, {"tooltip":"Image to remap with gradient input"}),
-                Lexicon.GRADIENT: (WILDCARD, {"tooltip":f"Look up table (LUT) to remap the input image in `{Lexicon.PIXEL}`"}),
+                Lexicon.PIXEL: (JOV_TYPE_ANY, {"tooltip":"Image to remap with gradient input"}),
+                Lexicon.GRADIENT: (JOV_TYPE_ANY, {"tooltip":f"Look up table (LUT) to remap the input image in `{Lexicon.PIXEL}`"}),
                 Lexicon.FLIP: ("BOOLEAN", {"default":False, "tooltip":"Reverse the gradient from left-to-right "}),
                 Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
                 Lexicon.WH: ("VEC2", {"default": (512, 512), "min":MIN_IMAGE_SIZE,
@@ -681,10 +681,10 @@ Combines individual color channels (red, green, blue) along with an optional mas
         d = super().INPUT_TYPES()
         d.update({
             "optional": {
-                Lexicon.R: (WILDCARD, {}),
-                Lexicon.G: (WILDCARD, {}),
-                Lexicon.B: (WILDCARD, {}),
-                Lexicon.A: (WILDCARD, {}),
+                Lexicon.R: (JOV_TYPE_IMAGE, {}),
+                Lexicon.G: (JOV_TYPE_IMAGE, {}),
+                Lexicon.B: (JOV_TYPE_IMAGE, {}),
+                Lexicon.A: (JOV_TYPE_IMAGE, {}),
                 Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
                 Lexicon.WH: ("VEC2", {"default": (512, 512), "min":MIN_IMAGE_SIZE,
                                     "step": 1, "label": [Lexicon.W, Lexicon.H]}),
@@ -697,10 +697,10 @@ Combines individual color channels (red, green, blue) along with an optional mas
         return Lexicon._parse(d, cls)
 
     def run(self, **kw)  -> Tuple[torch.Tensor, torch.Tensor]:
-        R = parse_param(kw, Lexicon.R, EnumConvertType.IMAGE, None)
-        G = parse_param(kw, Lexicon.G, EnumConvertType.IMAGE, None)
-        B = parse_param(kw, Lexicon.B, EnumConvertType.IMAGE, None)
-        A = parse_param(kw, Lexicon.A, EnumConvertType.IMAGE, None)
+        R = parse_param(kw, Lexicon.R, EnumConvertType.MASK, None)
+        G = parse_param(kw, Lexicon.G, EnumConvertType.MASK, None)
+        B = parse_param(kw, Lexicon.B, EnumConvertType.MASK, None)
+        A = parse_param(kw, Lexicon.A, EnumConvertType.MASK, None)
         if len(R)+len(B)+len(G)+len(A) == 0:
             img = channel_solid(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 0, EnumImageType.BGRA)
             return list(cv2tensor_full(img, matte))
@@ -708,7 +708,7 @@ Combines individual color channels (red, green, blue) along with an optional mas
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)
         sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC3INT, [(0, 0, 0)], 0, 255)
-        flip = parse_param(kw, Lexicon.FLIP, EnumConvertType.VEC4, [(0, 0, 0, 0)], 0, 0, 1)
+        flip = parse_param(kw, Lexicon.FLIP, EnumConvertType.VEC4, [(0, 0, 0, 0)], 0., 1.)
         invert = parse_param(kw, Lexicon.INVERT, EnumConvertType.BOOLEAN, False)
         params = list(zip_longest_fill(R, G, B, A, mode, wihi, sample, matte, flip, invert))
         images = []
@@ -716,14 +716,14 @@ Combines individual color channels (red, green, blue) along with an optional mas
         for idx, (r, g, b, a, mode, wihi, sample, matte, flip, invert) in enumerate(params):
             img = [None if x is None else tensor2cv(x) for x in (r,g,b,a)]
             _, _, w_max, h_max = image_minmax(img)
-
+            print(flip)
             for i, x in enumerate(img):
+                img[i] = x
                 if x is None:
                     # full channel with chosen "level" of color
                     img[i] = np.full((h_max, w_max), int(flip[i] * 255.), dtype=np.uint8)
-                elif flip[i] == 0:
-                    continue
-                img[i] = image_invert(x, flip[i])
+                elif flip[i] > 0:
+                    img[i] = image_invert(img[i], flip[i])
 
             img = channel_merge(img)
             mode = EnumScaleMode[mode]
@@ -752,7 +752,7 @@ Takes an input image and splits it into its individual color channels (red, gree
         d = super().INPUT_TYPES()
         d.update({
             "optional": {
-                Lexicon.PIXEL: (WILDCARD, {})
+                Lexicon.PIXEL: (JOV_TYPE_ANY, {})
             }
         })
         return Lexicon._parse(d, cls)
@@ -782,8 +782,8 @@ Swap pixel values between two input images based on specified channel swizzle op
         d = super().INPUT_TYPES()
         d.update({
             "optional": {
-                Lexicon.PIXEL_A: (WILDCARD, {}),
-                Lexicon.PIXEL_B: (WILDCARD, {}),
+                Lexicon.PIXEL_A: (JOV_TYPE_ANY, {}),
+                Lexicon.PIXEL_B: (JOV_TYPE_ANY, {}),
                 Lexicon.SWAP_R: (EnumPixelSwizzle._member_names_,
                                 {"default": EnumPixelSwizzle.RED_A.name}),
                 Lexicon.R: ("INT", {"default": 0, "step": 1, "min": 0, "max": 255}),
@@ -912,7 +912,7 @@ Use the Threshold Node to define a range and apply it to an image for segmentati
         d = super().INPUT_TYPES()
         d.update({
             "optional": {
-                Lexicon.PIXEL: (WILDCARD, {}),
+                Lexicon.PIXEL: (JOV_TYPE_ANY, {}),
                 Lexicon.ADAPT: ( EnumThresholdAdapt._member_names_,
                                 {"default": EnumThresholdAdapt.ADAPT_NONE.name}),
                 Lexicon.FUNC: ( EnumThreshold._member_names_, {"default": EnumThreshold.BINARY.name}),
@@ -957,7 +957,7 @@ Applies various geometric transformations to images, including translation, rota
         d = super().INPUT_TYPES()
         d.update({
             "optional": {
-                Lexicon.PIXEL: (WILDCARD, {}),
+                Lexicon.PIXEL: (JOV_TYPE_ANY, {}),
                 Lexicon.XY: ("VEC2", {"default": (0, 0,), "step": 0.01, "precision": 4, "round": 0.00001, "label": [Lexicon.X, Lexicon.Y]}),
                 Lexicon.ANGLE: ("FLOAT", {"default": 0, "min": -180, "max": 180, "step": 0.01, "precision": 4, "round": 0.00001}),
                 Lexicon.SIZE: ("VEC2", {"default": (1., 1.), "step": 0.01, "precision": 4, "round": 0.00001, "label": [Lexicon.X, Lexicon.Y]}),
@@ -1060,7 +1060,7 @@ The Histogram Node generates a histogram representation of the input image, show
         d = super().INPUT_TYPES()
         d.update({
             "optional": {
-                Lexicon.PIXEL: (WILDCARD, {}),
+                Lexicon.PIXEL: (JOV_TYPE_ANY, {}),
             }
         })
         return Lexicon._parse(d, cls)

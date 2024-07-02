@@ -19,8 +19,8 @@ from loguru import logger
 from comfy.utils import ProgressBar
 from nodes import interrupt_processing
 
-from Jovimetrix import comfy_message, parse_reset, JOVBaseNode, ComfyAPIMessage, \
-    TimedOutException, WILDCARD
+from Jovimetrix import JOV_TYPE_FULL, JOV_TYPE_COMFY, JOV_TYPE_IMAGE, JOV_TYPE_NUMBER, JOV_TYPE_VECTOR, comfy_message, parse_reset, JOVBaseNode, ComfyAPIMessage, \
+    TimedOutException, JOV_TYPE_ANY
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import parse_param, parse_value, vector_swap, \
     zip_longest_fill, EnumConvertType, EnumSwizzle
@@ -180,7 +180,7 @@ OP_UNARY = {
 class CalcUnaryOPNode(JOVBaseNode):
     NAME = "OP UNARY (JOV) 🎲"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = (WILDCARD,)
+    RETURN_TYPES = (JOV_TYPE_NUMBER,)
     RETURN_NAMES = (Lexicon.UNKNOWN,)
     SORT = 10
     DESCRIPTION = """
@@ -192,7 +192,7 @@ The Unary Operation node performs unary operations like absolute value, mean, me
         d = super().INPUT_TYPES()
         d.update({
             "optional": {
-                Lexicon.IN_A: (WILDCARD, {"default": None}),
+                Lexicon.IN_A: (JOV_TYPE_FULL, {"default": None}),
                 Lexicon.FUNC: (EnumUnaryOperation._member_names_, {"default": EnumUnaryOperation.ABS.name})
             }
         })
@@ -202,7 +202,6 @@ The Unary Operation node performs unary operations like absolute value, mean, me
         results = []
         A = parse_param(kw, Lexicon.IN_A, EnumConvertType.ANY, None)
         op = parse_param(kw, Lexicon.FUNC, EnumConvertType.STRING, EnumUnaryOperation.ABS.name)
-        logger.debug(A, op)
         params = list(zip_longest_fill(A, op))
         pbar = ProgressBar(len(params))
         for idx, (A, op) in enumerate(params):
@@ -275,13 +274,12 @@ The Unary Operation node performs unary operations like absolute value, mean, me
             val = parse_value(val, typ, 0)
             results.append(val)
             pbar.update_absolute(idx)
-        print(results)
         return (results,)
 
 class CalcBinaryOPNode(JOVBaseNode):
     NAME = "OP BINARY (JOV) 🌟"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = (WILDCARD,)
+    RETURN_TYPES = (JOV_TYPE_NUMBER,)
     RETURN_NAMES = (Lexicon.UNKNOWN,)
     SORT = 20
     DESCRIPTION = """
@@ -290,13 +288,13 @@ The Binary Operation node executes binary operations like addition, subtraction,
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        names_convert = EnumConvertType._member_names_[:9]
+        names_convert = EnumConvertType._member_names_[:10]
         d = super().INPUT_TYPES()
         d.update({
             "optional": {
-                Lexicon.IN_A: (WILDCARD, {"default": None,
+                Lexicon.IN_A: (JOV_TYPE_FULL, {"default": None,
                                         "tooltip":"Passes a raw value directly, or supplies defaults for any value inputs without connections"}),
-                Lexicon.IN_B: (WILDCARD, {"default": None,
+                Lexicon.IN_B: (JOV_TYPE_FULL, {"default": None,
                                         "tooltip":"Passes a raw value directly, or supplies defaults for any value inputs without connections"}),
                 Lexicon.FUNC: (EnumBinaryOperation._member_names_, {"default": EnumBinaryOperation.ADD.name, "tooltip":"Arithmetic operation to perform"}),
                 Lexicon.TYPE: (names_convert, {"default": names_convert[2],
@@ -420,7 +418,7 @@ The Binary Operation node executes binary operations like addition, subtraction,
 class ComparisonNode(JOVBaseNode):
     NAME = "COMPARISON (JOV) 🕵🏽"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = (WILDCARD, WILDCARD,)
+    RETURN_TYPES = (JOV_TYPE_NUMBER, JOV_TYPE_NUMBER,)
     RETURN_NAMES = (Lexicon.TRIGGER, Lexicon.VALUE,)
     SORT = 130
     DESCRIPTION = """
@@ -432,10 +430,10 @@ The Comparison node evaluates two inputs based on a specified operation. It acce
         d = super().INPUT_TYPES()
         d.update({
             "optional": {
-                Lexicon.IN_A: (WILDCARD, {"default": None, "tooltip":"Master Comparator"}),
-                Lexicon.IN_B: (WILDCARD, {"default": None, "tooltip":"Secondary Comparator"}),
-                Lexicon.COMP_A: (WILDCARD, {"default": None}),
-                Lexicon.COMP_B: (WILDCARD, {"default": None}),
+                Lexicon.IN_A: (JOV_TYPE_FULL, {"default": None, "tooltip":"Master Comparator"}),
+                Lexicon.IN_B: (JOV_TYPE_FULL, {"default": None, "tooltip":"Secondary Comparator"}),
+                Lexicon.COMP_A: (JOV_TYPE_ANY, {"default": None}),
+                Lexicon.COMP_B: (JOV_TYPE_ANY, {"default": None}),
                 Lexicon.COMPARE: (EnumComparison._member_names_, {"default": EnumComparison.EQUAL.name}),
                 Lexicon.FLIP: ("BOOLEAN", {"default": False}),
             }
@@ -526,7 +524,7 @@ The Comparison node evaluates two inputs based on a specified operation. It acce
 class DelayNode(JOVBaseNode):
     NAME = "DELAY (JOV) ✋🏽"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = (WILDCARD,)
+    RETURN_TYPES = (JOV_TYPE_ANY,)
     RETURN_NAMES = (Lexicon.PASS_OUT,)
     SORT = 240
     DESCRIPTION = """
@@ -538,7 +536,7 @@ Delay node used to introduce pauses in the workflow. It accepts an optional inpu
         d = super().INPUT_TYPES()
         d.update({
             "optional": {
-                Lexicon.PASS_IN: (WILDCARD, {"default": None}),
+                Lexicon.PASS_IN: (JOV_TYPE_ANY, {"default": None}),
                 Lexicon.TIMER: ("INT", {"step": 1, "default" : 0, "min": -1}),
             }
         })
@@ -570,7 +568,7 @@ Delay node used to introduce pauses in the workflow. It accepts an optional inpu
 class LerpNode(JOVBaseNode):
     NAME = "LERP (JOV) 🔰"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = (WILDCARD,)
+    RETURN_TYPES = (JOV_TYPE_FULL,)
     RETURN_NAMES = (Lexicon.ANY_OUT,)
     SORT = 30
     DESCRIPTION = """
@@ -580,11 +578,11 @@ The Lerp Node calculates linear interpolation between two values or vectors base
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = super().INPUT_TYPES()
-        names_convert = EnumConvertType._member_names_[:9]
+        names_convert = EnumConvertType._member_names_[:10]
         d.update({
             "optional": {
-                Lexicon.IN_A: (WILDCARD, {"tooltip": "Custom Start Point"}),
-                Lexicon.IN_B: (WILDCARD, {"tooltip": "Custom End Point"}),
+                Lexicon.IN_A: (JOV_TYPE_FULL, {"tooltip": "Custom Start Point"}),
+                Lexicon.IN_B: (JOV_TYPE_FULL, {"tooltip": "Custom End Point"}),
                 Lexicon.FLOAT: ("FLOAT", {"default": 0.5, "min": 0., "max": 1.0,
                                         "step": 0.001, "precision": 4, "round": 0.00001,
                                         "tooltip": "Blend Amount. 0 = full A, 1 = full B"}),
@@ -601,7 +599,7 @@ The Lerp Node calculates linear interpolation between two values or vectors base
                                         "tooltip":"default value vector for B"}),
             },
             "outputs": {
-                0: (WILDCARD, {"tooltip":f"Output can vary depending on the type chosen in the {Lexicon.TYPE} parameter."}),
+                0: (JOV_TYPE_ANY, {"tooltip":f"Output can vary depending on the type chosen in the {Lexicon.TYPE} parameter."}),
             }
         })
         return Lexicon._parse(d, cls)
@@ -648,7 +646,7 @@ The Lerp Node calculates linear interpolation between two values or vectors base
 class SwizzleNode(JOVBaseNode):
     NAME = "SWIZZLE (JOV) 😵"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = (WILDCARD,)
+    RETURN_TYPES = (JOV_TYPE_VECTOR,)
     RETURN_NAMES = (Lexicon.ANY_OUT,)
     SORT = 40
     DESCRIPTION = """
@@ -658,10 +656,13 @@ The Swap Node swaps components between two vectors based on specified swizzle pa
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = super().INPUT_TYPES()
+        names_convert = EnumConvertType._member_names_[3:10]
         d.update({
             "optional": {
-                Lexicon.IN_A: (WILDCARD, {}),
-                Lexicon.IN_B: (WILDCARD, {}),
+                Lexicon.IN_A: (JOV_TYPE_VECTOR, {}),
+                Lexicon.IN_B: (JOV_TYPE_VECTOR, {}),
+                Lexicon.TYPE: (names_convert, {"default": names_convert[2],
+                                            "tooltip":"Output type desired from resultant operation"}),
                 Lexicon.SWAP_X: (EnumSwizzle._member_names_, {"default": EnumSwizzle.A_X.name}),
                 Lexicon.X: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize}),
                 Lexicon.SWAP_Y: (EnumSwizzle._member_names_, {"default": EnumSwizzle.A_Y.name}),
@@ -701,7 +702,7 @@ The Swap Node swaps components between two vectors based on specified swizzle pa
 class TickNode(JOVBaseNode):
     NAME = "TICK (JOV) ⏱"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = (WILDCARD, "FLOAT", "FLOAT", WILDCARD)
+    RETURN_TYPES = ("INT", "FLOAT", "FLOAT", JOV_TYPE_ANY)
     RETURN_NAMES = (Lexicon.VALUE, Lexicon.LINEAR, Lexicon.FPS, Lexicon.TRIGGER)
     SORT = 50
     DESCRIPTION = """
@@ -714,7 +715,7 @@ The `Tick` node acts as a timer and frame counter, emitting pulses or signals ba
         d.update({
             "optional": {
                 # data to pass on a pulse of the loop
-                Lexicon.TRIGGER: (WILDCARD, {"default": None,
+                Lexicon.TRIGGER: (JOV_TYPE_ANY, {"default": None,
                                              "tooltip":"Output to send when beat (BPM setting) is hit"}),
                 # forces a MOD on CYCLE
                 Lexicon.VALUE: ("INT", {"min": 0, "default": 0, "step": 1,
@@ -794,7 +795,7 @@ The `Tick` node acts as a timer and frame counter, emitting pulses or signals ba
 class ValueNode(JOVBaseNode):
     NAME = "VALUE (JOV) 🧬"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = (WILDCARD, WILDCARD, WILDCARD, WILDCARD, WILDCARD,)
+    RETURN_TYPES = (JOV_TYPE_NUMBER, JOV_TYPE_NUMBER, JOV_TYPE_NUMBER, JOV_TYPE_NUMBER, JOV_TYPE_NUMBER,)
     RETURN_NAMES = (Lexicon.ANY_OUT, Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W)
     SORT = 5
     DESCRIPTION = """
@@ -817,20 +818,20 @@ The Value Node supplies raw or default values for various data types, supporting
         except: pass
         d.update({
             "optional": {
-                Lexicon.IN_A: (WILDCARD, {"default": None,
+                Lexicon.IN_A: (JOV_TYPE_ANY, {"default": None,
                                         "tooltip":"Passes a raw value directly, or supplies defaults for any value inputs without connections"}),
                 Lexicon.TYPE: (typ, {"default": EnumConvertType.BOOLEAN.name,
                                     "tooltip":"Take the input and convert it into the selected type."}),
-                Lexicon.X: (WILDCARD, {"default": 0, "min": -sys.maxsize,
+                Lexicon.X: (JOV_TYPE_ANY, {"default": 0, "min": -sys.maxsize,
                                     "max": sys.maxsize, "step": 0.01, "precision": 6,
                                     "forceInput": True}),
-                Lexicon.Y: (WILDCARD, {"default": 0, "min": -sys.maxsize,
+                Lexicon.Y: (JOV_TYPE_ANY, {"default": 0, "min": -sys.maxsize,
                                     "max": sys.maxsize, "step": 0.01, "precision": 6,
                                     "forceInput": True}),
-                Lexicon.Z: (WILDCARD, {"default": 0, "min": -sys.maxsize,
+                Lexicon.Z: (JOV_TYPE_ANY, {"default": 0, "min": -sys.maxsize,
                                     "max": sys.maxsize, "step": 0.01, "precision": 6,
                                     "forceInput": True}),
-                Lexicon.W: (WILDCARD, {"default": 0, "min": -sys.maxsize,
+                Lexicon.W: (JOV_TYPE_ANY, {"default": 0, "min": -sys.maxsize,
                                     "max": sys.maxsize, "step": 0.01, "precision": 6,
                                     "forceInput": True}),
                 Lexicon.IN_A+Lexicon.IN_A: ("VEC4", {"default": (0, 0, 0, 0),
@@ -982,7 +983,7 @@ class ParameterNode(JOVBaseNode):
         d = super().INPUT_TYPES()
         d.update({
             "optional": {
-                Lexicon.PASS_IN: (WILDCARD, {"default": None}),
+                Lexicon.PASS_IN: (JOV_TYPE_ANY, {"default": None}),
             }
         })
         return Lexicon._parse(d, cls)

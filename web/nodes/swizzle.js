@@ -20,47 +20,37 @@ app.registerExtension({
         const onNodeCreated = nodeType.prototype.onNodeCreated;
         nodeType.prototype.onNodeCreated = async function () {
             const me = onNodeCreated?.apply(this);
-            const self = this;
             const x = this.widgets.find(w => w.name === '🇽');
             const y = this.widgets.find(w => w.name === '🇾');
             const z = this.widgets.find(w => w.name === '🇿');
             const w = this.widgets.find(w => w.name === '🇼');
             const swap_x = this.widgets.find(w => w.name === 'SWAP X');
-            swap_x.callback = () => {
-                widget_hide(this, x, "-jov");
-                if (swap_x.value == "CONSTANT") {
-                    widget_show(x);
-                }
-                fitHeight(self);
-            };
             const swap_y = this.widgets.find(w => w.name === 'SWAP Y');
-            swap_y.callback = () => {
-                widget_hide(this, y, "-jov");
-                if (swap_y.value == "CONSTANT") {
-                    widget_show(y);
-                }
-                fitHeight(self);
-            };
             const swap_z = this.widgets.find(w => w.name === 'SWAP Z');
-            swap_z.callback = () => {
-                widget_hide(this, z, "-jov");
-                if (swap_z.value == "CONSTANT") {
-                    widget_show(z);
-                }
-                fitHeight(self);
-            };
             const swap_w = this.widgets.find(w => w.name === 'SWAP W');
-            swap_w.callback = () => {
-                widget_hide(this, w, "-jov");
-                if (swap_w.value == "CONSTANT") {
-                    widget_show(w);
-                }
-                fitHeight(self);
-            };
-            setTimeout(() => { swap_x.callback(); }, 0);
-            setTimeout(() => { swap_y.callback(); }, 0);
-            setTimeout(() => { swap_z.callback(); }, 0);
-            setTimeout(() => { swap_w.callback(); }, 0);
+            const type = this.widgets.find(w => w.name === '❓');
+            type.callback = () => {
+
+            }
+
+            const widgets = [
+                [x, swap_x],
+                [y, swap_y],
+                [z, swap_z],
+                [w, swap_w]
+            ];
+
+            for (const [widget, swapWidget] of widgets) {
+                swapWidget.callback = () => {
+                    widget_hide(this, widget, "-jov");
+                    if (swapWidget.value === "CONSTANT") {
+                        widget_show(widget);
+                    }
+                    fitHeight(this);
+                };
+                setTimeout(() => { swapWidget.callback(); }, 10);
+            }
+            setTimeout(() => { type.callback(); }, 10);
             return me;
         }
     }
