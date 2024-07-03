@@ -30,7 +30,7 @@ from Jovimetrix.sup.text import font_names, text_autosize, text_draw, \
     EnumAlignment, EnumJustify, EnumShapes
 
 from Jovimetrix.sup.audio import graph_sausage
-from Jovimetrix.sup.shader import GLSLShader #, MAX_WIDTH, MAX_HEIGHT, CompileException
+from Jovimetrix.sup.shader import CompileException, GLSLShader #, MAX_WIDTH, MAX_HEIGHT, CompileException
 
 # =============================================================================
 
@@ -105,9 +105,9 @@ The GLSL Node executes custom GLSL (OpenGL Shading Language) fragment shaders to
             "optional": {
                 # Lexicon.GLSL_CHANNEL: (JOV_TYPE_IMAGE, {}),
                 # Lexicon.GLSL_VAR: (JOV_TYPE_NUMBER, {}),
-                Lexicon.TIME: ("FLOAT", {"default": 0, "step": 0.0001, "min": 0, "precision": 6}),
-                Lexicon.BATCH: ("INT", {"default": 1, "step": 1, "min": 1, "max": 262144}),
-                Lexicon.FPS: ("INT", {"default": 30, "step": 1, "min": 1, "max": 120}),
+                Lexicon.TIME: ("FLOAT", {"default": 0, "step": 0.01, "min": 0, "precision": 4}),
+                Lexicon.BATCH: ("INT", {"default": 1, "step": 1, "min": 0, "max": 262144}),
+                Lexicon.FPS: ("INT", {"default": 24, "step": 1, "min": 1, "max": 120}),
                 Lexicon.WH: ("VEC2", {"default": (512, 512), "min": MIN_IMAGE_SIZE, "step": 1,}),
                 Lexicon.WAIT: ("BOOLEAN", {"default": False}),
                 Lexicon.RESET: ("BOOLEAN", {"default": False}),
@@ -123,25 +123,37 @@ The GLSL Node executes custom GLSL (OpenGL Shading Language) fragment shaders to
     def __init__(self, *arg, **kw) -> None:
         super().__init__(*arg, **kw)
         self.__glsl = GLSLShader()
+        self.__delta = 0
 
-    def run(self, **kw) -> tuple[torch.Tensor]:
+    def run(self, ident, **kw) -> tuple[torch.Tensor]:
         channels = parse_dynamic(kw, Lexicon.GLSL_CHANNEL, EnumConvertType.ANY, None)
         variables = parse_dynamic(kw, Lexicon.GLSL_VAR, EnumConvertType.ANY, None)
         delta = parse_param(kw, Lexicon.TIME, EnumConvertType.FLOAT, 0)
-        batch = parse_param(kw, Lexicon.BATCH, EnumConvertType.INT, 1, 1, 262144)
-        fps = parse_param(kw, Lexicon.FPS, EnumConvertType.INT, 1, 1, 120)
+        batch = parse_param(kw, Lexicon.BATCH, EnumConvertType.INT, 1, 0, 262144)
+        fps = parse_param(kw, Lexicon.FPS, EnumConvertType.INT, 24, 1, 120)
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)
         fragment = parse_param(kw, Lexicon.FRAGMENT, EnumConvertType.STRING, GLSLShader.PROG_FRAGMENT)
         wait = parse_param(kw, Lexicon.WAIT, EnumConvertType.BOOLEAN, False)
         reset = parse_param(kw, Lexicon.RESET, EnumConvertType.BOOLEAN, False)
         images = []
         params = list(zip_longest_fill(channels, variables, delta, batch, fps, wihi, fragment, wait, reset))
-        pbar = ProgressBar(len(params))
+        full_count = sum(batch)
+        pbar = ProgressBar(full_count)
+        full_count_idx = 1
         for idx, (channels, variables, delta, batch, fps, wihi, fragment, wait, reset) in enumerate(params):
-            self.__glsl.fragment = fragment
+            try:
+                self.__glsl.fragment = fragment
+            except CompileException as e:
+                comfy_message(ident, "jovi-glsl-error", {"id": ident, "e": str(e)})
+                logger.error(e)
+                image = self.__glsl.last_frame
+                images.append(cv2tensor_full(image))
+                pbar.update_absolute(full_count_idx)
+                full_count_idx += 1
+                continue
+
             self.__glsl.size = wihi
             self.__glsl.fps = fps
-
             # update_var(shader, width, height, frame * (1.0 / fps), (1.0 / fps), fps, frame)
             #if channel_0 is not None: self.update_texture(textures[0], channel_0)
             #if channel_1 is not None: self.update_texture(textures[1], channel_1)
@@ -149,16 +161,24 @@ The GLSL Node executes custom GLSL (OpenGL Shading Language) fragment shaders to
             #if channel_3 is not None: self.update_texture(textures[3], channel_3)
             #self.__glsl.texture_bind(shader, textures)
             step = 1. / fps
-            for x in range(batch):
-                image = self.__glsl.render(delta)
-                images.append(image)
+            if batch > 0:
+                self.__delta = delta
 
-                # step frame
-                if not self.__wait:
-                    delta += step
-                    # self.__glsl.
+            if parse_reset(ident) > 0 or reset:
+                self.__delta = 0
 
-            pbar.update_absolute(idx)
+            for x in range(batch or 1):
+                image = self.__glsl.render(self.__delta)
+                images.append(cv2tensor_full(image))
+                if not wait:
+                    self.__delta += step
+                pbar.update_absolute(full_count_idx)
+                full_count_idx += 1
+
+            if batch > 0:
+                self.__delta = delta
+
+            comfy_message(ident, "jovi-glsl-time", {"id": ident, "t": self.__delta})
         return [torch.cat(i, dim=0) for i in zip(*images)]
 
 class ShapeNode(JOVImageNode):

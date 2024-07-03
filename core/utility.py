@@ -92,7 +92,6 @@ The Akashic node processes input data and prepares it for visualization. It acce
             ret = val
             typ = ''.join(repr(type(val)).split("'")[1:2])
             if isinstance(val, dict):
-                print(val)
                 ret = json.dumps(val, indent=3)
             elif isinstance(val, (tuple, set, list,)):
                 ret = ''

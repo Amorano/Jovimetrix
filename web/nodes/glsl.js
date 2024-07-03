@@ -28,36 +28,44 @@ app.registerExtension({
         nodeType = node_add_dynamic(nodeType, _prefix_var, '*', 0, false, true, true);
 
         const onNodeCreated = nodeType.prototype.onNodeCreated;
-        nodeType.prototype.onNodeCreated = async function () {
+        nodeType.prototype.onNodeCreated = function () {
             const me = onNodeCreated?.apply(this);
-
+            const self = this;
             const widget_time = this.widgets.find(w => w.name === '🕛');
-            const widget_fragment = this.widgets.find(w => w.name === 'FRAGMENT');
-            widget_fragment.dynamicPrompts = false;
-            widget_fragment.inputEl.addEventListener('input', function (event) {
-                init_fragment(event.target.value)
-            });
-
+            const widget_batch = this.widgets.find(w => w.name === 'BATCH');
+            const widget_wait = this.widgets.find(w => w.name === '✋🏽');
             const widget_reset = this.widgets.find(w => w.name === 'RESET');
+            const widget_fragment = this.widgets.find(w => w.name === 'FRAGMENT');
             const old_callback = widget_reset?.callback;
-            widget_reset.callback = async (e) => {
+
+            widget_batch.callback = () => {
+                widget_hide(this, widget_reset, '-jov');
+                widget_hide(this, widget_wait, '-jov');
+                if (widget_batch.value == 0) {
+                    widget_show(widget_reset);
+                    widget_show(widget_wait);
+                }
+                fitHeight(this);
+            }
+
+            widget_reset.callback = () => {
                 widget_reset.value = false;
                 if (old_callback) {
-                    old_callback(this, arguments);
+                    old_callback(self, arguments);
                 }
                 api_cmd_jovian(self.id, "reset");
                 widget_time.value = 0;
             }
 
-            async function python_glsl_error(event) {
+            function python_glsl_error(event) {
                 if (event.detail.id != self.id) {
                     return;
                 }
                 console.error(event.detail.e);
-                await flashBackgroundColor(widget_fragment.inputEl, 250, 3, "#FF2222AA");
+                flashBackgroundColor(widget_fragment.inputEl, 250, 3, "#FF2222AA");
             }
 
-            async function python_glsl_time(event) {
+            function python_glsl_time(event) {
                 if (event.detail.id != self.id) {
                     return;
                 }
@@ -68,9 +76,7 @@ app.registerExtension({
             }
             api.addEventListener("jovi-glsl-error", python_glsl_error);
             api.addEventListener("jovi-glsl-time", python_glsl_time);
-            setTimeout(() => {
-                // init_fragment(widget_fragment.value);
-            }, 10);
+            widget_batch
             return me;
         }
     }

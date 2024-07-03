@@ -716,7 +716,6 @@ Combines individual color channels (red, green, blue) along with an optional mas
         for idx, (r, g, b, a, mode, wihi, sample, matte, flip, invert) in enumerate(params):
             img = [None if x is None else tensor2cv(x) for x in (r,g,b,a)]
             _, _, w_max, h_max = image_minmax(img)
-            print(flip)
             for i, x in enumerate(img):
                 img[i] = x
                 if x is None:

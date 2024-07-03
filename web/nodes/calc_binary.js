@@ -20,7 +20,8 @@ app.registerExtension({
         const onNodeCreated = nodeType.prototype.onNodeCreated
         nodeType.prototype.onNodeCreated = function () {
             const me = onNodeCreated?.apply(this)
-            const ab_data = hook_widget_AB(this, '❓');
+            hook_widget_AB(this, '❓');
+            return me;
         }
 
         const onConnectionsChange = nodeType.prototype.onConnectionsChange
@@ -31,6 +32,7 @@ app.registerExtension({
             }
             return onConnectionsChange?.apply(this, arguments);
         }
+
        return nodeType;
 	}
 })
