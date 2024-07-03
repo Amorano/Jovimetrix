@@ -384,6 +384,9 @@ The Graph node visualizes a series of data points over time. It accepts a dynami
                 Lexicon.VALUE: ("INT", {"default": 60, "min": 0, "tooltip":"Number of values to graph and display"}),
                 Lexicon.WH: ("VEC2", {"default": (512, 512), "min":MIN_IMAGE_SIZE,
                                     "step": 1, "label": [Lexicon.W, Lexicon.H]})
+            },
+            "outputs": {
+                0: (Lexicon.IMAGE, {"tooltip":"The graphed image"}),
             }
         })
         return Lexicon._parse(d, cls)
@@ -483,6 +486,13 @@ The Queue node manages a queue of items, such as file paths or data. It supports
                 Lexicon.WAIT: ("BOOLEAN", {"default": False, "tooltip":"Hold the item at the current queue index"}),
                 Lexicon.RESET: ("BOOLEAN", {"default": False, "tooltip":"reset the queue back to index 1"}),
                 Lexicon.BATCH: ("BOOLEAN", {"default": False, "tooltip":"load all items, if they are loadable items, i.e. batch load images from the Queue's list"}),
+            },
+            "outputs": {
+                0: (Lexicon.ANY_OUT, {"tooltip":"Current item selected from the Queue list"}),
+                1: (Lexicon.QUEUE, {"tooltip":"The entire Queue list"}),
+                2: (Lexicon.CURRENT, {"tooltip":"Current item selected from the Queue list as a string"}),
+                3: (Lexicon.INDEX, {"tooltip":"Current selected item index in the Queue list"}),
+                4: (Lexicon.TOTAL, {"tooltip":"Total items in the current Queue List"}),
             }
         })
         return Lexicon._parse(d, cls)
@@ -627,6 +637,9 @@ Routes the input data from the optional input ports to the output port, preservi
         d.update({
             "optional": {
                 Lexicon.ROUTE: ("BUS", {"default": None}),
+            },
+            "outputs": {
+                0: (Lexicon.ROUTE, {"tooltip":"Pass through for Route node"})
             }
         })
         return Lexicon._parse(d, cls)

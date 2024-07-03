@@ -44,6 +44,13 @@ export function widget_get_type(config) {
 }
 
 export const widget_find = (widgets, name) => widgets.find(w => w.name === name);
+export const widget_find_output = (widgets, name) => {
+    for (let i = 0; i < widgets.length; i++) {
+        if (widgets[i].name === name) {
+            return i;
+        }
+    }
+}
 
 export function widget_remove(node, widgetOrSlot) {
     let index = 0;

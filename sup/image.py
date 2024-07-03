@@ -347,10 +347,11 @@ def cv2pil(image: TYPE_IMAGE) -> Image.Image:
 
 def cv2tensor(image: TYPE_IMAGE, mask:bool=False) -> torch.Tensor:
     """Convert a CV2 image to a torch tensor."""
-    if mask or len(image.shape) == 2:
-        image = image_grayscale(image)
+    if mask or image.ndim < 3 or (image.ndim == 3 and image.shape[2] == 1):
+        mask = True
+        image = image_grayscale(image)[:,:]
     ret = torch.from_numpy(image.astype(np.float32) / 255.0).unsqueeze(0)
-    if mask:
+    if mask and ret.ndim == 4:
         ret = ret.squeeze(-1)
     return ret
 

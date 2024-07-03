@@ -372,7 +372,7 @@ def get_node_info(node_info: Dict[str, Any]) -> Dict[str, Any]:
     ]
     return_names = getattr(node_class, "RETURN_NAMES", [t.lower() for t in return_types])
     for t, n in zip(return_types, return_names):
-        output_parameters[n] = t
+        output_parameters[n] = ', '.join([x.strip() for x in t.split(',')])
     return {
         "class": repr(node_class).split("'")[1],
         "input_parameters": collapse_repeating_parameters(input_parameters),
@@ -393,8 +393,10 @@ def json2markdown(json_dict):
     boop2 = boop.replace(" ", "%20")
     ret += f"![{boop}](https://raw.githubusercontent.com/Amorano/Jovimetrix-examples/master/node/{boop2}/{boop2}.png)\n\n"
     ret += f"#### OUTPUT NODE?: `{json_dict['output_node']}`\n\n"
+
+    # INPUTS
     ret += f"### INPUT\n\n"
-    if len(json_dict['output_parameters']) > 0:
+    if len(json_dict['input_parameters']) > 0:
         for k, v in json_dict['input_parameters'].items():
             if len(v.items()) == 0:
                 continue
@@ -412,16 +414,24 @@ def json2markdown(json_dict):
                 ret += f"{param_key} | {typ} | {tool} | {default} | {ch}\n"
     else:
         ret += 'NONE\n'
+
+    # OUTPUTS
     ret += f"\n### OUTPUT\n\n"
     if len(json_dict['output_parameters']) > 0:
         ret += f"name | type | desc\n"
         ret += f":---:|:---:|---\n"
         for k, v in json_dict['output_parameters'].items():
             if (tool := Lexicon._tooltipsDB.get(k, "")) != "":
+                print(tool)
                 tool = "<br>".join(textwrap.wrap(tool, 40))
             k = k.replace('#', r'\#')
             ret += f"{k} | {v} | {tool} \n"
     else:
         ret += 'NONE\n'
+
+    # BODY INSERT
+    # PUT EXTERNAL DOCS HERE
+    #
+    # FOOTER
     ret += "\nhelp powered by [MelMass](https://github.com/melMass) & [comfy_mtb](https://github.com/melMass/comfy_mtb) project"
     return ret

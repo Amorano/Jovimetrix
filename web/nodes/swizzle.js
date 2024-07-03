@@ -7,6 +7,7 @@
 import { app } from "../../../scripts/app.js"
 import { fitHeight } from '../util/util.js'
 import { widget_hide, widget_show } from '../util/util_widget.js'
+import { hook_widget_type } from '../util/util_jov.js'
 
 const _id = "SWIZZLE (JOV) 😵"
 
@@ -28,10 +29,8 @@ app.registerExtension({
             const swap_y = this.widgets.find(w => w.name === 'SWAP Y');
             const swap_z = this.widgets.find(w => w.name === 'SWAP Z');
             const swap_w = this.widgets.find(w => w.name === 'SWAP W');
-            const type = this.widgets.find(w => w.name === '❓');
-            type.callback = () => {
 
-            }
+            hook_widget_type(this, '❓', 0)
 
             const widgets = [
                 [x, swap_x],
@@ -50,7 +49,6 @@ app.registerExtension({
                 };
                 setTimeout(() => { swapWidget.callback(); }, 10);
             }
-            setTimeout(() => { type.callback(); }, 10);
             return me;
         }
     }

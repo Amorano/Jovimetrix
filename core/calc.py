@@ -194,6 +194,9 @@ The Unary Operation node performs unary operations like absolute value, mean, me
             "optional": {
                 Lexicon.IN_A: (JOV_TYPE_FULL, {"default": None}),
                 Lexicon.FUNC: (EnumUnaryOperation._member_names_, {"default": EnumUnaryOperation.ABS.name})
+            },
+            "outputs": {
+                0: (Lexicon.UNKNOWN, {"tooltip":"Output type will match the input type"}),
             }
         })
         return Lexicon._parse(d, cls)
@@ -306,6 +309,9 @@ The Binary Operation node executes binary operations like addition, subtraction,
                 Lexicon.IN_B+Lexicon.IN_B: ("VEC4", {"default": (0,0,0,0),
                                         "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W],
                                         "tooltip":"value vector"}),
+            },
+            "outputs": {
+                0: (Lexicon.UNKNOWN, {"tooltip":"Output type will match the input type"}),
             }
         })
         return Lexicon._parse(d, cls)
@@ -436,6 +442,10 @@ The Comparison node evaluates two inputs based on a specified operation. It acce
                 Lexicon.COMP_B: (JOV_TYPE_ANY, {"default": None}),
                 Lexicon.COMPARE: (EnumComparison._member_names_, {"default": EnumComparison.EQUAL.name}),
                 Lexicon.FLIP: ("BOOLEAN", {"default": False}),
+            },
+            "outputs": {
+                0: (Lexicon.TRIGGER, {"tooltip":f"Outputs the input at {Lexicon.IN_A} or {Lexicon.IN_B} depending on which evaluated `TRUE`"}),
+                1: (Lexicon.VALUE, {"tooltip":"The comparison result value"}),
             }
         })
         return Lexicon._parse(d, cls)
@@ -538,6 +548,9 @@ Delay node used to introduce pauses in the workflow. It accepts an optional inpu
             "optional": {
                 Lexicon.PASS_IN: (JOV_TYPE_ANY, {"default": None}),
                 Lexicon.TIMER: ("INT", {"step": 1, "default" : 0, "min": -1}),
+            },
+            "outputs": {
+                0: (Lexicon.PASS_OUT, {"tooltip":f"Pass through data when the delay ends"})
             }
         })
         return Lexicon._parse(d, cls)
@@ -599,7 +612,13 @@ The Lerp Node calculates linear interpolation between two values or vectors base
                                         "tooltip":"default value vector for B"}),
             },
             "outputs": {
-                0: (JOV_TYPE_ANY, {"tooltip":f"Output can vary depending on the type chosen in the {Lexicon.TYPE} parameter."}),
+                0: (Lexicon.ANY_OUT, {"tooltip":f"Output can vary depending on the type chosen in the {Lexicon.TYPE} parameter"}),
+                1: (Lexicon.FLOAT, {"tooltip":f"1"}),
+                2: (Lexicon.INT, {"tooltip":f"2"}),
+                3: (Lexicon.VEC, {"tooltip":f"3"}),
+                4: (Lexicon.XY, {"tooltip":f"4"}),
+                5: (Lexicon.XYZ, {"tooltip":f"5"}),
+                6: (Lexicon.XYZW, {"tooltip":f"6"}),
             }
         })
         return Lexicon._parse(d, cls)

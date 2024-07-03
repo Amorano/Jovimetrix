@@ -503,13 +503,21 @@ Extract a portion of an input image or resize it. It supports various cropping m
         for idx, (pA, func, xy, wihi, tltr, blbr, color) in enumerate(params):
             width, height = wihi
             pA = tensor2cv(pA) if pA is not None else channel_solid(width, height)
+            alpha = None
+            if pA.ndim == 3 and pA.shape[2] == 4:
+                alpha = image_mask(pA)
+
             func = EnumCropMode[func]
             if func == EnumCropMode.FREE:
-                y1, x1, y2, x2 = tltr
-                y4, x4, y3, x3 = blbr
+                x1, y1, x2, y2 = tltr
+                x4, y4, x3, y3 = blbr
                 points = (x1 * width, y1 * height), (x2 * width, y2 * height), \
                     (x3 * width, y3 * height), (x4 * width, y4 * height)
                 pA = image_crop_polygonal(pA, points)
+                if alpha is not None:
+                    alpha = image_crop_polygonal(alpha, points)
+                    pA[:,:,3] = alpha[:,:,0][:,:]
+
             elif func == EnumCropMode.XY:
                 pA = image_crop(pA, width, height, xy)
             elif func == EnumCropMode.HEAD:
@@ -957,10 +965,10 @@ Applies various geometric transformations to images, including translation, rota
         d.update({
             "optional": {
                 Lexicon.PIXEL: (JOV_TYPE_ANY, {}),
-                Lexicon.XY: ("VEC2", {"default": (0, 0,), "step": 0.01, "precision": 4, "round": 0.00001, "label": [Lexicon.X, Lexicon.Y]}),
-                Lexicon.ANGLE: ("FLOAT", {"default": 0, "min": -180, "max": 180, "step": 0.01, "precision": 4, "round": 0.00001}),
-                Lexicon.SIZE: ("VEC2", {"default": (1., 1.), "step": 0.01, "precision": 4, "round": 0.00001, "label": [Lexicon.X, Lexicon.Y]}),
-                Lexicon.TILE: ("VEC2", {"default": (1., 1.), "step": 0.1,  "precision": 4, "label": [Lexicon.X, Lexicon.Y]}),
+                Lexicon.XY: ("VEC2", {"default": (0, 0,), "min": -1, "max": 1, "step": 0.01, "precision": 4, "label": [Lexicon.X, Lexicon.Y]}),
+                Lexicon.ANGLE: ("FLOAT", {"default": 0, "step": 0.1, "precision": 3}),
+                Lexicon.SIZE: ("VEC2", {"default": (1., 1.), "min": 0.001, "step": 0.01, "precision": 4, "label": [Lexicon.X, Lexicon.Y]}),
+                Lexicon.TILE: ("VEC2", {"default": (1., 1.), "min": 1, "step": 0.1,  "precision": 4, "label": [Lexicon.X, Lexicon.Y]}),
                 Lexicon.EDGE: (EnumEdge._member_names_, {"default": EnumEdge.CLIP.name}),
                 Lexicon.MIRROR: (EnumMirrorMode._member_names_, {"default": EnumMirrorMode.NONE.name}),
                 Lexicon.PIVOT: ("VEC2", {"default": (0.5, 0.5), "step": 0.005, "precision": 4, "label": [Lexicon.X, Lexicon.Y]}),
@@ -979,13 +987,13 @@ Applies various geometric transformations to images, including translation, rota
 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
-        offset = parse_param(kw, Lexicon.XY, EnumConvertType.VEC2, [(0, 0)])
+        offset = parse_param(kw, Lexicon.XY, EnumConvertType.VEC2, [(0, 0)], -1, 1)
         angle = parse_param(kw, Lexicon.ANGLE, EnumConvertType.FLOAT, 0)
         size = parse_param(kw, Lexicon.SIZE, EnumConvertType.VEC2, [(1, 1)], 0.001)
         edge = parse_param(kw, Lexicon.EDGE, EnumConvertType.STRING, EnumEdge.CLIP.name)
         mirror = parse_param(kw, Lexicon.MIRROR, EnumConvertType.STRING, EnumMirrorMode.NONE.name)
         mirror_pivot = parse_param(kw, Lexicon.PIVOT, EnumConvertType.VEC2, [(0.5, 0.5)], 0, 1)
-        tile_xy = parse_param(kw, Lexicon.TILE, EnumConvertType.VEC2INT, [(1, 1)], 1)
+        tile_xy = parse_param(kw, Lexicon.TILE, EnumConvertType.VEC2, [(1., 1.)], 1)
         proj = parse_param(kw, Lexicon.PROJECTION, EnumConvertType.STRING, EnumProjection.NORMAL.name)
         tltr = parse_param(kw, Lexicon.TLTR, EnumConvertType.VEC4, [(0, 0, 1, 0)], 0, 1)
         blbr = parse_param(kw, Lexicon.BLBR, EnumConvertType.VEC4, [(0, 1, 1, 1)], 0, 1)
