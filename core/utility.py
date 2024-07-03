@@ -148,6 +148,11 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
                 Lexicon.COUNT: ("INT", {"default": 1, "min": 1, "max": sys.maxsize, "step": 1, "tooltip":"How many items to return"}),
                 Lexicon.FLIP: ("BOOLEAN", {"default": False, "tooltip":"invert the calculated output list"}),
                 Lexicon.BATCH_CHUNK: ("INT", {"default": 0, "min": 0, "step": 1}),
+            },
+            "outputs": {
+                0: (Lexicon.ANY_OUT, {"tooltip":"Output list from selected operation"}),
+                1: (Lexicon.LIST, {"tooltip":"Full list"}),
+                2: (Lexicon.VALUE, {"tooltip":"Length of output list"}),
             }
         })
         return Lexicon._parse(d, cls)
@@ -166,7 +171,7 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
     def run(self, **kw) -> Tuple[int, list]:
         data_list = parse_dynamic(kw, Lexicon.UNKNOWN, EnumConvertType.ANY, None)
         mode = parse_param(kw, Lexicon.BATCH_MODE, EnumConvertType.STRING, EnumBatchMode.MERGE.name)
-        index = parse_param(kw, Lexicon.INDEX, EnumConvertType.INT, EnumBatchMode.MERGE.name)
+        index = parse_param(kw, Lexicon.INDEX, EnumConvertType.INT, 0, 0)
         slice_range = parse_param(kw, Lexicon.RANGE, EnumConvertType.VEC3INT, [(0, 0, 1)])
         indices = parse_param(kw, Lexicon.STRING, EnumConvertType.STRING, "")
         seed = parse_param(kw, Lexicon.SEED, EnumConvertType.INT, 0)
@@ -252,7 +257,6 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
             if batch_chunk > 0:
                 loop_extract = self.batched(loop_extract, batch_chunk)
             if not output_is_image:
-                loop_extract = *loop_extract,
                 results.append([*loop_extract, loop_extract, len(loop_extract)])
             else:
                 img.extend(loop_extract)
@@ -261,7 +265,7 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
         if not output_is_image:
             return list(zip(*results))
         ret = torch.stack(img, dim=0)
-        return ret, *list(zip(*results))
+        return ret, *results
 
 class ExportNode(JOVBaseNode):
     NAME = "EXPORT (JOV) 📽"

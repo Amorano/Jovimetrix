@@ -103,9 +103,7 @@ The GLSL Node executes custom GLSL (OpenGL Shading Language) fragment shaders to
         d = super().INPUT_TYPES()
         d.update({
             "optional": {
-                # Lexicon.GLSL_CHANNEL: (JOV_TYPE_IMAGE, {}),
-                # Lexicon.GLSL_VAR: (JOV_TYPE_NUMBER, {}),
-                Lexicon.TIME: ("FLOAT", {"default": 0, "step": 0.01, "min": 0, "precision": 4}),
+                Lexicon.TIME: ("FLOAT", {"default": 0, "step": 0.001, "min": 0, "precision": 4}),
                 Lexicon.BATCH: ("INT", {"default": 1, "step": 1, "min": 0, "max": 262144}),
                 Lexicon.FPS: ("INT", {"default": 24, "step": 1, "min": 1, "max": 120}),
                 Lexicon.WH: ("VEC2", {"default": (512, 512), "min": MIN_IMAGE_SIZE, "step": 1,}),

@@ -25,7 +25,7 @@ app.registerExtension({
         }
 
         nodeType = node_add_dynamic(nodeType, _prefix_chan, '*', 0, false, true, true);
-        nodeType = node_add_dynamic(nodeType, _prefix_var, '*', 0, false, true, true);
+        //nodeType = node_add_dynamic(nodeType, _prefix_var, '*', 0, false, true, true);
 
         const onNodeCreated = nodeType.prototype.onNodeCreated;
         nodeType.prototype.onNodeCreated = function () {
