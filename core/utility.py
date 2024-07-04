@@ -140,8 +140,8 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
         d = super().INPUT_TYPES()
         d.update({
             "optional": {
-                Lexicon.BATCH_MODE: (EnumBatchMode._member_names_, {"default": EnumBatchMode.MERGE.name, "tooltip":"select a single index, specific range, custom index list or randomized"}),
-                Lexicon.INDEX: ("INT", {"default": 0, "min": 0, "step": 1, "tooltip":"selected list position"}),
+                Lexicon.BATCH_MODE: (EnumBatchMode._member_names_, {"default": EnumBatchMode.MERGE.name, "tooltip":"Select a single index, specific range, custom index list or randomized"}),
+                Lexicon.INDEX: ("INT", {"default": 0, "min": 0, "step": 1, "tooltip":"Selected list position"}),
                 Lexicon.RANGE: ("VEC3", {"default": (0, 0, 1), "min": 0, "step": 1}),
                 Lexicon.STRING: ("STRING", {"default": "", "tooltip":"Comma separated list of indicies to export"}),
                 Lexicon.SEED: ("INT", {"default": 0, "min": 0, "max": sys.maxsize, "step": 1}),

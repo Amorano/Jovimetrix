@@ -48,6 +48,7 @@ app.registerExtension({
             }
             tooltipEl.style.display = "none";
         };
+
         const showTooltip = (tooltip) => {
             if (tooltipTimeout) {
                 clearTimeout(tooltipTimeout);

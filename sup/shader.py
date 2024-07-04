@@ -5,6 +5,7 @@ GLSL Support
 Blended from old ModernGL implementation + Audio_Scheduler & Fill Node Pack
 """
 
+import re
 import time
 from typing import Tuple
 
@@ -19,6 +20,10 @@ from loguru import logger
 
 IMAGE_SIZE_MIN = 512
 IMAGE_SIZE_MAX = 8192
+
+MAX_TEXTURES = 4
+
+RE_VARIABLE = re.compile(r"uniform (\w*)\s{1,}(\w*);")
 
 # =============================================================================
 
@@ -95,8 +100,6 @@ void main()
         self.__source_vertex_raw: str = None
         self.__source_fragment_raw: str = None
         self.__runtime: float = 0
-        self.__delta: float = 0
-        self.__frame: int = 0
         self.__fps: int = 30
         self.__mouse: Tuple[int, int] = (0, 0)
         self.__last_frame = np.zeros((self.__size[1], self.__size[0]), np.uint8)
@@ -113,8 +116,6 @@ void main()
         gl.glUniform1f(self.__shaderVar['iFrameRate'], self.__fps)
         gl.glUniform1i(self.__shaderVar['iFrame'], self.frame)
         gl.glUniform4f(self.__shaderVar['iMouse'], self.__mouse[0], self.__mouse[1], 0, 0)
-
-        # print(self.__size, self.__runtime, self.__fps, self.frame, self.__mouse)
 
     def __compile_shader(self, source:str, shader_type:str) -> None:
         shader = gl.glCreateShader(shader_type)
@@ -231,7 +232,7 @@ void main()
 
             self.__framebuffer()
 
-            self.__textures = gl.glGenTextures(4)
+            self.__textures = gl.glGenTextures(MAX_TEXTURES)
             self.__source_fragment_raw = fragment
             self.__source_vertex_raw = vertex
             self.__shaderVar = {
@@ -239,12 +240,16 @@ void main()
                 'iTime': gl.glGetUniformLocation(self.__program, "iTime"),
                 'iFrameRate': gl.glGetUniformLocation(self.__program, "iFrameRate"),
                 'iFrame': gl.glGetUniformLocation(self.__program, "iFrame"),
-                'iMouse': gl.glGetUniformLocation(self.__program, "iMouse"),
+                'iMouse': gl.glGetUniformLocation(self.__program, "iMouse")
             }
+            # read the fragment and setup the vars....
+            m = RE_VARIABLE.match(fragment)
+            print(m)
 
-    def update_texture(self, texture, image) -> None:
+    def update_texture(self, i:int, image:np.ndarray) -> None:
         image = image[::-1,:,:]
-        gl.glBindTexture(gl.GL_TEXTURE_2D, texture)
+        i = min(0, max(4, MAX_TEXTURES))
+        gl.glBindTexture(gl.GL_TEXTURE_2D, self.__textures[i])
         gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_RGBA, image.shape[1], image.shape[0], 0, gl.GL_RGBA, gl.GL_FLOAT, image)
         gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_LINEAR)
         gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_LINEAR)
@@ -260,11 +265,11 @@ void main()
         self.__updateVars()
 
         # bind textures...
-        #for i in range(4):
-        #    gl.glActiveTexture(gl.GL_TEXTURE0 + i)  # type: ignore
-        #    gl.glBindTexture(gl.GL_TEXTURE_2D, self.__textures[i])
-        #    iChannel_location = gl.glGetUniformLocation(self.__program, f"iVar{i}")
-        #    gl.glUniform1i(iChannel_location, i)
+        for i in range(MAX_TEXTURES):
+            gl.glActiveTexture(gl.GL_TEXTURE0 + i)
+            gl.glBindTexture(gl.GL_TEXTURE_2D, self.__textures[i])
+            iChannel_location = gl.glGetUniformLocation(self.__program, f"iChannel{i}")
+            gl.glUniform1i(iChannel_location, i)
 
         gl.glDrawArrays(gl.GL_TRIANGLES, 0, 3)
         data = gl.glReadPixels(0, 0, self.__size[0], self.__size[1], gl.GL_RGB, gl.GL_UNSIGNED_BYTE)
