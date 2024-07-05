@@ -79,6 +79,7 @@ except:
 
 from loguru import logger
 
+NODE_LIST_MAP = {}
 NODE_CLASS_MAPPINGS = {}
 NODE_DISPLAY_NAME_MAPPINGS = {}
 WEB_DIRECTORY = "./web"
@@ -100,6 +101,8 @@ JOV_SIDECAR = os.getenv("JOV_SIDECAR", str(ROOT / "_md"))
 
 JOV_LOG_LEVEL = os.getenv("JOV_LOG_LEVEL", "WARNING")
 logger.configure(handlers=[{"sink": sys.stdout, "level": JOV_LOG_LEVEL}])
+
+JOV_INTERNAL = os.getenv("JOV_INTERNAL", 'false').strip().lower() in ('true', '1', 't')
 
 # =============================================================================
 # === THERE CAN BE ONLY ONE ===
@@ -291,7 +294,7 @@ class Session(metaclass=Singleton):
         return [x for x in files if x.endswith('.json') or x.endswith('.html')]
 
     def __init__(self, *arg, **kw) -> None:
-        global JOV_CONFIG, JOV_IGNORE_NODE, NODE_CLASS_MAPPINGS, NODE_DISPLAY_NAME_MAPPINGS
+        global JOV_CONFIG, JOV_IGNORE_NODE, NODE_CLASS_MAPPINGS, NODE_DISPLAY_NAME_MAPPINGS, NODE_LIST_MAP
         found = False
         if JOV_CONFIG_FILE.exists():
             JOV_CONFIG = configLoad(JOV_CONFIG_FILE)
@@ -337,7 +340,11 @@ class Session(metaclass=Singleton):
                         Session.CLASS_MAPPINGS_WIP[name] = class_object
                     else:
                         Session.CLASS_MAPPINGS[name] = class_object
+
+                    desc = class_object.DESCRIPTION if hasattr(class_object, 'DESCRIPTION') else ""
+                    NODE_LIST_MAP[name] = desc.split('.')[0].strip('\n')
                     node_count += 1
+
             logger.info(f"✅ {module.__name__}")
         logger.info(f"{node_count} nodes loaded")
 
@@ -358,11 +365,16 @@ class Session(metaclass=Singleton):
                 if v.CATEGORY.endswith(c):
                     NODE_CLASS_MAPPINGS[k] = v
                     Session.CLASS_MAPPINGS.pop(k)
-                    logger.debug(f"✅ {k}::{NODE_DISPLAY_NAME_MAPPINGS[k]}")
+                    logger.debug(f"✅ {k} :: {NODE_DISPLAY_NAME_MAPPINGS[k]}")
 
         # anything we dont know about sort last...
         for k, v in Session.CLASS_MAPPINGS.items():
             NODE_CLASS_MAPPINGS[k] = v
             # logger.debug('⁉️ {} {}', k, v)
+
+        # only do the list on local runs...
+        if JOV_INTERNAL:
+            with open(str(ROOT) + "/node_list.json", "w", encoding="utf-8") as f:
+                json.dump(NODE_LIST_MAP, f, sort_keys=True, indent=4 )
 
 session = Session()
