@@ -14,7 +14,7 @@ from loguru import logger
 
 from comfy.utils import ProgressBar
 
-from Jovimetrix import JOV_TYPE_IMAGE, JOVBaseNode, JOV_TYPE_ANY
+from Jovimetrix import JOV_TYPE_IMAGE, JOVBaseNode
 from Jovimetrix.sup.lexicon import JOVImageNode, Lexicon
 from Jovimetrix.sup.util import parse_dynamic, parse_param, \
     zip_longest_fill, EnumConvertType
@@ -70,8 +70,8 @@ Enhance and modify images with various effects using the Adjust Node. Apply effe
         d = super().INPUT_TYPES()
         d.update({
             "optional": {
-                Lexicon.PIXEL: (JOV_TYPE_ANY, {}),
-                Lexicon.MASK: (JOV_TYPE_ANY, {}),
+                Lexicon.PIXEL: (JOV_TYPE_IMAGE, {}),
+                Lexicon.MASK: (JOV_TYPE_IMAGE, {}),
                 Lexicon.FUNC: (EnumAdjustOP._member_names_, {"default": EnumAdjustOP.BLUR.name,
                                                             "tooltip":"Type of adjustment (e.g., blur, sharpen, invert)"}),
                 Lexicon.RADIUS: ("INT", {"default": 3, "min": 3, "step": 1}),
@@ -219,9 +219,9 @@ Combines two input images using various blending modes, such as normal, screen, 
         d = super().INPUT_TYPES()
         d.update({
             "optional": {
-                Lexicon.PIXEL_A: (JOV_TYPE_ANY, {"tooltip": "Background Plate"}),
-                Lexicon.PIXEL_B: (JOV_TYPE_ANY, {"tooltip": "Image to Overlay on Background Plate"}),
-                Lexicon.MASK: (JOV_TYPE_ANY, {"tooltip": "Optional Mask to use for Alpha Blend Operation. If empty, will use the ALPHA of B"}),
+                Lexicon.PIXEL_A: (JOV_TYPE_IMAGE, {"tooltip": "Background Plate"}),
+                Lexicon.PIXEL_B: (JOV_TYPE_IMAGE, {"tooltip": "Image to Overlay on Background Plate"}),
+                Lexicon.MASK: (JOV_TYPE_IMAGE, {"tooltip": "Optional Mask to use for Alpha Blend Operation. If empty, will use the ALPHA of B"}),
                 Lexicon.FUNC: (EnumBlendType._member_names_, {"default": EnumBlendType.NORMAL.name, "tooltip": "Blending Operation"}),
                 Lexicon.A: ("FLOAT", {"default": 1, "min": 0, "max": 1, "step": 0.01, "tooltip": "Amount of Blending to Perform on the Selected Operation"}),
                 Lexicon.FLIP: ("BOOLEAN", {"default": False}),
@@ -314,7 +314,7 @@ Use the Color Blind Node to simulate color blindness effects on images. You can 
         d = super().INPUT_TYPES()
         d.update({
             "optional": {
-                Lexicon.PIXEL: (JOV_TYPE_ANY, {}),
+                Lexicon.PIXEL: (JOV_TYPE_IMAGE, {}),
                 Lexicon.DEFICIENCY: (EnumCBDeficiency._member_names_,
                                             {"default": EnumCBDeficiency.PROTAN.name}),
                 Lexicon.SIMULATOR: (EnumCBSimulator._member_names_,
@@ -353,8 +353,8 @@ Adjust the color scheme of one image to match another with the Color Match Node.
         d = super().INPUT_TYPES()
         d.update({
             "optional": {
-                Lexicon.PIXEL_A: (JOV_TYPE_ANY, {}),
-                Lexicon.PIXEL_B: (JOV_TYPE_ANY, {}),
+                Lexicon.PIXEL_A: (JOV_TYPE_IMAGE, {}),
+                Lexicon.PIXEL_B: (JOV_TYPE_IMAGE, {}),
                 Lexicon.COLORMATCH_MODE: (EnumColorMatchMode._member_names_,
                                             {"default": EnumColorMatchMode.REINHARD.name}),
                 Lexicon.COLORMATCH_MAP: (EnumColorMatchMap._member_names_,
@@ -438,7 +438,7 @@ Apply various color harmony schemes to an input image using the Color Theory Nod
         d = super().INPUT_TYPES()
         d.update({
             "optional": {
-                Lexicon.PIXEL: (JOV_TYPE_ANY, {}),
+                Lexicon.PIXEL: (JOV_TYPE_IMAGE, {}),
                 Lexicon.SCHEME: (EnumColorTheory._member_names_, {"default": EnumColorTheory.COMPLIMENTARY.name}),
                 Lexicon.VALUE: ("INT", {"default": 45, "min": -90, "max": 90, "step": 1, "tooltip": "Custom angle of separation to use when calculating colors"}),
                 Lexicon.INVERT: ("BOOLEAN", {"default": False})
@@ -477,7 +477,7 @@ Extract a portion of an input image or resize it. It supports various cropping m
         d = super().INPUT_TYPES()
         d.update({
             "optional": {
-                Lexicon.PIXEL: (JOV_TYPE_ANY, {}),
+                Lexicon.PIXEL: (JOV_TYPE_IMAGE, {}),
                 Lexicon.FUNC: (EnumCropMode._member_names_, {"default": EnumCropMode.CENTER.name}),
                 Lexicon.XY: ("VEC2", {"default": (0, 0), "min": 0.5, "max": 0.5, "label": [Lexicon.X, Lexicon.Y]}),
                 Lexicon.WH: ("VEC2", {"default": (512, 512), "step": 1, "min": MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
@@ -543,7 +543,7 @@ Create masks based on specific color ranges within an image. Specify the color r
         d = super().INPUT_TYPES()
         d.update({
             "optional": {
-                Lexicon.PIXEL_A: (JOV_TYPE_ANY, {}),
+                Lexicon.PIXEL_A: (JOV_TYPE_IMAGE, {}),
                 Lexicon.START: ("VEC3", {"default": (128, 128, 128), "min":0, "max":255, "step": 1, "rgb": True}),
                 Lexicon.BOOLEAN: ("BOOLEAN", {"default": False, "tooltip": "use an end point (start->end) when calculating the filter range"}),
                 Lexicon.END: ("VEC3", {"default": (128, 128, 128), "min":0, "max":255, "step": 1, "rgb": True}),
@@ -638,8 +638,8 @@ Remaps an input image using a gradient lookup table (LUT) to allow precise contr
         d = super().INPUT_TYPES()
         d.update({
             "optional": {
-                Lexicon.PIXEL: (JOV_TYPE_ANY, {"tooltip":"Image to remap with gradient input"}),
-                Lexicon.GRADIENT: (JOV_TYPE_ANY, {"tooltip":f"Look up table (LUT) to remap the input image in `{Lexicon.PIXEL}`"}),
+                Lexicon.PIXEL: (JOV_TYPE_IMAGE, {"tooltip":"Image to remap with gradient input"}),
+                Lexicon.GRADIENT: (JOV_TYPE_IMAGE, {"tooltip":f"Look up table (LUT) to remap the input image in `{Lexicon.PIXEL}`"}),
                 Lexicon.FLIP: ("BOOLEAN", {"default":False, "tooltip":"Reverse the gradient from left-to-right "}),
                 Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
                 Lexicon.WH: ("VEC2", {"default": (512, 512), "min":MIN_IMAGE_SIZE,
@@ -759,7 +759,7 @@ Takes an input image and splits it into its individual color channels (red, gree
         d = super().INPUT_TYPES()
         d.update({
             "optional": {
-                Lexicon.PIXEL: (JOV_TYPE_ANY, {})
+                Lexicon.PIXEL: (JOV_TYPE_IMAGE, {})
             }
         })
         return Lexicon._parse(d, cls)
@@ -789,8 +789,8 @@ Swap pixel values between two input images based on specified channel swizzle op
         d = super().INPUT_TYPES()
         d.update({
             "optional": {
-                Lexicon.PIXEL_A: (JOV_TYPE_ANY, {}),
-                Lexicon.PIXEL_B: (JOV_TYPE_ANY, {}),
+                Lexicon.PIXEL_A: (JOV_TYPE_IMAGE, {}),
+                Lexicon.PIXEL_B: (JOV_TYPE_IMAGE, {}),
                 Lexicon.SWAP_R: (EnumPixelSwizzle._member_names_,
                                 {"default": EnumPixelSwizzle.RED_A.name}),
                 Lexicon.R: ("INT", {"default": 0, "step": 1, "min": 0, "max": 255}),
@@ -919,7 +919,7 @@ Use the Threshold Node to define a range and apply it to an image for segmentati
         d = super().INPUT_TYPES()
         d.update({
             "optional": {
-                Lexicon.PIXEL: (JOV_TYPE_ANY, {}),
+                Lexicon.PIXEL: (JOV_TYPE_IMAGE, {}),
                 Lexicon.ADAPT: ( EnumThresholdAdapt._member_names_,
                                 {"default": EnumThresholdAdapt.ADAPT_NONE.name}),
                 Lexicon.FUNC: ( EnumThreshold._member_names_, {"default": EnumThreshold.BINARY.name}),
@@ -964,7 +964,7 @@ Applies various geometric transformations to images, including translation, rota
         d = super().INPUT_TYPES()
         d.update({
             "optional": {
-                Lexicon.PIXEL: (JOV_TYPE_ANY, {}),
+                Lexicon.PIXEL: (JOV_TYPE_IMAGE, {}),
                 Lexicon.XY: ("VEC2", {"default": (0, 0,), "min": -1, "max": 1, "step": 0.01, "precision": 4, "label": [Lexicon.X, Lexicon.Y]}),
                 Lexicon.ANGLE: ("FLOAT", {"default": 0, "step": 0.1, "precision": 3}),
                 Lexicon.SIZE: ("VEC2", {"default": (1., 1.), "min": 0.001, "step": 0.01, "precision": 4, "label": [Lexicon.X, Lexicon.Y]}),
@@ -1067,7 +1067,7 @@ The Histogram Node generates a histogram representation of the input image, show
         d = super().INPUT_TYPES()
         d.update({
             "optional": {
-                Lexicon.PIXEL: (JOV_TYPE_ANY, {}),
+                Lexicon.PIXEL: (JOV_TYPE_IMAGE, {}),
             }
         })
         return Lexicon._parse(d, cls)

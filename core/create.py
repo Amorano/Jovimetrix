@@ -14,7 +14,7 @@ from loguru import logger
 
 from comfy.utils import ProgressBar
 
-from Jovimetrix import JOV_TYPE_IMAGE, JOV_TYPE_NUMBER, JOVBaseNode, comfy_message, parse_reset, JOV_TYPE_ANY, ROOT
+from Jovimetrix import comfy_message, parse_reset, JOVBaseNode, ROOT, JOV_TYPE_IMAGE
 
 from Jovimetrix.sup.lexicon import JOVImageNode, Lexicon
 from Jovimetrix.sup.util import parse_dynamic, parse_param, zip_longest_fill, \
@@ -53,7 +53,7 @@ The Constant node generates constant images or masks of a specified size and col
         d = super().INPUT_TYPES()
         d.update({
             "optional": {
-                Lexicon.PIXEL: (JOV_TYPE_ANY, {"tooltip":"Optional Image to Matte with Selected Color"}),
+                Lexicon.PIXEL: (JOV_TYPE_IMAGE, {"tooltip":"Optional Image to Matte with Selected Color"}),
                 Lexicon.RGBA_A: ("VEC4", {"default": (0, 0, 0, 255), "step": 1,
                                         "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A],
                                         "rgb": True, "tooltip": "Constant Color to Output"}),
@@ -284,8 +284,8 @@ The Stereogram node creates stereograms, generating 3D images from 2D input. Set
         d = super().INPUT_TYPES()
         d.update({
             "optional": {
-                Lexicon.PIXEL: (JOV_TYPE_ANY, {}),
-                Lexicon.DEPTH: (JOV_TYPE_ANY, {}),
+                Lexicon.PIXEL: (JOV_TYPE_IMAGE, {}),
+                Lexicon.DEPTH: (JOV_TYPE_IMAGE, {}),
                 Lexicon.TILE: ("INT", {"default": 8, "min": 1}),
                 Lexicon.NOISE: ("FLOAT", {"default": 0.33, "min": 0, "max": 1, "step": 0.01}),
                 Lexicon.GAMMA: ("FLOAT", {"default": 0.33, "min": 0, "max": 1, "step": 0.01}),
@@ -330,7 +330,7 @@ The Stereoscopic node simulates depth perception in images by generating stereos
         d = super().INPUT_TYPES()
         d.update({
             "optional": {
-                Lexicon.PIXEL: (JOV_TYPE_ANY, {"tooltip":"Optional Image to Matte with Selected Color"}),
+                Lexicon.PIXEL: (JOV_TYPE_IMAGE, {"tooltip":"Optional Image to Matte with Selected Color"}),
                 Lexicon.INT: ("FLOAT", {"default": 0.1, "min": 0, "max": 1, "step": 0.01, "tooltip":"Baseline"}),
                 Lexicon.FOCAL: ("FLOAT", {"default": 500, "min": 0, "step": 0.01}),
             }

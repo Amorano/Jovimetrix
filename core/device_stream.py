@@ -15,7 +15,7 @@ from loguru import logger
 
 from comfy.utils import ProgressBar
 
-from Jovimetrix import JOVBaseNode, JOV_TYPE_ANY
+from Jovimetrix import JOV_TYPE_IMAGE, JOVBaseNode, JOV_TYPE_ANY
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import EnumConvertType, parse_param, \
     zip_longest_fill
@@ -273,7 +273,7 @@ The Stream Writer node sends frames to a specified route, typically for live str
         d = super().INPUT_TYPES()
         d.update({
             "optional": {
-                Lexicon.PIXEL: (JOV_TYPE_ANY, {}),
+                Lexicon.PIXEL: (JOV_TYPE_IMAGE, {}),
                 Lexicon.ROUTE: ("STRING", {"default": "/stream"}),
                 Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
                 Lexicon.WH: ("VEC2", {"default": (512, 512), "min":MIN_IMAGE_SIZE,
@@ -345,7 +345,7 @@ The Spout Writer node sends frames to a specified Spout receiver application for
             d = super().INPUT_TYPES()
             d.update({
                 "optional": {
-                    Lexicon.PIXEL: (JOV_TYPE_ANY, {}),
+                    Lexicon.PIXEL: (JOV_TYPE_IMAGE, {}),
                     Lexicon.ROUTE: ("STRING", {"default": "Spout Sender"}),
                     Lexicon.FPS: ("INT", {"min": 0, "max": 60, "default": 30, "tooltip": "@@@ NOT USED @@@"}),
                     Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),

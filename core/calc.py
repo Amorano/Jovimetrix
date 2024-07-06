@@ -19,8 +19,8 @@ from loguru import logger
 from comfy.utils import ProgressBar
 from nodes import interrupt_processing
 
-from Jovimetrix import JOV_TYPE_FULL, JOV_TYPE_COMFY, JOV_TYPE_IMAGE, JOV_TYPE_NUMBER, JOV_TYPE_VECTOR, comfy_message, parse_reset, JOVBaseNode, ComfyAPIMessage, \
-    TimedOutException, JOV_TYPE_ANY
+from Jovimetrix import comfy_message, parse_reset, JOVBaseNode, ComfyAPIMessage, \
+    TimedOutException, JOV_TYPE_ANY, JOV_TYPE_FULL, JOV_TYPE_NUMBER, JOV_TYPE_VECTOR
 from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import parse_param, parse_value, vector_swap, \
     zip_longest_fill, EnumConvertType, EnumSwizzle
@@ -866,12 +866,6 @@ The Value Node supplies raw or default values for various data types, supporting
             }
         })
         return Lexicon._parse(d, cls)
-
-    @classmethod
-    def IS_CHANGED(cls) -> float:
-        if cls.UPDATE:
-            return float("nan")
-        return super().IS_CHANGED()
 
     def run(self, **kw) -> Tuple[bool]:
         raw = parse_param(kw, Lexicon.IN_A, EnumConvertType.ANY, None)

@@ -124,7 +124,7 @@ def parse_value(val:Any, typ:EnumConvertType, default: Any,
         size = max(1, int(typ.value / 10))
         new_val = []
         for idx in range(size):
-            d = default[idx] if isinstance(default, (list, tuple, set, dict, torch.Tensor)) and idx < len(default) else default
+            d = default[idx] if isinstance(default, (list, tuple, set, dict, torch.Tensor)) and idx < len(default) else 0
             v = d if val is None else val[idx] if idx < len(val) else d
             try:
                 if typ in [EnumConvertType.FLOAT, EnumConvertType.VEC2, EnumConvertType.VEC3, EnumConvertType.VEC4]:

@@ -99,7 +99,7 @@ export function node_add_dynamic(nodeType, prefix, dynamic_type='*', index_start
                     }
                 } else {
                     const name = parts.slice(1).join('_');
-                    self.inputs[idx].name = `${slot_count}_${name}`;
+                    self.inputs[idx].name = `${idx}_${name}`;
                     if (match_output) {
                         while(self.outputs.length-1 < idx) {
                             self.addOutput(prefix, dynamic_type);
