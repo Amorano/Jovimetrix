@@ -23,8 +23,7 @@ const my_map = {
     LIST: "🧾",
     DICT: "📖",
     IMAGE: "🖼️",
-    MASK: "😷",
-
+    MASK: "😷"
 }
 
 export const CONVERTED_TYPE = "converted-widget"
@@ -130,7 +129,7 @@ export function widget_show(widget) {
         delete widget.origComputeSize;
     }
 
-    delete widget.serializeValue;
+    // delete widget.serializeValue;
     if (widget?.origSerializeValue) {
         widget.serializeValue = widget.origSerializeValue;
         delete widget.origSerializeValue;
@@ -192,10 +191,15 @@ export function show_vector(widget, values={}, type=undefined, precision=4) {
             widget.options.round =  1 / (10^Math.max(1, precision-1));
             widget.options.precision = precision;
         }
-        for (let i = 0; i < values.length; i++) {
+        widget.value = {};
+        for (let i = 0; i < size; i++) {
             widget.value[i] = widget.type.endsWith('INT') ? Math.round(values[i]) : Number(values[i]);
         }
-        // widget.value = widget.value.slice(0, size);
+    } else {
+        widget.options.step = 1;
+        widget.options.round = 1;
+        widget.options.precision = 0;
+        widget.value = values[0] ? true : false;
     }
 }
 
