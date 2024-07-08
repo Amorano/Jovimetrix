@@ -98,19 +98,19 @@ Enhance and modify images with various effects using the Adjust Node. Apply effe
         mask = parse_param(kw, Lexicon.MASK, EnumConvertType.IMAGE, None)
         op = parse_param(kw, Lexicon.FUNC, EnumConvertType.STRING, EnumAdjustOP.BLUR.name)
         radius = parse_param(kw, Lexicon.RADIUS, EnumConvertType.INT, 3, 3)
-        amt = parse_param(kw, Lexicon.VALUE, EnumConvertType.FLOAT, 0, 0, 1)
-        lohi = parse_param(kw, Lexicon.LOHI, EnumConvertType.VEC2, [(0, 1)], 0, 1)
-        lmh = parse_param(kw, Lexicon.LMH, EnumConvertType.VEC3, [(0, 0.5, 1)], 0, 1)
-        hsv = parse_param(kw, Lexicon.HSV, EnumConvertType.VEC3, [(0, 1, 1)], 0, 1)
-        contrast = parse_param(kw, Lexicon.CONTRAST, EnumConvertType.FLOAT, 1, 0, 0)
+        val = parse_param(kw, Lexicon.VALUE, EnumConvertType.FLOAT, 0, 0)
+        lohi = parse_param(kw, Lexicon.LOHI, EnumConvertType.VEC2, (0, 1), 0, 1)
+        lmh = parse_param(kw, Lexicon.LMH, EnumConvertType.VEC3, (0, 0.5, 1), 0, 1)
+        hsv = parse_param(kw, Lexicon.HSV, EnumConvertType.VEC3, (0, 1, 1), 0, 1)
+        contrast = parse_param(kw, Lexicon.CONTRAST, EnumConvertType.FLOAT, 1, 0, 1)
         gamma = parse_param(kw, Lexicon.GAMMA, EnumConvertType.FLOAT, 1, 0, 1)
-        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
+        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
         invert = parse_param(kw, Lexicon.INVERT, EnumConvertType.BOOLEAN, False)
-        params = list(zip_longest_fill(pA, mask, op, radius, amt, lohi,
+        params = list(zip_longest_fill(pA, mask, op, radius, val, lohi,
                                                     lmh, hsv, contrast, gamma, matte, invert))
         images = []
         pbar = ProgressBar(len(params))
-        for idx, (pA, mask, op, radius, amt, lohi, lmh, hsv, contrast, gamma, matte, invert) in enumerate(params):
+        for idx, (pA, mask, op, radius, val, lohi, lmh, hsv, contrast, gamma, matte, invert) in enumerate(params):
             pA = tensor2cv(pA) if pA is not None else channel_solid(chan=EnumImageType.BGRA)
             cc = pA.shape[2] if pA.ndim == 3 else 1
             if cc == 4:
@@ -118,7 +118,7 @@ Enhance and modify images with various effects using the Adjust Node. Apply effe
 
             match EnumAdjustOP[op]:
                 case EnumAdjustOP.INVERT:
-                    img_new = image_invert(pA, amt)
+                    img_new = image_invert(pA, val)
 
                 case EnumAdjustOP.LEVELS:
                     l, m, h = lmh
@@ -150,7 +150,7 @@ Enhance and modify images with various effects using the Adjust Node. Apply effe
                     r = min(radius, 999)
                     if r % 2 == 0:
                         r += 1
-                    img_new = cv2.GaussianBlur(pA, (r, r), sigmaX=amt)
+                    img_new = cv2.GaussianBlur(pA, (r, r), sigmaX=val)
 
                 case EnumAdjustOP.MEDIAN_BLUR:
                     r = min(radius, 357)
@@ -162,37 +162,37 @@ Enhance and modify images with various effects using the Adjust Node. Apply effe
                     r = min(radius, 511)
                     if r % 2 == 0:
                         r += 1
-                    img_new = image_sharpen(pA, kernel_size=r, amount=amt)
+                    img_new = image_sharpen(pA, kernel_size=r, amount=val)
 
                 case EnumAdjustOP.EMBOSS:
-                    img_new = morph_emboss(pA, amt, radius)
+                    img_new = morph_emboss(pA, val, radius)
 
                 case EnumAdjustOP.EQUALIZE:
                     img_new = image_equalize(pA)
 
                 case EnumAdjustOP.PIXELATE:
-                    img_new = image_pixelate(pA, amt / 255.)
+                    img_new = image_pixelate(pA, val / 255.)
 
                 case EnumAdjustOP.QUANTIZE:
-                    img_new = image_quantize(pA, int(amt))
+                    img_new = image_quantize(pA, int(val))
 
                 case EnumAdjustOP.POSTERIZE:
-                    img_new = image_posterize(pA, int(amt))
+                    img_new = image_posterize(pA, int(val))
 
                 case EnumAdjustOP.OUTLINE:
                     img_new = cv2.morphologyEx(pA, cv2.MORPH_GRADIENT, (radius, radius))
 
                 case EnumAdjustOP.DILATE:
-                    img_new = cv2.dilate(pA, (radius, radius), iterations=int(amt))
+                    img_new = cv2.dilate(pA, (radius, radius), iterations=int(val))
 
                 case EnumAdjustOP.ERODE:
-                    img_new = cv2.erode(pA, (radius, radius), iterations=int(amt))
+                    img_new = cv2.erode(pA, (radius, radius), iterations=int(val))
 
                 case EnumAdjustOP.OPEN:
-                    img_new = cv2.morphologyEx(pA, cv2.MORPH_OPEN, (radius, radius), iterations=int(amt))
+                    img_new = cv2.morphologyEx(pA, cv2.MORPH_OPEN, (radius, radius), iterations=int(val))
 
                 case EnumAdjustOP.CLOSE:
-                    img_new = cv2.morphologyEx(pA, cv2.MORPH_CLOSE, (radius, radius), iterations=int(amt))
+                    img_new = cv2.morphologyEx(pA, cv2.MORPH_CLOSE, (radius, radius), iterations=int(val))
 
             h, w = pA.shape[:2]
             mask = channel_solid(w, h, 255) if mask is None else tensor2cv(mask)

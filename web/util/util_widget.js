@@ -86,23 +86,20 @@ export function widget_hide(node, widget, suffix = '') {
         return;
     }
     widget.origType = widget.type;
-    widget.hidden = true;
-    if (widget.computeSize) {
-        widget.origComputeSize = widget.computeSize;
-    }
-    if (widget.serializeValue) {
-        widget.origSerializeValue = widget.serializeValue;
-    }
-    widget.computeSize = () => [0, -4];
     widget.type = CONVERTED_TYPE + suffix;
+    widget.hidden = true;
 
+    widget.origComputeSize = widget.computeSize;
+    widget.computeSize = () => [0, -4];
+
+    widget.origSerializeValue = widget.serializeValue;
     widget.serializeValue = () => {
 		// Prevent serializing the widget if we have no input linked
 		if (!node.inputs) {
 			return undefined;
 		}
-		let node_input = node.inputs.find((i) => i.widget?.name === widget.name);
 
+		let node_input = node.inputs.find((i) => i.widget?.name === widget.name);
 		if (!node_input || !node_input.link) {
 			return undefined;
 		}
@@ -123,23 +120,17 @@ export function widget_show(widget) {
         delete widget.origType;
     }
 
-    delete widget.computeSize;
-    if (widget?.origComputeSize) {
-        widget.computeSize = widget.origComputeSize;
-        delete widget.origComputeSize;
-    }
+    widget.computeSize = widget.origComputeSize;
+    delete widget.origComputeSize;
 
-    // delete widget.serializeValue;
-    if (widget?.origSerializeValue) {
-        widget.serializeValue = widget.origSerializeValue;
-        delete widget.origSerializeValue;
-    }
+    widget.serializeValue = widget.origSerializeValue;
+    delete widget.origSerializeValue;
 
     widget.hidden = false;
     if (widget?.linkedWidgets) {
-      for (const w of widget.linkedWidgets) {
-        widget_show(w)
-      }
+        for (const w of widget.linkedWidgets) {
+            widget_show(w)
+        }
     }
 }
 

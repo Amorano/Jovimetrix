@@ -424,7 +424,7 @@ The Binary Operation node executes binary operations like addition, subtraction,
 class ComparisonNode(JOVBaseNode):
     NAME = "COMPARISON (JOV) 🕵🏽"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = (JOV_TYPE_NUMBER, JOV_TYPE_NUMBER,)
+    RETURN_TYPES = (JOV_TYPE_ANY, JOV_TYPE_NUMBER,)
     RETURN_NAMES = (Lexicon.TRIGGER, Lexicon.VALUE,)
     SORT = 130
     DESCRIPTION = """
@@ -436,12 +436,13 @@ The Comparison node evaluates two inputs based on a specified operation. It acce
         d = super().INPUT_TYPES()
         d.update({
             "optional": {
-                Lexicon.IN_A: (JOV_TYPE_FULL, {"default": None, "tooltip":"Master Comparator"}),
-                Lexicon.IN_B: (JOV_TYPE_FULL, {"default": None, "tooltip":"Secondary Comparator"}),
-                Lexicon.COMP_A: (JOV_TYPE_ANY, {"default": None}),
-                Lexicon.COMP_B: (JOV_TYPE_ANY, {"default": None}),
+                Lexicon.IN_A: (JOV_TYPE_FULL, {"default": 0, "tooltip":"Master Comparator"}),
+                Lexicon.IN_B: (JOV_TYPE_FULL, {"default": 0, "tooltip":"Secondary Comparator"}),
+                Lexicon.COMP_A: (JOV_TYPE_ANY, {"default": 0}),
+                Lexicon.COMP_B: (JOV_TYPE_ANY, {"default": 0}),
                 Lexicon.COMPARE: (EnumComparison._member_names_, {"default": EnumComparison.EQUAL.name}),
                 Lexicon.FLIP: ("BOOLEAN", {"default": False}),
+                Lexicon.INVERT: ("BOOLEAN", {"default": False}),
             },
             "outputs": {
                 0: (Lexicon.TRIGGER, {"tooltip":f"Outputs the input at {Lexicon.IN_A} or {Lexicon.IN_B} depending on which evaluated `TRUE`"}),
@@ -451,17 +452,18 @@ The Comparison node evaluates two inputs based on a specified operation. It acce
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[Any, Any]:
-        A = parse_param(kw, Lexicon.IN_A, EnumConvertType.ANY, None)
-        B = parse_param(kw, Lexicon.IN_B, EnumConvertType.ANY, None)
-        good = parse_param(kw, Lexicon.COMP_A, EnumConvertType.ANY, None)
-        fail = parse_param(kw, Lexicon.COMP_B, EnumConvertType.ANY, None)
-        flip = parse_param(kw, Lexicon.FLIP, EnumConvertType.BOOLEAN, False)
+        A = parse_param(kw, Lexicon.IN_A, EnumConvertType.VEC4, 0)
+        B = parse_param(kw, Lexicon.IN_B, EnumConvertType.VEC4, 0)
+        good = parse_param(kw, Lexicon.COMP_A, EnumConvertType.ANY, 0)
+        fail = parse_param(kw, Lexicon.COMP_B, EnumConvertType.ANY, 0)
         op = parse_param(kw, Lexicon.COMPARE, EnumConvertType.STRING, EnumComparison.EQUAL.name)
-        params = list(zip_longest_fill(A, B, good, fail, flip, op))
+        flip = parse_param(kw, Lexicon.FLIP, EnumConvertType.BOOLEAN, False)
+        invert = parse_param(kw, Lexicon.INVERT, EnumConvertType.BOOLEAN, False)
+        params = list(zip_longest_fill(A, B, good, fail, op, flip, invert))
         pbar = ProgressBar(len(params))
         vals = []
         results = []
-        for idx, (A, B, good, fail, flip, op) in enumerate(params):
+        for idx, (A, B, good, fail, op, flip, invert) in enumerate(params):
             if not isinstance(A, (list, set, tuple)):
                 A = [A]
             if not isinstance(B, (list, set, tuple)):
@@ -517,7 +519,10 @@ The Comparison node evaluates two inputs based on a specified operation. It acce
                 case EnumComparison.NOT_IN:
                     val = [a not in val_b for a in val_a]
 
-            output = good if all([bool(v) for v in val]) else fail
+            output = all([bool(v) for v in val])
+            if invert:
+                output = not output
+            output = good if output else fail
             results.append([output, val])
             pbar.update_absolute(idx)
 

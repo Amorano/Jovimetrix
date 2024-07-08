@@ -7,6 +7,7 @@ from enum import Enum
 import textwrap
 from typing import List, Tuple
 
+import cv2
 from matplotlib import font_manager
 from PIL import Image, ImageFont, ImageDraw
 
@@ -103,6 +104,7 @@ def text_draw(full_text: str, font: ImageFont, width:int, height:int, align:Enum
         text_process_line(line, font, y)
         y += max_height
     return pil2cv(img)
+
 """
 def wrap_text_and_calculate_height(self, text, font, max_width, line_height):
     wrapped_lines = []
@@ -158,25 +160,59 @@ def text_autosize(text:str, font:str, width:int, height:int, columns:int=0) -> T
         font_size += 1
     return text, *size
 
-def text_draw(full_text: str, font: ImageFont, width: int, height: int,
-            align: EnumAlignment=EnumAlignment.CENTER,
-            justify: EnumJustify=EnumJustify.CENTER,
-            margin: int=0, line_spacing: int=0,
-            color: TYPE_PIXEL=(255,255,255,255)) -> TYPE_IMAGE:
+def detect_and_recenter(image_path, output_path):
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+    # Use OpenCV's simple thresholding to create a binary image
+    _, thresh = cv2.threshold(gray, 128, 255, cv2.THRESH_BINARY_INV)
+
+    # Find contours of the binary image
+    contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    # Assume the largest contour is the item we want to recenter
+    largest_contour = max(contours, key=cv2.contourArea)
+
+    # Get bounding box coordinates of the largest contour
+    x, y, w, h = cv2.boundingRect(largest_contour)
+
+    # Load the image using PIL
+    pil_image = Image.open(image_path)
+
+    # Crop the image around the detected item
+    cropped_image = pil_image.crop((x, y, x+w, y+h))
+
+    # Create a new image with white background
+    new_image = Image.new('RGB', pil_image.size, (255, 255, 255))
+
+    # Calculate the position to paste the cropped item in the center
+    paste_x = (new_image.width - cropped_image.width) // 2
+    paste_y = (new_image.height - cropped_image.height) // 2
+
+    # Paste the cropped item onto the new image
+    new_image.paste(cropped_image, (paste_x, paste_y))
+
+def text_draw(full_text: str, font: ImageFont,
+              width: int, height: int,
+              align: EnumAlignment=EnumAlignment.CENTER,
+              justify: EnumJustify=EnumJustify.CENTER,
+              margin: int=0, line_spacing: int=0,
+              color: TYPE_PIXEL=(255,255,255,255)) -> TYPE_IMAGE:
 
     img = Image.new("RGBA", (width, height))
     draw = ImageDraw.Draw(img)
     text_lines = full_text.split('\n')
     count = len(text_lines)
-    height_max = text_size(draw, full_text, font)[1] + line_spacing * count
+    height_max = text_size(draw, full_text, font)[1] + line_spacing * (count-1)
     height_delta = height_max / count
+    # find the bounding box of this
+
     if align == EnumAlignment.TOP:
-        y = margin
+        y = -height_max + margin
     elif align == EnumAlignment.BOTTOM:
-        y = height - height_max - margin - line_spacing
+        y = height - height_max * 1.5 - margin
     else:
-        y = (height - height_max) / 2
-    y = min(height, max(0, y))
+        y = -height_max * 0.5
+    # y = max(-height_max, min(height_max, y))
 
     # color = pixel_eval(color, EnumImageType.RGBA)
     for line in text_lines:

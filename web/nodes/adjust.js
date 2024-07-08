@@ -38,6 +38,7 @@ app.registerExtension({
                 widget_hide(this, gamma, "-jov");
                 if (["BLUR", "STACK_BLUR", "MEDIAN_BLUR", "OUTLINE"].includes(op.value)) {
                     widget_show(radius);
+
                 } else if (["PIXELATE", "QUANTIZE", "POSTERIZE"].includes(op.value)) {
                     widget_show(amount);
                 } else if (["HSV"].includes(op.value)) {

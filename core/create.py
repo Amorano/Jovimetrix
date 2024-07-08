@@ -30,7 +30,7 @@ from Jovimetrix.sup.text import font_names, text_autosize, text_draw, \
     EnumAlignment, EnumJustify, EnumShapes
 
 from Jovimetrix.sup.audio import graph_sausage
-from Jovimetrix.sup.shader import CompileException, GLSLShader #, MAX_WIDTH, MAX_HEIGHT, CompileException
+from Jovimetrix.sup.shader import CompileException, GLSLShader
 
 # =============================================================================
 
@@ -381,7 +381,7 @@ The Text Generation node generates images containing text based on user-defined 
                                         "label": [Lexicon.R, Lexicon.G, Lexicon.B], "rgb": True}),
                 Lexicon.COLUMNS: ("INT", {"default": 0, "min": 0, "step": 1}),
                 # if auto on, hide these...
-                Lexicon.FONT_SIZE: ("INT", {"default": 16, "min": 1, "step": 1}),
+                Lexicon.FONT_SIZE: ("INT", {"default": 16, "min": 8, "step": 1}),
                 Lexicon.ALIGN: (EnumAlignment._member_names_, {"default": EnumAlignment.CENTER.name}),
                 Lexicon.JUSTIFY: (EnumJustify._member_names_, {"default": EnumJustify.CENTER.name}),
                 Lexicon.MARGIN: ("INT", {"default": 0, "min": -1024, "max": 1024}),
@@ -390,10 +390,10 @@ The Text Generation node generates images containing text based on user-defined 
                                     "min":MIN_IMAGE_SIZE, "step": 1,
                                     "label": [Lexicon.W, Lexicon.H]}),
                 Lexicon.XY: ("VEC2", {"default": (0, 0,), "step": 0.01, "precision": 4,
+                                    "min": -1, "max": 1,
                                     "round": 0.00001, "label": [Lexicon.X, Lexicon.Y],
                                     "tooltip":"Offset the position"}),
-                Lexicon.ANGLE: ("FLOAT", {"default": 0, "min": -180, "max": 180,
-                                        "step": 0.01, "precision": 4, "round": 0.00001}),
+                Lexicon.ANGLE: ("FLOAT", {"default": 0, "step": 0.01, "precision": 4, "round": 0.00001}),
                 Lexicon.EDGE: (EnumEdge._member_names_, {"default": EnumEdge.CLIP.name}),
                 Lexicon.INVERT: ("BOOLEAN", {"default": False, "tooltip": "Invert the mask input"})
             }
@@ -405,16 +405,16 @@ The Text Generation node generates images containing text based on user-defined 
         font_idx = parse_param(kw, Lexicon.FONT, EnumConvertType.STRING, self.FONT_NAMES[0])
         autosize = parse_param(kw, Lexicon.AUTOSIZE, EnumConvertType.BOOLEAN, False)
         letter = parse_param(kw, Lexicon.LETTER, EnumConvertType.BOOLEAN, False)
-        color = parse_param(kw, Lexicon.RGBA_A, EnumConvertType.VEC4INT, [(255,255,255,255)], 0, 255)
-        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC3INT, [(0,0,0)], 0, 255)
+        color = parse_param(kw, Lexicon.RGBA_A, EnumConvertType.VEC4INT, (255,255,255,255), 0, 255)
+        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC3INT, (0,0,0), 0, 255)
         columns = parse_param(kw, Lexicon.COLUMNS, EnumConvertType.INT, 0)
         font_size = parse_param(kw, Lexicon.FONT_SIZE, EnumConvertType.INT, 1)
         align = parse_param(kw, Lexicon.ALIGN, EnumConvertType.STRING, EnumAlignment.CENTER.name)
         justify = parse_param(kw, Lexicon.JUSTIFY, EnumConvertType.STRING, EnumJustify.CENTER.name)
         margin = parse_param(kw, Lexicon.MARGIN, EnumConvertType.INT, 0)
         line_spacing = parse_param(kw, Lexicon.SPACING, EnumConvertType.INT, 25)
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)
-        pos = parse_param(kw, Lexicon.XY, EnumConvertType.VEC2, [(0, 0)], 1,  -1)
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (512, 512), MIN_IMAGE_SIZE)
+        pos = parse_param(kw, Lexicon.XY, EnumConvertType.VEC2, (0, 0), -1, 1)
         angle = parse_param(kw, Lexicon.ANGLE, EnumConvertType.INT, 0)
         edge = parse_param(kw, Lexicon.EDGE, EnumConvertType.STRING, EnumEdge.CLIP.name)
         invert = parse_param(kw, Lexicon.INVERT, EnumConvertType.BOOLEAN, False)
@@ -434,29 +434,25 @@ The Text Generation node generates images containing text based on user-defined 
             justify = EnumJustify[justify]
             edge = EnumEdge[edge]
             full_text = str(full_text)
-            wm = width-margin * 2
-            hm = height-margin * 2 - line_spacing
+
             if letter:
                 full_text = full_text.replace('\n', '')
                 if autosize:
-                    w, h = text_autosize(full_text, font_name, wm, hm)[2:]
-                    w /= len(full_text) * 1.25 # kerning?
-                    font_size = (w + h) * 0.5
-                font_size *= 10
-                font = ImageFont.truetype(font_name, int(font_size))
-                for ch in full_text:
-                    img = text_draw(ch, font, width, height, align, justify, color=color)
-                    img = image_rotate(img, angle, edge=edge)
-                    img = image_translate(img, pos, edge=edge)
-                    if invert:
-                        img = image_invert(img, 1)
-                    images.append(cv2tensor_full(img, matte))
+                    _, font_size = text_autosize(full_text[0].upper(), font_name, width, height)[:2]
+                    margin = 0
+                    line_spacing = 0
+                else:
+                    font_size *= 10
             else:
                 if autosize:
+                    wm = width - margin * 2
+                    hm = height - margin * 2 - line_spacing
                     full_text, font_size = text_autosize(full_text, font_name, wm, hm, columns)[:2]
-                font = ImageFont.truetype(font_name, font_size)
-                img = text_draw(full_text, font, width, height, align, justify,
-                                margin, line_spacing, color)
+                full_text = [full_text]
+
+            font = ImageFont.truetype(font_name, int(font_size))
+            for ch in full_text:
+                img = text_draw(ch, font, width, height, align, justify, margin, line_spacing, color)
                 img = image_rotate(img, angle, edge=edge)
                 img = image_translate(img, pos, edge=edge)
                 if invert:

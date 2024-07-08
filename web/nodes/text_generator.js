@@ -31,10 +31,11 @@ app.registerExtension({
                 widget_hide(this, size, "-jov");
                 if (!autosize.value) {
                     widget_show(size);
-
                 } else if (!letter.value) {
                     widget_show(cols);
                 }
+                console.info(size)
+                console.info(cols)
                 fitHeight(this);
             }
 
