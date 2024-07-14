@@ -29,6 +29,9 @@ app.registerExtension({
         const getExtraMenuOptions = nodeType.prototype.getExtraMenuOptions;
         nodeType.prototype.getExtraMenuOptions = function (_, options) {
             const me = getExtraMenuOptions?.apply(this, arguments);
+            if (this.widgets === undefined) {
+                return me;
+            }
             const convertToInputArray = [];
             const widgets = Object.values(this.widgets);
             for (const [widgetName, widgetType] of matchingTypes) {
