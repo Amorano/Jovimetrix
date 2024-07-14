@@ -255,7 +255,7 @@ class Lexicon(metaclass=LexiconMeta):
     @classmethod
     def _parse(cls, node: dict, node_cls: object) -> dict:
         name_url = node_cls.NAME.split(" (JOV)")[0]
-        url = name_url.replace(" ", "%20")
+        url = name_url.replace(" ", "-")
         cat = node_cls.CATEGORY.split('/')[1]
         data = {"_": f"{cat}#-{url}", "*": f"node/{name_url}/{name_url}.md", "outputs": {}}
         for cat, entry in node.items():

@@ -164,17 +164,15 @@ def parse_value(val:Any, typ:EnumConvertType, default: Any,
     elif typ == EnumConvertType.STRING:
         new_val = ", ".join(map(str, new_val)) if not isinstance(new_val, str) else new_val
     elif typ == EnumConvertType.BOOLEAN:
-        ret = False
         if isinstance(new_val, (torch.Tensor,)):
-            ret = True
+            new_val = True
         elif isinstance(new_val, (dict,)):
-            ret = len(new_val.keys()) > 0
+            new_val = len(new_val.keys()) > 0
         elif isinstance(new_val, (list, tuple,)) and len(new_val) > 0 and (nv := new_val[0]) is not None:
             if isinstance(nv, (bool, str,)):
-                ret = bool(nv)
+                new_val = bool(nv)
             elif isinstance(nv, (int, float,)):
-                ret = nv > 0
-        new_val = ret
+                new_val = nv > 0
     elif typ == EnumConvertType.LATENT:
         # covert image into latent
         if isinstance(new_val, (torch.Tensor,)):
