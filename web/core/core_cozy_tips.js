@@ -1,5 +1,5 @@
 /**
- * File: cozy_tips.js
+ * File: core_cozy_tips.js
  * Project: Jovimetrix
  *
  */

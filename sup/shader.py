@@ -6,24 +6,43 @@ Blended from old ModernGL implementation + Audio_Scheduler & Fill Node Pack
 """
 
 import re
-import time
 from typing import Tuple
 
-import cv2
 import glfw
 import numpy as np
 import OpenGL.GL as gl
 
 from loguru import logger
+from Jovimetrix.sup.util import EnumConvertType, parse_value
 
 # =============================================================================
 
 IMAGE_SIZE_MIN = 512
 IMAGE_SIZE_MAX = 8192
 
-MAX_TEXTURES = 4
+LAMBDA_UNIFORM = {
+    'int': gl.glUniform1i,
+    'ivec2': gl.glUniform2i,
+    'ivec3': gl.glUniform3i,
+    'ivec4': gl.glUniform4i,
+    'float': gl.glUniform1f,
+    'vec2': gl.glUniform2f,
+    'vec3': gl.glUniform3f,
+    'vec4': gl.glUniform4f,
+}
 
-RE_VARIABLE = re.compile(r"uniform (\w*)\s{1,}(\w*);")
+PTYPE = {
+    'int': EnumConvertType.INT,
+    'ivec2': EnumConvertType.VEC2INT,
+    'ivec3': EnumConvertType.VEC3INT,
+    'ivec4': EnumConvertType.VEC4INT,
+    'float': EnumConvertType.FLOAT,
+    'vec2': EnumConvertType.VEC2,
+    'vec3': EnumConvertType.VEC3,
+    'vec4': EnumConvertType.VEC4
+}
+
+RE_VARIABLE = re.compile(r"uniform\s*(\w*)\s*(\w*);(?:.*\/{2}\s*([A-Za-z0-9\-\.,\s]+)){0,1}$", re.MULTILINE)
 
 # =============================================================================
 
@@ -42,11 +61,6 @@ class GLSLShader():
     uniform float	iFrameRate;
     uniform int	    iFrame;
 
-    uniform sampler2D   iChannel0;
-    uniform sampler2D   iChannel1;
-    uniform sampler2D   iChannel2;
-    uniform sampler2D   iChannel3;
-
     #define texture2D texture
     """
 
@@ -60,16 +74,22 @@ class GLSLShader():
     """
 
     PROG_FRAGMENT = """
-void mainImage( out vec4 fragColor, in vec2 fragCoord )
-{
-    // Normalized pixel coordinates (from 0 to 1)
-    vec2 uv = fragCoord/iResolution.xy;
+uniform sampler2D imageA;
+uniform sampler2D imageB;
+uniform float size; // 7.
+uniform float time_scale; // 19.
 
-    // Time varying pixel color
-    vec3 col = 0.5 + 0.5*cos(iTime+uv.xyx+vec3(0,2,4));
+void mainImage( out vec4 fragColor, vec2 fragCoord ) {
+  vec2 u = floor(fragCoord / size);
+  float s = dot(u, u) + iTime / time_scale;
+  u = mod(u, 2.);
 
-    // Output to screen
-    fragColor = vec4(col,1.0);
+  vec2 uv = fragCoord.xy / iResolution.xy;
+  //vec3 col2 = texture2D(imageB, uv).rgb;
+  vec3 col = texture2D(imageA, uv).rgb;
+
+
+  fragColor = vec4(col + (floor(sin(s)) - u.y - floor(cos(s)) - u.xxxx).rgb, 1.0);
 }
 """
 
@@ -104,18 +124,8 @@ void main()
         self.__mouse: Tuple[int, int] = (0, 0)
         self.__last_frame = np.zeros((self.__size[1], self.__size[0]), np.uint8)
         self.__shaderVar = {}
+        self.__userVar = {}
         self.program(vertex, fragment)
-        #self.fps = fps
-        #self.size = (width, height)
-        self.__time_last: float = time.perf_counter()
-
-    def __updateVars(self) -> None:
-        gl.glUseProgram(self.__program)
-        gl.glUniform3f(self.__shaderVar['iResolution'], self.__size[0], self.__size[1], 0)
-        gl.glUniform1f(self.__shaderVar['iTime'], self.__runtime)
-        gl.glUniform1f(self.__shaderVar['iFrameRate'], self.__fps)
-        gl.glUniform1i(self.__shaderVar['iFrame'], self.frame)
-        gl.glUniform4f(self.__shaderVar['iMouse'], self.__mouse[0], self.__mouse[1], 0, 0)
 
     def __compile_shader(self, source:str, shader_type:str) -> None:
         shader = gl.glCreateShader(shader_type)
@@ -144,7 +154,10 @@ void main()
 
     def __del__(self) -> None:
         # assume all other resources get cleaned up with the context
-        glfw.terminate()
+        if len(self.__textures):
+            gl.glDeleteTextures(len(self.__textures), self.__textures)
+        if glfw:
+            glfw.terminate()
 
     @property
     def vertex(self) -> str:
@@ -209,7 +222,6 @@ void main()
         return self.__last_frame
 
     def program(self, vertex:str=None, fragment:str=None) -> None:
-        vertex = self.__source_vertex_raw if vertex is None else vertex
         if (vertex := self.__source_vertex_raw if vertex is None else vertex) is None:
             logger.debug("Vertex program is empty. Using Default.")
             vertex = self.PROG_VERTEX
@@ -232,7 +244,6 @@ void main()
 
             self.__framebuffer()
 
-            self.__textures = gl.glGenTextures(MAX_TEXTURES)
             self.__source_fragment_raw = fragment
             self.__source_vertex_raw = vertex
             self.__shaderVar = {
@@ -242,54 +253,92 @@ void main()
                 'iFrame': gl.glGetUniformLocation(self.__program, "iFrame"),
                 'iMouse': gl.glGetUniformLocation(self.__program, "iMouse")
             }
+
+            texture_count = 0
+            self.__userVar = {}
             # read the fragment and setup the vars....
-            m = RE_VARIABLE.match(fragment)
-            print(m)
+            for match in RE_VARIABLE.finditer(fragment):
+                typ, name, default = match.groups()
+                texIdx = None
+                if typ in ['sampler2D']:
+                    texIdx = texture_count
+                    texture_count += 1
+                else:
+                    logger.debug(f"{name}.{typ}: {default}")
+                self.__userVar[name] = [
+                    # type
+                    typ,
+                    # gl location
+                    gl.glGetUniformLocation(self.__program, name),
+                    # default value
+                    default,
+                    # texture index (if any)
+                    texIdx
+                ]
+            self.__textures = gl.glGenTextures(texture_count)
+            if not isinstance(self.__textures, (np.ndarray,)):
+                self.__textures = [self.__textures]
+            #else:
+            #    self.__textures.tolist()
 
-    def update_texture(self, i:int, image:np.ndarray) -> None:
-        image = image[::-1,:,:]
-        i = min(0, max(4, MAX_TEXTURES))
-        gl.glBindTexture(gl.GL_TEXTURE_2D, self.__textures[i])
-        gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_RGBA, image.shape[1], image.shape[0], 0, gl.GL_RGBA, gl.GL_FLOAT, image)
-        gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_LINEAR)
-        gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_LINEAR)
-        gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_S, gl.GL_CLAMP_TO_EDGE)
-        gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_T, gl.GL_CLAMP_TO_EDGE)
-
-    def render(self, time_delta:float=0.) -> np.ndarray:
+    def render(self, time_delta:float=0., **kw) -> np.ndarray:
         self.runtime = time_delta
+
+        gl.glUseProgram(self.__program)
         gl.glBindFramebuffer(gl.GL_FRAMEBUFFER, self.__fbo)
         gl.glClearColor(0.0, 0.0, 0.0, 1.0)
         gl.glClear(gl.GL_COLOR_BUFFER_BIT)
-        # gl.glUseProgram(self.__program)
-        self.__updateVars()
 
-        # bind textures...
-        for i in range(MAX_TEXTURES):
-            gl.glActiveTexture(gl.GL_TEXTURE0 + i)
-            gl.glBindTexture(gl.GL_TEXTURE_2D, self.__textures[i])
-            iChannel_location = gl.glGetUniformLocation(self.__program, f"iChannel{i}")
-            gl.glUniform1i(iChannel_location, i)
+        # SET SHADER STATIC VARS
+        gl.glUniform3f(self.__shaderVar['iResolution'], self.__size[0], self.__size[1], 0)
+        gl.glUniform1f(self.__shaderVar['iTime'], self.__runtime)
+        gl.glUniform1f(self.__shaderVar['iFrameRate'], self.__fps)
+        gl.glUniform1i(self.__shaderVar['iFrame'], self.frame)
+        gl.glUniform4f(self.__shaderVar['iMouse'], self.__mouse[0], self.__mouse[1], 0, 0)
+
+        empty = np.zeros((self.__size[0], self.__size[1], 4), dtype=np.uint8)
+
+        # SET USER DYNAMIC VARS
+        # update any user vars...
+        for uk, uv in self.__userVar.items():
+            # type, loc, value, index
+            p_type, p_loc, p_value, p_index = uv
+            # use the default....
+            val = p_value if not uk in kw else kw[uk]
+
+            # SET TEXTURE
+            if (p_type == 'sampler2D'):
+                # cache textures? or do we care per frame?
+                gl.glBindTexture(gl.GL_TEXTURE_2D, self.__textures[p_index])
+                if val is None:
+                    print(uk, val)
+                val = empty if val is None else val
+                if val.ndim == 3:
+                    op = gl.GL_RGBA if val.shape[2] == 4 else gl.GL_RGB
+                    val = val[::-1,:]
+                    val = val.astype(np.float32) / 255.0
+                    gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, op, val.shape[1], val.shape[0], 0, op, gl.GL_FLOAT, val)
+
+                gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_LINEAR)
+                gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_LINEAR)
+                gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_S, gl.GL_CLAMP_TO_EDGE)
+                gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_T, gl.GL_CLAMP_TO_EDGE)
+
+                loc_image = gl.glGetUniformLocation(self.__program, uk)
+                gl.glUniform1i(loc_image, p_index)
+
+            else:
+                if (funct := LAMBDA_UNIFORM.get(p_type, None)) is None:
+                    logger.warning(f"no type function: {p_type}.")
+                    continue
+                val = parse_value(val, PTYPE[p_type], 0)
+                if not isinstance(val, (list, tuple,)):
+                    val = [val]
+                # logger.debug(f'{uk}.{p_type}=={val}')
+                funct(p_loc, *val)
 
         gl.glDrawArrays(gl.GL_TRIANGLES, 0, 3)
         data = gl.glReadPixels(0, 0, self.__size[0], self.__size[1], gl.GL_RGB, gl.GL_UNSIGNED_BYTE)
         image = np.frombuffer(data, dtype=np.uint8).reshape(self.__size[1], self.__size[0], 3)
         self.__last_frame = image[::-1, :, :]
         return self.__last_frame
-
-# =============================================================================
-
-if __name__ == "__main__":
-    g = GLSLShader(width=512, height=512)
-    fps = 60.
-    delta = 1. / fps
-    frame = 1110
-    image = np.zeros((512, 512), dtype=np.uint8)
-    while 1:
-        t = time.perf_counter()
-        image = g.render(frame * delta)
-        cv2.imshow(f"a", image)
-        frame += 1
-        if (d := (time.perf_counter() - t)) < delta:
-            time.sleep(delta - d)
-        glfw.poll_events()

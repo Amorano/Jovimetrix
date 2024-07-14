@@ -15,6 +15,7 @@ PyOpenGL-accelerate>=3.1.7
 pywin32>=306; platform_system=="Windows"
 requests>=2.32.3
 scikit-image>=0.23.2
+scikit-learn>=1.5.1
 SpoutGL>=0.0.6; platform_system=="Windows"
 stereoscopy[auto_align]>=2.0.1
 vnoise>=0.1.0

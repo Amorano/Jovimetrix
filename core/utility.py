@@ -72,7 +72,7 @@ class AkashicNode(JOVBaseNode):
     OUTPUT_NODE = True
     SORT = 10
     DESCRIPTION = """
-The Akashic node processes input data and prepares it for visualization. It accepts various types of data, including images, text, and other types. If no input is provided, it returns an empty result. The output consists of a dictionary containing UI-related information, such as base64-encoded images and text representations of the input data.
+Visualize data. It accepts various types of data, including images, text, and other types. If no input is provided, it returns an empty result. The output consists of a dictionary containing UI-related information, such as base64-encoded images and text representations of the input data.
 """
 
     @classmethod
@@ -274,7 +274,7 @@ class ExportNode(JOVBaseNode):
     RETURN_TYPES = ()
     SORT = 2000
     DESCRIPTION = """
-The Export node is responsible for saving images or animations to disk. It supports various output formats such as GIF and GIFSKI. Users can specify the output directory, filename prefix, image quality, frame rate, and other parameters. Additionally, it allows overwriting existing files or generating unique filenames to avoid conflicts. The node outputs the saved images or animation as a tensor.
+Responsible for saving images or animations to disk. It supports various output formats such as GIF and GIFSKI. Users can specify the output directory, filename prefix, image quality, frame rate, and other parameters. Additionally, it allows overwriting existing files or generating unique filenames to avoid conflicts. The node outputs the saved images or animation as a tensor.
 """
 
     @classmethod
@@ -372,7 +372,7 @@ class GraphNode(JOVBaseNode):
     RETURN_NAMES = (Lexicon.IMAGE,)
     SORT = 15
     DESCRIPTION = """
-The Graph node visualizes a series of data points over time. It accepts a dynamic number of values to graph and display, with options to reset the graph or specify the number of values. The output is an image displaying the graph, allowing users to analyze trends and patterns.
+Visualize a series of data points over time. It accepts a dynamic number of values to graph and display, with options to reset the graph or specify the number of values. The output is an image displaying the graph, allowing users to analyze trends and patterns.
 """
 
     @classmethod
@@ -473,7 +473,7 @@ class QueueNode(JOVBaseNode):
     VIDEO_FORMATS = ['.wav', '.mp3', '.webm', '.mp4', '.avi', '.wmv', '.mkv', '.mov', '.mxf']
     SORT = 0
     DESCRIPTION = """
-The Queue node manages a queue of items, such as file paths or data. It supports various formats including images, videos, text files, and JSON files. Users can specify the current index for the queue item, enable pausing the queue, or reset it back to the first index. The node outputs the current item in the queue, the entire queue, the current index, and the total number of items in the queue.
+Manage a queue of items, such as file paths or data. It supports various formats including images, videos, text files, and JSON files. Users can specify the current index for the queue item, enable pausing the queue, or reset it back to the first index. The node outputs the current item in the queue, the entire queue, the current index, and the total number of items in the queue.
 """
 
     @classmethod

@@ -3,7 +3,6 @@ Jovimetrix - http://www.github.com/amorano/jovimetrix
 Creation
 """
 
-import time
 from typing import Tuple
 
 import torch
@@ -17,8 +16,7 @@ from comfy.utils import ProgressBar
 from Jovimetrix import comfy_message, parse_reset, JOVBaseNode, ROOT, JOV_TYPE_IMAGE
 
 from Jovimetrix.sup.lexicon import JOVImageNode, Lexicon
-from Jovimetrix.sup.util import parse_dynamic, parse_param, zip_longest_fill, \
-    EnumConvertType
+from Jovimetrix.sup.util import parse_param, zip_longest_fill, EnumConvertType
 
 from Jovimetrix.sup.image import channel_solid, cv2tensor, cv2tensor_full, \
     image_grayscale, image_invert, image_mask_add, pil2cv, tensor2pil, \
@@ -45,7 +43,7 @@ class ConstantNode(JOVImageNode):
     RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
     DESCRIPTION = """
-The Constant node generates constant images or masks of a specified size and color. It can be used to create solid color backgrounds or matte images for compositing with other visual elements. The node allows you to define the desired width and height of the output and specify the RGBA color value for the constant output. Additionally, you can input an optional image to use as a matte with the selected color.
+Generate a constant image or mask of a specified size and color. It can be used to create solid color backgrounds or matte images for compositing with other visual elements. The node allows you to define the desired width and height of the output and specify the RGBA color value for the constant output. Additionally, you can input an optional image to use as a matte with the selected color.
 """
 
     @classmethod
@@ -82,7 +80,6 @@ The Constant node generates constant images or masks of a specified size and col
                 images.append(cv2tensor_full(pA))
             else:
                 pA = tensor2cv(pA)
-                matte = pixel_eval(matte, EnumImageType.BGRA)
                 mode = EnumScaleMode[mode]
                 if mode != EnumScaleMode.NONE:
                     sample = EnumInterpolation[sample]
@@ -95,7 +92,7 @@ class GLSLNode(JOVImageNode):
     NAME = "GLSL (JOV) 🍩"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     DESCRIPTION = """
-The GLSL Node executes custom GLSL (OpenGL Shading Language) fragment shaders to generate images or apply effects. GLSL is a high-level shading language used for graphics programming, particularly in the context of rendering images or animations. This node allows for real-time rendering of shader effects, providing flexibility and creative control over image processing pipelines. It takes advantage of GPU acceleration for efficient computation, enabling the rapid generation of complex visual effects.
+Execute custom GLSL (OpenGL Shading Language) fragment shaders to generate images or apply effects. GLSL is a high-level shading language used for graphics programming, particularly in the context of rendering images or animations. This node allows for real-time rendering of shader effects, providing flexibility and creative control over image processing pipelines. It takes advantage of GPU acceleration for efficient computation, enabling the rapid generation of complex visual effects.
 """
 
     @classmethod
@@ -124,66 +121,57 @@ The GLSL Node executes custom GLSL (OpenGL Shading Language) fragment shaders to
         self.__delta = 0
 
     def run(self, ident, **kw) -> tuple[torch.Tensor]:
-        channels = parse_dynamic(kw, Lexicon.GLSL_CHANNEL, EnumConvertType.ANY, None)
-        variables = parse_dynamic(kw, Lexicon.GLSL_VAR, EnumConvertType.ANY, None)
-        delta = parse_param(kw, Lexicon.TIME, EnumConvertType.FLOAT, 0)
-        batch = parse_param(kw, Lexicon.BATCH, EnumConvertType.INT, 1, 0, 262144)
-        fps = parse_param(kw, Lexicon.FPS, EnumConvertType.INT, 24, 1, 120)
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)
-        fragment = parse_param(kw, Lexicon.FRAGMENT, EnumConvertType.STRING, GLSLShader.PROG_FRAGMENT)
-        wait = parse_param(kw, Lexicon.WAIT, EnumConvertType.BOOLEAN, False)
-        reset = parse_param(kw, Lexicon.RESET, EnumConvertType.BOOLEAN, False)
+        delta = parse_param(kw, Lexicon.TIME, EnumConvertType.FLOAT, 0)[0]
+        batch = parse_param(kw, Lexicon.BATCH, EnumConvertType.INT, 1, 0, 262144)[0]
+        fps = parse_param(kw, Lexicon.FPS, EnumConvertType.INT, 24, 1, 120)[0]
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)[0]
+        fragment = parse_param(kw, Lexicon.FRAGMENT, EnumConvertType.STRING, GLSLShader.PROG_FRAGMENT)[0]
+        wait = parse_param(kw, Lexicon.WAIT, EnumConvertType.BOOLEAN, False)[0]
+        reset = parse_param(kw, Lexicon.RESET, EnumConvertType.BOOLEAN, False)[0]
+        variables = kw.copy()
+        for p in [Lexicon.TIME, Lexicon.BATCH, Lexicon.FPS, Lexicon.WH, Lexicon.FRAGMENT, Lexicon.WAIT, Lexicon.RESET]:
+            variables.pop(p, None)
+
+        self.__glsl.size = wihi
+        self.__glsl.fps = fps
+        try:
+            self.__glsl.fragment = fragment
+        except CompileException as e:
+            comfy_message(ident, "jovi-glsl-error", {"id": ident, "e": str(e)})
+            logger.error(e)
+            return
+
+        if batch > 0:
+            self.__delta = delta
+        if parse_reset(ident) > 0 or reset:
+            self.__delta = 0
+        step = 1. / fps
+
         images = []
-        params = list(zip_longest_fill(channels, variables, delta, batch, fps, wihi, fragment, wait, reset))
-        full_count = sum(batch)
-        pbar = ProgressBar(full_count)
-        full_count_idx = 1
-        for idx, (channels, variables, delta, batch, fps, wihi, fragment, wait, reset) in enumerate(params):
-            try:
-                self.__glsl.fragment = fragment
-            except CompileException as e:
-                comfy_message(ident, "jovi-glsl-error", {"id": ident, "e": str(e)})
-                logger.error(e)
-                image = self.__glsl.last_frame
-                images.append(cv2tensor_full(image))
-                pbar.update_absolute(full_count_idx)
-                full_count_idx += 1
-                continue
+        pbar = ProgressBar(batch)
+        count = batch if batch > 0 else 1
+        for idx in range(count):
+            vars = {}
+            for k, v in variables.items():
+                var = v if not isinstance(v, (list, tuple,)) else v[idx] if idx < len(v) else v[-1]
+                if isinstance(var, (torch.Tensor)):
+                    var = tensor2cv(var)
+                vars[k] = var
 
-            self.__glsl.size = wihi
-            self.__glsl.fps = fps
-            # update_var(shader, width, height, frame * (1.0 / fps), (1.0 / fps), fps, frame)
-            #if channel_0 is not None: self.update_texture(textures[0], channel_0)
-            #if channel_1 is not None: self.update_texture(textures[1], channel_1)
-            #if channel_2 is not None: self.update_texture(textures[2], channel_2)
-            #if channel_3 is not None: self.update_texture(textures[3], channel_3)
-            #self.__glsl.texture_bind(shader, textures)
-            step = 1. / fps
-            if batch > 0:
-                self.__delta = delta
-
-            if parse_reset(ident) > 0 or reset:
-                self.__delta = 0
-
-            for x in range(batch or 1):
-                image = self.__glsl.render(self.__delta)
-                images.append(cv2tensor_full(image))
-                if not wait:
-                    self.__delta += step
-                pbar.update_absolute(full_count_idx)
-                full_count_idx += 1
-
-            if batch > 0:
-                self.__delta = delta
-
-            comfy_message(ident, "jovi-glsl-time", {"id": ident, "t": self.__delta})
+            image = self.__glsl.render(self.__delta, **vars)
+            images.append(cv2tensor_full(image))
+            if not wait:
+                self.__delta += step
+                if batch == 0:
+                    comfy_message(ident, "jovi-glsl-time", {"id": ident, "t": self.__delta})
+            pbar.update_absolute(idx)
         return [torch.cat(i, dim=0) for i in zip(*images)]
 
 class ShapeNode(JOVImageNode):
     NAME = "SHAPE GEN (JOV) ✨"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     DESCRIPTION = """
-The Shape Generation node creates images representing various shapes such as circles, squares, rectangles, ellipses, and polygons. These shapes can be customized by adjusting parameters such as size, color, position, rotation angle, and edge blur. The node provides options to specify the shape type, the number of sides for polygons, the RGBA color value for the main shape, and the RGBA color value for the background. Additionally, you can control the width and height of the output images, the position offset, and the amount of edge blur applied to the shapes.
+Create n-sided polygons. These shapes can be customized by adjusting parameters such as size, color, position, rotation angle, and edge blur. The node provides options to specify the shape type, the number of sides for polygons, the RGBA color value for the main shape, and the RGBA color value for the background. Additionally, you can control the width and height of the output images, the position offset, and the amount of edge blur applied to the shapes.
 """
 
     @classmethod
@@ -276,7 +264,7 @@ class StereogramNode(JOVImageNode):
     NAME = "STEREOGRAM (JOV) 📻"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     DESCRIPTION = """
-The Stereogram node creates stereograms, generating 3D images from 2D input. Set tile divisions, noise, gamma, and shift parameters to control the stereogram's appearance.
+Generates false perception 3D images from 2D input. Set tile divisions, noise, gamma, and shift parameters to control the stereogram's appearance.
 """
 
     @classmethod
@@ -323,7 +311,7 @@ class StereoscopicNode(JOVBaseNode):
     RETURN_TYPES = ("IMAGE", )
     RETURN_NAMES = (Lexicon.IMAGE, )
     DESCRIPTION = """
-The Stereoscopic node simulates depth perception in images by generating stereoscopic views. It accepts an optional input image for color matte. Adjust baseline and focal length for customized depth effects.
+Simulates depth perception in images by generating stereoscopic views. It accepts an optional input image for color matte. Adjust baseline and focal length for customized depth effects.
 """
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -360,7 +348,7 @@ class TextNode(JOVImageNode):
     FONTS = font_names()
     FONT_NAMES = sorted(FONTS.keys())
     DESCRIPTION = """
-The Text Generation node generates images containing text based on user-defined parameters such as font, size, alignment, color, and position. Users can input custom text messages, select fonts from a list of available options, adjust font size, and specify the alignment and justification of the text. Additionally, the node provides options for auto-sizing text to fit within specified dimensions, controlling letter-by-letter rendering, and applying edge effects such as clipping and inversion.
+Generates images containing text based on parameters such as font, size, alignment, color, and position. Users can input custom text messages, select fonts from a list of available options, adjust font size, and specify the alignment and justification of the text. Additionally, the node provides options for auto-sizing text to fit within specified dimensions, controlling letter-by-letter rendering, and applying edge effects such as clipping and inversion.
 """
 
     @classmethod
@@ -441,16 +429,16 @@ The Text Generation node generates images containing text based on user-defined 
                     _, font_size = text_autosize(full_text[0].upper(), font_name, width, height)[:2]
                     margin = 0
                     line_spacing = 0
-                else:
-                    font_size *= 10
             else:
                 if autosize:
                     wm = width - margin * 2
                     hm = height - margin * 2 - line_spacing
+                    columns = 0 if columns == 0 else columns * 2 + 2
                     full_text, font_size = text_autosize(full_text, font_name, wm, hm, columns)[:2]
                 full_text = [full_text]
+            font_size *= 2.5
 
-            font = ImageFont.truetype(font_name, int(font_size))
+            font = ImageFont.truetype(font_name, font_size)
             for ch in full_text:
                 img = text_draw(ch, font, width, height, align, justify, margin, line_spacing, color)
                 img = image_rotate(img, angle, edge=edge)

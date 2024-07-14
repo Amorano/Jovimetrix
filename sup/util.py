@@ -111,9 +111,6 @@ def parse_value(val:Any, typ:EnumConvertType, default: Any,
         cc = val.shape[2] if len(val.shape) > 2 else 1
         val = (w, h, cc)
 
-    if not isinstance(val, (list, tuple, torch.Tensor)):
-        val = [val]
-
     new_val = val
     if typ in [EnumConvertType.FLOAT, EnumConvertType.INT,
             EnumConvertType.VEC2, EnumConvertType.VEC2INT,
@@ -121,11 +118,16 @@ def parse_value(val:Any, typ:EnumConvertType, default: Any,
             EnumConvertType.VEC4, EnumConvertType.VEC4INT,
             EnumConvertType.COORD2D]:
 
+        if not isinstance(val, (list, tuple, torch.Tensor)):
+            val = [val]
+
         size = max(1, int(typ.value / 10))
         new_val = []
         for idx in range(size):
             d = default[idx] if isinstance(default, (list, tuple, set, dict, torch.Tensor)) and idx < len(default) else 0
             v = d if val is None else val[idx] if idx < len(val) else d
+            if v == '':
+                v = 0
             try:
                 if typ in [EnumConvertType.FLOAT, EnumConvertType.VEC2, EnumConvertType.VEC3, EnumConvertType.VEC4]:
                     v = round(float(v), 16)
@@ -135,13 +137,13 @@ def parse_value(val:Any, typ:EnumConvertType, default: Any,
                     v = max(v, clip_min)
                 if clip_max is not None:
                     v = min(v, clip_max)
-                if v == 0:
-                    v = zero
             except Exception as e:
                 logger.exception(e)
                 logger.error(f"Error converting value: {val} -- {v}")
-                raise Exception(e)
+                # raise Exception(e)
                 v = 0
+            if v == 0:
+                v = zero
             new_val.append(v)
         new_val = new_val[0] if size == 1 else tuple(new_val)
     elif typ == EnumConvertType.DICT:
@@ -152,6 +154,8 @@ def parse_value(val:Any, typ:EnumConvertType, default: Any,
                 except json.decoder.JSONDecodeError:
                     new_val = {}
             else:
+                if not isinstance(new_val, (list, tuple,)):
+                    new_val = [new_val]
                 new_val = {i: v for i, v in enumerate(new_val)}
         except Exception as e:
             logger.exception(e)

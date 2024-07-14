@@ -184,7 +184,7 @@ class CalcUnaryOPNode(JOVBaseNode):
     RETURN_NAMES = (Lexicon.UNKNOWN,)
     SORT = 10
     DESCRIPTION = """
-The Unary Operation node performs unary operations like absolute value, mean, median, mode, magnitude, normalization, maximum, or minimum on input values.
+Perform single function operations like absolute value, mean, median, mode, magnitude, normalization, maximum, or minimum on input values.
 """
 
     @classmethod
@@ -286,7 +286,7 @@ class CalcBinaryOPNode(JOVBaseNode):
     RETURN_NAMES = (Lexicon.UNKNOWN,)
     SORT = 20
     DESCRIPTION = """
-The Binary Operation node executes binary operations like addition, subtraction, multiplication, division, and bitwise operations on input values, supporting various data types and vector sizes.
+Execute binary operations like addition, subtraction, multiplication, division, and bitwise operations on input values, supporting various data types and vector sizes.
 """
 
     @classmethod
@@ -328,7 +328,7 @@ The Binary Operation node executes binary operations like addition, subtraction,
         params = list(zip_longest_fill(A, B, a_xyzw, b_xyzw, op, typ, flip))
         pbar = ProgressBar(len(params))
         for idx, (A, B, a_xyzw, b_xyzw, op, typ, flip) in enumerate(params):
-            logger.debug(f'val {A}, {B}, {a_xyzw}, {b_xyzw}')
+            # logger.debug(f'val {A}, {B}, {a_xyzw}, {b_xyzw}')
             # [[0.008793391303918097, 0.008793391303918097, 0.008793391303918097]], [[0.008793391303918097, 0.008793391303918097, 0.008793391303918097]], (0, 0, 0, 0), (0, 0, 0, 0)
             typ = EnumConvertType[typ]
 
@@ -341,7 +341,7 @@ The Binary Operation node executes binary operations like addition, subtraction,
 
             val_a = parse_value(A, EnumConvertType.VEC4, A if A is not None else a_xyzw)
             val_b = parse_value(B, EnumConvertType.VEC4, B if B is not None else b_xyzw)
-            logger.debug(f'val {val_a}, {val_b}')
+            # logger.debug(f'val {val_a}, {val_b}')
             # (0, 0, 0, 0), (0, 0, 0, 0)
             if flip:
                 val_a, val_b = val_b, val_a
@@ -428,7 +428,7 @@ class ComparisonNode(JOVBaseNode):
     RETURN_NAMES = (Lexicon.TRIGGER, Lexicon.VALUE,)
     SORT = 130
     DESCRIPTION = """
-The Comparison node evaluates two inputs based on a specified operation. It accepts two inputs (A and B), comparison operators, and optional values for successful and failed comparisons. The node performs the specified operation element-wise between corresponding elements of A and B. If the comparison is successful for all elements, it returns the success value; otherwise, it returns the failure value. The node supports various comparison operators such as EQUAL, GREATER_THAN, LESS_THAN, AND, OR, IS, IN, etc.
+Evaluates two inputs (A and B) with a specified comparison operators and optional values for successful and failed comparisons. The node performs the specified operation element-wise between corresponding elements of A and B. If the comparison is successful for all elements, it returns the success value; otherwise, it returns the failure value. The node supports various comparison operators such as EQUAL, GREATER_THAN, LESS_THAN, AND, OR, IS, IN, etc.
 """
 
     @classmethod
@@ -543,7 +543,7 @@ class DelayNode(JOVBaseNode):
     RETURN_NAMES = (Lexicon.PASS_OUT,)
     SORT = 240
     DESCRIPTION = """
-Delay node used to introduce pauses in the workflow. It accepts an optional input to pass through and a timer parameter to specify the duration of the delay. If no timer is provided, it defaults to a maximum delay. During the delay, it periodically checks for messages to interrupt the delay. Once the delay is completed, it returns the input passed to it.
+Introduce pauses in the workflow that accept an optional input to pass through and a timer parameter to specify the duration of the delay. If no timer is provided, it defaults to a maximum delay. During the delay, it periodically checks for messages to interrupt the delay. Once the delay is completed, it returns the input passed to it.
 """
 
     @classmethod
@@ -590,7 +590,7 @@ class LerpNode(JOVBaseNode):
     RETURN_NAMES = (Lexicon.ANY_OUT,)
     SORT = 30
     DESCRIPTION = """
-The Lerp Node calculates linear interpolation between two values or vectors based on a blending factor (alpha). The node accepts optional start (IN_A) and end (IN_B) points, a blending factor (FLOAT), and various input types for both start and end points, such as single values (X, Y), 2-value vectors (IN_A2, IN_B2), 3-value vectors (IN_A3, IN_B3), and 4-value vectors (IN_A4, IN_B4). Additionally, you can specify the easing function (EASE) and the desired output type (TYPE). It supports various easing functions for smoother transitions.
+Calculate linear interpolation between two values or vectors based on a blending factor (alpha). The node accepts optional start (IN_A) and end (IN_B) points, a blending factor (FLOAT), and various input types for both start and end points, such as single values (X, Y), 2-value vectors (IN_A2, IN_B2), 3-value vectors (IN_A3, IN_B3), and 4-value vectors (IN_A4, IN_B4). Additionally, you can specify the easing function (EASE) and the desired output type (TYPE). It supports various easing functions for smoother transitions.
 """
 
     @classmethod
@@ -617,13 +617,7 @@ The Lerp Node calculates linear interpolation between two values or vectors base
                                         "tooltip":"default value vector for B"}),
             },
             "outputs": {
-                0: (Lexicon.ANY_OUT, {"tooltip":f"Output can vary depending on the type chosen in the {Lexicon.TYPE} parameter"}),
-                1: (Lexicon.FLOAT, {"tooltip":f"1"}),
-                2: (Lexicon.INT, {"tooltip":f"2"}),
-                3: (Lexicon.VEC, {"tooltip":f"3"}),
-                4: (Lexicon.XY, {"tooltip":f"4"}),
-                5: (Lexicon.XYZ, {"tooltip":f"5"}),
-                6: (Lexicon.XYZW, {"tooltip":f"6"}),
+                0: (Lexicon.ANY_OUT, {"tooltip":f"Output can vary depending on the type chosen in the {Lexicon.TYPE} parameter"})
             }
         })
         return Lexicon._parse(d, cls)
@@ -663,9 +657,20 @@ The Lerp Node calculates linear interpolation between two values or vectors base
                 ease = EnumEase[op]
                 val = [ease_op(ease, val_a[x], val_b[x], alpha=alpha[x]) for x in range(size)]
 
+            convert = int if "INT" in typ.name else float
+            ret = []
+            for v in val:
+                try:
+                    ret.append(convert(v))
+                except OverflowError:
+                    ret.append(0)
+                except Exception as e:
+                    logger.error(f"{e} :: {op}")
+                    ret.append(0)
+            val = ret[0] if size == 1 else ret[:size]
             values.append(val)
             pbar.update_absolute(idx)
-        return (values, )
+        return [values]
 
 class SwizzleNode(JOVBaseNode):
     NAME = "SWIZZLE (JOV) 😵"
@@ -674,7 +679,7 @@ class SwizzleNode(JOVBaseNode):
     RETURN_NAMES = (Lexicon.ANY_OUT,)
     SORT = 40
     DESCRIPTION = """
-The Swap Node swaps components between two vectors based on specified swizzle patterns and values. It provides flexibility in rearranging vector elements dynamically.
+Swap components between two vectors based on specified swizzle patterns and values. It provides flexibility in rearranging vector elements dynamically.
 """
 
     @classmethod
@@ -730,7 +735,7 @@ class TickNode(JOVBaseNode):
     RETURN_NAMES = (Lexicon.VALUE, Lexicon.LINEAR, Lexicon.FPS, Lexicon.TRIGGER)
     SORT = 50
     DESCRIPTION = """
-The `Tick` node acts as a timer and frame counter, emitting pulses or signals based on time intervals or BPM settings. It allows precise synchronization and control over animation sequences, with options to adjust FPS, BPM, and loop points. This node is useful for generating time-based events or driving animations with rhythmic precision.
+A timer and frame counter, emitting pulses or signals based on time intervals. It allows precise synchronization and control over animation sequences, with options to adjust FPS, BPM, and loop points. This node is useful for generating time-based events or driving animations with rhythmic precision.
 """
 
     @classmethod
@@ -823,7 +828,7 @@ class ValueNode(JOVBaseNode):
     RETURN_NAMES = (Lexicon.ANY_OUT, Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W)
     SORT = 5
     DESCRIPTION = """
-The Value Node supplies raw or default values for various data types, supporting vector input with components for X, Y, Z, and W. It also provides a string input option.
+Supplies raw or default values for various data types, supporting vector input with components for X, Y, Z, and W. It also provides a string input option.
 """
     UPDATE = False
 
@@ -924,7 +929,7 @@ The Value Node supplies raw or default values for various data types, supporting
                         if typ == EnumConvertType.VEC4:
                             val[i] = mn + random.random() * (mx - mn)
                         else:
-                            logger.debug(f"{i}, {mx}, {mn}")
+                            # logger.debug(f"{i}, {mx}, {mn}")
                             val[i] = random.randint(mn, mx)
 
             extra = parse_value(val, typ, val)
@@ -942,7 +947,7 @@ class WaveGeneratorNode(JOVBaseNode):
     RETURN_NAMES = (Lexicon.FLOAT, Lexicon.INT, )
     SORT = 90
     DESCRIPTION = """
-The `Wave Generator` node produces waveforms like sine, square, or sawtooth with adjustable frequency, amplitude, phase, and offset. It's handy for creating oscillating patterns or controlling animation dynamics. This node emits both continuous floating-point values and integer representations of the generated waves.
+Produce waveforms like sine, square, or sawtooth with adjustable frequency, amplitude, phase, and offset. It's handy for creating oscillating patterns or controlling animation dynamics. This node emits both continuous floating-point values and integer representations of the generated waves.
 """
 
     @classmethod

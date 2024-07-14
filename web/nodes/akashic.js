@@ -6,7 +6,7 @@
 
 import { app } from "../../../scripts/app.js"
 import { ComfyWidgets } from '../../../scripts/widgets.js';
-import { fitHeight, node_add_dynamic } from '../util/util.js'
+import { node_add_dynamic } from '../util/util.js'
 
 const _prefix = '📥'
 const _id = "AKASHIC (JOV) 📓"
@@ -20,12 +20,6 @@ app.registerExtension({
 
         nodeType = node_add_dynamic(nodeType, _prefix);
 
-        const onComputeSize = nodeType.prototype.computeSize;
-        nodeType.computeSize = async () => {
-            const size = onComputeSize?.apply(this);
-            return [0, 4];
-        }
-
         const onNodeCreated = nodeType.prototype.onNodeCreated;
         nodeType.prototype.onNodeCreated = async function () {
             const me = onNodeCreated?.apply(this);
@@ -36,13 +30,13 @@ app.registerExtension({
                     },
                 ], app).widget;
             this.message.value = "";
-            //this.message.computeSize = () => [0, this.widgets.length * LiteGraph.NODE_TITLE_HEIGHT];
+            //this.message.computeSize = () => [0, this.widgets.length * LiteGraph.NODE_TITLE_HEIGHT * 2];
             return me;
         }
 
         const onExecuted = nodeType.prototype.onExecuted;
         nodeType.prototype.onExecuted = async function (message) {
-            onExecuted?.apply(this, arguments)
+            const me = onExecuted?.apply(this, arguments)
             let lineCount = 0;
             if (this.widgets) {
                 for (let i = 2; i < this.widgets.length; i++) {
@@ -62,7 +56,8 @@ app.registerExtension({
                     }
                 }
             }
-            fitHeight(this);
+            //fitHeight(this);
+            return me;
         }
     }
 })

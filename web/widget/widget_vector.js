@@ -224,7 +224,6 @@ app.registerExtension({
         }
     },
     async beforeRegisterNodeDef(nodeType, nodeData, app) {
-        // export const myTypes = ['RGB', 'VEC2', 'VEC2', 'VEC3', 'VEC4', 'INT3', 'INT4', 'INT2']
         const myTypes = ['RGB', 'VEC2', 'VEC3', 'VEC4']
         const inputTypes = nodeData.input;
         if (inputTypes) {
@@ -242,7 +241,7 @@ app.registerExtension({
                     const convertToInputArray = [];
                     for (const w of matchingTypes) {
                         const widget = Object.values(this.widgets).find(m => m.name === w[0]);
-                        if (widget.type !== CONVERTED_TYPE && myTypes.includes(widget.type) && (widget.options?.forceInput === undefined || widget.options?.forceInput === false) && widget.options?.menu !== false) {
+                        if (myTypes.includes(widget.type)) {
                             const who = matchingTypes.find(w => w[0] === widget.name)
                             const convertToInputObject = {
                                 content: `Convert ${widget.name} to input`,
@@ -251,7 +250,6 @@ app.registerExtension({
                             convertToInputArray.push(convertToInputObject);
                         }
                     }
-                    //const toInput = convertToInputArray;
                     if (convertToInputArray.length) {
                         options.push(...convertToInputArray, null);
                     }

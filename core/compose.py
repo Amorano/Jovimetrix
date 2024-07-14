@@ -62,7 +62,7 @@ class AdjustNode(JOVImageNode):
     NAME = "ADJUST (JOV) 🕸️"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     DESCRIPTION = """
-Enhance and modify images with various effects using the Adjust Node. Apply effects such as blurring, sharpening, color tweaks, and edge detection. Customize parameters like radius, value, and contrast, and use masks for selective effects. Advanced options include pixelation, quantization, and morphological operations like dilation and erosion. Handle transparency effortlessly to ensure seamless blending of effects. This node is ideal for simple adjustments and complex image transformations.
+Enhance and modify images with various effects such as blurring, sharpening, color tweaks, and edge detection. Customize parameters like radius, value, and contrast, and use masks for selective effects. Advanced options include pixelation, quantization, and morphological operations like dilation and erosion. Handle transparency effortlessly to ensure seamless blending of effects. This node is ideal for simple adjustments and complex image transformations.
 """
 
     @classmethod
@@ -211,7 +211,7 @@ class BlendNode(JOVImageNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     SORT = 10
     DESCRIPTION = """
-Combines two input images using various blending modes, such as normal, screen, multiply, overlay, etc. It also supports alpha blending and masking to achieve complex compositing effects. This node is essential for creating layered compositions and adding visual richness to images.
+Combine two input images using various blending modes, such as normal, screen, multiply, overlay, etc. It also supports alpha blending and masking to achieve complex compositing effects. This node is essential for creating layered compositions and adding visual richness to images.
 """
 
     @classmethod
@@ -306,7 +306,7 @@ class ColorBlindNode(JOVImageNode):
     NAME = "COLOR BLIND (JOV) 👁‍🗨"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     DESCRIPTION = """
-Use the Color Blind Node to simulate color blindness effects on images. You can select various types of color deficiencies, adjust the severity of the effect, and apply the simulation using different simulators. This node is ideal for accessibility testing and design adjustments, ensuring inclusivity in your visual content.
+Simulate color blindness effects on images. You can select various types of color deficiencies, adjust the severity of the effect, and apply the simulation using different simulators. This node is ideal for accessibility testing and design adjustments, ensuring inclusivity in your visual content.
 """
 
     @classmethod
@@ -430,7 +430,7 @@ class ColorTheoryNode(JOVBaseNode):
     RETURN_NAMES = (Lexicon.C1, Lexicon.C2, Lexicon.C3, Lexicon.C4, Lexicon.C5)
     SORT = 100
     DESCRIPTION = """
-Apply various color harmony schemes to an input image using the Color Theory Node, generating multiple color variants based on the selected scheme. Supported schemes include complimentary, analogous, triadic, tetradic, and more. Users can customize the angle of separation for color calculations, offering flexibility in color manipulation and exploration of different color palettes.
+Generate a color harmony based on the selected scheme. Supported schemes include complimentary, analogous, triadic, tetradic, and more. Users can customize the angle of separation for color calculations, offering flexibility in color manipulation and exploration of different color palettes.
 """
 
     @classmethod
@@ -469,7 +469,7 @@ class CropNode(JOVImageNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     SORT = 5
     DESCRIPTION = """
-Extract a portion of an input image or resize it. It supports various cropping modes, including center cropping, custom XY cropping, and freeform polygonal cropping. This node is useful for preparing image data for specific tasks or extracting regions of interest.
+Extract a portion of an input image or resize it. It supports various cropping modes, including center cropping, custom XY cropping, and free-form polygonal cropping. This node is useful for preparing image data for specific tasks or extracting regions of interest.
 """
 
     @classmethod
@@ -568,7 +568,7 @@ Create masks based on specific color ranges within an image. Specify the color r
             img = np.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=np.uint8) if pA is None else tensor2cv(pA)
             img, mask = image_filter(img, start, end, fuzz, use_range)
             matte = image_matte(img, matte)[:,:,:3]
-            logger.debug(f"{img.shape}, {type(img)}, {matte.shape}")
+            # logger.debug(f"{img.shape}, {type(img)}, {matte.shape}")
             images.append([cv2tensor(img), cv2tensor(matte), cv2tensor(mask)])
             pbar.update_absolute(idx)
         return [torch.cat(i, dim=0) for i in zip(*images)]
@@ -630,7 +630,7 @@ class GradientMap(JOVImageNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     SORT = 550
     DESCRIPTION = """
-Remaps an input image using a gradient lookup table (LUT) to allow precise control over color mapping by applying the gradient to the input image. The gradient image will be translated into a single row lookup table. This node is useful for artistic effects, color grading, and mapping specific color ranges to achieve desired visual effects.
+Remaps an input image using a gradient lookup table (LUT). The gradient image will be translated into a single row lookup table.
 """
 
     @classmethod
@@ -912,8 +912,9 @@ class ThresholdNode(JOVImageNode):
     NAME = "THRESHOLD (JOV) 📉"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     DESCRIPTION = """
-Use the Threshold Node to define a range and apply it to an image for segmentation and feature extraction. Choose from various threshold modes, such as binary and adaptive, and adjust the threshold value and block size to suit your needs. You can also invert the resulting mask if necessary. This node is versatile for a variety of image processing tasks.
+Define a range and apply it to an image for segmentation and feature extraction. Choose from various threshold modes, such as binary and adaptive, and adjust the threshold value and block size to suit your needs. You can also invert the resulting mask if necessary. This node is versatile for a variety of image processing tasks.
 """
+
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = super().INPUT_TYPES()
@@ -956,7 +957,7 @@ class TransformNode(JOVImageNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     SORT = 0
     DESCRIPTION = """
-Applies various geometric transformations to images, including translation, rotation, scaling, mirroring, tiling, perspective projection, and more. It offers extensive control over image manipulation to achieve desired visual effects.
+Apply various geometric transformations to images, including translation, rotation, scaling, mirroring, tiling and perspective projection. It offers extensive control over image manipulation to achieve desired visual effects.
 """
 
     @classmethod

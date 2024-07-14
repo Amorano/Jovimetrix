@@ -34,18 +34,8 @@ GO NUTS; JUST TRY NOT TO DO IT IN YOUR HEAD.
 @author: amorano
 @category: Compositing
 @reference: https://github.com/Amorano/Jovimetrix
-@tags: adjust, animate, compose, compositing, composition, device, flow,
-       video, mask, shape, webcam, animation, logic
-@description: Jovimetrix integrates Webcam, MIDI, Spout and GLSL shader support.
-              Animation via tick. Parameter manipulation with wave generator.
-              Math operations with Unary and Binary support. Value converstion
-              for all major types (int, string, list, dict, Image, Mask). Shape
-              mask generation, image stacking and channel ops, batch splitting,
-              merging and randomizing, load images and video from anywhere,
-              dynamic bus routing with a single node, export support for GIPHY,
-              save output anywhere! flatten, crop, transform; check colorblindness,
-              make stereogram or stereoscopic images, or liner interpolate values.
-              Plus much more.
+@tags: adjust, animate, compose, compositing, composition, device, flow, video, mask, shape, webcam, animation, logic
+@description: Integrates Webcam, MIDI, Spout and GLSL shader support. Animation via tick. Parameter manipulation with wave generator. Math operations with Unary and Binary support. Value converstion for all major types (int, string, list, dict, Image, Mask). Shape mask generation, image stacking and channel ops, batch splitting, merging and randomizing, load images and video from anywhere, dynamic bus routing with a single node, export support for GIPHY, save output anywhere! flatten, crop, transform; check colorblindness, make stereogram or stereoscopic images, or liner interpolate values and more.
 @node list:
     ConstantNode, ConstantNode, ShapeNode, StereogramNode, StereoscopicNode, TextNode, WaveGraphNode,
     AdjustNode, ColorBlindNode, ColorMatchNode, FilterMaskNode, ThresholdNode,
@@ -149,11 +139,18 @@ class AnyType(str):
 
 JOV_TYPE_ANY = AnyType("*")
 
+# want to make explicit entries; comfy only looks for single type
 JOV_TYPE_COMFY = "BOOLEAN,FLOAT,INT"
 JOV_TYPE_VECTOR = "VEC2,VEC3,VEC4,VEC2INT,VEC3INT,VEC4INT,COORD2D"
 JOV_TYPE_NUMBER = f"{JOV_TYPE_COMFY},{JOV_TYPE_VECTOR}"
 JOV_TYPE_IMAGE = "IMAGE,MASK"
 JOV_TYPE_FULL = f"{JOV_TYPE_NUMBER},{JOV_TYPE_IMAGE}"
+
+JOV_TYPE_COMFY = JOV_TYPE_ANY
+JOV_TYPE_VECTOR = JOV_TYPE_ANY
+JOV_TYPE_NUMBER = JOV_TYPE_ANY
+JOV_TYPE_IMAGE = JOV_TYPE_ANY
+JOV_TYPE_FULL =JOV_TYPE_ANY
 
 # =============================================================================
 # == API RESPONSE

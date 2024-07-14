@@ -10,6 +10,7 @@ import { ComfyWidgets } from "../../../scripts/widgets.js"
 import { api_cmd_jovian } from '../util/util_api.js'
 import { flashBackgroundColor } from '../util/util_fun.js'
 import { fitHeight, TypeSlotEvent, TypeSlot } from '../util/util.js'
+import { widget_hide, widget_show } from '../util/util_widget.js'
 
 const _id = "QUEUE (JOV) 🗃"
 const _prefix = '🦄'
@@ -26,8 +27,7 @@ app.registerExtension({
             app.canvas.setDirty(true);
         }
 
-        function update_list(self) {
-            const value = self.widget_queue.value.split('\n');
+        function update_list(self, value) {
             self.data_count = value.length;
             self.data_index = 1;
             self.data_current = "";
@@ -39,19 +39,29 @@ app.registerExtension({
         nodeType.prototype.onNodeCreated = async function () {
             const me = onNodeCreated?.apply(this);
             const self = this;
-
-            let output_data;
             this.data_index = 1;
             this.data_current = "";
             this.data_all = [];
 
-            this.widget_queue = this.widgets.find(w => w.name === 'Q');
-            this.widget_queue.inputEl.addEventListener('input', function (event) {
-                update_list(self);
+            const widget_queue = this.widgets.find(w => w.name === 'Q');
+            const widget_hold = this.widgets.find(w => w.name === '✋🏽');
+            const widget_reset = this.widgets.find(w => w.name === 'RESET');
+            const widget_value = this.widgets.find(w => w.name === 'VAL');
+            widget_value.callback = async (e) => {
+                widget_hide(this, widget_hold, '-jov');
+                widget_hide(this, widget_reset, '-jov');
+                if (widget_value.value == 0) {
+                    widget_show(widget_reset);
+                    widget_show(widget_hold);
+                }
+                fitHeight(this);
+            }
+
+            widget_queue?.inputEl.addEventListener('input', function (event) {
+                const value = widget_queue.value.split('\n');
+                update_list(self, value);
             });
 
-            output_data = this.outputs[0];
-            const widget_reset = this.widgets.find(w => w.name === 'RESET');
             widget_reset.callback = async (e) => {
                 widget_reset.value = false;
                 api_cmd_jovian(self.id, "reset");
@@ -88,6 +98,7 @@ app.registerExtension({
 
             api.addEventListener("jovi-queue-ping", python_queue_ping);
             api.addEventListener("jovi-queue-done", python_queue_done);
+            setTimeout(() => { widget_value.callback(); }, 10);
             return me;
         }
 
@@ -131,7 +142,7 @@ app.registerExtension({
                             const values = widget.options.values;
                             // remove all connections that don't match the list?
                             this.widget_queue.value = values.join('\n');
-                            update_list(this);
+                            update_list(this, values);
                         }
                     } else {
                         this.outputs[0].name = _prefix;

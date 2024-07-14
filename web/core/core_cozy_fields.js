@@ -1,5 +1,5 @@
 /**
- * File: cozy_fields.js
+ * File: core_cozy_fields.js
  * Project: Jovimetrix
  *
  */

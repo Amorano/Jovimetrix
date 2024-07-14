@@ -794,7 +794,7 @@ def image_crop_head(image: TYPE_IMAGE) -> TYPE_IMAGE:
 
     gray = image_grayscale(image)
     h, w = image.shape[:2]
-    minface = int(np.sqrt(height**2 + width**2) / MIN_FACE)
+    minface = int(np.sqrt(h**2 + w**2) / MIN_FACE)
 
     '''
         # Create the haar cascade
@@ -953,6 +953,18 @@ def image_crop_head(image: TYPE_IMAGE) -> TYPE_IMAGE:
         return [int(v1), int(v2), int(h1), int(h2)]
     '''
 
+def image_detect(image: TYPE_IMAGE) -> Tuple[TYPE_IMAGE, Tuple[int, ...]]:
+    gray = image_grayscale(image)
+    _, thresh = cv2.threshold(gray, 128, 255, cv2.THRESH_BINARY_INV)
+    # contours
+    contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    # Assume the largest contour is the item we want to recenter
+    largest_contour = max(contours, key=cv2.contourArea)
+    x, y, w, h = cv2.boundingRect(largest_contour)
+    cropped_image = image[y:y+h, x:x+w]
+    return cropped_image, (x, y, w, h)
+
 def image_diff(imageA: TYPE_IMAGE, imageB: TYPE_IMAGE, threshold:int=0, color:TYPE_PIXEL=(255, 0, 0)) -> Tuple[TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE, float]:
     """imageA, imageB, diff, thresh, score
     """
@@ -1082,7 +1094,7 @@ def image_gamma(image: TYPE_IMAGE, value: float) -> TYPE_IMAGE:
         # now back to the original "format"
     return bgr2image(image, alpha, cc == 1)
 
-def gradient_map2(image, gradient_map):
+def image_gradient_map2(image, gradient_map):
     na = np.array(image)
     grey = np.mean(na, axis=2).astype(np.uint8)
     cmap = np.array(gradient_map.convert('RGB'))
@@ -1248,7 +1260,7 @@ def image_load(url: str) -> Tuple[TYPE_IMAGE, TYPE_IMAGE]:
     """
     if img.format == 'PSD':
         images = [pil2cv(frame.copy()) for frame in ImageSequence.Iterator(img)]
-        logger.debug(f"#PSD {len(images)}")
+        # logger.debug(f"#PSD {len(images)}")
     """
     try:
         img = cv2.imread(url, cv2.IMREAD_UNCHANGED)
@@ -1465,6 +1477,14 @@ def image_quantize(image:TYPE_IMAGE, levels:int=256, iterations:int=10, epsilon:
     _, labels, centers = cv2.kmeans(pixels, levels, None, criteria, 5, cv2.KMEANS_RANDOM_CENTERS)
     centers = np.uint8(centers)
     return centers[labels.flatten()].reshape(image.shape)
+
+def image_recenter(image: TYPE_IMAGE) -> TYPE_IMAGE:
+    cropped_image = image_detect(image)[0]
+    new_image = np.zeros_like(image)
+    paste_x = (new_image.shape[1] - cropped_image.shape[1]) // 2
+    paste_y = (new_image.shape[0] - cropped_image.shape[0]) // 2
+    new_image[paste_y:paste_y+cropped_image.shape[0], paste_x:paste_x+cropped_image.shape[1]] = cropped_image
+    return new_image
 
 def image_rotate(image: TYPE_IMAGE, angle: float, center:TYPE_COORD=(0.5, 0.5), edge:EnumEdge=EnumEdge.CLIP) -> TYPE_IMAGE:
 
