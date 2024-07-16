@@ -42,7 +42,7 @@ PTYPE = {
     'vec4': EnumConvertType.VEC4
 }
 
-RE_VARIABLE = re.compile(r"uniform\s*(\w*)\s*(\w*);(?:.*\/{2}\s*([A-Za-z0-9\-\.,\s]+)){0,1}$", re.MULTILINE)
+RE_VARIABLE = re.compile(r"uniform\s*(\w*)\s*(\w*);(?:.*\/{2}\s*([A-Za-z0-9\-\.,\s]+)){0,1}\s*$", re.MULTILINE)
 
 # =============================================================================
 
@@ -85,10 +85,8 @@ void mainImage( out vec4 fragColor, vec2 fragCoord ) {
   u = mod(u, 2.);
 
   vec2 uv = fragCoord.xy / iResolution.xy;
-  //vec3 col2 = texture2D(imageB, uv).rgb;
+  vec3 col2 = texture2D(imageB, uv).rgb;
   vec3 col = texture2D(imageA, uv).rgb;
-
-
   fragColor = vec4(col + (floor(sin(s)) - u.y - floor(cos(s)) - u.xxxx).rgb, 1.0);
 }
 """
@@ -113,7 +111,6 @@ void main()
         #
         self.__size: Tuple[int, int] = (max(width, IMAGE_SIZE_MIN), max(height, IMAGE_SIZE_MIN))
         self.__fbo = None
-        self.__textures = None
         self.__program = None
         self.__source_vertex: None
         self.__source_fragment: None
@@ -150,14 +147,16 @@ void main()
         gl.glFramebufferTexture2D(gl.GL_FRAMEBUFFER, gl.GL_COLOR_ATTACHMENT0, gl.GL_TEXTURE_2D, texture, 0)
         if gl.glCheckFramebufferStatus(gl.GL_FRAMEBUFFER) != gl.GL_FRAMEBUFFER_COMPLETE:
             raise RuntimeError("Framebuffer is not complete")
-        # gl.glUseProgram(self.__program)
 
     def __del__(self) -> None:
         # assume all other resources get cleaned up with the context
-        if len(self.__textures):
-            gl.glDeleteTextures(len(self.__textures), self.__textures)
-        if glfw:
-            glfw.terminate()
+        """
+        try:
+            if len(self.__textures):
+                gl.glDeleteTextures(len(self.__textures), self.__textures)
+        except:
+            pass
+        """
 
     @property
     def vertex(self) -> str:
@@ -259,12 +258,10 @@ void main()
             # read the fragment and setup the vars....
             for match in RE_VARIABLE.finditer(fragment):
                 typ, name, default = match.groups()
-                texIdx = None
+                tex_loc = None
                 if typ in ['sampler2D']:
-                    texIdx = texture_count
-                    texture_count += 1
-                else:
-                    logger.debug(f"{name}.{typ}: {default}")
+                    tex_loc = gl.glGenTextures(1)
+                logger.debug(f"{name}.{typ}: {default}")
                 self.__userVar[name] = [
                     # type
                     typ,
@@ -272,22 +269,13 @@ void main()
                     gl.glGetUniformLocation(self.__program, name),
                     # default value
                     default,
-                    # texture index (if any)
-                    texIdx
+                    # texture id -- if a texture
+                    tex_loc
                 ]
-            self.__textures = gl.glGenTextures(texture_count)
-            if not isinstance(self.__textures, (np.ndarray,)):
-                self.__textures = [self.__textures]
-            #else:
-            #    self.__textures.tolist()
 
     def render(self, time_delta:float=0., **kw) -> np.ndarray:
         self.runtime = time_delta
-
         gl.glUseProgram(self.__program)
-        gl.glBindFramebuffer(gl.GL_FRAMEBUFFER, self.__fbo)
-        gl.glClearColor(0.0, 0.0, 0.0, 1.0)
-        gl.glClear(gl.GL_COLOR_BUFFER_BIT)
 
         # SET SHADER STATIC VARS
         gl.glUniform3f(self.__shaderVar['iResolution'], self.__size[0], self.__size[1], 0)
@@ -300,43 +288,43 @@ void main()
 
         # SET USER DYNAMIC VARS
         # update any user vars...
+        texture_index = 0
         for uk, uv in self.__userVar.items():
             # type, loc, value, index
-            p_type, p_loc, p_value, p_index = uv
+            p_type, p_loc, p_value, p_tex = uv
             # use the default....
             val = p_value if not uk in kw else kw[uk]
 
             # SET TEXTURE
             if (p_type == 'sampler2D'):
                 # cache textures? or do we care per frame?
-                gl.glBindTexture(gl.GL_TEXTURE_2D, self.__textures[p_index])
-                if val is None:
-                    print(uk, val)
+                gl.glBindTexture(gl.GL_TEXTURE_2D, p_tex)
                 val = empty if val is None else val
                 if val.ndim == 3:
                     op = gl.GL_RGBA if val.shape[2] == 4 else gl.GL_RGB
                     val = val[::-1,:]
                     val = val.astype(np.float32) / 255.0
-                    gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, op, val.shape[1], val.shape[0], 0, op, gl.GL_FLOAT, val)
-
+                gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, op, val.shape[1], val.shape[0], 0, op, gl.GL_FLOAT, val)
                 gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_LINEAR)
                 gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_LINEAR)
                 gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_S, gl.GL_CLAMP_TO_EDGE)
                 gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_T, gl.GL_CLAMP_TO_EDGE)
-
-                loc_image = gl.glGetUniformLocation(self.__program, uk)
-                gl.glUniform1i(loc_image, p_index)
-
+                # Bind the texture to the texture unit
+                gl.glActiveTexture(gl.GL_TEXTURE0 + texture_index)
+                gl.glBindTexture(gl.GL_TEXTURE_2D, p_tex)
+                gl.glUniform1i(p_loc, texture_index)
+                texture_index += 1
             else:
-                if (funct := LAMBDA_UNIFORM.get(p_type, None)) is None:
-                    logger.warning(f"no type function: {p_type}.")
-                    continue
-                val = parse_value(val, PTYPE[p_type], 0)
-                if not isinstance(val, (list, tuple,)):
-                    val = [val]
-                # logger.debug(f'{uk}.{p_type}=={val}')
-                funct(p_loc, *val)
+                funct = LAMBDA_UNIFORM.get(p_type)
+                if funct is not None:
+                    val = parse_value(val, PTYPE[p_type], 0)
+                    if not isinstance(val, (list, tuple)):
+                        val = [val]
+                    funct(p_loc, *val)
 
+        gl.glBindFramebuffer(gl.GL_FRAMEBUFFER, self.__fbo)
+        gl.glClearColor(0.0, 0.0, 0.0, 1.0)
+        gl.glClear(gl.GL_COLOR_BUFFER_BIT)
         gl.glDrawArrays(gl.GL_TRIANGLES, 0, 3)
         data = gl.glReadPixels(0, 0, self.__size[0], self.__size[1], gl.GL_RGB, gl.GL_UNSIGNED_BYTE)
         image = np.frombuffer(data, dtype=np.uint8).reshape(self.__size[1], self.__size[0], 3)

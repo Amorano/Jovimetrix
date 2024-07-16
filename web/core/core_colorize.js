@@ -9,13 +9,17 @@ import { $el } from "../../../scripts/ui.js"
 import { api_post } from '../util/util_api.js'
 import { color_contrast, node_color_all, node_color_reset } from '../util/util_color.js'
 import * as util_config from '../util/util_config.js'
-//import { CONFIG_REGEX, USER, CONFIG_USER, CONFIG_THEME, CONFIG_COLOR, NODE_LIST } from '../util/util_config.js'
+
 import { JovimetrixConfigDialog } from "./core_config.js"
 import "../extern/jsColorPicker.js"
 
 app.registerExtension({
     name: "jovimetrix.colorize",
-    async init(app) {
+    async setup(app) {
+        const original_color = LiteGraph.NODE_TEXT_COLOR;
+
+        util_config.setting_make('color.contrast', '🇯 🎨 Auto-Contrast Text', 'boolean', 'Auto-contrast the title text for all nodes for better readability', true);
+
         const showButton = $el("button.comfy-settings-btn", {
             textContent: "🎨",
             style: {
@@ -34,12 +38,17 @@ app.registerExtension({
         const firstKid = document.querySelector(".comfy-settings-btn")
         const parent = firstKid.parentElement
         parent.insertBefore(showButton, firstKid.nextSibling)
-    },
-    async setup(app) {
 
-        const original_color = LiteGraph.NODE_TEXT_COLOR;
-
-        util_config.setting_make('color.contrast', '🇯 🎨 Auto-Contrast Text', 'boolean', 'Auto-contrast the title text for all nodes for better readability', true);
+        let showMenuButton;
+		if (!app.menu?.element.style.display && app.menu?.settingsGroup) {
+			showMenuButton = new (await import("../../../scripts/ui/components/button.js")).ComfyButton({
+				icon: "palette-outline",
+				action: () => showButton.click(),
+				tooltip: "Jovimetrix Colorizer",
+				content: "Jovimetrix Colorizer",
+			});
+			app.menu.settingsGroup.append(showMenuButton);
+		}
 
         // Option for user to contrast text for better readability
         const drawNodeShape = LGraphCanvas.prototype.drawNodeShape;

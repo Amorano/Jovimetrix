@@ -566,10 +566,13 @@ Create masks based on specific color ranges within an image. Specify the color r
         pbar = ProgressBar(len(params))
         for idx, (pA, start, use_range, end, fuzz, matte) in enumerate(params):
             img = np.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=np.uint8) if pA is None else tensor2cv(pA)
+
             img, mask = image_filter(img, start, end, fuzz, use_range)
-            matte = image_matte(img, matte)[:,:,:3]
-            # logger.debug(f"{img.shape}, {type(img)}, {matte.shape}")
-            images.append([cv2tensor(img), cv2tensor(matte), cv2tensor(mask)])
+            if img.shape[2] == 3:
+                alpha_channel = np.zeros((img.shape[0], img.shape[1], 1), dtype=img.dtype)
+                img = np.concatenate((img, alpha_channel), axis=2)
+            img[:,:,3] = mask[:,:]
+            images.append(cv2tensor_full(img, matte))
             pbar.update_absolute(idx)
         return [torch.cat(i, dim=0) for i in zip(*images)]
 
