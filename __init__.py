@@ -8,36 +8,22 @@
               Animation, Image Compositing & Procedural Creation
                     http://www.github.com/amorano/jovimetrix
 
-                    Copyright Alexander G. Morano (Joviex)
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-
-GO NUTS; JUST TRY NOT TO DO IT IN YOUR HEAD.
-
 @title: Jovimetrix
 @author: amorano
 @category: Compositing
 @reference: https://github.com/Amorano/Jovimetrix
-@tags: adjust, animate, compose, compositing, composition, device, flow, video, mask, shape, webcam, animation, logic
-@description: Integrates Webcam, MIDI, Spout and GLSL shader support. Animation via tick. Parameter manipulation with wave generator. Math operations with Unary and Binary support. Value converstion for all major types (int, string, list, dict, Image, Mask). Shape mask generation, image stacking and channel ops, batch splitting, merging and randomizing, load images and video from anywhere, dynamic bus routing with a single node, export support for GIPHY, save output anywhere! flatten, crop, transform; check colorblindness, make stereogram or stereoscopic images, or liner interpolate values and more.
+@tags: adjust, animate, compose, compositing, composition, device, flow, video,
+mask, shape, webcam, animation, logic
+@description: Integrates Webcam, MIDI, Spout and GLSL shader support. Animation
+via tick. Parameter manipulation with wave generator. Math operations with Unary
+and Binary support. Value converstion for all major types (int, string, list,
+dict, Image, Mask). Shape mask generation, image stacking and channel ops, batch
+splitting, merging and randomizing, load images and video from anywhere, dynamic
+bus routing with a single node, export support for GIPHY, save output anywhere!
+flatten, crop, transform; check colorblindness, make stereogram or stereoscopic
+images, or liner interpolate values and more.
 @node list:
-    ConstantNode, ConstantNode, ShapeNode, StereogramNode, StereoscopicNode, TextNode, WaveGraphNode,
+    ConstantNode, GLSLNode, ShapeNode, StereogramNode, StereoscopicNode, TextNode, WaveGraphNode,
     AdjustNode, ColorBlindNode, ColorMatchNode, FilterMaskNode, ThresholdNode,
     BlendNode, ColorTheoryNode, CropNode, FlattenNode, PixelMergeNode, PixelSplitNode,
     PixelSwapNode, StackNode, TransformNode
@@ -48,7 +34,7 @@ GO NUTS; JUST TRY NOT TO DO IT IN YOUR HEAD.
     StreamReaderNode, StreamWriterNode, SpoutWriter,
     AkashicNode, ArrayNode, BatchLoadNode, DynamicNode, ValueGraphNode, ExportNode, QueueNode,
     RouteNode, SaveOutputNode
-@version: 1.2.0
+@version: 1.2.6
 """
 
 import os

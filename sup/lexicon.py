@@ -131,6 +131,7 @@ class Lexicon(metaclass=LexiconMeta):
     KEY = '🔑', "Key"
     LACUNARITY = 'LACUNARITY', "LACUNARITY"
     LEFT = '◀️', "Left"
+    LENGTH = 'LENGTH', "Length"
     LETTER = 'LETTER', "If each letter be generated and output in a batch"
     LINEAR = '🛟', "Linear"
     LIST = '🧾', "List"

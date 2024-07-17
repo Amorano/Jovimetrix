@@ -1,10 +1,15 @@
-# Byte-compiled / optimized / DLL files
-__pycache__/
+__pycache__
 *.py[cod]
 *$py.class
 _*
 *.code-workspace
-.vscode/
+.vscode
 config.json
 ignore.txt
 .env
+.DS_Store
+*.egg-info
+*.bak
+checkpoints
+results
+backup

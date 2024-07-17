@@ -129,7 +129,7 @@ class ArrayNode(JOVBaseNode):
     NAME = "ARRAY (JOV) 📚"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = (JOV_TYPE_ANY, JOV_TYPE_ANY, "INT")
-    RETURN_NAMES = (Lexicon.ANY_OUT, Lexicon.LIST, Lexicon.VALUE)
+    RETURN_NAMES = (Lexicon.ANY_OUT, Lexicon.LIST, Lexicon.LENGTH)
     SORT = 50
     DESCRIPTION = """
 Processes a batch of data based on the selected mode, such as merging, picking, slicing, random selection, or indexing. Allows for flipping the order of processed items and dividing the data into chunks.
@@ -145,14 +145,14 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
                 Lexicon.RANGE: ("VEC3", {"default": (0, 0, 1), "min": 0, "step": 1}),
                 Lexicon.STRING: ("STRING", {"default": "", "tooltip":"Comma separated list of indicies to export"}),
                 Lexicon.SEED: ("INT", {"default": 0, "min": 0, "max": sys.maxsize, "step": 1}),
-                Lexicon.COUNT: ("INT", {"default": 1, "min": 1, "max": sys.maxsize, "step": 1, "tooltip":"How many items to return"}),
+                Lexicon.COUNT: ("INT", {"default": 0, "min": 0, "max": sys.maxsize, "step": 1, "tooltip":"How many items to return"}),
                 Lexicon.FLIP: ("BOOLEAN", {"default": False, "tooltip":"invert the calculated output list"}),
                 Lexicon.BATCH_CHUNK: ("INT", {"default": 0, "min": 0, "step": 1}),
             },
             "outputs": {
                 0: (Lexicon.ANY_OUT, {"tooltip":"Output list from selected operation"}),
                 1: (Lexicon.LIST, {"tooltip":"Full list"}),
-                2: (Lexicon.VALUE, {"tooltip":"Length of output list"}),
+                2: (Lexicon.LENGTH, {"tooltip":"Length of output list"}),
             }
         })
         return Lexicon._parse(d, cls)
@@ -175,7 +175,7 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
         slice_range = parse_param(kw, Lexicon.RANGE, EnumConvertType.VEC3INT, [(0, 0, 1)])
         indices = parse_param(kw, Lexicon.STRING, EnumConvertType.STRING, "")
         seed = parse_param(kw, Lexicon.SEED, EnumConvertType.INT, 0)
-        count = parse_param(kw, Lexicon.COUNT, EnumConvertType.INT, 1, 1)
+        count = parse_param(kw, Lexicon.COUNT, EnumConvertType.INT, 0, 0)
         flip = parse_param(kw, Lexicon.FLIP, EnumConvertType.BOOLEAN, False)
         batch_chunk = parse_param(kw, Lexicon.BATCH_CHUNK, EnumConvertType.INT, 0, 0)
         extract = []
@@ -206,6 +206,7 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
         pbar = ProgressBar(len(params))
         for idx, (mode, index, slice_range, indices, seed, flip, batch_chunk, count) in enumerate(params):
             loop_extract = extract.copy()
+
             if len(loop_extract) == 0:
                 results.append([None, None, 0])
                 pbar.update_absolute(idx)
@@ -217,7 +218,7 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
             mode = EnumBatchMode[mode]
             if mode == EnumBatchMode.PICK:
                 index = index if index < len(loop_extract) else -1
-                loop_extract = loop_extract[index]
+                loop_extract = [loop_extract[index]]
             elif mode == EnumBatchMode.SLICE:
                 start, end, step = slice_range
                 end = len(loop_extract) if end == 0 else end
@@ -226,11 +227,9 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
                 if self.__seed is None or self.__seed != seed:
                     random.seed(seed)
                     self.__seed = seed
-                val = []
-                for i in range(count):
-                    index = random.randrange(0, len(loop_extract))
-                    val.append(loop_extract[index])
-                loop_extract = val
+                if count == 0:
+                    count = len(loop_extract)
+                loop_extract = random.sample(loop_extract, k=count)
             elif mode == EnumBatchMode.INDEX_LIST:
                 junk = []
                 for x in indices.strip().split(','):
@@ -248,24 +247,23 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
             elif mode == EnumBatchMode.CARTESIAN:
                 logger.warning("NOT IMPLEMENTED - CARTESIAN")
 
-            if not isinstance(loop_extract, (list,)):
-                loop_extract = [loop_extract]
-
             if len(loop_extract) == 0:
                 loop_extract = extract.copy()
 
             if batch_chunk > 0:
                 loop_extract = self.batched(loop_extract, batch_chunk)
+
             if not output_is_image:
                 results.append([*loop_extract, loop_extract, len(loop_extract)])
             else:
                 img.extend(loop_extract)
+                print(len(img))
                 results.append([loop_extract, len(loop_extract)])
             pbar.update_absolute(idx)
         if not output_is_image:
             return list(zip(*results))
         ret = torch.stack(img, dim=0)
-        return ret, *results
+        return ret, list(zip(*results))
 
 class ExportNode(JOVBaseNode):
     NAME = "EXPORT (JOV) 📽"
