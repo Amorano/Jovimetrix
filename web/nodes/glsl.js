@@ -44,7 +44,7 @@ app.registerExtension({
             widget_param.serializeValue = async () =>
                 self.inputs.reduce((result, widget) =>
                     ({ ...result, [widget.name]: widget.value }), {});
-                console.info(self.inputs)
+                // console.info(self.inputs)
             widget_hide(this, widget_param, "-jov");
 
             // parse this for vars... check existing vars and "types" and keep
@@ -54,7 +54,7 @@ app.registerExtension({
             function shader_changed() {
                 let widgets = [];
                 const matches = [...widget_fragment.value.matchAll(RE_VARIABLE)];
-                console.info(matches)
+                // console.info(matches)
                 matches.forEach(match => {
                     const [full_match, varType, varName, varValue] = match;
                     let exist = self.inputs?.find(w => w.name === varName);
@@ -98,7 +98,7 @@ app.registerExtension({
                     let idx = 0;
                     self.inputs.forEach(i => {
                         if (!widgets.includes(i.name)) {
-                            console.info(widgets, i.name, i)
+                            // console.info(widgets, i.name, i)
                             self.removeInput(idx);
                         } else {
                             idx += 1;

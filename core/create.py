@@ -18,7 +18,7 @@ from Jovimetrix import comfy_message, parse_reset, JOVBaseNode, ROOT, JOV_TYPE_I
 from Jovimetrix.sup.lexicon import JOVImageNode, Lexicon
 from Jovimetrix.sup.util import parse_param, zip_longest_fill, EnumConvertType
 
-from Jovimetrix.sup.image import channel_solid, cv2tensor, cv2tensor_full, \
+from Jovimetrix.sup.image import channel_solid, cv2tensor, cv2tensor_full, image_convert, \
     image_grayscale, image_invert, image_mask_add, pil2cv, tensor2pil, \
     image_rotate, image_scalefit, image_stereogram, image_transform, image_translate, \
     pixel_eval, tensor2cv, shape_ellipse, shape_polygon, shape_quad, \
@@ -104,9 +104,11 @@ Execute custom GLSL (OpenGL Shading Language) fragment shaders to generate image
                 Lexicon.BATCH: ("INT", {"default": 1, "step": 1, "min": 0, "max": 262144}),
                 Lexicon.FPS: ("INT", {"default": 24, "step": 1, "min": 1, "max": 120}),
                 Lexicon.WH: ("VEC2", {"default": (512, 512), "min": MIN_IMAGE_SIZE, "step": 1,}),
+                Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1,
+                                         "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True}),
                 Lexicon.WAIT: ("BOOLEAN", {"default": False}),
                 Lexicon.RESET: ("BOOLEAN", {"default": False}),
-                Lexicon.FRAGMENT: ("STRING", {"default": GLSLShader.PROG_FRAGMENT, "multiline": True, "dynamicPrompts": False})
+                Lexicon.FRAGMENT: ("STRING", {"default": GLSLShader.PROG_FRAGMENT, "multiline": True, "dynamicPrompts": False}),
             }
         })
         return Lexicon._parse(d, cls)
@@ -124,14 +126,17 @@ Execute custom GLSL (OpenGL Shading Language) fragment shaders to generate image
         delta = parse_param(kw, Lexicon.TIME, EnumConvertType.FLOAT, 0)[0]
         batch = parse_param(kw, Lexicon.BATCH, EnumConvertType.INT, 1, 0, 262144)[0]
         fps = parse_param(kw, Lexicon.FPS, EnumConvertType.INT, 24, 1, 120)[0]
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)[0]
-        fragment = parse_param(kw, Lexicon.FRAGMENT, EnumConvertType.STRING, GLSLShader.PROG_FRAGMENT)[0]
         wait = parse_param(kw, Lexicon.WAIT, EnumConvertType.BOOLEAN, False)[0]
         reset = parse_param(kw, Lexicon.RESET, EnumConvertType.BOOLEAN, False)[0]
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)[0]
+        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)[0]
+        fragment = parse_param(kw, Lexicon.FRAGMENT, EnumConvertType.STRING, GLSLShader.PROG_FRAGMENT)[0]
+
         variables = kw.copy()
         for p in [Lexicon.TIME, Lexicon.BATCH, Lexicon.FPS, Lexicon.WH, Lexicon.FRAGMENT, Lexicon.WAIT, Lexicon.RESET]:
             variables.pop(p, None)
 
+        self.__glsl.bgcolor = matte
         self.__glsl.size = wihi
         self.__glsl.fps = fps
         try:
@@ -156,6 +161,7 @@ Execute custom GLSL (OpenGL Shading Language) fragment shaders to generate image
                 var = v if not isinstance(v, (list, tuple,)) else v[idx] if idx < len(v) else v[-1]
                 if isinstance(var, (torch.Tensor)):
                     var = tensor2cv(var)
+                    var = image_convert(var, 4)
                 vars[k] = var
 
             image = self.__glsl.render(self.__delta, **vars)

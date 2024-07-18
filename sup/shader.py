@@ -14,11 +14,13 @@ import OpenGL.GL as gl
 
 from loguru import logger
 from Jovimetrix.sup.util import EnumConvertType, parse_value
+from Jovimetrix.sup.image import image_convert
 
 # =============================================================================
 
-IMAGE_SIZE_MIN = 512
-IMAGE_SIZE_MAX = 8192
+IMAGE_SIZE_DEFAULT = 512
+IMAGE_SIZE_MIN = 64
+IMAGE_SIZE_MAX = 16384
 
 LAMBDA_UNIFORM = {
     'int': gl.glUniform1i,
@@ -100,7 +102,7 @@ void main()
 }
 """
 
-    def __init__(self, vertex:str=None, fragment:str=None, width:int=IMAGE_SIZE_MIN, height:int=IMAGE_SIZE_MIN, fps:int=30) -> None:
+    def __init__(self, vertex:str=None, fragment:str=None, width:int=IMAGE_SIZE_DEFAULT, height:int=IMAGE_SIZE_DEFAULT, fps:int=30) -> None:
         if not glfw.init():
             raise RuntimeError("GLFW did not init")
         glfw.window_hint(glfw.VISIBLE, glfw.FALSE)  # hidden
@@ -108,20 +110,24 @@ void main()
         if not self.__window:
             raise RuntimeError("GLFW did not init window")
         glfw.make_context_current(self.__window)
-        #
+
+        self.__size_changed = False
         self.__size: Tuple[int, int] = (max(width, IMAGE_SIZE_MIN), max(height, IMAGE_SIZE_MIN))
-        self.__fbo = None
+
         self.__program = None
         self.__source_vertex: None
         self.__source_fragment: None
         self.__source_vertex_raw: str = None
         self.__source_fragment_raw: str = None
         self.__runtime: float = 0
-        self.__fps: int = 30
+        self.__fps: int = min(120, max(1, fps))
         self.__mouse: Tuple[int, int] = (0, 0)
         self.__last_frame = np.zeros((self.__size[1], self.__size[0]), np.uint8)
         self.__shaderVar = {}
         self.__userVar = {}
+        self.__fbo = None
+        self.__fbo_texture = None
+        self.__bgcolor = (0, 0, 0, 1.)
         self.program(vertex, fragment)
 
     def __compile_shader(self, source:str, shader_type:str) -> None:
@@ -136,27 +142,37 @@ void main()
     def __framebuffer(self) -> None:
         # match the window to the buffer size...
         glfw.set_window_size(self.__window, self.__size[0], self.__size[1])
+        if self.__fbo is None:
+            self.__fbo = gl.glGenFramebuffers(1)
+        gl.glBindFramebuffer(gl.GL_FRAMEBUFFER, self.__fbo)
+
+        if self.__fbo_texture:
+            gl.glDeleteTextures([self.__fbo_texture])
+
         # MAKE FRAMEBUFFER
-        texture = gl.glGenTextures(1)
-        gl.glBindTexture(gl.GL_TEXTURE_2D, texture)
+        self.__fbo_texture = gl.glGenTextures(1)
+        gl.glBindTexture(gl.GL_TEXTURE_2D, self.__fbo_texture)
         gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_RGBA, self.__size[0], self.__size[1], 0, gl.GL_RGBA, gl.GL_UNSIGNED_BYTE, None)
         gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_LINEAR)
         gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_LINEAR)
-        self.__fbo = gl.glGenFramebuffers(1)
-        gl.glBindFramebuffer(gl.GL_FRAMEBUFFER, self.__fbo)
-        gl.glFramebufferTexture2D(gl.GL_FRAMEBUFFER, gl.GL_COLOR_ATTACHMENT0, gl.GL_TEXTURE_2D, texture, 0)
+        gl.glFramebufferTexture2D(gl.GL_FRAMEBUFFER, gl.GL_COLOR_ATTACHMENT0, gl.GL_TEXTURE_2D, self.__fbo_texture, 0)
         if gl.glCheckFramebufferStatus(gl.GL_FRAMEBUFFER) != gl.GL_FRAMEBUFFER_COMPLETE:
             raise RuntimeError("Framebuffer is not complete")
 
+        # dump all the old texture slots?
+        old = [v[3] for v in self.__userVar.values() if v[0] == 'sampler2D']
+        gl.glDeleteTextures(old)
+        gl.glViewport(0, 0, self.__size[0], self.__size[1])
+
     def __del__(self) -> None:
-        # assume all other resources get cleaned up with the context
-        """
-        try:
-            if len(self.__textures):
-                gl.glDeleteTextures(len(self.__textures), self.__textures)
-        except:
-            pass
-        """
+        if gl:
+            if self.__fbo_texture:
+                gl.glDeleteTextures(1, [self.__fbo_texture])
+            if self.__fbo:
+                gl.glDeleteFramebuffers(1, [self.__fbo])
+            if self.__window:
+                glfw.destroy_window(self.__window)
+            glfw.terminate()
 
     @property
     def vertex(self) -> str:
@@ -220,6 +236,14 @@ void main()
     def last_frame(self) -> float:
         return self.__last_frame
 
+    @property
+    def bgcolor(self) -> Tuple[int, ...]:
+        return self.__bgcolor
+
+    @bgcolor.setter
+    def bgcolor(self, color:Tuple[int, ...]) -> None:
+        self.__bgcolor = tuple(x / 255. for x in color)
+
     def program(self, vertex:str=None, fragment:str=None) -> None:
         if (vertex := self.__source_vertex_raw if vertex is None else vertex) is None:
             logger.debug("Vertex program is empty. Using Default.")
@@ -230,6 +254,11 @@ void main()
             fragment = self.PROG_FRAGMENT
 
         if vertex != self.__source_vertex_raw or fragment != self.__source_fragment_raw:
+            # glfw.make_context_current(self.__window)
+
+            if self.__program:
+                gl.glDeleteProgram(self.__program)
+
             self.__source_vertex = self.__compile_shader(vertex, gl.GL_VERTEX_SHADER)
             fragment_full = self.PROG_HEADER + fragment + self.PROG_FOOTER
             self.__source_fragment = self.__compile_shader(fragment_full, gl.GL_FRAGMENT_SHADER)
@@ -298,7 +327,7 @@ void main()
             # SET TEXTURE
             if (p_type == 'sampler2D'):
                 # cache textures? or do we care per frame?
-                gl.glBindTexture(gl.GL_TEXTURE_2D, p_tex)
+                # gl.glBindTexture(gl.GL_TEXTURE_2D, p_tex)
                 val = empty if val is None else val
                 if val.ndim == 3:
                     op = gl.GL_RGBA if val.shape[2] == 4 else gl.GL_RGB
@@ -315,18 +344,27 @@ void main()
                 gl.glUniform1i(p_loc, texture_index)
                 texture_index += 1
             else:
-                funct = LAMBDA_UNIFORM.get(p_type)
-                if funct is not None:
-                    val = parse_value(val, PTYPE[p_type], 0)
-                    if not isinstance(val, (list, tuple)):
-                        val = [val]
-                    funct(p_loc, *val)
+                funct = LAMBDA_UNIFORM[p_type]
+                val = parse_value(val, PTYPE[p_type], 0)
+                if not isinstance(val, (list, tuple)):
+                    val = [val]
+                funct(p_loc, *val)
 
         gl.glBindFramebuffer(gl.GL_FRAMEBUFFER, self.__fbo)
-        gl.glClearColor(0.0, 0.0, 0.0, 1.0)
+        gl.glClearColor(*self.__bgcolor)
         gl.glClear(gl.GL_COLOR_BUFFER_BIT)
         gl.glDrawArrays(gl.GL_TRIANGLES, 0, 3)
         data = gl.glReadPixels(0, 0, self.__size[0], self.__size[1], gl.GL_RGB, gl.GL_UNSIGNED_BYTE)
         image = np.frombuffer(data, dtype=np.uint8).reshape(self.__size[1], self.__size[0], 3)
         self.__last_frame = image[::-1, :, :]
+
+        # check if window was changed...
+        if self.__size_changed:
+            self.__size_changed = False
+            w, h = glfw.get_framebuffer_size(self.__window)
+            gl.viewport(0, 0, w, h)
+
+        # clear events
+        glfw.poll_events()
+
         return self.__last_frame

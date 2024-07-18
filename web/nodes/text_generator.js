@@ -34,8 +34,8 @@ app.registerExtension({
                 } else if (!letter.value) {
                     widget_show(cols);
                 }
-                console.info(size)
-                console.info(cols)
+                //console.info(size)
+                //console.info(cols)
                 fitHeight(this);
             }
 
