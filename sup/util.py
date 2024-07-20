@@ -89,7 +89,10 @@ def parse_value(val:Any, typ:EnumConvertType, default: Any,
                 zero:int=0) -> List[Any]:
     """Convert target value into the new specified type."""
 
-    if isinstance(default, torch.Tensor) and typ not in [EnumConvertType.ANY, EnumConvertType.IMAGE, EnumConvertType.MASK, EnumConvertType.LATENT]:
+    if typ == EnumConvertType.ANY:
+        return val
+
+    if isinstance(default, torch.Tensor) and typ not in [EnumConvertType.IMAGE, EnumConvertType.MASK, EnumConvertType.LATENT]:
         h, w = default.shape[:2]
         cc = default.shape[2] if len(default.shape) > 2 else 1
         default = (w, h, cc)
@@ -106,7 +109,7 @@ def parse_value(val:Any, typ:EnumConvertType, default: Any,
             val = [val.get(c, 0) for c in 'xyzw']
         elif 'r' in val and 'g' in val:
             val = [val.get(c, 0) for c in 'rgba']
-    elif isinstance(val, torch.Tensor) and typ not in [EnumConvertType.ANY, EnumConvertType.IMAGE, EnumConvertType.MASK, EnumConvertType.LATENT]:
+    elif isinstance(val, torch.Tensor) and typ not in [EnumConvertType.IMAGE, EnumConvertType.MASK, EnumConvertType.LATENT]:
         h, w = val.shape[:2]
         cc = val.shape[2] if len(val.shape) > 2 else 1
         val = (w, h, cc)
@@ -241,10 +244,6 @@ def parse_param(data:dict, key:str, typ:EnumConvertType, default: Any,
             val = list(val)
     elif issubclass(type(val), (Enum,)):
         val = [str(val.name)]
-    if typ == EnumConvertType.ANY:
-        if not isinstance(val, (list, tuple, set)):
-            return [val]
-        return val
     if not isinstance(val, (list,)):
         val = [val]
     return [parse_value(v, typ, default, clip_min, clip_max, zero) for v in val]

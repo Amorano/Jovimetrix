@@ -128,8 +128,8 @@ Visualize data. It accepts various types of data, including images, text, and ot
 class ArrayNode(JOVBaseNode):
     NAME = "ARRAY (JOV) 📚"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = (JOV_TYPE_ANY, JOV_TYPE_ANY, "INT")
-    RETURN_NAMES = (Lexicon.ANY_OUT, Lexicon.LIST, Lexicon.LENGTH)
+    RETURN_TYPES = (JOV_TYPE_ANY, "INT", JOV_TYPE_ANY, "INT")
+    RETURN_NAMES = (Lexicon.ANY_OUT, Lexicon.LENGTH, Lexicon.LIST, Lexicon.LENGTH2)
     SORT = 50
     DESCRIPTION = """
 Processes a batch of data based on the selected mode, such as merging, picking, slicing, random selection, or indexing. Allows for flipping the order of processed items and dividing the data into chunks.
@@ -151,8 +151,9 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
             },
             "outputs": {
                 0: (Lexicon.ANY_OUT, {"tooltip":"Output list from selected operation"}),
-                1: (Lexicon.LIST, {"tooltip":"Full list"}),
-                2: (Lexicon.LENGTH, {"tooltip":"Length of output list"}),
+                1: (Lexicon.LENGTH, {"tooltip":"Length of output list"}),
+                2: (Lexicon.LIST, {"tooltip":"Full list"}),
+                3: (Lexicon.LENGTH2, {"tooltip":"Length of all input elements"}),
             }
         })
         return Lexicon._parse(d, cls)
@@ -170,15 +171,20 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
 
     def run(self, **kw) -> Tuple[int, list]:
         data_list = parse_dynamic(kw, Lexicon.UNKNOWN, EnumConvertType.ANY, None)
-        mode = parse_param(kw, Lexicon.BATCH_MODE, EnumConvertType.STRING, EnumBatchMode.MERGE.name)
-        index = parse_param(kw, Lexicon.INDEX, EnumConvertType.INT, 0, 0)
-        slice_range = parse_param(kw, Lexicon.RANGE, EnumConvertType.VEC3INT, [(0, 0, 1)])
-        indices = parse_param(kw, Lexicon.STRING, EnumConvertType.STRING, "")
-        seed = parse_param(kw, Lexicon.SEED, EnumConvertType.INT, 0)
-        count = parse_param(kw, Lexicon.COUNT, EnumConvertType.INT, 0, 0)
-        flip = parse_param(kw, Lexicon.FLIP, EnumConvertType.BOOLEAN, False)
-        batch_chunk = parse_param(kw, Lexicon.BATCH_CHUNK, EnumConvertType.INT, 0, 0)
-        extract = []
+        if data_list is None:
+            logger.warn("no data for list")
+            return (None, [], 0)
+        data_list = [item for sublist in data_list for item in sublist]
+        mode = parse_param(kw, Lexicon.BATCH_MODE, EnumConvertType.STRING, EnumBatchMode.MERGE.name)[0]
+        index = parse_param(kw, Lexicon.INDEX, EnumConvertType.INT, 0, 0)[0]
+        slice_range = parse_param(kw, Lexicon.RANGE, EnumConvertType.VEC3INT, [(0, 0, 1)])[0]
+        indices = parse_param(kw, Lexicon.STRING, EnumConvertType.STRING, "")[0]
+        seed = parse_param(kw, Lexicon.SEED, EnumConvertType.INT, 0)[0]
+        count = parse_param(kw, Lexicon.COUNT, EnumConvertType.INT, 0, 0)[0]
+        flip = parse_param(kw, Lexicon.FLIP, EnumConvertType.BOOLEAN, False)[0]
+        batch_chunk = parse_param(kw, Lexicon.BATCH_CHUNK, EnumConvertType.INT, 0, 0)[0]
+
+        full_list = []
         # track latents since they need to be added back to Dict['samples']
         output_is_image = False
         output_is_latent = False
@@ -186,84 +192,73 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
             if isinstance(b, dict) and "samples" in b:
                 # latents are batched in the x.samples key
                 data = b["samples"]
-                extract.extend(data)
+                full_list.extend(data)
                 output_is_latent = True
             elif isinstance(b, torch.Tensor):
                 if len(b.shape) > 3:
                     b = [i for i in b]
                 else:
                     b = [b]
-                extract.extend(b)
+                full_list.extend(b)
                 output_is_image = True
             elif isinstance(b, (list, set, tuple,)):
-                extract.extend(b)
+                full_list.extend(b)
             else:
-                extract.append(b)
+                full_list.append(b)
 
-        img = []
-        results = []
-        params = list(zip_longest_fill(mode, index, slice_range, indices, seed, flip, batch_chunk, count))
-        pbar = ProgressBar(len(params))
-        for idx, (mode, index, slice_range, indices, seed, flip, batch_chunk, count) in enumerate(params):
-            loop_extract = extract.copy()
+        if len(full_list) == 0:
+            logger.warning("no data for list")
+            return None, 0, None, 0
 
-            if len(loop_extract) == 0:
-                results.append([None, None, 0])
-                pbar.update_absolute(idx)
-                continue
+        results = full_list.copy()
 
-            if flip and len(loop_extract) > 1:
-                loop_extract = loop_extract[::-1]
+        if flip and len(results) > 1:
+            results = results[::-1]
 
-            mode = EnumBatchMode[mode]
-            if mode == EnumBatchMode.PICK:
-                index = index if index < len(loop_extract) else -1
-                loop_extract = [loop_extract[index]]
-            elif mode == EnumBatchMode.SLICE:
-                start, end, step = slice_range
-                end = len(loop_extract) if end == 0 else end
-                loop_extract = loop_extract[start:end:step]
-            elif mode == EnumBatchMode.RANDOM:
-                if self.__seed is None or self.__seed != seed:
-                    random.seed(seed)
-                    self.__seed = seed
-                if count == 0:
-                    count = len(loop_extract)
-                loop_extract = random.sample(loop_extract, k=count)
-            elif mode == EnumBatchMode.INDEX_LIST:
-                junk = []
-                for x in indices.strip().split(','):
-                    if '-' in x:
-                        x = x.split('-')
-                        x = list(range(x[0], x[1]))
-                    else:
-                        x = [x]
-                    for i in x:
-                        try:
-                            junk.append(int(i))
-                        except Exception as e:
-                            logger.error(e)
-                loop_extract = [loop_extract[i:j] for i, j in zip([0]+junk, junk+[None])]
-            elif mode == EnumBatchMode.CARTESIAN:
-                logger.warning("NOT IMPLEMENTED - CARTESIAN")
+        mode = EnumBatchMode[mode]
+        if mode == EnumBatchMode.PICK:
+            index = index if index < len(results) else -1
+            results = [results[index]]
+        elif mode == EnumBatchMode.SLICE:
+            start, end, step = slice_range
+            end = len(results) if end == 0 else end
+            results = results[start:end:step]
+        elif mode == EnumBatchMode.RANDOM:
+            if self.__seed is None or self.__seed != seed:
+                random.seed(seed)
+                self.__seed = seed
+            if count == 0:
+                count = len(results)
+            results = random.sample(results, k=count)
+        elif mode == EnumBatchMode.INDEX_LIST:
+            junk = []
+            for x in indices.strip().split(','):
+                if '-' in x:
+                    x = x.split('-')
+                    x = list(range(x[0], x[1]))
+                else:
+                    x = [x]
+                for i in x:
+                    try:
+                        junk.append(int(i))
+                    except Exception as e:
+                        logger.error(e)
+            results = [results[i:j] for i, j in zip([0]+junk, junk+[None])]
+        elif mode == EnumBatchMode.CARTESIAN:
+            logger.warning("NOT IMPLEMENTED - CARTESIAN")
 
-            if len(loop_extract) == 0:
-                loop_extract = extract.copy()
+        if len(results) == 0:
+            logger.warning("no data for list")
+            return None, 0, None, 0
 
-            if batch_chunk > 0:
-                loop_extract = self.batched(loop_extract, batch_chunk)
+        if batch_chunk > 0:
+            results = self.batched(results, batch_chunk)
 
-            if not output_is_image:
-                results.append([*loop_extract, loop_extract, len(loop_extract)])
-            else:
-                img.extend(loop_extract)
-                print(len(img))
-                results.append([loop_extract, len(loop_extract)])
-            pbar.update_absolute(idx)
-        if not output_is_image:
-            return list(zip(*results))
-        ret = torch.stack(img, dim=0)
-        return ret, list(zip(*results))
+        size = len(results)
+        if output_is_image:
+            results = torch.stack(results, dim=0)
+            size = results.shape[0]
+        return results, size, full_list, len(full_list)
 
 class ExportNode(JOVBaseNode):
     NAME = "EXPORT (JOV) 📽"

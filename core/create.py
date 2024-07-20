@@ -398,7 +398,6 @@ Generates images containing text based on parameters such as font, size, alignme
         full_text = parse_param(kw, Lexicon.STRING, EnumConvertType.STRING, "")
         font_idx = parse_param(kw, Lexicon.FONT, EnumConvertType.STRING, self.FONT_NAMES[0])
         autosize = parse_param(kw, Lexicon.AUTOSIZE, EnumConvertType.BOOLEAN, False)
-        print(kw[Lexicon.LETTER])
         letter = parse_param(kw, Lexicon.LETTER, EnumConvertType.BOOLEAN, False)
         color = parse_param(kw, Lexicon.RGBA_A, EnumConvertType.VEC4INT, [(255,255,255,255)], 0, 255)
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC3INT, [(0,0,0)], 0, 255)
@@ -430,7 +429,6 @@ Generates images containing text based on parameters such as font, size, alignme
             edge = EnumEdge[edge]
             full_text = str(full_text)
 
-            print(letter, autosize)
             if letter:
                 full_text = full_text.replace('\n', '')
                 if autosize:
