@@ -132,6 +132,7 @@ class Lexicon(metaclass=LexiconMeta):
     LACUNARITY = 'LACUNARITY', "LACUNARITY"
     LEFT = '◀️', "Left"
     LENGTH = 'LENGTH', "Length"
+    LENGTH2 = 'FULL SIZE', "All items"
     LETTER = 'LETTER', "If each letter be generated and output in a batch"
     LINEAR = '🛟', "Linear"
     LIST = '🧾', "List"
