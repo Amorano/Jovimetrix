@@ -11,6 +11,8 @@ import { api_post } from '../util/util_api.js'
 import { bubbles } from '../util/util_fun.js'
 
 const _id = "DELAY (JOV) ✋🏽"
+const EVENT_JOVI_DELAY = "jovi-delay-user";
+const EVENT_JOVI_UPDATE = "jovi-delay-update";
 
 app.registerExtension({
 	name: 'jovimetrix.node.' + _id,
@@ -64,11 +66,17 @@ app.registerExtension({
                 window.bubbles_alive = false;
                 // app.canvas.setDirty(true);
             }
-            api.addEventListener("jovi-delay-user", python_delay_user);
 
             async function python_delay_update(event) {
             }
-            api.addEventListener("jovi-delay-update", python_delay_update);
+
+            api.addEventListener(EVENT_JOVI_DELAY, python_delay_user);
+            api.addEventListener(EVENT_JOVI_UPDATE, python_delay_update);
+
+            this.onDestroy = () => {
+                api.removeEventListener(EVENT_JOVI_DELAY, python_glsl_error);
+                api.removeEventListener(EVENT_JOVI_UPDATE, python_delay_update);
+            };
             return me;
         }
 

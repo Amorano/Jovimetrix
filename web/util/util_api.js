@@ -33,3 +33,17 @@ export async function api_cmd_jovian(id, cmd) {
         }),
     })
 }
+
+export async function api_cmd_glsl_vertex(id, vertex, fragment) {
+    return api.fetchApi('/jovimetrix/glsl', {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            id: id,
+            vertex: vertex,
+            fragment: fragment
+        }),
+    })
+}

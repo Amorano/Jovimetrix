@@ -69,10 +69,26 @@ JOV_CONFIG = {}
 JOV_WEB = ROOT / 'web'
 JOV_DEFAULT = JOV_WEB / 'default.json'
 JOV_CONFIG_FILE = JOV_WEB / 'config.json'
+#
+JOV_ROOT_GLSL = ROOT / 'res' / 'glsl'
+GLSL_PROGRAMS = {
+    "vertex": { "NONE": None },
+    "fragment": { "NONE": None }
+}
+
+GLSL_PROGRAMS["vertex"].update({str(f.name): str(f) for f in Path(JOV_ROOT_GLSL).glob('*.vert')})
+if (USER_GLSL := os.getenv("JOV_GLSL", None)) is not None:
+    GLSL_PROGRAMS["vertex"].update({str(f.name): str(f) for f in Path(USER_GLSL).glob('*.vert')})
+
+GLSL_PROGRAMS["fragment"].update({str(f.name): str(f) for f in Path(JOV_ROOT_GLSL).glob('*.glsl')})
+if USER_GLSL is not None:
+    GLSL_PROGRAMS["fragment"].update({str(f.name): str(f) for f in Path(USER_GLSL).glob('*.glsl')})
+
+logger.info(f"found {len(GLSL_PROGRAMS['vertex'])} vertex and {len(GLSL_PROGRAMS['fragment'])} fragment programs")
+print(GLSL_PROGRAMS)
 
 # nodes to skip on import; for online systems; skip Export, Streamreader, etc...
 JOV_IGNORE_NODE = ROOT / 'ignore.txt'
-JOV_GLSL = ROOT / 'res' / 'glsl'
 JOV_SIDECAR = os.getenv("JOV_SIDECAR", str(ROOT / "_md"))
 
 JOV_LOG_LEVEL = os.getenv("JOV_LOG_LEVEL", "WARNING")
@@ -137,6 +153,17 @@ JOV_TYPE_VECTOR = JOV_TYPE_ANY
 JOV_TYPE_NUMBER = JOV_TYPE_ANY
 JOV_TYPE_IMAGE = JOV_TYPE_ANY
 JOV_TYPE_FULL =JOV_TYPE_ANY
+
+# =============================================================================
+# == API RESPONSE
+# =============================================================================
+
+def load_file(fname: str) -> Any:
+    try:
+        with open(fname, 'r') as f:
+            return f.read()
+    except Exception as e:
+        logger.error(e)
 
 # =============================================================================
 # == API RESPONSE
@@ -235,6 +262,36 @@ try:
             with open(str(path / f"{fname}.md"), "w", encoding='utf-8') as f:
                 f.write(data[k]['.md'])
         return web.json_response(data)
+
+    @PromptServer.instance.routes.get("/jovimetrix/glsl")
+    async def jovimetrix_glsl_list(request) -> Any:
+        ret = {k:[kk for kk, vv in v.items() \
+                  if kk not in ['NONE'] and vv not in [None] and Path(vv).exists()]
+               for k, v in GLSL_PROGRAMS.items()}
+        return web.json_response(ret)
+
+    @PromptServer.instance.routes.get("/jovimetrix/glsl/{shader}")
+    async def jovimetrix_glsl_raw(request, shader:str) -> Any:
+        if (program := GLSL_PROGRAMS.get(shader, None)) is None:
+            return web.json_response(f"no program {shader}")
+        response = load_file(program)
+        return web.json_response(response)
+
+    @PromptServer.instance.routes.post("/jovimetrix/glsl")
+    async def jovimetrix_glsl(request) -> Any:
+        json_data = await request.json()
+        response = {k:None for k in json_data.keys()}
+        for who in response.keys():
+            if (programs := GLSL_PROGRAMS.get(who, None)) is None:
+                logger.warning(f"no program type {who}")
+                continue
+            fname = json_data[who]
+            if (data := programs.get(fname, None)) is not None:
+                response[who] = load_file(data)
+            else:
+                logger.warning(f"no glsl shader entry {fname}")
+
+        return web.json_response(response)
 
 except Exception as e:
     logger.error(e)

@@ -13,15 +13,16 @@ from loguru import logger
 
 from comfy.utils import ProgressBar
 
-from Jovimetrix import comfy_message, parse_reset, JOVBaseNode, ROOT, JOV_TYPE_IMAGE
+from Jovimetrix import comfy_message, parse_reset, JOVBaseNode, \
+    JOV_TYPE_IMAGE, GLSL_PROGRAMS
 
 from Jovimetrix.sup.lexicon import JOVImageNode, Lexicon
 from Jovimetrix.sup.util import parse_param, zip_longest_fill, EnumConvertType
 
-from Jovimetrix.sup.image import channel_solid, cv2tensor, cv2tensor_full, image_convert, \
-    image_grayscale, image_invert, image_mask_add, pil2cv, tensor2pil, \
-    image_rotate, image_scalefit, image_stereogram, image_transform, image_translate, \
-    pixel_eval, tensor2cv, shape_ellipse, shape_polygon, shape_quad, \
+from Jovimetrix.sup.image import channel_solid, cv2tensor, cv2tensor_full, \
+    image_grayscale, image_invert, image_mask_add, pil2cv, image_convert, \
+    image_rotate, image_scalefit, image_stereogram, image_transform, \
+    tensor2cv, shape_ellipse, shape_polygon, shape_quad, image_translate, \
     EnumScaleMode, EnumInterpolation, EnumEdge, EnumImageType, MIN_IMAGE_SIZE
 
 from Jovimetrix.sup.text import font_names, text_autosize, text_draw, \
@@ -33,7 +34,6 @@ from Jovimetrix.sup.shader import CompileException, GLSLShader
 # =============================================================================
 
 JOV_CATEGORY = "CREATE"
-JOV_CONFIG_GLSL = ROOT / 'glsl'
 
 # =============================================================================
 
@@ -94,6 +94,7 @@ class GLSLNode(JOVImageNode):
     DESCRIPTION = """
 Execute custom GLSL (OpenGL Shading Language) fragment shaders to generate images or apply effects. GLSL is a high-level shading language used for graphics programming, particularly in the context of rendering images or animations. This node allows for real-time rendering of shader effects, providing flexibility and creative control over image processing pipelines. It takes advantage of GPU acceleration for efficient computation, enabling the rapid generation of complex visual effects.
 """
+    INSTANCE = 0
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -101,14 +102,15 @@ Execute custom GLSL (OpenGL Shading Language) fragment shaders to generate image
         d.update({
             "optional": {
                 Lexicon.TIME: ("FLOAT", {"default": 0, "step": 0.001, "min": 0, "precision": 4}),
-                Lexicon.BATCH: ("INT", {"default": 1, "step": 1, "min": 0, "max": 262144}),
+                Lexicon.BATCH: ("INT", {"default": 0, "step": 1, "min": 0, "max": 1048576}),
                 Lexicon.FPS: ("INT", {"default": 24, "step": 1, "min": 1, "max": 120}),
                 Lexicon.WH: ("VEC2", {"default": (512, 512), "min": MIN_IMAGE_SIZE, "step": 1,}),
                 Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1,
                                          "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True}),
                 Lexicon.WAIT: ("BOOLEAN", {"default": False}),
                 Lexicon.RESET: ("BOOLEAN", {"default": False}),
-                Lexicon.FRAGMENT: ("STRING", {"default": GLSLShader.PROG_FRAGMENT, "multiline": True, "dynamicPrompts": False}),
+                Lexicon.PROG_VERT: ("STRING", {"default": GLSLShader.PROG_VERTEX, "multiline": True, "dynamicPrompts": False}),
+                Lexicon.PROG_FRAG: ("STRING", {"default": GLSLShader.PROG_FRAGMENT, "multiline": True, "dynamicPrompts": False}),
             }
         })
         return Lexicon._parse(d, cls)
@@ -130,17 +132,18 @@ Execute custom GLSL (OpenGL Shading Language) fragment shaders to generate image
         reset = parse_param(kw, Lexicon.RESET, EnumConvertType.BOOLEAN, False)[0]
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)[0]
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)[0]
-        fragment = parse_param(kw, Lexicon.FRAGMENT, EnumConvertType.STRING, GLSLShader.PROG_FRAGMENT)[0]
+        vertex_src = parse_param(kw, Lexicon.PROG_VERT, EnumConvertType.STRING, "")[0]
+        fragment_src = parse_param(kw, Lexicon.PROG_FRAG, EnumConvertType.STRING, "")[0]
 
         variables = kw.copy()
-        for p in [Lexicon.TIME, Lexicon.BATCH, Lexicon.FPS, Lexicon.WH, Lexicon.FRAGMENT, Lexicon.WAIT, Lexicon.RESET]:
+        for p in [Lexicon.TIME, Lexicon.BATCH, Lexicon.FPS, Lexicon.WAIT, Lexicon.RESET, Lexicon.WH, Lexicon.MATTE, Lexicon.PROG_VERT, Lexicon.PROG_FRAG]:
             variables.pop(p, None)
 
         self.__glsl.bgcolor = matte
         self.__glsl.size = wihi
         self.__glsl.fps = fps
         try:
-            self.__glsl.fragment = fragment
+            self.__glsl.program(vertex_src, fragment_src)
         except CompileException as e:
             comfy_message(ident, "jovi-glsl-error", {"id": ident, "e": str(e)})
             logger.error(e)
@@ -168,8 +171,8 @@ Execute custom GLSL (OpenGL Shading Language) fragment shaders to generate image
             images.append(cv2tensor_full(image))
             if not wait:
                 self.__delta += step
-                if batch == 0:
-                    comfy_message(ident, "jovi-glsl-time", {"id": ident, "t": self.__delta})
+                # if batch == 0:
+                comfy_message(ident, "jovi-glsl-time", {"id": ident, "t": self.__delta})
             pbar.update_absolute(idx)
         return [torch.cat(i, dim=0) for i in zip(*images)]
 

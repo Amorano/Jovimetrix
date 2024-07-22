@@ -54,6 +54,70 @@ class EnumSwizzle(Enum):
 # === SUPPORT ===
 # =============================================================================
 
+def deep_merge_dict(*dicts: dict) -> dict:
+    """
+    Deep merge multiple dictionaries recursively.
+
+    Args:
+        *dicts: Variable number of dictionaries to be merged.
+
+    Returns:
+        dict: Merged dictionary.
+    """
+    def _deep_merge(d1: Any, d2: Any) -> Any:
+        if not isinstance(d1, dict) or not isinstance(d2, dict):
+            return d2
+
+        merged_dict = d1.copy()
+
+        for key in d2:
+            if key in merged_dict:
+                if isinstance(merged_dict[key], dict) and isinstance(d2[key], dict):
+                    merged_dict[key] = _deep_merge(merged_dict[key], d2[key])
+                elif isinstance(merged_dict[key], list) and isinstance(d2[key], list):
+                    merged_dict[key].extend(d2[key])
+                else:
+                    merged_dict[key] = d2[key]
+            else:
+                merged_dict[key] = d2[key]
+        return merged_dict
+
+    merged = {}
+    for d in dicts:
+        merged = _deep_merge(merged, d)
+    return merged
+
+def grid_make(data: List[Any]) -> Tuple[List[List[Any]], int, int]:
+    """
+    Create a 2D grid from a 1D list.
+
+    Args:
+        data (List[Any]): Input data.
+
+    Returns:
+        Tuple[List[List[Any]], int, int]: A tuple containing the 2D grid, number of columns,
+        and number of rows.
+    """
+    size = len(data)
+    grid = int(math.sqrt(size))
+    if grid * grid < size:
+        grid += 1
+    if grid < 1:
+        return [], 0, 0
+
+    rows = size // grid
+    if size % grid != 0:
+        rows += 1
+
+    ret = []
+    cols = 0
+    for j in range(rows):
+        end = min((j + 1) * grid, len(data))
+        cols = max(cols, end - j * grid)
+        d = [data[i] for i in range(j * grid, end)]
+        ret.append(d)
+    return ret, cols, rows
+
 def parse_dynamic(data:dict, prefix:str, typ:EnumConvertType, default: Any) -> List[Any]:
     """Convert iterated input field(s) based on a s into a single compound list of entries.
 
@@ -248,6 +312,33 @@ def parse_param(data:dict, key:str, typ:EnumConvertType, default: Any,
         val = [val]
     return [parse_value(v, typ, default, clip_min, clip_max, zero) for v in val]
 
+def path_next(pattern: str) -> str:
+    """
+    Finds the next free path in an sequentially named list of files
+    """
+    i = 1
+    while os.path.exists(pattern % i):
+        i = i * 2
+
+    a, b = (i // 2, i)
+    while a + 1 < b:
+        c = (a + b) // 2
+        a, b = (c, b) if os.path.exists(pattern % c) else (a, c)
+    return pattern % b
+
+def update_nested_dict(d, path, value) -> None:
+    keys = path.split('.')
+    current = d
+    for key in keys[:-1]:
+        current = current.setdefault(key, {})
+    last_key = keys[-1]
+
+    # Check if the key already exists
+    if last_key in current and isinstance(current[last_key], dict):
+        current[last_key].update(value)
+    else:
+        current[last_key] = value
+
 def vector_swap(pA: Any, pB: Any, swap_x: EnumSwizzle, x:float, swap_y:EnumSwizzle, y:float,
                 swap_z:EnumSwizzle, z:float, swap_w:EnumSwizzle, w:float) -> List[float]:
     """Swap out a vector's values with another vector's values, or a constant fill."""
@@ -265,19 +356,6 @@ def vector_swap(pA: Any, pB: Any, swap_x: EnumSwizzle, x:float, swap_y:EnumSwizz
         parse(pA, pB, swap_z, z),
         parse(pA, pB, swap_w, w)
     ]
-
-def update_nested_dict(d, path, value) -> None:
-    keys = path.split('.')
-    current = d
-    for key in keys[:-1]:
-        current = current.setdefault(key, {})
-    last_key = keys[-1]
-
-    # Check if the key already exists
-    if last_key in current and isinstance(current[last_key], dict):
-        current[last_key].update(value)
-    else:
-        current[last_key] = value
 
 def zip_longest_fill(*iterables: Any) -> Generator[Tuple[Any, ...], None, None]:
     """
@@ -310,81 +388,3 @@ def zip_longest_fill(*iterables: Any) -> Generator[Tuple[Any, ...], None, None]:
                         values[i] = current_value
 
             yield tuple(values)
-
-def deep_merge_dict(*dicts: dict) -> dict:
-    """
-    Deep merge multiple dictionaries recursively.
-
-    Args:
-        *dicts: Variable number of dictionaries to be merged.
-
-    Returns:
-        dict: Merged dictionary.
-    """
-    def _deep_merge(d1: Any, d2: Any) -> Any:
-        if not isinstance(d1, dict) or not isinstance(d2, dict):
-            return d2
-
-        merged_dict = d1.copy()
-
-        for key in d2:
-            if key in merged_dict:
-                if isinstance(merged_dict[key], dict) and isinstance(d2[key], dict):
-                    merged_dict[key] = _deep_merge(merged_dict[key], d2[key])
-                elif isinstance(merged_dict[key], list) and isinstance(d2[key], list):
-                    merged_dict[key].extend(d2[key])
-                else:
-                    merged_dict[key] = d2[key]
-            else:
-                merged_dict[key] = d2[key]
-        return merged_dict
-
-    merged = {}
-    for d in dicts:
-        merged = _deep_merge(merged, d)
-    return merged
-
-def grid_make(data: List[Any]) -> Tuple[List[List[Any]], int, int]:
-    """
-    Create a 2D grid from a 1D list.
-
-    Args:
-        data (List[Any]): Input data.
-
-    Returns:
-        Tuple[List[List[Any]], int, int]: A tuple containing the 2D grid, number of columns,
-        and number of rows.
-    """
-    size = len(data)
-    grid = int(math.sqrt(size))
-    if grid * grid < size:
-        grid += 1
-    if grid < 1:
-        return [], 0, 0
-
-    rows = size // grid
-    if size % grid != 0:
-        rows += 1
-
-    ret = []
-    cols = 0
-    for j in range(rows):
-        end = min((j + 1) * grid, len(data))
-        cols = max(cols, end - j * grid)
-        d = [data[i] for i in range(j * grid, end)]
-        ret.append(d)
-    return ret, cols, rows
-
-def path_next(pattern: str) -> str:
-    """
-    Finds the next free path in an sequentially named list of files
-    """
-    i = 1
-    while os.path.exists(pattern % i):
-        i = i * 2
-
-    a, b = (i // 2, i)
-    while a + 1 < b:
-        c = (a + b) // 2
-        a, b = (c, b) if os.path.exists(pattern % c) else (a, c)
-    return pattern % b

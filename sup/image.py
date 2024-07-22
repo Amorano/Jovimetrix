@@ -1143,14 +1143,14 @@ def image_gradient_map(image:TYPE_IMAGE, gradient_map:TYPE_IMAGE, reverse:bool=F
 
 def image_grayscale(image:TYPE_IMAGE) -> TYPE_IMAGE:
     if image.dtype in [np.float16, np.float32, np.float64]:
-        image = np.clip(image * 255, 0, 255).astype(np.uint8)
-    cc = image.shape[2] if image.ndim == 3 else 1
-    if cc == 1:
-        return image
-    if cc == 4:
-        image = image[:,:,:3]
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)[:,:,2]
-    # WxH to WxHx1
+        # normalize
+        image = (image - image.min()) / (image.max() - image.min())
+        image = (image * 255).astype(np.uint8)
+    if image.ndim == 3:
+        if image.shape[2] == 3:
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        else:
+            image = cv2.cvtColor(image, cv2.COLOR_BGRA2GRAY)
     return np.expand_dims(image, -1)
 
 def image_grid(data: List[TYPE_IMAGE], width: int, height: int) -> TYPE_IMAGE:
@@ -1217,29 +1217,28 @@ def image_invert(image: TYPE_IMAGE, value: float) -> TYPE_IMAGE:
     image = cv2.addWeighted(image, 1 - value, 255 - image, value, 0)
     return bgr2image(image, alpha, cc == 1)
 
-def image_lerp(imageA:TYPE_IMAGE,
-            imageB:TYPE_IMAGE,
-            mask:TYPE_IMAGE=None,
-            alpha:float=1.) -> TYPE_IMAGE:
+def image_lerp(imageA:TYPE_IMAGE, imageB:TYPE_IMAGE, mask:TYPE_IMAGE=None,
+               alpha:float=1.) -> TYPE_IMAGE:
 
     imageA = imageA.astype(np.float32)
     imageB = imageB.astype(np.float32)
 
-    # normalize alpha and establish mask
+    # establish mask
     alpha = np.clip(alpha, 0, 1)
     if mask is None:
         height, width = imageA.shape[:2]
-        mask = cv2.empty((height, width, 1), dtype=cv2.uint8)
+        mask = np.ones((height, width, 1), dtype=np.float32)
     else:
         # normalize the mask
-        info = np.iinfo(mask.dtype)
-        mask = mask.astype(np.float32) / info.max * alpha
+        mask = mask.astype(np.float32)
+        mask = (mask - mask.min()) / (mask.max() - mask.min()) * alpha
 
     # LERP
     imageA = cv2.multiply(1. - mask, imageA)
     imageB = cv2.multiply(mask, imageB)
-    imageA = cv2.add(imageA, imageB)
-    return imageA.astype(np.uint8)
+    imageA = (cv2.add(imageA, imageB) / 255. - 0.5) * 2.0
+    imageA = (imageA * 255).astype(np.uint8)
+    return np.clip(imageA, 0, 255)
 
 def image_levels(image:torch.Tensor, black_point:int=0, white_point=255,
         mid_point=128, gamma=1.0) -> TYPE_IMAGE:
@@ -1322,6 +1321,15 @@ def image_load_from_url(url:str) -> TYPE_IMAGE:
             return pil2cv(image)
         except Exception as e:
             logger.error(str(e))
+
+def image_normalize(image: TYPE_IMAGE) -> TYPE_IMAGE:
+    image = image.astype(np.float32)
+    img_min = np.min(image)
+    img_max = np.max(image)
+    if img_min == img_max:
+        return np.zeros_like(image, dtype=np.float32)
+    image = (image - img_min) / (img_max - img_min)
+    return (image * 255).astype(np.uint8)
 
 def image_mask(image:TYPE_IMAGE, color:TYPE_PIXEL=255) -> TYPE_IMAGE:
     """Returns a mask from an image or a default mask with the color."""
@@ -1437,6 +1445,19 @@ def image_mirror(image: TYPE_IMAGE, mode:EnumMirrorMode, x:float=0.5, y:float=0.
         image = mirror(image, 0, reverse)
 
     return image
+
+def image_mirror_mandela(imageA: np.ndarray, imageB: np.ndarray) -> Tuple[np.ndarray, ...]:
+    """Merge 4 flipped copies of input images to make them wrap.
+    Output is twice bigger in both dimensions."""
+
+    top = np.hstack([imageA, -np.flip(imageA, axis=1)])
+    bottom = np.hstack([np.flip(imageA, axis=0), -np.flip(imageA)])
+    imageA = np.vstack([top, bottom])
+
+    top = np.hstack([imageB, np.flip(imageB, axis=1)])
+    bottom = np.hstack([-np.flip(imageB, axis=0), -np.flip(imageB)])
+    imageB = np.vstack([top, bottom])
+    return imageA, imageB
 
 def image_pixelate(image: TYPE_IMAGE, amount:float=1.)-> TYPE_IMAGE:
 
@@ -2060,3 +2081,126 @@ def remap_sphere(image: TYPE_IMAGE, radius: float) -> TYPE_IMAGE:
     height, width = image.shape[:2]
     map_x, map_y = coord_sphere(width, height, radius)
     return cv2.remap(image, map_x, map_y, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
+
+def depth_from_gradient(grad_x, grad_y):
+    """Optimized Frankot-Chellappa depth-from-gradient algorithm."""
+    rows, cols = grad_x.shape
+    rows_scale = np.fft.fftfreq(rows)
+    cols_scale = np.fft.fftfreq(cols)
+    u_grid, v_grid = np.meshgrid(cols_scale, rows_scale)
+    grad_x_F = np.fft.fft2(grad_x)
+    grad_y_F = np.fft.fft2(grad_y)
+    denominator = u_grid**2 + v_grid**2
+    denominator[0, 0] = 1.0
+    Z_F = (-1j * u_grid * grad_x_F - 1j * v_grid * grad_y_F) / denominator
+    Z_F[0, 0] = 0.0
+    Z = np.fft.ifft2(Z_F).real
+    Z -= np.min(Z)
+    Z /= np.max(Z)
+    return Z
+
+def height_from_normal(image: TYPE_IMAGE, tile:bool=True) -> TYPE_IMAGE:
+    """Computes a height map from the given normal map."""
+    image = np.transpose(image, (2, 0, 1))
+    flip_img = np.flip(image, axis=1)
+    grad_x, grad_y = (flip_img[0] - 0.5) * 2, (flip_img[1] - 0.5) * 2
+    grad_x = np.flip(grad_x, axis=0)
+    grad_y = np.flip(grad_y, axis=0)
+
+    if not tile:
+        grad_x, grad_y = image_mirror_mandela(grad_x, grad_y)
+    pred_img = depth_from_gradient(-grad_x, grad_y)
+
+    # re-crop
+    if not tile:
+        height, width = image.shape[1], image.shape[2]
+        pred_img = pred_img[:height, :width]
+
+    image = np.stack([pred_img, pred_img, pred_img])
+    image = np.transpose(image, (1, 2, 0))
+    return image
+
+def curvature_from_normal(image: TYPE_IMAGE, blur_radius:int=2)-> TYPE_IMAGE:
+    """Computes a curvature map from the given normal map."""
+    image = np.transpose(image, (2, 0, 1))
+    blur_factor = 1 / 2 ** min(8, max(2, blur_radius))
+    diff_kernel = np.array([-1, 0, 1])
+
+    def conv_1d(array, kernel) -> np.ndarray[Any, np.dtype[Any]]:
+        """Performs row-wise 1D convolutions with repeat padding."""
+        k_l = len(kernel)
+        extended = np.pad(array, k_l // 2, mode="wrap")
+        return np.array([np.convolve(row, kernel, mode="valid") for row in extended[k_l//2:-k_l//2+1]])
+
+    h_conv = conv_1d(image[0], diff_kernel)
+    v_conv = conv_1d(-image[1].T, diff_kernel).T
+    edges_conv = h_conv + v_conv
+
+    # Calculate blur radius in pixels
+    blur_radius_px = int(np.mean(image.shape[1:3]) * blur_factor)
+    if blur_radius_px < 2:
+        # If blur radius is too small, just normalize the edge convolution
+        image = (edges_conv - np.min(edges_conv)) / (np.ptp(edges_conv) + 1e-10)
+    else:
+        blur_radius_px += blur_radius_px % 2 == 0
+
+        # Compute Gaussian kernel
+        sigma = max(1, blur_radius_px // 8)
+        x = np.linspace(-(blur_radius_px - 1) / 2, (blur_radius_px - 1) / 2, blur_radius_px)
+        g_kernel = np.exp(-0.5 * np.square(x) / np.square(sigma))
+        g_kernel /= np.sum(g_kernel)
+
+        # Apply Gaussian blur
+        h_blur = conv_1d(edges_conv, g_kernel)
+        v_blur = conv_1d(h_blur.T, g_kernel).T
+        image = (v_blur - np.min(v_blur)) / (np.ptp(v_blur) + 1e-10)
+
+    image = (image - image.min()) / (image.max() - image.min()) * 255
+    return image.astype(np.uint8)
+
+def roughness_from_normal(image: TYPE_IMAGE) -> TYPE_IMAGE:
+    """Roughness from a normal map."""
+    up_vector = np.array([0, 0, 1])
+    image = 1 - np.dot(image, up_vector)
+    image = (image - image.min()) / (image.max() - image.min())
+    image = (255 * image).astype(np.uint8)
+    return image_grayscale(image)
+
+def roughness_from_albedo(image: TYPE_IMAGE) -> TYPE_IMAGE:
+    """Roughness from an albedo map."""
+    kernel_size = 3
+    image = cv2.Laplacian(image, cv2.CV_64F, ksize=kernel_size)
+    image = (image - image.min()) / (image.max() - image.min())
+    image = (255 * image).astype(np.uint8)
+    return image_grayscale(image)
+
+def roughness_from_albedo_normal(albedo: TYPE_IMAGE, normal: TYPE_IMAGE, blur:int=2, blend:float=0.5, iterations:int=3) -> TYPE_IMAGE:
+    normal = roughness_from_normal(normal)
+    normal = image_normalize(normal)
+    albedo = roughness_from_albedo(albedo)
+    albedo = image_normalize(albedo)
+    rough = image_lerp(normal, albedo, alpha=blend)
+    rough = image_normalize(rough)
+    image = image_lerp(normal, rough, alpha=blend)
+    iterations = min(16, max(2, iterations))
+    blur += (blur % 2 == 0)
+    step = 1 / 2 ** iterations
+    for i in range(iterations):
+        image = cv2.add(normal * step, image * step)
+        image = cv2.GaussianBlur(image, (blur + i * 2, blur + i * 2), 3 * i)
+
+    inverted = 255 - image_normalize(image)
+    inverted = cv2.subtract(inverted, albedo) * 0.5
+    inverted = cv2.GaussianBlur(inverted, (blur, blur), blur)
+    inverted = image_normalize(inverted)
+
+    image = cv2.add(image * 0.5, inverted * 0.5)
+    for i in range(iterations):
+        image = cv2.GaussianBlur(image, (blur, blur), blur)
+
+    image = cv2.add(image * 0.5, inverted * 0.5)
+    for i in range(iterations):
+        image = cv2.GaussianBlur(image, (blur, blur), blur)
+
+    image = image_normalize(image)
+    return image

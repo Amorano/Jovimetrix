@@ -8,7 +8,8 @@ import { api } from "../../../scripts/api.js";
 import { app } from "../../../scripts/app.js"
 import { api_cmd_jovian } from '../util/util_api.js'
 
-const _id = "TICK (JOV) ⏱"
+const _id = "TICK (JOV) ⏱";
+const EVENT_JOVI_TICK = "jovi-tick";
 
 app.registerExtension({
 	name: 'jovimetrix.node.' + _id,
@@ -33,7 +34,11 @@ app.registerExtension({
                 }
                 self.widget_count.value = event.detail.i;
             }
+
             api.addEventListener("jovi-tick", python_tick);
+            this.onDestroy = () => {
+                api.removeEventListener(EVENT_JOVI_TICK, python_tick);
+            };
             return me;
         }
 	}

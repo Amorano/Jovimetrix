@@ -8,12 +8,13 @@ import { api } from "../../../scripts/api.js";
 import { app } from "../../../scripts/app.js";
 import { fitHeight } from '../util/util.js'
 import { widget_hide, widget_show  } from '../util/util_widget.js';
-import { api_cmd_jovian } from '../util/util_api.js';
+import { api_post, api_cmd_jovian } from '../util/util_api.js';
 import { flashBackgroundColor } from '../util/util_fun.js';
 
 const _id = "GLSL (JOV) 🍩";
 const EVENT_JOVI_GLSL_ERROR = "jovi-glsl-error";
 const EVENT_JOVI_GLSL_TIME = "jovi-glsl-time";
+const EVENT_JOVI_GLSL_REGISTER = "jovi-register-glsl";
 const RE_VARIABLE = /uniform\s*(\w*)\s*(\w*);(?:.*\/{2}\s*([A-Za-z0-9\-\.,\s]+)){0,1}\s*$/gm
 
 app.registerExtension({
@@ -28,14 +29,15 @@ app.registerExtension({
             const me = onNodeCreated?.apply(this);
             const self = this;
             const widget_time = this.widgets.find(w => w.name === '🕛');
-            widget_time.options.menu = false;
             const widget_batch = this.widgets.find(w => w.name === 'BATCH');
-            widget_batch.options.menu = false;
+            //
             const widget_wait = this.widgets.find(w => w.name === '✋🏽');
-            widget_wait.options.menu = false;
             const widget_reset = this.widgets.find(w => w.name === 'RESET');
-            widget_reset.options.menu = false;
+            const widget_vertex = this.widgets.find(w => w.name === 'VERTEX');
             const widget_fragment = this.widgets.find(w => w.name === 'FRAGMENT');
+            widget_wait.options.menu = false;
+            widget_reset.options.menu = false;
+            widget_vertex.options.menu = false;
             widget_fragment.options.menu = false;
             let widget_param = this.inputs?.find(w => w.name === 'PARAM');
             if (widget_param === undefined) {
@@ -93,7 +95,6 @@ app.registerExtension({
                     widgets.push(varName);
                 });
 
-
                 while (self.inputs?.length > widgets.length) {
                     let idx = 0;
                     self.inputs.forEach(i => {
@@ -107,6 +108,10 @@ app.registerExtension({
                 }
             }
             widget_fragment.inputEl.addEventListener('input', function () {
+                shader_changed();
+            });
+
+            widget_vertex.inputEl.addEventListener('input', function () {
                 shader_changed();
             });
 

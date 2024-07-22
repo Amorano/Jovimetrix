@@ -12,8 +12,10 @@ import { flashBackgroundColor } from '../util/util_fun.js'
 import { fitHeight, TypeSlotEvent, TypeSlot } from '../util/util.js'
 import { widget_hide, widget_show } from '../util/util_widget.js'
 
-const _id = "QUEUE (JOV) 🗃"
-const _prefix = '🦄'
+const _id = "QUEUE (JOV) 🗃";
+const _prefix = '🦄';
+const EVENT_JOVI_PING = "jovi-queue-ping";
+const EVENT_JOVI_DONE = "jovi-queue-done";
 
 app.registerExtension({
 	name: 'jovimetrix.node.' + _id,
@@ -96,8 +98,14 @@ app.registerExtension({
                 await flashBackgroundColor(self.widget_queue.inputEl, 650, 4, "#995242CC");
             }
 
-            api.addEventListener("jovi-queue-ping", python_queue_ping);
-            api.addEventListener("jovi-queue-done", python_queue_done);
+            api.addEventListener(EVENT_JOVI_PING, python_queue_ping);
+            api.addEventListener(EVENT_JOVI_DONE, python_queue_done);
+
+            this.onDestroy = () => {
+                api.removeEventListener(EVENT_JOVI_PING, python_queue_ping);
+                api.removeEventListener(EVENT_JOVI_DONE, python_queue_done);
+            };
+
             setTimeout(() => { widget_value.callback(); }, 10);
             return me;
         }
