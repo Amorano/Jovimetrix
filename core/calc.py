@@ -765,6 +765,12 @@ A timer and frame counter, emitting pulses or signals based on time intervals. I
                 # how many frames to dump....
                 Lexicon.BATCH: ("INT", {"min": 1, "default": 1, "step": 1, "max": 32767, "tooltip": "Number of frames wanted"}),
                 Lexicon.STEP: ("INT", {"default": 0, "step": 1, "tooltip": "Steps/Stride between pulses -- useful to do odd or even batches. If set to 0 will stretch from (VAL -> LOOP) / Batch giving a linear range of values."}),
+            },
+            "outputs": {
+                0: (Lexicon.VALUE, {"tooltip":"Current value for the configured tick"}),
+                1: (Lexicon.LINEAR, {"tooltip":"Normalized tick value (0..1) based on BPM and Loop"}),
+                2: (Lexicon.FPS, {"tooltip":"Current 'frame' in the tick based on FPS setting"}),
+                3: (Lexicon.TRIGGER, {"tooltip":"Based on the BPM settings, on beat hit, output the input at '⚡'"}),
             }
         })
         return Lexicon._parse(d, cls)
@@ -811,12 +817,13 @@ A timer and frame counter, emitting pulses or signals based on time intervals. I
             if loop != 0:
                 self.__frame %= loop
             results.frame.append(self.__frame)
-            results.lin.append(lin)
+            results.lin.append(float(lin))
             results.fixed.append(float(fixed_step))
             results.trigger.append(trigger)
             if not hold:
                 self.__frame += step
             pbar.update_absolute(idx)
+
         if batch < 2:
             comfy_message(ident, "jovi-tick", {"i": self.__frame})
         return (results.frame, results.lin, results.fixed, results.trigger,)

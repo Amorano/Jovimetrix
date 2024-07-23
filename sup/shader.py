@@ -6,7 +6,7 @@ Blended from old ModernGL implementation + Audio_Scheduler & Fill Node Pack
 """
 
 import re
-from typing import Tuple
+from typing import Dict, Tuple
 
 import cv2
 import glfw
@@ -15,8 +15,8 @@ import OpenGL.GL as gl
 
 from loguru import logger
 
-from Jovimetrix import load_file
-from Jovimetrix.sup.util import EnumConvertType, parse_value
+from Jovimetrix.sup.util import EnumConvertType, load_file, parse_value
+from Jovimetrix.sup.image import image_convert
 
 # =============================================================================
 
@@ -47,6 +47,7 @@ PTYPE = {
 }
 
 RE_VARIABLE = re.compile(r"uniform\s*(\w*)\s*(\w*);(?:.*\/{2}\s*([A-Za-z0-9\-\.,\s]+)){0,1}\s*$", re.MULTILINE)
+RE_SHADER_META = re.compile(r"\/\/\s(name|desc):\s([A-Za-z\s]+)$", re.MULTILINE)
 
 # =============================================================================
 
@@ -162,8 +163,8 @@ void main()
             raise RuntimeError("Framebuffer is not complete")
 
         # dump all the old texture slots?
-        # old = [v[3] for v in self.__userVar.values() if v[0] == 'sampler2D']
-        # gl.glDeleteTextures(old)
+        old = [v[3] for v in self.__userVar.values() if v[0] == 'sampler2D']
+        gl.glDeleteTextures(old)
         gl.glViewport(0, 0, self.__size[0], self.__size[1])
 
     def __cleanup(self) -> None:
@@ -358,13 +359,11 @@ void main()
             if (p_type == 'sampler2D'):
                 # cache textures? or do we care per frame?
                 # gl.glBindTexture(gl.GL_TEXTURE_2D, p_tex)
-                val = empty if val is None else val
-                if val.ndim == 3:
-                    op = gl.GL_RGBA if val.shape[2] == 4 else gl.GL_RGB
-                    val = val[::-1,:]
-                    val = val.astype(np.float32) / 255.0
+                val = empty if val is None else image_convert(val, 4)
+                val = val[::-1,:]
+                val = val.astype(np.float32) / 255.0
                 val = cv2.resize(val, self.__size, interpolation=cv2.INTER_LINEAR)
-                gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, op, val.shape[1], val.shape[0], 0, op, gl.GL_FLOAT, val)
+                gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_RGBA, val.shape[1], val.shape[0], 0, gl.GL_RGBA, gl.GL_FLOAT, val)
                 gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_LINEAR)
                 gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_LINEAR)
                 gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_S, gl.GL_CLAMP_TO_EDGE)
@@ -376,6 +375,7 @@ void main()
                 texture_index += 1
             else:
                 funct = LAMBDA_UNIFORM[p_type]
+                val = val.split(',')
                 val = parse_value(val, PTYPE[p_type], 0)
                 if not isinstance(val, (list, tuple)):
                     val = [val]
@@ -385,8 +385,8 @@ void main()
         gl.glClearColor(*self.__bgcolor)
         gl.glClear(gl.GL_COLOR_BUFFER_BIT)
         gl.glDrawArrays(gl.GL_TRIANGLES, 0, 3)
-        data = gl.glReadPixels(0, 0, self.__size[0], self.__size[1], gl.GL_RGB, gl.GL_UNSIGNED_BYTE)
-        image = np.frombuffer(data, dtype=np.uint8).reshape(self.__size[1], self.__size[0], 3)
+        data = gl.glReadPixels(0, 0, self.__size[0], self.__size[1], gl.GL_RGBA, gl.GL_UNSIGNED_BYTE)
+        image = np.frombuffer(data, dtype=np.uint8).reshape(self.__size[1], self.__size[0], 4)
         self.__last_frame = image[::-1, :, :]
 
         # check if window was changed...
@@ -399,3 +399,10 @@ void main()
         glfw.poll_events()
 
         return self.__last_frame
+
+def shader_meta(shader: str) -> Dict[str, str]:
+    ret = {}
+    for match in RE_SHADER_META.finditer(shader):
+        key, value = match.groups()
+        ret[key] = value
+    return ret

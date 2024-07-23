@@ -13,14 +13,13 @@ from loguru import logger
 
 from comfy.utils import ProgressBar
 
-from Jovimetrix import comfy_message, parse_reset, JOVBaseNode, \
-    JOV_TYPE_IMAGE, GLSL_PROGRAMS
+from Jovimetrix import JOVBaseNode, JOV_TYPE_IMAGE
 
 from Jovimetrix.sup.lexicon import JOVImageNode, Lexicon
 from Jovimetrix.sup.util import parse_param, zip_longest_fill, EnumConvertType
 
 from Jovimetrix.sup.image import channel_solid, cv2tensor, cv2tensor_full, \
-    image_grayscale, image_invert, image_mask_add, pil2cv, image_convert, \
+    image_grayscale, image_invert, image_mask_add, pil2cv, \
     image_rotate, image_scalefit, image_stereogram, image_transform, \
     tensor2cv, shape_ellipse, shape_polygon, shape_quad, image_translate, \
     EnumScaleMode, EnumInterpolation, EnumEdge, EnumImageType, MIN_IMAGE_SIZE
@@ -29,7 +28,6 @@ from Jovimetrix.sup.text import font_names, text_autosize, text_draw, \
     EnumAlignment, EnumJustify, EnumShapes
 
 from Jovimetrix.sup.audio import graph_sausage
-from Jovimetrix.sup.shader import CompileException, GLSLShader
 
 # =============================================================================
 
@@ -85,94 +83,6 @@ Generate a constant image or mask of a specified size and color. It can be used 
                     sample = EnumInterpolation[sample]
                     pA = image_scalefit(pA, width, height, mode, sample)
                 images.append(cv2tensor_full(pA, matte))
-            pbar.update_absolute(idx)
-        return [torch.cat(i, dim=0) for i in zip(*images)]
-
-class GLSLNode(JOVImageNode):
-    NAME = "GLSL (JOV) 🍩"
-    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = """
-Execute custom GLSL (OpenGL Shading Language) fragment shaders to generate images or apply effects. GLSL is a high-level shading language used for graphics programming, particularly in the context of rendering images or animations. This node allows for real-time rendering of shader effects, providing flexibility and creative control over image processing pipelines. It takes advantage of GPU acceleration for efficient computation, enabling the rapid generation of complex visual effects.
-"""
-    INSTANCE = 0
-
-    @classmethod
-    def INPUT_TYPES(cls) -> dict:
-        d = super().INPUT_TYPES()
-        d.update({
-            "optional": {
-                Lexicon.TIME: ("FLOAT", {"default": 0, "step": 0.001, "min": 0, "precision": 4}),
-                Lexicon.BATCH: ("INT", {"default": 0, "step": 1, "min": 0, "max": 1048576}),
-                Lexicon.FPS: ("INT", {"default": 24, "step": 1, "min": 1, "max": 120}),
-                Lexicon.WH: ("VEC2", {"default": (512, 512), "min": MIN_IMAGE_SIZE, "step": 1,}),
-                Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1,
-                                         "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True}),
-                Lexicon.WAIT: ("BOOLEAN", {"default": False}),
-                Lexicon.RESET: ("BOOLEAN", {"default": False}),
-                Lexicon.PROG_VERT: ("STRING", {"default": GLSLShader.PROG_VERTEX, "multiline": True, "dynamicPrompts": False}),
-                Lexicon.PROG_FRAG: ("STRING", {"default": GLSLShader.PROG_FRAGMENT, "multiline": True, "dynamicPrompts": False}),
-            }
-        })
-        return Lexicon._parse(d, cls)
-
-    @classmethod
-    def IS_CHANGED(cls, **kw) -> float:
-        return float("nan")
-
-    def __init__(self, *arg, **kw) -> None:
-        super().__init__(*arg, **kw)
-        self.__glsl = GLSLShader()
-        self.__delta = 0
-
-    def run(self, ident, **kw) -> tuple[torch.Tensor]:
-        delta = parse_param(kw, Lexicon.TIME, EnumConvertType.FLOAT, 0)[0]
-        batch = parse_param(kw, Lexicon.BATCH, EnumConvertType.INT, 1, 0, 262144)[0]
-        fps = parse_param(kw, Lexicon.FPS, EnumConvertType.INT, 24, 1, 120)[0]
-        wait = parse_param(kw, Lexicon.WAIT, EnumConvertType.BOOLEAN, False)[0]
-        reset = parse_param(kw, Lexicon.RESET, EnumConvertType.BOOLEAN, False)[0]
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)[0]
-        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)[0]
-        vertex_src = parse_param(kw, Lexicon.PROG_VERT, EnumConvertType.STRING, "")[0]
-        fragment_src = parse_param(kw, Lexicon.PROG_FRAG, EnumConvertType.STRING, "")[0]
-
-        variables = kw.copy()
-        for p in [Lexicon.TIME, Lexicon.BATCH, Lexicon.FPS, Lexicon.WAIT, Lexicon.RESET, Lexicon.WH, Lexicon.MATTE, Lexicon.PROG_VERT, Lexicon.PROG_FRAG]:
-            variables.pop(p, None)
-
-        self.__glsl.bgcolor = matte
-        self.__glsl.size = wihi
-        self.__glsl.fps = fps
-        try:
-            self.__glsl.program(vertex_src, fragment_src)
-        except CompileException as e:
-            comfy_message(ident, "jovi-glsl-error", {"id": ident, "e": str(e)})
-            logger.error(e)
-            return
-
-        if batch > 0:
-            self.__delta = delta
-        if parse_reset(ident) > 0 or reset:
-            self.__delta = 0
-        step = 1. / fps
-
-        images = []
-        pbar = ProgressBar(batch)
-        count = batch if batch > 0 else 1
-        for idx in range(count):
-            vars = {}
-            for k, v in variables.items():
-                var = v if not isinstance(v, (list, tuple,)) else v[idx] if idx < len(v) else v[-1]
-                if isinstance(var, (torch.Tensor)):
-                    var = tensor2cv(var)
-                    var = image_convert(var, 4)
-                vars[k] = var
-
-            image = self.__glsl.render(self.__delta, **vars)
-            images.append(cv2tensor_full(image))
-            if not wait:
-                self.__delta += step
-                # if batch == 0:
-                comfy_message(ident, "jovi-glsl-time", {"id": ident, "t": self.__delta})
             pbar.update_absolute(idx)
         return [torch.cat(i, dim=0) for i in zip(*images)]
 

@@ -283,7 +283,7 @@ Combine two input images using various blending modes, such as normal, screen, m
                 mask = tensor2cv(mask)
                 cc = mask.shape[2] if mask.ndim == 3 else 1
                 if cc == 4:
-                    mask = image_mask(mask)
+                    mask = mask[:,:,3]
                 else:
                     mask = image_grayscale(mask)
 

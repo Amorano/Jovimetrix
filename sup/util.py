@@ -118,6 +118,13 @@ def grid_make(data: List[Any]) -> Tuple[List[List[Any]], int, int]:
         ret.append(d)
     return ret, cols, rows
 
+def load_file(fname: str) -> str | None:
+    try:
+        with open(fname, 'r') as f:
+            return f.read()
+    except Exception as e:
+        logger.error(e)
+
 def parse_dynamic(data:dict, prefix:str, typ:EnumConvertType, default: Any) -> List[Any]:
     """Convert iterated input field(s) based on a s into a single compound list of entries.
 
@@ -193,8 +200,10 @@ def parse_value(val:Any, typ:EnumConvertType, default: Any,
         for idx in range(size):
             d = default[idx] if isinstance(default, (list, tuple, set, dict, torch.Tensor)) and idx < len(default) else 0
             v = d if val is None else val[idx] if idx < len(val) else d
-            if v == '':
-                v = 0
+            if isinstance(v, (str, )):
+                if v == '':
+                    v = 0
+                v = v.strip('\n')
             try:
                 if typ in [EnumConvertType.FLOAT, EnumConvertType.VEC2, EnumConvertType.VEC3, EnumConvertType.VEC4]:
                     v = round(float(v), 16)

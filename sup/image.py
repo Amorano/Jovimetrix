@@ -1141,17 +1141,53 @@ def image_gradient_map(image:TYPE_IMAGE, gradient_map:TYPE_IMAGE, reverse:bool=F
     cmap = cmap[0,:,:].reshape((256, 1, 3)).astype(np.uint8)
     return cv2.applyColorMap(grey, cmap)
 
-def image_grayscale(image:TYPE_IMAGE) -> TYPE_IMAGE:
+def image_grayscale(image: np.ndarray) -> np.ndarray:
+    """
+    Convert an image to grayscale, preserving alpha if present.
+
+    This function handles various input image formats:
+    - Floating-point images (normalizes to 0-255 range)
+    - RGB and RGBA images
+    - Already grayscale images
+
+    Args:
+    image (np.ndarray): Input image. Can be 2D (grayscale) or 3D (RGB/RGBA) array.
+
+    Returns:
+    np.ndarray: Grayscale image with alpha channel preserved if present in input.
+
+    Note:
+    - For RGBA images, the alpha channel is applied after grayscale conversion.
+    - The output is always a 3D array with shape (height, width, 1) for consistency.
+    """
+    # Handle floating-point images
     if image.dtype in [np.float16, np.float32, np.float64]:
-        # normalize
-        image = (image - image.min()) / (image.max() - image.min())
-        image = (image * 255).astype(np.uint8)
+        image = cv2.normalize(image, None, 0, 255, cv2.NORM_MINMAX)
+        image = image.astype(np.uint8)
+
+    # Extract alpha channel if present
+    has_alpha = image.shape[-1] == 4 if image.ndim == 3 else False
+    alpha = image[..., 3] if has_alpha else None
+
+    # Convert to grayscale
     if image.ndim == 3:
-        if image.shape[2] == 3:
-            image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        if image.shape[2] in [3, 4]:
+            gray = cv2.cvtColor(image[..., :3], cv2.COLOR_BGR2GRAY)
         else:
-            image = cv2.cvtColor(image, cv2.COLOR_BGRA2GRAY)
-    return np.expand_dims(image, -1)
+            raise ValueError(f"Unexpected number of channels: {image.shape[2]}")
+    elif image.ndim == 2:
+        gray = image
+    else:
+        raise ValueError(f"Unexpected number of dimensions: {image.ndim}")
+
+    # Ensure output is 3D
+    gray = np.expand_dims(gray, axis=-1)
+
+    # Apply alpha if present
+    if has_alpha:
+        gray = np.dstack((gray, alpha[..., np.newaxis]))
+
+    return gray
 
 def image_grid(data: List[TYPE_IMAGE], width: int, height: int) -> TYPE_IMAGE:
     #@TODO: makes poor assumption all images are the same dimensions.
