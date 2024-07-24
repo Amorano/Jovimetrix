@@ -238,6 +238,8 @@ def parse_value(val:Any, typ:EnumConvertType, default: Any,
     elif typ == EnumConvertType.LIST:
         new_val = list(new_val)
     elif typ == EnumConvertType.STRING:
+        if isinstance(new_val, (str, list,)):
+            new_val = [new_val]
         new_val = ", ".join(map(str, new_val)) if not isinstance(new_val, str) else new_val
     elif typ == EnumConvertType.BOOLEAN:
         if isinstance(new_val, (torch.Tensor,)):

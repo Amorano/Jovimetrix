@@ -24,7 +24,6 @@ app.registerExtension({
         const onNodeCreated = nodeType.prototype.onNodeCreated;
         nodeType.prototype.onNodeCreated = async function () {
             const me = onNodeCreated?.apply(this);
-            const self = this;
             const widget_time = this.widgets.find(w => w.name === '🕛');
             const widget_batch = this.widgets.find(w => w.name === 'BATCH');
             const widget_wait = this.widgets.find(w => w.name === '✋🏽');
@@ -33,90 +32,25 @@ app.registerExtension({
             widget_wait.options.menu = false;
             widget_reset.options.menu = false;
             widget_fragment.options.menu = false;
-            let widget_param = this.inputs?.find(w => w.name === 'PARAM');
-            if (widget_param === undefined) {
-                widget_param = this.addInput('PARAM', 'JDICT');
-            }
-            widget_param.serializeValue = async () =>
-                self.inputs.reduce((result, widget) =>
-                    ({ ...result, [widget.name]: widget.value }), {});
-            widget_hide(this, widget_param, "-jov");
-
-            // parse this for vars... check existing vars and "types" and keep
-            // or ignore as is the case -- I should stick to a common set of
-            // names/types so mine don't disconnect/rename on a script change.
-            // Parse the GLSL code for uniform variables and initialize corresponding widgets
-            function shader_changed() {
-                let widgets = [];
-                const matches = [...widget_fragment.options.fragment.matchAll(RE_VARIABLE)];
-                matches.forEach(match => {
-                    const [full_match, varType, varName, varValue] = match;
-                    let exist = self.inputs?.find(w => w.name === varName);
-                    let type;
-                    if (varType === 'int') {
-                        type = "INT";
-                    } else if (varType === 'float') {
-                        type = "FLOAT";
-                    } else if (varType === 'bool') {
-                        type = "BOOLEAN";
-                    } else if (varType.startsWith('ivec') || varType.startsWith('vec')) {
-                        const idx = varType[varType.length - 1];
-                        type = `VEC${idx}`;
-                        if (varType.startsWith('ivec')) {
-                            type += 'INT';
-                        }
-                    } else if (varType === "sampler2D") {
-                        type = "IMAGE";
-                    }
-
-                    if (exist === undefined) {
-                        if (["INT", "FLOAT", "BOOLEAN", "IMAGE"].includes(type)) {
-                            exist = self.addInput(varName, type);
-                        } else if (varType.startsWith('ivec') || varType.startsWith('vec')) {
-                            const idx = varType[varType.length - 1];
-                            let type = `VEC${idx}`;
-                            if (varType.startsWith('ivec')) {
-                                type += 'INT';
-                            }
-                            exist = self.addInput(varName, type);
-                        }
-                    } else {
-                        exist.type = type;
-                    }
-                    exist.value = varValue;
-                    widgets.push(varName);
-                });
-
-                while (self.inputs?.length > widgets.length) {
-                    let idx = 0;
-                    self.inputs.forEach(i => {
-                        if (!widgets.includes(i.name)) {
-                            self.removeInput(idx);
-                        } else {
-                            idx += 1;
-                        }
-                    })
-                }
-            }
 
             widget_batch.callback = () => {
-                widget_hide(self, widget_reset, '-jov');
-                widget_hide(self, widget_wait, '-jov');
+                widget_hide(this, widget_reset, '-jov');
+                widget_hide(this, widget_wait, '-jov');
                 if (widget_batch.value == 0) {
                     widget_show(widget_reset);
                     widget_show(widget_wait);
                 }
-                fitHeight(self);
+                fitHeight(this);
             }
 
             widget_reset.callback = () => {
                 widget_reset.value = false;
-                api_cmd_jovian(self.id, "reset");
+                api_cmd_jovian(this.id, "reset");
                 widget_time.value = 0;
             };
 
             function python_glsl_time(event) {
-                if (event.detail.id != self.id) {
+                if (event.detail.id != this.id) {
                     return;
                 }
                 if (!widget_time.hidden) {
@@ -131,7 +65,6 @@ app.registerExtension({
             };
 
             setTimeout(() => { widget_batch.callback(); }, 10);
-            setTimeout(() => { shader_changed(); }, 10);
             return me;
         }
     }

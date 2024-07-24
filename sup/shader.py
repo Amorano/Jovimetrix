@@ -43,10 +43,11 @@ PTYPE = {
     'float': EnumConvertType.FLOAT,
     'vec2': EnumConvertType.VEC2,
     'vec3': EnumConvertType.VEC3,
-    'vec4': EnumConvertType.VEC4
+    'vec4': EnumConvertType.VEC4,
+    'sampler2D': EnumConvertType.IMAGE
 }
 
-RE_VARIABLE = re.compile(r"uniform\s*(\w*)\s*(\w*);(?:.*\/{2}\s*([A-Za-z0-9\-\.,\s]+)){0,1}\s*$", re.MULTILINE)
+RE_VARIABLE = re.compile(r"uniform\s*(\w*)\s*(\w*);(?:.*\/{2}\s*([A-Za-z0-9\-\.,\s]+)){0,1}(\|[A-Za-z0-9\s]+)?$", re.MULTILINE)
 RE_SHADER_META = re.compile(r"\/\/\s(name|desc):\s([A-Za-z\s]+)$", re.MULTILINE)
 
 # =============================================================================
@@ -304,7 +305,7 @@ void main()
             self.__userVar = {}
             # read the fragment and setup the vars....
             for match in RE_VARIABLE.finditer(fragment):
-                typ, name, default = match.groups()
+                typ, name, default, tooltip = match.groups()
                 tex_loc = None
                 if typ in ['sampler2D']:
                     tex_loc = gl.glGenTextures(1)
@@ -367,7 +368,8 @@ void main()
                 texture_index += 1
             else:
                 funct = LAMBDA_UNIFORM[p_type]
-                val = val.split(',')
+                if isinstance(val, (str,)):
+                    val = val.split(',')
                 val = parse_value(val, PTYPE[p_type], 0)
                 if not isinstance(val, (list, tuple)):
                     val = [val]
@@ -399,4 +401,5 @@ def shader_meta(shader: str) -> Dict[str, str]:
     for match in RE_SHADER_META.finditer(shader):
         key, value = match.groups()
         ret[key] = value
+    ret['_'] = [match.groups() for match in RE_VARIABLE.finditer(shader)]
     return ret

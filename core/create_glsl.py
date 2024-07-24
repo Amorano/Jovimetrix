@@ -19,9 +19,9 @@ from comfy.utils import ProgressBar
 
 from Jovimetrix import comfy_message, parse_reset, ROOT
 from Jovimetrix.sup.lexicon import JOVImageNode, Lexicon
-from Jovimetrix.sup.util import load_file, parse_param, EnumConvertType
+from Jovimetrix.sup.util import load_file, parse_param, EnumConvertType, parse_value
 from Jovimetrix.sup.image import cv2tensor_full, image_convert, tensor2cv, MIN_IMAGE_SIZE
-from Jovimetrix.sup.shader import shader_meta, CompileException, GLSLShader
+from Jovimetrix.sup.shader import PTYPE, shader_meta, CompileException, GLSLShader
 
 # =============================================================================
 
@@ -185,15 +185,32 @@ Execute custom GLSL (OpenGL Shading Language) fragment shaders to generate image
         return super().run(ident, **kw)
 
 class GLSLNodeDynamic(GLSLNodeBase):
+
+    PARAM = None
+
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        d = super().INPUT_TYPES()
-        opts = d.get('optional', {})
+        original_params = super().INPUT_TYPES()
+        opts = original_params.get('optional', {})
         opts.update({
             Lexicon.PROG_FRAG: ("JDATABUCKET", {"fragment": cls.FRAGMENT}),
         })
-        d['optional'] = opts
-        return Lexicon._parse(d, cls)
+
+        # parameter list first...
+        data = {}
+        if cls.PARAM is not None:
+            for glsl_type, name, default, tooltip in cls.PARAM:
+                typ = PTYPE[glsl_type]
+                d = None
+                if glsl_type != 'sampler2D' and default is not None:
+                    d = default.split(',')
+                    d = parse_value(d, typ, 0)
+                data[name] = (typ.name, {"default": d, "min": -2147483647, "nax":2147483647, "step": 0.01, "tooltip": tooltip},)
+                print(name, (typ.name, {"default": d},))
+
+        data.update(opts)
+        original_params['optional'] = data
+        return Lexicon._parse(original_params, cls)
 
 def import_dynamic() -> Tuple[str,...]:
     ret = []
@@ -209,7 +226,8 @@ def import_dynamic() -> Tuple[str,...]:
         class_def = type(class_name, (GLSLNodeDynamic,), {
             "NAME": f'GLSL {name} (JOV) 🧙🏽'.upper(),
             "DESCRIPTION": meta.get('desc', name),
-            "FRAGMENT": shader
+            "FRAGMENT": shader,
+            "PARAM": meta.get('_', []),
         })
 
         #def init_method(self, *arg, **kw) -> None:
