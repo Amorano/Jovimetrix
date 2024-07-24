@@ -82,8 +82,7 @@ class GLSLShader():
 
 void mainImage( out vec4 fragColor, vec2 fragCoord ) {
   vec2 uv = fragCoord.xy / iResolution.xy;
-  vec3 col = texture2D(imageA, uv).rgb;
-  fragColor = vec4(col, 1.0);
+  fragColor = texture2D(imageA, uv);
 }
 """
 
@@ -103,6 +102,8 @@ void main()
         if not self.__window:
             raise RuntimeError("GLFW did not init window")
         glfw.make_context_current(self.__window)
+        #gl.glEnable(gl.GL_BLEND)
+        #gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
 
         self.__size_changed = False
         self.__size: Tuple[int, int] = (max(width, IMAGE_SIZE_MIN), max(height, IMAGE_SIZE_MIN))
@@ -131,15 +132,6 @@ void main()
             raise CompileException(gl.glGetShaderInfoLog(shader))
         logger.debug(f"{shader_type} compiled")
         return shader
-
-    def __init_window(self) -> None:
-        self.__cleanup()
-        glfw.window_hint(glfw.VISIBLE, glfw.FALSE)
-        self.__window = glfw.create_window(self.__size[0], self.__size[1], "hidden", None, None)
-        if not self.__window:
-            raise RuntimeError("GLFW did not init window")
-        self.__framebuffer()
-        self.program()
 
     def __framebuffer(self) -> None:
         # match the window to the buffer size...
@@ -256,7 +248,7 @@ void main()
 
     @bgcolor.setter
     def bgcolor(self, color:Tuple[int, ...]) -> None:
-        self.__bgcolor = tuple(x / 255. for x in color)
+        self.__bgcolor = tuple(float(x) / 255. for x in color)
 
     def program_load(self, vertex_file:str=None, frag_file:str=None) -> None:
         """Loads external file source as Vertex and/or Fragment programs."""
@@ -383,10 +375,12 @@ void main()
 
         gl.glBindFramebuffer(gl.GL_FRAMEBUFFER, self.__fbo)
         gl.glClearColor(*self.__bgcolor)
-        gl.glClear(gl.GL_COLOR_BUFFER_BIT)
+        gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
         gl.glDrawArrays(gl.GL_TRIANGLES, 0, 3)
+
         data = gl.glReadPixels(0, 0, self.__size[0], self.__size[1], gl.GL_RGBA, gl.GL_UNSIGNED_BYTE)
-        image = np.frombuffer(data, dtype=np.uint8).reshape(self.__size[1], self.__size[0], 4)
+        image = np.frombuffer(data, dtype=np.uint8).reshape(self.__size[1], self.__size[0], 4).copy()
+        image.flags.writeable = True
         self.__last_frame = image[::-1, :, :]
 
         # check if window was changed...

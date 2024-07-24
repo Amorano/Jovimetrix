@@ -68,6 +68,7 @@ class Lexicon(metaclass=LexiconMeta):
     C4 = '⚫️', "Color Scheme Result 4"
     C5 = '⚪', "Color Scheme Result 5"
     CAMERA = '📹', "Camera"
+    C = '🇨', "Image Channels"
     CHANNEL = 'CHAN', "Channel"
     COLOR = '©️', "Color Entry for Gradient"
     COLORMAP = '🇸🇨', "One of two dozen CV2 Built-in Colormap LUT (Look Up Table) Presets"
@@ -240,7 +241,8 @@ class Lexicon(metaclass=LexiconMeta):
     W = '🇼', "Width"
     WAIT = '✋🏽', "Wait"
     WAVE = '♒', "Wave Function"
-    WH = '🇼🇭', "Set the target dimensions for the output image if scaling is applied"
+    WH = '🇼🇭', "Width and Height as a Vector2 (x,y)"
+    WHC = '🇼🇭🇨', "Width, Height and Channel as a Vector3 (x,y,z)"
     WINDOW = '🪟', "Window"
     X = '🇽', "X"
     X_RAW = 'X', "X"
@@ -262,15 +264,15 @@ class Lexicon(metaclass=LexiconMeta):
             if cat not in ['optional', 'required', 'outputs']:
                 continue
             for k, v in entry.items():
-                if len(v) > 1:
-                    if (tip := v[1].get('tooltip', None)) is None:
-                        if (tip := cls._tooltipsDB.get(k), None) is None:
-                            logger.warning(f"no {k}")
-                            continue
-                    if cat == "outputs":
-                        data["outputs"][k] = tip
-                    else:
-                        data[k] = tip
+                widget_data = v[1] if isinstance(v, (tuple, list,)) and len(v) > 1 else {}
+                if (tip := widget_data.get('tooltip', None)) is None:
+                    if (tip := cls._tooltipsDB.get(k), None) is None:
+                        logger.warning(f"no {k}")
+                        continue
+                if cat == "outputs":
+                    data["outputs"][k] = tip
+                else:
+                    data[k] = tip
         if node.get("optional", None) is None:
             node["optional"] = {}
         node["optional"]["tooltips"] = ("JTOOLTIP", {"default": data})

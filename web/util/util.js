@@ -98,13 +98,15 @@ export function node_add_dynamic(nodeType, prefix, dynamic_type='*', index_start
                         self.removeInput(idx);
                     }
                 } else {
-                    const name = parts.slice(1).join('_');
+                    const name = parts.slice(1).join('');
                     self.inputs[idx].name = `${idx}_${name}`;
                     if (match_output) {
                         while(self.outputs.length-1 < idx) {
                             self.addOutput(prefix, dynamic_type);
                         }
                         self.outputs[idx].name = parts[1];
+                        self.outputs[idx].type = self.inputs[idx].type;
+
                     }
                     slot_count += 1;
                     idx += 1;
@@ -152,6 +154,82 @@ export function node_add_dynamic(nodeType, prefix, dynamic_type='*', index_start
             setTimeout(() => {
                 clean_inputs(this);
             }, 5);
+        }
+        fitHeight(this);
+        return me;
+    }
+    return nodeType;
+}
+
+/**
+ * Manage the slots on a node to allow a dynamic number of inputs
+*/
+export function node_add_dynamic_route(nodeType, prefix) {
+
+    const dynamic_type = "*";
+
+    const onNodeCreated = nodeType.prototype.onNodeCreated
+    nodeType.prototype.onNodeCreated = function () {
+        const me = onNodeCreated?.apply(this);
+        this.addInput(prefix, dynamic_type);
+        return me;
+    }
+
+    const onConnectionsChange = nodeType.prototype.onConnectionsChange
+    nodeType.prototype.onConnectionsChange = function (slotType, slot_idx, event, link_info, node_slot) {
+        const me = onConnectionsChange?.apply(this, arguments);
+        if (slotType === TypeSlot.Input && slot_idx > 0) {
+            if (link_info && event === TypeSlotEvent.Connect) {
+                const fromNode = this.graph._nodes.find(
+                    (otherNode) => otherNode.id == link_info.origin_id
+                )
+                if (fromNode) {
+                    const parent_link = fromNode.outputs[link_info.origin_slot];
+                    if (parent_link) {
+                        node_slot.type = parent_link.type;
+                        node_slot.name = `_${parent_link.name}`;
+                    }
+                }
+            }
+
+            // check that the last slot is a dynamic entry....
+            let last = this.inputs[this.inputs.length-1];
+            if (last.type != dynamic_type || last.name != prefix) {
+                this.addInput(prefix, dynamic_type);
+            }
+        }
+
+        // fix the inputs?
+
+        if (self.graph === undefined) {
+            return;
+        }
+
+        let idx = 1;
+        let slot_count = 0;
+        while (idx < this.inputs.length-1) {
+            const slot = this.inputs[idx];
+            const parts = slot.name.split('_');
+            if (parts.length == 2) {
+                if (slot.link == null) {
+                    this.removeOutput(idx);
+                    if (idx < this.inputs.length) {
+                        this.removeInput(idx);
+                    }
+                } else {
+                    const name = parts.slice(1).join('');
+                    this.inputs[idx].name = `${idx}_${name}`;
+                    while(this.outputs.length-1 < idx) {
+                        this.addOutput(prefix, dynamic_type);
+                    }
+                    this.outputs[idx].name = parts[1];
+                    this.outputs[idx].type = this.inputs[idx].type;
+                    slot_count += 1;
+                    idx += 1;
+                }
+            } else {
+                idx += 1;
+            }
         }
         fitHeight(this);
         return me;

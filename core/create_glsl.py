@@ -89,12 +89,12 @@ class GLSLNodeBase(JOVImageNode):
         d = super().INPUT_TYPES()
         d.update({
             "optional": {
-                Lexicon.TIME: ("FLOAT", {"default": 0, "step": 0.001, "min": 0, "precision": 4}),
-                Lexicon.BATCH: ("INT", {"default": 0, "step": 1, "min": 0, "max": 1048576}),
-                Lexicon.FPS: ("INT", {"default": 24, "step": 1, "min": 1, "max": 120}),
                 Lexicon.WH: ("VEC2", {"default": (512, 512), "min": MIN_IMAGE_SIZE, "step": 1,}),
                 Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1,
                                          "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True}),
+                Lexicon.BATCH: ("INT", {"default": 0, "step": 1, "min": 0, "max": 1048576}),
+                Lexicon.FPS: ("INT", {"default": 24, "step": 1, "min": 1, "max": 120}),
+                Lexicon.TIME: ("FLOAT", {"default": 0, "step": 0.001, "min": 0, "precision": 4}),
                 Lexicon.WAIT: ("BOOLEAN", {"default": False}),
                 Lexicon.RESET: ("BOOLEAN", {"default": False})
             }
@@ -111,19 +111,18 @@ class GLSLNodeBase(JOVImageNode):
         self.__delta = 0
 
     def run(self, ident, **kw) -> tuple[torch.Tensor]:
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)[0]
+        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)[0]
         delta = parse_param(kw, Lexicon.TIME, EnumConvertType.FLOAT, 0)[0]
         batch = parse_param(kw, Lexicon.BATCH, EnumConvertType.INT, 1, 0, 1048576)[0]
         fps = parse_param(kw, Lexicon.FPS, EnumConvertType.INT, 24, 1, 120)[0]
         wait = parse_param(kw, Lexicon.WAIT, EnumConvertType.BOOLEAN, False)[0]
         reset = parse_param(kw, Lexicon.RESET, EnumConvertType.BOOLEAN, False)[0]
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)[0]
-        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)[0]
 
         variables = kw.copy()
         for p in [Lexicon.TIME, Lexicon.BATCH, Lexicon.FPS, Lexicon.WAIT, Lexicon.RESET, Lexicon.WH, Lexicon.MATTE, Lexicon.PROG_VERT, Lexicon.PROG_FRAG]:
             variables.pop(p, None)
 
-        self.__glsl.bgcolor = matte
         self.__glsl.size = wihi
         self.__glsl.fps = fps
         try:
@@ -133,8 +132,9 @@ class GLSLNodeBase(JOVImageNode):
             logger.error(e)
             return
 
-        #if batch > 0:
-        self.__delta = delta
+        if batch > 0:
+            self.__delta = delta
+
         if parse_reset(ident) > 0 or reset:
             self.__delta = 0
         step = 1. / fps
@@ -152,7 +152,8 @@ class GLSLNodeBase(JOVImageNode):
                 vars[k] = var
 
             image = self.__glsl.render(self.__delta, **vars)
-            images.append(cv2tensor_full(image))
+            image = cv2tensor_full(image, matte)
+            images.append(image)
             if not wait:
                 self.__delta += step
                 # if batch == 0:
@@ -166,7 +167,6 @@ class GLSLNode(GLSLNodeBase):
     DESCRIPTION = """
 Execute custom GLSL (OpenGL Shading Language) fragment shaders to generate images or apply effects. GLSL is a high-level shading language used for graphics programming, particularly in the context of rendering images or animations. This node allows for real-time rendering of shader effects, providing flexibility and creative control over image processing pipelines. It takes advantage of GPU acceleration for efficient computation, enabling the rapid generation of complex visual effects.
 """
-    INSTANCE = 0
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -184,6 +184,17 @@ Execute custom GLSL (OpenGL Shading Language) fragment shaders to generate image
         self.FRAGMENT = parse_param(kw, Lexicon.PROG_FRAG, EnumConvertType.STRING, "")[0]
         return super().run(ident, **kw)
 
+class GLSLNodeDynamic(GLSLNodeBase):
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        d = super().INPUT_TYPES()
+        opts = d.get('optional', {})
+        opts.update({
+            Lexicon.PROG_FRAG: ("JDATABUCKET", {"fragment": cls.FRAGMENT}),
+        })
+        d['optional'] = opts
+        return Lexicon._parse(d, cls)
+
 def import_dynamic() -> Tuple[str,...]:
     ret = []
     for name, fname in GLSL_PROGRAMS['fragment'].items():
@@ -195,15 +206,16 @@ def import_dynamic() -> Tuple[str,...]:
         meta = shader_meta(shader)
         name = meta.get('name', name.split('.')[0])
         class_name = f'GLSLNode_{name.title()}'
-        class_def = type(class_name, (GLSLNodeBase,), {
+        class_def = type(class_name, (GLSLNodeDynamic,), {
             "NAME": f'GLSL {name} (JOV) 🧙🏽'.upper(),
-            "DESCRIPTION": meta.get('desc', name)
+            "DESCRIPTION": meta.get('desc', name),
+            "FRAGMENT": shader
         })
 
-        def init_method(self, *arg, **kw) -> None:
-            super(class_def, self).__init__(*arg, **kw)
-            self.FRAGMENT = shader
+        #def init_method(self, *arg, **kw) -> None:
+       #     super(class_def, self).__init__(*arg, **kw)
+        #    self.FRAGMENT = shader
 
-        class_def.__init__ = init_method
+        #class_def.__init__ = init_method
         ret.append((class_name, class_def,))
     return ret

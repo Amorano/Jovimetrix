@@ -128,7 +128,6 @@ app.registerExtension({
         nodeType.prototype.onConnectionsChange = function (slotType, slot, event, link_info, data)
         //side, slot, connected, link_info
         {
-            // console.info(slotType, slot, event, link_info, data)
             if (slotType === TypeSlot.Output && slot == 0) {
                 if (link_info){
                     if (event === TypeSlotEvent.Connect) {

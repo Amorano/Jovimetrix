@@ -75,7 +75,6 @@ app.registerExtension({
     async nodeCreated(node) {
         const onDrawForeground = node.onDrawForeground;
         node.onDrawForeground = async function (ctx, area) {
-            // console.info(node)
             const me = onDrawForeground?.apply(this, arguments);
             if (this.widgets) {
                 ctx.save();

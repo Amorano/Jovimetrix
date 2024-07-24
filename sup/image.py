@@ -356,14 +356,14 @@ def cv2tensor(image: TYPE_IMAGE, mask:bool=False) -> torch.Tensor:
     return ret
 
 def cv2tensor_full(image: TYPE_IMAGE, matte:TYPE_PIXEL=0) -> Tuple[torch.Tensor, ...]:
-    mask = image_mask(image)
-    mask = mask[:,:,0][:,:]
-    mask = torch.from_numpy(mask.astype(np.float32) / 255.0).unsqueeze(0)
-    #
-    image = image_matte(image, matte)
+    image = image_convert(image, 4)
+    mask = image_mask(image)[:,:,0][:,:]
+    image[:,:,3] = mask
+    rgb = image_matte(image, matte)
     rgb = image_convert(image, 3)
     image = torch.from_numpy(image.astype(np.float32) / 255.0).unsqueeze(0)
     rgb = torch.from_numpy(rgb.astype(np.float32) / 255.0).unsqueeze(0)
+    mask = torch.from_numpy(mask.astype(np.float32) / 255.0).unsqueeze(0)
     return image, rgb, mask
 
 def hsv2bgr(hsl_color: TYPE_PIXEL) -> TYPE_PIXEL:
@@ -717,10 +717,11 @@ def image_convert(image: TYPE_IMAGE, channels: int) -> TYPE_IMAGE:
     cc = image.shape[2] if image.ndim == 3 else 1
     if ncc == cc:
         return image
-    elif ncc == 3:
+    if ncc == 3:
         if cc == 1:
             return cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
-        return cv2.cvtColor(image, cv2.COLOR_BGRA2BGR)
+        elif cc == 4:
+            return cv2.cvtColor(image, cv2.COLOR_BGRA2BGR)
     if cc == 1:
         return cv2.cvtColor(image, cv2.COLOR_GRAY2BGRA)
     return cv2.cvtColor(image, cv2.COLOR_BGR2BGRA)

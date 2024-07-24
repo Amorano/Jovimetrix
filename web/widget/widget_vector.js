@@ -108,7 +108,6 @@ export const VectorWidget = (app, inputName, options, initial, desc='') => {
         if (w.options?.min !== undefined) {
             v = Math.max(v, w.options.min)
         }
-        //console.info(w.options)
         const precision = widget.options?.precision !== undefined ? widget.options.precision : 0;
         w.value[idx] = (precision == 0) ? Number(v) : parseFloat(v).toFixed(precision)
     }

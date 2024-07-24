@@ -35,7 +35,6 @@ app.registerExtension({
 
         const onConnectionsChange = nodeType.prototype.onConnectionsChange
         nodeType.prototype.onConnectionsChange = function (slotType, slot, event, link_info, data) {
-            //console.info(slot)
             if (slotType === TypeSlot.Input && slot.name == 'SHAPE') {
                 const widget_combo = this.widgets.find(w => w.name === 'SHAPE');
                 setTimeout(() => { widget_combo.callback(); }, 10);
@@ -45,7 +44,6 @@ app.registerExtension({
 
         const onExecuted = nodeType.prototype.onExecuted;
         nodeType.prototype.onExecuted = function (message) {
-            //console.info(message)
             const widget_combo = this.widgets.find(w => w.name === 'SHAPE');
             if (widget_combo.value == 'SHAPE') {
                 setTimeout(() => { widget_combo.callback(); }, 10);

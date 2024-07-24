@@ -9,17 +9,15 @@ import { app } from "../../../scripts/app.js";
 import { fitHeight } from '../util/util.js'
 import { widget_hide, widget_show  } from '../util/util_widget.js';
 import { api_cmd_jovian } from '../util/util_api.js';
-import { flashBackgroundColor } from '../util/util_fun.js';
 
-const _id = "GLSL (JOV) 🧙🏽";
-const EVENT_JOVI_GLSL_ERROR = "jovi-glsl-error";
+const _id = "GLSL DYNAMIC (JOV) 🧙🏽";
 const EVENT_JOVI_GLSL_TIME = "jovi-glsl-time";
 const RE_VARIABLE = /uniform\s*(\w*)\s*(\w*);(?:.*\/{2}\s*([A-Za-z0-9\-\.,\s]+)){0,1}\s*$/gm
 
 app.registerExtension({
     name: 'jovimetrix.node.' + _id,
     async beforeRegisterNodeDef(nodeType, nodeData, app) {
-        if (nodeData.name.endsWith("(JOV) 🧙🏽")) {
+        if (!nodeData.name.endsWith("(JOV) 🧙🏽")) {
             return;
         }
 
@@ -31,11 +29,9 @@ app.registerExtension({
             const widget_batch = this.widgets.find(w => w.name === 'BATCH');
             const widget_wait = this.widgets.find(w => w.name === '✋🏽');
             const widget_reset = this.widgets.find(w => w.name === 'RESET');
-            const widget_vertex = this.widgets.find(w => w.name === 'VERTEX');
             const widget_fragment = this.widgets.find(w => w.name === 'FRAGMENT');
             widget_wait.options.menu = false;
             widget_reset.options.menu = false;
-            widget_vertex.options.menu = false;
             widget_fragment.options.menu = false;
             let widget_param = this.inputs?.find(w => w.name === 'PARAM');
             if (widget_param === undefined) {
@@ -44,7 +40,6 @@ app.registerExtension({
             widget_param.serializeValue = async () =>
                 self.inputs.reduce((result, widget) =>
                     ({ ...result, [widget.name]: widget.value }), {});
-                // console.info(self.inputs)
             widget_hide(this, widget_param, "-jov");
 
             // parse this for vars... check existing vars and "types" and keep
@@ -53,8 +48,7 @@ app.registerExtension({
             // Parse the GLSL code for uniform variables and initialize corresponding widgets
             function shader_changed() {
                 let widgets = [];
-                const matches = [...widget_fragment.value.matchAll(RE_VARIABLE)];
-                // console.info(matches)
+                const matches = [...widget_fragment.options.fragment.matchAll(RE_VARIABLE)];
                 matches.forEach(match => {
                     const [full_match, varType, varName, varValue] = match;
                     let exist = self.inputs?.find(w => w.name === varName);
@@ -97,7 +91,6 @@ app.registerExtension({
                     let idx = 0;
                     self.inputs.forEach(i => {
                         if (!widgets.includes(i.name)) {
-                            // console.info(widgets, i.name, i)
                             self.removeInput(idx);
                         } else {
                             idx += 1;
@@ -105,13 +98,6 @@ app.registerExtension({
                     })
                 }
             }
-            widget_fragment.inputEl.addEventListener('input', function () {
-                shader_changed();
-            });
-
-            widget_vertex.inputEl.addEventListener('input', function () {
-                shader_changed();
-            });
 
             widget_batch.callback = () => {
                 widget_hide(self, widget_reset, '-jov');
@@ -129,14 +115,6 @@ app.registerExtension({
                 widget_time.value = 0;
             };
 
-            function python_glsl_error(event) {
-                if (event.detail.id != self.id) {
-                    return;
-                }
-                console.error(event.detail.e);
-                flashBackgroundColor(widget_fragment.inputEl, 250, 3, "#FF2222AA");
-            }
-
             function python_glsl_time(event) {
                 if (event.detail.id != self.id) {
                     return;
@@ -147,11 +125,8 @@ app.registerExtension({
                 }
             }
 
-            api.addEventListener(EVENT_JOVI_GLSL_ERROR, python_glsl_error);
             api.addEventListener(EVENT_JOVI_GLSL_TIME, python_glsl_time);
-
             this.onDestroy = () => {
-                api.removeEventListener(EVENT_JOVI_GLSL_ERROR, python_glsl_error);
                 api.removeEventListener(EVENT_JOVI_GLSL_TIME, python_glsl_time);
             };
 

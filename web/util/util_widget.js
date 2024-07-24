@@ -291,11 +291,7 @@ export function getHoveredWidget() {
         if (pos_y === undefined) {
             pos_y = w.last_y || 0;
         };
-        //console.info(w)
-        // console.info(w.last_y, x, y, pos_y)
 		if (widgetHeight > 0 && widgetWidth > 0 && w.last_y !== undefined && x >= 6 && x <= widgetWidth - 12 && y >= w.last_y && y <= w.last_y  + widgetHeight) {
-        //if (widgetHeight > 0 && widgetWidth > 0 && x >= 6 && x <= widgetWidth - 12 && y >= pos_y && y <= pos_y + widgetHeight)
-        //{
 			return w;
         }
     }

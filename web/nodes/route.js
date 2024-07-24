@@ -5,7 +5,7 @@
  */
 
 import { app } from "../../../scripts/app.js"
-import { TypeSlot, TypeSlotEvent, fitHeight, node_add_dynamic } from '../util/util.js'
+import { TypeSlot, TypeSlotEvent, fitHeight, node_add_dynamic_route } from '../util/util.js'
 
 const _id = "ROUTE (JOV) 🚌"
 const _prefix = '🔮'
@@ -17,7 +17,7 @@ app.registerExtension({
             return;
         }
 
-        nodeType = node_add_dynamic(nodeType, _prefix, '*', 1, true);
+        nodeType = node_add_dynamic_route(nodeType, _prefix);
 
         const onConnectionsChange = nodeType.prototype.onConnectionsChange
         nodeType.prototype.onConnectionsChange = function (slotType, slot_idx, event, link_info, node_slot) {

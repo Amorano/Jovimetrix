@@ -32,7 +32,7 @@ from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import parse_dynamic, path_next, \
     parse_param, zip_longest_fill, EnumConvertType
 
-from Jovimetrix.sup.image import cv2tensor, tensor2cv, pil2tensor, image_load, \
+from Jovimetrix.sup.image import cv2tensor, image_convert, image_matte, tensor2cv, pil2tensor, image_load, \
     image_formats, tensor2pil, MIN_IMAGE_SIZE
 
 # =============================================================================
@@ -428,6 +428,43 @@ Visualize a series of data points over time. It accepts a dynamic number of valu
         image = Image.open(buffer)
         return (pil2tensor(image),)
 
+class ImageInfoNode(JOVBaseNode):
+    NAME = "IMAGE INFO (JOV) 📚"
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
+    RETURN_TYPES = ("INT", "INT", "INT", "INT", "VEC2", "VEC3")
+    RETURN_NAMES = (Lexicon.INT, Lexicon.W, Lexicon.H, Lexicon.C, Lexicon.WH, Lexicon.WHC)
+    SORT = 55
+    DESCRIPTION = """
+Exports and Displays immediate information about images.
+"""
+
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        d = super().INPUT_TYPES()
+        d.update({
+            "optional": {
+                Lexicon.PIXEL_A: (JOV_TYPE_IMAGE,),
+            },
+            "outputs": {
+                0: (Lexicon.INT, {"tooltip":"Batch count"}),
+                1: (Lexicon.W,),
+                2: (Lexicon.H,),
+                3: (Lexicon.C, {"tooltip":"Number of image channels. 1 (Grayscale), 3 (RGB) or 4 (RGBA)"}),
+                4: (Lexicon.WH,),
+                5: (Lexicon.WHC,),
+            }
+        })
+        return Lexicon._parse(d, cls)
+
+    def run(self, **kw) -> Tuple[int, list]:
+        image = kw.get(Lexicon.PIXEL_A, None)
+        if image.ndim == 4:
+            count, height, width, cc = image.shape
+        else:
+            count, height, width = image.shape
+            cc = 1
+        return count, width, height, cc, (width, height), (width, height, cc)
+
 '''
 # OLD LOAD BATCH NODE -- add to queue?
 def run(self, **kw) -> None:
@@ -553,7 +590,6 @@ Manage a queue of items, such as file paths or data. It supports various formats
                 _, ext = os.path.splitext(q_data)
                 if ext in image_formats():
                     data = image_load(q_data)[0]
-                    data = cv2tensor(data)
                     self.__last_q_value[q_data] = data
                 elif ext == '.json':
                     with open(q_data, 'r', encoding='utf-8') as f:
@@ -596,11 +632,23 @@ Manage a queue of items, such as file paths or data. It supports various formats
                 for _ in range(self.__len):
                     ret = process(self.__q[self.__index])
                     data.append(ret)
-                    self.__index = max(0, self.__index + 1) % self.__len
-                if isinstance(data[0], (torch.Tensor,)):
-                    data = torch.cat(data, dim=0)
+                # self.__index = max(0, self.__index + 1) % self.__len
+                if isinstance(data[0], (np.ndarray,)):
+                    mw, mh, mc = 0, 0, 0
+                    for d in data:
+                        h, w, c = d.shape
+                        mw, mh, mc = max(mw, w), max(mh, h), max(mc, c)
+
+                    ret = []
+                    for d in data:
+                        d = image_convert(d, mc)
+                        d = image_matte(d, (0,0,0,0), width=mw, height=mh)
+                        d = cv2tensor(d)
+                        ret.append(d)
+                    data = torch.cat(ret, dim=0)
             else:
                 data = process(self.__q[self.__index])
+                data = cv2tensor(data)
                 self.__index += 1
 
         self.__previous = data
