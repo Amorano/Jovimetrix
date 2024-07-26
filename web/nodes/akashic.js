@@ -50,13 +50,8 @@ app.registerExtension({
             if (message.text != null) {
                 let new_val = message.text.map((txt, index) => `${index}: ${txt}`).join('\n');
                 this.message.value = new_val;
-                for (let char of new_val) {
-                    if (char === '\n') {
-                        lineCount++;
-                    }
-                }
             }
-            //fitHeight(this);
+            // fitHeight(this);
             return me;
         }
     }

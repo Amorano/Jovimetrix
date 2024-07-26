@@ -13,7 +13,7 @@ const _prefix = '❔'
 
 app.registerExtension({
 	name: 'jovimetrix.node.' + _id,
-	async beforeRegisterNodeDef(nodeType, nodeData, app) {
+	async beforeRegisterNodeDef(nodeType, nodeData) {
         if (nodeData.name !== _id) {
             return;
         }

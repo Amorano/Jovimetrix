@@ -300,7 +300,7 @@ class Session(metaclass=Singleton):
             if f.suffix != ".py" or f.stem.startswith('_'):
                 continue
             if f.stem in JOV_IGNORE_NODE or f.stem+'.py' in JOV_IGNORE_NODE:
-                logger.warning(f"💀 Jovimetrix.core.{f.stem}")
+                logger.warning(f"💀 [IGNORED] Jovimetrix.core.{f.stem}")
                 continue
             try:
                 module = importlib.import_module(f"Jovimetrix.core.{f.stem}")
@@ -313,7 +313,7 @@ class Session(metaclass=Singleton):
             try:
                 for class_name, class_def in module.import_dynamic():
                     setattr(module, class_name, class_def)
-                    logger.debug(f"shader: {class_name}")
+                    logger.info(f"shader: {class_name}")
             except Exception as e:
                 pass
 

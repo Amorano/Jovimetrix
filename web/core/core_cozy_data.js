@@ -14,10 +14,10 @@ const JDataBucket = (app, name, opts) => {
         type: "JDATABUCKET",
         hidden: true,
         options: options,
-        draw: function (ctx, node, width, Y, height) {
+        draw: function () {
             return;
         },
-        computeSize: function (width) {
+        computeSize: function () {
             return [0, 0];
         }
     }
@@ -26,7 +26,7 @@ const JDataBucket = (app, name, opts) => {
 
 app.registerExtension({
     name: "jovimetrix.data.bucket",
-    async getCustomWidgets(app) {
+    async getCustomWidgets() {
         return {
             JDATABUCKET: (node, inputName, inputData, app) => ({
                 widget: node.addCustomWidget(JDataBucket(app, inputName, inputData[1]))

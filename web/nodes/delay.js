@@ -67,21 +67,21 @@ app.registerExtension({
                 // app.canvas.setDirty(true);
             }
 
-            async function python_delay_update(event) {
+            async function python_delay_update() {
             }
 
             api.addEventListener(EVENT_JOVI_DELAY, python_delay_user);
             api.addEventListener(EVENT_JOVI_UPDATE, python_delay_update);
 
             this.onDestroy = () => {
-                api.removeEventListener(EVENT_JOVI_DELAY, python_glsl_error);
+                api.removeEventListener(EVENT_JOVI_DELAY, python_delay_user);
                 api.removeEventListener(EVENT_JOVI_UPDATE, python_delay_update);
             };
             return me;
         }
 
         const onExecutionStart = nodeType.prototype.onExecutionStart
-        nodeType.prototype.onExecutionStart = function (message) {
+        nodeType.prototype.onExecutionStart = function() {
             onExecutionStart?.apply(this, arguments);
             self.total_timeout = 0;
         }

@@ -57,11 +57,13 @@ const templateColorRegex = ({ idx, name, background, title, body }) => (
     ])
 );
 
+/*
 const colorClear = (name) => {
     api_post("/jovimetrix/config/clear", { name });
     delete util_config.CONFIG_THEME[name];
     if (util_config.CONFIG_COLOR.overwrite) node_color_all();
 };
+*/
 
 export class JovimetrixConfigDialog extends ComfyDialog {
     constructor() {

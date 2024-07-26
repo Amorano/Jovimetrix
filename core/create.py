@@ -19,9 +19,9 @@ from Jovimetrix.sup.lexicon import JOVImageNode, Lexicon
 from Jovimetrix.sup.util import parse_param, zip_longest_fill, EnumConvertType
 
 from Jovimetrix.sup.image import channel_solid, cv2tensor, cv2tensor_full, \
-    image_grayscale, image_invert, image_mask_add, pil2cv, \
-    image_rotate, image_scalefit, image_stereogram, image_transform, \
-    tensor2cv, shape_ellipse, shape_polygon, shape_quad, image_translate, \
+    image_grayscale, image_invert, image_mask_add, image_mask_binary, image_matte, \
+    image_rotate, image_scalefit, image_stereogram, image_transform, shape_body, \
+    tensor2cv, shape_polygon, image_translate, pil2cv, \
     EnumScaleMode, EnumInterpolation, EnumEdge, EnumImageType, MIN_IMAGE_SIZE
 
 from Jovimetrix.sup.text import font_names, text_autosize, text_draw, \
@@ -50,10 +50,10 @@ Generate a constant image or mask of a specified size and color. It can be used 
         d.update({
             "optional": {
                 Lexicon.PIXEL: (JOV_TYPE_IMAGE, {"tooltip":"Optional Image to Matte with Selected Color"}),
-                Lexicon.RGBA_A: ("VEC4", {"default": (0, 0, 0, 255), "step": 1,
+                Lexicon.RGBA_A: ("VEC4INT", {"default": (0, 0, 0, 255),
                                         "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A],
                                         "rgb": True, "tooltip": "Constant Color to Output"}),
-                Lexicon.WH: ("VEC2", {"default": (512, 512), "step": 1,
+                Lexicon.WH: ("VEC2INT", {"default": (512, 512),
                                     "label": [Lexicon.W, Lexicon.H],
                                     "tooltip": "Desired Width and Height of the Color Output"}),
                 Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
@@ -100,15 +100,14 @@ Create n-sided polygons. These shapes can be customized by adjusting parameters 
             "optional": {
                 Lexicon.SHAPE: (EnumShapes._member_names_, {"default": EnumShapes.CIRCLE.name}),
                 Lexicon.SIDES: ("INT", {"default": 3, "min": 3, "max": 100, "step": 1}),
-                Lexicon.RGBA_A: ("VEC4", {"default": (255, 255, 255, 255), "step": 1,
+                Lexicon.RGBA_A: ("VEC4INT", {"default": (255, 255, 255, 255), "step": 1,
                                         "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A],
                                         "rgb": True, "tooltip": "Main Shape Color"}),
-                Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1,
+                Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "step": 1,
                                         "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A],
                                         "rgb": True, "tooltip": "Background Color"}),
-                Lexicon.WH: ("VEC2", {"default": (256, 256),
-                                    "step": 1, "min":MIN_IMAGE_SIZE,
-                                    "label": [Lexicon.W, Lexicon.H]}),
+                Lexicon.WH: ("VEC2INT", {"default": (256, 256),
+                                    "min":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
                 Lexicon.XY: ("VEC2", {"default": (0, 0,), "step": 0.01, "precision": 4,
                                     "round": 0.00001, "label": [Lexicon.X, Lexicon.Y]}),
                 Lexicon.ANGLE: ("FLOAT", {"default": 0, "min": -180, "max": 180,
@@ -141,41 +140,34 @@ Create n-sided polygons. These shapes can be customized by adjusting parameters 
             sizeX, sizeY = size
             edge = EnumEdge[edge]
             shape = EnumShapes[shape]
-            alpha_m = int(matte[3])
+            fill = color[:3][::-1]
+            back = matte[:3]
+
             match shape:
-                case EnumShapes.SQUARE:
-                    pA = shape_quad(width, height, sizeX, sizeX, fill=color[:3], back=matte[:3])
-                    mask = shape_quad(width, height, sizeX, sizeX, fill=alpha_m)
+                case EnumShapes.SQUARE | EnumShapes.RECTANGLE:
+                    # pA = shape_quad(width, height, sizeX, sizeX, fill=fill, back=back)
+                    pA = shape_body('rectangle', width, height, sizeX=sizeX, sizeY=sizeY, fill=fill, back=back)
 
-                case EnumShapes.ELLIPSE:
-                    pA = shape_ellipse(width, height, sizeX, sizeY, fill=color[:3], back=matte[:3])
-                    mask = shape_ellipse(width, height, sizeX, sizeY, fill=alpha_m)
-
-                case EnumShapes.RECTANGLE:
-                    pA = shape_quad(width, height, sizeX, sizeY, fill=color[:3], back=matte[:3])
-                    mask = shape_quad(width, height, sizeX, sizeY, fill=alpha_m)
+                case EnumShapes.CIRCLE | EnumShapes.ELLIPSE:
+                    pA = shape_body('ellipse', width, height, sizeX=sizeX, sizeY=sizeY, fill=fill, back=back)
 
                 case EnumShapes.POLYGON:
-                    pA = shape_polygon(width, height, sizeX, sides, fill=color[:3], back=matte[:3])
-                    mask = shape_polygon(width, height, sizeX, sides, fill=alpha_m)
-
-                case EnumShapes.CIRCLE:
-                    pA = shape_ellipse(width, height, sizeX, sizeX, fill=color[:3], back=matte[:3])
-                    mask = shape_ellipse(width, height, sizeX, sizeX, fill=alpha_m)
+                    pA = shape_polygon(width, height, sizeX, sides, fill=fill, back=back)
 
             pA = pil2cv(pA)
-            mask = pil2cv(mask)
-            mask = image_grayscale(mask)
-            pA = image_transform(pA, offset, angle, (1,1), edge=edge)
-            mask = image_transform(mask, offset, angle, (1,1), edge=edge)
-            pB = image_mask_add(pA, mask)
+            pA = image_transform(pA, offset, angle, edge=edge)
             if blur > 0:
                 # @TODO: Do blur on larger canvas to remove wrap bleed.
                 pA = (gaussian(pA, sigma=blur, channel_axis=2) * 255).astype(np.uint8)
-                pB = (gaussian(pB, sigma=blur, channel_axis=2) * 255).astype(np.uint8)
-                mask = (gaussian(mask, sigma=blur, channel_axis=2) * 255).astype(np.uint8)
+            pA = image_matte(pA, matte)
 
-            images.append([cv2tensor(pB), cv2tensor(pA), cv2tensor(mask, True)])
+            mask = image_mask_binary(pA) # *  float(color[3]) / 255.
+            pB = image_mask_add(pA, mask)
+            matte = image_matte(pB, matte)
+            # matte = np.full((height, width, 4), matte, dtype=np.uint8)
+            # matte[:, :] = pB
+
+            images.append([cv2tensor(pB), cv2tensor(matte), cv2tensor(mask, True)])
             pbar.update_absolute(idx)
         return [torch.cat(i, dim=0) for i in zip(*images)]
 
@@ -402,7 +394,7 @@ The Wave Graph node visualizes audio waveforms as bars. Adjust parameters like t
         thick = parse_param(kw, Lexicon.THICK, EnumConvertType.FLOAT, 0.75, 0, 1)
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)
         rgb_a = parse_param(kw, Lexicon.RGBA_A, EnumConvertType.VEC4INT, [(196, 0, 196)], 0, 255)
-        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(42, 12, 42)], 0, 255)
+        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(42, 12, 42, 255)], 0, 255)
         params = list(zip_longest_fill(wave, bars, wihi, thick, rgb_a, matte))
         images = []
         pbar = ProgressBar(len(params))

@@ -72,11 +72,11 @@ app.registerExtension({
             multipleInstances: false,
             appendTo: this.config_dialog.element,
             noAlpha: false,
-            init: function(elm, rgb) {
+            init: function(elm, rgb) {
                 elm.style.backgroundColor = elm.color || LiteGraph.WIDGET_BGCOLOR;
                 elm.style.color = rgb.RGBLuminance > 0.22 ? '#222' : '#ddd'
             },
-            convertCallback: function(data, options) {
+            convertCallback: function(data) {
                 var AHEX = this.patch.attributes.color
                 if (AHEX === undefined) return
                 var name = this.patch.attributes.name.value
@@ -114,7 +114,7 @@ app.registerExtension({
             node_color_all();
         }
     },
-    async beforeRegisterNodeDef(nodeType, nodeData) {
+    async beforeRegisterNodeDef(nodeType) {
         const onNodeCreated = nodeType.prototype.onNodeCreated;
         nodeType.prototype.onNodeCreated = async function () {
             const me = onNodeCreated?.apply(this, arguments);

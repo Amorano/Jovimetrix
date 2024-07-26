@@ -114,7 +114,7 @@ Enhance and modify images with various effects such as blurring, sharpening, col
             pA = tensor2cv(pA) if pA is not None else channel_solid(chan=EnumImageType.BGRA)
             cc = pA.shape[2] if pA.ndim == 3 else 1
             if cc == 4:
-                alpha = pA[:,:,3]
+                alpha = pA[..., 3]
 
             match EnumAdjustOP[op]:
                 case EnumAdjustOP.INVERT:
@@ -201,7 +201,7 @@ Enhance and modify images with various effects such as blurring, sharpening, col
                 mask = 255 - mask
             pA = image_blend(pA, img_new, mask)
             if cc == 4:
-                pA[:,:,3] = alpha
+                pA[..., 3] = alpha
             images.append(cv2tensor_full(pA, matte))
             pbar.update_absolute(idx)
         return [torch.cat(i, dim=0) for i in zip(*images)]
@@ -245,7 +245,7 @@ Combine two input images using various blending modes, such as normal, screen, m
         mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.NONE.name)
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)
         sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)
-        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC3INT, [(0, 0, 0)], 0, 255)
+        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
         invert = parse_param(kw, Lexicon.INVERT, EnumConvertType.BOOLEAN, False)
         params = list(zip_longest_fill(pA, pB, mask, func, alpha, flip, mode, wihi, sample, matte, invert))
         images = []
@@ -281,11 +281,7 @@ Combine two input images using various blending modes, such as normal, screen, m
                 mask = channel_solid(w, h, matte[3], EnumImageType.GRAYSCALE) if tmask is None else image_mask(tmask)
             else:
                 mask = tensor2cv(mask)
-                cc = mask.shape[2] if mask.ndim == 3 else 1
-                if cc == 4:
-                    mask = mask[:,:,3]
-                else:
-                    mask = image_grayscale(mask)
+                mask = image_grayscale(mask)
 
             if invert:
                 mask = 255 - mask
@@ -516,7 +512,7 @@ Extract a portion of an input image or resize it. It supports various cropping m
                 pA = image_crop_polygonal(pA, points)
                 if alpha is not None:
                     alpha = image_crop_polygonal(alpha, points)
-                    pA[:,:,3] = alpha[:,:,0][:,:]
+                    pA[..., 3] = alpha[..., 0][:,:]
 
             elif func == EnumCropMode.XY:
                 pA = image_crop(pA, width, height, xy)
@@ -571,7 +567,7 @@ Create masks based on specific color ranges within an image. Specify the color r
             if img.shape[2] == 3:
                 alpha_channel = np.zeros((img.shape[0], img.shape[1], 1), dtype=img.dtype)
                 img = np.concatenate((img, alpha_channel), axis=2)
-            img[:,:,3] = mask[:,:]
+            img[..., 3] = mask[:,:]
             images.append(cv2tensor_full(img, matte))
             pbar.update_absolute(idx)
         return [torch.cat(i, dim=0) for i in zip(*images)]
@@ -852,10 +848,10 @@ Swap pixel values between two input images based on specified channel swizzle op
                 return target
 
             # logger.debug(swap_r, swap_g, swap_b, swap_a)
-            out[:,:,0] = swapper(EnumPixelSwizzle.BLUE_A, swap_b)[:,:,0]
+            out[..., 0] = swapper(EnumPixelSwizzle.BLUE_A, swap_b)[..., 0]
             out[:,:,1] = swapper(EnumPixelSwizzle.GREEN_A, swap_g)[:,:,1]
             out[:,:,2] = swapper(EnumPixelSwizzle.RED_A, swap_r)[:,:,2]
-            out[:,:,3] = swapper(EnumPixelSwizzle.ALPHA_A, swap_a)[:,:,3]
+            out[..., 3] = swapper(EnumPixelSwizzle.ALPHA_A, swap_a)[..., 3]
             images.append(cv2tensor_full(out))
             pbar.update_absolute(idx)
         return [torch.cat(i, dim=0) for i in zip(*images)]

@@ -12,7 +12,7 @@ const _id = "SHAPE GEN (JOV) ✨"
 
 app.registerExtension({
 	name: 'jovimetrix.node.' + _id,
-	async beforeRegisterNodeDef(nodeType, nodeData, app) {
+	async beforeRegisterNodeDef(nodeType, nodeData) {
         if (nodeData.name !== _id) {
             return;
         }
@@ -34,7 +34,7 @@ app.registerExtension({
         }
 
         const onConnectionsChange = nodeType.prototype.onConnectionsChange
-        nodeType.prototype.onConnectionsChange = function (slotType, slot, event, link_info, data) {
+        nodeType.prototype.onConnectionsChange = function (slotType, slot) {
             if (slotType === TypeSlot.Input && slot.name == 'SHAPE') {
                 const widget_combo = this.widgets.find(w => w.name === 'SHAPE');
                 setTimeout(() => { widget_combo.callback(); }, 10);
@@ -43,7 +43,7 @@ app.registerExtension({
         }
 
         const onExecuted = nodeType.prototype.onExecuted;
-        nodeType.prototype.onExecuted = function (message) {
+        nodeType.prototype.onExecuted = function () {
             const widget_combo = this.widgets.find(w => w.name === 'SHAPE');
             if (widget_combo.value == 'SHAPE') {
                 setTimeout(() => { widget_combo.callback(); }, 10);

@@ -16,10 +16,10 @@ const JTooltipWidget = (app, name, opts) => {
         type: "JTOOLTIP",
         hidden: true,
         options: options,
-        draw: function (ctx, node, width, Y, height) {
+        draw: function () {
             return;
         },
-        computeSize: function (width) {
+        computeSize: function () {
             return [0, 0];
         }
     }

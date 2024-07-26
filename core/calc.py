@@ -898,6 +898,7 @@ Supplies raw or default values for various data types, supporting vector input w
         params = list(zip_longest_fill(raw, r_x, r_y, r_z, r_w, typ, xyzw, seed, yyzw, x_str))
         results = []
         pbar = ProgressBar(len(params))
+        old_seed = -1
         for idx, (raw, r_x, r_y, r_z, r_w, typ, xyzw, seed, yyzw, x_str) in enumerate(params):
             typ = EnumConvertType[typ]
             default = [x_str]
@@ -924,19 +925,20 @@ Supplies raw or default values for various data types, supporting vector input w
             self.UPDATE = False
             if seed != 0 and isinstance(val, (tuple, list,)) and isinstance(val2, (tuple, list,)):
                 self.UPDATE = True
-                # val = list(val) if isinstance(val, (tuple, list,)) else [val]
-                # val2 = list(val2) if isinstance(val2, (tuple, list,)) else [val2]
+                # mutable to update
+                val = list(val)
                 for i in range(len(val)):
                     mx = max(val[i], val2[i])
                     mn = min(val[i], val2[i])
                     if mn == mx:
                         val[i] = mn
                     else:
-                        random.seed(seed)
+                        if old_seed != seed:
+                            random.seed(seed)
+                            old_seed = seed
                         if typ == EnumConvertType.VEC4:
                             val[i] = mn + random.random() * (mx - mn)
                         else:
-                            # logger.debug(f"{i}, {mx}, {mn}")
                             val[i] = random.randint(mn, mx)
 
             extra = parse_value(val, typ, val)

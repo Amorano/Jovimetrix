@@ -77,7 +77,7 @@ export function widget_remove_all(node) {
         for (const w of node.widgets) {
             widget_remove(node, w);
         }
-        who.widgets.length = 0;
+        node.widgets.length = 0;
     }
 }
 

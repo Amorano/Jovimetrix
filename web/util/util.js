@@ -89,7 +89,7 @@ export function node_add_dynamic(nodeType, prefix, dynamic_type='*', index_start
         while (idx < self.inputs.length-1) {
             const slot = self.inputs[idx];
             const parts = slot.name.split('_');
-            if (parts.length == 2) {
+            if (parts.length == 2 && self.graph) {
                 if (slot.link == null) {
                     if (match_output) {
                         self.removeOutput(idx);
@@ -289,24 +289,4 @@ export function showModal(innerHTML, eventCallback, timeout=null) {
         //    modal.dispatchEvent(new Event('tick'));
         //}, 1000);
     });
-}
-
-/*
-* wraps a single text line into maxWidth chunks
-*/
-function wrapText(text, maxWidth = 145) {
-    const words = text.split(' ');
-    const lines = [];
-    let currentLine = '';
-    for (const word of words) {
-        const potentialLine = currentLine ? `${currentLine} ${word}` : word;
-        if (potentialLine.length <= maxWidth) {
-            currentLine = potentialLine;
-        } else {
-            if (currentLine) lines.push(currentLine);
-            currentLine = word;
-        }
-    }
-    if (currentLine) lines.push(currentLine);
-    return lines;
 }

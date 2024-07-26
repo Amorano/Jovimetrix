@@ -4,7 +4,7 @@
  */
 
 import { app } from "../../../scripts/app.js"
-import { CONVERTED_TYPE, convertToInput } from '../util/util_widget.js'
+import { convertToInput } from '../util/util_widget.js'
 import { inner_value_change } from '../util/util_dom.js'
 import { hex2rgb, rgb2hex } from '../util/util_color.js'
 import { $el } from "../../../scripts/ui.js"
@@ -167,7 +167,9 @@ export const VectorWidget = (app, inputName, options, initial, desc='') => {
                         if (/^[0-9+\-*/()\s]+|\d+\.\d+$/.test(v)) {
                             try {
                                 v = eval(v);
-                            } catch (err) {}
+                            } catch (e) {
+
+                            }
                         }
                         if (this.value[idx] != v) {
                             setTimeout(
@@ -218,6 +220,15 @@ app.registerExtension({
                 widget: node.addCustomWidget(VectorWidget(app, inputName, inputData, [0, 0, 0])),
             }),
             VEC4: (node, inputName, inputData, app) => ({
+                widget: node.addCustomWidget(VectorWidget(app, inputName, inputData, [0, 0, 0, 0])),
+            }),
+            VEC2INT: (node, inputName, inputData, app) => ({
+                widget: node.addCustomWidget(VectorWidget(app, inputName, inputData, [0, 0])),
+            }),
+            VEC3INT: (node, inputName, inputData, app) => ({
+                widget: node.addCustomWidget(VectorWidget(app, inputName, inputData, [0, 0, 0])),
+            }),
+            VEC4INT: (node, inputName, inputData, app) => ({
                 widget: node.addCustomWidget(VectorWidget(app, inputName, inputData, [0, 0, 0, 0])),
             })
         }

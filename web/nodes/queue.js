@@ -49,7 +49,7 @@ app.registerExtension({
             const widget_hold = this.widgets.find(w => w.name === '✋🏽');
             const widget_reset = this.widgets.find(w => w.name === 'RESET');
             const widget_value = this.widgets.find(w => w.name === 'VAL');
-            widget_value.callback = async (e) => {
+            widget_value.callback = async() => {
                 widget_hide(this, widget_hold, '-jov');
                 widget_hide(this, widget_reset, '-jov');
                 if (widget_value.value == 0) {
@@ -59,12 +59,12 @@ app.registerExtension({
                 fitHeight(this);
             }
 
-            widget_queue?.inputEl.addEventListener('input', function (event) {
+            widget_queue?.inputEl.addEventListener('input', function () {
                 const value = widget_queue.value.split('\n');
                 update_list(self, value);
             });
 
-            widget_reset.callback = async (e) => {
+            widget_reset.callback = async() => {
                 widget_reset.value = false;
                 api_cmd_jovian(self.id, "reset");
             }
@@ -92,9 +92,11 @@ app.registerExtension({
                 if (event.detail.id != self.id) {
                     return;
                 }
+                /*
                 let centerX = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
                 let centerY = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
-                // util_fun.bewm(centerX / 2, centerY / 3);
+                util_fun.bewm(centerX / 2, centerY / 3);
+                */
                 await flashBackgroundColor(self.widget_queue.inputEl, 650, 4, "#995242CC");
             }
 
@@ -111,52 +113,47 @@ app.registerExtension({
         }
 
         const onConnectOutput = nodeType.prototype.onConnectOutput;
-        nodeType.prototype.onConnectOutput = function(outputIndex, inputType, inputSlot, inputNode, inputIndex) {
-            if (outputIndex == 0) {
-                if (inputType == "COMBO") {
-                    // can link the "same" list -- user breaks it past that, their problem atm.
-                    const widget = inputNode.widgets.find(w => w.name === inputSlot.name);
-                    if (this.outputs[0].name != _prefix && this.widget_queue.value != widget.options.values.join('\n')) {
-                        return false;
-                    }
+        nodeType.prototype.onConnectOutput = function(outputIndex, inputType, inputSlot, inputNode) {
+            if (outputIndex == 0 && inputType == "COMBO") {
+                // can link the "same" list -- user breaks it past that, their problem atm.
+
+                const widget_queue = this.widgets.find(w => w.name === 'Q');
+                const widget = inputNode.widgets.find(w => w.name === inputSlot.name);
+                const values = widget.options.values.join('\n');
+                if (this.outputs[0].name != _prefix && widget_queue.value != values) {
+                    return false;
                 }
             }
             return onConnectOutput?.apply(this, arguments);
         }
 
         const onConnectionsChange = nodeType.prototype.onConnectionsChange;
-        nodeType.prototype.onConnectionsChange = function (slotType, slot, event, link_info, data)
+        nodeType.prototype.onConnectionsChange = function (slotType, slot, event, link_info)
         //side, slot, connected, link_info
         {
-            if (slotType === TypeSlot.Output && slot == 0) {
-                if (link_info){
-                    if (event === TypeSlotEvent.Connect) {
-                        const node = app.graph.getNodeById(link_info.target_id);
-                        if (node === undefined || node.inputs === undefined) {
-                            return;
-                        }
-                        const target = node.inputs[link_info.target_slot];
-                        if (target === undefined) {
-                            return;
-                        }
-
-                        const widget = node.widgets?.find(w => w.name === target.name);
-                        if (widget === undefined) {
-                            return;
-                        }
-                        this.outputs[0].name = widget.name;
-                        if (widget?.origType == "combo" || widget.type == "COMBO") {
-                            const values = widget.options.values;
-                            // remove all connections that don't match the list?
-                            this.widget_queue.value = values.join('\n');
-                            update_list(this, values);
-                        }
-                    } else {
-                        this.outputs[0].name = _prefix;
-                    }
-                } else {
-                    this.outputs[0].name = _prefix;
+            if (slotType === TypeSlot.Output && slot == 0 && link_info && event === TypeSlotEvent.Connect) {
+                const node = app.graph.getNodeById(link_info.target_id);
+                if (node === undefined || node.inputs === undefined) {
+                    return;
                 }
+                const target = node.inputs[link_info.target_slot];
+                if (target === undefined) {
+                    return;
+                }
+
+                const widget = node.widgets?.find(w => w.name === target.name);
+                if (widget === undefined) {
+                    return;
+                }
+                this.outputs[0].name = widget.name;
+                if (widget?.origType == "combo" || widget.type == "COMBO") {
+                    const values = widget.options.values;
+                    const widget_queue = this.widgets.find(w => w.name === 'Q');
+                    // remove all connections that don't match the list?
+                    widget_queue.value = values.join('\n');
+                    update_list(this, values);
+                }
+                this.outputs[0].name = _prefix;
             }
             return onConnectionsChange?.apply(this, arguments);
         };

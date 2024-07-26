@@ -8,14 +8,13 @@ import { api } from "../../../scripts/api.js";
 import { app } from "../../../scripts/app.js";
 import { fitHeight } from '../util/util.js'
 import { widget_hide, widget_show  } from '../util/util_widget.js';
-import { api_post, api_cmd_jovian } from '../util/util_api.js';
+import { api_cmd_jovian } from '../util/util_api.js';
 import { flashBackgroundColor } from '../util/util_fun.js';
 
 const _id = "GLSL (JOV) 🍩";
 const EVENT_JOVI_GLSL_ERROR = "jovi-glsl-error";
 const EVENT_JOVI_GLSL_TIME = "jovi-glsl-time";
-const EVENT_JOVI_GLSL_REGISTER = "jovi-register-glsl";
-const RE_VARIABLE = /uniform\s*(\w*)\s*(\w*);(?:.*\/{2}\s*([A-Za-z0-9\-\.,\s]+)){0,1}\s*$/gm
+const RE_VARIABLE = /uniform\s+(\w+)\s+(\w+);\s*\/\/\s*([0-9.,\s]*)\s*(?:;\s*([0-9.-]+))?\s*(?:;\s*([0-9.-]+))?\s*(?:;\s*([0-9.-]+))?\s*(?:\|\s*(.*))?$/gm
 
 app.registerExtension({
     name: 'jovimetrix.node.' + _id,

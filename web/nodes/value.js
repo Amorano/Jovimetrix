@@ -6,14 +6,14 @@
 
 import { app } from "../../../scripts/app.js"
 import { hook_widget_AB } from '../util/util_jov.js'
-import { fitHeight, TypeSlot } from '../util/util.js'
+import { fitHeight } from '../util/util.js'
 import { widget_hide, process_any, widget_type_name } from '../util/util_widget.js'
 
 const _id = "VALUE (JOV) 🧬"
 
 app.registerExtension({
 	name: 'jovimetrix.node.' + _id,
-	async beforeRegisterNodeDef(nodeType, nodeData, app) {
+	async beforeRegisterNodeDef(nodeType, nodeData) {
         if (nodeData.name !== _id) {
             return;
         }
@@ -22,7 +22,6 @@ app.registerExtension({
         nodeType.prototype.onNodeCreated = function () {
             const me = onNodeCreated?.apply(this);
 
-            const widget_rng = this.widgets.find(w => w.name === 'seed');
             const widget_str = this.widgets.find(w => w.name === '📝');
 
             this.outputs[1].type = "*";

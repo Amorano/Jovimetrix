@@ -58,7 +58,7 @@ app.registerExtension({
             },
         });
     },
-    async beforeRegisterNodeDef(nodeType, nodeData, app) {
+    async beforeRegisterNodeDef(nodeType) {
         const onNodeCreated = nodeType.prototype.onNodeCreated;
         nodeType.prototype.onNodeCreated = async function () {
             const me = onNodeCreated.apply(this, arguments);
@@ -74,7 +74,7 @@ app.registerExtension({
     },
     async nodeCreated(node) {
         const onDrawForeground = node.onDrawForeground;
-        node.onDrawForeground = async function (ctx, area) {
+        node.onDrawForeground = async function (ctx) {
             const me = onDrawForeground?.apply(this, arguments);
             if (this.widgets) {
                 ctx.save();
@@ -85,7 +85,9 @@ app.registerExtension({
                         try {
                             color = hex2rgb(g_highlight);
                             color = g_highlight
-                        } catch { }
+                        } catch {
+
+                        }
                     }
                     if (g_color_style == "Round Highlight") {
                         const thick = Math.max(1, Math.min(3, g_thickness));

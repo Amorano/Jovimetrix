@@ -47,8 +47,8 @@ PTYPE = {
     'sampler2D': EnumConvertType.IMAGE
 }
 
-RE_VARIABLE = re.compile(r"uniform\s*(\w*)\s*(\w*);(?:.*\/{2}\s*([A-Za-z0-9\-\.,\s]+)){0,1}(\|[A-Za-z0-9\s]+)?$", re.MULTILINE)
-RE_SHADER_META = re.compile(r"\/\/\s(name|desc):\s([A-Za-z\s]+)$", re.MULTILINE)
+RE_VARIABLE = re.compile(r"uniform\s+(\w+)\s+(\w+);\s*\/\/\s*([0-9.,\s]*)\s*(?:;\s*([0-9.-]+))?\s*(?:;\s*([0-9.-]+))?\s*(?:;\s*([0-9.-]+))?\s*(?:\|\s*(.*))?$", re.MULTILINE)
+RE_SHADER_META = re.compile(r"\/\/\s?([A-Za-z\_]{3,}):\s?([A-Za-z\_\s]+)$", re.MULTILINE)
 
 # =============================================================================
 
@@ -98,13 +98,11 @@ void main()
     def __init__(self, vertex:str=None, fragment:str=None, width:int=IMAGE_SIZE_DEFAULT, height:int=IMAGE_SIZE_DEFAULT, fps:int=30) -> None:
         if not glfw.init():
             raise RuntimeError("GLFW did not init")
-        glfw.window_hint(glfw.VISIBLE, glfw.FALSE)  # hidden
+        glfw.window_hint(glfw.VISIBLE, glfw.FALSE)
         self.__window = glfw.create_window(width, height, "hidden", None, None)
         if not self.__window:
             raise RuntimeError("GLFW did not init window")
         glfw.make_context_current(self.__window)
-        #gl.glEnable(gl.GL_BLEND)
-        #gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
 
         self.__size_changed = False
         self.__size: Tuple[int, int] = (max(width, IMAGE_SIZE_MIN), max(height, IMAGE_SIZE_MIN))
@@ -131,7 +129,7 @@ void main()
         gl.glCompileShader(shader)
         if gl.glGetShaderiv(shader, gl.GL_COMPILE_STATUS) != gl.GL_TRUE:
             raise CompileException(gl.glGetShaderInfoLog(shader))
-        logger.debug(f"{shader_type} compiled")
+        # logger.debug(f"{shader_type} compiled")
         return shader
 
     def __framebuffer(self) -> None:
@@ -305,11 +303,11 @@ void main()
             self.__userVar = {}
             # read the fragment and setup the vars....
             for match in RE_VARIABLE.finditer(fragment):
-                typ, name, default, tooltip = match.groups()
+                typ, name, default, val_min, val_max, val_step, tooltip = match.groups()
                 tex_loc = None
                 if typ in ['sampler2D']:
                     tex_loc = gl.glGenTextures(1)
-                logger.debug(f"{name}.{typ}: {default}")
+                logger.debug(f"{name}.{typ}: {default} {val_min} {val_max} {val_step} {tooltip}")
                 self.__userVar[name] = [
                     # type
                     typ,
@@ -321,9 +319,7 @@ void main()
                     tex_loc
                 ]
 
-            logger.info("program changed")
-        self.render()
-        self.render()
+            logger.info("program compiled")
 
     def render(self, time_delta:float=0., **kw) -> np.ndarray:
         glfw.make_context_current(self.__window)

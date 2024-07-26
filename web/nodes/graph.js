@@ -33,7 +33,7 @@ app.registerExtension({
             const me = onNodeCreated?.apply(this);
             const self = this;
             const widget_reset = this.widgets.find(w => w.name === 'RESET');
-            widget_reset.callback = async (e) => {
+            widget_reset.callback = async() => {
                 widget_reset.value = false;
                 api_cmd_jovian(self.id, "reset");
             }
@@ -41,7 +41,7 @@ app.registerExtension({
         }
 
         const onConnectionsChange = nodeType.prototype.onConnectionsChange
-        nodeType.prototype.onConnectionsChange = function (slotType, slot, event, link_info, data) {
+        nodeType.prototype.onConnectionsChange = function (slotType, slot, event, link_info) {
             const me = onConnectionsChange?.apply(this, arguments);
             if (!link_info || slot == this.inputs.length) {
                 return;

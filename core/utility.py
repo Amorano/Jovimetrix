@@ -648,7 +648,8 @@ Manage a queue of items, such as file paths or data. It supports various formats
                     data = torch.cat(ret, dim=0)
             else:
                 data = process(self.__q[self.__index])
-                data = cv2tensor(data)
+                if isinstance(data[0], (np.ndarray,)):
+                    data = cv2tensor(data)
                 self.__index += 1
 
         self.__previous = data
@@ -762,6 +763,29 @@ Save the output image along with its metadata to the specified path. Supports sa
             image.save(fname, pnginfo=meta_png)
             pbar.update_absolute(idx)
         return ()
+
+class Terminate(JOVBaseNode):
+    NAME = "TERMINATE COMFYUI (JOV) "
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
+    OUTPUT_NODE = True
+    RETURN_TYPES = ()
+    SORT = 115
+    DESCRIPTION = """
+Terminate a running ComfyUI server.
+"""
+
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        d = super().INPUT_TYPES(True, True)
+        d.update({
+            "optional": {
+                Lexicon.TRIGGER: ("TRIGGER",),
+            }
+        })
+        return Lexicon._parse(d, cls)
+
+    def run(self, **kw) -> dict[str, Any]:
+        exit()
 
 '''
 class RESTNode:

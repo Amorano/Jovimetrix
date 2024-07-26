@@ -29,7 +29,7 @@ export function hook_widget_size_mode(node, wh_hide=true) {
 
 export function hook_widget_size_mode2(nodeType, wh_hide=true) {
     const onNodeCreated = nodeType.prototype.onNodeCreated
-    nodeType.prototype.onNodeCreated = function () {
+    nodeType.prototype.onNodeCreated = function (node) {
         const me = onNodeCreated?.apply(this);
         const wh = widget_find(node.widgets, '🇼🇭');
         const samp = widget_find(node.widgets, '🎞️');
@@ -84,7 +84,7 @@ export function hook_widget_AB(node, control_key, match_output=-1) {
         widget.options.menu = false;
         widget.callback = () => {
             if (widget.type === "toggle") {
-                trackKey[0] = 1 ? widget.value : 0;
+                trackKey[0] = widget.value ? 1 : 0;
             } else {
                 Object.keys(widget.value).forEach((key) => {
                     trackKey[key] = widget.value[key];

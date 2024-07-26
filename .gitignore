@@ -13,3 +13,5 @@ ignore.txt
 checkpoints
 results
 backup
+node_modules
+*-lock.json

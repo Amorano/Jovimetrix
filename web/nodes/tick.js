@@ -13,7 +13,7 @@ const EVENT_JOVI_TICK = "jovi-tick";
 
 app.registerExtension({
 	name: 'jovimetrix.node.' + _id,
-	async beforeRegisterNodeDef(nodeType, nodeData, app) {
+	async beforeRegisterNodeDef(nodeType, nodeData) {
         if (nodeData.name !== _id) {
             return;
         }
@@ -22,7 +22,7 @@ app.registerExtension({
             const me = onNodeCreated?.apply(this);
             const self = this;
             const widget_reset = this.widgets.find(w => w.name === 'RESET');
-            widget_reset.callback = async (e) => {
+            widget_reset.callback = async() => {
                 widget_reset.value = false;
                 api_cmd_jovian(self.id, "reset");
             }

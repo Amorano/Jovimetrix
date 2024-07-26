@@ -12,7 +12,7 @@ const _prefix = '🔮'
 
 app.registerExtension({
 	name: 'jovimetrix.node.' + _id,
-	async beforeRegisterNodeDef(nodeType, nodeData, app) {
+	async beforeRegisterNodeDef(nodeType, nodeData) {
         if (nodeData.name !== _id) {
             return;
         }
@@ -20,7 +20,7 @@ app.registerExtension({
         nodeType = node_add_dynamic_route(nodeType, _prefix);
 
         const onConnectionsChange = nodeType.prototype.onConnectionsChange
-        nodeType.prototype.onConnectionsChange = function (slotType, slot_idx, event, link_info, node_slot) {
+        nodeType.prototype.onConnectionsChange = function (slotType, slot_idx, event, link_info) {
             const me = onConnectionsChange?.apply(this, arguments);
             if (slot_idx == 0) {
                 if (event === TypeSlotEvent.Connect && slotType === TypeSlot.Input && link_info) {

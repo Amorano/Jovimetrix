@@ -201,9 +201,9 @@ def parse_value(val:Any, typ:EnumConvertType, default: Any,
             d = default[idx] if isinstance(default, (list, tuple, set, dict, torch.Tensor)) and idx < len(default) else 0
             v = d if val is None else val[idx] if idx < len(val) else d
             if isinstance(v, (str, )):
+                v = v.strip('\n').strip()
                 if v == '':
                     v = 0
-                v = v.strip('\n')
             try:
                 if typ in [EnumConvertType.FLOAT, EnumConvertType.VEC2, EnumConvertType.VEC3, EnumConvertType.VEC4]:
                     v = round(float(v), 16)
@@ -308,10 +308,8 @@ def parse_param(data:dict, key:str, typ:EnumConvertType, default: Any,
     elif isinstance(val, (torch.Tensor,)):
         if val.ndim > 3:
             val = [t for t in val]
-        else:
-            while (val.ndim < 3):
-                val = val.unsqueeze(-1)
-            val = [val]
+        elif val.ndim == 3:
+            val = [v.unsqueeze(-1) for v in val]
     elif isinstance(val, (list, tuple, set)):
         if len(val) == 0:
             val = [None]

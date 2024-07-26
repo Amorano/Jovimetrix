@@ -8,7 +8,7 @@ import { CONVERTED_TYPE, convertToInput } from '../util/util_widget.js'
 
 app.registerExtension({
     name: "jovimetrix.cozy.menu",
-    async beforeRegisterNodeDef(nodeType, nodeData, app) {
+    async beforeRegisterNodeDef(nodeType, nodeData) {
         if (!nodeData.name.includes("(JOV)")) {
             return;
         }
@@ -40,7 +40,7 @@ app.registerExtension({
                     (widget.options?.forceInput === undefined || widget.options?.forceInput === false) &&
                     widget.options?.menu !== false) {
                         const convertToInputObject = {
-                            content: `Convsert ${widget.name} to input`,
+                            content: `Convert ${widget.name} to input`,
                             callback: () => convertToInput(this, widget, widgetType)
                         };
                         convertToInputArray.push(convertToInputObject);

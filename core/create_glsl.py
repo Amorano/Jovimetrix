@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 from typing import Any, Tuple
 
+import numpy as np
 import torch
 from loguru import logger
 
@@ -129,6 +130,7 @@ class GLSLNodeBase(JOVImageNode):
             self.__glsl.program(self.VERTEX, self.FRAGMENT)
         except CompileException as e:
             comfy_message(ident, "jovi-glsl-error", {"id": ident, "e": str(e)})
+            logger.error(self.NAME)
             logger.error(e)
             return
 
@@ -199,14 +201,25 @@ class GLSLNodeDynamic(GLSLNodeBase):
         # parameter list first...
         data = {}
         if cls.PARAM is not None:
-            for glsl_type, name, default, tooltip in cls.PARAM:
+            for glsl_type, name, default, tooltip, val_min, val_max, val_step in cls.PARAM:
                 typ = PTYPE[glsl_type]
                 d = None
                 if glsl_type != 'sampler2D' and default is not None:
                     d = default.split(',')
                     d = parse_value(d, typ, 0)
-                data[name] = (typ.name, {"default": d, "min": -2147483647, "nax":2147483647, "step": 0.01, "tooltip": tooltip},)
-                print(name, (typ.name, {"default": d},))
+
+                #val_min = -2147483647
+                #val_max = 2147483647
+                #val_step = 1
+                entry = (typ.name, {})
+                match typ:
+                    case EnumConvertType.INT | EnumConvertType.VEC2INT | EnumConvertType.VEC3INT | EnumConvertType.VEC4INT:
+                        entry = (typ.name, {"default": d, "min": val_min, "max":val_max, "step": val_step, "tooltip": tooltip},)
+                    case EnumConvertType.FLOAT | EnumConvertType.VEC2 | EnumConvertType.VEC3 | EnumConvertType.VEC4:
+                        entry = (typ.name, {"default": d, "min": val_min, "max":val_max, "step": val_step, "precision": 6, "round": 0.0001, "tooltip": tooltip},)
+                    case EnumConvertType.IMAGE:
+                        entry = (typ.name, {"default": d, "tooltip": tooltip},)
+                data[name] = entry
 
         data.update(opts)
         original_params['optional'] = data
@@ -221,6 +234,7 @@ def import_dynamic() -> Tuple[str,...]:
             continue
 
         meta = shader_meta(shader)
+
         name = meta.get('name', name.split('.')[0])
         class_name = f'GLSLNode_{name.title()}'
         class_def = type(class_name, (GLSLNodeDynamic,), {
@@ -229,11 +243,5 @@ def import_dynamic() -> Tuple[str,...]:
             "FRAGMENT": shader,
             "PARAM": meta.get('_', []),
         })
-
-        #def init_method(self, *arg, **kw) -> None:
-       #     super(class_def, self).__init__(*arg, **kw)
-        #    self.FRAGMENT = shader
-
-        #class_def.__init__ = init_method
         ret.append((class_name, class_def,))
     return ret

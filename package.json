@@ -1,0 +1,17 @@
+{
+  "name": "jovimetrix",
+  "version": "1.0.0",
+  "description": "<h2><p align=\"center\">THIS ENTIRE PROJECT IS DONATIONWARE.<br>PLEASE FEEL FREE TO CONTRIBUTE IN ANYWAY YOU THINK YOU CAN</p></h2>\r <picture>\r   <source media=\"(prefers-color-scheme: dark)\" srcset=\"https://github.com/Amorano/Jovimetrix-examples/blob/master/res/logo-jovimetrix.png\">\r   <source media=\"(prefers-color-scheme: light)\" srcset=\"https://github.com/Amorano/Jovimetrix-examples/blob/master/res/logo-jovimetrix-light.png\">\r   <img alt=\"ComfyUI Nodes for procedural masking, live composition and video manipulation\">\r </picture>",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@eslint/js": "^9.7.0",
+    "eslint": "^9.7.0",
+    "eslint-plugin-vue": "^9.27.0",
+    "globals": "^15.8.0"
+  }
+}

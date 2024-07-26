@@ -344,7 +344,7 @@ app.registerExtension({
 
         // ? clicked
         const mouseDown = nodeType.prototype.onMouseDown
-        nodeType.prototype.onMouseDown = function (e, localPos, canvas) {
+        nodeType.prototype.onMouseDown = function (e, localPos) {
             const r = mouseDown ? mouseDown.apply(this, arguments) : undefined
             const iconX = this.size[0] - iconSize - iconMargin
             const iconY = iconSize - 34
