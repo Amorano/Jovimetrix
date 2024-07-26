@@ -5,8 +5,8 @@
  */
 
 import { app } from "../../../scripts/app.js"
-import { fitHeight, node_add_dynamic} from '../util/util.js'
-import { widget_hide, widget_show } from '../util/util_widget.js'
+import { nodeFitHeight, nodeAddDynamic} from '../util/util_node.js'
+import { widgetHide, widgetShow } from '../util/util_widget.js'
 import { hook_widget_size_mode } from '../util/util_jov.js'
 
 const _id = "STACK (JOV) ➕"
@@ -19,7 +19,7 @@ app.registerExtension({
             return;
         }
 
-        nodeType = node_add_dynamic(nodeType, _prefix);
+        nodeType = nodeAddDynamic(nodeType, _prefix);
         const onNodeCreated = nodeType.prototype.onNodeCreated
         nodeType.prototype.onNodeCreated = function () {
             const me = onNodeCreated?.apply(this)
@@ -28,11 +28,11 @@ app.registerExtension({
             const stride = this.widgets.find(w => w.name === '🦶🏽');
             const axis = this.widgets.find(w => w.name === 'AXIS');
             axis.callback = () => {
-                widget_hide(self, stride, "-jov");
+                widgetHide(self, stride, "-jov");
                 if (axis.value == 'GRID') {
-                    widget_show(stride);
+                    widgetShow(stride);
                 }
-                fitHeight(self);
+                nodeFitHeight(self);
             }
             setTimeout(() => { axis.callback(); }, 10);
             return me;

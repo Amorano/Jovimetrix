@@ -5,7 +5,7 @@
  */
 
 import { app } from "../../../scripts/app.js"
-import { node_add_dynamic} from '../util/util.js'
+import { nodeAddDynamic} from '../util/util_node.js'
 import{ hook_widget_size_mode2 } from '../util/util_jov.js'
 
 const _id = "FLATTEN (JOV) ⬇️"
@@ -18,7 +18,7 @@ app.registerExtension({
             return;
         }
 
-        nodeType = node_add_dynamic(nodeType, _prefix);
+        nodeType = nodeAddDynamic(nodeType, _prefix);
         nodeType = hook_widget_size_mode2(nodeType);
 	}
 })

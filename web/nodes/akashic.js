@@ -6,7 +6,7 @@
 
 import { app } from "../../../scripts/app.js"
 import { ComfyWidgets } from '../../../scripts/widgets.js';
-import { node_add_dynamic } from '../util/util.js'
+import { nodeAddDynamic } from '../util/util_node.js'
 
 const _prefix = '📥'
 const _id = "AKASHIC (JOV) 📓"
@@ -18,7 +18,7 @@ app.registerExtension({
             return
         }
 
-        nodeType = node_add_dynamic(nodeType, _prefix);
+        nodeType = nodeAddDynamic(nodeType, _prefix);
 
         const onNodeCreated = nodeType.prototype.onNodeCreated;
         nodeType.prototype.onNodeCreated = async function () {
@@ -51,7 +51,7 @@ app.registerExtension({
                 let new_val = message.text.map((txt, index) => `${index}: ${txt}`).join('\n');
                 this.message.value = new_val;
             }
-            // fitHeight(this);
+            // nodeFitHeight(this);
             return me;
         }
     }

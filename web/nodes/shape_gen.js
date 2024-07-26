@@ -5,8 +5,8 @@
  */
 
 import { app } from "../../../scripts/app.js"
-import { fitHeight, TypeSlot } from '../util/util.js'
-import { widget_hide, widget_show } from '../util/util_widget.js'
+import { nodeFitHeight, TypeSlot } from '../util/util_node.js'
+import { widgetHide, widgetShow } from '../util/util_widget.js'
 
 const _id = "SHAPE GEN (JOV) ✨"
 
@@ -23,11 +23,11 @@ app.registerExtension({
             const sides = this.widgets.find(w => w.name === 'SIDES');
             const op = this.widgets.find(w => w.name === 'SHAPE');
             op.callback = () => {
-                widget_hide(this, sides, "-jov");
+                widgetHide(this, sides, "-jov");
                 if (op.value == 'POLYGON') {
-                    widget_show(sides);
+                    widgetShow(sides);
                 }
-                fitHeight(this);
+                nodeFitHeight(this);
             }
             setTimeout(() => { op.callback(); }, 10);
             return me;

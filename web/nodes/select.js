@@ -5,8 +5,8 @@
  */
 
 import { app } from "../../../scripts/app.js"
-import { node_add_dynamic } from '../util/util.js'
-import { api_cmd_jovian } from '../util/util_api.js'
+import { nodeAddDynamic } from '../util/util_node.js'
+import { apiJovimetrix } from '../util/util_api.js'
 
 const _id = "SELECT (JOV) 🤏🏽"
 const _prefix = '❔'
@@ -18,7 +18,7 @@ app.registerExtension({
             return;
         }
 
-        nodeType = node_add_dynamic(nodeType, _prefix);
+        nodeType = nodeAddDynamic(nodeType, _prefix);
 
         const onNodeCreated = nodeType.prototype.onNodeCreated
         nodeType.prototype.onNodeCreated = function () {
@@ -26,7 +26,7 @@ app.registerExtension({
             const widget_reset = this.widgets.find(w => w.name === 'RESET');
             widget_reset.callback = async() => {
                 widget_reset.value = false;
-                api_cmd_jovian(self.id, "reset");
+                apiJovimetrix(self.id, "reset");
             }
             return me
         }

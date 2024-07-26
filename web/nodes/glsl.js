@@ -6,9 +6,9 @@
 
 import { api } from "../../../scripts/api.js";
 import { app } from "../../../scripts/app.js";
-import { fitHeight } from '../util/util.js'
-import { widget_hide, widget_show  } from '../util/util_widget.js';
-import { api_cmd_jovian } from '../util/util_api.js';
+import { nodeFitHeight } from '../util/util_node.js'
+import { widgetHide, widgetShow  } from '../util/util_widget.js';
+import { apiJovimetrix } from '../util/util_api.js';
 import { flashBackgroundColor } from '../util/util_fun.js';
 
 const _id = "GLSL (JOV) 🍩";
@@ -44,7 +44,7 @@ app.registerExtension({
             widget_param.serializeValue = async () =>
                 self.inputs.reduce((result, widget) =>
                     ({ ...result, [widget.name]: widget.value }), {});
-            widget_hide(this, widget_param, "-jov");
+            widgetHide(this, widget_param, "-jov");
 
             // parse this for vars... check existing vars and "types" and keep
             // or ignore as is the case -- I should stick to a common set of
@@ -111,18 +111,18 @@ app.registerExtension({
             });
 
             widget_batch.callback = () => {
-                widget_hide(self, widget_reset, '-jov');
-                widget_hide(self, widget_wait, '-jov');
+                widgetHide(self, widget_reset, '-jov');
+                widgetHide(self, widget_wait, '-jov');
                 if (widget_batch.value == 0) {
-                    widget_show(widget_reset);
-                    widget_show(widget_wait);
+                    widgetShow(widget_reset);
+                    widgetShow(widget_wait);
                 }
-                fitHeight(self);
+                nodeFitHeight(self);
             }
 
             widget_reset.callback = () => {
                 widget_reset.value = false;
-                api_cmd_jovian(self.id, "reset");
+                apiJovimetrix(self.id, "reset");
                 widget_time.value = 0;
             };
 

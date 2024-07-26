@@ -6,7 +6,7 @@
 
 import { app } from "../../../scripts/app.js"
 import * as util_config from '../util/util_config.js'
-import { hex2rgb } from '../util/util_color.js'
+import { colorHex2RGB } from '../util/util.js'
 
 let g_color_style;
 let g_thickness = 1;
@@ -83,7 +83,7 @@ app.registerExtension({
                     let color = ctx.strokeStyle;
                     if (g_highlight != "") {
                         try {
-                            color = hex2rgb(g_highlight);
+                            color = colorHex2RGB(g_highlight);
                             color = g_highlight
                         } catch {
 

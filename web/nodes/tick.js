@@ -6,7 +6,7 @@
 
 import { api } from "../../../scripts/api.js";
 import { app } from "../../../scripts/app.js"
-import { api_cmd_jovian } from '../util/util_api.js'
+import { apiJovimetrix } from '../util/util_api.js'
 
 const _id = "TICK (JOV) ⏱";
 const EVENT_JOVI_TICK = "jovi-tick";
@@ -24,7 +24,7 @@ app.registerExtension({
             const widget_reset = this.widgets.find(w => w.name === 'RESET');
             widget_reset.callback = async() => {
                 widget_reset.value = false;
-                api_cmd_jovian(self.id, "reset");
+                apiJovimetrix(self.id, "reset");
             }
 
             self.widget_count = this.widgets.find(w => w.name === 'VAL');

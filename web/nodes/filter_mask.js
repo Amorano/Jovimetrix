@@ -5,8 +5,8 @@
  */
 
 import { app } from "../../../scripts/app.js"
-import { fitHeight } from '../util/util.js'
-import { widget_hide, widget_show } from '../util/util_widget.js'
+import { nodeFitHeight } from '../util/util_node.js'
+import { widgetHide, widgetShow } from '../util/util_widget.js'
 
 const _id = "FILTER MASK (JOV) 🤿"
 
@@ -24,11 +24,11 @@ app.registerExtension({
             const toggle = this.widgets.find(w => w.name === '🇴');
             const end = this.widgets.find(w => w.name === 'END');
             toggle.callback = () => {
-                widget_hide(this, end, "-jov");
+                widgetHide(this, end, "-jov");
                 if (toggle.value == true) {
-                    widget_show(end);
+                    widgetShow(end);
                 }
-                fitHeight(self);
+                nodeFitHeight(self);
             };
             setTimeout(() => { toggle.callback(); }, 10);
             return me;

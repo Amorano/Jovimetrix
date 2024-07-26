@@ -6,7 +6,7 @@
 
 import { app } from "../../../scripts/app.js"
 import { $el } from "../../../scripts/ui.js"
-import { getHoveredWidget } from '../util/util_widget.js'
+import { widgetGetHovered } from '../util/util_widget.js'
 
 const JTooltipWidget = (app, name, opts) => {
     let options = opts || {};
@@ -106,7 +106,7 @@ app.registerExtension({
                 return showTooltip(tip);
             }
 
-            const widget = getHoveredWidget();
+            const widget = widgetGetHovered();
             if (widget && !widget.element) {
                 let tip = tips?.[widget.name];
                 const def = widget.options?.default;

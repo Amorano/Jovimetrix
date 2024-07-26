@@ -6,8 +6,8 @@
 
 import { api } from "../../../scripts/api.js";
 import { app } from "../../../scripts/app.js";
-import { showModal } from '../util/util.js'
-import { api_post } from '../util/util_api.js'
+import { domShowModal } from '../util/util.js'
+import { apiPost } from '../util/util_api.js'
 import { bubbles } from '../util/util_fun.js'
 
 const _id = "DELAY (JOV) ✋🏽"
@@ -16,7 +16,7 @@ const EVENT_JOVI_UPDATE = "jovi-delay-update";
 
 app.registerExtension({
 	name: 'jovimetrix.node.' + _id,
-	async beforeRegisterNodeDef(nodeType, nodeData, app) {
+	async beforeRegisterNodeDef(nodeType, nodeData) {
         if (nodeData.name !== _id) {
             return
         }
@@ -38,7 +38,7 @@ app.registerExtension({
                     bubbles();
                 }
                 showing = true;
-                delay_modal = showModal(`
+                delay_modal = domShowModal(`
                     <div class="jov-modal-content">
                         <h3 id="jov-delay-header">DELAY NODE #${event.detail?.title || event.detail.id}</h3>
                         <h4>CANCEL OR CONTINUE RENDER?</h4>
@@ -60,7 +60,7 @@ app.registerExtension({
                         console.error(e);
                     }
                 }
-                api_post('/jovimetrix/message', { id: event.detail.id, cancel: value });
+                apiPost('/jovimetrix/message', { id: event.detail.id, cancel: value });
 
                 showing = false;
                 window.bubbles_alive = false;

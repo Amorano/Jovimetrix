@@ -5,7 +5,7 @@
  */
 
 import { app } from "../../../scripts/app.js"
-import { TypeSlot } from '../util/util.js'
+import { TypeSlot } from '../util/util_node.js'
 import { hook_widget_AB } from '../util/util_jov.js'
 
 const _id = "OP BINARY (JOV) 🌟"

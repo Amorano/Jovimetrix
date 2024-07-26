@@ -5,7 +5,7 @@
  */
 
 import { app } from "../../../scripts/app.js"
-import { widget_hide, widget_show } from '../util/util_widget.js'
+import { widgetHide, widgetShow } from '../util/util_widget.js'
 
 const _id = "COLOR THEORY (JOV) 🛞"
 
@@ -22,9 +22,9 @@ app.registerExtension({
             const num_color = this.widgets.find(w => w.name === 'VAL');
             const scheme = this.widgets.find(w => w.name === 'SCHEME');
             scheme.callback = () => {
-                widget_hide(this, num_color, "-jov");
+                widgetHide(this, num_color, "-jov");
                 if (scheme.value == "CUSTOM_TETRAD") {
-                    widget_show(num_color);
+                    widgetShow(num_color);
                 }
             };
             setTimeout(() => { scheme.callback(); }, 10);

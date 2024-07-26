@@ -5,8 +5,8 @@
  */
 
 import { app } from "../../../scripts/app.js"
-import { fitHeight, node_add_dynamic } from '../util/util.js'
-import { widget_hide, widget_show } from '../util/util_widget.js'
+import { nodeFitHeight, nodeAddDynamic } from '../util/util_node.js'
+import { widgetHide, widgetShow } from '../util/util_widget.js'
 
 const _id = "ARRAY (JOV) 📚"
 const _prefix = '❔'
@@ -17,7 +17,7 @@ app.registerExtension({
         if (nodeData.name !== _id) {
             return;
         }
-        nodeType = node_add_dynamic(nodeType, _prefix);
+        nodeType = nodeAddDynamic(nodeType, _prefix);
 
         const onNodeCreated = nodeType.prototype.onNodeCreated;
         nodeType.prototype.onNodeCreated = async function () {
@@ -29,27 +29,27 @@ app.registerExtension({
             const widget_mode = this.widgets.find(w => w.name === 'MODE');
             const widget_count = this.widgets.find(w => w.name === 'COUNT');
             widget_mode.callback = async () => {
-                widget_hide(this, widget_idx, "-jov");
-                widget_hide(this, widget_range, "-jov");
-                widget_hide(this, widget_str, "-jov");
-                widget_hide(this, widget_seed, "-jov");
-                widget_hide(this, widget_count, "-jov");
+                widgetHide(this, widget_idx, "-jov");
+                widgetHide(this, widget_range, "-jov");
+                widgetHide(this, widget_str, "-jov");
+                widgetHide(this, widget_seed, "-jov");
+                widgetHide(this, widget_count, "-jov");
                 if (widget_mode.value == "PICK") {
-                    widget_show(widget_idx);
-                    widget_show(widget_count);
+                    widgetShow(widget_idx);
+                    widgetShow(widget_count);
                 } else if (widget_mode.value == "SLICE") {
-                    widget_show(widget_range);
+                    widgetShow(widget_range);
                 } else if (widget_mode.value == "INDEX_LIST") {
-                    widget_show(widget_str);
+                    widgetShow(widget_str);
                 } else if (widget_mode.value == "RANDOM") {
-                    widget_show(widget_seed);
-                    widget_show(widget_count);
+                    widgetShow(widget_seed);
+                    widgetShow(widget_count);
                 } else if (widget_mode.value == "MERGE") {
                     // MERGE
                 } else if (widget_mode.value == "CARTESIAN") {
                     console.warn("NOT IMPLEMENTED! YELL AT JOVIEX!")
                 }
-                fitHeight(this);
+                nodeFitHeight(this);
             }
             setTimeout(() => { widget_mode.callback(); }, 10);
             return me;

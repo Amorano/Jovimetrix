@@ -5,8 +5,8 @@
  */
 
 import { app } from "../../../scripts/app.js"
-import { fitHeight } from '../util/util.js'
-import { widget_hide, widget_show } from '../util/util_widget.js'
+import { nodeFitHeight } from '../util/util_node.js'
+import { widgetHide, widgetShow } from '../util/util_widget.js'
 
 const _id = "PIXEL SWAP (JOV) 🔃"
 
@@ -27,35 +27,35 @@ app.registerExtension({
             const a = this.widgets.find(w => w.name === '⬜');
             const swap_r = this.widgets.find(w => w.name === 'SWAP R');
             swap_r.callback = () => {
-                widget_hide(this, r, "-jov");
+                widgetHide(this, r, "-jov");
                 if (swap_r.value == "CONSTANT") {
-                    widget_show(r);
+                    widgetShow(r);
                 }
-                fitHeight(self);
+                nodeFitHeight(self);
             };
             const swap_g = this.widgets.find(w => w.name === 'SWAP G');
             swap_g.callback = () => {
-                widget_hide(this, g, "-jov");
+                widgetHide(this, g, "-jov");
                 if (swap_g.value == "CONSTANT") {
-                    widget_show(g);
+                    widgetShow(g);
                 }
-                fitHeight(self);
+                nodeFitHeight(self);
             };
             const swap_b = this.widgets.find(w => w.name === 'SWAP B');
             swap_b.callback = () => {
-                widget_hide(this, b, "-jov");
+                widgetHide(this, b, "-jov");
                 if (swap_b.value == "CONSTANT") {
-                    widget_show(b);
+                    widgetShow(b);
                 }
-                fitHeight(self);
+                nodeFitHeight(self);
             };
             const swap_a = this.widgets.find(w => w.name === 'SWAP A');
             swap_a.callback = () => {
-                widget_hide(this, a, "-jov");
+                widgetHide(this, a, "-jov");
                 if (swap_a.value == "CONSTANT") {
-                    widget_show(a);
+                    widgetShow(a);
                 }
-                fitHeight(self);
+                nodeFitHeight(self);
             };
             setTimeout(() => { swap_r.callback(); }, 10);
             setTimeout(() => { swap_g.callback(); }, 10);

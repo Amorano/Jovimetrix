@@ -5,8 +5,8 @@
  */
 
 import { app } from "../../../scripts/app.js"
-import { fitHeight } from '../util/util.js'
-import { widget_hide, widget_show } from '../util/util_widget.js'
+import { nodeFitHeight } from '../util/util_node.js'
+import { widgetHide, widgetShow } from '../util/util_widget.js'
 
 const _id = "CROP (JOV) ✂️"
 
@@ -27,20 +27,20 @@ app.registerExtension({
             const blbr = this.widgets.find(w => w.name === 'BL-BR');
             const op = this.widgets.find(w => w.name === '⚒️');
             op.callback = () => {
-                widget_hide(self, xy, "-jov");
-                widget_hide(self, wh, "-jov");
-                widget_hide(self, tltr, "-jov");
-                widget_hide(self, blbr, "-jov");
+                widgetHide(self, xy, "-jov");
+                widgetHide(self, wh, "-jov");
+                widgetHide(self, tltr, "-jov");
+                widgetHide(self, blbr, "-jov");
                 if (op.value == 'XY') {
-                    widget_show(xy);
-                    widget_show(wh);
+                    widgetShow(xy);
+                    widgetShow(wh);
                 } else if (op.value == 'CENTER') {
-                    widget_show(wh);
+                    widgetShow(wh);
                 } else {
-                    widget_show(tltr);
-                    widget_show(blbr);
+                    widgetShow(tltr);
+                    widgetShow(blbr);
                 }
-                fitHeight(self);
+                nodeFitHeight(self);
             }
             setTimeout(() => { op.callback(); }, 10);
             return me;

@@ -5,8 +5,8 @@
  */
 
 import { app } from "../../../scripts/app.js"
-import { fitHeight } from '../util/util.js'
-import { widget_hide, widget_show } from '../util/util_widget.js'
+import { nodeFitHeight } from '../util/util_node.js'
+import { widgetHide, widgetShow } from '../util/util_widget.js'
 import { hook_widget_type } from '../util/util_jov.js'
 
 const _id = "SWIZZLE (JOV) 😵"
@@ -41,11 +41,11 @@ app.registerExtension({
 
             for (const [widget, swapWidget] of widgets) {
                 swapWidget.callback = () => {
-                    widget_hide(this, widget, "-jov");
+                    widgetHide(this, widget, "-jov");
                     if (swapWidget.value === "CONSTANT") {
-                        widget_show(widget);
+                        widgetShow(widget);
                     }
-                    fitHeight(this);
+                    nodeFitHeight(this);
                 };
                 setTimeout(() => { swapWidget.callback(); }, 10);
             }

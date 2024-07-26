@@ -4,7 +4,7 @@
  */
 
 import { app } from "../../../scripts/app.js"
-import { CONVERTED_TYPE, convertToInput } from '../util/util_widget.js'
+import { CONVERTED_TYPE, widgetToInput } from '../util/util_widget.js'
 
 app.registerExtension({
     name: "jovimetrix.cozy.menu",
@@ -32,18 +32,18 @@ app.registerExtension({
                 return me;
             }
 
-            const convertToInputArray = [];
+            const widgetToInputArray = [];
             const widgets = Object.values(this.widgets);
             for (const [widgetName, widgetType] of matchingTypes) {
                 const widget = widgets.find(m => m.name === widgetName);
                 if (widget && widget.type !== CONVERTED_TYPE &&
                     (widget.options?.forceInput === undefined || widget.options?.forceInput === false) &&
                     widget.options?.menu !== false) {
-                        const convertToInputObject = {
+                        const widgetToInputObject = {
                             content: `Convert ${widget.name} to input`,
-                            callback: () => convertToInput(this, widget, widgetType)
+                            callback: () => widgetToInput(this, widget, widgetType)
                         };
-                        convertToInputArray.push(convertToInputObject);
+                        widgetToInputArray.push(widgetToInputObject);
                 }
             }
             // remove all the options that start with the word "Convert" from the options...
@@ -53,8 +53,8 @@ app.registerExtension({
                 });
             }
 
-            if (convertToInputArray.length) {
-                options.push(...convertToInputArray, null);
+            if (widgetToInputArray.length) {
+                options.push(...widgetToInputArray, null);
             }
             return me;
         };

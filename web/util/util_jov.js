@@ -4,25 +4,25 @@
  *
  */
 
-import { fitHeight } from './util.js'
-import { show_vector, widget_find, widget_type_name, widget_find_output, widget_hide, widget_show } from './util_widget.js'
+import { nodeFitHeight } from './util_node.js'
+import { widgetShowVector, widgetFind, widget_type_name, widgetHide, widgetShow } from './util_widget.js'
 
 export function hook_widget_size_mode(node, wh_hide=true) {
-    const wh = widget_find(node.widgets, '🇼🇭');
-    const samp = widget_find(node.widgets, '🎞️');
-    const mode = widget_find(node.widgets, 'MODE');
+    const wh = widgetFind(node.widgets, '🇼🇭');
+    const samp = widgetFind(node.widgets, '🎞️');
+    const mode = widgetFind(node.widgets, 'MODE');
     mode.callback = () => {
         if (wh_hide) {
-            widget_hide(node, wh, "-jov");
+            widgetHide(node, wh, "-jov");
         }
-        widget_hide(node, samp, "-jov");
+        widgetHide(node, samp, "-jov");
         if (!['NONE'].includes(mode.value)) {
-            widget_show(wh);
+            widgetShow(wh);
         }
         if (!['NONE', 'CROP', 'MATTE'].includes(mode.value)) {
-            widget_show(samp);
+            widgetShow(samp);
         }
-        fitHeight(node);
+        nodeFitHeight(node);
     }
     setTimeout(() => { mode.callback(); }, 20);
 }
@@ -31,21 +31,21 @@ export function hook_widget_size_mode2(nodeType, wh_hide=true) {
     const onNodeCreated = nodeType.prototype.onNodeCreated
     nodeType.prototype.onNodeCreated = function (node) {
         const me = onNodeCreated?.apply(this);
-        const wh = widget_find(node.widgets, '🇼🇭');
-        const samp = widget_find(node.widgets, '🎞️');
-        const mode = widget_find(node.widgets, 'MODE');
+        const wh = widgetFind(node.widgets, '🇼🇭');
+        const samp = widgetFind(node.widgets, '🎞️');
+        const mode = widgetFind(node.widgets, 'MODE');
         mode.callback = () => {
             if (wh_hide) {
-                widget_hide(node, wh, "-jov");
+                widgetHide(node, wh, "-jov");
             }
-            widget_hide(node, samp, "-jov");
+            widgetHide(node, samp, "-jov");
             if (!['NONE'].includes(mode.value)) {
-                widget_show(wh);
+                widgetShow(wh);
             }
             if (!['NONE', 'CROP', 'MATTE'].includes(mode.value)) {
-                widget_show(samp);
+                widgetShow(samp);
             }
-            fitHeight(node);
+            nodeFitHeight(node);
         }
         setTimeout(() => { mode.callback(); }, 20);
         return me;
@@ -53,7 +53,7 @@ export function hook_widget_size_mode2(nodeType, wh_hide=true) {
 }
 
 export function hook_widget_type(node, control_key, match_output=0) {
-    const combo = widget_find(node.widgets, control_key);
+    const combo = widgetFind(node.widgets, control_key);
     const output = node.outputs[match_output];
 
     if (!output || !combo) {
@@ -94,9 +94,9 @@ export function hook_widget_AB(node, control_key, match_output=-1) {
     };
 
     const { widgets } = node;
-    const A = widget_find(widgets, '🅰️🅰️');
-    const B = widget_find(widgets, '🅱️🅱️');
-    const combo = widget_find(widgets, control_key);
+    const A = widgetFind(widgets, '🅰️🅰️');
+    const B = widgetFind(widgets, '🅱️🅱️');
+    const combo = widgetFind(widgets, control_key);
 
     if (!A || !B || !combo) {
         throw new Error("Required widgets not found");
@@ -117,13 +117,13 @@ export function hook_widget_AB(node, control_key, match_output=-1) {
     const oldCallback = combo.callback;
     combo.callback = () => {
         const me = oldCallback?.apply(this, arguments);
-        widget_hide(node, A, "-jovi");
-        widget_hide(node, B, "-jovi");
+        widgetHide(node, A, "-jovi");
+        widgetHide(node, B, "-jovi");
         if (["VEC2", "VEC2INT", "COORD2D", "VEC3", "VEC3INT", "VEC4", "VEC4INT", "BOOLEAN", "INT", "FLOAT"].includes(combo.value)) {
-            show_vector(A, data.track_xyzw, combo.value);
-            show_vector(B, data.track_yyzw, combo.value);
+            widgetShowVector(A, data.track_xyzw, combo.value);
+            widgetShowVector(B, data.track_yyzw, combo.value);
         }
-        fitHeight(node);
+        nodeFitHeight(node);
         return me;
     }
 

@@ -4,9 +4,8 @@
  */
 
 import { app } from "../../../scripts/app.js"
-import { convertToInput } from '../util/util_widget.js'
-import { inner_value_change } from '../util/util_dom.js'
-import { hex2rgb, rgb2hex } from '../util/util_color.js'
+import { widgetToInput } from '../util/util_widget.js'
+import { domInnerValueChange, colorHex2RGB, colorRGB2Hex } from '../util/util.js'
 import { $el } from "../../../scripts/ui.js"
 
 export const VectorWidget = (app, inputName, options, initial, desc='') => {
@@ -91,7 +90,7 @@ export const VectorWidget = (app, inputName, options, initial, desc='') => {
 
         if (this.options.rgb) {
             try {
-                ctx.fillStyle = rgb2hex(converted);
+                ctx.fillStyle = colorRGB2Hex(converted);
             } catch (e) {
                 ctx.fillStyle = "#000";
             }
@@ -123,7 +122,7 @@ export const VectorWidget = (app, inputName, options, initial, desc='') => {
                 isDragging = { name: this.name, idx: index}
             } else if (this.options.rgb) {
                 const rgba = Object.values(this?.value || []);
-                let color = rgb2hex(rgba.slice(0, 3));
+                let color = colorRGB2Hex(rgba.slice(0, 3));
                 if (index == size) {
                     if (!picker) {
                         picker = $el("input", {
@@ -135,7 +134,7 @@ export const VectorWidget = (app, inputName, options, initial, desc='') => {
                         });
                         picker.onchange = () => {
                             if (picker.value) {
-                                this.value = hex2rgb(picker.value);
+                                this.value = colorHex2RGB(picker.value);
                                 if (rgba.length > 3) {
                                     this.value.push(rgba[3])
                                 }
@@ -175,7 +174,7 @@ export const VectorWidget = (app, inputName, options, initial, desc='') => {
                             setTimeout(
                                 function () {
                                     clamp(this, v, idx)
-                                    inner_value_change(node, pos, this, this.value, e)
+                                    domInnerValueChange(node, pos, this, this.value, e)
                                 }.bind(this), 20)
                         }
                     }.bind(this), e);
@@ -184,7 +183,7 @@ export const VectorWidget = (app, inputName, options, initial, desc='') => {
                 if (old_value != this.value) {
                     setTimeout(
                         function () {
-                            inner_value_change(node, pos, this, this.value, e)
+                            domInnerValueChange(node, pos, this, this.value, e)
                         }.bind(this), 20)
                 }
             }
@@ -248,20 +247,20 @@ app.registerExtension({
                 const getExtraMenuOptions = nodeType.prototype.getExtraMenuOptions;
                 nodeType.prototype.getExtraMenuOptions = function (_, options) {
                     const me = getExtraMenuOptions?.apply(this, arguments);
-                    const convertToInputArray = [];
+                    const widgetToInputArray = [];
                     for (const w of matchingTypes) {
                         const widget = Object.values(this.widgets).find(m => m.name === w[0]);
                         if (myTypes.includes(widget.type)) {
                             const who = matchingTypes.find(w => w[0] === widget.name)
-                            const convertToInputObject = {
+                            const widgetToInputObject = {
                                 content: `Convert vector ${widget.name} to input`,
-                                callback: () => convertToInput(this, widget, who[1])
+                                callback: () => widgetToInput(this, widget, who[1])
                             };
-                            convertToInputArray.push(convertToInputObject);
+                            widgetToInputArray.push(widgetToInputObject);
                         }
                     }
-                    if (convertToInputArray.length) {
-                        options.push(...convertToInputArray, null);
+                    if (widgetToInputArray.length) {
+                        options.push(...widgetToInputArray, null);
                     }
                     return me;
                 };

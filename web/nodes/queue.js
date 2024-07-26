@@ -7,10 +7,10 @@
 import { api } from "../../../scripts/api.js";
 import { app } from "../../../scripts/app.js";
 import { ComfyWidgets } from "../../../scripts/widgets.js"
-import { api_cmd_jovian } from '../util/util_api.js'
+import { apiJovimetrix } from '../util/util_api.js'
 import { flashBackgroundColor } from '../util/util_fun.js'
-import { fitHeight, TypeSlotEvent, TypeSlot } from '../util/util.js'
-import { widget_hide, widget_show } from '../util/util_widget.js'
+import { nodeFitHeight, TypeSlotEvent, TypeSlot } from '../util/util_node.js'
+import { widgetHide, widgetShow } from '../util/util_widget.js'
 
 const _id = "QUEUE (JOV) 🗃";
 const _prefix = '🦄';
@@ -34,7 +34,7 @@ app.registerExtension({
             self.data_index = 1;
             self.data_current = "";
             update_report(self);
-            api_cmd_jovian(self.id, "reset");
+            apiJovimetrix(self.id, "reset");
         }
 
         const onNodeCreated = nodeType.prototype.onNodeCreated;
@@ -50,13 +50,13 @@ app.registerExtension({
             const widget_reset = this.widgets.find(w => w.name === 'RESET');
             const widget_value = this.widgets.find(w => w.name === 'VAL');
             widget_value.callback = async() => {
-                widget_hide(this, widget_hold, '-jov');
-                widget_hide(this, widget_reset, '-jov');
+                widgetHide(this, widget_hold, '-jov');
+                widgetHide(this, widget_reset, '-jov');
                 if (widget_value.value == 0) {
-                    widget_show(widget_reset);
-                    widget_show(widget_hold);
+                    widgetShow(widget_reset);
+                    widgetShow(widget_hold);
                 }
-                fitHeight(this);
+                nodeFitHeight(this);
             }
 
             widget_queue?.inputEl.addEventListener('input', function () {
@@ -66,7 +66,7 @@ app.registerExtension({
 
             widget_reset.callback = async() => {
                 widget_reset.value = false;
-                api_cmd_jovian(self.id, "reset");
+                apiJovimetrix(self.id, "reset");
             }
 
             this.widget_report = ComfyWidgets.STRING(this, 'QUEUE IS EMPTY 🔜', [

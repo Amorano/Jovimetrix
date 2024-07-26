@@ -5,8 +5,8 @@
  */
 
 import { app } from "../../../scripts/app.js"
-import { fitHeight } from '../util/util.js'
-import { widget_hide, widget_show } from '../util/util_widget.js'
+import { nodeFitHeight } from '../util/util_node.js'
+import { widgetHide, widgetShow } from '../util/util_widget.js'
 
 const _id = "COLOR MATCH (JOV) 💞"
 
@@ -26,21 +26,21 @@ app.registerExtension({
             const mode = this.widgets.find(w => w.name === 'MODE');
             const map = this.widgets.find(w => w.name === 'MAP');
             map.callback = () => {
-                widget_hide(this, color_map, "-jov");
-                widget_hide(this, num_color, "-jov");
+                widgetHide(this, color_map, "-jov");
+                widgetHide(this, num_color, "-jov");
                 if (mode.value == "LUT") {
                     if (map.value == "USER_MAP") {
-                        widget_show(num_color);
+                        widgetShow(num_color);
                     } else {
-                        widget_show(color_map);
+                        widgetShow(color_map);
                     }
                 }
-                fitHeight(self);
+                nodeFitHeight(self);
             };
             mode.callback = () => {
-                widget_hide(this, map, "-jov");
+                widgetHide(this, map, "-jov");
                 if (mode.value == "LUT") {
-                    widget_show(map);
+                    widgetShow(map);
                 }
                 setTimeout(() => { map.callback(); }, 10);
             };

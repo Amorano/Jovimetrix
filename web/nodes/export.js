@@ -5,8 +5,8 @@
  */
 
 import { app } from "../../../scripts/app.js"
-import { fitHeight } from '../util/util.js'
-import { widget_hide, widget_show } from '../util/util_widget.js'
+import { nodeFitHeight } from '../util/util_node.js'
+import { widgetHide, widgetShow } from '../util/util_widget.js'
 
 const _id = "EXPORT (JOV) 📽"
 
@@ -28,29 +28,29 @@ app.registerExtension({
             let loop = this.widgets.find(w => w.name === '🔄');
             let combo = this.widgets.find(w => w.name === 'FORMAT');
             combo.callback = () => {
-                widget_hide(self, opt, "-jov");
-                widget_hide(self, quality, "-jov");
-                widget_hide(self, quality_m, "-jov");
-                widget_hide(self, fps, "-jov");
-                widget_hide(self, loop, "-jov");
+                widgetHide(self, opt, "-jov");
+                widgetHide(self, quality, "-jov");
+                widgetHide(self, quality_m, "-jov");
+                widgetHide(self, fps, "-jov");
+                widgetHide(self, loop, "-jov");
                 switch (combo.value) {
                     case "gif":
-                        widget_show(opt);
-                        widget_show(fps);
-                        widget_show(loop);
+                        widgetShow(opt);
+                        widgetShow(fps);
+                        widgetShow(loop);
                         break;
                     case "gifski":
-                        widget_show(quality);
-                        widget_show(quality_m);
-                        widget_show(fps);
-                        widget_show(loop);
+                        widgetShow(quality);
+                        widgetShow(quality_m);
+                        widgetShow(fps);
+                        widgetShow(loop);
                         break;
                     default:
-                        widget_show(opt);
+                        widgetShow(opt);
                         break;
                 }
                 self.onResize?.(self.size);
-                fitHeight(self);
+                nodeFitHeight(self);
             }
             setTimeout(() => { combo.callback(); }, 10);
             return me;

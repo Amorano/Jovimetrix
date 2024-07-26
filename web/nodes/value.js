@@ -6,8 +6,8 @@
 
 import { app } from "../../../scripts/app.js"
 import { hook_widget_AB } from '../util/util_jov.js'
-import { fitHeight } from '../util/util.js'
-import { widget_hide, process_any, widget_type_name } from '../util/util_widget.js'
+import { nodeFitHeight } from '../util/util_node.js'
+import { widgetHide, widgetProcessAny, widget_type_name } from '../util/util_widget.js'
 
 const _id = "VALUE (JOV) 🧬"
 
@@ -36,7 +36,7 @@ app.registerExtension({
             const oldCallback = ab_data.combo.callback;
             ab_data.combo.callback = () => {
                 oldCallback?.apply(this, arguments);
-                widget_hide(this, widget_str, "-jov");
+                widgetHide(this, widget_str, "-jov");
                 widget_str.inputEl.className = "jov-hidden";
                 widget_str.computeSize = () => [0, -4];
 
@@ -44,7 +44,7 @@ app.registerExtension({
                 this.outputs[0].type = ab_data.combo.value;
                 let type = ab_data.combo.value;
                 if (["LIST", "DICT", "STRING"].includes(ab_data.combo.value)) {
-                    process_any(widget_str, ab_data.combo.value);
+                    widgetProcessAny(widget_str, ab_data.combo.value);
                     widget_str.inputEl.className = "comfy-multiline-input";
                     widget_str.computeSize = widget_str.origComputeSize;
                 } else {
@@ -57,7 +57,7 @@ app.registerExtension({
                 this.outputs[2].type = type;
                 this.outputs[3].type = type;
                 this.outputs[4].type = type;
-                fitHeight(this);
+                nodeFitHeight(this);
             }
             return me;
         }

@@ -6,9 +6,9 @@
 
 import { app } from "../../../scripts/app.js"
 
-const regex = /\d/;
+const _REGEX = /\d/;
 
-const my_map = {
+const _MAP = {
     STRING: "📝",
     BOOLEAN: "🇴",
     INT: "🔟",
@@ -29,7 +29,7 @@ const my_map = {
 export const CONVERTED_TYPE = "converted-widget"
 
 // return the internal mapping type name
-export function widget_type_name(type) { return my_map[type];}
+export function widget_type_name(type) { return _MAP[type];}
 
 export function widget_get_type(config) {
     // Special handling for COMBO so we restrict links based on the entries
@@ -42,8 +42,9 @@ export function widget_get_type(config) {
     return { type, linkType }
 }
 
-export const widget_find = (widgets, name) => widgets.find(w => w.name === name);
-export const widget_find_output = (widgets, name) => {
+export const widgetFind = (widgets, name) => widgets.find(w => w.name === name);
+
+export const widgetFindOutput = (widgets, name) => {
     for (let i = 0; i < widgets.length; i++) {
         if (widgets[i].name === name) {
             return i;
@@ -51,7 +52,7 @@ export const widget_find_output = (widgets, name) => {
     }
 }
 
-export function widget_remove(node, widgetOrSlot) {
+export function widgetRemove(node, widgetOrSlot) {
     let index = 0;
     if (typeof widgetOrSlot === 'number') {
         index = widgetOrSlot;
@@ -72,16 +73,16 @@ export function widget_remove(node, widgetOrSlot) {
     }
 }
 
-export function widget_remove_all(node) {
+export function widgetRemoveAll(node) {
     if (node.widgets) {
         for (const w of node.widgets) {
-            widget_remove(node, w);
+            widgetRemove(node, w);
         }
         node.widgets.length = 0;
     }
 }
 
-export function widget_hide(node, widget, suffix = '') {
+export function widgetHide(node, widget, suffix = '') {
     if (widget.hidden || widget.type?.startsWith(CONVERTED_TYPE + suffix)) {
         return;
     }
@@ -109,12 +110,12 @@ export function widget_hide(node, widget, suffix = '') {
     // Hide any linked widgets, e.g. seed+seedControl
     if (widget.linkedWidgets) {
         for (const w of widget.linkedWidgets) {
-            widget_hide(node, w, ':' + widget.name);
+            widgetHide(node, w, ':' + widget.name);
         }
     }
 }
 
-export function widget_show(widget) {
+export function widgetShow(widget) {
     if (widget?.origType) {
         widget.type = widget.origType;
         delete widget.origType;
@@ -129,19 +130,13 @@ export function widget_show(widget) {
     widget.hidden = false;
     if (widget?.linkedWidgets) {
         for (const w of widget.linkedWidgets) {
-            widget_show(w)
+            widgetShow(w)
         }
     }
 }
 
-export function show_boolean(widget_x) {
-    widget_show(widget_x);
-    widget_x.origType = widget_x.type;
-    widget_x.type = "toggle";
-}
-
-export function show_vector(widget, values={}, type=undefined, precision=4) {
-    widget_show(widget);
+export function widgetShowVector(widget, values={}, type=undefined, precision=4) {
+    widgetShow(widget);
     if (["FLOAT"].includes(type)) {
         type = "VEC1";
     } else if (["INT"].includes(type)) {
@@ -169,7 +164,7 @@ export function show_vector(widget, values={}, type=undefined, precision=4) {
 
     if (widget.type != 'toggle') {
         let size = 1;
-        const match = regex.exec(widget.type);
+        const match = _REGEX.exec(widget.type);
         if (match) {
             size = match[0];
         }
@@ -194,24 +189,8 @@ export function show_vector(widget, values={}, type=undefined, precision=4) {
     }
 }
 
-export function process_value(widget, precision=0) {
-    //widget.origType = widget.type;
-    widget_show(widget);
-    widget.type = "number";
-    if (widget?.options) {
-        widget.options.precision = precision;
-        if (precision == 0) {
-            widget.options.step = 10;
-            widget.options.round = 1;
-        } else {
-            widget.options.step = 1;
-            widget.options.round =  0.1;
-        }
-    }
-}
-
-export function process_any(widget, subtype="FLOAT") {
-    widget_show(widget);
+export function widgetProcessAny(widget, subtype="FLOAT") {
+    widgetShow(widget);
     //input.type = subtype;
     if (subtype === "BOOLEAN") {
         widget.type = "toggle";
@@ -233,8 +212,8 @@ export function process_any(widget, subtype="FLOAT") {
     }
 }
 
-export function convertToWidget(node, widget) {
-    widget_show(widget)
+export function widgetToWidget(node, widget) {
+    widgetShow(widget)
     const sz = node.size
     node.removeInput(node.inputs.findIndex((i) => i.widget?.name === widget.name))
 
@@ -246,8 +225,8 @@ export function convertToWidget(node, widget) {
     node.setSize([Math.max(sz[0], node.size[0]), Math.max(sz[1], node.size[1])])
 }
 
-export function convertToInput(node, widget, config) {
-    widget_hide(node, widget, "-jov")
+export function widgetToInput(node, widget, config) {
+    widgetHide(node, widget, "-jov")
 
     const { linkType } = widget_get_type(config)
 
@@ -265,7 +244,7 @@ export function convertToInput(node, widget, config) {
     node.setSize([Math.max(sz[0], node.size[0]), Math.max(sz[1], node.size[1])])
 }
 
-export function getHoveredWidget() {
+export function widgetGetHovered() {
     if (typeof app === 'undefined')
         return;
 

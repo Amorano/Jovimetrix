@@ -5,8 +5,8 @@
  */
 
 import { app } from "../../../scripts/app.js"
-import { fitHeight } from '../util/util.js'
-import { widget_hide, widget_show } from '../util/util_widget.js'
+import { nodeFitHeight } from '../util/util_node.js'
+import { widgetHide, widgetShow } from '../util/util_widget.js'
 
 const _id = "ADJUST (JOV) 🕸️"
 
@@ -29,32 +29,32 @@ app.registerExtension({
             const gamma = this.widgets.find(w => w.name === '🔆');
             const op = this.widgets.find(w => w.name === '⚒️');
             op.callback = () => {
-                widget_hide(this, radius, "-jov");
-                widget_hide(this, amount, "-jov");
-                widget_hide(this, lohi, "-jov");
-                widget_hide(this, lmh, "-jov");
-                widget_hide(this, hsv, "-jov");
-                widget_hide(this, contrast, "-jov");
-                widget_hide(this, gamma, "-jov");
+                widgetHide(this, radius, "-jov");
+                widgetHide(this, amount, "-jov");
+                widgetHide(this, lohi, "-jov");
+                widgetHide(this, lmh, "-jov");
+                widgetHide(this, hsv, "-jov");
+                widgetHide(this, contrast, "-jov");
+                widgetHide(this, gamma, "-jov");
                 if (["BLUR", "STACK_BLUR", "MEDIAN_BLUR", "OUTLINE"].includes(op.value)) {
-                    widget_show(radius);
+                    widgetShow(radius);
 
                 } else if (["PIXELATE", "QUANTIZE", "POSTERIZE"].includes(op.value)) {
-                    widget_show(amount);
+                    widgetShow(amount);
                 } else if (["HSV"].includes(op.value)) {
-                    widget_show(hsv);
-                    widget_show(gamma);
-                    widget_show(contrast);
+                    widgetShow(hsv);
+                    widgetShow(gamma);
+                    widgetShow(contrast);
                 } else if (["LEVELS"].includes(op.value)) {
-                    widget_show(lmh);
-                    widget_show(gamma);
+                    widgetShow(lmh);
+                    widgetShow(gamma);
                 } else if (["FIND_EDGES"].includes(op.value)) {
-                    widget_show(lohi);
+                    widgetShow(lohi);
                 } else if (!["EQUALIZE"].includes(op.value)) {
-                    widget_show(radius);
-                    widget_show(amount);
+                    widgetShow(radius);
+                    widgetShow(amount);
                 }
-                fitHeight(this);
+                nodeFitHeight(this);
             };
             setTimeout(() => { op.callback(); }, 10);
             return me;

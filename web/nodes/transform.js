@@ -5,8 +5,8 @@
  */
 
 import { app } from "../../../scripts/app.js"
-import { fitHeight } from '../util/util.js'
-import { widget_hide, widget_show } from '../util/util_widget.js'
+import { nodeFitHeight } from '../util/util_node.js'
+import { widgetHide, widgetShow } from '../util/util_widget.js'
 import { hook_widget_size_mode } from '../util/util_jov.js'
 
 const _id = "TRANSFORM (JOV) 🏝️"
@@ -25,11 +25,11 @@ app.registerExtension({
             const pivot = this.widgets.find(w => w.name === 'PIVOT');
             const mirror = this.widgets.find(w => w.name === '🪞');
             mirror.callback = () => {
-                widget_hide(this, pivot, "-jov");
+                widgetHide(this, pivot, "-jov");
                 if (mirror.value != 'NONE') {
-                    widget_show(pivot);
+                    widgetShow(pivot);
                 }
-                fitHeight(this);
+                nodeFitHeight(this);
             }
 
             const tltr = this.widgets.find(w => w.name === 'TL-TR');
@@ -37,16 +37,16 @@ app.registerExtension({
             const str = this.widgets.find(w => w.name === '💪🏽');
             const proj = this.widgets.find(w => w.name === 'PROJ');
             proj.callback = () => {
-                widget_hide(this, str, "-jov");
-                widget_hide(this, tltr, "-jov");
-                widget_hide(this, blbr, "-jov");
+                widgetHide(this, str, "-jov");
+                widgetHide(this, tltr, "-jov");
+                widgetHide(this, blbr, "-jov");
                 if (['SPHERICAL', 'FISHEYE'].includes(proj.value)) {
-                    widget_show(str);
+                    widgetShow(str);
                 } else if (['PERSPECTIVE'].includes(proj.value)) {
-                    widget_show(tltr);
-                    widget_show(blbr);
+                    widgetShow(tltr);
+                    widgetShow(blbr);
                 }
-                fitHeight(this);
+                nodeFitHeight(this);
             }
 
             setTimeout(() => { mirror.callback(); }, 10);

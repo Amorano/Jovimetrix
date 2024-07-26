@@ -5,8 +5,8 @@
  */
 
 import { ComfyDialog, $el } from "../../../scripts/ui.js"
-import { api_post } from '../util/util_api.js'
-import { node_color_all } from '../util/util_color.js'
+import { apiPost } from '../util/util_api.js'
+import { nodeColorAll } from './core_colorize.js'
 import * as util_config from '../util/util_config.js'
 
 // Append CSS
@@ -36,11 +36,11 @@ const templateColorHeader = ({ name, background, title, body }) => (
 
 const updateRegexColor = (index, key, value) => {
     util_config.CONFIG_REGEX[index][key] = value;
-    api_post("/jovimetrix/config", {
+    apiPost("/jovimetrix/config", {
         id: `${util_config.USER}.color.regex`,
         v: util_config.CONFIG_REGEX
     });
-    node_color_all();
+    nodeColorAll();
 };
 
 const templateColorRegex = ({ idx, name, background, title, body }) => (
@@ -59,9 +59,9 @@ const templateColorRegex = ({ idx, name, background, title, body }) => (
 
 /*
 const colorClear = (name) => {
-    api_post("/jovimetrix/config/clear", { name });
+    apiPost("/jovimetrix/config/clear", { name });
     delete util_config.CONFIG_THEME[name];
-    if (util_config.CONFIG_COLOR.overwrite) node_color_all();
+    if (util_config.CONFIG_COLOR.overwrite) nodeColorAll();
 };
 */
 
@@ -175,11 +175,11 @@ export class JovimetrixConfigDialog extends ComfyDialog {
                     style: { color: "white" },
                     onclick: (cb) => {
                         util_config.CONFIG_USER.color.overwrite = cb.target.checked;
-                        api_post('/jovimetrix/config', {
+                        apiPost('/jovimetrix/config', {
                             id: `${util_config.USER}.color.overwrite`,
                             v: util_config.CONFIG_USER.color.overwrite
                         });
-                        if (util_config.CONFIG_USER.color.overwrite) node_color_all();
+                        if (util_config.CONFIG_USER.color.overwrite) nodeColorAll();
                     }
                 })
             ])

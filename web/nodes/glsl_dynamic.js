@@ -6,9 +6,9 @@
 
 import { api } from "../../../scripts/api.js";
 import { app } from "../../../scripts/app.js";
-import { fitHeight } from '../util/util.js'
-import { widget_hide, widget_show  } from '../util/util_widget.js';
-import { api_cmd_jovian } from '../util/util_api.js';
+import { nodeFitHeight } from '../util/util_node.js'
+import { widgetHide, widgetShow  } from '../util/util_widget.js';
+import { apiJovimetrix } from '../util/util_api.js';
 
 const _id = "GLSL DYNAMIC (JOV) 🧙🏽";
 const EVENT_JOVI_GLSL_TIME = "jovi-glsl-time";
@@ -33,18 +33,18 @@ app.registerExtension({
             widget_fragment.options.menu = false;
 
             widget_batch.callback = () => {
-                widget_hide(this, widget_reset, '-jov');
-                widget_hide(this, widget_wait, '-jov');
+                widgetHide(this, widget_reset, '-jov');
+                widgetHide(this, widget_wait, '-jov');
                 if (widget_batch.value == 0) {
-                    widget_show(widget_reset);
-                    widget_show(widget_wait);
+                    widgetShow(widget_reset);
+                    widgetShow(widget_wait);
                 }
-                fitHeight(this);
+                nodeFitHeight(this);
             }
 
             widget_reset.callback = () => {
                 widget_reset.value = false;
-                api_cmd_jovian(this.id, "reset");
+                apiJovimetrix(this.id, "reset");
                 widget_time.value = 0;
             };
 

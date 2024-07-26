@@ -5,7 +5,7 @@
  */
 
 import { app } from "../../../scripts/app.js"
-import { node_cleanup } from '../util/util.js'
+import { nodeCleanup } from '../util/util_node.js'
 import "../extern/shodown.min.js"
 
 const JOV_WEBWIKI_URL = "https://github.com/Amorano/Jovimetrix/wiki";
@@ -125,7 +125,7 @@ app.registerExtension({
             this.offsetY = 0;
             this.show_doc = false;
             this.onRemoved = function () {
-                node_cleanup(this);
+                nodeCleanup(this);
                 if (docElement) {
                     docElement.remove();
                     docElement = null;

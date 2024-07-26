@@ -5,8 +5,8 @@
  */
 
 import { app } from "../../../scripts/app.js"
-import { fitHeight } from '../util/util.js'
-import { widget_hide, widget_show } from '../util/util_widget.js'
+import { nodeFitHeight } from '../util/util_node.js'
+import { widgetHide, widgetShow } from '../util/util_widget.js'
 
 const _id = "TEXT GEN (JOV) 📝"
 
@@ -27,28 +27,28 @@ app.registerExtension({
             const spacing = this.widgets.find(w => w.name === 'SPACING');
             const autosize = this.widgets.find(w => w.name === 'AUTOSIZE');
             autosize.callback = () => {
-                widget_hide(this, cols, "-jov");
-                widget_hide(this, size, "-jov");
+                widgetHide(this, cols, "-jov");
+                widgetHide(this, size, "-jov");
                 if (!autosize.value) {
-                    widget_show(size);
+                    widgetShow(size);
                 } else if (!letter.value) {
-                    widget_show(cols);
+                    widgetShow(cols);
                 }
-                fitHeight(this);
+                nodeFitHeight(this);
             }
 
             letter.callback = () => {
-                widget_hide(this, cols, "-jov");
-                widget_hide(this, margin, "-jov");
-                widget_hide(this, spacing, "-jov");
+                widgetHide(this, cols, "-jov");
+                widgetHide(this, margin, "-jov");
+                widgetHide(this, spacing, "-jov");
                 if(!letter.value) {
-                    widget_show(margin);
-                    widget_show(spacing);
+                    widgetShow(margin);
+                    widgetShow(spacing);
                     if (autosize.value) {
-                        widget_show(cols);
+                        widgetShow(cols);
                     }
                 }
-                fitHeight(this);
+                nodeFitHeight(this);
             }
 
             setTimeout(() => { autosize.callback(); }, 10);

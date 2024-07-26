@@ -1,6 +1,6 @@
 // jsColorpicker.js
 
-import { rgb2hex } from '../util/util_color.js';
+import { colorRGB2Hex } from '../util/util.js';
 import { local_set, local_get } from '../util/util_config.js';
 
 (function (global) {
@@ -15,7 +15,7 @@ import { local_set, local_get } from '../util/util_config.js';
                 const data = local_get(key, def);
                 return data;
             },
-            setItem: function (key, value, options) {
+            setItem: function (key, value) {
                 local_set(key, value);
             }
         };
@@ -28,7 +28,7 @@ import { local_set, local_get } from '../util/util_config.js';
                     patch = options.patch,
                     RGB = colors.RND.rgb;
                 const rgb = Object.values(RGB).reverse();
-                const AHEX = !colors.HEX.includes("NAN") ? rgb2hex(rgb) : LiteGraph.NODE_DEFAULT_BGCOLOR // LiteGraph.NODE_DEFAULT_COLOR; // LiteGraph.NODE_DEFAULT_BGCOLOR
+                const AHEX = !colors.HEX.includes("NAN") ? colorRGB2Hex(rgb) : LiteGraph.NODE_DEFAULT_BGCOLOR // LiteGraph.NODE_DEFAULT_COLOR; // LiteGraph.NODE_DEFAULT_BGCOLOR
 
                 patch.style.cssText =
                     'color:' + (colors.rgbaMixCustom.luminance > 0.22 ? '#222' : '#ddd') + ';' + // Black...???
@@ -110,7 +110,7 @@ import { local_set, local_get } from '../util/util_config.js';
             },
             doEventListeners = function(elm, multiple, off) {
                 var onOff = off ? 'removeEventListener' : 'addEventListener',
-                    focusListener = function(e) {
+                    focusListener = function() {
                         var input = this,
                             position = window.ColorPicker.getOrigin(input),
                             index = multiple ? Array.prototype.indexOf.call(elms, this) : 0,
