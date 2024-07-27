@@ -1298,6 +1298,7 @@ def image_load(url: str) -> Tuple[TYPE_IMAGE, ...]:
         if img is None:
             raise ValueError(f"Image at {url} could not be loaded.")
 
+        img = image_normalize(img)
         if img.ndim == 3:
             if img.shape[2] == 4:
                 img = cv2.cvtColor(img, cv2.COLOR_RGBA2BGRA)

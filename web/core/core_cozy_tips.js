@@ -28,7 +28,7 @@ const JTooltipWidget = (app, name, opts) => {
 
 app.registerExtension({
     name: "jovimetrix.help.tooltips",
-    async getCustomWidgets(app) {
+    async getCustomWidgets() {
         return {
             JTOOLTIP: (node, inputName, inputData, app) => ({
                 widget: node.addCustomWidget(JTooltipWidget(app, inputName, inputData[1]))

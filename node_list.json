@@ -41,7 +41,6 @@
     "STREAM READER (JOV) \ud83d\udcfa": "Capture frames from various sources such as URLs, cameras, monitors, windows, or Spout streams",
     "STREAM WRITER (JOV) \ud83c\udf9e\ufe0f": "Sends frames to a specified route, typically for live streaming or recording purposes",
     "SWIZZLE (JOV) \ud83d\ude35": "Swap components between two vectors based on specified swizzle patterns and values",
-    "TERMINATE COMFYUI (JOV) ": "Terminate a running ComfyUI server",
     "TEXT GEN (JOV) \ud83d\udcdd": "Generates images containing text based on parameters such as font, size, alignment, color, and position",
     "THRESHOLD (JOV) \ud83d\udcc9": "Define a range and apply it to an image for segmentation and feature extraction",
     "TICK (JOV) \u23f1": "A timer and frame counter, emitting pulses or signals based on time intervals",

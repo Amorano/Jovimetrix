@@ -158,7 +158,6 @@ class GLSLNodeBase(JOVImageNode):
             images.append(image)
             if not wait:
                 self.__delta += step
-                # if batch == 0:
                 comfy_message(ident, "jovi-glsl-time", {"id": ident, "t": self.__delta})
             pbar.update_absolute(idx)
         return [torch.cat(i, dim=0) for i in zip(*images)]

@@ -13,7 +13,7 @@ from enum import Enum
 from uuid import uuid4
 from pathlib import Path
 from itertools import zip_longest
-from typing import Any, Tuple
+from typing import Any, Literal, Tuple
 
 import torch
 import numpy as np
@@ -57,6 +57,10 @@ class EnumBatchMode(Enum):
     INDEX_LIST = 20
     RANDOM = 5
     CARTESIAN = 40
+
+class ContainsAnyDict(dict):
+    def __contains__(self, key) -> Literal[True]:
+        return True
 
 # =============================================================================
 
@@ -666,7 +670,7 @@ Manage a queue of items, such as file paths or data. It supports various formats
 class RouteNode(JOVBaseNode):
     NAME = "ROUTE (JOV) 🚌"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = ("BUS",)
+    RETURN_TYPES = ("BUS",) + (JOV_TYPE_ANY,) * 27
     RETURN_NAMES = (Lexicon.ROUTE,)
     SORT = 850
     DESCRIPTION = """
@@ -688,9 +692,12 @@ Routes the input data from the optional input ports to the output port, preservi
 
     def run(self, **kw) -> Tuple[Any, ...]:
         inout = parse_param(kw, Lexicon.ROUTE, EnumConvertType.ANY, None)
-        kw.pop(Lexicon.ROUTE, None)
-        kw.pop('ident', None)
-        return inout, *kw.values(),
+        vars = kw.copy()
+        vars.pop(Lexicon.ROUTE, None)
+        vars.pop('ident', None)
+        print(kw)
+        print(vars)
+        return inout, *vars.values(),
 
 class SaveOutput(JOVBaseNode):
     NAME = "SAVE OUTPUT (JOV) 💾"
@@ -763,29 +770,6 @@ Save the output image along with its metadata to the specified path. Supports sa
             image.save(fname, pnginfo=meta_png)
             pbar.update_absolute(idx)
         return ()
-
-class Terminate(JOVBaseNode):
-    NAME = "TERMINATE COMFYUI (JOV) "
-    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    OUTPUT_NODE = True
-    RETURN_TYPES = ()
-    SORT = 115
-    DESCRIPTION = """
-Terminate a running ComfyUI server.
-"""
-
-    @classmethod
-    def INPUT_TYPES(cls) -> dict:
-        d = super().INPUT_TYPES(True, True)
-        d.update({
-            "optional": {
-                Lexicon.TRIGGER: ("TRIGGER",),
-            }
-        })
-        return Lexicon._parse(d, cls)
-
-    def run(self, **kw) -> dict[str, Any]:
-        exit()
 
 '''
 class RESTNode:
