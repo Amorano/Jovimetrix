@@ -1,7 +1,8 @@
 __pycache__
 *.py[cod]
 *$py.class
-_*
+_*/
+glsl/*
 *.code-workspace
 .vscode
 config.json

@@ -198,7 +198,14 @@ def parse_value(val:Any, typ:EnumConvertType, default: Any,
         size = max(1, int(typ.value / 10))
         new_val = []
         for idx in range(size):
-            d = default[idx] if isinstance(default, (list, tuple, set, dict, torch.Tensor)) and idx < len(default) else 0
+            try:
+                d = default[idx] if idx < len(default) else 0
+            except:
+                try:
+                    d = default.get(str(idx), 0)
+                except:
+                    d = default
+
             v = d if val is None else val[idx] if idx < len(val) else d
             if isinstance(v, (str, )):
                 v = v.strip('\n').strip()

@@ -11,7 +11,7 @@ import "../extern/shodown.min.js"
 const JOV_WEBWIKI_URL = "https://github.com/Amorano/Jovimetrix/wiki";
 const JOV_HELP_URL = "https://raw.githubusercontent.com/Amorano/Jovimetrix-examples/master";
 
-const dataCache = {};
+const CACHE_DOCUMENTATION = {};
 
 const create_documentation_stylesheet = () => {
     const tag = 'jov-documentation-stylesheet'
@@ -104,6 +104,38 @@ const documentationConverter = new showdown.Converter({
     openLinksInNewWindow: true,
 });
 
+async function load_help(name, url, refresh=false) {
+    if (name in CACHE_DOCUMENTATION) {
+        return CACHE_DOCUMENTATION[name];
+    }
+
+    if (!url.endsWith('.md')) {
+        CACHE_DOCUMENTATION[name] = documentationConverter.makeHtml(CACHE_DOCUMENTATION[name]);
+        return CACHE_DOCUMENTATION[name];
+    }
+
+    url = `${JOV_HELP_URL}/${url}`;
+    console.log(url)
+    // Check if data is already cached
+    const result = fetch(url)
+        .then(response => {
+            if (!response.ok) {
+                return `Failed to load documentation\n\n${response}`
+            }
+            return response.text();
+        })
+        .then(data => {
+            // Cache the fetched data
+            CACHE_DOCUMENTATION[name] = documentationConverter.makeHtml(data);
+            return CACHE_DOCUMENTATION[name];
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            return `Failed to load documentation\n\n${error}`
+        });
+    return result;
+}
+
 app.registerExtension({
     name: "jovimetrix.help",
     init() {
@@ -148,45 +180,17 @@ app.registerExtension({
                 docElement = document.createElement('div')
                 contentWrapper = document.createElement('div');
                 docElement.appendChild(contentWrapper);
-                //create_documentation_stylesheet();
                 contentWrapper.classList.add('content-wrapper');
                 docElement.classList.add('jov-documentation-popup');
-                if (!(nodeData.name in dataCache)) {
-                    // Load data from URL asynchronously if it ends with .md
-                    const widget_tooltip = (this.widgets || [])
-                        .find(widget => widget.type === 'JTOOLTIP');
-                    if (widget_tooltip) {
-                        const tips = widget_tooltip.options.default || {};
-                        let url = tips['*'];
-                        if (url.endsWith('.md')) {
-                            url = `${JOV_HELP_URL}/${url}`;
-                            console.log(url)
-                            // Check if data is already cached
-                            // Fetch data from URL
-                            fetch(url)
-                                .then(response => {
-                                    if (!response.ok) {
-                                        contentWrapper.innerHTML = `Failed to load documentation\n\n${response}`
-                                    }
-                                    return response.text();
-                                })
-                                .then(data => {
-                                    // Cache the fetched data
-                                    dataCache[nodeData.name] = documentationConverter.makeHtml(data);
-                                    contentWrapper.innerHTML = dataCache[nodeData.name];
-                                })
-                                .catch(error => {
-                                    contentWrapper.innerHTML = `Failed to load documentation\n\n${error}`
-                                    console.error('Error:', error);
-                                });
-                        } else {
-                            // If description does not end with .md, set data directly
-                            dataCache[nodeData.name] = documentationConverter.makeHtml(dataCache[nodeData.name]);
-                            contentWrapper.innerHTML = dataCache[nodeData.name];
-                        }
-                    }
+
+                const widget_tooltip = (this.widgets || [])
+                    .find(widget => widget.type === 'JTOOLTIP');
+
+                if (widget_tooltip) {
+                    const tips = widget_tooltip.options.default || {};
+                    const url = tips['*'];
+                    contentWrapper.innerHTML = await load_help(nodeData.name, url);
                 }
-                contentWrapper.innerHTML = dataCache[nodeData.name];
 
                 // resize handle
                 const resizeHandle = document.createElement('div');
@@ -372,3 +376,15 @@ app.registerExtension({
         }
 	}
 })
+
+app.extensionManager.registerSidebarTab({
+    id: "jovimetrix.sidebar.help",
+    icon: "pi pi-money-bill",
+    title: "Jovimetrix Lore",
+    tooltip: "The Akashic records for all things Jovimetrix",
+    type: "custom",
+    render: async (el) => {
+        el.innerHTML = "<div>Loading...</div>";
+        el.innerHTML = await load_help('LERP (JOV) ', JOV_HELP_URL, true);
+    }
+});

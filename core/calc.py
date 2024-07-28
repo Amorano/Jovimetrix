@@ -634,22 +634,26 @@ Calculate linear interpolation between two values or vectors based on a blending
         params = list(zip_longest_fill(A, B, a_xyzw, b_xyzw, alpha, op, typ))
         pbar = ProgressBar(len(params))
         for idx, (A, B, a_xyzw, b_xyzw, alpha, op, typ) in enumerate(params):
-            # make sure we only interpolate between the longest "stride" we can
-            size = min(3, max(0 if not isinstance(A, (list,)) else len(A), 0 if not isinstance(B, (list,)) else len(B)))
-            best_type = [EnumConvertType.FLOAT, EnumConvertType.VEC2, EnumConvertType.VEC3, EnumConvertType.VEC4][size]
-            val_a = parse_value(A, best_type, a_xyzw)
-            val_a = parse_value(val_a, EnumConvertType.VEC4, a_xyzw)
-            val_b = parse_value(B, best_type, b_xyzw)
-            val_b = parse_value(val_b, EnumConvertType.VEC4, b_xyzw)
-            alpha = parse_value(alpha, EnumConvertType.VEC4, alpha)
             typ = EnumConvertType[typ]
-            size = max(1, int(typ.value / 10))
+            size = int(typ.value / 10)
+
+            if A is None:
+                A = a_xyzw[:size]
+            if B is None:
+                B = b_xyzw[:size]
+
+            val_a = parse_value(A, EnumConvertType.VEC4, a_xyzw)
+            val_b = parse_value(B, EnumConvertType.VEC4, b_xyzw)
+            alpha = parse_value(alpha, EnumConvertType.VEC4, alpha)
+
             if size > 1:
-                val_a = val_a[:size]
-                val_b = val_b[:size]
+                val_a = val_a[:size + 1]
+                val_b = val_b[:size + 1]
             else:
                 val_a = [val_a[0]]
                 val_b = [val_b[0]]
+
+            print(A, B, val_a, val_b, alpha, size)
 
             if op == "NONE":
                 val = [val_b[x] * alpha[x] + val_a[x] * (1 - alpha[x]) for x in range(size)]
@@ -667,7 +671,7 @@ Calculate linear interpolation between two values or vectors based on a blending
                 except Exception as e:
                     logger.error(f"{e} :: {op}")
                     ret.append(0)
-            val = ret[0] if size == 1 else ret[:size]
+            val = ret[0] if size == 1 else ret[:size+1]
             values.append(val)
             pbar.update_absolute(idx)
         return [values]
@@ -941,7 +945,7 @@ Supplies raw or default values for various data types, supporting vector input w
                         else:
                             val[i] = random.randint(mn, mx)
 
-            extra = parse_value(val, typ, val)
+            extra = parse_value(val, typ, val) or [0]
             ret = [val]
             ret.extend(extra)
             results.append(ret)

@@ -14,7 +14,7 @@ import { flashBackgroundColor } from '../util/util_fun.js';
 const _id = "GLSL (JOV) 🍩";
 const EVENT_JOVI_GLSL_ERROR = "jovi-glsl-error";
 const EVENT_JOVI_GLSL_TIME = "jovi-glsl-time";
-const RE_VARIABLE = /uniform\s+(\w+)\s+(\w+);\s*\/\/\s*([0-9.,\s]*)\s*(?:;\s*([0-9.-]+))?\s*(?:;\s*([0-9.-]+))?\s*(?:;\s*([0-9.-]+))?\s*(?:\|\s*(.*))?$/gm
+const RE_VARIABLE = /uniform\s+(\w+)\s+(\w+);(?:\s*\/\/\s*([0-9.,\s]*))?\s*(?:;\s*([0-9.-]+))?\s*(?:;\s*([0-9.-]+))?\s*(?:;\s*([0-9.-]+))?\s*(?:\|\s*(.*))?$/gm
 
 app.registerExtension({
     name: 'jovimetrix.node.' + _id,

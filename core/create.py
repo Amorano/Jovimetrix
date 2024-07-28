@@ -19,13 +19,13 @@ from Jovimetrix.sup.lexicon import JOVImageNode, Lexicon
 from Jovimetrix.sup.util import parse_param, zip_longest_fill, EnumConvertType
 
 from Jovimetrix.sup.image import channel_solid, cv2tensor, cv2tensor_full, \
-    image_grayscale, image_invert, image_mask_add, image_mask_binary, image_matte, \
-    image_rotate, image_scalefit, image_stereogram, image_transform, shape_body, \
-    tensor2cv, shape_polygon, image_translate, pil2cv, \
-    EnumScaleMode, EnumInterpolation, EnumEdge, EnumImageType, MIN_IMAGE_SIZE
+    image_invert, image_mask_add, image_mask_binary, image_matte, \
+    image_rotate, image_scalefit, image_stereogram, image_transform, \
+    tensor2cv, shape_polygon, image_translate, pil2cv, shape_ellipse, shape_quad, \
+    EnumScaleMode, EnumInterpolation, EnumEdge, EnumImageType, EnumShapes, MIN_IMAGE_SIZE
 
 from Jovimetrix.sup.text import font_names, text_autosize, text_draw, \
-    EnumAlignment, EnumJustify, EnumShapes
+    EnumAlignment, EnumJustify
 
 from Jovimetrix.sup.audio import graph_sausage
 
@@ -144,28 +144,33 @@ Create n-sided polygons. These shapes can be customized by adjusting parameters 
             back = matte[:3]
 
             match shape:
-                case EnumShapes.SQUARE | EnumShapes.RECTANGLE:
-                    # pA = shape_quad(width, height, sizeX, sizeX, fill=fill, back=back)
-                    pA = shape_body('rectangle', width, height, sizeX=sizeX, sizeY=sizeY, fill=fill, back=back)
+                case EnumShapes.RECTANGLE:
+                    pA = shape_quad(width, height, sizeX, sizeY, fill, back)
 
-                case EnumShapes.CIRCLE | EnumShapes.ELLIPSE:
-                    pA = shape_body('ellipse', width, height, sizeX=sizeX, sizeY=sizeY, fill=fill, back=back)
+                case EnumShapes.SQUARE:
+                    pA = shape_quad(width, height, sizeX, sizeX, fill, back)
+
+                case EnumShapes.ELLIPSE:
+                    pA = shape_ellipse(width, height, sizeX, sizeY, fill, back)
+
+                case EnumShapes.CIRCLE:
+                    pA = shape_ellipse(width, height, sizeX, sizeY, fill, back)
 
                 case EnumShapes.POLYGON:
-                    pA = shape_polygon(width, height, sizeX, sides, fill=fill, back=back)
+                    pA = shape_polygon(width, height, sizeX, sides, fill, back)
 
             pA = pil2cv(pA)
             pA = image_transform(pA, offset, angle, edge=edge)
             if blur > 0:
                 # @TODO: Do blur on larger canvas to remove wrap bleed.
                 pA = (gaussian(pA, sigma=blur, channel_axis=2) * 255).astype(np.uint8)
-            pA = image_matte(pA, matte)
 
-            mask = image_mask_binary(pA) # *  float(color[3]) / 255.
+            pA = image_matte(pA, matte)
+            mask = image_mask_binary(pA)
+            print(pA.shape, mask.shape)
+
             pB = image_mask_add(pA, mask)
             matte = image_matte(pB, matte)
-            # matte = np.full((height, width, 4), matte, dtype=np.uint8)
-            # matte[:, :] = pB
 
             images.append([cv2tensor(pB), cv2tensor(matte), cv2tensor(mask, True)])
             pbar.update_absolute(idx)

@@ -217,6 +217,13 @@ class EnumScaleMode(Enum):
     ASPECT = 30
     ASPECT_SHORT = 35
 
+class EnumShapes(Enum):
+    CIRCLE = 0
+    SQUARE = 1
+    ELLIPSE = 2
+    RECTANGLE = 3
+    POLYGON = 4
+
 class EnumThreshold(Enum):
     BINARY = cv2.THRESH_BINARY
     TRUNC = cv2.THRESH_TRUNC
@@ -606,14 +613,20 @@ def channel_swap(imageA:TYPE_IMAGE, swap_ot:EnumPixelSwizzle,
 # === EXPLICIT SHAPE FUNCTIONS ===
 # =============================================================================
 
-def shape_body(func: str, width: int, height: int, sizeX:float=1., sizeY:float=1., fill:TYPE_PIXEL=255, back:TYPE_PIXEL=0) -> Image:
+def shape_ellipse(width: int, height: int, sizeX:float=1., sizeY:float=1., fill:TYPE_PIXEL=255, back:TYPE_PIXEL=0) -> Image:
     sizeX = max(0.5, sizeX / 2 + 0.5)
     sizeY = max(0.5, sizeY / 2 + 0.5)
     xy = [(width * (1. - sizeX), height * (1. - sizeY)),(width * sizeX, height * sizeY)]
     image = Image.new("RGB", (width, height), back)
-    d = ImageDraw.Draw(image)
-    func = getattr(d, func)
-    func(xy, fill=fill)
+    ImageDraw.Draw(image).ellipse(xy, fill=fill)
+    return image
+
+def shape_quad(width: int, height: int, sizeX:float=1., sizeY:float=1., fill:TYPE_PIXEL=255, back:TYPE_PIXEL=0) -> Image:
+    sizeX = max(0.5, sizeX / 2 + 0.5)
+    sizeY = max(0.5, sizeY / 2 + 0.5)
+    xy = [(width * (1. - sizeX), height * (1. - sizeY)),(width * sizeX, height * sizeY)]
+    image = Image.new("RGB", (width, height), back)
+    ImageDraw.Draw(image).rectangle(xy, fill=fill)
     return image
 
 def shape_polygon(width: int, height: int, size: float=1., sides: int=3, fill:TYPE_PIXEL=255, back:TYPE_PIXEL=0) -> Image:
@@ -702,22 +715,35 @@ def image_contrast(image: TYPE_IMAGE, value: float) -> TYPE_IMAGE:
     return bgr2image(image, alpha, cc == 1)
 
 def image_convert(image: TYPE_IMAGE, channels: int) -> TYPE_IMAGE:
-    """Force image format to number of channels chosen."""
-    if len(image.shape) < 3:
-        image = np.expand_dims(image, -1).astype(dtype=np.uint8)
+    """Force image format to a specific number of channels.
 
+    Args:
+        image (TYPE_IMAGE): Input image.
+        channels (int): Desired number of channels (1, 3, or 4).
+
+    Returns:
+        TYPE_IMAGE: Image with the specified number of channels.
+    """
+    if image.ndim == 2:
+        # Expand grayscale image to have a channel dimension
+        image = np.expand_dims(image, -1)
+
+    # Ensure channels value is within the valid range
     channels = max(1, min(4, channels))
-    if channels < 3:
+    cc = image.shape[2] if image.ndim == 3 else 1
+
+    if cc == channels:
+        return image
+
+    if channels == 1:
         return image_grayscale(image)
 
-    cc = image.shape[2] if image.ndim == 3 else 1
-    if channels == cc:
-        return image
     if channels == 3:
         if cc == 1:
             return cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
         elif cc == 4:
             return cv2.cvtColor(image, cv2.COLOR_BGRA2BGR)
+
     if cc == 1:
         return cv2.cvtColor(image, cv2.COLOR_GRAY2BGRA)
     return cv2.cvtColor(image, cv2.COLOR_BGR2BGRA)
@@ -1138,39 +1164,31 @@ def image_gradient_map(image:TYPE_IMAGE, gradient_map:TYPE_IMAGE, reverse:bool=F
     cmap = cmap[0,:,:].reshape((256, 1, 3)).astype(np.uint8)
     return cv2.applyColorMap(grey, cmap)
 
-def image_grayscale(image: TYPE_IMAGE) -> TYPE_IMAGE:
-    """
-    Convert an image to grayscale, preserving alpha if present.
-
-    This function handles various input image formats:
-    - Floating-point images (normalizes to 0-255 range)
-    - RGB and RGBA images
-    - Already grayscale images
+def image_grayscale(image: TYPE_IMAGE, use_alpha: bool = False) -> TYPE_IMAGE:
+    """Convert image to grayscale, optionally using the alpha channel if present.
 
     Args:
-    image (TYPE_IMAGE): Input image. Can be 2D (grayscale) or 3D (RGB/RGBA) array.
+        image (TYPE_IMAGE): Input image, potentially with multiple channels.
+        use_alpha (bool): If True and the image has 4 channels, multiply the grayscale
+                          values by the alpha channel. Defaults to False.
 
     Returns:
-    np.ndarray: Grayscale image with alpha channel preserved if present in input.
-
-    Note:
-    - For RGBA images, the alpha channel is applied after grayscale conversion.
-    - The output is always a 3D array with shape (height, width, 1) for consistency.
+        TYPE_IMAGE: Grayscale image, optionally alpha-multiplied.
     """
-    # Handle floating-point images
-    if image.dtype in [np.float16, np.float32, np.float64]:
-        image = cv2.normalize(image, None, 0, 255, cv2.NORM_MINMAX)
-        image = image.astype(np.uint8)
-
-    # already grayscale
-    if image.ndim < 3 or image.shape[2] == 1:
-        return np.expand_dims(image, axis=-1)
+    if image.ndim == 2 or image.shape[2] == 1:
+        return image
 
     if image.shape[2] == 4:
-        image = cv2.cvtColor(image, cv2.COLOR_BGRA2GRAY)
-    else:
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    return np.expand_dims(image, axis=-1)
+        # Convert RGBA to grayscale
+        grayscale = cv2.cvtColor(image, cv2.COLOR_BGRA2GRAY)
+        if use_alpha:
+            # Normalize alpha to [0, 1]
+            alpha_channel = image[:, :, 3] / 255.0
+            grayscale = (grayscale * alpha_channel).astype(np.uint8)
+        return grayscale
+
+    # Convert RGB to grayscale
+    return cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
 def image_grid(data: List[TYPE_IMAGE], width: int, height: int) -> TYPE_IMAGE:
     #@TODO: makes poor assumption all images are the same dimensions.
@@ -1410,6 +1428,8 @@ def image_mask_binary(image: TYPE_IMAGE) -> TYPE_IMAGE:
 
     # Create a binary mask where any non-black pixel is set to 1
     _, mask = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY)
+    if mask.ndim == 2:
+        mask = np.expand_dims(mask, -1)
     return mask.astype(np.uint8)
 
 def image_matte(image:TYPE_IMAGE, color:TYPE_PIXEL=(0, 0, 0, 255), width:int=None, height:int=None) -> TYPE_IMAGE:
@@ -1421,7 +1441,7 @@ def image_matte(image:TYPE_IMAGE, color:TYPE_PIXEL=(0, 0, 0, 255), width:int=Non
         color (TYPE_PIXEL): The color of the matte as a tuple (R, G, B, A).
 
     Returns:
-        TYPE_IMAGE: The composited image on a matte.
+        TYPE_IMAGE: The composited image on a matte. Output is reduced to RGB.
     """
 
     # Determine the dimensions of the matte
@@ -1441,7 +1461,7 @@ def image_matte(image:TYPE_IMAGE, color:TYPE_PIXEL=(0, 0, 0, 255), width:int=Non
 
     # Composite the image onto the matte
     matte[y_offset:y_offset + image_height, x_offset:x_offset + image_width] = image
-    return matte
+    return matte[...,:3]
 
 def image_merge(imageA: TYPE_IMAGE, imageB: TYPE_IMAGE, axis: int=0, flip: bool=False) -> TYPE_IMAGE:
     if flip:
@@ -1636,7 +1656,7 @@ def image_scalefit(image: TYPE_IMAGE, width: int, height:int,
         case EnumScaleMode.FIT:
             image = cv2.resize(image, (width, height), interpolation=sample.value)
 
-    if len(image.shape) == 2:
+    if image.ndim == 2:
         image = np.expand_dims(image, -1)
     return image
 

@@ -5,7 +5,6 @@
  */
 
 import { app } from "../../../scripts/app.js"
-import { widgetHide } from "../util/util_widget.js"
 import {
     TypeSlot, TypeSlotEvent, nodeFitHeight,
     nodeVirtualLinkRoot, nodeVirtualLinkChild,

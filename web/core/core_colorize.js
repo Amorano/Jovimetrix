@@ -113,15 +113,15 @@ app.registerExtension({
         parent.insertBefore(showButton, firstKid.nextSibling)
 
         let showMenuButton;
-		if (!app.menu?.element.style.display && app.menu?.settingsGroup) {
-			showMenuButton = new (await import("../../../scripts/ui/components/button.js")).ComfyButton({
-				icon: "palette-outline",
-				action: () => showButton.click(),
-				tooltip: "Jovimetrix Colorizer",
-				content: "Jovimetrix Colorizer",
-			});
-			app.menu.settingsGroup.append(showMenuButton);
-		}
+        if (!app.menu?.element.style.display && app.menu?.settingsGroup) {
+            showMenuButton = new (await import("../../../scripts/ui/components/button.js")).ComfyButton({
+                icon: "palette-outline",
+                action: () => showButton.click(),
+                tooltip: "Jovimetrix Colorizer",
+                content: "Jovimetrix Colorizer",
+            });
+            app.menu.settingsGroup.append(showMenuButton);
+        }
 
         // Option for user to contrast text for better readability
         const drawNodeShape = LGraphCanvas.prototype.drawNodeShape;

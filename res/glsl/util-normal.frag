@@ -2,8 +2,8 @@
 // desc: Convert input into a Normal map
 //
 
-uniform sampler2D image; // | Input image to convert into a normal map
-uniform float scalar; // 0.25 | Intensity of depth
+uniform sampler2D image; //      | Input image to convert into a normal map
+uniform float scalar;    // 0.25 | Intensity of depth
 
 const mat3 scharr_x = mat3(
     3.0, 10.0, 3.0,

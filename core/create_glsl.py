@@ -7,7 +7,6 @@ import os
 from pathlib import Path
 from typing import Any, Tuple
 
-import numpy as np
 import torch
 from loguru import logger
 
@@ -28,17 +27,19 @@ from Jovimetrix.sup.shader import PTYPE, shader_meta, CompileException, GLSLShad
 
 JOV_ROOT_GLSL = ROOT / 'res' / 'glsl'
 GLSL_PROGRAMS = {
-    "vertex": { "NONE": None },
-    "fragment": { "NONE": None }
+    "vertex": {  },
+    "fragment": { }
 }
 
-GLSL_PROGRAMS["vertex"].update({str(f.relative_to(JOV_ROOT_GLSL)): str(f) for f in Path(JOV_ROOT_GLSL).rglob('*.vert')})
-if (USER_GLSL := os.getenv("JOV_GLSL", None)) is not None:
-    GLSL_PROGRAMS["vertex"].update({str(f.relative_to(USER_GLSL)): str(f) for f in Path(USER_GLSL).rglob('*.vert')})
+GLSL_PROGRAMS['vertex'].update({str(f.relative_to(JOV_ROOT_GLSL)): str(f) for f in Path(JOV_ROOT_GLSL).rglob('*.vert')})
+USER_GLSL = ROOT / 'glsl'
+USER_GLSL.mkdir(parents=True, exist_ok=True)
+if (USER_GLSL := os.getenv("JOV_GLSL", str(USER_GLSL))) is not None:
+    GLSL_PROGRAMS['vertex'].update({str(f.relative_to(USER_GLSL)): str(f) for f in Path(USER_GLSL).rglob('*.vert')})
 
-GLSL_PROGRAMS["fragment"].update({str(f.relative_to(JOV_ROOT_GLSL)): str(f) for f in Path(JOV_ROOT_GLSL).rglob('*.glsl')})
+GLSL_PROGRAMS['fragment'].update({str(f.relative_to(JOV_ROOT_GLSL)): str(f) for f in Path(JOV_ROOT_GLSL).rglob('*.frag')})
 if USER_GLSL is not None:
-    GLSL_PROGRAMS["fragment"].update({str(f.relative_to(USER_GLSL)): str(f) for f in Path(USER_GLSL).rglob('*.glsl')})
+    GLSL_PROGRAMS['fragment'].update({str(f.relative_to(USER_GLSL)): str(f) for f in Path(USER_GLSL).rglob('*.frag')})
 
 logger.info(f"  vertex programs: {len(GLSL_PROGRAMS['vertex'])}")
 logger.info(f"fragment programs: {len(GLSL_PROGRAMS['fragment'])}")
@@ -226,21 +227,45 @@ class GLSLNodeDynamic(GLSLNodeBase):
 
 def import_dynamic() -> Tuple[str,...]:
     ret = []
+    global GLSL_PROGRAMS
+    if (prog := GLSL_PROGRAMS['vertex'].pop('_', None)) is not None:
+        if (shader := load_file(prog)) is not None:
+            GLSLShader.PROG_VERTEX = shader
+
+    if (prog := GLSL_PROGRAMS['fragment'].pop('_', None)) is not None:
+        if (shader := load_file(prog)) is not None:
+            GLSLShader.PROG_FRAGMENT = shader
+
+    sort = 10000
+    root = str(JOV_ROOT_GLSL)
     for name, fname in GLSL_PROGRAMS['fragment'].items():
-        if name == 'NONE': continue
+        print(name)
         if (shader := load_file(fname)) is None:
             logger.error(f"missing shader file {fname}")
             continue
 
         meta = shader_meta(shader)
+        if meta.get('hide', False):
+            continue
 
         name = meta.get('name', name.split('.')[0])
-        class_name = f'GLSLNode_{name.title()}'
+        class_name = name.title().replace(' ', '_')
+        class_name = f'GLSLNode_{class_name}'
+
+        emoji = '🧙🏽‍♀️'
+        sort_order = sort
+        if fname.startswith(root):
+            emoji = '🧙🏽'
+            sort_order -= 10000
+
         class_def = type(class_name, (GLSLNodeDynamic,), {
-            "NAME": f'GLSL {name} (JOV) 🧙🏽'.upper(),
+            "NAME": f'GLSL {name} (JOV) {emoji}'.upper(),
             "DESCRIPTION": meta.get('desc', name),
             "FRAGMENT": shader,
             "PARAM": meta.get('_', []),
+            "SORT": sort_order,
         })
+
+        sort += 10
         ret.append((class_name, class_def,))
     return ret

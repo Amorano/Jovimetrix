@@ -47,7 +47,8 @@ PTYPE = {
     'sampler2D': EnumConvertType.IMAGE
 }
 
-RE_VARIABLE = re.compile(r"uniform\s+(\w+)\s+(\w+);\s*\/\/\s*([0-9.,\s]*)\s*(?:;\s*([0-9.-]+))?\s*(?:;\s*([0-9.-]+))?\s*(?:;\s*([0-9.-]+))?\s*(?:\|\s*(.*))?$", re.MULTILINE)
+RE_VARIABLE = re.compile(r"uniform\s+(\w+)\s+(\w+);(?:\s*\/\/\s*([0-9.,\s]*))?\s*(?:;\s*([0-9.-]+))?\s*(?:;\s*([0-9.-]+))?\s*(?:;\s*([0-9.-]+))?\s*(?:\|\s*(.*))?$", re.MULTILINE)
+
 RE_SHADER_META = re.compile(r"\/\/\s?([A-Za-z\_]{3,}):\s?([A-Za-z\_\s]+)$", re.MULTILINE)
 
 # =============================================================================

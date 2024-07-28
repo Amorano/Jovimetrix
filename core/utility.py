@@ -636,7 +636,7 @@ Manage a queue of items, such as file paths or data. It supports various formats
                 for _ in range(self.__len):
                     ret = process(self.__q[self.__index])
                     data.append(ret)
-                # self.__index = max(0, self.__index + 1) % self.__len
+
                 if isinstance(data[0], (np.ndarray,)):
                     mw, mh, mc = 0, 0, 0
                     for d in data:

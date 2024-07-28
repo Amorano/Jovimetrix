@@ -309,7 +309,7 @@ class Session(metaclass=Singleton):
                 logger.warning(str(e))
                 continue
 
-            # check if there is a dyanmic register function....
+            # check if there is a dynamic register function....
             try:
                 for class_name, class_def in module.import_dynamic():
                     setattr(module, class_name, class_def)

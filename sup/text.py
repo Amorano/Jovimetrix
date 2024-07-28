@@ -7,24 +7,14 @@ from enum import Enum
 import textwrap
 from typing import List, Tuple
 
-import cv2
 from matplotlib import font_manager
 from PIL import Image, ImageFont, ImageDraw
-import numpy as np
 
 from loguru import logger
 
-from Jovimetrix.sup.image import image_detect, pil2cv, \
-    TYPE_IMAGE, TYPE_PIXEL
+from Jovimetrix.sup.image import pil2cv, TYPE_IMAGE, TYPE_PIXEL
 
 # =============================================================================
-
-class EnumShapes(Enum):
-    CIRCLE = 0
-    SQUARE = 1
-    ELLIPSE = 2
-    RECTANGLE = 3
-    POLYGON = 4
 
 class EnumAlignment(Enum):
     TOP = 10
