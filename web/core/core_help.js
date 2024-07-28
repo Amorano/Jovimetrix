@@ -13,6 +13,11 @@ const JOV_HELP_URL = "https://raw.githubusercontent.com/Amorano/Jovimetrix-examp
 
 const CACHE_DOCUMENTATION = {};
 
+if (!window.jovimetrixEvents) {
+    window.jovimetrixEvents = new EventTarget();
+}
+const jovimetrixEvents = window.jovimetrixEvents;
+
 const create_documentation_stylesheet = () => {
     const tag = 'jov-documentation-stylesheet'
     let styleTag = document.head.querySelector(tag)
@@ -104,18 +109,20 @@ const documentationConverter = new showdown.Converter({
     openLinksInNewWindow: true,
 });
 
-async function load_help(name, url, refresh=false) {
+async function load_help(name, data) {
+    // overwrite
+    if (data) {
+        CACHE_DOCUMENTATION[name] = documentationConverter.makeHtml(data);
+    }
+
     if (name in CACHE_DOCUMENTATION) {
         return CACHE_DOCUMENTATION[name];
     }
 
-    if (!url.endsWith('.md')) {
-        CACHE_DOCUMENTATION[name] = documentationConverter.makeHtml(CACHE_DOCUMENTATION[name]);
-        return CACHE_DOCUMENTATION[name];
-    }
+    // https://raw.githubusercontent.com/Amorano/Jovimetrix-examples/master/node/BLEND/BLEND.md
+    const url = `${JOV_HELP_URL}/node/${name}/${name}.md`;
+    console.info(url)
 
-    url = `${JOV_HELP_URL}/${url}`;
-    console.log(url)
     // Check if data is already cached
     const result = fetch(url)
         .then(response => {
@@ -141,10 +148,24 @@ app.registerExtension({
     init() {
         create_documentation_stylesheet();
 	},
+    setup() {
+        const onSelectionChange = app.canvas.onSelectionChange;
+        app.canvas.onSelectionChange = function(selectedNodes) {
+            const me = onSelectionChange?.apply(this);
+            if (selectedNodes && Object.keys(selectedNodes).length > 0) {
+                const firstNodeKey = Object.keys(selectedNodes)[0];
+                const firstNode = selectedNodes[firstNodeKey].type.split(" (JOV)")[0];
+                const event = new CustomEvent('jovimetrixHelpRequested', { detail: firstNode });
+                jovimetrixEvents.dispatchEvent(event);
+            }
+            return me;
+        }
+    },
 	async beforeRegisterNodeDef(nodeType, nodeData) {
         if (!nodeData?.category?.startsWith("JOVIMETRIX")) {
             return;
         }
+
         let opts = { icon_size: 14, icon_margin: 3 }
         const iconSize = opts.icon_size ? opts.icon_size : 14;
         const iconMargin = opts.icon_margin ? opts.icon_margin : 3;
@@ -188,8 +209,9 @@ app.registerExtension({
 
                 if (widget_tooltip) {
                     const tips = widget_tooltip.options.default || {};
-                    const url = tips['*'];
-                    contentWrapper.innerHTML = await load_help(nodeData.name, url);
+                    const url_name = tips['*'];
+                    contentWrapper.innerHTML = await load_help(url_name);
+                    // node/{name_url}/{name_url}.md
                 }
 
                 // resize handle
@@ -370,6 +392,10 @@ app.registerExtension({
                 } else {
                     this.helpClose.abort()
                 }
+                // Dispatch a custom event with the node name
+                const event = new CustomEvent('jovimetrixHelpRequested', { detail: this.type });
+                jovimetrixEvents.dispatchEvent(event);
+
                 return true;
             }
             return r;
@@ -377,14 +403,33 @@ app.registerExtension({
 	}
 })
 
+let HELP_PANEL_CONTENT = `
+# JOVIMETRIX 🔺🟩🔵
+## CLICK A JOV NODE TO SEE THE HELP
+`;
+
 app.extensionManager.registerSidebarTab({
     id: "jovimetrix.sidebar.help",
     icon: "pi pi-money-bill",
     title: "Jovimetrix Lore",
-    tooltip: "The Akashic records for all things Jovimetrix",
+    tooltip: "The Akashic records for all things JOVIMETRIX 🔺🟩🔵",
     type: "custom",
     render: async (el) => {
         el.innerHTML = "<div>Loading...</div>";
-        el.innerHTML = await load_help('LERP (JOV) ', JOV_HELP_URL, true);
+
+        // Function to update content
+        const updateContent = async (nodeName, data) => {
+            HELP_PANEL_CONTENT = await load_help(nodeName, data);
+            el.innerHTML = HELP_PANEL_CONTENT;
+        };
+
+        // Initial load
+        await updateContent('_', HELP_PANEL_CONTENT);
+
+        // Listen for the custom event
+        jovimetrixEvents.addEventListener('jovimetrixHelpRequested', async (event) => {
+            HELP_PANEL_CONTENT = event.detail;
+            await updateContent(HELP_PANEL_CONTENT);
+        });
     }
 });

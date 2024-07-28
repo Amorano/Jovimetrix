@@ -259,7 +259,7 @@ class Lexicon(metaclass=LexiconMeta):
         name_url = node_cls.NAME.split(" (JOV)")[0]
         url = name_url.replace(" ", "-")
         cat = node_cls.CATEGORY.split('/')[1]
-        data = {"_": f"{cat}#-{url}", "*": f"node/{name_url}/{name_url}.md", "outputs": {}}
+        data = {"_": f"{cat}#-{url}", "*": name_url, "outputs": {}}
         for cat, entry in node.items():
             if cat not in ['optional', 'required', 'outputs']:
                 continue
@@ -391,12 +391,15 @@ def get_node_info(node_info: Dict[str, Any]) -> Dict[str, Any]:
 def json2markdown(json_dict):
     """Example of json to markdown converter. You are welcome to change formatting per specific request."""
     name = json_dict['display_name']
-    ret = f"# {name}\n\n"
-    ret += f"## {json_dict['category']}\n"
-    ret += f"{json_dict['documentation']}\n"
     boop = name.split('(JOV)')[0].strip()
     boop2 = boop.replace(" ", "%20")
-    ret += f"![{boop}](https://raw.githubusercontent.com/Amorano/Jovimetrix-examples/master/node/{boop2}/{boop2}.png)\n\n"
+    root1 = f"https://github.com/Amorano/Jovimetrix-examples/blob/master/node/{boop2}/{boop2}.md"
+    root2 = f"https://raw.githubusercontent.com/Amorano/Jovimetrix-examples/master/node/{boop2}/{boop2}.png"
+
+    ret = f"# [{name}]({root1})\n\n"
+    ret += f"## {json_dict['category']}\n"
+    ret += f"{json_dict['documentation']}\n"
+    ret += f"![{boop}]({root2})\n\n"
     ret += f"#### OUTPUT NODE?: `{json_dict['output_node']}`\n\n"
 
     # INPUTS
