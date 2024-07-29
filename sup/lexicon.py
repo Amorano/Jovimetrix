@@ -396,19 +396,19 @@ def json2markdown(json_dict):
     root1 = f"https://github.com/Amorano/Jovimetrix-examples/blob/master/node/{boop2}/{boop2}.md"
     root2 = f"https://raw.githubusercontent.com/Amorano/Jovimetrix-examples/master/node/{boop2}/{boop2}.png"
 
-    ret = f"# [{name}]({root1})\n\n"
-    ret += f"## {json_dict['category']}\n"
-    ret += f"{json_dict['documentation']}\n"
+    ret = f"## [{name}]({root1})\n\n"
+    ret += f"## {json_dict['category']}\n\n"
+    ret += f"{json_dict['documentation']}\n\n"
     ret += f"![{boop}]({root2})\n\n"
     ret += f"#### OUTPUT NODE?: `{json_dict['output_node']}`\n\n"
 
     # INPUTS
-    ret += f"### INPUT\n\n"
+    ret += f"## INPUT\n\n"
     if len(json_dict['input_parameters']) > 0:
         for k, v in json_dict['input_parameters'].items():
             if len(v.items()) == 0:
                 continue
-            ret += f"#### {k.upper()}\n\n"
+            ret += f"### {k.upper()}\n\n"
             ret += f"name | type | desc | default | meta\n"
             ret += f":---:|:---:|---|:---:|---\n"
             for param_key, param_meta in v.items():
@@ -426,7 +426,7 @@ def json2markdown(json_dict):
         ret += 'NONE\n'
 
     # OUTPUTS
-    ret += f"\n### OUTPUT\n\n"
+    ret += f"\n## OUTPUT\n\n"
     if len(json_dict['output_parameters']) > 0:
         ret += f"name | type | desc\n"
         ret += f":---:|:---:|---\n"
@@ -442,5 +442,5 @@ def json2markdown(json_dict):
     # PUT EXTERNAL DOCS HERE
     #
     # FOOTER
-    ret += "\nhelp powered by [MelMass](https://github.com/melMass) & [comfy_mtb](https://github.com/melMass/comfy_mtb) project"
+    ret += "\noriginal help system powered by [MelMass](https://github.com/melMass) & the [comfy_mtb](https://github.com/melMass/comfy_mtb) project"
     return ret

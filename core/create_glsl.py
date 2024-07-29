@@ -239,7 +239,6 @@ def import_dynamic() -> Tuple[str,...]:
     sort = 10000
     root = str(JOV_ROOT_GLSL)
     for name, fname in GLSL_PROGRAMS['fragment'].items():
-        print(name)
         if (shader := load_file(fname)) is None:
             logger.error(f"missing shader file {fname}")
             continue

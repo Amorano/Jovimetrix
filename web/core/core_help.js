@@ -67,32 +67,70 @@ const create_documentation_stylesheet = () => {
     .content-wrapper {
         overflow: auto;
         max-height: 90%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8em;
+
         /* Scrollbar styling for Chrome */
         &::-webkit-scrollbar {
-           width: 6px;
+            width: 6px;
         }
         &::-webkit-scrollbar-track {
-           background: var(--bg-color);
+            background: var(--bg-color);
         }
         &::-webkit-scrollbar-thumb {
-           background-color: var(--fg-color);
-           border-radius: 6px;
-           border: 3px solid var(--bg-color);
+            background-color: var(--fg-color);
+            border-radius: 6px;
+            border: 3px solid var(--bg-color);
         }
 
         /* Scrollbar styling for Firefox */
         scrollbar-width: thin;
         scrollbar-color: var(--fg-color) var(--bg-color);
-        a {
-          color: yellow;
-        }
-        a:visited {
-          color: orange;
-        }
-        a:hover {
-          color: red;
-        }
-    }`
+    }
+
+    .content-wrapper h1,
+    .content-wrapper h2,
+    .content-wrapper h3,
+    .content-wrapper h4,
+    .content-wrapper h5,
+    .content-wrapper h6 {
+        margin: 2px;
+        padding: 2px;
+        text-align: left;
+    }
+
+    .content-wrapper p {
+        margin: 2px;
+        padding: 2px;
+    }
+
+    .content-wrapper iframe,
+    .content-wrapper img,
+    .content-wrapper video,
+    .content-wrapper object,
+    .content-wrapper embed {
+        width: 100%;
+        height: 100%;
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain; /* Ensure content scales to fit */
+    }
+
+    .content-wrapper a {
+        color: yellow;
+    }
+
+    .content-wrapper a:visited {
+        color: orange;
+    }
+
+    .content-wrapper a:hover {
+        color: red;
+    }
+    `
     document.head.appendChild(styleTag)
 }
 
@@ -109,10 +147,10 @@ const documentationConverter = new showdown.Converter({
     openLinksInNewWindow: true,
 });
 
-async function load_help(name, data) {
+async function load_help(name, custom_data) {
     // overwrite
-    if (data) {
-        CACHE_DOCUMENTATION[name] = documentationConverter.makeHtml(data);
+    if (custom_data) {
+        CACHE_DOCUMENTATION[name] = documentationConverter.makeHtml(custom_data);
     }
 
     if (name in CACHE_DOCUMENTATION) {
@@ -121,7 +159,6 @@ async function load_help(name, data) {
 
     // https://raw.githubusercontent.com/Amorano/Jovimetrix-examples/master/node/BLEND/BLEND.md
     const url = `${JOV_HELP_URL}/node/${name}/${name}.md`;
-    console.info(url)
 
     // Check if data is already cached
     const result = fetch(url)
@@ -133,7 +170,12 @@ async function load_help(name, data) {
         })
         .then(data => {
             // Cache the fetched data
-            CACHE_DOCUMENTATION[name] = documentationConverter.makeHtml(data);
+            const docElement = `<div>
+                <div class='content-wrapper'>
+                    ${documentationConverter.makeHtml(data)}
+                </div>
+            </div>`;
+            CACHE_DOCUMENTATION[name] = docElement;
             return CACHE_DOCUMENTATION[name];
         })
         .catch(error => {
@@ -403,7 +445,7 @@ app.registerExtension({
 	}
 })
 
-let HELP_PANEL_CONTENT = `
+const HELP_PANEL_CONTENT = `
 # JOVIMETRIX 🔺🟩🔵
 ## CLICK A JOV NODE TO SEE THE HELP
 `;
@@ -418,9 +460,9 @@ app.extensionManager.registerSidebarTab({
         el.innerHTML = "<div>Loading...</div>";
 
         // Function to update content
-        const updateContent = async (nodeName, data) => {
-            HELP_PANEL_CONTENT = await load_help(nodeName, data);
-            el.innerHTML = HELP_PANEL_CONTENT;
+        const updateContent = async (node, data) => {
+            el.innerHTML = documentationConverter.makeHtml("<div>Loading Node Help for " + node + "</div>");
+            el.innerHTML = await load_help(node, data);
         };
 
         // Initial load
@@ -428,8 +470,7 @@ app.extensionManager.registerSidebarTab({
 
         // Listen for the custom event
         jovimetrixEvents.addEventListener('jovimetrixHelpRequested', async (event) => {
-            HELP_PANEL_CONTENT = event.detail;
-            await updateContent(HELP_PANEL_CONTENT);
+            await updateContent(event.detail);
         });
     }
 });
