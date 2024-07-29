@@ -16,3 +16,4 @@ results
 backup
 node_modules
 *-lock.json
+*.config.mjs

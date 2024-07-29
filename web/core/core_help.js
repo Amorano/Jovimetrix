@@ -450,27 +450,29 @@ const HELP_PANEL_CONTENT = `
 ## CLICK A JOV NODE TO SEE THE HELP
 `;
 
-app.extensionManager.registerSidebarTab({
-    id: "jovimetrix.sidebar.help",
-    icon: "pi pi-money-bill",
-    title: "Jovimetrix Lore",
-    tooltip: "The Akashic records for all things JOVIMETRIX 🔺🟩🔵",
-    type: "custom",
-    render: async (el) => {
-        el.innerHTML = "<div>Loading...</div>";
+if(!app.menu?.element.style.display && app?.extensionManager) {
+    app.extensionManager.registerSidebarTab({
+        id: "jovimetrix.sidebar.help",
+        icon: "pi pi-money-bill",
+        title: "Jovimetrix Lore",
+        tooltip: "The Akashic records for all things JOVIMETRIX 🔺🟩🔵",
+        type: "custom",
+        render: async (el) => {
+            el.innerHTML = "<div>Loading...</div>";
 
-        // Function to update content
-        const updateContent = async (node, data) => {
-            el.innerHTML = documentationConverter.makeHtml("<div>Loading Node Help for " + node + "</div>");
-            el.innerHTML = await load_help(node, data);
-        };
+            // Function to update content
+            const updateContent = async (node, data) => {
+                el.innerHTML = documentationConverter.makeHtml("<div>Loading Node Help for " + node + "</div>");
+                el.innerHTML = await load_help(node, data);
+            };
 
-        // Initial load
-        await updateContent('_', HELP_PANEL_CONTENT);
+            // Initial load
+            await updateContent('_', HELP_PANEL_CONTENT);
 
-        // Listen for the custom event
-        jovimetrixEvents.addEventListener('jovimetrixHelpRequested', async (event) => {
-            await updateContent(event.detail);
-        });
-    }
-});
+            // Listen for the custom event
+            jovimetrixEvents.addEventListener('jovimetrixHelpRequested', async (event) => {
+                await updateContent(event.detail);
+            });
+        }
+    });
+}
