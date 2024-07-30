@@ -5,7 +5,7 @@
  */
 
 import { app } from "../../../scripts/app.js"
-import { hook_widget_AB } from '../util/util_jov.js'
+import { widgetABHook } from '../util/util_jov.js'
 import { nodeFitHeight } from '../util/util_node.js'
 import { widgetHide, widgetProcessAny, widget_type_name } from '../util/util_widget.js'
 
@@ -32,7 +32,7 @@ app.registerExtension({
             widget_str.options.menu = false;
             widget_str.origComputeSize = widget_str.computeSize;
 
-            const ab_data = hook_widget_AB(this, '❓');
+            const ab_data = widgetABHook(this, '❓');
             const oldCallback = ab_data.combo.callback;
             ab_data.combo.callback = () => {
                 oldCallback?.apply(this, arguments);

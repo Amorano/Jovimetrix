@@ -137,10 +137,20 @@ You can build all the help locally by loading Comfy and surfing to the local URL
 
 This will build all the help stub files (.md) inside the main Jovimetrix folder under a folder named `_md`
 
-If you wish to re-direct those outputs, you can set the ENV varible `JOV_SIDECAR`.
+If you wish to re-direct those outputs, you can set the ENV variable `JOV_DOC`.
 
-e.g.
-`SET JOV_SIDECAR=C:/dev/jvx/help`
+For example:
+`SET JOV_DOC=C:/dev/jvx/help`
+
+You can also use the token: {name} in the path and it will be replaced with the name of the node, in case you wish to further categorize the output:
+
+`SET JOV_DOC=C:/dev/jvx/help/{name}`
+
+### IGNORING NODES
+
+if `JOV_IGNORE_NODE` points to a valid `.txt` file, it will parse the file rows for Node Class names and attempt to skip loading those nodes at initialization.
+
+This should be reflected in your ComfyUI log. Verify with the log any nodes ignored this way.
 
 ### GIFSKI SUPPORT
 

@@ -20,20 +20,20 @@ import numpy as np
 from PIL import Image
 from PIL.PngImagePlugin import PngInfo
 import matplotlib.pyplot as plt
+
 from loguru import logger
 
 from comfy.utils import ProgressBar
 from folder_paths import get_output_directory
 
-from Jovimetrix import JOV_TYPE_IMAGE, comfy_message, parse_reset, JOVBaseNode, \
-    JOV_TYPE_ANY, ROOT
+from Jovimetrix import comfy_message, parse_reset, \
+    Lexicon, JOVBaseNode, JOV_TYPE_ANY, ROOT, JOV_TYPE_IMAGE
 
-from Jovimetrix.sup.lexicon import Lexicon
 from Jovimetrix.sup.util import parse_dynamic, path_next, \
     parse_param, zip_longest_fill, EnumConvertType
 
-from Jovimetrix.sup.image import cv2tensor, image_convert, image_matte, tensor2cv, pil2tensor, image_load, \
-    image_formats, tensor2pil, MIN_IMAGE_SIZE
+from Jovimetrix.sup.image import cv2tensor, image_convert, image_matte, tensor2cv, \
+    pil2tensor, image_load, image_formats, tensor2pil, MIN_IMAGE_SIZE
 
 # =============================================================================
 

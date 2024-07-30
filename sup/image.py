@@ -662,18 +662,22 @@ def image_blend(imageA: TYPE_IMAGE, imageB: TYPE_IMAGE, mask:Optional[TYPE_IMAGE
     h2 = min(h, h2)
     imageB = image_crop_center(imageB, w2, h2)
     imageB = image_matte(imageB, (0,0,0,0), w, h)
+    imageB = image_convert(imageB, 4)
     old_mask = image_mask(imageB)
     if len(old_mask.shape) > 2:
         old_mask = old_mask[..., 0][:,:]
+
     if mask is not None:
         mask = image_crop_center(mask, w, h)
         mask = image_matte(mask, (0,0,0,0), w, h)
         if len(mask.shape) > 2:
             mask = mask[..., 0][:,:]
         old_mask = cv2.bitwise_and(mask, old_mask)
+
     imageB[..., 3] = old_mask
     imageB = cv2pil(imageB)
-    image = blendLayers(imageA, imageB, blendOp.value, np.clip(alpha, 0, 1))
+    alpha = np.clip(alpha, 0, 1)
+    image = blendLayers(imageA, imageB, blendOp.value, alpha)
     image = pil2cv(image)
     return image_crop_center(image, w, h)
 
@@ -1392,7 +1396,7 @@ def image_mask_add(image:TYPE_IMAGE, mask:TYPE_IMAGE=None, alpha:float=255) -> T
     if mask is None:
         mask = np.full_like(image, alpha, np.uint8)
     else:
-        mask = image_convert(image, 1)
+        mask = np.expand_dims(image_convert(image, 1), -1)
     image[..., 3] = mask[...,0]
     return image
 

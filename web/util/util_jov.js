@@ -7,7 +7,7 @@
 import { nodeFitHeight } from './util_node.js'
 import { widgetShowVector, widgetFind, widget_type_name, widgetHide, widgetShow } from './util_widget.js'
 
-export function hook_widget_size_mode(node, wh_hide=true) {
+export function widgetSizeModeHook(node, wh_hide=true) {
     const wh = widgetFind(node.widgets, '🇼🇭');
     const samp = widgetFind(node.widgets, '🎞️');
     const mode = widgetFind(node.widgets, 'MODE');
@@ -27,7 +27,7 @@ export function hook_widget_size_mode(node, wh_hide=true) {
     setTimeout(() => { mode.callback(); }, 20);
 }
 
-export function hook_widget_size_mode2(nodeType, wh_hide=true) {
+export function widgetSizeModeHook2(nodeType, wh_hide=true) {
     const onNodeCreated = nodeType.prototype.onNodeCreated
     nodeType.prototype.onNodeCreated = function (node) {
         const me = onNodeCreated?.apply(this);
@@ -52,7 +52,7 @@ export function hook_widget_size_mode2(nodeType, wh_hide=true) {
     }
 }
 
-export function hook_widget_type(node, control_key, match_output=0) {
+export function widgetTypeHook(node, control_key, match_output=0) {
     const combo = widgetFind(node.widgets, control_key);
     const output = node.outputs[match_output];
 
@@ -70,7 +70,7 @@ export function hook_widget_type(node, control_key, match_output=0) {
     setTimeout(() => { combo.callback(); }, 10);
 }
 
-export function hook_widget_AB(node, control_key, match_output=-1) {
+export function widgetABHook(node, control_key, match_output=-1) {
     const initializeTrack = (widget) => {
         const track = {};
         for (let i = 0; i < 4; i++) {
@@ -111,7 +111,7 @@ export function hook_widget_AB(node, control_key, match_output=-1) {
     };
 
     if (match_output > -1) {
-        hook_widget_type(node, control_key, match_output);
+        widgetTypeHook(node, control_key, match_output);
     }
 
     const oldCallback = combo.callback;

@@ -15,8 +15,7 @@ from loguru import logger
 
 from comfy.utils import ProgressBar
 
-from Jovimetrix import JOV_TYPE_IMAGE, JOVBaseNode, JOV_TYPE_ANY
-from Jovimetrix.sup.lexicon import Lexicon
+from Jovimetrix import JOV_TYPE_IMAGE, JOVBaseNode, Lexicon
 from Jovimetrix.sup.util import EnumConvertType, parse_param, \
     zip_longest_fill
 from Jovimetrix.sup.stream import camera_list, monitor_list, window_list, \

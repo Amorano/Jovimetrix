@@ -19,13 +19,13 @@ from loguru import logger
 from comfy.utils import ProgressBar
 from nodes import interrupt_processing
 
-from Jovimetrix import comfy_message, parse_reset, JOVBaseNode, ComfyAPIMessage, \
+from Jovimetrix import comfy_message, parse_reset, Lexicon, JOVBaseNode, ComfyAPIMessage, \
     TimedOutException, JOV_TYPE_ANY, JOV_TYPE_FULL, JOV_TYPE_NUMBER, JOV_TYPE_VECTOR
-from Jovimetrix.sup.lexicon import Lexicon
+
 from Jovimetrix.sup.util import parse_param, parse_value, vector_swap, \
     zip_longest_fill, EnumConvertType, EnumSwizzle
+
 from Jovimetrix.sup.anim import ease_op, wave_op, EnumWave, EnumEase
-from Jovimetrix.sup.util import parse_param, zip_longest_fill, EnumConvertType
 
 # =============================================================================
 
@@ -590,7 +590,11 @@ class LerpNode(JOVBaseNode):
     RETURN_NAMES = (Lexicon.ANY_OUT,)
     SORT = 30
     DESCRIPTION = """
-Calculate linear interpolation between two values or vectors based on a blending factor (alpha). The node accepts optional start (IN_A) and end (IN_B) points, a blending factor (FLOAT), and various input types for both start and end points, such as single values (X, Y), 2-value vectors (IN_A2, IN_B2), 3-value vectors (IN_A3, IN_B3), and 4-value vectors (IN_A4, IN_B4). Additionally, you can specify the easing function (EASE) and the desired output type (TYPE). It supports various easing functions for smoother transitions.
+Calculate linear interpolation between two values or vectors based on a blending factor (alpha).
+
+The node accepts optional start (IN_A) and end (IN_B) points, a blending factor (FLOAT), and various input types for both start and end points, such as single values (X, Y), 2-value vectors (IN_A2, IN_B2), 3-value vectors (IN_A3, IN_B3), and 4-value vectors (IN_A4, IN_B4).
+
+Additionally, you can specify the easing function (EASE) and the desired output type (TYPE). It supports various easing functions for smoother transitions.
 """
 
     @classmethod

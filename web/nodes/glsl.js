@@ -10,6 +10,7 @@ import { nodeFitHeight } from '../util/util_node.js'
 import { widgetHide, widgetShow  } from '../util/util_widget.js';
 import { apiJovimetrix } from '../util/util_api.js';
 import { flashBackgroundColor } from '../util/util_fun.js';
+import{ widgetSizeModeHook } from '../util/util_jov.js'
 
 const _id = "GLSL (JOV) 🍩";
 const EVENT_JOVI_GLSL_ERROR = "jovi-glsl-error";
@@ -27,14 +28,11 @@ app.registerExtension({
         nodeType.prototype.onNodeCreated = async function () {
             const me = onNodeCreated?.apply(this);
             const self = this;
+            widgetSizeModeHook(this);
             const widget_time = this.widgets.find(w => w.name === '🕛');
             const widget_batch = this.widgets.find(w => w.name === 'BATCH');
-            const widget_wait = this.widgets.find(w => w.name === '✋🏽');
-            const widget_reset = this.widgets.find(w => w.name === 'RESET');
             const widget_vertex = this.widgets.find(w => w.name === 'VERTEX');
             const widget_fragment = this.widgets.find(w => w.name === 'FRAGMENT');
-            widget_wait.options.menu = false;
-            widget_reset.options.menu = false;
             widget_vertex.options.menu = false;
             widget_fragment.options.menu = false;
             let widget_param = this.inputs?.find(w => w.name === 'PARAM');
@@ -109,22 +107,6 @@ app.registerExtension({
             widget_vertex.inputEl.addEventListener('input', function () {
                 shader_changed();
             });
-
-            widget_batch.callback = () => {
-                widgetHide(self, widget_reset, '-jov');
-                widgetHide(self, widget_wait, '-jov');
-                if (widget_batch.value == 0) {
-                    widgetShow(widget_reset);
-                    widgetShow(widget_wait);
-                }
-                nodeFitHeight(self);
-            }
-
-            widget_reset.callback = () => {
-                widget_reset.value = false;
-                apiJovimetrix(self.id, "reset");
-                widget_time.value = 0;
-            };
 
             function python_glsl_error(event) {
                 if (event.detail.id != self.id) {

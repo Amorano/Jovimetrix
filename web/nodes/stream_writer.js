@@ -5,7 +5,7 @@
  */
 
 import { app } from "../../../scripts/app.js"
-import { hook_widget_size_mode } from '../util/util_jov.js'
+import { widgetSizeModeHook } from '../util/util_jov.js'
 
 const _id = "STREAM WRITER (JOV) 🎞️"
 
@@ -19,7 +19,7 @@ app.registerExtension({
         const onNodeCreated = nodeType.prototype.onNodeCreated
         nodeType.prototype.onNodeCreated = function () {
             const me = onNodeCreated?.apply(this)
-            hook_widget_size_mode(this);
+            widgetSizeModeHook(this);
             return me;
         }
 	}

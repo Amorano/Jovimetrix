@@ -6,7 +6,7 @@
 
 import { app } from "../../../scripts/app.js"
 import { nodeFitHeight } from '../util/util_node.js'
-import{ hook_widget_size_mode } from '../util/util_jov.js'
+import{ widgetSizeModeHook } from '../util/util_jov.js'
 import { widgetHide, widgetShow } from '../util/util_widget.js'
 
 const _id = "STREAM READER (JOV) 📺"
@@ -22,7 +22,7 @@ app.registerExtension({
         nodeType.prototype.onNodeCreated = async function () {
             const me = onNodeCreated?.apply(this);
             const self = this;
-            hook_widget_size_mode(this);
+            widgetSizeModeHook(this);
             const url = this.widgets.find(w => w.name === '🌐');
             const orient = this.widgets.find(w => w.name === '🧭');
             const zoom = this.widgets.find(w => w.name === '🔎');

@@ -13,9 +13,8 @@ from loguru import logger
 
 from comfy.utils import ProgressBar
 
-from Jovimetrix import JOVBaseNode, JOV_TYPE_IMAGE
+from Jovimetrix import JOVBaseNode, JOV_TYPE_IMAGE, JOVImageNode, Lexicon
 
-from Jovimetrix.sup.lexicon import JOVImageNode, Lexicon
 from Jovimetrix.sup.util import parse_param, zip_longest_fill, EnumConvertType
 
 from Jovimetrix.sup.image import channel_solid, cv2tensor, cv2tensor_full, \
@@ -167,8 +166,6 @@ Create n-sided polygons. These shapes can be customized by adjusting parameters 
 
             pA = image_matte(pA, matte)
             mask = image_mask_binary(pA)
-            print(pA.shape, mask.shape)
-
             pB = image_mask_add(pA, mask)
             matte = image_matte(pB, matte)
 

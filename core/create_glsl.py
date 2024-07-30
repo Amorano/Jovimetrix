@@ -17,10 +17,9 @@ except:
     pass
 from comfy.utils import ProgressBar
 
-from Jovimetrix import comfy_message, parse_reset, ROOT
-from Jovimetrix.sup.lexicon import JOVImageNode, Lexicon
+from Jovimetrix import JOVImageNode, Lexicon, comfy_message, ROOT
 from Jovimetrix.sup.util import load_file, parse_param, EnumConvertType, parse_value
-from Jovimetrix.sup.image import cv2tensor_full, image_convert, tensor2cv, MIN_IMAGE_SIZE
+from Jovimetrix.sup.image import EnumInterpolation, EnumScaleMode, cv2tensor_full, image_convert, tensor2cv, MIN_IMAGE_SIZE
 from Jovimetrix.sup.shader import PTYPE, shader_meta, CompileException, GLSLShader
 
 # =============================================================================
@@ -91,14 +90,12 @@ class GLSLNodeBase(JOVImageNode):
         d = super().INPUT_TYPES()
         d.update({
             "optional": {
-                Lexicon.WH: ("VEC2", {"default": (512, 512), "min": MIN_IMAGE_SIZE, "step": 1,}),
+                Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
+                Lexicon.WH: ("VEC2", {"default": (512, 512), "min":MIN_IMAGE_SIZE,
+                                    "step": 1, "label": [Lexicon.W, Lexicon.H]}),
+                Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
                 Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1,
-                                         "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True}),
-                Lexicon.BATCH: ("INT", {"default": 0, "step": 1, "min": 0, "max": 1048576}),
-                Lexicon.FPS: ("INT", {"default": 24, "step": 1, "min": 1, "max": 120}),
-                Lexicon.TIME: ("FLOAT", {"default": 0, "step": 0.001, "min": 0, "precision": 4}),
-                Lexicon.WAIT: ("BOOLEAN", {"default": False}),
-                Lexicon.RESET: ("BOOLEAN", {"default": False})
+                                         "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
             }
         })
         return Lexicon._parse(d, cls)
@@ -113,20 +110,17 @@ class GLSLNodeBase(JOVImageNode):
         self.__delta = 0
 
     def run(self, ident, **kw) -> tuple[torch.Tensor]:
+        batch = parse_param(kw, Lexicon.BATCH, EnumConvertType.INT, 0, 0, 1048576)[0]
+        delta = parse_param(kw, Lexicon.TIME, EnumConvertType.FLOAT, 0)[0]
+        self.__glsl.fps = parse_param(kw, Lexicon.FPS, EnumConvertType.INT, 24, 1, 120)[0]
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)[0]
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)[0]
-        delta = parse_param(kw, Lexicon.TIME, EnumConvertType.FLOAT, 0)[0]
-        batch = parse_param(kw, Lexicon.BATCH, EnumConvertType.INT, 1, 0, 1048576)[0]
-        fps = parse_param(kw, Lexicon.FPS, EnumConvertType.INT, 24, 1, 120)[0]
-        wait = parse_param(kw, Lexicon.WAIT, EnumConvertType.BOOLEAN, False)[0]
-        reset = parse_param(kw, Lexicon.RESET, EnumConvertType.BOOLEAN, False)[0]
 
         variables = kw.copy()
-        for p in [Lexicon.TIME, Lexicon.BATCH, Lexicon.FPS, Lexicon.WAIT, Lexicon.RESET, Lexicon.WH, Lexicon.MATTE, Lexicon.PROG_VERT, Lexicon.PROG_FRAG]:
+        for p in [Lexicon.WH, Lexicon.MATTE]:
             variables.pop(p, None)
 
         self.__glsl.size = wihi
-        self.__glsl.fps = fps
         try:
             self.__glsl.program(self.VERTEX, self.FRAGMENT)
         except CompileException as e:
@@ -137,10 +131,7 @@ class GLSLNodeBase(JOVImageNode):
 
         if batch > 0:
             self.__delta = delta
-
-        if parse_reset(ident) > 0 or reset:
-            self.__delta = 0
-        step = 1. / fps
+        step = 1. / self.__glsl.fps
 
         images = []
         pbar = ProgressBar(batch)
@@ -157,9 +148,9 @@ class GLSLNodeBase(JOVImageNode):
             image = self.__glsl.render(self.__delta, **vars)
             image = cv2tensor_full(image, matte)
             images.append(image)
-            if not wait:
-                self.__delta += step
-                comfy_message(ident, "jovi-glsl-time", {"id": ident, "t": self.__delta})
+
+            self.__delta += step
+            comfy_message(ident, "jovi-glsl-time", {"id": ident, "t": self.__delta})
             pbar.update_absolute(idx)
         return [torch.cat(i, dim=0) for i in zip(*images)]
 
@@ -175,6 +166,9 @@ Execute custom GLSL (OpenGL Shading Language) fragment shaders to generate image
         d = super().INPUT_TYPES()
         opts = d.get('optional', {})
         opts.update({
+            Lexicon.BATCH: ("INT", {"default": 0, "step": 1, "min": 0, "max": 1048576}),
+            Lexicon.FPS: ("INT", {"default": 24, "step": 1, "min": 1, "max": 120}),
+            Lexicon.TIME: ("FLOAT", {"default": 0, "step": 0.001, "min": 0, "precision": 4}),
             Lexicon.PROG_VERT: ("STRING", {"default": GLSLShader.PROG_VERTEX, "multiline": True, "dynamicPrompts": False}),
             Lexicon.PROG_FRAG: ("STRING", {"default": GLSLShader.PROG_FRAGMENT, "multiline": True, "dynamicPrompts": False}),
         })
@@ -184,7 +178,10 @@ Execute custom GLSL (OpenGL Shading Language) fragment shaders to generate image
     def run(self, ident, **kw) -> tuple[torch.Tensor]:
         self.VERTEX = parse_param(kw, Lexicon.PROG_VERT, EnumConvertType.STRING, "")[0]
         self.FRAGMENT = parse_param(kw, Lexicon.PROG_FRAG, EnumConvertType.STRING, "")[0]
-        return super().run(ident, **kw)
+        variables = kw.copy()
+        for p in [Lexicon.PROG_VERT, Lexicon.PROG_FRAG]:
+            variables.pop(p, None)
+        return super().run(ident, **variables)
 
 class GLSLNodeDynamic(GLSLNodeBase):
 

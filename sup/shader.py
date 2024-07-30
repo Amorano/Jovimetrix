@@ -49,7 +49,7 @@ PTYPE = {
 
 RE_VARIABLE = re.compile(r"uniform\s+(\w+)\s+(\w+);(?:\s*\/\/\s*([0-9.,\s]*))?\s*(?:;\s*([0-9.-]+))?\s*(?:;\s*([0-9.-]+))?\s*(?:;\s*([0-9.-]+))?\s*(?:\|\s*(.*))?$", re.MULTILINE)
 
-RE_SHADER_META = re.compile(r"\/\/\s?([A-Za-z\_]{3,}):\s?([A-Za-z\_\s]+)$", re.MULTILINE)
+RE_SHADER_META = re.compile(r"\/{2}\s?([A-Za-z_]{3,}):\s?([A-Za-z_0-9\s\-()[\]]+)$", re.MULTILINE)
 
 # =============================================================================
 

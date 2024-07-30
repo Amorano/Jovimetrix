@@ -7,7 +7,7 @@
 import { app } from "../../../scripts/app.js"
 import { nodeFitHeight } from '../util/util_node.js'
 import { widgetHide, widgetShow } from '../util/util_widget.js'
-import { hook_widget_type } from '../util/util_jov.js'
+import { widgetTypeHook } from '../util/util_jov.js'
 
 const _id = "SWIZZLE (JOV) 😵"
 
@@ -30,7 +30,7 @@ app.registerExtension({
             const swap_z = this.widgets.find(w => w.name === 'SWAP Z');
             const swap_w = this.widgets.find(w => w.name === 'SWAP W');
 
-            hook_widget_type(this, '❓', 0)
+            widgetTypeHook(this, '❓', 0)
 
             const widgets = [
                 [x, swap_x],
