@@ -87,7 +87,9 @@ JOV_INTERNAL = os.getenv("JOV_INTERNAL", 'false').strip().lower() in ('true', '1
 JOV_INTERNAL_DOC = os.getenv("JOV_INTERNAL_DOC", str(ROOT / "_doc"))
 
 # any/all documentation auto-made on request
-DOCUMENTATION = {}
+DOCUMENTATION = {
+    'jovimetrix' : {}
+}
 
 # maximum items to show in help for combo list items
 JOV_LIST_MAX = 25
@@ -477,11 +479,11 @@ def match_combo(lst: List[Any] | Tuple[Any]) -> str:
         return f"{types_matcher.get(type(lst[0]).__name__, 'STRING')}"
     return "STRING"
 
-def get_node_info(node_info: Dict[str, Any]) -> Dict[str, Any]:
+def get_node_info(node_cls: object) -> Dict[str, Any]:
     """Collects available information from node class to use in the pipeline."""
-    node_class = node_info["class"]
+
     input_parameters, output_parameters = {}, {}
-    for k, node_param_meta in node_class.INPUT_TYPES().items():
+    for k, node_param_meta in node_cls.INPUT_TYPES().items():
         if k in ["required", "optional"]:
             input_parameters[k] = {}
             for param_key, param_meta in node_param_meta.items():
@@ -525,24 +527,24 @@ def get_node_info(node_info: Dict[str, Any]) -> Dict[str, Any]:
                     pass
 
     return_types = [
-        match_combo(x) if isinstance(x, list) or isinstance(x, tuple) else x for x in node_class.RETURN_TYPES
+        match_combo(x) if isinstance(x, list) or isinstance(x, tuple) else x for x in node_cls.RETURN_TYPES
     ]
-    return_names = getattr(node_class, "RETURN_NAMES", [t.lower() for t in return_types])
+    return_names = getattr(node_cls, "RETURN_NAMES", [t.lower() for t in return_types])
     for t, n in zip(return_types, return_names):
         output_parameters[n] = ', '.join([x.strip() for x in t.split(',')])
     return {
-        "class": repr(node_class).split("'")[1],
+        "class": repr(node_cls).split("'")[1],
         "input_parameters": collapse_repeating_parameters(input_parameters),
         "output_parameters": output_parameters,
-        "display_name": node_info["display_name"],
-        "output_node": str(getattr(node_class, "OUTPUT_NODE", False)),
-        "category": str(getattr(node_class, "CATEGORY", "")),
-        "documentation": str(getattr(node_class, "DESCRIPTION", "")),
+        "name": str(getattr(node_cls, "NAME")),
+        "output_node": str(getattr(node_cls, "OUTPUT_NODE", False)),
+        "category": str(getattr(node_cls, "CATEGORY", "")),
+        "documentation": str(getattr(node_cls, "DESCRIPTION", "")),
     }
 
-def json2markdown(json_dict) -> str:
+def json2markdown(json_dict: dict) -> str:
     """Example of json to markdown converter. You are welcome to change formatting per specific request."""
-    name = json_dict['display_name']
+    name = json_dict['name']
     boop = name.split('(JOV)')[0].strip()
     boop2 = boop.replace(" ", "%20")
     root1 = f"https://github.com/Amorano/Jovimetrix-examples/blob/master/node/{boop2}/{boop2}.md"
@@ -597,9 +599,9 @@ def json2markdown(json_dict) -> str:
     ret += "\noriginal help system powered by [MelMass](https://github.com/melMass) & the [comfy_mtb](https://github.com/melMass/comfy_mtb) project"
     return ret
 
-def json2html(json_dict) -> str:
+def json2html(json_dict: dict) -> str:
     """Convert JSON to HTML using templates for all HTML elements."""
-    name = json_dict['display_name']
+    name = json_dict['name']
     boop = name.split(' (JOV)')[0].strip()
     boop2 = boop.replace(" ", "%20")
     root1 = f"https://github.com/Amorano/Jovimetrix-examples/blob/master/node/{boop2}/{boop2}.md"
@@ -754,40 +756,61 @@ try:
 
     @PromptServer.instance.routes.get("/jovimetrix/doc")
     async def jovimetrix_doc(request) -> Any:
-        data = {}
-        for k, v in NODE_CLASS_MAPPINGS.items():
+        for k in NODE_CLASS_MAPPINGS.keys():
+            data = get_node_info(NODE_CLASS_MAPPINGS[k])
+            data['.html'] = json2html(data)
+            data['.md'] = json2markdown(data)
+            DOCUMENTATION['jovimetrix'][k] = data
+
             node = NODE_DISPLAY_NAME_MAPPINGS[k]
-            if node.endswith('🧙🏽‍♀️'):
-                continue
+            fname = node.split(" (JOV)")[0]
+            path = Path(JOV_INTERNAL_DOC.replace("{name}", fname))
+            path.mkdir(parents=True, exist_ok=True)
 
-            if not node.endswith('🧙🏽‍♀️') and DOCUMENTATION.get(node, None) is None:
-                ret = {"class": NODE_CLASS_MAPPINGS[node], "display_name": node}
-                data = get_node_info(ret)
-                DOCUMENTATION[node] = json2html(data)
-                data[k]['.html'] = DOCUMENTATION[node]
-                data[k]['.md'] = json2markdown(data[k])
+            if not JOV_INTERNAL:
+                with open(str(path / f"{fname}.md"), "w", encoding='utf-8') as f:
+                    f.write(data['.md'])
 
-                fname = node.split(" (JOV)")[0]
-                path = Path(JOV_INTERNAL_DOC.replace("{name}", fname))
-                path.mkdir(parents=True, exist_ok=True)
+                with open(str(path / f"{fname}.html"), "w", encoding='utf-8') as f:
+                    f.write(data['.html'])
 
-                if not JOV_INTERNAL:
-                    with open(str(path / f"{fname}.md"), "w", encoding='utf-8') as f:
-                        f.write(data[k]['.md'])
+        return web.json_response(DOCUMENTATION)
 
-                    with open(str(path / f"{fname}.html"), "w", encoding='utf-8') as f:
-                        f.write(html)
-
-        return web.json_response(data)
-
-    @PromptServer.instance.routes.get("/jovimetrix/doc/{node}")
+    @PromptServer.instance.routes.get("/jovimetrix/doc/{repo}/{node}")
     async def jovimetrix_doc_node(request) -> Any:
-        node = request.match_info.get('node')
-        docs = f"unknown node: {node}"
-        if not node.endswith('🧙🏽‍♀️') and DOCUMENTATION.get(node, None) is None:
-            ret = {"class": NODE_CLASS_MAPPINGS[node], "display_name": node}
-            data = get_node_info(ret)
-            docs = DOCUMENTATION[node] = json2html(data)
+        repo_name = request.match_info.get('repo')
+        node_name = request.match_info.get('node')
+        docs = f"unknown: {repo_name}.{node_name}"
+        if (repo := DOCUMENTATION.get(repo_name.lower(), None)) is None:
+            return web.Response(text=docs, content_type='text/html')
+
+        if (node := repo.get(node_name, None)) is not None:
+            if (docs := node.get('.html', None)) is not None:
+                return web.Response(text=docs, content_type='text/html')
+
+        if repo_name.lower() == 'jovimetrix':
+            docs = get_node_info(NODE_CLASS_MAPPINGS[node_name])
+            docs = json2html(docs)
+            DOCUMENTATION[repo_name.lower()].update({ node_name: { '.html': docs } })
+            return web.Response(text=docs, content_type='text/html')
+        try:
+            # check all the imports for the repository and object:
+            # docs = <repo>.<node>
+            # If not found in the main module, search in submodules
+            for name, obj in sys.modules.items():
+                print(name, obj)
+                if not name.startswith(f"{repo_name}.") or not hasattr(obj, node_name):
+                    continue
+                node_class = getattr(obj, node_name)
+                docs = get_node_info(node_class)
+                docs = json2html(docs)
+                DOCUMENTATION[repo_name.lower()].update({ node_name: { '.html': docs } })
+                break
+
+        except Exception as e:
+            docs = str(e)
+            logger.exception(docs)
+
         return web.Response(text=docs, content_type='text/html')
 
 except Exception as e:

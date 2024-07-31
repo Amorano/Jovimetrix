@@ -92,17 +92,16 @@ Capture frames from various sources such as URLs, cameras, monitors, windows, or
                 Lexicon.MONITOR: (monitor, {"default": monitor[0], "choice": "list of system monitor devices"}),
                 Lexicon.WINDOW: (window, {"default": window_default, "choice": "list of available system windows"}),
                 Lexicon.DPI: ("BOOLEAN", {"default": True}),
-                Lexicon.BBOX: ("VEC4", {"default": (0, 0, 1, 1), "step": 0.01, "precision": 4, "round": 0.00001, "label": [Lexicon.TOP, Lexicon.LEFT, Lexicon.BOTTOM, Lexicon.RIGHT]}),
+                Lexicon.BBOX: ("VEC4", {"default": (0, 0, 1, 1), "label": [Lexicon.TOP, Lexicon.LEFT, Lexicon.BOTTOM, Lexicon.RIGHT]}),
                 Lexicon.FPS: ("INT", {"min": 1, "max": 60, "default": 30}),
                 Lexicon.WAIT: ("BOOLEAN", {"default": False}),
-                Lexicon.BATCH: ("VEC2", {"default": (1, 30), "step": 1, "label": ["COUNT", "FPS"], "tooltip": "Number of frames wanted and the FPS"}),
+                Lexicon.BATCH: ("VEC2INT", {"default": (1, 30), "label": ["COUNT", "FPS"], "tooltip": "Number of frames wanted and the FPS"}),
                 Lexicon.ORIENT: (EnumCanvasOrientation._member_names_, {"default": EnumCanvasOrientation.NORMAL.name}),
-                Lexicon.ZOOM: ("FLOAT", {"min": 0, "max": 1, "step": 0.005, "default": 0., "precision":4}),
+                Lexicon.ZOOM: ("FLOAT", {"min": 0, "max": 1, "step": 0.005, "default": 0.}),
                 Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
-                Lexicon.WH: ("VEC2", {"default": (512, 512), "min":MIN_IMAGE_SIZE,
-                                    "step": 1, "label": [Lexicon.W, Lexicon.H]}),
+                Lexicon.WH: ("VEC2INT", {"default": (512, 512), "min":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
-                Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
+                Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True})
             }
         })
         return Lexicon._parse(d, cls)
@@ -275,10 +274,9 @@ Sends frames to a specified route, typically for live streaming or recording pur
                 Lexicon.PIXEL: (JOV_TYPE_IMAGE, {}),
                 Lexicon.ROUTE: ("STRING", {"default": "/stream"}),
                 Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
-                Lexicon.WH: ("VEC2", {"default": (512, 512), "min":MIN_IMAGE_SIZE,
-                                    "step": 1, "label": [Lexicon.W, Lexicon.H]}),
+                Lexicon.WH: ("VEC2INT", {"default": (512, 512), "min":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
-                Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 0), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
+                Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 0), "rgb": True})
             }
         })
         return Lexicon._parse(d, cls)
@@ -348,10 +346,9 @@ Sends frames to a specified Spout receiver application for real-time video shari
                     Lexicon.ROUTE: ("STRING", {"default": "Spout Sender"}),
                     Lexicon.FPS: ("INT", {"min": 0, "max": 60, "default": 30, "tooltip": "@@@ NOT USED @@@"}),
                     Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
-                    Lexicon.WH: ("VEC2", {"default": (512, 512), "min":MIN_IMAGE_SIZE,
-                                        "step": 1, "label": [Lexicon.W, Lexicon.H]}),
+                    Lexicon.WH: ("VEC2INT", {"default": (512, 512), "min":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
                     Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
-                    Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
+                    Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
                 }
             })
             return Lexicon._parse(d, cls)

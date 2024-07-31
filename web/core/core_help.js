@@ -45,7 +45,6 @@ async function load_help(name, custom_data) {
     }
 
     const url = `${JOV_HELP_URL}/${name}`;
-
     // Check if data is already cached
     const result = fetch(url,
         { cache: "no-store" }
@@ -58,12 +57,16 @@ async function load_help(name, custom_data) {
         })
         .then(data => {
             // Cache the fetched data
-            const docElement = `<div>
-                <div class='jov-docs-content-wrapper'>
-                    ${data}
-                </div>
-            </div>`;
-            CACHE_DOCUMENTATION[name] = docElement;
+            if (data.startsWith("unknown")) {
+                return `
+                    <div align="center">
+                        <h3>${data}</h3>
+                        <h4>SELECT A NODE TO SEE HELP</h4>
+                        <h4>JOVIMETRIX 🔺🟩🔵 NODES ALL HAVE HELP</h4>
+                    </div>
+                `;
+            };
+            CACHE_DOCUMENTATION[name] = data;
             return CACHE_DOCUMENTATION[name];
         })
         .catch(error => {
@@ -83,7 +86,11 @@ app.registerExtension({
                 if (selectedNodes && Object.keys(selectedNodes).length > 0) {
                     const firstNodeKey = Object.keys(selectedNodes)[0];
                     const firstNode = selectedNodes[firstNodeKey];
-                    const event = new CustomEvent('jovimetrixHelpRequested', { detail: firstNode.title });
+                    const data = {
+                        class: firstNode.getNickname() || "jovimetrix",
+                        name: firstNode.type
+                    }
+                    const event = new CustomEvent('jovimetrixHelpRequested', { detail: data });
                     jovimetrixEvents.dispatchEvent(event);
                 }
                 return me;
@@ -156,16 +163,15 @@ app.registerExtension({
 
                 const x = this.size[0] - iconSize - iconMargin
                 if (this.show_doc && docElement === null) {
-                    docElement = document.createElement('div');
-                    docElement.classList.add('jov-docs');
+                    docElement = document.createElement('div')
+                    docElement.classList.add('jov-panel-doc-popup');
 
                     const widget_tooltip = (this.widgets || [])
                         .find(widget => widget.type === 'JTOOLTIP');
 
                     if (widget_tooltip) {
                         const tips = widget_tooltip.options.default || {};
-                        const url_name = tips['*'];
-                        console.info(url_name)
+                        const url_name = `jovimetrix/${tips['*']}`;
                         docElement.innerHTML = await load_help(url_name);
                     }
 
@@ -325,9 +331,12 @@ app.registerExtension({
                         this.helpClose.abort()
                     }
                     // Dispatch a custom event with the node name
-                    const event = new CustomEvent('jovimetrixHelpRequested', { detail: this.type });
+                    const data = {
+                        class: this.getNickname() || "jovimetrix",
+                        name: this.type
+                    }
+                    const event = new CustomEvent('jovimetrixHelpRequested', { detail: data });
                     jovimetrixEvents.dispatchEvent(event);
-
                     return true;
                 }
                 return r;
@@ -336,12 +345,23 @@ app.registerExtension({
 	}
 })
 
-const HELP_PANEL_CONTENT = `
-# JOVIMETRIX 🔺🟩🔵
-## CLICK A JOV NODE TO SEE THE HELP
+let HELP_PANEL_CONTENT = `
+<div align="center">
+    <h4>SELECT A NODE TO SEE HELP</h4>
+    <h4>JOVIMETRIX 🔺🟩🔵 NODES ALL HAVE HELP</h4>
+</div>
 `;
 
 if(new_menu != "Disabled" && app.extensionManager) {
+    let sidebarElement;
+
+    const updateContent = async (node, data) => {
+        HELP_PANEL_CONTENT = await load_help(node, data);
+        if (sidebarElement) {
+            sidebarElement.innerHTML = HELP_PANEL_CONTENT;
+        }
+    };
+
     app.extensionManager.registerSidebarTab({
         id: "jovimetrix.sidebar.help",
         icon: "pi pi-money-bill",
@@ -349,21 +369,15 @@ if(new_menu != "Disabled" && app.extensionManager) {
         tooltip: "The Akashic records for all things JOVIMETRIX 🔺🟩🔵",
         type: "custom",
         render: async (el) => {
+            sidebarElement = el;
             el.innerHTML = "<div>Loading...</div>";
-
-            // Function to update content
-            const updateContent = async (node, data) => {
-                el.innerHTML = documentationConverter.makeHtml("<div>Loading Node Help for " + node + "</div>");
-                el.innerHTML = await load_help(node, data);
-            };
-
-            // Initial load
             await updateContent('_', HELP_PANEL_CONTENT);
-
-            // Listen for the custom event
-            jovimetrixEvents.addEventListener('jovimetrixHelpRequested', async (event) => {
-                await updateContent(event.detail);
-            });
         }
+    });
+
+    // Listen for the custom event
+    jovimetrixEvents.addEventListener('jovimetrixHelpRequested', async (event) => {
+        const node = `${event.detail.class}/${event.detail.name}`;
+        await updateContent(node);
     });
 }

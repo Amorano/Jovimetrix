@@ -91,11 +91,9 @@ class GLSLNodeBase(JOVImageNode):
         d.update({
             "optional": {
                 Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
-                Lexicon.WH: ("VEC2", {"default": (512, 512), "min":MIN_IMAGE_SIZE,
-                                    "step": 1, "label": [Lexicon.W, Lexicon.H]}),
+                Lexicon.WH: ("VEC2INT", {"default": (512, 512), "min":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
-                Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1,
-                                         "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
+                Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True})
             }
         })
         return Lexicon._parse(d, cls)
@@ -166,9 +164,9 @@ Execute custom GLSL (OpenGL Shading Language) fragment shaders to generate image
         d = super().INPUT_TYPES()
         opts = d.get('optional', {})
         opts.update({
-            Lexicon.BATCH: ("INT", {"default": 0, "step": 1, "min": 0, "max": 1048576}),
-            Lexicon.FPS: ("INT", {"default": 24, "step": 1, "min": 1, "max": 120}),
-            Lexicon.TIME: ("FLOAT", {"default": 0, "step": 0.001, "min": 0, "precision": 4}),
+            Lexicon.BATCH: ("INT", {"default": 0, "min": 0, "max": 1048576}),
+            Lexicon.FPS: ("INT", {"default": 24, "min": 1, "max": 120}),
+            Lexicon.TIME: ("FLOAT", {"default": 0, "step": 0.0001, "min": 0}),
             Lexicon.PROG_VERT: ("STRING", {"default": GLSLShader.PROG_VERTEX, "multiline": True, "dynamicPrompts": False}),
             Lexicon.PROG_FRAG: ("STRING", {"default": GLSLShader.PROG_FRAGMENT, "multiline": True, "dynamicPrompts": False}),
         })
@@ -213,7 +211,7 @@ class GLSLNodeDynamic(GLSLNodeBase):
                     case EnumConvertType.INT | EnumConvertType.VEC2INT | EnumConvertType.VEC3INT | EnumConvertType.VEC4INT:
                         entry = (typ.name, {"default": d, "min": val_min, "max":val_max, "step": val_step, "tooltip": tooltip},)
                     case EnumConvertType.FLOAT | EnumConvertType.VEC2 | EnumConvertType.VEC3 | EnumConvertType.VEC4:
-                        entry = (typ.name, {"default": d, "min": val_min, "max":val_max, "step": val_step, "precision": 6, "round": 0.0001, "tooltip": tooltip},)
+                        entry = (typ.name, {"default": d, "min": val_min, "max":val_max, "step": val_step, "tooltip": tooltip},)
                     case EnumConvertType.IMAGE:
                         entry = (typ.name, {"default": d, "tooltip": tooltip},)
                 data[name] = entry

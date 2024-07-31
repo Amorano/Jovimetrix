@@ -11,47 +11,6 @@ import { colorContrast } from '../util/util.js'
 import * as util_config from '../util/util_config.js'
 import '../extern/jsColorPicker.js'
 
-const createColorInput = (value, name, color) => $el("input.jov-color", { value, name, color });
-
-const templateColorBlock = ({ name, background, title, body }) => (
-    $el("tr", { style: { background } }, [
-        $el("td", { textContent: name }),
-        $el("td", [createColorInput("T", `${name}.title`, title)]),
-        $el("td", [createColorInput("B", `${name}.body`, body)])
-    ])
-);
-
-const templateColorHeader = ({ name, background, title, body }) => (
-    $el("tr", [
-        $el("td.jov-config-color-header", { style: { background }, textContent: name }),
-        $el("td", [createColorInput("T", `${name}.title`, title)]),
-        $el("td", [createColorInput("B", `${name}.body`, body)])
-    ])
-);
-
-const templateColorRegex = ({ idx, name, background, title, body }) => (
-    $el("tr", [
-        $el("td", { style: { background } }, [
-            $el("input", {
-                name: `regex.${idx}`,
-                value: name,
-                onchange: (e) => updateRegexColor(idx, "regex", e.target.value)
-            })
-        ]),
-        $el("td", [createColorInput("T", `regex.${idx}.title`, title)]),
-        $el("td", [createColorInput("B", `regex.${idx}.body`, body)])
-    ])
-);
-
-const updateRegexColor = (index, key, value) => {
-    util_config.CONFIG_REGEX[index][key] = value;
-    apiPost("/jovimetrix/config", {
-        id: `${util_config.USER}.color.regex`,
-        v: util_config.CONFIG_REGEX
-    });
-    nodeColorAll();
-};
-
 // gets the CONFIG entry for name
 function nodeColorGet(node) {
     const find_me = node.type || node.name;
@@ -141,6 +100,80 @@ class JovimetrixConfigDialog extends ComfyDialog {
         this.element.addEventListener('mousedown', this.startDrag);
     }
 
+    createColorInput = (value, name, color) => $el("input.jov-color", { value, name, color });
+
+    templateColorBlock = (data) => [
+        $el("tr", { style: {
+                background: data.background
+            }}, [
+                $el("td", {
+                    textContent: data.name
+                }),
+                $el("td", [
+                    $el("input.jov-color", {
+                        value: "T",
+                        name: data.name + '.title',
+                        color: data.title
+                    })
+                ]),
+                $el("td", [
+                    $el("input.jov-color", {
+                        value: "B",
+                        name: data.name + '.body',
+                        color: data.body
+                    })
+                ])
+            ])
+    ]
+
+    templateColorHeader = (data) => [
+        $el("tr", [
+            $el("td.jov-config-color-header", {
+                style: {
+                    background: data.background
+                },
+                textContent: data.name
+            }),
+            $el("td", [
+                $el("input.jov-color", {
+                    value: "T",
+                    name: data.name + '.title',
+                    color: data.title
+                })
+            ]),
+            $el("td", [
+                $el("input.jov-color", {
+                    value: "B",
+                    name: data.name + '.body',
+                    color: data.body
+                })
+            ])
+        ])
+    ]
+
+    templateColorRegex = ({ idx, name, background, title, body }) => (
+        $el("tr", [
+            $el("td", { style: { background } }, [
+                $el("input", {
+                    name: `regex.${idx}`,
+                    value: name,
+                    onchange: (e) => this.updateRegexColor(idx, "regex", e.target.value)
+                })
+            ]),
+            $el("td", [this.createColorInput("T", `regex.${idx}.title`, title)]),
+            $el("td", [this.createColorInput("B", `regex.${idx}.body`, body)])
+        ])
+    );
+
+    updateRegexColor = (index, key, value) => {
+        util_config.CONFIG_REGEX[index][key] = value;
+        apiPost("/jovimetrix/config", {
+            id: `${util_config.USER}.color.regex`,
+            v: util_config.CONFIG_REGEX
+        });
+        nodeColorAll();
+    };
+
     startDrag = (e) => {
         const { clientX, clientY } = e;
         const { offsetLeft, offsetTop } = this.element;
@@ -165,11 +198,10 @@ class JovimetrixConfigDialog extends ComfyDialog {
     }
 
     createColorPalettes() {
-        const colorTable = $el("thead");
-        const header = $el("div.jov-config-column", [$el("table", [colorTable])]);
+        const colorTable = $el("table");
 
         util_config.CONFIG_COLOR.regex?.forEach((entry, idx) => {
-            colorTable.appendChild($el("tbody", templateColorRegex({
+            colorTable.appendChild($el("tbody", this.templateColorRegex({
                 idx,
                 name: entry.regex,
                 title: entry.title,
@@ -195,7 +227,7 @@ class JovimetrixConfigDialog extends ComfyDialog {
             const meow = cat.split('/')[0];
             if (!category.includes(meow)) {
                 backgroundIndex = (backgroundIndex + 1) % 2;
-                colorTable.appendChild($el("tbody", templateColorHeader({
+                colorTable.appendChild($el("tbody", this.templateColorHeader({
                     name: meow,
                     background: LiteGraph.WIDGET_BGCOLOR,
                     ...util_config.CONFIG_THEME[meow]
@@ -205,7 +237,7 @@ class JovimetrixConfigDialog extends ComfyDialog {
 
             if (!category.includes(cat)) {
                 backgroundIndex = (backgroundIndex + 1) % 2;
-                colorTable.appendChild($el("tbody", templateColorHeader({
+                colorTable.appendChild($el("tbody", this.templateColorHeader({
                     name: cat,
                     background: backgroundTitles[backgroundIndex] || LiteGraph.WIDGET_BGCOLOR,
                     ...util_config.CONFIG_THEME[cat]
@@ -213,14 +245,14 @@ class JovimetrixConfigDialog extends ComfyDialog {
                 category.push(cat);
             }
 
-            colorTable.appendChild($el("tbody", templateColorBlock({
+            colorTable.appendChild($el("tbody", this.templateColorBlock({
                 name,
                 ...util_config.CONFIG_THEME[name],
                 background: backgrounds[backgroundIndex] || LiteGraph.NODE_DEFAULT_COLOR
             })));
         });
 
-        return [header];
+        return [colorTable];
     }
 
     createTitle = () => [
@@ -239,7 +271,6 @@ class JovimetrixConfigDialog extends ComfyDialog {
                 $el("input", {
                     type: "checkbox",
                     checked: util_config.CONFIG_USER.color.overwrite,
-                    style: { color: "white" },
                     onclick: (cb) => {
                         util_config.CONFIG_USER.color.overwrite = cb.target.checked;
                         apiPost('/jovimetrix/config', {
@@ -254,7 +285,7 @@ class JovimetrixConfigDialog extends ComfyDialog {
     }
 
     createContent() {
-        return $el("div.comfy-modal-content", {
+        return $el("div.jov-panel-color", {
             style: { width: '100%', height: '100%' }
         }, [
             this.createTitleElement(),
@@ -277,6 +308,7 @@ class JovimetrixConfigDialog extends ComfyDialog {
         this.element.style.display = this.visible ? "block" : "";
     }
 }
+const DIALOG_COLOR = new JovimetrixConfigDialog();
 
 app.registerExtension({
     name: "jovimetrix.color",
@@ -313,9 +345,8 @@ app.registerExtension({
 
         // Old Style Popup Node Color Changer
         if (app.menu?.element.style.display || !app.menu?.settingsGroup) {
-            this.config_dialog = new JovimetrixConfigDialog();
             showButton.onclick = () => {
-                this.config_dialog.show()
+                DIALOG_COLOR.show()
             }
 
             const firstKid = document.querySelector(".comfy-settings-btn")
@@ -323,7 +354,7 @@ app.registerExtension({
             parent.insertBefore(showButton, firstKid.nextSibling);
         }
         // New Style Panel Node Color Changer
-        else if (!app.menu?.element.style.display && app.menu?.settingsGroup) {
+        else if (!app.menu?.element.style.display && app.menu?.settingsGroup && !app.extensionManager) {
             const showMenuButton = new (await import("../../../scripts/ui/components/button.js")).ComfyButton({
                 icon: "palette-outline",
                 action: () => showButton.click(),
@@ -333,53 +364,55 @@ app.registerExtension({
             app.menu.settingsGroup.append(showMenuButton);
         }
 
-        jsColorPicker('input.jov-color', {
-            readOnly: true,
-            size: 2,
-            multipleInstances: false,
-            appendTo: document,
-            noAlpha: false,
-            init: function(elm, rgb) {
-                elm.style.backgroundColor = elm.color || LiteGraph.WIDGET_BGCOLOR;
-                elm.style.color = rgb.RGBLuminance > 0.22 ? '#222' : '#ddd'
-            },
-            convertCallback: function(data) {
-                var AHEX = this.patch.attributes.color
-                if (AHEX === undefined) return
-                var name = this.patch.attributes.name.value
-                const parts = name.split('.')
-                const part = parts.slice(-1)[0]
-                name = parts[0]
-                let api_packet = {}
-                if (parts.length > 2) {
-                    const idx = parts[1];
-                    data = util_config.CONFIG_REGEX[idx];
-                    data[part] = AHEX.value
-                    util_config.CONFIG_REGEX[idx] = data
-                    api_packet = {
-                        id: util_config.USER + '.color.regex',
-                        v: util_config.CONFIG_REGEX
-                    }
-                } else {
-                    if (util_config.CONFIG_THEME[name] === undefined) {
-                        util_config.CONFIG_THEME[name] = {}
-                    }
-                    util_config.CONFIG_THEME[name][part] = AHEX.value
-                    api_packet = {
-                        id: util_config.USER + '.color.theme.' + name,
-                        v: util_config.CONFIG_THEME[name]
-                    }
-                }
-                apiPost("/jovimetrix/config", api_packet);
-                if (util_config.CONFIG_COLOR.overwrite) {
-                    nodeColorAll();
-                }
-            }
-        })
-
         if (util_config.CONFIG_USER.color.overwrite) {
             nodeColorAll();
         }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            jsColorPicker('input.jov-color', {
+                readOnly: true,
+                size: 2,
+                multipleInstances: false,
+                appendTo: document,
+                noAlpha: false,
+                init: function(elm, rgb) {
+                    elm.style.backgroundColor = elm.color || LiteGraph.WIDGET_BGCOLOR;
+                    elm.style.color = rgb.RGBLuminance > 0.22 ? '#222' : '#ddd'
+                },
+                convertCallback: function(data) {
+                    var AHEX = this.patch.attributes.color
+                    if (AHEX === undefined) return
+                    var name = this.patch.attributes.name.value
+                    const parts = name.split('.')
+                    const part = parts.slice(-1)[0]
+                    name = parts[0]
+                    let api_packet = {}
+                    if (parts.length > 2) {
+                        const idx = parts[1];
+                        data = util_config.CONFIG_REGEX[idx];
+                        data[part] = AHEX.value
+                        util_config.CONFIG_REGEX[idx] = data
+                        api_packet = {
+                            id: util_config.USER + '.color.regex',
+                            v: util_config.CONFIG_REGEX
+                        }
+                    } else {
+                        if (util_config.CONFIG_THEME[name] === undefined) {
+                            util_config.CONFIG_THEME[name] = {}
+                        }
+                        util_config.CONFIG_THEME[name][part] = AHEX.value
+                        api_packet = {
+                            id: util_config.USER + '.color.theme.' + name,
+                            v: util_config.CONFIG_THEME[name]
+                        }
+                    }
+                    apiPost("/jovimetrix/config", api_packet);
+                    if (util_config.CONFIG_COLOR.overwrite) {
+                        nodeColorAll();
+                    }
+                }
+            });
+        });
     },
     async beforeRegisterNodeDef(nodeType) {
         const onNodeCreated = nodeType.prototype.onNodeCreated;
@@ -392,3 +425,294 @@ app.registerExtension({
         }
     }
 })
+
+const new_menu = app.ui.settings.getSettingValue("Comfy.UseNewMenu", "Disabled");
+
+class JovimetrixPanelColorize {
+    constructor() {
+        this.headerTitle = null;
+        this.overwrite = false;
+        this.visible = false;
+        this.element = $el("div.comfy-modal", { id:'jov-manager-dialog', parent: document.body }, [ this.createContent() ]);
+
+        if (util_config.CONFIG_USER.color.overwrite) {
+            nodeColorAll();
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            jsColorPicker('.jov-panel-color-input', {
+                readOnly: true,
+                size: 2,
+                multipleInstances: false,
+                appendTo: document,
+                noAlpha: false,
+                init: function(elm, rgb) {
+                    elm.style.backgroundColor = elm.color || LiteGraph.WIDGET_BGCOLOR;
+                    elm.style.color = rgb.RGBLuminance > 0.22 ? '#222' : '#ddd'
+                },
+                convertCallback: function(data) {
+                    var AHEX = this.patch.attributes.color
+                    if (AHEX === undefined) return
+                    var name = this.patch.attributes.name.value
+                    const parts = name.split('.')
+                    const part = parts.slice(-1)[0]
+                    name = parts[0]
+                    let api_packet = {}
+                    if (parts.length > 2) {
+                        const idx = parts[1];
+                        data = util_config.CONFIG_REGEX[idx];
+                        data[part] = AHEX.value
+                        util_config.CONFIG_REGEX[idx] = data
+                        api_packet = {
+                            id: util_config.USER + '.color.regex',
+                            v: util_config.CONFIG_REGEX
+                        }
+                    } else {
+                        if (util_config.CONFIG_THEME[name] === undefined) {
+                            util_config.CONFIG_THEME[name] = {}
+                        }
+                        util_config.CONFIG_THEME[name][part] = AHEX.value
+                        api_packet = {
+                            id: util_config.USER + '.color.theme.' + name,
+                            v: util_config.CONFIG_THEME[name]
+                        }
+                    }
+                    apiPost("/jovimetrix/config", api_packet);
+                    if (util_config.CONFIG_COLOR.overwrite) {
+                        nodeColorAll();
+                    }
+                }
+            })
+        })
+    }
+
+    updateRegexColor = (index, key, value) => {
+        util_config.CONFIG_REGEX[index][key] = value
+        let api_packet = {
+            id: util_config.USER + '.color.regex',
+            v: util_config.CONFIG_REGEX
+        }
+        apiPost("/jovimetrix/config", api_packet)
+        nodeColorAll()
+    };
+
+    templateColorRow = (data, type = 'block') => {
+        const isRegex = type === 'regex';
+        const isHeader = type === 'header';
+
+        const createNameCell = () => {
+            if (isRegex) {
+                return $el("td", {
+                    style: { background: data.background }
+                }, [
+                    $el("input", {
+                        name: `regex.${data.idx}`,
+                        value: data.name,
+                        onchange: function() {
+                            this.updateRegexColor(data.idx, "regex", this.value);
+                        }
+                    })
+                ]);
+            } else {
+                return $el(isHeader ? "td.jov-config-color-header" : "td", {
+                    style: isHeader ? { background: data.background } : {},
+                    textContent: data.name
+                });
+            }
+        };
+
+        const createColorInput = (suffix, value) => {
+            return $el("td", [
+                $el("input.jov-panel-color-input", {
+                    value: value,
+                    name: isRegex ? `regex.${data.idx}.${suffix}` : `${data.name}.${suffix}`,
+                    color: data[suffix]
+                })
+            ]);
+        };
+
+        return [
+            $el("tr", {
+                style: !isHeader ? { background: data.background } : {}
+            }, [
+                createNameCell(),
+                createColorInput('title', 'T'),
+                createColorInput('body', 'B')
+            ])
+        ];
+    };
+
+    createColorPalettes() {
+        var data = {}
+        let colorTable = null
+        const header =
+            $el("table.flexible-table", [
+                colorTable = $el("thead", [
+                ]),
+            ])
+
+        // rule-sets first
+        var idx = 0
+        const rules = util_config.CONFIG_COLOR.regex || []
+        rules.forEach(entry => {
+            const data = {
+                idx: idx,
+                name: entry.regex,
+                title: entry.title, // || LiteGraph.NODE_TITLE_COLOR,
+                body: entry.body, // || LiteGraph.NODE_DEFAULT_COLOR,
+                background: LiteGraph.WIDGET_BGCOLOR
+            }
+            const row = this.templateColorRow(data, 'regex');
+            colorTable.appendChild($el("tbody", row))
+            idx += 1
+        })
+
+        // get categories to generate on the fly
+        const category = []
+        const all_nodes = Object.entries(util_config?.NODE_LIST ? util_config.NODE_LIST : []);
+        all_nodes.sort((a, b) => {
+            const categoryComparison = a[1].category.toLowerCase().localeCompare(b[1].category.toLowerCase());
+            // Move items with empty category or starting with underscore to the end
+            if (a[1].category === "" || a[1].category.startsWith("_")) {
+                return 1;
+            } else if (b[1].category === "" || b[1].category.startsWith("_")) {
+                return -1;
+            } else {
+                return categoryComparison;
+            }
+        });
+
+        // groups + nodes
+        const alts = util_config.CONFIG_COLOR
+        const background = [alts.backA, alts.backB]
+        const background_title = [alts.titleA, alts.titleB]
+        let background_index = 0
+        all_nodes.forEach(entry => {
+            var name = entry[0]
+            var cat = entry[1].category
+            var meow = cat.split('/')[0]
+
+            if (!category.includes(meow))
+            {
+                // major category first?
+                background_index = (background_index + 1) % 2
+                data = {
+                    name: meow,
+                    background: LiteGraph.WIDGET_BGCOLOR
+                }
+                if (util_config.CONFIG_THEME.hasOwnProperty(meow)) {
+                    data.title = util_config.CONFIG_THEME[meow].title
+                    data.body = util_config.CONFIG_THEME[meow].body
+                }
+                colorTable.appendChild($el("tbody", this.templateColorRow(data, 'header')))
+                category.push(meow)
+            }
+
+            if(category.includes(cat) == false) {
+                background_index = (background_index + 1) % 2
+                data = {
+                    name: cat,
+                    background: background_title[background_index] || LiteGraph.WIDGET_BGCOLOR
+                }
+                if (util_config.CONFIG_THEME.hasOwnProperty(cat)) {
+                    data.title = util_config.CONFIG_THEME[cat].title
+                    data.body = util_config.CONFIG_THEME[cat].body
+                }
+                colorTable.appendChild($el("tbody", this.templateColorRow(data, 'header')))
+                category.push(cat)
+            }
+
+            const who = util_config.CONFIG_THEME[name] || {};
+            data = {
+                name: name,
+                title: who.title,
+                body: who.body,
+                background: background[background_index] || LiteGraph.NODE_DEFAULT_COLOR
+            }
+            colorTable.appendChild($el("tbody", this.templateColorRow(data, 'block')))
+        })
+        return [header]
+	}
+
+    createTitle() {
+        const title = [
+            "COLOR CONFIGURATION",
+            "COLOR CALIBRATION",
+            "COLOR CUSTOMIZATION",
+            "CHROMA CALIBRATION",
+            "CHROMA CONFIGURATION",
+            "CHROMA CUSTOMIZATION",
+            "CHROMATIC CALIBRATION",
+            "CHROMATIC CONFIGURATION",
+            "CHROMATIC CUSTOMIZATION",
+            "HUE HOMESTEAD",
+            "PALETTE PREFERENCES",
+            "PALETTE PERSONALIZATION",
+            "PALETTE PICKER",
+            "PIGMENT PREFERENCES",
+            "PIGMENT PERSONALIZATION",
+            "PIGMENT PICKER",
+            "SPECTRUM STYLING",
+            "TINT TAILORING",
+            "TINT TWEAKING"
+        ]
+        const randomIndex = Math.floor(Math.random() * title.length)
+        return title[randomIndex]
+    }
+
+    createTitleElement() {
+        return $el("div.jov-title", [
+            this.headerTitle = $el("div.jov-title-header"),
+            $el("label", {
+                id: "jov-apply-button",
+                textContent: "FORCE NODES TO SYNCHRONIZE WITH PANEL? ",
+                style: {fontsize: "0.5em"}
+            }, [
+                $el("input", {
+                    type: "checkbox",
+                    checked: util_config.CONFIG_USER.color.overwrite,
+                    onclick: (cb) => {
+                        util_config.CONFIG_USER.color.overwrite = cb.target.checked
+                        var data = {
+                            id: util_config.USER + '.color.overwrite',
+                            v: util_config.CONFIG_USER.color.overwrite
+                        }
+                        apiPost('/jovimetrix/config', data)
+                        if (util_config.CONFIG_USER.color.overwrite) {
+                            nodeColorAll()
+                        }
+                    }
+                })
+            ]),
+        ])
+    }
+
+    createContent() {
+        const content = $el("div.jov-panel-color", [
+            this.createTitleElement(),
+            $el("div.jov-config-color", [...this.createColorPalettes()]),
+        ])
+        content.addEventListener('mousedown', this.startDrag)
+        return content
+    }
+}
+
+let PANEL_COLORIZE;
+document.addEventListener('DOMContentLoaded', function() {
+    PANEL_COLORIZE = new JovimetrixPanelColorize();
+});
+
+if(new_menu != "Disabled" && app.extensionManager) {
+    app.extensionManager.registerSidebarTab({
+        id: "jovimetrix.sidebar.colorizer",
+        icon: "pi pi-palette",
+        title: "JOVIMETRIX COLORIZER 🔺🟩🔵",
+        tooltip: "Colorize your nodes how you want; I'm not your dad.",
+        type: "custom",
+        render: async (el) => {
+            if (PANEL_COLORIZE) {
+                el.appendChild(PANEL_COLORIZE.createContent());
+            }
+        }
+    });
+}

@@ -73,35 +73,34 @@ import { local_set, local_get } from '../util/util_config.js';
                     ColorPicker.docCookies('colorPickerSize', colorPicker.color.options.currentSize);
                 } else if (action === 'modeChange') {
                     var mode = colorPicker.color.options.mode;
-
                     ColorPicker.docCookies('colorPickerMode', mode.type + '-' + mode.z);
                 }
             },
             createInstance = function(elm, config) {
                 var initConfig = {
-                        klass: window.ColorPicker,
-                        input: elm,
-                        patch: elm,
-                        isIE8: !!document.all && !document.addEventListener, // Opera???
-                        // *** animationSpeed: 200,
-                        // *** draggable: true,
-                        margin: {left: -1, top: 2},
-                        customBG: '#FFFFFF',
-                        // displayCallback: displayCallback,
-                        /* --- regular colorPicker options from this point --- */
-                        color: extractValue(elm),
-                        initStyle: 'display: none',
-                        mode: ColorPicker.docCookies('colorPickerMode') || 'hsv-h',
-                        // memoryColors: (function(colors, config) {
-                        // 	return config.noAlpha ?
-                        // 		colors.replace(/\,\d*\.*\d*\)/g, ',1)') : colors;
-                        // })($.docCookies('colorPickerMemos'), config || {}),
-                        memoryColors: ColorPicker.docCookies('colorPickerMemos' +
-                            ((config || {}).noAlpha ? 'NoAlpha' : '')),
-                        size: ColorPicker.docCookies('colorPickerSize') || 1,
-                        renderCallback: renderCallback,
-                        actionCallback: actionCallback
-                    };
+                    klass: window.ColorPicker,
+                    input: elm,
+                    patch: elm,
+                    isIE8: !!document.all && !document.addEventListener, // Opera???
+                    // *** animationSpeed: 200,
+                    // *** draggable: true,
+                    margin: {left: -1, top: 2},
+                    customBG: '#FFFFFF',
+                    // displayCallback: displayCallback,
+                    /* --- regular colorPicker options from this point --- */
+                    color: extractValue(elm),
+                    initStyle: 'display: none',
+                    mode: ColorPicker.docCookies('colorPickerMode') || 'hsv-h',
+                    // memoryColors: (function(colors, config) {
+                    // 	return config.noAlpha ?
+                    // 		colors.replace(/\,\d*\.*\d*\)/g, ',1)') : colors;
+                    // })($.docCookies('colorPickerMemos'), config || {}),
+                    memoryColors: ColorPicker.docCookies('colorPickerMemos' +
+                        ((config || {}).noAlpha ? 'NoAlpha' : '')),
+                    size: ColorPicker.docCookies('colorPickerSize') || 1,
+                    renderCallback: renderCallback,
+                    actionCallback: actionCallback
+                };
 
                 for (var n in config) {
                     initConfig[n] = config[n];
@@ -137,7 +136,8 @@ import { local_set, local_get } from '../util/util_config.js';
                         }
                         colorPickers.current = colorPickers[index];
                         appendTo.appendChild(colorPickerUI);
-                        waitTimer = setInterval(function() { // compensating late style on onload in colorPicker
+                        waitTimer = setInterval(function() {
+                            // compensating late style on onload in colorPicker
                             if (colorPickers.current.cssIsReady) {
                                 waitTimer = clearInterval(waitTimer);
                                 colorPickerUI.style.display = 'block';
@@ -174,8 +174,8 @@ import { local_set, local_get } from '../util/util_config.js';
                 elm[onOff]('focus', focusListener);
 
                 if (!colorPickers.evt || off) {
-                    colorPickers.evt = true; // prevent new eventListener for window
-
+                    // prevent new eventListener for window
+                    colorPickers.evt = true;
                     window[onOff]('mousedown', mousDownListener);
                 }
             },

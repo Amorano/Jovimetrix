@@ -145,13 +145,13 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
         d.update({
             "optional": {
                 Lexicon.BATCH_MODE: (EnumBatchMode._member_names_, {"default": EnumBatchMode.MERGE.name, "tooltip":"Select a single index, specific range, custom index list or randomized"}),
-                Lexicon.INDEX: ("INT", {"default": 0, "min": 0, "step": 1, "tooltip":"Selected list position"}),
-                Lexicon.RANGE: ("VEC3", {"default": (0, 0, 1), "min": 0, "step": 1}),
+                Lexicon.INDEX: ("INT", {"default": 0, "min": 0, "tooltip":"Selected list position"}),
+                Lexicon.RANGE: ("VEC3", {"default": (0, 0, 1), "min": 0}),
                 Lexicon.STRING: ("STRING", {"default": "", "tooltip":"Comma separated list of indicies to export"}),
-                Lexicon.SEED: ("INT", {"default": 0, "min": 0, "max": sys.maxsize, "step": 1}),
-                Lexicon.COUNT: ("INT", {"default": 0, "min": 0, "max": sys.maxsize, "step": 1, "tooltip":"How many items to return"}),
+                Lexicon.SEED: ("INT", {"default": 0, "min": 0, "max": sys.maxsize}),
+                Lexicon.COUNT: ("INT", {"default": 0, "min": 0, "max": sys.maxsize, "tooltip":"How many items to return"}),
                 Lexicon.FLIP: ("BOOLEAN", {"default": False, "tooltip":"invert the calculated output list"}),
-                Lexicon.BATCH_CHUNK: ("INT", {"default": 0, "min": 0, "step": 1}),
+                Lexicon.BATCH_CHUNK: ("INT", {"default": 0, "min": 0,}),
             },
             "outputs": {
                 0: (Lexicon.ANY_OUT, {"tooltip":"Output list from selected operation"}),
@@ -379,8 +379,7 @@ Visualize a series of data points over time. It accepts a dynamic number of valu
             "optional": {
                 Lexicon.RESET: ("BOOLEAN", {"default": False}),
                 Lexicon.VALUE: ("INT", {"default": 60, "min": 0, "tooltip":"Number of values to graph and display"}),
-                Lexicon.WH: ("VEC2", {"default": (512, 512), "min":MIN_IMAGE_SIZE,
-                                    "step": 1, "label": [Lexicon.W, Lexicon.H]})
+                Lexicon.WH: ("VEC2INT", {"default": (512, 512), "min":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]})
             },
             "outputs": {
                 0: (Lexicon.IMAGE, {"tooltip":"The graphed image"}),
@@ -516,7 +515,7 @@ Manage a queue of items, such as file paths or data. It supports various formats
         d.update({
             "optional": {
                 Lexicon.QUEUE: ("STRING", {"multiline": True, "default": "./res/img/test-a.png"}),
-                Lexicon.VALUE: ("INT", {"min": 0, "default": 0, "step": 1, "tooltip": "the current index for the current queue item"}),
+                Lexicon.VALUE: ("INT", {"min": 0, "default": 0, "tooltip": "the current index for the current queue item"}),
                 Lexicon.WAIT: ("BOOLEAN", {"default": False, "tooltip":"Hold the item at the current queue index"}),
                 Lexicon.RESET: ("BOOLEAN", {"default": False, "tooltip":"reset the queue back to index 1"}),
                 Lexicon.BATCH: ("BOOLEAN", {"default": False, "tooltip":"load all items, if they are loadable items, i.e. batch load images from the Queue's list"}),
@@ -793,7 +792,7 @@ Make requests to a RESTful API endpoint and process the responses. It supports a
                 Lexicon.ATTRIBUTE: ("STRING", {"default": ""}),
                 Lexicon.AUTH: ("STRING", {"multiline": True, "dynamic": False}),
                 Lexicon.PATH: ("STRING", {"default": ""}),
-                "iteration_index": ("INT", {"default": 0, "min": 0, "max": 9999, "step": 1})
+                "iteration_index": ("INT", {"default": 0, "min": 0, "max": 9999})
             }
         }
         return Lexicon._parse(d, cls)

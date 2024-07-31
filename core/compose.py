@@ -73,20 +73,17 @@ Enhance and modify images with various effects such as blurring, sharpening, col
                 Lexicon.MASK: (JOV_TYPE_IMAGE, {}),
                 Lexicon.FUNC: (EnumAdjustOP._member_names_, {"default": EnumAdjustOP.BLUR.name,
                                                             "tooltip":"Type of adjustment (e.g., blur, sharpen, invert)"}),
-                Lexicon.RADIUS: ("INT", {"default": 3, "min": 3, "step": 1}),
-                Lexicon.VALUE: ("FLOAT", {"default": 1, "min": 0, "step": 0.1}),
-                Lexicon.LOHI: ("VEC2", {"default": (0, 1), "step": 0.01, "precision": 4,
-                                        "min": 0, "max": 1, "round": 0.00001, "label": [Lexicon.LO, Lexicon.HI]}),
-                Lexicon.LMH: ("VEC3", {"default": (0, 0.5, 1), "step": 0.01, "precision": 4,
-                                        "min": 0, "max": 1, "round": 0.00001, "label": [Lexicon.LO, Lexicon.MID, Lexicon.HI]}),
-                Lexicon.HSV: ("VEC3",{"default": (0, 1, 1), "step": 0.01, "precision": 4,
-                                    "min": 0, "max": 1, "round": 0.00001, "label": [Lexicon.H, Lexicon.S, Lexicon.V]}),
-                Lexicon.CONTRAST: ("FLOAT", {"default": 0, "min": 0, "max": 1, "step": 0.01,
-                                                "precision": 4, "round": 0.00001}),
-                Lexicon.GAMMA: ("FLOAT", {"default": 1, "min": 0.00001, "max": 1, "step": 0.01,
-                                            "precision": 4, "round": 0.00001}),
-                Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1,
-                                            "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True}),
+                Lexicon.RADIUS: ("INT", {"default": 3, "min": 3}),
+                Lexicon.VALUE: ("FLOAT", {"default": 1, "min": 0}),
+                Lexicon.LOHI: ("VEC2", {"default": (0, 1),
+                                        "min": 0, "max": 1, "label": [Lexicon.LO, Lexicon.HI]}),
+                Lexicon.LMH: ("VEC3", {"default": (0, 0.5, 1),
+                                        "min": 0, "max": 1, "label": [Lexicon.LO, Lexicon.MID, Lexicon.HI]}),
+                Lexicon.HSV: ("VEC3",{"default": (0, 1, 1),
+                                    "min": 0, "max": 1,  "label": [Lexicon.H, Lexicon.S, Lexicon.V]}),
+                Lexicon.CONTRAST: ("FLOAT", {"default": 0, "min": 0, "max": 1}),
+                Lexicon.GAMMA: ("FLOAT", {"default": 1, "min": 0.00001, "max": 1}),
+                Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True}),
                 Lexicon.INVERT: ("BOOLEAN", {"default": False, "tooltip": "Invert the mask input"})
             }
         })
@@ -222,14 +219,13 @@ Combine two input images using various blending modes, such as normal, screen, m
                 Lexicon.PIXEL_B: (JOV_TYPE_IMAGE, {"tooltip": "Image to Overlay on Background Plate"}),
                 Lexicon.MASK: (JOV_TYPE_IMAGE, {"tooltip": "Optional Mask to use for Alpha Blend Operation. If empty, will use the ALPHA of B"}),
                 Lexicon.FUNC: (EnumBlendType._member_names_, {"default": EnumBlendType.NORMAL.name, "tooltip": "Blending Operation"}),
-                Lexicon.A: ("FLOAT", {"default": 1, "min": 0, "max": 1, "step": 0.01, "tooltip": "Amount of Blending to Perform on the Selected Operation"}),
+                Lexicon.A: ("FLOAT", {"default": 1, "min": 0, "max": 1, "tooltip": "Amount of Blending to Perform on the Selected Operation"}),
                 Lexicon.FLIP: ("BOOLEAN", {"default": False}),
                 Lexicon.INVERT: ("BOOLEAN", {"default": False, "tooltip": "Invert the mask input"}),
                 Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
-                Lexicon.WH: ("VEC2", {"default": (512, 512), "min":MIN_IMAGE_SIZE,
-                                    "step": 1, "label": [Lexicon.W, Lexicon.H]}),
+                Lexicon.WH: ("VEC2INT", {"default": (512, 512), "min":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
-                Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
+                Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True})
             }
         })
         return Lexicon._parse(d, cls)
@@ -360,8 +356,7 @@ Adjust the color scheme of one image to match another with the Color Match Node.
                 Lexicon.FLIP: ("BOOLEAN", {"default": False}),
                 Lexicon.INVERT: ("BOOLEAN", {"default": False,
                                                 "tooltip": "Invert the color match output"}),
-                Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1,
-                                            "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True}),
+                Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True}),
             }
         })
         return Lexicon._parse(d, cls)
@@ -435,7 +430,7 @@ Generate a color harmony based on the selected scheme. Supported schemes include
             "optional": {
                 Lexicon.PIXEL: (JOV_TYPE_IMAGE, {}),
                 Lexicon.SCHEME: (EnumColorTheory._member_names_, {"default": EnumColorTheory.COMPLIMENTARY.name}),
-                Lexicon.VALUE: ("INT", {"default": 45, "min": -90, "max": 90, "step": 1, "tooltip": "Custom angle of separation to use when calculating colors"}),
+                Lexicon.VALUE: ("INT", {"default": 45, "min": -90, "max": 90, "tooltip": "Custom angle of separation to use when calculating colors"}),
                 Lexicon.INVERT: ("BOOLEAN", {"default": False})
             }
         })
@@ -475,10 +470,10 @@ Extract a portion of an input image or resize it. It supports various cropping m
                 Lexicon.PIXEL: (JOV_TYPE_IMAGE, {}),
                 Lexicon.FUNC: (EnumCropMode._member_names_, {"default": EnumCropMode.CENTER.name}),
                 Lexicon.XY: ("VEC2", {"default": (0, 0), "min": 0.5, "max": 0.5, "label": [Lexicon.X, Lexicon.Y]}),
-                Lexicon.WH: ("VEC2", {"default": (512, 512), "step": 1, "min": MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
-                Lexicon.TLTR: ("VEC4", {"default": (0, 0, 0, 1), "min": 0, "max": 1, "step": 0.01, "precision": 5, "round": 0.000001, "label": [Lexicon.TOP, Lexicon.LEFT, Lexicon.TOP, Lexicon.RIGHT]}),
-                Lexicon.BLBR: ("VEC4", {"default": (1, 0, 1, 1), "min": 0, "max": 1, "step": 0.01, "precision": 5, "round": 0.000001, "label": [Lexicon.BOTTOM, Lexicon.LEFT, Lexicon.BOTTOM, Lexicon.RIGHT]}),
-                Lexicon.RGB: ("VEC3", {"default": (0, 0, 0), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B], "rgb": True})
+                Lexicon.WH: ("VEC2INT", {"default": (512, 512), "min": MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
+                Lexicon.TLTR: ("VEC4", {"default": (0, 0, 0, 1), "min": 0, "max": 1, "label": [Lexicon.TOP, Lexicon.LEFT, Lexicon.TOP, Lexicon.RIGHT]}),
+                Lexicon.BLBR: ("VEC4", {"default": (1, 0, 1, 1), "min": 0, "max": 1,  "label": [Lexicon.BOTTOM, Lexicon.LEFT, Lexicon.BOTTOM, Lexicon.RIGHT]}),
+                Lexicon.MATTE: ("VEC3INT", {"default": (0, 0, 0), "label": [Lexicon.R, Lexicon.G, Lexicon.B], "rgb": True})
             }
         })
         return Lexicon._parse(d, cls)
@@ -491,11 +486,11 @@ Extract a portion of an input image or resize it. It supports various cropping m
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)
         tltr = parse_param(kw, Lexicon.TLTR, EnumConvertType.VEC4, [(0, 0, 0, 1,)], 0, 1)
         blbr = parse_param(kw, Lexicon.BLBR, EnumConvertType.VEC4, [(1, 0, 1, 1,)], 0, 1)
-        color = parse_param(kw, Lexicon.RGB, EnumConvertType.VEC3INT, [(0, 0, 0,)], 0, 255)
+        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
         params = list(zip_longest_fill(pA, func, xy, wihi, tltr, blbr, color))
         images = []
         pbar = ProgressBar(len(params))
-        for idx, (pA, func, xy, wihi, tltr, blbr, color) in enumerate(params):
+        for idx, (pA, func, xy, wihi, tltr, blbr, matte) in enumerate(params):
             width, height = wihi
             pA = tensor2cv(pA) if pA is not None else channel_solid(width, height)
             alpha = None
@@ -521,7 +516,7 @@ Extract a portion of an input image or resize it. It supports various cropping m
                 pass
             else:
                 pA = image_crop_center(pA, width, height)
-            images.append(cv2tensor_full(pA, color))
+            images.append(cv2tensor_full(pA, matte))
             pbar.update_absolute(idx)
         return [torch.cat(i, dim=0) for i in zip(*images)]
 
@@ -539,12 +534,11 @@ Create masks based on specific color ranges within an image. Specify the color r
         d.update({
             "optional": {
                 Lexicon.PIXEL_A: (JOV_TYPE_IMAGE, {}),
-                Lexicon.START: ("VEC3", {"default": (128, 128, 128), "min":0, "max":255, "step": 1, "rgb": True}),
+                Lexicon.START: ("VEC3INT", {"default": (128, 128, 128), "rgb": True}),
                 Lexicon.BOOLEAN: ("BOOLEAN", {"default": False, "tooltip": "use an end point (start->end) when calculating the filter range"}),
-                Lexicon.END: ("VEC3", {"default": (128, 128, 128), "min":0, "max":255, "step": 1, "rgb": True}),
-                Lexicon.FLOAT: ("VEC3", {"default": (0.5,0.5,0.5), "min":0, "max":1, "step": 0.01, "precision": 4, "tooltip": "the fuzziness use to extend the start and end range(s)"}),
-                Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1,
-                                        "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True}),
+                Lexicon.END: ("VEC3INT", {"default": (128, 128, 128), "rgb": True}),
+                Lexicon.FLOAT: ("VEC3", {"default": (0.5,0.5,0.5), "min":0, "max":1, "tooltip": "the fuzziness use to extend the start and end range(s)"}),
+                Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True}),
             }
         })
         return Lexicon._parse(d, cls)
@@ -585,10 +579,9 @@ Combine multiple input images into a single image by summing their pixel values.
         d.update({
             "optional": {
                 Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
-                Lexicon.WH: ("VEC2", {"default": (512, 512), "min":MIN_IMAGE_SIZE,
-                                    "step": 1, "label": [Lexicon.W, Lexicon.H]}),
+                Lexicon.WH: ("VEC2INT", {"default": (512, 512), "min":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
-                Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
+                Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True})
             }
         })
         return Lexicon._parse(d, cls)
@@ -640,10 +633,9 @@ Remaps an input image using a gradient lookup table (LUT). The gradient image wi
                 Lexicon.GRADIENT: (JOV_TYPE_IMAGE, {"tooltip":f"Look up table (LUT) to remap the input image in `{Lexicon.PIXEL}`"}),
                 Lexicon.FLIP: ("BOOLEAN", {"default":False, "tooltip":"Reverse the gradient from left-to-right "}),
                 Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
-                Lexicon.WH: ("VEC2", {"default": (512, 512), "min":MIN_IMAGE_SIZE,
-                                    "step": 1, "label": [Lexicon.W, Lexicon.H]}),
+                Lexicon.WH: ("VEC2INT", {"default": (512, 512), "min":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
-                Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
+                Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True})
             }
         })
         return Lexicon._parse(d, cls)
@@ -692,11 +684,10 @@ Combines individual color channels (red, green, blue) along with an optional mas
                 Lexicon.B: (JOV_TYPE_IMAGE, {}),
                 Lexicon.A: (JOV_TYPE_IMAGE, {}),
                 Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
-                Lexicon.WH: ("VEC2", {"default": (512, 512), "min":MIN_IMAGE_SIZE,
-                                    "step": 1, "label": [Lexicon.W, Lexicon.H]}),
+                Lexicon.WH: ("VEC2INT", {"default": (512, 512), "min":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
-                Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True}),
-                Lexicon.FLIP: ("VEC4", {"min":0, "max":1, "step": 0.01, "precision": 4, "default":(0,0,0,0), "tooltip": "Invert specific input prior to merging. R, G, B, A."}),
+                Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True}),
+                Lexicon.FLIP: ("VEC4", {"min":0, "max":1, "tooltip": "Invert specific input prior to merging. R, G, B, A."}),
                 Lexicon.INVERT: ("BOOLEAN", {"default": False, "tooltip": "Invert the final merged output"})
             }
         })
@@ -791,16 +782,16 @@ Swap pixel values between two input images based on specified channel swizzle op
                 Lexicon.PIXEL_B: (JOV_TYPE_IMAGE, {}),
                 Lexicon.SWAP_R: (EnumPixelSwizzle._member_names_,
                                 {"default": EnumPixelSwizzle.RED_A.name}),
-                Lexicon.R: ("INT", {"default": 0, "step": 1, "min": 0, "max": 255}),
+                Lexicon.R: ("INT", {"default": 0, "min": 0, "max": 255}),
                 Lexicon.SWAP_G: (EnumPixelSwizzle._member_names_,
                                 {"default": EnumPixelSwizzle.GREEN_A.name}),
-                Lexicon.G: ("INT", {"default": 0, "step": 1, "min": 0, "max": 255}),
+                Lexicon.G: ("INT", {"default": 0, "min": 0, "max": 255}),
                 Lexicon.SWAP_B: (EnumPixelSwizzle._member_names_,
                                 {"default": EnumPixelSwizzle.BLUE_A.name}),
-                Lexicon.B: ("INT", {"default": 0, "step": 1, "min": 0, "max": 255}),
+                Lexicon.B: ("INT", {"default": 0, "min": 0, "max": 255}),
                 Lexicon.SWAP_A: (EnumPixelSwizzle._member_names_,
                                 {"default": EnumPixelSwizzle.ALPHA_A.name}),
-                Lexicon.A: ("INT", {"default": 0, "step": 1, "min": 0, "max": 255}),
+                Lexicon.A: ("INT", {"default": 0, "min": 0, "max": 255}),
             }
         })
         return Lexicon._parse(d, cls)
@@ -870,13 +861,12 @@ Merge multiple input images into a single composite image by stacking them along
             "optional": {
                 Lexicon.AXIS: (EnumOrientation._member_names_, {"default": EnumOrientation.GRID.name,
                                                                 "tooltip":"Choose the direction in which to stack the images. Options include horizontal, vertical, or a grid layout"}),
-                Lexicon.STEP: ("INT", {"min": 0, "step": 1, "default": 1,
+                Lexicon.STEP: ("INT", {"min": 0, "default": 1,
                                     "tooltip":"Specify the spacing between each stacked image. This determines how far apart the images are from each other"}),
                 Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
-                Lexicon.WH: ("VEC2", {"default": (512, 512), "min":MIN_IMAGE_SIZE,
-                                    "step": 1, "label": [Lexicon.W, Lexicon.H]}),
+                Lexicon.WH: ("VEC2INT", {"default": (512, 512), "min":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
-                Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
+                Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True})
             }
         })
         return Lexicon._parse(d, cls)
@@ -923,7 +913,7 @@ Define a range and apply it to an image for segmentation and feature extraction.
                                 {"default": EnumThresholdAdapt.ADAPT_NONE.name}),
                 Lexicon.FUNC: ( EnumThreshold._member_names_, {"default": EnumThreshold.BINARY.name}),
                 Lexicon.THRESHOLD: ("FLOAT", {"default": 0.5, "min": 0, "max": 1, "step": 0.005}),
-                Lexicon.SIZE: ("INT", {"default": 3, "min": 3, "max": 103, "step": 1}),
+                Lexicon.SIZE: ("INT", {"default": 3, "min": 3, "max": 103}),
                 Lexicon.INVERT: ("BOOLEAN", {"default": False, "tooltip": "Invert the mask input"})
             }
         })
@@ -964,22 +954,21 @@ Apply various geometric transformations to images, including translation, rotati
         d.update({
             "optional": {
                 Lexicon.PIXEL: (JOV_TYPE_IMAGE, {}),
-                Lexicon.XY: ("VEC2", {"default": (0, 0,), "min": -1, "max": 1, "step": 0.01, "precision": 4, "label": [Lexicon.X, Lexicon.Y]}),
-                Lexicon.ANGLE: ("FLOAT", {"default": 0, "step": 0.1, "precision": 3}),
-                Lexicon.SIZE: ("VEC2", {"default": (1., 1.), "min": 0.001, "step": 0.01, "precision": 4, "label": [Lexicon.X, Lexicon.Y]}),
-                Lexicon.TILE: ("VEC2", {"default": (1., 1.), "min": 1, "step": 0.1,  "precision": 4, "label": [Lexicon.X, Lexicon.Y]}),
+                Lexicon.XY: ("VEC2", {"default": (0, 0,), "min": -1, "max": 1, "label": [Lexicon.X, Lexicon.Y]}),
+                Lexicon.ANGLE: ("FLOAT", {"default": 0}),
+                Lexicon.SIZE: ("VEC2", {"default": (1., 1.), "min": 0.001, "label": [Lexicon.X, Lexicon.Y]}),
+                Lexicon.TILE: ("VEC2", {"default": (1., 1.), "min": 1, "label": [Lexicon.X, Lexicon.Y]}),
                 Lexicon.EDGE: (EnumEdge._member_names_, {"default": EnumEdge.CLIP.name}),
                 Lexicon.MIRROR: (EnumMirrorMode._member_names_, {"default": EnumMirrorMode.NONE.name}),
-                Lexicon.PIVOT: ("VEC2", {"default": (0.5, 0.5), "step": 0.005, "precision": 4, "label": [Lexicon.X, Lexicon.Y]}),
+                Lexicon.PIVOT: ("VEC2", {"default": (0.5, 0.5), "step": 0.005, "label": [Lexicon.X, Lexicon.Y]}),
                 Lexicon.PROJECTION: (EnumProjection._member_names_, {"default": EnumProjection.NORMAL.name}),
-                Lexicon.TLTR: ("VEC4", {"default": (0, 0, 1, 0), "step": 0.005, "precision": 4, "label": [Lexicon.TOP, Lexicon.LEFT, Lexicon.TOP, Lexicon.RIGHT]}),
-                Lexicon.BLBR: ("VEC4", {"default": (0, 1, 1, 1), "step": 0.005, "precision": 4, "label": [Lexicon.BOTTOM, Lexicon.LEFT, Lexicon.BOTTOM, Lexicon.RIGHT]}),
-                Lexicon.STRENGTH: ("FLOAT", {"default": 1, "min": 0, "precision": 4, "step": 0.005}),
+                Lexicon.TLTR: ("VEC4", {"default": (0, 0, 1, 0), "step": 0.005,  "label": [Lexicon.TOP, Lexicon.LEFT, Lexicon.TOP, Lexicon.RIGHT]}),
+                Lexicon.BLBR: ("VEC4", {"default": (0, 1, 1, 1), "step": 0.005, "label": [Lexicon.BOTTOM, Lexicon.LEFT, Lexicon.BOTTOM, Lexicon.RIGHT]}),
+                Lexicon.STRENGTH: ("FLOAT", {"default": 1, "min": 0, "step": 0.005}),
                 Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
-                Lexicon.WH: ("VEC2", {"default": (512, 512), "min":MIN_IMAGE_SIZE,
-                                    "step": 1, "label": [Lexicon.W, Lexicon.H]}),
+                Lexicon.WH: ("VEC2INT", {"default": (512, 512), "min":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
-                Lexicon.MATTE: ("VEC4", {"default": (0, 0, 0, 255), "step": 1, "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
+                Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True})
             }
         })
         return Lexicon._parse(d, cls)

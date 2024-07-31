@@ -8,7 +8,7 @@ import { widgetToInput } from '../util/util_widget.js'
 import { domInnerValueChange, colorHex2RGB, colorRGB2Hex } from '../util/util.js'
 import { $el } from "../../../scripts/ui.js"
 
-export const VectorWidget = (app, inputName, options, initial, desc='') => {
+const VectorWidget = (app, inputName, options, initial, desc='') => {
     const values = options[1]?.default || initial;
     const widget = {
         name: inputName,
@@ -18,18 +18,21 @@ export const VectorWidget = (app, inputName, options, initial, desc='') => {
         options: options[1]
     }
 
-    let isDragging;
-    let step = 0.01;
+    widget.options.step = 1;
     if (options[0].endsWith('INT')) {
-        step = 1;
+        delete widget.options.round;
+        delete widget.options.precision;
+        if (widget.options?.rgb || false) {
+            widget.options.max = 255;
+            widget.options.min = 0;
+            // "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A],
+        }
+    } else {
+        widget.options.precision = widget.options?.precision || 6;
+        widget.options.step = widget.options?.step || 0.01;
+        widget.options.round = widget.options?.round || 1 / (widget.options.precision-1) ** 10;
     }
-    widget.options.step = widget.options?.step || step;
-    widget.options.rgb = widget.options?.rgb || false;
-    if (widget.options.rgb) {
-        widget.options.max = 255;
-        widget.options.min = 0;
-        widget.options.step = 1;
-    }
+    console.info(inputName, options[0], options[0].endsWith('INT'))
 
     const offset_y = 4;
     const widget_padding_left = 13;
@@ -37,6 +40,7 @@ export const VectorWidget = (app, inputName, options, initial, desc='') => {
     const label_full = 72;
     const label_center = label_full/2;
     let picker;
+    let isDragging;
 
     widget.draw = function(ctx, node, width, Y, height) {
         if ((app.canvas.ds.scale < 0.50) || (!this.type.startsWith("VEC") && this.type != "COORD2D")) return;
@@ -59,7 +63,7 @@ export const VectorWidget = (app, inputName, options, initial, desc='') => {
 
         const fields = Object.keys(this?.value || []);
         let count = fields.length;
-        if (widget.options.rgb) {
+        if (widget.options?.rgb) {
             count += 0.23;
         }
         const element_width = (width - label_full - widget_padding) / count;
@@ -88,11 +92,12 @@ export const VectorWidget = (app, inputName, options, initial, desc='') => {
             x += element_width;
         }
 
-        if (this.options.rgb) {
+        if (this.options?.rgb) {
             try {
                 ctx.fillStyle = colorRGB2Hex(converted);
             } catch (e) {
-                ctx.fillStyle = "#000";
+                console.error(e)
+                ctx.fillStyle = "#FFF";
             }
             ctx.roundRect(width - 1.17 * widget_padding, Y+1, 19, height-2, 16);
             ctx.fill()
@@ -114,10 +119,10 @@ export const VectorWidget = (app, inputName, options, initial, desc='') => {
     widget.mouse = function (e, pos, node) {
         let delta = 0;
         if (e.type === 'pointerdown' & isDragging === undefined) {
-            const x = pos[0] - label_full
-            const size = Object.keys(this.value).length
-            const element_width = (node.size[0] - label_full - widget_padding * 1.25) / size
-            const index = Math.floor(x / element_width)
+            const x = pos[0] - label_full;
+            const size = Object.keys(this.value).length;;
+            const element_width = (node.size[0] - label_full - widget_padding * 1.25) / size;
+            const index = Math.floor(x / element_width);
             if (index >= 0 && index < size) {
                 isDragging = { name: this.name, idx: index}
             } else if (this.options.rgb) {
@@ -167,7 +172,7 @@ export const VectorWidget = (app, inputName, options, initial, desc='') => {
                             try {
                                 v = eval(v);
                             } catch (e) {
-
+                                console.info(e)
                             }
                         }
                         if (this.value[idx] != v) {
@@ -233,7 +238,7 @@ app.registerExtension({
         }
     },
     async beforeRegisterNodeDef(nodeType, nodeData, app) {
-        const myTypes = ['RGB', 'VEC2', 'VEC3', 'VEC4']
+        const myTypes = ['RGB', 'VEC2', 'VEC3', 'VEC4', 'VEC2INT', 'VEC3INT', 'VEC4INT']
         const inputTypes = nodeData.input;
         if (inputTypes) {
             const matchingTypes = ['required', 'optional']

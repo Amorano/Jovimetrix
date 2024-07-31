@@ -3,7 +3,7 @@
  * Project: Jovimetrix
  */
 
-#jov-manager-dialog {
+ #jov-manager-dialog {
   min-width: 400px;
   max-width: 1000px;
   height: 620px;
@@ -58,14 +58,11 @@
 }
 
 .jov-config-color-header  {
-  color: white;
   text-align: right;
 }
 
 .jov-config-color {
-  background-color: rgb(15, 15, 15);
-  max-height: 550px;
-  overflow-x: hidden;
+  overflow-x: auto;
   overflow-y: auto;
 }
 
@@ -115,32 +112,28 @@
 
 .jov-color {
   text-align: center;
-  font-size: 1em;
-  width: 25px;
-  height: 25px;
+
 }
 
 .jov-color tbody {
-  padding: 0px;
   user-select: none;
 }
 
 .jov-color tr, td {
-  padding: 0px;
   user-select: none;
 }
 
-.foldable-title {
+.jov-color .foldable-title {
   cursor: pointer;
   font-weight: bold;
   user-select: none;
 }
 
-.foldable-symbol {
+.jov-color .foldable-symbol {
   margin-right: 10px;
 }
 
-.foldable-content {
+.jov-color .foldable-content {
   display: none;
   flex-direction: column;
   margin-left: 20px;
@@ -168,110 +161,272 @@
 	white-space: pre-wrap;
 }
 
-.jov-docs {
+.jov-panel-doc {
   background: var(--comfy-menu-bg);
-  position: absolute;
   color: var(--fg-color);
   font: 12px monospace;
-  padding: 2px;
-  margin: 2px;
+  padding: 0px;
+  margin: 0px;
   border-radius: 4px;
-  border-style: solid;
-  border-width: medium;
-  border-color: var(--border-color);
+  border: medium solid var(--border-color);
+  overflow: auto;
+  width: 100%;
+  height: 90vh;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  scrollbar-width: thin;
+  scrollbar-color: var(--fg-color) var(--bg-color);
+}
+
+.jov-panel-doc h2, .jov-panel-doc h3 {
+  width: 100%;
+  text-align: center;
+  margin: 4px 0;
+}
+
+.jov-panel-doc p {
+  text-align: center;
+  max-width: 100%;
+  margin: 2px auto;
+}
+
+.jov-panel-doc img {
+  display: block;
+  max-width: 640px;
+  max-height: 70vh;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  margin: 4px auto;
+}
+
+.jov-panel-doc table {
+  width: 100%;
+  margin: 0px auto;
+  padding: 0px;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid var(--border-color);
+}
+
+.jov-panel-doc th, .jov-panel-doc td {
+  padding: 2px;
+  text-align: left;
+}
+
+.jov-panel-doc th {
+  background-color: var(--comfy-input-bg);
+  color: var(--input-text);
+}
+
+.jov-panel-doc tr:nth-child(even) {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.jov-panel-doc tr:nth-child(odd) {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.jov-panel-doc footer {
+  margin-top: 4px;
+  text-align: center;
+}
+
+.jov-panel-doc a {
+  color: yellow;
+  text-decoration: none;
+}
+
+.jov-panel-doc a:visited {
+  color: orange;
+}
+
+.jov-panel-doc a:hover {
+  color: red;
+  text-decoration: underline;
+}
+
+/* Scrollbar styling */
+.jov-panel-doc::-webkit-scrollbar {
+  width: 6px;
+}
+
+.jov-panel-doc::-webkit-scrollbar-track {
+  background: var(--bg-color);
+}
+
+.jov-panel-doc::-webkit-scrollbar-thumb {
+  background-color: var(--fg-color);
+  border-radius: 6px;
+  border: 3px solid var(--bg-color);
+}
+
+/* Embedded content */
+.jov-panel-doc iframe,
+.jov-panel-doc video,
+.jov-panel-doc object,
+.jov-panel-doc embed {
+  max-width: 100%;
+  max-height: 70vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+
+/* Media query for responsiveness */
+@media screen and (max-width: 640px) {
+  .jov-panel-doc {
+    font-size: 12px;
+    padding: 5px;
+    width: 100%;
+    height: 95vh;
+  }
+
+  .jov-panel-doc table {
+    width: 100%;
+  }
+
+  .jov-panel-doc img,
+  .jov-panel-doc iframe,
+  .jov-panel-doc video,
+  .jov-panel-doc object,
+  .jov-panel-doc embed {
+    max-height: 50vh;
+    width: 100%;
+  }
+}
+
+.jov-panel-doc-popup {
+  position: absolute;
+  line-height: 1.5em;
   z-index: 925;
   width: 315px;
   height: 295px;
   min-width: 215px;
   min-height: 85px;
-  overflow: auto;
+  overflow: hidden;
 }
 
-.jov-docs img {
+.jov-panel-doc-popup img {
   display: block;
-  margin-left: 10px;
-  margin-right: 10px;
-  width: 90%;
+  margin: 5px;
+  width: 95%;
 }
 
-.jov-docs table {
+.jov-panel-doc-popup table {
   border-collapse: collapse;
   border: 1px var(--border-color) solid;
 }
 
-.jov-docs th,
-.jov-docs td {
+.jov-panel-doc-popup th,
+.jov-panel-doc-popup td {
   border: 1px var(--border-color) solid;
 }
 
-.jov-docs th {
+.jov-panel-doc-popup th {
   background-color: var(--comfy-input-bg);
 }
 
-.jov-docs-content-wrapper {
+
+/* */
+.jov-panel-color {
+  padding: 4px;
+  max-width: 95%;
+  max-height: 95%;
   overflow: auto;
-  max-height: 98%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  font-size: 0.8em;
-
-  /* Scrollbar styling for Chrome */
-  .jov-docs &::-webkit-scrollbar {
-      width: 6px;
-  }
-
-  .jov-docs &::-webkit-scrollbar-track {
-      background: var(--bg-color);
-  }
-
-  .jov-docs &::-webkit-scrollbar-thumb {
-      background-color: var(--fg-color);
-      border-radius: 6px;
-      border: 3px solid var(--bg-color);
-  }
-
-  /* Scrollbar styling for Firefox */
-  scrollbar-width: thin;
-  scrollbar-color: var(--fg-color) var(--bg-color);
+  border-radius: 2px;
+  border: medium solid var(--border-color);
 }
 
-.jov-docs-content-wrapper h1,
-.jov-docs-content-wrapper h2,
-.jov-docs-content-wrapper h3,
-.jov-docs-content-wrapper h4,
-.jov-docs-content-wrapper h5,
-.jov-docs-content-wrapper h6 {
-  margin: 2px;
-  padding: 2px;
-  text-align: left;
+.jov-panel-color .jov-color-title {
+  text-align: center;
+  margin-bottom: 10px;
 }
 
-.jov-docs-content-wrapper p {
-  margin: 2px;
-  padding: 2px;
-}
-
-.jov-docs-content-wrapper iframe,
-.jov-docs-content-wrapper img,
-.jov-docs-content-wrapper video,
-.jov-docs-content-wrapper object,
-.jov-docs-content-wrapper embed {
+.jov-panel-color table {
   width: 100%;
-  height: 100%;
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain; /* Ensure content scales to fit */
+  border-collapse: collapse;
 }
 
-.jov-docs-content-wrapper a {
-  color: yellow;
+.jov-panel-color th,
+.jov-panel-color td {
+  padding: 4px;
+  text-align: left;
+  border: 1px solid var(--border-color);
+  background-color: var(--comfy-input-bg);
+  color: var(--fg-color);
 }
 
-.jov-docs-content-wrapper a:visited {
-  color: orange;
+.jov-panel-color input[type="checkbox"] {
+  margin-right: 5px;
 }
 
-.jov-docs-content-wrapper a:hover {
-  color: red;
+.jov-panel-color .jov-color-header {
+  font-weight: bold;
+  font-size: 1.5em;
+  text-align: center;
+  background: linear-gradient(22deg, #ff0000 25%, #4c67dd 40%, #5ddd4c 50%, #dd4c4c 65%);
+  clip: text;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 10px;
+}
+
+.jov-panel-color #jov-color-apply {
+  text-align: center;
+  font-size: 0.9em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+.jov-panel-color-input {
+  font-size: 1em;
+  width: 25px;
+}
+
+.flexible-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.flexible-table td {
+  padding: 4px;
+  vertical-align: middle;
+  text-align: right;
+}
+
+@media screen and (max-width: 600px) {
+  .flexible-table, .flexible-table tbody, .flexible-table tr, .flexible-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .flexible-table tbody {
+      text-align: right;
+  }
+
+  .flexible-table tr {
+    margin-bottom: 5px;
+  }
+
+  .flexible-table td {
+    border: none;
+    position: relative;
+    padding-left: 50%;
+  }
+
+  .flexible-table td:before {
+    content: attr(data-label);
+    position: absolute;
+    left: 3px;
+    width: 45%;
+    padding-right: 5px;
+    white-space: nowrap;
+    font-weight: bold;
+  }
 }

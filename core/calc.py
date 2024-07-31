@@ -552,7 +552,7 @@ Introduce pauses in the workflow that accept an optional input to pass through a
         d.update({
             "optional": {
                 Lexicon.PASS_IN: (JOV_TYPE_ANY, {"default": None}),
-                Lexicon.TIMER: ("INT", {"step": 1, "default" : 0, "min": -1}),
+                Lexicon.TIMER: ("INT", {"default" : 0, "min": -1}),
             },
             "outputs": {
                 0: (Lexicon.PASS_OUT, {"tooltip":f"Pass through data when the delay ends"})
@@ -606,7 +606,7 @@ Additionally, you can specify the easing function (EASE) and the desired output 
                 Lexicon.IN_A: (JOV_TYPE_FULL, {"tooltip": "Custom Start Point"}),
                 Lexicon.IN_B: (JOV_TYPE_FULL, {"tooltip": "Custom End Point"}),
                 Lexicon.FLOAT: ("FLOAT", {"default": 0.5, "min": 0., "max": 1.0,
-                                        "step": 0.001, "precision": 4, "round": 0.00001,
+                                        "step": 0.001, "round": 0.00001,
                                         "tooltip": "Blend Amount. 0 = full A, 1 = full B"}),
                 Lexicon.EASE: (["NONE"] + EnumEase._member_names_, {"default": "NONE"}),
                 Lexicon.TYPE: (names_convert, {"default": names_convert[2],
@@ -755,24 +755,24 @@ A timer and frame counter, emitting pulses or signals based on time intervals. I
                 Lexicon.TRIGGER: (JOV_TYPE_ANY, {"default": None,
                                              "tooltip":"Output to send when beat (BPM setting) is hit"}),
                 # forces a MOD on CYCLE
-                Lexicon.VALUE: ("INT", {"min": 0, "default": 0, "step": 1,
+                Lexicon.VALUE: ("INT", {"min": 0, "default": 0,
                                         "tooltip": "the current frame number of the tick"}),
-                Lexicon.LOOP: ("INT", {"min": 0, "max": 32767, "default": 0, "step": 1,
+                Lexicon.LOOP: ("INT", {"min": 0, "max": 32767, "default": 0,
                                        "tooltip": "number of frames before looping starts. 0 means continuous playback (no loop point)"}),
                 #
-                Lexicon.FPS: ("INT", {"min": 1, "default": 24, "step": 1,
+                Lexicon.FPS: ("INT", {"min": 1, "default": 24,
                                       "tooltip": "Fixed frame step rate based on FPS (1/FPS)"}),
-                Lexicon.BPM: ("FLOAT", {"min": 1, "max": 60000, "default": 120, "step": 1,
+                Lexicon.BPM: ("INT", {"min": 1, "max": 60000, "default": 120,
                                         "tooltip": "BPM trigger rate to send the input. If input is empty, TRUE is sent on trigger"}),
-                Lexicon.NOTE: ("INT", {"default": 4, "min": 1, "max": 256, "step": 1,
+                Lexicon.NOTE: ("INT", {"default": 4, "min": 1, "max": 256,
                                     "tooltip":"Number of beats per measure. Quarter note is 4, Eighth is 8, 16 is 16, etc."}),
                 # stick the current "count"
                 Lexicon.WAIT: ("BOOLEAN", {"default": False}),
                 # manual total = 0
                 Lexicon.RESET: ("BOOLEAN", {"default": False}),
                 # how many frames to dump....
-                Lexicon.BATCH: ("INT", {"min": 1, "default": 1, "step": 1, "max": 32767, "tooltip": "Number of frames wanted"}),
-                Lexicon.STEP: ("INT", {"default": 0, "step": 1, "tooltip": "Steps/Stride between pulses -- useful to do odd or even batches. If set to 0 will stretch from (VAL -> LOOP) / Batch giving a linear range of values."}),
+                Lexicon.BATCH: ("INT", {"min": 1, "default": 1, "max": 32767, "tooltip": "Number of frames wanted"}),
+                Lexicon.STEP: ("INT", {"default": 0, "tooltip": "Steps/Stride between pulses -- useful to do odd or even batches. If set to 0 will stretch from (VAL -> LOOP) / Batch giving a linear range of values."}),
             },
             "outputs": {
                 0: (Lexicon.VALUE, {"tooltip":"Current value for the configured tick"}),
@@ -867,22 +867,18 @@ Supplies raw or default values for various data types, supporting vector input w
                 Lexicon.TYPE: (typ, {"default": EnumConvertType.BOOLEAN.name,
                                     "tooltip":"Take the input and convert it into the selected type."}),
                 Lexicon.X: (JOV_TYPE_ANY, {"default": 0, "min": -sys.maxsize,
-                                    "max": sys.maxsize, "step": 0.01, "precision": 6,
-                                    "forceInput": True}),
+                                    "max": sys.maxsize, "forceInput": True}),
                 Lexicon.Y: (JOV_TYPE_ANY, {"default": 0, "min": -sys.maxsize,
-                                    "max": sys.maxsize, "step": 0.01, "precision": 6,
-                                    "forceInput": True}),
+                                    "max": sys.maxsize, "forceInput": True}),
                 Lexicon.Z: (JOV_TYPE_ANY, {"default": 0, "min": -sys.maxsize,
-                                    "max": sys.maxsize, "step": 0.01, "precision": 6,
-                                    "forceInput": True}),
+                                    "max": sys.maxsize, "forceInput": True}),
                 Lexicon.W: (JOV_TYPE_ANY, {"default": 0, "min": -sys.maxsize,
-                                    "max": sys.maxsize, "step": 0.01, "precision": 6,
-                                    "forceInput": True}),
+                                    "max": sys.maxsize,                                 "forceInput": True}),
                 Lexicon.IN_A+Lexicon.IN_A: ("VEC4", {"default": (0, 0, 0, 0),
                                     #"min": -sys.maxsize, "max": sys.maxsize,
                                     "label": [Lexicon.X, Lexicon.Y],
                                     "tooltip":"default value vector for A"}),
-                Lexicon.SEED: ("INT", {"default": 0, "min": 0, "max": sys.maxsize, "step": 1}),
+                Lexicon.SEED: ("INT", {"default": 0, "min": 0, "max": sys.maxsize}),
                 Lexicon.IN_B+Lexicon.IN_B: ("VEC4", {"default": (1,1,1,1),
                                     #"min": -sys.maxsize, "max": sys.maxsize,
                                     "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W],
@@ -973,11 +969,11 @@ Produce waveforms like sine, square, or sawtooth with adjustable frequency, ampl
         d.update({
             "optional": {
                 Lexicon.WAVE: (EnumWave._member_names_, {"default": EnumWave.SIN.name}),
-                Lexicon.FREQ: ("FLOAT", {"default": 1, "min": 0, "step": 0.01, "max": 10000000000000000}),
-                Lexicon.AMP: ("FLOAT", {"default": 1, "min": 0, "step": 0.01, "max": 10000000000000000}),
+                Lexicon.FREQ: ("FLOAT", {"default": 1, "min": 0, "max": 10000000000000000}),
+                Lexicon.AMP: ("FLOAT", {"default": 1, "min": 0, "max": 10000000000000000}),
                 Lexicon.PHASE: ("FLOAT", {"default": 0, "min": 0.0, "step": 0.001, "max": 1.0}),
                 Lexicon.OFFSET: ("FLOAT", {"default": 0, "min": 0.0, "step": 0.001, "max": 1.0}),
-                Lexicon.TIME: ("FLOAT", {"default": 0, "min": 0, "step": 0.000001}),
+                Lexicon.TIME: ("FLOAT", {"default": 0, "min": 0, "step": 0.0001}),
                 Lexicon.INVERT: ("BOOLEAN", {"default": False}),
             }
         })
