@@ -430,10 +430,6 @@ const new_menu = app.ui.settings.getSettingValue("Comfy.UseNewMenu", "Disabled")
 
 class JovimetrixPanelColorize {
     constructor() {
-        this.headerTitle = null;
-        this.overwrite = false;
-        this.visible = false;
-        this.element = $el("div.comfy-modal", { id:'jov-manager-dialog', parent: document.body }, [ this.createContent() ]);
 
         if (util_config.CONFIG_USER.color.overwrite) {
             nodeColorAll();
@@ -698,9 +694,6 @@ class JovimetrixPanelColorize {
 }
 
 let PANEL_COLORIZE;
-document.addEventListener('DOMContentLoaded', function() {
-    PANEL_COLORIZE = new JovimetrixPanelColorize();
-});
 
 if(new_menu != "Disabled" && app.extensionManager) {
     app.extensionManager.registerSidebarTab({
@@ -710,8 +703,10 @@ if(new_menu != "Disabled" && app.extensionManager) {
         tooltip: "Colorize your nodes how you want; I'm not your dad.",
         type: "custom",
         render: async (el) => {
-            if (PANEL_COLORIZE) {
-                el.appendChild(PANEL_COLORIZE.createContent());
+            if (PANEL_COLORIZE === undefined) {
+                PANEL_COLORIZE = new JovimetrixPanelColorize();
+                const content = PANEL_COLORIZE.createContent();
+                el.appendChild(content);
             }
         }
     });

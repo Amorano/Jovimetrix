@@ -532,15 +532,19 @@ def get_node_info(node_cls: object) -> Dict[str, Any]:
     return_names = getattr(node_cls, "RETURN_NAMES", [t.lower() for t in return_types])
     for t, n in zip(return_types, return_names):
         output_parameters[n] = ', '.join([x.strip() for x in t.split(',')])
-    return {
+
+    data = {
         "class": repr(node_cls).split("'")[1],
         "input_parameters": collapse_repeating_parameters(input_parameters),
         "output_parameters": output_parameters,
         "name": str(getattr(node_cls, "NAME")),
         "output_node": str(getattr(node_cls, "OUTPUT_NODE", False)),
         "category": str(getattr(node_cls, "CATEGORY", "")),
-        "documentation": str(getattr(node_cls, "DESCRIPTION", "")),
+        "documentation": str(getattr(node_cls, "DESCRIPTION", ""))
     }
+    data['.html'] = json2html(data)
+    data['.md'] = json2markdown(data)
+    return data
 
 def json2markdown(json_dict: dict) -> str:
     """Example of json to markdown converter. You are welcome to change formatting per specific request."""
@@ -758,8 +762,6 @@ try:
     async def jovimetrix_doc(request) -> Any:
         for k in NODE_CLASS_MAPPINGS.keys():
             data = get_node_info(NODE_CLASS_MAPPINGS[k])
-            data['.html'] = json2html(data)
-            data['.md'] = json2markdown(data)
             DOCUMENTATION['jovimetrix'][k] = data
 
             node = NODE_DISPLAY_NAME_MAPPINGS[k]
@@ -767,7 +769,7 @@ try:
             path = Path(JOV_INTERNAL_DOC.replace("{name}", fname))
             path.mkdir(parents=True, exist_ok=True)
 
-            if not JOV_INTERNAL:
+            if JOV_INTERNAL:
                 with open(str(path / f"{fname}.md"), "w", encoding='utf-8') as f:
                     f.write(data['.md'])
 
@@ -790,9 +792,8 @@ try:
 
         if repo_name.lower() == 'jovimetrix':
             docs = get_node_info(NODE_CLASS_MAPPINGS[node_name])
-            docs = json2html(docs)
-            DOCUMENTATION[repo_name.lower()].update({ node_name: { '.html': docs } })
-            return web.Response(text=docs, content_type='text/html')
+            DOCUMENTATION[repo_name.lower()][node_name] = docs
+            return web.Response(text=docs['.html'], content_type='text/html')
         try:
             # check all the imports for the repository and object:
             # docs = <repo>.<node>
@@ -803,8 +804,8 @@ try:
                     continue
                 node_class = getattr(obj, node_name)
                 docs = get_node_info(node_class)
-                docs = json2html(docs)
-                DOCUMENTATION[repo_name.lower()].update({ node_name: { '.html': docs } })
+                DOCUMENTATION[repo_name.lower()][node_name] = docs
+                docs = docs['.html']
                 break
 
         except Exception as e:

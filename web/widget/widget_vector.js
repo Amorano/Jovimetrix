@@ -18,10 +18,10 @@ const VectorWidget = (app, inputName, options, initial, desc='') => {
         options: options[1]
     }
 
-    widget.options.step = 1;
     if (options[0].endsWith('INT')) {
         delete widget.options.round;
         delete widget.options.precision;
+        widget.options.step = 1;
         if (widget.options?.rgb || false) {
             widget.options.max = 255;
             widget.options.min = 0;
@@ -32,7 +32,6 @@ const VectorWidget = (app, inputName, options, initial, desc='') => {
         widget.options.step = widget.options?.step || 0.01;
         widget.options.round = widget.options?.round || 1 / (widget.options.precision-1) ** 10;
     }
-    console.info(inputName, options[0], options[0].endsWith('INT'))
 
     const offset_y = 4;
     const widget_padding_left = 13;
@@ -172,7 +171,7 @@ const VectorWidget = (app, inputName, options, initial, desc='') => {
                             try {
                                 v = eval(v);
                             } catch (e) {
-                                console.info(e)
+
                             }
                         }
                         if (this.value[idx] != v) {
