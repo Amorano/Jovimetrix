@@ -57,30 +57,31 @@ class CompileException(Exception): pass
 
 class GLSLShader:
     PROG_HEADER = """
-    #version 440
+#version 440
 
-    precision highp float;
+precision highp float;
 
-    uniform vec3	iResolution;
-    uniform vec4	iMouse;
-    uniform float	iTime;
-    uniform float	iTimeDelta;
-    uniform float	iFrameRate;
-    uniform int	    iFrame;
+uniform vec3	iResolution;
+uniform vec4	iMouse;
+uniform float	iTime;
+uniform float	iTimeDelta;
+uniform float	iFrameRate;
+uniform int	    iFrame;
 
-    #define texture2D texture
-    """
+#define texture2D texture
+"""
 
     PROG_FOOTER = """
-    layout(location = 0) out vec4 _fragColor;
+layout(location = 0) out vec4 _fragColor;
 
-    void main()
-    {
-        mainImage(_fragColor, gl_FragCoord.xy);
-    }
-    """
+void main()
+{
+    mainImage(_fragColor, gl_FragCoord.xy);
+}
+"""
 
-    PROG_FRAGMENT = """uniform sampler2D image;
+    PROG_FRAGMENT = """
+uniform sampler2D image;
 
 void mainImage( out vec4 fragColor, vec2 fragCoord ) {
   vec2 uv = fragCoord.xy / iResolution.xy;
@@ -90,7 +91,9 @@ void mainImage( out vec4 fragColor, vec2 fragCoord ) {
 }
 """
 
-    PROG_VERTEX = """#version 330 core
+    PROG_VERTEX = """
+#version 330 core
+
 void main()
 {
     vec2 verts[3] = vec2[](vec2(-1, -1), vec2(3, -1), vec2(-1, 3));
@@ -253,8 +256,7 @@ void main()
 
     @vertex.setter
     def vertex(self, program:str) -> None:
-        if program != self.__source_vertex_raw:
-            self.__init_program(vertex=program)
+        self.__init_program(vertex=program)
 
     @property
     def fragment(self) -> str:
@@ -262,8 +264,7 @@ void main()
 
     @fragment.setter
     def fragment(self, program:str) -> None:
-        if program != self.__source_fragment_raw:
-            self.__init_program(fragment=program)
+        self.__init_program(fragment=program)
 
     @property
     def size(self) -> Tuple[int, int]:

@@ -82,8 +82,8 @@ except Exception as e:
 
 class GLSLNodeBase(JOVImageNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/GLSL"
-    FRAGMENT = None
-    VERTEX = None
+    VERTEX = GLSLShader.PROG_VERTEX
+    FRAGMENT = GLSLShader.PROG_FRAGMENT
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -108,32 +108,34 @@ class GLSLNodeBase(JOVImageNode):
         self.__delta = 0
 
     def run(self, ident, **kw) -> tuple[torch.Tensor]:
-        vertex = parse_param(kw, Lexicon.PROG_VERT, EnumConvertType.STRING, "")[0]
-        fragment = parse_param(kw, Lexicon.PROG_FRAG, EnumConvertType.STRING, "")[0]
         batch = parse_param(kw, Lexicon.BATCH, EnumConvertType.INT, 0, 0, 1048576)[0]
         delta = parse_param(kw, Lexicon.TIME, EnumConvertType.FLOAT, 0)[0]
 
-        self.__glsl.fps = parse_param(kw, Lexicon.FPS, EnumConvertType.INT, 24, 1, 120)[0]
-
         # everybody wang comp tonight
         mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.NONE.name)[0]
+        mode = EnumScaleMode[mode]
+
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)[0]
         sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)[0]
+        sample = EnumInterpolation[sample]
+
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)[0]
 
         variables = kw.copy()
         for p in [Lexicon.MODE, Lexicon.WH, Lexicon.SAMPLE, Lexicon.MATTE, Lexicon.PROG_VERT, Lexicon.PROG_FRAG, Lexicon.BATCH, Lexicon.TIME, Lexicon.FPS]:
             variables.pop(p, None)
 
-        self.__glsl.size = wihi
         try:
-            self.__glsl.vertex = vertex
-            self.__glsl.fragment = fragment
+            self.__glsl.vertex = self.VERTEX
+            self.__glsl.fragment = self.FRAGMENT
         except CompileException as e:
             comfy_message(ident, "jovi-glsl-error", {"id": ident, "e": str(e)})
             logger.error(self.NAME)
             logger.error(e)
             return
+
+        self.__glsl.size = wihi
+        self.__glsl.fps = parse_param(kw, Lexicon.FPS, EnumConvertType.INT, 24, 1, 120)[0]
 
         if batch > 0:
             self.__delta = delta
@@ -155,14 +157,13 @@ class GLSLNodeBase(JOVImageNode):
                 vars[k] = var
 
             w, h = wihi
-            mode = EnumScaleMode[mode]
             if firstImage is not None and mode == EnumScaleMode.NONE:
                 h, w = firstImage.shape[:2]
 
             self.__glsl.size = (w, h)
             img = self.__glsl.render(self.__delta, **vars)
             if mode != EnumScaleMode.NONE:
-                sample = EnumInterpolation[sample]
+
                 img = image_scalefit(img, w, h, mode, sample)
             img = cv2tensor_full(img, matte)
             images.append(img)
@@ -192,6 +193,13 @@ Execute custom GLSL (OpenGL Shading Language) fragment shaders to generate image
         })
         d['optional'] = opts
         return Lexicon._parse(d, cls)
+
+    def __init__(self, *arg, **kw) -> None:
+        self.VERTEX = parse_param(kw, Lexicon.PROG_VERT, EnumConvertType.STRING, GLSLShader.PROG_VERTEX)[0]
+        self.FRAGMENT = parse_param(kw, Lexicon.PROG_FRAG, EnumConvertType.STRING, GLSLShader.PROG_FRAGMENT)[0]
+        super().__init__(*arg, **kw)
+
+
 
 class GLSLNodeDynamic(GLSLNodeBase):
 
@@ -228,6 +236,13 @@ class GLSLNodeDynamic(GLSLNodeBase):
         data.update(opts)
         original_params['optional'] = data
         return Lexicon._parse(original_params, cls)
+
+    '''
+    def __init__(self, *arg, **kw) -> None:
+        kw[Lexicon.PROG_VERT] = self.VERTEX
+        kw[Lexicon.PROG_FRAG] = self.FRAGMENT
+        super().__init__(*arg, **kw)
+    '''
 
 def import_dynamic() -> Tuple[str,...]:
     ret = []
