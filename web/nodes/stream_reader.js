@@ -34,15 +34,15 @@ app.registerExtension({
             const bbox = this.widgets.find(w => w.name === '🔲');
             const source = this.widgets.find(w => w.name === 'SRC');
             source.callback = () => {
-                widgetHide(this, url, "-jov");
-                widgetHide(this, camera, "-jov");
-                widgetHide(this, monitor, "-jov");
-                widgetHide(this, window, "-jov");
-                widgetHide(this, dpi, "-jov");
-                widgetHide(this, bbox, "-jov");
-                widgetHide(this, fps, "-jov");
-                widgetHide(this, orient, "-jov");
-                widgetHide(this, zoom, "-jov");
+                widgetHide(this, url);
+                widgetHide(this, camera);
+                widgetHide(this, monitor);
+                widgetHide(this, window);
+                widgetHide(this, dpi);
+                widgetHide(this, bbox);
+                widgetHide(this, fps);
+                widgetHide(this, orient);
+                widgetHide(this, zoom);
 
                 switch (source.value) {
                     // "URL", "CAMERA", "MONITOR", "WINDOW", "SPOUT"

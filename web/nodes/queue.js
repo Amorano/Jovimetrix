@@ -50,8 +50,8 @@ app.registerExtension({
             const widget_reset = this.widgets.find(w => w.name === 'RESET');
             const widget_value = this.widgets.find(w => w.name === 'VAL');
             widget_value.callback = async() => {
-                widgetHide(this, widget_hold, '-jov');
-                widgetHide(this, widget_reset, '-jov');
+                widgetHide(this, widget_hold);
+                widgetHide(this, widget_reset);
                 if (widget_value.value == 0) {
                     widgetShow(widget_reset);
                     widgetShow(widget_hold);

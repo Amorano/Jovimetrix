@@ -174,11 +174,11 @@ def parse_value(val:Any, typ:EnumConvertType, default: Any,
         val = default
 
     if isinstance(val, dict):
-        if ('0' in val and '1' in val) or (0 in val and 1 in val):
+        if '0' in val or 0 in val:
             val = [val.get(i, val.get(str(i), 0)) for i in range(min(len(val), 4))]
-        elif 'x' in val and 'y' in val:
+        elif 'x' in val:
             val = [val.get(c, 0) for c in 'xyzw']
-        elif 'r' in val and 'g' in val:
+        elif 'r' in val:
             val = [val.get(c, 0) for c in 'rgba']
     elif isinstance(val, torch.Tensor) and typ not in [EnumConvertType.IMAGE, EnumConvertType.MASK, EnumConvertType.LATENT]:
         h, w = val.shape[:2]
@@ -211,9 +211,10 @@ def parse_value(val:Any, typ:EnumConvertType, default: Any,
                 v = v.strip('\n').strip()
                 if v == '':
                     v = 0
+
             try:
                 if typ in [EnumConvertType.FLOAT, EnumConvertType.VEC2, EnumConvertType.VEC3, EnumConvertType.VEC4]:
-                    v = round(float(v), 16)
+                    v = round(float(v or 0), 16)
                 else:
                     v = int(v)
                 if clip_min is not None:
@@ -223,8 +224,8 @@ def parse_value(val:Any, typ:EnumConvertType, default: Any,
             except Exception as e:
                 logger.exception(e)
                 logger.error(f"Error converting value: {val} -- {v}")
-                # raise Exception(e)
                 v = 0
+
             if v == 0:
                 v = zero
             new_val.append(v)

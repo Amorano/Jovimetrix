@@ -301,12 +301,6 @@ class JovimetrixConfigDialog extends ComfyDialog {
             })
         ]);
     }
-
-    show() {
-        this.visible = !this.visible;
-        this.headerTitle.innerText = this.createTitle();
-        this.element.style.display = this.visible ? "block" : "";
-    }
 }
 const DIALOG_COLOR = new JovimetrixConfigDialog();
 

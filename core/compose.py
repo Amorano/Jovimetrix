@@ -371,6 +371,7 @@ Adjust the color scheme of one image to match another with the Color Match Node.
         flip = parse_param(kw, Lexicon.FLIP, EnumConvertType.BOOLEAN, False)
         invert = parse_param(kw, Lexicon.INVERT, EnumConvertType.BOOLEAN, False)
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
+        matte = [(0,255,0,255)]
         params = list(zip_longest_fill(pA, pB, colormap, colormatch_mode, colormatch_map, num_colors, flip, invert, matte))
         images = []
         pbar = ProgressBar(len(params))
@@ -405,10 +406,12 @@ Adjust the color scheme of one image to match another with the Color Match Node.
                     pA = color_match_histogram(pA, pB)
                 case EnumColorMatchMode.REINHARD:
                     pA = color_match_reinhard(pA, pB)
+
             if invert == True:
                 pA = image_invert(pA, 1)
             if cc == 4:
                 pA = image_mask_add(pA, mask)
+
             images.append(cv2tensor_full(pA, matte))
             pbar.update_absolute(idx)
         return [torch.cat(i, dim=0) for i in zip(*images)]
@@ -473,7 +476,7 @@ Extract a portion of an input image or resize it. It supports various cropping m
                 Lexicon.WH: ("VEC2INT", {"default": (512, 512), "min": MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
                 Lexicon.TLTR: ("VEC4", {"default": (0, 0, 0, 1), "min": 0, "max": 1, "label": [Lexicon.TOP, Lexicon.LEFT, Lexicon.TOP, Lexicon.RIGHT]}),
                 Lexicon.BLBR: ("VEC4", {"default": (1, 0, 1, 1), "min": 0, "max": 1,  "label": [Lexicon.BOTTOM, Lexicon.LEFT, Lexicon.BOTTOM, Lexicon.RIGHT]}),
-                Lexicon.MATTE: ("VEC3INT", {"default": (0, 0, 0), "label": [Lexicon.R, Lexicon.G, Lexicon.B], "rgb": True})
+                Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True})
             }
         })
         return Lexicon._parse(d, cls)
@@ -487,7 +490,7 @@ Extract a portion of an input image or resize it. It supports various cropping m
         tltr = parse_param(kw, Lexicon.TLTR, EnumConvertType.VEC4, [(0, 0, 0, 1,)], 0, 1)
         blbr = parse_param(kw, Lexicon.BLBR, EnumConvertType.VEC4, [(1, 0, 1, 1,)], 0, 1)
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
-        params = list(zip_longest_fill(pA, func, xy, wihi, tltr, blbr, color))
+        params = list(zip_longest_fill(pA, func, xy, wihi, tltr, blbr, matte))
         images = []
         pbar = ProgressBar(len(params))
         for idx, (pA, func, xy, wihi, tltr, blbr, matte) in enumerate(params):
@@ -704,7 +707,7 @@ Combines individual color channels (red, green, blue) along with an optional mas
         mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.NONE.name)
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)
         sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)
-        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC3INT, [(0, 0, 0)], 0, 255)
+        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
         flip = parse_param(kw, Lexicon.FLIP, EnumConvertType.VEC4, [(0, 0, 0, 0)], 0., 1.)
         invert = parse_param(kw, Lexicon.INVERT, EnumConvertType.BOOLEAN, False)
         params = list(zip_longest_fill(R, G, B, A, mode, wihi, sample, matte, flip, invert))

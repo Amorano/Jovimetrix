@@ -348,7 +348,7 @@ Sends frames to a specified Spout receiver application for real-time video shari
                     Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
                     Lexicon.WH: ("VEC2INT", {"default": (512, 512), "min":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
                     Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
-                    Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A], "rgb": True})
+                    Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True})
                 }
             })
             return Lexicon._parse(d, cls)

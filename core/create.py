@@ -50,7 +50,6 @@ Generate a constant image or mask of a specified size and color. It can be used 
             "optional": {
                 Lexicon.PIXEL: (JOV_TYPE_IMAGE, {"tooltip":"Optional Image to Matte with Selected Color"}),
                 Lexicon.RGBA_A: ("VEC4INT", {"default": (0, 0, 0, 255),
-                                        "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A],
                                         "rgb": True, "tooltip": "Constant Color to Output"}),
                 Lexicon.WH: ("VEC2INT", {"default": (512, 512),
                                     "label": [Lexicon.W, Lexicon.H],
@@ -260,14 +259,14 @@ Generates images containing text based on parameters such as font, size, alignme
         d = super().INPUT_TYPES()
         d.update({
             "optional": {
-                Lexicon.STRING: ("STRING", {"default": "", "multiline": True,
+                Lexicon.STRING: ("STRING", {"default": "jovimetrix", "multiline": True,
                                             "dynamicPrompts": False,
                                             "tooltip": "Your Message"}),
                 Lexicon.FONT: (cls.FONT_NAMES, {"default": cls.FONT_NAMES[0]}),
                 Lexicon.LETTER: ("BOOLEAN", {"default": False}),
                 Lexicon.AUTOSIZE: ("BOOLEAN", {"default": False}),
-                Lexicon.RGBA_A: ("VEC4", {"default": (255, 255, 255, 255), "rgb": True, "tooltip": "Color of the letters"}),
-                Lexicon.MATTE: ("VEC3INT", {"default": (0, 0, 0), "rgb": True}),
+                Lexicon.RGBA_A: ("VEC4INT", {"default": (255, 255, 255, 255), "rgb": True, "tooltip": "Color of the letters"}),
+                Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True}),
                 Lexicon.COLUMNS: ("INT", {"default": 0, "min": 0}),
                 # if auto on, hide these...
                 Lexicon.FONT_SIZE: ("INT", {"default": 16, "min": 8}),
@@ -288,12 +287,12 @@ Generates images containing text based on parameters such as font, size, alignme
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
-        full_text = parse_param(kw, Lexicon.STRING, EnumConvertType.STRING, "")
+        full_text = parse_param(kw, Lexicon.STRING, EnumConvertType.STRING, "jovimetrix")
         font_idx = parse_param(kw, Lexicon.FONT, EnumConvertType.STRING, self.FONT_NAMES[0])
         autosize = parse_param(kw, Lexicon.AUTOSIZE, EnumConvertType.BOOLEAN, False)
         letter = parse_param(kw, Lexicon.LETTER, EnumConvertType.BOOLEAN, False)
         color = parse_param(kw, Lexicon.RGBA_A, EnumConvertType.VEC4INT, [(255,255,255,255)], 0, 255)
-        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC3INT, [(0,0,0)], 0, 255)
+        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0,0,0,255)], 0, 255)
         columns = parse_param(kw, Lexicon.COLUMNS, EnumConvertType.INT, 0)
         font_size = parse_param(kw, Lexicon.FONT_SIZE, EnumConvertType.INT, 1)
         align = parse_param(kw, Lexicon.ALIGN, EnumConvertType.STRING, EnumAlignment.CENTER.name)
@@ -366,7 +365,7 @@ The Wave Graph node visualizes audio waveforms as bars. Adjust parameters like t
                 Lexicon.THICK: ("FLOAT", {"default": 0.72, "min": 0, "max": 1,
                                         "tooltip": "The percentage of fullness for each bar; currently scaled from the left only"}),
                 Lexicon.WH: ("VEC2INT", {"default": (256, 256), "min":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H], "tooltip": "Final output size of the wave bar graph"}),
-                Lexicon.RGBA_A: ("VEC4", {"default": (128, 128, 0, 255), "rgb": True, "tooltip": "Bar Color"}),
+                Lexicon.RGBA_A: ("VEC4INT", {"default": (128, 128, 0, 255), "rgb": True, "tooltip": "Bar Color"}),
                 Lexicon.MATTE: ("VEC4INT", {"default": (0, 128, 128, 255), "rgb": True})
             }
         })

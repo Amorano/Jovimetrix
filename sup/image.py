@@ -363,15 +363,13 @@ def cv2tensor(image: TYPE_IMAGE, mask:bool=False) -> torch.Tensor:
     return ret
 
 def cv2tensor_full(image: TYPE_IMAGE, matte:TYPE_PIXEL=0) -> Tuple[torch.Tensor, ...]:
-    image = image_convert(image, 4)
+    rgba = image_matte(image, matte)
+    rgb = rgba[:,:,:3]
     mask = image_mask(image)
-    image[..., 3] = mask
-    rgb = image_matte(image, matte)
-    rgb = image_convert(image, 3)
-    image = torch.from_numpy(image.astype(np.float32) / 255.0).unsqueeze(0)
+    rgba = torch.from_numpy(rgba.astype(np.float32) / 255.0).unsqueeze(0)
     rgb = torch.from_numpy(rgb.astype(np.float32) / 255.0).unsqueeze(0)
     mask = torch.from_numpy(mask.astype(np.float32) / 255.0).unsqueeze(0)
-    return image, rgb, mask
+    return rgba, rgb, mask
 
 def hsv2bgr(hsl_color: TYPE_PIXEL) -> TYPE_PIXEL:
     return cv2.cvtColor(np.uint8([[hsl_color]]), cv2.COLOR_HSV2BGR)[0, 0]
@@ -1258,7 +1256,7 @@ def image_invert(image: TYPE_IMAGE, value: float) -> TYPE_IMAGE:
     image = cv2.addWeighted(image, 1 - value, 255 - image, value, 0)
     return bgr2image(image, alpha, cc == 1)
 
-def image_lerp(imageA:TYPE_IMAGE, imageB:TYPE_IMAGE, mask:TYPE_IMAGE=None,
+def image_lerp(imageA: TYPE_IMAGE, imageB:TYPE_IMAGE, mask:TYPE_IMAGE=None,
                alpha:float=1.) -> TYPE_IMAGE:
 
     imageA = imageA.astype(np.float32)
@@ -1281,7 +1279,7 @@ def image_lerp(imageA:TYPE_IMAGE, imageB:TYPE_IMAGE, mask:TYPE_IMAGE=None,
     imageA = (imageA * 255).astype(np.uint8)
     return np.clip(imageA, 0, 255)
 
-def image_levels(image:np.ndarray, black_point:int=0, white_point=255,
+def image_levels(image: np.ndarray, black_point:int=0, white_point=255,
         mid_point=128, gamma=1.0) -> np.ndarray:
     """
     Adjusts the levels of an image including black, white, midpoints, and gamma correction.
@@ -1368,7 +1366,7 @@ def image_load_exr(url: str) -> Tuple[TYPE_IMAGE, TYPE_IMAGE]:
     """
     pass
 
-def image_load_from_url(url:str) -> TYPE_IMAGE:
+def image_load_from_url(url: str) -> TYPE_IMAGE:
     """Creates a CV2 BGR image from a url."""
     try:
         image  = urllib.request.urlopen(url)
@@ -1393,11 +1391,8 @@ def image_mask_add(image:TYPE_IMAGE, mask:TYPE_IMAGE=None, alpha:float=255) -> T
     Existing 4 channel images with no mask input just return themselves.
     """
     image = image_convert(image, 4)
-    if mask is None:
-        mask = np.full_like(image, alpha, np.uint8)
-    else:
-        mask = np.expand_dims(image_convert(image, 1), -1)
-    image[..., 3] = mask[...,0]
+    mask = image_mask(image, alpha) if mask is None else image_convert(mask, 1)
+    image[..., 3] = mask if mask.ndim == 2 else mask[:, :, 0]
     return image
 
 def image_mask_binary(image: TYPE_IMAGE) -> TYPE_IMAGE:
@@ -1436,36 +1431,48 @@ def image_mask_binary(image: TYPE_IMAGE) -> TYPE_IMAGE:
         mask = np.expand_dims(mask, -1)
     return mask.astype(np.uint8)
 
-def image_matte(image:TYPE_IMAGE, color:TYPE_PIXEL=(0, 0, 0, 255), width:int=None, height:int=None) -> TYPE_IMAGE:
+def image_matte(image: TYPE_IMAGE, color: tuple = (0, 0, 0, 255), width: int = None, height: int = None) -> TYPE_IMAGE:
     """
     Puts an image atop a colored matte with the same dimensions as the image.
 
     Args:
         image (TYPE_IMAGE): The input image.
-        color (TYPE_PIXEL): The color of the matte as a tuple (R, G, B, A).
+        color (tuple): The color of the matte as a tuple (R, G, B, A).
+        width (int, optional): The width of the matte. Defaults to the image width.
+        height (int, optional): The height of the matte. Defaults to the image height.
 
     Returns:
-        TYPE_IMAGE: The composited image on a matte. Output is reduced to RGB.
+        TYPE_IMAGE: The composited image on a matte. Output is RGBA with the original Alpha (if any) or solid white.
     """
-
-    # Determine the dimensions of the matte
+    # Determine the dimensions of the image and the matte
     image_height, image_width = image.shape[:2]
     width = width or image_width
     height = height or image_height
 
-    #  solid matte
+    # Create a solid matte with the specified color
     matte = np.full((height, width, 4), color, dtype=np.uint8)
 
-    # Position the image in the center of the matte
+    # Ensure the image has 4 channels (RGBA)
+    image = image_convert(image, 4)
+
+    # Extract the alpha channel from the image
+    alpha = image[:, :, 3] / 255.0
+
+    # Calculate the center position for the image on the matte
     x_offset = (width - image_width) // 2
     y_offset = (height - image_height) // 2
 
-    # everything 4 channel...
-    image = image_convert(image, 4)
+    # Place the image onto the matte using the alpha channel for blending
+    for c in range(0, 3):
+        matte[y_offset:y_offset + image_height, x_offset:x_offset + image_width, c] = \
+            (1 - alpha) * matte[y_offset:y_offset + image_height, x_offset:x_offset + image_width, c] + \
+            alpha * image[:, :, c]
 
-    # Composite the image onto the matte
-    matte[y_offset:y_offset + image_height, x_offset:x_offset + image_width] = image
-    return matte[...,:3]
+    # Set the alpha channel of the matte to the maximum of the matte's and the image's alpha
+    matte[y_offset:y_offset + image_height, x_offset:x_offset + image_width, 3] = \
+        np.maximum(matte[y_offset:y_offset + image_height, x_offset:x_offset + image_width, 3], image[:, :, 3])
+
+    return matte
 
 def image_merge(imageA: TYPE_IMAGE, imageB: TYPE_IMAGE, axis: int=0, flip: bool=False) -> TYPE_IMAGE:
     if flip:
@@ -1809,7 +1816,7 @@ def image_threshold(image:TYPE_IMAGE, threshold:float=0.5,
         _, image = cv2.threshold(image, threshold, 255, mode.value)
     return bgr2image(image, alpha, cc == 1)
 
-def image_translate(image: TYPE_IMAGE, offset: TYPE_COORD = (0.0, 0.0), edge: EnumEdge = EnumEdge.CLIP) -> TYPE_IMAGE:
+def image_translate(image: TYPE_IMAGE, offset: TYPE_COORD = (0.0, 0.0), edge: EnumEdge = EnumEdge.CLIP, border_value:int=0) -> TYPE_IMAGE:
     """
     Translates an image by a given offset. Supports various edge handling methods.
 
@@ -1830,7 +1837,6 @@ def image_translate(image: TYPE_IMAGE, offset: TYPE_COORD = (0.0, 0.0), edge: En
         M = np.float32([[1, 0, offset[0] * width * scalarX], [0, 1, offset[1] * height * scalarY]])
         if edge == EnumEdge.CLIP:
             border_mode = cv2.BORDER_CONSTANT
-            border_value = 0  # You can change this value to suit your needs
         else:
             border_mode = cv2.BORDER_WRAP
 
@@ -1965,14 +1971,28 @@ def color_match_histogram(image: TYPE_IMAGE, usermap: TYPE_IMAGE) -> TYPE_IMAGE:
     return image
 
 def color_match_reinhard(image: TYPE_IMAGE, target: TYPE_IMAGE) -> TYPE_IMAGE:
-    """Reinhard Color matching based on https://www.cs.tau.ac.il/~turkel/imagepapers/ColorTransfer."""
+    """
+    Apply Reinhard color matching to an image based on a target image.
+    Works only for BGR images and returns an BGR image.
+
+    based on https://www.cs.tau.ac.il/~turkel/imagepapers/ColorTransfer.
+
+    Args:
+        image (TYPE_IMAGE): The input image (BGR or BGRA or Grayscale).
+        target (TYPE_IMAGE): The target image (BGR or BGRA or Grayscale).
+
+    Returns:
+        TYPE_IMAGE: The color-matched image in BGR format.
+    """
+    target = image_convert(target, 3)
     lab_tar = cv2.cvtColor(target, cv2.COLOR_BGR2Lab)
+    image = image_convert(image, 3)
     lab_ori = cv2.cvtColor(image, cv2.COLOR_BGR2Lab)
     mean_tar, std_tar = cv2.meanStdDev(lab_tar)
     mean_ori, std_ori = cv2.meanStdDev(lab_ori)
-    ratio = (std_tar/std_ori).reshape(-1)
-    offset = (mean_tar - mean_ori*std_tar/std_ori).reshape(-1)
-    lab_tar = cv2.convertScaleAbs(lab_ori*ratio + offset)
+    ratio = (std_tar / std_ori).reshape(-1)
+    offset = (mean_tar - mean_ori * std_tar / std_ori).reshape(-1)
+    lab_tar = cv2.convertScaleAbs(lab_ori * ratio + offset)
     return cv2.cvtColor(lab_tar, cv2.COLOR_Lab2BGR)
 
 def color_match_lut(image: TYPE_IMAGE, colormap:int=cv2.COLORMAP_JET,

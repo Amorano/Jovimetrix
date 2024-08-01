@@ -605,20 +605,17 @@ Additionally, you can specify the easing function (EASE) and the desired output 
             "optional": {
                 Lexicon.IN_A: (JOV_TYPE_FULL, {"tooltip": "Custom Start Point"}),
                 Lexicon.IN_B: (JOV_TYPE_FULL, {"tooltip": "Custom End Point"}),
-                Lexicon.FLOAT: ("FLOAT", {"default": 0.5, "min": 0., "max": 1.0,
-                                        "step": 0.001, "round": 0.00001,
-                                        "tooltip": "Blend Amount. 0 = full A, 1 = full B"}),
-                Lexicon.EASE: (["NONE"] + EnumEase._member_names_, {"default": "NONE"}),
-                Lexicon.TYPE: (names_convert, {"default": names_convert[2],
-                                            "tooltip":"Output type desired from resultant operation"}),
+                Lexicon.FLOAT: ("VEC4", {"default": (0.5, 0.5, 0.5, 0.5),
+                                         "min": 0., "max": 1.0,
+                                         # "step": 0.001, "round": 0.0001, "precision": 5,
+                                         "tooltip": "Blend Amount. 0 = full A, 1 = full B"}),
                 Lexicon.IN_A+Lexicon.IN_A: ("VEC4", {"default": (0, 0, 0, 0),
-                                        #"min": -sys.maxsize, "max": sys.maxsize,
-                                        "label": [Lexicon.X, Lexicon.Y],
                                         "tooltip":"default value vector for A"}),
                 Lexicon.IN_B+Lexicon.IN_B: ("VEC4", {"default": (1,1,1,1),
-                                        #"min": -sys.maxsize, "max": sys.maxsize,
-                                        "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W],
                                         "tooltip":"default value vector for B"}),
+                Lexicon.TYPE: (names_convert, {"default": "FLOAT",
+                                            "tooltip":"Output type desired from resultant operation"}),
+                Lexicon.EASE: (["NONE"] + EnumEase._member_names_, {"default": "NONE"}),
             },
             "outputs": {
                 0: (Lexicon.ANY_OUT, {"tooltip":f"Output can vary depending on the type chosen in the {Lexicon.TYPE} parameter"})
@@ -631,7 +628,7 @@ Additionally, you can specify the easing function (EASE) and the desired output 
         B = parse_param(kw, Lexicon.IN_B, EnumConvertType.ANY, None)
         a_xyzw = parse_param(kw, Lexicon.IN_A+Lexicon.IN_A, EnumConvertType.VEC4, [(0, 0, 0, 0)])
         b_xyzw = parse_param(kw, Lexicon.IN_B+Lexicon.IN_B, EnumConvertType.VEC4, [(1, 1, 1, 1)])
-        alpha = parse_param(kw, Lexicon.FLOAT,EnumConvertType.FLOAT, 0.5, 0, 1)
+        alpha = parse_param(kw, Lexicon.FLOAT,EnumConvertType.VEC4, [(0.5,0.5,0.5,0.5)], 0, 1)
         op = parse_param(kw, Lexicon.EASE, EnumConvertType.STRING, "NONE")
         typ = parse_param(kw, Lexicon.TYPE, EnumConvertType.STRING, EnumNumberType.FLOAT.name)
         values = []
@@ -657,7 +654,7 @@ Additionally, you can specify the easing function (EASE) and the desired output 
                 val_a = [val_a[0]]
                 val_b = [val_b[0]]
 
-            print(A, B, val_a, val_b, alpha, size)
+            logger.debug([A, B, val_a, val_b, alpha, size])
 
             if op == "NONE":
                 val = [val_b[x] * alpha[x] + val_a[x] * (1 - alpha[x]) for x in range(size)]

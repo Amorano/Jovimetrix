@@ -83,7 +83,7 @@ export function widgetRemoveAll(node) {
 }
 
 export function widgetHide(node, widget, suffix = '') {
-    if (widget.hidden || widget.type?.startsWith(CONVERTED_TYPE + suffix)) {
+    if ((widget?.hidden || false) || widget.type?.startsWith(CONVERTED_TYPE + suffix)) {
         return;
     }
     widget.origType = widget.type;
@@ -162,29 +162,25 @@ export function widgetShowVector(widget, values={}, type=undefined, precision=4)
         widget.value = new_val;
     }
 
+    widget.options.step = 1;
+    widget.options.round = 1;
+    widget.options.precision = 6;
     if (widget.type != 'toggle') {
         let size = 1;
         const match = _REGEX.exec(widget.type);
         if (match) {
             size = match[0];
         }
-        if (widget.type.endsWith('INT')) {
-            widget.options.step = 1;
-            widget.options.round = 1;
-            widget.options.precision = 0;
-        } else if (widget.type != 'BOOLEAN') {
-            widget.options.step = 1 / (10^Math.max(1, precision-2));
-            widget.options.round =  1 / (10^Math.max(1, precision-1));
-            widget.options.precision = precision;
+        if (!widget.type.endsWith('INT') && widget.type != 'BOOLEAN') {
+            widget.options.step = 0.01;
+            widget.options.round = 0.001;
         }
+
         widget.value = {};
         for (let i = 0; i < size; i++) {
             widget.value[i] = widget.type.endsWith('INT') ? Math.round(values[i]) : Number(values[i]);
         }
     } else {
-        widget.options.step = 1;
-        widget.options.round = 1;
-        widget.options.precision = 0;
         widget.value = values[0] ? true : false;
     }
 }
@@ -213,31 +209,32 @@ export function widgetProcessAny(widget, subtype="FLOAT") {
 }
 
 export function widgetToWidget(node, widget) {
-    widgetShow(widget)
-    const sz = node.size
-    node.removeInput(node.inputs.findIndex((i) => i.widget?.name === widget.name))
+    widgetShow(widget);
+    console.info(widget)
+    const sz = node.size;
+    node.removeInput(node.inputs.findIndex((i) => i.widget?.name === widget.name));
 
     for (const widget of node.widgets) {
-      widget.last_y -= LiteGraph.NODE_SLOT_HEIGHT
+        widget.last_y -= LiteGraph.NODE_SLOT_HEIGHT;
     }
 
     // Restore original size but grow if needed
-    node.setSize([Math.max(sz[0], node.size[0]), Math.max(sz[1], node.size[1])])
+    node.setSize([Math.max(sz[0], node.size[0]), Math.max(sz[1], node.size[1])]);
 }
 
 export function widgetToInput(node, widget, config) {
-    widgetHide(node, widget, "-jov")
+    widgetHide(node, widget, '-jov');
 
-    const { linkType } = widget_get_type(config)
+    const { linkType } = widget_get_type(config);
 
     // Add input and store widget config for creating on primitive node
     const sz = node.size
     node.addInput(widget.name, linkType, {
-      widget: { name: widget.name, config },
+        widget: { name: widget.name, config },
     })
 
     for (const widget of node.widgets) {
-      widget.last_y += LiteGraph.NODE_SLOT_HEIGHT
+        widget.last_y += LiteGraph.NODE_SLOT_HEIGHT;
     }
 
     // Restore original size but grow if needed

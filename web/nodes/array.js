@@ -29,11 +29,11 @@ app.registerExtension({
             const widget_mode = this.widgets.find(w => w.name === 'MODE');
             const widget_count = this.widgets.find(w => w.name === 'COUNT');
             widget_mode.callback = async () => {
-                widgetHide(this, widget_idx, "-jov");
-                widgetHide(this, widget_range, "-jov");
-                widgetHide(this, widget_str, "-jov");
-                widgetHide(this, widget_seed, "-jov");
-                widgetHide(this, widget_count, "-jov");
+                widgetHide(this, widget_idx);
+                widgetHide(this, widget_range);
+                widgetHide(this, widget_str);
+                widgetHide(this, widget_seed);
+                widgetHide(this, widget_count);
                 if (widget_mode.value == "PICK") {
                     widgetShow(widget_idx);
                     widgetShow(widget_count);

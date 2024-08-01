@@ -28,9 +28,8 @@ app.registerExtension({
         nodeType.prototype.onNodeCreated = async function () {
             const me = onNodeCreated?.apply(this);
             const self = this;
-            widgetSizeModeHook(this);
+            widgetSizeModeHook(this, false);
             const widget_time = this.widgets.find(w => w.name === '🕛');
-            const widget_batch = this.widgets.find(w => w.name === 'BATCH');
             const widget_vertex = this.widgets.find(w => w.name === 'VERTEX');
             const widget_fragment = this.widgets.find(w => w.name === 'FRAGMENT');
             widget_vertex.options.menu = false;
@@ -42,7 +41,7 @@ app.registerExtension({
             widget_param.serializeValue = async () =>
                 self.inputs.reduce((result, widget) =>
                     ({ ...result, [widget.name]: widget.value }), {});
-            widgetHide(this, widget_param, "-jov");
+            widgetHide(this, widget_param);
 
             // parse this for vars... check existing vars and "types" and keep
             // or ignore as is the case -- I should stick to a common set of
@@ -134,7 +133,6 @@ app.registerExtension({
                 api.removeEventListener(EVENT_JOVI_GLSL_TIME, python_glsl_time);
             };
 
-            setTimeout(() => { widget_batch.callback(); }, 10);
             setTimeout(() => { shader_changed(); }, 10);
             return me;
         }

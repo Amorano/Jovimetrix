@@ -4,17 +4,9 @@
  */
 
  #jov-manager-dialog {
-  min-width: 400px;
-  max-width: 1000px;
   height: 620px;
-  font-size: 15px;
   padding: 0px;
   margin: 0px;
-  z-index: 10000;
-  overflow: visible;
-  box-shadow: 0 0 8px #648064;
-  color: whitesmoke;
-  text-align: center;
 }
 
 #jov-manager-dialog td {
@@ -27,8 +19,6 @@
   flex-direction: column;
   align-items: center;
   background-color: #111;
-  padding: 15px;
-  border-radius: 10px;
   border: 3px solid #AAA;
 }
 

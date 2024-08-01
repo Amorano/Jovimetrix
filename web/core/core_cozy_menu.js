@@ -36,7 +36,7 @@ app.registerExtension({
             const widgets = Object.values(this.widgets);
             for (const [widgetName, widgetType] of matchingTypes) {
                 const widget = widgets.find(m => m.name === widgetName);
-                if (widget && widget.type !== CONVERTED_TYPE &&
+                if (widget && !widget.type.startsWith(CONVERTED_TYPE) &&
                     (widget.options?.forceInput === undefined || widget.options?.forceInput === false) &&
                     widget.options?.menu !== false) {
                         const widgetToInputObject = {

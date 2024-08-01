@@ -25,7 +25,7 @@ app.registerExtension({
             const pivot = this.widgets.find(w => w.name === 'PIVOT');
             const mirror = this.widgets.find(w => w.name === '🪞');
             mirror.callback = () => {
-                widgetHide(this, pivot, "-jov");
+                widgetHide(this, pivot);
                 if (mirror.value != 'NONE') {
                     widgetShow(pivot);
                 }
@@ -37,9 +37,9 @@ app.registerExtension({
             const str = this.widgets.find(w => w.name === '💪🏽');
             const proj = this.widgets.find(w => w.name === 'PROJ');
             proj.callback = () => {
-                widgetHide(this, str, "-jov");
-                widgetHide(this, tltr, "-jov");
-                widgetHide(this, blbr, "-jov");
+                widgetHide(this, str);
+                widgetHide(this, tltr);
+                widgetHide(this, blbr);
                 if (['SPHERICAL', 'FISHEYE'].includes(proj.value)) {
                     widgetShow(str);
                 } else if (['PERSPECTIVE'].includes(proj.value)) {

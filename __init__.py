@@ -799,7 +799,7 @@ try:
             # docs = <repo>.<node>
             # If not found in the main module, search in submodules
             for name, obj in sys.modules.items():
-                print(name, obj)
+                logger.debug(name, obj)
                 if not name.startswith(f"{repo_name}.") or not hasattr(obj, node_name):
                     continue
                 node_class = getattr(obj, node_name)

@@ -4,7 +4,7 @@
  */
 
 import { app } from "../../../scripts/app.js"
-import { widgetToInput } from '../util/util_widget.js'
+import { widgetToInput, widgetToWidget } from '../util/util_widget.js'
 import { domInnerValueChange, colorHex2RGB, colorRGB2Hex } from '../util/util.js'
 import { $el } from "../../../scripts/ui.js"
 
@@ -19,18 +19,20 @@ const VectorWidget = (app, inputName, options, initial, desc='') => {
     }
 
     if (options[0].endsWith('INT')) {
-        delete widget.options.round;
-        delete widget.options.precision;
+        widget.options.step = 1;
+        widget.options.round = 1;
+        widget.options.precision = 0;
         widget.options.step = 1;
         if (widget.options?.rgb || false) {
             widget.options.max = 255;
             widget.options.min = 0;
+            // add the label for being an RGB(A) field?
             // "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A],
         }
     } else {
         widget.options.precision = widget.options?.precision || 6;
-        widget.options.step = widget.options?.step || 0.01;
-        widget.options.round = widget.options?.round || 1 / (widget.options.precision-1) ** 10;
+        widget.options.step = widget.options?.step || 0.001;
+        widget.options.round = widget.options?.round || 1 / 10 ** widget.options.step;
     }
 
     const offset_y = 4;
@@ -43,7 +45,6 @@ const VectorWidget = (app, inputName, options, initial, desc='') => {
 
     widget.draw = function(ctx, node, width, Y, height) {
         if ((app.canvas.ds.scale < 0.50) || (!this.type.startsWith("VEC") && this.type != "COORD2D")) return;
-        const precision = widget.options?.precision !== undefined ? widget.options.precision : 0;
         ctx.save()
         ctx.beginPath()
         ctx.lineWidth = 1
@@ -83,7 +84,11 @@ const VectorWidget = (app, inputName, options, initial, desc='') => {
             // value
             ctx.fillStyle = LiteGraph.WIDGET_TEXT_COLOR
             const it = this.value[idx.toString()];
-            const value = Number(it).toFixed(Math.min(2, precision));
+            const precision = widget.options?.precision || 0;
+            let value = Number(it);
+            if (precision > 0) {
+                value = value.toFixed(Math.min(2, precision));
+            }
             converted.push(value);
             const text = value.toString();
             ctx.fillText(text, x + element_width2 - text.length * 3.3, Y + height/2 + offset_y);
@@ -191,7 +196,6 @@ const VectorWidget = (app, inputName, options, initial, desc='') => {
                         }.bind(this), 20)
                 }
             }
-
         }
         app.canvas.setDirty(true, true);
     }
@@ -252,15 +256,22 @@ app.registerExtension({
                 nodeType.prototype.getExtraMenuOptions = function (_, options) {
                     const me = getExtraMenuOptions?.apply(this, arguments);
                     const widgetToInputArray = [];
-                    for (const w of matchingTypes) {
-                        const widget = Object.values(this.widgets).find(m => m.name === w[0]);
-                        if (myTypes.includes(widget.type)) {
-                            const who = matchingTypes.find(w => w[0] === widget.name)
-                            const widgetToInputObject = {
-                                content: `Convert vector ${widget.name} to input`,
-                                callback: () => widgetToInput(this, widget, who[1])
-                            };
-                            widgetToInputArray.push(widgetToInputObject);
+                    for (const [widgetName, additionalInfo] of matchingTypes) {
+                        const widget = Object.values(this.widgets).find(m => m.name === widgetName);
+                        if (myTypes.includes(widget.type) || widget.type.endsWith('-jov')) {
+                            if (!widget.hidden) {
+                                const widgetToInputObject = {
+                                    content: `Convert ${widgetName} to input`,
+                                    callback: () => widgetToInput(this, widget, additionalInfo)
+                                };
+                                widgetToInputArray.push(widgetToInputObject);
+                            } else {
+                                const widgetToInputObject = {
+                                    content: `Convert ${widgetName} to widget`,
+                                    callback: () => widgetToWidget(this, widget, additionalInfo)
+                                };
+                                widgetToInputArray.push(widgetToInputObject);
+                            }
                         }
                     }
                     if (widgetToInputArray.length) {

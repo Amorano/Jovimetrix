@@ -163,6 +163,7 @@ app.registerExtension({
 
                 const x = this.size[0] - iconSize - iconMargin
                 if (this.show_doc && docElement === null) {
+
                     docElement = document.createElement('div')
                     docElement.classList.add('jov-panel-doc-popup');
 
@@ -189,9 +190,9 @@ app.registerExtension({
                     resizeHandle.style.borderLeft = '5px solid transparent';
                     resizeHandle.style.borderBottom = `5px solid ${borderColor}`;
                     resizeHandle.style.borderRight = `5px solid ${borderColor}`;
-                    docElement.appendChild(resizeHandle)
-                    let isResizing = false
-                    let startX, startY, startWidth, startHeight
+                    docElement.appendChild(resizeHandle);
+                    let isResizing = false;
+                    let startX, startY, startWidth, startHeight;
 
                     resizeHandle.addEventListener('mousedown', function (e) {
                             e.preventDefault();

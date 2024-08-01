@@ -6,7 +6,7 @@
  */
 
 import { app } from "../../../scripts/app.js"
-import { widgetABHook } from '../util/util_jov.js'
+import { widgetABHook2, widgetOutputHookType } from '../util/util_jov.js'
 
 const _id = "LERP (JOV) 🔰"
 
@@ -20,7 +20,15 @@ app.registerExtension({
         const onNodeCreated = nodeType.prototype.onNodeCreated
         nodeType.prototype.onNodeCreated = function () {
             const me = onNodeCreated?.apply(this);
-            widgetABHook(this, '❓', 0);
+            const alpha = this.widgets.find(w => w.name === '🛟');
+            const AA = this.widgets.find(w => w.name === '🅰️🅰️');
+            const BB = this.widgets.find(w => w.name === '🅱️🅱️');
+            const combo = this.widgets.find(w => w.name === '❓');
+            widgetABHook2(this, '❓', alpha, true);
+            widgetABHook2(this, '❓', AA);
+            widgetABHook2(this, '❓', BB);
+            widgetOutputHookType(this, '❓');
+            setTimeout(() => { combo.callback(); }, 5);
             return me;
         }
         return nodeType;

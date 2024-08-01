@@ -13,16 +13,17 @@ export function widgetSizeModeHook(node, wh_hide=true) {
     const mode = widgetFind(node.widgets, 'MODE');
     mode.callback = () => {
         if (wh_hide) {
-            widgetHide(node, wh, "-jov");
+            widgetHide(node, wh);
+            widgetHide(node, samp);
+
+            if (!['NONE'].includes(mode.value)) {
+                widgetShow(wh);
+            }
+            if (!['NONE', 'CROP', 'MATTE'].includes(mode.value)) {
+                widgetShow(samp);
+            }
+            nodeFitHeight(node);
         }
-        widgetHide(node, samp, "-jov");
-        if (!['NONE'].includes(mode.value)) {
-            widgetShow(wh);
-        }
-        if (!['NONE', 'CROP', 'MATTE'].includes(mode.value)) {
-            widgetShow(samp);
-        }
-        nodeFitHeight(node);
     }
     setTimeout(() => { mode.callback(); }, 20);
 }
@@ -36,9 +37,9 @@ export function widgetSizeModeHook2(nodeType, wh_hide=true) {
         const mode = widgetFind(node.widgets, 'MODE');
         mode.callback = () => {
             if (wh_hide) {
-                widgetHide(node, wh, "-jov");
+                widgetHide(node, wh);
             }
-            widgetHide(node, samp, "-jov");
+            widgetHide(node, samp);
             if (!['NONE'].includes(mode.value)) {
                 widgetShow(wh);
             }
@@ -52,7 +53,7 @@ export function widgetSizeModeHook2(nodeType, wh_hide=true) {
     }
 }
 
-export function widgetTypeHook(node, control_key, match_output=0) {
+export function widgetOutputHookType(node, control_key, match_output=0) {
     const combo = widgetFind(node.widgets, control_key);
     const output = node.outputs[match_output];
 
@@ -74,7 +75,7 @@ export function widgetABHook(node, control_key, match_output=-1) {
     const initializeTrack = (widget) => {
         const track = {};
         for (let i = 0; i < 4; i++) {
-            track[i] = widget.options.default[i];
+            track[i] = widget.options?.default[i];
         }
         Object.assign(track, widget.value);
         return track;
@@ -111,14 +112,14 @@ export function widgetABHook(node, control_key, match_output=-1) {
     };
 
     if (match_output > -1) {
-        widgetTypeHook(node, control_key, match_output);
+        widgetOutputHookType(node, control_key, match_output);
     }
 
     const oldCallback = combo.callback;
     combo.callback = () => {
         const me = oldCallback?.apply(this, arguments);
-        widgetHide(node, A, "-jovi");
-        widgetHide(node, B, "-jovi");
+        widgetHide(node, A);
+        widgetHide(node, B);
         if (["VEC2", "VEC2INT", "COORD2D", "VEC3", "VEC3INT", "VEC4", "VEC4INT", "BOOLEAN", "INT", "FLOAT"].includes(combo.value)) {
             widgetShowVector(A, data.track_xyzw, combo.value);
             widgetShowVector(B, data.track_yyzw, combo.value);
@@ -130,5 +131,69 @@ export function widgetABHook(node, control_key, match_output=-1) {
     setTimeout(() => { combo.callback(); }, 10);
     setCallback(A, data.track_xyzw);
     setCallback(B, data.track_yyzw);
+    return data;
+}
+
+/*
+* matchFloatSize forces the target to be float[n] based on its type size
+*/
+export function widgetABHook2(node, control_key, target, matchFloatSize=false) {
+    const initializeTrack = (widget) => {
+        const track = {};
+        for (let i = 0; i < 4; i++) {
+            track[i] = widget.options?.default[i];
+        }
+        Object.assign(track, widget.value);
+        return track;
+    };
+
+    const setCallback = (widget, trackKey) => {
+        widget.options.menu = false;
+        widget.callback = () => {
+            if (widget.type === "toggle") {
+                trackKey[0] = widget.value ? 1 : 0;
+            } else {
+                Object.keys(widget.value).forEach((key) => {
+                    trackKey[key] = widget.value[key];
+                });
+            }
+        };
+    };
+
+    const { widgets } = node;
+    const combo = widgetFind(widgets, control_key);
+
+    if (!target || !combo) {
+        throw new Error("Required widgets not found");
+    }
+
+    const data = {
+        track_xyzw: initializeTrack(target),
+        target,
+        combo
+    };
+
+    const oldCallback = combo.callback;
+    combo.callback = () => {
+        const me = oldCallback?.apply(this, arguments);
+        widgetHide(node, target);
+        if (["VEC2", "VEC2INT", "COORD2D", "VEC3", "VEC3INT", "VEC4", "VEC4INT", "BOOLEAN", "INT", "FLOAT"].includes(combo.value)) {
+            let size = combo.value;
+            if (matchFloatSize) {
+                size = "FLOAT";
+                if (["VEC2", "VEC2INT", "COORD2D"].includes(combo.value)) {
+                    size = "VEC2";
+                } else if (["VEC3", "VEC3INT"].includes(combo.value)) {
+                    size = "VEC3";
+                } else if (["VEC4", "VEC4INT"].includes(combo.value)) {
+                    size = "VEC4";
+                }
+            }
+            widgetShowVector(target, data.track_xyzw, size);
+        }
+        nodeFitHeight(node);
+        return me;
+    }
+    setCallback(target, data.track_xyzw);
     return data;
 }

@@ -19,7 +19,7 @@ from comfy.utils import ProgressBar
 
 from Jovimetrix import JOVImageNode, Lexicon, comfy_message, ROOT
 from Jovimetrix.sup.util import load_file, parse_param, EnumConvertType, parse_value
-from Jovimetrix.sup.image import EnumInterpolation, EnumScaleMode, cv2tensor_full, image_convert, tensor2cv, MIN_IMAGE_SIZE
+from Jovimetrix.sup.image import EnumInterpolation, EnumScaleMode, cv2tensor_full, image_convert, image_scalefit, tensor2cv, MIN_IMAGE_SIZE
 from Jovimetrix.sup.shader import PTYPE, shader_meta, CompileException, GLSLShader
 
 # =============================================================================
@@ -108,19 +108,26 @@ class GLSLNodeBase(JOVImageNode):
         self.__delta = 0
 
     def run(self, ident, **kw) -> tuple[torch.Tensor]:
+        vertex = parse_param(kw, Lexicon.PROG_VERT, EnumConvertType.STRING, "")[0]
+        fragment = parse_param(kw, Lexicon.PROG_FRAG, EnumConvertType.STRING, "")[0]
         batch = parse_param(kw, Lexicon.BATCH, EnumConvertType.INT, 0, 0, 1048576)[0]
         delta = parse_param(kw, Lexicon.TIME, EnumConvertType.FLOAT, 0)[0]
+
         self.__glsl.fps = parse_param(kw, Lexicon.FPS, EnumConvertType.INT, 24, 1, 120)[0]
+
+        # everybody wang comp tonight
+        mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.NONE.name)[0]
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)[0]
+        sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)[0]
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)[0]
 
         variables = kw.copy()
-        for p in [Lexicon.WH, Lexicon.MATTE]:
+        for p in [Lexicon.MODE, Lexicon.WH, Lexicon.SAMPLE, Lexicon.MATTE, Lexicon.PROG_VERT, Lexicon.PROG_FRAG, Lexicon.BATCH, Lexicon.TIME, Lexicon.FPS]:
             variables.pop(p, None)
 
         self.__glsl.size = wihi
         try:
-            self.__glsl.program(self.VERTEX, self.FRAGMENT)
+            self.__glsl.program(vertex, fragment)
         except CompileException as e:
             comfy_message(ident, "jovi-glsl-error", {"id": ident, "e": str(e)})
             logger.error(self.NAME)
@@ -136,16 +143,28 @@ class GLSLNodeBase(JOVImageNode):
         count = batch if batch > 0 else 1
         for idx in range(count):
             vars = {}
+            firstImage = None
             for k, v in variables.items():
                 var = v if not isinstance(v, (list, tuple,)) else v[idx] if idx < len(v) else v[-1]
                 if isinstance(var, (torch.Tensor)):
                     var = tensor2cv(var)
                     var = image_convert(var, 4)
+                    if firstImage is None:
+                        firstImage = var
                 vars[k] = var
 
-            image = self.__glsl.render(self.__delta, **vars)
-            image = cv2tensor_full(image, matte)
-            images.append(image)
+            w, h = wihi
+            mode = EnumScaleMode[mode]
+            if firstImage is not None and mode == EnumScaleMode.NONE:
+                h, w = firstImage.shape[:2]
+
+            self.__glsl.size = (w, h)
+            img = self.__glsl.render(self.__delta, **vars)
+            if mode != EnumScaleMode.NONE:
+                sample = EnumInterpolation[sample]
+                img = image_scalefit(img, w, h, mode, sample)
+            img = cv2tensor_full(img, matte)
+            images.append(img)
 
             self.__delta += step
             comfy_message(ident, "jovi-glsl-time", {"id": ident, "t": self.__delta})
@@ -173,14 +192,6 @@ Execute custom GLSL (OpenGL Shading Language) fragment shaders to generate image
         d['optional'] = opts
         return Lexicon._parse(d, cls)
 
-    def run(self, ident, **kw) -> tuple[torch.Tensor]:
-        self.VERTEX = parse_param(kw, Lexicon.PROG_VERT, EnumConvertType.STRING, "")[0]
-        self.FRAGMENT = parse_param(kw, Lexicon.PROG_FRAG, EnumConvertType.STRING, "")[0]
-        variables = kw.copy()
-        for p in [Lexicon.PROG_VERT, Lexicon.PROG_FRAG]:
-            variables.pop(p, None)
-        return super().run(ident, **variables)
-
 class GLSLNodeDynamic(GLSLNodeBase):
 
     PARAM = None
@@ -203,9 +214,6 @@ class GLSLNodeDynamic(GLSLNodeBase):
                     d = default.split(',')
                     d = parse_value(d, typ, 0)
 
-                #val_min = -2147483647
-                #val_max = 2147483647
-                #val_step = 1
                 entry = (typ.name, {})
                 match typ:
                     case EnumConvertType.INT | EnumConvertType.VEC2INT | EnumConvertType.VEC3INT | EnumConvertType.VEC4INT:

@@ -24,7 +24,7 @@ app.registerExtension({
             const toggle = this.widgets.find(w => w.name === '🇴');
             const end = this.widgets.find(w => w.name === 'END');
             toggle.callback = () => {
-                widgetHide(this, end, "-jov");
+                widgetHide(this, end);
                 if (toggle.value == true) {
                     widgetShow(end);
                 }

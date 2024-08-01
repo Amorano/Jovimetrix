@@ -80,11 +80,11 @@ class GLSLShader():
     }
     """
 
-    PROG_FRAGMENT = """uniform sampler2D imageA;
+    PROG_FRAGMENT = """uniform sampler2D image;
 
 void mainImage( out vec4 fragColor, vec2 fragCoord ) {
   vec2 uv = fragCoord.xy / iResolution.xy;
-  fragColor = texture2D(imageA, uv);
+  fragColor = texture2D(image, uv);
 }
 """
 
@@ -105,7 +105,6 @@ void main()
             raise RuntimeError("GLFW did not init window")
         glfw.make_context_current(self.__window)
 
-        self.__size_changed = False
         self.__size: Tuple[int, int] = (max(width, IMAGE_SIZE_MIN), max(height, IMAGE_SIZE_MIN))
         self.__program = None
         self.__source_vertex: None
@@ -121,6 +120,8 @@ void main()
         self.__fbo = None
         self.__fbo_texture = None
         self.__bgcolor = (0, 0, 0, 1.)
+
+        self.__textures = {}
         self.program(vertex, fragment)
 
     def __compile_shader(self, source:str, shader_type:str) -> None:
@@ -129,56 +130,52 @@ void main()
         gl.glShaderSource(shader, source)
         gl.glCompileShader(shader)
         if gl.glGetShaderiv(shader, gl.GL_COMPILE_STATUS) != gl.GL_TRUE:
-            raise CompileException(gl.glGetShaderInfoLog(shader))
+            log = gl.glGetShaderInfoLog(shader).decode()
+            logger.error(f"Shader compilation error: {log}")
+            raise CompileException(log)
         # logger.debug(f"{shader_type} compiled")
         return shader
-
-    def __framebuffer(self) -> None:
-        # match the window to the buffer size...
-        glfw.make_context_current(self.__window)
-        glfw.set_window_size(self.__window, self.__size[0], self.__size[1])
-        if self.__fbo is None:
-            self.__fbo = gl.glGenFramebuffers(1)
-        gl.glBindFramebuffer(gl.GL_FRAMEBUFFER, self.__fbo)
-
-        if self.__fbo_texture:
-            gl.glDeleteTextures([self.__fbo_texture])
-
-        # MAKE FRAMEBUFFER
-        self.__fbo_texture = gl.glGenTextures(1)
-        gl.glBindTexture(gl.GL_TEXTURE_2D, self.__fbo_texture)
-        gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_RGBA, self.__size[0], self.__size[1], 0, gl.GL_RGBA, gl.GL_UNSIGNED_BYTE, None)
-        gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_LINEAR)
-        gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_LINEAR)
-        gl.glFramebufferTexture2D(gl.GL_FRAMEBUFFER, gl.GL_COLOR_ATTACHMENT0, gl.GL_TEXTURE_2D, self.__fbo_texture, 0)
-        if gl.glCheckFramebufferStatus(gl.GL_FRAMEBUFFER) != gl.GL_FRAMEBUFFER_COMPLETE:
-            raise RuntimeError("Framebuffer is not complete")
-
-        # dump all the old texture slots?
-        old = [v[3] for v in self.__userVar.values() if v[0] == 'sampler2D']
-        gl.glDeleteTextures(old)
-        gl.glViewport(0, 0, self.__size[0], self.__size[1])
 
     def __cleanup(self) -> None:
         glfw.make_context_current(self.__window)
         old = [v[3] for v in self.__userVar.values() if v[0] == 'sampler2D']
         if len(old):
             gl.glDeleteTextures(old)
+
         if self.__fbo_texture:
             gl.glDeleteTextures(1, [self.__fbo_texture])
             self.__fbo_texture = None
+
         if self.__fbo:
             gl.glDeleteFramebuffers(1, [self.__fbo])
             self.__fbo = None
+
+    def __framebuffer(self) -> None:
+        glfw.make_context_current(self.__window)
+
+        # clear the old setup
+        self.__cleanup()
+
+        glfw.set_window_size(self.__window, self.__size[0], self.__size[1])
+
+        self.__fbo = gl.glGenFramebuffers(1)
+        gl.glBindFramebuffer(gl.GL_FRAMEBUFFER, self.__fbo)
+
+        self.__fbo_texture = gl.glGenTextures(1)
+        gl.glBindTexture(gl.GL_TEXTURE_2D, self.__fbo_texture)
+        gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_RGBA, self.__size[0], self.__size[1], 0, gl.GL_RGBA, gl.GL_UNSIGNED_BYTE, None)
+        gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_LINEAR)
+        gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_LINEAR)
+        gl.glFramebufferTexture2D(gl.GL_FRAMEBUFFER, gl.GL_COLOR_ATTACHMENT0, gl.GL_TEXTURE_2D, self.__fbo_texture, 0)
+
+        gl.glViewport(0, 0, self.__size[0], self.__size[1])
+
+    def __del__(self) -> None:
+        self.__cleanup()
         if self.__window:
             glfw.destroy_window(self.__window)
             self.__window = None
-
-    def __del__(self) -> None:
-        glfw.make_context_current(self.__window)
-        if gl:
-            self.__cleanup()
-            glfw.terminate()
+        glfw.terminate()
 
     @property
     def vertex(self) -> str:
@@ -204,9 +201,13 @@ void main()
 
     @size.setter
     def size(self, size:Tuple[int, int]) -> None:
-        self.__size = (min(IMAGE_SIZE_MAX, max(IMAGE_SIZE_MIN, size[0])),
+        size = (min(IMAGE_SIZE_MAX, max(IMAGE_SIZE_MIN, size[0])),
                 min(IMAGE_SIZE_MAX, max(IMAGE_SIZE_MIN, size[1])))
-        self.__framebuffer()
+
+        if size[0] != self.__size[0] or size[1] != self.__size[1]:
+            logger.debug(f"size {size}")
+            self.__size = size
+            self.__framebuffer()
 
     @property
     def runtime(self) -> float:
@@ -225,6 +226,9 @@ void main()
     def fps(self, fps:int) -> None:
         fps = max(1, min(120, int(fps)))
         self.__fps = fps
+        glfw.make_context_current(self.__window)
+        gl.glUseProgram(self.__program)
+        gl.glUniform1f(self.__shaderVar['iFrameRate'], self.__fps)
 
     @property
     def mouse(self) -> Tuple[int, int]:
@@ -287,7 +291,9 @@ void main()
             gl.glAttachShader(self.__program, self.__source_fragment)
             gl.glLinkProgram(self.__program)
             if gl.glGetProgramiv(self.__program, gl.GL_LINK_STATUS) != gl.GL_TRUE:
-                raise RuntimeError(gl.glGetProgramInfoLog(self.__program))
+                log = gl.glGetProgramInfoLog(self.__program).decode()
+                logger.error(f"Program linking error: {log}")
+                raise RuntimeError(log)
 
             self.__framebuffer()
 
@@ -301,14 +307,22 @@ void main()
                 'iMouse': gl.glGetUniformLocation(self.__program, "iMouse")
             }
 
+            gl.glUseProgram(self.__program)
+
+            if (resolution := self.__shaderVar['iResolution']) > -1:
+                gl.glUniform3f(resolution, self.__size[0], self.__size[1], 0)
+
+            if (framerate := self.__shaderVar['iFrameRate']) > -1:
+                gl.glUniform1i(framerate, self.__fps)
+
             self.__userVar = {}
             # read the fragment and setup the vars....
             for match in RE_VARIABLE.finditer(fragment):
                 typ, name, default, val_min, val_max, val_step, tooltip = match.groups()
-                tex_loc = None
+                self.__textures[name] = None
                 if typ in ['sampler2D']:
-                    tex_loc = gl.glGenTextures(1)
-                logger.debug(f"{name}.{typ}: {default} {val_min} {val_max} {val_step} {tooltip}")
+                    self.__textures[name] = gl.glGenTextures(1)
+                # logger.debug(f"{name}.{typ}: {default} {val_min} {val_max} {val_step} {tooltip}")
                 self.__userVar[name] = [
                     # type
                     typ,
@@ -317,7 +331,7 @@ void main()
                     # default value
                     default,
                     # texture id -- if a texture
-                    tex_loc
+                    self.__textures[name]
                 ]
 
             logger.info("program compiled")
@@ -327,45 +341,43 @@ void main()
         self.runtime = time_delta
         gl.glUseProgram(self.__program)
 
-        # SET SHADER STATIC VARS
-        gl.glUniform3f(self.__shaderVar['iResolution'], self.__size[0], self.__size[1], 0)
-        gl.glUniform1f(self.__shaderVar['iTime'], self.__runtime)
-        gl.glUniform1f(self.__shaderVar['iFrameRate'], self.__fps)
-        gl.glUniform1i(self.__shaderVar['iFrame'], self.frame)
-        gl.glUniform4f(self.__shaderVar['iMouse'], self.__mouse[0], self.__mouse[1], 0, 0)
+        if (val := self.__shaderVar['iTime']) > -1:
+            gl.glUniform1f(val, self.__runtime)
 
-        empty = np.zeros((self.__size[0], self.__size[1], 4), dtype=np.uint8)
+        if (val := self.__shaderVar['iFrame']) > -1:
+            gl.glUniform1i(val, self.frame)
 
-        # SET USER DYNAMIC VARS
-        # update any user vars...
+        if (val := self.__shaderVar['iMouse']) > -1:
+            gl.glUniform4f(val, self.__mouse[0], self.__mouse[1], 0, 0)
+
         texture_index = 0
         for uk, uv in self.__userVar.items():
-            # type, loc, value, index
-            p_type, p_loc, p_value, p_tex = uv
-            # use the default....
-            val = p_value if not uk in kw else kw[uk]
+            p_type, p_loc, p_value, _ = uv
+            val = kw.get(uk, p_value)
 
-            # SET TEXTURE
-            if (p_type == 'sampler2D'):
-                # cache textures? or do we care per frame?
-                # gl.glBindTexture(gl.GL_TEXTURE_2D, p_tex)
-                val = empty if val is None else image_convert(val, 4)
-                val = val[::-1,:]
-                val = val.astype(np.float32) / 255.0
-                val = cv2.resize(val, self.__size, interpolation=cv2.INTER_LINEAR)
-                gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_RGBA, val.shape[1], val.shape[0], 0, gl.GL_RGBA, gl.GL_FLOAT, val)
-                gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_LINEAR)
-                gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_LINEAR)
-                gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_S, gl.GL_CLAMP_TO_EDGE)
-                gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_T, gl.GL_CLAMP_TO_EDGE)
-                # Bind the texture to the texture unit
+            if p_type == 'sampler2D':
+                texture = self.__textures[uk]
+                if texture is None:
+                    logger.error(f"texture {uk} is None")
                 gl.glActiveTexture(gl.GL_TEXTURE0 + texture_index)
-                gl.glBindTexture(gl.GL_TEXTURE_2D, p_tex)
+                gl.glBindTexture(gl.GL_TEXTURE_2D, texture)
+
+                if val is not None:
+                    val = image_convert(val, 4)
+                    val = val[::-1,:]
+                    val = val.astype(np.float32) / 255.0
+                    val = cv2.resize(val, self.__size, interpolation=cv2.INTER_LINEAR)
+                    gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_RGBA, val.shape[1], val.shape[0], 0, gl.GL_RGBA, gl.GL_FLOAT, val)
+                    gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_LINEAR)
+                    gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_LINEAR)
+                    gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_S, gl.GL_CLAMP_TO_EDGE)
+                    gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_T, gl.GL_CLAMP_TO_EDGE)
+
                 gl.glUniform1i(p_loc, texture_index)
                 texture_index += 1
             else:
                 funct = LAMBDA_UNIFORM[p_type]
-                if isinstance(val, (str,)):
+                if isinstance(val, str):
                     val = val.split(',')
                 val = parse_value(val, PTYPE[p_type], 0)
                 if not isinstance(val, (list, tuple)):
@@ -378,17 +390,9 @@ void main()
         gl.glDrawArrays(gl.GL_TRIANGLES, 0, 3)
 
         data = gl.glReadPixels(0, 0, self.__size[0], self.__size[1], gl.GL_RGBA, gl.GL_UNSIGNED_BYTE)
-        image = np.frombuffer(data, dtype=np.uint8).reshape(self.__size[1], self.__size[0], 4).copy()
-        image.flags.writeable = True
+        image = np.frombuffer(data, dtype=np.uint8).reshape(self.__size[1], self.__size[0], 4)
         self.__last_frame = image[::-1, :, :]
 
-        # check if window was changed...
-        if self.__size_changed:
-            self.__size_changed = False
-            w, h = glfw.get_framebuffer_size(self.__window)
-            gl.viewport(0, 0, w, h)
-
-        # clear events
         glfw.poll_events()
 
         return self.__last_frame

@@ -28,7 +28,7 @@ app.registerExtension({
             const stride = this.widgets.find(w => w.name === '🦶🏽');
             const axis = this.widgets.find(w => w.name === 'AXIS');
             axis.callback = () => {
-                widgetHide(self, stride, "-jov");
+                widgetHide(self, stride);
                 if (axis.value == 'GRID') {
                     widgetShow(stride);
                 }

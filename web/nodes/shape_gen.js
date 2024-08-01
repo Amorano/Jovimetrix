@@ -23,7 +23,7 @@ app.registerExtension({
             const sides = this.widgets.find(w => w.name === 'SIDES');
             const op = this.widgets.find(w => w.name === 'SHAPE');
             op.callback = () => {
-                widgetHide(this, sides, "-jov");
+                widgetHide(this, sides);
                 if (op.value == 'POLYGON') {
                     widgetShow(sides);
                 }
