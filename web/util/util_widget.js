@@ -210,7 +210,6 @@ export function widgetProcessAny(widget, subtype="FLOAT") {
 
 export function widgetToWidget(node, widget) {
     widgetShow(widget);
-    console.info(widget)
     const sz = node.size;
     node.removeInput(node.inputs.findIndex((i) => i.widget?.name === widget.name));
 

@@ -127,7 +127,8 @@ class GLSLNodeBase(JOVImageNode):
 
         self.__glsl.size = wihi
         try:
-            self.__glsl.program(vertex, fragment)
+            self.__glsl.vertex = vertex
+            self.__glsl.fragment = fragment
         except CompileException as e:
             comfy_message(ident, "jovi-glsl-error", {"id": ident, "e": str(e)})
             logger.error(self.NAME)
