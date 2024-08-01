@@ -140,6 +140,7 @@ void main()
 
         if self.__window:
             glfw.destroy_window(self.__window)
+        logger.debug("cleanup")
 
     def __init_window(self, vertex:str=None, fragment:str=None, force:bool=False) -> None:
         glfw.window_hint(glfw.VISIBLE, glfw.FALSE)
@@ -147,7 +148,11 @@ void main()
         self.__window = glfw.create_window(self.__size[0], self.__size[1], "hidden", None, None)
         if not self.__window:
             raise RuntimeError("GLFW did not init window")
+
+        self.__init_framebuffer()
         self.__init_program(vertex, fragment, force)
+        self.__init_vars()
+        logger.debug("init window")
 
     def __compile_shader(self, source:str, shader_type:str) -> None:
         glfw.make_context_current(self.__window)
@@ -190,65 +195,74 @@ void main()
                 logger.error(f"Program linking error: {log}")
                 raise RuntimeError(log)
 
-            gl.glUseProgram(self.__program)
-
-            self.__fbo = gl.glGenFramebuffers(1)
-            gl.glBindFramebuffer(gl.GL_FRAMEBUFFER, self.__fbo)
-
-            self.__fbo_texture = gl.glGenTextures(1)
-            gl.glBindTexture(gl.GL_TEXTURE_2D, self.__fbo_texture)
-            glfw.set_window_size(self.__window, self.__size[0], self.__size[1])
-
-            gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_RGBA, self.__size[0], self.__size[1], 0, gl.GL_RGBA, gl.GL_UNSIGNED_BYTE, None)
-            gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_LINEAR)
-            gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_LINEAR)
-            gl.glFramebufferTexture2D(gl.GL_FRAMEBUFFER, gl.GL_COLOR_ATTACHMENT0, gl.GL_TEXTURE_2D, self.__fbo_texture, 0)
-
-            gl.glViewport(0, 0, self.__size[0], self.__size[1])
-
             self.__source_fragment_raw = fragment
             self.__source_vertex_raw = vertex
-            self.__shaderVar = {
-                'iResolution': gl.glGetUniformLocation(self.__program, "iResolution"),
-                'iTime': gl.glGetUniformLocation(self.__program, "iTime"),
-                'iFrameRate': gl.glGetUniformLocation(self.__program, "iFrameRate"),
-                'iFrame': gl.glGetUniformLocation(self.__program, "iFrame"),
-                'iMouse': gl.glGetUniformLocation(self.__program, "iMouse")
-            }
+            logger.debug("init program")
 
-            if (resolution := self.__shaderVar['iResolution']) > -1:
-                gl.glUniform3f(resolution, self.__size[0], self.__size[1], 0)
+    def __init_framebuffer(self) -> None:
+        glfw.make_context_current(self.__window)
 
-            if (framerate := self.__shaderVar['iFrameRate']) > -1:
-                gl.glUniform1i(framerate, self.__fps)
+        self.__fbo = gl.glGenFramebuffers(1)
+        gl.glBindFramebuffer(gl.GL_FRAMEBUFFER, self.__fbo)
 
-            self.__userVar = {}
-            # read the fragment and setup the vars....
-            for match in RE_VARIABLE.finditer(fragment):
-                typ, name, default, val_min, val_max, val_step, tooltip = match.groups()
-                self.__textures[name] = None
-                if typ in ['sampler2D']:
-                    self.__textures[name] = gl.glGenTextures(1)
-                # logger.debug(f"{name}.{typ}: {default} {val_min} {val_max} {val_step} {tooltip}")
-                self.__userVar[name] = [
-                    # type
-                    typ,
-                    # gl location
-                    gl.glGetUniformLocation(self.__program, name),
-                    # default value
-                    default,
-                    # texture id -- if a texture
-                    self.__textures[name]
-                ]
+        self.__fbo_texture = gl.glGenTextures(1)
+        gl.glBindTexture(gl.GL_TEXTURE_2D, self.__fbo_texture)
+        glfw.set_window_size(self.__window, self.__size[0], self.__size[1])
 
-            logger.info("program compiled")
+        gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_RGBA, self.__size[0], self.__size[1], 0, gl.GL_RGBA, gl.GL_UNSIGNED_BYTE, None)
+        gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_LINEAR)
+        gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_LINEAR)
+        gl.glFramebufferTexture2D(gl.GL_FRAMEBUFFER, gl.GL_COLOR_ATTACHMENT0, gl.GL_TEXTURE_2D, self.__fbo_texture, 0)
+
+        gl.glViewport(0, 0, self.__size[0], self.__size[1])
+        logger.debug("init framebuffer")
+
+    def __init_vars(self) -> None:
+        glfw.make_context_current(self.__window)
+        gl.glUseProgram(self.__program)
+
+        self.__shaderVar = {
+            'iResolution': gl.glGetUniformLocation(self.__program, "iResolution"),
+            'iTime': gl.glGetUniformLocation(self.__program, "iTime"),
+            'iFrameRate': gl.glGetUniformLocation(self.__program, "iFrameRate"),
+            'iFrame': gl.glGetUniformLocation(self.__program, "iFrame"),
+            'iMouse': gl.glGetUniformLocation(self.__program, "iMouse")
+        }
+
+        if (resolution := self.__shaderVar['iResolution']) > -1:
+            gl.glUniform3f(resolution, self.__size[0], self.__size[1], 0)
+
+        if (framerate := self.__shaderVar['iFrameRate']) > -1:
+            gl.glUniform1i(framerate, self.__fps)
+
+        self.__userVar = {}
+        # read the fragment and setup the vars....
+        for match in RE_VARIABLE.finditer(self.__source_fragment_raw):
+            typ, name, default, val_min, val_max, val_step, tooltip = match.groups()
+            self.__textures[name] = None
+            if typ in ['sampler2D']:
+                self.__textures[name] = gl.glGenTextures(1)
+            # logger.debug(f"{name}.{typ}: {default} {val_min} {val_max} {val_step} {tooltip}")
+            self.__userVar[name] = [
+                # type
+                typ,
+                # gl location
+                gl.glGetUniformLocation(self.__program, name),
+                # default value
+                default,
+                # texture id -- if a texture
+                self.__textures[name]
+            ]
+
+        logger.debug("init vars")
 
     def __del__(self) -> None:
         self.__cleanup()
-        if self.__window:
-            glfw.destroy_window(self.__window)
-            self.__window = None
-        glfw.terminate()
+        #if self.__window is not None:
+        #    if glfw is not None:
+        #        glfw.destroy_window(self.__window)
+        #    self.__window = None
+        # glfw.terminate()
 
     @property
     def vertex(self) -> str:

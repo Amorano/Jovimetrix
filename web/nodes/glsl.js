@@ -54,11 +54,11 @@ app.registerExtension({
                     const [full_match, varType, varName, varValue] = match;
                     let exist = self.inputs?.find(w => w.name === varName);
                     let type;
-                    if (varType === 'int') {
+                    if (varType == 'int') {
                         type = "INT";
-                    } else if (varType === 'float') {
+                    } else if (varType == 'float') {
                         type = "FLOAT";
-                    } else if (varType === 'bool') {
+                    } else if (varType == 'bool') {
                         type = "BOOLEAN";
                     } else if (varType.startsWith('ivec') || varType.startsWith('vec')) {
                         const idx = varType[varType.length - 1];
@@ -66,7 +66,7 @@ app.registerExtension({
                         if (varType.startsWith('ivec')) {
                             type += 'INT';
                         }
-                    } else if (varType === "sampler2D") {
+                    } else if (varType == "sampler2D") {
                         type = "IMAGE";
                     }
 
