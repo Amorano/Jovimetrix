@@ -114,11 +114,9 @@ class GLSLNodeBase(JOVImageNode):
         # everybody wang comp tonight
         mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.NONE.name)[0]
         mode = EnumScaleMode[mode]
-
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)[0]
         sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)[0]
         sample = EnumInterpolation[sample]
-
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)[0]
 
         variables = kw.copy()
@@ -134,9 +132,7 @@ class GLSLNodeBase(JOVImageNode):
             logger.error(e)
             return
 
-        self.__glsl.size = wihi
         self.__glsl.fps = parse_param(kw, Lexicon.FPS, EnumConvertType.INT, 24, 1, 120)[0]
-
         if batch > 0:
             self.__delta = delta
         step = 1. / self.__glsl.fps
@@ -161,9 +157,9 @@ class GLSLNodeBase(JOVImageNode):
                 h, w = firstImage.shape[:2]
 
             self.__glsl.size = (w, h)
+
             img = self.__glsl.render(self.__delta, **vars)
             if mode != EnumScaleMode.NONE:
-
                 img = image_scalefit(img, w, h, mode, sample)
             img = cv2tensor_full(img, matte)
             images.append(img)
@@ -283,6 +279,9 @@ def import_dynamic() -> Tuple[str,...]:
             "PARAM": meta.get('_', []),
             "SORT": sort_order,
         })
+        print(f'GLSL {name} (JOV) {emoji}'.upper())
+        print(meta.get('_', []))
+        print()
 
         sort += 10
         ret.append((class_name, class_def,))

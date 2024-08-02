@@ -151,7 +151,6 @@ void main()
 
         self.__init_framebuffer()
         self.__init_program(vertex, fragment, force)
-        self.__init_vars()
         logger.debug("init window")
 
     def __compile_shader(self, source:str, shader_type:str) -> None:
@@ -175,65 +174,41 @@ void main()
             logger.debug("Fragment program is empty. Using Default.")
             fragment = self.PROG_FRAGMENT
 
-        if force or vertex != self.__source_vertex_raw or fragment != self.__source_fragment_raw:
-            glfw.make_context_current(self.__window)
-            try:
-                gl.glDeleteProgram(self.__program)
-            except Exception as e:
-                pass
+        if not force and vertex == self.__source_vertex_raw and fragment == self.__source_fragment_raw:
+            return
 
-            self.__source_vertex = self.__compile_shader(vertex, gl.GL_VERTEX_SHADER)
-            fragment_full = self.PROG_HEADER + fragment + self.PROG_FOOTER
-            self.__source_fragment = self.__compile_shader(fragment_full, gl.GL_FRAGMENT_SHADER)
-
-            self.__program = gl.glCreateProgram()
-            gl.glAttachShader(self.__program, self.__source_vertex)
-            gl.glAttachShader(self.__program, self.__source_fragment)
-            gl.glLinkProgram(self.__program)
-            if gl.glGetProgramiv(self.__program, gl.GL_LINK_STATUS) != gl.GL_TRUE:
-                log = gl.glGetProgramInfoLog(self.__program).decode()
-                logger.error(f"Program linking error: {log}")
-                raise RuntimeError(log)
-
-            self.__source_fragment_raw = fragment
-            self.__source_vertex_raw = vertex
-            logger.debug("init program")
-
-    def __init_framebuffer(self) -> None:
         glfw.make_context_current(self.__window)
+        try:
+            gl.glDeleteProgram(self.__program)
+        except Exception as e:
+            pass
 
-        self.__fbo = gl.glGenFramebuffers(1)
-        gl.glBindFramebuffer(gl.GL_FRAMEBUFFER, self.__fbo)
+        self.__source_vertex = self.__compile_shader(vertex, gl.GL_VERTEX_SHADER)
+        fragment_full = self.PROG_HEADER + fragment + self.PROG_FOOTER
+        self.__source_fragment = self.__compile_shader(fragment_full, gl.GL_FRAGMENT_SHADER)
 
-        self.__fbo_texture = gl.glGenTextures(1)
-        gl.glBindTexture(gl.GL_TEXTURE_2D, self.__fbo_texture)
-        glfw.set_window_size(self.__window, self.__size[0], self.__size[1])
+        self.__program = gl.glCreateProgram()
+        gl.glAttachShader(self.__program, self.__source_vertex)
+        gl.glAttachShader(self.__program, self.__source_fragment)
+        gl.glLinkProgram(self.__program)
+        if gl.glGetProgramiv(self.__program, gl.GL_LINK_STATUS) != gl.GL_TRUE:
+            log = gl.glGetProgramInfoLog(self.__program).decode()
+            logger.error(f"Program linking error: {log}")
+            raise RuntimeError(log)
 
-        gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_RGBA, self.__size[0], self.__size[1], 0, gl.GL_RGBA, gl.GL_UNSIGNED_BYTE, None)
-        gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_LINEAR)
-        gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_LINEAR)
-        gl.glFramebufferTexture2D(gl.GL_FRAMEBUFFER, gl.GL_COLOR_ATTACHMENT0, gl.GL_TEXTURE_2D, self.__fbo_texture, 0)
+        self.__source_fragment_raw = fragment
+        self.__source_vertex_raw = vertex
 
-        gl.glViewport(0, 0, self.__size[0], self.__size[1])
-        logger.debug("init framebuffer")
-
-    def __init_vars(self) -> None:
-        glfw.make_context_current(self.__window)
         gl.glUseProgram(self.__program)
 
-        self.__shaderVar = {
-            'iResolution': gl.glGetUniformLocation(self.__program, "iResolution"),
-            'iTime': gl.glGetUniformLocation(self.__program, "iTime"),
-            'iFrameRate': gl.glGetUniformLocation(self.__program, "iFrameRate"),
-            'iFrame': gl.glGetUniformLocation(self.__program, "iFrame"),
-            'iMouse': gl.glGetUniformLocation(self.__program, "iMouse")
-        }
+        self.__shaderVar = {}
+        statics = ['iResolution', 'iTime', 'iFrameRate', 'iFrame', 'iMouse']
+        for s in statics:
+            if (val := gl.glGetUniformLocation(self.__program, s)) > -1:
+                self.__shaderVar[s] = val
 
-        if (resolution := self.__shaderVar['iResolution']) > -1:
+        if (resolution := self.__shaderVar.get('iResolution', -1)) > -1:
             gl.glUniform3f(resolution, self.__size[0], self.__size[1], 0)
-
-        if (framerate := self.__shaderVar['iFrameRate']) > -1:
-            gl.glUniform1i(framerate, self.__fps)
 
         self.__userVar = {}
         # read the fragment and setup the vars....
@@ -255,6 +230,25 @@ void main()
             ]
 
         logger.debug("init vars")
+        logger.debug("init program")
+
+    def __init_framebuffer(self) -> None:
+        glfw.make_context_current(self.__window)
+
+        self.__fbo = gl.glGenFramebuffers(1)
+        gl.glBindFramebuffer(gl.GL_FRAMEBUFFER, self.__fbo)
+
+        self.__fbo_texture = gl.glGenTextures(1)
+        gl.glBindTexture(gl.GL_TEXTURE_2D, self.__fbo_texture)
+        glfw.set_window_size(self.__window, self.__size[0], self.__size[1])
+
+        gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_RGBA, self.__size[0], self.__size[1], 0, gl.GL_RGBA, gl.GL_UNSIGNED_BYTE, None)
+        gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_LINEAR)
+        gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_LINEAR)
+        gl.glFramebufferTexture2D(gl.GL_FRAMEBUFFER, gl.GL_COLOR_ATTACHMENT0, gl.GL_TEXTURE_2D, self.__fbo_texture, 0)
+
+        gl.glViewport(0, 0, self.__size[0], self.__size[1])
+        logger.debug("init framebuffer")
 
     def __del__(self) -> None:
         self.__cleanup()
@@ -310,9 +304,10 @@ void main()
     def fps(self, fps:int) -> None:
         fps = max(1, min(120, int(fps)))
         self.__fps = fps
-        glfw.make_context_current(self.__window)
-        gl.glUseProgram(self.__program)
-        gl.glUniform1f(self.__shaderVar['iFrameRate'], self.__fps)
+        if (iFrameRate := self.__shaderVar.get('iFrameRate', -1)) > -1:
+            glfw.make_context_current(self.__window)
+            gl.glUseProgram(self.__program)
+            gl.glUniform1f(self.__shaderVar['iFrameRate'], iFrameRate)
 
     @property
     def mouse(self) -> Tuple[int, int]:
@@ -344,13 +339,16 @@ void main()
 
         self.runtime = time_delta
 
-        if (val := self.__shaderVar['iTime']) > -1:
+        if (val := self.__shaderVar.get('iTime', -1)) > -1:
             gl.glUniform1f(val, self.__runtime)
 
-        if (val := self.__shaderVar['iFrame']) > -1:
+        if (val := self.__shaderVar.get('iFrameRate', -1)) > -1:
+            gl.glUniform1i(val, self.__fps)
+
+        if (val := self.__shaderVar.get('iFrame', -1)) > -1:
             gl.glUniform1i(val, self.frame)
 
-        if (val := self.__shaderVar['iMouse']) > -1:
+        if (val := self.__shaderVar.get('iMouse', -1)) > -1:
             gl.glUniform4f(val, self.__mouse[0], self.__mouse[1], 0, 0)
 
         texture_index = 0
