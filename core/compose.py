@@ -371,7 +371,6 @@ Adjust the color scheme of one image to match another with the Color Match Node.
         flip = parse_param(kw, Lexicon.FLIP, EnumConvertType.BOOLEAN, False)
         invert = parse_param(kw, Lexicon.INVERT, EnumConvertType.BOOLEAN, False)
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
-        matte = [(0,255,0,255)]
         params = list(zip_longest_fill(pA, pB, colormap, colormatch_mode, colormatch_map, num_colors, flip, invert, matte))
         images = []
         pbar = ProgressBar(len(params))
