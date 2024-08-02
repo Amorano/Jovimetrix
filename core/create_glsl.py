@@ -4,6 +4,7 @@ Creation
 """
 
 import os
+import sys
 from pathlib import Path
 from typing import Any, Tuple
 
@@ -138,13 +139,13 @@ class GLSLNodeBase(JOVImageNode):
         step = 1. / self.__glsl.fps
 
         images = []
+        batch = max(1, batch)
         pbar = ProgressBar(batch)
-        count = batch if batch > 0 else 1
-        for idx in range(count):
+        for idx in range(batch):
             vars = {}
             firstImage = None
             for k, v in variables.items():
-                var = v if not isinstance(v, (list, tuple,)) else v[idx] if idx < len(v) else v[-1]
+                var = v if not isinstance(v, (list, tuple,)) else v[idx % len(v)]
                 if isinstance(var, (torch.Tensor)):
                     var = tensor2cv(var)
                     var = image_convert(var, 4)
@@ -162,6 +163,7 @@ class GLSLNodeBase(JOVImageNode):
             if mode != EnumScaleMode.NONE:
                 img = image_scalefit(img, w, h, mode, sample)
             img = cv2tensor_full(img, matte)
+
             images.append(img)
 
             self.__delta += step
@@ -212,33 +214,35 @@ class GLSLNodeDynamic(GLSLNodeBase):
         # parameter list first...
         data = {}
         if cls.PARAM is not None:
-            for glsl_type, name, default, tooltip, val_min, val_max, val_step in cls.PARAM:
+            # 1., 1., 1.; 0; 1; 0.01 | End of the Range
+            # default, min, max, step, tooltip
+            for glsl_type, name, default, val_min, val_max, val_step, tooltip in cls.PARAM:
                 typ = PTYPE[glsl_type]
-                d = None
-                if glsl_type != 'sampler2D' and default is not None:
-                    d = default.split(',')
-                    d = parse_value(d, typ, 0)
+                params = {"default": None}
 
-                entry = (typ.name, {})
-                match typ:
-                    case EnumConvertType.INT | EnumConvertType.VEC2INT | EnumConvertType.VEC3INT | EnumConvertType.VEC4INT:
-                        entry = (typ.name, {"default": d, "min": val_min, "max":val_max, "step": val_step, "tooltip": tooltip},)
-                    case EnumConvertType.FLOAT | EnumConvertType.VEC2 | EnumConvertType.VEC3 | EnumConvertType.VEC4:
-                        entry = (typ.name, {"default": d, "min": val_min, "max":val_max, "step": val_step, "tooltip": tooltip},)
-                    case EnumConvertType.IMAGE:
-                        entry = (typ.name, {"default": d, "tooltip": tooltip},)
-                data[name] = entry
+                d = None
+                if glsl_type != 'sampler2D':
+                    if default is not None:
+                        d = default.split(',')
+                    params['default'] = parse_value(d, typ, 0)
+
+                    if val_min is not None:
+                        params['val_min'] = parse_value(val_min, EnumConvertType.FLOAT, -sys.maxsize)
+
+                    if val_max is not None:
+                        params['val_max'] = parse_value(val_max, EnumConvertType.FLOAT, sys.maxsize)
+
+                    if val_step is not None:
+                        d = 1 if typ.name.endswith('INT') else 0.01
+                        params['val_step'] = parse_value(val_step, EnumConvertType.FLOAT, d)
+
+                    if tooltip is not None:
+                        params['tooltip'] = tooltip
+                data[name] = (typ.name, params,)
 
         data.update(opts)
         original_params['optional'] = data
         return Lexicon._parse(original_params, cls)
-
-    '''
-    def __init__(self, *arg, **kw) -> None:
-        kw[Lexicon.PROG_VERT] = self.VERTEX
-        kw[Lexicon.PROG_FRAG] = self.FRAGMENT
-        super().__init__(*arg, **kw)
-    '''
 
 def import_dynamic() -> Tuple[str,...]:
     ret = []
@@ -279,9 +283,6 @@ def import_dynamic() -> Tuple[str,...]:
             "PARAM": meta.get('_', []),
             "SORT": sort_order,
         })
-        print(f'GLSL {name} (JOV) {emoji}'.upper())
-        print(meta.get('_', []))
-        print()
 
         sort += 10
         ret.append((class_name, class_def,))

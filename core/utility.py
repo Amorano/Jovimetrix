@@ -632,22 +632,25 @@ Manage a queue of items, such as file paths or data. It supports various formats
         else:
             if parse_param(kw, Lexicon.BATCH, EnumConvertType.BOOLEAN, False)[0] == True:
                 data = []
-                for _ in range(self.__len):
-                    ret = process(self.__q[self.__index])
-                    data.append(ret)
-
-                if isinstance(data[0], (np.ndarray,)):
-                    mw, mh, mc = 0, 0, 0
-                    for d in data:
-                        h, w, c = d.shape
+                mw, mh, mc = 0, 0, 0
+                pbar = ProgressBar(self.__len)
+                for idx in range(self.__len):
+                    ret = process(self.__q[idx])
+                    if isinstance(ret, (np.ndarray,)):
+                        h, w, c = ret.shape
                         mw, mh, mc = max(mw, w), max(mh, h), max(mc, c)
+                    data.append(ret)
+                    pbar.update_absolute(idx)
 
+                if mw != 0 or mh != 0 or mc != 0:
                     ret = []
-                    for d in data:
+                    pbar = ProgressBar(self.__len)
+                    for idx, d in enumerate(data):
                         d = image_convert(d, mc)
                         d = image_matte(d, (0,0,0,0), width=mw, height=mh)
                         d = cv2tensor(d)
                         ret.append(d)
+                        pbar.update_absolute(idx)
                     data = torch.cat(ret, dim=0)
             else:
                 data = process(self.__q[self.__index])

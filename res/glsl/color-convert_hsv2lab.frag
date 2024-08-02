@@ -4,6 +4,7 @@
 
 uniform sampler2D image;
 
+const float PI = 3.14159;
 const vec3 D65 = vec3(95.047, 100.0, 108.883);
 
 void mainImage(out vec4 fragColor, vec2 fragCoord) {

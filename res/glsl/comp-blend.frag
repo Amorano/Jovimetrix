@@ -4,7 +4,7 @@
 
 uniform sampler2D imageA;
 uniform sampler2D imageB;
-uniform float blend_amt; // 0.5;0;1;0.01
+uniform float blend_amt; // 0.5; 0; 1; 0.01 | Scalar blend amount
 
 void mainImage( out vec4 fragColor, vec2 fragCoord ) {
     vec2 uv = fragCoord.xy / iResolution.xy;
