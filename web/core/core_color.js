@@ -128,12 +128,6 @@ class JovimetrixConfigDialog extends ComfyDialog {
 
     templateColorHeader = (data) => [
         $el("tr", [
-            $el("td.jov-config-color-header", {
-                style: {
-                    background: data.background
-                },
-                textContent: data.name
-            }),
             $el("td", [
                 $el("input.jov-color", {
                     value: "T",
@@ -147,21 +141,27 @@ class JovimetrixConfigDialog extends ComfyDialog {
                     name: data.name + '.body',
                     color: data.body
                 })
-            ])
+            ]),
+            $el("td.jov-config-color-header", {
+                style: {
+                    background: data.background
+                },
+                textContent: data.name
+            }),
         ])
     ]
 
     templateColorRegex = ({ idx, name, background, title, body }) => (
         $el("tr", [
+            $el("td", [this.createColorInput("T", `regex.${idx}.title`, title)]),
+            $el("td", [this.createColorInput("B", `regex.${idx}.body`, body)]),
             $el("td", { style: { background } }, [
                 $el("input", {
                     name: `regex.${idx}`,
                     value: name,
                     onchange: (e) => this.updateRegexColor(idx, "regex", e.target.value)
                 })
-            ]),
-            $el("td", [this.createColorInput("T", `regex.${idx}.title`, title)]),
-            $el("td", [this.createColorInput("B", `regex.${idx}.body`, body)])
+            ])
         ])
     );
 
@@ -493,7 +493,8 @@ class JovimetrixPanelColorize {
         const createNameCell = () => {
             if (isRegex) {
                 return $el("td", {
-                    style: { background: data.background }
+                    style: { background: data.background },
+                    textContent: " REGEX FILTER ",
                 }, [
                     $el("input", {
                         name: `regex.${data.idx}`,
@@ -501,10 +502,10 @@ class JovimetrixPanelColorize {
                         onchange: function() {
                             this.updateRegexColor(data.idx, "regex", this.value);
                         }
-                    })
+                    }),
                 ]);
             } else {
-                return $el(isHeader ? "td.jov-config-color-header" : "td", {
+                return $el(isHeader ? "td.jov-panel-color-header" : "td", {
                     style: isHeader ? { background: data.background } : {},
                     textContent: data.name
                 });
@@ -525,9 +526,9 @@ class JovimetrixPanelColorize {
             $el("tr", {
                 style: !isHeader ? { background: data.background } : {}
             }, [
-                createNameCell(),
                 createColorInput('title', 'T'),
-                createColorInput('body', 'B')
+                createColorInput('body', 'B'),
+                createNameCell()
             ])
         ];
     };
@@ -563,9 +564,9 @@ class JovimetrixPanelColorize {
         all_nodes.sort((a, b) => {
             const categoryComparison = a[1].category.toLowerCase().localeCompare(b[1].category.toLowerCase());
             // Move items with empty category or starting with underscore to the end
-            if (a[1].category === "" || a[1].category.startsWith("_")) {
+            if (a[1].category == "" || a[1].category.startsWith("_")) {
                 return 1;
-            } else if (b[1].category === "" || b[1].category.startsWith("_")) {
+            } else if (b[1].category == "" || b[1].category.startsWith("_")) {
                 return -1;
             } else {
                 return categoryComparison;

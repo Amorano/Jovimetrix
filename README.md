@@ -255,18 +255,25 @@ The audio nodes require FFMPEG. You can find the official [FFMPEG](https://ffmpe
 <!---------------------------------------------------------------------------->
 
 # ACKNOWLEDGEMENTS
+Thank you to all the creators and developers who make available their talent everyday to help everyone else.
+
+## PROJECT SOURCES
+
+This project uses code concepts from the following projects:
+
+PROJECT | URL | LICENSE
+---|---|---
+MTB Nodes project | https://github.com/melMass/comfy_mtb | MIT
+ComfyUI-Custom-Scripts project | https://github.com/pythongosssss/ComfyUI-Custom-Scripts | MIT
+WAS Node Suite project | https://github.com/WASasquatch/was-node-suite-comfyui | MIT
+rgthree-comfy project | https://github.com/rgthree/rgthree-comfy | MIT
+FizzNodes project |  https://github.com/FizzleDorf/ComfyUI_FizzNodes | MIT
+
+## COMFY DEVELOPERS & NODE MAKERS & COMMUNITY BUILDERS & ADDITIONAL THANKS!
 
 Everyone mentioned here has been tireless in helping me, at some point, construct all the material in Jovimetrix.
 
-&nbsp; | &nbsp;
----|---
-[Stable Diffusion](https://stability.ai/stable-diffusion/)|without this, we would all still only be using pixel pushing tools
-[ComfyUI](https://github.com/comfyanonymous/ComfyUI)|Thank You! for existing
-<img width=225/>|<img width=auto/>
-
-## COMFY DEVELOPERS & NODE MAKERS & COMMUNITY BUILDERS
-
-&nbsp; | &nbsp; | &nbsp;
+THANK | YOU! | 💕
 ---|---|---
 [comfy](https://github.com/comfyanonymous)|[Chris Goringe](https://github.com/chrisgoringe)|[Purz](https://github.com/purzbeats)
 [pythongosssss](https://github.com/pythongosssss)|[melmass](https://github.com/melMass)|[Fizzledorf](https://github.com/Fizzledorf)

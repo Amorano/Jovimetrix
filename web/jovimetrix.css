@@ -34,7 +34,7 @@
 
 #jov-submit-continue {
   width: 100%;
-  padding: 10px;
+  padding: 5px;
   margin: 5px;
   background-color: #3EC43E;
   color: #222;
@@ -78,7 +78,7 @@
 #jov-manager-dialog button {
   background-color: #300000;
   color: #FFFFFF;
-  padding: 5px;
+  padding: 4px;
   border-radius: 0px;
   -moz-border-radius: 0px;
   margin:0px
@@ -135,7 +135,7 @@
 
 .jov-graph-tooltip {
 	z-index: 99999;
-	padding: 4px 8px;
+	padding: 4px 4px;
 	background: var(--comfy-input-bg);
 	color: var(--input-text);
 	position: absolute;
@@ -155,8 +155,8 @@
   background: var(--comfy-menu-bg);
   color: var(--fg-color);
   font: 12px monospace;
-  padding: 0px;
-  margin: 0px;
+  padding: 4px;
+  margin: 4px;
   border-radius: 4px;
   border: medium solid var(--border-color);
   overflow: auto;
@@ -320,19 +320,27 @@
 }
 
 
-/* */
+/*
+COLORIZATION STYLE
+COLORIZATION STYLE
+COLORIZATION STYLE
+*/
 .jov-panel-color {
   padding: 4px;
-  max-width: 95%;
-  max-height: 95%;
+  max-width: 100%;
+  max-height: 100%;
   overflow: auto;
   border-radius: 2px;
   border: medium solid var(--border-color);
+  margin: 5px;
 }
 
-.jov-panel-color .jov-color-title {
+.jov-color-title {
   text-align: center;
-  margin-bottom: 10px;
+}
+
+.jov-panel-color-header {
+  text-transform: uppercase;
 }
 
 .jov-panel-color table {
@@ -342,27 +350,14 @@
 
 .jov-panel-color th,
 .jov-panel-color td {
-  padding: 4px;
-  text-align: left;
   border: 1px solid var(--border-color);
   background-color: var(--comfy-input-bg);
   color: var(--fg-color);
 }
 
 .jov-panel-color input[type="checkbox"] {
-  margin-right: 5px;
-}
-
-.jov-panel-color .jov-color-header {
-  font-weight: bold;
-  font-size: 1.5em;
   text-align: center;
-  background: linear-gradient(22deg, #ff0000 25%, #4c67dd 40%, #5ddd4c 50%, #dd4c4c 65%);
-  clip: text;
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  margin-bottom: 10px;
+  margin-right: 5px;
 }
 
 .jov-panel-color #jov-color-apply {
@@ -385,9 +380,8 @@
 }
 
 .flexible-table td {
-  padding: 4px;
   vertical-align: middle;
-  text-align: right;
+  text-align: left;
 }
 
 @media screen and (max-width: 600px) {
@@ -397,7 +391,7 @@
   }
 
   .flexible-table tbody {
-      text-align: right;
+      text-align: left;
   }
 
   .flexible-table tr {
