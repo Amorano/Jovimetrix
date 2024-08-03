@@ -331,11 +331,12 @@ COLORIZATION STYLE
   max-height: 100%;
   overflow: auto;
   border-radius: 2px;
-  border: medium solid var(--border-color);
-  margin: 5px;
+  border: 1px solid var(--border-color);
+  margin: 15px;
+  padding: 15px;
 }
 
-.jov-color-title {
+.jov-panel-color-title {
   text-align: center;
 }
 

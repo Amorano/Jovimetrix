@@ -16,7 +16,7 @@ function arrayToObject(values, length, parseFn) {
 
 export function domRenderTemplate(template, data) {
     for (const key in data) {
-        if (data.hasOwnProperty(key)) {
+        if (Object.prototype.hasOwnProperty.call(data, key)) {
             const regex = new RegExp(`{{\\s*${key}\\s*}}`, 'g')
             template = template.replace(regex, data[key])
         }

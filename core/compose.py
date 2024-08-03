@@ -377,20 +377,22 @@ Adjust the color scheme of one image to match another with the Color Match Node.
         for idx, (pA, pB, colormap, mode, cmap, num_colors, flip, invert, matte) in enumerate(params):
             if flip == True:
                 pA, pB = pB, pA
-            cc = 3
+            # cc = 3
+
             if pA is None:
                 pA = channel_solid(chan=EnumImageType.BGRA)
             else:
                 pA = tensor2cv(pA)
-                if (cc := pA.shape[2] if len(pA.shape) > 2 else 1) == 4:
-                    mask = image_mask(pA)
+                mask = image_mask(pA)
                 pA = image_convert(pA, 4)
+
             h, w = pA.shape[:2]
             if pB is None:
                 pB = channel_solid(chan=EnumImageType.BGRA)
             else:
                 pB = tensor2cv(pB)
                 pB = image_convert(pB, 4)
+
             mode = EnumColorMatchMode[mode]
             match mode:
                 case EnumColorMatchMode.LUT:
@@ -408,8 +410,9 @@ Adjust the color scheme of one image to match another with the Color Match Node.
 
             if invert == True:
                 pA = image_invert(pA, 1)
-            if cc == 4:
-                pA = image_mask_add(pA, mask)
+
+            # if cc == 4:
+            pA = image_mask_add(pA, mask)
 
             images.append(cv2tensor_full(pA, matte))
             pbar.update_absolute(idx)
@@ -681,6 +684,7 @@ Combines individual color channels (red, green, blue) along with an optional mas
         d = super().INPUT_TYPES()
         d.update({
             "optional": {
+                Lexicon.PIXEL: (JOV_TYPE_IMAGE, {}),
                 Lexicon.R: (JOV_TYPE_IMAGE, {}),
                 Lexicon.G: (JOV_TYPE_IMAGE, {}),
                 Lexicon.B: (JOV_TYPE_IMAGE, {}),
@@ -696,24 +700,32 @@ Combines individual color channels (red, green, blue) along with an optional mas
         return Lexicon._parse(d, cls)
 
     def run(self, **kw)  -> Tuple[torch.Tensor, torch.Tensor]:
+        rgba = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
         R = parse_param(kw, Lexicon.R, EnumConvertType.MASK, None)
         G = parse_param(kw, Lexicon.G, EnumConvertType.MASK, None)
         B = parse_param(kw, Lexicon.B, EnumConvertType.MASK, None)
         A = parse_param(kw, Lexicon.A, EnumConvertType.MASK, None)
-        if len(R)+len(B)+len(G)+len(A) == 0:
-            img = channel_solid(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 0, EnumImageType.BGRA)
-            return list(cv2tensor_full(img, matte))
         mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.NONE.name)
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)
         sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
         flip = parse_param(kw, Lexicon.FLIP, EnumConvertType.VEC4, [(0, 0, 0, 0)], 0., 1.)
         invert = parse_param(kw, Lexicon.INVERT, EnumConvertType.BOOLEAN, False)
-        params = list(zip_longest_fill(R, G, B, A, mode, wihi, sample, matte, flip, invert))
+        params = list(zip_longest_fill(rgba, R, G, B, A, mode, wihi, sample, matte, flip, invert))
         images = []
         pbar = ProgressBar(len(params))
-        for idx, (r, g, b, a, mode, wihi, sample, matte, flip, invert) in enumerate(params):
-            img = [None if x is None else tensor2cv(x) for x in (r,g,b,a)]
+        for idx, (rgba, r, g, b, a, mode, wihi, sample, matte, flip, invert) in enumerate(params):
+            rgba = tensor2cv(rgba)
+            images.append(cv2tensor_full(rgba, matte))
+            continue
+            rgba = image_convert(rgba, 4)
+            rgba = image_split(rgba)
+            print(rgba[0].shape)
+            print(rgba[1].shape)
+            print(rgba[2].shape)
+            print(rgba[3].shape)
+            replace = r, g, b, a
+            img = [replace[i] if replace[i] is not None else x for i, x in enumerate(rgba)]
             _, _, w_max, h_max = image_minmax(img)
             for i, x in enumerate(img):
                 img[i] = x

@@ -147,7 +147,7 @@ import { local_set, local_get } from '../util/util_config.js';
                     mousDownListener = function(e) {
                         var colorPicker = colorPickers.current,
                             colorPickerUI = (colorPicker ? colorPicker.nodes.colorPicker : undefined),
-                            animationSpeed = colorPicker ? colorPicker.color.options.animationSpeed : 0,
+                            // animationSpeed = colorPicker ? colorPicker.color.options.animationSpeed : 0
                             isColorPicker = colorPicker && (function(elm) {
                                 while (elm) {
                                     if ((elm.className || '').indexOf('cp-app') !== -1) return elm;
@@ -248,3 +248,9 @@ import { local_set, local_get } from '../util/util_config.js';
         }
     };
 })(typeof window !== 'undefined' ? window : this);
+
+if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
+    module.exports = jsColorPicker;
+} else {
+    window.jsColorPicker = jsColorPicker;
+}
