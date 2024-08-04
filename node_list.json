@@ -20,7 +20,7 @@
     "GLSL HSV-2-LAB (JOV) \ud83e\uddd9\ud83c\udffd": "Convert HSV input to LAB",
     "GLSL HSV-2-RGB (JOV) \ud83e\uddd9\ud83c\udffd": "Convert HSV input to RGB",
     "GLSL LAB-2-HSV (JOV) \ud83e\uddd9\ud83c\udffd": "Convert LAB color space to HSV",
-    "GLSL LAB-2-RGB (JOV) \ud83e\uddd9\ud83c\udffd": "Convert LAB color space to RGB",
+    "GLSL LAB-2-RGB (JOV) \ud83e\uddd9\ud83c\udffd": "Convert LAB input to RGB",
     "GLSL NORMAL (JOV) \ud83e\uddd9\ud83c\udffd": "Convert input into a Normal map",
     "GLSL RGB-2-HSV (JOV) \ud83e\uddd9\ud83c\udffd": "Convert RGB input to HSV",
     "GLSL RGB-2-LAB (JOV) \ud83e\uddd9\ud83c\udffd": "Convert RGB input to LAB",
