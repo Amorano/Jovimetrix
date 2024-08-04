@@ -27,11 +27,11 @@ const VectorWidget = (app, inputName, options, initial, desc='') => {
             widget.options.max = 255;
             widget.options.min = 0;
             // add the label for being an RGB(A) field?
-            // "label": [Lexicon.R, Lexicon.G, Lexicon.B, Lexicon.A],
+            widget.options.label = ['🟥', '🟩', '🟦', 'ALPHA'];
         }
     } else {
         widget.options.precision = widget.options?.precision || 6;
-        widget.options.step = widget.options?.step || 0.001;
+        widget.options.step = widget.options?.step || 0.0075;
         widget.options.round = widget.options?.round || 1 / 10 ** widget.options.step;
     }
 
@@ -175,8 +175,8 @@ const VectorWidget = (app, inputName, options, initial, desc='') => {
                         if (/^[0-9+\-*/()\s]+|\d+\.\d+$/.test(v)) {
                             try {
                                 v = eval(v);
-                            } catch (e) {
-
+                            } catch {
+                                // Suppressed exception
                             }
                         }
                         if (this.value[idx] != v) {

@@ -717,7 +717,6 @@ try:
         json_data = await request.json()
         did = json_data.get("id", None)
         ComfyAPIMessage.MESSAGE[str(did)] = json_data
-        # logger.debug(ComfyAPIMessage.MESSAGE[did])
         return web.json_response()
 
     @PromptServer.instance.routes.get("/jovimetrix/config")
@@ -739,7 +738,6 @@ try:
         global JOV_CONFIG
         from Jovimetrix.sup.util import update_nested_dict
         update_nested_dict(JOV_CONFIG, did, value)
-        # logger.debug("{} {}", did, value)
         with open(JOV_CONFIG_FILE, 'w', encoding='utf-8') as f:
             json.dump(JOV_CONFIG, f, indent=4)
         return web.json_response(json_data)
@@ -748,7 +746,6 @@ try:
     async def jovimetrix_config_post(request) -> Any:
         json_data = await request.json()
         name = json_data['name']
-        # logger.debug(name)
         global JOV_CONFIG
         try:
             del JOV_CONFIG['color'][name]
@@ -799,9 +796,9 @@ try:
             # docs = <repo>.<node>
             # If not found in the main module, search in submodules
             for name, obj in sys.modules.items():
-                logger.debug(name, obj)
                 if not name.startswith(f"{repo_name}.") or not hasattr(obj, node_name):
                     continue
+                logger.debug(name, obj)
                 node_class = getattr(obj, node_name)
                 docs = get_node_info(node_class)
                 DOCUMENTATION[repo_name.lower()][node_name] = docs
@@ -937,7 +934,6 @@ class Session(metaclass=Singleton):
         # anything we dont know about sort last...
         for k, v in Session.CLASS_MAPPINGS.items():
             NODE_CLASS_MAPPINGS[k] = v
-            # logger.debug('⁉️ {} {}', k, v)
 
         # only do the list on local runs...
         if JOV_INTERNAL:

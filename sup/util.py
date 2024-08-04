@@ -311,7 +311,6 @@ def parse_param(data:dict, key:str, typ:EnumConvertType, default: Any,
         elif 'r' in val and 'g' in val:
             val = tuple(val.get(c, 0) for c in 'rgba')
         elif len(val) == 0:
-            logger.debug(f"[parse_param] {val}")
             val = tuple()
     elif isinstance(val, (torch.Tensor,)):
         if val.ndim > 3:

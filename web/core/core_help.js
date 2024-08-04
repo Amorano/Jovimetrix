@@ -58,7 +58,7 @@ async function load_help(name, custom_data) {
         .then(data => {
             // Cache the fetched data
             if (data.startsWith("unknown")) {
-                return `
+                data = `
                     <div align="center">
                         <h3>${data}</h3>
                         <h4>SELECT A NODE TO SEE HELP</h4>
@@ -357,8 +357,8 @@ if(new_menu != "Disabled" && app.extensionManager) {
     let sidebarElement;
 
     const updateContent = async (node, data) => {
-        HELP_PANEL_CONTENT = await load_help(node, data);
         if (sidebarElement) {
+            HELP_PANEL_CONTENT = await load_help(node, data);
             sidebarElement.innerHTML = HELP_PANEL_CONTENT;
         }
     };
@@ -382,3 +382,4 @@ if(new_menu != "Disabled" && app.extensionManager) {
         await updateContent(node);
     });
 }
+

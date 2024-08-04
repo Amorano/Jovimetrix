@@ -697,7 +697,7 @@ Routes the input data from the optional input ports to the output port, preservi
         vars = kw.copy()
         vars.pop(Lexicon.ROUTE, None)
         vars.pop('ident', None)
-        logger.debug([kw, vars])
+        logger.debug(kw.keys())
         return inout, *vars.values(),
 
 class SaveOutput(JOVBaseNode):

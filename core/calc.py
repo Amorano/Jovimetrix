@@ -328,8 +328,6 @@ Execute binary operations like addition, subtraction, multiplication, division, 
         params = list(zip_longest_fill(A, B, a_xyzw, b_xyzw, op, typ, flip))
         pbar = ProgressBar(len(params))
         for idx, (A, B, a_xyzw, b_xyzw, op, typ, flip) in enumerate(params):
-            # logger.debug(f'val {A}, {B}, {a_xyzw}, {b_xyzw}')
-            # [[0.008793391303918097, 0.008793391303918097, 0.008793391303918097]], [[0.008793391303918097, 0.008793391303918097, 0.008793391303918097]], (0, 0, 0, 0), (0, 0, 0, 0)
             typ = EnumConvertType[typ]
 
             size = min(3, max(0 if not isinstance(A, (list,)) else len(A), 0 if not isinstance(B, (list,)) else len(B)))
@@ -341,8 +339,7 @@ Execute binary operations like addition, subtraction, multiplication, division, 
 
             val_a = parse_value(A, EnumConvertType.VEC4, A if A is not None else a_xyzw)
             val_b = parse_value(B, EnumConvertType.VEC4, B if B is not None else b_xyzw)
-            # logger.debug(f'val {val_a}, {val_b}')
-            # (0, 0, 0, 0), (0, 0, 0, 0)
+
             if flip:
                 val_a, val_b = val_b, val_a
             size = max(1, int(typ.value / 10))
@@ -654,7 +651,7 @@ Additionally, you can specify the easing function (EASE) and the desired output 
                 val_a = [val_a[0]]
                 val_b = [val_b[0]]
 
-            logger.debug([A, B, val_a, val_b, alpha, size])
+            # logger.debug([A, B, val_a, val_b, alpha, size])
 
             if op == "NONE":
                 val = [val_b[x] * alpha[x] + val_a[x] * (1 - alpha[x]) for x in range(size)]

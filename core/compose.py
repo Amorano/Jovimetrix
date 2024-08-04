@@ -377,21 +377,20 @@ Adjust the color scheme of one image to match another with the Color Match Node.
         for idx, (pA, pB, colormap, mode, cmap, num_colors, flip, invert, matte) in enumerate(params):
             if flip == True:
                 pA, pB = pB, pA
-            # cc = 3
 
+            mask = None
             if pA is None:
-                pA = channel_solid(chan=EnumImageType.BGRA)
+                pA = channel_solid(chan=EnumImageType.BGR)
             else:
                 pA = tensor2cv(pA)
-                mask = image_mask(pA)
-                pA = image_convert(pA, 4)
+                if pA.ndim == 3 and pA.shape[2] == 4:
+                    mask = image_mask(pA)
 
             h, w = pA.shape[:2]
             if pB is None:
-                pB = channel_solid(chan=EnumImageType.BGRA)
+                pB = channel_solid(chan=EnumImageType.BGR)
             else:
                 pB = tensor2cv(pB)
-                pB = image_convert(pB, 4)
 
             mode = EnumColorMatchMode[mode]
             match mode:
@@ -408,11 +407,14 @@ Adjust the color scheme of one image to match another with the Color Match Node.
                 case EnumColorMatchMode.REINHARD:
                     pA = color_match_reinhard(pA, pB)
 
+
             if invert == True:
                 pA = image_invert(pA, 1)
 
-            # if cc == 4:
-            pA = image_mask_add(pA, mask)
+            print(mask)
+            if mask is not None:
+                pA = image_mask_add(pA, mask)
+            print(pA.shape)
 
             images.append(cv2tensor_full(pA, matte))
             pbar.update_absolute(idx)
@@ -715,34 +717,34 @@ Combines individual color channels (red, green, blue) along with an optional mas
         images = []
         pbar = ProgressBar(len(params))
         for idx, (rgba, r, g, b, a, mode, wihi, sample, matte, flip, invert) in enumerate(params):
-            rgba = tensor2cv(rgba)
-            images.append(cv2tensor_full(rgba, matte))
-            continue
-            rgba = image_convert(rgba, 4)
-            rgba = image_split(rgba)
-            print(rgba[0].shape)
-            print(rgba[1].shape)
-            print(rgba[2].shape)
-            print(rgba[3].shape)
             replace = r, g, b, a
-            img = [replace[i] if replace[i] is not None else x for i, x in enumerate(rgba)]
+            if rgba is not None:
+                rgba = tensor2cv(rgba)
+                rgba = image_convert(rgba, 4)
+                rgba = image_split(rgba)
+                img = [tensor2cv(replace[i]) if replace[i] is not None else x for i, x in enumerate(rgba)]
+            else:
+                img = [tensor2cv(x) if x is not None else x for x in replace]
+
             _, _, w_max, h_max = image_minmax(img)
             for i, x in enumerate(img):
                 img[i] = x
                 if x is None:
-                    # full channel with chosen "level" of color
-                    img[i] = np.full((h_max, w_max), int(flip[i] * 255.), dtype=np.uint8)
-                elif flip[i] > 0:
-                    img[i] = image_invert(img[i], flip[i])
+                    img[i] = np.full((h_max, w_max), matte[i], dtype=np.uint8)
+                if flip[i] > 0:
+                    img[i] = image_invert(x, flip[i])
 
             img = channel_merge(img)
+
             mode = EnumScaleMode[mode]
             if mode != EnumScaleMode.NONE:
                 w, h = wihi
                 sample = EnumInterpolation[sample]
                 img = image_scalefit(img, w, h, mode, sample)
+
             if invert == True:
                 img = image_invert(img, 1)
+
             images.append(cv2tensor_full(img, matte))
             pbar.update_absolute(idx)
         return [torch.cat(i, dim=0) for i in zip(*images)]
@@ -773,9 +775,7 @@ Takes an input image and splits it into its individual color channels (red, gree
         pbar = ProgressBar(len(pA))
         for idx, pA in enumerate(pA):
             pA = channel_solid(chan=EnumImageType.BGRA) if pA is None else tensor2cv(pA)
-            pA = image_mask_add(pA)
-            pA = [cv2tensor(x, True) for x in image_split(pA)]
-            images.append(pA)
+            images.append([cv2tensor(x, True) for x in image_split(pA)])
             pbar.update_absolute(idx)
         return [torch.cat(i, dim=0) for i in zip(*images)]
 
@@ -1049,6 +1049,7 @@ Apply various geometric transformations to images, including translation, rotati
             if mode != EnumScaleMode.NONE:
                 w, h = wihi
                 pA = image_scalefit(pA, w, h, mode, sample)
+
             images.append(cv2tensor_full(pA, matte))
             pbar.update_absolute(idx)
         return [torch.cat(i, dim=0) for i in zip(*images)]

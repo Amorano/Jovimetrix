@@ -363,12 +363,12 @@ def cv2tensor(image: TYPE_IMAGE, mask:bool=False) -> torch.Tensor:
     return ret
 
 def cv2tensor_full(image: TYPE_IMAGE, matte:TYPE_PIXEL=0) -> Tuple[torch.Tensor, ...]:
-    rgba = image_matte(image, matte)
-    rgb = rgba[:,:,:3]
+    rgba = image_convert(image, 4)
+    rgb = image_matte(image, matte)[:,:,:3]
     mask = image_mask(image)
     rgba = torch.from_numpy(rgba.astype(np.float32) / 255.0).unsqueeze(0)
     rgb = torch.from_numpy(rgb.astype(np.float32) / 255.0).unsqueeze(0)
-    mask = torch.from_numpy(mask.astype(np.float32) / 255.0).unsqueeze(0)
+    mask = torch.from_numpy(mask.astype(np.float32) / 255.0)
     return rgba, rgb, mask
 
 def hsv2bgr(hsl_color: TYPE_PIXEL) -> TYPE_PIXEL:
@@ -572,24 +572,32 @@ def channel_solid(width:int=MIN_IMAGE_SIZE, height:int=MIN_IMAGE_SIZE, color:TYP
         color = color[2::-1]
     return np.full((height, width, 4), color, dtype=np.uint8)
 
-def channel_merge(channel:List[TYPE_IMAGE]) -> TYPE_IMAGE:
-    ch_sizes = [c.shape[:2] if c is not None else (0, 0) for c in channel]
-    ch_sizes.append([MIN_IMAGE_SIZE, MIN_IMAGE_SIZE])
-    max_width = max([c[1] for c in ch_sizes])
-    max_height = max([c[0] for c in ch_sizes])
-    img = channel_solid(max_width, max_height, chan=EnumImageType.BGRA)
-    for i, ch in enumerate(channel):
-        if ch is None:
-            continue
-        if ch.shape[:2] != (max_height, max_width):
-            ch = cv2.resize(ch, (max_width, max_height))
-        if ch.ndim > 2:
-            ch = ch[..., 0]
-        img[:,:,i] = ch
+def channel_merge(channels: List[TYPE_IMAGE]) -> TYPE_IMAGE:
+    max_height = max(ch.shape[0] for ch in channels if ch is not None)
+    max_width = max(ch.shape[1] for ch in channels if ch is not None)
+    num_channels = len(channels)
+    dtype = channels[0].dtype
+    output = np.zeros((max_height, max_width, num_channels), dtype=dtype)
 
-    if len(channel) == 3:
-        img = img[:, :, :3]
-    return img
+    for i, channel in enumerate(channels):
+        if channel is None:
+            continue
+
+        h, w = channel.shape[:2]
+        if channel.ndim > 2:
+            channel = channel[..., 0]
+
+        pad_top = (max_height - h) // 2
+        pad_bottom = max_height - h - pad_top
+        pad_left = (max_width - w) // 2
+        pad_right = max_width - w - pad_left
+        padded_channel = np.pad(channel, ((pad_top, pad_bottom), (pad_left, pad_right)),
+                                mode='constant', constant_values=0)
+        output[..., i] = padded_channel
+
+    if num_channels == 1:
+        output = output[..., 0]
+    return output
 
 def channel_swap(imageA:TYPE_IMAGE, swap_ot:EnumPixelSwizzle,
                 imageB:TYPE_IMAGE, swap_in:EnumPixelSwizzle) -> TYPE_IMAGE:
@@ -1383,7 +1391,8 @@ def image_mask(image:TYPE_IMAGE, color:TYPE_PIXEL=255) -> TYPE_IMAGE:
     """Create a mask from the image, preserving transparency."""
     if image.ndim == 3 and image.shape[2] == 4:
         return image[..., 3]
-    return np.ones_like(image, dtype=np.uint8) * color
+    image = np.ones_like(image, dtype=np.uint8) * color
+    return image[:,:,0]
 
 def image_mask_add(image:TYPE_IMAGE, mask:TYPE_IMAGE=None, alpha:float=255) -> TYPE_IMAGE:
     """Put custom mask into an image. If there is no mask, alpha is applied.
@@ -1686,21 +1695,21 @@ def image_sharpen(image:TYPE_IMAGE, kernel_size=None, sigma:float=1.0,
         np.copyto(sharpened, image, where=low_contrast_mask)
     return sharpened
 
-def image_split(image: TYPE_IMAGE) -> Tuple[TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE]:
-    cc = image.shape[2] if image.ndim == 3 else 1
+def image_split(image: TYPE_IMAGE, convert:object=image_grayscale) -> Tuple[TYPE_IMAGE, ...]:
     h, w = image.shape[:2]
-    if cc == 4:
-        b, g, r, a = cv2.split(image)
-    elif cc == 3:
-        b, g, r = cv2.split(image)
-        a = np.full((h, w), 255, dtype=np.uint8)
+    dtype = image.dtype
+
+    # Grayscale image
+    if image.ndim == 2 or image.shape[2] == 1:
+        r = g = b = image.reshape(h, w)
+        a = np.full((h, w), 255, dtype=dtype)
+
+    # BGR image
+    elif image.shape[2] == 3:
+        r, g, b = cv2.split(image)
+        a = np.full((h, w), 255, dtype=dtype)
     else:
-        r = g = b = image
-        a = np.full((h, w), 255, dtype=np.uint8)
-    r = np.expand_dims(r, -1)
-    g = np.expand_dims(g, -1)
-    b = np.expand_dims(b, -1)
-    a = np.expand_dims(a, -1)
+        r, g, b, a = cv2.split(image)
     return r, g, b, a
 
 def image_stack(image_list: List[TYPE_IMAGE], axis:EnumOrientation=EnumOrientation.HORIZONTAL,
