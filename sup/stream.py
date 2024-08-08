@@ -70,13 +70,16 @@ def monitor_capture_all(width:int=None, height:int=None) -> cv2.Mat:
 
 def monitor_capture(monitor:int=0, tlwh:Tuple[int, int, int, int]=None, width:int=None, height:int=None) -> cv2.Mat:
     with mss.mss() as sct:
+        region = sct.monitors[monitor]
         if tlwh is not None:
-            region = {'top': tlwh[0], 'left': tlwh[1], 'width': tlwh[2], 'height': tlwh[3]}
-            img = sct.grab(region)
-        else:
-            monitor = sct.monitors[monitor]
-            img = sct.grab(monitor)
+            t, l, w, h = region['top'], region['left'], region['width'], region['height']
+            l += min(tlwh[1], tlwh[2]) * w
+            t += min(tlwh[0], tlwh[3]) * h
+            w = abs(tlwh[2] - tlwh[1]) * w
+            h = abs(tlwh[3] - tlwh[0]) * h
+            region = {'top': int(t), 'left': int(l), 'width': int(w), 'height': int(h)}
 
+        img = sct.grab(region)
         img = cv2.cvtColor(np.array(img, dtype=np.uint8), cv2.COLOR_RGB2BGR)
         if height is not None and width is not None:
             img = cv2.resize(img, (width, height))

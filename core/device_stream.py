@@ -142,8 +142,10 @@ Capture frames from various sources such as URLs, cameras, monitors, windows, or
             self.__deviceType = EnumStreamType.MONITOR
             if (which := parse_param(kw, Lexicon.MONITOR, EnumConvertType.STRING, "NONE")[0]) != "NONE":
                 which = int(which.split('-')[0].strip()) + 1
+                bbox = parse_param(kw, Lexicon.BBOX, EnumConvertType.VEC4, [(0,0,1,1)], 0, 1)[0]
                 for idx in range(batch_size):
-                    img = monitor_capture(which)
+
+                    img = monitor_capture(which, bbox) #, width, height)
                     if img is None:
                         img = channel_solid(width, height, matte)
                     else:
