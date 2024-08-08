@@ -86,16 +86,21 @@ app.registerExtension({
                             color = colorHex2RGB(g_highlight);
                             color = g_highlight
                         } catch {
-
+                            // Intentionally left blank
                         }
                     }
                     if (g_color_style == "Round Highlight") {
                         const thick = Math.max(1, Math.min(3, g_thickness));
 
                         for (const w of this.widgets) {
-                            if (w?.hidden || w.type.startsWith('converted-') || ["customtext"].includes(w.type)) {
+                            if (!w || w?.hidden || !w?.type) {
+                                continue
+                            }
+
+                            if (w.type.startsWith('converted-') || ["customtext"].includes(w.type)) {
                                 continue;
                             }
+
                             ctx.beginPath();
                             ctx.fillStyle = color;
                             ctx.roundRect(15-thick, w.last_y-thick, node.size[0]-30+2*thick, LiteGraph.NODE_WIDGET_HEIGHT+thick * 2, 12);

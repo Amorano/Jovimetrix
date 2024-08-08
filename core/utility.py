@@ -32,8 +32,8 @@ from Jovimetrix import comfy_message, parse_reset, \
 from Jovimetrix.sup.util import parse_dynamic, path_next, \
     parse_param, zip_longest_fill, EnumConvertType
 
-from Jovimetrix.sup.image import cv2tensor, image_convert, image_matte, tensor2cv, \
-    pil2tensor, image_load, image_formats, tensor2pil, MIN_IMAGE_SIZE
+from Jovimetrix.sup.image import cv2tensor, image_by_size, image_convert, \
+    image_matte, tensor2cv, pil2tensor, image_load, image_formats, tensor2pil, MIN_IMAGE_SIZE
 
 # =============================================================================
 
@@ -144,20 +144,20 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
         d = super().INPUT_TYPES()
         d.update({
             "optional": {
-                Lexicon.BATCH_MODE: (EnumBatchMode._member_names_, {"default": EnumBatchMode.MERGE.name, "tooltip":"Select a single index, specific range, custom index list or randomized"}),
-                Lexicon.INDEX: ("INT", {"default": 0, "min": 0, "tooltip":"Selected list position"}),
-                Lexicon.RANGE: ("VEC3", {"default": (0, 0, 1), "min": 0}),
-                Lexicon.STRING: ("STRING", {"default": "", "tooltip":"Comma separated list of indicies to export"}),
-                Lexicon.SEED: ("INT", {"default": 0, "min": 0, "max": sys.maxsize}),
-                Lexicon.COUNT: ("INT", {"default": 0, "min": 0, "max": sys.maxsize, "tooltip":"How many items to return"}),
-                Lexicon.FLIP: ("BOOLEAN", {"default": False, "tooltip":"invert the calculated output list"}),
-                Lexicon.BATCH_CHUNK: ("INT", {"default": 0, "min": 0,}),
+                Lexicon.BATCH_MODE: (EnumBatchMode._member_names_, {"default": EnumBatchMode.MERGE.name, "tooltips":"Select a single index, specific range, custom index list or randomized"}),
+                Lexicon.INDEX: ("INT", {"default": 0, "mij": 0, "tooltips":"Selected list position"}),
+                Lexicon.RANGE: ("VEC3", {"default": (0, 0, 1), "mij": 0}),
+                Lexicon.STRING: ("STRING", {"default": "", "tooltips":"Comma separated list of indicies to export"}),
+                Lexicon.SEED: ("INT", {"default": 0, "mij": 0, "maj": sys.maxsize}),
+                Lexicon.COUNT: ("INT", {"default": 0, "mij": 0, "maj": sys.maxsize, "tooltips":"How many items to return"}),
+                Lexicon.FLIP: ("BOOLEAN", {"default": False, "tooltips":"invert the calculated output list"}),
+                Lexicon.BATCH_CHUNK: ("INT", {"default": 0, "mij": 0,}),
             },
             "outputs": {
-                0: (Lexicon.ANY_OUT, {"tooltip":"Output list from selected operation"}),
-                1: (Lexicon.LENGTH, {"tooltip":"Length of output list"}),
-                2: (Lexicon.LIST, {"tooltip":"Full list"}),
-                3: (Lexicon.LENGTH2, {"tooltip":"Length of all input elements"}),
+                0: (Lexicon.ANY_OUT, {"tooltips":"Output list from selected operation"}),
+                1: (Lexicon.LENGTH, {"tooltips":"Length of output list"}),
+                2: (Lexicon.LIST, {"tooltips":"Full list"}),
+                3: (Lexicon.LENGTH2, {"tooltips":"Length of all input elements"}),
             }
         })
         return Lexicon._parse(d, cls)
@@ -184,7 +184,7 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
         slice_range = parse_param(kw, Lexicon.RANGE, EnumConvertType.VEC3INT, [(0, 0, 1)])[0]
         indices = parse_param(kw, Lexicon.STRING, EnumConvertType.STRING, "")[0]
         seed = parse_param(kw, Lexicon.SEED, EnumConvertType.INT, 0)[0]
-        count = parse_param(kw, Lexicon.COUNT, EnumConvertType.INT, 0, 0)[0]
+        count = parse_param(kw, Lexicon.COUNT, EnumConvertType.INT, 0, 0, sys.maxsize)[0]
         flip = parse_param(kw, Lexicon.FLIP, EnumConvertType.BOOLEAN, False)[0]
         batch_chunk = parse_param(kw, Lexicon.BATCH_CHUNK, EnumConvertType.INT, 0, 0)[0]
 
@@ -260,6 +260,10 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
 
         size = len(results)
         if output_is_image:
+            _, w, h = image_by_size(results)
+            print(w, h)
+            results = [image_convert(i, 4) for i in results]
+            results = [image_matte(i, (0,0,0,0), w, h) for i in results]
             results = torch.stack(results, dim=0)
             size = results.shape[0]
         return results, size, full_list, len(full_list)
@@ -287,12 +291,12 @@ Responsible for saving images or animations to disk. It supports various output 
                 # GIF ONLY
                 Lexicon.OPTIMIZE: ("BOOLEAN", {"default": False}),
                 # GIFSKI ONLY
-                Lexicon.QUALITY: ("INT", {"default": 90, "min": 1, "max": 100}),
-                Lexicon.QUALITY_M: ("INT", {"default": 100, "min": 1, "max": 100}),
+                Lexicon.QUALITY: ("INT", {"default": 90, "mij": 1, "maj": 100}),
+                Lexicon.QUALITY_M: ("INT", {"default": 100, "mij": 1, "maj": 100}),
                 # GIF OR GIFSKI
-                Lexicon.FPS: ("INT", {"default": 24, "min": 1, "max": 60}),
+                Lexicon.FPS: ("INT", {"default": 24, "mij": 1, "maj": 60}),
                 # GIF OR GIFSKI
-                Lexicon.LOOP: ("INT", {"default": 0, "min": 0}),
+                Lexicon.LOOP: ("INT", {"default": 0, "mij": 0}),
             }
         })
         return Lexicon._parse(d, cls)
@@ -378,11 +382,11 @@ Visualize a series of data points over time. It accepts a dynamic number of valu
         d.update({
             "optional": {
                 Lexicon.RESET: ("BOOLEAN", {"default": False}),
-                Lexicon.VALUE: ("INT", {"default": 60, "min": 0, "tooltip":"Number of values to graph and display"}),
-                Lexicon.WH: ("VEC2INT", {"default": (512, 512), "min":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]})
+                Lexicon.VALUE: ("INT", {"default": 60, "mij": 0, "tooltips":"Number of values to graph and display"}),
+                Lexicon.WH: ("VEC2INT", {"default": (512, 512), "mij":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]})
             },
             "outputs": {
-                0: (Lexicon.IMAGE, {"tooltip":"The graphed image"}),
+                0: (Lexicon.IMAGE, {"tooltips":"The graphed image"}),
             }
         })
         return Lexicon._parse(d, cls)
@@ -449,10 +453,10 @@ Exports and Displays immediate information about images.
                 Lexicon.PIXEL_A: (JOV_TYPE_IMAGE,),
             },
             "outputs": {
-                0: (Lexicon.INT, {"tooltip":"Batch count"}),
+                0: (Lexicon.INT, {"tooltips":"Batch count"}),
                 1: (Lexicon.W,),
                 2: (Lexicon.H,),
-                3: (Lexicon.C, {"tooltip":"Number of image channels. 1 (Grayscale), 3 (RGB) or 4 (RGBA)"}),
+                3: (Lexicon.C, {"tooltips":"Number of image channels. 1 (Grayscale), 3 (RGB) or 4 (RGBA)"}),
                 4: (Lexicon.WH,),
                 5: (Lexicon.WHC,),
             }
@@ -515,17 +519,17 @@ Manage a queue of items, such as file paths or data. It supports various formats
         d.update({
             "optional": {
                 Lexicon.QUEUE: ("STRING", {"multiline": True, "default": "./res/img/test-a.png"}),
-                Lexicon.VALUE: ("INT", {"min": 0, "default": 0, "tooltip": "the current index for the current queue item"}),
-                Lexicon.WAIT: ("BOOLEAN", {"default": False, "tooltip":"Hold the item at the current queue index"}),
-                Lexicon.RESET: ("BOOLEAN", {"default": False, "tooltip":"reset the queue back to index 1"}),
-                Lexicon.BATCH: ("BOOLEAN", {"default": False, "tooltip":"load all items, if they are loadable items, i.e. batch load images from the Queue's list"}),
+                Lexicon.VALUE: ("INT", {"mij": 0, "default": 0, "tooltips": "the current index for the current queue item"}),
+                Lexicon.WAIT: ("BOOLEAN", {"default": False, "tooltips":"Hold the item at the current queue index"}),
+                Lexicon.RESET: ("BOOLEAN", {"default": False, "tooltips":"reset the queue back to index 1"}),
+                Lexicon.BATCH: ("BOOLEAN", {"default": False, "tooltips":"load all items, if they are loadable items, i.e. batch load images from the Queue's list"}),
             },
             "outputs": {
-                0: (Lexicon.ANY_OUT, {"tooltip":"Current item selected from the Queue list"}),
-                1: (Lexicon.QUEUE, {"tooltip":"The entire Queue list"}),
-                2: (Lexicon.CURRENT, {"tooltip":"Current item selected from the Queue list as a string"}),
-                3: (Lexicon.INDEX, {"tooltip":"Current selected item index in the Queue list"}),
-                4: (Lexicon.TOTAL, {"tooltip":"Total items in the current Queue List"}),
+                0: (Lexicon.ANY_OUT, {"tooltips":"Current item selected from the Queue list"}),
+                1: (Lexicon.QUEUE, {"tooltips":"The entire Queue list"}),
+                2: (Lexicon.CURRENT, {"tooltips":"Current item selected from the Queue list as a string"}),
+                3: (Lexicon.INDEX, {"tooltips":"Current selected item index in the Queue list"}),
+                4: (Lexicon.TOTAL, {"tooltips":"Total items in the current Queue List"}),
             }
         })
         return Lexicon._parse(d, cls)
@@ -654,7 +658,7 @@ Manage a queue of items, such as file paths or data. It supports various formats
                     data = torch.cat(ret, dim=0)
             else:
                 data = process(self.__q[self.__index])
-                if isinstance(data[0], (np.ndarray,)):
+                if isinstance(data, (list, np.ndarray,)) and isinstance(data[0], (np.ndarray,)):
                     data = cv2tensor(data)
                 self.__index += 1
 
@@ -687,7 +691,7 @@ Routes the input data from the optional input ports to the output port, preservi
                 Lexicon.ROUTE: ("BUS", {"default": None}),
             },
             "outputs": {
-                0: (Lexicon.ROUTE, {"tooltip":"Pass through for Route node"})
+                0: (Lexicon.ROUTE, {"tooltips":"Pass through for Route node"})
             }
         })
         return Lexicon._parse(d, cls)
@@ -794,7 +798,7 @@ Make requests to a RESTful API endpoint and process the responses. It supports a
                 Lexicon.ATTRIBUTE: ("STRING", {"default": ""}),
                 Lexicon.AUTH: ("STRING", {"multiline": True, "dynamic": False}),
                 Lexicon.PATH: ("STRING", {"default": ""}),
-                "iteration_index": ("INT", {"default": 0, "min": 0, "max": 9999})
+                "iteration_index": ("INT", {"default": 0, "mij": 0, "maj": 9999})
             }
         }
         return Lexicon._parse(d, cls)

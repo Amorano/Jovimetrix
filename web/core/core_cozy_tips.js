@@ -26,6 +26,8 @@ const JTooltipWidget = (app, name, opts) => {
     return w
 }
 
+if(app.extensionManager) {
+
 app.registerExtension({
     name: "jovimetrix.help.tooltips",
     async getCustomWidgets() {
@@ -42,11 +44,14 @@ app.registerExtension({
 
         let userTimeout = 750;
         let tooltipTimeout;
+        let widget_previous;
+
         const hideTooltip = () => {
             if (tooltipTimeout) {
                 clearTimeout(tooltipTimeout);
             }
             tooltipEl.style.display = "none";
+            widget_previous = null;
         };
 
         const showTooltip = (tooltip) => {
@@ -72,18 +77,21 @@ app.registerExtension({
         };
 
         const onCanvasPointerMove = function () {
-            hideTooltip();
             const node = this.node_over;
-            if (!node) return;
-
-            if (node.flags.collapsed) return;
+            if (!node || node.flags.collapsed) {
+                hideTooltip();
+                return;
+            }
 
             // jovian tooltip
             const widget_tooltip = (node?.widgets || [])
                 .find(widget => widget.type === 'JTOOLTIP');
-            if (!widget_tooltip) return;
-            const tips = widget_tooltip.options.default || {};
+            if (!widget_tooltip) {
+                hideTooltip();
+                return;
+            }
 
+            const tips = widget_tooltip.options.default || {};
             const inputSlot = this.isOverNodeInput(node, this.graph_mouse[0], this.graph_mouse[1], [0, 0]);
             if (inputSlot !== -1) {
                 const slot = node.inputs[inputSlot];
@@ -97,12 +105,23 @@ app.registerExtension({
                         }
                     }
                 }
+
+                const name = `inputs_${inputSlot}`;
+                if (widget_previous != name) {
+                    hideTooltip();
+                    widget_previous = name;
+                }
                 return showTooltip(tip);
             }
 
             const outputSlot = this.isOverNodeOutput(node, this.graph_mouse[0], this.graph_mouse[1], [0, 0]);
             if (outputSlot !== -1) {
                 let tip = tips?.['outputs']?.[outputSlot];
+                const name = `outputs_${outputSlot}`;
+                if (widget_previous != name) {
+                    hideTooltip();
+                    widget_previous = name;
+                }
                 return showTooltip(tip);
             }
 
@@ -113,8 +132,13 @@ app.registerExtension({
                 if (def) {
                     tip += ` (default: ${def})`;
                 }
+                if (widget_previous != widget.name) {
+                    hideTooltip();
+                    widget_previous = widget.name;
+                }
                 return showTooltip(tip);
             }
+            hideTooltip();
         }.bind(app.canvas);
 
         app.ui.settings.addSetting({
@@ -138,3 +162,4 @@ app.registerExtension({
         });
     },
 });
+}

@@ -87,7 +87,7 @@ app.registerExtension({
                     const firstNodeKey = Object.keys(selectedNodes)[0];
                     const firstNode = selectedNodes[firstNodeKey];
                     const data = {
-                        class: firstNode.getNickname() || "jovimetrix",
+                        class: firstNode?.getNickname() || "unknown",
                         name: firstNode.type
                     }
                     const event = new CustomEvent('jovimetrixHelpRequested', { detail: data });

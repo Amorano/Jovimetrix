@@ -5,6 +5,7 @@ Image Support
 
 import math
 import base64
+import sys
 import urllib
 import requests
 from enum import Enum
@@ -115,6 +116,14 @@ class EnumBlendType(Enum):
     DESTOUT = BlendType.DESTOUT
     SRCATOP = BlendType.SRCATOP
     DESTATOP = BlendType.DESTATOP
+
+class EnumImageBySize(Enum):
+    LARGEST = 10
+    SMALLEST = 20
+    WIDTH_MIN = 30
+    WIDTH_MAX = 40
+    HEIGHT_MIN = 50
+    HEIGHT_MAX = 60
 
 class EnumColorMap(Enum):
     AUTUMN = cv2.COLORMAP_AUTUMN
@@ -686,6 +695,47 @@ def image_blend(imageA: TYPE_IMAGE, imageB: TYPE_IMAGE, mask:Optional[TYPE_IMAGE
     image = blendLayers(imageA, imageB, blendOp.value, alpha)
     image = pil2cv(image)
     return image_crop_center(image, w, h)
+
+def image_by_size(image_list: List[TYPE_IMAGE], enumSize: EnumImageBySize=EnumImageBySize.LARGEST) -> Tuple[TYPE_IMAGE, int, int]:
+
+    img = None
+    mega, width, height = 0, 0, 0
+    if enumSize in [EnumImageBySize.SMALLEST, EnumImageBySize.WIDTH_MIN, EnumImageBySize.HEIGHT_MIN]:
+        mega, width, height = sys.maxsize, sys.maxsize, sys.maxsize
+
+    for i in image_list:
+        h, w = i.shape[:2]
+        match enumSize:
+            case EnumImageBySize.LARGEST:
+                if (new_mega := w * h) > mega:
+                    mega = new_mega
+                    img = i
+                width = max(width, w)
+                height = max(height, h)
+            case EnumImageBySize.SMALLEST:
+                if (new_mega := w * h) < mega:
+                    mega = new_mega
+                    img = i
+                width = min(width, w)
+                height = min(height, h)
+            case EnumImageBySize.WIDTH_MIN:
+                if w < width:
+                    width = w
+                    img = i
+            case EnumImageBySize.WIDTH_MAX:
+                if w > width:
+                    width = w
+                    img = i
+            case EnumImageBySize.HEIGHT_MIN:
+                if h < height:
+                    height = h
+                    img = i
+            case EnumImageBySize.HEIGHT_MAX:
+                if h > height:
+                    height = h
+                    img = i
+
+    return img, width, height
 
 def image_color_blind(image: TYPE_IMAGE, deficiency:EnumCBDeficiency,
                     simulator:EnumCBSimulator=EnumCBSimulator.AUTOSELECT,
@@ -1715,17 +1765,10 @@ def image_split(image: TYPE_IMAGE, convert:object=image_grayscale) -> Tuple[TYPE
 def image_stack(image_list: List[TYPE_IMAGE], axis:EnumOrientation=EnumOrientation.HORIZONTAL,
                 stride:int=0, matte:TYPE_PIXEL=(0,0,0,255)) -> TYPE_IMAGE:
 
-    count = 0
-    images = []
-    width, height = 0, 0
-    for i in image_list:
-        h, w = i.shape[:2]
-        width = max(width, w)
-        height = max(height, h)
-        images.append(i)
-        count += 1
+    _, width, height = image_by_size(image_list)
+    images = [image_matte(image_convert(i, 4), matte, width, height) for i in image_list]
+    count = len(images)
 
-    images = [image_matte(image_convert(i, 4), matte, width, height) for i in images]
     matte = pixel_convert(matte, 4)
     match axis:
         case EnumOrientation.GRID:

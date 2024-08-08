@@ -5,7 +5,7 @@
  */
 
 import { app } from "../../../scripts/app.js"
-import { widgetABHook } from '../util/util_jov.js'
+import { widgetHookAB } from '../util/util_jov.js'
 import { nodeFitHeight } from '../util/util_node.js'
 import { widgetHide, widgetProcessAny, widget_type_name } from '../util/util_widget.js'
 
@@ -32,24 +32,25 @@ app.registerExtension({
             widget_str.options.menu = false;
             widget_str.origComputeSize = widget_str.computeSize;
 
-            const ab_data = widgetABHook(this, '❓');
-            const oldCallback = ab_data.combo.callback;
-            ab_data.combo.callback = () => {
+            const ab_data = widgetHookAB(this, '❓');
+
+            const oldCallback = ab_data.callback;
+            ab_data.callback = () => {
                 oldCallback?.apply(this, arguments);
                 widgetHide(this, widget_str);
                 widget_str.inputEl.className = "jov-hidden";
                 widget_str.computeSize = () => [0, -4];
 
-                this.outputs[0].name = widget_type_name(ab_data.combo.value);
-                this.outputs[0].type = ab_data.combo.value;
-                let type = ab_data.combo.value;
-                if (["LIST", "DICT", "STRING"].includes(ab_data.combo.value)) {
-                    widgetProcessAny(widget_str, ab_data.combo.value);
+                this.outputs[0].name = widget_type_name(ab_data.value);
+                this.outputs[0].type = ab_data.value;
+                let type = ab_data.value;
+                if (["LIST", "DICT", "STRING"].includes(ab_data.value)) {
+                    widgetProcessAny(widget_str, ab_data.value);
                     widget_str.inputEl.className = "comfy-multiline-input";
                     widget_str.computeSize = widget_str.origComputeSize;
                 } else {
                     type = "FLOAT";
-                    if (ab_data.combo.value.endsWith("INT")) {
+                    if (ab_data.value.endsWith("INT")) {
                         type = "INT";
                     }
                 }

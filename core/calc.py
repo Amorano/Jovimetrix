@@ -196,7 +196,7 @@ Perform single function operations like absolute value, mean, median, mode, magn
                 Lexicon.FUNC: (EnumUnaryOperation._member_names_, {"default": EnumUnaryOperation.ABS.name})
             },
             "outputs": {
-                0: (Lexicon.UNKNOWN, {"tooltip":"Output type will match the input type"}),
+                0: (Lexicon.UNKNOWN, {"tooltips":"Output type will match the input type"}),
             }
         })
         return Lexicon._parse(d, cls)
@@ -296,22 +296,22 @@ Execute binary operations like addition, subtraction, multiplication, division, 
         d.update({
             "optional": {
                 Lexicon.IN_A: (JOV_TYPE_FULL, {"default": None,
-                                        "tooltip":"Passes a raw value directly, or supplies defaults for any value inputs without connections"}),
+                                        "tooltips":"Passes a raw value directly, or supplies defaults for any value inputs without connections"}),
                 Lexicon.IN_B: (JOV_TYPE_FULL, {"default": None,
-                                        "tooltip":"Passes a raw value directly, or supplies defaults for any value inputs without connections"}),
-                Lexicon.FUNC: (EnumBinaryOperation._member_names_, {"default": EnumBinaryOperation.ADD.name, "tooltip":"Arithmetic operation to perform"}),
+                                        "tooltips":"Passes a raw value directly, or supplies defaults for any value inputs without connections"}),
+                Lexicon.FUNC: (EnumBinaryOperation._member_names_, {"default": EnumBinaryOperation.ADD.name, "tooltips":"Arithmetic operation to perform"}),
                 Lexicon.TYPE: (names_convert, {"default": names_convert[2],
-                                            "tooltip":"Output type desired from resultant operation"}),
+                                            "tooltips":"Output type desired from resultant operation"}),
                 Lexicon.FLIP: ("BOOLEAN", {"default": False}),
                 Lexicon.IN_A+Lexicon.IN_A: ("VEC4", {"default": (0,0,0,0),
                                         "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W],
-                                        "tooltip":"value vector"}),
+                                        "tooltips":"value vector"}),
                 Lexicon.IN_B+Lexicon.IN_B: ("VEC4", {"default": (0,0,0,0),
                                         "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W],
-                                        "tooltip":"value vector"}),
+                                        "tooltips":"value vector"}),
             },
             "outputs": {
-                0: (Lexicon.UNKNOWN, {"tooltip":"Output type will match the input type"}),
+                0: (Lexicon.UNKNOWN, {"tooltips":"Output type will match the input type"}),
             }
         })
         return Lexicon._parse(d, cls)
@@ -433,8 +433,8 @@ Evaluates two inputs (A and B) with a specified comparison operators and optiona
         d = super().INPUT_TYPES()
         d.update({
             "optional": {
-                Lexicon.IN_A: (JOV_TYPE_FULL, {"default": 0, "tooltip":"Master Comparator"}),
-                Lexicon.IN_B: (JOV_TYPE_FULL, {"default": 0, "tooltip":"Secondary Comparator"}),
+                Lexicon.IN_A: (JOV_TYPE_FULL, {"default": 0, "tooltips":"Master Comparator"}),
+                Lexicon.IN_B: (JOV_TYPE_FULL, {"default": 0, "tooltips":"Secondary Comparator"}),
                 Lexicon.COMP_A: (JOV_TYPE_ANY, {"default": 0}),
                 Lexicon.COMP_B: (JOV_TYPE_ANY, {"default": 0}),
                 Lexicon.COMPARE: (EnumComparison._member_names_, {"default": EnumComparison.EQUAL.name}),
@@ -442,8 +442,8 @@ Evaluates two inputs (A and B) with a specified comparison operators and optiona
                 Lexicon.INVERT: ("BOOLEAN", {"default": False}),
             },
             "outputs": {
-                0: (Lexicon.TRIGGER, {"tooltip":f"Outputs the input at {Lexicon.IN_A} or {Lexicon.IN_B} depending on which evaluated `TRUE`"}),
-                1: (Lexicon.VALUE, {"tooltip":"The comparison result value"}),
+                0: (Lexicon.TRIGGER, {"tooltips":f"Outputs the input at {Lexicon.IN_A} or {Lexicon.IN_B} depending on which evaluated `TRUE`"}),
+                1: (Lexicon.VALUE, {"tooltips":"The comparison result value"}),
             }
         })
         return Lexicon._parse(d, cls)
@@ -549,10 +549,10 @@ Introduce pauses in the workflow that accept an optional input to pass through a
         d.update({
             "optional": {
                 Lexicon.PASS_IN: (JOV_TYPE_ANY, {"default": None}),
-                Lexicon.TIMER: ("INT", {"default" : 0, "min": -1}),
+                Lexicon.TIMER: ("INT", {"default" : 0, "mij": -1}),
             },
             "outputs": {
-                0: (Lexicon.PASS_OUT, {"tooltip":f"Pass through data when the delay ends"})
+                0: (Lexicon.PASS_OUT, {"tooltips":f"Pass through data when the delay ends"})
             }
         })
         return Lexicon._parse(d, cls)
@@ -600,22 +600,22 @@ Additionally, you can specify the easing function (EASE) and the desired output 
         names_convert = EnumConvertType._member_names_[:10]
         d.update({
             "optional": {
-                Lexicon.IN_A: (JOV_TYPE_FULL, {"tooltip": "Custom Start Point"}),
-                Lexicon.IN_B: (JOV_TYPE_FULL, {"tooltip": "Custom End Point"}),
+                Lexicon.IN_A: (JOV_TYPE_FULL, {"tooltips": "Custom Start Point"}),
+                Lexicon.IN_B: (JOV_TYPE_FULL, {"tooltips": "Custom End Point"}),
                 Lexicon.FLOAT: ("VEC4", {"default": (0.5, 0.5, 0.5, 0.5),
-                                         "min": 0., "max": 1.0,
+                                         "mij": 0., "maj": 1.0,
                                          # "step": 0.001, "round": 0.0001, "precision": 5,
-                                         "tooltip": "Blend Amount. 0 = full A, 1 = full B"}),
+                                         "tooltips": "Blend Amount. 0 = full A, 1 = full B"}),
                 Lexicon.IN_A+Lexicon.IN_A: ("VEC4", {"default": (0, 0, 0, 0),
-                                        "tooltip":"default value vector for A"}),
+                                        "tooltips":"default value vector for A"}),
                 Lexicon.IN_B+Lexicon.IN_B: ("VEC4", {"default": (1,1,1,1),
-                                        "tooltip":"default value vector for B"}),
+                                        "tooltips":"default value vector for B"}),
                 Lexicon.TYPE: (names_convert, {"default": "FLOAT",
-                                            "tooltip":"Output type desired from resultant operation"}),
+                                            "tooltips":"Output type desired from resultant operation"}),
                 Lexicon.EASE: (["NONE"] + EnumEase._member_names_, {"default": "NONE"}),
             },
             "outputs": {
-                0: (Lexicon.ANY_OUT, {"tooltip":f"Output can vary depending on the type chosen in the {Lexicon.TYPE} parameter"})
+                0: (Lexicon.ANY_OUT, {"tooltips":f"Output can vary depending on the type chosen in the {Lexicon.TYPE} parameter"})
             }
         })
         return Lexicon._parse(d, cls)
@@ -693,15 +693,15 @@ Swap components between two vectors based on specified swizzle patterns and valu
                 Lexicon.IN_A: (JOV_TYPE_VECTOR, {}),
                 Lexicon.IN_B: (JOV_TYPE_VECTOR, {}),
                 Lexicon.TYPE: (names_convert, {"default": names_convert[2],
-                                            "tooltip":"Output type desired from resultant operation"}),
+                                            "tooltips":"Output type desired from resultant operation"}),
                 Lexicon.SWAP_X: (EnumSwizzle._member_names_, {"default": EnumSwizzle.A_X.name}),
-                Lexicon.X: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize}),
+                Lexicon.X: ("FLOAT", {"default": 0, "mij": -sys.maxsize, "maj": sys.maxsize}),
                 Lexicon.SWAP_Y: (EnumSwizzle._member_names_, {"default": EnumSwizzle.A_Y.name}),
-                Lexicon.Y: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize}),
+                Lexicon.Y: ("FLOAT", {"default": 0, "mij": -sys.maxsize, "maj": sys.maxsize}),
                 Lexicon.SWAP_Z: (EnumSwizzle._member_names_, {"default": EnumSwizzle.A_Z.name}),
-                Lexicon.Z: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize}),
+                Lexicon.Z: ("FLOAT", {"default": 0, "mij": -sys.maxsize, "maj": sys.maxsize}),
                 Lexicon.SWAP_W: (EnumSwizzle._member_names_, {"default": EnumSwizzle.A_W.name}),
-                Lexicon.W: ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize})
+                Lexicon.W: ("FLOAT", {"default": 0, "mij": -sys.maxsize, "maj": sys.maxsize})
             }
         })
         return Lexicon._parse(d, cls)
@@ -710,13 +710,13 @@ Swap components between two vectors based on specified swizzle patterns and valu
         pA = parse_param(kw, Lexicon.IN_A, EnumConvertType.VEC4, [(0,0,0,0)])
         pB = parse_param(kw, Lexicon.IN_B, EnumConvertType.VEC4, [(0,0,0,0)])
         swap_x = parse_param(kw, Lexicon.SWAP_X, EnumConvertType.STRING, EnumSwizzle.A_X.name)
-        x = parse_param(kw, Lexicon.X, EnumConvertType.FLOAT, 0)
+        x = parse_param(kw, Lexicon.X, EnumConvertType.FLOAT, 0, -sys.maxsize, sys.maxsize)
         swap_y = parse_param(kw, Lexicon.SWAP_Y, EnumConvertType.STRING, EnumSwizzle.A_Y.name)
-        y = parse_param(kw, Lexicon.Y, EnumConvertType.FLOAT, 0)
+        y = parse_param(kw, Lexicon.Y, EnumConvertType.FLOAT, 0, -sys.maxsize, sys.maxsize)
         swap_z = parse_param(kw, Lexicon.SWAP_Z, EnumConvertType.STRING, EnumSwizzle.A_W.name)
-        z = parse_param(kw, Lexicon.Z, EnumConvertType.FLOAT, 0)
+        z = parse_param(kw, Lexicon.Z, EnumConvertType.FLOAT, 0, -sys.maxsize, sys.maxsize)
         swap_w = parse_param(kw, Lexicon.SWAP_W, EnumConvertType.STRING, EnumSwizzle.A_Z.name)
-        w = parse_param(kw, Lexicon.W, EnumConvertType.FLOAT, 0)
+        w = parse_param(kw, Lexicon.W, EnumConvertType.FLOAT, 0, -sys.maxsize, sys.maxsize)
         params = list(zip_longest_fill(pA, pB, swap_x, x, swap_y, y, swap_z, z, swap_w, w))
         results = []
         pbar = ProgressBar(len(params))
@@ -747,32 +747,32 @@ A timer and frame counter, emitting pulses or signals based on time intervals. I
             "optional": {
                 # data to pass on a pulse of the loop
                 Lexicon.TRIGGER: (JOV_TYPE_ANY, {"default": None,
-                                             "tooltip":"Output to send when beat (BPM setting) is hit"}),
+                                             "tooltips":"Output to send when beat (BPM setting) is hit"}),
                 # forces a MOD on CYCLE
-                Lexicon.VALUE: ("INT", {"min": 0, "default": 0,
-                                        "tooltip": "the current frame number of the tick"}),
-                Lexicon.LOOP: ("INT", {"min": 0, "max": 32767, "default": 0,
-                                       "tooltip": "number of frames before looping starts. 0 means continuous playback (no loop point)"}),
+                Lexicon.VALUE: ("INT", {"mij": 0, "default": 0, "mij": 0, "maj": sys.maxsize,
+                                        "tooltips": "the current frame number of the tick"}),
+                Lexicon.LOOP: ("INT", {"mij": 0, "maj": sys.maxsize, "default": 0,
+                                       "tooltips": "number of frames before looping starts. 0 means continuous playback (no loop point)"}),
                 #
-                Lexicon.FPS: ("INT", {"min": 1, "default": 24,
-                                      "tooltip": "Fixed frame step rate based on FPS (1/FPS)"}),
-                Lexicon.BPM: ("INT", {"min": 1, "max": 60000, "default": 120,
-                                        "tooltip": "BPM trigger rate to send the input. If input is empty, TRUE is sent on trigger"}),
-                Lexicon.NOTE: ("INT", {"default": 4, "min": 1, "max": 256,
-                                    "tooltip":"Number of beats per measure. Quarter note is 4, Eighth is 8, 16 is 16, etc."}),
+                Lexicon.FPS: ("INT", {"mij": 1, "default": 24,
+                                      "tooltips": "Fixed frame step rate based on FPS (1/FPS)"}),
+                Lexicon.BPM: ("INT", {"mij": 1, "maj": 60000, "default": 120,
+                                        "tooltips": "BPM trigger rate to send the input. If input is empty, TRUE is sent on trigger"}),
+                Lexicon.NOTE: ("INT", {"default": 4, "mij": 1, "maj": 256,
+                                    "tooltips":"Number of beats per measure. Quarter note is 4, Eighth is 8, 16 is 16, etc."}),
                 # stick the current "count"
                 Lexicon.WAIT: ("BOOLEAN", {"default": False}),
                 # manual total = 0
                 Lexicon.RESET: ("BOOLEAN", {"default": False}),
                 # how many frames to dump....
-                Lexicon.BATCH: ("INT", {"min": 1, "default": 1, "max": 32767, "tooltip": "Number of frames wanted"}),
-                Lexicon.STEP: ("INT", {"default": 0, "tooltip": "Steps/Stride between pulses -- useful to do odd or even batches. If set to 0 will stretch from (VAL -> LOOP) / Batch giving a linear range of values."}),
+                Lexicon.BATCH: ("INT", {"mij": 1, "default": 1, "maj": 32767, "tooltips": "Number of frames wanted"}),
+                Lexicon.STEP: ("INT", {"default": 0, "mij": 0, "maj": sys.maxsize}),
             },
             "outputs": {
-                0: (Lexicon.VALUE, {"tooltip":"Current value for the configured tick"}),
-                1: (Lexicon.LINEAR, {"tooltip":"Normalized tick value (0..1) based on BPM and Loop"}),
-                2: (Lexicon.FPS, {"tooltip":"Current 'frame' in the tick based on FPS setting"}),
-                3: (Lexicon.TRIGGER, {"tooltip":"Based on the BPM settings, on beat hit, output the input at '⚡'"}),
+                0: (Lexicon.VALUE, {"tooltips":"Current value for the configured tick"}),
+                1: (Lexicon.LINEAR, {"tooltips":"Normalized tick value (0..1) based on BPM and Loop"}),
+                2: (Lexicon.FPS, {"tooltips":"Current 'frame' in the tick based on FPS setting"}),
+                3: (Lexicon.TRIGGER, {"tooltips":"Based on the BPM settings, on beat hit, output the input at '⚡'"}),
             }
         })
         return Lexicon._parse(d, cls)
@@ -790,9 +790,9 @@ A timer and frame counter, emitting pulses or signals based on time intervals. I
 
     def run(self, ident, **kw) -> Tuple[int, float, float, Any]:
         passthru = parse_param(kw, Lexicon.TRIGGER, EnumConvertType.ANY, None)[0]
-        stride = parse_param(kw, Lexicon.STEP, EnumConvertType.INT, 0, 0)[0]
-        loop = parse_param(kw, Lexicon.LOOP, EnumConvertType.INT, 0)[0]
-        self.__frame = parse_param(kw, Lexicon.VALUE, EnumConvertType.INT, self.__frame)[0]
+        stride = parse_param(kw, Lexicon.STEP, EnumConvertType.INT, 0, 0, sys.maxsize)[0]
+        loop = parse_param(kw, Lexicon.LOOP, EnumConvertType.INT, 0, 0, sys.maxsize)[0]
+        self.__frame = parse_param(kw, Lexicon.VALUE, EnumConvertType.INT, self.__frame, 0, sys.maxsize)[0]
         if loop != 0:
             self.__frame %= loop
         # start_frame = max(0, start_frame)
@@ -857,26 +857,26 @@ Supplies raw or default values for various data types, supporting vector input w
         d.update({
             "optional": {
                 Lexicon.IN_A: (JOV_TYPE_ANY, {"default": None,
-                                        "tooltip":"Passes a raw value directly, or supplies defaults for any value inputs without connections"}),
+                                        "tooltips":"Passes a raw value directly, or supplies defaults for any value inputs without connections"}),
                 Lexicon.TYPE: (typ, {"default": EnumConvertType.BOOLEAN.name,
-                                    "tooltip":"Take the input and convert it into the selected type."}),
-                Lexicon.X: (JOV_TYPE_ANY, {"default": 0, "min": -sys.maxsize,
-                                    "max": sys.maxsize, "forceInput": True}),
-                Lexicon.Y: (JOV_TYPE_ANY, {"default": 0, "min": -sys.maxsize,
-                                    "max": sys.maxsize, "forceInput": True}),
-                Lexicon.Z: (JOV_TYPE_ANY, {"default": 0, "min": -sys.maxsize,
-                                    "max": sys.maxsize, "forceInput": True}),
-                Lexicon.W: (JOV_TYPE_ANY, {"default": 0, "min": -sys.maxsize,
-                                    "max": sys.maxsize,                                 "forceInput": True}),
+                                    "tooltips":"Take the input and convert it into the selected type."}),
+                Lexicon.X: (JOV_TYPE_ANY, {"default": 0, "mij": -sys.maxsize,
+                                    "maj": sys.maxsize, "forceInput": True}),
+                Lexicon.Y: (JOV_TYPE_ANY, {"default": 0, "mij": -sys.maxsize,
+                                    "maj": sys.maxsize, "forceInput": True}),
+                Lexicon.Z: (JOV_TYPE_ANY, {"default": 0, "mij": -sys.maxsize,
+                                    "maj": sys.maxsize, "forceInput": True}),
+                Lexicon.W: (JOV_TYPE_ANY, {"default": 0, "mij": -sys.maxsize,
+                                    "maj": sys.maxsize,                                 "forceInput": True}),
                 Lexicon.IN_A+Lexicon.IN_A: ("VEC4", {"default": (0, 0, 0, 0),
-                                    #"min": -sys.maxsize, "max": sys.maxsize,
+                                    #"mij": -sys.maxsize, "maj": sys.maxsize,
                                     "label": [Lexicon.X, Lexicon.Y],
-                                    "tooltip":"default value vector for A"}),
-                Lexicon.SEED: ("INT", {"default": 0, "min": 0, "max": sys.maxsize}),
+                                    "tooltips":"default value vector for A"}),
+                Lexicon.SEED: ("INT", {"default": 0, "mij": 0, "maj": sys.maxsize}),
                 Lexicon.IN_B+Lexicon.IN_B: ("VEC4", {"default": (1,1,1,1),
-                                    #"min": -sys.maxsize, "max": sys.maxsize,
+                                    #"mij": -sys.maxsize, "maj": sys.maxsize,
                                     "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W],
-                                    "tooltip":"default value vector for B"}),
+                                    "tooltips":"default value vector for B"}),
                 Lexicon.STRING: ("STRING", {"default": "", "dynamicPrompts": False, "multiline": True}),
             }
         })
@@ -884,10 +884,10 @@ Supplies raw or default values for various data types, supporting vector input w
 
     def run(self, **kw) -> Tuple[bool]:
         raw = parse_param(kw, Lexicon.IN_A, EnumConvertType.ANY, None)
-        r_x = parse_param(kw, Lexicon.X, EnumConvertType.FLOAT, None)
-        r_y = parse_param(kw, Lexicon.Y, EnumConvertType.FLOAT, None)
-        r_z = parse_param(kw, Lexicon.Z, EnumConvertType.FLOAT, None)
-        r_w = parse_param(kw, Lexicon.W, EnumConvertType.FLOAT, None)
+        r_x = parse_param(kw, Lexicon.X, EnumConvertType.FLOAT, 0, -sys.maxsize, sys.maxsize)
+        r_y = parse_param(kw, Lexicon.Y, EnumConvertType.FLOAT, 0, -sys.maxsize, sys.maxsize)
+        r_z = parse_param(kw, Lexicon.Z, EnumConvertType.FLOAT, 0, -sys.maxsize, sys.maxsize)
+        r_w = parse_param(kw, Lexicon.W, EnumConvertType.FLOAT, 0, -sys.maxsize, sys.maxsize)
         typ = parse_param(kw, Lexicon.TYPE, EnumConvertType.STRING, EnumConvertType.BOOLEAN.name)
         xyzw = parse_param(kw, Lexicon.IN_A+Lexicon.IN_A, EnumConvertType.VEC4, [(0, 0, 0, 0)])
         seed = parse_param(kw, Lexicon.SEED, EnumConvertType.INT, 0, 0)
@@ -963,11 +963,11 @@ Produce waveforms like sine, square, or sawtooth with adjustable frequency, ampl
         d.update({
             "optional": {
                 Lexicon.WAVE: (EnumWave._member_names_, {"default": EnumWave.SIN.name}),
-                Lexicon.FREQ: ("FLOAT", {"default": 1, "min": 0, "max": 10000000000000000}),
-                Lexicon.AMP: ("FLOAT", {"default": 1, "min": 0, "max": 10000000000000000}),
-                Lexicon.PHASE: ("FLOAT", {"default": 0, "min": 0.0, "step": 0.001, "max": 1.0}),
-                Lexicon.OFFSET: ("FLOAT", {"default": 0, "min": 0.0, "step": 0.001, "max": 1.0}),
-                Lexicon.TIME: ("FLOAT", {"default": 0, "min": 0, "step": 0.0001}),
+                Lexicon.FREQ: ("FLOAT", {"default": 1, "mij": 0, "maj": sys.maxsize}),
+                Lexicon.AMP: ("FLOAT", {"default": 1, "mij": 0, "maj": sys.maxsize}),
+                Lexicon.PHASE: ("FLOAT", {"default": 0, "mij": 0.0, "maj": 1.0, "step": 0.001, }),
+                Lexicon.OFFSET: ("FLOAT", {"default": 0, "mij": 0.0, "maj": 1.0, "step": 0.001, }),
+                Lexicon.TIME: ("FLOAT", {"default": 0, "mij": 0, "maj": sys.maxsize, "step": 0.0001}),
                 Lexicon.INVERT: ("BOOLEAN", {"default": False}),
             }
         })
@@ -975,23 +975,24 @@ Produce waveforms like sine, square, or sawtooth with adjustable frequency, ampl
 
     def run(self, **kw) -> Tuple[float, int]:
         op = parse_param(kw, Lexicon.WAVE, EnumConvertType.STRING, EnumWave.SIN.name)
-        freq = parse_param(kw, Lexicon.FREQ, EnumConvertType.FLOAT, 1, 0.0001)
-        amp = parse_param(kw, Lexicon.AMP, EnumConvertType.FLOAT, 1, 0.0001)
-        phase = parse_param(kw, Lexicon.PHASE, EnumConvertType.FLOAT, 0)
-        shift = parse_param(kw, Lexicon.OFFSET, EnumConvertType.FLOAT, 0)
-        delta_time = parse_param(kw, Lexicon.TIME, EnumConvertType.FLOAT, 0, 0)
+        freq = parse_param(kw, Lexicon.FREQ, EnumConvertType.FLOAT, 1, 0, sys.maxsize)
+        amp = parse_param(kw, Lexicon.AMP, EnumConvertType.FLOAT, 1, 0, sys.maxsize)
+        phase = parse_param(kw, Lexicon.PHASE, EnumConvertType.FLOAT, 0, 1)
+        shift = parse_param(kw, Lexicon.OFFSET, EnumConvertType.FLOAT, 0, 1)
+        delta_time = parse_param(kw, Lexicon.TIME, EnumConvertType.FLOAT, 0, 0, sys.maxsize)
         invert = parse_param(kw, Lexicon.INVERT, EnumConvertType.BOOLEAN, False)
         abs = parse_param(kw, Lexicon.ABSOLUTE, EnumConvertType.BOOLEAN, False)
         results = []
         params = list(zip_longest_fill(op, freq, amp, phase, shift, delta_time, invert, abs))
         pbar = ProgressBar(len(params))
         for idx, (op, freq, amp, phase, shift, delta_time, invert, abs) in enumerate(params):
+            val = wave_op(op, phase, freq, amp, shift, delta_time)
             # freq = 1. / freq
             if invert:
-                amp = -amp
-            val = wave_op(op, phase, freq, amp, shift, delta_time)
+                amp = 1. / val
             if abs:
                 val = np.abs(val)
+            val = max(-sys.maxsize, min(val, sys.maxsize))
             results.append([val, int(val)])
             pbar.update_absolute(idx)
         return *list(zip(*results)),

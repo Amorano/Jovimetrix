@@ -139,11 +139,11 @@ Filter MIDI messages based on various criteria, including MIDI mode (such as not
             "optional": {
                 Lexicon.MIDI: ('JMIDIMSG', {"default": None}),
                 Lexicon.MODE: (MIDINoteOnFilter._member_names_, {"default": MIDINoteOnFilter.IGNORE.name}),
-                Lexicon.CHANNEL: ("INT", {"default": -1, "min": -1, "max": 127}),
-                Lexicon.CONTROL: ("INT", {"default": -1, "min": -1, "max": 127}),
-                Lexicon.NOTE: ("INT", {"default": -1, "min": -1, "max": 127}),
-                Lexicon.VALUE: ("INT", {"default": -1, "min": -1, "max": 127}),
-                Lexicon.NORMALIZE: ("FLOAT", {"default": -1, "min": -1, "max": 1})
+                Lexicon.CHANNEL: ("INT", {"default": -1, "mij": -1, "maj": 127}),
+                Lexicon.CONTROL: ("INT", {"default": -1, "mij": -1, "maj": 127}),
+                Lexicon.NOTE: ("INT", {"default": -1, "mij": -1, "maj": 127}),
+                Lexicon.VALUE: ("INT", {"default": -1, "mij": -1, "maj": 127}),
+                Lexicon.NORMALIZE: ("FLOAT", {"default": -1, "mij": -1, "maj": 1})
             }
         })
         return Lexicon._parse(d, cls)

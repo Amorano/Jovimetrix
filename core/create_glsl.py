@@ -92,7 +92,7 @@ class GLSLNodeBase(JOVImageNode):
         d.update({
             "optional": {
                 Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
-                Lexicon.WH: ("VEC2INT", {"default": (512, 512), "min":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
+                Lexicon.WH: ("VEC2INT", {"default": (512, 512), "mij":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
                 Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True})
             }
@@ -183,9 +183,9 @@ Execute custom GLSL (OpenGL Shading Language) fragment shaders to generate image
         d = super().INPUT_TYPES()
         opts = d.get('optional', {})
         opts.update({
-            Lexicon.BATCH: ("INT", {"default": 0, "min": 0, "max": 1048576}),
-            Lexicon.FPS: ("INT", {"default": 24, "min": 1, "max": 120}),
-            Lexicon.TIME: ("FLOAT", {"default": 0, "step": 0.0001, "min": 0}),
+            Lexicon.BATCH: ("INT", {"default": 0, "mij": 0, "maj": 1048576}),
+            Lexicon.FPS: ("INT", {"default": 24, "mij": 1, "maj": 120}),
+            Lexicon.TIME: ("FLOAT", {"default": 0, "step": 0.0001, "mij": 0}),
             Lexicon.PROG_VERT: ("STRING", {"default": GLSLShader.PROG_VERTEX, "multiline": True, "dynamicPrompts": False}),
             Lexicon.PROG_FRAG: ("STRING", {"default": GLSLShader.PROG_FRAGMENT, "multiline": True, "dynamicPrompts": False}),
         })
@@ -237,7 +237,7 @@ class GLSLNodeDynamic(GLSLNodeBase):
                         params['val_step'] = parse_value(val_step, EnumConvertType.FLOAT, d)
 
                     if tooltip is not None:
-                        params['tooltip'] = tooltip
+                        params["tooltips"] = tooltip
                 data[name] = (typ.name, params,)
 
         data.update(opts)

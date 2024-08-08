@@ -5,12 +5,12 @@
  */
 
 import { nodeFitHeight } from './util_node.js'
-import { widgetShowVector, widgetFind, widget_type_name, widgetHide, widgetShow } from './util_widget.js'
+import { widgetShowVector, widget_type_name, widgetHide, widgetShow } from './util_widget.js'
 
 export function widgetSizeModeHook(node, wh_hide=true) {
-    const wh = widgetFind(node.widgets, '🇼🇭');
-    const samp = widgetFind(node.widgets, '🎞️');
-    const mode = widgetFind(node.widgets, 'MODE');
+    const wh = node.widgets.find(w => w.name === '🇼🇭');
+    const samp = node.widgets.find(w => w.name === '🎞️');
+    const mode = node.widgets.find(w => w.name === 'MODE');
     mode.callback = () => {
         if (wh_hide) {
             widgetHide(node, wh);
@@ -32,9 +32,9 @@ export function widgetSizeModeHook2(nodeType, wh_hide=true) {
     const onNodeCreated = nodeType.prototype.onNodeCreated
     nodeType.prototype.onNodeCreated = function (node) {
         const me = onNodeCreated?.apply(this);
-        const wh = widgetFind(node.widgets, '🇼🇭');
-        const samp = widgetFind(node.widgets, '🎞️');
-        const mode = widgetFind(node.widgets, 'MODE');
+        const wh = node.widgets.find(w => w.name === '🇼🇭');
+        const samp = node.widgets.find(w => w.name === '🎞️');
+        const mode = node.widgets.find(w => w.name === 'MODE');
         mode.callback = () => {
             if (wh_hide) {
                 widgetHide(node, wh);
@@ -54,7 +54,7 @@ export function widgetSizeModeHook2(nodeType, wh_hide=true) {
 }
 
 export function widgetOutputHookType(node, control_key, match_output=0) {
-    const combo = widgetFind(node.widgets, control_key);
+    const combo = node.widgets.find(w => w.name === control_key);
     const output = node.outputs[match_output];
 
     if (!output || !combo) {
@@ -71,73 +71,32 @@ export function widgetOutputHookType(node, control_key, match_output=0) {
     setTimeout(() => { combo.callback(); }, 10);
 }
 
-export function widgetABHook(node, control_key, match_output=-1) {
-    const initializeTrack = (widget) => {
-        const track = {};
-        for (let i = 0; i < 4; i++) {
-            track[i] = widget.options?.default[i];
-        }
-        Object.assign(track, widget.value);
-        return track;
-    };
+/*
+* matchFloatSize forces the target to be float[n] based on its type size
+*/
+export function widgetHookAB(node, control_key) {
 
-    const setCallback = (widget, trackKey) => {
-        widget.options.menu = false;
-        widget.callback = () => {
-            if (widget.type === "toggle") {
-                trackKey[0] = widget.value ? 1 : 0;
-            } else {
-                Object.keys(widget.value).forEach((key) => {
-                    trackKey[key] = widget.value[key];
-                });
-            }
-        };
-    };
+    const AA = node.widgets.find(w => w.name === '🅰️🅰️');
+    const BB = node.widgets.find(w => w.name === '🅱️🅱️');
+    const combo = node.widgets.find(w => w.name === control_key);
 
-    const { widgets } = node;
-    const A = widgetFind(widgets, '🅰️🅰️');
-    const B = widgetFind(widgets, '🅱️🅱️');
-    const combo = widgetFind(widgets, control_key);
-
-    if (!A || !B || !combo) {
-        throw new Error("Required widgets not found");
+    if (combo === undefined) {
+        return;
     }
 
-    const data = {
-        track_xyzw: initializeTrack(A),
-        track_yyzw: initializeTrack(B),
-        A,
-        B,
-        combo
-    };
+    widgetHookControl(node, control_key, AA);
+    widgetHookControl(node, control_key, BB);
+    widgetOutputHookType(node, control_key);
+    setTimeout(() => { combo.callback(); }, 5);
 
-    if (match_output > -1) {
-        widgetOutputHookType(node, control_key, match_output);
-    }
-
-    const oldCallback = combo.callback;
-    combo.callback = () => {
-        const me = oldCallback?.apply(this, arguments);
-        widgetHide(node, A);
-        widgetHide(node, B);
-        if (["VEC2", "VEC2INT", "COORD2D", "VEC3", "VEC3INT", "VEC4", "VEC4INT", "BOOLEAN", "INT", "FLOAT"].includes(combo.value)) {
-            widgetShowVector(A, data.track_xyzw, combo.value);
-            widgetShowVector(B, data.track_yyzw, combo.value);
-        }
-        nodeFitHeight(node);
-        return me;
-    }
-
-    setTimeout(() => { combo.callback(); }, 10);
-    setCallback(A, data.track_xyzw);
-    setCallback(B, data.track_yyzw);
-    return data;
-}
+    return combo;
+};
 
 /*
 * matchFloatSize forces the target to be float[n] based on its type size
 */
-export function widgetABHook2(node, control_key, target, matchFloatSize=false) {
+export function widgetHookControl(node, control_key, target, matchFloatSize=false) {
+
     const initializeTrack = (widget) => {
         const track = {};
         for (let i = 0; i < 4; i++) {
@@ -161,7 +120,7 @@ export function widgetABHook2(node, control_key, target, matchFloatSize=false) {
     };
 
     const { widgets } = node;
-    const combo = widgetFind(widgets, control_key);
+    const combo = widgets.find(w => w.name === control_key);
 
     if (!target || !combo) {
         throw new Error("Required widgets not found");
@@ -176,7 +135,7 @@ export function widgetABHook2(node, control_key, target, matchFloatSize=false) {
     const oldCallback = combo.callback;
     combo.callback = () => {
         const me = oldCallback?.apply(this, arguments);
-        widgetHide(node, target);
+        widgetHide(node, target, "-jov");
         if (["VEC2", "VEC2INT", "COORD2D", "VEC3", "VEC3INT", "VEC4", "VEC4INT", "BOOLEAN", "INT", "FLOAT"].includes(combo.value)) {
             let size = combo.value;
             if (matchFloatSize) {

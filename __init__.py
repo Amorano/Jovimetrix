@@ -299,7 +299,7 @@ class Lexicon(metaclass=LexiconMeta):
     SOURCE = 'SRC', "Source"
     SPACING = 'SPACING', "Line Spacing between Text Lines"
     START = 'START', "Start of the range"
-    STEP = '🦶🏽', "Step"
+    STEP = '🦶🏽', "Steps/Stride between pulses -- useful to do odd or even batches. If set to 0 will stretch from (VAL -> LOOP) / Batch giving a linear range of values."
     STRENGTH = '💪🏽', "Strength"
     STRING = '📝', "String Entry"
     STYLE = 'STYLE', "Style"
@@ -355,7 +355,7 @@ class Lexicon(metaclass=LexiconMeta):
                 continue
             for k, v in entry.items():
                 widget_data = v[1] if isinstance(v, (tuple, list,)) and len(v) > 1 else {}
-                if (tip := widget_data.get('tooltip', None)) is None:
+                if (tip := widget_data.get("tooltips", None)) is None:
                     if (tip := cls._tooltipsDB.get(k), None) is None:
                         logger.warning(f"no {k}")
                         continue
@@ -393,6 +393,11 @@ class JOVBaseNode:
     INSTANCE = {}
 
     @classmethod
+    def VALIDATE_INPUTS(cls, *arg, **kw) -> bool:
+        logger.debug(f'validate -- {arg} {kw}')
+        return True
+
+    @classmethod
     def INPUT_TYPES(cls, prompt:bool=False, extra_png:bool=False) -> dict:
         data = {
             "required": {},
@@ -415,9 +420,9 @@ class JOVImageNode(JOVBaseNode):
         d = super().INPUT_TYPES()
         d.update({
             "outputs": {
-                0: ("IMAGE", {"tooltip":"Full channel [RGBA] image. If there is an alpha, the image will be masked out with it when using this output."}),
-                1: ("IMAGE", {"tooltip":"Three channel [RGB] image. There will be no alpha."}),
-                2: ("MASK", {"tooltip":"Single channel mask output."}),
+                0: ("IMAGE", {"tooltips":"Full channel [RGBA] image. If there is an alpha, the image will be masked out with it when using this output."}),
+                1: ("IMAGE", {"tooltips":"Three channel [RGB] image. There will be no alpha."}),
+                2: ("MASK", {"tooltips":"Single channel mask output."}),
             }
         })
         return Lexicon._parse(d, cls)
@@ -514,12 +519,12 @@ def get_node_info(node_cls: object) -> Dict[str, Any]:
                     # only stuff that makes sense...
                     junk = ['default', 'min', 'max']
                     meta = node_param_meta[param_key][1]
-                    if (tip := meta.get('tooltip', None)) is None:
+                    if (tip := meta.get("tooltips", None)) is None:
                         if (tip := Lexicon._tooltipsDB.get(param_key, None)) is None:
                             # logger.warning(f"no tooltip for {node_class}[{k}]::{param_key}")
-                            junk.append('tooltip')
+                            junk.append("tooltips")
                             tip = "Unknown Explanation!"
-                    input_parameters[k][param_key]['tooltip'] = tip
+                    input_parameters[k][param_key]["tooltips"] = tip
                     for scrape in junk:
                         if (val := meta.get(scrape, None)) is not None and val != "":
                             input_parameters[k][param_key][scrape] = val
@@ -573,7 +578,7 @@ def json2markdown(json_dict: dict) -> str:
                 typ = param_meta.get('type','UNKNOWN').upper()
                 typ = ', '.join([x.strip() for x in typ.split(',')])
                 typ = "<br>".join(textwrap.wrap(typ, 42))
-                tool = param_meta.get('tooltip','')
+                tool = param_meta.get("tooltips",'')
                 tool = "<br>".join(textwrap.wrap(tool, 42))
                 default = param_meta.get('default','')
                 ch = ", ".join(param_meta.get('choice', []))
@@ -633,7 +638,7 @@ def json2html(json_dict: dict) -> str:
             typ = param_meta.get('type', 'UNKNOWN').upper()
             typ = ', '.join([x.strip() for x in typ.split(',')])
             typ = '<br>'.join(textwrap.wrap(typ, 42))
-            tool = param_meta.get('tooltip', '')
+            tool = param_meta.get("tooltips", '')
             tool = '<br>'.join(textwrap.wrap(tool, 42))
             default = html.escape(str(param_meta.get('default', '')))
             ch = ', '.join(param_meta.get('choice', []))
@@ -889,7 +894,7 @@ class Session(metaclass=Singleton):
             try:
                 for class_name, class_def in module.import_dynamic():
                     setattr(module, class_name, class_def)
-                    logger.info(f"shader: {class_name}")
+                    logger.debug(f"shader: {class_name}")
             except Exception as e:
                 pass
 

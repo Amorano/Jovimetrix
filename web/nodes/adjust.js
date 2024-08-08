@@ -29,13 +29,13 @@ app.registerExtension({
             const gamma = this.widgets.find(w => w.name === '🔆');
             const op = this.widgets.find(w => w.name === '⚒️');
             op.callback = () => {
-                widgetHide(this, radius);
-                widgetHide(this, amount);
-                widgetHide(this, lohi);
-                widgetHide(this, lmh);
-                widgetHide(this, hsv);
-                widgetHide(this, contrast);
-                widgetHide(this, gamma);
+                widgetHide(this, radius, 'jov');
+                widgetHide(this, amount, 'jov');
+                widgetHide(this, lohi, 'jov');
+                widgetHide(this, lmh, 'jov');
+                widgetHide(this, hsv, 'jov');
+                widgetHide(this, contrast, 'jov');
+                widgetHide(this, gamma, 'jov');
                 if (["BLUR", "STACK_BLUR", "MEDIAN_BLUR", "OUTLINE"].includes(op.value)) {
                     widgetShow(radius);
 
