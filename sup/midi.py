@@ -82,11 +82,12 @@ class MIDIServerThread(threading.Thread):
             # device is not null....
             logger.debug(f"starting device loop {self.__device}")
 
-            with mido.open_input(self.__device, callback=self.__callback) as inport:
+            with mido.open_input(self.__device, callback=self.__callback):
                 while True:
                     if self.__device != old_device:
                         logger.debug(f"device loop ended {old_device}")
                         break
+                    time.sleep(0.01)
 
 class MIDIMessage:
     """Snap shot of a message from Midi device."""
@@ -109,30 +110,38 @@ class MIDIMessage:
 # === TESTING ===
 # =============================================================================
 
+class Packet:
+    def __init__(self) -> None:
+        self.note = 0
+        self.control = 0
+        self.note_on = False
+        self.channel = None
+        self.value = 0
+
+    def __str__(self) -> str:
+        return f"{self.note_on}, {self.channel}, {self.control}, {self.note}, {self.value}"
+
 if __name__ == "__main__":
 
+    packet = Packet()
+
     def process(data) -> None:
-        channel = data.channel
-        note = 0
-        control = 0
-        note_on = False
+        packet.channel = data.channel
         match data.type:
             case "control_change":
                 # control=8 value=14 time=0
-                control = data.control
-                value = data.value
+                packet.control = data.control
+                packet.value = data.value
             case "note_on":
-                note = data.note
-                note_on = True
-                value = data.velocity
+                packet.note = data.note
+                packet.note_on = True
+                packet.value = data.velocity
                 # note=59 velocity=0 time=0
             case "note_off":
-                note = data.note
-                value = data.velocity
+                packet.note = data.note
+                packet.value = data.velocity
                 # note=59 velocity=0 time=0
-
-        value /= 127.
-        # logger.debug("{} {} {} {} {}", note_on, channel, control, note, value)
+        packet.value /= 127.
 
     q_in = Queue()
     server = MIDIServerThread(q_in, None, process, daemon=True)
@@ -141,4 +150,5 @@ if __name__ == "__main__":
     logger.debug(device)
     q_in.put(device)
     while True:
-        time.sleep(0.01)
+        time.sleep(0.05)
+        logger.debug(packet)

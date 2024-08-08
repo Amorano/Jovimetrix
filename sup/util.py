@@ -301,8 +301,11 @@ def parse_param(data:dict, key:str, typ:EnumConvertType, default: Any,
         except json.JSONDecodeError: pass
     # see if we are a Jovimetrix hacked vector blob... {0:x, 1:y, 2:z, 3:w}
     elif isinstance(val, dict):
+        # vector patch....
+        if 'xyzw' in val:
+            val = tuple(x for x in val["xyzw"])
         # latents....
-        if 'samples' in val:
+        elif 'samples' in val:
             val = tuple(x for x in val["samples"])
         elif ('0' in val) or (0 in val):
             val = tuple(val.get(i, val.get(str(i), 0)) for i in range(min(len(val), 4)))

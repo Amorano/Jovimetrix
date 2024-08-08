@@ -410,10 +410,10 @@ Adjust the color scheme of one image to match another with the Color Match Node.
             if invert == True:
                 pA = image_invert(pA, 1)
 
-            print(mask)
+            logger.debug(mask)
             if mask is not None:
                 pA = image_mask_add(pA, mask)
-            print(pA.shape)
+            logger.debug(pA.shape)
 
             images.append(cv2tensor_full(pA, matte))
             pbar.update_absolute(idx)
@@ -769,6 +769,12 @@ Takes an input image and splits it into its individual color channels (red, gree
         d.update({
             "optional": {
                 Lexicon.PIXEL: (JOV_TYPE_IMAGE, {})
+            },
+            "outputs": {
+                0: ("MASK", {"tooltips":"Single channel output of Red Channel."}),
+                1: ("MASK", {"tooltips":"Single channel output of Green Channel"}),
+                2: ("MASK", {"tooltips":"Single channel output of Blue Channel"}),
+                3: ("MASK", {"tooltips":"Single channel output of Alpha Channel"}),
             }
         })
         return Lexicon._parse(d, cls)
@@ -993,7 +999,8 @@ Apply various geometric transformations to images, including translation, rotati
 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
-        offset = parse_param(kw, Lexicon.XY, EnumConvertType.VEC2, [(0, 0)], -1, 1)
+        offset = parse_param(kw, Lexicon.XY, EnumConvertType.VEC2, [(0, 0)], -2.5, 2.5)
+        logger.debug(offset)
         angle = parse_param(kw, Lexicon.ANGLE, EnumConvertType.FLOAT, 0)
         size = parse_param(kw, Lexicon.SIZE, EnumConvertType.VEC2, [(1, 1)], 0.001)
         edge = parse_param(kw, Lexicon.EDGE, EnumConvertType.STRING, EnumEdge.CLIP.name)

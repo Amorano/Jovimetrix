@@ -261,7 +261,7 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
         size = len(results)
         if output_is_image:
             _, w, h = image_by_size(results)
-            print(w, h)
+            logger.debug(f"{w}, {h}")
             results = [image_convert(i, 4) for i in results]
             results = [image_matte(i, (0,0,0,0), w, h) for i in results]
             results = torch.stack(results, dim=0)

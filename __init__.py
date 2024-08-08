@@ -394,7 +394,7 @@ class JOVBaseNode:
 
     @classmethod
     def VALIDATE_INPUTS(cls, *arg, **kw) -> bool:
-        logger.debug(f'validate -- {arg} {kw}')
+        # logger.debug(f'validate -- {arg} {kw}')
         return True
 
     @classmethod

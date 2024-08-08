@@ -99,10 +99,6 @@ class GLSLNodeBase(JOVImageNode):
         })
         return Lexicon._parse(d, cls)
 
-    @classmethod
-    def IS_CHANGED(cls, **kw) -> float:
-        return float("nan")
-
     def __init__(self, *arg, **kw) -> None:
         super().__init__(*arg, **kw)
         self.__glsl = GLSLShader()
@@ -192,12 +188,14 @@ Execute custom GLSL (OpenGL Shading Language) fragment shaders to generate image
         d['optional'] = opts
         return Lexicon._parse(d, cls)
 
+    @classmethod
+    def IS_CHANGED(cls, **kw) -> float:
+        return float("nan")
+
     def __init__(self, *arg, **kw) -> None:
         self.VERTEX = parse_param(kw, Lexicon.PROG_VERT, EnumConvertType.STRING, GLSLShader.PROG_VERTEX)[0]
         self.FRAGMENT = parse_param(kw, Lexicon.PROG_FRAG, EnumConvertType.STRING, GLSLShader.PROG_FRAGMENT)[0]
         super().__init__(*arg, **kw)
-
-
 
 class GLSLNodeDynamic(GLSLNodeBase):
 
@@ -266,7 +264,7 @@ def import_dynamic() -> Tuple[str,...]:
         if meta.get('hide', False):
             continue
 
-        name = meta.get('name', name.split('.')[0])
+        name = meta.get('name', name.split('.')[0]).upper()
         class_name = name.title().replace(' ', '_')
         class_name = f'GLSLNode_{class_name}'
 
@@ -276,9 +274,14 @@ def import_dynamic() -> Tuple[str,...]:
             emoji = '🧙🏽'
             sort_order -= 10000
 
+        category = GLSLNodeDynamic.CATEGORY
+        if (sub := meta.get('category', None)) is not None:
+            category += f'/{sub}'
+
         class_def = type(class_name, (GLSLNodeDynamic,), {
             "NAME": f'GLSL {name} (JOV) {emoji}'.upper(),
             "DESCRIPTION": meta.get('desc', name),
+            "CATEGORY": category.upper(),
             "FRAGMENT": shader,
             "PARAM": meta.get('_', []),
             "SORT": sort_order,
