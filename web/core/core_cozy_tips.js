@@ -142,8 +142,8 @@ app.registerExtension({
         }.bind(app.canvas);
 
         app.ui.settings.addSetting({
-            id: "jovimetrix.cozy.tips",
-            name: "🇯 🎨 Tooltips Delay",
+            id: "JOVIMETRIX 🔺🟩🔵.tooltips 📝",
+            name: "Delay",
             tooltip: "How long (in milliseconds) to wait before showing the tooltip. 0 will turn it off.",
             type: "number",
             defaultValue: 500,

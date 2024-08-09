@@ -15,10 +15,10 @@ let g_highlight;
 app.registerExtension({
     name: "jovimetrix.cozy.fields",
     setup() {
-        let id = "user.default.color.style"
+        let id = "color 🎨.style"
         app.ui.settings.addSetting({
-            id: `jov.${id}`,
-            name: "🇯 🎨 Node Color Style",
+            id: `JOVIMETRIX 🔺🟩🔵.${id}`,
+            name: "Style",
             type: "combo",
             options: ["ComfyUI Default", "Round Highlight", "Line Highlight"],
             tooltip: "Style to draw nodes.",
@@ -28,10 +28,10 @@ app.registerExtension({
                 g_color_style = val;
             },
         });
-        id = "user.default.color.thickness"
+        id = "color 🎨.thickness"
         app.ui.settings.addSetting({
-            id: `jov.${id}`,
-            name: "🇯 🎨 Node Color Style Thickness",
+            id: `JOVIMETRIX 🔺🟩🔵.${id}`,
+            name: "Style Thickness",
             type: "number",
             attrs: {
                 min: -10,
@@ -45,12 +45,12 @@ app.registerExtension({
                 g_thickness = val;
             },
         });
-        id = "user.default.color.highlight"
+        id = "color 🎨.highlight"
         app.ui.settings.addSetting({
-            id: `jov.${id}`,
-            name: "🇯 🎨 Node Color Style Highlight",
+            id: `JOVIMETRIX 🔺🟩🔵.${id}`,
+            name: "Style Highlight",
             type: "string",
-            tooltip: "Line thickness around widgets in Round or Line Highlight Mode.",
+            tooltip: "Color Highlight if Round or Line mode enabled. Hex code entry #FFF. The default will use the node base color.",
             defaultValue: "",
             onChange: function(val) {
                 util_config.setting_store(id, val);

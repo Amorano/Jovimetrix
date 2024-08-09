@@ -312,7 +312,7 @@ app.registerExtension({
         // Option for user to contrast text for better readability
         const original_color = LiteGraph.NODE_TEXT_COLOR;
 
-        util_config.setting_make('color.contrast', '🇯 🎨 Auto-Contrast Text', 'boolean', 'Auto-contrast the title text for all nodes for better readability', true);
+        util_config.setting_make('color 🎨.contrast', 'Auto-Contrast Text', 'boolean', 'Auto-contrast the title text for all nodes for better readability', true);
 
         const drawNodeShape = LGraphCanvas.prototype.drawNodeShape;
         LGraphCanvas.prototype.drawNodeShape = function() {

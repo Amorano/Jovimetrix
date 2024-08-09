@@ -35,7 +35,7 @@ export function setting_store(id, val) {
 }
 
 export function setting_make(id, pretty, type, tip, value,) {
-    const key = `user.default.${id}`
+    const key = `JOVIMETRIX 🔺🟩🔵.${id}`
     const setting_root = `Comfy.Settings.jov.${key}`;
     const local = localStorage[setting_root];
     value = local ? local : CONFIG_USER?.[key] ? CONFIG_USER[key] : value;
