@@ -84,8 +84,8 @@ export function widgetHookAB(node, control_key) {
         return;
     }
 
-    widgetHookControl(node, control_key, AA);
-    widgetHookControl(node, control_key, BB);
+    widgetHookControl(node, AA, control_key);
+    widgetHookControl(node, BB, control_key);
     widgetOutputHookType(node, control_key);
     setTimeout(() => { combo.callback(); }, 5);
 
@@ -97,6 +97,7 @@ export function widgetHookAB(node, control_key) {
 */
 export function widgetHookControl(node, control_key, target, matchFloatSize=false) {
 
+    /*
     const initializeTrack = (widget) => {
         const track = {};
         for (let i = 0; i < 4; i++) {
@@ -105,19 +106,7 @@ export function widgetHookControl(node, control_key, target, matchFloatSize=fals
         Object.assign(track, widget.value);
         return track;
     };
-
-    const setCallback = (widget, trackKey) => {
-        widget.options.menu = false;
-        widget.callback = () => {
-            if (widget.type === "toggle") {
-                trackKey[0] = widget.value ? 1 : 0;
-            } else {
-                Object.keys(widget.value).forEach((key) => {
-                    trackKey[key] = widget.value[key];
-                });
-            }
-        };
-    };
+    */
 
     const { widgets } = node;
     const combo = widgets.find(w => w.name === control_key);
@@ -127,7 +116,7 @@ export function widgetHookControl(node, control_key, target, matchFloatSize=fals
     }
 
     const data = {
-        track_xyzw: initializeTrack(target),
+        track_xyzw: target.options?.default, //initializeTrack(target),
         target,
         combo
     };
@@ -153,6 +142,17 @@ export function widgetHookControl(node, control_key, target, matchFloatSize=fals
         nodeFitHeight(node);
         return me;
     }
-    setCallback(target, data.track_xyzw);
+
+    target.options.menu = false;
+    target.callback = () => {
+        if (target.type === "toggle") {
+            data.track_xyzw[0] = target.value ? 1 : 0;
+        } else {
+            Object.keys(target.value).forEach((key) => {
+                data.track_xyzw[key] = target.value[key];
+            });
+        }
+    };
+
     return data;
 }
