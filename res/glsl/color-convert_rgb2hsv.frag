@@ -1,6 +1,6 @@
 // name: RGB-2-HSV
 // desc: Convert RGB input to HSV
-// category: convert
+// category: COLOR/CONVERT
 
 uniform sampler2D image;
 const float Epsilon = 1e-10;

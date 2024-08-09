@@ -1,6 +1,6 @@
 // name: GRAYSCALE
 // desc: Convert input to grayscale
-//
+// category: COLOR
 
 // default grayscale using NTSC conversion weights
 uniform sampler2D image;

@@ -1,6 +1,6 @@
 // name: NORMAL
 // desc: Convert input into a Normal map
-//
+// category: UTILITY
 
 uniform sampler2D image; //      | Input image to convert into a normal map
 uniform float scalar;    // 0.25 | Intensity of depth

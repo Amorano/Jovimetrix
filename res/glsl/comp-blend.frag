@@ -1,6 +1,6 @@
 // name: BLEND LINEAR
 // desc: Simple linear blend between two images
-//
+// category: COMPOSITE
 
 uniform sampler2D imageA;
 uniform sampler2D imageB;

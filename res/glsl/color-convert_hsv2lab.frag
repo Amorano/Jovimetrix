@@ -1,6 +1,6 @@
 // name: HSV-2-LAB
 // desc: Convert HSV input to LAB
-// category: convert
+// category: COLOR/CONVERT
 
 uniform sampler2D image;
 

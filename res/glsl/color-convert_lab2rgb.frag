@@ -1,13 +1,18 @@
 // name: LAB-2-RGB
 // desc: Convert LAB input to RGB
-// category: convert
+// category: COLOR/CONVERT
 
 uniform sampler2D image;
 
 void mainImage(out vec4 fragColor, vec2 fragCoord) {
     vec2 uv = fragCoord.xy / iResolution.xy;
     vec4 color = texture(image, uv);
-    vec3 lab = color.rgb;
+
+    // Denormalize LAB from 0-1 range
+    vec3 lab;
+    lab.x = color.r * 100.0;  // L: 0 to 1 -> 0 to 100
+    lab.y = color.g * 255.0 - 128.0;  // a: 0 to 1 -> -128 to 127
+    lab.z = color.b * 255.0 - 128.0;  // b: 0 to 1 -> -128 to 127
 
     // LAB to XYZ
     vec3 f;
@@ -20,8 +25,11 @@ void mainImage(out vec4 fragColor, vec2 fragCoord) {
     xyz.y = (f.y > 0.206897) ? pow(f.y, 3.0) : (f.y - 16.0 / 116.0) / 7.787;
     xyz.z = (f.z > 0.206897) ? pow(f.z, 3.0) : (f.z - 16.0 / 116.0) / 7.787;
 
-    // D65 reference white
-    xyz *= vec3(95.047, 100.0, 108.883);
+    // xyz *= vec3(109.85, 100.00, 35.58);  // CIE A -> 109.85, 100.00, 35.58
+    // xyz *= vec3(96.42, 100.00, 82.51);  // D50 -> 96.42, 100.00, 82.51
+    // xyz *= vec3(95.68, 100.00, 92.14);  // D55 -> 95.68, 100.00, 92.14
+    xyz *= vec3(0.95047, 1.0, 1.08883);  // D65 -> 95.047, 100.0, 108.883
+    // xyz *= vec3(96.42, 100.0, 82.49);  // ICC -> 96.42, 100.0, 82.49
 
     // XYZ to RGB
     vec3 rgb = xyz / 100.0 * mat3(
@@ -38,7 +46,6 @@ void mainImage(out vec4 fragColor, vec2 fragCoord) {
     );
 
     // Scale back to 0-255 range
-    rgb *= 255.0;
-
+    rgb = clamp(rgb * 255.0, 0.0, 255.0);
     fragColor = vec4(rgb, color.a);
 }

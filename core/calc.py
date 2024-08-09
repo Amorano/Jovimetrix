@@ -884,10 +884,10 @@ Supplies raw or default values for various data types, supporting vector input w
 
     def run(self, **kw) -> Tuple[bool]:
         raw = parse_param(kw, Lexicon.IN_A, EnumConvertType.ANY, None)
-        r_x = parse_param(kw, Lexicon.X, EnumConvertType.FLOAT, 0, -sys.maxsize, sys.maxsize)
-        r_y = parse_param(kw, Lexicon.Y, EnumConvertType.FLOAT, 0, -sys.maxsize, sys.maxsize)
-        r_z = parse_param(kw, Lexicon.Z, EnumConvertType.FLOAT, 0, -sys.maxsize, sys.maxsize)
-        r_w = parse_param(kw, Lexicon.W, EnumConvertType.FLOAT, 0, -sys.maxsize, sys.maxsize)
+        r_x = parse_param(kw, Lexicon.X, EnumConvertType.FLOAT, None, -sys.maxsize, sys.maxsize)
+        r_y = parse_param(kw, Lexicon.Y, EnumConvertType.FLOAT, None, -sys.maxsize, sys.maxsize)
+        r_z = parse_param(kw, Lexicon.Z, EnumConvertType.FLOAT, None, -sys.maxsize, sys.maxsize)
+        r_w = parse_param(kw, Lexicon.W, EnumConvertType.FLOAT, None, -sys.maxsize, sys.maxsize)
         typ = parse_param(kw, Lexicon.TYPE, EnumConvertType.STRING, EnumConvertType.BOOLEAN.name)
         xyzw = parse_param(kw, Lexicon.IN_A+Lexicon.IN_A, EnumConvertType.VEC4, [(0, 0, 0, 0)])
         seed = parse_param(kw, Lexicon.SEED, EnumConvertType.INT, 0, 0)
@@ -898,6 +898,7 @@ Supplies raw or default values for various data types, supporting vector input w
         pbar = ProgressBar(len(params))
         old_seed = -1
         for idx, (raw, r_x, r_y, r_z, r_w, typ, xyzw, seed, yyzw, x_str) in enumerate(params):
+            print(raw, r_x, r_y, r_z, r_w, typ, xyzw, seed, yyzw, x_str)
             typ = EnumConvertType[typ]
             default = [x_str]
             default2 = None
@@ -918,7 +919,7 @@ Supplies raw or default values for various data types, supporting vector input w
             typ = EnumConvertType.VEC4 if typ in [EnumConvertType.VEC4, EnumConvertType.VEC3, \
                                                 EnumConvertType.VEC2, EnumConvertType.FLOAT] \
                                                 else EnumConvertType.VEC4INT
-
+            print(val, val2)
             # check if set to randomize....
             self.UPDATE = False
             if seed != 0 and isinstance(val, (tuple, list,)) and isinstance(val2, (tuple, list,)):

@@ -1,6 +1,6 @@
 // name: LAB-2-HSV
 // desc: Convert LAB color space to HSV
-// category: convert
+// category: COLOR/CONVERT
 
 uniform sampler2D image;
 

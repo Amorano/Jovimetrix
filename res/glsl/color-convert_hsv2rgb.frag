@@ -1,6 +1,6 @@
 // name: HSV-2-RGB
 // desc: Convert HSV input to RGB
-// category: convert
+// category: COLOR/CONVERT
 
 uniform sampler2D image;
 
