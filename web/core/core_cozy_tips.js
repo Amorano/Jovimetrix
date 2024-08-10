@@ -76,16 +76,19 @@ app.registerExtension({
 
         const onCanvasPointerMove = function () {
             const node = this.node_over;
+
             if (!node || node.flags.collapsed) {
+                widget_previous = null;
                 hideTooltip();
                 return;
             }
 
-            // jovian tooltip
+            // Jovian tooltip logic
             const widget_tooltip = (node?.widgets || [])
                 .find(widget => widget.type === 'JTOOLTIP');
 
             if (!widget_tooltip) {
+                widget_previous = null;
                 hideTooltip();
                 return;
             }
@@ -128,14 +131,10 @@ app.registerExtension({
             }
 
             if (widget_previous != name) {
-                hideTooltip();
                 widget_previous = name;
-                if (tip) {
-                    return showTooltip(tip);
-                }
-                return;
-            } else {
-                return;
+            }
+            if (tip) {
+                return showTooltip(tip);
             }
             hideTooltip();
         }.bind(app.canvas);
