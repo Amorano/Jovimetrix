@@ -11,56 +11,19 @@
 
 <!---------------------------------------------------------------------------->
 
-# WHY BUILD THESE NODES?
+# QUICK REFERENCE
 
-There are many ways to do composition and it is apparent that is a large portion of what Computer Vision - aka contemporaneous "A.I" - is invented to resolve.
+* [INSTALLATION](#installation)
+* * [ENVIRONMENT](#environment-variables)
+* [GLSL SHADERS](#glsl-shaders)
+* * [CUSTOM SHADERS](#custom-shaders)
+* [WORKFLOWS](#workflow-examples)
+* [YT VIDEOS](#video-tutorials)
+* [NODE REFERENCE](#node-reference)
+* [COMMUNITY](#community)
+* [ACKNOWLEDGEMENTS](#acknowledgements)
 
-While diffusers and latent hallucinations can make many amazing things at the moment, there is still a need to resolve final "frames" in something else, like one of the many free tools:
-* [Krita](https://krita.org/en/) (2D)
-* [Calvary](https://cavalry.scenegroup.co/) (motion graphics)
-* [Davinci Resolve](https://www.blackmagicdesign.com/products/davinciresolve) (movie editing)
-
-The main goal of Jovimetrix is to supplement those external workflows before the need to use them.
-
-## TARGETS
-
-* animation / motion graphics
-* traditional image blending
-* support masks as an image channel
-* improved UX
-** custom node colorization
-** node favorites
-
-# COMMUNITY
-
-Everything here is made because I wanted to make it.
-Everything you are looking for here that you cant find doesn't exist because I didn't make it.
-If you feel like helping with text or code contributions, please pull and send me any PRs.
-
-## VISUAL AIDS AND EXAMPLES
-
-[![YouTube](./res/YouTube.svg)](https://www.youtube.com/channel/UCseaPIn-a2ji3LzVmnEF0Xw)
-
-## WORKFLOW EXAMPLES
-
-TBD
-
-## CONTRIBUTIONS
-
-Feel free to contribute to this project by reporting issues or suggesting improvements. Open an issue or submit a pull request on the GitHub repository.
-
-## DONATIONS
-
-[![If you feel like donating money resource instead, you can always use my ko-fi ❤️](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/alexandermorano)
-
-## DISCORD
-There are a few places you can chat about Jovimetrix nodes.
-
-Directly on the `#jovimetrix` channel at the Banodoco discord:
-[![](https://dcbadge.vercel.app/api/server/fbpScsxF4f?style=flat-square)](https://discord.gg/fbpScsxF4f)
-
-On Purz discord (Creative Exploration):
-[![](https://dcbadge.vercel.app/api/server/AxjQCRCnxn?style=flat-square)](https://discord.gg/AxjQCRCnxn)
+<!---------------------------------------------------------------------------->
 
 # INSTALLATION
 
@@ -84,6 +47,18 @@ pip install -r requirements.txt
 
 ## ENVIRONMENT VARIABLES
 
+There are a number of environment variables that can be used to affect how `Jovimetrix` itself functions within the ComfyUI environment:
+
+CONTROL | VARIABLE(S)
+---|---
+[LOGGER](#logger) | JOV_LOG_LEVEL
+[IGNORING NODES](#ignore-nodes) | JOV_IGNORE_NODE
+[DEVICE SCANNER](#device-scan) | JOV_SCAN_DEVICES
+[HELP SYSTEM](#help-system) | JOV_DOC
+[GLSL SHADERS](#glsl-shaders) | JOV_GLSL
+[GIFSKI EXPORT](#gifski-export) | JOV_GIFSKI
+[SPOUT](#spout) | JOV_SPOUT
+
 ### LOGGER
 
 The logger can be controlled via the JOV_LOG_LEVEL variable. It can be set to one of the following, by name or value:
@@ -105,6 +80,12 @@ The default is WARNING (30); i.e.:
 Because there are a number of nodes that have overlapping functionality with other node packages, I have provided a mechanism to ignore loading of specific nodes.
 
 If you create a file called `ignore.txt` inside the Jovimetrix root folder \(`.../ComfyUI/custom_nodes/Jovimetrix`\), it will skip loading any nodes included.
+
+#### CUSTOM IGNORE FILE
+
+If the `JOV_IGNORE_NODE` environment variable points to a valid text file, it will parse the file rows for `<Node Class>` names and attempt to skip loading those specific node class(es) at initialization.
+
+This should be reflected in your ComfyUI log. Verify with the log any nodes ignored this way.
 
 #### USAGE
 
@@ -146,13 +127,7 @@ You can also use the token: {name} in the path and it will be replaced with the 
 
 `SET JOV_DOC=C:/dev/jvx/help/{name}`
 
-### IGNORING NODES
-
-if `JOV_IGNORE_NODE` points to a valid `.txt` file, it will parse the file rows for Node Class names and attempt to skip loading those nodes at initialization.
-
-This should be reflected in your ComfyUI log. Verify with the log any nodes ignored this way.
-
-### GIFSKI SUPPORT
+### GIFSKI EXPORT
 
 If you have [GIFSKI](https://gif.ski/) installed you can enable the option for the Export Node to use GIFSKI when outputting frames.
 
@@ -162,15 +137,8 @@ You will need to add an environment var so it knows you have it installed and wh
 
 Once set the GIFSKI option should appear in the Export Node drop down list of output target formats.
 
-### PYAUDIO
-
-By default, pyaudio is installed for all platforms; however, it may be nessicary to run a specific platform package manager to obtain all the correct platform dependencies. [You can refer to the non-complicated specific platform instructions for help.](https://people.csail.mit.edu/hubert/pyaudio).
-
-In short:
-* For MacOS you need the extra brew package of portaudio. (brew install portaudio)
-* For Linux you need the extra apt package of python3-pyaudio. (sudo apt-get install python3-pyaudio)
-
-### SPOUT (WINDOWS ONLY)
+### SPOUT
+(WINDOWS ONLY)
 
 If you are on Linux or Mac, `Spout` will not be installed from the requirements.txt.
 
@@ -183,11 +151,135 @@ If you want to fully turn off the initial startup attempt to import Spout, you c
 
 `SET JOV_SPOUT=0`
 
-## FFMEPG
+# GLSL SHADERS
 
-The audio nodes require FFMPEG. You can find the official [FFMPEG](https://ffmpeg.org "official FFMPEG binaries") here. Follow it's installation instructions for your specific operating system.
+There are two mechanisms in Jovimetrix that allow the creation of GLSL shaders to support image creation or manipulation at ComfyUI runtime.
 
-<!---------------------------------------------------------------------------->
+The main `GLSL (JOV) 🍩` node allows for the manipulating of shaders in the UI of ComfyUI. Once the shader is established, it can be left as is within the network and will produce the same content output as if it was a `Dynamic GLSL` node.
+
+The secondary way is via the `Dynamic GLSL` system. This will search a filepath for shader files and pre-load them as nodes for ComfyUI. They will register as normal nodes and work in any API calls.
+
+The benefit of the dynamic nodes are the reduced footprint of the node itself. Since the Dynamic nodes load their scripts statically, the node only contains the inputs and widgets for that specific script.
+
+![`GLSL (JOV) 🍩` vs `Dynamic Node`](res/wiki/glsl_custom.png)
+<p align="center">example of `GLSL (JOV) 🍩` footprint vs `Dynamic Node` footprint</p>
+
+## DYNAMIC SHADERS
+
+### CORE
+
+All shaders have two parts: the vertex shader (.vert) and the fragment shader (.frag).
+
+The default location for the included shaders is:
+
+`<ComfyUI>/custom_nodes/Jovimetrix/res/glsl`
+
+The basic shaders for each of these programs is included in the default location and are named:
+
+`_.frag` and `_.vert`
+
+There are several other shaders included and when they are used in ComfyUI they come denoted with a 🧙🏽 wizard icon at the end of their name.
+
+These shader examples can be used to help jump-start custom shader work.
+
+### VERTEX SHADER
+
+```
+#version 330 core
+
+precision highp float;
+
+void main()
+{
+    vec2 verts[3] = vec2[](vec2(-1, -1), vec2(3, -1), vec2(-1, 3));
+    gl_Position = vec4(verts[gl_VertexID], 0, 1);
+}
+```
+
+The default vertex shader is simply a quad with the UV mapped from 0..1.
+
+### CUSTOM SHADERS
+
+You are able to add your own shaders such that they compile into nodes at ComfyUI load time. Custom shaders that are local to your machine will have a 🧙🏽‍♀️ wizard icon at the end of their name. The default location for local shaders is to search a folder in the root of Jovimetrix:
+
+`<ComfyUI>/custom_nodes/Jovimetrix/glsl`
+
+If you want to change the search location, you can set the environment variable:
+
+`SET JOV_GLSL=<location to glsl shader files>`
+
+### HEADER
+
+```
+uniform vec3    iResolution;
+uniform float   iTime;
+uniform float   iFrameRate;
+uniform int     iFrame;
+
+#define texture2D texture
+```
+
+All the shaders first have a header file that contains some pre-set variables for shader program usage. These are mostly mirrored from ShaderToy variables, with a few changes:
+
+NAME | TYPE | USAGE
+---|---|---
+iResolution | vec3 | Dimensions of the GL canvas
+iTime | float | current time in shader's lifetime
+iFrameRate | float | the desired FPS
+iFrame | int | the current frame based on the `iTime` and `iFrameRate`
+
+There are also a few functions defined to keep compatibility for an easier 1:1 transition:
+
+SHORTHAND | GLSL FUNCTION
+---|---
+texture | texture2D
+
+### ENTRY POINT
+
+The fragment shader's entry point is defined as:
+
+```
+void mainImage(out vec4 fragColor, vec2 fragCoord)
+```
+
+such that setting fragColor will output the final RGBA value for the pixel.
+
+### SHADER META
+
+Shaders are 100% fully GLSL compatible; however, there can be additional information (meta data) added to the shaders via comments. This expands the usefulness of the shaders since they can be pre-parsed and turned into nodes made at runtime (Dynamic Nodes).
+
+```
+// name: GRAYSCALE
+// desc: Convert input to grayscale
+// category: COLOR
+```
+
+The meta data breakdown of this shader header:
+
+KEY | USAGE | EXPLANATION
+---|---|---
+name | GRAYSCALE | title of the node with an added 🧙🏽 for internal and 🧙🏽‍♀️ for custom nodes
+desc | Convert input to grayscale | text that shows up for preview nodes and the Jovimetrix help panel
+category | COLOR | ComfyUI menu placement. Added to the end of `JOVIMETRIX 🔺🟩🔵/GLSL`
+
+`UNIFORM fields` also have metadata about usage(clipping for number fields) and their tooltips:
+
+```
+// default grayscale using NTSC conversion weights
+uniform sampler2D image; | MASK, RGB or RGBA
+uniform vec3 convert; // 0.299, 0.587, 0.114; 0; 1; 0.01 | Scalar for each channel
+```
+
+`<default value> ; <minimum> ; <maximum>; <step> | <tooltip>`
+
+For the convert uniform this means a vector3 field with a default value of `<0.299, 0.587, 0.114>` clipped in the range `0..1` with a `0.01` step when the user interacts with the mouse and the tooltip will read: `Scalar for each channel`
+
+If you need to omit fields, like a minimum, just place the token separator (;) by itself, for example:
+
+uniform float num; // 0.5; ; 10
+
+This would clip the upper-bound to 10 and allow the number to go to -system maximum.
+
 
 # [NODE REFERENCE](https://github.com/Amorano/Jovimetrix/wiki)
 
@@ -254,7 +346,42 @@ The audio nodes require FFMPEG. You can find the official [FFMPEG](https://ffmpe
 
 <!---------------------------------------------------------------------------->
 
-# ACKNOWLEDGEMENTS
+# EXAMPLES
+
+## WORKFLOW EXAMPLES
+
+TBD
+
+## VIDEO TUTORIALS
+
+[![YouTube](./res/wiki/YouTube.svg)](https://www.youtube.com/channel/UCseaPIn-a2ji3LzVmnEF0Xw)
+
+<!---------------------------------------------------------------------------->
+
+# COMMUNITY
+
+Everything here is made because I wanted to make it.
+Everything you are looking for here that you cant find doesn't exist because I didn't make it.
+If you feel like helping with text or code contributions, please pull and send me any PRs.
+
+## CONTRIBUTIONS
+
+Feel free to contribute to this project by reporting issues or suggesting improvements. Open an issue or submit a pull request on the GitHub repository.
+
+## DONATIONS
+
+[![If you feel like donating money resource instead, you can always use my ko-fi ❤️](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/alexandermorano)
+
+## DISCORD
+There are a few places you can chat about Jovimetrix nodes.
+
+Directly on the `#jovimetrix` channel at the Banodoco discord:
+[![](https://dcbadge.vercel.app/api/server/fbpScsxF4f?style=flat-square)](https://discord.gg/fbpScsxF4f)
+
+On Purz discord (Creative Exploration):
+[![](https://dcbadge.vercel.app/api/server/AxjQCRCnxn?style=flat-square)](https://discord.gg/AxjQCRCnxn)
+
+## ACKNOWLEDGEMENTS
 Thank you to all the creators and developers who make available their talent everyday to help everyone else.
 
 ## PROJECT SOURCES
@@ -281,6 +408,28 @@ THANK | YOU! | 💕
 [Kijai](https://github.com/Kijai)|[WASasquatch](https://github.com/WASasquatch)|[MatisseTec](https://github.com/MatissesProjects)
 [rgthree](https://github.com/rgthree)|[Suzue1](https://github.com/Suzie1)
 <img width=250/>|<img width=250/>|<img width=250/>
+
+<!---------------------------------------------------------------------------->
+
+# WHY BUILD THESE NODES?
+
+There are many ways to do composition and it is apparent that is a large portion of what Computer Vision - aka contemporaneous "A.I" - is invented to resolve.
+
+While diffusers and latent hallucinations can make many amazing things at the moment, there is still a need to resolve final "frames" in something else, like one of the many free tools:
+* [Krita](https://krita.org/en/) (2D)
+* [Calvary](https://cavalry.scenegroup.co/) (motion graphics)
+* [Davinci Resolve](https://www.blackmagicdesign.com/products/davinciresolve) (movie editing)
+
+The main goal of Jovimetrix is to supplement those external workflows before the need to use them.
+
+## TARGETS
+
+* animation / motion graphics
+* traditional image blending
+* support masks as an image channel
+* improved UX
+** custom node colorization
+** node favorites
 
 <!---------------------------------------------------------------------------->
 

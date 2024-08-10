@@ -17,6 +17,7 @@
     "GLSL BLEND LINEAR (JOV) \ud83e\uddd9\ud83c\udffd": "Simple linear blend between two images",
     "GLSL FILTER RANGE (JOV) \ud83e\uddd9\ud83c\udffd\u200d\u2640\ufe0f": "Select pixels from start color through end color",
     "GLSL GRAYSCALE (JOV) \ud83e\uddd9\ud83c\udffd": "Convert input to grayscale",
+    "GLSL HSV ADJUST (JOV) \ud83e\uddd9\ud83c\udffd": "HSV ADJUST",
     "GLSL HSV-2-LAB (JOV) \ud83e\uddd9\ud83c\udffd": "Convert HSV input to LAB",
     "GLSL HSV-2-RGB (JOV) \ud83e\uddd9\ud83c\udffd": "Convert HSV input to RGB",
     "GLSL LAB-2-HSV (JOV) \ud83e\uddd9\ud83c\udffd": "Convert LAB color space to HSV",

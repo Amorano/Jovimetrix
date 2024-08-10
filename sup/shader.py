@@ -61,12 +61,10 @@ class GLSLShader:
 
 precision highp float;
 
-uniform vec3	iResolution;
-uniform vec4	iMouse;
-uniform float	iTime;
-uniform float	iTimeDelta;
-uniform float	iFrameRate;
-uniform int	    iFrame;
+uniform vec3    iResolution;
+uniform float   iTime;
+uniform float   iFrameRate;
+uniform int     iFrame;
 
 #define texture2D texture
 """
@@ -84,10 +82,10 @@ void main()
 uniform sampler2D image;
 
 void mainImage( out vec4 fragColor, vec2 fragCoord ) {
-  vec2 uv = fragCoord.xy / iResolution.xy;
-  // Correcting for aspect ratio
-  // uv.y *= (iResolution.x / iResolution.y);
-  fragColor = texture2D(image, uv);
+vec2 uv = fragCoord.xy / iResolution.xy;
+// Correcting for aspect ratio
+// uv.y *= (iResolution.x / iResolution.y);
+fragColor = texture2D(image, uv);
 }
 """
 
@@ -204,7 +202,7 @@ void main()
         gl.glUseProgram(self.__program)
 
         self.__shaderVar = {}
-        statics = ['iResolution', 'iTime', 'iFrameRate', 'iFrame', 'iMouse']
+        statics = ['iResolution', 'iTime', 'iFrameRate', 'iFrame']
         for s in statics:
             if (val := gl.glGetUniformLocation(self.__program, s)) > -1:
                 self.__shaderVar[s] = val
@@ -342,17 +340,17 @@ void main()
 
         self.runtime = time_delta
 
+        # current time in shader lifetime
         if (val := self.__shaderVar.get('iTime', -1)) > -1:
             gl.glUniform1f(val, self.__runtime)
 
+        # the desired FPS
         if (val := self.__shaderVar.get('iFrameRate', -1)) > -1:
             gl.glUniform1i(val, self.__fps)
 
+        # the current frame based on the life time and "fps"
         if (val := self.__shaderVar.get('iFrame', -1)) > -1:
             gl.glUniform1i(val, self.frame)
-
-        if (val := self.__shaderVar.get('iMouse', -1)) > -1:
-            gl.glUniform4f(val, self.__mouse[0], self.__mouse[1], 0, 0)
 
         texture_index = 0
         for uk, uv in self.__userVar.items():

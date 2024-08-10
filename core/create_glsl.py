@@ -234,8 +234,8 @@ class GLSLNodeDynamic(GLSLNodeBase):
                         d = 1 if typ.name.endswith('INT') else 0.01
                         params['val_step'] = parse_value(val_step, EnumConvertType.FLOAT, d)
 
-                    if tooltip is not None:
-                        params["tooltips"] = tooltip
+                if tooltip is not None:
+                    params["tooltips"] = tooltip
                 data[name] = (typ.name, params,)
 
         data.update(opts)

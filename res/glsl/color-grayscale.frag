@@ -3,7 +3,7 @@
 // category: COLOR
 
 // default grayscale using NTSC conversion weights
-uniform sampler2D image;
+uniform sampler2D image; | MASK, RGB or RGBA
 uniform vec3 convert; // 0.299, 0.587, 0.114; 0; 1; 0.01 | Scalar for each channel
 
 void mainImage( out vec4 fragColor, vec2 fragCoord ) {
