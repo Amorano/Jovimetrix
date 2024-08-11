@@ -84,8 +84,8 @@ export function widgetHookAB(node, control_key) {
         return;
     }
 
-    widgetHookControl(node, AA, control_key);
-    widgetHookControl(node, BB, control_key);
+    widgetHookControl(node, control_key, AA);
+    widgetHookControl(node, control_key, BB);
     widgetOutputHookType(node, control_key);
     setTimeout(() => { combo.callback(); }, 5);
 
@@ -96,8 +96,6 @@ export function widgetHookAB(node, control_key) {
 * matchFloatSize forces the target to be float[n] based on its type size
 */
 export function widgetHookControl(node, control_key, target, matchFloatSize=false) {
-
-    /*
     const initializeTrack = (widget) => {
         const track = {};
         for (let i = 0; i < 4; i++) {
@@ -106,7 +104,6 @@ export function widgetHookControl(node, control_key, target, matchFloatSize=fals
         Object.assign(track, widget.value);
         return track;
     };
-    */
 
     const { widgets } = node;
     const combo = widgets.find(w => w.name === control_key);
@@ -116,7 +113,8 @@ export function widgetHookControl(node, control_key, target, matchFloatSize=fals
     }
 
     const data = {
-        track_xyzw: target.options?.default, //initializeTrack(target),
+        //track_xyzw: target.options?.default, //initializeTrack(target),
+        track_xyzw: initializeTrack(target),
         target,
         combo
     };
