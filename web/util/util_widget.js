@@ -135,7 +135,7 @@ export function widgetShow(widget) {
     }
 }
 
-export function widgetShowVector(widget, values={}, type=undefined, precision=4) {
+export function widgetShowVector(widget, values={}, type) {
     widgetShow(widget);
     if (["FLOAT"].includes(type)) {
         type = "VEC1";
@@ -241,33 +241,39 @@ export function widgetToInput(node, widget, config) {
 }
 
 export function widgetGetHovered() {
-    if (typeof app === 'undefined')
-        return;
+    if (typeof app === 'undefined') return;
 
-	const node = app.canvas.node_over;
-	if (!node.widgets) return;
+    const node = app.canvas.node_over;
+    if (!node || !node.widgets) return;
 
-	const graphPos = app.canvas.graph_mouse;
-
-	const x = graphPos[0] - node.pos[0];
-	const y = graphPos[1] - node.pos[1];
+    const graphPos = app.canvas.graph_mouse;
+    const x = graphPos[0] - node.pos[0];
+    const y = graphPos[1] - node.pos[1];
 
     let pos_y;
-	for (const w of node.widgets) {
-		let widgetWidth, widgetHeight;
-		if (w.computeSize) {
-			const sz = w.computeSize();
-			widgetWidth = sz[0] || 0;
-			widgetHeight = sz[1] || 0;
-		} else {
-			widgetWidth = w.width || node.size[0] || 0;
-			widgetHeight = LiteGraph.NODE_WIDGET_HEIGHT;
-		}
+    for (const w of node.widgets) {
+        let widgetWidth, widgetHeight;
+        if (w.computeSize) {
+            const sz = w.computeSize();
+            widgetWidth = sz[0] || 0;
+            widgetHeight = sz[1] || 0;
+        } else {
+            widgetWidth = w.width || node.size[0] || 0;
+            widgetHeight = LiteGraph.NODE_WIDGET_HEIGHT;
+        }
+
         if (pos_y === undefined) {
             pos_y = w.last_y || 0;
-        };
-		if (widgetHeight > 0 && widgetWidth > 0 && w.last_y !== undefined && x >= 6 && x <= widgetWidth - 12 && y >= w.last_y && y <= w.last_y  + widgetHeight) {
-			return w;
+        }
+
+        if (widgetHeight > 0 && widgetWidth > 0 && w.last_y !== undefined && x >= 6 && x <= widgetWidth - 12 && y >= w.last_y && y <= w.last_y + widgetHeight) {
+            return {
+                widget: w,
+                x1: 6 + node.pos[0],
+                y1: node.pos[1] + w.last_y,
+                x2: node.pos[0] + widgetWidth - 12,
+                y2: node.pos[1] + w.last_y + widgetHeight
+            };
         }
     }
 }

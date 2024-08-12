@@ -8,6 +8,8 @@ import { app } from "../../../scripts/app.js"
 import { $el } from "../../../scripts/ui.js"
 import { widgetGetHovered } from '../util/util_widget.js'
 
+//const widget_height = 25;
+
 const JTooltipWidget = (app, name, opts) => {
     let options = opts || {};
     options.serialize = false;
@@ -42,17 +44,17 @@ app.registerExtension({
 
         let userTimeout = 750;
         let tooltipTimeout;
-        let widget_previous;
+        let tips_previous;
 
         const hideTooltip = () => {
             if (tooltipTimeout) {
                 clearTimeout(tooltipTimeout);
             }
             tooltipEl.style.display = "none";
-            widget_previous = null;
+            tips_previous = null;
         };
 
-        const showTooltip = (tooltip) => {
+        const showTooltip = (tooltip, x_offset, y_offset) => {
             if (tooltipTimeout) {
                 clearTimeout(tooltipTimeout);
             }
@@ -60,15 +62,15 @@ app.registerExtension({
                 tooltipTimeout = setTimeout(() => {
                     tooltipEl.textContent = tooltip;
                     tooltipEl.style.display = "block";
-                    tooltipEl.style.left = app.canvas.mouse[0] + "px";
-                    tooltipEl.style.top = app.canvas.mouse[1] + "px";
+                    tooltipEl.style.left = x_offset + "px";
+                    tooltipEl.style.top = y_offset + "px";
                     const rect = tooltipEl.getBoundingClientRect();
                     if(rect.right > window.innerWidth) {
-                        tooltipEl.style.left = (app.canvas.mouse[0] - rect.width) + "px";
+                        tooltipEl.style.left = (x_offset - rect.width) + "px";
                     }
 
                     if(rect.top < 0) {
-                        tooltipEl.style.top = (app.canvas.mouse[1] + rect.height) + "px";
+                        tooltipEl.style.top = (y_offset + rect.height) + "px";
                     }
                 }, userTimeout);
             }
@@ -78,9 +80,7 @@ app.registerExtension({
             const node = this.node_over;
 
             if (!node || node.flags.collapsed) {
-                widget_previous = null;
-                hideTooltip();
-                return;
+                return hideTooltip();
             }
 
             // Jovian tooltip logic
@@ -88,20 +88,27 @@ app.registerExtension({
                 .find(widget => widget.type === 'JTOOLTIP');
 
             if (!widget_tooltip) {
-                widget_previous = null;
-                hideTooltip();
-                return;
+                return hideTooltip();
             }
 
-            const tips = widget_tooltip.options.default || {};
-            const inputSlot = this.isOverNodeInput(node, this.graph_mouse[0], this.graph_mouse[1], [0, 0]);
+            const tips = widget_tooltip.options?.default;
+            if (!tips) {
+                return hideTooltip();
+            }
 
             let tip;
             let name;
+            //let mouse_x = app.canvas.mouse[0];
+            //let mouse_y = app.canvas.mouse[1];
+
+            const mouse_test_x = this.graph_mouse[0];
+            const mouse_test_y = this.graph_mouse[1];
+            const inputSlot = this.isOverNodeInput(node, mouse_test_x, mouse_test_y, [0, 0]);
 
             if (inputSlot !== -1) {
                 const slot = node.inputs[inputSlot];
                 tip = tips?.[slot.name];
+                //mouse_y =  node.pos[1] - 5 * widget_height + inputSlot * widget_height;
                 if (slot.widget) {
                     const widget = node.widgets.find(w => w.name === slot.name);
                     if (widget && widget.type.startsWith('converted-widget')) {
@@ -113,30 +120,37 @@ app.registerExtension({
                 }
                 name = `inputs_${inputSlot}`;
             } else {
-                const outputSlot = this.isOverNodeOutput(node, this.graph_mouse[0], this.graph_mouse[1], [0, 0]);
+                const outputSlot = this.isOverNodeOutput(node, mouse_test_x, mouse_test_y, [0, 0]);
                 if (outputSlot !== -1) {
                     tip = tips?.['outputs']?.[outputSlot];
+                    //mouse_y = node.pos[1] - 4 * widget_height + outputSlot * widget_height;
                     name = `outputs_${outputSlot}`;
                 } else {
-                    const widget = widgetGetHovered();
-                    if (widget && !widget.element) {
-                        name = widget.name;
-                        tip = tips?.[name];
-                        const def = widget.options?.default;
-                        if (def) {
-                            tip += ` (default: ${def})`;
+                    const hover = widgetGetHovered();
+                    if (hover) {
+                        const { widget } = hover;
+                        if (widget && !widget.element) {
+                            name = widget.name;
+                            tip = tips?.[name];
+                            //mouse_x = node.pos[0] - mouse_x + 10;
+                            //mouse_y = node.pos[1] - 4 * widget_height;
+                            const def = widget.options?.default;
+                            if (def) {
+                                tip += ` (default: ${def})`;
+                            }
                         }
                     }
                 }
             }
+            if (tips_previous == name) {
+                return;
+            }
 
-            if (widget_previous != name) {
-                widget_previous = name;
+            tips_previous = name;
+            if (!tip) {
+                return hideTooltip();
             }
-            if (tip) {
-                return showTooltip(tip);
-            }
-            hideTooltip();
+            showTooltip(tip, app.canvas.mouse[0], app.canvas.mouse[1]);
         }.bind(app.canvas);
 
         app.ui.settings.addSetting({

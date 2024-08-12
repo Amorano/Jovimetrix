@@ -124,18 +124,18 @@ export function widgetHookControl(node, control_key, target, matchFloatSize=fals
         const me = oldCallback?.apply(this, arguments);
         widgetHide(node, target, "-jov");
         if (["VEC2", "VEC2INT", "COORD2D", "VEC3", "VEC3INT", "VEC4", "VEC4INT", "BOOLEAN", "INT", "FLOAT"].includes(combo.value)) {
-            let size = combo.value;
+            let type = combo.value;
             if (matchFloatSize) {
-                size = "FLOAT";
+                type = "FLOAT";
                 if (["VEC2", "VEC2INT", "COORD2D"].includes(combo.value)) {
-                    size = "VEC2";
+                    type = "VEC2";
                 } else if (["VEC3", "VEC3INT"].includes(combo.value)) {
-                    size = "VEC3";
+                    type = "VEC3";
                 } else if (["VEC4", "VEC4INT"].includes(combo.value)) {
-                    size = "VEC4";
+                    type = "VEC4";
                 }
             }
-            widgetShowVector(target, data.track_xyzw, size);
+            widgetShowVector(target, data.track_xyzw, type);
         }
         nodeFitHeight(node);
         return me;
