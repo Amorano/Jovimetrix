@@ -268,10 +268,10 @@ def import_dynamic() -> Tuple[str,...]:
         class_name = name.title().replace(' ', '_')
         class_name = f'GLSLNode_{class_name}'
 
-        emoji = '🧙🏽‍♀️'
+        emoji = Lexicon.GLSL_CUSTOM
         sort_order = sort
         if fname.startswith(root):
-            emoji = '🧙🏽'
+            emoji = Lexicon.GLSL_INTERNAL
             sort_order -= 10000
 
         category = GLSLNodeDynamic.CATEGORY

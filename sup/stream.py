@@ -4,6 +4,7 @@ Media Stream Support
 """
 
 import os
+import ssl
 import sys
 import json
 import time
@@ -19,6 +20,8 @@ import mss
 import mss.tools
 import numpy as np
 from PIL import Image, ImageGrab
+
+from comfy.cli_args import args as cmd_args
 
 from loguru import logger
 
@@ -557,6 +560,8 @@ class StreamingServer(metaclass=Singleton):
         self.__host = host
         self.__port = port
         self.__address = (self.__host, self.__port)
+        self.__tls_keyfile = cmd_args.tls_keyfile
+        self.__tls_certfile = cmd_args.tls_certfile
         self.__thread_server = threading.Thread(target=self.__server, daemon=True)
         self.__thread_server.start()
         self.__thread_capture = threading.Thread(target=self.__capture, daemon=True)
@@ -564,7 +569,19 @@ class StreamingServer(metaclass=Singleton):
         logger.info("STARTED")
 
     def __server(self) -> None:
-        httpd = ThreadingHTTPServer(self.__address, lambda *args: StreamingHandler(StreamingServer.OUT, *args))
+        handler = lambda *args: StreamingHandler(StreamingServer.OUT, *args)
+        httpd = ThreadingHTTPServer(self.__address, handler)
+
+        if self.__tls_keyfile and self.__tls_certfile:
+            # HTTPS mode
+            context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+            context.load_cert_chain(self.__tls_certfile, self.__tls_keyfile)
+            httpd.socket = context.wrap_socket(httpd.socket, server_side=True)
+            logger.info(f"HTTPS server {self.__address}")
+        else:
+            # HTTP mode
+            logger.info(f"HTTP server {self.__address}")
+
         while True:
             httpd.handle_request()
 

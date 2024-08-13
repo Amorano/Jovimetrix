@@ -202,6 +202,8 @@ class Lexicon(metaclass=LexiconMeta):
     G = '🟩', "Green"
     GAMMA = '🔆', "Gamma"
     GI = '💚', "Green Channel"
+    GLSL_CUSTOM = '🧙🏽‍♀️', "User GLSL Shader"
+    GLSL_INTERNAL = '🧙🏽', "Internal GLSL Shader"
     GRADIENT = '🇲🇺', "Gradient"
     H = '🇭', "Hue"
     HI = 'HI', "High / Top of range"
@@ -877,16 +879,16 @@ class Session(metaclass=Singleton):
             JOV_IGNORE_NODE = []
 
         node_count = 0
-        for f in (ROOT / 'core').iterdir():
-            if f.suffix != ".py" or f.stem.startswith('_'):
+        for fname in (ROOT / 'core').iterdir():
+            if fname.suffix != ".py" or fname.stem.startswith('_'):
                 continue
-            if f.stem in JOV_IGNORE_NODE or f.stem+'.py' in JOV_IGNORE_NODE:
-                logger.warning(f"💀 [IGNORED] Jovimetrix.core.{f.stem}")
+            if fname.stem in JOV_IGNORE_NODE or fname.stem+'.py' in JOV_IGNORE_NODE:
+                logger.warning(f"💀 [IGNORED] Jovimetrix.core.{fname.stem}")
                 continue
             try:
-                module = importlib.import_module(f"Jovimetrix.core.{f.stem}")
+                module = importlib.import_module(f"Jovimetrix.core.{fname.stem}")
             except Exception as e:
-                logger.warning(f"module failed {f}")
+                logger.warning(f"module failed {fname}")
                 logger.warning(str(e))
                 continue
 
@@ -912,8 +914,11 @@ class Session(metaclass=Singleton):
                     else:
                         Session.CLASS_MAPPINGS[name] = class_object
 
-                    desc = class_object.DESCRIPTION if hasattr(class_object, 'DESCRIPTION') else ""
-                    NODE_LIST_MAP[name] = desc.split('.')[0].strip('\n')
+                    if not name.endswith(Lexicon.GLSL_CUSTOM):
+                        desc = class_object.DESCRIPTION if hasattr(class_object, 'DESCRIPTION') else ""
+                        NODE_LIST_MAP[name] = desc.split('.')[0].strip('\n')
+                    else:
+                        logger.debug(f"customs {name}")
                     node_count += 1
 
             logger.info(f"✅ {module.__name__}")

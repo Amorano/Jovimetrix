@@ -293,6 +293,7 @@ Sends frames to a specified route, typically for live streaming or recording pur
         super().__init__(*arg, **kw)
         self.__route = ""
         self.__unique = uuid.uuid4()
+
         self.__device = StreamManager().capture(self.__unique, static=True)
 
     def run(self, **kw) -> Tuple[torch.Tensor]:

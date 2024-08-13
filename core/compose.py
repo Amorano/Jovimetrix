@@ -42,7 +42,7 @@ JOV_CATEGORY = "COMPOSE"
 class EnumColorMatchMode(Enum):
     REINHARD = 30
     LUT = 10
-    HISTOGRAM = 20
+    # HISTOGRAM = 20
 
 class EnumColorMatchMap(Enum):
     USER_MAP = 0
@@ -335,7 +335,7 @@ class ColorMatchNode(JOVImageNode):
     NAME = "COLOR MATCH (JOV) 💞"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     DESCRIPTION = """
-Adjust the color scheme of one image to match another with the Color Match Node. Choose from various color matching modes, including LUT, Histogram, and Reinhard. You can specify options like color maps, the number of colors, and whether to flip or invert the images. This node allows for the creation of seamless and cohesive visuals, making it ideal for texture work or masking in motion graphics and design projects.
+Adjust the color scheme of one image to match another with the Color Match Node. Choose from various color matching LUTs or Reinhard matching. You can specify a custom user color maps, the number of colors, and whether to flip or invert the images.
 """
 
     @classmethod
@@ -385,7 +385,7 @@ Adjust the color scheme of one image to match another with the Color Match Node.
                 if pA.ndim == 3 and pA.shape[2] == 4:
                     mask = image_mask(pA)
 
-            h, w = pA.shape[:2]
+            # h, w = pA.shape[:2]
             if pB is None:
                 pB = channel_solid(chan=EnumImageType.BGR)
             else:
@@ -399,10 +399,7 @@ Adjust the color scheme of one image to match another with the Color Match Node.
                         pB = None
                     colormap = EnumColorMap[colormap]
                     pA = color_match_lut(pA, colormap.value, pB, num_colors)
-                case EnumColorMatchMode.HISTOGRAM:
-                    pB = image_scalefit(pB, w, h, EnumScaleMode.CROP)
-                    pB = image_scalefit(pB, w, h, EnumScaleMode.MATTE)
-                    pA = color_match_histogram(pA, pB)
+
                 case EnumColorMatchMode.REINHARD:
                     pA = color_match_reinhard(pA, pB)
 
@@ -410,10 +407,8 @@ Adjust the color scheme of one image to match another with the Color Match Node.
             if invert == True:
                 pA = image_invert(pA, 1)
 
-            logger.debug(mask)
             if mask is not None:
                 pA = image_mask_add(pA, mask)
-            logger.debug(pA.shape)
 
             images.append(cv2tensor_full(pA, matte))
             pbar.update_absolute(idx)
@@ -659,6 +654,7 @@ Remaps an input image using a gradient lookup table (LUT). The gradient image wi
         pbar = ProgressBar(len(params))
         for idx, (pA, gradient, flip, mode, sample, wihi, matte) in enumerate(params):
             pA = channel_solid(chan=EnumImageType.BGR) if pA is None else tensor2cv(pA)
+            mask = None
             if pA.ndim == 3 and pA.shape[2] == 4:
                 mask = image_mask(pA)
 
