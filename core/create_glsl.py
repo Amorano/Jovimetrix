@@ -116,18 +116,18 @@ class GLSLNodeBase(JOVImageNode):
         sample = EnumInterpolation[sample]
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)[0]
 
-        variables = kw.copy()
-        for p in [Lexicon.MODE, Lexicon.WH, Lexicon.SAMPLE, Lexicon.MATTE, Lexicon.PROG_VERT, Lexicon.PROG_FRAG, Lexicon.BATCH, Lexicon.TIME, Lexicon.FPS]:
-            variables.pop(p, None)
-
         try:
-            self.__glsl.vertex = self.VERTEX
-            self.__glsl.fragment = self.FRAGMENT
+            self.__glsl.vertex = kw.pop(Lexicon.PROG_VERT, self.VERTEX)
+            self.__glsl.fragment = kw.pop(Lexicon.PROG_FRAG, self.FRAGMENT)
         except CompileException as e:
             comfy_message(ident, "jovi-glsl-error", {"id": ident, "e": str(e)})
             logger.error(self.NAME)
             logger.error(e)
             return
+
+        variables = kw.copy()
+        for p in [Lexicon.MODE, Lexicon.WH, Lexicon.SAMPLE, Lexicon.MATTE, Lexicon.BATCH, Lexicon.TIME, Lexicon.FPS]:
+            variables.pop(p, None)
 
         self.__glsl.fps = parse_param(kw, Lexicon.FPS, EnumConvertType.INT, 24, 1, 120)[0]
         if batch > 0:

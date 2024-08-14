@@ -56,6 +56,7 @@ RE_SHADER_META = re.compile(r"\/{2}\s?([A-Za-z_]{3,}):\s?([A-Za-z_0-9\s\-()[\]]+
 class CompileException(Exception): pass
 
 class GLSLShader:
+
     PROG_HEADER = """
 #version 440
 
@@ -69,26 +70,6 @@ uniform int     iFrame;
 #define texture2D texture
 """
 
-    PROG_FOOTER = """
-layout(location = 0) out vec4 _fragColor;
-
-void main()
-{
-    mainImage(_fragColor, gl_FragCoord.xy);
-}
-"""
-
-    PROG_FRAGMENT = """
-uniform sampler2D image;
-
-void mainImage( out vec4 fragColor, vec2 fragCoord ) {
-vec2 uv = fragCoord.xy / iResolution.xy;
-// Correcting for aspect ratio
-// uv.y *= (iResolution.x / iResolution.y);
-fragColor = texture2D(image, uv);
-}
-"""
-
     PROG_VERTEX = """
 #version 330 core
 
@@ -98,6 +79,26 @@ void main()
 {
     vec2 verts[3] = vec2[](vec2(-1, -1), vec2(3, -1), vec2(-1, 3));
     gl_Position = vec4(verts[gl_VertexID], 0, 1);
+}
+"""
+
+    PROG_FRAGMENT = """
+uniform sampler2D image;
+
+void mainImage( out vec4 fragColor, vec2 fragCoord ) {
+    vec2 uv = fragCoord.xy / iResolution.xy;
+    // Correcting for aspect ratio
+    // uv.y *= (iResolution.x / iResolution.y);
+    fragColor = texture2D(image, uv);
+}
+"""
+
+    PROG_FOOTER = """
+layout(location = 0) out vec4 _fragColor;
+
+void main()
+{
+    mainImage(_fragColor, gl_FragCoord.xy);
 }
 """
 

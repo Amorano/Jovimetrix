@@ -150,7 +150,7 @@ app.registerExtension({
             if (!tip) {
                 return hideTooltip();
             }
-            showTooltip(tip, app.canvas.mouse[0], app.canvas.mouse[1]);
+            showTooltip(tip, app.canvas.mouse[0], app.canvas.mouse[1] - 18);
         }.bind(app.canvas);
 
         app.ui.settings.addSetting({
@@ -158,7 +158,7 @@ app.registerExtension({
             name: "Delay",
             tooltip: "How long (in milliseconds) to wait before showing the tooltip. 0 will turn it off.",
             type: "number",
-            defaultValue: 500,
+            defaultValue: 50,
             attrs: {
                 min: 0,
                 step: 1,

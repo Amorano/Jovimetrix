@@ -135,9 +135,10 @@
 
 .jov-graph-tooltip {
 	z-index: 99999;
-	padding: 4px 4px;
-	background: var(--comfy-input-bg);
-	color: var(--input-text);
+	padding: 3px;
+  margin: 3px;
+	background: var(--border-color);
+	color: var(--fg-color);
 	position: absolute;
 	left: 0;
 	top: 0;
@@ -145,9 +146,9 @@
 	transform: translate(5px, calc(-100% - 5px));
 	max-width: 30vw;
 	border-radius: 5px;
-	box-shadow: 0 0 5px rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--fg-color);
 	font-family: sans-serif;
-  font-size: 0.9em;
+  font-size: 0.95em;
 	white-space: pre-wrap;
 }
 
@@ -155,9 +156,9 @@
   background: var(--comfy-menu-bg);
   color: var(--fg-color);
   font: 12px monospace;
-  padding: 4px;
-  margin: 4px;
-  border-radius: 4px;
+  padding: 3px;
+  margin: 3px;
+  border-radius: 5px;
   border: medium solid var(--border-color);
   overflow: auto;
   width: 100%;

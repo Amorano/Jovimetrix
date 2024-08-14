@@ -14,8 +14,9 @@ from typing import Any, List, Optional, Tuple, Union
 
 import cv2
 import torch
+import cupy as cp
 import numpy as np
-from numba import jit
+from numba import jit, cuda
 from daltonlens import simulate
 from sklearn.cluster import MiniBatchKMeans
 from scipy import ndimage
@@ -1993,18 +1994,63 @@ def kernel(stride: int) -> TYPE_IMAGE:
 # === COLOR FUNCTIONS ===
 # =============================================================================
 
-def color_image2lut(image: TYPE_IMAGE, num_colors:int=256) -> np.ndarray[np.uint8]:
-    """Create X sized LUT from an RGB image."""
-    image = image_convert(image, 3)
-    lab = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
-    pixels = lab.reshape(-1, 3)
-    kmeans = MiniBatchKMeans(n_clusters=num_colors)
-    kmeans.fit(pixels)
-    colors = kmeans.cluster_centers_.astype(np.uint8)
-    lut = np.zeros((256, 1, 3), dtype=np.uint8)
-    for i, color in enumerate(colors):
-        lut[i] = color
-    return lut
+@cuda.jit
+def kmeans_kernel(pixels, centroids, assignments) -> None:
+    idx = cuda.grid(1)
+    if idx < pixels.shape[0]:
+        min_dist = 1e10
+        min_centroid = 0
+        for i in range(centroids.shape[0]):
+            dist = 0
+            for j in range(3):
+                diff = pixels[idx, j] - centroids[i, j]
+                dist += diff * diff
+            if dist < min_dist:
+                min_dist = dist
+                min_centroid = i
+        assignments[idx] = min_centroid
+
+def color_image2lut(image: np.ndarray, num_colors: int = 256) -> np.ndarray:
+    """Create X sized LUT from an RGB image using GPU acceleration."""
+    # Ensure image is in RGB format
+    if image.shape[2] == 4:  # If RGBA, convert to RGB
+        image = cv2.cvtColor(image, cv2.COLOR_RGBA2RGB)
+    elif image.shape[2] == 1:  # If grayscale, convert to RGB
+        image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
+
+    # Reshape and transfer to GPU
+    pixels = cp.asarray(image.reshape(-1, 3)).astype(cp.float32)
+    print("Pixel range:", cp.min(pixels), cp.max(pixels))
+
+    # Initialize centroids using random pixels
+    random_indices = cp.random.choice(pixels.shape[0], size=num_colors, replace=False)
+    centroids = pixels[random_indices]
+    print("Initial centroids range:", cp.min(centroids), cp.max(centroids))
+
+    # Prepare for K-means
+    assignments = cp.zeros(pixels.shape[0], dtype=cp.int32)
+    threads_per_block = 256
+    blocks = (pixels.shape[0] + threads_per_block - 1) // threads_per_block
+
+    # K-means iterations
+    for iteration in range(20):  # Adjust the number of iterations as needed
+        kmeans_kernel[blocks, threads_per_block](pixels, centroids, assignments)
+        new_centroids = cp.zeros((num_colors, 3), dtype=cp.float32)
+        for i in range(num_colors):
+            mask = (assignments == i)
+            if cp.any(mask):
+                new_centroids[i] = cp.mean(pixels[mask], axis=0)
+
+        centroids = new_centroids
+
+        if iteration % 5 == 0:
+            print(f"Iteration {iteration}, Centroids range:", cp.min(centroids), cp.max(centroids))
+
+    # Create LUT
+    lut = cp.zeros((256, 1, 3), dtype=cp.uint8)
+    lut[:num_colors] = cp.clip(centroids, 0, 255).reshape(-1, 1, 3).astype(cp.uint8)
+    print("Final LUT range:", cp.min(lut), cp.max(lut))
+    return cp.asnumpy(lut)
 
 def color_match_histogram(image: TYPE_IMAGE, usermap: TYPE_IMAGE) -> TYPE_IMAGE:
     """Colorize one input based on the histogram matches."""
@@ -2053,14 +2099,18 @@ def color_match_lut(image: TYPE_IMAGE, colormap:int=cv2.COLORMAP_JET,
     cc = image.shape[2] if image.ndim == 3 else 1
     if cc == 4:
         alpha = image_mask(image)
+
     image = image_convert(image, 3)
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
     if usermap is not None:
         usermap = image_convert(usermap, 3)
-    colormap = colormap if usermap is None else color_image2lut(usermap, num_colors)
+        colormap = color_image2lut(usermap, num_colors)
+
     image = cv2.applyColorMap(image, colormap)
+    image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+
     image = cv2.addWeighted(image, 0.5, image, 0.5, 0)
     image = image_convert(image, cc)
+
     if cc == 4:
         image[..., 3] = alpha[..., 0]
     return image
