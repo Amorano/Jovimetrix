@@ -6,5 +6,5 @@ uniform sampler2D imageA;
 
 void mainImage( out vec4 fragColor, vec2 fragCoord ) {
   vec2 uv = fragCoord.xy / iResolution.xy;
-  fragColor = texture2D(imageA, uv);
+  fragColor = texture(imageA, uv);
 }

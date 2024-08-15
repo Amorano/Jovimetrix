@@ -228,12 +228,6 @@ iTime | float | current time in shader's lifetime
 iFrameRate | float | the desired FPS
 iFrame | int | the current frame based on the `iTime` and `iFrameRate`
 
-There are also a few functions defined to keep compatibility for an easier 1:1 transition:
-
-SHORTHAND | GLSL FUNCTION
----|---
-texture | texture2D
-
 ### ENTRY POINT
 
 The fragment shader's entry point is defined as:

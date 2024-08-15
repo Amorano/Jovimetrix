@@ -49,7 +49,7 @@ PTYPE = {
 
 RE_VARIABLE = re.compile(r"uniform\s+(\w+)\s+(\w+);(?:\s*\/\/\s*([0-9.,\s]*))?\s*(?:;\s*([0-9.-]+))?\s*(?:;\s*([0-9.-]+))?\s*(?:;\s*([0-9.-]+))?\s*(?:\|\s*(.*))?$", re.MULTILINE)
 
-RE_SHADER_META = re.compile(r"\/{2}\s?([A-Za-z_]{3,}):\s?([A-Za-z_0-9\s\-()[\]]+)$", re.MULTILINE)
+RE_SHADER_META = re.compile(r"^\/\/\s?([A-Za-z_]{3,}):\s?([A-Za-z_0-9 \-\(\)\[\]\/]+)$", re.MULTILINE)
 
 # =============================================================================
 
@@ -62,12 +62,20 @@ class GLSLShader:
 
 precision highp float;
 
+// system globals
 uniform vec3    iResolution;
 uniform float   iTime;
 uniform float   iFrameRate;
 uniform int     iFrame;
 
+// functions
 #define texture2D texture
+
+// constants
+#define M_EPSILON 1.0e-10
+#define M_PI 3.1415926535897932384626433832795
+#define M_TAU (2.0 * M_PI)
+
 """
 
     PROG_VERTEX = """
@@ -89,7 +97,7 @@ void mainImage( out vec4 fragColor, vec2 fragCoord ) {
     vec2 uv = fragCoord.xy / iResolution.xy;
     // Correcting for aspect ratio
     // uv.y *= (iResolution.x / iResolution.y);
-    fragColor = texture2D(image, uv);
+    fragColor = texture(image, uv);
 }
 """
 

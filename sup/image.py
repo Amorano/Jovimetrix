@@ -2020,12 +2020,12 @@ def color_image2lut(image: np.ndarray, num_colors: int = 256) -> np.ndarray:
 
     # Reshape and transfer to GPU
     pixels = cp.asarray(image.reshape(-1, 3)).astype(cp.float32)
-    print("Pixel range:", cp.min(pixels), cp.max(pixels))
+    # logger.debug("Pixel range:", cp.min(pixels), cp.max(pixels))
 
     # Initialize centroids using random pixels
     random_indices = cp.random.choice(pixels.shape[0], size=num_colors, replace=False)
     centroids = pixels[random_indices]
-    print("Initial centroids range:", cp.min(centroids), cp.max(centroids))
+    # logger.debug("Initial centroids range:", cp.min(centroids), cp.max(centroids))
 
     # Prepare for K-means
     assignments = cp.zeros(pixels.shape[0], dtype=cp.int32)
@@ -2044,12 +2044,13 @@ def color_image2lut(image: np.ndarray, num_colors: int = 256) -> np.ndarray:
         centroids = new_centroids
 
         if iteration % 5 == 0:
-            print(f"Iteration {iteration}, Centroids range:", cp.min(centroids), cp.max(centroids))
+            # logger.debug(f"Iteration {iteration}, Centroids range: {cp.min(centroids)} {cp.max(centroids)}")
+            pass
 
     # Create LUT
     lut = cp.zeros((256, 1, 3), dtype=cp.uint8)
     lut[:num_colors] = cp.clip(centroids, 0, 255).reshape(-1, 1, 3).astype(cp.uint8)
-    print("Final LUT range:", cp.min(lut), cp.max(lut))
+    # logger.debug(f"Final LUT range: { cp.min(lut)} {cp.max(lut)}")
     return cp.asnumpy(lut)
 
 def color_match_histogram(image: TYPE_IMAGE, usermap: TYPE_IMAGE) -> TYPE_IMAGE:

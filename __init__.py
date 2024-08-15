@@ -546,7 +546,7 @@ def get_node_info(node_cls: object) -> Dict[str, Any]:
         "output_parameters": output_parameters,
         "name": str(getattr(node_cls, "NAME")),
         "output_node": str(getattr(node_cls, "OUTPUT_NODE", False)),
-        "category": str(getattr(node_cls, "CATEGORY", "")),
+        "category": str(getattr(node_cls, "CATEGORY", "")).strip('\n').strip(),
         "documentation": str(getattr(node_cls, "DESCRIPTION", ""))
     }
     data['.html'] = json2html(data)

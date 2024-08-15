@@ -898,7 +898,7 @@ Supplies raw or default values for various data types, supporting vector input w
         pbar = ProgressBar(len(params))
         old_seed = -1
         for idx, (raw, r_x, r_y, r_z, r_w, typ, xyzw, seed, yyzw, x_str) in enumerate(params):
-            print(raw, r_x, r_y, r_z, r_w, typ, xyzw, seed, yyzw, x_str)
+            # logger.debug((raw, r_x, r_y, r_z, r_w, typ, xyzw, seed, yyzw, x_str))
             typ = EnumConvertType[typ]
             default = [x_str]
             default2 = None
@@ -919,7 +919,7 @@ Supplies raw or default values for various data types, supporting vector input w
             typ = EnumConvertType.VEC4 if typ in [EnumConvertType.VEC4, EnumConvertType.VEC3, \
                                                 EnumConvertType.VEC2, EnumConvertType.FLOAT] \
                                                 else EnumConvertType.VEC4INT
-            print(val, val2)
+            # logger.debug(val, val2)
             # check if set to randomize....
             self.UPDATE = False
             if seed != 0 and isinstance(val, (tuple, list,)) and isinstance(val2, (tuple, list,)):

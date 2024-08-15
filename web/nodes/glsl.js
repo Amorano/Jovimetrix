@@ -6,9 +6,7 @@
 
 import { api } from "../../../scripts/api.js";
 import { app } from "../../../scripts/app.js";
-import { nodeFitHeight } from '../util/util_node.js'
-import { widgetHide, widgetShow  } from '../util/util_widget.js';
-import { apiJovimetrix } from '../util/util_api.js';
+import { widgetHide  } from '../util/util_widget.js';
 import { flashBackgroundColor } from '../util/util_fun.js';
 import{ widgetSizeModeHook } from '../util/util_jov.js'
 
