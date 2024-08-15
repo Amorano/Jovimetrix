@@ -1,9 +1,9 @@
 // name: BLEND LINEAR
 // desc: Simple linear blend between two images
-// category: COMPOSITE
+// category: COLOR
 
-uniform sampler2D imageA;
-uniform sampler2D imageB;
+uniform sampler2D imageA; // | MASK, RGB or RGBA
+uniform sampler2D imageB; // | MASK, RGB or RGBA
 uniform float blend_amt; // 0.5; 0; 1; 0.01 | Scalar blend amount
 
 void mainImage( out vec4 fragColor, vec2 fragCoord ) {

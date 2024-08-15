@@ -2,7 +2,7 @@
 // desc: Convert LAB color space to HSV
 // category: COLOR/CONVERT
 
-uniform sampler2D image;
+uniform sampler2D image; // | MASK, RGB or RGBA
 
 void mainImage(out vec4 fragColor, vec2 fragCoord) {
     vec2 uv = fragCoord.xy / iResolution.xy;
