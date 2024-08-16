@@ -15,7 +15,7 @@ from loguru import logger
 
 from comfy.utils import ProgressBar
 
-from Jovimetrix import JOVBaseNode, Lexicon
+from Jovimetrix import deep_merge, JOVBaseNode, Lexicon
 from Jovimetrix.sup.util import parse_param, zip_longest_fill, EnumConvertType
 from Jovimetrix.sup.midi import midi_device_names, \
     MIDIMessage, MIDINoteOnFilter, MIDIServerThread
@@ -39,7 +39,7 @@ Processes MIDI messages received from an external MIDI controller or device. It 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = super().INPUT_TYPES()
-        d.update({
+        d = deep_merge(d, {
             "optional": {
                 Lexicon.MIDI: ('JMIDIMSG', {"default": None})
             }
@@ -72,7 +72,7 @@ Captures MIDI messages from an external MIDI device or controller. It monitors M
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = super().INPUT_TYPES()
-        d.update({
+        d = deep_merge(d, {
             "optional": {
                 Lexicon.DEVICE : (cls.DEVICES, {"default": cls.DEVICES[0] if len(cls.DEVICES) > 0 else None})
             }
@@ -135,7 +135,7 @@ Filter MIDI messages based on various criteria, including MIDI mode (such as not
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = super().INPUT_TYPES()
-        d.update({
+        d = deep_merge(d, {
             "optional": {
                 Lexicon.MIDI: ('JMIDIMSG', {"default": None}),
                 Lexicon.MODE: (MIDINoteOnFilter._member_names_, {"default": MIDINoteOnFilter.IGNORE.name}),
@@ -202,7 +202,7 @@ Provides advanced filtering capabilities for MIDI messages based on various crit
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = super().INPUT_TYPES()
-        d.update({
+        d = deep_merge(d, {
             "optional": {
                 Lexicon.MIDI: ('JMIDIMSG', {"default": None}),
                 Lexicon.ON: (MIDINoteOnFilter._member_names_, {"default": MIDINoteOnFilter.IGNORE.name}),

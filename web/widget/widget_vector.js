@@ -96,11 +96,11 @@ const VectorWidget = (app, inputName, options, initial, desc='') => {
             x += element_width;
         }
 
-        if (this.options?.rgb) {
+        if (this.options?.rgb && converted.length > 2) {
             try {
                 ctx.fillStyle = colorRGB2Hex(converted);
             } catch (e) {
-                console.error(e)
+                console.error(converted, e);
                 ctx.fillStyle = "#FFF";
             }
             ctx.roundRect(width - 1.17 * widget_padding, Y+1, 19, height-2, 16);
@@ -122,7 +122,7 @@ const VectorWidget = (app, inputName, options, initial, desc='') => {
 
     widget.mouse = function (e, pos, node) {
         let delta = 0;
-        if (e.type === 'pointerdown' & isDragging === undefined) {
+        if (e.type === 'pointerdown' && isDragging === undefined) {
             const x = pos[0] - label_full;
             const size = Object.keys(this.value).length;;
             const element_width = (node.size[0] - label_full - widget_padding * 1.25) / size;

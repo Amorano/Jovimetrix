@@ -18,7 +18,7 @@ except:
     pass
 from comfy.utils import ProgressBar
 
-from Jovimetrix import JOVImageNode, Lexicon, comfy_message, ROOT
+from Jovimetrix import JOVImageNode, comfy_message, deep_merge, Lexicon, ROOT
 from Jovimetrix.sup.util import load_file, parse_param, EnumConvertType, parse_value
 from Jovimetrix.sup.image import EnumInterpolation, EnumScaleMode, cv2tensor_full, image_convert, image_scalefit, tensor2cv, MIN_IMAGE_SIZE
 from Jovimetrix.sup.shader import PTYPE, shader_meta, CompileException, GLSLShader
@@ -89,7 +89,7 @@ class GLSLNodeBase(JOVImageNode):
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = super().INPUT_TYPES()
-        d.update({
+        d = deep_merge(d, {
             "optional": {
                 Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
                 Lexicon.WH: ("VEC2INT", {"default": (512, 512), "mij":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),

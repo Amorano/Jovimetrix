@@ -54,39 +54,6 @@ class EnumSwizzle(Enum):
 # === SUPPORT ===
 # =============================================================================
 
-def deep_merge_dict(*dicts: dict) -> dict:
-    """
-    Deep merge multiple dictionaries recursively.
-
-    Args:
-        *dicts: Variable number of dictionaries to be merged.
-
-    Returns:
-        dict: Merged dictionary.
-    """
-    def _deep_merge(d1: Any, d2: Any) -> Any:
-        if not isinstance(d1, dict) or not isinstance(d2, dict):
-            return d2
-
-        merged_dict = d1.copy()
-
-        for key in d2:
-            if key in merged_dict:
-                if isinstance(merged_dict[key], dict) and isinstance(d2[key], dict):
-                    merged_dict[key] = _deep_merge(merged_dict[key], d2[key])
-                elif isinstance(merged_dict[key], list) and isinstance(d2[key], list):
-                    merged_dict[key].extend(d2[key])
-                else:
-                    merged_dict[key] = d2[key]
-            else:
-                merged_dict[key] = d2[key]
-        return merged_dict
-
-    merged = {}
-    for d in dicts:
-        merged = _deep_merge(merged, d)
-    return merged
-
 def grid_make(data: List[Any]) -> Tuple[List[List[Any]], int, int]:
     """
     Create a 2D grid from a 1D list.

@@ -26,7 +26,7 @@ from loguru import logger
 from comfy.utils import ProgressBar
 from folder_paths import get_output_directory
 
-from Jovimetrix import comfy_message, parse_reset, \
+from Jovimetrix import deep_merge, comfy_message, parse_reset, \
     Lexicon, JOVBaseNode, JOV_TYPE_ANY, ROOT, JOV_TYPE_IMAGE
 
 from Jovimetrix.sup.util import parse_dynamic, path_next, \
@@ -142,7 +142,7 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = super().INPUT_TYPES()
-        d.update({
+        d = deep_merge(d, {
             "optional": {
                 Lexicon.BATCH_MODE: (EnumBatchMode._member_names_, {"default": EnumBatchMode.MERGE.name, "tooltips":"Select a single index, specific range, custom index list or randomized"}),
                 Lexicon.INDEX: ("INT", {"default": 0, "mij": 0, "tooltips":"Selected list position"}),
@@ -281,7 +281,7 @@ Responsible for saving images or animations to disk. It supports various output 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = super().INPUT_TYPES()
-        d.update({
+        d = deep_merge(d, {
             "optional": {
                 Lexicon.PIXEL: (JOV_TYPE_IMAGE, {}),
                 Lexicon.PASS_OUT: ("STRING", {"default": get_output_directory(), "default_top":"<comfy output dir>"}),
@@ -379,7 +379,7 @@ Visualize a series of data points over time. It accepts a dynamic number of valu
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = super().INPUT_TYPES()
-        d.update({
+        d = deep_merge(d, {
             "optional": {
                 Lexicon.RESET: ("BOOLEAN", {"default": False}),
                 Lexicon.VALUE: ("INT", {"default": 60, "mij": 0, "tooltips":"Number of values to graph and display"}),
@@ -448,7 +448,7 @@ Exports and Displays immediate information about images.
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = super().INPUT_TYPES()
-        d.update({
+        d = deep_merge(d, {
             "optional": {
                 Lexicon.PIXEL_A: (JOV_TYPE_IMAGE,),
             },
@@ -516,7 +516,7 @@ Manage a queue of items, such as file paths or data. It supports various formats
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = super().INPUT_TYPES()
-        d.update({
+        d = deep_merge(d, {
             "optional": {
                 Lexicon.QUEUE: ("STRING", {"multiline": True, "default": "./res/img/test-a.png"}),
                 Lexicon.VALUE: ("INT", {"mij": 0, "default": 0, "tooltips": "the current index for the current queue item"}),
@@ -676,7 +676,7 @@ Manage a queue of items, such as file paths or data. It supports various formats
 class RouteNode(JOVBaseNode):
     NAME = "ROUTE (JOV) 🚌"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = ("BUS",) + (JOV_TYPE_ANY,) * 27
+    RETURN_TYPES = ("BUS",) + (JOV_TYPE_ANY,) * 127
     RETURN_NAMES = (Lexicon.ROUTE,)
     SORT = 850
     DESCRIPTION = """
@@ -686,12 +686,15 @@ Routes the input data from the optional input ports to the output port, preservi
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = super().INPUT_TYPES()
-        d.update({
+        d = deep_merge(d, {
             "optional": {
-                Lexicon.ROUTE: ("BUS", {"default": None}),
+                Lexicon.ROUTE: ("BUS", {"default": None, "tooltips":"Pass through another route node to pre-populate the outputs."}),
             },
             "outputs": {
                 0: (Lexicon.ROUTE, {"tooltips":"Pass through for Route node"})
+            },
+            "hidden": {
+
             }
         })
         return Lexicon._parse(d, cls)
@@ -701,7 +704,7 @@ Routes the input data from the optional input ports to the output port, preservi
         vars = kw.copy()
         vars.pop(Lexicon.ROUTE, None)
         vars.pop('ident', None)
-        logger.debug(kw.keys())
+        logger.debug(vars)
         return inout, *vars.values(),
 
 class SaveOutput(JOVBaseNode):
@@ -717,7 +720,7 @@ Save the output image along with its metadata to the specified path. Supports sa
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = super().INPUT_TYPES(True, True)
-        d.update({
+        d = deep_merge(d, {
             "optional": {
                 "image": ("IMAGE",),
                 "path": ("STRING", {"default": "", "dynamicPrompts":False}),
@@ -775,79 +778,3 @@ Save the output image along with its metadata to the specified path. Supports sa
             image.save(fname, pnginfo=meta_png)
             pbar.update_absolute(idx)
         return ()
-
-'''
-class RESTNode:
-    """Make requests and process the responses."""
-    NAME = "REST (JOV) 😴"
-    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = ("JSON", "INT", "STRING")
-    RETURN_NAMES = ("RESPONSE", "LENGTH", "TOKEN")
-    SORT = 80
-    DESCRIPTION = """
-Make requests to a RESTful API endpoint and process the responses. It supports authentication with bearer tokens. The input parameters include the API URL, authentication details, request attribute, and JSON path for array extraction. The node returns the JSON response, the length of the extracted array, and the bearer token.
-"""
-
-    @classmethod
-    def INPUT_TYPES(cls) -> dict:
-        d = super().INPUT_TYPES()
-        d.update({
-            "optional": {
-                Lexicon.API: ("STRING", {"default": ""}),
-                Lexicon.URL: ("STRING", {"default": ""}),
-                Lexicon.ATTRIBUTE: ("STRING", {"default": ""}),
-                Lexicon.AUTH: ("STRING", {"multiline": True, "dynamic": False}),
-                Lexicon.PATH: ("STRING", {"default": ""}),
-                "iteration_index": ("INT", {"default": 0, "mij": 0, "maj": 9999})
-            }
-        }
-        return Lexicon._parse(d, cls)
-
-    def authenticate(self, auth_url, auth_body, token_attribute_name):
-        try:
-            response = requests.post(auth_url, json=auth_body)
-            response.raise_for_status()
-            return response.json().get(token_attribute_name)
-        except requests.exceptions.RequestException as e:
-            logger.error(f"error obtaining bearer token - {e}")
-
-    def run(self, **kw):
-        auth_body_text = parse_param(kw, Lexicon.AUTH, EnumConvertType.STRING, "")
-        api_url = parse_param(kw, Lexicon.URL, EnumConvertType.STRING, "")
-        attribute = parse_param(kw, Lexicon.ATTRIBUTE, EnumConvertType.STRING, "")
-        array_path = parse_param(kw, Lexicon.PATH, EnumConvertType.STRING, "")
-        results = []
-        params = list(zip_longest_fill(auth_body_text, api_url, attribute, array_path))
-        pbar = ProgressBar(len(params))
-        for idx, (auth_body_text, api_url, attribute, array_path) in enumerate(params):
-            auth_body = None
-            if auth_body_text:
-                try:
-                    auth_body = json.loads("{" + auth_body_text + "}")
-                except json.JSONDecodeError as e:
-                    logger.error(f"Error parsing JSON input: {e}")
-                    results.append([None, None, None])
-                    pbar.update_absolute(idx)
-                    continue
-
-            headers = {}
-            if api_url:
-                token = self.authenticate(api_url, auth_body, attribute)
-                headers = {'Authorization': f'Bearer {token}'}
-
-            try:
-                response_data = requests.get(api_url, headers=headers, params={})
-                response_data.raise_for_status()
-                response_data = response_data.json()
-            except requests.exceptions.RequestException as e:
-                logger.error(f"API request: {e}")
-                return {}, None, ""
-
-            target_data = []
-            for key in array_path.split('.'):
-                target_data = target_data.get(key, [])
-            array_data = target_data if isinstance(target_data, list) else []
-            results.append([array_data, len(array_data), f'Bearer {token}'])
-            pbar.update_absolute(idx)
-        return [list(a) for a in zip(*results)]
-'''

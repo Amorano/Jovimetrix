@@ -15,9 +15,10 @@ from loguru import logger
 
 from comfy.utils import ProgressBar
 
-from Jovimetrix import JOV_TYPE_IMAGE, JOVBaseNode, Lexicon
+from Jovimetrix import deep_merge, JOVBaseNode, Lexicon, JOV_TYPE_IMAGE
 from Jovimetrix.sup.util import EnumConvertType, parse_param, \
     zip_longest_fill
+
 from Jovimetrix.sup.stream import camera_list, monitor_list, window_list, \
     monitor_capture, window_capture, StreamingServer, StreamManager, \
     MediaStreamDevice, JOV_SPOUT
@@ -84,7 +85,7 @@ Capture frames from various sources such as URLs, cameras, monitors, windows, or
         if not JOV_SPOUT:
             names.pop()
 
-        d.update({
+        d = deep_merge(d, {
             "optional": {
                 Lexicon.SOURCE: (names, {"default": EnumStreamType.URL.name}),
                 Lexicon.URL: ("STRING", {"default": "", "dynamicPrompts": False}),
@@ -271,7 +272,7 @@ Sends frames to a specified route, typically for live streaming or recording pur
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = super().INPUT_TYPES()
-        d.update({
+        d = deep_merge(d, {
             "optional": {
                 Lexicon.PIXEL: (JOV_TYPE_IMAGE, {}),
                 Lexicon.ROUTE: ("STRING", {"default": "/stream"}),
@@ -343,7 +344,7 @@ Sends frames to a specified Spout receiver application for real-time video shari
         @classmethod
         def INPUT_TYPES(cls) -> dict:
             d = super().INPUT_TYPES()
-            d.update({
+            d = deep_merge(d, {
                 "optional": {
                     Lexicon.PIXEL: (JOV_TYPE_IMAGE, {}),
                     Lexicon.ROUTE: ("STRING", {"default": "Spout Sender"}),

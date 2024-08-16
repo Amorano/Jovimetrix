@@ -13,7 +13,7 @@ from loguru import logger
 
 from comfy.utils import ProgressBar
 
-from Jovimetrix import JOVBaseNode, JOV_TYPE_IMAGE, JOVImageNode, Lexicon
+from Jovimetrix import deep_merge, JOVBaseNode, JOVImageNode, Lexicon, JOV_TYPE_IMAGE
 
 from Jovimetrix.sup.util import parse_param, zip_longest_fill, EnumConvertType
 
@@ -46,7 +46,7 @@ Generate a constant image or mask of a specified size and color. It can be used 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = super().INPUT_TYPES()
-        d.update({
+        d = deep_merge(d, {
             "optional": {
                 Lexicon.PIXEL: (JOV_TYPE_IMAGE, {"tooltips":"Optional Image to Matte with Selected Color"}),
                 Lexicon.RGBA_A: ("VEC4INT", {"default": (0, 0, 0, 255),
@@ -94,7 +94,7 @@ Create n-sided polygons. These shapes can be customized by adjusting parameters 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = super().INPUT_TYPES()
-        d.update({
+        d = deep_merge(d, {
             "optional": {
                 Lexicon.SHAPE: (EnumShapes._member_names_, {"default": EnumShapes.CIRCLE.name}),
                 Lexicon.SIDES: ("INT", {"default": 3, "mij": 3, "maj": 100}),
@@ -173,7 +173,7 @@ Generates false perception 3D images from 2D input. Set tile divisions, noise, g
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = super().INPUT_TYPES()
-        d.update({
+        d = deep_merge(d, {
             "optional": {
                 Lexicon.PIXEL: (JOV_TYPE_IMAGE, {}),
                 Lexicon.DEPTH: (JOV_TYPE_IMAGE, {}),
@@ -219,7 +219,7 @@ Simulates depth perception in images by generating stereoscopic views. It accept
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = super().INPUT_TYPES()
-        d.update({
+        d = deep_merge(d, {
             "optional": {
                 Lexicon.PIXEL: (JOV_TYPE_IMAGE, {"tooltips":"Optional Image to Matte with Selected Color"}),
                 Lexicon.INT: ("FLOAT", {"default": 0.1, "mij": 0, "maj": 1, "tooltips":"Baseline"}),
@@ -257,7 +257,7 @@ Generates images containing text based on parameters such as font, size, alignme
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = super().INPUT_TYPES()
-        d.update({
+        d = deep_merge(d, {
             "optional": {
                 Lexicon.STRING: ("STRING", {"default": "jovimetrix", "multiline": True,
                                             "dynamicPrompts": False,
@@ -357,7 +357,7 @@ The Wave Graph node visualizes audio waveforms as bars. Adjust parameters like t
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = super().INPUT_TYPES()
-        d.update({
+        d = deep_merge(d, {
             "optional": {
                 Lexicon.WAVE: ("AUDIO", {"default": None, "tooltips": "Audio Wave Object"}),
                 Lexicon.VALUE: ("INT", {"default": 100, "mij": 32, "maj": 8192,

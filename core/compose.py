@@ -14,13 +14,14 @@ from loguru import logger
 
 from comfy.utils import ProgressBar
 
-from Jovimetrix import JOV_TYPE_IMAGE, JOVBaseNode, JOVImageNode, Lexicon
+from Jovimetrix import deep_merge, JOV_TYPE_IMAGE, JOVBaseNode, JOVImageNode, Lexicon
+
 from Jovimetrix.sup.util import parse_dynamic, parse_param, \
     zip_longest_fill, EnumConvertType
+
 from Jovimetrix.sup.image import  \
-    channel_merge, channel_solid, channel_swap, color_match_histogram, \
-    color_match_lut, image_filter, image_gradient_map, image_minmax,  \
-    image_quantize, image_scalefit, \
+    channel_merge, channel_solid, channel_swap, color_match_lut, image_filter, \
+    image_gradient_map, image_minmax, image_quantize, image_scalefit, \
     color_match_reinhard, cv2tensor_full, image_color_blind, image_contrast,\
     image_crop, image_crop_center, image_crop_polygonal, image_equalize, \
     image_gamma, image_grayscale, image_hsv, image_levels, image_convert, \
@@ -67,7 +68,7 @@ Enhance and modify images with various effects such as blurring, sharpening, col
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = super().INPUT_TYPES()
-        d.update({
+        d = deep_merge(d, {
             "optional": {
                 Lexicon.PIXEL: (JOV_TYPE_IMAGE, {}),
                 Lexicon.MASK: (JOV_TYPE_IMAGE, {}),
@@ -212,7 +213,7 @@ Combine two input images using various blending modes, such as normal, screen, m
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = super().INPUT_TYPES()
-        d.update({
+        d = deep_merge(d, {
             "optional": {
                 Lexicon.PIXEL_A: (JOV_TYPE_IMAGE, {"tooltips": "Background Plate"}),
                 Lexicon.PIXEL_B: (JOV_TYPE_IMAGE, {"tooltips": "Image to Overlay on Background Plate"}),
@@ -302,7 +303,7 @@ Simulate color blindness effects on images. You can select various types of colo
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = super().INPUT_TYPES()
-        d.update({
+        d = deep_merge(d, {
             "optional": {
                 Lexicon.PIXEL: (JOV_TYPE_IMAGE, {}),
                 Lexicon.DEFICIENCY: (EnumCBDeficiency._member_names_,
@@ -341,7 +342,7 @@ Adjust the color scheme of one image to match another with the Color Match Node.
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = super().INPUT_TYPES()
-        d.update({
+        d = deep_merge(d, {
             "optional": {
                 Lexicon.PIXEL_A: (JOV_TYPE_IMAGE, {}),
                 Lexicon.PIXEL_B: (JOV_TYPE_IMAGE, {}),
@@ -427,7 +428,7 @@ Generate a color harmony based on the selected scheme. Supported schemes include
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = super().INPUT_TYPES()
-        d.update({
+        d = deep_merge(d, {
             "optional": {
                 Lexicon.PIXEL: (JOV_TYPE_IMAGE, {}),
                 Lexicon.SCHEME: (EnumColorTheory._member_names_, {"default": EnumColorTheory.COMPLIMENTARY.name}),
@@ -466,7 +467,7 @@ Extract a portion of an input image or resize it. It supports various cropping m
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = super().INPUT_TYPES()
-        d.update({
+        d = deep_merge(d, {
             "optional": {
                 Lexicon.PIXEL: (JOV_TYPE_IMAGE, {}),
                 Lexicon.FUNC: (EnumCropMode._member_names_, {"default": EnumCropMode.CENTER.name}),
@@ -532,7 +533,7 @@ Create masks based on specific color ranges within an image. Specify the color r
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = super().INPUT_TYPES()
-        d.update({
+        d = deep_merge(d, {
             "optional": {
                 Lexicon.PIXEL_A: (JOV_TYPE_IMAGE, {}),
                 Lexicon.START: ("VEC3INT", {"default": (128, 128, 128), "rgb": True}),
@@ -577,7 +578,7 @@ Combine multiple input images into a single image by summing their pixel values.
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = super().INPUT_TYPES()
-        d.update({
+        d = deep_merge(d, {
             "optional": {
                 Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
                 Lexicon.WH: ("VEC2INT", {"default": (512, 512), "mij":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
@@ -628,7 +629,7 @@ Remaps an input image using a gradient lookup table (LUT). The gradient image wi
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = super().INPUT_TYPES()
-        d.update({
+        d = deep_merge(d, {
             "optional": {
                 Lexicon.PIXEL: (JOV_TYPE_IMAGE, {"tooltips":"Image to remap with gradient input"}),
                 Lexicon.GRADIENT: (JOV_TYPE_IMAGE, {"tooltips":f"Look up table (LUT) to remap the input image in `{Lexicon.PIXEL}`"}),
@@ -684,7 +685,7 @@ Combines individual color channels (red, green, blue) along with an optional mas
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = super().INPUT_TYPES()
-        d.update({
+        d = deep_merge(d, {
             "optional": {
                 Lexicon.PIXEL: (JOV_TYPE_IMAGE, {}),
                 Lexicon.R: (JOV_TYPE_IMAGE, {}),
@@ -762,7 +763,7 @@ Takes an input image and splits it into its individual color channels (red, gree
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = super().INPUT_TYPES()
-        d.update({
+        d = deep_merge(d, {
             "optional": {
                 Lexicon.PIXEL: (JOV_TYPE_IMAGE, {})
             },
@@ -796,7 +797,7 @@ Swap pixel values between two input images based on specified channel swizzle op
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = super().INPUT_TYPES()
-        d.update({
+        d = deep_merge(d, {
             "optional": {
                 Lexicon.PIXEL_A: (JOV_TYPE_IMAGE, {}),
                 Lexicon.PIXEL_B: (JOV_TYPE_IMAGE, {}),
@@ -877,7 +878,7 @@ Merge multiple input images into a single composite image by stacking them along
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = super().INPUT_TYPES()
-        d.update({
+        d = deep_merge(d, {
             "optional": {
                 Lexicon.AXIS: (EnumOrientation._member_names_, {"default": EnumOrientation.GRID.name,
                                                                 "tooltips":"Choose the direction in which to stack the images. Options include horizontal, vertical, or a grid layout"}),
@@ -926,7 +927,7 @@ Define a range and apply it to an image for segmentation and feature extraction.
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = super().INPUT_TYPES()
-        d.update({
+        d = deep_merge(d, {
             "optional": {
                 Lexicon.PIXEL: (JOV_TYPE_IMAGE, {}),
                 Lexicon.ADAPT: ( EnumThresholdAdapt._member_names_,
@@ -971,7 +972,7 @@ Apply various geometric transformations to images, including translation, rotati
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = super().INPUT_TYPES()
-        d.update({
+        d = deep_merge(d, {
             "optional": {
                 Lexicon.PIXEL: (JOV_TYPE_IMAGE, {}),
                 Lexicon.XY: ("VEC2", {"default": (0, 0,), "mij": -1, "maj": 1, "label": [Lexicon.X, Lexicon.Y]}),
@@ -1075,7 +1076,7 @@ The Histogram Node generates a histogram representation of the input image, show
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = super().INPUT_TYPES()
-        d.update({
+        d = deep_merge(d, {
             "optional": {
                 Lexicon.PIXEL: (JOV_TYPE_IMAGE, {}),
             }

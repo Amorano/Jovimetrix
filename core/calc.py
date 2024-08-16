@@ -19,8 +19,9 @@ from loguru import logger
 from comfy.utils import ProgressBar
 from nodes import interrupt_processing
 
-from Jovimetrix import comfy_message, parse_reset, Lexicon, JOVBaseNode, ComfyAPIMessage, \
-    TimedOutException, JOV_TYPE_ANY, JOV_TYPE_FULL, JOV_TYPE_NUMBER, JOV_TYPE_VECTOR
+from Jovimetrix import comfy_message, deep_merge, parse_reset, Lexicon, \
+    JOVBaseNode, ComfyAPIMessage, TimedOutException, JOV_TYPE_ANY, \
+    JOV_TYPE_FULL, JOV_TYPE_NUMBER, JOV_TYPE_VECTOR
 
 from Jovimetrix.sup.util import parse_param, parse_value, vector_swap, \
     zip_longest_fill, EnumConvertType, EnumSwizzle
@@ -190,7 +191,7 @@ Perform single function operations like absolute value, mean, median, mode, magn
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = super().INPUT_TYPES()
-        d.update({
+        d = deep_merge(d, {
             "optional": {
                 Lexicon.IN_A: (JOV_TYPE_FULL, {"default": None}),
                 Lexicon.FUNC: (EnumUnaryOperation._member_names_, {"default": EnumUnaryOperation.ABS.name})
@@ -293,7 +294,7 @@ Execute binary operations like addition, subtraction, multiplication, division, 
     def INPUT_TYPES(cls) -> dict:
         names_convert = EnumConvertType._member_names_[:10]
         d = super().INPUT_TYPES()
-        d.update({
+        d = deep_merge(d, {
             "optional": {
                 Lexicon.IN_A: (JOV_TYPE_FULL, {"default": None,
                                         "tooltips":"Passes a raw value directly, or supplies defaults for any value inputs without connections"}),
@@ -431,7 +432,7 @@ Evaluates two inputs (A and B) with a specified comparison operators and optiona
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = super().INPUT_TYPES()
-        d.update({
+        d = deep_merge(d, {
             "optional": {
                 Lexicon.IN_A: (JOV_TYPE_FULL, {"default": 0, "tooltips":"Master Comparator"}),
                 Lexicon.IN_B: (JOV_TYPE_FULL, {"default": 0, "tooltips":"Secondary Comparator"}),
@@ -546,7 +547,7 @@ Introduce pauses in the workflow that accept an optional input to pass through a
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = super().INPUT_TYPES()
-        d.update({
+        d = deep_merge(d, {
             "optional": {
                 Lexicon.PASS_IN: (JOV_TYPE_ANY, {"default": None}),
                 Lexicon.TIMER: ("INT", {"default" : 0, "mij": -1}),
@@ -598,7 +599,7 @@ Additionally, you can specify the easing function (EASE) and the desired output 
     def INPUT_TYPES(cls) -> dict:
         d = super().INPUT_TYPES()
         names_convert = EnumConvertType._member_names_[:10]
-        d.update({
+        d = deep_merge(d, {
             "optional": {
                 Lexicon.IN_A: (JOV_TYPE_FULL, {"tooltips": "Custom Start Point"}),
                 Lexicon.IN_B: (JOV_TYPE_FULL, {"tooltips": "Custom End Point"}),
@@ -688,7 +689,7 @@ Swap components between two vectors based on specified swizzle patterns and valu
     def INPUT_TYPES(cls) -> dict:
         d = super().INPUT_TYPES()
         names_convert = EnumConvertType._member_names_[3:10]
-        d.update({
+        d = deep_merge(d, {
             "optional": {
                 Lexicon.IN_A: (JOV_TYPE_VECTOR, {}),
                 Lexicon.IN_B: (JOV_TYPE_VECTOR, {}),
@@ -743,7 +744,7 @@ A timer and frame counter, emitting pulses or signals based on time intervals. I
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = super().INPUT_TYPES()
-        d.update({
+        d = deep_merge(d, {
             "optional": {
                 # data to pass on a pulse of the loop
                 Lexicon.TRIGGER: (JOV_TYPE_ANY, {"default": None,
@@ -854,7 +855,7 @@ Supplies raw or default values for various data types, supporting vector input w
         except: pass
         try: typ.pop(typ.index('MASK'))
         except: pass
-        d.update({
+        d = deep_merge(d, {
             "optional": {
                 Lexicon.IN_A: (JOV_TYPE_ANY, {"default": None,
                                         "tooltips":"Passes a raw value directly, or supplies defaults for any value inputs without connections"}),
@@ -961,7 +962,7 @@ Produce waveforms like sine, square, or sawtooth with adjustable frequency, ampl
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = super().INPUT_TYPES()
-        d.update({
+        d = deep_merge(d, {
             "optional": {
                 Lexicon.WAVE: (EnumWave._member_names_, {"default": EnumWave.SIN.name}),
                 Lexicon.FREQ: ("FLOAT", {"default": 1, "mij": 0, "maj": sys.maxsize}),
@@ -1013,7 +1014,7 @@ class ParameterNode(JOVBaseNode):
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = super().INPUT_TYPES()
-        d.update({
+        d = deep_merge(d, {
             "optional": {
                 Lexicon.PASS_IN: (JOV_TYPE_ANY, {"default": None}),
             }

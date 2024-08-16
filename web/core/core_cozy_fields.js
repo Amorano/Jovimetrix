@@ -58,21 +58,18 @@ app.registerExtension({
             },
         });
     },
-    async beforeRegisterNodeDef(nodeType) {
-        const onNodeCreated = nodeType.prototype.onNodeCreated;
-        nodeType.prototype.onNodeCreated = async function () {
-            const me = onNodeCreated.apply(this, arguments);
-            if (this.widgets) {
-                for (const widget of this.widgets) {
+    async nodeCreated(node) {
+
+        if (node.comfyClass.includes("(JOV)")) {
+            if (node.widgets) {
+                for (const widget of node.widgets) {
                     if (widget.name === "control_after_generate") {
                         widget.value = "fixed";
                     }
                 }
             }
-            return me;
         }
-    },
-    async nodeCreated(node) {
+
         const onDrawForeground = node.onDrawForeground;
         node.onDrawForeground = async function (ctx) {
             const me = onDrawForeground?.apply(this, arguments);

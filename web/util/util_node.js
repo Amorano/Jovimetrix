@@ -62,10 +62,14 @@ export function nodeAddDynamic(nodeType, prefix, dynamic_type='*', index_start=0
         }
 
         let idx = index_start;
-        if (match_output) {
+        if (self?.outputs && match_output) {
             while (self.outputs.length > index_start) {
                 self.removeOutput(self.outputs.length-1);
             }
+        }
+
+        if (!self.inputs) {
+            return;
         }
 
         idx = index_start

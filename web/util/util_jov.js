@@ -31,6 +31,7 @@ export function widgetSizeModeHook(node, wh_hide=true) {
 export function widgetSizeModeHook2(nodeType, wh_hide=true) {
     const onNodeCreated = nodeType.prototype.onNodeCreated
     nodeType.prototype.onNodeCreated = function (node) {
+        if (!node) { return; }
         const me = onNodeCreated?.apply(this);
         const wh = node.widgets.find(w => w.name === '🇼🇭');
         const samp = node.widgets.find(w => w.name === '🎞️');

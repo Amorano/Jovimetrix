@@ -303,120 +303,124 @@ class JovimetrixConfigDialog extends ComfyDialog {
     }
 }
 
-const DIALOG_COLOR = new JovimetrixConfigDialog();
 
-app.registerExtension({
-    name: "jovimetrix.color",
-    async setup(app) {
+if (!app?.extensionManager) {
 
-        // Option for user to contrast text for better readability
-        const original_color = LiteGraph.NODE_TEXT_COLOR;
+    const DIALOG_COLOR = new JovimetrixConfigDialog();
 
-        util_config.setting_make('color 🎨.contrast', 'Auto-Contrast Text', 'boolean', 'Auto-contrast the title text for all nodes for better readability', true);
+    app.registerExtension({
+        name: "jovimetrix.color",
+        async setup(app) {
 
-        const drawNodeShape = LGraphCanvas.prototype.drawNodeShape;
-        LGraphCanvas.prototype.drawNodeShape = function() {
-            const contrast = localStorage["Comfy.Settings.jov.user.default.color.contrast"] || false;
-            if (contrast == true) {
-                var color = this.color || LiteGraph.NODE_TITLE_COLOR;
-                var bgcolor = this.bgcolor || LiteGraph.WIDGET_BGCOLOR;
-                this.node_title_color = colorContrast(color) ? "#000" : "#FFF";
-                LiteGraph.NODE_TEXT_COLOR = colorContrast(bgcolor) ? "#000" : "#FFF";
-            } else {
-                this.node_title_color = original_color
-                LiteGraph.NODE_TEXT_COLOR = original_color;
-            }
-            drawNodeShape.apply(this, arguments);
-        };
+            // Option for user to contrast text for better readability
+            const original_color = LiteGraph.NODE_TEXT_COLOR;
 
-        const showButton = $el("button.comfy-settings-btn", {
-            textContent: "🎨",
-            style: {
-                right: "82%",
-                cursor: "pointer",
-                display: "unset",
-            },
-        });
+            util_config.setting_make('color 🎨.contrast', 'Auto-Contrast Text', 'boolean', 'Auto-contrast the title text for all nodes for better readability', true);
 
-        // Old Style Popup Node Color Changer
-        if (app.menu?.element.style.display || !app.menu?.settingsGroup) {
-            showButton.onclick = () => {
-                DIALOG_COLOR.show()
-            }
-
-            const firstKid = document.querySelector(".comfy-settings-btn")
-            const parent = firstKid.parentElement;
-            parent.insertBefore(showButton, firstKid.nextSibling);
-        }
-        // New Style Panel Node Color Changer
-        else if (!app.menu?.element.style.display && app.menu?.settingsGroup && !app.extensionManager) {
-            const showMenuButton = new (await import("../../../scripts/ui/components/button.js")).ComfyButton({
-                icon: "palette-outline",
-                action: () => showButton.click(),
-                tooltip: "Jovimetrix Colorizer",
-                content: "Jovimetrix Colorizer",
-            });
-            app.menu.settingsGroup.append(showMenuButton);
-        }
-
-        if (util_config.CONFIG_USER.color.overwrite) {
-            nodeColorAll();
-        }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            jsColorPicker('input.jov-color', {
-                readOnly: true,
-                size: 2,
-                multipleInstances: false,
-                appendTo: document,
-                noAlpha: false,
-                init: function(elm, rgb) {
-                    elm.style.backgroundColor = elm.color || LiteGraph.WIDGET_BGCOLOR;
-                    elm.style.color = rgb.RGBLuminance > 0.22 ? '#222' : '#ddd'
-                },
-                convertCallback: function(data) {
-                    var AHEX = this.patch.attributes.color
-                    if (AHEX === undefined) return
-                    var name = this.patch.attributes.name.value
-                    const parts = name.split('.')
-                    const part = parts.slice(-1)[0]
-                    name = parts[0]
-                    let api_packet = {}
-                    if (parts.length > 2) {
-                        const idx = parts[1];
-                        data = util_config.CONFIG_REGEX[idx];
-                        data[part] = AHEX.value
-                        util_config.CONFIG_REGEX[idx] = data
-                        api_packet = {
-                            id: util_config.USER + '.color.regex',
-                            v: util_config.CONFIG_REGEX
-                        }
-                    } else {
-                        if (util_config.CONFIG_THEME[name] === undefined) {
-                            util_config.CONFIG_THEME[name] = {}
-                        }
-                        util_config.CONFIG_THEME[name][part] = AHEX.value
-                        api_packet = {
-                            id: util_config.USER + '.color.theme.' + name,
-                            v: util_config.CONFIG_THEME[name]
-                        }
-                    }
-                    apiPost("/jovimetrix/config", api_packet);
-                    if (util_config.CONFIG_COLOR.overwrite) {
-                        nodeColorAll();
-                    }
+            const drawNodeShape = LGraphCanvas.prototype.drawNodeShape;
+            LGraphCanvas.prototype.drawNodeShape = function() {
+                const contrast = localStorage["Comfy.Settings.jov.user.default.color.contrast"] || false;
+                if (contrast == true) {
+                    var color = this.color || LiteGraph.NODE_TITLE_COLOR;
+                    var bgcolor = this.bgcolor || LiteGraph.WIDGET_BGCOLOR;
+                    this.node_title_color = colorContrast(color) ? "#000" : "#FFF";
+                    LiteGraph.NODE_TEXT_COLOR = colorContrast(bgcolor) ? "#000" : "#FFF";
+                } else {
+                    this.node_title_color = original_color
+                    LiteGraph.NODE_TEXT_COLOR = original_color;
                 }
+                drawNodeShape.apply(this, arguments);
+            };
+
+            const showButton = $el("button.comfy-settings-btn", {
+                textContent: "🎨",
+                style: {
+                    right: "82%",
+                    cursor: "pointer",
+                    display: "unset",
+                },
             });
-        });
-    },
-    async beforeRegisterNodeDef(nodeType) {
-        const onNodeCreated = nodeType.prototype.onNodeCreated;
-        nodeType.prototype.onNodeCreated = async function () {
-            const me = onNodeCreated?.apply(this, arguments);
-            if (this) {
-                nodeColorReset(this, false);
+
+            // Old Style Popup Node Color Changer
+            if (app.menu?.element.style.display || !app.menu?.settingsGroup) {
+                showButton.onclick = () => {
+                    DIALOG_COLOR.show()
+                }
+
+                const firstKid = document.querySelector(".comfy-settings-btn")
+                const parent = firstKid.parentElement;
+                parent.insertBefore(showButton, firstKid.nextSibling);
             }
-            return me;
+            // New Style Panel Node Color Changer
+            else if (!app.menu?.element.style.display && app.menu?.settingsGroup && !app.extensionManager) {
+                const showMenuButton = new (await import("../../../scripts/ui/components/button.js")).ComfyButton({
+                    icon: "palette-outline",
+                    action: () => showButton.click(),
+                    tooltip: "Jovimetrix Colorizer",
+                    content: "Jovimetrix Colorizer",
+                });
+                app.menu.settingsGroup.append(showMenuButton);
+            }
+
+            if (util_config.CONFIG_USER.color.overwrite) {
+                nodeColorAll();
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+                jsColorPicker('input.jov-color', {
+                    readOnly: true,
+                    size: 2,
+                    multipleInstances: false,
+                    appendTo: document,
+                    noAlpha: false,
+                    init: function(elm, rgb) {
+                        elm.style.backgroundColor = elm.color || LiteGraph.WIDGET_BGCOLOR;
+                        elm.style.color = rgb.RGBLuminance > 0.22 ? '#222' : '#ddd'
+                    },
+                    convertCallback: function(data) {
+                        var AHEX = this.patch.attributes.color
+                        if (AHEX === undefined) return
+                        var name = this.patch.attributes.name.value
+                        const parts = name.split('.')
+                        const part = parts.slice(-1)[0]
+                        name = parts[0]
+                        let api_packet = {}
+                        if (parts.length > 2) {
+                            const idx = parts[1];
+                            data = util_config.CONFIG_REGEX[idx];
+                            data[part] = AHEX.value
+                            util_config.CONFIG_REGEX[idx] = data
+                            api_packet = {
+                                id: util_config.USER + '.color.regex',
+                                v: util_config.CONFIG_REGEX
+                            }
+                        } else {
+                            if (util_config.CONFIG_THEME[name] === undefined) {
+                                util_config.CONFIG_THEME[name] = {}
+                            }
+                            util_config.CONFIG_THEME[name][part] = AHEX.value
+                            api_packet = {
+                                id: util_config.USER + '.color.theme.' + name,
+                                v: util_config.CONFIG_THEME[name]
+                            }
+                        }
+                        apiPost("/jovimetrix/config", api_packet);
+                        if (util_config.CONFIG_COLOR.overwrite) {
+                            nodeColorAll();
+                        }
+                    }
+                });
+            });
+        },
+        async beforeRegisterNodeDef(nodeType) {
+            const onNodeCreated = nodeType.prototype.onNodeCreated;
+            nodeType.prototype.onNodeCreated = async function () {
+                const me = onNodeCreated?.apply(this, arguments);
+                if (this) {
+                    nodeColorReset(this, false);
+                }
+                return me;
+            }
         }
-    }
-})
+    })
+}

@@ -49,7 +49,7 @@ import textwrap
 import importlib
 from pathlib import Path
 from string import Template
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Literal, Tuple
 
 try:
     from server import PromptServer
@@ -420,7 +420,7 @@ class JOVImageNode(JOVBaseNode):
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = super().INPUT_TYPES()
-        d.update({
+        d = deep_merge(d, {
             "outputs": {
                 0: ("IMAGE", {"tooltips":"Full channel [RGBA] image. If there is an alpha, the image will be masked out with it when using this output."}),
                 1: ("IMAGE", {"tooltips":"Three channel [RGB] image. There will be no alpha."}),
@@ -428,6 +428,29 @@ class JOVImageNode(JOVBaseNode):
             }
         })
         return Lexicon._parse(d, cls)
+
+# original sourced from: https://github.com/rgthree/rgthree-comfy/blob/dd534e5384be8cf0c0fa35865afe2126ba75ac55/py/utils.py
+class FlexibleOptionalInputType(dict):
+  """A special class to make flexible nodes that pass data to our python handlers.
+
+  Enables both flexible/dynamic input types (like for Any Switch) or a dynamic number of inputs
+  (like for Any Switch, Context Switch, Context Merge, Power Lora Loader, etc).
+
+  Note, for ComfyUI, all that's needed is the `__contains__` override below, which tells ComfyUI
+  that our node will handle the input, regardless of what it is.
+
+  However, with https://github.com/comfyanonymous/ComfyUI/pull/2666 a large change would occur
+  requiring more details on the input itself. There, we need to return a list/tuple where the first
+  item is the type. This can be a real type, or use the AnyType for additional flexibility.
+  """
+  def __init__(self, type) -> None:
+    self.type = type
+
+  def __getitem__(self, key) -> Tuple[Any]:
+    return (self.type, )
+
+  def __contains__(self, key) -> Literal[True]:
+    return True
 
 # wildcard trick is 100% stolen from pythongossss's
 class AnyType(str):
@@ -683,6 +706,26 @@ def json2html(json_dict: dict) -> str:
         output_content=''.join(output_rows)
     )
     return html_content
+
+def deep_merge(d1: dict, d2: dict) -> dict:
+    """
+    Deep merge multiple dictionaries recursively.
+
+    Args:
+        *dicts: Variable number of dictionaries to be merged.
+
+    Returns:
+        dict: Merged dictionary.
+    """
+    for key in d2:
+        if key in d1:
+            if isinstance(d1[key], dict) and isinstance(d2[key], dict):
+                deep_merge(d1[key], d2[key])
+            else:
+                d1[key] = d2[key]
+        else:
+            d1[key] = d2[key]
+    return d1
 
 # =============================================================================
 # == API RESPONSE
