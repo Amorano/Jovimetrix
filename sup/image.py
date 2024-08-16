@@ -315,24 +315,53 @@ def linear2gamma(image: TYPE_IMAGE) -> TYPE_IMAGE:
 
 def sRGB2Linear(image: TYPE_IMAGE) -> TYPE_IMAGE:
     """Convert sRGB to linearRGB, removing the gamma correction.
-    Formula taken from Wikipedia https://en.wikipedia.org/wiki/SRGB
+    Works for grayscale, RGB, or RGBA images.
     """
-    image = image.astype(float) / 255.
-    gamma = ((image + 0.055) / 1.055) ** 2.4
-    scale = image / 12.92
-    image = np.where (image > 0.04045, gamma, scale)
+    image = image.astype(float) / 255.0
+
+    # If the image has an alpha channel, separate it
+    if image.shape[-1] == 4:
+        rgb = image[..., :3]
+        alpha = image[..., 3]
+    else:
+        rgb = image
+        alpha = None
+
+    gamma = ((rgb + 0.055) / 1.055) ** 2.4
+    scale = rgb / 12.92
+    rgb = np.where(rgb > 0.04045, gamma, scale)
+
+    # Recombine the alpha channel if it exists
+    if alpha is not None:
+        image = np.concatenate((rgb, alpha[..., np.newaxis]), axis=-1)
+    else:
+        image = rgb
     return (image * 255).astype(np.uint8)
 
 def linear2sRGB(image: TYPE_IMAGE) -> TYPE_IMAGE:
     """Convert linearRGB to sRGB, applying the gamma correction.
-    Formula taken from Wikipedia https://en.wikipedia.org/wiki/SRGB
+    Works for grayscale, RGB, or RGBA images.
     """
-    image = image.astype(float) / 255.
-    cutoff = image < 0.0031308
-    higher = 1.055 * pow(image, 1.0 / 2.4) - 0.055
-    lower = image * 12.92
-    image = np.where (image > cutoff, higher, lower)
-    return (image * 255).astype(np.uint8)
+    image = image.astype(float) / 255.0
+
+    # If the image has an alpha channel, separate it
+    if image.shape[-1] == 4:
+        rgb = image[..., :3]
+        alpha = image[..., 3]
+    else:
+        rgb = image
+        alpha = None
+
+    higher = 1.055 * np.power(rgb, 1.0 / 2.4) - 0.055
+    lower = rgb * 12.92
+    rgb = np.where(rgb > 0.0031308, higher, lower)
+
+    # Recombine the alpha channel if it exists
+    if alpha is not None:
+        image = np.concatenate((rgb, alpha[..., np.newaxis]), axis=-1)
+    else:
+        image = rgb
+    return np.clip(image * 255.0, 0, 255).astype(np.uint8)
 
 # =============================================================================
 # === IMAGE CONVERSION ===
@@ -367,7 +396,10 @@ def cv2tensor(image: TYPE_IMAGE, mask:bool=False) -> torch.Tensor:
     if mask or image.ndim < 3 or (image.ndim == 3 and image.shape[2] == 1):
         mask = True
         image = image_grayscale(image)
-    ret = torch.from_numpy(image.astype(np.float32) / 255.0).unsqueeze(0)
+
+    # image = linear2sRGB(image)
+    image = image.astype(np.float32) / 255.0
+    ret = torch.from_numpy(image).unsqueeze(0)
     if mask and ret.ndim == 4:
         ret = ret.squeeze(-1)
     return ret
@@ -418,6 +450,7 @@ def tensor2cv(tensor: torch.Tensor) -> TYPE_IMAGE:
     if len(tensor.shape) < 3:
         tensor = np.expand_dims(tensor, -1)
     return np.clip(255.0 * tensor, 0, 255).astype(np.uint8)
+    # return sRGB2Linear(255.0 * tensor)
 
 def tensor2pil(tensor: torch.Tensor) -> Image.Image:
     """Convert a torch Tensor to a PIL Image.

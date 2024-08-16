@@ -1,8 +1,8 @@
 // name: BASIC VERTEX SHADER
 // desc: draws 2 triangles as a quad for a surface to manipulate
-//
 
 #version 330 core
+
 void main()
 {
     vec2 verts[3] = vec2[](vec2(-1, -1), vec2(3, -1), vec2(-1, 3));

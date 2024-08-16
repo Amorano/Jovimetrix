@@ -1,8 +1,8 @@
 // name: RGB-2-HSV
-// desc: Convert RGB input to HSV
+// desc: Convert RGB(A) input into HSV color space. Maintains alpha/mask.
 // category: COLOR/CONVERT
 
-uniform sampler2D image; // | MASK, RGB or RGBA
+uniform sampler2D image; // | RGB(A) image
 
 vec3 rgb2hsv(vec3 c) {
     vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
@@ -13,7 +13,7 @@ vec3 rgb2hsv(vec3 c) {
 }
 
 void mainImage(out vec4 fragColor, vec2 fragCoord) {
-    vec2 uv = fragCoord.xy / iResolution.xy;
+    vec2 uv = fragCoord / iResolution.xy;
     vec4 color = texture(image, uv);
     fragColor = vec4(rgb2hsv(color.rgb), color.a);
 }

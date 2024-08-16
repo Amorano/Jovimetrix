@@ -25,6 +25,7 @@ IMAGE_SIZE_MIN = 64
 IMAGE_SIZE_MAX = 16384
 
 LAMBDA_UNIFORM = {
+    'bool': gl.glUniform1i,
     'int': gl.glUniform1i,
     'ivec2': gl.glUniform2i,
     'ivec3': gl.glUniform3i,
@@ -36,6 +37,7 @@ LAMBDA_UNIFORM = {
 }
 
 PTYPE = {
+    'bool': EnumConvertType.BOOLEAN,
     'int': EnumConvertType.INT,
     'ivec2': EnumConvertType.VEC2INT,
     'ivec3': EnumConvertType.VEC3INT,
@@ -49,7 +51,7 @@ PTYPE = {
 
 RE_VARIABLE = re.compile(r"uniform\s+(\w+)\s+(\w+);(?:\s*\/\/\s*([0-9.,\s]*))?\s*(?:;\s*([0-9.-]+))?\s*(?:;\s*([0-9.-]+))?\s*(?:;\s*([0-9.-]+))?\s*(?:\|\s*(.*))?$", re.MULTILINE)
 
-RE_SHADER_META = re.compile(r"^\/\/\s?([A-Za-z_]{3,}):\s?([A-Za-z_0-9 \-\(\)\[\]\/]+)$", re.MULTILINE)
+RE_SHADER_META = re.compile(r"^\/\/\s?([A-Za-z_]{3,}):\s?([A-Za-z_0-9 \-\(\)\[\]\/\.]+)$", re.MULTILINE)
 
 # =============================================================================
 
@@ -68,10 +70,10 @@ uniform float   iTime;
 uniform float   iFrameRate;
 uniform int     iFrame;
 
-// functions
+// old deprecated functions
 #define texture2D texture
 
-// constants
+// useful constants
 #define M_EPSILON 1.0e-10
 #define M_PI 3.1415926535897932384626433832795
 #define M_TAU (2.0 * M_PI)
@@ -94,7 +96,7 @@ void main()
 uniform sampler2D image;
 
 void mainImage( out vec4 fragColor, vec2 fragCoord ) {
-    vec2 uv = fragCoord.xy / iResolution.xy;
+    vec2 uv = fragCoord / iResolution.xy;
     // Correcting for aspect ratio
     // uv.y *= (iResolution.x / iResolution.y);
     fragColor = texture(image, uv);
@@ -366,27 +368,13 @@ void main()
             p_type, p_loc, p_value, _ = uv
             val = kw.get(uk, p_value)
 
-            if p_type == 'sampler2D':
-                texture = self.__textures[uk]
-                if texture is None:
-                    logger.error(f"texture {uk} is None")
-                gl.glActiveTexture(gl.GL_TEXTURE0 + texture_index)
-                gl.glBindTexture(gl.GL_TEXTURE_2D, texture)
+            # empty var
+            if val is None:
+                if p_type == 'sampler2D':
+                    texture_index += 1
+                continue
 
-                if val is not None:
-                    val = image_convert(val, 4)
-                    val = val[::-1,:]
-                    val = val.astype(np.float32) / 255.0
-                    val = cv2.resize(val, self.__size, interpolation=cv2.INTER_LINEAR)
-                    gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_RGBA32F, self.__size[0], self.__size[1], 0, gl.GL_RGBA, gl.GL_FLOAT, val)
-                    gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_LINEAR)
-                    gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_LINEAR)
-                    gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_S, gl.GL_CLAMP_TO_EDGE)
-                    gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_T, gl.GL_CLAMP_TO_EDGE)
-
-                gl.glUniform1i(p_loc, texture_index)
-                texture_index += 1
-            else:
+            if p_type != 'sampler2D':
                 funct = LAMBDA_UNIFORM[p_type]
                 if isinstance(val, str):
                     val = val.split(',')
@@ -394,6 +382,29 @@ void main()
                 if not isinstance(val, (list, tuple)):
                     val = [val]
                 funct(p_loc, *val)
+                continue
+
+            if (texture := self.__textures.get(uk, None)) is None:
+                logger.error(f"texture [{texture_index}] {uk} is None")
+                texture_index += 1
+                continue
+
+            gl.glActiveTexture(gl.GL_TEXTURE0 + texture_index)
+            gl.glBindTexture(gl.GL_TEXTURE_2D, texture)
+
+            # @TODO: could cache this
+            val = image_convert(val, 4)
+            val = val[::-1,:]
+            val = val.astype(np.float32) / 255.0
+            val = cv2.resize(val, self.__size, interpolation=cv2.INTER_LINEAR)
+            #
+            gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_RGBA32F, self.__size[0], self.__size[1], 0, gl.GL_RGBA, gl.GL_FLOAT, val)
+            gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_LINEAR)
+            gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_LINEAR)
+            gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_S, gl.GL_CLAMP_TO_EDGE)
+            gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_T, gl.GL_CLAMP_TO_EDGE)
+            gl.glUniform1i(p_loc, texture_index)
+            texture_index += 1
 
         gl.glBindFramebuffer(gl.GL_FRAMEBUFFER, self.__fbo)
         gl.glClearColor(*self.__bgcolor)

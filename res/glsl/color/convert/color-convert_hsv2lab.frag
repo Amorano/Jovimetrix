@@ -1,14 +1,14 @@
 // name: HSV-2-LAB
-// desc: Convert HSV input to LAB
+// desc: Convert HSV image into LAB color space. Maintains alpha/mask.
 // category: COLOR/CONVERT
 
-uniform sampler2D image;
+uniform sampler2D image; // | HSV image
 
 const float PI = 3.14159;
 const vec3 D65 = vec3(95.047, 100.0, 108.883);
 
 void mainImage(out vec4 fragColor, vec2 fragCoord) {
-    vec2 uv = fragCoord.xy / iResolution.xy;
+    vec2 uv = fragCoord / iResolution.xy;
     vec4 color = texture(image, uv);
 
     // Assuming input is in HSV format

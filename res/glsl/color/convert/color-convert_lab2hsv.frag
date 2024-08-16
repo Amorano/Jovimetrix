@@ -1,11 +1,11 @@
 // name: LAB-2-HSV
-// desc: Convert LAB color space to HSV
+// desc: Convert LAB image into HSV color space. Maintains alpha/mask.
 // category: COLOR/CONVERT
 
-uniform sampler2D image; // | MASK, RGB or RGBA
+uniform sampler2D image; // | LAB image
 
 void mainImage(out vec4 fragColor, vec2 fragCoord) {
-    vec2 uv = fragCoord.xy / iResolution.xy;
+    vec2 uv = fragCoord / iResolution.xy;
     vec4 color = texture(image, uv);
 
     // De-normalize LAB

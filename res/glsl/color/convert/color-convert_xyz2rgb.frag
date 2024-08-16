@@ -1,8 +1,8 @@
-// name: LAB-2-RGB
-// desc: Convert LAB image into RGB color space. Maintains alpha/mask.
+// name: XYZ-2-RGB
+// desc: Convert XYZ(W) image into RGB color space. Maintains alpha/mask.
 // category: COLOR/CONVERT
 
-uniform sampler2D image; // | LAB image
+uniform sampler2D image; // | XYZ(W) image
 
 vec3 xyz2rgb( vec3 c ) {
     vec3 v =  c / 100.0 * mat3(
@@ -17,12 +17,8 @@ vec3 xyz2rgb( vec3 c ) {
     return r;
 }
 
-vec3 lab2rgb(vec3 c) {
-    return xyz2rgb( lab2xyz( vec3(100.0 * c.x, 2.0 * 127.0 * (c.y - 0.5), 2.0 * 127.0 * (c.z - 0.5)) ) );
-}
-
 void mainImage(out vec4 fragColor, vec2 fragCoord) {
     vec2 uv = fragCoord / iResolution.xy;
     vec4 color = texture(image, uv);
-    fragColor = vec4(lab2rgb(color.rgb), color.a);
+    fragColor = vec4(xyz2rgb(color.rgb), color.a);
 }
