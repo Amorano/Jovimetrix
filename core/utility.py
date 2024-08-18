@@ -26,7 +26,7 @@ from loguru import logger
 from comfy.utils import ProgressBar
 from folder_paths import get_output_directory
 
-from Jovimetrix import deep_merge, comfy_message, parse_reset, \
+from Jovimetrix import DynamicInputType, deep_merge, comfy_message, parse_reset, \
     Lexicon, JOVBaseNode, JOV_TYPE_ANY, ROOT, JOV_TYPE_IMAGE
 
 from Jovimetrix.sup.util import parse_dynamic, path_next, \
@@ -687,14 +687,14 @@ Routes the input data from the optional input ports to the output port, preservi
     def INPUT_TYPES(cls) -> dict:
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
+            "optional": DynamicInputType(JOV_TYPE_ANY),
+            """
             "optional": {
                 Lexicon.ROUTE: ("BUS", {"default": None, "tooltips":"Pass through another route node to pre-populate the outputs."}),
             },
+            """
             "outputs": {
                 0: (Lexicon.ROUTE, {"tooltips":"Pass through for Route node"})
-            },
-            "hidden": {
-
             }
         })
         return Lexicon._parse(d, cls)

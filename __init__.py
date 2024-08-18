@@ -51,11 +51,9 @@ from pathlib import Path
 from string import Template
 from typing import Any, Dict, List, Literal, Tuple
 
-try:
-    from server import PromptServer
-    from aiohttp import web
-except:
-    pass
+from aiohttp import web
+from server import PromptServer
+from nodes import load_custom_node
 
 from loguru import logger
 
@@ -429,33 +427,42 @@ class JOVImageNode(JOVBaseNode):
         })
         return Lexicon._parse(d, cls)
 
-# original sourced from: https://github.com/rgthree/rgthree-comfy/blob/dd534e5384be8cf0c0fa35865afe2126ba75ac55/py/utils.py
-class FlexibleOptionalInputType(dict):
-  """A special class to make flexible nodes that pass data to our python handlers.
+class DynamicInputType(dict):
+    """A special class to make flexible nodes that pass data to our python handlers.
 
-  Enables both flexible/dynamic input types (like for Any Switch) or a dynamic number of inputs
-  (like for Any Switch, Context Switch, Context Merge, Power Lora Loader, etc).
+    Enables both flexible/dynamic input types or a dynamic number of inputs.
 
-  Note, for ComfyUI, all that's needed is the `__contains__` override below, which tells ComfyUI
-  that our node will handle the input, regardless of what it is.
+    original sourced from rgthree:
+        https://github.com/rgthree/rgthree-comfy/blob/dd534e5384be8cf0c0fa35865afe2126ba75ac55/py/utils.py
+    """
+    def __init__(self, type: Any) -> None:
+        self.type = type
 
-  However, with https://github.com/comfyanonymous/ComfyUI/pull/2666 a large change would occur
-  requiring more details on the input itself. There, we need to return a list/tuple where the first
-  item is the type. This can be a real type, or use the AnyType for additional flexibility.
-  """
-  def __init__(self, type) -> None:
-    self.type = type
+    def __getitem__(self, key: Any) -> Tuple[Any]:
+        return (self.type, )
 
-  def __getitem__(self, key) -> Tuple[Any]:
-    return (self.type, )
+    def __contains__(self, key: Any) -> Literal[True]:
+        return True
 
-  def __contains__(self, key) -> Literal[True]:
-    return True
-
-# wildcard trick is 100% stolen from pythongossss's
 class AnyType(str):
+    """AnyType input wildcard trick taken from pythongossss's:
+
+    https://github.com/pythongosssss/ComfyUI-Custom-Scripts
+    """
     def __ne__(self, __value: object) -> bool:
         return False
+
+class DynamicOutputType(tuple):
+    """A special class that will return additional "AnyType" strings beyond defined values.
+
+    original sourced from Trung0246:
+        https://github.com/Trung0246/ComfyUI-0246/blob/fb16466a82553aebdc4d851a483847c2dc0cb953/utils.py#L51
+
+    """
+    def __getitem__(self, index) -> Any:
+        if index > len(self) - 1:
+            return AnyType("*")
+        return super().__getitem__(index)
 
 JOV_TYPE_ANY = AnyType("*")
 
@@ -761,6 +768,19 @@ def comfy_message(ident:str, route:str, data:dict) -> None:
     PromptServer.instance.send_sync(route, data)
 
 try:
+
+    @PromptServer.instance.routes.get("/jovimetrix/reload")
+    async def reload(request) -> web.Response:
+
+        data = {k: dir(v) for k, v in sys.modules.copy().items()}
+        with open('a.json', 'w') as fhandle:
+            json.dump(data, fhandle, indent=4)
+
+        module = importlib.import_module("Jovimetrix")
+        # ensure the module is reloaded
+        importlib.reload(module)
+        load_custom_node('custom_nodes/Jovimetrix')
+        return web.Response(text='RELOADED JOVIMETRIX')
 
     @PromptServer.instance.routes.post("/jovimetrix/message")
     async def jovimetrix_message(request) -> Any:

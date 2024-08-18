@@ -7,9 +7,9 @@
 import { app } from "../../../scripts/app.js"
 import {
     TypeSlot, TypeSlotEvent, nodeFitHeight,
-    nodeVirtualLinkRoot, nodeVirtualLinkChild,
-    nodeInputsClear, nodeOutputsClear
+    nodeVirtualLinkRoot, nodeInputsClear, nodeOutputsClear
 } from '../util/util_node.js'
+import { widgetHide  } from '../util/util_widget.js';
 
 const _id = "ROUTE (JOV) 🚌";
 const _prefix = '🔮';
@@ -33,9 +33,12 @@ app.registerExtension({
 
             let widget_param = this.inputs?.find(w => w.name === 'PARAM');
             if (widget_param === undefined) {
-                widget_param = this.addWidget('PARAM', 'JDICT');
-                widget_param.hidden = true;
+                widget_param = this.addInput('PARAM', 'JDICT');
             }
+            widget_param.serializeValue = async () =>
+                self.inputs.reduce((result, widget) =>
+                    ({ ...result, [widget.name]: widget.value }), {});
+            widgetHide(this, widget_param, '-jov');
 
             const self = this;
             widget_param.serializeValue = async () =>
