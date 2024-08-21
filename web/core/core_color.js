@@ -68,13 +68,6 @@ function nodeColorReset(node, refresh=true) {
     }
 }
 
-function nodeColorList(nodes) {
-    Object.entries(nodes).forEach((node) => {
-        nodeColorReset(node, false);
-    })
-    app.canvas.setDirty(true);
-}
-
 function nodeColorAll() {
     app.graph._nodes.forEach((node) => {
         nodeColorReset(node);
@@ -89,8 +82,6 @@ const colorClear = (name) => {
     if (util_config.CONFIG_COLOR.overwrite) nodeColorAll();
 };
 */
-
-const new_menu = app.ui.settings.getSettingValue("Comfy.UseNewMenu", "Disabled");
 
 class JovimetrixPanelColorize {
     constructor() {
@@ -428,19 +419,17 @@ class JovimetrixPanelColorize {
 
 let PANEL_COLORIZE;
 
-if(new_menu != "Disabled" && app.extensionManager) {
-    app.extensionManager.registerSidebarTab({
-        id: "jovimetrix.sidebar.colorizer",
-        icon: "pi pi-palette",
-        title: "JOVIMETRIX COLORIZER 🔺🟩🔵",
-        tooltip: "Colorize your nodes how you want; I'm not your dad.",
-        type: "custom",
-        render: async (el) => {
-            if (PANEL_COLORIZE === undefined) {
-                PANEL_COLORIZE = new JovimetrixPanelColorize();
-                const content = PANEL_COLORIZE.createContent();
-                el.appendChild(content);
-            }
+app.extensionManager.registerSidebarTab({
+    id: "jovimetrix.sidebar.colorizer",
+    icon: "pi pi-palette",
+    title: "JOVIMETRIX COLORIZER 🔺🟩🔵",
+    tooltip: "Colorize your nodes how you want; I'm not your dad.",
+    type: "custom",
+    render: async (el) => {
+        if (PANEL_COLORIZE === undefined) {
+            PANEL_COLORIZE = new JovimetrixPanelColorize();
+            const content = PANEL_COLORIZE.createContent();
+            el.appendChild(content);
         }
-    });
-}
+    }
+});

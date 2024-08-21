@@ -95,6 +95,12 @@ JOV_LIST_MAX = 25
 # HTML TEMPLATES
 TEMPLATE = {}
 
+# BAD ACTOR NODES -- GITHUB MARKDOWN HATES EMOJI -- SCREW GITHUB MARKDOWN
+MARKDOWN = [
+    "ADJUST", "BLEND", "CROP", "FLATTEN", "STEREOSCOPIC", "MIDI-MESSAGE",
+    "MIDI-FILTER", "STREAM-WRITER"
+]
+
 # =============================================================================
 # === LEXICON ===
 # =============================================================================
@@ -346,10 +352,11 @@ class Lexicon(metaclass=LexiconMeta):
 
     @classmethod
     def _parse(cls, node: dict, node_cls: object) -> dict:
-        name_url = node_cls.NAME.split(" (JOV)")[0]
-        url = name_url.replace(" ", "-")
+        name = node_cls.NAME.split(" (JOV)")[0].replace(" ", "-").replace(' GEN', 'GENERATOR')
+        sep = "%EF%B8%8F-" if name in MARKDOWN else "-"
         cat = '/'.join(node_cls.CATEGORY.split('/')[1:])
-        data = {"_": f"{cat}#-{url}", "*": node_cls.NAME, "outputs": {}}
+        # WIKI URL
+        data = {"_": sep + name, "*": node_cls.NAME, "outputs": {}}
         for cat, entry in node.items():
             if cat not in ['optional', 'required', 'outputs']:
                 continue

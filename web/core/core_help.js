@@ -5,18 +5,19 @@
  */
 
 import { app } from '../../../scripts/app.js'
-import { nodeCleanup } from '../util/util_node.js'
 import '../extern/shodown.min.js'
 
-const JOV_WEBWIKI_URL = "https://github.com/Amorano/Jovimetrix/wiki";
+
+// OLD: https://github.com/Amorano/Jovimetrix/wiki/COMPOSE#-TRANSFORM
+// NEW: https://github.com/Amorano/Jovimetrix/wiki/Z.-REFERENCE#-transform
+
+const JOV_WEBWIKI_URL = "https://github.com/Amorano/Jovimetrix/wiki/Z.-REFERENCE#";
 const CACHE_DOCUMENTATION = {};
 
 if (!window.jovimetrixEvents) {
     window.jovimetrixEvents = new EventTarget();
 }
 const jovimetrixEvents = window.jovimetrixEvents;
-
-const new_menu = app.ui.settings.getSettingValue("Comfy.UseNewMenu", "Disabled");
 
 const documentationConverter = new showdown.Converter({
     tables: true,
@@ -82,59 +83,58 @@ let HELP_PANEL_CONTENT = `
 </div>
 `;
 
-if(new_menu != "Disabled" && app?.extensionManager) {
-    let sidebarElement;
+let sidebarElement;
 
-    const updateContent = async (node, data) => {
-        if (sidebarElement) {
-            HELP_PANEL_CONTENT = await load_help(node, data);
-            sidebarElement.innerHTML = HELP_PANEL_CONTENT;
-        }
-    };
+const updateContent = async (node, data) => {
+    if (sidebarElement) {
+        HELP_PANEL_CONTENT = await load_help(node, data);
+        sidebarElement.innerHTML = HELP_PANEL_CONTENT;
+    }
+};
 
-    app.extensionManager.registerSidebarTab({
-        id: "jovimetrix.sidebar.help",
-        icon: "pi pi-money-bill",
-        title: "Jovimetrix Lore",
-        tooltip: "The Akashic records for all things JOVIMETRIX 🔺🟩🔵",
-        type: "custom",
-        render: async (el) => {
-            sidebarElement = el;
-            el.innerHTML = "<div>Loading...</div>";
-            await updateContent('_', HELP_PANEL_CONTENT);
-        }
-    });
+app.extensionManager.registerSidebarTab({
+    id: "jovimetrix.sidebar.help",
+    icon: "pi pi-money-bill",
+    title: "Jovimetrix Lore",
+    tooltip: "The Akashic records for all things JOVIMETRIX 🔺🟩🔵",
+    type: "custom",
+    render: async (el) => {
+        sidebarElement = el;
+        el.innerHTML = "<div>Loading...</div>";
+        await updateContent('_', HELP_PANEL_CONTENT);
+    }
+});
 
-    // Listen for the custom event
-    jovimetrixEvents.addEventListener('jovimetrixHelpRequested', async (event) => {
-        const node = `${event.detail.class}/${event.detail.name}`;
-        await updateContent(node);
-    });
+// Listen for the custom event
+jovimetrixEvents.addEventListener('jovimetrixHelpRequested', async (event) => {
+    const node = `${event.detail.class}/${event.detail.name}`;
+    await updateContent(node);
+});
 
-    app.registerExtension({
-        name: "jovimetrix.help.select",
-        setup() {
-            const onSelectionChange = app.canvas.onSelectionChange;
-            app.canvas.onSelectionChange = function(selectedNodes) {
-                const me = onSelectionChange?.apply(this);
-                if (selectedNodes && Object.keys(selectedNodes).length > 0) {
-                    const firstNodeKey = Object.keys(selectedNodes)[0];
-                    const firstNode = selectedNodes[firstNodeKey];
-                    const data = {
-                        class: firstNode?.getNickname() || "unknown",
-                        name: firstNode.type
-                    }
-                    const event = new CustomEvent('jovimetrixHelpRequested', { detail: data });
-                    jovimetrixEvents.dispatchEvent(event);
-                }
-                return me;
-            }
-        }
-    });
-}
 
 app.registerExtension({
-    name: "jovimetrix.help2",
+    name: "jovimetrix.help.select",
+    setup() {
+        const onSelectionChange = app.canvas.onSelectionChange;
+        app.canvas.onSelectionChange = function(selectedNodes) {
+            const me = onSelectionChange?.apply(this);
+            if (selectedNodes && Object.keys(selectedNodes).length > 0) {
+                const firstNodeKey = Object.keys(selectedNodes)[0];
+                const firstNode = selectedNodes[firstNodeKey];
+                const data = {
+                    class: firstNode?.getNickname() || "unknown",
+                    name: firstNode.type
+                }
+                const event = new CustomEvent('jovimetrixHelpRequested', { detail: data });
+                jovimetrixEvents.dispatchEvent(event);
+            }
+            return me;
+        }
+    }
+});
+
+app.registerExtension({
+    name: "jovimetrix.help",
     async beforeRegisterNodeDef(nodeType, nodeData) {
         if (!nodeData?.category?.startsWith("JOVIMETRIX")) {
             return;
@@ -158,7 +158,7 @@ app.registerExtension({
                     content: `HELP: ${this.title}`,
                     callback: () => {
                         LiteGraph.closeAllContextMenus();
-                        window.open(`${JOV_WEBWIKI_URL}/${url}`, '_blank');
+                        window.open(`${JOV_WEBWIKI_URL}${url}`, '_blank');
                         this.setDirtyCanvas(true, true);
                     }
                 }];
