@@ -8,6 +8,7 @@ glsl/*
 config.json
 ignore.txt
 .env
+.venv
 .DS_Store
 *.egg-info
 *.bak

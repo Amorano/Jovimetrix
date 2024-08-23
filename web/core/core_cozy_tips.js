@@ -150,7 +150,7 @@ app.registerExtension({
             if (!tip) {
                 return hideTooltip();
             }
-            showTooltip(tip, app.canvas.mouse[0], app.canvas.mouse[1] - 18);
+            showTooltip(tip, app.canvas.mouse[0], app.canvas.mouse[1] - 26);
         }.bind(app.canvas);
 
         app.ui.settings.addSetting({

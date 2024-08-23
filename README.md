@@ -4,8 +4,13 @@
   <img alt="ComfyUI Nodes for procedural masking, live composition and video manipulation">
 </picture>
 
-<h3><div align="center">
+<h2><div align="center">
 <a href="https://github.com/comfyanonymous/ComfyUI">COMFYUI</a> Nodes for procedural masking, live composition and video manipulation
+</div></h2>
+
+<h3><div align="center">
+JOVIMETRIX IS ONLY GAURENTEED TO SUPPORT <a href="https://github.com/comfyanonymous/ComfyUI">COMFYUI 0.0.7+</a> and <a href="https://github.com/Comfy-Org/ComfyUI_frontend">FRONTEND 1.2.27+</a><br>
+IF YOU NEED AN OLDER VERSION, PLEASE DO NOT UPDATE.
 </div></h3>
 
 <!---------------------------------------------------------------------------->

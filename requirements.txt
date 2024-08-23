@@ -1,5 +1,6 @@
 aenum>=3.1.15,<4
 blendmodes>=2024.1.1
+cupy-cuda12x>=13.3.0
 daltonlens>=0.1.5
 glfw>=2.7.0
 loguru>=0.7.2
