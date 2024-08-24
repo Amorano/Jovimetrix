@@ -146,7 +146,7 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
             "optional": {
                 Lexicon.BATCH_MODE: (EnumBatchMode._member_names_, {"default": EnumBatchMode.MERGE.name, "tooltips":"Select a single index, specific range, custom index list or randomized"}),
                 Lexicon.INDEX: ("INT", {"default": 0, "mij": 0, "tooltips":"Selected list position"}),
-                Lexicon.RANGE: ("VEC3", {"default": (0, 0, 1), "mij": 0}),
+                Lexicon.RANGE: ("VEC3INT", {"default": (0, 0, 1), "mij": 0}),
                 Lexicon.STRING: ("STRING", {"default": "", "tooltips":"Comma separated list of indicies to export"}),
                 Lexicon.SEED: ("INT", {"default": 0, "mij": 0, "maj": sys.maxsize}),
                 Lexicon.COUNT: ("INT", {"default": 0, "mij": 0, "maj": sys.maxsize, "tooltips":"How many items to return"}),
@@ -214,40 +214,41 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
             logger.warning("no data for list")
             return None, 0, None, 0
 
-        results = full_list.copy()
+        data = full_list.copy()
 
-        if flip and len(results) > 1:
-            results = results[::-1]
+        if flip and len(data) > 1:
+            data = data[::-1]
 
         mode = EnumBatchMode[mode]
         if mode == EnumBatchMode.PICK:
-            index = index if index < len(results) else -1
-            results = [results[index]]
+            index = index if index < len(data) else -1
+            results = [data[index]]
         elif mode == EnumBatchMode.SLICE:
             start, end, step = slice_range
-            end = len(results) if end == 0 else end
-            results = results[start:end:step]
+            end = len(data) if end == 0 else end
+            results = data[start:end:step]
         elif mode == EnumBatchMode.RANDOM:
             if self.__seed is None or self.__seed != seed:
                 random.seed(seed)
                 self.__seed = seed
             if count == 0:
-                count = len(results)
-            results = random.sample(results, k=count)
+                count = len(data)
+            results = random.sample(data, k=count)
         elif mode == EnumBatchMode.INDEX_LIST:
             junk = []
-            for x in indices.strip().split(','):
+            for x in indices.split(','):
                 if '-' in x:
                     x = x.split('-')
-                    x = list(range(x[0], x[1]))
+                    a = int(x[0])
+                    b = int(x[1])
+                    if a > b:
+                        junk = list(range(a, b-1, -1))
+                    else:
+                        junk = list(range(a, b + 1))
                 else:
-                    x = [x]
-                for i in x:
-                    try:
-                        junk.append(int(i))
-                    except Exception as e:
-                        logger.error(e)
-            results = [results[i:j] for i, j in zip([0]+junk, junk+[None])]
+                    junk = [int(x)]
+            results = [data[i:j+1] for i, j in zip(junk, junk)]
+
         elif mode == EnumBatchMode.CARTESIAN:
             logger.warning("NOT IMPLEMENTED - CARTESIAN")
 
@@ -266,6 +267,13 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
             results = [image_matte(i, (0,0,0,0), w, h) for i in results]
             results = torch.stack(results, dim=0)
             size = results.shape[0]
+
+        if count > 0:
+            results = results[0:count]
+
+        if len(results) == 1:
+            results = results[0]
+
         return results, size, full_list, len(full_list)
 
 class ExportNode(JOVBaseNode):
