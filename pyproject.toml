@@ -1,7 +1,7 @@
 [project]
 name = "jovimetrix"
 description = "Integrates Webcam, MIDI, Spout and GLSL shader support. Animation via tick. Parameter manipulation with wave generator. Math operations with Unary and Binary support. Value conversion for all major types (int, string, list, dict, Image, Mask). Shape mask generation, image stacking and channel ops, batch splitting, merging and randomizing, load images and video from anywhere, dynamic bus routing with a single node, export support for GIPHY, save output anywhere! flatten, crop, transform; check colorblindness, make stereogram or stereoscopic images, or liner interpolate values and more."
-version = "1.2.29"
+version = "1.2.30"
 license = { file = "LICENSE" }
 dependencies = [
     "aenum>=3.1.15,<4",
@@ -10,6 +10,7 @@ dependencies = [
     "daltonlens>=0.1.5",
     "glfw>=2.7.0",
     "loguru>=0.7.2",
+    "markdown>=3.7",
     "matplotlib>=3.8.4",
     "mido[ports-rtmidi]>=1.3.2",
     "mss>=9.0.1",
@@ -25,7 +26,7 @@ dependencies = [
     "scikit-learn>=1.5.1",
     "SpoutGL>=0.0.6; platform_system==\"Windows\"",
     "stereoscopy[auto_align]>=2.0.1",
-    "vnoise>=0.1.0"
+    "vnoise>=0.1.0",
 ]
 
 [project.urls]

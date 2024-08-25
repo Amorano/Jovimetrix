@@ -1,17 +1,14 @@
 /**
  * File: core_help.js
  * Project: Jovimetrix
- * code based on mtb nodes by Mel Massadian https://github.com/melMass/comfy_mtb/
+ * The original code to show the help was based on Mel Massadian's mtb node help extension:
+ *
+ *    https://github.com/melMass/comfy_mtb/
  */
 
 import { app } from '../../../scripts/app.js'
-import '../extern/shodown.min.js'
 
-
-// OLD: https://github.com/Amorano/Jovimetrix/wiki/COMPOSE#-TRANSFORM
-// NEW: https://github.com/Amorano/Jovimetrix/wiki/Z.-REFERENCE#-transform
-
-const JOV_WEBWIKI_URL = "https://github.com/Amorano/Jovimetrix/wiki/Z.-REFERENCE#";
+// help now is 100% dynamically built as it is used, no more requests out
 const CACHE_DOCUMENTATION = {};
 
 if (!window.jovimetrixEvents) {
@@ -19,25 +16,12 @@ if (!window.jovimetrixEvents) {
 }
 const jovimetrixEvents = window.jovimetrixEvents;
 
-const documentationConverter = new showdown.Converter({
-    tables: true,
-    strikethrough: true,
-    emoji: true,
-    ghCodeBlocks: true,
-    tasklists: true,
-    ghMentions: true,
-    smoothLivePreview: true,
-    simplifiedAutoLink: true,
-    parseImgDimensions: true,
-    openLinksInNewWindow: true,
-});
-
-const JOV_HELP_URL = "/jovimetrix/doc";
+const JOV_HELP_URL = "./api/jovimetrix/doc";
 
 async function load_help(name, custom_data) {
     // overwrite
     if (custom_data) {
-        CACHE_DOCUMENTATION[name] = documentationConverter.makeHtml(custom_data);
+        CACHE_DOCUMENTATION[name] = custom_data;
     }
 
     if (name in CACHE_DOCUMENTATION) {
@@ -45,6 +29,7 @@ async function load_help(name, custom_data) {
     }
 
     const url = `${JOV_HELP_URL}/${name}`;
+
     // Check if data is already cached
     const result = fetch(url,
         { cache: "no-store" }
@@ -107,8 +92,8 @@ app.extensionManager.registerSidebarTab({
 
 // Listen for the custom event
 jovimetrixEvents.addEventListener('jovimetrixHelpRequested', async (event) => {
-    const node = `${event.detail.class}/${event.detail.name}`;
-    await updateContent(node);
+    // const node = `${event.detail.class}/${event.detail.name}`;
+    await updateContent(event.detail.name);
 });
 
 

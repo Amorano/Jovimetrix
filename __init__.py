@@ -51,7 +51,9 @@ from pathlib import Path
 from string import Template
 from typing import Any, Dict, List, Literal, Tuple
 
-from aiohttp import web
+import markdown
+
+from aiohttp import web, ClientSession
 from server import PromptServer
 from nodes import load_custom_node
 
@@ -88,6 +90,9 @@ JOV_INTERNAL_DOC = os.getenv("JOV_INTERNAL_DOC", str(ROOT / "_doc"))
 DOCUMENTATION = {
     'jovimetrix' : {}
 }
+
+# The object_info route return after a startup -- cached
+COMFYUI_DOCUMENTATION = {}
 
 # maximum items to show in help for combo list items
 JOV_LIST_MAX = 25
@@ -523,149 +528,28 @@ def match_combo(lst: List[Any] | Tuple[Any]) -> str:
         return f"{types_matcher.get(type(lst[0]).__name__, 'STRING')}"
     return "STRING"
 
-def get_node_info(node_cls: object) -> Dict[str, Any]:
-    """Collects available information from node class to use in the pipeline."""
-
-    input_parameters, output_parameters = {}, {}
-    for k, node_param_meta in node_cls.INPUT_TYPES().items():
-        if k in ["required", "optional"]:
-            input_parameters[k] = {}
-            for param_key, param_meta in node_param_meta.items():
-                # skip list
-                if param_key in ['tooltips']:
-                    continue
-                lst = None
-                typ = param_meta[0]
-                if isinstance(typ, list):
-                    typ = match_combo(typ)
-                    lst = param_meta
-                input_parameters[k][param_key] = {
-                    "type": typ
-                }
-                try:
-                    meta = param_meta[1]
-                    if lst is not None:
-                        if (choice_list := meta.get('choice', None)) is None:
-                            data = [x.replace('_', ' ') for x in lst[0]][:JOV_LIST_MAX]
-                            input_parameters[k][param_key]["choice"] = data
-                            meta.update(lst[1])
-                        else:
-                            input_parameters[k][param_key]["choice"] = [choice_list][:JOV_LIST_MAX]
-                            meta['default'] = 'dynamic'
-                    elif (default_top := meta.get('default_top', None)) is not None:
-                        meta['default'] = default_top
-
-                    # only stuff that makes sense...
-                    junk = ['default', 'min', 'max']
-                    meta = node_param_meta[param_key][1]
-                    if (tip := meta.get("tooltips", None)) is None:
-                        if (tip := Lexicon._tooltipsDB.get(param_key, None)) is None:
-                            # logger.warning(f"no tooltip for {node_class}[{k}]::{param_key}")
-                            junk.append("tooltips")
-                            tip = "Unknown Explanation!"
-                    input_parameters[k][param_key]["tooltips"] = tip
-                    for scrape in junk:
-                        if (val := meta.get(scrape, None)) is not None and val != "":
-                            input_parameters[k][param_key][scrape] = val
-                except IndexError:
-                    pass
-
-    return_types = [
-        match_combo(x) if isinstance(x, list) or isinstance(x, tuple) else x for x in node_cls.RETURN_TYPES
-    ]
-    return_names = getattr(node_cls, "RETURN_NAMES", [t.lower() for t in return_types])
-    for t, n in zip(return_types, return_names):
-        output_parameters[n] = ', '.join([x.strip() for x in t.split(',')])
-
-    data = {
-        "class": repr(node_cls).split("'")[1],
-        "input_parameters": collapse_repeating_parameters(input_parameters),
-        "output_parameters": output_parameters,
-        "name": str(getattr(node_cls, "NAME")),
-        "output_node": str(getattr(node_cls, "OUTPUT_NODE", False)),
-        "category": str(getattr(node_cls, "CATEGORY", "")).strip('\n').strip(),
-        "documentation": str(getattr(node_cls, "DESCRIPTION", ""))
-    }
-    data['.html'] = json2html(data)
-    data['.md'] = json2markdown(data)
+def template_load(fname: str) -> Template:
+    with open(ROOT_DOC / fname, 'r') as f:
+        data = Template(f.read())
     return data
 
-def json2markdown(json_dict: dict) -> str:
-    """Example of json to markdown converter. You are welcome to change formatting per specific request."""
-    name = json_dict['name']
-    boop = name.split('(JOV)')[0].strip()
-    boop2 = boop.replace(" ", "%20")
-    root1 = f"https://github.com/Amorano/Jovimetrix-examples/blob/master/node/{boop2}/{boop2}.md"
-    root2 = f"https://raw.githubusercontent.com/Amorano/Jovimetrix-examples/master/node/{boop2}/{boop2}.png"
-
-    ret = f"## [{name}]({root1})\n\n"
-    ret += f"## {json_dict['category']}\n\n"
-    ret += f"{json_dict['documentation']}\n\n"
-    ret += f"![{boop}]({root2})\n\n"
-    ret += f"#### OUTPUT NODE?: `{json_dict['output_node']}`\n\n"
-
-    # INPUTS
-    ret += f"## INPUT\n\n"
-    if len(json_dict['input_parameters']) > 0:
-        for k, v in json_dict['input_parameters'].items():
-            if len(v.items()) == 0:
-                continue
-            ret += f"### {k.upper()}\n\n"
-            ret += f"name | type | desc | default | meta\n"
-            ret += f":---:|:---:|---|:---:|---\n"
-            for param_key, param_meta in v.items():
-                typ = param_meta.get('type','UNKNOWN').upper()
-                typ = ', '.join([x.strip() for x in typ.split(',')])
-                typ = "<br>".join(textwrap.wrap(typ, 42))
-                tool = param_meta.get("tooltips",'')
-                tool = "<br>".join(textwrap.wrap(tool, 42))
-                default = param_meta.get('default','')
-                ch = ", ".join(param_meta.get('choice', []))
-                ch = "<br>".join(textwrap.wrap(ch, 42))
-                param_key = param_key.replace('#', r'\#')
-                ret += f"{param_key}  |  {typ}  | {tool} | {default} | {ch}\n"
-    else:
-        ret += 'NONE\n'
-
-    # OUTPUTS
-    ret += f"\n## OUTPUT\n\n"
-    if len(json_dict['output_parameters']) > 0:
-        ret += f"name | type | desc\n"
-        ret += f":---:|:---:|---\n"
-        for k, v in json_dict['output_parameters'].items():
-            if (tool := Lexicon._tooltipsDB.get(k, "")) != "":
-                tool = "<br>".join(textwrap.wrap(tool, 65))
-            k = k.replace('#', r'\#')
-            ret += f"{k}  |  {v}  | {tool} \n"
-    else:
-        ret += 'NONE\n'
-
-    # BODY INSERT
-    # PUT EXTERNAL DOCS HERE
-    #
-    # FOOTER
-    ret += "\noriginal help system powered by [MelMass](https://github.com/melMass) & the [comfy_mtb](https://github.com/melMass/comfy_mtb) project"
-    return ret
+HTML_input_section = template_load('template_section.html')
+HTML_input_row = template_load('template_param_input.html')
+HTML_output_row = template_load('template_param_output.html')
+HTML_template_node = template_load('template_node.html')
+HTML_template_node_plain = template_load('template_node_plain.html')
 
 def json2html(json_dict: dict) -> str:
     """Convert JSON to HTML using templates for all HTML elements."""
     name = json_dict['name']
     boop = name.split(' (JOV)')[0].strip()
-    boop2 = boop.replace(" ", "%20")
-    root1 = f"https://github.com/Amorano/Jovimetrix-examples/blob/master/node/{boop2}/{boop2}.md"
-    root2 = f"https://raw.githubusercontent.com/Amorano/Jovimetrix-examples/master/node/{boop2}/{boop2}.png"
-
-    global TEMPLATE
-    def template_load(what: str, fname: str) -> Template:
-        if TEMPLATE.get(what, None) is None:
-            with open(ROOT_DOC / fname, 'r') as f:
-                TEMPLATE[what] = Template(f.read())
-        return TEMPLATE[what]
-
-    template_node = template_load('node', 'template_node.html')
-    input_section = template_load('input_section', 'template_section.html')
-    input_row = template_load('input_row', 'template_param_input.html')
-    output_row = template_load('output_row', 'template_param_output.html')
+    root1 = root2 = ""
+    template_node = HTML_template_node_plain
+    if " (JOV)" in name:
+        template_node = HTML_template_node
+        boop2 = boop.replace(" ", "%20")
+        root1 = f"https://github.com/Amorano/Jovimetrix-examples/blob/master/node/{boop2}/{boop2}.md"
+        root2 = f"https://raw.githubusercontent.com/Amorano/Jovimetrix-examples/master/node/{boop2}/{boop2}.png"
 
     # Generate input content
     input_sections = []
@@ -682,7 +566,7 @@ def json2html(json_dict: dict) -> str:
             default = html.escape(str(param_meta.get('default', '')))
             ch = ', '.join(param_meta.get('choice', []))
             ch = '<br>'.join(textwrap.wrap(ch, 42))
-            rows.append(input_row.substitute(
+            rows.append(HTML_input_row.substitute(
                 param_key=html.escape(param_key),
                 type=typ,
                 tooltip=tool,
@@ -690,7 +574,7 @@ def json2html(json_dict: dict) -> str:
                 choice=ch
             ))
 
-        input_sections.append(input_section.substitute(
+        input_sections.append(HTML_input_section.substitute(
             name=html.escape(k.upper()),
             rows=''.join(rows)
         ))
@@ -700,19 +584,25 @@ def json2html(json_dict: dict) -> str:
     for k, v in json_dict['output_parameters'].items():
         tool = Lexicon._tooltipsDB.get(k, "")
         tool = '<br>'.join(textwrap.wrap(tool, 65))
-        output_rows.append(output_row.substitute(
+        output_rows.append(HTML_output_row.substitute(
             name=html.escape(k),
             type=html.escape(v),
             description=tool
         ))
 
     # Fill in the main template
+    description = json_dict['description']
+    if not "<div>" in description and not "<p>" in description:
+        description = markdown.markdown(description)
+        # description = html.escape(description)
+    description = description.replace('\n', '<br>').replace(f"('", '').replace(f"')", '')
+
     html_content = template_node.substitute(
         title=html.escape(name),
         name=html.escape(name),
         root1=root1,
         category=html.escape(json_dict['category']),
-        documentation=html.escape(json_dict['documentation']).replace('\n', '<br>'),
+        documentation=description,
         root2=root2,
         boop=html.escape(boop),
         output_node=json_dict['output_node'],
@@ -720,6 +610,75 @@ def json2html(json_dict: dict) -> str:
         output_content=''.join(output_rows)
     )
     return html_content
+
+def get_node_info(node_data: dict) -> Dict[str, Any]:
+    """Transform node object_info route result into .html."""
+    input_parameters = {}
+    for k, node_param_meta in node_data.get('input', {}).items():
+        if not k in ["required", "optional"]:
+            continue
+
+        input_parameters[k] = {}
+        for param_key, param_meta in node_param_meta.items():
+            # skip list
+            if param_key in ['tooltips']:
+                continue
+
+            lst = None
+            typ = param_meta[0]
+            if isinstance(typ, list):
+                typ = match_combo(typ)
+                lst = param_meta
+            input_parameters[k][param_key] = {
+                "type": typ
+            }
+            try:
+                meta = param_meta[1]
+                if lst is not None:
+                    if (choice_list := meta.get('choice', None)) is None:
+                        data = [x.replace('_', ' ') for x in lst[0]][:JOV_LIST_MAX]
+                        input_parameters[k][param_key]["choice"] = data
+                        meta.update(lst[1])
+                    else:
+                        input_parameters[k][param_key]["choice"] = [choice_list][:JOV_LIST_MAX]
+                        meta['default'] = 'dynamic'
+                elif (default_top := meta.get('default_top', None)) is not None:
+                    meta['default'] = default_top
+
+                # only stuff that makes sense...
+                junk = ['default', 'min', 'max']
+                meta = node_param_meta[param_key][1]
+                if (tip := meta.get("tooltips", None)) is None:
+                    if (tip := Lexicon._tooltipsDB.get(param_key, None)) is None:
+                        # logger.warning(f"no tooltip for {node_class}[{k}]::{param_key}")
+                        junk.append("tooltips")
+                        tip = "Unknown Explanation!"
+                input_parameters[k][param_key]["tooltips"] = tip
+                for scrape in junk:
+                    if (val := meta.get(scrape, None)) is not None and val != "":
+                        input_parameters[k][param_key][scrape] = val
+            except IndexError:
+                pass
+
+    return_types = [
+        match_combo(x) if isinstance(x, list) or isinstance(x, tuple) else x for x in node_data.get('output', [])
+    ]
+
+    output_parameters = {}
+    return_names = [t.lower() for t in node_data.get('output_name', [])]
+    for t, n in zip(return_types, return_names):
+        output_parameters[n] = ', '.join([x.strip() for x in t.split(',')])
+
+    data = {
+        "class": node_data['name'],
+        "input_parameters": collapse_repeating_parameters(input_parameters),
+        "output_parameters": output_parameters,
+        "name": node_data['name'],
+        "output_node": node_data['output_node'],
+        "category": node_data['category'].strip('\n').strip(),
+        "description": node_data['description']
+    }
+    return json2html(data)
 
 def deep_merge(d1: dict, d2: dict) -> dict:
     """
@@ -835,9 +794,7 @@ try:
     @PromptServer.instance.routes.get("/jovimetrix/doc")
     async def jovimetrix_doc(request) -> Any:
         for k in NODE_CLASS_MAPPINGS.keys():
-            data = get_node_info(NODE_CLASS_MAPPINGS[k])
-            DOCUMENTATION['jovimetrix'][k] = data
-
+            DOCUMENTATION['jovimetrix'][k]['.html'] = get_node_info(NODE_CLASS_MAPPINGS[k])
             node = NODE_DISPLAY_NAME_MAPPINGS[k]
             fname = node.split(" (JOV)")[0]
             path = Path(JOV_INTERNAL_DOC.replace("{name}", fname))
@@ -852,39 +809,32 @@ try:
 
         return web.json_response(DOCUMENTATION)
 
-    @PromptServer.instance.routes.get("/jovimetrix/doc/{repo}/{node}")
-    async def jovimetrix_doc_node(request) -> Any:
-        repo_name = request.match_info.get('repo')
-        node_name = request.match_info.get('node')
-        docs = f"unknown: {repo_name}.{node_name}"
-        if (repo := DOCUMENTATION.get(repo_name.lower(), None)) is None:
-            return web.Response(text=docs, content_type='text/html')
+    @PromptServer.instance.routes.get("/jovimetrix/doc/{node}")
+    async def jovimetrix_doc_node_comfy(request) -> Any:
+        node_class = request.match_info.get('node')
+        global COMFYUI_DOCUMENTATION
+        if (docs := COMFYUI_DOCUMENTATION.get(node_class, None)) is None:
+            # look up via the route...
+            url = f"{request.scheme}://{request.host}/object_info/{node_class}"
 
-        if (node := repo.get(node_name, None)) is not None:
-            if (docs := node.get('.html', None)) is not None:
-                return web.Response(text=docs, content_type='text/html')
-
-        if repo_name.lower() == 'jovimetrix':
-            docs = get_node_info(NODE_CLASS_MAPPINGS[node_name])
-            DOCUMENTATION[repo_name.lower()][node_name] = docs
-            return web.Response(text=docs['.html'], content_type='text/html')
-        try:
-            # check all the imports for the repository and object:
-            # docs = <repo>.<node>
-            # If not found in the main module, search in submodules
-            for name, obj in sys.modules.items():
-                if not name.startswith(f"{repo_name}.") or not hasattr(obj, node_name):
-                    continue
-                logger.debug(name, obj)
-                node_class = getattr(obj, node_name)
-                docs = get_node_info(node_class)
-                DOCUMENTATION[repo_name.lower()][node_name] = docs
-                docs = docs['.html']
-                break
-
-        except Exception as e:
-            docs = str(e)
-            logger.exception(docs)
+            # Make an asynchronous HTTP request using aiohttp.ClientSession
+            async with ClientSession() as session:
+                try:
+                    async with session.get(url) as response:
+                        if response.status == 200:
+                            docs = await response.json()
+                            if (data := docs.get(node_class, None)) is not None:
+                                docs = get_node_info(data)
+                            else:
+                                docs = f"No data for {node_class}"
+                            COMFYUI_DOCUMENTATION[node_class] = docs
+                        else:
+                            docs = f"Failed to get docs {node_class}, status: {response.status}"
+                            logger.error(docs)
+                except Exception as e:
+                    logger.error(f"Failed to get docs {node_class}")
+                    logger.exception(e)
+                    docs = f"Failed to get docs {node_class}\n{e}"
 
         return web.Response(text=docs, content_type='text/html')
 

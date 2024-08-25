@@ -4,6 +4,7 @@ cupy-cuda12x>=13.3.0
 daltonlens>=0.1.5
 glfw>=2.7.0
 loguru>=0.7.2
+markdown>=3.7
 matplotlib>=3.8.4
 mido[ports-rtmidi]>=1.3.2
 mss>=9.0.1
