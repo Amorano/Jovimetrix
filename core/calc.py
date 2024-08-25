@@ -847,14 +847,10 @@ Supplies raw or default values for various data types, supporting vector input w
         d = super().INPUT_TYPES()
 
         typ = EnumConvertType._member_names_
-        try: typ.pop(typ.index('IMAGE'))
-        except: pass
-        try: typ.pop(typ.index('LATENT'))
-        except: pass
-        try: typ.pop(typ.index('ANY'))
-        except: pass
-        try: typ.pop(typ.index('MASK'))
-        except: pass
+        for t in ['IMAGE', 'LATENT', 'ANY', 'MASK', 'LAYER']:
+            try: typ.pop(typ.index(t))
+            except: pass
+
         d = deep_merge(d, {
             "optional": {
                 Lexicon.IN_A: (JOV_TYPE_ANY, {"default": None,

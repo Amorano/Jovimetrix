@@ -3,6 +3,7 @@ Jovimetrix - http://www.github.com/amorano/jovimetrix
 Image Support
 """
 
+import io
 import math
 import base64
 import sys
@@ -382,6 +383,20 @@ def b64_2_tensor(base64str: str) -> torch.Tensor:
     img = ImageOps.exif_transpose(img)
     return pil2tensor(img)
 
+def b64_2_pil(base64_string):
+    prefix, base64_data = base64_string.split(",", 1)
+    image_data = base64.b64decode(base64_data)
+    image_stream = io.BytesIO(image_data)
+    return Image.open(image_stream)
+
+def b64_2_cv(base64_string) -> TYPE_IMAGE:
+    _, data = base64_string.split(",", 1)
+    data = base64.b64decode(data)
+    data = io.BytesIO(data)
+    data = Image.open(data)
+    data = np.array(data)
+    return cv2.cvtColor(data, cv2.COLOR_RGB2BGR)
+
 def cv2pil(image: TYPE_IMAGE) -> Image.Image:
     """Convert a CV2 image to a PIL Image."""
     if (cc := image.shape[2] if len(image.shape) > 2 else 1) > 1:
@@ -458,6 +473,17 @@ def tensor2pil(tensor: torch.Tensor) -> Image.Image:
     """
     tensor = np.clip(255. * tensor.cpu().numpy().squeeze(), 0, 255).astype(np.uint8)
     return Image.fromarray(tensor)
+
+def mixlabLayer2cv(layer: dict) -> torch.Tensor:
+    image=layer['image']
+    mask=layer['mask']
+    if 'type' in layer and layer['type']=='base64' and type(image) == str:
+        image = b64_2_cv(image)
+        mask = b64_2_cv(mask)
+    else:
+        image = tensor2cv(image)
+        mask = tensor2cv(mask)
+    return image_mask_add(image, mask)
 
 # =============================================================================
 # === PIXEL ===

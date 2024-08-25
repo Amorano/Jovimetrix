@@ -38,6 +38,8 @@ class EnumConvertType(Enum):
     # ENUM = 6
     ANY = 9
     MASK = 7
+    # MIXLAB LAYER
+    LAYER = 8
 
 class EnumSwizzle(Enum):
     A_X = 0
@@ -141,10 +143,13 @@ def parse_value(val:Any, typ:EnumConvertType, default: Any,
         val = default
 
     if isinstance(val, dict):
+        # old jovimetrix index?
         if '0' in val or 0 in val:
             val = [val.get(i, val.get(str(i), 0)) for i in range(min(len(val), 4))]
+        # coord2d?
         elif 'x' in val:
             val = [val.get(c, 0) for c in 'xyzw']
+        # wacky color struct?
         elif 'r' in val:
             val = [val.get(c, 0) for c in 'rgba']
     elif isinstance(val, torch.Tensor) and typ not in [EnumConvertType.IMAGE, EnumConvertType.MASK, EnumConvertType.LATENT]:
@@ -268,8 +273,19 @@ def parse_param(data:dict, key:str, typ:EnumConvertType, default: Any,
         except json.JSONDecodeError: pass
     # see if we are a Jovimetrix hacked vector blob... {0:x, 1:y, 2:z, 3:w}
     elif isinstance(val, dict):
+        # mixlab layer?
+        if (image := val.get('image', None)) is not None:
+            ret = image
+            if (mask := val.get('mask', None)) is not None:
+                while len(mask.shape) < len(image.shape):
+                    mask = mask.unsqueeze(-1)
+                ret = torch.cat((image, mask), dim=-1)
+            if ret.ndim > 3:
+                val = [t for t in ret]
+            elif ret.ndim == 3:
+                val = [v.unsqueeze(-1) for v in ret]
         # vector patch....
-        if 'xyzw' in val:
+        elif 'xyzw' in val:
             val = tuple(x for x in val["xyzw"])
         # latents....
         elif 'samples' in val:

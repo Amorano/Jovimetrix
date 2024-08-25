@@ -55,6 +55,11 @@ If those nodes have descriptions written in HTML or Markdown, they will be conve
 
 ## UPDATES
 
+**2024/08/25**:
+* Added conversion coercion for Mixlab Layer types
+![Mixlab supports](https://github.com/user-attachments/assets/05a53b98-b620-4743-b7b5-26da4140d443)
+* Supports ComfyUI 0.1.2+, frontend 1.2.34+
+
 **2024/08/24**:
 * All node dynamic help
 * Array node -- updated to return single values as their single value, not a list
