@@ -9,7 +9,7 @@
 </div></h2>
 
 <h3><div align="center">
-JOVIMETRIX IS ONLY GAURENTEED TO SUPPORT <a href="https://github.com/comfyanonymous/ComfyUI">COMFYUI 0.0.7+</a> and <a href="https://github.com/Comfy-Org/ComfyUI_frontend">FRONTEND 1.2.27+</a><br>
+JOVIMETRIX IS ONLY GAURENTEED TO SUPPORT <a href="https://github.com/comfyanonymous/ComfyUI">COMFYUI 0.1.2+</a> and <a href="https://github.com/Comfy-Org/ComfyUI_frontend">FRONTEND 1.2.30+</a><br>
 IF YOU NEED AN OLDER VERSION, PLEASE DO NOT UPDATE.
 </div></h3>
 
@@ -31,9 +31,42 @@ Please consider sponsoring me if you enjoy the results of my work, code or docum
 
 </div>
 
+## HIGHLIGHTS
+
+### HELP SYSTEM
+
+<div align="center">
+
+![CLICKING NODES FOR HELP](res/wiki/help_002.png)
+</div>
+
+The built-in help system will dynamically parse any nodes found at the ComfyUI API endpoint:
+
+`<comfyui_web_root>/object_info`
+
+If those nodes have descriptions written in HTML or Markdown, they will be converted into HTML for presentation in the panel.
+
+### NODE COLORS
+
+<div align="center">
+
+![alt text](res/wiki/color_001.png)
+</div>
+
 ## UPDATES
 
-**2024/08/16**: Complete Wiki and Examples revamp. Nodes updated to work on primary new frontend 1.2.27+
+**2024/08/24**:
+* All node dynamic help
+* Array node -- updated to return single values as their single value, not a list
+* Supports ComfyUI 0.1.2+, frontend 1.2.30+
+
+**2024/08/23**:
+* Colorization and Help panel only work on new frontend
+* Supports ComfyUI 0.1.1+, frontend 1.2.29+
+
+**2024/08/20**:
+* Complete Wiki and Examples revamp.
+* Supports ComfyUI 0.0.8+, frontend 1.2.30+
 
 # INSTALLATION
 
