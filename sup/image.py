@@ -754,6 +754,10 @@ def image_blend(imageA: TYPE_IMAGE, imageB: TYPE_IMAGE, mask:Optional[TYPE_IMAGE
     alpha = np.clip(alpha, 0, 1)
     image = blendLayers(imageA, imageB, blendOp.value, alpha)
     image = pil2cv(image)
+
+    if mask is not None:
+        image = image_mask_add(image, mask)
+
     return image_crop_center(image, w, h)
 
 def image_by_size(image_list: List[TYPE_IMAGE], enumSize: EnumImageBySize=EnumImageBySize.LARGEST) -> Tuple[TYPE_IMAGE, int, int]:

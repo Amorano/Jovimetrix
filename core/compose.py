@@ -283,6 +283,7 @@ Combine two input images using various blending modes, such as normal, screen, m
 
             func = EnumBlendType[func]
             img = image_blend(pA, pB, mask, func, alpha)
+
             mode = EnumScaleMode[mode]
             if mode != EnumScaleMode.NONE:
                 w, h = wihi

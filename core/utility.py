@@ -222,18 +222,18 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
         mode = EnumBatchMode[mode]
         if mode == EnumBatchMode.PICK:
             index = index if index < len(data) else -1
-            results = [data[index]]
+            data = [data[index]]
         elif mode == EnumBatchMode.SLICE:
             start, end, step = slice_range
             end = len(data) if end == 0 else end
-            results = data[start:end:step]
+            data = data[start:end:step]
         elif mode == EnumBatchMode.RANDOM:
             if self.__seed is None or self.__seed != seed:
                 random.seed(seed)
                 self.__seed = seed
             if count == 0:
                 count = len(data)
-            results = random.sample(data, k=count)
+            data = random.sample(data, k=count)
         elif mode == EnumBatchMode.INDEX_LIST:
             junk = []
             for x in indices.split(','):
@@ -247,34 +247,37 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
                         junk = list(range(a, b + 1))
                 else:
                     junk = [int(x)]
-            results = [data[i:j+1] for i, j in zip(junk, junk)]
+            data = [data[i:j+1] for i, j in zip(junk, junk)]
 
         elif mode == EnumBatchMode.CARTESIAN:
             logger.warning("NOT IMPLEMENTED - CARTESIAN")
 
-        if len(results) == 0:
+        if len(data) == 0:
             logger.warning("no data for list")
             return None, 0, None, 0
 
         if batch_chunk > 0:
-            results = self.batched(results, batch_chunk)
+            data = self.batched(data, batch_chunk)
 
-        size = len(results)
+        size = len(data)
         if output_is_image:
-            _, w, h = image_by_size(results)
-            logger.debug(f"{w}, {h}")
-            results = [image_convert(i, 4) for i in results]
-            results = [image_matte(i, (0,0,0,0), w, h) for i in results]
-            results = torch.stack(results, dim=0)
-            size = results.shape[0]
+            _, w, h = image_by_size(data)
+            result = []
+            for d in data:
+                d = tensor2cv(d)
+                d = image_convert(d, 4)
+                d = image_matte(d, (0,0,0,0), w, h)
+                result.append(cv2tensor(d))
+            data = torch.stack([r.squeeze(0) for r in result], dim=0)
+            size = data.shape[0]
 
         if count > 0:
-            results = results[0:count]
+            data = data[0:count]
 
-        if len(results) == 1:
-            results = results[0]
+        if len(data) == 1:
+            data = data[0]
 
-        return results, size, full_list, len(full_list)
+        return data, size, full_list, len(full_list)
 
 class ExportNode(JOVBaseNode):
     NAME = "EXPORT (JOV) 📽"
