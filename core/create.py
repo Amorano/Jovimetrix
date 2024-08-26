@@ -101,11 +101,11 @@ Create n-sided polygons. These shapes can be customized by adjusting parameters 
                 Lexicon.RGBA_A: ("VEC4INT", {"default": (255, 255, 255, 255), "rgb": True, "tooltips": "Main Shape Color"}),
                 Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True, "tooltips": "Background Color"}),
                 Lexicon.WH: ("VEC2INT", {"default": (256, 256), "mij":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
-                Lexicon.XY: ("VEC2", {"default": (0, 0,), "label": [Lexicon.X, Lexicon.Y]}),
-                Lexicon.ANGLE: ("FLOAT", {"default": 0, "mij": -180, "maj": 180}),
-                Lexicon.SIZE: ("VEC2", {"default": (1., 1.), "label": [Lexicon.X, Lexicon.Y]}),
+                Lexicon.XY: ("VEC2", {"default": (0, 0,), "step": 0.01, "label": [Lexicon.X, Lexicon.Y]}),
+                Lexicon.ANGLE: ("FLOAT", {"default": 0, "mij": -180, "maj": 180, "step": 0.01}),
+                Lexicon.SIZE: ("VEC2", {"default": (1., 1.), "step": 0.01, "label": [Lexicon.X, Lexicon.Y]}),
                 Lexicon.EDGE: (EnumEdge._member_names_, {"default": EnumEdge.CLIP.name}),
-                Lexicon.BLUR: ("FLOAT", {"default": 0, "mij": 0, "tooltips": "Edge blur amount (Gaussian blur)"}),
+                Lexicon.BLUR: ("FLOAT", {"default": 0, "mij": 0, "step": 0.01, "tooltips": "Edge blur amount (Gaussian blur)"}),
             }
         })
         return Lexicon._parse(d, cls)
@@ -178,9 +178,9 @@ Generates false perception 3D images from 2D input. Set tile divisions, noise, g
                 Lexicon.PIXEL: (JOV_TYPE_IMAGE, {}),
                 Lexicon.DEPTH: (JOV_TYPE_IMAGE, {}),
                 Lexicon.TILE: ("INT", {"default": 8, "mij": 1}),
-                Lexicon.NOISE: ("FLOAT", {"default": 0.33, "mij": 0, "maj": 1}),
-                Lexicon.GAMMA: ("FLOAT", {"default": 0.33, "mij": 0, "maj": 1}),
-                Lexicon.SHIFT: ("FLOAT", {"default": 1., "mij": -1, "maj": 1}),
+                Lexicon.NOISE: ("FLOAT", {"default": 0.33, "mij": 0, "maj": 1, "step": 0.01}),
+                Lexicon.GAMMA: ("FLOAT", {"default": 0.33, "mij": 0, "maj": 1, "step": 0.01}),
+                Lexicon.SHIFT: ("FLOAT", {"default": 1., "mij": -1, "maj": 1, "step": 0.01}),
                 Lexicon.INVERT: ("BOOLEAN", {"default": False}),
             }
         })
@@ -222,8 +222,8 @@ Simulates depth perception in images by generating stereoscopic views. It accept
         d = deep_merge(d, {
             "optional": {
                 Lexicon.PIXEL: (JOV_TYPE_IMAGE, {"tooltips":"Optional Image to Matte with Selected Color"}),
-                Lexicon.INT: ("FLOAT", {"default": 0.1, "mij": 0, "maj": 1, "tooltips":"Baseline"}),
-                Lexicon.FOCAL: ("FLOAT", {"default": 500, "mij": 0}),
+                Lexicon.INT: ("FLOAT", {"default": 0.1, "mij": 0, "maj": 1, "step": 0.01, "tooltips":"Baseline"}),
+                Lexicon.FOCAL: ("FLOAT", {"default": 500, "mij": 0, "step": 0.01}),
             }
         })
         return Lexicon._parse(d, cls)
@@ -276,10 +276,10 @@ Generates images containing text based on parameters such as font, size, alignme
                 Lexicon.SPACING: ("INT", {"default": 25, "mij": -1024, "maj": 1024}),
                 Lexicon.WH: ("VEC2INT", {"default": (256, 256),
                                     "mij":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
-                Lexicon.XY: ("VEC2", {"default": (0, 0,), "mij": -1, "maj": 1,
+                Lexicon.XY: ("VEC2", {"default": (0, 0,), "mij": -1, "maj": 1, "step": 0.01,
                                       "label": [Lexicon.X, Lexicon.Y],
                                       "tooltips":"Offset the position"}),
-                Lexicon.ANGLE: ("FLOAT", {"default": 0}),
+                Lexicon.ANGLE: ("FLOAT", {"default": 0, "step": 0.01}),
                 Lexicon.EDGE: (EnumEdge._member_names_, {"default": EnumEdge.CLIP.name}),
                 Lexicon.INVERT: ("BOOLEAN", {"default": False, "tooltips": "Invert the mask input"})
             }
@@ -362,7 +362,7 @@ The Wave Graph node visualizes audio waveforms as bars. Adjust parameters like t
                 Lexicon.WAVE: ("AUDIO", {"default": None, "tooltips": "Audio Wave Object"}),
                 Lexicon.VALUE: ("INT", {"default": 100, "mij": 32, "maj": 8192,
                                         "tooltips": "Number of Vertical bars to try to fit within the specified Width x Height"}),
-                Lexicon.THICK: ("FLOAT", {"default": 0.72, "mij": 0, "maj": 1,
+                Lexicon.THICK: ("FLOAT", {"default": 0.72, "mij": 0, "maj": 1, "step": 0.01,
                                         "tooltips": "The percentage of fullness for each bar; currently scaled from the left only"}),
                 Lexicon.WH: ("VEC2INT", {"default": (256, 256), "mij":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H], "tooltips": "Final output size of the wave bar graph"}),
                 Lexicon.RGBA_A: ("VEC4INT", {"default": (128, 128, 0, 255), "rgb": True, "tooltips": "Bar Color"}),

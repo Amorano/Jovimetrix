@@ -143,7 +143,7 @@ Filter MIDI messages based on various criteria, including MIDI mode (such as not
                 Lexicon.CONTROL: ("INT", {"default": -1, "mij": -1, "maj": 127}),
                 Lexicon.NOTE: ("INT", {"default": -1, "mij": -1, "maj": 127}),
                 Lexicon.VALUE: ("INT", {"default": -1, "mij": -1, "maj": 127}),
-                Lexicon.NORMALIZE: ("FLOAT", {"default": -1, "mij": -1, "maj": 1})
+                Lexicon.NORMALIZE: ("FLOAT", {"default": -1, "mij": -1, "maj": 1, "step": 0.01})
             }
         })
         return Lexicon._parse(d, cls)
