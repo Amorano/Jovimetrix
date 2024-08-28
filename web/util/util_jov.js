@@ -75,7 +75,7 @@ export function widgetOutputHookType(node, control_key, match_output=0) {
 /*
 * matchFloatSize forces the target to be float[n] based on its type size
 */
-export function widgetHookAB(node, control_key) {
+export function widgetHookAB(node, control_key, output_type_match=true) {
 
     const AA = node.widgets.find(w => w.name === '🅰️🅰️');
     const BB = node.widgets.find(w => w.name === '🅱️🅱️');
@@ -87,7 +87,9 @@ export function widgetHookAB(node, control_key) {
 
     widgetHookControl(node, control_key, AA);
     widgetHookControl(node, control_key, BB);
-    widgetOutputHookType(node, control_key);
+    if (output_type_match) {
+        widgetOutputHookType(node, control_key);
+    }
     setTimeout(() => { combo.callback(); }, 5);
 
     return combo;

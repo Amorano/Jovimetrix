@@ -264,10 +264,9 @@ Combine two input images using various blending modes, such as normal, screen, m
                 pA = tensor2cv(pA)
                 matted = pixel_eval(matte, EnumImageType.BGRA)
                 pA = image_matte(pA, matted)
-                tmask = pA
 
             if pB is None:
-                pB = channel_solid(w, h, matte, chan=EnumImageType.BGRA)
+                pB = pA
             else:
                 pB = tensor2cv(pB)
                 tmask = pB

@@ -212,6 +212,7 @@ class JovimetrixPanelColorize {
     templateColorRow = (data, type = 'block') => {
         const isRegex = type === 'regex';
         const isHeader = type === 'header';
+        const self = this;
 
         const createNameCell = () => {
             if (isRegex) {
@@ -223,7 +224,7 @@ class JovimetrixPanelColorize {
                         name: `regex.${data.idx}`,
                         value: data.name,
                         onchange: function() {
-                            this.updateRegexColor(data.idx, "regex", this.value);
+                            self.updateRegexColor(data.idx, "regex", this.value);
                         }
                     }),
                 ]);

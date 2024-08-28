@@ -421,7 +421,8 @@ def cv2tensor(image: TYPE_IMAGE, mask:bool=False) -> torch.Tensor:
 
 def cv2tensor_full(image: TYPE_IMAGE, matte:TYPE_PIXEL=0) -> Tuple[torch.Tensor, ...]:
     rgba = image_convert(image, 4)
-    rgb = image_matte(image, matte)[:,:,:3]
+    rgb = image_convert(image, 3)
+    # rgb = image_matte(image, matte)[:,:,:3]
     mask = image_mask(image)
     rgba = torch.from_numpy(rgba.astype(np.float32) / 255.0).unsqueeze(0)
     rgb = torch.from_numpy(rgb.astype(np.float32) / 255.0).unsqueeze(0)
@@ -738,18 +739,19 @@ def image_blend(imageA: TYPE_IMAGE, imageB: TYPE_IMAGE, mask:Optional[TYPE_IMAGE
     imageB = image_crop_center(imageB, w2, h2)
     imageB = image_matte(imageB, (0,0,0,0), w, h)
     imageB = image_convert(imageB, 4)
-    old_mask = image_mask(imageB)
-    if len(old_mask.shape) > 2:
-        old_mask = old_mask[..., 0][:,:]
+    #
+    #old_mask = image_mask(imageB)
+    #if len(old_mask.shape) > 2:
+    #    old_mask = old_mask[..., 0][:,:]
 
     if mask is not None:
         mask = image_crop_center(mask, w, h)
         mask = image_matte(mask, (0,0,0,0), w, h)
         if len(mask.shape) > 2:
             mask = mask[..., 0][:,:]
-        old_mask = cv2.bitwise_and(mask, old_mask)
+        #old_mask = cv2.bitwise_and(mask, old_mask)
 
-    imageB[..., 3] = old_mask
+    imageB[..., 3] = mask #old_mask
     imageB = cv2pil(imageB)
     alpha = np.clip(alpha, 0, 1)
     image = blendLayers(imageA, imageB, blendOp.value, alpha)
