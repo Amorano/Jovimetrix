@@ -352,7 +352,7 @@ Adjust the color scheme of one image to match another with the Color Match Node.
                                             {"default": EnumColorMatchMap.USER_MAP.name}),
                 Lexicon.COLORMAP: (EnumColorMap._member_names_,
                                     {"default": EnumColorMap.HSV.name}),
-                Lexicon.VALUE: ("INT", {"default": 255, "mij": 0, "maj": 255}),
+                Lexicon.VALUE: ("INT", {"default": 255, "mij": 0, "maj": 255, "tooltips":"The number of colors to use from the LUT during the remap. Will quantize the LUT range."}),
                 Lexicon.FLIP: ("BOOLEAN", {"default": False}),
                 Lexicon.INVERT: ("BOOLEAN", {"default": False,
                                                 "tooltips": "Invert the color match output"}),

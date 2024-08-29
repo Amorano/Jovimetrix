@@ -62,6 +62,22 @@ If those nodes have descriptions written in HTML or Markdown, they will be conve
 
 ## UPDATES
 
+**2024/08/28**:
+
+* New `STRINGER NODE` for string operations: Split, Join, Replace and Slice.
+
+![STRINGER NODE](https://github.com/user-attachments/assets/557bdef6-c0d3-4d01-a3dd-46f4a51952fa)
+
+* `QUEUE NODE` now supports recursing directories. To filter pngs, jpgs, and gifs from the c:/images folder and its sub-folders:
+
+    `c:/images;.png,.jpg,.gif`
+
+    You can add as many extensions as you need, but keep in mind not every image type is supported just because you filter for it -- the Queue node will still return strings where it cant find/load a file type.
+
+![QUEUE NODE](https://github.com/user-attachments/assets/9686b900-24a2-46ab-88ba-9e3c929b439c)
+
+* Supports ComfyUI 0.1.3+, frontend 1.2.39+
+
 **2024/08/25**:
 * Added conversion coercion for Mixlab Layer types
 ![Mixlab supports](https://github.com/user-attachments/assets/05a53b98-b620-4743-b7b5-26da4140d443)

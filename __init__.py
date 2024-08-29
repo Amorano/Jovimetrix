@@ -196,6 +196,7 @@ class Lexicon(metaclass=LexiconMeta):
     FALSE = '🇫', "False"
     FILEN = '💾', "File Name"
     FILTER = '🔎', "Filter"
+    FIND = 'FIND', "Find"
     FIXED = 'FIXED', "Fixed"
     FLIP = '🙃', "Flip Input A and Input B with each other"
     FLOAT = '🛟', "Float"
@@ -285,6 +286,8 @@ class Lexicon(metaclass=LexiconMeta):
     RATE = 'RATE', "Rate"
     RECORD = '⏺', "Arm record capture from selected device"
     REGION = 'REGION', "Region"
+    RECURSE = 'RECURSE', "Search within sub-directories"
+    REPLACE = 'REPLACE', "String to use as replacement"
     RESET = 'RESET', "Reset"
     RGB = '🌈', "RGB (no alpha) Color"
     RGB_A = '🌈A', "RGB (no alpha) Color"
@@ -399,6 +402,7 @@ class Singleton(type):
 # =============================================================================
 
 class JOVBaseNode:
+    NOT_IDEMPOTENT = True
     RETURN_TYPES = ()
     FUNCTION = "run"
     # instance map for caching

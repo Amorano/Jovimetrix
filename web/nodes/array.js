@@ -1,5 +1,5 @@
 /**
- * File: batcher.js
+ * File: array.js
  * Project: Jovimetrix
  *
  */

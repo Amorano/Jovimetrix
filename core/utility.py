@@ -530,10 +530,11 @@ Manage a queue of items, such as file paths or data. It supports various formats
         d = deep_merge(d, {
             "optional": {
                 Lexicon.QUEUE: ("STRING", {"multiline": True, "default": "./res/img/test-a.png"}),
-                Lexicon.VALUE: ("INT", {"mij": 0, "default": 0, "tooltips": "the current index for the current queue item"}),
+                Lexicon.VALUE: ("INT", {"mij": 0, "default": 0, "tooltips": "The current index for the current queue item"}),
                 Lexicon.WAIT: ("BOOLEAN", {"default": False, "tooltips":"Hold the item at the current queue index"}),
-                Lexicon.RESET: ("BOOLEAN", {"default": False, "tooltips":"reset the queue back to index 1"}),
-                Lexicon.BATCH: ("BOOLEAN", {"default": False, "tooltips":"load all items, if they are loadable items, i.e. batch load images from the Queue's list"}),
+                Lexicon.RESET: ("BOOLEAN", {"default": False, "tooltips":"Reset the queue back to index 1"}),
+                Lexicon.BATCH: ("BOOLEAN", {"default": False, "tooltips":"Load all items, if they are loadable items, i.e. batch load images from the Queue's list"}),
+                Lexicon.RECURSE: ("BOOLEAN", {"default": False}),
             },
             "outputs": {
                 0: (Lexicon.ANY_OUT, {"tooltips":"Current item selected from the Queue list"}),
@@ -546,10 +547,13 @@ Manage a queue of items, such as file paths or data. It supports various formats
         return Lexicon._parse(d, cls)
 
     @classmethod
-    def IS_CHANGED(cls) -> float:
+    def IS_CHANGED(cls, *arg, **kw) -> float:
         return float("nan")
 
     def __init__(self) -> None:
+        self.__formats = image_formats()
+        # print('formats', self.__formats)
+        self.__formats.extend(self.VIDEO_FORMATS)
         self.__index = 0
         self.__q = None
         self.__index_last = None
@@ -557,24 +561,27 @@ Manage a queue of items, such as file paths or data. It supports various formats
         self.__previous = None
         self.__last_q_value = {}
 
-    def __parse(self, data) -> list:
+    def __parse(self, data: Any, recurse: bool=False) -> list:
         entries = []
         for line in data.strip().split('\n'):
-            parts = [part.strip() for part in line.split(',')]
-            count = 1
-            if len(parts) > 2:
-                try: count = int(parts[-1])
-                except: pass
+            if len(line) == 0:
+                continue
 
+            # <directory>;png,gif,jpg
+            parts = [part.strip() for part in line.split(';')]
             data = [parts[0]]
             path = Path(parts[0])
             path2 = Path(ROOT / parts[0])
-            if path.is_dir() or path2.is_dir():
-                philter = parts[1].split(';') if len(parts) > 1 and isinstance(parts[1], str) else image_formats()
-                philter.extend(self.VIDEO_FORMATS)
-                path = path if path.is_dir() else path2
-                file_names = [file.name for file in path.iterdir() if file.is_file()]
-                new_data = [str(path / fname) for fname in file_names if any(fname.endswith(pat) for pat in philter)]
+            if path.exists() or path2.exists():
+                philter = parts[1].split(',') if len(parts) > 1 and isinstance(parts[1], str) else self.__formats
+                path = path if path.exists() else path2
+
+                if recurse:
+                    file_names = [str(file.resolve()) for file in path.rglob('*') if file.is_file()]
+                else:
+                    file_names = [str(file.resolve()) for file in path.iterdir() if file.is_file()]
+                new_data = [fname for fname in file_names if any(fname.endswith(pat) for pat in philter)]
+
                 if len(new_data):
                     data = new_data
             elif path.is_file() or path2.is_file():
@@ -588,12 +595,12 @@ Manage a queue of items, such as file paths or data. It supports various formats
             elif len(results := glob.glob(str(path2))) > 0:
                 data = [x.replace('\\', '/') for x in results]
 
-            if len(data) and count > 0:
+            if len(data):
                 ret = []
                 for x in data:
                     try: ret.append(float(x))
                     except: ret.append(x)
-                entries.extend(ret * count)
+                entries.extend(ret)
         return entries
 
     def run(self, ident, **kw) -> None:
@@ -606,7 +613,7 @@ Manage a queue of items, such as file paths or data. It supports various formats
                 if not os.path.isfile(q_data):
                     return q_data
                 _, ext = os.path.splitext(q_data)
-                if ext in image_formats():
+                if ext in self.__formats:
                     data = image_load(q_data)[0]
                     self.__last_q_value[q_data] = data
                 elif ext == '.json':
@@ -626,8 +633,10 @@ Manage a queue of items, such as file paths or data. It supports various formats
             # process Q into ...
             # check if folder first, file, then string.
             # entry is: data, <filter if folder:*.png,*.jpg>, <repeats:1+>
+            print(kw)
+            recurse = parse_param(kw, Lexicon.RECURSE, EnumConvertType.BOOLEAN, False)[0]
             q = parse_param(kw, Lexicon.QUEUE, EnumConvertType.STRING, "")[0]
-            self.__q = self.__parse(q)
+            self.__q = self.__parse(q, recurse)
             self.__len = len(self.__q)
             self.__index_last = 0
             self.__previous = self.__q[0] if len(self.__q) else None

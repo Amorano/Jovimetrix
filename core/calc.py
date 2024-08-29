@@ -23,7 +23,7 @@ from Jovimetrix import comfy_message, deep_merge, parse_reset, Lexicon, \
     JOVBaseNode, ComfyAPIMessage, TimedOutException, JOV_TYPE_ANY, \
     JOV_TYPE_FULL, JOV_TYPE_NUMBER, JOV_TYPE_VECTOR
 
-from Jovimetrix.sup.util import parse_param, parse_value, vector_swap, \
+from Jovimetrix.sup.util import parse_dynamic, parse_param, parse_value, vector_swap, \
     zip_longest_fill, EnumConvertType, EnumSwizzle
 
 from Jovimetrix.sup.anim import ease_op, wave_op, EnumWave, EnumEase
@@ -97,6 +97,13 @@ class EnumComparison(Enum):
     # GROUPS
     IN = 82
     NOT_IN = 83
+
+class EnumConvertString(Enum):
+    SPLIT = 10
+    JOIN = 30
+    FIND = 40
+    REPLACE = 50
+    SLICE = 70  # start - end - step  = -1, -1, 1
 
 class EnumNumberType(Enum):
     INT = 0
@@ -674,6 +681,71 @@ Additionally, you can specify the easing function (EASE) and the desired output 
             values.append(val)
             pbar.update_absolute(idx)
         return [values]
+
+class StringerNode(JOVBaseNode):
+    NAME = "STRINGER (JOV) 🪀"
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
+    RETURN_TYPES = ("STRING",)
+    RETURN_NAMES = (Lexicon.STRING,)
+    SORT = 44
+    DESCRIPTION = """
+Manipulate strings through filtering
+"""
+
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        d = super().INPUT_TYPES()
+        d = deep_merge(d, {
+            "optional": {
+                # split, join, replace, trim/lift
+                Lexicon.FUNC: (EnumConvertString._member_names_, {"default": EnumConvertString.SPLIT.name,
+                                                                  "tooltips":"Operation to perform on the input string"}),
+                Lexicon.KEY: ("STRING", {"default":"", "dynamicPrompt":False, "tooltips":"Delimiter (SPLIT/JOIN) or string to use as search string (FIND/REPLACE)."}),
+                Lexicon.REPLACE: ("STRING", {"default":"", "dynamicPrompt":False}),
+                Lexicon.RANGE: ("VEC3INT", {"default":(0, -1, 1), "tooltips":"Start, End and Step. Values will clip to the actual list size(s)."}),
+            }
+        })
+        return Lexicon._parse(d, cls)
+
+    def run(self, **kw)  -> Tuple[torch.Tensor, torch.Tensor]:
+        # turn any all inputs into the
+        data_list = parse_dynamic(kw, Lexicon.UNKNOWN, EnumConvertType.ANY, None)
+        if data_list is None:
+            logger.warn("no data for list")
+            return ([],)
+        # flat list of ALL the dynamic inputs...
+        data_list = [item for sublist in data_list for item in sublist]
+        # single operation mode -- like array node
+        op = parse_param(kw, Lexicon.FUNC, EnumConvertType.STRING, EnumConvertString.SPLIT.name)[0]
+        key = parse_param(kw, Lexicon.KEY, EnumConvertType.STRING, "")[0]
+        replace = parse_param(kw, Lexicon.REPLACE, EnumConvertType.STRING, "")[0]
+        stenst = parse_param(kw, Lexicon.RANGE, EnumConvertType.VEC3INT, [(0, -1, 1)])[0]
+        results = []
+        match EnumConvertString[op]:
+            case EnumConvertString.SPLIT:
+                results = data_list
+                if key != "":
+                    results = [r.split(key) for r in data_list]
+            case EnumConvertString.JOIN:
+                results = [key.join(data_list)]
+            case EnumConvertString.FIND:
+                results = [r for r in data_list if r.find(key) > -1]
+            case EnumConvertString.REPLACE:
+                results = data_list
+                if key != "":
+                    results = [r.replace(key, replace) for r in data_list]
+            case EnumConvertString.SLICE:
+                start, end, step = stenst
+                for x in data_list:
+                    start = len(x) if start < 0 else min(max(0, start), len(x))
+                    end = len(x) if end < 0 else min(max(0, end), len(x))
+                    if step != 0:
+                        results.append(x[start:end:step])
+                    else:
+                        results.append(x)
+        if len(results) == 0:
+            results = [""]
+        return (results,) if len(results) > 1 else (results[0],)
 
 class SwizzleNode(JOVBaseNode):
     NAME = "SWIZZLE (JOV) 😵"
