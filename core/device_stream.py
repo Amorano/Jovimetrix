@@ -71,7 +71,8 @@ Capture frames from various sources such as URLs, cameras, monitors, windows, or
         monitor = ["NONE"]
         try:
             monitors = monitor_list()
-            monitors.pop(0)
+            if monitors:  # Check if the list is not empty
+                monitors.pop(0)
             monitor = [f"{i} - {v['width']}x{v['height']}" for i, v in enumerate(monitors.values())]
         except:
             pass
@@ -83,7 +84,9 @@ Capture frames from various sources such as URLs, cameras, monitors, windows, or
 
         names = EnumStreamType._member_names_
         if not JOV_SPOUT:
-            names.pop()
+            if names: # Check if the list is not empty
+                names.pop()
+
 
         d = deep_merge(d, {
             "optional": {
