@@ -42,6 +42,7 @@
     "PIXEL SPLIT (JOV) \ud83d\udc94": "Takes an input image and splits it into its individual color channels (red, green, blue), along with a mask channel",
     "PIXEL SWAP (JOV) \ud83d\udd03": "Swap pixel values between two input images based on specified channel swizzle operations",
     "QUEUE (JOV) \ud83d\uddc3": "Manage a queue of items, such as file paths or data",
+    "QUEUE TOO (JOV) \ud83d\uddc3": "Manage a queue of specific items: media files",
     "ROUTE (JOV) \ud83d\ude8c": "Routes the input data from the optional input ports to the output port, preserving the order of inputs",
     "SAVE OUTPUT (JOV) \ud83d\udcbe": "Save the output image along with its metadata to the specified path",
     "SHAPE GEN (JOV) \u2728": "Create n-sided polygons",

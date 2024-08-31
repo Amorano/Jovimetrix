@@ -37,7 +37,6 @@ app.registerExtension({
         const onExecuted = nodeType.prototype.onExecuted;
         nodeType.prototype.onExecuted = async function (message) {
             const me = onExecuted?.apply(this, arguments)
-            let lineCount = 0;
             if (this.widgets) {
                 for (let i = 2; i < this.widgets.length; i++) {
                     if (this.widgets[i].name.startsWith("jovi_")) {

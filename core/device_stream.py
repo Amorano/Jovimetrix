@@ -99,7 +99,7 @@ Capture frames from various sources such as URLs, cameras, monitors, windows, or
                 Lexicon.BATCH: ("VEC2INT", {"default": (1, 30), "label": ["COUNT", "FPS"], "tooltips": "Number of frames wanted and the FPS"}),
                 Lexicon.ORIENT: (EnumCanvasOrientation._member_names_, {"default": EnumCanvasOrientation.NORMAL.name}),
                 Lexicon.ZOOM: ("FLOAT", {"mij": 0, "maj": 1, "step": 0.005, "default": 0.}),
-                Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
+                Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.MATTE.name}),
                 Lexicon.WH: ("VEC2INT", {"default": (512, 512), "mij":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
                 Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True})
@@ -133,7 +133,7 @@ Capture frames from various sources such as URLs, cameras, monitors, windows, or
         rate = 1. / rate
         width, height = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)])[0]
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0,0,0,255)], 0, 255)[0]
-        mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.NONE.name)[0]
+        mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.MATTE.name)[0]
         mode = EnumScaleMode[mode]
         sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)[0]
         sample = EnumInterpolation[sample]
@@ -276,7 +276,7 @@ Sends frames to a specified route, typically for live streaming or recording pur
             "optional": {
                 Lexicon.PIXEL: (JOV_TYPE_IMAGE, {}),
                 Lexicon.ROUTE: ("STRING", {"default": "/stream"}),
-                Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
+                Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.MATTE.name}),
                 Lexicon.WH: ("VEC2INT", {"default": (512, 512), "mij":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
                 Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 0), "rgb": True})
@@ -302,7 +302,7 @@ Sends frames to a specified route, typically for live streaming or recording pur
         images = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0,0,0,0)], 0, 255)
-        mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.NONE.name)
+        mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.MATTE.name)
         sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)
         params = list(zip_longest_fill(route, images, wihi, matte, mode, sample))
         pbar = ProgressBar(len(params))
@@ -349,7 +349,7 @@ Sends frames to a specified Spout receiver application for real-time video shari
                     Lexicon.PIXEL: (JOV_TYPE_IMAGE, {}),
                     Lexicon.ROUTE: ("STRING", {"default": "Spout Sender"}),
                     Lexicon.FPS: ("INT", {"mij": 0, "maj": 60, "default": 30, "tooltips": "@@@ NOT USED @@@"}),
-                    Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
+                    Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.MATTE.name}),
                     Lexicon.WH: ("VEC2INT", {"default": (512, 512), "mij":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
                     Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
                     Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True})
@@ -369,7 +369,7 @@ Sends frames to a specified Spout receiver application for real-time video shari
             images = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
             host = parse_param(kw, Lexicon.ROUTE, EnumConvertType.STRING, "")
             #fps = parse_param(kw, Lexicon.FPS, EnumConvertType.INT, 30)
-            mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.NONE.name)
+            mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.MATTE.name)
             wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)
             sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)
             matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0,0,0,0)], 0, 255)
@@ -381,7 +381,7 @@ Sends frames to a specified Spout receiver application for real-time video shari
                 matte = pixel_eval(matte, EnumImageType.BGRA)
                 w, h = wihi
                 img = channel_solid(w, h, chan=EnumImageType.BGRA) if img is None else tensor2cv(img)
-                if (mode := EnumScaleMode[mode]) != EnumScaleMode.NONE:
+                if (mode := EnumScaleMode[mode]) != EnumScaleMode.MATTE:
                     img = image_scalefit(img, w, h, mode, sample, matte)
                 img = image_convert(img, 4)
                 self.__sender.frame = img

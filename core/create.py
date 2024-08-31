@@ -54,7 +54,7 @@ Generate a constant image or mask of a specified size and color. It can be used 
                 Lexicon.WH: ("VEC2INT", {"default": (512, 512),
                                     "label": [Lexicon.W, Lexicon.H],
                                     "tooltips": "Desired Width and Height of the Color Output"}),
-                Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
+                Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.MATTE.name}),
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
             }
         })
@@ -64,7 +64,7 @@ Generate a constant image or mask of a specified size and color. It can be used 
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
         matte = parse_param(kw, Lexicon.RGBA_A, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)
-        mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.NONE.name)
+        mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.MATTE.name)
         sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)
         images = []
         params = list(zip_longest_fill(pA, matte, wihi, mode, sample))
@@ -77,7 +77,7 @@ Generate a constant image or mask of a specified size and color. It can be used 
             else:
                 pA = tensor2cv(pA)
                 mode = EnumScaleMode[mode]
-                if mode != EnumScaleMode.NONE:
+                if mode != EnumScaleMode.MATTE:
                     sample = EnumInterpolation[sample]
                     pA = image_scalefit(pA, width, height, mode, sample)
                 images.append(cv2tensor_full(pA, matte))

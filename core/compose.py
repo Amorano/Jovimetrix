@@ -20,7 +20,7 @@ from Jovimetrix.sup.util import parse_dynamic, parse_param, \
     zip_longest_fill, EnumConvertType
 
 from Jovimetrix.sup.image import  \
-    channel_merge, channel_solid, channel_swap, color_match_lut, image_filter, image_flatten_mask, \
+    channel_merge, channel_solid, channel_swap, color_match_lut, image_filter, \
     image_gradient_map, image_minmax, image_quantize, image_scalefit, \
     color_match_reinhard, cv2tensor_full, image_color_blind, image_contrast,\
     image_crop, image_crop_center, image_crop_polygonal, image_equalize, \
@@ -109,7 +109,7 @@ Enhance and modify images with various effects such as blurring, sharpening, col
         pbar = ProgressBar(len(params))
         for idx, (pA, mask, op, radius, val, lohi, lmh, hsv, contrast, gamma, matte, invert) in enumerate(params):
             pA = tensor2cv(pA) if pA is not None else channel_solid(chan=EnumImageType.BGR)
-            pA, alpha = image_flatten_mask(pA)
+            alpha = image_mask(pA) if pA.ndim == 3 and pA.shape[2] == 4 else None
 
             match EnumAdjustOP[op]:
                 case EnumAdjustOP.INVERT:
@@ -194,8 +194,6 @@ Enhance and modify images with various effects such as blurring, sharpening, col
             mask = image_grayscale(mask)
             if invert:
                 mask = 255 - mask
-            mask = image_convert(mask, 1)
-
             pA = image_blend(pA, img_new, mask)
             if alpha is not None:
                 pA = image_mask_add(pA, alpha)
@@ -224,7 +222,7 @@ Combine two input images using various blending modes, such as normal, screen, m
                 Lexicon.A: ("FLOAT", {"default": 1, "mij": 0, "maj": 1, "step": 0.01, "tooltips": "Amount of Blending to Perform on the Selected Operation"}),
                 Lexicon.FLIP: ("BOOLEAN", {"default": False}),
                 Lexicon.INVERT: ("BOOLEAN", {"default": False, "tooltips": "Invert the mask input"}),
-                Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
+                Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.MATTE.name}),
                 Lexicon.WH: ("VEC2INT", {"default": (512, 512), "mij":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
                 Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True})
@@ -239,7 +237,7 @@ Combine two input images using various blending modes, such as normal, screen, m
         func = parse_param(kw, Lexicon.FUNC, EnumConvertType.STRING, EnumBlendType.NORMAL.name)
         alpha = parse_param(kw, Lexicon.A, EnumConvertType.FLOAT, 1, 0, 1)
         flip = parse_param(kw, Lexicon.FLIP, EnumConvertType.BOOLEAN, False)
-        mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.NONE.name)
+        mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.MATTE.name)
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)
         sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
@@ -286,7 +284,7 @@ Combine two input images using various blending modes, such as normal, screen, m
             img = image_blend(pA, pB, mask, func, alpha)
 
             mode = EnumScaleMode[mode]
-            if mode != EnumScaleMode.NONE:
+            if mode != EnumScaleMode.MATTE:
                 w, h = wihi
                 sample = EnumInterpolation[sample]
                 img = image_scalefit(img, w, h, mode, sample)
@@ -582,7 +580,7 @@ Combine multiple input images into a single image by summing their pixel values.
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
+                Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.MATTE.name}),
                 Lexicon.WH: ("VEC2INT", {"default": (512, 512), "mij":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
                 Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True})
@@ -599,7 +597,7 @@ Combine multiple input images into a single image by summing their pixel values.
             logger.error("no images to flatten")
             return ()
 
-        mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.NONE.name)
+        mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.MATTE.name)
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)
         sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
@@ -608,10 +606,10 @@ Combine multiple input images into a single image by summing their pixel values.
         pbar = ProgressBar(len(params))
         for idx, (mode, sample, wihi, matte) in enumerate(params):
             mode = EnumScaleMode[mode]
-            h, w = pA[0].shape[:2] if mode == EnumScaleMode.NONE else wihi[::-1]
+            h, w = pA[0].shape[:2] if mode == EnumScaleMode.MATTE else wihi[::-1]
             current = np.full((w, h, 4), (0,0,0,0), dtype=np.uint8)
             for x in pA:
-                if mode != EnumScaleMode.NONE:
+                if mode != EnumScaleMode.MATTE:
                     x = image_scalefit(x, w, h, mode, sample)
                 x = image_scalefit(x, w, h, EnumScaleMode.CROP, sample)
                 x = image_convert(x, 4)
@@ -637,7 +635,7 @@ Remaps an input image using a gradient lookup table (LUT). The gradient image wi
                 Lexicon.PIXEL: (JOV_TYPE_IMAGE, {"tooltips":"Image to remap with gradient input"}),
                 Lexicon.GRADIENT: (JOV_TYPE_IMAGE, {"tooltips":f"Look up table (LUT) to remap the input image in `{Lexicon.PIXEL}`"}),
                 Lexicon.FLIP: ("BOOLEAN", {"default":False, "tooltips":"Reverse the gradient from left-to-right "}),
-                Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
+                Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.MATTE.name}),
                 Lexicon.WH: ("VEC2INT", {"default": (512, 512), "mij":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
                 Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True})
@@ -649,7 +647,7 @@ Remaps an input image using a gradient lookup table (LUT). The gradient image wi
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
         gradient = parse_param(kw, Lexicon.GRADIENT, EnumConvertType.IMAGE, None)
         flip = parse_param(kw, Lexicon.FLIP, EnumConvertType.BOOLEAN, False)
-        mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.NONE.name)
+        mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.MATTE.name)
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)
         sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
@@ -666,7 +664,7 @@ Remaps an input image using a gradient lookup table (LUT). The gradient image wi
             pA = image_gradient_map(pA, gradient)
             # @TODO: pattern o' scale... when make it a lambda?
             mode = EnumScaleMode[mode]
-            if mode != EnumScaleMode.NONE:
+            if mode != EnumScaleMode.MATTE:
                 w, h = wihi
                 sample = EnumInterpolation[sample]
                 pA = image_scalefit(pA, w, h, mode, sample)
@@ -695,7 +693,7 @@ Combines individual color channels (red, green, blue) along with an optional mas
                 Lexicon.G: (JOV_TYPE_IMAGE, {}),
                 Lexicon.B: (JOV_TYPE_IMAGE, {}),
                 Lexicon.A: (JOV_TYPE_IMAGE, {}),
-                Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
+                Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.MATTE.name}),
                 Lexicon.WH: ("VEC2INT", {"default": (512, 512), "mij":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
                 Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True}),
@@ -711,7 +709,7 @@ Combines individual color channels (red, green, blue) along with an optional mas
         G = parse_param(kw, Lexicon.G, EnumConvertType.MASK, None)
         B = parse_param(kw, Lexicon.B, EnumConvertType.MASK, None)
         A = parse_param(kw, Lexicon.A, EnumConvertType.MASK, None)
-        mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.NONE.name)
+        mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.MATTE.name)
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)
         sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
@@ -741,7 +739,7 @@ Combines individual color channels (red, green, blue) along with an optional mas
             img = channel_merge(img)
 
             mode = EnumScaleMode[mode]
-            if mode != EnumScaleMode.NONE:
+            if mode != EnumScaleMode.MATTE:
                 w, h = wihi
                 sample = EnumInterpolation[sample]
                 img = image_scalefit(img, w, h, mode, sample)
@@ -887,7 +885,7 @@ Merge multiple input images into a single composite image by stacking them along
                                                                 "tooltips":"Choose the direction in which to stack the images. Options include horizontal, vertical, or a grid layout"}),
                 Lexicon.STEP: ("INT", {"mij": 0, "default": 1,
                                     "tooltips":"Specify the spacing between each stacked image. This determines how far apart the images are from each other"}),
-                Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
+                Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.MATTE.name}),
                 Lexicon.WH: ("VEC2INT", {"default": (512, 512), "mij":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
                 Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True})
@@ -907,14 +905,14 @@ Merge multiple input images into a single composite image by stacking them along
 
         axis = parse_param(kw, Lexicon.AXIS, EnumConvertType.STRING, EnumOrientation.GRID.name)[0]
         stride = parse_param(kw, Lexicon.STEP, EnumConvertType.INT, 1)[0]
-        mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.NONE.name)[0]
+        mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.MATTE.name)[0]
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)[0]
         sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)[0]
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)[0]
         axis = EnumOrientation[axis]
         img = image_stack(images, axis, stride) #, matte)
         mode = EnumScaleMode[mode]
-        if mode != EnumScaleMode.NONE:
+        if mode != EnumScaleMode.MATTE:
             w, h = wihi
             sample = EnumInterpolation[sample]
             img = image_scalefit(img, w, h, mode, sample)
@@ -989,7 +987,7 @@ Apply various geometric transformations to images, including translation, rotati
                 Lexicon.TLTR: ("VEC4", {"default": (0, 0, 1, 0), "step": 0.005,  "label": [Lexicon.TOP, Lexicon.LEFT, Lexicon.TOP, Lexicon.RIGHT]}),
                 Lexicon.BLBR: ("VEC4", {"default": (0, 1, 1, 1), "step": 0.005, "label": [Lexicon.BOTTOM, Lexicon.LEFT, Lexicon.BOTTOM, Lexicon.RIGHT]}),
                 Lexicon.STRENGTH: ("FLOAT", {"default": 1, "mij": 0, "step": 0.005}),
-                Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
+                Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.MATTE.name}),
                 Lexicon.WH: ("VEC2INT", {"default": (512, 512), "mij":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
                 Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True})
@@ -1011,7 +1009,7 @@ Apply various geometric transformations to images, including translation, rotati
         tltr = parse_param(kw, Lexicon.TLTR, EnumConvertType.VEC4, [(0, 0, 1, 0)], 0, 1)
         blbr = parse_param(kw, Lexicon.BLBR, EnumConvertType.VEC4, [(0, 1, 1, 1)], 0, 1)
         strength = parse_param(kw, Lexicon.STRENGTH, EnumConvertType.FLOAT, 1, 0, 1)
-        mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.NONE.name)
+        mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.MATTE.name)
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)
         sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
@@ -1057,7 +1055,7 @@ Apply various geometric transformations to images, including translation, rotati
                 pA = image_scalefit(pA, w, h, EnumScaleMode.FIT, sample)
 
             mode = EnumScaleMode[mode]
-            if mode != EnumScaleMode.NONE:
+            if mode != EnumScaleMode.MATTE:
                 w, h = wihi
                 pA = image_scalefit(pA, w, h, mode, sample)
 

@@ -91,7 +91,7 @@ class GLSLNodeBase(JOVImageNode):
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.NONE.name}),
+                Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.MATTE.name}),
                 Lexicon.WH: ("VEC2INT", {"default": (512, 512), "mij":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
                 Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True})
@@ -109,7 +109,7 @@ class GLSLNodeBase(JOVImageNode):
         delta = parse_param(kw, Lexicon.TIME, EnumConvertType.FLOAT, 0)[0]
 
         # everybody wang comp tonight
-        mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.NONE.name)[0]
+        mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.MATTE.name)[0]
         mode = EnumScaleMode[mode]
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)[0]
         sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)[0]
@@ -150,13 +150,13 @@ class GLSLNodeBase(JOVImageNode):
                 vars[k] = var
 
             w, h = wihi
-            if firstImage is not None and mode == EnumScaleMode.NONE:
+            if firstImage is not None and mode == EnumScaleMode.MATTE:
                 h, w = firstImage.shape[:2]
 
             self.__glsl.size = (w, h)
 
             img = self.__glsl.render(self.__delta, **vars)
-            if mode != EnumScaleMode.NONE:
+            if mode != EnumScaleMode.MATTE:
                 img = image_scalefit(img, w, h, mode, sample)
             img = cv2tensor_full(img, matte)
 

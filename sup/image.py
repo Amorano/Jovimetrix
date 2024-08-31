@@ -221,9 +221,9 @@ class EnumProjection(Enum):
     PERSPECTIVE = 20
 
 class EnumScaleMode(Enum):
-    NONE = 0
-    CROP = 20
+    # NONE = 0
     MATTE = 25
+    CROP = 20
     FIT = 10
     ASPECT = 30
     ASPECT_SHORT = 35
@@ -421,9 +421,8 @@ def cv2tensor(image: TYPE_IMAGE, mask:bool=False) -> torch.Tensor:
 
 def cv2tensor_full(image: TYPE_IMAGE, matte:TYPE_PIXEL=0) -> Tuple[torch.Tensor, ...]:
     rgba = image_convert(image, 4)
-    rgb = image_convert(image, 3)
-    # rgb = image_matte(image, matte)[:,:,:3]
-    mask = image_mask(image)
+    rgb = image_matte(rgba, matte)[:,:,:3]
+    mask = image_mask(rgba)
     rgba = torch.from_numpy(rgba.astype(np.float32) / 255.0).unsqueeze(0)
     rgb = torch.from_numpy(rgb.astype(np.float32) / 255.0).unsqueeze(0)
     mask = torch.from_numpy(mask.astype(np.float32) / 255.0)
@@ -432,7 +431,7 @@ def cv2tensor_full(image: TYPE_IMAGE, matte:TYPE_PIXEL=0) -> Tuple[torch.Tensor,
 def hsv2bgr(hsl_color: TYPE_PIXEL) -> TYPE_PIXEL:
     return cv2.cvtColor(np.uint8([[hsl_color]]), cv2.COLOR_HSV2BGR)[0, 0]
 
-def image2bgr(image: TYPE_IMAGE) -> Tuple[int, TYPE_IMAGE, TYPE_IMAGE]:
+def image2bgr(image: TYPE_IMAGE) -> Tuple[TYPE_IMAGE, TYPE_IMAGE, int]:
     """RGB Helper function.
     Return channel count, BGR, and Alpha.
     """
@@ -463,16 +462,22 @@ def pil2tensor(image: Image.Image) -> torch.Tensor:
 def tensor2cv(tensor: torch.Tensor) -> TYPE_IMAGE:
     """Convert a torch Tensor to a numpy ndarray."""
     tensor = tensor.cpu().squeeze().numpy()
-    if len(tensor.shape) < 3:
+    if tensor.ndim == 1:
         tensor = np.expand_dims(tensor, -1)
-    return np.clip(255.0 * tensor, 0, 255).astype(np.uint8)
-    # return sRGB2Linear(255.0 * tensor)
+    image = np.clip(255.0 * tensor, 0, 255).astype(np.uint8)
+    if image.shape[2] == 4:
+        image_flatten_mask
+        mask = image_mask(image)
+        image = image_blend(image, image, mask)
+        image = image_mask_add(image, mask)
+    return image
 
 def tensor2pil(tensor: torch.Tensor) -> Image.Image:
     """Convert a torch Tensor to a PIL Image.
     Tensor should be HxWxC [no batch].
     """
-    tensor = np.clip(255. * tensor.cpu().numpy().squeeze(), 0, 255).astype(np.uint8)
+    tensor = tensor.cpu().numpy().squeeze()
+    tensor = np.clip(255. * tensor, 0, 255).astype(np.uint8)
     return Image.fromarray(tensor)
 
 def mixlabLayer2cv(layer: dict) -> torch.Tensor:
@@ -757,8 +762,8 @@ def image_blend(imageA: TYPE_IMAGE, imageB: TYPE_IMAGE, mask:Optional[TYPE_IMAGE
     image = blendLayers(imageA, imageB, blendOp.value, alpha)
     image = pil2cv(image)
 
-    if mask is not None:
-        image = image_mask_add(image, mask)
+    #if mask is not None:
+    #    image = image_mask_add(image, mask)
 
     return image_crop_center(image, w, h)
 
@@ -1227,6 +1232,7 @@ def image_filter(image:TYPE_IMAGE, start:Tuple[int]=(128,128,128), end:Tuple[int
     return tensor2cv(output_image), mask.cpu().numpy().astype(np.uint8) * 255
 
 def image_flatten_mask(image: TYPE_IMAGE) -> Tuple[TYPE_IMAGE, TYPE_IMAGE|None]:
+    """Flatten the image with its own alpha channel, if any."""
     mask = image_mask(image)
     return image_blend(image, image, mask), mask
 
@@ -1379,10 +1385,28 @@ def image_hsv(image: TYPE_IMAGE, hue: float, saturation: float, value: float) ->
     return bgr2image(image, alpha, cc == 1)
 
 def image_invert(image: TYPE_IMAGE, value: float) -> TYPE_IMAGE:
+    """
+    Invert an Grayscale, RGB or RGBA image using a specified inversion intensity.
+
+    Parameters:
+    - image: Input image as a NumPy array (RGB or RGBA).
+    - value: Float between 0 and 1 representing the intensity of inversion (0: no inversion, 1: full inversion).
+
+    Returns:
+    - Inverted image.
+    """
+    # Clip the value to be within [0, 1] and scale to [0, 255]
     value = np.clip(value, 0, 1)
-    image, alpha, cc = image2bgr(image)
-    image = cv2.addWeighted(image, 1 - value, 255 - image, value, 0)
-    return bgr2image(image, alpha, cc == 1)
+    if image.ndim == 3 and image.shape[2] == 4:
+        rgb = image[:, :, :3]
+        alpha = image[:, :, 3]
+        mask = alpha > 0
+        inverted_rgb = 255 - rgb
+        image = np.where(mask[:, :, None], (1 - value) * rgb + value * inverted_rgb, rgb)
+        return np.dstack((image.astype(np.uint8), alpha))
+
+    inverted_image = 255 - image
+    return ((1 - value) * image + value * inverted_image).astype(np.uint8)
 
 def image_lerp(imageA: TYPE_IMAGE, imageB:TYPE_IMAGE, mask:TYPE_IMAGE=None,
                alpha:float=1.) -> TYPE_IMAGE:
@@ -1775,7 +1799,7 @@ def image_scale(image: TYPE_IMAGE, scale:TYPE_COORD=(1.0, 1.0), sample:EnumInter
     return image_affine_edge(image, scale_func, edge)
 
 def image_scalefit(image: TYPE_IMAGE, width: int, height:int,
-                mode:EnumScaleMode=EnumScaleMode.NONE,
+                mode:EnumScaleMode=EnumScaleMode.MATTE,
                 sample:EnumInterpolation=EnumInterpolation.LANCZOS4,
                 matte:TYPE_PIXEL=(0,0,0,0)) -> TYPE_IMAGE:
 

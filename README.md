@@ -62,6 +62,11 @@ If those nodes have descriptions written in HTML or Markdown, they will be conve
 
 ## UPDATES
 
+**2024/08/31**:
+* Better MASK/ALPHA support for `BLEND`, `ADJUST` and `QUEUE`
+* Cleaner Markdown outputs
+* Supports ComfyUI 0.1.3+, frontend 1.2.41+
+
 **2024/08/28**:
 
 * New `STRINGER NODE` for string operations: Split, Join, Replace and Slice.

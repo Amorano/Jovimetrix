@@ -17,6 +17,7 @@ if (!window.jovimetrixEvents) {
 const jovimetrixEvents = window.jovimetrixEvents;
 
 const JOV_HELP_URL = "./api/jovimetrix/doc";
+const JOV_WEBWIKI_URL = "https://github.com/Amorano/Jovimetrix/wiki/Z.-REFERENCE#";
 
 async function load_help(name, custom_data) {
     // overwrite

@@ -16,10 +16,10 @@ export function widgetSizeModeHook(node, wh_hide=true) {
             widgetHide(node, wh);
             widgetHide(node, samp);
 
-            if (!['NONE'].includes(mode.value)) {
+            if (!['MATTE'].includes(mode.value)) {
                 widgetShow(wh);
             }
-            if (!['NONE', 'CROP', 'MATTE'].includes(mode.value)) {
+            if (!['CROP', 'MATTE'].includes(mode.value)) {
                 widgetShow(samp);
             }
             nodeFitHeight(node);
