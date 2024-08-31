@@ -86,13 +86,8 @@ JOV_INTERNAL = os.getenv("JOV_INTERNAL", 'false').strip().lower() in ('true', '1
 # direct the documentation output -- used to build jovimetrix-examples
 JOV_INTERNAL_DOC = os.getenv("JOV_INTERNAL_DOC", str(ROOT / "_doc"))
 
-# any/all documentation auto-made on request
-DOCUMENTATION = {
-    'jovimetrix' : {}
-}
-
-# The object_info route return after a startup -- cached
-COMFYUI_DOCUMENTATION = {}
+# The object_info route data -- cached
+COMFYUI_OBJ_DATA = {}
 
 # maximum items to show in help for combo list items
 JOV_LIST_MAX = 25
@@ -615,6 +610,63 @@ def json2html(json_dict: dict) -> str:
     )
     return html_content
 
+def json2md(json_dict: dict) -> str:
+    """Example of json to markdown converter. You are welcome to change formatting per specific request."""
+    name = json_dict['name']
+    boop = name.split('(JOV)')[0].strip()
+    boop2 = boop.replace(" ", "%20")
+    root1 = f"https://github.com/Amorano/Jovimetrix-examples/blob/master/node/{boop2}/{boop2}.md"
+    root2 = f"https://raw.githubusercontent.com/Amorano/Jovimetrix-examples/master/node/{boop2}/{boop2}.png"
+
+    ret = f"## [{name}]({root1})\n\n"
+    ret += f"## {json_dict['category']}\n\n"
+    ret += f"{json_dict['description']}\n\n"
+    ret += f"![{boop}]({root2})\n\n"
+    ret += f"#### OUTPUT NODE?: `{json_dict['output_node']}`\n\n"
+
+    # INPUTS
+    ret += f"## INPUT\n\n"
+    if len(json_dict['input_parameters']) > 0:
+        for k, v in json_dict['input_parameters'].items():
+            if len(v.items()) == 0:
+                continue
+            ret += f"### {k.upper()}\n\n"
+            ret += f"name | type | desc | default | meta\n"
+            ret += f":---:|:---:|---|:---:|---\n"
+            for param_key, param_meta in v.items():
+                typ = param_meta.get('type','UNKNOWN').upper()
+                typ = ', '.join([x.strip() for x in typ.split(',')])
+                typ = "<br>".join(textwrap.wrap(typ, 42))
+                tool = param_meta.get("tooltips",'')
+                tool = "<br>".join(textwrap.wrap(tool, 42))
+                default = param_meta.get('default','')
+                ch = ", ".join(param_meta.get('choice', []))
+                ch = "<br>".join(textwrap.wrap(ch, 42))
+                param_key = param_key.replace('#', r'\#')
+                ret += f"{param_key}  |  {typ}  | {tool} | {default} | {ch}\n"
+    else:
+        ret += 'NONE\n'
+
+    # OUTPUTS
+    ret += f"\n## OUTPUT\n\n"
+    if len(json_dict['output_parameters']) > 0:
+        ret += f"name | type | desc\n"
+        ret += f":---:|:---:|---\n"
+        for k, v in json_dict['output_parameters'].items():
+            if (tool := Lexicon._tooltipsDB.get(k, "")) != "":
+                tool = "<br>".join(textwrap.wrap(tool, 65))
+            k = k.replace('#', r'\#')
+            ret += f"{k}  |  {v}  | {tool} \n"
+    else:
+        ret += 'NONE\n'
+
+    # BODY INSERT
+    # PUT EXTERNAL DOCS HERE
+    #
+    # FOOTER
+    ret += "\noriginal help system powered by [MelMass](https://github.com/melMass) & the [comfy_mtb](https://github.com/melMass/comfy_mtb) project"
+    return ret
+
 def get_node_info(node_data: dict) -> Dict[str, Any]:
     """Transform node object_info route result into .html."""
     input_parameters = {}
@@ -682,7 +734,9 @@ def get_node_info(node_data: dict) -> Dict[str, Any]:
         "category": node_data['category'].strip('\n').strip(),
         "description": node_data['description']
     }
-    return json2html(data)
+    data[".html"] = json2html(data)
+    data[".md"] = json2md(data)
+    return data
 
 def deep_merge(d1: dict, d2: dict) -> dict:
     """
@@ -795,52 +849,61 @@ try:
             json.dump(JOV_CONFIG, f)
         return web.json_response(json_data)
 
-    @PromptServer.instance.routes.get("/jovimetrix/doc")
-    async def jovimetrix_doc(request) -> Any:
-        for k in NODE_CLASS_MAPPINGS.keys():
-            DOCUMENTATION['jovimetrix'][k]['.html'] = get_node_info(NODE_CLASS_MAPPINGS[k])
-            node = NODE_DISPLAY_NAME_MAPPINGS[k]
-            fname = node.split(" (JOV)")[0]
-            path = Path(JOV_INTERNAL_DOC.replace("{name}", fname))
-            path.mkdir(parents=True, exist_ok=True)
-
-            if JOV_INTERNAL:
-                with open(str(path / f"{fname}.md"), "w", encoding='utf-8') as f:
-                    f.write(data['.md'])
-
-                with open(str(path / f"{fname}.html"), "w", encoding='utf-8') as f:
-                    f.write(data['.html'])
-
-        return web.json_response(DOCUMENTATION)
-
-    @PromptServer.instance.routes.get("/jovimetrix/doc/{node}")
-    async def jovimetrix_doc_node_comfy(request) -> Any:
-        node_class = request.match_info.get('node')
-        global COMFYUI_DOCUMENTATION
-        if (docs := COMFYUI_DOCUMENTATION.get(node_class, None)) is None:
+    async def object_info(node_class: str, scheme:str, host: str) -> Any:
+        global COMFYUI_OBJ_DATA
+        if (info := COMFYUI_OBJ_DATA.get(node_class, None)) is None:
             # look up via the route...
-            url = f"{request.scheme}://{request.host}/object_info/{node_class}"
+            url = f"{scheme}://{host}/object_info/{node_class}"
 
             # Make an asynchronous HTTP request using aiohttp.ClientSession
             async with ClientSession() as session:
                 try:
                     async with session.get(url) as response:
                         if response.status == 200:
-                            docs = await response.json()
-                            if (data := docs.get(node_class, None)) is not None:
-                                docs = get_node_info(data)
+                            info = await response.json()
+                            if (data := info.get(node_class, None)) is not None:
+                                info = get_node_info(data)
                             else:
-                                docs = f"No data for {node_class}"
-                            COMFYUI_DOCUMENTATION[node_class] = docs
+                                info = {'.html': f"No data for {node_class}"}
+                            COMFYUI_OBJ_DATA[node_class] = info
                         else:
-                            docs = f"Failed to get docs {node_class}, status: {response.status}"
-                            logger.error(docs)
+                            info = {'.html': f"Failed to get docs {node_class}, status: {response.status}"}
+                            logger.error(info)
                 except Exception as e:
                     logger.error(f"Failed to get docs {node_class}")
                     logger.exception(e)
-                    docs = f"Failed to get docs {node_class}\n{e}"
+                    info = {'.html': f"Failed to get docs {node_class}\n{e}"}
 
-        return web.Response(text=docs, content_type='text/html')
+        return info
+
+    @PromptServer.instance.routes.get("/jovimetrix/doc")
+    async def jovimetrix_doc(request) -> Any:
+
+        for node_class in NODE_CLASS_MAPPINGS.keys():
+            if COMFYUI_OBJ_DATA.get(node_class, None) is None:
+                COMFYUI_OBJ_DATA[node_class] = await object_info(node_class, request.scheme, request.host)
+
+            node = NODE_DISPLAY_NAME_MAPPINGS[node_class]
+            fname = node.split(" (JOV)")[0]
+            path = Path(JOV_INTERNAL_DOC.replace("{name}", fname))
+            path.mkdir(parents=True, exist_ok=True)
+
+            if JOV_INTERNAL:
+                if (md := COMFYUI_OBJ_DATA[node_class].get('.md', None)) is not None:
+                    with open(str(path / f"{fname}.md"), "w", encoding='utf-8') as f:
+                        f.write(md)
+
+                with open(str(path / f"{fname}.html"), "w", encoding='utf-8') as f:
+                    f.write(COMFYUI_OBJ_DATA[node_class]['.html'])
+
+        return web.json_response(COMFYUI_OBJ_DATA)
+
+    @PromptServer.instance.routes.get("/jovimetrix/doc/{node}")
+    async def jovimetrix_doc_node_comfy(request) -> Any:
+        node_class = request.match_info.get('node')
+        if COMFYUI_OBJ_DATA.get(node_class, None) is None:
+            COMFYUI_OBJ_DATA[node_class] = await object_info(node_class, request.scheme, request.host)
+        return web.Response(text=COMFYUI_OBJ_DATA[node_class]['.html'], content_type='text/html')
 
 except Exception as e:
     logger.error(e)

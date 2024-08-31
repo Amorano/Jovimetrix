@@ -1226,6 +1226,10 @@ def image_filter(image:TYPE_IMAGE, start:Tuple[int]=(128,128,128), end:Tuple[int
 
     return tensor2cv(output_image), mask.cpu().numpy().astype(np.uint8) * 255
 
+def image_flatten_mask(image: TYPE_IMAGE) -> Tuple[TYPE_IMAGE, TYPE_IMAGE|None]:
+    mask = image_mask(image)
+    return image_blend(image, image, mask), mask
+
 def image_formats() -> List[str]:
     exts = Image.registered_extensions()
     return [ex for ex, f in exts.items() if f in Image.OPEN]
@@ -1443,6 +1447,7 @@ def image_load(url: str) -> Tuple[TYPE_IMAGE, ...]:
             raise ValueError(f"Image at {url} could not be loaded.")
 
         img = image_normalize(img)
+        logger.debug(f"load image {url}: {img.ndim} {img.shape}")
         if img.ndim == 3:
             if img.shape[2] == 4:
                 img = cv2.cvtColor(img, cv2.COLOR_RGBA2BGRA)
@@ -1452,10 +1457,13 @@ def image_load(url: str) -> Tuple[TYPE_IMAGE, ...]:
             img = np.expand_dims(img, axis=2)
 
     except Exception:
+        logger.debug(f"load image fallback to PIL {url}")
         try:
             img = Image.open(url)
             img = ImageOps.exif_transpose(img)
             img = np.array(img)
+            if img.dtype != np.uint8:
+                img = np.clip(np.array(img * 255), 0, 255).astype(dtype=np.uint8)
         except Exception as e:
             logger.error(str(e))
             raise Exception(f"Error loading image: {e}")
@@ -1463,10 +1471,9 @@ def image_load(url: str) -> Tuple[TYPE_IMAGE, ...]:
     if img is None:
         raise Exception(f"No file found at {url}")
 
-    if img.dtype != np.uint8:
-        img = np.clip(np.array(img * 255), 0, 255).astype(dtype=np.uint8)
-
-    return img, image_mask(img)
+    mask = image_mask(img)
+    img = image_blend(img, img, mask)
+    return img, mask
 
 def image_load_data(data: str) -> TYPE_IMAGE:
     img = ImageOps.exif_transpose(data)

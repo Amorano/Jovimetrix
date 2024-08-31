@@ -518,7 +518,7 @@ class QueueNode(JOVBaseNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = (JOV_TYPE_ANY, JOV_TYPE_ANY, JOV_TYPE_ANY, "INT", "INT")
     RETURN_NAMES = (Lexicon.ANY_OUT, Lexicon.QUEUE, Lexicon.CURRENT, Lexicon.INDEX, Lexicon.TOTAL, )
-    VIDEO_FORMATS = ['.wav', '.mp3', '.webm', '.mp4', '.avi', '.wmv', '.mkv', '.mov', '.mxf']
+    VIDEO_FORMATS = image_formats() + ['.wav', '.mp3', '.webm', '.mp4', '.avi', '.wmv', '.mkv', '.mov', '.mxf']
     SORT = 0
     DESCRIPTION = """
 Manage a queue of items, such as file paths or data. It supports various formats including images, videos, text files, and JSON files. Users can specify the current index for the queue item, enable pausing the queue, or reset it back to the first index. The node outputs the current item in the queue, the entire queue, the current index, and the total number of items in the queue.
@@ -551,9 +551,6 @@ Manage a queue of items, such as file paths or data. It supports various formats
         return float("nan")
 
     def __init__(self) -> None:
-        self.__formats = image_formats()
-        # print('formats', self.__formats)
-        self.__formats.extend(self.VIDEO_FORMATS)
         self.__index = 0
         self.__q = None
         self.__index_last = None
@@ -573,13 +570,15 @@ Manage a queue of items, such as file paths or data. It supports various formats
             path = Path(parts[0])
             path2 = Path(ROOT / parts[0])
             if path.exists() or path2.exists():
-                philter = parts[1].split(',') if len(parts) > 1 and isinstance(parts[1], str) else self.__formats
+                philter = parts[1].split(',') if len(parts) > 1 and isinstance(parts[1], str) else self.VIDEO_FORMATS
                 path = path if path.exists() else path2
 
-                if recurse:
-                    file_names = [str(file.resolve()) for file in path.rglob('*') if file.is_file()]
-                else:
-                    file_names = [str(file.resolve()) for file in path.iterdir() if file.is_file()]
+                file_names = [str(path.resolve())]
+                if path.is_dir():
+                    if recurse:
+                        file_names = [str(file.resolve()) for file in path.rglob('*') if file.is_file()]
+                    else:
+                        file_names = [str(file.resolve()) for file in path.iterdir() if file.is_file()]
                 new_data = [fname for fname in file_names if any(fname.endswith(pat) for pat in philter)]
 
                 if len(new_data):
@@ -613,7 +612,7 @@ Manage a queue of items, such as file paths or data. It supports various formats
                 if not os.path.isfile(q_data):
                     return q_data
                 _, ext = os.path.splitext(q_data)
-                if ext in self.__formats:
+                if ext in self.VIDEO_FORMATS:
                     data = image_load(q_data)[0]
                     self.__last_q_value[q_data] = data
                 elif ext == '.json':
@@ -633,7 +632,6 @@ Manage a queue of items, such as file paths or data. It supports various formats
             # process Q into ...
             # check if folder first, file, then string.
             # entry is: data, <filter if folder:*.png,*.jpg>, <repeats:1+>
-            print(kw)
             recurse = parse_param(kw, Lexicon.RECURSE, EnumConvertType.BOOLEAN, False)[0]
             q = parse_param(kw, Lexicon.QUEUE, EnumConvertType.STRING, "")[0]
             self.__q = self.__parse(q, recurse)

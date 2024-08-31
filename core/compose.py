@@ -20,7 +20,7 @@ from Jovimetrix.sup.util import parse_dynamic, parse_param, \
     zip_longest_fill, EnumConvertType
 
 from Jovimetrix.sup.image import  \
-    channel_merge, channel_solid, channel_swap, color_match_lut, image_filter, \
+    channel_merge, channel_solid, channel_swap, color_match_lut, image_filter, image_flatten_mask, \
     image_gradient_map, image_minmax, image_quantize, image_scalefit, \
     color_match_reinhard, cv2tensor_full, image_color_blind, image_contrast,\
     image_crop, image_crop_center, image_crop_polygonal, image_equalize, \
@@ -104,13 +104,12 @@ Enhance and modify images with various effects such as blurring, sharpening, col
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
         invert = parse_param(kw, Lexicon.INVERT, EnumConvertType.BOOLEAN, False)
         params = list(zip_longest_fill(pA, mask, op, radius, val, lohi,
-                                                    lmh, hsv, contrast, gamma, matte, invert))
+                                        lmh, hsv, contrast, gamma, matte, invert))
         images = []
         pbar = ProgressBar(len(params))
         for idx, (pA, mask, op, radius, val, lohi, lmh, hsv, contrast, gamma, matte, invert) in enumerate(params):
             pA = tensor2cv(pA) if pA is not None else channel_solid(chan=EnumImageType.BGR)
-            alpha = pA[..., 3] if pA.ndim == 3 and pA.shape[2] == 4 else None
-            pA = image_convert(pA, 3)
+            pA, alpha = image_flatten_mask(pA)
 
             match EnumAdjustOP[op]:
                 case EnumAdjustOP.INVERT:
@@ -195,9 +194,12 @@ Enhance and modify images with various effects such as blurring, sharpening, col
             mask = image_grayscale(mask)
             if invert:
                 mask = 255 - mask
+            mask = image_convert(mask, 1)
+
             pA = image_blend(pA, img_new, mask)
             if alpha is not None:
                 pA = image_mask_add(pA, alpha)
+
             images.append(cv2tensor_full(pA, matte))
             pbar.update_absolute(idx)
         return [torch.cat(i, dim=0) for i in zip(*images)]
@@ -596,6 +598,7 @@ Combine multiple input images into a single image by summing their pixel values.
         if len(pA) == 0:
             logger.error("no images to flatten")
             return ()
+
         mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.NONE.name)
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)
         sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)
