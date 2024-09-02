@@ -4,7 +4,7 @@
  *
  */
 
-import { nodeFitHeight } from './util_node.js'
+import { nodeFitHeight, nodeFitHeight2 } from './util_node.js'
 import { widgetShowVector, widget_type_name, widgetHide, widgetShow } from './util_widget.js'
 
 export function widgetSizeModeHook(node, wh_hide=true) {
@@ -12,7 +12,33 @@ export function widgetSizeModeHook(node, wh_hide=true) {
     const samp = node.widgets.find(w => w.name === '🎞️');
     const mode = node.widgets.find(w => w.name === 'MODE');
     mode.callback = () => {
-        if (wh_hide) {
+        if (!wh_hide) {
+            return;
+        }
+
+        widgetHide(node, wh);
+        widgetHide(node, samp);
+
+        if (!['MATTE'].includes(mode.value)) {
+            widgetShow(wh);
+        }
+        if (!['CROP', 'MATTE'].includes(mode.value)) {
+            widgetShow(samp);
+        }
+        nodeFitHeight2(node);
+    }
+    setTimeout(() => { mode.callback(); }, 20);
+}
+
+export function widgetSizeModeHook2(nodeType) {
+    const onNodeCreated = nodeType.prototype.onNodeCreated
+    nodeType.prototype.onNodeCreated = function (node) {
+        if (!node) { return; }
+        const me = onNodeCreated?.apply(this);
+        const wh = node.widgets.find(w => w.name === '🇼🇭');
+        const samp = node.widgets.find(w => w.name === '🎞️');
+        const mode = node.widgets.find(w => w.name === 'MODE');
+        mode.callback = () => {
             widgetHide(node, wh);
             widgetHide(node, samp);
 
@@ -22,32 +48,7 @@ export function widgetSizeModeHook(node, wh_hide=true) {
             if (!['CROP', 'MATTE'].includes(mode.value)) {
                 widgetShow(samp);
             }
-            nodeFitHeight(node);
-        }
-    }
-    setTimeout(() => { mode.callback(); }, 20);
-}
-
-export function widgetSizeModeHook2(nodeType, wh_hide=true) {
-    const onNodeCreated = nodeType.prototype.onNodeCreated
-    nodeType.prototype.onNodeCreated = function (node) {
-        if (!node) { return; }
-        const me = onNodeCreated?.apply(this);
-        const wh = node.widgets.find(w => w.name === '🇼🇭');
-        const samp = node.widgets.find(w => w.name === '🎞️');
-        const mode = node.widgets.find(w => w.name === 'MODE');
-        mode.callback = () => {
-            if (wh_hide) {
-                widgetHide(node, wh);
-            }
-            widgetHide(node, samp);
-            if (!['NONE'].includes(mode.value)) {
-                widgetShow(wh);
-            }
-            if (!['NONE', 'CROP', 'MATTE'].includes(mode.value)) {
-                widgetShow(samp);
-            }
-            nodeFitHeight(node);
+            nodeFitHeight2(node);
         }
         setTimeout(() => { mode.callback(); }, 20);
         return me;

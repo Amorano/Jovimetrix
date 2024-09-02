@@ -43,7 +43,12 @@ export function nodeFitHeight(node) {
     node.setDirtyCanvas(true, true);
     app.graph.setDirtyCanvas(true, true);
     node.setSize([size_old[0], size[1]]);
-    return;
+}
+
+export function nodeFitHeight2(node) {
+    node.setSize(node.computeSize());
+    node.setDirtyCanvas(true, true);
+    app.graph.setDirtyCanvas(true, true);
 }
 
 /**

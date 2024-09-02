@@ -222,7 +222,7 @@ class EnumProjection(Enum):
 
 class EnumScaleMode(Enum):
     # NONE = 0
-    MATTE = 25
+    MATTE = 0
     CROP = 20
     FIT = 10
     ASPECT = 30

@@ -7,7 +7,7 @@
 import { app } from "../../../scripts/app.js"
 import { nodeFitHeight } from '../util/util_node.js'
 import { widgetHide, widgetShow } from '../util/util_widget.js'
-import { widgetSizeModeHook } from '../util/util_jov.js'
+import { widgetSizeModeHook2 } from '../util/util_jov.js'
 
 const _id = "TRANSFORM (JOV) 🏝️"
 
@@ -18,10 +18,11 @@ app.registerExtension({
             return;
         }
 
+        widgetSizeModeHook2(nodeType);
+
         const onNodeCreated = nodeType.prototype.onNodeCreated
         nodeType.prototype.onNodeCreated = async function () {
             const me = onNodeCreated?.apply(this);
-            widgetSizeModeHook(this);
             const pivot = this.widgets.find(w => w.name === 'PIVOT');
             const mirror = this.widgets.find(w => w.name === '🪞');
             mirror.callback = () => {
