@@ -7,7 +7,7 @@
 import { app } from "../../../scripts/app.js"
 import { nodeFitHeight, nodeAddDynamic} from '../util/util_node.js'
 import { widgetHide, widgetShow } from '../util/util_widget.js'
-import { widgetSizeModeHook2 } from '../util/util_jov.js'
+import { widgetSizeModeHook } from '../util/util_jov.js'
 
 const _id = "STACK (JOV) ➕"
 const _prefix = '👾'
@@ -19,9 +19,9 @@ app.registerExtension({
             return;
         }
 
-        widgetSizeModeHook2(nodeType);
+        widgetSizeModeHook(nodeType);
+        nodeAddDynamic(nodeType, _prefix);
 
-        nodeType = nodeAddDynamic(nodeType, _prefix);
         const onNodeCreated = nodeType.prototype.onNodeCreated
         nodeType.prototype.onNodeCreated = function () {
             const me = onNodeCreated?.apply(this)

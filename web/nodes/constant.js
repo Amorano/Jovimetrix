@@ -5,7 +5,7 @@
  */
 
 import { app } from "../../../scripts/app.js"
-import { widgetSizeModeHook2 } from '../util/util_jov.js'
+import { widgetSizeModeHook } from '../util/util_jov.js'
 
 const _id = "CONSTANT (JOV) 🟪"
 
@@ -15,6 +15,6 @@ app.registerExtension({
         if (nodeData.name !== _id) {
             return;
         }
-        widgetSizeModeHook2(nodeType);
+        widgetSizeModeHook(nodeType);
 	}
 })

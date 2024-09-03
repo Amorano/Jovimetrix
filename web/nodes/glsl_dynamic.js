@@ -5,7 +5,7 @@
  */
 
 import { app } from "../../../scripts/app.js";
-import{ widgetSizeModeHook2 } from '../util/util_jov.js'
+import{ widgetSizeModeHook } from '../util/util_jov.js'
 
 const _id = "GLSL DYNAMIC (JOV) 🧙🏽";
 
@@ -16,6 +16,6 @@ app.registerExtension({
             return;
         }
 
-        widgetSizeModeHook2(nodeType);
+        widgetSizeModeHook(nodeType);
     }
 });

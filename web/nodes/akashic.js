@@ -18,7 +18,7 @@ app.registerExtension({
             return
         }
 
-        nodeType = nodeAddDynamic(nodeType, _prefix);
+        nodeAddDynamic(nodeType, _prefix);
 
         const onNodeCreated = nodeType.prototype.onNodeCreated;
         nodeType.prototype.onNodeCreated = async function () {

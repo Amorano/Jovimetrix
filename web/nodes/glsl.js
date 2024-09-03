@@ -8,7 +8,7 @@ import { api } from "../../../scripts/api.js";
 import { app } from "../../../scripts/app.js";
 import { widgetHide  } from '../util/util_widget.js';
 import { flashBackgroundColor } from '../util/util_fun.js';
-import{ widgetSizeModeHook2 } from '../util/util_jov.js'
+import{ widgetSizeModeHook } from '../util/util_jov.js'
 
 const _id = "GLSL (JOV) 🍩";
 const EVENT_JOVI_GLSL_ERROR = "jovi-glsl-error";
@@ -22,7 +22,7 @@ app.registerExtension({
             return;
         }
 
-        widgetSizeModeHook2(nodeType);
+        widgetSizeModeHook(nodeType);
 
         const onNodeCreated = nodeType.prototype.onNodeCreated;
         nodeType.prototype.onNodeCreated = async function () {

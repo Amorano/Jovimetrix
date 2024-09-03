@@ -78,7 +78,7 @@ JOV_CONFIG_FILE = JOV_WEB / 'config.json'
 # nodes to skip on import; for online systems; skip Export, Streamreader, etc...
 JOV_IGNORE_NODE = ROOT / 'ignore.txt'
 
-JOV_LOG_LEVEL = os.getenv("JOV_LOG_LEVEL", "WARNING")
+JOV_LOG_LEVEL = os.getenv("JOV_LOG_LEVEL", "INFO")
 logger.configure(handlers=[{"sink": sys.stdout, "level": JOV_LOG_LEVEL}])
 
 JOV_INTERNAL = os.getenv("JOV_INTERNAL", 'false').strip().lower() in ('true', '1', 't')

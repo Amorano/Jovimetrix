@@ -4,43 +4,19 @@
  *
  */
 
-import { nodeFitHeight, nodeFitHeight2 } from './util_node.js'
+import { nodeFitHeight } from './util_node.js'
 import { widgetShowVector, widget_type_name, widgetHide, widgetShow } from './util_widget.js'
 
-export function widgetSizeModeHook(node, wh_hide=true) {
-    const wh = node.widgets.find(w => w.name === '🇼🇭');
-    const samp = node.widgets.find(w => w.name === '🎞️');
-    const mode = node.widgets.find(w => w.name === 'MODE');
-    mode.callback = () => {
-        if (!wh_hide) {
-            return;
-        }
-
-        widgetHide(node, wh);
-        widgetHide(node, samp);
-
-        if (!['MATTE'].includes(mode.value)) {
-            widgetShow(wh);
-        }
-        if (!['CROP', 'MATTE'].includes(mode.value)) {
-            widgetShow(samp);
-        }
-        nodeFitHeight2(node);
-    }
-    setTimeout(() => { mode.callback(); }, 20);
-}
-
-export function widgetSizeModeHook2(nodeType) {
+export function widgetSizeModeHook(nodeType) {
     const onNodeCreated = nodeType.prototype.onNodeCreated
-    nodeType.prototype.onNodeCreated = function (node) {
-        if (!node) { return; }
+    nodeType.prototype.onNodeCreated = function () {
         const me = onNodeCreated?.apply(this);
-        const wh = node.widgets.find(w => w.name === '🇼🇭');
-        const samp = node.widgets.find(w => w.name === '🎞️');
-        const mode = node.widgets.find(w => w.name === 'MODE');
+        const wh = this.widgets.find(w => w.name === '🇼🇭');
+        const samp = this.widgets.find(w => w.name === '🎞️');
+        const mode = this.widgets.find(w => w.name === 'MODE');
         mode.callback = () => {
-            widgetHide(node, wh);
-            widgetHide(node, samp);
+            widgetHide(this, wh);
+            widgetHide(this, samp);
 
             if (!['MATTE'].includes(mode.value)) {
                 widgetShow(wh);
@@ -48,7 +24,7 @@ export function widgetSizeModeHook2(nodeType) {
             if (!['CROP', 'MATTE'].includes(mode.value)) {
                 widgetShow(samp);
             }
-            nodeFitHeight2(node);
+            nodeFitHeight(this);
         }
         setTimeout(() => { mode.callback(); }, 20);
         return me;

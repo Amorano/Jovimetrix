@@ -11,7 +11,7 @@ import { apiJovimetrix } from '../util/util_api.js'
 import { flashBackgroundColor } from '../util/util_fun.js'
 import { nodeFitHeight, TypeSlotEvent, TypeSlot } from '../util/util_node.js'
 import { widgetHide, widgetShow } from '../util/util_widget.js'
-import { widgetSizeModeHook2 } from '../util/util_jov.js'
+import { widgetSizeModeHook } from '../util/util_jov.js'
 
 const _id = "QUEUE TOO (JOV) 🗃";
 const _prefix = '🦄';
@@ -25,7 +25,7 @@ app.registerExtension({
             return;
         }
 
-        widgetSizeModeHook2(nodeType);
+        widgetSizeModeHook(nodeType);
 
         function update_report(self) {
             self.widget_report.value = `[${self.data_index} / ${self.data_all.length}]\n${self.data_current}`;
