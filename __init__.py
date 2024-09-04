@@ -365,10 +365,14 @@ class Lexicon(metaclass=LexiconMeta):
                 continue
             for k, v in entry.items():
                 widget_data = v[1] if isinstance(v, (tuple, list,)) and len(v) > 1 else {}
+                # jovimetrix
                 if (tip := widget_data.get("tooltips", None)) is None:
+                    # cached
                     if (tip := cls._tooltipsDB.get(k), None) is None:
-                        logger.warning(f"no {k}")
-                        continue
+                        # comfyui standard
+                        if (tip := widget_data.get("tooltip", None)) is None:
+                            logger.warning(f"no {k}")
+                            continue
                 if cat == "outputs":
                     data["outputs"][k] = tip
                 else:
@@ -957,8 +961,9 @@ class Session(metaclass=Singleton):
             try:
                 shutil.copy2(JOV_DEFAULT, JOV_CONFIG_FILE)
                 logger.warning("---> DEFAULT CONFIGURATION <---")
-            except:
-                raise Exception("MAJOR 😿😰😬🥟 BLUNDERCATS 🥟😬😰😿")
+            except Exception as e:
+                logger.error("MAJOR 😿😰😬🥟 BLUNDERCATS 🥟😬😰😿")
+                logger.error(e)
 
         if JOV_IGNORE_NODE.exists():
             JOV_IGNORE_NODE = configLoad(JOV_IGNORE_NODE, False)

@@ -62,6 +62,11 @@ If those nodes have descriptions written in HTML or Markdown, they will be conve
 
 ## UPDATES
 
+**2024/09/04**:
+* Import change for chromium tab crash
+* Added ComfyUI default "tooltips" as last fallback for help docs
+* Supports ComfyUI 0.2.1+, frontend 1.2.45+
+
 **2024/09/03**:
 * New `QUEUE TOO` Node focused on efficient image media loading.
 * Better reporting in `AKASHIC` Node for core ComfyUI types.

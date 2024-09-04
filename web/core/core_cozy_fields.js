@@ -28,6 +28,8 @@ app.registerExtension({
                 g_color_style = val;
             },
         });
+
+
         id = "color 🎨.thickness"
         app.ui.settings.addSetting({
             id: `JOVIMETRIX 🔺🟩🔵.${id}`,
@@ -41,10 +43,12 @@ app.registerExtension({
             tooltip: "Line thickness around widgets in Round or Line Highlight Mode.",
             defaultValue: 1,
             onChange: function(val) {
-                util_config.setting_store(id, val);
+                setting_store(id, val);
                 g_thickness = val;
             },
         });
+
+
         id = "color 🎨.highlight"
         app.ui.settings.addSetting({
             id: `JOVIMETRIX 🔺🟩🔵.${id}`,
@@ -53,7 +57,7 @@ app.registerExtension({
             tooltip: "Color Highlight if Round or Line mode enabled. Hex code entry #FFF. The default will use the node base color.",
             defaultValue: "",
             onChange: function(val) {
-                util_config.setting_store(id, val);
+                setting_store(id, val);
                 g_highlight = val;
             },
         });
@@ -120,5 +124,6 @@ app.registerExtension({
             }
             return me;
         }
-    },
+    }
+    */
 })
