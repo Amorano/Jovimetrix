@@ -62,6 +62,14 @@ If those nodes have descriptions written in HTML or Markdown, they will be conve
 
 ## UPDATES
 
+**2024/09/03**:
+* New `QUEUE TOO` Node focused on efficient image media loading.
+* Better reporting in `AKASHIC` Node for core ComfyUI types.
+* `MODE` setting for most nodes has been defaulted to `MATTE`. The older `NONE` setting has been removed.
+* Thanks to [christian-byrne](https://github.com/christian-byrne) for squashing a bug in [the help sidebar!](https://github.com/Amorano/Jovimetrix/pull/55)
+* Thanks to [Ainaemaet](https://github.com/Ainaemaet) for cleaning up the `STREAM READER` Node device list [when no devices are present](https://github.com/Amorano/Jovimetrix/pull/53)!
+* Supports ComfyUI 0.2.0+, frontend 1.2.45+
+
 **2024/08/31**:
 * Better MASK/ALPHA support for `BLEND`, `ADJUST` and `QUEUE`
 * Cleaner Markdown outputs
@@ -69,11 +77,11 @@ If those nodes have descriptions written in HTML or Markdown, they will be conve
 
 **2024/08/28**:
 
-* New `STRINGER NODE` for string operations: Split, Join, Replace and Slice.
+* New `STRINGER` Node for string operations: Split, Join, Replace and Slice.
 
 ![STRINGER NODE](https://github.com/user-attachments/assets/557bdef6-c0d3-4d01-a3dd-46f4a51952fa)
 
-* `QUEUE NODE` now supports recursing directories. To filter pngs, jpgs, and gifs from the c:/images folder and its sub-folders:
+* `QUEUE` Node now supports recursing directories. To filter pngs, jpgs, and gifs from the c:/images folder and its sub-folders:
 
     `c:/images;.png,.jpg,.gif`
 

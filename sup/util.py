@@ -124,6 +124,14 @@ def parse_dynamic(data:dict, prefix:str, typ:EnumConvertType, default: Any) -> L
 
     return vals
 
+def decode_tensor(tensor: torch.Tensor) -> str:
+    if tensor.ndim > 3:
+        b, h, w, cc = tensor.shape
+    else:
+        cc = 1
+        b, h, w = tensor.shape
+    return f"{b}x{w}x{h}x{cc}"
+
 def parse_value(val:Any, typ:EnumConvertType, default: Any,
                 clip_min: Optional[float]=None, clip_max: Optional[float]=None,
                 zero:int=0) -> List[Any]:

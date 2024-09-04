@@ -23,13 +23,14 @@ import matplotlib.pyplot as plt
 
 from loguru import logger
 
+import comfy.sd as comfy_sd
 from comfy.utils import ProgressBar
 from folder_paths import get_output_directory
 
 from Jovimetrix import DynamicInputType, deep_merge, comfy_message, parse_reset, \
     Lexicon, JOVBaseNode, JOV_TYPE_ANY, ROOT, JOV_TYPE_IMAGE
 
-from Jovimetrix.sup.util import parse_dynamic, path_next, \
+from Jovimetrix.sup.util import decode_tensor, parse_dynamic, path_next, \
     parse_param, zip_longest_fill, EnumConvertType
 
 from Jovimetrix.sup.image import EnumInterpolation, EnumScaleMode, cv2tensor, cv2tensor_full, image_by_size, image_convert, \
@@ -96,10 +97,38 @@ Visualize data. It accepts various types of data, including images, text, and ot
             ret = val
             typ = ''.join(repr(type(val)).split("'")[1:2])
             if isinstance(val, dict):
-                ret = json.dumps(val, indent=3)
+                # mixlab layer?
+                if (image := val.get('image', None)) is not None:
+                    ret = image
+                    if (mask := val.get('mask', None)) is not None:
+                        while len(mask.shape) < len(image.shape):
+                            mask = mask.unsqueeze(-1)
+                        ret = torch.cat((image, mask), dim=-1)
+                    if ret.ndim < 4:
+                        ret = ret.unsqueeze(-1)
+                    ret = decode_tensor(ret)
+                    typ = "Mixlab Layer"
+
+                # vector patch....
+                elif 'xyzw' in val:
+                    val = {"xyzw"[i]:x for i, x in enumerate(val["xyzw"])}
+                    typ = "VECTOR"
+                # latents....
+                elif 'samples' in val:
+                    ret = decode_tensor(val['samples'][0])
+                    typ = "LATENT"
+                # empty bugger
+                elif len(val) == 0:
+                    ret = ""
+                else:
+                    try:
+                        ret = json.dumps(val, indent=3)
+                    except Exception as e:
+                        ret = str(e)
+
             elif isinstance(val, (tuple, set, list,)):
                 ret = ''
-                if len(val) > 0:
+                if (size := len(val)) > 0:
                     if type(val) == np.ndarray:
                         if len(q := q()) == 1:
                             ret += f"{q[0]}"
@@ -107,22 +136,24 @@ Visualize data. It accepts various types of data, including images, text, and ot
                             ret += f"{q[1]}x{q[0]}"
                         else:
                             ret += f"{q[1]}x{q[0]}x{q[2]}"
-                    elif len(val) < 2:
+                            # typ = "NUMPY ARRAY"
+                    elif isinstance(val[0], (torch.Tensor,)):
+                        ret = decode_tensor(val[0])
+                        typ = type(val[0])
+                    elif size == 1:
+                        if isinstance(val[0], (list,)) and isinstance(val[0][0], (torch.Tensor,)):
+                            ret = decode_tensor(val[0][0])
+                            typ = "CONDITIONING"
+                    elif size < 2:
                         ret = val[0]
                     else:
                         ret = '\n\t' + '\n\t'.join(str(v) for v in val)
             elif isinstance(val, bool):
                 ret = "True" if val else "False"
             elif isinstance(val, torch.Tensor):
-                size = len(val.shape)
-                if size > 3:
-                    b, h, w, cc = val.shape
-                else:
-                    cc = 1
-                    b, h, w = val.shape
-                ret = f"{b}x{w}x{h}x{cc}"
+                ret = decode_tensor(val)
             else:
-                val = str(val)
+                ret = str(ret)
             return f"({ret}) [{typ}]"
 
         for x in o:
