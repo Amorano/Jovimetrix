@@ -33,8 +33,8 @@ from Jovimetrix import DynamicInputType, deep_merge, comfy_message, parse_reset,
 from Jovimetrix.sup.util import decode_tensor, parse_dynamic, path_next, \
     parse_param, zip_longest_fill, EnumConvertType
 
-from Jovimetrix.sup.image import EnumInterpolation, EnumScaleMode, cv2tensor, cv2tensor_full, image_by_size, image_convert, \
-    image_matte, tensor2cv, pil2tensor, image_load, image_formats, tensor2pil, MIN_IMAGE_SIZE
+from Jovimetrix.sup.image import TYPE_IMAGE, EnumInterpolation, EnumScaleMode, cv2tensor, cv2tensor_full, image_by_size, image_convert, \
+    image_matte, image_scalefit, tensor2cv, pil2tensor, image_load, image_formats, tensor2pil, MIN_IMAGE_SIZE
 
 # =============================================================================
 
@@ -230,15 +230,11 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
                 full_list.extend(data)
                 output_is_latent = True
             elif isinstance(b, torch.Tensor):
-                if len(b.shape) > 3:
-                    b = [i for i in b]
-                else:
-                    b = [b]
-                full_list.extend(b)
+                full_list.extend([i for i in b])
                 output_is_image = True
             elif isinstance(b, (list, set, tuple,)):
                 full_list.extend(b)
-            else:
+            elif b is not None:
                 full_list.append(b)
 
         if len(full_list) == 0:
@@ -247,7 +243,7 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
 
         data = full_list.copy()
 
-        if flip and len(data) > 1:
+        if flip:
             data = data[::-1]
 
         mode = EnumBatchMode[mode]
@@ -521,6 +517,8 @@ Exports and Displays immediate information about images.
 
 class QueueBaseNode(JOVBaseNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
+    RETURN_TYPES = (JOV_TYPE_ANY, JOV_TYPE_ANY, "STRING", "INT", "INT")
+    RETURN_NAMES = (Lexicon.ANY_OUT, Lexicon.QUEUE, Lexicon.CURRENT, Lexicon.INDEX, Lexicon.TOTAL, )
     VIDEO_FORMATS = image_formats() + ['.wav', '.mp3', '.webm', '.mp4', '.avi', '.wmv', '.mkv', '.mov', '.mxf']
 
     @classmethod
@@ -615,7 +613,7 @@ class QueueBaseNode(JOVBaseNode):
                     self.__last_q_value[q_data] = json.load(f)
         return self.__last_q_value.get(q_data, q_data)
 
-    def run(self, ident, **kw) -> None:
+    def run(self, ident, full_rgba=False, **kw) -> Tuple[Any, List[str], str, int, int]:
 
         self.__ident = ident
         # should work headless as well
@@ -674,8 +672,6 @@ class QueueBaseNode(JOVBaseNode):
                     data = torch.cat(ret, dim=0)
             else:
                 data = self.process(self.__q[self.__index])
-                if isinstance(data, (list, np.ndarray,)) and isinstance(data[0], (np.ndarray,)):
-                    data = cv2tensor(data)
                 self.__index += 1
 
         self.__previous = data
@@ -694,8 +690,6 @@ class QueueBaseNode(JOVBaseNode):
 
 class QueueNode(QueueBaseNode):
     NAME = "QUEUE (JOV) 🗃"
-    RETURN_TYPES = (JOV_TYPE_ANY, JOV_TYPE_ANY, JOV_TYPE_ANY, "INT", "INT")
-    RETURN_NAMES = (Lexicon.ANY_OUT, Lexicon.QUEUE, Lexicon.CURRENT, Lexicon.INDEX, Lexicon.TOTAL, )
     SORT = 450
     DESCRIPTION = """
 Manage a queue of items, such as file paths or data. Supports various formats including images, videos, text files, and JSON files. You can specify the current index for the queue item, enable pausing the queue, or reset it back to the first index. The node outputs the current item in the queue, the entire queue, the current index, and the total number of items in the queue.
@@ -709,15 +703,21 @@ Manage a queue of items, such as file paths or data. Supports various formats in
                 0: (Lexicon.ANY_OUT, {"tooltips":"Current item selected from the Queue list"}),
                 1: (Lexicon.QUEUE, {"tooltips":"The entire Queue list"}),
                 2: (Lexicon.CURRENT, {"tooltips":"Current item selected from the Queue list as a string"}),
-                3: (Lexicon.INDEX, {"tooltips":"Current selected item index in the Queue list"}),
+                3: (Lexicon.INDEX, {"tooltips":"Current index for the selected item in the Queue list"}),
                 4: (Lexicon.TOTAL, {"tooltips":"Total items in the current Queue List"}),
             }
         })
         return Lexicon._parse(d, cls)
 
+    def run(self, ident, **kw) -> Tuple[Any, List[str], str, int, int]:
+        data, aa, ba, ca, da = super().run(ident, **kw)
+        if isinstance(data, (list, np.ndarray,)) and isinstance(data[0], (np.ndarray,)):
+            data = [cv2tensor(d) for d in data]
+        return data, aa, ba, ca, da
+
 class QueueTooNode(QueueBaseNode):
     NAME = "QUEUE TOO (JOV) 🗃"
-    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK", JOV_TYPE_ANY, "INT", "INT")
+    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK", "STRING", "INT", "INT")
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK, Lexicon.CURRENT, Lexicon.INDEX, Lexicon.TOTAL, )
     SORT = 500
     DESCRIPTION = """
@@ -738,87 +738,35 @@ Manage a queue of specific items: media files. Supports various image and video 
                 0: ("IMAGE", {"tooltips":"Full channel [RGBA] image. If there is an alpha, the image will be masked out with it when using this output."}),
                 1: ("IMAGE", {"tooltips":"Three channel [RGB] image. There will be no alpha."}),
                 2: ("MASK", {"tooltips":"Single channel mask output."}),
-                3: (Lexicon.QUEUE, {"tooltips":"The entire Queue list"}),
-                4: (Lexicon.CURRENT, {"tooltips":"Current item selected from the Queue list as a string"}),
-                5: (Lexicon.INDEX, {"tooltips":"Current selected item index in the Queue list"}),
-                6: (Lexicon.TOTAL, {"tooltips":"Total items in the current Queue List"}),
+                3: (Lexicon.CURRENT, {"tooltips":"Current item selected from the Queue list as a string"}),
+                4: (Lexicon.INDEX, {"tooltips":"Current index for the selected item in the Queue list"}),
+                5: (Lexicon.TOTAL, {"tooltips":"Total items in the current Queue List"}),
             }
         })
         return Lexicon._parse(d, cls)
 
-    def run(self, ident, **kw) -> None:
-        if parse_reset(ident) > 0 or parse_param(kw, Lexicon.RESET, EnumConvertType.BOOLEAN, False)[0]:
-            self.__q = None
-            self.__index = 0
+    def run(self, ident, **kw) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, str, int, int]:
+        data, _, current, index, total = super().run(ident, **kw)
+        if not isinstance(data, (list, )):
+            data = [data]
 
-        if (new_val := parse_param(kw, Lexicon.VALUE, EnumConvertType.INT, self.__index)[0]) > 0:
-            self.__index = new_val
-
-        if self.__q is None:
-            recurse = parse_param(kw, Lexicon.RECURSE, EnumConvertType.BOOLEAN, False)[0]
-            q = parse_param(kw, Lexicon.QUEUE, EnumConvertType.STRING, "")[0]
-            self.__q = self.parseQ(q, self.VIDEO_FORMATS, recurse)
-            self.__len = len(self.__q)
-            self.__index_last = 0
-            self.__previous = self.__q[0] if len(self.__q) else None
-            if self.__previous:
-                self.__previous = self.process(self.__previous)
-
-        if (wait := parse_param(kw, Lexicon.WAIT, EnumConvertType.BOOLEAN, False))[0] == True:
-            self.__index = self.__index_last
-
-        self.__index = max(0, self.__index) % self.__len
-        current = self.__q[self.__index]
-        data = self.__previous
-        self.__index_last = self.__index
-
-
-
-        info = f"QUEUE #{ident} [{current}] ({self.__index})"
-        if wait == True:
-            info += f" PAUSED"
-        else:
-            ret = []
-            matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
-            mw, mh, mc = 0, 0, 0
-
-            if parse_param(kw, Lexicon.BATCH, EnumConvertType.BOOLEAN, False)[0] == True:
-                data = []
-                for idx in range(self.__len):
-                    ret = self.process(self.__q[idx])
-                    h, w, c = ret.shape
-                    mw, mh, mc = max(mw, w), max(mh, h), max(mc, c)
-                    data.append(ret)
-
-                pbar = ProgressBar(self.__len)
-                for idx, d in enumerate(data):
-                    d = image_convert(d, mc)
-                    d = image_matte(d, matte, width=mw, height=mh)
-                    d = cv2tensor(d)
-                    ret.append(d)
-                    pbar.update_absolute(idx)
-                data = torch.cat(ret, dim=0)
-            else:
-                data = self.process(self.__q[self.__index])
-                h, w, c = data.shape
-
-                data = cv2tensor_full(data, matte)
-                self.__index += 1
-
-        mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.MATTE.name)
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)
-        sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)
-
-        self.__previous = data
-        msg = {
-            "id": ident,
-            "c": current,
-            "i": self.__index_last+1,
-            "s": self.__len,
-            "l": self.__q
-        }
-        comfy_message(ident, "jovi-queue-ping", msg)
-        return data, self.__q, current, self.__index_last+1, self.__len
+        mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.MATTE.name)[0]
+        mode = EnumScaleMode[mode]
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)[0]
+        w, h = wihi
+        sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)[0]
+        sample = EnumInterpolation[sample]
+        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)[0]
+        images = []
+        pbar = ProgressBar(len(data))
+        for idx, image in enumerate(data):
+            if mode != EnumScaleMode.MATTE:
+                image = tensor2cv(image)
+                image = image_scalefit(image, w, h, mode, sample)
+            images.append(cv2tensor_full(image, matte))
+            pbar.update_absolute(idx)
+        images = [torch.cat(i, dim=0) for i in zip(*images)]
+        return *images, current, index, total
 
 class RouteNode(JOVBaseNode):
     NAME = "ROUTE (JOV) 🚌"

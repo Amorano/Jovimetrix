@@ -23,18 +23,19 @@ bus routing with a single node, export support for GIPHY, save output anywhere!
 flatten, crop, transform; check colorblindness, make stereogram or stereoscopic
 images, or liner interpolate values and more.
 @node list:
-    ConstantNode, GLSLNode, ShapeNode, StereogramNode, StereoscopicNode, TextNode, WaveGraphNode,
-    AdjustNode, ColorBlindNode, ColorMatchNode, FilterMaskNode, ThresholdNode,
-    BlendNode, ColorTheoryNode, CropNode, FlattenNode, PixelMergeNode, PixelSplitNode,
-    PixelSwapNode, StackNode, TransformNode
-    CalcUnaryOPNode, CalcBinaryOPNode, ValueNode, ConvertNode, LerpNode, DelayNode,
-    ComparisonNode,
-    TickNode, WaveGeneratorNode,
-    MIDIMessageNode, MIDIReaderNode, MIDIFilterEZNode, MIDIFilterNode,
-    StreamReaderNode, StreamWriterNode, SpoutWriter,
-    AkashicNode, ArrayNode, BatchLoadNode, DynamicNode, ValueGraphNode, ExportNode, QueueNode,
-    RouteNode, SaveOutputNode
-@version: 1.2.35
+    ConstantNode, GLSLNode, ShapeNode, StereogramNode, StereoscopicNode, TextNode,
+    WaveGraphNode,
+    AdjustNode, BlendNode, ColorBlindNode, ColorMatchNode, ColorTheoryNode, CropNode,
+    FilterMaskNode, FlattenNode, GradientMapNode, PixelMergeNode, PixelSplitNode,
+    PixelSwapNode, StackNode, ThresholdNode,TransformNode,
+    ComparisonNode, DelayNode, LerpNode, CalcUnaryOPNode, CalcBinaryOPNode,
+    StringerNode, SwizzleNode, TickNode, ValueNode, WaveGeneratorNode,
+    MIDIFilterNode, MIDIFilterEZNode, MIDIMessageNode, MIDIReaderNode, SpoutWriter,
+    StreamReaderNode, StreamWriterNode,
+    AkashicNode, ArrayNode, ExportNode, ValueGraphNode, ImageInfoNode, QueueNode,
+    QueueTooNode, RouteNode, SaveOutputNode
+
+@version: 1.2.36
 """
 
 import os

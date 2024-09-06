@@ -468,7 +468,7 @@ def tensor2cv(tensor: torch.Tensor) -> TYPE_IMAGE:
         # image_flatten_mask
         mask = 255 - image_mask(image)
         # we should flatten against black?
-        black = np.zeros_like(image, (0,0,0,0), dtype=np.uint8)
+        black = np.zeros(image.shape, dtype=np.uint8)
         image = image_blend(black, image, mask)
         image = image_mask_add(image, mask)
     return image
@@ -1469,7 +1469,7 @@ def image_load(url: str) -> Tuple[TYPE_IMAGE, ...]:
     try:
         img = cv2.imread(url, cv2.IMREAD_UNCHANGED)
         if img is None:
-            raise ValueError(f"Image at {url} could not be loaded.")
+            raise ValueError(f"{url} could not be loaded.")
 
         img = image_normalize(img)
         logger.debug(f"load image {url}: {img.ndim} {img.shape}")
@@ -1711,7 +1711,7 @@ def image_normalize(image: TYPE_IMAGE) -> TYPE_IMAGE:
     img_min = np.min(image)
     img_max = np.max(image)
     if img_min == img_max:
-        return np.zeros_like(image, dtype=np.float32)
+        return np.zeros_like(image)
     image = (image - img_min) / (img_max - img_min)
     return (image * 255).astype(np.uint8)
 
@@ -1757,7 +1757,7 @@ def image_quantize(image:TYPE_IMAGE, levels:int=256, iterations:int=10, epsilon:
 
 def image_recenter(image: TYPE_IMAGE) -> TYPE_IMAGE:
     cropped_image = image_detect(image)[0]
-    new_image = np.zeros_like(image)
+    new_image = np.zeros(image.shape, dtype=np.uint8)
     paste_x = (new_image.shape[1] - cropped_image.shape[1]) // 2
     paste_y = (new_image.shape[0] - cropped_image.shape[0]) // 2
     new_image[paste_y:paste_y+cropped_image.shape[0], paste_x:paste_x+cropped_image.shape[1]] = cropped_image
@@ -1927,7 +1927,7 @@ def image_stereo_shift(image: TYPE_IMAGE, depth: TYPE_IMAGE, shift:float=10) -> 
     image = image_convert(image, 4)
     depth = image_convert(depth, 1)
     deltas = np.array((depth / 255.0) * float(shift), dtype=int)
-    shifted_data = np.zeros_like(image)
+    shifted_data = np.zeros(image.shape, dtype=np.uint8)
     _, width = image.shape[:2]
     for y, row in enumerate(deltas):
         for x, dx in enumerate(row):

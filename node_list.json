@@ -23,6 +23,7 @@
     "GLSL LAB-2-XYZ (JOV) \ud83e\uddd9\ud83c\udffd": "Convert LAB image into XYZ color space",
     "GLSL NORMAL (JOV) \ud83e\uddd9\ud83c\udffd": "Convert input into a Normal map",
     "GLSL NORMAL BLEND (JOV) \ud83e\uddd9\ud83c\udffd": "Blend two Normal maps",
+    "GLSL POSTERIZE (JOV) \ud83e\uddd9\ud83c\udffd": "Reduce the pixel color data range",
     "GLSL RGB-2-HSV (JOV) \ud83e\uddd9\ud83c\udffd": "Convert RGB(A) input into HSV color space",
     "GLSL RGB-2-LAB (JOV) \ud83e\uddd9\ud83c\udffd": "Convert RGB(A) image into LAB color space",
     "GLSL RGB-2-XYZ (JOV) \ud83e\uddd9\ud83c\udffd": "Convert RGB(A) input into XYZ color space",
