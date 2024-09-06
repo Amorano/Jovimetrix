@@ -257,6 +257,11 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
         elif mode == EnumBatchMode.SLICE:
             start, end, step = slice_range
             end = len(data) if end == 0 else end
+            if step == 0:
+                step = 1
+            elif step < 0:
+                data = data[::-1]
+                step = abs(step)
             data = data[start:end:step]
         elif mode == EnumBatchMode.RANDOM:
             if self.__seed is None or self.__seed != seed:

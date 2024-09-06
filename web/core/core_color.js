@@ -6,10 +6,18 @@
 
 import { app } from '../../../scripts/app.js'
 import { $el } from '../../../scripts/ui.js'
-import { apiPost } from '../util/util_api.js'
+import { apiGet, apiPost } from '../util/util_api.js'
 import { colorContrast } from '../util/util.js'
-import * as util_config from '../util/util_config.js'
+import { setting_make } from '../util/util_config.js'
 import { colorPicker } from '../extern/jsColorPicker.js'
+
+let NODE_LIST;
+let CONFIG_CORE;
+let CONFIG_USER;
+let CONFIG_COLOR;
+let CONFIG_REGEX;
+let CONFIG_THEME;
+const USER = 'user.default';
 
 // gets the CONFIG entry for name
 function nodeColorGet(node) {
@@ -19,7 +27,7 @@ function nodeColorGet(node) {
     }
 
     // First look to regex....
-    for (const colors of util_config.CONFIG_REGEX) {
+    for (const colors of CONFIG_REGEX || []) {
         if (colors.regex == "") {
             continue
         }
@@ -31,18 +39,20 @@ function nodeColorGet(node) {
     }
 
     // now look to theme
-    let color = util_config.CONFIG_THEME[find_me]
+    let color = CONFIG_THEME?.[find_me]
     if (color) {
-        return color
+        return color;
     }
 
-    color = util_config.NODE_LIST[find_me]
+    // console.info(find_me)
+
+    color = NODE_LIST?.[find_me];
     // now look to category theme
-    if (color && color.category) {
+    if (color && color?.category) {
         const segments = color.category.split('/')
         let k = segments.join('/')
         while (k) {
-            const found = util_config.CONFIG_THEME[k]
+            const found = CONFIG_THEME?.[k]
             if (found) {
                 return found
             }
@@ -50,7 +60,6 @@ function nodeColorGet(node) {
             k = last !== -1 ? k.substring(0, last) : ''
         }
     }
-    return null;
 }
 
 // refresh the color of a node
@@ -86,9 +95,16 @@ class JovimetrixPanelColorize {
         }
     }
 
-    init() {
-        if (util_config.CONFIG_USER.color.overwrite) {
-            nodeColorAll();
+    async init() {
+        NODE_LIST = await apiGet("/object_info");
+        CONFIG_CORE = await apiGet("/jovimetrix/config");
+        CONFIG_USER = CONFIG_CORE.user.default;
+        CONFIG_COLOR = CONFIG_USER.color;
+        CONFIG_REGEX = CONFIG_COLOR.regex || [];
+        CONFIG_THEME = CONFIG_COLOR.theme;
+
+        if (CONFIG_USER.color.overwrite) {
+            nodeColorAll(NODE_LIST);
         }
         this.watchForColorInputs();
     }
@@ -168,25 +184,25 @@ class JovimetrixPanelColorize {
                     let api_packet = {}
                     if (parts.length > 2) {
                         const idx = parts[1];
-                        data = util_config.CONFIG_REGEX[idx];
+                        data = CONFIG_REGEX[idx];
                         data[part] = AHEX.value
-                        util_config.CONFIG_REGEX[idx] = data
+                        CONFIG_REGEX[idx] = data
                         api_packet = {
-                            id: util_config.USER + '.color.regex',
-                            v: util_config.CONFIG_REGEX
+                            id: USER + '.color.regex',
+                            v: CONFIG_REGEX
                         }
                     } else {
-                        if (util_config.CONFIG_THEME[name] === undefined) {
-                            util_config.CONFIG_THEME[name] = {}
+                        if (CONFIG_THEME[name] === undefined) {
+                            CONFIG_THEME[name] = {}
                         }
-                        util_config.CONFIG_THEME[name][part] = AHEX.value
+                        CONFIG_THEME[name][part] = AHEX.value
                         api_packet = {
-                            id: util_config.USER + '.color.theme.' + name,
-                            v: util_config.CONFIG_THEME[name]
+                            id: USER + '.color.theme.' + name,
+                            v: CONFIG_THEME[name]
                         }
                     }
                     apiPost("/jovimetrix/config", api_packet);
-                    if (util_config.CONFIG_COLOR.overwrite) {
+                    if (CONFIG_COLOR.overwrite) {
                         nodeColorAll();
                     }
                 }
@@ -200,10 +216,10 @@ class JovimetrixPanelColorize {
     }
 
     updateRegexColor = (index, key, value) => {
-        util_config.CONFIG_REGEX[index][key] = value
+        CONFIG_REGEX[index][key] = value
         let api_packet = {
-            id: util_config.USER + '.color.regex',
-            v: util_config.CONFIG_REGEX
+            id: USER + '.color.regex',
+            v: CONFIG_REGEX
         }
         apiPost("/jovimetrix/config", api_packet)
         nodeColorAll()
@@ -268,7 +284,7 @@ class JovimetrixPanelColorize {
 
         // rule-sets first
         var idx = 0
-        const rules = util_config.CONFIG_COLOR.regex || []
+        const rules = CONFIG_COLOR?.regex || []
         rules.forEach(entry => {
             const data = {
                 idx: idx,
@@ -283,7 +299,7 @@ class JovimetrixPanelColorize {
 
         // get categories to generate on the fly
         const category = []
-        const all_nodes = Object.entries(util_config?.NODE_LIST ? util_config.NODE_LIST : []);
+        const all_nodes = Object.entries(NODE_LIST ? NODE_LIST : []);
         all_nodes.sort((a, b) => {
             const categoryComparison = a[1].category.toLowerCase().localeCompare(b[1].category.toLowerCase());
             // Move items with empty category or starting with underscore to the end
@@ -297,9 +313,9 @@ class JovimetrixPanelColorize {
         });
 
         // groups + nodes
-        const alts = util_config.CONFIG_COLOR
-        const background = [alts.backA, alts.backB]
-        const background_title = [alts.titleA, alts.titleB]
+        const alts = CONFIG_COLOR
+        const background = [alts?.backA, alts?.backB]
+        const background_title = [alts?.titleA, alts?.titleB]
         let background_index = 0
         all_nodes.forEach(entry => {
             var name = entry[0]
@@ -313,9 +329,9 @@ class JovimetrixPanelColorize {
                 data = {
                     name: meow,
                 }
-                if (Object.prototype.hasOwnProperty.call(util_config.CONFIG_THEME, meow)) {
-                    data.title = util_config.CONFIG_THEME[meow].title
-                    data.body = util_config.CONFIG_THEME[meow].body
+                if (Object.prototype.hasOwnProperty.call(CONFIG_THEME, meow)) {
+                    data.title = CONFIG_THEME?.[meow].title
+                    data.body = CONFIG_THEME?.[meow].body
                 }
                 colorTable.appendChild($el("tbody", this.templateColorRow(data, 'header')))
                 category.push(meow)
@@ -328,15 +344,15 @@ class JovimetrixPanelColorize {
                     background: background_title[background_index] || LiteGraph.WIDGET_BGCOLOR
                 }
 
-                if (Object.prototype.hasOwnProperty.call(util_config.CONFIG_THEME, cat)) {
-                    data.title = util_config.CONFIG_THEME[cat].title
-                    data.body = util_config.CONFIG_THEME[cat].body
+                if (Object.prototype.hasOwnProperty.call(CONFIG_THEME, cat)) {
+                    data.title = CONFIG_THEME?.[cat].title
+                    data.body = CONFIG_THEME?.[cat].body
                 }
                 colorTable.appendChild($el("tbody", this.templateColorRow(data, 'header')))
                 category.push(cat)
             }
 
-            const who = util_config.CONFIG_THEME[name] || {};
+            const who = CONFIG_THEME[name] || {};
             data = {
                 name: name,
                 title: who.title,
@@ -384,15 +400,15 @@ class JovimetrixPanelColorize {
             }, [
                 $el("input", {
                     type: "checkbox",
-                    checked: util_config.CONFIG_USER.color.overwrite,
+                    checked: CONFIG_USER?.color?.overwrite,
                     onclick: (cb) => {
-                        util_config.CONFIG_USER.color.overwrite = cb.target.checked
+                        CONFIG_USER.color.overwrite = cb.target.checked
                         var data = {
-                            id: util_config.USER + '.color.overwrite',
-                            v: util_config.CONFIG_USER.color.overwrite
+                            id: USER + '.color.overwrite',
+                            v: CONFIG_USER?.color?.overwrite
                         }
                         apiPost('/jovimetrix/config', data)
-                        if (util_config.CONFIG_USER.color.overwrite) {
+                        if (CONFIG_USER?.color?.overwrite) {
                             nodeColorAll()
                         }
                     }
@@ -430,11 +446,11 @@ app.extensionManager.registerSidebarTab({
 
 app.registerExtension({
     name: "jovimetrix.color",
-    async setup(app) {
+    async setup() {
         // Option for user to contrast text for better readability
         const original_color = LiteGraph.NODE_TEXT_COLOR;
 
-        util_config.setting_make('color 🎨.contrast', 'Auto-Contrast Text', 'boolean', 'Auto-contrast the title text for all nodes for better readability', true);
+        setting_make('color 🎨.contrast', 'Auto-Contrast Text', 'boolean', 'Auto-contrast the title text for all nodes for better readability', true);
 
         const drawNodeShape = LGraphCanvas.prototype.drawNodeShape;
         LGraphCanvas.prototype.drawNodeShape = function() {
@@ -451,7 +467,7 @@ app.registerExtension({
             drawNodeShape.apply(this, arguments);
         };
 
-        if (util_config.CONFIG_USER.color.overwrite) {
+        if (CONFIG_USER?.color?.overwrite) {
             nodeColorAll();
         }
     },
@@ -480,7 +496,7 @@ function initializeColorPicker() {
                 elm.style.backgroundColor = elm.color || LiteGraph.WIDGET_BGCOLOR;
                 elm.style.color = rgb.RGBLuminance > 0.22 ? '#222' : '#ddd'
             },
-            convertCallback: function(data) {
+            convertCallback: function() {
                 let AHEX = this.patch.attributes.color;
                 if (!AHEX) return;
 
@@ -492,25 +508,25 @@ function initializeColorPicker() {
 
                 if (parts.length > 1) {
                     const idx = parts[1];
-                    let data = util_config.CONFIG_REGEX[idx];
+                    let data = CONFIG_REGEX[idx];
                     data[part] = AHEX.value;
-                    util_config.CONFIG_REGEX[idx] = data;
+                    CONFIG_REGEX[idx] = data;
 
                     api_packet = {
-                        id: `${util_config.USER}.color.regex`,
-                        v: util_config.CONFIG_REGEX
+                        id: `${USER}.color.regex`,
+                        v: CONFIG_REGEX
                     };
                 } else {
-                    const themeConfig = util_config.CONFIG_THEME[name] || (util_config.CONFIG_THEME[name] = {});
+                    const themeConfig = CONFIG_THEME[name] || (CONFIG_THEME[name] = {});
                     themeConfig[part] = AHEX.value;
 
                     api_packet = {
-                        id: `${util_config.USER}.color.theme.${name}`,
+                        id: `${USER}.color.theme.${name}`,
                         v: themeConfig
                     };
                 }
                 apiPost("/jovimetrix/config", api_packet);
-                if (util_config.CONFIG_COLOR.overwrite) {
+                if (CONFIG_COLOR.overwrite) {
                     nodeColorAll();
                 }
             }

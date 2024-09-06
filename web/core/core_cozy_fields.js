@@ -5,7 +5,7 @@
  */
 
 import { app } from "../../../scripts/app.js"
-import * as util_config from '../util/util_config.js'
+import { setting_store } from '../util/util_config.js'
 import { colorHex2RGB } from '../util/util.js'
 
 let g_color_style;
@@ -24,7 +24,7 @@ app.registerExtension({
             tooltip: "Style to draw nodes.",
             defaultValue: "ComfyUI Default",
             onChange: function(val) {
-                util_config.setting_store(id, val);
+                setting_store(id, val);
                 g_color_style = val;
             },
         });
@@ -125,5 +125,4 @@ app.registerExtension({
             return me;
         }
     }
-    */
 })

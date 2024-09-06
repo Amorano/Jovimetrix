@@ -18,7 +18,7 @@ except:
     pass
 from comfy.utils import ProgressBar
 
-from Jovimetrix import JOVImageNode, comfy_message, deep_merge, Lexicon, ROOT
+from Jovimetrix import JOVImageNode, comfy_message, deep_merge, Lexicon, ROOT, JOV_TYPE_ANY
 from Jovimetrix.sup.util import load_file, parse_param, EnumConvertType, parse_value
 from Jovimetrix.sup.image import EnumInterpolation, EnumScaleMode, cv2tensor_full, image_convert, image_scalefit, tensor2cv, MIN_IMAGE_SIZE
 from Jovimetrix.sup.shader import PTYPE, shader_meta, CompileException, GLSLShader
@@ -135,19 +135,24 @@ class GLSLNodeBase(JOVImageNode):
         step = 1. / self.__glsl.fps
 
         images = []
+        vars = {}
         batch = max(1, batch)
+        firstImage = None
+        # check if the input(s) have more than a single entry, get the max...
+        if batch == 1:
+            for k, var in variables.items():
+                if isinstance(var, (torch.Tensor)):
+                    batch = max(batch, var.shape[0])
+                    var = [image_convert(tensor2cv(v), 4) for v in var]
+                    if firstImage is None:
+                        firstImage = var[0]
+
+                variables[k] = var if isinstance(var, (list, tuple,)) else [var]
+
         pbar = ProgressBar(batch)
         for idx in range(batch):
-            vars = {}
-            firstImage = None
-            for k, v in variables.items():
-                var = v if not isinstance(v, (list, tuple,)) else v[idx % len(v)]
-                if isinstance(var, (torch.Tensor)):
-                    var = tensor2cv(var)
-                    var = image_convert(var, 4)
-                    if firstImage is None:
-                        firstImage = var
-                vars[k] = var
+            for k, val in variables.items():
+                vars[k] = val[idx % len(val)]
 
             w, h = wihi
             if firstImage is not None and mode == EnumScaleMode.MATTE:
@@ -219,24 +224,26 @@ class GLSLNodeDynamic(GLSLNodeBase):
                 params = {"default": None}
 
                 d = None
+                type_name = typ.name
                 if glsl_type != 'sampler2D':
                     if default is not None:
                         d = default.split(',')
                     params['default'] = parse_value(d, typ, 0)
 
                     if val_min is not None:
-                        params['val_min'] = parse_value(val_min, EnumConvertType.FLOAT, -sys.maxsize)
+                        params['mij'] = parse_value(val_min, EnumConvertType.FLOAT, -sys.maxsize)
 
                     if val_max is not None:
-                        params['val_max'] = parse_value(val_max, EnumConvertType.FLOAT, sys.maxsize)
+                        params['maj'] = parse_value(val_max, EnumConvertType.FLOAT, sys.maxsize)
 
                     if val_step is not None:
                         d = 1 if typ.name.endswith('INT') else 0.01
-                        params['val_step'] = parse_value(val_step, EnumConvertType.FLOAT, d)
-
+                        params['step'] = parse_value(val_step, EnumConvertType.FLOAT, d)
+                else:
+                    type_name = JOV_TYPE_ANY
                 if tooltip is not None:
                     params["tooltips"] = tooltip
-                data[name] = (typ.name, params,)
+                data[name] = (type_name, params,)
 
         data.update(opts)
         original_params['optional'] = data

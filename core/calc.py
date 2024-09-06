@@ -969,7 +969,6 @@ Supplies raw or default values for various data types, supporting vector input w
         pbar = ProgressBar(len(params))
         old_seed = -1
         for idx, (raw, r_x, r_y, r_z, r_w, typ, xyzw, seed, yyzw, x_str) in enumerate(params):
-            # logger.debug((raw, r_x, r_y, r_z, r_w, typ, xyzw, seed, yyzw, x_str))
             typ = EnumConvertType[typ]
             default = [x_str]
             default2 = None
@@ -1016,6 +1015,8 @@ Supplies raw or default values for various data types, supporting vector input w
             ret.extend(extra)
             results.append(ret)
             pbar.update_absolute(idx)
+        if len(results) < 2:
+            return results[0]
         return [x for x in zip(*results)]
 
 class WaveGeneratorNode(JOVBaseNode):

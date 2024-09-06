@@ -62,25 +62,40 @@ If those nodes have descriptions written in HTML or Markdown, they will be conve
 
 ## UPDATES
 
-**2024/09/04**:
+**2024/09/05** @1.2.35:
+* `VALUE` Node defaults fixed on save
+* `Colorizer` Panel is a undergoing major re-constructive surgery
+* Allow slice reversal in `ARRAY` Node
+* `GLSL` Nodes allow for `IMAGE or MASK` input for RGB(A)
+* NOTE ADJUSTED VERSION NUMBERS TO SHOW OLDEST COMFYUI and FRONTEND VERSIONS SUPPORTED:
+  * ComfyUI 0.1.3+
+  * ComfyUI Frontend 1.2.30+
+
+**2024/09/04** @1.2.34:
 * Import change for chromium tab crash
 * Added ComfyUI default "tooltips" as last fallback for help docs
-* Supports ComfyUI 0.2.1+, frontend 1.2.45+
+* Supports Versions:
+  * ComfyUI 0.1.3+
+  * ComfyUI Frontend 1.2.30+
 
-**2024/09/03**:
+**2024/09/03** @1.2.33:
 * New `QUEUE TOO` Node focused on efficient image media loading.
 * Better reporting in `AKASHIC` Node for core ComfyUI types.
 * `MODE` setting for most nodes has been defaulted to `MATTE`. The older `NONE` setting has been removed.
 * Thanks to [christian-byrne](https://github.com/christian-byrne) for squashing a bug in [the help sidebar!](https://github.com/Amorano/Jovimetrix/pull/55)
 * Thanks to [Ainaemaet](https://github.com/Ainaemaet) for cleaning up the `STREAM READER` Node device list [when no devices are present](https://github.com/Amorano/Jovimetrix/pull/53)!
-* Supports ComfyUI 0.2.0+, frontend 1.2.45+
+* Supports Versions:
+  * ComfyUI 0.1.3+
+  * ComfyUI Frontend 1.2.30+
 
-**2024/08/31**:
+**2024/08/31** @1.2.32:
 * Better MASK/ALPHA support for `BLEND`, `ADJUST` and `QUEUE`
 * Cleaner Markdown outputs
-* Supports ComfyUI 0.1.3+, frontend 1.2.41+
+* Supports Versions:
+  * ComfyUI 0.1.3+
+  * ComfyUI Frontend 1.2.30+
 
-**2024/08/28**:
+**2024/08/28** @1.2.31:
 
 * New `STRINGER` Node for string operations: Split, Join, Replace and Slice.
 
@@ -94,25 +109,35 @@ If those nodes have descriptions written in HTML or Markdown, they will be conve
 
 ![QUEUE NODE](https://github.com/user-attachments/assets/9686b900-24a2-46ab-88ba-9e3c929b439c)
 
-* Supports ComfyUI 0.1.3+, frontend 1.2.39+
+* Supports Versions:
+  * ComfyUI 0.1.3+
+  * ComfyUI Frontend 1.2.30+
 
-**2024/08/25**:
+**2024/08/25** @1.2.30:
 * Added conversion coercion for Mixlab Layer types
 ![Mixlab supports](https://github.com/user-attachments/assets/05a53b98-b620-4743-b7b5-26da4140d443)
-* Supports ComfyUI 0.1.2+, frontend 1.2.34+
+* Supports Versions:
+  * ComfyUI 0.1.3+
+  * ComfyUI Frontend 1.2.30+
 
-**2024/08/24**:
+**2024/08/24** @1.2.29:
 * All node dynamic help
 * Array node -- updated to return single values as their single value, not a list
-* Supports ComfyUI 0.1.2+, frontend 1.2.30+
+* Supports Versions:
+  * ComfyUI 0.1.3+
+  * ComfyUI Frontend 1.2.30+
 
-**2024/08/23**:
+**2024/08/23** @1.2.28:
 * Colorization and Help panel only work on new frontend
-* Supports ComfyUI 0.1.1+, frontend 1.2.29+
+* Supports Versions:
+  * ComfyUI 0.1.3+
+  * ComfyUI Frontend 1.2.30+
 
-**2024/08/20**:
+**2024/08/20** @1.2.14:
 * Complete Wiki and Examples revamp.
-* Supports ComfyUI 0.0.8+, frontend 1.2.30+
+* Supports Versions:
+  * ComfyUI 0.1.3+
+  * ComfyUI Frontend 1.2.30+
 
 # INSTALLATION
 

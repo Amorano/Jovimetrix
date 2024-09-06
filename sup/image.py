@@ -462,11 +462,11 @@ def pil2tensor(image: Image.Image) -> torch.Tensor:
 def tensor2cv(tensor: torch.Tensor) -> TYPE_IMAGE:
     """Convert a torch Tensor to a numpy ndarray."""
     tensor = tensor.cpu().squeeze().numpy()
-    if tensor.ndim == 1:
+    if tensor.ndim < 3:
         tensor = np.expand_dims(tensor, -1)
     image = np.clip(255.0 * tensor, 0, 255).astype(np.uint8)
     if image.shape[2] == 4:
-        image_flatten_mask
+        # image_flatten_mask
         mask = image_mask(image)
         image = image_blend(image, image, mask)
         image = image_mask_add(image, mask)
