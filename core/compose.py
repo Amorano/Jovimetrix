@@ -590,24 +590,26 @@ Combine multiple input images into a single image by summing their pixel values.
 
     def run(self, **kw) -> torch.Tensor:
         imgs = parse_dynamic(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
-        pA = []
-        for img in imgs:
-            pA.extend([image_convert(tensor2cv(i), 4) for i in img])
-        if len(pA) == 0:
+        if imgs is None:
             logger.error("no images to flatten")
             return ()
 
+        # be less dumb when merging
+        pA = [tensor2cv(i) for img in imgs for i in img]
+        logger.info(f"{len(pA)}  {pA[0].shape}")
         mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.MATTE.name)
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)
         sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
+
         images = []
         params = list(zip_longest_fill(mode, sample, wihi, matte))
         pbar = ProgressBar(len(params))
         for idx, (mode, sample, wihi, matte) in enumerate(params):
             mode = EnumScaleMode[mode]
+            sample = EnumInterpolation[sample]
             h, w = pA[0].shape[:2] if mode == EnumScaleMode.MATTE else wihi[::-1]
-            current = np.full((w, h, 4), (0,0,0,0), dtype=np.uint8)
+            current = np.zeros((w, h, 4), dtype=np.uint8)
             for x in pA:
                 if mode != EnumScaleMode.MATTE:
                     x = image_scalefit(x, w, h, mode, sample)

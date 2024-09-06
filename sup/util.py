@@ -245,7 +245,7 @@ def parse_value(val:Any, typ:EnumConvertType, default: Any,
             new_val = {'samples': new_val.unsqueeze(0)}
         else:
             # convert whatever into a latent sample...
-            new_val = torch.empty((4, 512, 512), dtype=torch.uint8).unsqueeze(0)
+            new_val = torch.empty((4, 64, 64), dtype=torch.uint8).unsqueeze(0)
             new_val = {'samples': new_val}
     elif typ == EnumConvertType.IMAGE:
         # covert image into image? just skip if already an image

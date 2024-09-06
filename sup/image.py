@@ -43,21 +43,19 @@ TAU = math.pi * 2
 # =============================================================================
 
 TYPE_COORD = Union[
-    Tuple[int, int],
-    Tuple[float, float]
+    Tuple[int, ...],
+    Tuple[float, ...]
 ]
 
 TYPE_PIXEL = Union[
     int,
     float,
-    Tuple[float, float, float],
-    Tuple[float, float, float, Optional[float]],
-    Tuple[int, int, int],
-    Tuple[int, int, int, Optional[int]]
+    Tuple[float, ...],
+    Tuple[int, ...],
 ]
 
 TYPE_IMAGE = Union[np.ndarray, torch.Tensor]
-TYPE_VECTOR = Union[TYPE_IMAGE|TYPE_PIXEL]
+TYPE_VECTOR = Union[TYPE_IMAGE | TYPE_PIXEL]
 
 # =============================================================================
 # === ENUM GLOBALS ===
@@ -465,10 +463,13 @@ def tensor2cv(tensor: torch.Tensor) -> TYPE_IMAGE:
     if tensor.ndim < 3:
         tensor = np.expand_dims(tensor, -1)
     image = np.clip(255.0 * tensor, 0, 255).astype(np.uint8)
+
     if image.shape[2] == 4:
         # image_flatten_mask
-        mask = image_mask(image)
-        image = image_blend(image, image, mask)
+        mask = 255 - image_mask(image)
+        # we should flatten against black?
+        black = np.zeros_like(image, (0,0,0,0), dtype=np.uint8)
+        image = image_blend(black, image, mask)
         image = image_mask_add(image, mask)
     return image
 
@@ -1231,7 +1232,7 @@ def image_filter(image:TYPE_IMAGE, start:Tuple[int]=(128,128,128), end:Tuple[int
 
     return tensor2cv(output_image), mask.cpu().numpy().astype(np.uint8) * 255
 
-def image_flatten_mask(image: TYPE_IMAGE) -> Tuple[TYPE_IMAGE, TYPE_IMAGE|None]:
+def image_flatten_mask(image:TYPE_IMAGE, matte:Tuple=(0,0,0,255)) -> Tuple[TYPE_IMAGE, TYPE_IMAGE|None]:
     """Flatten the image with its own alpha channel, if any."""
     mask = image_mask(image)
     return image_blend(image, image, mask), mask
@@ -1587,13 +1588,13 @@ def image_mask_binary(image: TYPE_IMAGE) -> TYPE_IMAGE:
         mask = np.expand_dims(mask, -1)
     return mask.astype(np.uint8)
 
-def image_matte(image: TYPE_IMAGE, color: tuple = (0, 0, 0, 255), width: int = None, height: int = None) -> TYPE_IMAGE:
+def image_matte(image: TYPE_IMAGE, color: Tuple[int,int,int,int]=(0,0,0,255), width: int=None, height: int=None) -> TYPE_IMAGE:
     """
     Puts an image atop a colored matte with the same dimensions as the image.
 
     Args:
         image (TYPE_IMAGE): The input image.
-        color (tuple): The color of the matte as a tuple (R, G, B, A).
+        color (tuple(int, int, int, int)): The color of the matte as a tuple (R, G, B, A).
         width (int, optional): The width of the matte. Defaults to the image width.
         height (int, optional): The height of the matte. Defaults to the image height.
 
@@ -2231,7 +2232,7 @@ def color_theory_complementary(color: TYPE_PIXEL) -> TYPE_PIXEL:
     color_a = pixel_hsv_adjust(color, 90, 0, 0)
     return hsv2bgr(color_a)
 
-def color_theory_monochromatic(color: TYPE_PIXEL) -> Tuple[TYPE_PIXEL, TYPE_PIXEL]:
+def color_theory_monochromatic(color: TYPE_PIXEL) -> Tuple[TYPE_PIXEL, ...]:
     color = bgr2hsv(color)
     sat = 255 / 5
     val = 255 / 5
@@ -2241,13 +2242,13 @@ def color_theory_monochromatic(color: TYPE_PIXEL) -> Tuple[TYPE_PIXEL, TYPE_PIXE
     color_d = pixel_hsv_adjust(color, 0, -4 * sat, -4 * val, mod_sat=True, mod_value=True)
     return hsv2bgr(color_a), hsv2bgr(color_b), hsv2bgr(color_c), hsv2bgr(color_d)
 
-def color_theory_split_complementary(color: TYPE_PIXEL) -> Tuple[TYPE_PIXEL, TYPE_PIXEL]:
+def color_theory_split_complementary(color: TYPE_PIXEL) -> Tuple[TYPE_PIXEL, ...]:
     color = bgr2hsv(color)
     color_a = pixel_hsv_adjust(color, 75, 0, 0)
     color_b = pixel_hsv_adjust(color, 105, 0, 0)
     return hsv2bgr(color_a), hsv2bgr(color_b)
 
-def color_theory_analogous(color: TYPE_PIXEL) -> Tuple[TYPE_PIXEL, TYPE_PIXEL, TYPE_PIXEL, TYPE_PIXEL]:
+def color_theory_analogous(color: TYPE_PIXEL) -> Tuple[TYPE_PIXEL, ...]:
     color = bgr2hsv(color)
     color_a = pixel_hsv_adjust(color, 30, 0, 0)
     color_b = pixel_hsv_adjust(color, 15, 0, 0)
@@ -2255,27 +2256,27 @@ def color_theory_analogous(color: TYPE_PIXEL) -> Tuple[TYPE_PIXEL, TYPE_PIXEL, T
     color_d = pixel_hsv_adjust(color, 150, 0, 0)
     return hsv2bgr(color_a), hsv2bgr(color_b), hsv2bgr(color_c), hsv2bgr(color_d)
 
-def color_theory_triadic(color: TYPE_PIXEL) -> Tuple[TYPE_PIXEL, TYPE_PIXEL]:
+def color_theory_triadic(color: TYPE_PIXEL) -> Tuple[TYPE_PIXEL, ...]:
     color = bgr2hsv(color)
     color_a = pixel_hsv_adjust(color, 60, 0, 0)
     color_b = pixel_hsv_adjust(color, 120, 0, 0)
     return hsv2bgr(color_a), hsv2bgr(color_b)
 
-def color_theory_compound(color: TYPE_PIXEL) -> Tuple[TYPE_PIXEL, TYPE_PIXEL, TYPE_PIXEL]:
+def color_theory_compound(color: TYPE_PIXEL) -> Tuple[TYPE_PIXEL, ...]:
     color = bgr2hsv(color)
     color_a = pixel_hsv_adjust(color, 90, 0, 0)
     color_b = pixel_hsv_adjust(color, 120, 0, 0)
     color_c = pixel_hsv_adjust(color, 150, 0, 0)
     return hsv2bgr(color_a), hsv2bgr(color_b), hsv2bgr(color_c)
 
-def color_theory_square(color: TYPE_PIXEL) -> Tuple[TYPE_PIXEL, TYPE_PIXEL, TYPE_PIXEL]:
+def color_theory_square(color: TYPE_PIXEL) -> Tuple[TYPE_PIXEL, ...]:
     color = bgr2hsv(color)
     color_a = pixel_hsv_adjust(color, 45, 0, 0)
     color_b = pixel_hsv_adjust(color, 90, 0, 0)
     color_c = pixel_hsv_adjust(color, 135, 0, 0)
     return hsv2bgr(color_a), hsv2bgr(color_b), hsv2bgr(color_c)
 
-def color_theory_tetrad_custom(color: TYPE_PIXEL, delta:int=0) -> Tuple[TYPE_PIXEL, TYPE_PIXEL, TYPE_PIXEL]:
+def color_theory_tetrad_custom(color: TYPE_PIXEL, delta:int=0) -> Tuple[TYPE_PIXEL, ...]:
     color = bgr2hsv(color)
 
     # modulus on neg and pos
@@ -2292,7 +2293,7 @@ def color_theory_tetrad_custom(color: TYPE_PIXEL, delta:int=0) -> Tuple[TYPE_PIX
     color_d = pixel_hsv_adjust(color, 90 + delta, 0, 0)
     return hsv2bgr(color_a), hsv2bgr(color_b), hsv2bgr(color_c), hsv2bgr(color_d)
 
-def color_theory(image: TYPE_IMAGE, custom:int=0, scheme: EnumColorTheory=EnumColorTheory.COMPLIMENTARY) -> Tuple[TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE]:
+def color_theory(image: TYPE_IMAGE, custom:int=0, scheme: EnumColorTheory=EnumColorTheory.COMPLIMENTARY) -> Tuple[TYPE_IMAGE, ...]:
 
     b = [0,0,0]
     c = [0,0,0]
@@ -2327,17 +2328,17 @@ def color_theory(image: TYPE_IMAGE, custom:int=0, scheme: EnumColorTheory=EnumCo
 
 # =============================================================================
 
-def coord_cart2polar(x, y) -> Tuple[Any, Any]:
+def coord_cart2polar(x: float, y: float) -> Tuple[float, ...]:
     r = np.sqrt(x**2 + y**2)
     theta = np.arctan2(y, x)
     return r, theta
 
-def coord_polar2cart(r, theta) -> tuple:
+def coord_polar2cart(r: float, theta: float) -> Tuple[float, ...]:
     x = r * np.cos(theta)
     y = r * np.sin(theta)
     return x, y
 
-def coord_default(width:int, height:int, origin:Tuple[float, float]=None) -> tuple:
+def coord_default(width:int, height:int, origin:Tuple[float, ...]=None) -> Tuple[float, ...]:
     """Creates x & y coords for the indicies in a numpy array "data".
     "origin" defaults to the center of the image. Specify origin=(0,0)
     to set the origin to the lower left corner of the image."""
@@ -2350,7 +2351,7 @@ def coord_default(width:int, height:int, origin:Tuple[float, float]=None) -> tup
     y -= origin_y
     return x, y
 
-def coord_fisheye(width: int, height: int, distortion: float) -> Tuple[TYPE_IMAGE, TYPE_IMAGE]:
+def coord_fisheye(width: int, height: int, distortion: float) -> Tuple[TYPE_IMAGE, ...]:
     map_x, map_y = np.meshgrid(np.linspace(0., 1., width), np.linspace(0., 1., height))
     # normalized
     xnd, ynd = (2 * map_x - 1), (2 * map_y - 1)
@@ -2367,7 +2368,7 @@ def coord_perspective(width: int, height: int, pts: List[TYPE_COORD]) -> TYPE_IM
     pts = np.column_stack([pts[:, 0], pts[:, 1]])
     return cv2.getPerspectiveTransform(object_pts, pts)
 
-def coord_sphere(width: int, height: int, radius: float) -> Tuple[TYPE_IMAGE, TYPE_IMAGE]:
+def coord_sphere(width: int, height: int, radius: float) -> Tuple[TYPE_IMAGE, ...]:
     theta, phi = np.meshgrid(np.linspace(0, TAU, width), np.linspace(0, np.pi, height))
     x = radius * np.sin(phi) * np.cos(theta)
     y = radius * np.sin(phi) * np.sin(theta)
