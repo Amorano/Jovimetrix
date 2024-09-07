@@ -80,7 +80,7 @@ Captures MIDI messages from an external MIDI device or controller. It monitors M
         return Lexicon._parse(d, cls)
 
     @classmethod
-    def IS_CHANGED(cls) -> float:
+    def IS_CHANGED(cls, **kw) -> float:
         return float("nan")
 
     def __init__(self, *arg, **kw) -> None:

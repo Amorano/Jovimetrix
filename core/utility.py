@@ -613,7 +613,7 @@ class QueueBaseNode(JOVBaseNode):
                     self.__last_q_value[q_data] = json.load(f)
         return self.__last_q_value.get(q_data, q_data)
 
-    def run(self, ident, full_rgba=False, **kw) -> Tuple[Any, List[str], str, int, int]:
+    def run(self, ident, **kw) -> Tuple[Any, List[str], str, int, int]:
 
         self.__ident = ident
         # should work headless as well
@@ -666,10 +666,11 @@ class QueueBaseNode(JOVBaseNode):
                     for idx, d in enumerate(data):
                         d = image_convert(d, mc)
                         d = image_matte(d, (0,0,0,0), width=mw, height=mh)
-                        d = cv2tensor(d)
+                        # d = cv2tensor(d)
                         ret.append(d)
                         pbar.update_absolute(idx)
-                    data = torch.cat(ret, dim=0)
+                    # data = torch.cat(ret, dim=0)
+                    data = ret
             else:
                 data = self.process(self.__q[self.__index])
                 self.__index += 1
@@ -711,8 +712,11 @@ Manage a queue of items, such as file paths or data. Supports various formats in
 
     def run(self, ident, **kw) -> Tuple[Any, List[str], str, int, int]:
         data, aa, ba, ca, da = super().run(ident, **kw)
-        if isinstance(data, (list, np.ndarray,)) and isinstance(data[0], (np.ndarray,)):
+        if isinstance(data, (list, )) and isinstance(data[0], (np.ndarray,)):
             data = [cv2tensor(d) for d in data]
+            data = torch.cat(data, dim=0)
+        else:
+            data = cv2tensor(data)
         return data, aa, ba, ca, da
 
 class QueueTooNode(QueueBaseNode):
@@ -727,12 +731,19 @@ Manage a queue of specific items: media files. Supports various image and video 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = super().INPUT_TYPES()
-        d = deep_merge(d, {
-            "optional": {
+        d = {"optional": {
+                Lexicon.QUEUE: ("STRING", {"multiline": True, "default": "./res/img/test-a.png"}),
+                Lexicon.BATCH: ("BOOLEAN", {"default": False, "tooltips":"Load all items, if they are loadable items, i.e. batch load images from the Queue's list"}),
+                Lexicon.VALUE: ("INT", {"mij": 0, "default": 0, "tooltips": "The current index for the current queue item"}),
+                Lexicon.RECURSE: ("BOOLEAN", {"default": False}),
+                Lexicon.WAIT: ("BOOLEAN", {"default": False, "tooltips":"Hold the item at the current queue index"}),
+                Lexicon.RESET: ("BOOLEAN", {"default": False, "tooltips":"Reset the queue back to index 1"}),
+                #
                 Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.MATTE.name}),
                 Lexicon.WH: ("VEC2INT", {"default": (512, 512), "mij":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
-                Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True})
+                Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True}),
+
             },
             "outputs": {
                 0: ("IMAGE", {"tooltips":"Full channel [RGBA] image. If there is an alpha, the image will be masked out with it when using this output."}),
@@ -742,7 +753,7 @@ Manage a queue of specific items: media files. Supports various image and video 
                 4: (Lexicon.INDEX, {"tooltips":"Current index for the selected item in the Queue list"}),
                 5: (Lexicon.TOTAL, {"tooltips":"Total items in the current Queue List"}),
             }
-        })
+        }
         return Lexicon._parse(d, cls)
 
     def run(self, ident, **kw) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, str, int, int]:

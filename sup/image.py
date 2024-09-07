@@ -423,7 +423,7 @@ def cv2tensor_full(image: TYPE_IMAGE, matte:TYPE_PIXEL=0) -> Tuple[torch.Tensor,
     mask = image_mask(rgba)
     rgba = torch.from_numpy(rgba.astype(np.float32) / 255.0).unsqueeze(0)
     rgb = torch.from_numpy(rgb.astype(np.float32) / 255.0).unsqueeze(0)
-    mask = torch.from_numpy(mask.astype(np.float32) / 255.0)
+    mask = torch.from_numpy(mask.astype(np.float32) / 255.0).unsqueeze(0)
     return rgba, rgb, mask
 
 def hsv2bgr(hsl_color: TYPE_PIXEL) -> TYPE_PIXEL:

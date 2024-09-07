@@ -46,15 +46,18 @@ app.registerExtension({
             this.data_all = [];
 
             const widget_queue = this.widgets.find(w => w.name === 'Q');
+            const widget_value = this.widgets.find(w => w.name === 'VAL');
             const widget_hold = this.widgets.find(w => w.name === '✋🏽');
             const widget_reset = this.widgets.find(w => w.name === 'RESET');
-            const widget_value = this.widgets.find(w => w.name === 'VAL');
-            widget_value.callback = async() => {
+            const widget_batch = this.widgets.find(w => w.name === 'BATCH');
+            widget_batch.callback = async() => {
+                widgetHide(this, widget_value);
                 widgetHide(this, widget_hold);
                 widgetHide(this, widget_reset);
-                if (widget_value.value == 0) {
-                    widgetShow(widget_reset);
+                if (!widget_batch.value) {
+                    widgetShow(widget_value);
                     widgetShow(widget_hold);
+                    widgetShow(widget_reset);
                 }
                 nodeFitHeight(this);
             }
@@ -62,6 +65,7 @@ app.registerExtension({
             widget_queue?.inputEl.addEventListener('input', function () {
                 const value = widget_queue.value.split('\n');
                 update_list(self, value);
+                console.info(value)
             });
 
             widget_reset.callback = async() => {
@@ -108,7 +112,7 @@ app.registerExtension({
                 api.removeEventListener(EVENT_JOVI_DONE, python_queue_done);
             };
 
-            setTimeout(() => { widget_value.callback(); }, 10);
+            setTimeout(() => { widget_batch.callback(); }, 10);
             return me;
         }
 

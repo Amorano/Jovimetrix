@@ -149,10 +149,10 @@ Capture frames from various sources such as URLs, cameras, monitors, windows, or
                 bbox = parse_param(kw, Lexicon.BBOX, EnumConvertType.VEC4, [(0,0,1,1)], 0, 1)[0]
                 for idx in range(batch_size):
 
-                    img = monitor_capture(which, bbox) #, width, height)
+                    img = monitor_capture(which, bbox)
                     if img is None:
                         img = channel_solid(width, height, matte)
-                    else:
+                    elif mode != EnumScaleMode.MATTE:
                         img = image_scalefit(img, width, height, mode, sample, matte)
 
                     images.append(cv2tensor_full(img))
@@ -169,7 +169,7 @@ Capture frames from various sources such as URLs, cameras, monitors, windows, or
                     img = window_capture(which, dpi=dpi)
                     if img is None:
                         img = channel_solid(width, height, matte)
-                    else:
+                    elif mode != EnumScaleMode.MATTE:
                         img = image_scalefit(img, width, height, mode, sample, matte)
                     images.append(cv2tensor_full(img))
                     if batch_size > 1:
@@ -220,7 +220,9 @@ Capture frames from various sources such as URLs, cameras, monitors, windows, or
                     self.__device.zoom = parse_param(kw, Lexicon.ZOOM, EnumConvertType.FLOAT, 0, 0, 1)[0]
 
                 orient = parse_param(kw, Lexicon.ORIENT, EnumConvertType.STRING, EnumCanvasOrientation.NORMAL.name)[0]
-                # orient = EnumCanvasOrientation[orient]
+
+                self.__device
+
                 for idx in range(batch_size):
                     img = self.__device.frame
                     if img is None:
@@ -232,7 +234,8 @@ Capture frames from various sources such as URLs, cameras, monitors, windows, or
                                 img = cv2.flip(img, 1)
                             if orient in [EnumCanvasOrientation.FLIPY, EnumCanvasOrientation.FLIPXY]:
                                 img = cv2.flip(img, 0)
-                        img = image_scalefit(img, width, height, mode, sample, matte)
+                        if mode != EnumScaleMode.MATTE:
+                            img = image_scalefit(img, width, height, mode, sample, matte)
                         images.append(cv2tensor_full(img))
                     pbar.update_absolute(idx)
                     if batch_size > 1:
@@ -251,7 +254,7 @@ Capture frames from various sources such as URLs, cameras, monitors, windows, or
                     img = self.__device.frame
                     if img is None:
                         images.append(self.__empty)
-                    else:
+                    elif mode != EnumScaleMode.MATTE:
                         img = image_scalefit(img, width, height, mode, sample, matte)
                         images.append(cv2tensor_full(img))
                     pbar.update_absolute(idx)
@@ -327,7 +330,8 @@ Sends frames to a specified route, typically for live streaming or recording pur
                     img = channel_solid(w, h, matte, EnumImageType.RGBA)
                 else:
                     img = tensor2cv(images)
-                    img = image_scalefit(img, w, h, mode, sample, matte)
+                    if mode != EnumScaleMode.MATTE:
+                        img = image_scalefit(img, w, h, mode, sample, matte)
                     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                 self.__device.image = img
             pbar.update_absolute(idx)
