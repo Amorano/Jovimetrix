@@ -65,7 +65,6 @@ app.registerExtension({
             widget_queue?.inputEl.addEventListener('input', function () {
                 const value = widget_queue.value.split('\n');
                 update_list(self, value);
-                console.info(value)
             });
 
             widget_reset.callback = async() => {

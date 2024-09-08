@@ -44,8 +44,6 @@ function nodeColorGet(node) {
         return color;
     }
 
-    // console.info(find_me)
-
     color = NODE_LIST?.[find_me];
     // now look to category theme
     if (color && color?.category) {
