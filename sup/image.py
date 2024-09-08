@@ -19,12 +19,11 @@ import cupy as cp
 import numpy as np
 from numba import jit, cuda
 from daltonlens import simulate
-from sklearn.cluster import MiniBatchKMeans
 from scipy import ndimage
 from skimage import exposure
 from skimage.metrics import structural_similarity as ssim
 from PIL import Image, ImageDraw, ImageOps, ImageChops
-from blendmodes.blend import blendLayers, BlendType
+from blendmodes.blend import BlendType, blendLayers
 
 from loguru import logger
 

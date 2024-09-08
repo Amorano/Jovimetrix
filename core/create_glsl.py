@@ -5,6 +5,7 @@ Creation
 
 import os
 import sys
+from enum import Enum
 from pathlib import Path
 from typing import Any, Tuple
 
@@ -18,10 +19,15 @@ except:
     pass
 from comfy.utils import ProgressBar
 
-from Jovimetrix import JOVImageNode, comfy_message, deep_merge, Lexicon, ROOT, JOV_TYPE_ANY
-from Jovimetrix.sup.util import load_file, parse_param, EnumConvertType, parse_value
-from Jovimetrix.sup.image import EnumInterpolation, EnumScaleMode, cv2tensor_full, image_convert, image_scalefit, tensor2cv, MIN_IMAGE_SIZE
-from Jovimetrix.sup.shader import PTYPE, shader_meta, CompileException, GLSLShader
+from Jovimetrix import ROOT, JOV_TYPE_ANY, Lexicon, JOVImageNode, comfy_message, \
+    deep_merge
+
+from Jovimetrix.sup.util import EnumConvertType, load_file, parse_param, parse_value
+
+from Jovimetrix.sup.image import MIN_IMAGE_SIZE, EnumInterpolation, EnumScaleMode, \
+    cv2tensor_full, image_convert, image_scalefit, tensor2cv
+
+from Jovimetrix.sup.shader import PTYPE, CompileException, GLSLShader, shader_meta
 
 # =============================================================================
 
@@ -45,6 +51,12 @@ logger.info(f"  vertex programs: {len(GLSL_PROGRAMS['vertex'])}")
 logger.info(f"fragment programs: {len(GLSL_PROGRAMS['fragment'])}")
 
 JOV_CATEGORY = "CREATE"
+
+class EnumEdgeGLSL(Enum):
+    CLIP = 1
+    WRAP = 2
+    WRAPX = 3
+    WRAPY = 4
 
 # =============================================================================
 
@@ -94,7 +106,8 @@ class GLSLNodeBase(JOVImageNode):
                 Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.MATTE.name}),
                 Lexicon.WH: ("VEC2INT", {"default": (512, 512), "mij":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
-                Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True})
+                Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True}),
+                Lexicon.EDGE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
             }
         })
         return Lexicon._parse(d, cls)

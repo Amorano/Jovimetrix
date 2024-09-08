@@ -12,7 +12,7 @@ from PIL import Image, ImageFont, ImageDraw
 
 from loguru import logger
 
-from Jovimetrix.sup.image import pil2cv, TYPE_IMAGE, TYPE_PIXEL
+from Jovimetrix.sup.image import TYPE_IMAGE, TYPE_PIXEL, pil2cv
 
 # =============================================================================
 

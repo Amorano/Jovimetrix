@@ -13,18 +13,19 @@ from loguru import logger
 
 from comfy.utils import ProgressBar
 
-from Jovimetrix import deep_merge, JOVBaseNode, JOVImageNode, Lexicon, JOV_TYPE_IMAGE
+from Jovimetrix import JOV_TYPE_IMAGE, JOVBaseNode, JOVImageNode, Lexicon, \
+    deep_merge
 
-from Jovimetrix.sup.util import parse_param, zip_longest_fill, EnumConvertType
+from Jovimetrix.sup.util import EnumConvertType, parse_param, zip_longest_fill
 
-from Jovimetrix.sup.image import channel_solid, cv2tensor, cv2tensor_full, \
-    image_invert, image_mask_add, image_mask_binary, image_matte, \
-    image_rotate, image_scalefit, image_stereogram, image_transform, \
-    tensor2cv, shape_polygon, image_translate, pil2cv, shape_ellipse, shape_quad, \
-    EnumScaleMode, EnumInterpolation, EnumEdge, EnumImageType, EnumShapes, MIN_IMAGE_SIZE
+from Jovimetrix.sup.image import MIN_IMAGE_SIZE, EnumScaleMode, EnumInterpolation, \
+    EnumEdge, EnumImageType, EnumShapes, channel_solid, cv2tensor, cv2tensor_full, \
+    image_invert, image_mask_add, image_mask_binary, image_matte, image_rotate, \
+    image_scalefit, image_stereogram, image_transform, tensor2cv, shape_polygon, \
+    image_translate, pil2cv, shape_ellipse, shape_quad
 
-from Jovimetrix.sup.text import font_names, text_autosize, text_draw, \
-    EnumAlignment, EnumJustify
+from Jovimetrix.sup.text import EnumAlignment, EnumJustify, font_names, \
+    text_autosize, text_draw
 
 from Jovimetrix.sup.audio import graph_sausage
 

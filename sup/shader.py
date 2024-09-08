@@ -6,7 +6,7 @@ Blended from old ModernGL implementation + Audio_Scheduler & Fill Node Pack
 """
 
 import re
-from typing import Any, Dict, Tuple, Optional, List
+from typing import Any, Dict, Tuple
 
 import cv2
 import glfw
@@ -15,7 +15,7 @@ import OpenGL.GL as gl
 
 from loguru import logger
 
-from Jovimetrix.sup.util import EnumConvertType, load_file, parse_value
+from Jovimetrix.sup.util import EnumConvertType, parse_value
 from Jovimetrix.sup.image import image_convert
 
 # =============================================================================
@@ -349,7 +349,7 @@ void main()
     def bgcolor(self, color:Tuple[int, ...]) -> None:
         self.__bgcolor = tuple(float(x) / 255. for x in color)
 
-    def render(self, time_delta:float=0., **kw) -> np.ndarray:
+    def render(self, time_delta:float=0., tile_edge:Tuple[bool,...]=(False,False), **kw) -> np.ndarray:
         glfw.make_context_current(self.__window)
         gl.glUseProgram(self.__program)
 
@@ -394,8 +394,17 @@ void main()
                 gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_RGBA32F, self.__size[0], self.__size[1], 0, gl.GL_RGBA, gl.GL_FLOAT, val)
                 gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_LINEAR)
                 gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_LINEAR)
-                gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_S, gl.GL_CLAMP_TO_EDGE)
-                gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_T, gl.GL_CLAMP_TO_EDGE)
+
+                if tile_edge[0]:
+                    gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_S, gl.GL_REPEAT)
+                else:
+                    gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_S, gl.GL_CLAMP_TO_EDGE)
+
+                if tile_edge[1]:
+                    gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_T, gl.GL_REPEAT)
+                else:
+                    gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_T, gl.GL_CLAMP_TO_EDGE)
+
                 gl.glUniform1i(p_loc, texture_index)
                 texture_index += 1
             elif val:

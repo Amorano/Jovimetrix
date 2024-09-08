@@ -19,14 +19,14 @@ from loguru import logger
 from comfy.utils import ProgressBar
 from nodes import interrupt_processing
 
-from Jovimetrix import comfy_message, deep_merge, parse_reset, Lexicon, \
-    JOVBaseNode, ComfyAPIMessage, TimedOutException, JOV_TYPE_ANY, \
-    JOV_TYPE_FULL, JOV_TYPE_NUMBER, JOV_TYPE_VECTOR
+from Jovimetrix import JOV_TYPE_ANY, JOV_TYPE_FULL, JOV_TYPE_NUMBER, \
+    JOV_TYPE_VECTOR, Lexicon, JOVBaseNode, ComfyAPIMessage, TimedOutException, \
+    comfy_message, deep_merge, parse_reset
 
-from Jovimetrix.sup.util import parse_dynamic, parse_param, parse_value, vector_swap, \
-    zip_longest_fill, EnumConvertType, EnumSwizzle
+from Jovimetrix.sup.util import EnumConvertType, EnumSwizzle, parse_dynamic, \
+    parse_param, parse_value, vector_swap, zip_longest_fill
 
-from Jovimetrix.sup.anim import ease_op, wave_op, EnumWave, EnumEase
+from Jovimetrix.sup.anim import EnumWave, EnumEase, ease_op, wave_op
 
 # =============================================================================
 
