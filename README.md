@@ -40,6 +40,39 @@ Please consider sponsoring me if you enjoy the results of my work, code or docum
 
 ## HIGHLIGHTS
 
+* 30 function `BLEND` node -- subtract, multiply and overlay like the best
+* Vector support for 2, 3, 4 size tuples of integer or float type
+* Specific RGB/RGBA color vector support that provides a color picker
+* All Image inputs support RGBA, RGB or pure MASK input
+* GLSL shader support
+* * `GLSL Node`  provides raw access to Vertex and Fragment shaders
+* * `Dynamic GLSL` dynamically convert existing GLSL scripts file into ComfyUI nodes at runtime
+* * Hand written GLSL nodes to speed up specific tasks better done on the GPU (10x speedup in most cases)
+* `STREAM READER` node to capture monitor, webcam or url media
+* `STREAM WRITER` node to export media to a HTTP/HTTPS server for OBS or other 3rd party streaming software
+* `SPOUT` streaming support *WINDOWS ONLY*
+* MIDI device read support with `MIDI FILTER` and `MIDI FILTER EZ` nodes to drive other node parameters
+* Full Text generation support using installed system fonts
+* Basic parameteric shape (Circle, Square, Polygon) generator
+* `COLOR BLIND` check support
+* `COLOR MATCH` against existing images or create a custom LUT
+* Generate `COLOR THEORY` spreads from an existing image
+* `PIXEL SPLIT` separate the channels of an image to manipulate and `PIXEL MERGE` them back together
+* `STACK` a series of images into a new single image vertically, horizontally or in a grid
+* Or `FLATTEN` a batch of images into a single image with each image subsequently added on top (slap comp)
+* `VALUE` Node has conversion support for all ComfyUI types and some 3rd party types (2DCoords, Mixlab Layers)
+* `LERP` node to linear interpolate all ComfyUI and Jovimetrix value types
+* Automatic conversion of Mixlab Layer types into Image types
+* Generic `ARRAY` that can Merge, Split, Select, Slice or Randomize a list of ANY type
+* `STRINGER` node to perform specific string manipulation operations: Split, Join, Replace, Slice.
+* A `QUEUE` Node that supports recursing directories, filtering multiple file types and batch loading
+* Use the `OP UNARY` and `OP BINARY` nodes to perform single and double type functions across all ComfyUI and Jovimetrix value types
+* Manipulate vectors with the `SWIZZLE` node to swap their XYZW positions
+* `DELAY` execution at certain parts in a workflow, with or without a timeout
+* Generate curve data with the `TICK` and `WAVE GEN` nodes
+* Help System for *ALL NODES* that will auto-parse unknown knows for their type data and descriptions
+* Colorization for *ALL NODES* using their own node settings, their node group or via regex pattern matching
+
 ### HELP SYSTEM
 
 <div align="center">
@@ -61,6 +94,19 @@ If those nodes have descriptions written in HTML or Markdown, they will be conve
 </div>
 
 ## UPDATES
+
+**2024/09/08** @1.2.36:
+* MIDI `MIDI FILTER` and `MIDI FILTER EZ` Nodes cleaned up
+* `COMPARISON` Node value conversion fixed
+* new `GLSL TRANSFORM` Node -- offset, rotate and tile
+* new `GLSL POSTERIZE` Node
+* new `GLSL WARP` Node -- warps image based on distortion and strength mask
+* new `GLSL CONICAL GRADIENT` Node
+* new `EDGE` mode for `GLSL shaders`: Clamp, Wrap, Mirror
+* `QUEUE TOO` Node updated to support batch
+* Supported Versions:
+  * ComfyUI 0.1.3+
+  * ComfyUI Frontend 1.2.30+
 
 **2024/09/05** @1.2.35:
 * `VALUE` Node defaults fixed on save
@@ -91,50 +137,6 @@ If those nodes have descriptions written in HTML or Markdown, they will be conve
 **2024/08/31** @1.2.32:
 * Better MASK/ALPHA support for `BLEND`, `ADJUST` and `QUEUE`
 * Cleaner Markdown outputs
-* Supports Versions:
-  * ComfyUI 0.1.3+
-  * ComfyUI Frontend 1.2.30+
-
-**2024/08/28** @1.2.31:
-
-* New `STRINGER` Node for string operations: Split, Join, Replace and Slice.
-
-![STRINGER NODE](https://github.com/user-attachments/assets/557bdef6-c0d3-4d01-a3dd-46f4a51952fa)
-
-* `QUEUE` Node now supports recursing directories. To filter pngs, jpgs, and gifs from the c:/images folder and its sub-folders:
-
-    `c:/images;.png,.jpg,.gif`
-
-    You can add as many extensions as you need, but keep in mind not every image type is supported just because you filter for it -- the Queue node will still return strings where it cant find/load a file type.
-
-![QUEUE NODE](https://github.com/user-attachments/assets/9686b900-24a2-46ab-88ba-9e3c929b439c)
-
-* Supports Versions:
-  * ComfyUI 0.1.3+
-  * ComfyUI Frontend 1.2.30+
-
-**2024/08/25** @1.2.30:
-* Added conversion coercion for Mixlab Layer types
-![Mixlab supports](https://github.com/user-attachments/assets/05a53b98-b620-4743-b7b5-26da4140d443)
-* Supports Versions:
-  * ComfyUI 0.1.3+
-  * ComfyUI Frontend 1.2.30+
-
-**2024/08/24** @1.2.29:
-* All node dynamic help
-* Array node -- updated to return single values as their single value, not a list
-* Supports Versions:
-  * ComfyUI 0.1.3+
-  * ComfyUI Frontend 1.2.30+
-
-**2024/08/23** @1.2.28:
-* Colorization and Help panel only work on new frontend
-* Supports Versions:
-  * ComfyUI 0.1.3+
-  * ComfyUI Frontend 1.2.30+
-
-**2024/08/20** @1.2.14:
-* Complete Wiki and Examples revamp.
 * Supports Versions:
   * ComfyUI 0.1.3+
   * ComfyUI Frontend 1.2.30+
