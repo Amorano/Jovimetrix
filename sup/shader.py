@@ -6,6 +6,7 @@ Blended from old ModernGL implementation + Audio_Scheduler & Fill Node Pack
 """
 
 import re
+from enum import Enum
 from typing import Any, Dict, Tuple
 
 import cv2
@@ -48,6 +49,11 @@ PTYPE = {
     'vec4': EnumConvertType.VEC4,
     'sampler2D': EnumConvertType.IMAGE
 }
+
+class EnumEdgeGLSL(Enum):
+    CLAMP  = 10
+    WRAP   = 20
+    MIRROR = 30
 
 RE_VARIABLE = re.compile(r"uniform\s+(\w+)\s+(\w+);(?:\s*\/\/\s*([0-9.,\s]*))?\s*(?:;\s*([0-9.-]+))?\s*(?:;\s*([0-9.-]+))?\s*(?:;\s*([0-9.-]+))?\s*(?:\|\s*(.*))?$", re.MULTILINE)
 
@@ -349,7 +355,10 @@ void main()
     def bgcolor(self, color:Tuple[int, ...]) -> None:
         self.__bgcolor = tuple(float(x) / 255. for x in color)
 
-    def render(self, time_delta:float=0., tile_edge:Tuple[bool,...]=(False,False), **kw) -> np.ndarray:
+    def render(self, time_delta:float=0.,
+               tile_edge:Tuple[EnumEdgeGLSL,...]=(EnumEdgeGLSL.CLAMP, EnumEdgeGLSL.CLAMP),
+               **kw) -> np.ndarray:
+
         glfw.make_context_current(self.__window)
         gl.glUseProgram(self.__program)
 
@@ -395,15 +404,14 @@ void main()
                 gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_LINEAR)
                 gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_LINEAR)
 
-                if tile_edge[0]:
-                    gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_S, gl.GL_REPEAT)
-                else:
-                    gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_S, gl.GL_CLAMP_TO_EDGE)
-
-                if tile_edge[1]:
-                    gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_T, gl.GL_REPEAT)
-                else:
-                    gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_T, gl.GL_CLAMP_TO_EDGE)
+                for idx, text_wrap in enumerate([gl.GL_TEXTURE_WRAP_S, gl.GL_TEXTURE_WRAP_T]):
+                    match EnumEdgeGLSL[tile_edge[idx]]:
+                        case EnumEdgeGLSL.WRAP:
+                            gl.glTexParameteri(gl.GL_TEXTURE_2D, text_wrap, gl.GL_REPEAT)
+                        case EnumEdgeGLSL.MIRROR:
+                            gl.glTexParameteri(gl.GL_TEXTURE_2D, text_wrap, gl.GL_MIRRORED_REPEAT)
+                        case _:
+                            gl.glTexParameteri(gl.GL_TEXTURE_2D, text_wrap, gl.GL_CLAMP_TO_EDGE)
 
                 gl.glUniform1i(p_loc, texture_index)
                 texture_index += 1

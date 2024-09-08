@@ -447,7 +447,7 @@ Evaluates two inputs (A and B) with a specified comparison operators and optiona
                 Lexicon.COMP_B: (JOV_TYPE_ANY, {"default": 0}),
                 Lexicon.COMPARE: (EnumComparison._member_names_, {"default": EnumComparison.EQUAL.name}),
                 Lexicon.FLIP: ("BOOLEAN", {"default": False}),
-                Lexicon.INVERT: ("BOOLEAN", {"default": False}),
+                Lexicon.INVERT: ("BOOLEAN", {"default": False, "tooltips":"reverse the successful and failure inputs"}),
             },
             "outputs": {
                 0: (Lexicon.TRIGGER, {"tooltips":f"Outputs the input at {Lexicon.IN_A} or {Lexicon.IN_B} depending on which evaluated `TRUE`"}),
@@ -457,8 +457,8 @@ Evaluates two inputs (A and B) with a specified comparison operators and optiona
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[Any, Any]:
-        A = parse_param(kw, Lexicon.IN_A, EnumConvertType.VEC4, 0)
-        B = parse_param(kw, Lexicon.IN_B, EnumConvertType.VEC4, 0)
+        A = parse_param(kw, Lexicon.IN_A, EnumConvertType.ANY, 0)
+        B = parse_param(kw, Lexicon.IN_B, EnumConvertType.ANY, 0)
         good = parse_param(kw, Lexicon.COMP_A, EnumConvertType.ANY, 0)
         fail = parse_param(kw, Lexicon.COMP_B, EnumConvertType.ANY, 0)
         op = parse_param(kw, Lexicon.COMPARE, EnumConvertType.STRING, EnumComparison.EQUAL.name)
@@ -469,22 +469,23 @@ Evaluates two inputs (A and B) with a specified comparison operators and optiona
         vals = []
         results = []
         for idx, (A, B, good, fail, op, flip, invert) in enumerate(params):
-            if not isinstance(A, (list, set, tuple)):
+            if not isinstance(A, (list,)):
                 A = [A]
-            if not isinstance(B, (list, set, tuple)):
+            if not isinstance(B, (list,)):
                 B = [B]
             size = min(4, max(len(A), len(B))) - 1
             typ = [EnumConvertType.FLOAT, EnumConvertType.VEC2, EnumConvertType.VEC3, EnumConvertType.VEC4][size]
-            val_a = parse_value(A, typ, [A[-1]] * size)
-            val_b = parse_value(B, typ, [B[-1]] * size)
-            if flip:
-                val_a, val_b = val_b, val_a
 
-            if not isinstance(val_a, (list, tuple)):
+            val_a = parse_value(A, typ, [A[-1]] * size)
+            if not isinstance(val_a, (list,)):
                 val_a = [val_a]
-            if not isinstance(val_b, (list, tuple)):
+
+            val_b = parse_value(B, typ, [B[-1]] * size)
+            if not isinstance(val_b, (list,)):
                 val_b = [val_b]
 
+            if flip:
+                val_a, val_b = val_b, val_a
             op = EnumComparison[op]
             match op:
                 case EnumComparison.EQUAL:
@@ -539,7 +540,7 @@ Evaluates two inputs (A and B) with a specified comparison operators and optiona
                 outs = outs[0].unsqueeze(0)
         else:
             outs = list(outs)
-        return outs, list(vals)
+        return outs, vals,
 
 class DelayNode(JOVBaseNode):
     NAME = "DELAY (JOV) ✋🏽"

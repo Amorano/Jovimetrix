@@ -5,7 +5,6 @@ Creation
 
 import os
 import sys
-from enum import Enum
 from pathlib import Path
 from typing import Any, Tuple
 
@@ -19,15 +18,17 @@ except:
     pass
 from comfy.utils import ProgressBar
 
-from Jovimetrix import ROOT, JOV_TYPE_ANY, Lexicon, JOVImageNode, comfy_message, \
-    deep_merge
+from Jovimetrix import ROOT, JOV_TYPE_ANY, Lexicon, JOVImageNode, \
+    comfy_message, deep_merge
 
-from Jovimetrix.sup.util import EnumConvertType, load_file, parse_param, parse_value
+from Jovimetrix.sup.util import EnumConvertType, load_file, parse_param, \
+    parse_value
 
-from Jovimetrix.sup.image import MIN_IMAGE_SIZE, EnumInterpolation, EnumScaleMode, \
-    cv2tensor_full, image_convert, image_scalefit, tensor2cv
+from Jovimetrix.sup.image import MIN_IMAGE_SIZE, EnumInterpolation, \
+    EnumScaleMode, cv2tensor_full, image_convert, image_scalefit, tensor2cv
 
-from Jovimetrix.sup.shader import PTYPE, CompileException, GLSLShader, shader_meta
+from Jovimetrix.sup.shader import PTYPE, CompileException, EnumEdgeGLSL, \
+    GLSLShader, shader_meta
 
 # =============================================================================
 
@@ -51,12 +52,6 @@ logger.info(f"  vertex programs: {len(GLSL_PROGRAMS['vertex'])}")
 logger.info(f"fragment programs: {len(GLSL_PROGRAMS['fragment'])}")
 
 JOV_CATEGORY = "CREATE"
-
-class EnumEdgeGLSL(Enum):
-    CLIP = 1
-    WRAP = 2
-    WRAPX = 3
-    WRAPY = 4
 
 # =============================================================================
 
@@ -107,7 +102,8 @@ class GLSLNodeBase(JOVImageNode):
                 Lexicon.WH: ("VEC2INT", {"default": (512, 512), "mij":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
                 Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True}),
-                Lexicon.EDGE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
+                Lexicon.EDGE_X: (EnumEdgeGLSL._member_names_, {"default": EnumEdgeGLSL.CLAMP.name}),
+                Lexicon.EDGE_Y: (EnumEdgeGLSL._member_names_, {"default": EnumEdgeGLSL.CLAMP.name}),
             }
         })
         return Lexicon._parse(d, cls)
@@ -128,6 +124,9 @@ class GLSLNodeBase(JOVImageNode):
         sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)[0]
         sample = EnumInterpolation[sample]
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)[0]
+        edge_x = parse_param(kw, Lexicon.EDGE_X, EnumConvertType.STRING, EnumEdgeGLSL.CLAMP.name)[0]
+        edge_y = parse_param(kw, Lexicon.EDGE_Y, EnumConvertType.STRING, EnumEdgeGLSL.CLAMP.name)[0]
+        edge = (edge_x, edge_y)
 
         try:
             self.__glsl.vertex = kw.pop(Lexicon.PROG_VERT, self.VERTEX)
@@ -139,7 +138,7 @@ class GLSLNodeBase(JOVImageNode):
             return
 
         variables = kw.copy()
-        for p in [Lexicon.MODE, Lexicon.WH, Lexicon.SAMPLE, Lexicon.MATTE, Lexicon.BATCH, Lexicon.TIME, Lexicon.FPS]:
+        for p in [Lexicon.MODE, Lexicon.WH, Lexicon.SAMPLE, Lexicon.MATTE, Lexicon.BATCH, Lexicon.TIME, Lexicon.FPS, Lexicon.EDGE]:
             variables.pop(p, None)
 
         self.__glsl.fps = parse_param(kw, Lexicon.FPS, EnumConvertType.INT, 24, 1, 120)[0]
@@ -173,7 +172,7 @@ class GLSLNodeBase(JOVImageNode):
 
             self.__glsl.size = (w, h)
 
-            img = self.__glsl.render(self.__delta, **vars)
+            img = self.__glsl.render(self.__delta, edge, **vars)
             if mode != EnumScaleMode.MATTE:
                 img = image_scalefit(img, w, h, mode, sample)
             img = cv2tensor_full(img, matte)

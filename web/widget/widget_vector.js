@@ -24,8 +24,8 @@ const VectorWidget = (app, inputName, options, initial, desc='') => {
         widget.options.precision = 0;
         widget.options.step = 1;
         if (widget.options?.rgb || false) {
-            widget.options.max = 255;
-            widget.options.min = 0;
+            widget.options.maj = 255;
+            widget.options.mij = 0;
             // add the label for being an RGB(A) field?
             widget.options.label = ['🟥', '🟩', '🟦', 'ALPHA'];
         }
@@ -109,22 +109,18 @@ const VectorWidget = (app, inputName, options, initial, desc='') => {
         ctx.restore()
     }
 
-    function clamp(w, v, idx) {
-        if (w.options?.max !== undefined) {
-            v = Math.min(v, w.options.max)
-        }
-        if (w.options?.min !== undefined) {
-            v = Math.max(v, w.options.min)
-        }
-        const precision = widget.options?.precision !== undefined ? widget.options.precision : 0;
-        w.value[idx] = (precision == 0) ? Number(v) : parseFloat(v).toFixed(precision)
+    function clamp(widget, v, idx) {
+        v = Math.min(v, widget.options?.maj !== undefined ? widget.options.maj : v);
+        v = Math.max(v, widget.options?.mij !== undefined ? widget.options.mij : v);
+        const precision = widget.options?.precision || 0;
+        widget.value[idx] = (precision == 0) ? Number(v) : parseFloat(v).toFixed(precision);
     }
 
     widget.mouse = function (e, pos, node) {
         let delta = 0;
         if (e.type === 'pointerdown' && isDragging === undefined) {
             const x = pos[0] - label_full;
-            const size = Object.keys(this.value).length;;
+            const size = Object.keys(this.value).length;
             const element_width = (node.size[0] - label_full - widget_padding * 1.25) / size;
             const index = Math.floor(x / element_width);
             if (index >= 0 && index < size) {
@@ -182,8 +178,8 @@ const VectorWidget = (app, inputName, options, initial, desc='') => {
                         if (this.value[idx] != v) {
                             setTimeout(
                                 function () {
-                                    clamp(this, v, idx)
-                                    domInnerValueChange(node, pos, this, this.value, e)
+                                    clamp(this, v, idx);
+                                    domInnerValueChange(node, pos, this, this.value, e);
                                 }.bind(this), 20)
                         }
                     }.bind(this), e);

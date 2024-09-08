@@ -7,7 +7,7 @@ Device -- MIDI
     type 2 (asynchronous): each track is independent of the others
 """
 
-from typing import Tuple
+from typing import Any, Tuple
 from math import isclose
 from queue import Queue
 
@@ -15,10 +15,12 @@ from loguru import logger
 
 from comfy.utils import ProgressBar
 
-from Jovimetrix import deep_merge, JOVBaseNode, Lexicon
-from Jovimetrix.sup.util import parse_param, zip_longest_fill, EnumConvertType
-from Jovimetrix.sup.midi import midi_device_names, \
-    MIDIMessage, MIDINoteOnFilter, MIDIServerThread
+from Jovimetrix import JOV_TYPE_ANY, JOVBaseNode, Lexicon, deep_merge
+
+from Jovimetrix.sup.util import EnumConvertType, parse_param, zip_longest_fill
+
+from Jovimetrix.sup.midi import MIDIMessage, MIDINoteOnFilter, MIDIServerThread,\
+      midi_device_names
 
 # =============================================================================
 
@@ -122,76 +124,10 @@ Captures MIDI messages from an external MIDI device or controller. It monitors M
         msg = MIDIMessage(self.__note_on, self.__channel, self.__control, self.__note, self.__value)
         return msg, self.__note_on, self.__channel, self.__control, self.__note, self.__value, normalize,
 
-class MIDIFilterEZNode(JOVBaseNode):
-    NAME = "MIDI FILTER EZ (JOV) ❇️"
-    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = ('JMIDIMSG', 'BOOLEAN',)
-    RETURN_NAMES = (Lexicon.MIDI, Lexicon.TRIGGER,)
-    SORT = 25
-    DESCRIPTION = """
-Filter MIDI messages based on various criteria, including MIDI mode (such as note on or note off), MIDI channel, control number, note number, value, and normalized value. This node is useful for processing MIDI input and selectively passing through only the desired messages. It helps simplify MIDI data handling by allowing you to focus on specific types of MIDI events.
-"""
-
-    @classmethod
-    def INPUT_TYPES(cls) -> dict:
-        d = super().INPUT_TYPES()
-        d = deep_merge(d, {
-            "optional": {
-                Lexicon.MIDI: ('JMIDIMSG', {"default": None}),
-                Lexicon.MODE: (MIDINoteOnFilter._member_names_, {"default": MIDINoteOnFilter.IGNORE.name}),
-                Lexicon.CHANNEL: ("INT", {"default": -1, "mij": -1, "maj": 127}),
-                Lexicon.CONTROL: ("INT", {"default": -1, "mij": -1, "maj": 127}),
-                Lexicon.NOTE: ("INT", {"default": -1, "mij": -1, "maj": 127}),
-                Lexicon.VALUE: ("INT", {"default": -1, "mij": -1, "maj": 127}),
-                Lexicon.NORMALIZE: ("FLOAT", {"default": -1, "mij": -1, "maj": 1, "step": 0.01})
-            }
-        })
-        return Lexicon._parse(d, cls)
-
-    def run(self, **kw) -> Tuple[MIDIMessage, bool]:
-
-        message: MIDIMessage = parse_param(kw, Lexicon.MIDI, EnumConvertType.ANY, None)
-        mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, MIDINoteOnFilter.IGNORE.name)
-        chan = parse_param(kw, Lexicon.CHANNEL, EnumConvertType.INT, -1)
-        ctrl = parse_param(kw, Lexicon.CONTROL, EnumConvertType.INT, -1)
-        note = parse_param(kw, Lexicon.NOTE, EnumConvertType.INT, -1)
-        value = parse_param(kw, Lexicon.VALUE, EnumConvertType.INT, -1)
-        normal = parse_param(kw, Lexicon.NORMALIZE, EnumConvertType.FLOAT, -1)
-        params = list(zip_longest_fill(message, mode, chan, ctrl, note, value, normal))
-        ret = []
-        pbar = ProgressBar(len(params))
-        for idx, (message, mode, chan, ctrl, note, value, normal) in enumerate(params):
-            mode = MIDINoteOnFilter[mode]
-            if mode != MIDINoteOnFilter.IGNORE:
-                if mode == MIDINoteOnFilter.NOTE_ON and message.note_on == False:
-                    ret.append((message, False, ))
-                    continue
-                elif mode == MIDINoteOnFilter.NOTE_OFF and message.note_on == False:
-                    ret.append((message, False, ))
-                    continue
-            if chan != -1 and chan != message.channel:
-                ret.append((message, False, ))
-                continue
-            if ctrl != -1 and ctrl != message.control:
-                ret.append((message, False, ))
-                continue
-            if note != -1 and note != message.note:
-                ret.append((message, False, ))
-                continue
-            if value != -1 and value != message.value:
-                ret.append((message, False, ))
-                continue
-            if normal > 0 and not isclose(message.normal):
-                ret.append((message, False, ))
-                continue
-            ret.append((message, True, ))
-            pbar.update_absolute(idx)
-        return [list(x) for x in (zip(*ret))]
-
 class MIDIFilterNode(JOVBaseNode):
     NAME = "MIDI FILTER (JOV) ✳️"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = ('JMIDIMSG', 'BOOLEAN', )
+    RETURN_TYPES = ("JMIDIMSG", "BOOLEAN", )
     RETURN_NAMES = (Lexicon.MIDI, Lexicon.TRIGGER,)
     SORT = 20
     EPSILON = 1e-6
@@ -210,7 +146,7 @@ Provides advanced filtering capabilities for MIDI messages based on various crit
                 Lexicon.CONTROL: ("STRING", {"default": ""}),
                 Lexicon.NOTE: ("STRING", {"default": ""}),
                 Lexicon.VALUE: ("STRING", {"default": ""}),
-                Lexicon.NORMALIZE: ("STRING", {"default": ""})
+                Lexicon.NORMALIZE: ("STRING", {"default": ""}),
             }
         })
         return Lexicon._parse(d, cls)
@@ -246,33 +182,78 @@ Provides advanced filtering capabilities for MIDI messages based on various crit
         return False
 
     def run(self, **kw) -> Tuple[bool]:
-        message: MIDIMessage = parse_param(kw, Lexicon.MIDI, EnumConvertType.ANY, None)
-        note_on = parse_param(kw, Lexicon.ON, EnumConvertType.STRING, MIDINoteOnFilter.IGNORE.name)
-        chan = parse_param(kw, Lexicon.CHANNEL, EnumConvertType.STRING, "")
-        ctrl = parse_param(kw, Lexicon.CONTROL, EnumConvertType.STRING, "")
-        note = parse_param(kw, Lexicon.NOTE, EnumConvertType.STRING, "")
-        value = parse_param(kw, Lexicon.VALUE, EnumConvertType.STRING, "")
-        normal = parse_param(kw, Lexicon.NORMALIZE, EnumConvertType.STRING, "")
-        params = list(zip_longest_fill(message, note_on, chan, ctrl, note, value, normal))
-        results = []
-        pbar = ProgressBar(len(params))
-        for idx, (message, note_on, chan, ctrl, note, value, normal) in enumerate(params):
-            note_on = MIDINoteOnFilter[note_on]
-            if note_on != MIDINoteOnFilter.IGNORE:
-                if note_on == "TRUE" and message.note_on != True:
-                    results.append((message, False, ))
-                if note_on == "FALSE" and message.note_on != False:
-                    results.append((message, False, ))
-            elif self.__filter(message.channel, chan) == False:
-                results.append((message, False, ))
-            elif self.__filter(message.control, ctrl) == False:
-                results.append((message, False, ))
-            elif self.__filter(message.note, note) == False:
-                results.append((message, False, ))
-            elif self.__filter(message.value, value) == False:
-                results.append((message, False, ))
-            elif self.__filter(message.normal, normal) == False:
-                results.append((message, False, ))
-            results.append((message, True, ))
-            pbar.update_absolute(idx)
-        return [list(x) for x in (zip(*results))]
+        message: MIDIMessage = kw.get(Lexicon.MIDI, None)
+        note_on: str = parse_param(kw, Lexicon.ON, EnumConvertType.STRING, MIDINoteOnFilter.IGNORE.name)[0]
+        chan: str = parse_param(kw, Lexicon.CHANNEL, EnumConvertType.STRING, "")[0]
+        ctrl: str = parse_param(kw, Lexicon.CONTROL, EnumConvertType.STRING, "")[0]
+        note: str = parse_param(kw, Lexicon.NOTE, EnumConvertType.STRING, "")[0]
+        value: str = parse_param(kw, Lexicon.VALUE, EnumConvertType.STRING, "")[0]
+        normal: str = parse_param(kw, Lexicon.NORMALIZE, EnumConvertType.STRING, "")[0]
+
+        note_on = MIDINoteOnFilter[note_on]
+        if note_on != MIDINoteOnFilter.IGNORE:
+            if note_on == MIDINoteOnFilter.NOTE_ON and message.note_on != True:
+                return message, False,
+            if note_on == MIDINoteOnFilter.NOTE_OFF and message.note_on != False:
+                return message, False,
+        elif self.__filter(message.channel, chan) == False:
+            return message, False,
+        elif self.__filter(message.control, ctrl) == False:
+            return message, False,
+        elif self.__filter(message.note, note) == False:
+            return message, False,
+        elif self.__filter(message.value, value) == False:
+            return message, False,
+        elif self.__filter(message.normal, normal) == False:
+            return message, False,
+        return message, True,
+
+class MIDIFilterEZNode(JOVBaseNode):
+    NAME = "MIDI FILTER EZ (JOV) ❇️"
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
+    RETURN_TYPES = ("JMIDIMSG", "BOOLEAN", )
+    RETURN_NAMES = (Lexicon.MIDI, Lexicon.TRIGGER,)
+    SORT = 25
+    DESCRIPTION = """
+Filter MIDI messages based on various criteria, including MIDI mode (such as note on or note off), MIDI channel, control number, note number, value, and normalized value. This node is useful for processing MIDI input and selectively passing through only the desired messages. It helps simplify MIDI data handling by allowing you to focus on specific types of MIDI events.
+"""
+
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        d = super().INPUT_TYPES()
+        d = deep_merge(d, {
+            "optional": {
+                Lexicon.MIDI: ('JMIDIMSG', {"default": None}),
+                Lexicon.MODE: (MIDINoteOnFilter._member_names_, {"default": MIDINoteOnFilter.IGNORE.name}),
+                Lexicon.CHANNEL: ("INT", {"default": -1, "mij": -1, "maj": 127}),
+                Lexicon.CONTROL: ("INT", {"default": -1, "mij": -1, "maj": 127}),
+                Lexicon.NOTE: ("INT", {"default": -1, "mij": -1, "maj": 127}),
+                Lexicon.VALUE: ("INT", {"default": -1, "mij": -1, "maj": 127}),
+            }
+        })
+        return Lexicon._parse(d, cls)
+
+    def run(self, **kw) -> Tuple[MIDIMessage, bool]:
+
+        message: MIDIMessage = parse_param(kw, Lexicon.MIDI, EnumConvertType.ANY, None)[0]
+        note_on = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, MIDINoteOnFilter.IGNORE.name)[0]
+        chan = parse_param(kw, Lexicon.CHANNEL, EnumConvertType.INT, -1)[0]
+        ctrl = parse_param(kw, Lexicon.CONTROL, EnumConvertType.INT, -1)[0]
+        note = parse_param(kw, Lexicon.NOTE, EnumConvertType.INT, -1)[0]
+        value = parse_param(kw, Lexicon.VALUE, EnumConvertType.INT, -1)[0]
+
+        note_on = MIDINoteOnFilter[note_on]
+        if note_on != MIDINoteOnFilter.IGNORE:
+            if note_on == MIDINoteOnFilter.NOTE_ON and message.note_on != True:
+                return message, False,
+            if note_on == MIDINoteOnFilter.NOTE_OFF and message.note_on != False:
+                return message, False,
+        elif chan > -1 and message.channel != chan:
+            return message, False,
+        elif ctrl > -1 and message.control != ctrl:
+            return message, False,
+        elif note > -1 and message.note != note:
+            return message, False,
+        elif value > -1 and message.value != value:
+            return message, False,
+        return message, True,
