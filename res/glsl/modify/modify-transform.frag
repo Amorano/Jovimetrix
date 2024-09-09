@@ -7,16 +7,14 @@ uniform vec2 offset;     // 0.0,0.0;-0.5;0.5;0.001 | positional offset (-0.5..0.
 uniform float rotate;    // 0;0;1;0.001            | rotation from 0..2pi
 uniform vec2 tile;       // 1.0,1.0;1;2048;1       | repetitions on X and Y
 
-#define TAU 6.283185307179586
-
 void mainImage( out vec4 fragColor, in vec2 fragCoord )
 {
     // normalize + offset
     vec2 uv = (fragCoord - offset * iResolution.xy) / iResolution.xy;
 
     // rotation matrix
-    float cosAngle = cos(rotate * TAU);
-    float sinAngle = sin(rotate * TAU);
+    float cosAngle = cos(rotate * M_TAU);
+    float sinAngle = sin(rotate * M_TAU);
     mat2 rotationMatrix = mat2(cosAngle, -sinAngle, sinAngle, cosAngle);
 
 	// center rotate, scale

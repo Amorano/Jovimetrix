@@ -7,6 +7,7 @@ Blended from old ModernGL implementation + Audio_Scheduler & Fill Node Pack
 
 import re
 from enum import Enum
+import sys
 from typing import Any, Dict, Tuple
 
 import cv2
@@ -50,14 +51,28 @@ PTYPE = {
     'sampler2D': EnumConvertType.IMAGE
 }
 
-class EnumEdgeGLSL(Enum):
+class EnumGLSLEdge(Enum):
     CLAMP  = 10
     WRAP   = 20
     MIRROR = 30
 
-RE_VARIABLE = re.compile(r"uniform\s+(\w+)\s+(\w+);(?:\s*\/\/\s*([0-9.,\s]*))?\s*(?:;\s*([0-9.-]+))?\s*(?:;\s*([0-9.-]+))?\s*(?:;\s*([0-9.-]+))?\s*(?:\|\s*(.*))?$", re.MULTILINE)
+class EnumGLSLColorConvert(Enum):
+    RGB2HSV = 0
+    RGB2LAB = 1
+    RGB2XYZ = 2
+    HSV2RGB = 10
+    HSV2LAB = 11
+    HSV2XYZ = 12
+    LAB2RGB = 20
+    LAB2HSV = 21
+    LAB2XYZ = 22
+    XYZ2RGB = 30
+    XYZ2HSV = 31
+    XYZ2LAB = 32
 
-RE_SHADER_META = re.compile(r"^\/\/\s?([A-Za-z_]{3,}):\s?([A-Za-z_0-9 \-\(\)\[\]\/\.]+)$", re.MULTILINE)
+RE_VARIABLE = re.compile(r"uniform\s+(\w+)\s+(\w+);(?:\s*\/\/\s*([A-Za-z0-9.,\s]*))?\s*(?:;\s*([0-9.-]+))?\s*(?:;\s*([0-9.-]+))?\s*(?:;\s*([0-9.-]+))?\s*(?:\|\s*(.*))?$", re.MULTILINE)
+
+RE_SHADER_META = re.compile(r"^\/\/\s?([A-Za-z_]{3,}):\s?([A-Za-z_0-9 \-\(\)\[\]\/\.\,;]+)$", re.MULTILINE)
 
 # =============================================================================
 
@@ -81,8 +96,8 @@ uniform int     iFrame;
 
 // useful constants
 #define M_EPSILON 1.0e-10
-#define M_PI 3.1415926535897932384626433832795
-#define M_TAU (2.0 * M_PI)
+#define M_PI  3.141592653589793
+#define M_TAU 6.283185307179586
 
 """
 
@@ -233,9 +248,19 @@ void main()
         # read the fragment and setup the vars....
         for match in RE_VARIABLE.finditer(self.__source_fragment_raw):
             typ, name, default, val_min, val_max, val_step, tooltip = match.groups()
+
             self.__textures[name] = None
             if typ in ['sampler2D']:
                 self.__textures[name] = gl.glGenTextures(1)
+            else:
+                default = default.strip()
+                if default.startswith('EnumGLSL'):
+                    typ = 'int'
+                    if (target_enum := getattr(sys.modules[__name__], default, None)) is not None:
+                        default = target_enum
+                    else:
+                        default = 0
+
             # logger.debug(f"{name}.{typ}: {default} {val_min} {val_max} {val_step} {tooltip}")
             self.__userVar[name] = [
                 # type
@@ -356,7 +381,7 @@ void main()
         self.__bgcolor = tuple(float(x) / 255. for x in color)
 
     def render(self, time_delta:float=0.,
-               tile_edge:Tuple[EnumEdgeGLSL,...]=(EnumEdgeGLSL.CLAMP, EnumEdgeGLSL.CLAMP),
+               tile_edge:Tuple[EnumGLSLEdge,...]=(EnumGLSLEdge.CLAMP, EnumGLSLEdge.CLAMP),
                **kw) -> np.ndarray:
 
         glfw.make_context_current(self.__window)
@@ -405,10 +430,10 @@ void main()
                 gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_LINEAR)
 
                 for idx, text_wrap in enumerate([gl.GL_TEXTURE_WRAP_S, gl.GL_TEXTURE_WRAP_T]):
-                    match EnumEdgeGLSL[tile_edge[idx]]:
-                        case EnumEdgeGLSL.WRAP:
+                    match EnumGLSLEdge[tile_edge[idx]]:
+                        case EnumGLSLEdge.WRAP:
                             gl.glTexParameteri(gl.GL_TEXTURE_2D, text_wrap, gl.GL_REPEAT)
-                        case EnumEdgeGLSL.MIRROR:
+                        case EnumGLSLEdge.MIRROR:
                             gl.glTexParameteri(gl.GL_TEXTURE_2D, text_wrap, gl.GL_MIRRORED_REPEAT)
                         case _:
                             gl.glTexParameteri(gl.GL_TEXTURE_2D, text_wrap, gl.GL_CLAMP_TO_EDGE)
@@ -417,9 +442,12 @@ void main()
                 texture_index += 1
             elif val:
                 funct = LAMBDA_UNIFORM[p_type]
-                if isinstance(val, str):
-                    val = val.split(',')
-                val = parse_value(val, PTYPE[p_type], 0)
+                if issubclass(p_value, (Enum,)):
+                    val = p_value[val].value
+                else:
+                    if isinstance(val, str):
+                        val = val.split(',')
+                    val = parse_value(val, PTYPE[p_type], 0)
                 if not isinstance(val, (list, tuple)):
                     val = [val]
                 funct(p_loc, *val)

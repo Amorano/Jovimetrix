@@ -404,7 +404,6 @@ Adjust the color scheme of one image to match another with the Color Match Node.
                 case EnumColorMatchMode.REINHARD:
                     pA = color_match_reinhard(pA, pB)
 
-
             if invert == True:
                 pA = image_invert(pA, 1)
 

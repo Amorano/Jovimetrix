@@ -7,15 +7,13 @@ uniform sampler2D distortion; //          | RGB(A) image used as a LUMA mask for
 uniform sampler2D direction;  //          | RGB(A) image used as a LUMA mask for direction
 uniform float strength;       // 64;0;1;1 | Pixel data range allowed
 
-#define TAU 6.283185307179586
-
 vec2 warp(vec2 uv)
 {
     vec4 uv_distortion = texture(distortion, uv);
     float distortion_val = dot(uv_distortion.rgb, vec3(0.299, 0.587, 0.114));
 
     vec4 uv_direction = texture(direction, uv);
-    float angle = dot(uv_direction.rgb, vec3(0.299, 0.587, 0.114)) * TAU;
+    float angle = dot(uv_direction.rgb, vec3(0.299, 0.587, 0.114)) * M_TAU;
     vec2 direction_val = vec2(cos(angle), sin(angle));
     uv += direction_val * distortion_val * strength / iResolution.xy;
     return uv;

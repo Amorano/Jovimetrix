@@ -27,7 +27,8 @@ from Jovimetrix.sup.util import EnumConvertType, load_file, parse_param, \
 from Jovimetrix.sup.image import MIN_IMAGE_SIZE, EnumInterpolation, \
     EnumScaleMode, cv2tensor_full, image_convert, image_scalefit, tensor2cv
 
-from Jovimetrix.sup.shader import PTYPE, CompileException, EnumEdgeGLSL, \
+import Jovimetrix.sup.shader as glsl_enums
+from Jovimetrix.sup.shader import PTYPE, CompileException, EnumGLSLEdge, \
     GLSLShader, shader_meta
 
 # =============================================================================
@@ -102,8 +103,8 @@ class GLSLNodeBase(JOVImageNode):
                 Lexicon.WH: ("VEC2INT", {"default": (512, 512), "mij":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
                 Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True}),
-                Lexicon.EDGE_X: (EnumEdgeGLSL._member_names_, {"default": EnumEdgeGLSL.CLAMP.name}),
-                Lexicon.EDGE_Y: (EnumEdgeGLSL._member_names_, {"default": EnumEdgeGLSL.CLAMP.name}),
+                Lexicon.EDGE_X: (EnumGLSLEdge._member_names_, {"default": EnumGLSLEdge.CLAMP.name}),
+                Lexicon.EDGE_Y: (EnumGLSLEdge._member_names_, {"default": EnumGLSLEdge.CLAMP.name}),
             }
         })
         return Lexicon._parse(d, cls)
@@ -124,8 +125,8 @@ class GLSLNodeBase(JOVImageNode):
         sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)[0]
         sample = EnumInterpolation[sample]
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)[0]
-        edge_x = parse_param(kw, Lexicon.EDGE_X, EnumConvertType.STRING, EnumEdgeGLSL.CLAMP.name)[0]
-        edge_y = parse_param(kw, Lexicon.EDGE_Y, EnumConvertType.STRING, EnumEdgeGLSL.CLAMP.name)[0]
+        edge_x = parse_param(kw, Lexicon.EDGE_X, EnumConvertType.STRING, EnumGLSLEdge.CLAMP.name)[0]
+        edge_y = parse_param(kw, Lexicon.EDGE_Y, EnumConvertType.STRING, EnumGLSLEdge.CLAMP.name)[0]
         edge = (edge_x, edge_y)
 
         try:
@@ -239,8 +240,16 @@ class GLSLNodeDynamic(GLSLNodeBase):
                 type_name = typ.name
                 if glsl_type != 'sampler2D':
                     if default is not None:
-                        d = default.split(',')
-                    params['default'] = parse_value(d, typ, 0)
+                        if default.startswith('EnumGLSL'):
+                            if (target_enum := getattr(glsl_enums, default.strip(), None)) is not None:
+                                # this be an ENUM....
+                                type_name = target_enum._member_names_
+                                params['default'] = type_name[0]
+                            else:
+                                params['default'] = 0
+                        else:
+                            d = default.split(',')
+                            params['default'] = parse_value(d, typ, 0)
 
                     if val_min is not None:
                         params['mij'] = parse_value(val_min, EnumConvertType.FLOAT, -sys.maxsize)
