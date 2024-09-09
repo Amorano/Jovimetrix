@@ -95,6 +95,13 @@ If those nodes have descriptions written in HTML or Markdown, they will be conve
 
 ## UPDATES
 
+**2024/09/09** @1.2.38:
+* QUEUEs will signal true (TRIGGER) on complete unless halted
+
+* Supported Versions:
+  * ComfyUI 0.1.3+
+  * ComfyUI Frontend 1.2.30+
+
 **2024/09/09** @1.2.37:
 * doubled speed of midi reader when idle
 * reduced GLSL footprint for color conversions
@@ -104,7 +111,6 @@ If those nodes have descriptions written in HTML or Markdown, they will be conve
 * Supported Versions:
   * ComfyUI 0.1.3+
   * ComfyUI Frontend 1.2.30+
-
 
 **2024/09/08** @1.2.36:
 * MIDI `MIDI FILTER` and `MIDI FILTER EZ` Nodes cleaned up
