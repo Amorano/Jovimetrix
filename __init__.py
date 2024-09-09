@@ -312,6 +312,7 @@ class Lexicon(metaclass=LexiconMeta):
     SPACING = 'SPACING', "Line Spacing between Text Lines"
     START = 'START', "Start of the range"
     STEP = '🦶🏽', "Steps/Stride between pulses -- useful to do odd or even batches. If set to 0 will stretch from (VAL -> LOOP) / Batch giving a linear range of values."
+    STOP = 'STOP', "Halt processing"
     STRENGTH = '💪🏽', "Strength"
     STRING = '📝', "String Entry"
     STYLE = 'STYLE', "Style"
@@ -494,7 +495,7 @@ JOV_TYPE_FULL = f"{JOV_TYPE_NUMBER},{JOV_TYPE_IMAGE}"
 JOV_TYPE_COMFY = JOV_TYPE_ANY
 JOV_TYPE_VECTOR = JOV_TYPE_ANY
 JOV_TYPE_NUMBER = JOV_TYPE_ANY
-JOV_TYPE_IMAGE = JOV_TYPE_ANY
+# JOV_TYPE_IMAGE = JOV_TYPE_ANY
 JOV_TYPE_FULL = JOV_TYPE_ANY
 
 # =============================================================================
@@ -921,7 +922,7 @@ except Exception as e:
 
 def parse_reset(ident:str) -> int:
     try:
-        data = ComfyAPIMessage.poll(ident, timeout=0)
+        data = ComfyAPIMessage.poll(ident, timeout=0.01)
         return data.get('cmd', None) == 'reset'
     except TimedOutException as e:
         return -1
