@@ -18,7 +18,7 @@ except:
     pass
 from comfy.utils import ProgressBar
 
-from Jovimetrix import ROOT, JOV_TYPE_ANY, Lexicon, JOVImageNode, \
+from Jovimetrix import JOV_TYPE_IMAGE, ROOT, Lexicon, JOVImageNode, \
     comfy_message, deep_merge
 
 from Jovimetrix.sup.util import EnumConvertType, load_file, parse_param, \
@@ -261,7 +261,8 @@ class GLSLNodeDynamic(GLSLNodeBase):
                         d = 1 if typ.name.endswith('INT') else 0.01
                         params['step'] = parse_value(val_step, EnumConvertType.FLOAT, d)
                 else:
-                    type_name = JOV_TYPE_ANY
+                    type_name = JOV_TYPE_IMAGE
+
                 if tooltip is not None:
                     params["tooltips"] = tooltip
                 data[name] = (type_name, params,)

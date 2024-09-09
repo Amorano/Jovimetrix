@@ -486,6 +486,7 @@ Evaluates two inputs (A and B) with a specified comparison operators and optiona
 
             if flip:
                 val_a, val_b = val_b, val_a
+
             op = EnumComparison[op]
             match op:
                 case EnumComparison.EQUAL:
@@ -528,6 +529,9 @@ Evaluates two inputs (A and B) with a specified comparison operators and optiona
             output = all([bool(v) for v in val])
             if invert:
                 output = not output
+
+            logger.debug(f"{A}, {val_a}, {B}, {val_b}, {val}, {output}")
+
             output = good if output else fail
             results.append([output, val])
             pbar.update_absolute(idx)
@@ -540,7 +544,7 @@ Evaluates two inputs (A and B) with a specified comparison operators and optiona
                 outs = outs[0].unsqueeze(0)
         else:
             outs = list(outs)
-        return outs, vals,
+        return outs, list(vals),
 
 class DelayNode(JOVBaseNode):
     NAME = "DELAY (JOV) ✋🏽"
@@ -686,8 +690,8 @@ Additionally, you can specify the easing function (EASE) and the desired output 
 class StringerNode(JOVBaseNode):
     NAME = "STRINGER (JOV) 🪀"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = ("STRING",)
-    RETURN_NAMES = (Lexicon.STRING,)
+    RETURN_TYPES = ("STRING", "INT",)
+    RETURN_NAMES = (Lexicon.STRING, Lexicon.COUNT,)
     SORT = 44
     DESCRIPTION = """
 Manipulate strings through filtering
@@ -746,7 +750,7 @@ Manipulate strings through filtering
                         results.append(x)
         if len(results) == 0:
             results = [""]
-        return (results,) if len(results) > 1 else (results[0],)
+        return (results, [len(r) for r in results],) if len(results) > 1 else (results[0], len(results[0]),)
 
 class SwizzleNode(JOVBaseNode):
     NAME = "SWIZZLE (JOV) 😵"
