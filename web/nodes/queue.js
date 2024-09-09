@@ -50,14 +50,18 @@ app.registerExtension({
             const widget_hold = this.widgets.find(w => w.name === '✋🏽');
             const widget_reset = this.widgets.find(w => w.name === 'RESET');
             const widget_batch = this.widgets.find(w => w.name === 'BATCH');
+            const widget_loop = this.widgets.find(w => w.name === '🔄');
             widget_batch.callback = async() => {
                 widgetHide(this, widget_value);
                 widgetHide(this, widget_hold);
                 widgetHide(this, widget_reset);
+                widgetHide(this, widget_loop);
+
                 if (!widget_batch.value) {
                     widgetShow(widget_value);
                     widgetShow(widget_hold);
                     widgetShow(widget_reset);
+                    widgetShow(widget_loop);
                 }
                 nodeFitHeight(this);
             }

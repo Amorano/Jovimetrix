@@ -7,7 +7,7 @@
 import { nodeFitHeight } from './util_node.js'
 import { widgetShowVector, widget_type_name, widgetHide, widgetShow } from './util_widget.js'
 
-export function widgetSizeModeHook(nodeType) {
+export function widgetSizeModeHook(nodeType, always_wh=false) {
     const onNodeCreated = nodeType.prototype.onNodeCreated
     nodeType.prototype.onNodeCreated = function () {
         const me = onNodeCreated?.apply(this);
@@ -18,7 +18,7 @@ export function widgetSizeModeHook(nodeType) {
             widgetHide(this, wh);
             widgetHide(this, samp);
 
-            if (!['MATTE'].includes(mode.value)) {
+            if (always_wh || !['MATTE'].includes(mode.value)) {
                 widgetShow(wh);
             }
             if (!['CROP', 'MATTE'].includes(mode.value)) {

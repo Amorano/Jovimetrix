@@ -22,7 +22,7 @@ app.registerExtension({
             return;
         }
 
-        widgetSizeModeHook(nodeType);
+        widgetSizeModeHook(nodeType, true);
 
         const onNodeCreated = nodeType.prototype.onNodeCreated;
         nodeType.prototype.onNodeCreated = async function () {

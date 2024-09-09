@@ -567,12 +567,9 @@ def json2html(json_dict: dict) -> str:
         for param_key, param_meta in v.items():
             typ = param_meta.get('type', 'UNKNOWN').upper()
             typ = ', '.join([x.strip() for x in typ.split(',')])
-            typ = '<br>'.join(textwrap.wrap(typ, 42))
             tool = param_meta.get("tooltips", '')
-            tool = '<br>'.join(textwrap.wrap(tool, 42))
             default = html.escape(str(param_meta.get('default', '')))
             ch = ', '.join(param_meta.get('choice', []))
-            ch = '<br>'.join(textwrap.wrap(ch, 42))
             rows.append(HTML_input_row.substitute(
                 param_key=html.escape(param_key),
                 type=typ,
@@ -590,7 +587,7 @@ def json2html(json_dict: dict) -> str:
     output_rows = []
     for k, v in json_dict['output_parameters'].items():
         tool = Lexicon._tooltipsDB.get(k, "")
-        tool = '<br>'.join(textwrap.wrap(tool, 65))
+        # tool = '<br>'.join(textwrap.wrap(tool, 65))
         output_rows.append(HTML_output_row.substitute(
             name=html.escape(k),
             type=html.escape(v),
