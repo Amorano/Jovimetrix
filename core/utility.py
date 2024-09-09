@@ -626,7 +626,7 @@ class QueueBaseNode(JOVBaseNode):
             self.__index = 0
 
         if (new_val := parse_param(kw, Lexicon.VALUE, EnumConvertType.INT, self.__index)[0]) > 0:
-            self.__index = new_val
+            self.__index = new_val - 1
 
         if self.__q is None:
             # process Q into ...
@@ -644,6 +644,7 @@ class QueueBaseNode(JOVBaseNode):
         # make sure we have more to process if are a single fire queue
         stop = parse_param(kw, Lexicon.STOP, EnumConvertType.BOOLEAN, False)[0]
         if stop and self.__index >= self.__len:
+            comfy_message(ident, "jovi-queue-done", self.status)
             interrupt_processing()
             return self.__previous, self.__q, self.__current, self.__index_last+1, self.__len
 
@@ -655,42 +656,41 @@ class QueueBaseNode(JOVBaseNode):
         if loop == True:
             self.__index %= self.__len
         else:
-            self.__index = max(0, self.__len-1)
+            self.__index = min(self.__index, self.__len-1)
 
         self.__current = self.__q[self.__index]
         data = self.__previous
         self.__index_last = self.__index
         info = f"QUEUE #{ident} [{self.__current}] ({self.__index})"
         batched = False
-        if wait == True:
+        if (batched := parse_param(kw, Lexicon.BATCH, EnumConvertType.BOOLEAN, False)[0]) == True:
+            data = []
+            mw, mh, mc = 0, 0, 0
+            pbar = ProgressBar(self.__len)
+            for idx in range(self.__len):
+                ret = self.process(self.__q[idx])
+                if isinstance(ret, (np.ndarray,)):
+                    h, w, c = ret.shape
+                    mw, mh, mc = max(mw, w), max(mh, h), max(mc, c)
+                data.append(ret)
+                pbar.update_absolute(idx)
+
+            if mw != 0 or mh != 0 or mc != 0:
+                ret = []
+                pbar = ProgressBar(self.__len)
+                for idx, d in enumerate(data):
+                    d = image_convert(d, mc)
+                    d = image_matte(d, (0,0,0,0), width=mw, height=mh)
+                    # d = cv2tensor(d)
+                    ret.append(d)
+                    pbar.update_absolute(idx)
+                # data = torch.cat(ret, dim=0)
+                data = ret
+        elif wait == True:
             info += f" PAUSED"
         else:
-            if (batched := parse_param(kw, Lexicon.BATCH, EnumConvertType.BOOLEAN, False)[0]) == True:
-                data = []
-                mw, mh, mc = 0, 0, 0
-                pbar = ProgressBar(self.__len)
-                for idx in range(self.__len):
-                    ret = self.process(self.__q[idx])
-                    if isinstance(ret, (np.ndarray,)):
-                        h, w, c = ret.shape
-                        mw, mh, mc = max(mw, w), max(mh, h), max(mc, c)
-                    data.append(ret)
-                    pbar.update_absolute(idx)
-
-                if mw != 0 or mh != 0 or mc != 0:
-                    ret = []
-                    pbar = ProgressBar(self.__len)
-                    for idx, d in enumerate(data):
-                        d = image_convert(d, mc)
-                        d = image_matte(d, (0,0,0,0), width=mw, height=mh)
-                        # d = cv2tensor(d)
-                        ret.append(d)
-                        pbar.update_absolute(idx)
-                    # data = torch.cat(ret, dim=0)
-                    data = ret
-            else:
-                data = self.process(self.__q[self.__index])
-                self.__index += 1
+            data = self.process(self.__q[self.__index])
+            self.__index += 1
 
         self.__previous = data
         comfy_message(ident, "jovi-queue-ping", self.status)
@@ -703,7 +703,7 @@ class QueueBaseNode(JOVBaseNode):
         return {
             "id": self.__ident,
             "c": self.__current,
-            "i": self.__index_last+1,
+            "i": self.__index_last,
             "s": self.__len,
             "l": self.__q
         }
@@ -714,6 +714,7 @@ class QueueNode(QueueBaseNode):
     DESCRIPTION = """
 Manage a queue of items, such as file paths or data. Supports various formats including images, videos, text files, and JSON files. You can specify the current index for the queue item, enable pausing the queue, or reset it back to the first index. The node outputs the current item in the queue, the entire queue, the current index, and the total number of items in the queue.
 """
+    DEPRECATED = True
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -751,16 +752,16 @@ Manage a queue of specific items: media files. Supports various image and video 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = super().INPUT_TYPES()
-        d = deep_merge(d, {
+        d = {
             "optional": {
                 Lexicon.QUEUE: ("STRING", {"multiline": True, "default": "./res/img/test-a.png"}),
-                Lexicon.BATCH: ("BOOLEAN", {"default": False, "tooltips":"Load all items, if they are loadable items, i.e. batch load images from the Queue's list"}),
                 Lexicon.RECURSE: ("BOOLEAN", {"default": False}),
-                Lexicon.STOP: ("BOOLEAN", {"default": False, "tooltips":"When the Queue is out of items, send a `HALT` to ComfyUI."}),
+                Lexicon.BATCH: ("BOOLEAN", {"default": False, "tooltips":"Load all items, if they are loadable items, i.e. batch load images from the Queue's list"}),
                 Lexicon.VALUE: ("INT", {"mij": 0, "default": 0, "tooltips": "The current index for the current queue item"}),
                 Lexicon.WAIT: ("BOOLEAN", {"default": False, "tooltips":"Hold the item at the current queue index"}),
-                Lexicon.RESET: ("BOOLEAN", {"default": False, "tooltips":"Reset the queue back to index 1"}),
+                Lexicon.STOP: ("BOOLEAN", {"default": False, "tooltips":"When the Queue is out of items, send a `HALT` to ComfyUI."}),
                 Lexicon.LOOP: ("BOOLEAN", {"default": False, "tooltips":"If the queue should loop around the end when reached. If `False`, at the end of the Queue, if there are more iterations, it will just send the previous image."}),
+                Lexicon.RESET: ("BOOLEAN", {"default": False, "tooltips":"Reset the queue back to index 1"}),
                 #
                 Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.MATTE.name}),
                 Lexicon.WH: ("VEC2INT", {"default": (512, 512), "mij":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
@@ -775,8 +776,9 @@ Manage a queue of specific items: media files. Supports various image and video 
                 4: (Lexicon.INDEX, {"tooltips":"Current index for the selected item in the Queue list"}),
                 5: (Lexicon.TOTAL, {"tooltips":"Total items in the current Queue List"}),
                 6: (Lexicon.TRIGGER, {"tooltips":"Send a True signal when the queue end index is reached"}),
-            }
-        })
+            },
+            "hidden": d.get("hidden", {}),
+        }
         return Lexicon._parse(d, cls)
 
     def run(self, ident, **kw) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, str, int, int]:

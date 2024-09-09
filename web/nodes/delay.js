@@ -7,7 +7,7 @@
 import { api } from "../../../scripts/api.js";
 import { app } from "../../../scripts/app.js";
 import { domShowModal } from '../util/util.js'
-import { apiPost } from '../util/util_api.js'
+import { apiJovimetrix } from '../util/util_api.js'
 import { bubbles } from '../util/util_fun.js'
 
 const _id = "DELAY (JOV) ✋🏽"
@@ -60,7 +60,7 @@ app.registerExtension({
                         console.error(e);
                     }
                 }
-                apiPost('/jovimetrix/message', { id: event.detail.id, cancel: value });
+                apiJovimetrix(event.detail.id, value);
 
                 showing = false;
                 window.bubbles_alive = false;

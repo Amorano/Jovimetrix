@@ -52,11 +52,8 @@ from pathlib import Path
 from string import Template
 from typing import Any, Dict, List, Literal, Tuple
 
-import markdown
-
 from aiohttp import web, ClientSession
 from server import PromptServer
-from nodes import load_custom_node
 
 from loguru import logger
 
@@ -783,6 +780,7 @@ class ComfyAPIMessage:
         if isinstance(ident, (set, list, tuple, )):
             ident = ident[0]
         sid = str(ident)
+        # logger.debug(f'sid {sid} -- {cls.MESSAGE}')
         while not (sid in cls.MESSAGE) and time.monotonic() - _t < timeout:
             time.sleep(period)
 
@@ -798,25 +796,18 @@ def comfy_message(ident:str, route:str, data:dict) -> None:
 
 try:
 
-    @PromptServer.instance.routes.get("/jovimetrix/reload")
-    async def reload(request) -> web.Response:
-
-        data = {k: dir(v) for k, v in sys.modules.copy().items()}
-        with open('a.json', 'w') as fhandle:
-            json.dump(data, fhandle, indent=4)
-
-        module = importlib.import_module("Jovimetrix")
-        # ensure the module is reloaded
-        importlib.reload(module)
-        load_custom_node('custom_nodes/Jovimetrix')
-        return web.Response(text='RELOADED JOVIMETRIX')
+    @PromptServer.instance.routes.get("/jovimetrix/message")
+    async def jovimetrix_message(request) -> Any:
+        return web.json_response(ComfyAPIMessage.MESSAGE)
 
     @PromptServer.instance.routes.post("/jovimetrix/message")
-    async def jovimetrix_message(request) -> Any:
+    async def jovimetrix_message_post(request) -> Any:
         json_data = await request.json()
-        did = json_data.get("id", None)
-        ComfyAPIMessage.MESSAGE[str(did)] = json_data
-        return web.json_response()
+        response = web.json_response()
+        if (did := json_data.get("id", None)) is not None:
+            ComfyAPIMessage.MESSAGE[str(did)] = json_data
+            response = web.json_response(json_data)
+        return response
 
     @PromptServer.instance.routes.get("/jovimetrix/config")
     async def jovimetrix_config(request) -> Any:
@@ -919,8 +910,9 @@ except Exception as e:
 
 def parse_reset(ident:str) -> int:
     try:
-        data = ComfyAPIMessage.poll(ident, timeout=0.01)
-        return data.get('cmd', None) == 'reset'
+        data = ComfyAPIMessage.poll(ident, timeout=0)
+        ret = data.get('cmd', None)
+        return ret == 'reset'
     except TimedOutException as e:
         return -1
     except Exception as e:

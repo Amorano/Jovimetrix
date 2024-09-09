@@ -28,7 +28,7 @@ app.registerExtension({
         widgetSizeModeHook(nodeType);
 
         function update_report(self) {
-            self.widget_report.value = `[${self.data_index} / ${self.data_all.length}]\n${self.data_current}`;
+            self.widget_report.value = `[${self.data_index+1} / ${self.data_all.length}]\n${self.data_current}`;
             app.canvas.setDirty(true);
         }
 
@@ -49,22 +49,41 @@ app.registerExtension({
             this.data_all = [];
 
             const widget_queue = this.widgets.find(w => w.name === 'Q');
+            const widget_batch = this.widgets.find(w => w.name === 'BATCH');
             const widget_value = this.widgets.find(w => w.name === 'VAL');
             const widget_hold = this.widgets.find(w => w.name === '✋🏽');
             const widget_reset = this.widgets.find(w => w.name === 'RESET');
-            const widget_batch = this.widgets.find(w => w.name === 'BATCH');
+            const widget_stop = this.widgets.find(w => w.name === 'STOP');
             const widget_loop = this.widgets.find(w => w.name === '🔄');
-            widget_batch.callback = async() => {
+            widget_batch.callback = () => {
                 widgetHide(this, widget_value);
                 widgetHide(this, widget_hold);
-                widgetHide(this, widget_reset);
+                widgetHide(this, widget_stop);
                 widgetHide(this, widget_loop);
-
-                if (!widget_batch.value) {
+                widgetHide(this, widget_reset);
+                if (widget_batch.value == false) {
                     widgetShow(widget_value);
                     widgetShow(widget_hold);
-                    widgetShow(widget_reset);
+                    if (widget_hold.value == false) {
+                        widgetShow(widget_stop);
+                        widgetShow(widget_loop);
+                        widgetShow(widget_reset);
+                    }
+                }
+                nodeFitHeight(this);
+            }
+
+            widget_hold.callback = () => {
+                if (widget_batch.value == true) {
+                    return;
+                }
+                widgetHide(this, widget_stop);
+                widgetHide(this, widget_loop);
+                widgetHide(this, widget_reset);
+                if (widget_hold.value == false) {
+                    widgetShow(widget_stop);
                     widgetShow(widget_loop);
+                    widgetShow(widget_reset);
                 }
                 nodeFitHeight(this);
             }
@@ -74,7 +93,7 @@ app.registerExtension({
                 update_list(self, value);
             });
 
-            widget_reset.callback = async() => {
+            widget_reset.callback = () => {
                 widget_reset.value = false;
                 apiJovimetrix(self.id, "reset");
             }
@@ -113,7 +132,8 @@ app.registerExtension({
                 api.removeEventListener(EVENT_JOVI_DONE, python_queue_done);
             };
 
-            setTimeout(() => { widget_batch.callback(); }, 10);
+            setTimeout(() => { widget_hold.callback(); }, 5);
+            setTimeout(() => { widget_batch.callback(); }, 5);
             return me;
         }
 
