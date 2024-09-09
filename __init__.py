@@ -598,8 +598,8 @@ def json2html(json_dict: dict) -> str:
 
     # Fill in the main template
     description = json_dict['description']
-    if not "<div>" in description and not "<p>" in description:
-        description = markdown.markdown(description)
+    #if not "<div>" in description and not "<p>" in description:
+        #description = markdown.markdown(description)
         # description = html.escape(description)
     description = description.replace('\n', '<br>').replace(f"('", '').replace(f"')", '')
 
@@ -1010,7 +1010,7 @@ class Session(metaclass=Singleton):
                         Session.CLASS_MAPPINGS[name] = class_object
 
                     if not name.endswith(Lexicon.GLSL_CUSTOM):
-                        desc = class_object.DESCRIPTION if hasattr(class_object, 'DESCRIPTION') else ""
+                        desc = class_object.DESCRIPTION if hasattr(class_object, 'DESCRIPTION') else name
                         NODE_LIST_MAP[name] = desc.split('.')[0].strip('\n')
                     else:
                         logger.debug(f"customs {name}")

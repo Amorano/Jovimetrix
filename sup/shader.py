@@ -6,8 +6,8 @@ Blended from old ModernGL implementation + Audio_Scheduler & Fill Node Pack
 """
 
 import re
-from enum import Enum
 import sys
+from enum import Enum, EnumType
 from typing import Any, Dict, Tuple
 
 import cv2
@@ -72,7 +72,7 @@ class EnumGLSLColorConvert(Enum):
 
 RE_VARIABLE = re.compile(r"uniform\s+(\w+)\s+(\w+);(?:\s*\/\/\s*([A-Za-z0-9.,\s]*))?\s*(?:;\s*([0-9.-]+))?\s*(?:;\s*([0-9.-]+))?\s*(?:;\s*([0-9.-]+))?\s*(?:\|\s*(.*))?$", re.MULTILINE)
 
-RE_SHADER_META = re.compile(r"^\/\/\s?([A-Za-z_]{3,}):\s?([A-Za-z_0-9 \-\(\)\[\]\/\.\,;]+)$", re.MULTILINE)
+RE_SHADER_META = re.compile(r"^\/\/\s?([A-Za-z_]{3,}):\s?(.+)$", re.MULTILINE)
 
 # =============================================================================
 
@@ -442,12 +442,11 @@ void main()
                 texture_index += 1
             elif val:
                 funct = LAMBDA_UNIFORM[p_type]
-                if issubclass(p_value, (Enum,)):
+                if isinstance(p_value, EnumType):
                     val = p_value[val].value
-                else:
-                    if isinstance(val, str):
-                        val = val.split(',')
-                    val = parse_value(val, PTYPE[p_type], 0)
+                elif isinstance(val, str):
+                    val = val.split(',')
+                val = parse_value(val, PTYPE[p_type], 0)
                 if not isinstance(val, (list, tuple)):
                     val = [val]
                 funct(p_loc, *val)

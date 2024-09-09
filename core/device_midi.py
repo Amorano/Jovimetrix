@@ -71,6 +71,8 @@ class MIDIReaderNode(JOVBaseNode):
 Captures MIDI messages from an external MIDI device or controller. It monitors MIDI input and provides information about the received MIDI messages, including whether a note is being played, the MIDI channel, control number, note number, value, and a normalized value. This node is essential for integrating MIDI control into various applications, such as music production, live performances, and interactive installations.
 """
 
+    CHANGED = False
+
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = super().INPUT_TYPES()
@@ -83,7 +85,9 @@ Captures MIDI messages from an external MIDI device or controller. It monitors M
 
     @classmethod
     def IS_CHANGED(cls, **kw) -> float:
-        return float("nan")
+        if cls.CHANGED:
+            cls.CHANGED = False
+            return float("nan")
 
     def __init__(self, *arg, **kw) -> None:
         super().__init__(*arg, **kw)
@@ -98,6 +102,7 @@ Captures MIDI messages from an external MIDI device or controller. It monitors M
         self.__SERVER.start()
 
     def __process(self, data) -> None:
+        MIDIReaderNode.CHANGED = True
         self.__channel = data.channel
         self.__note = 0
         self.__control = 0

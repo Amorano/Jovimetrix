@@ -82,12 +82,20 @@ class MIDIServerThread(threading.Thread):
             # device is not null....
             logger.debug(f"starting device loop {self.__device}")
 
-            with mido.open_input(self.__device, callback=self.__callback):
-                while True:
-                    if self.__device != old_device:
-                        logger.debug(f"device loop ended {old_device}")
-                        break
-                    time.sleep(0.01)
+            failure = 0
+            try:
+                with mido.open_input(self.__device, callback=self.__callback):
+                    while True:
+                        if self.__device != old_device:
+                            logger.debug(f"device loop ended {old_device}")
+                            break
+                        time.sleep(0.01)
+            except Exception as e:
+                if (failure := failure + 1) > 3:
+                    logger.exception(e)
+                    return
+                logger.error(e)
+                time.sleep(2)
 
 class MIDIMessage:
     """Snap shot of a message from Midi device."""

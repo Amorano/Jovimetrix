@@ -6,7 +6,7 @@
 // See https://iquilezles.org/articles/palettes for more information
 //
 // name: COLOR PALETTE
-// desc: Color palette creation using the formula: color(t) = a + b ⋅ cos[2π(c⋅t+d)]
+// desc: Color palette creation using the formula: color(t) = a + b * cos[tau(c*t+d)]. See https://iquilezles.org/articles/palettes for more information.
 // category: CREATE
 
 uniform vec3 bias;  // 0.5,0.5,0.5;0 | scale and bias (dc offset)
