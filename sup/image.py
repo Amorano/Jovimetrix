@@ -41,16 +41,23 @@ TAU = math.pi * 2
 # === TYPE SHORTCUTS ===
 # =============================================================================
 
-TYPE_COORD = Union[
-    Tuple[int, ...],
-    Tuple[float, ...]
-]
+TYPE_fCOORD2D = Tuple[float, float]
+TYPE_fCOORD3D = Tuple[float, float, float]
+TYPE_iCOORD2D = Tuple[int, int]
+TYPE_iCOORD3D = Tuple[int, int, int]
+
+TYPE_iRGB  = Tuple[int, int, int]
+TYPE_iRGBA = Tuple[int, int, int, int]
+TYPE_fRGB  = Tuple[float, float, float]
+TYPE_fRGBA = Tuple[float, float, float, float]
 
 TYPE_PIXEL = Union[
     int,
     float,
-    Tuple[float, ...],
-    Tuple[int, ...],
+    TYPE_iRGB,
+    TYPE_iRGBA,
+    TYPE_fRGB,
+    TYPE_fRGBA
 ]
 
 TYPE_IMAGE = Union[np.ndarray, torch.Tensor]
@@ -403,18 +410,15 @@ def cv2pil(image: TYPE_IMAGE) -> Image.Image:
             image = cv2.cvtColor(image, cv2.COLOR_BGRA2RGBA)
     return Image.fromarray(image)
 
-def cv2tensor(image: TYPE_IMAGE, mask:bool=False) -> torch.Tensor:
-    """Convert a CV2 image to a torch tensor."""
-    if mask or image.ndim < 3 or (image.ndim == 3 and image.shape[2] == 1):
-        mask = True
-        image = image_grayscale(image)
+def cv2tensor(image: np.ndarray, mask: bool = False) -> torch.Tensor:
+    """Convert a CV2 image to a torch tensor, with handling for grayscale/mask."""
 
-    # image = linear2sRGB(image)
+    if mask or image.ndim < 3 or (image.ndim == 3 and image.shape[2] == 1):
+        image = image_mask(image)
     image = image.astype(np.float32) / 255.0
-    ret = torch.from_numpy(image).unsqueeze(0)
-    if mask and ret.ndim == 4:
-        ret = ret.squeeze(-1)
-    return ret
+    image = torch.from_numpy(image).unsqueeze(0)
+    # logger.debug(image.shape)
+    return image
 
 def cv2tensor_full(image: TYPE_IMAGE, matte:TYPE_PIXEL=0) -> Tuple[torch.Tensor, ...]:
     rgba = image_convert(image, 4)
@@ -458,18 +462,26 @@ def pil2tensor(image: Image.Image) -> torch.Tensor:
 
 def tensor2cv(tensor: torch.Tensor) -> TYPE_IMAGE:
     """Convert a torch Tensor to a numpy ndarray."""
-    tensor = tensor.cpu().squeeze().numpy()
+    if tensor.ndim == 4 and tensor.shape[0] != 1:
+        raise Exception("Tensor is batch of tensors")
+
     if tensor.ndim < 3:
-        tensor = np.expand_dims(tensor, -1)
+        # tensor = (255.0 - tensor).unsqueeze(-1)
+        tensor = tensor.unsqueeze(-1)
+    else:
+        tensor = tensor.squeeze()
+
+    tensor = tensor.cpu().numpy()
     image = np.clip(255.0 * tensor, 0, 255).astype(np.uint8)
 
+    """
     if image.shape[2] == 4:
-        # image_flatten_mask
         mask = image_mask(image)
         # we should flatten against black?
         black = np.zeros(image.shape, dtype=np.uint8)
         image = image_blend(black, image, mask)
         image = image_mask_add(image, mask)
+    """
     return image
 
 def tensor2pil(tensor: torch.Tensor) -> Image.Image:
@@ -733,30 +745,33 @@ def image_affine_edge(image: TYPE_IMAGE, callback: object, edge: EnumEdge=EnumEd
 
 def image_blend(imageA: TYPE_IMAGE, imageB: TYPE_IMAGE, mask:Optional[TYPE_IMAGE]=None,
                 blendOp:BlendType=BlendType.NORMAL, alpha:float=1) -> TYPE_IMAGE:
+    """Blending that will expand to the largest image pre-operation."""
 
-    h, w = imageA.shape[:2]
-    imageA = image_convert(imageA, 4)
-    imageA = cv2pil(imageA)
-    imageB = image_convert(imageB, 4)
+    h1, w1 = imageA.shape[:2]
     h2, w2 = imageB.shape[:2]
-    w2 = min(w, w2)
-    h2 = min(h, h2)
-    imageB = image_crop_center(imageB, w2, h2)
-    imageB = image_matte(imageB, (0,0,0,0), w, h)
-    imageB = image_convert(imageB, 4)
-    #
-    #old_mask = image_mask(imageB)
-    #if len(old_mask.shape) > 2:
-    #    old_mask = old_mask[..., 0][:,:]
+    w = max(w1, w2)
+    h = max(h1, h2)
 
-    if mask is not None:
-        mask = image_crop_center(mask, w, h)
-        mask = image_matte(mask, (0,0,0,0), w, h)
-        if len(mask.shape) > 2:
-            mask = mask[..., 0][:,:]
-        #old_mask = cv2.bitwise_and(mask, old_mask)
+    logger.debug([w, h, imageA.shape, imageB.shape])
+    images = []
+    for img in [imageA, imageB]:
+        logger.debug([w, h, img.shape])
+        img = image_convert(img, 4, w, h)
+        images.append(img)
 
-    imageB[..., 3] = mask #old_mask
+    imageA, imageB = images
+    logger.debug([imageA.shape, imageB.shape])
+
+    old_mask = image_mask(imageB)
+    if mask is None:
+        mask = old_mask
+    else:
+        mask = image_convert(mask, 1, w, h)
+        mask = mask[..., 0][:,:]
+        mask = cv2.bitwise_and(mask, old_mask)
+
+    imageA = cv2pil(imageA)
+    imageB[..., 3] = mask
     imageB = cv2pil(imageB)
     alpha = np.clip(alpha, 0, 1)
     image = blendLayers(imageA, imageB, blendOp.value, alpha)
@@ -845,41 +860,56 @@ def image_contrast(image: TYPE_IMAGE, value: float) -> TYPE_IMAGE:
     image = np.clip(image, 0, 255).astype(np.uint8)
     return bgr2image(image, alpha, cc == 1)
 
-def image_convert(image: TYPE_IMAGE, channels: int) -> TYPE_IMAGE:
+def image_convert(image: TYPE_IMAGE, channels: int, width:int=None, height:int=None,
+                  matte:Tuple[int,...]=(0,0,0,0)) -> TYPE_IMAGE:
     """Force image format to a specific number of channels.
 
     Args:
         image (TYPE_IMAGE): Input image.
         channels (int): Desired number of channels (1, 3, or 4).
-
+        width (int): Desired width. `None` means leave unchanged.
+        height (int): Desired height. `None` means leave unchanged.
+        matte (tuple): RGBA color to use as background color for transparent areas.
     Returns:
         TYPE_IMAGE: Image with the specified number of channels.
     """
+
     if image.ndim == 2:
         # Expand grayscale image to have a channel dimension
         image = np.expand_dims(image, -1)
 
-    # Ensure channels value is within the valid range
-    channels = max(1, min(4, channels))
+    # 1, 3 or 4
+    if (channels := max(1, min(4, channels))) == 2:
+        channels = 1
     cc = image.shape[2] if image.ndim == 3 else 1
 
-    if cc == channels:
-        return image
+    if cc != channels:
+        if channels == 1:
+            image = image_grayscale(image)
 
-    if channels == 1:
-        return image_grayscale(image)
+        elif channels == 3:
+            if cc == 1:
+                image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
+            elif cc == 4:
+                image = cv2.cvtColor(image, cv2.COLOR_BGRA2BGR)
 
-    if channels == 3:
-        if cc == 1:
-            return cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
-        elif cc == 4:
-            return cv2.cvtColor(image, cv2.COLOR_BGRA2BGR)
+        elif cc == 1:
+            image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGRA)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2BGRA)
 
-    if cc == 1:
-        return cv2.cvtColor(image, cv2.COLOR_GRAY2BGRA)
-    return cv2.cvtColor(image, cv2.COLOR_BGR2BGRA)
+    # if there is expansion, it should be on a black canvas?
+    if width is not None or height is not None:
+        h, w = image.shape[:2]
+        width = width or w
+        height = height or h
+        logger.debug([1, image.shape])
+        image = image_matte(image, matte, width, height)
+        logger.debug([2, image.shape])
+        image = image_crop_center(image, width, height)
 
-def image_crop_polygonal(image: TYPE_IMAGE, points: List[TYPE_COORD]) -> TYPE_IMAGE:
+    return image
+
+def image_crop_polygonal(image: TYPE_IMAGE, points: List[TYPE_fCOORD2D]) -> TYPE_IMAGE:
     cc = image.shape[2] if image.ndim == 3 else 1
     height, width = image.shape[:2]
     point_mask = np.zeros((height, width), dtype=np.uint8)
@@ -1276,7 +1306,7 @@ def image_gradient(width:int, height:int, color_map:dict=None) -> TYPE_IMAGE:
     def gaussian(x, a, b, c, d=0) -> Any:
         return a * math.exp(-(x - b)**2 / (2 * c**2)) + d
 
-    def pixel(x, spread:int=1) -> Tuple[int, int, int]:
+    def pixel(x, spread:int=1) -> TYPE_iRGB:
         ws = widthf / (spread * len(color_map))
         r = sum([gaussian(x, p[0], k * widthf, ws) for k, p in color_map.items()])
         g = sum([gaussian(x, p[1], k * widthf, ws) for k, p in color_map.items()])
@@ -1587,19 +1617,69 @@ def image_mask_binary(image: TYPE_IMAGE) -> TYPE_IMAGE:
         mask = np.expand_dims(mask, -1)
     return mask.astype(np.uint8)
 
-def image_matte(image: TYPE_IMAGE, color: Tuple[int,int,int,int]=(0,0,0,255), width: int=None, height: int=None) -> TYPE_IMAGE:
+def image_matte(image: TYPE_IMAGE, color: TYPE_iRGBA=(0,0,0,255), width: int=None, height: int=None) -> TYPE_IMAGE:
     """
-    Puts an image atop a colored matte with the same dimensions as the image.
+    Puts an RGBA image atop a colored matte expanding or clipping the image if requested.
 
     Args:
-        image (TYPE_IMAGE): The input image.
-        color (tuple(int, int, int, int)): The color of the matte as a tuple (R, G, B, A).
+        image (TYPE_IMAGE): The input RGBA image.
+        color (TYPE_iRGBA): The color of the matte as a tuple (R, G, B, A).
         width (int, optional): The width of the matte. Defaults to the image width.
         height (int, optional): The height of the matte. Defaults to the image height.
 
     Returns:
-        TYPE_IMAGE: The composited image on a matte. Output is RGBA with the original Alpha (if any) or solid white.
+        TYPE_IMAGE: Composited RGBA image on a matte with original alpha channel.
     """
+
+    #if image.ndim != 4 or image.shape[2] != 4:
+    #    return image
+
+    # Determine the dimensions of the image and the matte
+    image_height, image_width = image.shape[:2]
+    width = width or image_width
+    height = height or image_height
+    print(width, height)
+
+    # Create a solid matte with the specified color
+    matte = np.full((height, width, 4), color, dtype=np.uint8)
+
+    # Extract the alpha channel from the image
+    alpha = None
+    if image.ndim == 3 and image.shape[2] == 4:
+        alpha = image[:, :, 3] / 255.0
+
+    # Calculate the center position for the image on the matte
+    x_offset = (width - image_width) // 2
+    y_offset = (height - image_height) // 2
+
+    if alpha is not None:
+        # Place the image onto the matte using the alpha channel for blending
+        for c in range(0, 3):
+            matte[y_offset:y_offset + image_height, x_offset:x_offset + image_width, c] = \
+                (1 - alpha) * matte[y_offset:y_offset + image_height, x_offset:x_offset + image_width, c] + \
+                alpha * image[:, :, c]
+
+        # Set the alpha channel of the matte to the maximum of the matte's and the image's alpha
+        matte[y_offset:y_offset + image_height, x_offset:x_offset + image_width, 3] = \
+            np.maximum(matte[y_offset:y_offset + image_height, x_offset:x_offset + image_width, 3], image[:, :, 3])
+    else:
+        image = image[y_offset:y_offset + image_height, x_offset:x_offset + image_width, :]
+    return matte
+
+def image_matte(image: TYPE_IMAGE, color: TYPE_iRGBA= (0, 0, 0, 255), width: int = None, height: int = None) -> TYPE_IMAGE:
+    """
+    Puts an RGBA image atop a colored matte expanding or clipping the image if requested.
+
+    Args:
+        image (TYPE_IMAGE): The input RGBA image.
+        color (TYPE_iRGBA): The color of the matte as a tuple (R, G, B, A).
+        width (int, optional): The width of the matte. Defaults to the image width.
+        height (int, optional): The height of the matte. Defaults to the image height.
+
+    Returns:
+        TYPE_IMAGE: Composited RGBA image on a matte with original alpha channel.
+    """
+
     # Determine the dimensions of the image and the matte
     image_height, image_width = image.shape[:2]
     width = width or image_width
@@ -1608,27 +1688,28 @@ def image_matte(image: TYPE_IMAGE, color: Tuple[int,int,int,int]=(0,0,0,255), wi
     # Create a solid matte with the specified color
     matte = np.full((height, width, 4), color, dtype=np.uint8)
 
-    # Ensure the image has 4 channels (RGBA)
-    image = image_convert(image, 4)
-
-    # Extract the alpha channel from the image
-    alpha = image[:, :, 3] / 255.0
-
     # Calculate the center position for the image on the matte
     x_offset = (width - image_width) // 2
     y_offset = (height - image_height) // 2
 
-    # Place the image onto the matte using the alpha channel for blending
-    for c in range(0, 3):
-        matte[y_offset:y_offset + image_height, x_offset:x_offset + image_width, c] = \
-            (1 - alpha) * matte[y_offset:y_offset + image_height, x_offset:x_offset + image_width, c] + \
-            alpha * image[:, :, c]
+    # Extract the alpha channel from the image if it's RGBA
+    if image.ndim == 3 and image.shape[2] == 4:
+        alpha = image[:, :, 3] / 255.0
 
-    # Set the alpha channel of the matte to the maximum of the matte's and the image's alpha
-    matte[y_offset:y_offset + image_height, x_offset:x_offset + image_width, 3] = \
-        np.maximum(matte[y_offset:y_offset + image_height, x_offset:x_offset + image_width, 3], image[:, :, 3])
+        # Blend the RGB channels using the alpha mask
+        for c in range(3):  # Iterate over RGB channels
+            matte[y_offset:y_offset + image_height, x_offset:x_offset + image_width, c] = \
+                (1 - alpha) * matte[y_offset:y_offset + image_height, x_offset:x_offset + image_width, c] + \
+                alpha * image[:, :, c]
+
+        # Set the alpha channel to the image's alpha channel
+        matte[y_offset:y_offset + image_height, x_offset:x_offset + image_width, 3] = image[:, :, 3]
+    else:
+        # Handle non-RGBA images (just copy the image onto the matte)
+        matte[y_offset:y_offset + image_height, x_offset:x_offset + image_width, :3] = image[:, :, :3]
 
     return matte
+
 
 def image_merge(imageA: TYPE_IMAGE, imageB: TYPE_IMAGE, axis: int=0, flip: bool=False) -> TYPE_IMAGE:
     if flip:
@@ -1762,7 +1843,7 @@ def image_recenter(image: TYPE_IMAGE) -> TYPE_IMAGE:
     new_image[paste_y:paste_y+cropped_image.shape[0], paste_x:paste_x+cropped_image.shape[1]] = cropped_image
     return new_image
 
-def image_rotate(image: TYPE_IMAGE, angle: float, center:TYPE_COORD=(0.5, 0.5), edge:EnumEdge=EnumEdge.CLIP) -> TYPE_IMAGE:
+def image_rotate(image: TYPE_IMAGE, angle: float, center:TYPE_fCOORD2D=(0.5, 0.5), edge:EnumEdge=EnumEdge.CLIP) -> TYPE_IMAGE:
 
     def func_rotate(img: TYPE_IMAGE) -> TYPE_IMAGE:
         height, width = img.shape[:2]
@@ -1786,7 +1867,7 @@ def image_save_gif(fpath:str, images: List[Image.Image], fps: int=0,
         save_all=True
     )
 
-def image_scale(image: TYPE_IMAGE, scale:TYPE_COORD=(1.0, 1.0), sample:EnumInterpolation=EnumInterpolation.LANCZOS4, edge:EnumEdge=EnumEdge.CLIP) -> TYPE_IMAGE:
+def image_scale(image: TYPE_IMAGE, scale:TYPE_fCOORD2D=(1.0, 1.0), sample:EnumInterpolation=EnumInterpolation.LANCZOS4, edge:EnumEdge=EnumEdge.CLIP) -> TYPE_IMAGE:
 
     def scale_func(img: TYPE_IMAGE) -> TYPE_IMAGE:
         height, width = img.shape[:2]
@@ -1965,13 +2046,13 @@ def image_threshold(image:TYPE_IMAGE, threshold:float=0.5,
         _, image = cv2.threshold(image, threshold, 255, mode.value)
     return bgr2image(image, alpha, cc == 1)
 
-def image_translate(image: TYPE_IMAGE, offset: TYPE_COORD = (0.0, 0.0), edge: EnumEdge = EnumEdge.CLIP, border_value:int=0) -> TYPE_IMAGE:
+def image_translate(image: TYPE_IMAGE, offset: TYPE_fCOORD2D=(0.0, 0.0), edge: EnumEdge = EnumEdge.CLIP, border_value:int=0) -> TYPE_IMAGE:
     """
     Translates an image by a given offset. Supports various edge handling methods.
 
     Args:
         image (TYPE_IMAGE): Input image as a numpy array.
-        offset (TYPE_COORD): Tuple (offset_x, offset_y) representing the translation offset.
+        offset (TYPE_fCOORD2D): Tuple (offset_x, offset_y) representing the translation offset.
         edge (EnumEdge): Enum representing edge handling method. Options are 'CLIP', 'WRAP', 'WRAPX', 'WRAPY'.
 
     Returns:
@@ -1993,7 +2074,7 @@ def image_translate(image: TYPE_IMAGE, offset: TYPE_COORD = (0.0, 0.0), edge: En
 
     return translate(image)
 
-def image_transform(image: TYPE_IMAGE, offset:TYPE_COORD=(0.0, 0.0), angle:float=0, scale:TYPE_COORD=(1.0, 1.0), sample:EnumInterpolation=EnumInterpolation.LANCZOS4, edge:EnumEdge=EnumEdge.CLIP) -> TYPE_IMAGE:
+def image_transform(image: TYPE_IMAGE, offset:TYPE_fCOORD2D=(0.0, 0.0), angle:float=0, scale:TYPE_fCOORD2D=(1.0, 1.0), sample:EnumInterpolation=EnumInterpolation.LANCZOS4, edge:EnumEdge=EnumEdge.CLIP) -> TYPE_IMAGE:
     sX, sY = scale
     if sX < 0:
         image = cv2.flip(image, 1)
@@ -2327,17 +2408,17 @@ def color_theory(image: TYPE_IMAGE, custom:int=0, scheme: EnumColorTheory=EnumCo
 
 # =============================================================================
 
-def coord_cart2polar(x: float, y: float) -> Tuple[float, ...]:
+def coord_cart2polar(x: float, y: float) -> TYPE_fCOORD2D:
     r = np.sqrt(x**2 + y**2)
     theta = np.arctan2(y, x)
     return r, theta
 
-def coord_polar2cart(r: float, theta: float) -> Tuple[float, ...]:
+def coord_polar2cart(r: float, theta: float) -> TYPE_fCOORD2D:
     x = r * np.cos(theta)
     y = r * np.sin(theta)
     return x, y
 
-def coord_default(width:int, height:int, origin:Tuple[float, ...]=None) -> Tuple[float, ...]:
+def coord_default(width:int, height:int, origin:TYPE_fCOORD2D=None) -> TYPE_fCOORD2D:
     """Creates x & y coords for the indicies in a numpy array "data".
     "origin" defaults to the center of the image. Specify origin=(0,0)
     to set the origin to the lower left corner of the image."""
@@ -2350,7 +2431,7 @@ def coord_default(width:int, height:int, origin:Tuple[float, ...]=None) -> Tuple
     y -= origin_y
     return x, y
 
-def coord_fisheye(width: int, height: int, distortion: float) -> Tuple[TYPE_IMAGE, ...]:
+def coord_fisheye(width: int, height: int, distortion: float) -> Tuple[TYPE_IMAGE, TYPE_IMAGE]:
     map_x, map_y = np.meshgrid(np.linspace(0., 1., width), np.linspace(0., 1., height))
     # normalized
     xnd, ynd = (2 * map_x - 1), (2 * map_y - 1)
@@ -2361,13 +2442,13 @@ def coord_fisheye(width: int, height: int, distortion: float) -> Tuple[TYPE_IMAG
     xu, yu = ((xdu + 1) * width) / 2, ((ydu + 1) * height) / 2
     return xu.astype(np.float32), yu.astype(np.float32)
 
-def coord_perspective(width: int, height: int, pts: List[TYPE_COORD]) -> TYPE_IMAGE:
+def coord_perspective(width: int, height: int, pts: List[TYPE_fCOORD2D]) -> TYPE_IMAGE:
     object_pts = np.float32([[0, 0], [width, 0], [width, height], [0, height]])
     pts = np.float32(pts)
     pts = np.column_stack([pts[:, 0], pts[:, 1]])
     return cv2.getPerspectiveTransform(object_pts, pts)
 
-def coord_sphere(width: int, height: int, radius: float) -> Tuple[TYPE_IMAGE, ...]:
+def coord_sphere(width: int, height: int, radius: float) -> Tuple[TYPE_IMAGE, TYPE_IMAGE]:
     theta, phi = np.meshgrid(np.linspace(0, TAU, width), np.linspace(0, np.pi, height))
     x = radius * np.sin(phi) * np.cos(theta)
     y = radius * np.sin(phi) * np.sin(theta)

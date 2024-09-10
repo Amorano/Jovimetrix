@@ -257,7 +257,6 @@ Combine two input images using various blending modes, such as normal, screen, m
             elif mask is not None:
                 h, w = mask.shape[:2]
 
-            tmask = None
             if pA is None:
                 pA = channel_solid(w, h, matte, chan=EnumImageType.BGRA)
             else:
@@ -269,10 +268,9 @@ Combine two input images using various blending modes, such as normal, screen, m
                 pB = pA
             else:
                 pB = tensor2cv(pB)
-                tmask = pB
 
             if mask is None:
-                mask = channel_solid(w, h, matte[3], EnumImageType.GRAYSCALE) if tmask is None else image_mask(tmask)
+                mask = channel_solid(w, h, matte[3], EnumImageType.GRAYSCALE)
             else:
                 mask = tensor2cv(mask)
                 mask = image_grayscale(mask)
@@ -288,6 +286,7 @@ Combine two input images using various blending modes, such as normal, screen, m
                 w, h = wihi
                 sample = EnumInterpolation[sample]
                 img = image_scalefit(img, w, h, mode, sample)
+
             img = cv2tensor_full(img, matte)
             images.append(img)
             pbar.update_absolute(idx)
