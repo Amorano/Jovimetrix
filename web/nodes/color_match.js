@@ -21,10 +21,10 @@ app.registerExtension({
         nodeType.prototype.onNodeCreated = async function () {
             const me = onNodeCreated?.apply(this);
             const self = this;
-            const color_map = this.widgets.find(w => w.name === '🇸🇨');
-            const num_color = this.widgets.find(w => w.name === 'VAL');
-            const mode = this.widgets.find(w => w.name === 'MODE');
-            const map = this.widgets.find(w => w.name === 'MAP');
+            const color_map = this.widgets.find(w => w.name == '🇸🇨');
+            const num_color = this.widgets.find(w => w.name == 'VAL');
+            const mode = this.widgets.find(w => w.name == 'MODE');
+            const map = this.widgets.find(w => w.name == 'MAP');
             map.callback = () => {
                 widgetHide(this, color_map);
                 widgetHide(this, num_color);

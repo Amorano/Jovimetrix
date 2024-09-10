@@ -6,7 +6,7 @@
 
 import { app } from '../../../scripts/app.js'
 import { $el } from '../../../scripts/ui.js'
-import { apiGet, apiPost } from '../util/util_api.js'
+import { apiGet, apiJovimetrix } from '../util/util_api.js'
 import { colorContrast } from '../util/util.js'
 import { setting_make } from '../util/util_config.js'
 import { colorPicker } from '../extern/jsColorPicker.js'
@@ -86,7 +86,7 @@ function nodeColorAll() {
 class JovimetrixPanelColorize {
     constructor() {
 
-        if (document.readyState === 'loading') {
+        if (document.readyState == 'loading') {
             document.addEventListener('DOMContentLoaded', () => this.init());
         } else {
             this.init();
@@ -154,7 +154,7 @@ class JovimetrixPanelColorize {
         console.log('Initializing color picker');
         const inputs = document.querySelectorAll('.jov-panel-color-input');
         console.log('Elements found:', inputs.length);
-        if (typeof window.jsColorPicker === 'function' && inputs.length > 0) {
+        if (typeof window.jsColorPicker == 'function' && inputs.length > 0) {
             // Container for the color picker
             const container = document.createElement('div');
             container.id = 'jov-panel-color-picker-container';
@@ -199,7 +199,7 @@ class JovimetrixPanelColorize {
                             v: CONFIG_THEME[name]
                         }
                     }
-                    apiPost("/jovimetrix/config", api_packet);
+                    apiJovimetrix(api_packet.id, api_packet.v, "config");
                     if (CONFIG_COLOR.overwrite) {
                         nodeColorAll();
                     }
@@ -214,18 +214,14 @@ class JovimetrixPanelColorize {
     }
 
     updateRegexColor = (index, key, value) => {
-        CONFIG_REGEX[index][key] = value
-        let api_packet = {
-            id: USER + '.color.regex',
-            v: CONFIG_REGEX
-        }
-        apiPost("/jovimetrix/config", api_packet)
+        CONFIG_REGEX[index][key] = value;
+        apiJovimetrix(USER + '.color.regex', CONFIG_REGEX, "config");
         nodeColorAll()
     };
 
     templateColorRow = (data, type = 'block') => {
-        const isRegex = type === 'regex';
-        const isHeader = type === 'header';
+        const isRegex = type == 'regex';
+        const isHeader = type == 'header';
         const self = this;
 
         const createNameCell = () => {
@@ -400,12 +396,8 @@ class JovimetrixPanelColorize {
                     type: "checkbox",
                     checked: CONFIG_USER?.color?.overwrite,
                     onclick: (cb) => {
-                        CONFIG_USER.color.overwrite = cb.target.checked
-                        var data = {
-                            id: USER + '.color.overwrite',
-                            v: CONFIG_USER?.color?.overwrite
-                        }
-                        apiPost('/jovimetrix/config', data)
+                        CONFIG_USER.color.overwrite = cb.target.checked;
+                        apiJovimetrix(USER + '.color.overwrite', CONFIG_USER?.color?.overwrite, "config");
                         if (CONFIG_USER?.color?.overwrite) {
                             nodeColorAll()
                         }
@@ -523,7 +515,7 @@ function initializeColorPicker() {
                         v: themeConfig
                     };
                 }
-                apiPost("/jovimetrix/config", api_packet);
+                apiJovimetrix(api_packet.id, api_packet.v, "config");
                 if (CONFIG_COLOR.overwrite) {
                     nodeColorAll();
                 }

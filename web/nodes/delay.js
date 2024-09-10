@@ -24,7 +24,7 @@ app.registerExtension({
         const onNodeCreated = nodeType.prototype.onNodeCreated;
         nodeType.prototype.onNodeCreated = async function () {
             const me = onNodeCreated?.apply(this);
-            const widget_time = this.widgets.find(w => w.name === '⏱');
+            const widget_time = this.widgets.find(w => w.name == '⏱');
             this.total_timeout = 0;
             let showing = false;
             let delay_modal;
@@ -48,7 +48,7 @@ app.registerExtension({
                         </div>
                     </div>`,
                     (button) => {
-                        return (button === "jov-submit-cancel");
+                        return (button != "jov-submit-cancel");
                     },
                     widget_time.value);
 
@@ -56,7 +56,7 @@ app.registerExtension({
                 try {
                     value = await delay_modal;
                 } catch (e) {
-                    if (e.message !== "TIMEOUT") {
+                    if (e.message != "TIMEOUT") {
                         console.error(e);
                     }
                 }

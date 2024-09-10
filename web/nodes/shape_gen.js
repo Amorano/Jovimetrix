@@ -20,8 +20,8 @@ app.registerExtension({
         const onNodeCreated = nodeType.prototype.onNodeCreated
         nodeType.prototype.onNodeCreated = function () {
             const me = onNodeCreated?.apply(this)
-            const sides = this.widgets.find(w => w.name === 'SIDES');
-            const op = this.widgets.find(w => w.name === 'SHAPE');
+            const sides = this.widgets.find(w => w.name == 'SIDES');
+            const op = this.widgets.find(w => w.name == 'SHAPE');
             op.callback = () => {
                 widgetHide(this, sides);
                 if (op.value == 'POLYGON') {
@@ -35,8 +35,8 @@ app.registerExtension({
 
         const onConnectionsChange = nodeType.prototype.onConnectionsChange
         nodeType.prototype.onConnectionsChange = function (slotType, slot) {
-            if (slotType === TypeSlot.Input && slot.name == 'SHAPE') {
-                const widget_combo = this.widgets.find(w => w.name === 'SHAPE');
+            if (slotType == TypeSlot.Input && slot.name == 'SHAPE') {
+                const widget_combo = this.widgets.find(w => w.name == 'SHAPE');
                 setTimeout(() => { widget_combo.callback(); }, 10);
             }
             return onConnectionsChange?.apply(this, arguments);
@@ -44,7 +44,7 @@ app.registerExtension({
 
         const onExecuted = nodeType.prototype.onExecuted;
         nodeType.prototype.onExecuted = function () {
-            const widget_combo = this.widgets.find(w => w.name === 'SHAPE');
+            const widget_combo = this.widgets.find(w => w.name == 'SHAPE');
             if (widget_combo.value == 'SHAPE') {
                 setTimeout(() => { widget_combo.callback(); }, 10);
             }

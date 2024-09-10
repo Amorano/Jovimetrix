@@ -21,8 +21,8 @@ app.registerExtension({
         nodeType.prototype.onNodeCreated = async function () {
             const me = onNodeCreated?.apply(this);
             const self = this;
-            const toggle = this.widgets.find(w => w.name === '🇴');
-            const end = this.widgets.find(w => w.name === 'END');
+            const toggle = this.widgets.find(w => w.name == '🇴');
+            const end = this.widgets.find(w => w.name == 'END');
             toggle.callback = () => {
                 widgetHide(this, end);
                 if (toggle.value == true) {

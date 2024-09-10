@@ -11,19 +11,9 @@ export async function apiGet(url) {
     return await response.json()
 }
 
-export async function apiPost(url, data) {
-    return api.fetchApi(url, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-    })
-}
-
-export async function apiJovimetrix(id, cmd) {
+export async function apiJovimetrix(id, cmd, route="message") {
     try {
-        const response = await api.fetchApi('/jovimetrix/message', {
+        const response = await api.fetchApi(`/jovimetrix/${route}`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -37,7 +27,6 @@ export async function apiJovimetrix(id, cmd) {
         if (!response.ok) {
             throw new Error(`Error: ${response.status} - ${response.statusText}`);
         }
-        console.debug(response);
         return response;
 
     } catch (error) {

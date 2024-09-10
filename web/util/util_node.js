@@ -123,8 +123,8 @@ export function nodeAddDynamic(nodeType, prefix, dynamic_type='*', index_start=0
     const onConnectionsChange = nodeType.prototype.onConnectionsChange
     nodeType.prototype.onConnectionsChange = function (slotType, slot_idx, event, link_info, node_slot) {
         const me = onConnectionsChange?.apply(this, arguments);
-        if (slotType === TypeSlot.Input && slot_idx >= index_start) {
-            if (link_info && event === TypeSlotEvent.Connect) {
+        if (slotType == TypeSlot.Input && slot_idx >= index_start) {
+            if (link_info && event == TypeSlotEvent.Connect) {
                 const fromNode = this.graph._nodes.find(
                     (otherNode) => otherNode.id == link_info.origin_id
                 )
@@ -159,8 +159,7 @@ export function nodeAddDynamic(nodeType, prefix, dynamic_type='*', index_start=0
  */
 export function nodeVirtualLinkRoot(node) {
     while (node) {
-        const isVirtualNode = node.isVirtualNode === true;
-        const findSetter = node.findSetter;
+        const { isVirtualNode, findSetter } = node;
 
         if (!isVirtualNode || !findSetter) break;
         const nextNode = findSetter(node.graph);
@@ -179,8 +178,7 @@ export function nodeVirtualLinkRoot(node) {
  */
 export function nodeVirtualLinkChild(node) {
     while (node) {
-        const isVirtualNode = node.isVirtualNode === true;
-        const findGetter = node.findGetter;
+        const { isVirtualNode, findGetter } = node;
 
         if (!isVirtualNode || !findGetter) break;
         const nextNode = findGetter(node.graph);

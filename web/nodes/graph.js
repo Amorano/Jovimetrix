@@ -32,7 +32,7 @@ app.registerExtension({
         nodeType.prototype.onNodeCreated = async function () {
             const me = onNodeCreated?.apply(this);
             const self = this;
-            const widget_reset = this.widgets.find(w => w.name === 'RESET');
+            const widget_reset = this.widgets.find(w => w.name == 'RESET');
             widget_reset.callback = async() => {
                 widget_reset.value = false;
                 apiJovimetrix(self.id, "reset");
@@ -52,8 +52,8 @@ app.registerExtension({
                 const link = app.graph.links[link_id];
                 const nameParts = this.inputs[i].name.split('_');
                 const isInteger = nameParts.length > 1 && !isNaN(nameParts[0]) && Number.isInteger(parseFloat(nameParts[0]));
-                if (link && isInteger && nameParts[1].substring(0, _prefix.length) === _prefix) {
-                //if(link && this.inputs[i].name.substring(0, _prefix.length) === _prefix) {
+                if (link && isInteger && nameParts[1].substring(0, _prefix.length) == _prefix) {
+                //if(link && this.inputs[i].name.substring(0, _prefix.length) == _prefix) {
                     link.type = `JOV_VG_${count}`;
                     this.inputs[i].color_on = LGraphCanvas.link_type_colors[link.type];
                     count += 1;

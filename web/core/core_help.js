@@ -135,7 +135,7 @@ app.registerExtension({
             }
 
             const widget_tooltip = (this.widgets || [])
-                .find(widget => widget.type === 'JTOOLTIP');
+                .find(widget => widget.type == 'JTOOLTIP');
 
             if (widget_tooltip) {
                 const tips = widget_tooltip.options.default || {};

@@ -21,12 +21,12 @@ app.registerExtension({
         nodeType.prototype.onNodeCreated = function () {
             const me = onNodeCreated?.apply(this)
             const self = this;
-            let opt = this.widgets.find(w => w.name === 'OPT');
-            let quality = this.widgets.find(w => w.name === 'QUALITY');
-            let quality_m = this.widgets.find(w => w.name === 'MOTION');
-            let fps = this.widgets.find(w => w.name === '🏎️');
-            let loop = this.widgets.find(w => w.name === '🔄');
-            let combo = this.widgets.find(w => w.name === 'FORMAT');
+            let opt = this.widgets.find(w => w.name == 'OPT');
+            let quality = this.widgets.find(w => w.name == 'QUALITY');
+            let quality_m = this.widgets.find(w => w.name == 'MOTION');
+            let fps = this.widgets.find(w => w.name == '🏎️');
+            let loop = this.widgets.find(w => w.name == '🔄');
+            let combo = this.widgets.find(w => w.name == 'FORMAT');
             combo.callback = () => {
                 widgetHide(self, opt);
                 widgetHide(self, quality);

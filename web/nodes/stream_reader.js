@@ -24,16 +24,16 @@ app.registerExtension({
         nodeType.prototype.onNodeCreated = async function () {
             const me = onNodeCreated?.apply(this);
             const self = this;
-            const url = this.widgets.find(w => w.name === '🌐');
-            const orient = this.widgets.find(w => w.name === '🧭');
-            const zoom = this.widgets.find(w => w.name === '🔎');
-            const dpi = this.widgets.find(w => w.name === 'DPI');
-            const camera = this.widgets.find(w => w.name === '📹');
-            const monitor =this.widgets.find(w => w.name === '🖥');
-            const window = this.widgets.find(w => w.name === '🪟');
-            const fps = this.widgets.find(w => w.name === '🏎️');
-            const bbox = this.widgets.find(w => w.name === '🔲');
-            const source = this.widgets.find(w => w.name === 'SRC');
+            const url = this.widgets.find(w => w.name == '🌐');
+            const orient = this.widgets.find(w => w.name == '🧭');
+            const zoom = this.widgets.find(w => w.name == '🔎');
+            const dpi = this.widgets.find(w => w.name == 'DPI');
+            const camera = this.widgets.find(w => w.name == '📹');
+            const monitor =this.widgets.find(w => w.name == '🖥');
+            const window = this.widgets.find(w => w.name == '🪟');
+            const fps = this.widgets.find(w => w.name == '🏎️');
+            const bbox = this.widgets.find(w => w.name == '🔲');
+            const source = this.widgets.find(w => w.name == 'SRC');
             source.callback = () => {
                 widgetHide(this, url);
                 widgetHide(this, camera);

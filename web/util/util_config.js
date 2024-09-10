@@ -5,7 +5,7 @@
  */
 
 import { app } from "../../../scripts/app.js"
-import { apiPost } from './util_api.js'
+import { apiJovimetrix } from './util_api.js'
 
 export async function local_get(url, d) {
     const v = localStorage.getItem(url)
@@ -20,8 +20,7 @@ export async function local_set(url, v) {
 }
 
 export function setting_store(id, val) {
-    var data = { id: id, v: val }
-    apiPost('/jovimetrix/config', data);
+    apiJovimetrix(id, val, 'config');
     // CONFIG_USER[id] = val;
     localStorage[`Comfy.Settings.${id}`] = val;
 }
@@ -40,8 +39,7 @@ export function setting_make(id, pretty, type, tip, value,) {
         tooltip: tip,
         defaultValue: value,
         onChange(val) {
-            var data = { id: key, v: val }
-            apiPost('/jovimetrix/config', data);
+            apiJovimetrix(key, val, 'config');
             // CONFIG_USER[id] = val;
             localStorage[setting_root] = val;
         },

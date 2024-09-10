@@ -20,12 +20,12 @@ app.registerExtension({
         const onNodeCreated = nodeType.prototype.onNodeCreated;
         nodeType.prototype.onNodeCreated = async function () {
             const me = onNodeCreated?.apply(this);
-            const letter = this.widgets.find(w => w.name === 'LETTER');
-            const cols = this.widgets.find(w => w.name === 'COLS');
-            const size = this.widgets.find(w => w.name === 'SIZE');
-            const margin = this.widgets.find(w => w.name === 'MARGIN');
-            const spacing = this.widgets.find(w => w.name === 'SPACING');
-            const autosize = this.widgets.find(w => w.name === 'AUTOSIZE');
+            const letter = this.widgets.find(w => w.name == 'LETTER');
+            const cols = this.widgets.find(w => w.name == 'COLS');
+            const size = this.widgets.find(w => w.name == 'SIZE');
+            const margin = this.widgets.find(w => w.name == 'MARGIN');
+            const spacing = this.widgets.find(w => w.name == 'SPACING');
+            const autosize = this.widgets.find(w => w.name == 'AUTOSIZE');
             autosize.callback = () => {
                 widgetHide(this, cols);
                 widgetHide(this, size);

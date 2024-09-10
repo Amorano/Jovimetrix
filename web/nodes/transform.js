@@ -23,8 +23,8 @@ app.registerExtension({
         const onNodeCreated = nodeType.prototype.onNodeCreated
         nodeType.prototype.onNodeCreated = async function () {
             const me = onNodeCreated?.apply(this);
-            const pivot = this.widgets.find(w => w.name === 'PIVOT');
-            const mirror = this.widgets.find(w => w.name === '🪞');
+            const pivot = this.widgets.find(w => w.name == 'PIVOT');
+            const mirror = this.widgets.find(w => w.name == '🪞');
             mirror.callback = () => {
                 widgetHide(this, pivot);
                 if (mirror.value != 'NONE') {
@@ -33,10 +33,10 @@ app.registerExtension({
                 nodeFitHeight(this);
             }
 
-            const tltr = this.widgets.find(w => w.name === 'TL-TR');
-            const blbr = this.widgets.find(w => w.name === 'BL-BR');
-            const str = this.widgets.find(w => w.name === '💪🏽');
-            const proj = this.widgets.find(w => w.name === 'PROJ');
+            const tltr = this.widgets.find(w => w.name == 'TL-TR');
+            const blbr = this.widgets.find(w => w.name == 'BL-BR');
+            const str = this.widgets.find(w => w.name == '💪🏽');
+            const proj = this.widgets.find(w => w.name == 'PROJ');
             proj.callback = () => {
                 widgetHide(this, str);
                 widgetHide(this, tltr);

@@ -23,12 +23,12 @@ app.registerExtension({
         const onNodeCreated = nodeType.prototype.onNodeCreated;
         nodeType.prototype.onNodeCreated = async function () {
             const me = onNodeCreated?.apply(this);
-            const widget_idx = this.widgets.find(w => w.name === 'INDEX');
-            const widget_range = this.widgets.find(w => w.name === 'RANGE');
-            const widget_str = this.widgets.find(w => w.name === '📝');
-            const widget_seed = this.widgets.find(w => w.name === 'seed');
-            const widget_mode = this.widgets.find(w => w.name === 'MODE');
-            const widget_count = this.widgets.find(w => w.name === 'COUNT');
+            const widget_idx = this.widgets.find(w => w.name == 'INDEX');
+            const widget_range = this.widgets.find(w => w.name == 'RANGE');
+            const widget_str = this.widgets.find(w => w.name == '📝');
+            const widget_seed = this.widgets.find(w => w.name == 'seed');
+            const widget_mode = this.widgets.find(w => w.name == 'MODE');
+            const widget_count = this.widgets.find(w => w.name == 'COUNT');
             widget_mode.callback = async () => {
                 widgetHide(this, widget_idx);
                 widgetHide(this, widget_range);

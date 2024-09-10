@@ -85,7 +85,7 @@ app.registerExtension({
 
             // Jovian tooltip logic
             const widget_tooltip = (node?.widgets || [])
-                .find(widget => widget.type === 'JTOOLTIP');
+                .find(widget => widget.type == 'JTOOLTIP');
 
             if (!widget_tooltip) {
                 return hideTooltip();
@@ -110,7 +110,7 @@ app.registerExtension({
                 tip = tips?.[slot.name];
                 //mouse_y =  node.pos[1] - 5 * widget_height + inputSlot * widget_height;
                 if (slot.widget) {
-                    const widget = node.widgets.find(w => w.name === slot.name);
+                    const widget = node.widgets.find(w => w.name == slot.name);
                     if (widget && widget.type.startsWith('converted-widget')) {
                         const def = widget.options?.default;
                         if (def) {

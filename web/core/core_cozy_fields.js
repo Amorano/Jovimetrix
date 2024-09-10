@@ -67,7 +67,7 @@ app.registerExtension({
         if (node.comfyClass.includes("(JOV)")) {
             if (node.widgets) {
                 for (const widget of node.widgets) {
-                    if (widget.name === "control_after_generate") {
+                    if (widget.name == "control_after_generate") {
                         widget.value = "fixed";
                     }
                 }

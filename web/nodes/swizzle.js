@@ -21,14 +21,14 @@ app.registerExtension({
         const onNodeCreated = nodeType.prototype.onNodeCreated;
         nodeType.prototype.onNodeCreated = async function () {
             const me = onNodeCreated?.apply(this);
-            const x = this.widgets.find(w => w.name === '🇽');
-            const y = this.widgets.find(w => w.name === '🇾');
-            const z = this.widgets.find(w => w.name === '🇿');
-            const w = this.widgets.find(w => w.name === '🇼');
-            const swap_x = this.widgets.find(w => w.name === 'SWAP X');
-            const swap_y = this.widgets.find(w => w.name === 'SWAP Y');
-            const swap_z = this.widgets.find(w => w.name === 'SWAP Z');
-            const swap_w = this.widgets.find(w => w.name === 'SWAP W');
+            const x = this.widgets.find(w => w.name == '🇽');
+            const y = this.widgets.find(w => w.name == '🇾');
+            const z = this.widgets.find(w => w.name == '🇿');
+            const w = this.widgets.find(w => w.name == '🇼');
+            const swap_x = this.widgets.find(w => w.name == 'SWAP X');
+            const swap_y = this.widgets.find(w => w.name == 'SWAP Y');
+            const swap_z = this.widgets.find(w => w.name == 'SWAP Z');
+            const swap_w = this.widgets.find(w => w.name == 'SWAP W');
 
             widgetOutputHookType(this, '❓', 0)
 
@@ -42,7 +42,7 @@ app.registerExtension({
             for (const [widget, swapWidget] of widgets) {
                 swapWidget.callback = () => {
                     widgetHide(this, widget);
-                    if (swapWidget.value === "CONSTANT") {
+                    if (swapWidget.value == "CONSTANT") {
                         widgetShow(widget);
                     }
                     nodeFitHeight(this);

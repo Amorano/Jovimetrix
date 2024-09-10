@@ -11,9 +11,9 @@ export function widgetSizeModeHook(nodeType, always_wh=false) {
     const onNodeCreated = nodeType.prototype.onNodeCreated
     nodeType.prototype.onNodeCreated = function () {
         const me = onNodeCreated?.apply(this);
-        const wh = this.widgets.find(w => w.name === '🇼🇭');
-        const samp = this.widgets.find(w => w.name === '🎞️');
-        const mode = this.widgets.find(w => w.name === 'MODE');
+        const wh = this.widgets.find(w => w.name == '🇼🇭');
+        const samp = this.widgets.find(w => w.name == '🎞️');
+        const mode = this.widgets.find(w => w.name == 'MODE');
         mode.callback = () => {
             widgetHide(this, wh);
             widgetHide(this, samp);
@@ -32,7 +32,7 @@ export function widgetSizeModeHook(nodeType, always_wh=false) {
 }
 
 export function widgetOutputHookType(node, control_key, match_output=0) {
-    const combo = node.widgets.find(w => w.name === control_key);
+    const combo = node.widgets.find(w => w.name == control_key);
     const output = node.outputs[match_output];
 
     if (!output || !combo) {
@@ -54,9 +54,9 @@ export function widgetOutputHookType(node, control_key, match_output=0) {
 */
 export function widgetHookAB(node, control_key, output_type_match=true) {
 
-    const AA = node.widgets.find(w => w.name === '🅰️🅰️');
-    const BB = node.widgets.find(w => w.name === '🅱️🅱️');
-    const combo = node.widgets.find(w => w.name === control_key);
+    const AA = node.widgets.find(w => w.name == '🅰️🅰️');
+    const BB = node.widgets.find(w => w.name == '🅱️🅱️');
+    const combo = node.widgets.find(w => w.name == control_key);
 
     if (combo === undefined) {
         return;
@@ -86,7 +86,7 @@ export function widgetHookControl(node, control_key, target, matchFloatSize=fals
     };
 
     const { widgets } = node;
-    const combo = widgets.find(w => w.name === control_key);
+    const combo = widgets.find(w => w.name == control_key);
 
     if (!target || !combo) {
         throw new Error("Required widgets not found");
@@ -123,7 +123,7 @@ export function widgetHookControl(node, control_key, target, matchFloatSize=fals
 
     target.options.menu = false;
     target.callback = () => {
-        if (target.type === "toggle") {
+        if (target.type == "toggle") {
             data.track_xyzw[0] = target.value ? 1 : 0;
         } else {
             Object.keys(target.value).forEach((key) => {

@@ -31,7 +31,7 @@ app.registerExtension({
                 variables.pop(p, None)
             */
 
-            let widget_param = this.inputs?.find(w => w.name === 'PARAM');
+            let widget_param = this.inputs?.find(w => w.name == 'PARAM');
             if (widget_param === undefined) {
                 widget_param = this.addInput('PARAM', 'JDICT');
             }
@@ -54,14 +54,14 @@ app.registerExtension({
         nodeType.prototype.onConnectionsChange = function (slotType, slot_idx, event, link_info, node_slot) {
             const me = onConnectionsChange?.apply(this, arguments);
             let bus_connected = false;
-            if (event === TypeSlotEvent.Connect && link_info) {
+            if (event == TypeSlotEvent.Connect && link_info) {
                 let fromNode = this.graph._nodes.find(
                     (otherNode) => otherNode.id == link_info.origin_id
                 );
-                if (slotType === TypeSlot.Input) {
-                    if (slot_idx === 0) {
+                if (slotType == TypeSlot.Input) {
+                    if (slot_idx == 0) {
                         fromNode = nodeVirtualLinkRoot(fromNode);
-                        if (fromNode?.outputs && fromNode.outputs[0].type === node_slot.type) {
+                        if (fromNode?.outputs && fromNode.outputs[0].type == node_slot.type) {
                             // bus connection
                             bus_connected = true;
                             nodeInputsClear(this, 1);
@@ -82,9 +82,9 @@ app.registerExtension({
                         }
                     }
                 }
-            } else if (event === TypeSlotEvent.Disconnect) {
+            } else if (event == TypeSlotEvent.Disconnect) {
                 bus_connected = false;
-                if (slot_idx === 0) {
+                if (slot_idx == 0) {
                     nodeInputsClear(this, 1);
                     nodeOutputsClear(this, 1);
                 } else {

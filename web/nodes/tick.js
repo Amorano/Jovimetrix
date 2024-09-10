@@ -21,13 +21,13 @@ app.registerExtension({
         nodeType.prototype.onNodeCreated = async function () {
             const me = onNodeCreated?.apply(this);
             const self = this;
-            const widget_reset = this.widgets.find(w => w.name === 'RESET');
+            const widget_reset = this.widgets.find(w => w.name == 'RESET');
             widget_reset.callback = async() => {
                 widget_reset.value = false;
                 apiJovimetrix(self.id, "reset");
             }
 
-            self.widget_count = this.widgets.find(w => w.name === 'VAL');
+            self.widget_count = this.widgets.find(w => w.name == 'VAL');
             async function python_tick(event) {
                 if (event.detail.id != self.id) {
                     return;

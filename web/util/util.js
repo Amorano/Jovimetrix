@@ -27,7 +27,7 @@ export function domRenderTemplate(template, data) {
 export function domFoldableToggle(elementId, symbolId) {
     const content = document.getElementById(elementId)
     const symbol = document.getElementById(symbolId)
-    if (content.style.display === 'none' || content.style.display === '') {
+    if (content.style.display == 'none' || content.style.display == '') {
         content.style.display = 'flex'
         symbol.innerHTML = '&#9661' // Down arrow
     } else {
@@ -153,14 +153,14 @@ export function colorHex2RGB(hex) {
 * Parse a string "255,255,255,255" or a List[255,255,255,255] into hex
 */
 export function colorRGB2Hex(input) {
-    const rgbArray = typeof input === 'string' ? input.match(/\d+/g) : input;
+    const rgbArray = typeof input == 'string' ? input.match(/\d+/g) : input;
     if (rgbArray.length < 3) {
         throw new Error('input not 3 or 4 values');
     }
     const hexValues = rgbArray.map((value, index) => {
-        if (index === 3 && !value) return 'ff';
+        if (index == 3 && !value) return 'ff';
         const hex = parseInt(value).toString(16);
-        return hex.length === 1 ? '0' + hex : hex;
+        return hex.length == 1 ? '0' + hex : hex;
     });
     return '#' + hexValues.slice(0, 3).join('') + (hexValues[3] || '');
 }

@@ -19,8 +19,8 @@ app.registerExtension({
         const onNodeCreated = nodeType.prototype.onNodeCreated;
         nodeType.prototype.onNodeCreated = async function () {
             const me = onNodeCreated?.apply(this);
-            const num_color = this.widgets.find(w => w.name === 'VAL');
-            const scheme = this.widgets.find(w => w.name === 'SCHEME');
+            const num_color = this.widgets.find(w => w.name == 'VAL');
+            const scheme = this.widgets.find(w => w.name == 'SCHEME');
             scheme.callback = () => {
                 widgetHide(this, num_color);
                 if (scheme.value == "CUSTOM_TETRAD") {

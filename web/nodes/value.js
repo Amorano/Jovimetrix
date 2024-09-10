@@ -22,7 +22,7 @@ app.registerExtension({
         nodeType.prototype.onNodeCreated = function () {
             const me = onNodeCreated?.apply(this);
 
-            const widget_str = this.widgets.find(w => w.name === '📝');
+            const widget_str = this.widgets.find(w => w.name == '📝');
 
             this.outputs[1].type = "*";
             this.outputs[2].type = "*";

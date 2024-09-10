@@ -20,7 +20,7 @@ app.registerExtension({
         const onNodeCreated = nodeType.prototype.onNodeCreated
         nodeType.prototype.onNodeCreated = function () {
             const me = onNodeCreated?.apply(this);
-            const alpha = this.widgets.find(w => w.name === '🛟');
+            const alpha = this.widgets.find(w => w.name == '🛟');
             widgetHookControl(this, '❓', alpha, true);
             widgetHookAB(this, '❓', false);
             return me;

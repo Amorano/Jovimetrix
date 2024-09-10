@@ -48,13 +48,13 @@ app.registerExtension({
             this.data_current = "";
             this.data_all = [];
 
-            const widget_queue = this.widgets.find(w => w.name === 'Q');
-            const widget_batch = this.widgets.find(w => w.name === 'BATCH');
-            const widget_value = this.widgets.find(w => w.name === 'VAL');
-            const widget_hold = this.widgets.find(w => w.name === '✋🏽');
-            const widget_reset = this.widgets.find(w => w.name === 'RESET');
-            const widget_stop = this.widgets.find(w => w.name === 'STOP');
-            const widget_loop = this.widgets.find(w => w.name === '🔄');
+            const widget_queue = this.widgets.find(w => w.name == 'Q');
+            const widget_batch = this.widgets.find(w => w.name == 'BATCH');
+            const widget_value = this.widgets.find(w => w.name == 'VAL');
+            const widget_hold = this.widgets.find(w => w.name == '✋🏽');
+            const widget_reset = this.widgets.find(w => w.name == 'RESET');
+            const widget_stop = this.widgets.find(w => w.name == 'STOP');
+            const widget_loop = this.widgets.find(w => w.name == '🔄');
             widget_batch.callback = () => {
                 widgetHide(this, widget_value);
                 widgetHide(this, widget_hold);
@@ -142,8 +142,8 @@ app.registerExtension({
             if (outputIndex == 0 && inputType == "COMBO") {
                 // can link the "same" list -- user breaks it past that, their problem atm.
 
-                const widget_queue = this.widgets.find(w => w.name === 'Q');
-                const widget = inputNode.widgets.find(w => w.name === inputSlot.name);
+                const widget_queue = this.widgets.find(w => w.name == 'Q');
+                const widget = inputNode.widgets.find(w => w.name == inputSlot.name);
                 const values = widget.options.values.join('\n');
                 if (this.outputs[0].name != _prefix && widget_queue.value != values) {
                     return false;
@@ -156,7 +156,7 @@ app.registerExtension({
         nodeType.prototype.onConnectionsChange = function (slotType, slot, event, link_info)
         //side, slot, connected, link_info
         {
-            if (slotType === TypeSlot.Output && slot == 0 && link_info && event === TypeSlotEvent.Connect) {
+            if (slotType == TypeSlot.Output && slot == 0 && link_info && event == TypeSlotEvent.Connect) {
                 const node = app.graph.getNodeById(link_info.target_id);
                 if (node === undefined || node.inputs === undefined) {
                     return;
@@ -166,14 +166,14 @@ app.registerExtension({
                     return;
                 }
 
-                const widget = node.widgets?.find(w => w.name === target.name);
+                const widget = node.widgets?.find(w => w.name == target.name);
                 if (widget === undefined) {
                     return;
                 }
                 this.outputs[0].name = widget.name;
                 if (widget?.origType == "combo" || widget.type == "COMBO") {
                     const values = widget.options.values;
-                    const widget_queue = this.widgets.find(w => w.name === 'Q');
+                    const widget_queue = this.widgets.find(w => w.name == 'Q');
                     // remove all connections that don't match the list?
                     widget_queue.value = values.join('\n');
                     update_list(this, values);

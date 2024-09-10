@@ -28,12 +28,12 @@ app.registerExtension({
         nodeType.prototype.onNodeCreated = async function () {
             const me = onNodeCreated?.apply(this);
             const self = this;
-            const widget_time = this.widgets.find(w => w.name === '🕛');
-            const widget_vertex = this.widgets.find(w => w.name === 'VERTEX');
-            const widget_fragment = this.widgets.find(w => w.name === 'FRAGMENT');
+            const widget_time = this.widgets.find(w => w.name == '🕛');
+            const widget_vertex = this.widgets.find(w => w.name == 'VERTEX');
+            const widget_fragment = this.widgets.find(w => w.name == 'FRAGMENT');
             widget_vertex.options.menu = false;
             widget_fragment.options.menu = false;
-            let widget_param = this.inputs?.find(w => w.name === 'PARAM');
+            let widget_param = this.inputs?.find(w => w.name == 'PARAM');
             if (widget_param === undefined) {
                 widget_param = this.addInput('PARAM', 'JDICT');
             }
@@ -51,7 +51,7 @@ app.registerExtension({
                 const matches = [...widget_fragment.value.matchAll(RE_VARIABLE)];
                 matches.forEach(match => {
                     const [full_match, varType, varName, varValue] = match;
-                    let exist = self.inputs?.find(w => w.name === varName);
+                    let exist = self.inputs?.find(w => w.name == varName);
                     let type;
                     if (varType == 'int') {
                         type = "INT";

@@ -118,7 +118,7 @@ const VectorWidget = (app, inputName, options, initial, desc='') => {
 
     widget.mouse = function (e, pos, node) {
         let delta = 0;
-        if (e.type === 'pointerdown' && isDragging === undefined) {
+        if (e.type == 'pointerdown' && isDragging === undefined) {
             const x = pos[0] - label_full;
             const size = Object.keys(this.value).length;
             const element_width = (node.size[0] - label_full - widget_padding * 1.25) / size;
@@ -156,14 +156,14 @@ const VectorWidget = (app, inputName, options, initial, desc='') => {
             }
         }
 
-        if (isDragging !== undefined && isDragging.idx > -1 && isDragging.name === this.name) {
+        if (isDragging !== undefined && isDragging.idx > -1 && isDragging.name == this.name) {
             const idx = isDragging.idx
             const old_value = { ...this.value };
-            if (e.type === 'pointermove' && e.deltaX) {
+            if (e.type == 'pointermove' && e.deltaX) {
                 let v = parseFloat(this.value[idx]);
                 v += this.options.step * Math.sign(e.deltaX);
                 clamp(this, v, idx);
-            } else if (e.type === 'pointerup') {
+            } else if (e.type == 'pointerup') {
                 isDragging = undefined
                 if (e.click_time < 150 && delta == 0) {
                     const label = this.options?.label ? this.name + '➖' + this.options.label?.[idx] : this.name;
@@ -253,7 +253,7 @@ app.registerExtension({
                     const me = getExtraMenuOptions?.apply(this, arguments);
                     const widgetToInputArray = [];
                     for (const [widgetName, additionalInfo] of matchingTypes) {
-                        const widget = Object.values(this.widgets).find(m => m.name === widgetName);
+                        const widget = Object.values(this.widgets).find(m => m.name == widgetName);
                         if (myTypes.includes(widget.type) || widget.type.endsWith('-jov')) {
                             if (!widget.hidden) {
                                 const widgetToInputObject = {

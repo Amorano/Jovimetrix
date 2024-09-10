@@ -26,8 +26,8 @@ app.registerExtension({
         nodeType.prototype.onNodeCreated = function () {
             const me = onNodeCreated?.apply(this)
             const self = this;
-            const stride = this.widgets.find(w => w.name === '🦶🏽');
-            const axis = this.widgets.find(w => w.name === 'AXIS');
+            const stride = this.widgets.find(w => w.name == '🦶🏽');
+            const axis = this.widgets.find(w => w.name == 'AXIS');
             axis.callback = () => {
                 widgetHide(self, stride);
                 if (axis.value == 'GRID') {

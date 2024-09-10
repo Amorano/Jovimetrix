@@ -21,11 +21,11 @@ app.registerExtension({
         nodeType.prototype.onNodeCreated = async function () {
             const me = onNodeCreated?.apply(this);
             const self = this;
-            const r = this.widgets.find(w => w.name === '🟥');
-            const g = this.widgets.find(w => w.name === '🟩');
-            const b = this.widgets.find(w => w.name === '🟦');
-            const a = this.widgets.find(w => w.name === '⬜');
-            const swap_r = this.widgets.find(w => w.name === 'SWAP R');
+            const r = this.widgets.find(w => w.name == '🟥');
+            const g = this.widgets.find(w => w.name == '🟩');
+            const b = this.widgets.find(w => w.name == '🟦');
+            const a = this.widgets.find(w => w.name == '⬜');
+            const swap_r = this.widgets.find(w => w.name == 'SWAP R');
             swap_r.callback = () => {
                 widgetHide(this, r);
                 if (swap_r.value == "CONSTANT") {
@@ -33,7 +33,7 @@ app.registerExtension({
                 }
                 nodeFitHeight(self);
             };
-            const swap_g = this.widgets.find(w => w.name === 'SWAP G');
+            const swap_g = this.widgets.find(w => w.name == 'SWAP G');
             swap_g.callback = () => {
                 widgetHide(this, g);
                 if (swap_g.value == "CONSTANT") {
@@ -41,7 +41,7 @@ app.registerExtension({
                 }
                 nodeFitHeight(self);
             };
-            const swap_b = this.widgets.find(w => w.name === 'SWAP B');
+            const swap_b = this.widgets.find(w => w.name == 'SWAP B');
             swap_b.callback = () => {
                 widgetHide(this, b);
                 if (swap_b.value == "CONSTANT") {
@@ -49,7 +49,7 @@ app.registerExtension({
                 }
                 nodeFitHeight(self);
             };
-            const swap_a = this.widgets.find(w => w.name === 'SWAP A');
+            const swap_a = this.widgets.find(w => w.name == 'SWAP A');
             swap_a.callback = () => {
                 widgetHide(this, a);
                 if (swap_a.value == "CONSTANT") {

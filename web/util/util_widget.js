@@ -42,11 +42,11 @@ export function widget_get_type(config) {
     return { type, linkType }
 }
 
-export const widgetFind = (widgets, name) => widgets.find(w => w.name === name);
+export const widgetFind = (widgets, name) => widgets.find(w => w.name == name);
 
 export const widgetFindOutput = (widgets, name) => {
     for (let i = 0; i < widgets.length; i++) {
-        if (widgets[i].name === name) {
+        if (widgets[i].name == name) {
             return i;
         }
     }
@@ -54,7 +54,7 @@ export const widgetFindOutput = (widgets, name) => {
 
 export function widgetRemove(node, widgetOrSlot) {
     let index = 0;
-    if (typeof widgetOrSlot === 'number') {
+    if (typeof widgetOrSlot == 'number') {
         index = widgetOrSlot;
     }
     else if (widgetOrSlot) {
@@ -100,7 +100,7 @@ export function widgetHide(node, widget, suffix = '') {
 			return undefined;
 		}
 
-		let node_input = node.inputs.find((i) => i.widget?.name === widget.name);
+		let node_input = node.inputs.find((i) => i.widget?.name == widget.name);
 		if (!node_input || !node_input.link) {
 			return undefined;
 		}
@@ -188,9 +188,9 @@ export function widgetShowVector(widget, values={}, type) {
 export function widgetProcessAny(widget, subtype="FLOAT") {
     widgetShow(widget);
     //input.type = subtype;
-    if (subtype === "BOOLEAN") {
+    if (subtype == "BOOLEAN") {
         widget.type = "toggle";
-    } else if (subtype === "FLOAT" || subtype === "INT") {
+    } else if (subtype == "FLOAT" || subtype == "INT") {
         widget.type = "number";
         if (widget?.options) {
             if (subtype=="FLOAT") {
@@ -211,7 +211,7 @@ export function widgetProcessAny(widget, subtype="FLOAT") {
 export function widgetToWidget(node, widget) {
     widgetShow(widget);
     const sz = node.size;
-    node.removeInput(node.inputs.findIndex((i) => i.widget?.name === widget.name));
+    node.removeInput(node.inputs.findIndex((i) => i.widget?.name == widget.name));
 
     for (const widget of node.widgets) {
         widget.last_y -= LiteGraph.NODE_SLOT_HEIGHT;
@@ -241,7 +241,7 @@ export function widgetToInput(node, widget, config) {
 }
 
 export function widgetGetHovered() {
-    if (typeof app === 'undefined') return;
+    if (typeof app == 'undefined') return;
 
     const node = app.canvas.node_over;
     if (!node || !node.widgets) return;

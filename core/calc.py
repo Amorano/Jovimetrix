@@ -537,7 +537,6 @@ Evaluates two inputs (A and B) with a specified comparison operators and optiona
             pbar.update_absolute(idx)
 
         outs, vals = zip(*results)
-        print(vals, outs)
         if isinstance(outs[0], (torch.Tensor,)):
             if len(outs) > 1:
                 outs = torch.cat(outs, dim=0)
@@ -583,7 +582,8 @@ Introduce pauses in the workflow that accept an optional input to pass through a
             # comfy_message(ident, "jovi-delay-update", {"id": ident, "timeout": step})
             try:
                 data = ComfyAPIMessage.poll(ident, timeout=1)
-                if data.get('cancel', True):
+                print(data)
+                if data.get('cmd', False):
                     interrupt_processing(True)
                     logger.warning(f"delay [cancelled] ({step}): {ident}")
                     break
