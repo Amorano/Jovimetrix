@@ -142,12 +142,9 @@ Visualize data. It accepts various types of data, including images, text, and ot
                     elif isinstance(val[0], (torch.Tensor,)):
                         ret = decode_tensor(val[0])
                         typ = type(val[0])
-                    elif size == 1:
-                        if isinstance(val[0], (list,)) and isinstance(val[0][0], (torch.Tensor,)):
-                            ret = decode_tensor(val[0][0])
-                            typ = "CONDITIONING"
-                    elif size < 2:
-                        ret = val[0]
+                    elif size == 1 and isinstance(val[0], (list,)) and isinstance(val[0][0], (torch.Tensor,)):
+                        ret = decode_tensor(val[0][0])
+                        typ = "CONDITIONING"
                     else:
                         ret = '\n\t' + '\n\t'.join(str(v) for v in val)
             elif isinstance(val, bool):
@@ -533,13 +530,13 @@ class QueueBaseNode(JOVBaseNode):
         d = deep_merge(d, {
             "optional": {
                 Lexicon.QUEUE: ("STRING", {"multiline": True, "default": "./res/img/test-a.png"}),
+                Lexicon.RECURSE: ("BOOLEAN", {"default": False}),
+                Lexicon.BATCH: ("BOOLEAN", {"default": False, "tooltips":"Load all items, if they are loadable items, i.e. batch load images from the Queue's list. This can consume a lot of memory depending on the list size and each item size."}),
                 Lexicon.VALUE: ("INT", {"mij": 0, "default": 0, "tooltips": "The current index for the current queue item"}),
                 Lexicon.WAIT: ("BOOLEAN", {"default": False, "tooltips":"Hold the item at the current queue index"}),
-                Lexicon.RESET: ("BOOLEAN", {"default": False, "tooltips":"Reset the queue back to index 1"}),
-                Lexicon.BATCH: ("BOOLEAN", {"default": False, "tooltips":"Load all items, if they are loadable items, i.e. batch load images from the Queue's list. This can consume a lot of memory depending on the list size and each item size."}),
-                Lexicon.RECURSE: ("BOOLEAN", {"default": False}),
-                Lexicon.LOOP: ("BOOLEAN", {"default": False, "tooltips":"If the queue should loop around the end when reached. If `False`, at the end of the Queue, if there are more iterations, it will just send the previous image."}),
                 Lexicon.STOP: ("BOOLEAN", {"default": False, "tooltips":"When the Queue is out of items, send a `HALT` to ComfyUI."}),
+                Lexicon.LOOP: ("BOOLEAN", {"default": True, "tooltips":"If the queue should loop around the end when reached. If `False`, at the end of the Queue, if there are more iterations, it will just send the previous image."}),
+                Lexicon.RESET: ("BOOLEAN", {"default": False, "tooltips":"Reset the queue back to index 1"}),
             }
         })
         return Lexicon._parse(d, cls)
@@ -733,10 +730,11 @@ Manage a queue of items, such as file paths or data. Supports various formats in
 
     def run(self, ident, **kw) -> Tuple[Any, List[str], str, int, int]:
         data, aa, ba, ca, da = super().run(ident, **kw)
-        if isinstance(data, (list, )) and isinstance(data[0], (np.ndarray,)):
-            data = [cv2tensor(d) for d in data]
-            data = torch.cat(data, dim=0)
-        else:
+        if isinstance(data, (list, )):
+            if isinstance(data[0], (np.ndarray,)):
+                data = [cv2tensor(d) for d in data]
+                data = torch.cat(data, dim=0)
+        elif isinstance(data, (np.ndarray,)):
             data = cv2tensor(data)
         return data, aa, ba, ca, da
 
@@ -760,7 +758,7 @@ Manage a queue of specific items: media files. Supports various image and video 
                 Lexicon.VALUE: ("INT", {"mij": 0, "default": 0, "tooltips": "The current index for the current queue item"}),
                 Lexicon.WAIT: ("BOOLEAN", {"default": False, "tooltips":"Hold the item at the current queue index"}),
                 Lexicon.STOP: ("BOOLEAN", {"default": False, "tooltips":"When the Queue is out of items, send a `HALT` to ComfyUI."}),
-                Lexicon.LOOP: ("BOOLEAN", {"default": False, "tooltips":"If the queue should loop around the end when reached. If `False`, at the end of the Queue, if there are more iterations, it will just send the previous image."}),
+                Lexicon.LOOP: ("BOOLEAN", {"default": True, "tooltips":"If the queue should loop around the end when reached. If `False`, at the end of the Queue, if there are more iterations, it will just send the previous image."}),
                 Lexicon.RESET: ("BOOLEAN", {"default": False, "tooltips":"Reset the queue back to index 1"}),
                 #
                 Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.MATTE.name}),
@@ -835,7 +833,6 @@ Routes the input data from the optional input ports to the output port, preservi
         vars = kw.copy()
         vars.pop(Lexicon.ROUTE, None)
         vars.pop('ident', None)
-        logger.debug(vars)
         return inout, *vars.values(),
 
 class SaveOutput(JOVBaseNode):

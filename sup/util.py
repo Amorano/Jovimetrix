@@ -276,6 +276,17 @@ def parse_param(data:dict, key:str, typ:EnumConvertType, default: Any,
     Convert list of values into a list of specified type.
     """
     val = data.get(key, default)
+    if typ == EnumConvertType.ANY:
+        if val is None:
+            if default is None:
+                return [None]
+            val = default
+
+        if not isinstance(val, (list, torch.Tensor, )):
+            logger.debug(f"{type(val)}, {val}")
+            val = [val]
+        return val
+
     if isinstance(val, (str,)):
         try: val = json.loads(val.replace("'", '"'))
         except json.JSONDecodeError: pass
@@ -318,6 +329,7 @@ def parse_param(data:dict, key:str, typ:EnumConvertType, default: Any,
             val = list(val)
     elif issubclass(type(val), (Enum,)):
         val = [str(val.name)]
+
     if not isinstance(val, (list,)):
         val = [val]
     return [parse_value(v, typ, default, clip_min, clip_max, zero) for v in val]

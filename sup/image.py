@@ -465,7 +465,7 @@ def tensor2cv(tensor: torch.Tensor) -> TYPE_IMAGE:
 
     if image.shape[2] == 4:
         # image_flatten_mask
-        mask = 255 - image_mask(image)
+        mask = image_mask(image)
         # we should flatten against black?
         black = np.zeros(image.shape, dtype=np.uint8)
         image = image_blend(black, image, mask)
@@ -2181,59 +2181,14 @@ def color_match_reinhard(image: TYPE_IMAGE, target: TYPE_IMAGE) -> TYPE_IMAGE:
     """
     target = image_convert(target, 3)
     lab_tar = cv2.cvtColor(target, cv2.COLOR_BGR2Lab)
-
-    mask = None
-    if image.ndim == 3 and image.shape[2] == 4:
-        mask = image_mask(image)
-
     image = image_convert(image, 3)
     lab_ori = cv2.cvtColor(image, cv2.COLOR_BGR2Lab)
-
     mean_tar, std_tar = cv2.meanStdDev(lab_tar)
     mean_ori, std_ori = cv2.meanStdDev(lab_ori)
-
-    # Avoid division zero
-    std_ori[std_ori == 0] = 1.0
     ratio = (std_tar / std_ori).reshape(-1)
-    offset = (mean_tar - (mean_ori * std_tar / std_ori)).reshape(-1)
-
-    lab_result = lab_ori * ratio + offset
-    lab_result = cv2.convertScaleAbs(lab_result)
-    image = cv2.cvtColor(lab_result, cv2.COLOR_Lab2BGR)
-
-    if mask is not None:
-        image = image_mask_add(image, mask)
-    return image
-
-def color_match_reinhard(image: TYPE_IMAGE, target: TYPE_IMAGE) -> TYPE_IMAGE:
-    mask = None
-    if image.ndim == 3 and image.shape[2] == 4:
-        mask = image_mask(image)
-
-    image = image_convert(image, 3).astype(np.float32) / 255.0
-    target = image_convert(target, 3).astype(np.float32) / 255.0
-
-    source_lab = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
-    target_lab = cv2.cvtColor(target, cv2.COLOR_BGR2LAB)
-
-    src_mean, src_std = cv2.meanStdDev(source_lab)
-    tgt_mean, tgt_std = cv2.meanStdDev(target_lab)
-    src_mean = src_mean.reshape(1, 1, 3)
-    src_std = src_std.reshape(1, 1, 3)
-    tgt_mean = tgt_mean.reshape(1, 1, 3)
-    tgt_std = tgt_std.reshape(1, 1, 3)
-
-    # division by zero
-    src_std = np.where(src_std == 0, 1, src_std)
-
-    # actual reinhard
-    result_lab = (source_lab - src_mean) * (tgt_std / src_std) + tgt_mean
-    result_lab = np.clip(result_lab, 0, 255)
-    image = cv2.cvtColor(result_lab.astype(np.uint8), cv2.COLOR_LAB2BGR)
-
-    if mask is not None:
-        image = image_mask_add(image, mask)
-    return image
+    offset = (mean_tar - mean_ori * std_tar / std_ori).reshape(-1)
+    lab_tar = cv2.convertScaleAbs(lab_ori * ratio + offset)
+    return cv2.cvtColor(lab_tar, cv2.COLOR_Lab2BGR)
 
 def color_match_lut(image: TYPE_IMAGE, colormap:int=cv2.COLORMAP_JET,
                     usermap:TYPE_IMAGE=None, num_colors:int=255) -> TYPE_IMAGE:

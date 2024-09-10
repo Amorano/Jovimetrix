@@ -459,20 +459,22 @@ Evaluates two inputs (A and B) with a specified comparison operators and optiona
     def run(self, **kw) -> Tuple[Any, Any]:
         A = parse_param(kw, Lexicon.IN_A, EnumConvertType.ANY, 0)
         B = parse_param(kw, Lexicon.IN_B, EnumConvertType.ANY, 0)
-        good = parse_param(kw, Lexicon.COMP_A, EnumConvertType.ANY, 0)
-        fail = parse_param(kw, Lexicon.COMP_B, EnumConvertType.ANY, 0)
-        op = parse_param(kw, Lexicon.COMPARE, EnumConvertType.STRING, EnumComparison.EQUAL.name)
-        flip = parse_param(kw, Lexicon.FLIP, EnumConvertType.BOOLEAN, False)
-        invert = parse_param(kw, Lexicon.INVERT, EnumConvertType.BOOLEAN, False)
+        size = max(len(A), len(B))
+        good = parse_param(kw, Lexicon.COMP_A, EnumConvertType.ANY, 0)[:size]
+        fail = parse_param(kw, Lexicon.COMP_B, EnumConvertType.ANY, 0)[:size]
+        op = parse_param(kw, Lexicon.COMPARE, EnumConvertType.STRING, EnumComparison.EQUAL.name)[:size]
+        flip = parse_param(kw, Lexicon.FLIP, EnumConvertType.BOOLEAN, False)[:size]
+        invert = parse_param(kw, Lexicon.INVERT, EnumConvertType.BOOLEAN, False)[:size]
         params = list(zip_longest_fill(A, B, good, fail, op, flip, invert))
         pbar = ProgressBar(len(params))
         vals = []
         results = []
         for idx, (A, B, good, fail, op, flip, invert) in enumerate(params):
-            if not isinstance(A, (list,)):
+            if not isinstance(A, (tuple, list,)):
                 A = [A]
-            if not isinstance(B, (list,)):
+            if not isinstance(B, (tuple, list,)):
                 B = [B]
+
             size = min(4, max(len(A), len(B))) - 1
             typ = [EnumConvertType.FLOAT, EnumConvertType.VEC2, EnumConvertType.VEC3, EnumConvertType.VEC4][size]
 
@@ -530,13 +532,12 @@ Evaluates two inputs (A and B) with a specified comparison operators and optiona
             if invert:
                 output = not output
 
-            logger.debug(f"{A}, {val_a}, {B}, {val_b}, {val}, {output}")
-
-            output = good if output else fail
+            output = good if output == True else fail
             results.append([output, val])
             pbar.update_absolute(idx)
 
         outs, vals = zip(*results)
+        print(vals, outs)
         if isinstance(outs[0], (torch.Tensor,)):
             if len(outs) > 1:
                 outs = torch.cat(outs, dim=0)
@@ -544,7 +545,7 @@ Evaluates two inputs (A and B) with a specified comparison operators and optiona
                 outs = outs[0].unsqueeze(0)
         else:
             outs = list(outs)
-        return outs, list(vals),
+        return outs, *vals,
 
 class DelayNode(JOVBaseNode):
     NAME = "DELAY (JOV) ✋🏽"

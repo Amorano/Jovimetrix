@@ -999,7 +999,6 @@ Apply various geometric transformations to images, including translation, rotati
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
         offset = parse_param(kw, Lexicon.XY, EnumConvertType.VEC2, [(0, 0)], -2.5, 2.5)
-        logger.debug(offset)
         angle = parse_param(kw, Lexicon.ANGLE, EnumConvertType.FLOAT, 0)
         size = parse_param(kw, Lexicon.SIZE, EnumConvertType.VEC2, [(1, 1)], 0.001)
         edge = parse_param(kw, Lexicon.EDGE, EnumConvertType.STRING, EnumEdge.CLIP.name)
