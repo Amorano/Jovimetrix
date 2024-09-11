@@ -24,17 +24,22 @@ from Jovimetrix.sup.image import MIN_IMAGE_SIZE, EnumImageType, EnumColorTheory,
     EnumProjection, EnumScaleMode, EnumEdge, EnumMirrorMode, EnumOrientation, \
     EnumPixelSwizzle, EnumBlendType, EnumCBDeficiency, EnumCBSimulator, \
     EnumColorMap, EnumAdjustOP, EnumThreshold, EnumInterpolation, \
-    EnumThresholdAdapt, channel_merge, channel_solid, channel_swap, \
-    color_match_lut, image_filter, image_gradient_map, image_minmax, \
-    image_quantize, image_scalefit, color_match_reinhard, cv2tensor_full, \
-    image_color_blind, image_contrast, image_crop, image_crop_center, \
-    image_crop_polygonal, image_equalize, image_gamma, image_grayscale, \
-    image_hsv, image_levels, image_convert, image_mask, image_mask_add, \
-    image_matte, image_pixelate, image_posterize, image_sharpen, image_threshold, \
-    image_transform, image_edge_wrap, image_split, morph_edge_detect, \
-    morph_emboss, pixel_eval, tensor2cv, color_theory, remap_fisheye, \
-    remap_perspective, remap_polar, cv2tensor, remap_sphere, image_invert, \
-    image_stack, image_mirror, image_blend
+    EnumThresholdAdapt, cv2tensor_full, image_blend, image_crop, image_grayscale, \
+    image_mask, image_mask_add, image_matte, image_scalefit, tensor2cv, cv2tensor, \
+    pixel_eval, image_convert, channel_merge, channel_solid, channel_swap, \
+    image_crop_polygonal
+
+from Jovimetrix.sup.image.compose import image_crop_center, image_minmax, image_transform
+
+from Jovimetrix.sup.image.color import color_match_lut, color_match_reinhard, \
+    color_theory, color_blind
+
+from Jovimetrix.sup.image.misc import \
+    image_filter, image_gradient_map, image_contrast, image_hsv, image_stack, \
+    image_mirror, image_threshold, image_quantize, image_invert, image_levels, \
+    image_gamma, morph_edge_detect, remap_sphere, image_sharpen, image_edge_wrap, \
+    morph_emboss, remap_fisheye, remap_perspective, remap_polar, image_split, \
+    image_equalize, image_pixelate, image_posterize
 
 # =============================================================================
 
@@ -326,7 +331,7 @@ Simulate color blindness effects on images. You can select various types of colo
             pA = channel_solid(chan=EnumImageType.BGRA) if pA is None else tensor2cv(pA)
             deficiency = EnumCBDeficiency[deficiency]
             simulator = EnumCBSimulator[simulator]
-            pA = image_color_blind(pA, deficiency, simulator, severity)
+            pA = color_blind(pA, deficiency, simulator, severity)
             images.append(cv2tensor_full(pA))
             pbar.update_absolute(idx)
         return [torch.cat(i, dim=0) for i in zip(*images)]

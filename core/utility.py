@@ -33,10 +33,12 @@ from Jovimetrix import JOV_TYPE_ANY, ROOT, JOV_TYPE_IMAGE, DynamicInputType, \
 from Jovimetrix.sup.util import EnumConvertType, decode_tensor, parse_dynamic, \
     path_next, parse_param, zip_longest_fill
 
-from Jovimetrix.sup.image import MIN_IMAGE_SIZE, EnumInterpolation, \
-    EnumScaleMode, cv2tensor, cv2tensor_full, image_by_size, image_convert, \
-    image_matte, image_scalefit, tensor2cv, pil2tensor, image_load, image_formats, \
+from Jovimetrix.sup.image import MIN_IMAGE_SIZE, IMAGE_FORMATS, EnumInterpolation, \
+    EnumScaleMode, cv2tensor, cv2tensor_full, image_convert, \
+    image_matte, image_scalefit, tensor2cv, pil2tensor, image_load, \
     tensor2pil
+
+from Jovimetrix.sup.image.misc import image_by_size
 
 # =============================================================================
 
@@ -523,7 +525,7 @@ class QueueBaseNode(JOVBaseNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = (JOV_TYPE_ANY, JOV_TYPE_ANY, "STRING", "INT", "INT", "BOOLEAN")
     RETURN_NAMES = (Lexicon.ANY_OUT, Lexicon.QUEUE, Lexicon.CURRENT, Lexicon.INDEX, Lexicon.TOTAL, Lexicon.TRIGGER, )
-    VIDEO_FORMATS = image_formats() + ['.wav', '.mp3', '.webm', '.mp4', '.avi', '.wmv', '.mkv', '.mov', '.mxf']
+    VIDEO_FORMATS = IMAGE_FORMATS + ['.wav', '.mp3', '.webm', '.mp4', '.avi', '.wmv', '.mkv', '.mov', '.mxf']
 
     @classmethod
     def IS_CHANGED(cls, *arg, **kw) -> float:

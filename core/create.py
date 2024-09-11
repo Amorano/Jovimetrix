@@ -20,9 +20,13 @@ from Jovimetrix.sup.util import EnumConvertType, parse_param, zip_longest_fill
 
 from Jovimetrix.sup.image import MIN_IMAGE_SIZE, EnumScaleMode, EnumInterpolation, \
     EnumEdge, EnumImageType, EnumShapes, channel_solid, cv2tensor, cv2tensor_full, \
-    image_invert, image_mask_add, image_mask_binary, image_matte, image_rotate, \
-    image_scalefit, image_stereogram, image_transform, tensor2cv, shape_polygon, \
-    image_translate, pil2cv, shape_ellipse, shape_quad
+    image_mask_add, image_matte, image_scalefit, tensor2cv, pil2cv
+
+from Jovimetrix.sup.image.compose import image_mask_binary, image_rotate, \
+    image_transform, image_translate
+
+from Jovimetrix.sup.image.misc import image_invert, image_stereogram, shape_ellipse, \
+    shape_polygon, shape_quad
 
 from Jovimetrix.sup.text import EnumAlignment, EnumJustify, font_names, \
     text_autosize, text_draw
