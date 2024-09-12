@@ -24,22 +24,22 @@ from Jovimetrix.sup.image import MIN_IMAGE_SIZE, EnumImageType, EnumColorTheory,
     EnumProjection, EnumScaleMode, EnumEdge, EnumMirrorMode, EnumOrientation, \
     EnumPixelSwizzle, EnumBlendType, EnumCBDeficiency, EnumCBSimulator, \
     EnumColorMap, EnumAdjustOP, EnumThreshold, EnumInterpolation, \
-    EnumThresholdAdapt, cv2tensor_full, image_blend, image_crop, image_grayscale, \
-    image_mask, image_mask_add, image_matte, image_scalefit, tensor2cv, cv2tensor, \
-    pixel_eval, image_convert, channel_merge, channel_solid, channel_swap, \
-    image_crop_polygonal
-
-from Jovimetrix.sup.image.compose import image_crop_center, image_minmax, image_transform
+    EnumThresholdAdapt, cv2tensor_full, image_blend, image_crop, image_crop_center, image_flatten, \
+    image_grayscale, image_mask, image_mask_add, image_matte, image_minmax, \
+    image_scalefit, tensor2cv, cv2tensor, pixel_eval, image_convert, channel_merge, \
+    channel_solid, channel_swap, image_crop_polygonal
 
 from Jovimetrix.sup.image.color import color_match_lut, color_match_reinhard, \
     color_theory, color_blind
 
-from Jovimetrix.sup.image.misc import \
-    image_filter, image_gradient_map, image_contrast, image_hsv, image_stack, \
-    image_mirror, image_threshold, image_quantize, image_invert, image_levels, \
-    image_gamma, morph_edge_detect, remap_sphere, image_sharpen, image_edge_wrap, \
-    morph_emboss, remap_fisheye, remap_perspective, remap_polar, image_split, \
-    image_equalize, image_pixelate, image_posterize
+from Jovimetrix.sup.image.adjust import image_contrast, image_edge_wrap, \
+    image_equalize, image_filter, image_gamma, image_hsv, image_invert, \
+    image_transform
+
+from Jovimetrix.sup.image.misc import image_gradient_map, image_stack, \
+    image_mirror, image_threshold, image_quantize, image_levels, \
+    morph_edge_detect, remap_sphere, image_sharpen, morph_emboss, remap_fisheye, \
+    remap_perspective, remap_polar, image_split, image_pixelate, image_posterize
 
 # =============================================================================
 
@@ -609,16 +609,7 @@ Combine multiple input images into a single image by summing their pixel values.
         for idx, (mode, sample, wihi, matte) in enumerate(params):
             mode = EnumScaleMode[mode]
             sample = EnumInterpolation[sample]
-            h, w = pA[0].shape[:2] if mode == EnumScaleMode.MATTE else wihi[::-1]
-            current = np.zeros((h, w, 4), dtype=np.uint8)
-            for x in pA:
-                if mode != EnumScaleMode.MATTE:
-                    x = image_scalefit(x, w, h, mode, sample)
-                x = image_matte(x, (0,0,0,0), w, h)
-                x = image_scalefit(x, w, h, EnumScaleMode.CROP, sample)
-                x = image_convert(x, 4)
-                #@TODO: ADD VARIOUS COMP OPS?
-                current = cv2.add(current, x)
+            current = image_flatten(pA)
             images.append(cv2tensor_full(current, matte))
             pbar.update_absolute(idx)
         return [torch.cat(i, dim=0) for i in zip(*images)]

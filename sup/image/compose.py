@@ -3,17 +3,14 @@ Jovimetrix - http://www.github.com/amorano/jovimetrix
 Image Composition Operation Support
 """
 
-from typing import List, Tuple
-
 import cv2
 import numpy as np
 
 from loguru import logger
 
-from Jovimetrix.sup.image import MIN_IMAGE_SIZE, TYPE_IMAGE, EnumEdge, \
-    EnumInterpolation, TYPE_fCOORD2D, image_crop_center
+from Jovimetrix.sup.image import TYPE_IMAGE
 
-from Jovimetrix.sup.image.misc import image_detect, image_edge_wrap, image_grayscale
+from Jovimetrix.sup.image.misc import image_detect, image_grayscale
 
 # =============================================================================
 # === IMAGE ===
@@ -247,21 +244,6 @@ def image_mask_binary(image: TYPE_IMAGE) -> TYPE_IMAGE:
         mask = np.expand_dims(mask, -1)
     return mask.astype(np.uint8)
 
-def image_minmax(image:List[TYPE_IMAGE]) -> Tuple[int, int, int, int]:
-    h_min = w_min = 100000000000
-    h_max = w_max = MIN_IMAGE_SIZE
-    for img in image:
-        if img is None:
-            continue
-        h, w = img.shape[:2]
-        h_max = max(h, h_max)
-        w_max = max(w, w_max)
-        h_min = min(h, h_min)
-        w_min = min(w, w_min)
-
-    # x,y - x+width, y+height
-    return w_min, h_min, w_max, h_max
-
 def image_recenter(image: TYPE_IMAGE) -> TYPE_IMAGE:
     cropped_image = image_detect(image)[0]
     new_image = np.zeros(image.shape, dtype=np.uint8)
@@ -269,76 +251,3 @@ def image_recenter(image: TYPE_IMAGE) -> TYPE_IMAGE:
     paste_y = (new_image.shape[0] - cropped_image.shape[0]) // 2
     new_image[paste_y:paste_y+cropped_image.shape[0], paste_x:paste_x+cropped_image.shape[1]] = cropped_image
     return new_image
-
-def image_rotate(image: TYPE_IMAGE, angle: float, center:TYPE_fCOORD2D=(0.5, 0.5), edge:EnumEdge=EnumEdge.CLIP) -> TYPE_IMAGE:
-
-    h, w = image.shape[:2]
-    if edge != EnumEdge.CLIP:
-        image = image_edge_wrap(image, edge=edge)
-
-    height, width = image.shape[:2]
-    c = (int(width * center[0]), int(height * center[1]))
-    M = cv2.getRotationMatrix2D(c, -angle, 1.0)
-    image = cv2.warpAffine(image, M, (width, height), flags=cv2.INTER_LINEAR)
-    if edge != EnumEdge.CLIP:
-        image = image_crop_center(image, w, h)
-    return image
-
-def image_scale(image: TYPE_IMAGE, scale:TYPE_fCOORD2D=(1.0, 1.0), sample:EnumInterpolation=EnumInterpolation.LANCZOS4, edge:EnumEdge=EnumEdge.CLIP) -> TYPE_IMAGE:
-
-    h, w = image.shape[:2]
-    if edge != EnumEdge.CLIP:
-        image = image_edge_wrap(image, edge=edge)
-
-    height, width = image.shape[:2]
-    width = int(width * scale[0])
-    height = int(height * scale[1])
-    image = cv2.resize(image, (width, height), interpolation=sample.value)
-
-    if edge != EnumEdge.CLIP:
-        image = image_crop_center(image, w, h)
-    return image
-
-def image_translate(image: TYPE_IMAGE, offset: TYPE_fCOORD2D=(0.0, 0.0), edge: EnumEdge=EnumEdge.CLIP, border_value:int=0) -> TYPE_IMAGE:
-    """
-    Translates an image by a given offset. Supports various edge handling methods.
-
-    Args:
-        image (TYPE_IMAGE): Input image as a numpy array.
-        offset (TYPE_fCOORD2D): Tuple (offset_x, offset_y) representing the translation offset.
-        edge (EnumEdge): Enum representing edge handling method. Options are 'CLIP', 'WRAP', 'WRAPX', 'WRAPY'.
-
-    Returns:
-        TYPE_IMAGE: Translated image.
-    """
-
-    def translate(img: TYPE_IMAGE) -> TYPE_IMAGE:
-        height, width = img.shape[:2]
-        scalarX = 0.333 if edge in [EnumEdge.WRAP, EnumEdge.WRAPX] else 1.0
-        scalarY = 0.333 if edge in [EnumEdge.WRAP, EnumEdge.WRAPY] else 1.0
-
-        M = np.float32([[1, 0, offset[0] * width * scalarX], [0, 1, offset[1] * height * scalarY]])
-        if edge == EnumEdge.CLIP:
-            border_mode = cv2.BORDER_CONSTANT
-        else:
-            border_mode = cv2.BORDER_WRAP
-
-        return cv2.warpAffine(img, M, (width, height), flags=cv2.INTER_LINEAR, borderMode=border_mode, borderValue=border_value)
-
-    return translate(image)
-
-def image_transform(image: TYPE_IMAGE, offset:TYPE_fCOORD2D=(0.0, 0.0), angle:float=0, scale:TYPE_fCOORD2D=(1.0, 1.0), sample:EnumInterpolation=EnumInterpolation.LANCZOS4, edge:EnumEdge=EnumEdge.CLIP) -> TYPE_IMAGE:
-    sX, sY = scale
-    if sX < 0:
-        image = cv2.flip(image, 1)
-        sX = -sX
-    if sY < 0:
-        image = cv2.flip(image, 0)
-        sY = -sY
-    if sX != 1. or sY != 1.:
-        image = image_scale(image, (sX, sY), sample, edge)
-    if angle != 0:
-        image = image_rotate(image, angle, edge=edge)
-    if offset[0] != 0. or offset[1] != 0.:
-        image = image_translate(image, offset, edge)
-    return image

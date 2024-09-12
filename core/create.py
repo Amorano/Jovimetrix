@@ -22,16 +22,18 @@ from Jovimetrix.sup.image import MIN_IMAGE_SIZE, EnumScaleMode, EnumInterpolatio
     EnumEdge, EnumImageType, EnumShapes, channel_solid, cv2tensor, cv2tensor_full, \
     image_mask_add, image_matte, image_scalefit, tensor2cv, pil2cv
 
-from Jovimetrix.sup.image.compose import image_mask_binary, image_rotate, \
-    image_transform, image_translate
+from Jovimetrix.sup.image.compose import image_mask_binary
 
-from Jovimetrix.sup.image.misc import image_invert, image_stereogram, shape_ellipse, \
+from Jovimetrix.sup.image.adjust import image_invert, image_rotate, image_transform, image_translate
+
+from Jovimetrix.sup.image.misc import image_stereogram, shape_ellipse, \
     shape_polygon, shape_quad
 
 from Jovimetrix.sup.text import EnumAlignment, EnumJustify, font_names, \
     text_autosize, text_draw
 
 from Jovimetrix.sup.audio import graph_sausage
+
 
 # =============================================================================
 

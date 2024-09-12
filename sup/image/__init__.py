@@ -921,6 +921,33 @@ def image_crop_center(image: TYPE_IMAGE, width:int=None, height:int=None) -> TYP
     points = [(x1, y1), (x2, y1), (x2, y2), (x1, y2)]
     return image_crop_polygonal(image, points)
 
+def image_flatten(image: List[TYPE_IMAGE], width:int=None, height:int=None,
+                  mode=EnumScaleMode.MATTE,
+                  sample:EnumInterpolation=EnumInterpolation.LANCZOS4) -> TYPE_IMAGE:
+
+    if mode == EnumScaleMode.MATTE:
+        width, height = image_minmax(image)[1:]
+    else:
+        h, w = image[0].shape[:2]
+        width = width or w
+        height = height or h
+
+    current = np.zeros((height, width, 4), dtype=np.uint8)
+    for x in image:
+        if mode != EnumScaleMode.MATTE:
+            x = image_scalefit(x, width, height, mode, sample)
+        x = image_matte(x, (0,0,0,0), width, height)
+        x = image_scalefit(x, width, height, EnumScaleMode.CROP, sample)
+        x = image_convert(x, 4)
+        #@TODO: ADD VARIOUS COMP OPS?
+        current = cv2.add(current, x)
+    return current
+
+def image_flatten_mask(image:TYPE_IMAGE, matte:Tuple=(0,0,0,255)) -> Tuple[TYPE_IMAGE, TYPE_IMAGE|None]:
+    """Flatten the image with its own alpha channel, if any."""
+    mask = image_mask(image)
+    return image_blend(image, image, mask), mask
+
 def image_grayscale(image: TYPE_IMAGE, use_alpha: bool = False) -> TYPE_IMAGE:
     """Convert image to grayscale, optionally using the alpha channel if present.
 
@@ -1056,6 +1083,21 @@ def image_matte(image: TYPE_IMAGE, color: TYPE_iRGBA= (0, 0, 0, 255), width: int
         matte[y_offset:y_offset + image_height, x_offset:x_offset + image_width, :3] = image[:, :, :3]
 
     return matte
+
+def image_minmax(image:List[TYPE_IMAGE]) -> Tuple[int, int, int, int]:
+    h_min = w_min = 100000000000
+    h_max = w_max = MIN_IMAGE_SIZE
+    for img in image:
+        if img is None:
+            continue
+        h, w = img.shape[:2]
+        h_max = max(h, h_max)
+        w_max = max(w, w_max)
+        h_min = min(h, h_min)
+        w_min = min(w, w_min)
+
+    # x,y - x+width, y+height
+    return w_min, h_min, w_max, h_max
 
 def image_normalize(image: TYPE_IMAGE) -> TYPE_IMAGE:
     image = image.astype(np.float32)

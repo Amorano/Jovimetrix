@@ -8,7 +8,6 @@ import sys
 from typing import Any, List, Tuple
 
 import cv2
-import torch
 import numpy as np
 from numba import jit
 from scipy import ndimage
@@ -20,16 +19,17 @@ from loguru import logger
 from Jovimetrix.sup.util import grid_make
 
 from Jovimetrix.sup.image import TAU, TYPE_IMAGE, TYPE_PIXEL, TYPE_fCOORD2D, \
-    TYPE_iRGB, EnumEdge, EnumImageBySize, EnumMirrorMode, EnumOrientation, \
-    EnumThreshold, EnumThresholdAdapt, bgr2image, channel_add, cv2pil, cv2tensor, \
-    image2bgr, image_grayscale, image_matte, image_normalize, pil2cv, pixel_convert, \
-    tensor2cv, image_convert, image_mask, image_blend
+    TYPE_iRGB, EnumImageBySize, EnumMirrorMode, EnumOrientation, \
+    EnumThreshold, EnumThresholdAdapt, bgr2image, channel_add, cv2pil, \
+    image2bgr, image_grayscale, image_matte, image_normalize, pil2cv, \
+    pixel_convert, image_convert
 
 # =============================================================================
 # === EXPLICIT SHAPE FUNCTIONS ===
 # =============================================================================
 
-def shape_ellipse(width: int, height: int, sizeX:float=1., sizeY:float=1., fill:TYPE_PIXEL=255, back:TYPE_PIXEL=0) -> Image:
+def shape_ellipse(width: int, height: int, sizeX:float=1., sizeY:float=1.,
+                  fill:TYPE_PIXEL=255, back:TYPE_PIXEL=0) -> Image:
     sizeX = max(0.5, sizeX / 2 + 0.5)
     sizeY = max(0.5, sizeY / 2 + 0.5)
     xy = [(width * (1. - sizeX), height * (1. - sizeY)),(width * sizeX, height * sizeY)]
@@ -37,7 +37,8 @@ def shape_ellipse(width: int, height: int, sizeX:float=1., sizeY:float=1., fill:
     ImageDraw.Draw(image).ellipse(xy, fill=fill)
     return image
 
-def shape_quad(width: int, height: int, sizeX:float=1., sizeY:float=1., fill:TYPE_PIXEL=255, back:TYPE_PIXEL=0) -> Image:
+def shape_quad(width: int, height: int, sizeX:float=1., sizeY:float=1.,
+               fill:TYPE_PIXEL=255, back:TYPE_PIXEL=0) -> Image:
     sizeX = max(0.5, sizeX / 2 + 0.5)
     sizeY = max(0.5, sizeY / 2 + 0.5)
     xy = [(width * (1. - sizeX), height * (1. - sizeY)),(width * sizeX, height * sizeY)]
@@ -45,7 +46,8 @@ def shape_quad(width: int, height: int, sizeX:float=1., sizeY:float=1., fill:TYP
     ImageDraw.Draw(image).rectangle(xy, fill=fill)
     return image
 
-def shape_polygon(width: int, height: int, size: float=1., sides: int=3, fill:TYPE_PIXEL=255, back:TYPE_PIXEL=0) -> Image:
+def shape_polygon(width: int, height: int, size: float=1., sides: int=3,
+                  fill:TYPE_PIXEL=255, back:TYPE_PIXEL=0) -> Image:
     size = max(0.00001, size)
     r = min(width, height) * size * 0.5
     xy = (width * 0.5, height * 0.5, r)
@@ -54,7 +56,8 @@ def shape_polygon(width: int, height: int, size: float=1., sides: int=3, fill:TY
     d.regular_polygon(xy, sides, fill=fill)
     return image
 
-def image_by_size(image_list: List[TYPE_IMAGE], enumSize: EnumImageBySize=EnumImageBySize.LARGEST) -> Tuple[TYPE_IMAGE, int, int]:
+def image_by_size(image_list: List[TYPE_IMAGE],
+                  enumSize: EnumImageBySize=EnumImageBySize.LARGEST) -> Tuple[TYPE_IMAGE, int, int]:
 
     img = None
     mega, width, height = 0, 0, 0
@@ -95,13 +98,6 @@ def image_by_size(image_list: List[TYPE_IMAGE], enumSize: EnumImageBySize=EnumIm
 
     return img, width, height
 
-def image_contrast(image: TYPE_IMAGE, value: float) -> TYPE_IMAGE:
-    image, alpha, cc = image2bgr(image)
-    mean_value = np.mean(image)
-    image = (image - mean_value) * value + mean_value
-    image = np.clip(image, 0, 255).astype(np.uint8)
-    return bgr2image(image, alpha, cc == 1)
-
 def image_detect(image: TYPE_IMAGE) -> Tuple[TYPE_IMAGE, Tuple[int, ...]]:
     gray = image_grayscale(image)
     _, thresh = cv2.threshold(gray, 128, 255, cv2.THRESH_BINARY_INV)
@@ -114,7 +110,8 @@ def image_detect(image: TYPE_IMAGE) -> Tuple[TYPE_IMAGE, Tuple[int, ...]]:
     cropped_image = image[y:y+h, x:x+w]
     return cropped_image, (x, y, w, h)
 
-def image_diff(imageA: TYPE_IMAGE, imageB: TYPE_IMAGE, threshold:int=0, color:TYPE_PIXEL=(255, 0, 0)) -> Tuple[TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE, float]:
+def image_diff(imageA: TYPE_IMAGE, imageB: TYPE_IMAGE, threshold:int=0,
+               color:TYPE_PIXEL=(255, 0, 0)) -> Tuple[TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE, float]:
     """imageA, imageB, diff, thresh, score
     """
     h1, w1 = imageA.shape[:2]
@@ -156,95 +153,6 @@ def image_disparity(imageA: np.ndarray) -> np.ndarray:
     imageA = cv2.normalize(imageA, None, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX)
     disparity_map = np.divide(1.0, imageA, where=imageA != 0)
     return np.where(imageA == 0, 1, disparity_map)
-
-
-def image_edge_wrap(image: TYPE_IMAGE, tileX: float=1., tileY: float=1., edge:EnumEdge=EnumEdge.WRAP) -> TYPE_IMAGE:
-    """TILING."""
-    height, width = image.shape[:2]
-    tileX = int(width * tileX) if edge in [EnumEdge.WRAP, EnumEdge.WRAPX] else 0
-    tileY = int(height * tileY) if edge in [EnumEdge.WRAP, EnumEdge.WRAPY] else 0
-    return cv2.copyMakeBorder(image, tileY, tileY, tileX, tileX, cv2.BORDER_WRAP)
-
-def image_equalize(image:TYPE_IMAGE) -> TYPE_IMAGE:
-    image, alpha, cc = image2bgr(image)
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    image = cv2.equalizeHist(image)
-    image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
-    return bgr2image(image, alpha, cc == 1)
-
-def image_exposure(image: TYPE_IMAGE, value: float) -> TYPE_IMAGE:
-    image, alpha, cc = image2bgr(image)
-    image = np.clip(image * value, 0, 255).astype(np.uint8)
-    return bgr2image(image, alpha, cc == 1)
-
-def image_filter(image:TYPE_IMAGE, start:Tuple[int]=(128,128,128), end:Tuple[int]=(128,128,128), fuzz:Tuple[float]=(0.5,0.5,0.5), use_range:bool=False) -> Tuple[TYPE_IMAGE, TYPE_IMAGE]:
-    """Filter an image based on a range threshold.
-    It can use a start point with fuzziness factor and/or a start and end point with fuzziness on both points.
-
-    Args:
-        image (np.ndarray): Input image in the form of a NumPy array.
-        start (tuple): The lower bound of the color range to be filtered.
-        end (tuple): The upper bound of the color range to be filtered.
-        fuzz (float): A factor for adding fuzziness (tolerance) to the color range.
-        use_range (bool): Boolean indicating whether to use a start and end range or just the start point with fuzziness.
-
-    Returns:
-        Tuple[np.ndarray, np.ndarray]: A tuple containing the filtered image and the mask.
-    """
-    old_alpha = None
-    image: torch.tensor = cv2tensor(image)
-    cc = image.shape[2]
-    if cc == 4:
-        old_alpha = image[..., 3]
-        new_image = image[:, :, :3]
-    elif cc == 1:
-        new_image = np.repeat(image, 3, axis=2)
-    else:
-        new_image = image
-
-    fuzz = torch.tensor(fuzz, dtype=torch.float64, device="cpu")
-    start = torch.tensor(start, dtype=torch.float64, device="cpu") / 255.
-    end = torch.tensor(end, dtype=torch.float64, device="cpu") / 255.
-    if not use_range:
-        end = start
-    start -= fuzz
-    end += fuzz
-    start = torch.clamp(start, 0.0, 1.0)
-    end = torch.clamp(end, 0.0, 1.0)
-
-    mask = ((new_image[..., 0] > start[0]) & (new_image[..., 0] < end[0]))
-    #mask |= ((new_image[..., 1] > start[1]) & (new_image[..., 1] < end[1]))
-    #mask |= ((new_image[..., 2] > start[2]) & (new_image[..., 2] < end[2]))
-    mask = ((new_image[..., 0] >= start[0]) & (new_image[..., 0] <= end[0]) &
-            (new_image[..., 1] >= start[1]) & (new_image[..., 1] <= end[1]) &
-            (new_image[..., 2] >= start[2]) & (new_image[..., 2] <= end[2]))
-
-    output_image = torch.zeros_like(new_image)
-    output_image[mask] = new_image[mask]
-
-    if old_alpha is not None:
-        output_image = torch.cat([output_image, old_alpha.unsqueeze(2)], dim=2)
-
-    return tensor2cv(output_image), mask.cpu().numpy().astype(np.uint8) * 255
-
-def image_flatten_mask(image:TYPE_IMAGE, matte:Tuple=(0,0,0,255)) -> Tuple[TYPE_IMAGE, TYPE_IMAGE|None]:
-    """Flatten the image with its own alpha channel, if any."""
-    mask = image_mask(image)
-    return image_blend(image, image, mask), mask
-
-
-def image_gamma(image: TYPE_IMAGE, value: float) -> TYPE_IMAGE:
-    # preserve original format
-    image, alpha, cc = image2bgr(image)
-    if value <= 0:
-        image = (image * 0).astype(np.uint8)
-    else:
-        invGamma = 1.0 / max(0.000001, value)
-        table = cv2.pow(np.arange(256) / 255, invGamma) * 255
-        lookUpTable = np.clip(table, 0, 255).astype(np.uint8)
-        image = cv2.LUT(image, lookUpTable)
-        # now back to the original "format"
-    return bgr2image(image, alpha, cc == 1)
 
 def image_gradient_map2(image, gradient_map):
     na = np.array(image)
@@ -318,52 +226,6 @@ def image_histogram(image:TYPE_IMAGE, bins=256) -> TYPE_IMAGE:
         histogram[pixel] += 1
     return histogram
 
-def image_histogram_normalize(image:TYPE_IMAGE)-> TYPE_IMAGE:
-    L = image.max()
-    nonEqualizedHistogram = image_histogram(image, bins=L)
-    sumPixels = np.sum(nonEqualizedHistogram)
-    nonEqualizedHistogram = nonEqualizedHistogram/sumPixels
-    cfdHistogram = np.cumsum(nonEqualizedHistogram)
-    transformMap = np.floor((L-1) * cfdHistogram)
-    flatNonEqualizedImage = list(image.flatten())
-    flatEqualizedImage = [transformMap[p] for p in flatNonEqualizedImage]
-    return np.reshape(flatEqualizedImage, image.shape)
-
-
-def image_hsv(image: TYPE_IMAGE, hue: float, saturation: float, value: float) -> TYPE_IMAGE:
-    image, alpha, cc = image2bgr(image)
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-    hue *= 255
-    image[:, :, 0] = (image[:, :, 0] + hue) % 180
-    image[:, :, 1] = np.clip(image[:, :, 1] * saturation, 0, 255)
-    image[:, :, 2] = np.clip(image[:, :, 2] * value, 0, 255)
-    image = cv2.cvtColor(image, cv2.COLOR_HSV2BGR)
-    return bgr2image(image, alpha, cc == 1)
-
-def image_invert(image: TYPE_IMAGE, value: float) -> TYPE_IMAGE:
-    """
-    Invert an Grayscale, RGB or RGBA image using a specified inversion intensity.
-
-    Parameters:
-    - image: Input image as a NumPy array (RGB or RGBA).
-    - value: Float between 0 and 1 representing the intensity of inversion (0: no inversion, 1: full inversion).
-
-    Returns:
-    - Inverted image.
-    """
-    # Clip the value to be within [0, 1] and scale to [0, 255]
-    value = np.clip(value, 0, 1)
-    if image.ndim == 3 and image.shape[2] == 4:
-        rgb = image[:, :, :3]
-        alpha = image[:, :, 3]
-        mask = alpha > 0
-        inverted_rgb = 255 - rgb
-        image = np.where(mask[:, :, None], (1 - value) * rgb + value * inverted_rgb, rgb)
-        return np.dstack((image.astype(np.uint8), alpha))
-
-    inverted_image = 255 - image
-    return ((1 - value) * image + value * inverted_image).astype(np.uint8)
-
 def image_lerp(imageA: TYPE_IMAGE, imageB:TYPE_IMAGE, mask:TYPE_IMAGE=None,
                alpha:float=1.) -> TYPE_IMAGE:
 
@@ -420,14 +282,15 @@ def image_levels(image: np.ndarray, black_point:int=0, white_point=255,
     image = np.clip(image, 0, 255).astype(np.uint8)
     return bgr2image(image, alpha, cc == 1)
 
-def image_merge(imageA: TYPE_IMAGE, imageB: TYPE_IMAGE, axis: int=0, flip: bool=False) -> TYPE_IMAGE:
+def image_merge(imageA: TYPE_IMAGE, imageB: TYPE_IMAGE, axis: int=0,
+                flip: bool=False) -> TYPE_IMAGE:
     if flip:
         imageA, imageB = imageB, imageA
     axis = 1 if axis == "HORIZONTAL" else 0
     return np.concatenate((imageA, imageB), axis=axis)
 
-
-def image_mirror(image: TYPE_IMAGE, mode:EnumMirrorMode, x:float=0.5, y:float=0.5) -> TYPE_IMAGE:
+def image_mirror(image: TYPE_IMAGE, mode:EnumMirrorMode, x:float=0.5,
+                 y:float=0.5) -> TYPE_IMAGE:
     cc = image.shape[2] if image.ndim == 3 else 1
     height, width = image.shape[:2]
 
@@ -513,7 +376,8 @@ def image_posterize(image: TYPE_IMAGE, levels:int=256) -> TYPE_IMAGE:
     divisor = 256 / max(2, min(256, levels))
     return (np.floor(image / divisor) * int(divisor)).astype(np.uint8)
 
-def image_quantize(image:TYPE_IMAGE, levels:int=256, iterations:int=10, epsilon:float=0.2) -> TYPE_IMAGE:
+def image_quantize(image:TYPE_IMAGE, levels:int=256, iterations:int=10,
+                   epsilon:float=0.2) -> TYPE_IMAGE:
     levels = int(max(2, min(256, levels)))
     pixels = np.float32(image)
     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, iterations, epsilon)
@@ -536,7 +400,6 @@ def image_sharpen(image:TYPE_IMAGE, kernel_size=None, sigma:float=1.0,
         np.copyto(sharpened, image, where=low_contrast_mask)
     return sharpened
 
-
 def image_split(image: TYPE_IMAGE, convert:object=image_grayscale) -> Tuple[TYPE_IMAGE, ...]:
     h, w = image.shape[:2]
     dtype = image.dtype
@@ -554,7 +417,8 @@ def image_split(image: TYPE_IMAGE, convert:object=image_grayscale) -> Tuple[TYPE
         r, g, b, a = cv2.split(image)
     return r, g, b, a
 
-def image_stack(image_list: List[TYPE_IMAGE], axis:EnumOrientation=EnumOrientation.HORIZONTAL,
+def image_stack(image_list: List[TYPE_IMAGE],
+                axis:EnumOrientation=EnumOrientation.HORIZONTAL,
                 stride:int=0, matte:TYPE_PIXEL=(0,0,0,255)) -> TYPE_IMAGE:
 
     _, width, height = image_by_size(image_list)
@@ -592,8 +456,8 @@ def image_stack(image_list: List[TYPE_IMAGE], axis:EnumOrientation=EnumOrientati
             image = np.vstack(images)
     return image
 
-
-def image_stereogram(image: TYPE_IMAGE, depth: TYPE_IMAGE, divisions:int=8, mix:float=0.33, gamma:float=0.33, shift:float=1.) -> TYPE_IMAGE:
+def image_stereogram(image: TYPE_IMAGE, depth: TYPE_IMAGE, divisions:int=8,
+                     mix:float=0.33, gamma:float=0.33, shift:float=1.) -> TYPE_IMAGE:
     height, width = depth.shape[:2]
     out = np.zeros((height, width, 3), dtype=np.uint8)
     image = cv2.resize(image, (width, height))
@@ -660,7 +524,6 @@ def image_threshold(image:TYPE_IMAGE, threshold:float=0.5,
         threshold = int(threshold * 255)
         _, image = cv2.threshold(image, threshold, 255, mode.value)
     return bgr2image(image, alpha, cc == 1)
-
 
 # MORPHOLOGY
 
@@ -916,7 +779,8 @@ def roughness_from_albedo(image: TYPE_IMAGE) -> TYPE_IMAGE:
     image = (255 * image).astype(np.uint8)
     return image_grayscale(image)
 
-def roughness_from_albedo_normal(albedo: TYPE_IMAGE, normal: TYPE_IMAGE, blur:int=2, blend:float=0.5, iterations:int=3) -> TYPE_IMAGE:
+def roughness_from_albedo_normal(albedo: TYPE_IMAGE, normal: TYPE_IMAGE,
+                                 blur:int=2, blend:float=0.5, iterations:int=3) -> TYPE_IMAGE:
     normal = roughness_from_normal(normal)
     normal = image_normalize(normal)
     albedo = roughness_from_albedo(albedo)
