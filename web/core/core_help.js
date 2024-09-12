@@ -82,7 +82,7 @@ app.extensionManager.registerSidebarTab({
     id: "jovimetrix.sidebar.help",
     icon: "pi pi-money-bill",
     title: "Jovimetrix Lore",
-    tooltip: "The Akashic records for all things JOVIMETRIX 🔺🟩🔵",
+    tooltip: "In panel help for most ComfyUI extension packs.\nJOVIMETRIX 🔺🟩🔵",
     type: "custom",
     render: async (el) => {
         sidebarElement = el;

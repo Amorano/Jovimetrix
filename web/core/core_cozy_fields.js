@@ -5,7 +5,7 @@
  */
 
 import { app } from "../../../scripts/app.js"
-import { setting_store } from '../util/util_config.js'
+import { setting_make } from '../util/util_api.js'
 import { colorHex2RGB } from '../util/util.js'
 
 let g_color_style;
@@ -15,52 +15,13 @@ let g_highlight;
 app.registerExtension({
     name: "jovimetrix.cozy.fields",
     setup() {
-        let id = "color 🎨.style"
-        app.ui.settings.addSetting({
-            id: `JOVIMETRIX 🔺🟩🔵.${id}`,
-            name: "Style",
-            type: "combo",
-            options: ["ComfyUI Default", "Round Highlight", "Line Highlight"],
-            tooltip: "Style to draw nodes.",
-            defaultValue: "ComfyUI Default",
-            onChange: function(val) {
-                setting_store(id, val);
-                g_color_style = val;
-            },
+        setting_make('color 🎨.style', 'Style', 'combo', 'Style to draw nodes.', "ComfyUI Default", {}, ["ComfyUI Default", "Round Highlight", "Line Highlight"]);
+        setting_make('color 🎨.thickness', 'Style Thickness', 'number', 'Line thickness around widgets in Round or Line Highlight Mode.', 1, {
+            min: -10,
+            max: 3,
+            step: 1,
         });
-
-
-        id = "color 🎨.thickness"
-        app.ui.settings.addSetting({
-            id: `JOVIMETRIX 🔺🟩🔵.${id}`,
-            name: "Style Thickness",
-            type: "number",
-            attrs: {
-                min: -10,
-                max: 3,
-                step: 1,
-            },
-            tooltip: "Line thickness around widgets in Round or Line Highlight Mode.",
-            defaultValue: 1,
-            onChange: function(val) {
-                setting_store(id, val);
-                g_thickness = val;
-            },
-        });
-
-
-        id = "color 🎨.highlight"
-        app.ui.settings.addSetting({
-            id: `JOVIMETRIX 🔺🟩🔵.${id}`,
-            name: "Style Highlight",
-            type: "string",
-            tooltip: "Color Highlight if Round or Line mode enabled. Hex code entry #FFF. The default will use the node base color.",
-            defaultValue: "",
-            onChange: function(val) {
-                setting_store(id, val);
-                g_highlight = val;
-            },
-        });
+        setting_make('color 🎨.highlight', 'Style Highlight', 'number', 'Color Highlight if Round or Line mode enabled. Hex code entry #FFF. The default will use the node base color.');
     },
     async nodeCreated(node) {
 

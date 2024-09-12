@@ -6,6 +6,7 @@
 
 import { app } from "../../../scripts/app.js"
 import { $el } from "../../../scripts/ui.js"
+import { setting_make } from '../util/util_api.js'
 import { widgetGetHovered } from '../util/util_widget.js'
 
 //const widget_height = 25;
@@ -153,24 +154,20 @@ app.registerExtension({
             showTooltip(tip, app.canvas.mouse[0], app.canvas.mouse[1] - 26);
         }.bind(app.canvas);
 
-        app.ui.settings.addSetting({
-            id: "JOVIMETRIX 🔺🟩🔵.tooltips 📝",
-            name: "Delay",
-            tooltip: "How long (in milliseconds) to wait before showing the tooltip. 0 will turn it off.",
-            type: "number",
-            defaultValue: 50,
-            attrs: {
+        const onChange = (val) => {
+            if (val > 0) {
+                LiteGraph.pointerListenerAdd(app.canvasEl, "move", onCanvasPointerMove);
+            } else {
+                LiteGraph.pointerListenerRemove(app.canvasEl, "move", onCanvasPointerMove);
+            }
+            userTimeout = val;
+        }
+
+        setting_make('tooltips 📝.delay', 'Delay', 'number',
+            'How long (in milliseconds) to wait before showing the tooltip. 0 will turn it off.',
+            50, {
                 min: 0,
                 step: 1,
-            },
-            onChange(value) {
-                if (value > 0) {
-                    LiteGraph.pointerListenerAdd(app.canvasEl, "move", onCanvasPointerMove);
-                } else {
-                    LiteGraph.pointerListenerRemove(app.canvasEl, "move", onCanvasPointerMove);
-                }
-                userTimeout = value;
-            },
-        });
-    },
+            }, [], onChange);
+    }
 });
