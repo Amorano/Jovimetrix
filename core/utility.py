@@ -231,7 +231,7 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
                 full_list.extend(data)
                 output_is_latent = True
             elif isinstance(b, torch.Tensor):
-                logger.debug(b.shape)
+                # logger.debug(b.shape)
                 if b.ndim == 4:
                     full_list.extend([i for i in b])
                 else:
@@ -304,7 +304,7 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
                 d = tensor2cv(d)
                 d = image_convert(d, 4)
                 d = image_matte(d, (0,0,0,0), w, h)
-                logger.debug(d.shape)
+                # logger.debug(d.shape)
                 result.append(cv2tensor(d))
             data = torch.stack([r.squeeze(0) for r in result], dim=0)
             size = data.shape[0]

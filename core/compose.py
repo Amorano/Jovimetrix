@@ -274,14 +274,12 @@ Combine two input images using various blending modes, such as normal, screen, m
             else:
                 pB = tensor2cv(pB)
 
-            if mask is None:
-                mask = channel_solid(w, h, matte[3], EnumImageType.GRAYSCALE)
-            else:
+            if mask is not None:
                 mask = tensor2cv(mask)
                 mask = image_grayscale(mask)
 
-            if invert:
-                mask = 255 - mask
+                if invert:
+                    mask = 255 - mask
 
             func = EnumBlendType[func]
             img = image_blend(pA, pB, mask, func, alpha)
@@ -599,7 +597,7 @@ Combine multiple input images into a single image by summing their pixel values.
 
         # be less dumb when merging
         pA = [tensor2cv(i) for img in imgs for i in img]
-        logger.debug(f"{len(pA)}  {pA[0].shape}")
+        # logger.debug(f"{len(pA)}  {pA[0].shape}")
         mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.MATTE.name)
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)
         sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)
@@ -612,10 +610,11 @@ Combine multiple input images into a single image by summing their pixel values.
             mode = EnumScaleMode[mode]
             sample = EnumInterpolation[sample]
             h, w = pA[0].shape[:2] if mode == EnumScaleMode.MATTE else wihi[::-1]
-            current = np.zeros((w, h, 4), dtype=np.uint8)
+            current = np.zeros((h, w, 4), dtype=np.uint8)
             for x in pA:
                 if mode != EnumScaleMode.MATTE:
                     x = image_scalefit(x, w, h, mode, sample)
+                x = image_matte(x, (0,0,0,0), w, h)
                 x = image_scalefit(x, w, h, EnumScaleMode.CROP, sample)
                 x = image_convert(x, 4)
                 #@TODO: ADD VARIOUS COMP OPS?

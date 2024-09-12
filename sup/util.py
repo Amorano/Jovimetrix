@@ -283,7 +283,7 @@ def parse_param(data:dict, key:str, typ:EnumConvertType, default: Any,
             val = default
 
         if not isinstance(val, (list, torch.Tensor, )):
-            logger.debug(f"{type(val)}, {val}")
+            # logger.debug(f"{type(val)}, {val}")
             val = [val]
         return val
 

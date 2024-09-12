@@ -281,7 +281,7 @@ def image_load(url: str) -> Tuple[TYPE_IMAGE, ...]:
             raise ValueError(f"{url} could not be loaded.")
 
         img = image_normalize(img)
-        logger.debug(f"load image {url}: {img.ndim} {img.shape}")
+        # logger.debug(f"load image {url}: {img.ndim} {img.shape}")
         if img.ndim == 3:
             if img.shape[2] == 4:
                 img = cv2.cvtColor(img, cv2.COLOR_RGBA2BGRA)
@@ -801,16 +801,14 @@ def image_blend(imageA: TYPE_IMAGE, imageB: TYPE_IMAGE, mask:Optional[TYPE_IMAGE
     w = max(w1, w2)
     h = max(h1, h2)
 
-    logger.debug([w, h, imageA.shape, imageB.shape])
+    # logger.debug([w, h, imageA.shape, imageB.shape])
     images = []
     for img in [imageA, imageB]:
-        logger.debug([w, h, img.shape])
         img = image_convert(img, 4, w, h)
         images.append(img)
 
-    imageA, imageB = images
-    logger.debug([imageA.shape, imageB.shape])
-
+    imageA = images[0]
+    imageB = images[1]
     old_mask = image_mask(imageB)
     if mask is None:
         mask = old_mask
@@ -825,9 +823,6 @@ def image_blend(imageA: TYPE_IMAGE, imageB: TYPE_IMAGE, mask:Optional[TYPE_IMAGE
     alpha = np.clip(alpha, 0, 1)
     image = blendLayers(imageA, imageB, blendOp.value, alpha)
     image = pil2cv(image)
-
-    #if mask is not None:
-    #    image = image_mask_add(image, mask)
 
     return image_crop_center(image, w, h)
 
@@ -873,9 +868,7 @@ def image_convert(image: TYPE_IMAGE, channels: int, width:int=None, height:int=N
         h, w = image.shape[:2]
         width = width or w
         height = height or h
-        logger.debug([1, image.shape])
         image = image_matte(image, matte, width, height)
-        logger.debug([2, image.shape])
         image = image_crop_center(image, width, height)
 
     return image

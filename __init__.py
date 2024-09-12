@@ -35,7 +35,7 @@ images, or liner interpolate values and more.
     AkashicNode, ArrayNode, ExportNode, ValueGraphNode, ImageInfoNode, QueueNode,
     QueueTooNode, RouteNode, SaveOutputNode
 
-@version: 1.2.36
+@version: 1.2.39
 """
 
 import os
@@ -46,11 +46,15 @@ import time
 import json
 import shutil
 import inspect
-import textwrap
 import importlib
 from pathlib import Path
 from string import Template
 from typing import Any, Dict, List, Literal, Tuple
+
+try:
+    from markdownify import markdownify
+except:
+    markdownify = None
 
 from aiohttp import web, ClientSession
 from server import PromptServer
@@ -492,7 +496,7 @@ JOV_TYPE_FULL = f"{JOV_TYPE_NUMBER},{JOV_TYPE_IMAGE}"
 JOV_TYPE_COMFY = JOV_TYPE_ANY
 JOV_TYPE_VECTOR = JOV_TYPE_ANY
 JOV_TYPE_NUMBER = JOV_TYPE_ANY
-# JOV_TYPE_IMAGE = JOV_TYPE_ANY
+JOV_TYPE_IMAGE = JOV_TYPE_ANY
 JOV_TYPE_FULL = JOV_TYPE_ANY
 
 # =============================================================================
@@ -612,63 +616,6 @@ def json2html(json_dict: dict) -> str:
     )
     return html_content
 
-def json2md(json_dict: dict) -> str:
-    """Example of json to markdown converter. You are welcome to change formatting per specific request."""
-    name = json_dict['name']
-    boop = name.split('(JOV)')[0].strip()
-    boop2 = boop.replace(" ", "%20")
-    root1 = f"https://github.com/Amorano/Jovimetrix-examples/blob/master/node/{boop2}/{boop2}.md"
-    root2 = f"https://raw.githubusercontent.com/Amorano/Jovimetrix-examples/master/node/{boop2}/{boop2}.png"
-
-    ret = f"## [{name}]({root1})\n\n"
-    ret += f"## {json_dict['category']}\n\n"
-    ret += f"{json_dict['description']}\n\n"
-    ret += f"![{boop}]({root2})\n\n"
-    ret += f"#### OUTPUT NODE?: `{json_dict['output_node']}`\n\n"
-
-    # INPUTS
-    ret += f"## INPUT\n\n"
-    if len(json_dict['input_parameters']) > 0:
-        for k, v in json_dict['input_parameters'].items():
-            if len(v.items()) == 0:
-                continue
-            ret += f"### {k.upper()}\n\n"
-            ret += f"name | type | desc | default | meta\n"
-            ret += f":---:|:---:|---|:---:|---\n"
-            for param_key, param_meta in v.items():
-                typ = param_meta.get('type','UNKNOWN').upper()
-                typ = ', '.join([x.strip() for x in typ.split(',')])
-                typ = "<br>".join(textwrap.wrap(typ, 42))
-                tool = param_meta.get("tooltips",'')
-                tool = "<br>".join(textwrap.wrap(tool, 42))
-                default = param_meta.get('default','')
-                ch = ", ".join(param_meta.get('choice', []))
-                ch = "<br>".join(textwrap.wrap(ch, 42))
-                param_key = param_key.replace('#', r'\#')
-                ret += f"{param_key}  |  {typ}  | {tool} | {default} | {ch}\n"
-    else:
-        ret += 'NONE\n'
-
-    # OUTPUTS
-    ret += f"\n## OUTPUT\n\n"
-    if len(json_dict['output_parameters']) > 0:
-        ret += f"name | type | desc\n"
-        ret += f":---:|:---:|---\n"
-        for k, v in json_dict['output_parameters'].items():
-            if (tool := Lexicon._tooltipsDB.get(k, "")) != "":
-                tool = "<br>".join(textwrap.wrap(tool, 65))
-            k = k.replace('#', r'\#')
-            ret += f"{k}  |  {v}  | {tool} \n"
-    else:
-        ret += 'NONE\n'
-
-    # BODY INSERT
-    # PUT EXTERNAL DOCS HERE
-    #
-    # FOOTER
-    ret += "\noriginal help system powered by [MelMass](https://github.com/melMass) & the [comfy_mtb](https://github.com/melMass/comfy_mtb) project"
-    return ret
-
 def get_node_info(node_data: dict) -> Dict[str, Any]:
     """Transform node object_info route result into .html."""
     input_parameters = {}
@@ -737,7 +684,11 @@ def get_node_info(node_data: dict) -> Dict[str, Any]:
         "description": node_data['description']
     }
     data[".html"] = json2html(data)
-    data[".md"] = json2md(data)
+    if markdownify:
+        md = markdownify(data[".html"], keep_inline_images_in=True)
+        md = md.split('\n')[8:]
+        md = '\n'.join([m for m in md if m != ''])
+        data[".md"] = md
     return data
 
 def deep_merge(d1: dict, d2: dict) -> dict:
@@ -780,7 +731,7 @@ class ComfyAPIMessage:
         if isinstance(ident, (set, list, tuple, )):
             ident = ident[0]
         sid = str(ident)
-        # logger.debug(f'sid {sid} -- {cls.MESSAGE}')
+        logger.debug(f'sid {sid} -- {cls.MESSAGE}')
         while not (sid in cls.MESSAGE) and time.monotonic() - _t < timeout:
             time.sleep(period)
 
@@ -820,7 +771,7 @@ try:
     async def jovimetrix_config_post(request) -> Any:
         json_data = await request.json()
         did = json_data.get("id", None)
-        value = json_data.get("v", None)
+        value = json_data.get("cmd", None)
         if did is None or value is None:
             logger.error("bad config {}", json_data)
             return
