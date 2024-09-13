@@ -3,57 +3,38 @@ Jovimetrix - http://www.github.com/amorano/jovimetrix
 Utility
 """
 
-import io
 import os
 import sys
 import json
 import glob
 import random
 from enum import Enum
-from uuid import uuid4
 from pathlib import Path
 from itertools import zip_longest
 from typing import Any, List, Literal, Tuple
 
 import torch
 import numpy as np
-from PIL import Image
-from PIL.PngImagePlugin import PngInfo
-import matplotlib.pyplot as plt
 
 from loguru import logger
 
 from comfy.utils import ProgressBar
 from nodes import interrupt_processing
-from folder_paths import get_output_directory
 
-from Jovimetrix import JOV_TYPE_ANY, ROOT, JOV_TYPE_IMAGE, DynamicInputType, \
+from Jovimetrix import JOV_TYPE_ANY, ROOT, \
     Lexicon, JOVBaseNode, deep_merge, comfy_message, parse_reset
 
-from Jovimetrix.sup.util import EnumConvertType, decode_tensor, parse_dynamic, \
-    path_next, parse_param, zip_longest_fill
+from Jovimetrix.sup.util import EnumConvertType, parse_dynamic, parse_param
 
 from Jovimetrix.sup.image import MIN_IMAGE_SIZE, IMAGE_FORMATS, EnumInterpolation, \
     EnumScaleMode, cv2tensor, cv2tensor_full, image_convert, \
-    image_matte, image_scalefit, tensor2cv, pil2tensor, image_load, \
-    tensor2pil
+    image_matte, image_scalefit, tensor2cv, image_load
 
 from Jovimetrix.sup.image.misc import image_by_size
 
 # =============================================================================
 
 JOV_CATEGORY = "UTILITY"
-
-FORMATS = ["gif", "png", "jpg"]
-if (JOV_GIFSKI := os.getenv("JOV_GIFSKI", None)) is not None:
-    if not os.path.isfile(JOV_GIFSKI):
-        logger.error(f"gifski missing [{JOV_GIFSKI}]")
-        JOV_GIFSKI = None
-    else:
-        FORMATS = ["gifski"] + FORMATS
-        logger.info("gifski support")
-else:
-    logger.warning("no gifski support")
 
 class EnumBatchMode(Enum):
     MERGE = 30
@@ -68,98 +49,6 @@ class ContainsAnyDict(dict):
         return True
 
 # =============================================================================
-
-class AkashicData:
-    def __init__(self, **kw) -> None:
-        for k, v in kw.items():
-            setattr(self, k, v)
-
-class AkashicNode(JOVBaseNode):
-    NAME = "AKASHIC (JOV) 📓"
-    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_NAMES = ()
-    OUTPUT_NODE = True
-    SORT = 10
-    DESCRIPTION = """
-Visualize data. It accepts various types of data, including images, text, and other types. If no input is provided, it returns an empty result. The output consists of a dictionary containing UI-related information, such as base64-encoded images and text representations of the input data.
-"""
-
-    @classmethod
-    def INPUT_TYPES(cls) -> dict:
-        d = super().INPUT_TYPES()
-        return Lexicon._parse(d, cls)
-
-    def run(self, **kw) -> Tuple[Any, Any]:
-        kw.pop('ident', None)
-        o = kw.values()
-        output = {"ui": {"b64_images": [], "text": []}}
-        if o is None or len(o) == 0:
-            output["ui"]["result"] = (None, None, )
-            return output
-
-        def __parse(val) -> str:
-            ret = val
-            typ = ''.join(repr(type(val)).split("'")[1:2])
-            if isinstance(val, dict):
-                # mixlab layer?
-                if (image := val.get('image', None)) is not None:
-                    ret = image
-                    if (mask := val.get('mask', None)) is not None:
-                        while len(mask.shape) < len(image.shape):
-                            mask = mask.unsqueeze(-1)
-                        ret = torch.cat((image, mask), dim=-1)
-                    if ret.ndim < 4:
-                        ret = ret.unsqueeze(-1)
-                    ret = decode_tensor(ret)
-                    typ = "Mixlab Layer"
-
-                # vector patch....
-                elif 'xyzw' in val:
-                    val = {"xyzw"[i]:x for i, x in enumerate(val["xyzw"])}
-                    typ = "VECTOR"
-                # latents....
-                elif 'samples' in val:
-                    ret = decode_tensor(val['samples'][0])
-                    typ = "LATENT"
-                # empty bugger
-                elif len(val) == 0:
-                    ret = ""
-                else:
-                    try:
-                        ret = json.dumps(val, indent=3)
-                    except Exception as e:
-                        ret = str(e)
-
-            elif isinstance(val, (tuple, set, list,)):
-                ret = ''
-                if (size := len(val)) > 0:
-                    if type(val) == np.ndarray:
-                        if len(q := q()) == 1:
-                            ret += f"{q[0]}"
-                        elif q > 1:
-                            ret += f"{q[1]}x{q[0]}"
-                        else:
-                            ret += f"{q[1]}x{q[0]}x{q[2]}"
-                            # typ = "NUMPY ARRAY"
-                    elif isinstance(val[0], (torch.Tensor,)):
-                        ret = decode_tensor(val[0])
-                        typ = type(val[0])
-                    elif size == 1 and isinstance(val[0], (list,)) and isinstance(val[0][0], (torch.Tensor,)):
-                        ret = decode_tensor(val[0][0])
-                        typ = "CONDITIONING"
-                    else:
-                        ret = '\n\t' + '\n\t'.join(str(v) for v in val)
-            elif isinstance(val, bool):
-                ret = "True" if val else "False"
-            elif isinstance(val, torch.Tensor):
-                ret = decode_tensor(val)
-            else:
-                ret = str(ret)
-            return f"({ret}) [{typ}]"
-
-        for x in o:
-            output["ui"]["text"].append(__parse(x))
-        return output
 
 class ArrayNode(JOVBaseNode):
     NAME = "ARRAY (JOV) 📚"
@@ -316,210 +205,6 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
             data = data[0]
 
         return data, size, full_list, len(full_list)
-
-class ExportNode(JOVBaseNode):
-    NAME = "EXPORT (JOV) 📽"
-    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    OUTPUT_NODE = True
-    RETURN_TYPES = ()
-    SORT = 2000
-    DESCRIPTION = """
-Responsible for saving images or animations to disk. It supports various output formats such as GIF and GIFSKI. Users can specify the output directory, filename prefix, image quality, frame rate, and other parameters. Additionally, it allows overwriting existing files or generating unique filenames to avoid conflicts. The node outputs the saved images or animation as a tensor.
-"""
-
-    @classmethod
-    def INPUT_TYPES(cls) -> dict:
-        d = super().INPUT_TYPES()
-        d = deep_merge(d, {
-            "optional": {
-                Lexicon.PIXEL: (JOV_TYPE_IMAGE, {}),
-                Lexicon.PASS_OUT: ("STRING", {"default": get_output_directory(), "default_top":"<comfy output dir>"}),
-                Lexicon.FORMAT: (FORMATS, {"default": FORMATS[0]}),
-                Lexicon.PREFIX: ("STRING", {"default": "jovi"}),
-                Lexicon.OVERWRITE: ("BOOLEAN", {"default": False}),
-                # GIF ONLY
-                Lexicon.OPTIMIZE: ("BOOLEAN", {"default": False}),
-                # GIFSKI ONLY
-                Lexicon.QUALITY: ("INT", {"default": 90, "mij": 1, "maj": 100}),
-                Lexicon.QUALITY_M: ("INT", {"default": 100, "mij": 1, "maj": 100}),
-                # GIF OR GIFSKI
-                Lexicon.FPS: ("INT", {"default": 24, "mij": 1, "maj": 60}),
-                # GIF OR GIFSKI
-                Lexicon.LOOP: ("INT", {"default": 0, "mij": 0}),
-            }
-        })
-        return Lexicon._parse(d, cls)
-
-    def run(self, **kw) -> None:
-        images = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
-        suffix = parse_param(kw, Lexicon.PREFIX, EnumConvertType.STRING, uuid4().hex[:16])[0]
-        output_dir = parse_param(kw, Lexicon.PASS_OUT, EnumConvertType.STRING, "")[0]
-        format = parse_param(kw, Lexicon.FORMAT, EnumConvertType.STRING, "gif")[0]
-        overwrite = parse_param(kw, Lexicon.OVERWRITE, EnumConvertType.BOOLEAN, False)[0]
-        optimize = parse_param(kw, Lexicon.OPTIMIZE, EnumConvertType.BOOLEAN, False)[0]
-        quality = parse_param(kw, Lexicon.QUALITY, EnumConvertType.INT, 90, 0, 100)[0]
-        motion = parse_param(kw, Lexicon.QUALITY_M, EnumConvertType.INT, 100, 0, 100)[0]
-        fps = parse_param(kw, Lexicon.FPS, EnumConvertType.INT, 24, 1, 60)[0]
-        loop = parse_param(kw, Lexicon.LOOP, EnumConvertType.INT, 0, 0)[0]
-        output_dir = Path(output_dir)
-        output_dir.mkdir(parents=True, exist_ok=True)
-
-        def output(extension) -> Path:
-            path = output_dir / f"{suffix}.{extension}"
-            if not overwrite and os.path.isfile(path):
-                path = str(output_dir / f"{suffix}_%s.{extension}")
-                path = path_next(path)
-            return path
-
-        images = [tensor2pil(i) for i in images]
-        if format == "gifski":
-            root = output_dir / f"{suffix}_{uuid4().hex[:16]}"
-            # logger.debug(root)
-            try:
-                root.mkdir(parents=True, exist_ok=True)
-                for idx, i in enumerate(images):
-                    fname = str(root / f"{suffix}_{idx}.png")
-                    i.save(fname)
-            except Exception as e:
-                logger.warning(output_dir)
-                logger.error(str(e))
-                return
-            else:
-                out = output('gif')
-                fps = f"--fps {fps}" if fps > 0 else ""
-                q = f"--quality {quality}"
-                mq = f"--motion-quality {motion}"
-                cmd = f"{JOV_GIFSKI} -o {out} {q} {mq} {fps} {str(root)}/{suffix}_*.png"
-                logger.info(cmd)
-                try:
-                    os.system(cmd)
-                except Exception as e:
-                    logger.warning(cmd)
-                    logger.error(str(e))
-
-                # shutil.rmtree(root)
-
-        elif format == "gif":
-            images[0].save(
-                output('gif'),
-                append_images=images[1:],
-                disposal=2,
-                duration=1 / fps * 1000 if fps else 0,
-                loop=loop,
-                optimize=optimize,
-                save_all=True,
-            )
-        else:
-            for img in images:
-                img.save(output(format), optimize=optimize)
-        return ()
-
-class GraphNode(JOVBaseNode):
-    NAME = "GRAPH (JOV) 📈"
-    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    OUTPUT_NODE = True
-    RETURN_TYPES = ("IMAGE", )
-    RETURN_NAMES = (Lexicon.IMAGE,)
-    SORT = 15
-    DESCRIPTION = """
-Visualize a series of data points over time. It accepts a dynamic number of values to graph and display, with options to reset the graph or specify the number of values. The output is an image displaying the graph, allowing users to analyze trends and patterns.
-"""
-
-    @classmethod
-    def INPUT_TYPES(cls) -> dict:
-        d = super().INPUT_TYPES()
-        d = deep_merge(d, {
-            "optional": {
-                Lexicon.RESET: ("BOOLEAN", {"default": False}),
-                Lexicon.VALUE: ("INT", {"default": 60, "mij": 0, "tooltips":"Number of values to graph and display"}),
-                Lexicon.WH: ("VEC2INT", {"default": (512, 512), "mij":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]})
-            },
-            "outputs": {
-                0: (Lexicon.IMAGE, {"tooltips":"The graphed image"}),
-            }
-        })
-        return Lexicon._parse(d, cls)
-
-    @classmethod
-    def IS_CHANGED(cls) -> float:
-        return float("nan")
-
-    def __init__(self, *arg, **kw) -> None:
-        super().__init__(*arg, **kw)
-        self.__history = []
-        self.__fig, self.__ax = plt.subplots(figsize=(5.12, 5.12))
-
-    def run(self, ident, **kw) -> Tuple[torch.Tensor]:
-        slice = parse_param(kw, Lexicon.VALUE, EnumConvertType.INT, 60)[0]
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], 1)[0]
-        if parse_reset(ident) > 0 or parse_param(kw, Lexicon.RESET, EnumConvertType.BOOLEAN, False)[0]:
-            self.__history = []
-        longest_edge = 0
-        dynamic = parse_dynamic(kw, Lexicon.UNKNOWN, EnumConvertType.FLOAT, 0)
-        dynamic = [i[0] for i in dynamic]
-        self.__ax.clear()
-        for idx, val in enumerate(dynamic):
-            if isinstance(val, (set, tuple,)):
-                val = list(val)
-            if not isinstance(val, (list, )):
-                val = [val]
-            while len(self.__history) <= idx:
-                self.__history.append([])
-            self.__history[idx].extend(val)
-            if slice > 0:
-                stride = max(0, -slice + len(self.__history[idx]) + 1)
-                longest_edge = max(longest_edge, stride)
-                self.__history[idx] = self.__history[idx][stride:]
-            self.__ax.plot(self.__history[idx], color="rgbcymk"[idx])
-
-        self.__history = self.__history[:slice+1]
-        width, height = wihi
-        width, height = (width / 100., height / 100.)
-        self.__fig.set_figwidth(width)
-        self.__fig.set_figheight(height)
-        self.__fig.canvas.draw_idle()
-        buffer = io.BytesIO()
-        self.__fig.savefig(buffer, format="png")
-        buffer.seek(0)
-        image = Image.open(buffer)
-        return (pil2tensor(image),)
-
-class ImageInfoNode(JOVBaseNode):
-    NAME = "IMAGE INFO (JOV) 📚"
-    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = ("INT", "INT", "INT", "INT", "VEC2", "VEC3")
-    RETURN_NAMES = (Lexicon.INT, Lexicon.W, Lexicon.H, Lexicon.C, Lexicon.WH, Lexicon.WHC)
-    SORT = 55
-    DESCRIPTION = """
-Exports and Displays immediate information about images.
-"""
-
-    @classmethod
-    def INPUT_TYPES(cls) -> dict:
-        d = super().INPUT_TYPES()
-        d = deep_merge(d, {
-            "optional": {
-                Lexicon.PIXEL_A: (JOV_TYPE_IMAGE,),
-            },
-            "outputs": {
-                0: (Lexicon.INT, {"tooltips":"Batch count"}),
-                1: (Lexicon.W,),
-                2: (Lexicon.H,),
-                3: (Lexicon.C, {"tooltips":"Number of image channels. 1 (Grayscale), 3 (RGB) or 4 (RGBA)"}),
-                4: (Lexicon.WH,),
-                5: (Lexicon.WHC,),
-            }
-        })
-        return Lexicon._parse(d, cls)
-
-    def run(self, **kw) -> Tuple[int, list]:
-        image = kw.get(Lexicon.PIXEL_A, None)
-        if image.ndim == 4:
-            count, height, width, cc = image.shape
-        else:
-            count, height, width = image.shape
-            cc = 1
-        return count, width, height, cc, (width, height), (width, height, cc)
 
 class QueueBaseNode(JOVBaseNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
@@ -808,108 +493,3 @@ Manage a queue of specific items: media files. Supports various image and video 
             pbar.update_absolute(idx)
         images = [torch.cat(i, dim=0) for i in zip(*images)]
         return *images, current, index, total
-
-class RouteNode(JOVBaseNode):
-    NAME = "ROUTE (JOV) 🚌"
-    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = ("BUS",) + (JOV_TYPE_ANY,) * 127
-    RETURN_NAMES = (Lexicon.ROUTE,)
-    SORT = 850
-    DESCRIPTION = """
-Routes the input data from the optional input ports to the output port, preserving the order of inputs. The `PASS_IN` optional input is directly passed through to the output, while other optional inputs are collected and returned as tuples, preserving the order of insertion.
-"""
-
-    @classmethod
-    def INPUT_TYPES(cls) -> dict:
-        d = super().INPUT_TYPES()
-        d = deep_merge(d, {
-            "optional": DynamicInputType(JOV_TYPE_ANY),
-            """
-            "optional": {
-                Lexicon.ROUTE: ("BUS", {"default": None, "tooltips":"Pass through another route node to pre-populate the outputs."}),
-            },
-            """
-            "outputs": {
-                0: (Lexicon.ROUTE, {"tooltips":"Pass through for Route node"})
-            }
-        })
-        return Lexicon._parse(d, cls)
-
-    def run(self, **kw) -> Tuple[Any, ...]:
-        inout = parse_param(kw, Lexicon.ROUTE, EnumConvertType.ANY, None)
-        vars = kw.copy()
-        vars.pop(Lexicon.ROUTE, None)
-        vars.pop('ident', None)
-        return inout, *vars.values(),
-
-class SaveOutput(JOVBaseNode):
-    NAME = "SAVE OUTPUT (JOV) 💾"
-    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    OUTPUT_NODE = True
-    RETURN_TYPES = ()
-    SORT = 85
-    DESCRIPTION = """
-Save the output image along with its metadata to the specified path. Supports saving additional user metadata and prompt information.
-"""
-
-    @classmethod
-    def INPUT_TYPES(cls) -> dict:
-        d = super().INPUT_TYPES(True, True)
-        d = deep_merge(d, {
-            "optional": {
-                "image": ("IMAGE",),
-                "path": ("STRING", {"default": "", "dynamicPrompts":False}),
-                "fname": ("STRING", {"default": "output", "dynamicPrompts":False}),
-                "metadata": ("JSON", {}),
-                "usermeta": ("STRING", {"multiline": True, "dynamicPrompts":False,
-                                        "default": ""}),
-            }
-        })
-        return Lexicon._parse(d, cls)
-
-    def run(self, **kw) -> dict[str, Any]:
-        image = parse_param(kw, 'image', EnumConvertType.IMAGE, None)
-        metadata = parse_param(kw, 'metadata', EnumConvertType.DICT, {})
-        usermeta = parse_param(kw, 'usermeta', EnumConvertType.DICT, {})
-        path = parse_param(kw, 'path', EnumConvertType.STRING, "")
-        fname = parse_param(kw, 'fname', EnumConvertType.STRING, "output")
-        prompt = parse_param(kw, 'prompt', EnumConvertType.STRING, "")
-        pnginfo = parse_param(kw, 'extra_pnginfo', EnumConvertType.DICT, {})
-        params = list(zip_longest_fill(image, path, fname, metadata, usermeta, prompt, pnginfo))
-        pbar = ProgressBar(len(params))
-        for idx, (image, path, fname, metadata, usermeta, prompt, pnginfo) in enumerate(params):
-            if image is None:
-                logger.warning("no image")
-                image = torch.zeros((32, 32, 4), dtype=torch.uint8, device="cpu")
-            try:
-                if not isinstance(usermeta, (dict,)):
-                    usermeta = json.loads(usermeta)
-                metadata.update(usermeta)
-            except json.decoder.JSONDecodeError:
-                pass
-            except Exception as e:
-                logger.error(e)
-                logger.error(usermeta)
-            metadata["prompt"] = prompt
-            metadata["workflow"] = json.dumps(pnginfo)
-            image = tensor2cv(image)
-            image = Image.fromarray(np.clip(image, 0, 255).astype(np.uint8))
-            meta_png = PngInfo()
-            for x in metadata:
-                try:
-                    data = json.dumps(metadata[x])
-                    meta_png.add_text(x, data)
-                except Exception as e:
-                    logger.error(e)
-                    logger.error(x)
-            if path == "" or path is None:
-                path = get_output_directory()
-            root = Path(path)
-            if not root.exists():
-                root = Path(get_output_directory())
-            root.mkdir(parents=True, exist_ok=True)
-            fname = (root / fname).with_suffix(".png")
-            logger.info(f"wrote file: {fname}")
-            image.save(fname, pnginfo=meta_png)
-            pbar.update_absolute(idx)
-        return ()

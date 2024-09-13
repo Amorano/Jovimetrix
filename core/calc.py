@@ -579,10 +579,8 @@ Introduce pauses in the workflow that accept an optional input to pass through a
         step = 1
         pbar = ProgressBar(delay)
         while step <= delay:
-            # comfy_message(ident, "jovi-delay-update", {"id": ident, "timeout": step})
             try:
                 data = ComfyAPIMessage.poll(ident, timeout=1)
-                print(data)
                 if data.get('cmd', False):
                     interrupt_processing(True)
                     logger.warning(f"delay [cancelled] ({step}): {ident}")

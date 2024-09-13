@@ -915,14 +915,18 @@ class Session(metaclass=Singleton):
             JOV_IGNORE_NODE = []
 
         node_count = 0
-        for fname in (ROOT / 'core').iterdir():
-            if fname.suffix != ".py" or fname.stem.startswith('_'):
+        for fname in ROOT.glob('core/**/*.py'):
+            if fname.stem.startswith('_'):
                 continue
             if fname.stem in JOV_IGNORE_NODE or fname.stem+'.py' in JOV_IGNORE_NODE:
                 logger.warning(f"💀 [IGNORED] Jovimetrix.core.{fname.stem}")
                 continue
+
             try:
-                module = importlib.import_module(f"Jovimetrix.core.{fname.stem}")
+                route = str(fname).replace("\\", "/").split("Jovimetrix/core/")[1]
+                route = route.split('.')[0].replace('/', '.')
+                module = f"Jovimetrix.core.{route}"
+                module = importlib.import_module(module)
             except Exception as e:
                 logger.warning(f"module failed {fname}")
                 logger.warning(str(e))
