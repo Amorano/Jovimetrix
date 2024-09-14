@@ -5,8 +5,10 @@ GLSL Support
 Blended from old ModernGL implementation + Audio_Scheduler & Fill Node Pack
 """
 
+import os
 import re
 import sys
+from pathlib import Path
 from enum import Enum, EnumType
 from typing import Any, Dict, Tuple
 
@@ -17,7 +19,8 @@ import OpenGL.GL as gl
 
 from loguru import logger
 
-from Jovimetrix.sup.util import EnumConvertType, parse_value
+from Jovimetrix import ROOT
+from Jovimetrix.sup.util import EnumConvertType, parse_value, load_file
 from Jovimetrix.sup.image import image_convert
 
 # =============================================================================
@@ -70,8 +73,48 @@ class EnumGLSLColorConvert(Enum):
     XYZ2HSV = 31
     XYZ2LAB = 32
 
-RE_VARIABLE = re.compile(r"uniform\s+(\w+)\s+(\w+);(?:\s*\/\/\s*([A-Za-z0-9.,\s]*))?\s*(?:;\s*([0-9.-]+))?\s*(?:;\s*([0-9.-]+))?\s*(?:;\s*([0-9.-]+))?\s*(?:\|\s*(.*))?$", re.MULTILINE)
+JOV_ROOT_GLSL = ROOT / 'res' / 'glsl'
+GLSL_PROGRAMS = {
+    "vertex": {  },
+    "fragment": { }
+}
 
+GLSL_PROGRAMS['vertex'].update({str(f.relative_to(JOV_ROOT_GLSL).as_posix()):
+                                str(f) for f in Path(JOV_ROOT_GLSL).rglob('*.vert')})
+USER_GLSL = ROOT / 'glsl'
+USER_GLSL.mkdir(parents=True, exist_ok=True)
+if (USER_GLSL := os.getenv("JOV_GLSL", str(USER_GLSL))) is not None:
+    GLSL_PROGRAMS['vertex'].update({str(f.relative_to(USER_GLSL).as_posix()):
+                                    str(f) for f in Path(USER_GLSL).rglob('*.vert')})
+
+GLSL_PROGRAMS['fragment'].update({str(f.relative_to(JOV_ROOT_GLSL).as_posix()):
+                                  str(f) for f in Path(JOV_ROOT_GLSL).rglob('*.frag')})
+if USER_GLSL is not None:
+    GLSL_PROGRAMS['fragment'].update({str(f.relative_to(USER_GLSL).as_posix()):
+                                      str(f) for f in Path(USER_GLSL).rglob('*.frag')})
+
+try:
+    prog = GLSL_PROGRAMS['vertex'].pop('.lib/_.vert')
+    PROG_VERTEX = load_file(prog)
+except Exception as e:
+    logger.error(e)
+    raise Exception("failed load default vertex program .lib/_.vert")
+
+try:
+    prog = GLSL_PROGRAMS['fragment'].pop('.lib/_.frag')
+    PROG_FRAGMENT = load_file(prog)
+except Exception as e:
+    logger.error(e)
+    raise Exception("failed load default fragment program .lib/_.frag")
+
+PROG_HEADER = load_file(JOV_ROOT_GLSL / '.lib/_.head')
+PROG_FOOTER = load_file(JOV_ROOT_GLSL / '.lib/_.foot')
+
+logger.info(f"  vertex programs: {len(GLSL_PROGRAMS['vertex'])}")
+logger.info(f"fragment programs: {len(GLSL_PROGRAMS['fragment'])}")
+
+RE_INCLUDE = re.compile(r"^\s+?#include\s+?([A-Za-z\_\-\.\\\/]{3,})$", re.MULTILINE)
+RE_VARIABLE = re.compile(r"uniform\s+(\w+)\s+(\w+);(?:\s*\/\/\s*([A-Za-z0-9.,\s]*))?\s*(?:;\s*([0-9.-]+))?\s*(?:;\s*([0-9.-]+))?\s*(?:;\s*([0-9.-]+))?\s*(?:\|\s*(.*))?$", re.MULTILINE)
 RE_SHADER_META = re.compile(r"^\/\/\s?([A-Za-z_]{3,}):\s?(.+)$", re.MULTILINE)
 
 # =============================================================================
@@ -79,136 +122,6 @@ RE_SHADER_META = re.compile(r"^\/\/\s?([A-Za-z_]{3,}):\s?(.+)$", re.MULTILINE)
 class CompileException(Exception): pass
 
 class GLSLShader:
-
-    PROG_HEADER = """
-#version 460
-precision highp float;
-
-//------------------------------------------------------------------------------
-// System globals
-//------------------------------------------------------------------------------
-uniform vec3    iResolution;  // Viewport resolution (pixels)
-uniform float   iTime;        // Shader playback time (seconds)
-uniform float   iFrameRate;   // Shader frame rate
-uniform int     iFrame;       // Shader playback frame
-
-//------------------------------------------------------------------------------
-// Constants
-//------------------------------------------------------------------------------
-#define M_EPSILON 1.0e-10     // Small value for float comparisons
-#define M_PI  3.141592653589793  // Pi
-#define M_TAU 6.283185307179586  // Tau (2 * Pi)
-#define M_SQRT2 1.414213562373095  // Square root of 2
-#define M_PHI 1.618033988749895  // Golden ratio
-#define M_DEG2RAD 0.017453292519943  // Degree to radian conversion factor
-#define M_RAD2DEG 57.29577951308232  // Radian to degree conversion factor
-
-//------------------------------------------------------------------------------
-// Macros
-//------------------------------------------------------------------------------
-
-// Convert degrees to radians
-#define DEG2RAD(deg) ((deg) * M_DEG2RAD)
-
-// Convert radians to degrees
-#define RAD2DEG(rad) ((rad) * M_RAD2DEG)
-
-// Compute the 2D perpendicular vector (rotate 90 degrees)
-#define PERPENDICULAR(v) (vec2(-(v).y, (v).x))
-
-// Compute the normalized difference vector between two points
-#define NORMALIZE_DIFF(a, b) (normalize((b) - (a)))
-
-//------------------------------------------------------------------------------
-// Functions
-//------------------------------------------------------------------------------
-
-// Compute the "negative dot product" of two 2D vectors
-float lib_ndot(in vec2 a, in vec2 b) {
-    return a.x*b.x - a.y*b.y;
-}
-
-// Custom smoothstep function (Hermite interpolation)
-float lib_smoothstep(float edge0, float edge1, float x) {
-    float t = clamp((x - edge0) / (edge1 - edge0), 0.0, 1.0);
-    return t * t * (3.0 - 2.0 * t);
-}
-
-// Compute the 2D cross product (wedge product) of two 2D vectors
-float lib_cross2D(in vec2 a, in vec2 b) {
-    return a.x * b.y - a.y * b.x;
-}
-
-// Compute the angle between two 2D vectors
-float lib_angleBetween2D(vec2 a, vec2 b) {
-    return acos(dot(normalize(a), normalize(b)));
-}
-
-// Compute the angle between two 3D vectors
-float lib_angleBetween3D(vec3 a, vec3 b) {
-    return acos(dot(normalize(a), normalize(b)));
-}
-
-// Rotates a 2D vector by an angle in radians
-vec2 lib_rotate2D(vec2 v, float angle) {
-    float cosA = cos(angle);
-    float sinA = sin(angle);
-    return vec2(
-        v.x * cosA - v.y * sinA,
-        v.x * sinA + v.y * cosA
-    );
-}
-
-// Reflects a 2D vector across an arbitrary axis (useful for mirrors or reflections).
-vec2 lib_reflect2D(vec2 v, vec2 axis) {
-    return v - 2.0 * dot(v, axis) * axis;
-}
-
-// Performs refraction with a custom index of refraction.
-vec3 lib_refractCustom(vec3 I, vec3 N, float eta) {
-    float cosI = dot(-I, N);
-    float sinT2 = eta * eta * (1.0 - cosI * cosI);
-    if (sinT2 > 1.0) return vec3(0.0); // Total internal reflection
-    float cosT = sqrt(1.0 - sinT2);
-    return eta * I + (eta * cosI - cosT) * N;
-}
-
-// Generate a pseudo-random value based on a 2D coordinate
-float lib_rand(vec2 co) {
-    return fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 43758.5453123);
-}
-"""
-
-    PROG_VERTEX = """
-#version 460
-precision highp float;
-
-void main()
-{
-    vec2 verts[3] = vec2[](vec2(-1, -1), vec2(3, -1), vec2(-1, 3));
-    gl_Position = vec4(verts[gl_VertexID], 0, 1);
-}
-"""
-
-    PROG_FRAGMENT = """
-uniform sampler2D image;
-
-void mainImage( out vec4 fragColor, vec2 fragCoord ) {
-    vec2 uv = fragCoord / iResolution.xy;
-    // Correcting for aspect ratio
-    // uv.y *= (iResolution.x / iResolution.y);
-    fragColor = texture(image, uv);
-}
-"""
-
-    PROG_FOOTER = """
-layout(location = 0) out vec4 _fragColor;
-
-void main()
-{
-    mainImage(_fragColor, gl_FragCoord.xy);
-}
-"""
 
     def __init__(self, vertex:str=None, fragment:str=None, width:int=IMAGE_SIZE_DEFAULT, height:int=IMAGE_SIZE_DEFAULT, fps:int=30) -> None:
         if not glfw.init():
@@ -264,6 +177,7 @@ void main()
         logger.debug("init window")
 
     def __compile_shader(self, source:str, shader_type:str) -> None:
+        print('compiled')
         glfw.make_context_current(self.__window)
         shader = gl.glCreateShader(shader_type)
         gl.glShaderSource(shader, source)
@@ -279,11 +193,11 @@ void main()
         vertex = self.__source_vertex_raw if vertex is None else vertex
         if vertex is None:
             logger.debug("Vertex program is empty. Using Default.")
-            vertex = self.PROG_VERTEX
+            vertex = PROG_VERTEX
 
         if (fragment := self.__source_fragment_raw if fragment is None else fragment) is None:
             logger.debug("Fragment program is empty. Using Default.")
-            fragment = self.PROG_FRAGMENT
+            fragment = PROG_FRAGMENT
 
         if not force and vertex == self.__source_vertex_raw and fragment == self.__source_fragment_raw:
             return
@@ -295,7 +209,7 @@ void main()
             pass
 
         self.__source_vertex = self.__compile_shader(vertex, gl.GL_VERTEX_SHADER)
-        fragment_full = self.PROG_HEADER + fragment + self.PROG_FOOTER
+        fragment_full = PROG_HEADER + fragment + PROG_FOOTER
         self.__source_fragment = self.__compile_shader(fragment_full, gl.GL_FRAGMENT_SHADER)
 
         self.__program = gl.glCreateProgram()
@@ -323,6 +237,9 @@ void main()
 
         self.__userVar = {}
         # read the fragment and setup the vars....
+
+        # RE_INCLUDE
+
         for match in RE_VARIABLE.finditer(self.__source_fragment_raw):
             typ, name, default, val_min, val_max, val_step, tooltip = match.groups()
 
@@ -548,3 +465,33 @@ def shader_meta(shader: str) -> Dict[str, Any]:
         ret[key] = value
     ret['_'] = [match.groups() for match in RE_VARIABLE.finditer(shader)]
     return ret
+
+def load_file_glsl(fname: str) -> str:
+
+    # first file we load, starts the list of included
+    include = set()
+
+    def scan_include(file:str, idx:int=0) -> str:
+        if idx > 4:
+            return "too many recursive includes"
+
+        file_path = JOV_ROOT_GLSL / file
+        if file_path in include:
+            return ""
+
+        include.add(file_path)
+        try:
+            result = load_file(file_path)
+        except FileNotFoundError:
+            return f"File not found: {file_path}"
+
+        # replace #include directives with their content
+        def replace_include(match):
+            lib_path = JOV_ROOT_GLSL / match.group(1)
+            if lib_path not in include:
+                return scan_include(lib_path, idx+1)
+            return ""
+
+        return RE_INCLUDE.sub(replace_include, result)
+
+    return scan_include(fname)

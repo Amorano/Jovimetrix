@@ -1,0 +1,54 @@
+//------------------------------------------------------------------------------
+// CURVE
+//------------------------------------------------------------------------------
+
+//------------------------------------------------------------------------------
+// QUADRATIC BEZIER CURVE
+//------------------------------------------------------------------------------
+// Compute a quadratic Bezier curve between three control points
+vec3 lib_quadraticBezier(vec3 p0, vec3 p1, vec3 p2, float t) {
+    float u = 1.0 - t;
+    return u * u * p0 + 2.0 * u * t * p1 + t * t * p2;
+}
+
+// Quadratic Bezier curve for 2D vectors
+vec2 lib_quadraticBezier(vec2 p0, vec2 p1, vec2 p2, float t) {
+    float u = 1.0 - t;
+    return u * u * p0 + 2.0 * u * t * p1 + t * t * p2;
+}
+
+//------------------------------------------------------------------------------
+// CUBIC BEZIER CURVE
+//------------------------------------------------------------------------------
+// Compute a cubic Bezier curve between four control points
+vec3 lib_cubicBezier(vec3 p0, vec3 p1, vec3 p2, vec3 p3, float t) {
+    float u = 1.0 - t;
+    return u * u * u * p0 + 3.0 * u * u * t * p1 + 3.0 * u * t * t * p2 + t * t * t * p3;
+}
+
+// Cubic Bezier curve for 2D vectors
+vec2 lib_cubicBezier(vec2 p0, vec2 p1, vec2 p2, vec2 p3, float t) {
+    float u = 1.0 - t;
+    return u * u * u * p0 + 3.0 * u * u * t * p1 + 3.0 * u * t * t * p2 + t * t * t * p3;
+}
+
+//------------------------------------------------------------------------------
+// CATMULL-ROM SPLINE
+//------------------------------------------------------------------------------
+// Interpolation using Catmull-Rom spline between four points
+vec3 lib_catmullRom(vec3 p0, vec3 p1, vec3 p2, vec3 p3, float t) {
+    vec3 a = 2.0 * p1;
+    vec3 b = p2 - p0;
+    vec3 c = 2.0 * p0 - 5.0 * p1 + 4.0 * p2 - p3;
+    vec3 d = -p0 + 3.0 * p1 - 3.0 * p2 + p3;
+    return 0.5 * (a + b * t + c * t * t + d * t * t * t);
+}
+
+// Catmull-Rom spline for 2D vectors
+vec2 lib_catmullRom(vec2 p0, vec2 p1, vec2 p2, vec2 p3, float t) {
+    vec2 a = 2.0 * p1;
+    vec2 b = p2 - p0;
+    vec2 c = 2.0 * p0 - 5.0 * p1 + 4.0 * p2 - p3;
+    vec2 d = -p0 + 3.0 * p1 - 3.0 * p2 + p3;
+    return 0.5 * (a + b * t + c * t * t + d * t * t * t);
+}

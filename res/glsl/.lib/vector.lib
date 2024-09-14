@@ -1,0 +1,85 @@
+//------------------------------------------------------------------------------
+// VECTOR
+//------------------------------------------------------------------------------
+
+// Compute the "negative dot product" of two 2D vectors
+float lib_ndot(in vec2 a, in vec2 b) {
+    return a.x*b.x - a.y*b.y;
+}
+
+// Compute the 2D cross product (wedge product) of two 2D vectors
+float lib_cross2D(in vec2 a, in vec2 b) {
+    return a.x * b.y - a.y * b.x;
+}
+
+// Compute the angle between two 2D vectors
+float lib_angleBetween2D(vec2 a, vec2 b) {
+    return acos(clamp(dot(normalize(a), normalize(b)), -1.0, 1.0));
+}
+
+// Compute the angle between two 3D vectors
+float lib_angleBetween3D(vec3 a, vec3 b) {
+    return acos(clamp(dot(normalize(a), normalize(b)), -1.0, 1.0));
+}
+
+// Project one vector onto another in 3D
+vec3 project(vec3 a, vec3 b) {
+    return (dot(a, b) / dot(b, b)) * b;
+}
+
+// Project one vector onto another in 2D
+vec2 project(vec2 a, vec2 b) {
+    return (dot(a, b) / dot(b, b)) * b;
+}
+
+// Rotates a 2D vector by angle in radians
+vec2 lib_rotate2D(vec2 v, float angle) {
+    float cosA = cos(angle);
+    float sinA = sin(angle);
+    return vec2(
+        v.x * cosA - v.y * sinA,
+        v.x * sinA + v.y * cosA
+    );
+}
+
+// Reflects 2D vector across arbitrary axis.
+vec2 lib_reflect2D(vec2 v, vec2 axis) {
+    return v - 2.0 * dot(v, axis) * axis;
+}
+
+// Performs refraction with a custom index of refraction.
+vec3 lib_refractCustom(vec3 I, vec3 N, float eta) {
+    float cosI = dot(-I, N);
+    float sinT2 = eta * eta * (1.0 - cosI * cosI);
+    // Total internal reflection
+    if (sinT2 > 1.0) return vec3(0.0);
+    float cosT = sqrt(1.0 - sinT2);
+    return eta * I + (eta * cosI - cosT) * N;
+}
+
+// useful for triangle interpolation
+vec3 barycentricCoords(vec2 p, vec2 a, vec2 b, vec2 c) {
+    vec2 v0 = b - a;
+    vec2 v1 = c - a;
+    vec2 v2 = p - a;
+    float d00 = dot(v0, v0);
+    float d01 = dot(v0, v1);
+    float d11 = dot(v1, v1);
+    float d20 = dot(v2, v0);
+    float d21 = dot(v2, v1);
+    float denom = d00 * d11 - d01 * d01;
+    vec3 result;
+    result.y = (d11 * d20 - d01 * d21) / denom;
+    result.z = (d00 * d21 - d01 * d20) / denom;
+    result.x = 1.0 - result.y - result.z;
+    return result;
+}
+
+// Find a vector orthogonal to a given vector in 3D.
+// There is no single orthogonal vector in 3D; this finds one that is normalized.
+vec3 orthogonalVector(vec3 v) {
+    if (abs(v.x) > abs(v.y))
+        return normalize(vec3(-v.z, 0.0, v.x));
+    else
+        return normalize(vec3(0.0, v.z, -v.y));
+}

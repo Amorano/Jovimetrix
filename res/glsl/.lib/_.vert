@@ -1,7 +1,8 @@
 // name: BASIC VERTEX SHADER
 // desc: draws 2 triangles as a quad for a surface to manipulate
 
-#version 330 core
+#version 460
+precision highp float;
 
 void main()
 {

@@ -1,0 +1,12 @@
+// Standard Fragment Shader Header
+
+#version 460
+precision highp float;
+
+//------------------------------------------------------------------------------
+// GLOBALS
+//------------------------------------------------------------------------------
+uniform vec3    iResolution; // Viewport resolution (pixels)
+uniform float   iTime;       // Shader playback time (seconds)
+uniform float   iFrameRate;  // Shader frame rate
+uniform int     iFrame;      // Shader playback frame

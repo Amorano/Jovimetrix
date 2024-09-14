@@ -72,6 +72,7 @@ ROOT = Path(__file__).resolve().parent
 ROOT_COMFY = ROOT.parent.parent
 ROOT_DOC = ROOT / 'res/doc'
 
+
 JOV_CONFIG = {}
 JOV_WEB = ROOT / 'web'
 JOV_DEFAULT = JOV_WEB / 'default.json'

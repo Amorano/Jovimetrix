@@ -3,7 +3,6 @@ Jovimetrix - http://www.github.com/amorano/jovimetrix
 Creation
 """
 
-import os
 import sys
 from pathlib import Path
 from typing import Any, Tuple
@@ -18,39 +17,22 @@ except:
     pass
 from comfy.utils import ProgressBar
 
-from Jovimetrix import JOV_TYPE_IMAGE, ROOT, Lexicon, JOVImageNode, \
+from Jovimetrix import JOV_TYPE_IMAGE, Lexicon, JOVImageNode, \
     comfy_message, deep_merge
 
-from Jovimetrix.sup.util import EnumConvertType, load_file, parse_param, \
+from Jovimetrix.sup.util import EnumConvertType, parse_param, \
     parse_value
 
 from Jovimetrix.sup.image import MIN_IMAGE_SIZE, EnumInterpolation, \
     EnumScaleMode, cv2tensor_full, image_convert, image_scalefit, tensor2cv
 
 import Jovimetrix.sup.shader as glsl_enums
-from Jovimetrix.sup.shader import PTYPE, CompileException, EnumGLSLEdge, \
-    GLSLShader, shader_meta
+
+from Jovimetrix.sup.shader import JOV_ROOT_GLSL, GLSL_PROGRAMS, PROG_FRAGMENT, \
+    PROG_VERTEX, PTYPE, CompileException, EnumGLSLEdge, GLSLShader, shader_meta, \
+    load_file_glsl
 
 # =============================================================================
-
-JOV_ROOT_GLSL = ROOT / 'res' / 'glsl'
-GLSL_PROGRAMS = {
-    "vertex": {  },
-    "fragment": { }
-}
-
-GLSL_PROGRAMS['vertex'].update({str(f.relative_to(JOV_ROOT_GLSL)): str(f) for f in Path(JOV_ROOT_GLSL).rglob('*.vert')})
-USER_GLSL = ROOT / 'glsl'
-USER_GLSL.mkdir(parents=True, exist_ok=True)
-if (USER_GLSL := os.getenv("JOV_GLSL", str(USER_GLSL))) is not None:
-    GLSL_PROGRAMS['vertex'].update({str(f.relative_to(USER_GLSL)): str(f) for f in Path(USER_GLSL).rglob('*.vert')})
-
-GLSL_PROGRAMS['fragment'].update({str(f.relative_to(JOV_ROOT_GLSL)): str(f) for f in Path(JOV_ROOT_GLSL).rglob('*.frag')})
-if USER_GLSL is not None:
-    GLSL_PROGRAMS['fragment'].update({str(f.relative_to(USER_GLSL)): str(f) for f in Path(USER_GLSL).rglob('*.frag')})
-
-logger.info(f"  vertex programs: {len(GLSL_PROGRAMS['vertex'])}")
-logger.info(f"fragment programs: {len(GLSL_PROGRAMS['fragment'])}")
 
 JOV_CATEGORY = "CREATE"
 
@@ -64,12 +46,18 @@ try:
                for k, v in GLSL_PROGRAMS.items()}
         return web.json_response(ret)
 
-    @PromptServer.instance.routes.get("/jovimetrix/glsl/{shader}")
-    async def jovimetrix_glsl_raw(request, shader:str) -> Any:
-        if (program := GLSL_PROGRAMS.get(shader, None)) is None:
-            return web.json_response(f"no program {shader}")
-        response = load_file(program)
-        return web.json_response(response)
+    @PromptServer.instance.routes.get("/jovimetrix/glsl/{prog}/{shader}")
+    async def jovimetrix_glsl_raw(request) -> Any:
+        prog = request.match_info["prog"]
+        if (program := GLSL_PROGRAMS.get(prog, None)) is None:
+            return web.Response(text=f"no program {prog}")
+
+        shader = request.match_info["shader"].replace("|", "/")
+        if (raw := program.get(shader, None)) is None:
+            return web.Response(text=f"no shader {shader}")
+
+        response = load_file_glsl(raw)
+        return web.Response(text=response)
 
     @PromptServer.instance.routes.post("/jovimetrix/glsl")
     async def jovimetrix_glsl(request) -> Any:
@@ -81,7 +69,7 @@ try:
                 continue
             fname = json_data[who]
             if (data := programs.get(fname, None)) is not None:
-                response[who] = load_file(data)
+                response[who] = load_file_glsl(data)
             else:
                 logger.warning(f"no glsl shader entry {fname}")
 
@@ -91,8 +79,6 @@ except Exception as e:
 
 class GLSLNodeBase(JOVImageNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/GLSL"
-    VERTEX = GLSLShader.PROG_VERTEX
-    FRAGMENT = GLSLShader.PROG_FRAGMENT
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
@@ -130,8 +116,8 @@ class GLSLNodeBase(JOVImageNode):
         edge = (edge_x, edge_y)
 
         try:
-            self.__glsl.vertex = kw.pop(Lexicon.PROG_VERT, self.VERTEX)
-            self.__glsl.fragment = kw.pop(Lexicon.PROG_FRAG, self.FRAGMENT)
+            self.__glsl.vertex = getattr(self, 'VERTEX', kw.pop(Lexicon.PROG_VERT, None))
+            self.__glsl.fragment = getattr(self, 'FRAGMENT', kw.pop(Lexicon.PROG_FRAG, None))
         except CompileException as e:
             comfy_message(ident, "jovi-glsl-error", {"id": ident, "e": str(e)})
             logger.error(self.NAME)
@@ -200,20 +186,15 @@ Execute custom GLSL (OpenGL Shading Language) fragment shaders to generate image
             Lexicon.BATCH: ("INT", {"default": 0, "mij": 0, "maj": 1048576}),
             Lexicon.FPS: ("INT", {"default": 24, "mij": 1, "maj": 120}),
             Lexicon.TIME: ("FLOAT", {"default": 0, "step": 0.0001, "mij": 0}),
-            Lexicon.PROG_VERT: ("STRING", {"default": GLSLShader.PROG_VERTEX, "multiline": True, "dynamicPrompts": False}),
-            Lexicon.PROG_FRAG: ("STRING", {"default": GLSLShader.PROG_FRAGMENT, "multiline": True, "dynamicPrompts": False}),
+            Lexicon.PROG_VERT: ("STRING", {"default": PROG_VERTEX, "multiline": True, "dynamicPrompts": False}),
+            Lexicon.PROG_FRAG: ("STRING", {"default": PROG_FRAGMENT, "multiline": True, "dynamicPrompts": False}),
         })
         d['optional'] = opts
         return Lexicon._parse(d, cls)
 
     @classmethod
     def IS_CHANGED(cls, **kw) -> float:
-        return float("nan")
-
-    def __init__(self, *arg, **kw) -> None:
-        self.VERTEX = parse_param(kw, Lexicon.PROG_VERT, EnumConvertType.STRING, GLSLShader.PROG_VERTEX)[0]
-        self.FRAGMENT = parse_param(kw, Lexicon.PROG_FRAG, EnumConvertType.STRING, GLSLShader.PROG_FRAGMENT)[0]
-        super().__init__(*arg, **kw)
+        return float("NaN")
 
 class GLSLNodeDynamic(GLSLNodeBase):
 
@@ -273,22 +254,12 @@ class GLSLNodeDynamic(GLSLNodeBase):
 
 def import_dynamic() -> Tuple[str,...]:
     ret = []
-    global GLSL_PROGRAMS
-    if (prog := GLSL_PROGRAMS['vertex'].pop('_', None)) is not None:
-        if (shader := load_file(prog)) is not None:
-            GLSLShader.PROG_VERTEX = shader
-
-    if (prog := GLSL_PROGRAMS['fragment'].pop('_', None)) is not None:
-        if (shader := load_file(prog)) is not None:
-            GLSLShader.PROG_FRAGMENT = shader
-
     sort = 10000
     root = str(JOV_ROOT_GLSL)
     for name, fname in GLSL_PROGRAMS['fragment'].items():
-        if (shader := load_file(fname)) is None:
+        if (shader := load_file_glsl(fname)) is None:
             logger.error(f"missing shader file {fname}")
             continue
-
         meta = shader_meta(shader)
         if meta.get('hide', False):
             continue
