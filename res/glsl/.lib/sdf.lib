@@ -1,0 +1,69 @@
+//------------------------------------------------------------------------------
+// SIGNED DISTANCE
+//------------------------------------------------------------------------------
+
+float lib_sdf_circle2D(vec2 p, float r);                // Distance to a circle
+float lib_sdf_box2D(vec2 p, vec2 s);                    // Distance to a rectangle
+float lib_sdf_triangle2D(vec2 p, float r);              // Distance to an equilateral triangle
+
+//------------------------------------------------------------------------------
+// SUPPORT FUNCTIONS
+//------------------------------------------------------------------------------
+
+float lib_sdf_union2D(float d1, float d2);              // Union of two 2D SDFs
+float lib_sdf_subtract2D(float d1, float d2);           // Subtraction of two 2D SDFs
+float lib_sdf_round2D(vec2 s, float r);                 // Rounds the corners of a 2D SDF
+float lib_sdf_onion2D(vec2 s, float thickness);         // Outlines the shape of a 2D SDF
+
+vec3 lib_sdf_onion3D(vec3 shape, float r);               // Onion skinning effect for 3D SDF
+
+//------------------------------------------------------------------------------
+// SHAPES
+//------------------------------------------------------------------------------
+
+//------------------------------------------------------------------------------
+// SHAPES
+//------------------------------------------------------------------------------
+
+float lib_sdf_circle2D(vec2 p, float r) {
+    return length(p) - r;
+}
+
+float lib_sdf_box2D(vec2 p, vec2 s) {
+    vec2 d = abs(p) - s;
+    return length(max(d, 0.0)) + min(max(d.x, d.y), 0.0);
+}
+
+float lib_sdf_triangle2D(vec2 p, float r) {
+    const float k = sqrt(3.0);
+    p.x = abs(p.x) - r;
+    p.y = p.y + r / k;
+    if (p.x + k * p.y > 0.0)
+        p = vec2(p.x - k * p.y, -k * p.x - p.y) / 2.0;
+    p.x -= clamp(p.x, -2.0 * r, 0.0);
+    return -length(p) * sign(p.y);
+}
+
+//------------------------------------------------------------------------------
+// SUPPORT FUNCTIONS
+//------------------------------------------------------------------------------
+
+float lib_sdf_union2D(float d1, float d2) {
+    return min(d1, d2);
+}
+
+float lib_sdf_subtract2D(float d1, float d2) {
+    return max(d1, -d2);
+}
+
+float lib_sdf_round2D(vec2 s, float r) {
+    return length(s) - r;
+}
+
+float lib_sdf_onion2D(vec2 s, float thickness) {
+    return abs(s) - thickness;
+}
+
+vec3 lib_sdf_onion3D(vec3 shape, float r) {
+    return vec3(abs(shape.x) - r, sign(shape.x) * shape.yz);
+}

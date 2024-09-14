@@ -4,6 +4,24 @@
 
 #include .lib/const.lib
 
+// =============================================================================
+// PROTOTYPES
+// =============================================================================
+
+float lib_decayExp(float t, float lambda);
+float lib_interpSS(float a, float b, float t);
+vec3 lib_interpSS(vec3 a, vec3 b, float t);
+float lib_interpHermite(float t);
+vec3 lib_interpHermite(vec3 a, vec3 b, vec3 tangentA, vec3 tangentB, float t);
+float lib_easeInOutSine(float t);
+vec3 lib_easeInOutSine(vec3 a, vec3 b, float t);
+float lib_interpBounce(float t);
+vec3 lib_interpBounce2Points(vec3 a, vec3 b, float t);
+float lib_easeInOutCirc(float t);
+vec3 lib_easeInOutCirc(vec3 a, vec3 b, float t);
+float lib_easeInOutQuad(float t);
+vec3 lib_easeInOutQuad(vec3 a, vec3 b, float t);
+
 //------------------------------------------------------------------------------
 // EXPONENTIAL DECAY (Falloff)
 //------------------------------------------------------------------------------

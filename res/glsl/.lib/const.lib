@@ -30,11 +30,11 @@
 #define M_PLANCK   6.62607015e-34     // Planck's constant (Js)
 #define M_KB       1.380649e-23       // Boltzmann constant (J/K)
 #define M_MASS_E   9.10938356e-31     // Mass of electron (kg)
-#define M_CHARGE_E 1.602176634e-19   // Elementary charge (C)
+#define M_CHARGE_E 1.602176634e-19    // Elementary charge (C)
 
 // ANGLES
-#define M_DEG2RAD 0.017453292519943  // Degree to radian conversion factor
-#define M_RAD2DEG 57.29577951308232  // Radian to degree conversion factor
+#define M_DEG2RAD 0.017453292519943   // Degree to radian conversion factor
+#define M_RAD2DEG 57.29577951308232   // Radian to degree conversion factor
 
 // Convert degrees to radians
 #define DEG2RAD(deg) ((deg) * M_DEG2RAD)
