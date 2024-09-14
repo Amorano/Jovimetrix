@@ -6,10 +6,8 @@
 
 import { app } from "../../../scripts/app.js"
 import { $el } from "../../../scripts/ui.js"
-import { setting_make } from '../util/util_api.js'
-import { widgetGetHovered } from '../util/util_widget.js'
-
-//const widget_height = 25;
+import { setting_make } from "../util/util_api.js"
+import { widgetGetHovered } from "../util/util_widget.js"
 
 const JTooltipWidget = (app, name, opts) => {
     let options = opts || {};
@@ -28,6 +26,42 @@ const JTooltipWidget = (app, name, opts) => {
     }
     return w
 }
+
+function isOverNodeOutput(node, x, y) {
+    if (node.outputs === undefined) {
+        return -1;
+    }
+
+    for (var i2 = 0, l = node.outputs?.length; i2 < l; ++i2) {
+        const output = node.outputs[i2];
+        const dist = output.name.length * 11;
+        var link_pos = node.getConnectionPos(false, i2);
+        var is_inside = false;
+        if (node.horizontal) {
+            is_inside = LiteGraph.isInsideRectangle(
+                x,
+                y,
+                link_pos[0] - 5 - dist,
+                link_pos[1] - 10,
+                10 + dist * 2,
+                20
+            );
+        } else {
+            is_inside = LiteGraph.isInsideRectangle(
+                x,
+                y,
+                link_pos[0] - 10 - dist,
+                link_pos[1] - 10,
+                20 + dist * 2,
+                20
+            );
+        }
+        if (is_inside) {
+            return i2;
+        }
+    }
+    return -1;
+  }
 
 app.registerExtension({
     name: "jovimetrix.help.tooltips",
@@ -86,7 +120,7 @@ app.registerExtension({
 
             // Jovian tooltip logic
             const widget_tooltip = (node?.widgets || [])
-                .find(widget => widget.type == 'JTOOLTIP');
+                .find(widget => widget.type == "JTOOLTIP");
 
             if (!widget_tooltip) {
                 return hideTooltip();
@@ -99,9 +133,6 @@ app.registerExtension({
 
             let tip;
             let name;
-            //let mouse_x = app.canvas.mouse[0];
-            //let mouse_y = app.canvas.mouse[1];
-
             const mouse_test_x = this.graph_mouse[0];
             const mouse_test_y = this.graph_mouse[1];
             const inputSlot = this.isOverNodeInput(node, mouse_test_x, mouse_test_y, [0, 0]);
@@ -109,10 +140,9 @@ app.registerExtension({
             if (inputSlot !== -1) {
                 const slot = node.inputs[inputSlot];
                 tip = tips?.[slot.name];
-                //mouse_y =  node.pos[1] - 5 * widget_height + inputSlot * widget_height;
                 if (slot.widget) {
                     const widget = node.widgets.find(w => w.name == slot.name);
-                    if (widget && widget.type.startsWith('converted-widget')) {
+                    if (widget && widget.type.startsWith("converted-widget")) {
                         const def = widget.options?.default;
                         if (def) {
                             tip += ` (default: ${def})`;
@@ -121,10 +151,9 @@ app.registerExtension({
                 }
                 name = `inputs_${inputSlot}`;
             } else {
-                const outputSlot = this.isOverNodeOutput(node, mouse_test_x, mouse_test_y, [0, 0]);
+                const outputSlot = isOverNodeOutput(node, mouse_test_x, mouse_test_y);
                 if (outputSlot !== -1) {
-                    tip = tips?.['outputs']?.[outputSlot];
-                    //mouse_y = node.pos[1] - 4 * widget_height + outputSlot * widget_height;
+                    tip = tips?.["outputs"]?.[outputSlot];
                     name = `outputs_${outputSlot}`;
                 } else {
                     const hover = widgetGetHovered();
@@ -133,8 +162,6 @@ app.registerExtension({
                         if (widget && !widget.element) {
                             name = widget.name;
                             tip = tips?.[name];
-                            //mouse_x = node.pos[0] - mouse_x + 10;
-                            //mouse_y = node.pos[1] - 4 * widget_height;
                             const def = widget.options?.default;
                             if (def) {
                                 tip += ` (default: ${def})`;
@@ -154,7 +181,7 @@ app.registerExtension({
             showTooltip(tip, app.canvas.mouse[0], app.canvas.mouse[1] - 26);
         }.bind(app.canvas);
 
-        const onChange = (val) => {
+        const onChange = function (val) {
             if (val > 0) {
                 LiteGraph.pointerListenerAdd(app.canvasEl, "move", onCanvasPointerMove);
             } else {
@@ -163,8 +190,8 @@ app.registerExtension({
             userTimeout = val;
         }
 
-        setting_make('tooltips 📝.delay', 'Delay', 'number',
-            'How long (in milliseconds) to wait before showing the tooltip. 0 will turn it off.',
+        setting_make("Tooltips 📝", "Delay", "number",
+            "How long (in milliseconds) to wait before showing the tooltip. 0 will turn it off.",
             50, {
                 min: 0,
                 step: 1,

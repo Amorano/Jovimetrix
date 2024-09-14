@@ -81,29 +81,106 @@ class CompileException(Exception): pass
 class GLSLShader:
 
     PROG_HEADER = """
-#version 440
-
+#version 460
 precision highp float;
 
-// system globals
-uniform vec3    iResolution;
-uniform float   iTime;
-uniform float   iFrameRate;
-uniform int     iFrame;
+//------------------------------------------------------------------------------
+// System globals
+//------------------------------------------------------------------------------
+uniform vec3    iResolution;  // Viewport resolution (pixels)
+uniform float   iTime;        // Shader playback time (seconds)
+uniform float   iFrameRate;   // Shader frame rate
+uniform int     iFrame;       // Shader playback frame
 
-// old deprecated functions
-#define texture2D texture
+//------------------------------------------------------------------------------
+// Constants
+//------------------------------------------------------------------------------
+#define M_EPSILON 1.0e-10     // Small value for float comparisons
+#define M_PI  3.141592653589793  // Pi
+#define M_TAU 6.283185307179586  // Tau (2 * Pi)
+#define M_SQRT2 1.414213562373095  // Square root of 2
+#define M_PHI 1.618033988749895  // Golden ratio
+#define M_DEG2RAD 0.017453292519943  // Degree to radian conversion factor
+#define M_RAD2DEG 57.29577951308232  // Radian to degree conversion factor
 
-// useful constants
-#define M_EPSILON 1.0e-10
-#define M_PI  3.141592653589793
-#define M_TAU 6.283185307179586
+//------------------------------------------------------------------------------
+// Macros
+//------------------------------------------------------------------------------
 
+// Convert degrees to radians
+#define DEG2RAD(deg) ((deg) * M_DEG2RAD)
+
+// Convert radians to degrees
+#define RAD2DEG(rad) ((rad) * M_RAD2DEG)
+
+// Compute the 2D perpendicular vector (rotate 90 degrees)
+#define PERPENDICULAR(v) (vec2(-(v).y, (v).x))
+
+// Compute the normalized difference vector between two points
+#define NORMALIZE_DIFF(a, b) (normalize((b) - (a)))
+
+//------------------------------------------------------------------------------
+// Functions
+//------------------------------------------------------------------------------
+
+// Compute the "negative dot product" of two 2D vectors
+float lib_ndot(in vec2 a, in vec2 b) {
+    return a.x*b.x - a.y*b.y;
+}
+
+// Custom smoothstep function (Hermite interpolation)
+float lib_smoothstep(float edge0, float edge1, float x) {
+    float t = clamp((x - edge0) / (edge1 - edge0), 0.0, 1.0);
+    return t * t * (3.0 - 2.0 * t);
+}
+
+// Compute the 2D cross product (wedge product) of two 2D vectors
+float lib_cross2D(in vec2 a, in vec2 b) {
+    return a.x * b.y - a.y * b.x;
+}
+
+// Compute the angle between two 2D vectors
+float lib_angleBetween2D(vec2 a, vec2 b) {
+    return acos(dot(normalize(a), normalize(b)));
+}
+
+// Compute the angle between two 3D vectors
+float lib_angleBetween3D(vec3 a, vec3 b) {
+    return acos(dot(normalize(a), normalize(b)));
+}
+
+// Rotates a 2D vector by an angle in radians
+vec2 lib_rotate2D(vec2 v, float angle) {
+    float cosA = cos(angle);
+    float sinA = sin(angle);
+    return vec2(
+        v.x * cosA - v.y * sinA,
+        v.x * sinA + v.y * cosA
+    );
+}
+
+// Reflects a 2D vector across an arbitrary axis (useful for mirrors or reflections).
+vec2 lib_reflect2D(vec2 v, vec2 axis) {
+    return v - 2.0 * dot(v, axis) * axis;
+}
+
+// Performs refraction with a custom index of refraction.
+vec3 lib_refractCustom(vec3 I, vec3 N, float eta) {
+    float cosI = dot(-I, N);
+    float sinT2 = eta * eta * (1.0 - cosI * cosI);
+    if (sinT2 > 1.0) return vec3(0.0); // Total internal reflection
+    float cosT = sqrt(1.0 - sinT2);
+    return eta * I + (eta * cosI - cosT) * N;
+}
+
+// Generate a pseudo-random value based on a 2D coordinate
+float lib_rand(vec2 co) {
+    return fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 43758.5453123);
+}
 """
 
     PROG_VERTEX = """
-#version 330 core
-
+#version 460
 precision highp float;
 
 void main()

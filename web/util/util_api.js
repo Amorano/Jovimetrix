@@ -54,27 +54,27 @@ export function setting_store(id, val) {
     localStorage[`Comfy.Settings.${id}`] = val;
 }
 
-export function setting_make(id, pretty, type, tip, value, attrs={}, options=[], proto=undefined) {
-    const key = `JOVIMETRIX 🔺🟩🔵.${id}`
+export function setting_make(category, name, type, tip, value, attrs={}, options=[], proto=undefined) {
+    const key = `JOVIMETRIX 🔺🟩🔵.${category}.${name}`
     const setting_root = `Comfy.Settings.jov.${key}`;
-    const local = localStorage[setting_root];
+    const local = localStorage.getItem(setting_root);
     value = local ? local : value;
-
-    if (proto === undefined) {
-        proto = (v) => {
-            apiJovimetrix(key, v, 'config');
-            localStorage[setting_root] = v;
-        }
-    }
 
     app.ui.settings.addSetting({
         id: key,
-        name: pretty,
+        category: ["JOVIMETRIX 🔺🟩🔵", category],
+        name: name,
         type: type,
         tooltip: tip,
         defaultValue: value,
         attrs: attrs,
         options: options,
-        proto
+        async onChange(value) {
+            if (proto) {
+                proto(value);
+            }
+            apiJovimetrix(key, value, 'config');
+            localStorage[setting_root] = value;
+        }
     })
 }

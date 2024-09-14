@@ -5,8 +5,8 @@
  */
 
 import { app } from "../../../scripts/app.js"
-import { setting_make } from '../util/util_api.js'
-import { colorHex2RGB } from '../util/util.js'
+import { setting_make } from "../util/util_api.js"
+import { colorHex2RGB } from "../util/util.js"
 
 let g_color_style;
 let g_thickness = 1;
@@ -15,13 +15,13 @@ let g_highlight;
 app.registerExtension({
     name: "jovimetrix.cozy.fields",
     setup() {
-        setting_make('color 🎨.style', 'Style', 'combo', 'Style to draw nodes.', "ComfyUI Default", {}, ["ComfyUI Default", "Round Highlight", "Line Highlight"]);
-        setting_make('color 🎨.thickness', 'Style Thickness', 'number', 'Line thickness around widgets in Round or Line Highlight Mode.', 1, {
+        setting_make("Color 🎨", "Style", "combo", "Style to draw nodes.", "ComfyUI Default", {}, ["ComfyUI Default", "Round Highlight", "Line Highlight"]);
+        setting_make("Color 🎨", "Thickness", "number", "Line thickness around widgets in Round or Line Highlight Mode.", 1, {
             min: -10,
             max: 3,
             step: 1,
         });
-        setting_make('color 🎨.highlight', 'Style Highlight', 'number', 'Color Highlight if Round or Line mode enabled. Hex code entry #FFF. The default will use the node base color.');
+        setting_make("Color 🎨", "Highlight", "number", "Color Highlight if Round or Line mode enabled. Hex code entry #FFF. The default will use the node base color.");
     },
     async nodeCreated(node) {
 
@@ -59,7 +59,7 @@ app.registerExtension({
                                 continue
                             }
 
-                            if (w.type.startsWith('converted-') || ["customtext"].includes(w.type)) {
+                            if (w.type.startsWith("converted-") || ["customtext"].includes(w.type)) {
                                 continue;
                             }
 
@@ -71,7 +71,7 @@ app.registerExtension({
                         }
                     } else if (g_color_style == "Line Highlight") {
                         for (const w of this.widgets) {
-                            if (w?.hidden || w.type.startsWith('converted-') || ["customtext"].includes(w.type)) {
+                            if (w?.hidden || w.type.startsWith("converted-") || ["customtext"].includes(w.type)) {
                                 continue;
                             }
                             ctx.beginPath();

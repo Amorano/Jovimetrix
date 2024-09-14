@@ -4,13 +4,13 @@
  *
  */
 
-import { app } from '../../../scripts/app.js';
-import { $el } from '../../../scripts/ui.js';
-import { apiGet, apiJovimetrix, setting_make } from '../util/util_api.js';
-import { colorContrast } from '../util/util.js';
+import { app } from "../../../scripts/app.js";
+import { $el } from "../../../scripts/ui.js";
+import { apiGet, apiJovimetrix, setting_make } from "../util/util_api.js";
+import { colorContrast, colorRGB2Hex } from "../util/util.js";
 
 let PANEL_STATIC, PANEL_COLORIZE, CONTENT, NODE_LIST, CONFIG_CORE, CONFIG_USER, CONFIG_COLOR, CONFIG_REGEX, CONFIG_THEME;
-const USER = 'user.default';
+const USER = "user.default";
 
 class ColorPicker {
     constructor(config) {
@@ -22,7 +22,7 @@ class ColorPicker {
 
         // Initialize with the passed config
         this.config = config;
-        this.color = this.config.color || '#FFFFFF';
+        this.color = this.config.color || "#FFFFFF";
     }
 
     static createInstance(elm, config) {
@@ -31,12 +31,12 @@ class ColorPicker {
             patch: elm,
             isIE8: !!document.all && !document.addEventListener,
             margin: { left: -1, top: 2 },
-            customBG: '#FFFFFF',
+            customBG: "#FFFFFF",
             color: ColorPicker.extractValue(elm),
-            initStyle: 'display: none',
-            mode: ColorPicker.docCookies['colorPickerMode'] || 'hsv-h',
-            memoryColors: ColorPicker.docCookies['colorPickerMemos' + ((config || {}).noAlpha ? 'NoAlpha' : '')],
-            size: ColorPicker.docCookies['colorPickerSize'] || 1,
+            initStyle: "display: none",
+            mode: ColorPicker.docCookies["colorPickerMode"] || "hsv-h",
+            memoryColors: ColorPicker.docCookies["colorPickerMemos" + ((config || {}).noAlpha ? "NoAlpha" : "")],
+            size: ColorPicker.docCookies["colorPickerSize"] || 1,
             renderCallback: ColorPicker.renderCallback,
             actionCallback: ColorPicker.actionCallback
         };
@@ -50,7 +50,7 @@ class ColorPicker {
 
 
     static extractValue(elm) {
-        const val = elm.getAttribute('color') || elm.style.backgroundColor || '#353535FF';
+        const val = elm.getAttribute("color") || elm.style.backgroundColor || "#353535FF";
         return val.includes("NAN") ? "#353535FF" : val;
     }
 
@@ -59,8 +59,8 @@ class ColorPicker {
         const AHEX = !colors.HEX.includes("NAN") ? colorRGB2Hex(rgb) : "#353535FF";
 
         this.patch.style.cssText =
-            'color:' + (colors.rgbaMixCustom.luminance > 0.22 ? '#222' : '#ddd') + ';' +
-            'background-color: ' + AHEX + ';';
+            "color:" + (colors.rgbaMixCustom.luminance > 0.22 ? "#222" : "#ddd") + ";" +
+            "background-color: " + AHEX + ";";
 
         this.input.setAttribute("color", AHEX);
 
@@ -70,53 +70,28 @@ class ColorPicker {
     }
 
     static actionCallback(event, action) {
-        if (action == 'toMemory') {
+        if (action == "toMemory") {
             const memos = this.nodes.memos;
             const cookieTXT = [];
 
             for (let n = 0, m = memos.length; n < m; n++) {
                 let backgroundColor = memos[n].style.backgroundColor;
                 let opacity = memos[n].style.opacity;
-                opacity = Math.round((opacity == '' ? 1 : opacity) * 100) / 100;
-                cookieTXT.push(backgroundColor.replace(/, /g, ',').replace('rgb(', 'rgba(').replace(')', ',' + opacity + ')'));
+                opacity = Math.round((opacity == "" ? 1 : opacity) * 100) / 100;
+                cookieTXT.push(backgroundColor.replace(/, /g, ",").replace("rgb(", "rgba(").replace(")", "," + opacity + ")"));
             }
 
-            ColorPicker.docCookies['colorPickerMemos' + (this.noAlpha ? 'NoAlpha' : ''), "'" + cookieTXT.join("','") + "'"];
-        } else if (action == 'resizeApp') {
-            ColorPicker.docCookies['colorPickerSize', this.color.options.currentSize];
-        } else if (action == 'modeChange') {
+            ColorPicker.docCookies["colorPickerMemos" + (this.noAlpha ? "NoAlpha" : ""), "'" + cookieTXT.join("","") + "'"];
+        } else if (action == "resizeApp") {
+            ColorPicker.docCookies["colorPickerSize", this.color.options.currentSize];
+        } else if (action == "modeChange") {
             const mode = this.color.options.mode;
-            ColorPicker.docCookies['colorPickerMode', mode.type + '-' + mode.z];
+            ColorPicker.docCookies["colorPickerMode", mode.type + "-" + mode.z];
         }
     }
 
-    /*
-    createInstance: (elm, config) => {
-        const initConfig = {
-            input: elm,
-            patch: elm,
-            isIE8: !!document.all && !document.addEventListener,
-            margin: { left: -1, top: 2 },
-            customBG: '#FFFFFF',
-            color: ColorPicker.extractValue(elm),
-            initStyle: 'display: none',
-            mode: ColorPicker.docCookies['colorPickerMode'] || 'hsv-h',
-            memoryColors: ColorPicker.docCookies['colorPickerMemos' + ((config || {}).noAlpha ? 'NoAlpha' : '')],
-            size: ColorPicker.docCookies['colorPickerSize'] || 1,
-            renderCallback: ColorPicker.renderCallback,
-            actionCallback: ColorPicker.actionCallback
-        };
-
-        for (const n in config) {
-            initConfig[n] = config[n];
-        }
-
-        return new ColorPicker(initConfig);
-    },
-    */
-
     static doEventListeners(elm, multiple, off, elms) {
-        const onOff = off ? 'removeEventListener' : 'addEventListener';
+        const onOff = off ? "removeEventListener" : "addEventListener";
         const focusListener = () => {
             const position = ColorPicker.getOrigin(this);
             const index = multiple ? Array.prototype.indexOf.call(elms, this) : 0;
@@ -129,9 +104,9 @@ class ColorPicker {
 
             options.color = ColorPicker.extractValue(elm);
             colorPickerUI.style.cssText =
-                'position: absolute;' + (!ColorPicker.colorPickers[index].cssIsReady ? 'display: none;' : '') +
-                'left:' + (position.left + options.margin.left - atrect.left) + 'px;' +
-                'top:' + (position.top + +this.offsetHeight + options.margin.top - atrect.top) + 'px;';
+                "position: absolute;" + (!ColorPicker.colorPickers[index].cssIsReady ? "display: none;" : "") +
+                "left:" + (position.left + options.margin.left - atrect.left) + "px;" +
+                "top:" + (position.top + +this.offsetHeight + options.margin.top - atrect.top) + "px;";
 
             if (!multiple) {
                 options.input = elm;
@@ -146,21 +121,21 @@ class ColorPicker {
             let waitTimer = setInterval(function() {
                 if (ColorPicker.colorPickers.current.cssIsReady) {
                     waitTimer = clearInterval(waitTimer);
-                    colorPickerUI.style.display = 'block';
+                    colorPickerUI.style.display = "block";
                 }
             }, 10);
         };
 
-        elm[onOff]('focus', focusListener);
+        elm[onOff]("focus", focusListener);
 
         if (!ColorPicker.colorPickers.evt || off) {
             ColorPicker.colorPickers.evt = true;
-            window[onOff]('mousedown', (e) => {
+            window[onOff]("mousedown", (e) => {
                 const colorPicker = ColorPicker.colorPickers.current;
                 const colorPickerUI = (colorPicker ? colorPicker.nodes.colorPicker : undefined);
                 const isColorPicker = colorPicker && (function(elm) {
                     while (elm) {
-                        if ((elm.className || '').indexOf('cp-app') !== -1) return elm;
+                        if ((elm.className || "").indexOf("cp-app") !== -1) return elm;
                         elm = elm.parentNode;
                     }
                     return false;
@@ -168,12 +143,13 @@ class ColorPicker {
 
                 if (isColorPicker && Array.prototype.indexOf.call(ColorPicker.colorPickers, isColorPicker)) {
                     if (e.target == colorPicker.nodes.exit) {
-                        colorPickerUI.style.display = 'none';
+                        colorPickerUI.style.display = "none";
                         document.activeElement.blur();
                     }
                 } else if (Array.prototype.indexOf.call(elms, e.target) !== -1) {
+                    console.info("why");
                 } else if (colorPickerUI) {
-                    colorPickerUI.style.display = 'none';
+                    colorPickerUI.style.display = "none";
                 }
             });
         }
@@ -183,23 +159,23 @@ class ColorPicker {
 function colorPicker(elms, config, callback) {
     const testColors = new window.Colors({ customBG: config.customBG, allMixDetails: true });
 
-    for (let n = 0, m = elms.length; n < m; n++) {
+    for (let n = 0, m = elms?.length; n < m; n++) {
         const elm = elms[n];
 
-        if (config == 'destroy') {
+        if (config == "destroy") {
             ColorPicker.doEventListeners(elm, (config && config.multipleInstances), true, elms);
             if (ColorPicker.colorPickers[n]) {
                 ColorPicker.colorPickers[n].destroyAll();
             }
         } else {
             const color = ColorPicker.extractValue(elm);
-            const value = color.split('(');
+            const value = color.split("(");
 
             testColors.setColor(color);
             if (config && config.init) {
                 config.init(elm, testColors.colors);
             }
-            elm.setAttribute('data-colorMode', value[1] ? value[0].substr(0, 3) : 'HEX');
+            elm.setAttribute("data-colorMode", value[1] ? value[0].substr(0, 3) : "HEX");
             ColorPicker.doEventListeners(elm, (config && config.multipleInstances), false, elms);
             if (config && config.readOnly) {
                 elm.readOnly = true;
@@ -221,7 +197,7 @@ function nodeColorGet(node) {
 
     // Look for matching regex pattern
     for (const { regex, ...colors } of CONFIG_REGEX || []) {
-        if (regex && find_me.match(new RegExp(regex, 'i'))) return colors;
+        if (regex && find_me.match(new RegExp(regex, "i"))) return colors;
     }
 
     // Check theme first by node name, then by category
@@ -235,7 +211,7 @@ function getColorByCategory(find_me) {
         let k = color.category;
         while (k) {
             if (CONFIG_THEME?.[k]) return CONFIG_THEME[k];
-            k = k.substring(0, k.lastIndexOf('/'));
+            k = k.substring(0, k.lastIndexOf("/"));
         }
     }
 }
@@ -259,7 +235,7 @@ function nodeColorAll() {
 class JovimetrixPanelColorize {
 
     initializeColorPicker(container) {
-        const elements = container.querySelector('.jov-panel-color-input');
+        const elements = container.querySelector(".jov-panel-color-input");
         colorPicker(elements, {
             readOnly: false,
             size: 3,
@@ -268,15 +244,15 @@ class JovimetrixPanelColorize {
             noAlpha: false,
             init: function(elm, rgb) {
                 elm.style.backgroundColor = elm.color || LiteGraph.WIDGET_BGCOLOR;
-                elm.style.color = rgb.RGBLuminance > 0.22 ? '#222' : '#ddd';
+                elm.style.color = rgb.RGBLuminance > 0.22 ? "#222" : "#ddd";
             },
             convertCallback: function() {
                 const AHEX = this.patch.attributes.color;
                 if (!AHEX) return;
 
-                const parts = this.patch.attributes.name.value.split('.');
+                const parts = this.patch.attributes.name.value.split(".");
                 const part = parts.pop();
-                const name = parts.join('.');
+                const name = parts.join(".");
 
                 let key, value;
 
@@ -301,13 +277,13 @@ class JovimetrixPanelColorize {
 
     updateRegexColor = (index, key, value) => {
         CONFIG_REGEX[index][key] = value;
-        apiJovimetrix(USER + '.color.regex', CONFIG_REGEX, "config");
+        apiJovimetrix(USER + ".color.regex", CONFIG_REGEX, "config");
         nodeColorAll()
     };
 
-    templateColorRow = (data, type = 'block') => {
-        const isRegex = type == 'regex';
-        const isHeader = type == 'header';
+    templateColorRow = (data, type = "block") => {
+        const isRegex = type == "regex";
+        const isHeader = type == "header";
         const self = this;
 
         const createNameCell = () => {
@@ -333,9 +309,8 @@ class JovimetrixPanelColorize {
         };
 
         const createColorInput = (suffix, value) => {
-            console.info(data[suffix]);
             return $el("td", [
-                $el("input.jov-panel-color-input", {
+                $el("input.jov-panel-color-input2", {
                     value: value,
                     name: isRegex ? `regex.${data.idx}.${suffix}` : `${data.name}.${suffix}`,
                     backgroundColor: data[suffix]
@@ -347,8 +322,8 @@ class JovimetrixPanelColorize {
             $el("tr", {
                 style: !isHeader ? { backgroundColor: data.background } : {}
             }, [
-                createColorInput('title', 'T'),
-                createColorInput('body', 'B'),
+                createColorInput("title", "T"),
+                createColorInput("body", "B"),
                 createNameCell()
             ])
         ];
@@ -372,7 +347,7 @@ class JovimetrixPanelColorize {
                 title: entry.title, // || LiteGraph.NODE_TITLE_COLOR,
                 body: entry.body, // || LiteGraph.NODE_DEFAULT_COLOR,
             }
-            const row = this.templateColorRow(data, 'regex');
+            const row = this.templateColorRow(data, "regex");
             colorTable.appendChild($el("tbody", row))
             idx += 1
         })
@@ -415,7 +390,7 @@ class JovimetrixPanelColorize {
         all_nodes.forEach(entry => {
             var name = entry[0]
             var cat = entry[1].category
-            var meow = cat.split('/')[0]
+            var meow = cat.split("/")[0]
 
             if (!category.includes(meow))
             {
@@ -428,7 +403,7 @@ class JovimetrixPanelColorize {
                     data.title = CONFIG_THEME?.[meow].title
                     data.body = CONFIG_THEME?.[meow].body
                 }
-                colorTable.appendChild($el("tbody", this.templateColorRow(data, 'header')))
+                colorTable.appendChild($el("tbody", this.templateColorRow(data, "header")))
                 category.push(meow)
             }
 
@@ -443,7 +418,7 @@ class JovimetrixPanelColorize {
                     data.title = CONFIG_THEME?.[cat].title
                     data.body = CONFIG_THEME?.[cat].body
                 }
-                colorTable.appendChild($el("tbody", this.templateColorRow(data, 'header')))
+                colorTable.appendChild($el("tbody", this.templateColorRow(data, "header")))
                 category.push(cat)
             }
 
@@ -454,7 +429,7 @@ class JovimetrixPanelColorize {
                 body: who.body,
                 background: background[background_index] || LiteGraph.NODE_DEFAULT_COLOR
             }
-            colorTable.appendChild($el("tbody", this.templateColorRow(data, 'block')))
+            colorTable.appendChild($el("tbody", this.templateColorRow(data, "block")))
         })
         PANEL_STATIC = [header];
         return PANEL_STATIC;
@@ -493,7 +468,7 @@ app.extensionManager.registerSidebarTab({
     tooltip: "Color node title and body via unique name, group and regex filtering\nJOVIMETRIX 🔺🟩🔵",
     type: "custom",
     render: async (el) => {
-        el.innerHTML = '';
+        el.innerHTML = "";
         CONTENT = PANEL_COLORIZE.createContent();
         el.appendChild(CONTENT);
     }
@@ -526,8 +501,7 @@ app.registerExtension({
             if (CONFIG_USER.color.overwrite) {
                 nodeColorAll();
             }
-
-            console.info("Jovimetrix Colorizer Panel initialized successfully");
+            console.info("Jovimetrix Colorizer Configuration loaded");
         } catch (error) {
             console.error("Error initializing Jovimetrix Colorizer Panel:", error);
         }
@@ -535,7 +509,7 @@ app.registerExtension({
         // Option for user to contrast text for better readability
         const original_color = LiteGraph.NODE_TEXT_COLOR;
 
-        setting_make('color 🎨.contrast', 'Auto-Contrast Text', 'boolean', 'Auto-contrast the title text for all nodes for better readability', true);
+        setting_make("Color 🎨", "Auto-Contrast", "boolean", "Auto-contrast the title text for all nodes for better readability", true);
 
         function colorAll(checked) {
             CONFIG_USER.color.overwrite = checked;
@@ -544,7 +518,7 @@ app.registerExtension({
                 nodeColorAll();
             }
         }
-        setting_make("color 🎨.synchronize", "Synchronize Color Panel", "boolean", "Synchronize color updates from color panel", true, {}, [], colorAll);
+        setting_make("Color 🎨", "Synchronize", "boolean", "Synchronize color updates from color panel", true, {}, [], colorAll);
 
         const drawNodeShape = LGraphCanvas.prototype.drawNodeShape;
         LGraphCanvas.prototype.drawNodeShape = function() {
@@ -571,6 +545,7 @@ app.registerExtension({
         if (CONFIG_USER.color.overwrite) {
             nodeColorAll();
         }
+        console.info("Jovimetrix Colorizer Panel initialized successfully");
     }
     /*
     async refreshComboInNodes() {
@@ -578,9 +553,9 @@ app.registerExtension({
     }*/
 })
 
-document.addEventListener('keydown', (event) => {
-    if (event.key === 'T' || event.key === 'B') {
-        const elm = document.querySelector('.jov-panel-color-input');
+document.addEventListener("keydown", (event) => {
+    if (event.key === "T" || event.key === "B") {
+        const elm = document.querySelector(".jov-panel-color-input");
         ColorPicker.createInstance(elm, {});  // Pass your config if needed
     }
 });

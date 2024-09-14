@@ -8,6 +8,8 @@
 
 import { app } from '../../../scripts/app.js'
 
+let PANEL;
+
 // help now is 100% dynamically built as it is used, no more requests out
 const CACHE_DOCUMENTATION = {};
 
@@ -19,12 +21,7 @@ const jovimetrixEvents = window.jovimetrixEvents;
 const JOV_HELP_URL = "./api/jovimetrix/doc";
 const JOV_WEBWIKI_URL = "https://github.com/Amorano/Jovimetrix/wiki/Z.-REFERENCE#";
 
-async function load_help(name, custom_data) {
-    // overwrite
-    if (custom_data) {
-        CACHE_DOCUMENTATION[name] = custom_data;
-    }
-
+async function load_help(name) {
     if (name in CACHE_DOCUMENTATION) {
         return CACHE_DOCUMENTATION[name];
     }
@@ -62,22 +59,6 @@ async function load_help(name, custom_data) {
     return result;
 }
 
-let HELP_PANEL_CONTENT = `
-<div align="center">
-    <h4>SELECT A NODE TO SEE HELP</h4>
-    <h4>JOVIMETRIX 🔺🟩🔵 NODES ALL HAVE HELP</h4>
-</div>
-`;
-
-let sidebarElement;
-
-const updateContent = async (node, data) => {
-    if (sidebarElement) {
-        HELP_PANEL_CONTENT = await load_help(node, data);
-        sidebarElement.innerHTML = HELP_PANEL_CONTENT;
-    }
-};
-
 app.extensionManager.registerSidebarTab({
     id: "jovimetrix.sidebar.help",
     icon: "pi pi-money-bill",
@@ -85,21 +66,20 @@ app.extensionManager.registerSidebarTab({
     tooltip: "In panel help for most ComfyUI extension packs.\nJOVIMETRIX 🔺🟩🔵",
     type: "custom",
     render: async (el) => {
-        sidebarElement = el;
-        el.innerHTML = "<div>Loading...</div>";
-        await updateContent('_', HELP_PANEL_CONTENT);
+        PANEL = el;
     }
 });
 
 // Listen for the custom event
 jovimetrixEvents.addEventListener('jovimetrixHelpRequested', async (event) => {
     // const node = `${event.detail.class}/${event.detail.name}`;
-    await updateContent(event.detail.name);
+    if (PANEL) {
+        PANEL.innerHTML = await load_help(event.detail.name);
+    }
 });
 
-
 app.registerExtension({
-    name: "jovimetrix.help.select",
+    name: "jovimetrix.help",
     setup() {
         const onSelectionChange = app.canvas.onSelectionChange;
         app.canvas.onSelectionChange = function(selectedNodes) {
@@ -116,11 +96,7 @@ app.registerExtension({
             }
             return me;
         }
-    }
-});
-
-app.registerExtension({
-    name: "jovimetrix.help",
+    },
     async beforeRegisterNodeDef(nodeType, nodeData) {
         if (!nodeData?.category?.startsWith("JOVIMETRIX")) {
             return;
