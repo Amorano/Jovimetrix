@@ -1,5 +1,5 @@
 // name: BLEND LINEAR
-// desc: Simple linear blend between two images
+// desc: Simple linear blend between two images. Will stretch/shrink images to fit.
 // category: UTILITY
 
 uniform sampler2D imageA; //                 | MASK, RGB or RGBA

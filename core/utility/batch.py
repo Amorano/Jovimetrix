@@ -403,7 +403,6 @@ class QueueNode(QueueBaseNode):
     DESCRIPTION = """
 Manage a queue of items, such as file paths or data. Supports various formats including images, videos, text files, and JSON files. You can specify the current index for the queue item, enable pausing the queue, or reset it back to the first index. The node outputs the current item in the queue, the entire queue, the current index, and the total number of items in the queue.
 """
-    DEPRECATED = True
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:

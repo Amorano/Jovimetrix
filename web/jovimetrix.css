@@ -190,23 +190,24 @@
   border: 1px solid var(--border-color);
 }
 
-.jov-panel-doc table td:first-child,
+.jov-panel-doc table td:first-child
 .jov-panel-doc table td:nth-child(2) {
-  width: 50px;
   max-width: 75px;
   min-width: 50px;
 }
 
 .jov-panel-doc table td:nth-child(3) {
-  width: auto;
   min-width: 150px;
-  max-width: 350px;
+  max-width: 400px;
 }
 
-.jov-panel-doc table td:nth-child(4),
+.jov-panel-doc table td:nth-child(4) {
+  max-width: 250px;
+  min-width: 50px;
+}
+
 .jov-panel-doc table td:nth-child(5) {
-  width: 75px;
-  max-width: 150px;
+  max-width: 400px;
   min-width: 50px;
 }
 

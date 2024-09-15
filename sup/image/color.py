@@ -6,7 +6,6 @@ Image Color Support
 from typing import Tuple
 
 import cv2
-import cupy as cp
 import numpy as np
 from numba import cuda
 from daltonlens import simulate
@@ -46,39 +45,39 @@ def color_image2lut(image: np.ndarray, num_colors: int = 256) -> np.ndarray:
         image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
 
     # Reshape and transfer to GPU
-    pixels = cp.asarray(image.reshape(-1, 3)).astype(cp.float32)
-    # logger.debug("Pixel range:", cp.min(pixels), cp.max(pixels))
+    pixels = np.asarray(image.reshape(-1, 3)).astype(np.float32)
+    # logger.debug("Pixel range:", np.min(pixels), np.max(pixels))
 
     # Initialize centroids using random pixels
-    random_indices = cp.random.choice(pixels.shape[0], size=num_colors, replace=False)
+    random_indices = np.random.choice(pixels.shape[0], size=num_colors, replace=False)
     centroids = pixels[random_indices]
-    # logger.debug("Initial centroids range:", cp.min(centroids), cp.max(centroids))
+    # logger.debug("Initial centroids range:", np.min(centroids), np.max(centroids))
 
     # Prepare for K-means
-    assignments = cp.zeros(pixels.shape[0], dtype=cp.int32)
+    assignments = np.zeros(pixels.shape[0], dtype=np.int32)
     threads_per_block = 256
     blocks = (pixels.shape[0] + threads_per_block - 1) // threads_per_block
 
     # K-means iterations
     for iteration in range(20):  # Adjust the number of iterations as needed
         kmeans_kernel[blocks, threads_per_block](pixels, centroids, assignments)
-        new_centroids = cp.zeros((num_colors, 3), dtype=cp.float32)
+        new_centroids = np.zeros((num_colors, 3), dtype=np.float32)
         for i in range(num_colors):
             mask = (assignments == i)
-            if cp.any(mask):
-                new_centroids[i] = cp.mean(pixels[mask], axis=0)
+            if np.any(mask):
+                new_centroids[i] = np.mean(pixels[mask], axis=0)
 
         centroids = new_centroids
 
         if iteration % 5 == 0:
-            # logger.debug(f"Iteration {iteration}, Centroids range: {cp.min(centroids)} {cp.max(centroids)}")
+            # logger.debug(f"Iteration {iteration}, Centroids range: {np.min(centroids)} {np.max(centroids)}")
             pass
 
     # Create LUT
-    lut = cp.zeros((256, 1, 3), dtype=cp.uint8)
-    lut[:num_colors] = cp.clip(centroids, 0, 255).reshape(-1, 1, 3).astype(cp.uint8)
-    # logger.debug(f"Final LUT range: { cp.min(lut)} {cp.max(lut)}")
-    return cp.asnumpy(lut)
+    lut = np.zeros((256, 1, 3), dtype=np.uint8)
+    lut[:num_colors] = np.clip(centroids, 0, 255).reshape(-1, 1, 3).astype(np.uint8)
+    # logger.debug(f"Final LUT range: { np.min(lut)} {np.max(lut)}")
+    return np.asnumpy(lut)
 
 def color_blind(image: TYPE_IMAGE, deficiency:EnumCBDeficiency,
                     simulator:EnumCBSimulator=EnumCBSimulator.AUTOSELECT,

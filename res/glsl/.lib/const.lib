@@ -51,7 +51,6 @@
 #define INTERP_BOUNCE(t)  abs(sin(M_TAU * (t) * (1.0 - (t))))
 #define INTERP_BOUNCE_VEC(a, b, t)  mix((a), (b), INTERP_BOUNCE(t))
 
-#define INTERP_HERMITE(t)  (t * t * (3.0 - 2.0 * t))
 #define INTERP_HERMITE_VEC(a, b, tangentA, tangentB, t)  \
     ( \
         float h00 = 2.0 * (t) * (t) * (t) - 3.0 * (t) * (t) + 1.0; \
@@ -82,4 +81,3 @@ vec3 barycentricCoords(vec2 p, vec2 a, vec2 b, vec2 c) {
     result.x = 1.0 - result.y - result.z;
     return result;
 }
-
