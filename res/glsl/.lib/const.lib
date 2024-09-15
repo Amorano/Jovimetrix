@@ -3,6 +3,9 @@
 //------------------------------------------------------------------------------
 
 #define M_EPSILON  1.0e-10            // zero value for float comparisons
+
+#define M_DEG2RAD 0.017453292519943   // Degree to radian conversion factor
+#define M_RAD2DEG 57.29577951308232   // Radian to degree conversion factor
 #define M_TAU      6.283185307179586  // Tau (2 * Pi)
 #define M_PI       3.141592653589793  // Pi
 #define M_PI_2     1.570796326794896  // Pi divided by 2 (π/2)
@@ -24,7 +27,10 @@
 #define M_SQRT1_2  0.707106781186547  // 1 divided by square root of 2 (1/sqrt(2))
 #define M_SQRT1_3  0.577350269189626  // 1 divided by square root of 3 (1/sqrt(3))
 
+//------------------------------------------------------------------------------
 // PHYSICS
+//------------------------------------------------------------------------------
+
 #define M_C        299792458.0        // Speed of light in meters per second (m/s)
 #define M_G        9.80665            // Gravitational acceleration on Earth (m/s²)
 #define M_PLANCK   6.62607015e-34     // Planck's constant (Js)
@@ -32,22 +38,48 @@
 #define M_MASS_E   9.10938356e-31     // Mass of electron (kg)
 #define M_CHARGE_E 1.602176634e-19    // Elementary charge (C)
 
-// ANGLES
-#define M_DEG2RAD 0.017453292519943   // Degree to radian conversion factor
-#define M_RAD2DEG 57.29577951308232   // Radian to degree conversion factor
-
-// Convert degrees to radians
-#define DEG2RAD(deg) ((deg) * M_DEG2RAD)
-
-// Convert radians to degrees
-#define RAD2DEG(rad) ((rad) * M_RAD2DEG)
-
 //------------------------------------------------------------------------------
-// MACROS
+// EASE
 //------------------------------------------------------------------------------
 
-// Compute the 2D perpendicular vector (rotate 90 degrees)
-#define PERPENDICULAR(v) (vec2(-(v).y, (v).x))
+#define EASE_IN_OUT_SINE(t)  (-0.5 * (cos(M_PI * (t)) - 1.0))
+#define EASE_IN_OUT_CIRC(t)  (((t) < 1.0) ? (-0.5 * (sqrt(1.0 - (t) * (t)) - 1.0)) : (0.5 * (sqrt(1.0 - ((t)-2.0) * ((t)-2.0)) + 1.0)))
+#define EASE_IN_OUT_QUAD(t)  (((t) < 0.5) ? (2.0 * (t) * (t)) : (-2.0 * (t) * (t) + 4.0 * (t) - 1.0))
 
-// Compute the normalized difference vector between two points
-#define NORMALIZE_DIFF(a, b) (normalize((b) - (a)))
+#define DECAY_EXP(t, lambda)  exp(-lambda * (t))
+#define INTERP_SS(a, b, t)  mix((a), (b), smoothstep(0.0, 1.0, (t)))
+#define INTERP_BOUNCE(t)  abs(sin(M_TAU * (t) * (1.0 - (t))))
+#define INTERP_BOUNCE_VEC(a, b, t)  mix((a), (b), INTERP_BOUNCE(t))
+
+#define INTERP_HERMITE(t)  (t * t * (3.0 - 2.0 * t))
+#define INTERP_HERMITE_VEC(a, b, tangentA, tangentB, t)  \
+    ( \
+        float h00 = 2.0 * (t) * (t) * (t) - 3.0 * (t) * (t) + 1.0; \
+        float h10 = (t) * (t) * (t) - 2.0 * (t) * (t) + (t); \
+        float h01 = -2.0 * (t) * (t) * (t) + 3.0 * (t) * (t); \
+        float h11 = (t) * (t) * (t) - (t) * (t); \
+        (h00 * (a) + h10 * (tangentA) + h01 * (b) + h11 * (tangentB)) \
+    )
+
+//------------------------------------------------------------------------------
+// GENERAL
+//------------------------------------------------------------------------------
+
+// useful for triangle interpolation
+vec3 barycentricCoords(vec2 p, vec2 a, vec2 b, vec2 c) {
+    vec2 v0 = b - a;
+    vec2 v1 = c - a;
+    vec2 v2 = p - a;
+    float d00 = dot(v0, v0);
+    float d01 = dot(v0, v1);
+    float d11 = dot(v1, v1);
+    float d20 = dot(v2, v0);
+    float d21 = dot(v2, v1);
+    float denom = d00 * d11 - d01 * d01;
+    vec3 result;
+    result.y = (d11 * d20 - d01 * d21) / denom;
+    result.z = (d00 * d21 - d01 * d20) / denom;
+    result.x = 1.0 - result.y - result.z;
+    return result;
+}
+
