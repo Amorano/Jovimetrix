@@ -2,21 +2,21 @@
 // SIGNED DISTANCE
 //------------------------------------------------------------------------------
 
-float lib_sdf_polygon2D(vec2 p, vec2 center, float radius, int sides, float starFactor); // Regular Polygon
-float lib_sdf_star2D(vec2 p, float r, float t);                        // Star
-float lib_sdf_heart2D(vec2 p);                                         // Heart Shape
-float lib_sdf_ellipse2D(vec2 p, vec2 radii);                           // Ellipse
-float lib_sdf_circle2D(vec2 p, float r);                               // Circle
+float lib_sdf_polygon2D(vec2 p, vec2 center, float radius, int sides, float starFactor);
+float lib_sdf_star2D(vec2 p, float r, float t);
+float lib_sdf_heart2D(vec2 p);
+float lib_sdf_ellipse2D(vec2 p, vec2 radii);
+float lib_sdf_circle2D(vec2 p, float r);
 
 //------------------------------------------------------------------------------
 // SUPPORT FUNCTIONS
 //------------------------------------------------------------------------------
 
-float lib_sdf_union2D(float d1, float d2);       // Union of two 2D SDFs
-float lib_sdf_subtract2D(float d1, float d2);    // Subtraction of two 2D SDFs
-float lib_sdf_round2D(vec2 s, float r);          // Rounds the corners of a 2D SDF
-float lib_sdf_hollow2D(vec2 s, float thickness); // Outlines the shape of a 2D SDF
-vec3 lib_sdf_hollow3D(vec3 shape, float r);      // Onion skinning effect for 3D SDF
+float lib_sdf_union(float d1, float d2);
+float lib_sdf_subtract(float d1, float d2);
+float lib_sdf_round(vec2 s, float r);
+float lib_sdf_hollow(vec2 s, float thickness);
+vec3 lib_sdf_hollow(vec3 shape, float r);
 
 //------------------------------------------------------------------------------
 // SHAPE
@@ -45,17 +45,15 @@ float lib_sdf_box(vec4 p, vec4 radius)
     return length(max(d,0.0)) + min(maxcomp(d),0.0);
 }
 
+// Computes the signed distance from a point to a sphere
+float lib_sdf_sphere(vec3 p, float r) {
+    return length(p) - r;
+}
 
-
-
-
-
-
-
-
-
-
-
+float lib_sdf_cylinder(vec3 p, float r, float h) {
+    vec2 d = vec2(length(p.xy) - r, abs(p.z) - h * 0.5);
+    return length(max(d, 0.0)) + min(max(d.x, d.y), 0.0);
+}
 
 
 
@@ -114,22 +112,6 @@ float lib_sdf_heart(vec2 p) {
     return length(vec2(x, y - sqrt(abs(x))) - vec2(0.0, 0.5)) * (abs(a) - 0.5);
 }
 
-// Computes the signed distance from a point to a sphere
-float lib_sdf_sphere(vec3 p, float r) {
-    return length(p) - r;
-}
-
-// Computes the signed distance from a point to an axis-aligned box
-float lib_sdf_box(vec3 p, vec3 s) {
-    vec3 d = abs(p) - s;
-    return length(max(d, 0.0)) + min(max(d.x, max(d.y, d.z)), 0.0);
-}
-
-float lib_sdf_cylinder(vec3 p, float r, float h) {
-    vec2 d = vec2(length(p.xy) - r, abs(p.z) - h * 0.5);
-    return length(max(d, 0.0)) + min(max(d.x, d.y), 0.0);
-}
-
 //------------------------------------------------------------------------------
 // TRANSFORMATION
 //------------------------------------------------------------------------------
@@ -186,7 +168,7 @@ vec3 lib_sdf_twist(vec3 p, float a) {
 //------------------------------------------------------------------------------
 
 // Computes ray-box intersection and returns true if intersection occurs
-bool ray_vs_aabb(vec3 o, vec3 dir, vec3 bmin, vec3 bmax, inout vec2 e) {
+bool lib_intersection_aabb(vec3 o, vec3 dir, vec3 bmin, vec3 bmax, inout vec2 e) {
     vec3 a = (bmin - o) / dir;
     vec3 b = (bmax - o) / dir;
     vec3 s = min(a, b);
@@ -197,7 +179,7 @@ bool ray_vs_aabb(vec3 o, vec3 dir, vec3 bmin, vec3 bmax, inout vec2 e) {
 }
 
 //------------------------------------------------------------------------------
-// RAY MARCHING
+// DISTANCE FIELD
 //------------------------------------------------------------------------------
 
 // Computes the distance field for a given point
@@ -208,16 +190,39 @@ float dist_field(vec3 p) {
     // p = sdTwist(p, 3.0);
 
     // Compute distances to box and sphere
-    float d0 = sdBox(p, vec3(0.5));
-    float d1 = sdSphere(p, 0.6);
+    float d0 = lib_sdf_box(p, vec3(0.5));
+    float d1 = lib_sdf_sphere(p, 0.6);
 
     // Combine distances using intersection
-    return sdInter(d1, d0);
+    return lib_sdf_intersection(d1, d0);
 
     // Optionally include displacement and smooth union
     // return d + sfDisp(p * 2.5);
     // return sdUnion_s(d + sfDisp(p * 2.5 * sin(iTime * 1.01)), d1, 0.1);
 }
+
+
+//------------------------------------------------------------------------------
+// GRADIENT FUNCTION
+//------------------------------------------------------------------------------
+
+// Computes the gradient of the distance field at a point
+vec3 gradient(vec3 pos) {
+    const vec3 dx = vec3(grad_step, 0.0, 0.0);
+    const vec3 dy = vec3(0.0, grad_step, 0.0);
+    const vec3 dz = vec3(0.0, 0.0, grad_step);
+    return normalize(
+        vec3(
+            dist_field(pos + dx) - dist_field(pos - dx),
+            dist_field(pos + dy) - dist_field(pos - dy),
+            dist_field(pos + dz) - dist_field(pos - dz)
+        )
+    );
+}
+
+//------------------------------------------------------------------------------
+// RAY MARCHING
+//------------------------------------------------------------------------------
 
 // Performs ray marching to find the intersection with a distance field
 bool ray_marching(vec3 o, vec3 dir, inout float depth, inout vec3 n) {
@@ -254,22 +259,3 @@ bool ray_marching(vec3 o, vec3 dir, inout float depth, inout vec3 n) {
     n = normalize(gradient(o + dir * t));
     return true;
 }
-
-//------------------------------------------------------------------------------
-// GRADIENT FUNCTION
-//------------------------------------------------------------------------------
-
-// Computes the gradient of the distance field at a point
-vec3 gradient(vec3 pos) {
-    const vec3 dx = vec3(grad_step, 0.0, 0.0);
-    const vec3 dy = vec3(0.0, grad_step, 0.0);
-    const vec3 dz = vec3(0.0, 0.0, grad_step);
-    return normalize(
-        vec3(
-            dist_field(pos + dx) - dist_field(pos - dx),
-            dist_field(pos + dy) - dist_field(pos - dy),
-            dist_field(pos + dz) - dist_field(pos - dz)
-        )
-    );
-}
-

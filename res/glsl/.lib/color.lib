@@ -10,18 +10,18 @@ const vec3 D65 = vec3(95.047, 100.0, 108.883);
 // PROTOTYPES
 // =============================================================================
 
-vec3 rgb2xyz(vec3 rgb);  // Converts RGB to XYZ
-vec3 xyz2rgb(vec3 xyz);  // Converts XYZ to RGB
-vec3 xyz2lab(vec3 xyz);  // Converts XYZ to LAB
-vec3 rgb2hsv(vec3 rgb);  // Converts RGB to HSV
-vec3 rgb2lab(vec3 rgb);  // Converts RGB to LAB
-vec3 hsv2rgb(vec3 hsv);  // Converts HSV to RGB
-vec3 hsv2lab(vec3 hsv);  // Converts HSV to LAB
-vec3 hsv2xyz(vec3 hsv);  // Converts HSV to XYZ
-vec3 lab2xyz(vec3 lab);  // Converts LAB to XYZ
-vec3 lab2rgb(vec3 lab);  // Converts LAB to RGB
-vec3 lab2hsv(vec3 lab);  // Converts LAB to HSV
-vec3 xyz2hsv(vec3 xyz);  // Converts XYZ to HSV
+vec3 rgb2hsv(vec3 rgb);
+vec3 rgb2lab(vec3 rgb);
+vec3 rgb2xyz(vec3 rgb);
+vec3 hsv2rgb(vec3 hsv);
+vec3 hsv2lab(vec3 hsv);
+vec3 hsv2xyz(vec3 hsv);
+vec3 lab2rgb(vec3 lab);
+vec3 lab2hsv(vec3 lab);
+vec3 lab2xyz(vec3 lab);
+vec3 xyz2rgb(vec3 xyz);
+vec3 xyz2hsv(vec3 xyz);
+vec3 xyz2lab(vec3 xyz);
 
 //------------------------------------------------------------------------------
 // RGB
@@ -89,17 +89,6 @@ vec3 hsv2xyz(vec3 hsv) {
 // LAB
 //------------------------------------------------------------------------------
 
-vec3 lab2xyz(vec3 lab) {
-    float fy = (lab.x + 16.0) / 116.0;
-    float fx = lab.y / 500.0 + fy;
-    float fz = fy - lab.z / 200.0;
-    return vec3(
-         95.047 * ((fx > 0.206897) ? fx * fx * fx : (fx - 16.0 / 116.0) / 7.787),
-        100.000 * ((fy > 0.206897) ? fy * fy * fy : (fy - 16.0 / 116.0) / 7.787),
-        108.883 * ((fz > 0.206897) ? fz * fz * fz : (fz - 16.0 / 116.0) / 7.787)
-    );
-}
-
 vec3 lab2rgb(vec3 lab) {
     vec3 xyz = lab2xyz(lab);
     return xyz2rgb(xyz);
@@ -108,6 +97,17 @@ vec3 lab2rgb(vec3 lab) {
 vec3 lab2hsv(vec3 lab) {
     vec3 rgb = lab2rgb(lab);
     return rgb2hsv(rgb);
+}
+
+vec3 lab2xyz(vec3 lab) {
+    float fy = (lab.x + 16.0) / 116.0;
+    float fx = lab.y / 500.0 + fy;
+    float fz = fy - lab.z / 200.0;
+    return vec3(
+        95.047 * ((fx > 0.206897) ? fx * fx * fx : (fx - 16.0 / 116.0) / 7.787),
+        100.000 * ((fy > 0.206897) ? fy * fy * fy : (fy - 16.0 / 116.0) / 7.787),
+        108.883 * ((fz > 0.206897) ? fz * fz * fz : (fz - 16.0 / 116.0) / 7.787)
+    );
 }
 
 //------------------------------------------------------------------------------

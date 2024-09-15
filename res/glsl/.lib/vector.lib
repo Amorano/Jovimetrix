@@ -6,20 +6,20 @@
 // DEFINE
 // =============================================================================
 
-#define VEC_PROJECT(a, b) ((dot(a, b) / dot(b, b)) * b) // Project one vector onto another
-#define VEC_ORTHOGONAL2(v) vec2(-(v).y, (v).x)      // Orthogonal
+#define VEC_PROJECT(a, b) ((dot(a, b) / dot(b, b)) * b)
+#define VEC_ORTHOGONAL2(v) vec2(-(v).y, (v).x)
 #define VEC_ORTHOGONAL3(v) \
     (abs((v).x) > abs((v).y) ? normalize(vec3(-(v).z, 0.0, (v).x)) : \
-                               normalize(vec3(0.0, (v).z, -(v).y)))
+                            normalize(vec3(0.0, (v).z, -(v).y)))
 #define VEC_ANGLEBETWEEN(a, b) acos(clamp(dot(normalize(a), normalize(b)), -1.0, 1.0))
 
 // =============================================================================
 // PROTOTYPE
 // =============================================================================
 
-float lib_vec_ndot(in vec2 a, in vec2 b);  // 2D vector "negative dot product"
-mat3 lib_vec_rotationXY(vec2 angle);       // Rotation matrix for 2D rotation
-vec2 lib_vec_rotate2(vec2 v, float angle); // 2D vector rotation by angle
+float lib_vec_ndot(in vec2 a, in vec2 b);
+mat3 lib_vec_rotationXY(vec2 angle);
+vec2 lib_vec_rotate2(vec2 v, float angle);
 
 //------------------------------------------------------------------------------
 // ANGLE
@@ -32,14 +32,14 @@ float lib_vec_ndot(in vec2 a, in vec2 b) {
 
 // Creates a rotation matrix for pitch, yaw
 mat3 lib_vec_rotationXY( vec2 angle ) {
-	vec2 c = cos( angle );
-	vec2 s = sin( angle );
+    vec2 c = cos( angle );
+    vec2 s = sin( angle );
 
-	return mat3(
-		c.y      ,  0.0, -s.y,
-		s.y * s.x,  c.x,  c.y * s.x,
-		s.y * c.x, -s.x,  c.y * c.x
-	);
+    return mat3(
+        c.y      ,  0.0, -s.y,
+        s.y * s.x,  c.x,  c.y * s.x,
+        s.y * c.x, -s.x,  c.y * c.x
+    );
 }
 
 // Rotates a 2D vector by angle in radians
