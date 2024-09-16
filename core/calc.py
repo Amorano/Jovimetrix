@@ -211,7 +211,7 @@ Perform single function operations like absolute value, mean, median, mode, magn
 
     def run(self, **kw) -> Tuple[bool]:
         results = []
-        A = parse_param(kw, Lexicon.IN_A, EnumConvertType.ANY, None)
+        A = parse_param(kw, Lexicon.IN_A, EnumConvertType.ANY, [0])
         op = parse_param(kw, Lexicon.FUNC, EnumConvertType.STRING, EnumUnaryOperation.ABS.name)
         params = list(zip_longest_fill(A, op))
         pbar = ProgressBar(len(params))
@@ -326,8 +326,8 @@ Execute binary operations like addition, subtraction, multiplication, division, 
 
     def run(self, **kw) -> Tuple[bool]:
         results = []
-        A = parse_param(kw, Lexicon.IN_A, EnumConvertType.ANY, None)
-        B = parse_param(kw, Lexicon.IN_B, EnumConvertType.ANY, None)
+        A = parse_param(kw, Lexicon.IN_A, EnumConvertType.ANY, [0])
+        B = parse_param(kw, Lexicon.IN_B, EnumConvertType.ANY, [0])
         a_xyzw = parse_param(kw, Lexicon.IN_A+Lexicon.IN_A, EnumConvertType.VEC4, [(0, 0, 0, 0)])
         b_xyzw = parse_param(kw, Lexicon.IN_B+Lexicon.IN_B, EnumConvertType.VEC4, [(0, 0, 0, 0)])
         op = parse_param(kw, Lexicon.FUNC, EnumConvertType.STRING, EnumBinaryOperation.ADD.name)
@@ -457,11 +457,11 @@ Evaluates two inputs (A and B) with a specified comparison operators and optiona
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[Any, Any]:
-        A = parse_param(kw, Lexicon.IN_A, EnumConvertType.ANY, 0)
-        B = parse_param(kw, Lexicon.IN_B, EnumConvertType.ANY, 0)
+        A = parse_param(kw, Lexicon.IN_A, EnumConvertType.ANY, [0])
+        B = parse_param(kw, Lexicon.IN_B, EnumConvertType.ANY, [0])
         size = max(len(A), len(B))
-        good = parse_param(kw, Lexicon.COMP_A, EnumConvertType.ANY, 0)[:size]
-        fail = parse_param(kw, Lexicon.COMP_B, EnumConvertType.ANY, 0)[:size]
+        good = parse_param(kw, Lexicon.COMP_A, EnumConvertType.ANY, [0])[:size]
+        fail = parse_param(kw, Lexicon.COMP_B, EnumConvertType.ANY, [0])[:size]
         op = parse_param(kw, Lexicon.COMPARE, EnumConvertType.STRING, EnumComparison.EQUAL.name)[:size]
         flip = parse_param(kw, Lexicon.FLIP, EnumConvertType.BOOLEAN, False)[:size]
         invert = parse_param(kw, Lexicon.INVERT, EnumConvertType.BOOLEAN, False)[:size]
@@ -633,8 +633,8 @@ Additionally, you can specify the easing function (EASE) and the desired output 
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[Any, Any]:
-        A = parse_param(kw, Lexicon.IN_A, EnumConvertType.ANY, None)
-        B = parse_param(kw, Lexicon.IN_B, EnumConvertType.ANY, None)
+        A = parse_param(kw, Lexicon.IN_A, EnumConvertType.ANY, [0])
+        B = parse_param(kw, Lexicon.IN_B, EnumConvertType.ANY, [0])
         a_xyzw = parse_param(kw, Lexicon.IN_A+Lexicon.IN_A, EnumConvertType.VEC4, [(0, 0, 0, 0)])
         b_xyzw = parse_param(kw, Lexicon.IN_B+Lexicon.IN_B, EnumConvertType.VEC4, [(1, 1, 1, 1)])
         alpha = parse_param(kw, Lexicon.FLOAT,EnumConvertType.VEC4, [(0.5,0.5,0.5,0.5)], 0, 1)
@@ -713,7 +713,7 @@ Manipulate strings through filtering
 
     def run(self, **kw)  -> Tuple[torch.Tensor, torch.Tensor]:
         # turn any all inputs into the
-        data_list = parse_dynamic(kw, Lexicon.UNKNOWN, EnumConvertType.ANY, None)
+        data_list = parse_dynamic(kw, Lexicon.UNKNOWN, EnumConvertType.ANY, [""])
         if data_list is None:
             logger.warn("no data for list")
             return ([],)
@@ -866,7 +866,7 @@ A timer and frame counter, emitting pulses or signals based on time intervals. I
         self.__frame = 0
 
     def run(self, ident, **kw) -> Tuple[int, float, float, Any]:
-        passthru = parse_param(kw, Lexicon.TRIGGER, EnumConvertType.ANY, None)[0]
+        passthru = parse_param(kw, Lexicon.TRIGGER, EnumConvertType.ANY, [None])[0]
         stride = parse_param(kw, Lexicon.STEP, EnumConvertType.INT, 0, 0, sys.maxsize)[0]
         loop = parse_param(kw, Lexicon.LOOP, EnumConvertType.INT, 0, 0, sys.maxsize)[0]
         self.__frame = parse_param(kw, Lexicon.VALUE, EnumConvertType.INT, self.__frame, 0, sys.maxsize)[0]
@@ -958,7 +958,7 @@ Supplies raw or default values for various data types, supporting vector input w
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[bool]:
-        raw = parse_param(kw, Lexicon.IN_A, EnumConvertType.ANY, None)
+        raw = parse_param(kw, Lexicon.IN_A, EnumConvertType.ANY, [0])
         r_x = parse_param(kw, Lexicon.X, EnumConvertType.FLOAT, None, -sys.maxsize, sys.maxsize)
         r_y = parse_param(kw, Lexicon.Y, EnumConvertType.FLOAT, None, -sys.maxsize, sys.maxsize)
         r_z = parse_param(kw, Lexicon.Z, EnumConvertType.FLOAT, None, -sys.maxsize, sys.maxsize)

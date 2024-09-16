@@ -15,13 +15,25 @@ let g_highlight;
 app.registerExtension({
     name: "jovimetrix.cozy.fields",
     setup() {
-        setting_make("Color 🎨", "Style", "combo", "Style to draw nodes.", "ComfyUI Default", {}, ["ComfyUI Default", "Round Highlight", "Line Highlight"]);
-        setting_make("Color 🎨", "Thickness", "number", "Line thickness around widgets in Round or Line Highlight Mode.", 1, {
-            min: -10,
-            max: 3,
-            step: 1,
-        });
-        setting_make("Color 🎨", "Highlight", "number", "Color Highlight if Round or Line mode enabled. Hex code entry #FFF. The default will use the node base color.");
+        setting_make("Color 🎨", "Style", "combo",
+            "Style to draw nodes.",
+            "ComfyUI Default",
+            {},
+            ["ComfyUI Default", "Round Highlight", "Line Highlight"]
+        );
+
+        setting_make("Color 🎨", "Thickness", "number",
+            "Line thickness around widgets in Round or Line Highlight Mode.",
+            1,
+            {
+                min: -10,
+                max: 3,
+                step: 1,
+            }
+        );
+
+        setting_make("Color 🎨", "Highlight", "string",
+            "Color Highlight if Round or Line mode enabled. Hex code entry #FFF. The default will use the node base color.");
     },
     async nodeCreated(node) {
 

@@ -9,6 +9,13 @@ uniform float blend;      // 0.5; 0; 1; 0.01 | Intensity of blend
 void mainImage( out vec4 fragColor, in vec2 fragCoord )
 {
     vec2 uv = fragCoord / iResolution.xy;
-    vec3 col = texture(imageA, uv);
-    fragColor = vec4(col, 1.0);
+
+    vec3 normalA = texture(imageA, uv).rgb * 2.0 - 1.0;
+    normalA = normalize(normalA);
+
+    vec3 normalB = texture(imageB, uv).rgb * 2.0 - 1.0;
+    normalB = normalize(normalB);
+
+    vec3 blendedNormal = normalize(mix(normalA, normalB, blend));
+    fragColor = vec4((blendedNormal * 0.5) + 0.5, 1.0);
 }

@@ -254,7 +254,7 @@ Routes the input data from the optional input ports to the output port, preservi
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[Any, ...]:
-        inout = parse_param(kw, Lexicon.ROUTE, EnumConvertType.ANY, None)
+        inout = parse_param(kw, Lexicon.ROUTE, EnumConvertType.ANY, [None])
         vars = kw.copy()
         vars.pop(Lexicon.ROUTE, None)
         vars.pop('ident', None)

@@ -18,18 +18,21 @@ const VectorWidget = (app, inputName, options, initial, desc='') => {
         options: options[1]
     }
 
+    if (widget.options?.rgb || false) {
+        widget.options.maj = 255;
+        widget.options.mij = 0;
+        widget.options.label = ['🟥', '🟩', '🟦', 'ALPHA'];
+    }
+
     if (options[0].endsWith('INT')) {
         widget.options.step = 1;
         widget.options.round = 1;
         widget.options.precision = 0;
         widget.options.step = 1;
-        if (widget.options?.rgb || false) {
-            widget.options.maj = 255;
-            widget.options.mij = 0;
-            // add the label for being an RGB(A) field?
-            widget.options.label = ['🟥', '🟩', '🟦', 'ALPHA'];
-        }
     } else {
+        if (widget.options?.rgb || false) {
+            widget.options.maj = 1;
+        }
         widget.options.precision = widget.options?.precision || 6;
         widget.options.step = widget.options?.step || 0.0075;
         widget.options.round = widget.options?.round || 1 / 10 ** widget.options.step;
@@ -75,7 +78,7 @@ const VectorWidget = (app, inputName, options, initial, desc='') => {
             ctx.beginPath()
             ctx.fillStyle = LiteGraph.WIDGET_OUTLINE_COLOR
             // separation bar
-            if (idx != fields.length || (idx == fields.length && !this.options.rgb)) {
+            if (idx != fields.length || (idx == fields.length && !this.options?.rgb)) {
                 ctx.moveTo(x, Y)
                 ctx.lineTo(x, Y+height)
                 ctx.stroke();
@@ -125,7 +128,7 @@ const VectorWidget = (app, inputName, options, initial, desc='') => {
             const index = Math.floor(x / element_width);
             if (index >= 0 && index < size) {
                 isDragging = { name: this.name, idx: index}
-            } else if (this.options.rgb) {
+            } else if (this.options?.rgb) {
                 const rgba = Object.values(this?.value || []);
                 let color = colorRGB2Hex(rgba.slice(0, 3));
                 if (index == size) {

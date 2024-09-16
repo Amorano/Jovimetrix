@@ -9,6 +9,8 @@
 // desc: Color palette creation using the formula: color(t) = a + b * cos[tau(c*t+d)]. See https://iquilezles.org/articles/palettes for more information.
 // category: CREATE
 
+#include .lib/const.lib
+
 uniform vec3 bias;  // 0.5,0.5,0.5;0 | scale and bias (dc offset)
 uniform vec3 amp;   // 0.5,0.5,0.5   | contrast and brightness (amplitude)
 uniform vec3 freq;  // 1,1,1         | color cycle (R, G and B) (frequency)

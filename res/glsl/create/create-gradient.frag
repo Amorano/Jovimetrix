@@ -2,6 +2,8 @@
 // desc: Generate a conical gradient from black to white
 // category: CREATE
 
+#include .lib/const.lib
+
 uniform vec2 origin;       // 0.5,0.5;0;1;0.01 | Intensity of base normal
 uniform vec2 range;        // 0.0,1.0;0;1;0.01 | start of range. 0=start. size of range. 1=full range.
 uniform float angleOffset; // 0.0; 0; 1; 0.01  | offset of the gradient starting angle

@@ -277,15 +277,11 @@ def parse_param(data:dict, key:str, typ:EnumConvertType, default: Any,
     """
     val = data.get(key, default)
     if typ == EnumConvertType.ANY:
-        if val is None:
-            if default is None:
-                return [None]
-            val = default
-
-        if not isinstance(val, (list, torch.Tensor, )):
-            # logger.debug(f"{type(val)}, {val}")
-            val = [val]
-        return val
+        if isinstance(val, (list,)):
+            val = tuple([val])
+        elif val is None:
+            val = [default]
+        #return val
 
     if isinstance(val, (str,)):
         try: val = json.loads(val.replace("'", '"'))

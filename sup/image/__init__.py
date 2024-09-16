@@ -1012,7 +1012,6 @@ def image_matte(image: TYPE_IMAGE, color: TYPE_iRGBA=(0,0,0,255), width: int=Non
     image_height, image_width = image.shape[:2]
     width = width or image_width
     height = height or image_height
-    print(width, height)
 
     # Create a solid matte with the specified color
     matte = np.full((height, width, 4), color, dtype=np.uint8)

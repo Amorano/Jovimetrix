@@ -2,10 +2,12 @@
 // desc: Domain warp an image with a direction and distortion map
 // category: FILTER
 
+#include .lib/const.lib
+
 uniform sampler2D image;      //          | RGB(A) image
 uniform sampler2D distortion; //          | RGB(A) image used as a LUMA mask for distortion
 uniform sampler2D direction;  //          | RGB(A) image used as a LUMA mask for direction
-uniform float strength;       // 64;0;1;1 | Pixel data range allowed
+uniform float strength;       // 64;0;;1  | Pixel data range allowed
 
 vec2 warp(vec2 uv)
 {

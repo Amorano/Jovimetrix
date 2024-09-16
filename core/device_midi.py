@@ -49,7 +49,7 @@ Processes MIDI messages received from an external MIDI controller or device. It 
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[object, bool, int, int, int, float, float]:
-        message: MIDIMessage = parse_param(kw, Lexicon.MIDI, EnumConvertType.ANY, None)
+        message: MIDIMessage = parse_param(kw, Lexicon.MIDI, EnumConvertType.ANY, [None])
         results = []
         pbar = ProgressBar(len(message))
         for idx, message in enumerate(message):
@@ -240,7 +240,7 @@ Filter MIDI messages based on various criteria, including MIDI mode (such as not
 
     def run(self, **kw) -> Tuple[MIDIMessage, bool]:
 
-        message: MIDIMessage = parse_param(kw, Lexicon.MIDI, EnumConvertType.ANY, None)[0]
+        message: MIDIMessage = parse_param(kw, Lexicon.MIDI, EnumConvertType.ANY, [None])[0]
         note_on = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, MIDINoteOnFilter.IGNORE.name)[0]
         chan = parse_param(kw, Lexicon.CHANNEL, EnumConvertType.INT, -1)[0]
         ctrl = parse_param(kw, Lexicon.CONTROL, EnumConvertType.INT, -1)[0]

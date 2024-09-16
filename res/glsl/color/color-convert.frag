@@ -2,10 +2,10 @@
 // desc: Convert an image from one color space (RGB, HSV, LAB, XYZ) to another.
 // category: COLOR
 
+#include .lib/color.lib
+
 uniform sampler2D image; // | Image to convert
 uniform int operator;    // EnumGLSLColorConvert | conversion operation to perform.
-
-#include .lib/color.lib
 
 // =============================================================================
 // SELECTOR

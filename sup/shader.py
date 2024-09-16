@@ -114,7 +114,7 @@ logger.info(f"  vertex programs: {len(GLSL_PROGRAMS['vertex'])}")
 logger.info(f"fragment programs: {len(GLSL_PROGRAMS['fragment'])}")
 
 RE_INCLUDE = re.compile(r"^\s+?#include\s+?([A-Za-z\_\-\.\\\/]{3,})$", re.MULTILINE)
-RE_VARIABLE = re.compile(r"uniform\s+(\w+)\s+(\w+);(?:\s*\/\/\s*([A-Za-z0-9.,\s]*))?\s*(?:;\s*([0-9.-]+))?\s*(?:;\s*([0-9.-]+))?\s*(?:;\s*([0-9.-]+))?\s*(?:\|\s*(.*))?$", re.MULTILINE)
+RE_VARIABLE = re.compile(r"uniform\s+(\w+)\s+(\w+);\s*(?:\/\/\s*([^;|]*))?\s*(?:;\s*([^;|]*))?\s*(?:;\s*([^;|]*))?\s*(?:;\s*([^;|]*))?\s*(?:;\s*([^;|]*))?\s*(?:\|\s*(.*))?$", re.MULTILINE)
 RE_SHADER_META = re.compile(r"^\/\/\s?([A-Za-z_]{3,}):\s?(.+)$", re.MULTILINE)
 
 # =============================================================================
@@ -177,7 +177,6 @@ class GLSLShader:
         logger.debug("init window")
 
     def __compile_shader(self, source:str, shader_type:str) -> None:
-        print('compiled')
         glfw.make_context_current(self.__window)
         shader = gl.glCreateShader(shader_type)
         gl.glShaderSource(shader, source)
@@ -237,15 +236,12 @@ class GLSLShader:
 
         self.__userVar = {}
         # read the fragment and setup the vars....
-
-        # RE_INCLUDE
-
         for match in RE_VARIABLE.finditer(self.__source_fragment_raw):
-            typ, name, default, val_min, val_max, val_step, tooltip = match.groups()
+            typ, name, default, val_min, val_max, val_step, meta, tooltip = match.groups()
 
-            self.__textures[name] = None
+            texture = None
             if typ in ['sampler2D']:
-                self.__textures[name] = gl.glGenTextures(1)
+                texture = self.__textures[name] = gl.glGenTextures(1)
             else:
                 default = default.strip()
                 if default.startswith('EnumGLSL'):
@@ -264,7 +260,7 @@ class GLSLShader:
                 # default value
                 default,
                 # texture id -- if a texture
-                self.__textures[name]
+                texture
             ]
 
         logger.debug("init vars")

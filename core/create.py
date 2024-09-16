@@ -379,7 +379,7 @@ The Wave Graph node visualizes audio waveforms as bars. Adjust parameters like t
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
-        wave = parse_param(kw, Lexicon.WAVE, EnumConvertType.ANY, None)
+        wave = parse_param(kw, Lexicon.WAVE, EnumConvertType.ANY, [0])
         bars = parse_param(kw, Lexicon.VALUE, EnumConvertType.INT, 50, 1, 8192)
         thick = parse_param(kw, Lexicon.THICK, EnumConvertType.FLOAT, 0.75, 0, 1)
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)

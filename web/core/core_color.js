@@ -190,20 +190,6 @@ function colorPicker(elms, config, callback) {
     return ColorPicker.colorPickers;
 }
 
-// Get the CONFIG entry for a node by name
-function nodeColorGet(node) {
-    const find_me = node.type || node.name;
-    if (!find_me) return;
-
-    // Look for matching regex pattern
-    for (const { regex, ...colors } of CONFIG_REGEX || []) {
-        if (regex && find_me.match(new RegExp(regex, "i"))) return colors;
-    }
-
-    // Check theme first by node name, then by category
-    return CONFIG_THEME?.[find_me] || getColorByCategory(find_me);
-}
-
 // Recursively get color by category in theme
 function getColorByCategory(find_me) {
     let color = NODE_LIST?.[find_me];
@@ -216,14 +202,24 @@ function getColorByCategory(find_me) {
     }
 }
 
+// Get the CONFIG entry for a node by name
+function nodeColorGet(node) {
+    // Look for matching regex pattern
+    for (const { regex, ...colors } of CONFIG_REGEX || []) {
+        if (regex && node.type.match(new RegExp(regex, "i"))) return colors;
+    }
+    // Check theme first by node name, then by category
+    return CONFIG_THEME?.[node.type] || getColorByCategory(node.type);
+}
+
 // Refresh the color of a node
 function nodeColorReset(node, refresh = true) {
     const color = nodeColorGet(node);
     if (color) {
         node.bgcolor = color.body || node.bgcolor;
         node.color = color.title || node.color;
-        if (refresh) node?.graph?.setDirtyCanvas(true, true);
     }
+    if (refresh) node?.graph?.setDirtyCanvas(true, true);
 }
 
 // Apply color to all nodes
@@ -476,40 +472,9 @@ app.extensionManager.registerSidebarTab({
 
 app.registerExtension({
     name: "jovimetrix.color",
-    async beforeRegisterNodeDef(nodeType) {
-        const onNodeCreated = nodeType.prototype.onNodeCreated;
-        nodeType.prototype.onNodeCreated = async function () {
-            const me = onNodeCreated?.apply(this, arguments);
-            if (this) {
-                nodeColorReset(this, false);
-            }
-            return me;
-        }
-    },
-    async afterConfigureGraph() {
-        console.info("Initializing Jovimetrix Colorizer Panel");
-        try {
-            [NODE_LIST, CONFIG_CORE] = await Promise.all([
-                apiGet("/object_info"),
-                apiGet("/jovimetrix/config")
-            ]);
-            CONFIG_USER = CONFIG_CORE.user.default;
-            CONFIG_COLOR = CONFIG_USER.color;
-            CONFIG_REGEX = CONFIG_COLOR.regex || [];
-            CONFIG_THEME = CONFIG_COLOR.theme;
-
-            if (CONFIG_USER.color.overwrite) {
-                nodeColorAll();
-            }
-            console.info("Jovimetrix Colorizer Configuration loaded");
-        } catch (error) {
-            console.error("Error initializing Jovimetrix Colorizer Panel:", error);
-        }
-
+    async setup() {
         // Option for user to contrast text for better readability
         const original_color = LiteGraph.NODE_TEXT_COLOR;
-
-        setting_make("Color 🎨", "Auto-Contrast", "boolean", "Auto-contrast the title text for all nodes for better readability", true);
 
         function colorAll(checked) {
             CONFIG_USER.color.overwrite = checked;
@@ -518,7 +483,19 @@ app.registerExtension({
                 nodeColorAll();
             }
         }
-        setting_make("Color 🎨", "Synchronize", "boolean", "Synchronize color updates from color panel", true, {}, [], colorAll);
+
+        setting_make("Color 🎨", "Auto-Contrast", "boolean",
+            "Auto-contrast the title text for all nodes for better readability",
+            true
+        );
+
+        setting_make("Color 🎨", "Synchronize", "boolean",
+            "Synchronize color updates from color panel",
+            true,
+            {},
+            [],
+            colorAll
+        );
 
         const drawNodeShape = LGraphCanvas.prototype.drawNodeShape;
         LGraphCanvas.prototype.drawNodeShape = function() {
@@ -534,9 +511,33 @@ app.registerExtension({
             }
             drawNodeShape.apply(this, arguments);
         };
+    },
+    /*
+    async beforeRegisterNodeDef(nodeType) {
+        const onNodeCreated = nodeType.prototype.onNodeCreated;
+        nodeType.prototype.onNodeCreated = async function () {
+            const me = onNodeCreated?.apply(this, arguments);
+            if (this) {
+                nodeColorReset(this, false);
+            }
+            return me;
+        }
+    },*/
+    async afterConfigureGraph() {
+        console.info("Initializing Jovimetrix Colorizer Panel");
+        try {
+            [NODE_LIST, CONFIG_CORE] = await Promise.all([
+                apiGet("/object_info"),
+                apiGet("/jovimetrix/config")
+            ]);
+            CONFIG_USER = CONFIG_CORE.user.default;
+            CONFIG_COLOR = CONFIG_USER.color;
+            CONFIG_REGEX = CONFIG_COLOR.regex || [];
+            CONFIG_THEME = CONFIG_COLOR.theme;
 
-        if (CONFIG_USER.color.overwrite) {
-            nodeColorAll();
+            console.info("Jovimetrix Colorizer Configuration loaded");
+        } catch (error) {
+            console.error("Error initializing Jovimetrix Colorizer Panel:", error);
         }
 
         PANEL_COLORIZE = new JovimetrixPanelColorize();

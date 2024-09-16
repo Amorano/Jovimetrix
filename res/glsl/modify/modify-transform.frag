@@ -2,6 +2,8 @@
 // desc: Abuse UV space to create repetitions. Maximums are row: width/4; column: height/4
 // category: MODIFY
 
+#include .lib/const.lib
+
 uniform sampler2D image; //                        | RGB(A) input to repeat
 uniform vec2 offset;     // 0.0,0.0;-0.5;0.5;0.001 | positional offset (-0.5..0.5)
 uniform float rotate;    // 0;0;1;0.001            | rotation from 0..2pi

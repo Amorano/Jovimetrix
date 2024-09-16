@@ -211,15 +211,16 @@ class GLSLNodeDynamic(GLSLNodeBase):
         # parameter list first...
         data = {}
         if cls.PARAM is not None:
-            # 1., 1., 1.; 0; 1; 0.01 | End of the Range
-            # default, min, max, step, tooltip
-            for glsl_type, name, default, val_min, val_max, val_step, tooltip in cls.PARAM:
+            # 1., 1., 1.; 0; 1; 0.01; rgb | End of the Range
+            # default, min, max, step, metadata, tooltip
+            for glsl_type, name, default, val_min, val_max, val_step, meta, tooltip in cls.PARAM:
                 typ = PTYPE[glsl_type]
                 params = {"default": None}
 
                 d = None
-                type_name = typ.name
+                type_name = JOV_TYPE_IMAGE
                 if glsl_type != 'sampler2D':
+                    type_name = typ.name
                     if default is not None:
                         if default.startswith('EnumGLSL'):
                             if (target_enum := getattr(glsl_enums, default.strip(), None)) is not None:
@@ -241,8 +242,13 @@ class GLSLNodeDynamic(GLSLNodeBase):
                     if val_step is not None:
                         d = 1 if typ.name.endswith('INT') else 0.01
                         params['step'] = parse_value(val_step, EnumConvertType.FLOAT, d)
-                else:
-                    type_name = JOV_TYPE_IMAGE
+
+                    if meta is not None:
+                        if "rgb" in meta:
+                            if glsl_type.startswith('vec'):
+                                params['linear'] = True
+                            else:
+                                params['rgb'] = True
 
                 if tooltip is not None:
                     params["tooltips"] = tooltip
