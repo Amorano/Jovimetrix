@@ -1,5 +1,5 @@
 /**
- * File: queue.js
+ * File: queue_too.js
  * Project: Jovimetrix
  *
  */
@@ -11,17 +11,23 @@ import { apiJovimetrix } from '../util/util_api.js'
 import { flashBackgroundColor } from '../util/util_fun.js'
 import { nodeFitHeight, TypeSlotEvent, TypeSlot } from '../util/util_node.js'
 import { widgetHide, widgetShow } from '../util/util_widget.js'
+import { widgetSizeModeHook } from '../util/util_jov.js'
 
-const _id = "QUEUE (JOV) 🗃";
+const _id1 = "QUEUE (JOV) 🗃";
+const _id2 = "QUEUE TOO (JOV) 🗃";
 const _prefix = '🦄';
 const EVENT_JOVI_PING = "jovi-queue-ping";
 const EVENT_JOVI_DONE = "jovi-queue-done";
 
 app.registerExtension({
-	name: 'jovimetrix.node.' + _id,
+	name: 'jovimetrix.node.' + _id1,
 	async beforeRegisterNodeDef(nodeType, nodeData, app) {
-        if (nodeData.name !== _id) {
+        if (nodeData.name != _id1 && nodeData.name != _id2) {
             return;
+        }
+
+        if (nodeData.name == _id2) {
+            widgetSizeModeHook(nodeType);
         }
 
         function update_report(self) {
@@ -44,6 +50,13 @@ app.registerExtension({
             this.data_index = 1;
             this.data_current = "";
             this.data_all = [];
+            this.widget_report = ComfyWidgets.STRING(this, 'QUEUE IS EMPTY 🔜', [
+                'STRING', {
+                    multiline: true,
+                },
+            ], app).widget;
+            this.widget_report.inputEl.readOnly = true;
+            this.widget_report.serializeValue = async () => { };
 
             const widget_queue = this.widgets.find(w => w.name == 'Q');
             const widget_batch = this.widgets.find(w => w.name == 'BATCH');
@@ -85,7 +98,7 @@ app.registerExtension({
                 nodeFitHeight(this);
             }
 
-            widget_queue?.inputEl.addEventListener('input', function () {
+            widget_queue.inputEl.addEventListener('input', function () {
                 const value = widget_queue.value.split('\n');
                 update_list(self, value);
             });
@@ -94,14 +107,6 @@ app.registerExtension({
                 widget_reset.value = false;
                 apiJovimetrix(self.id, "reset");
             }
-
-            this.widget_report = ComfyWidgets.STRING(this, 'QUEUE IS EMPTY 🔜', [
-                'STRING', {
-                    multiline: true,
-                },
-            ], app).widget;
-            this.widget_report.inputEl.readOnly = true;
-            this.widget_report.serializeValue = async () => { };
 
             async function python_queue_ping(event) {
                 if (event.detail.id != self.id) {
@@ -118,11 +123,6 @@ app.registerExtension({
                 if (event.detail.id != self.id) {
                     return;
                 }
-                /*
-                let centerX = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
-                let centerY = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
-                util_fun.bewm(centerX / 2, centerY / 3);
-                */
                 await flashBackgroundColor(self.widget_queue.inputEl, 650, 4, "#995242CC");
             }
 

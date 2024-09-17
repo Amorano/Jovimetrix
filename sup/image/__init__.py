@@ -433,13 +433,14 @@ def cv2pil(image: TYPE_IMAGE) -> Image.Image:
 
 def cv2tensor(image: np.ndarray, mask: bool = False) -> torch.Tensor:
     """Convert a CV2 image to a torch tensor, with handling for grayscale/mask."""
+    if mask or image.ndim < 3:
+        if (image.ndim == 3 and image.shape[2] == 1):
+            image = image_mask(image)
+        else:
+            image = image_grayscale(image)
 
-    if mask or image.ndim < 3 or (image.ndim == 3 and image.shape[2] == 1):
-        image = image_mask(image)
     image = image.astype(np.float32) / 255.0
-    image = torch.from_numpy(image).unsqueeze(0)
-    # logger.debug(image.shape)
-    return image
+    return torch.from_numpy(image).unsqueeze(0)
 
 def cv2tensor_full(image: TYPE_IMAGE, matte:TYPE_PIXEL=0) -> Tuple[torch.Tensor, ...]:
     rgba = image_convert(image, 4)

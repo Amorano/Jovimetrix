@@ -400,19 +400,18 @@ def image_sharpen(image:TYPE_IMAGE, kernel_size=None, sigma:float=1.0,
         np.copyto(sharpened, image, where=low_contrast_mask)
     return sharpened
 
-def image_split(image: TYPE_IMAGE, convert:object=image_grayscale) -> Tuple[TYPE_IMAGE, ...]:
+def image_split(image: TYPE_IMAGE) -> Tuple[TYPE_IMAGE, ...]:
     h, w = image.shape[:2]
-    dtype = image.dtype
 
     # Grayscale image
     if image.ndim == 2 or image.shape[2] == 1:
-        r = g = b = image.reshape(h, w)
-        a = np.full((h, w), 255, dtype=dtype)
+        r = g = b = image
+        a = np.full((h, w), 255, dtype=image.dtype)
 
     # BGR image
     elif image.shape[2] == 3:
         r, g, b = cv2.split(image)
-        a = np.full((h, w), 255, dtype=dtype)
+        a = np.full((h, w), 255, dtype=image.dtype)
     else:
         r, g, b, a = cv2.split(image)
     return r, g, b, a
