@@ -9,186 +9,8 @@ import { $el } from "../../../scripts/ui.js";
 import { apiGet, apiJovimetrix, setting_make } from "../util/util_api.js";
 import { colorContrast, colorRGB2Hex } from "../util/util.js";
 
-let PANEL_STATIC, PANEL_COLORIZE, CONTENT, NODE_LIST, CONFIG_CORE, CONFIG_USER, CONFIG_COLOR, CONFIG_REGEX, CONFIG_THEME;
+let PICKER, PANEL_COLORIZE, CONTENT, NODE_LIST, CONFIG_CORE, CONFIG_USER, CONFIG_COLOR, CONFIG_REGEX, CONFIG_THEME;
 const USER = "user.default";
-
-class ColorPicker {
-    constructor(config) {
-        this.colorPickers = window.jsColorPicker?.colorPickers || [];
-        this.docCookies = {
-            getItem: (key, def) => local_get(key, def),
-            setItem: (key, value) => local_set(key, value)
-        };
-
-        // Initialize with the passed config
-        this.config = config;
-        this.color = this.config.color || "#FFFFFF";
-    }
-
-    static createInstance(elm, config) {
-        const initConfig = {
-            input: elm,
-            patch: elm,
-            isIE8: !!document.all && !document.addEventListener,
-            margin: { left: -1, top: 2 },
-            customBG: "#FFFFFF",
-            color: ColorPicker.extractValue(elm),
-            initStyle: "display: none",
-            mode: ColorPicker.docCookies["colorPickerMode"] || "hsv-h",
-            memoryColors: ColorPicker.docCookies["colorPickerMemos" + ((config || {}).noAlpha ? "NoAlpha" : "")],
-            size: ColorPicker.docCookies["colorPickerSize"] || 1,
-            renderCallback: ColorPicker.renderCallback,
-            actionCallback: ColorPicker.actionCallback
-        };
-
-        for (const n in config) {
-            initConfig[n] = config[n];
-        }
-
-        return new ColorPicker(initConfig);
-    }
-
-
-    static extractValue(elm) {
-        const val = elm.getAttribute("color") || elm.style.backgroundColor || "#353535FF";
-        return val.includes("NAN") ? "#353535FF" : val;
-    }
-
-    static renderCallback(colors, mode) {
-        const rgb = Object.values(colors.RND.rgb).reverse();
-        const AHEX = !colors.HEX.includes("NAN") ? colorRGB2Hex(rgb) : "#353535FF";
-
-        this.patch.style.cssText =
-            "color:" + (colors.rgbaMixCustom.luminance > 0.22 ? "#222" : "#ddd") + ";" +
-            "background-color: " + AHEX + ";";
-
-        this.input.setAttribute("color", AHEX);
-
-        if (this.displayCallback) {
-            this.displayCallback(colors, mode, this);
-        }
-    }
-
-    static actionCallback(event, action) {
-        if (action == "toMemory") {
-            const memos = this.nodes.memos;
-            const cookieTXT = [];
-
-            for (let n = 0, m = memos.length; n < m; n++) {
-                let backgroundColor = memos[n].style.backgroundColor;
-                let opacity = memos[n].style.opacity;
-                opacity = Math.round((opacity == "" ? 1 : opacity) * 100) / 100;
-                cookieTXT.push(backgroundColor.replace(/, /g, ",").replace("rgb(", "rgba(").replace(")", "," + opacity + ")"));
-            }
-
-            ColorPicker.docCookies["colorPickerMemos" + (this.noAlpha ? "NoAlpha" : ""), "'" + cookieTXT.join("","") + "'"];
-        } else if (action == "resizeApp") {
-            ColorPicker.docCookies["colorPickerSize", this.color.options.currentSize];
-        } else if (action == "modeChange") {
-            const mode = this.color.options.mode;
-            ColorPicker.docCookies["colorPickerMode", mode.type + "-" + mode.z];
-        }
-    }
-
-    static doEventListeners(elm, multiple, off, elms) {
-        const onOff = off ? "removeEventListener" : "addEventListener";
-        const focusListener = () => {
-            const position = ColorPicker.getOrigin(this);
-            const index = multiple ? Array.prototype.indexOf.call(elms, this) : 0;
-            const colorPicker = ColorPicker.colorPickers[index] || (ColorPicker.colorPickers[index] = ColorPicker.createInstance(this, config));
-            const options = colorPicker.color.options;
-            const colorPickerUI = colorPicker.nodes.colorPicker;
-            const appendTo = (options.appendTo || document.body);
-            const isStatic = /static/.test(window.getComputedStyle(appendTo).position);
-            const atrect = isStatic ? { left: 0, top: 0 } : appendTo.getBoundingClientRect();
-
-            options.color = ColorPicker.extractValue(elm);
-            colorPickerUI.style.cssText =
-                "position: absolute;" + (!ColorPicker.colorPickers[index].cssIsReady ? "display: none;" : "") +
-                "left:" + (position.left + options.margin.left - atrect.left) + "px;" +
-                "top:" + (position.top + +this.offsetHeight + options.margin.top - atrect.top) + "px;";
-
-            if (!multiple) {
-                options.input = elm;
-                options.patch = elm;
-                colorPicker.setColor(ColorPicker.extractValue(elm), undefined, undefined, true);
-                colorPicker.saveAsBackground();
-            }
-
-            ColorPicker.colorPickers.current = ColorPicker.colorPickers[index];
-            appendTo.appendChild(colorPickerUI);
-
-            let waitTimer = setInterval(function() {
-                if (ColorPicker.colorPickers.current.cssIsReady) {
-                    waitTimer = clearInterval(waitTimer);
-                    colorPickerUI.style.display = "block";
-                }
-            }, 10);
-        };
-
-        elm[onOff]("focus", focusListener);
-
-        if (!ColorPicker.colorPickers.evt || off) {
-            ColorPicker.colorPickers.evt = true;
-            window[onOff]("mousedown", (e) => {
-                const colorPicker = ColorPicker.colorPickers.current;
-                const colorPickerUI = (colorPicker ? colorPicker.nodes.colorPicker : undefined);
-                const isColorPicker = colorPicker && (function(elm) {
-                    while (elm) {
-                        if ((elm.className || "").indexOf("cp-app") !== -1) return elm;
-                        elm = elm.parentNode;
-                    }
-                    return false;
-                })(e.target);
-
-                if (isColorPicker && Array.prototype.indexOf.call(ColorPicker.colorPickers, isColorPicker)) {
-                    if (e.target == colorPicker.nodes.exit) {
-                        colorPickerUI.style.display = "none";
-                        document.activeElement.blur();
-                    }
-                } else if (Array.prototype.indexOf.call(elms, e.target) !== -1) {
-                    console.info("why");
-                } else if (colorPickerUI) {
-                    colorPickerUI.style.display = "none";
-                }
-            });
-        }
-    }
-};
-
-function colorPicker(elms, config, callback) {
-    const testColors = new window.Colors({ customBG: config.customBG, allMixDetails: true });
-
-    for (let n = 0, m = elms?.length; n < m; n++) {
-        const elm = elms[n];
-
-        if (config == "destroy") {
-            ColorPicker.doEventListeners(elm, (config && config.multipleInstances), true, elms);
-            if (ColorPicker.colorPickers[n]) {
-                ColorPicker.colorPickers[n].destroyAll();
-            }
-        } else {
-            const color = ColorPicker.extractValue(elm);
-            const value = color.split("(");
-
-            testColors.setColor(color);
-            if (config && config.init) {
-                config.init(elm, testColors.colors);
-            }
-            elm.setAttribute("data-colorMode", value[1] ? value[0].substr(0, 3) : "HEX");
-            ColorPicker.doEventListeners(elm, (config && config.multipleInstances), false, elms);
-            if (config && config.readOnly) {
-                elm.readOnly = true;
-            }
-        }
-    }
-
-    if (callback) {
-        callback(ColorPicker.colorPickers);
-    }
-
-    return ColorPicker.colorPickers;
-}
 
 // Recursively get color by category in theme
 function getColorByCategory(find_me) {
@@ -230,205 +52,115 @@ function nodeColorAll() {
 
 class JovimetrixPanelColorize {
 
-    initializeColorPicker(container) {
-        const elements = container.querySelector(".jov-panel-color-input");
-        colorPicker(elements, {
-            readOnly: false,
-            size: 3,
-            multipleInstances: false,
-            appendTo: container,
-            noAlpha: false,
-            init: function(elm, rgb) {
-                elm.style.backgroundColor = elm.color || LiteGraph.WIDGET_BGCOLOR;
-                elm.style.color = rgb.RGBLuminance > 0.22 ? "#222" : "#ddd";
-            },
-            convertCallback: function() {
-                const AHEX = this.patch.attributes.color;
-                if (!AHEX) return;
-
-                const parts = this.patch.attributes.name.value.split(".");
-                const part = parts.pop();
-                const name = parts.join(".");
-
-                let key, value;
-
-                if (parts.length > 1) {
-                    CONFIG_REGEX[parts[1]][part] = AHEX.value;
-                    key = `${USER}.color.regex`
-                    value = CONFIG_REGEX;
-                } else {
-                    const themeConfig = CONFIG_THEME[name] || (CONFIG_THEME[name] = {});
-                    themeConfig[part] = AHEX.value;
-                    key`${USER}.color.theme.${name}`
-                    value = CONFIG_THEME[name];
-                }
-
-                apiJovimetrix(key, value, "config");
-                if (CONFIG_COLOR.overwrite) {
-                    nodeColorAll();
-                }
-            }
+    createColorButton(label, color, identifier) {
+        const button = $el('button.color-button', {
+            style: { backgroundColor: color },
+            dataset: { color: color, identifier: identifier },
+            value: label,
+            content: label,
+            textContent: label,
+            label: label
         });
+
+        button.addEventListener('click', () => {
+            PICKER.setColor(button.dataset.color || '#ffffff');
+            PICKER.show();
+        });
+
+        return button;
     }
 
-    updateRegexColor = (index, key, value) => {
-        CONFIG_REGEX[index][key] = value;
-        apiJovimetrix(USER + ".color.regex", CONFIG_REGEX, "config");
-        nodeColorAll()
-    };
-
-    templateColorRow = (data, type = "block") => {
-        const isRegex = type == "regex";
-        const isHeader = type == "header";
-        const self = this;
-
-        const createNameCell = () => {
-            if (isRegex) {
-                return $el("td", {
-                    style: { backgroundColor: data.background },
-                    textContent: " REGEX FILTER ",
-                }, [
-                    $el("input", {
-                        name: `regex.${data.idx}`,
-                        value: data.name,
-                        onchange: function() {
-                            self.updateRegexColor(data.idx, "regex", this.value);
-                        }
-                    }),
-                ]);
-            } else {
-                return $el(isHeader ? "td.jov-panel-color-header" : "td", {
-                    style: isHeader ? { backgroundColor: data.background } : {},
-                    textContent: data.name
-                });
-            }
-        };
-
-        const createColorInput = (suffix, value) => {
-            return $el("td", [
-                $el("input.jov-panel-color-input2", {
-                    value: value,
-                    name: isRegex ? `regex.${data.idx}.${suffix}` : `${data.name}.${suffix}`,
-                    backgroundColor: data[suffix]
+    templateColorRow(data, type = "block") {
+        const isRegex = type === "regex";
+        const nameCell = isRegex
+            ? $el("td", [
+                $el("input", {
+                    value: data.name,
+                    onchange: (e) => this.updateColor(data.idx, e.target.value)
                 })
-            ]);
-        };
+              ])
+            :
+            $el("td", { textContent: data.name });
 
-        return [
-            $el("tr", {
-                style: !isHeader ? { backgroundColor: data.background } : {}
-            }, [
-                createColorInput("title", "T"),
-                createColorInput("body", "B"),
-                createNameCell()
-            ])
-        ];
-    };
+        return $el("tr", {}, [
+            $el("td", {}, [this.createColorButton("T", data.title, `${data.name}.${data.idx}.title`)]),
+            $el("td", {}, [this.createColorButton("B", data.body, `${data.name}.${data.idx}.body`)]),
+            nameCell
+        ]);
+    }
 
     createRegexPalettes() {
-        let colorTable = null
-        const header =
-            $el("table.flexible-table", [
-                colorTable = $el("thead", [
-                ]),
-            ])
+        const table = $el("table.flexible-table");
+        const tbody = $el("tbody");
 
-        // rule-sets first
-        var idx = 0
-        const rules = CONFIG_COLOR?.regex || []
-        rules.forEach(entry => {
+        (CONFIG_COLOR?.regex || []).forEach((entry, idx) => {
             const data = {
                 idx: idx,
                 name: entry.regex,
-                title: entry.title, // || LiteGraph.NODE_TITLE_COLOR,
-                body: entry.body, // || LiteGraph.NODE_DEFAULT_COLOR,
-            }
-            const row = this.templateColorRow(data, "regex");
-            colorTable.appendChild($el("tbody", row))
-            idx += 1
-        })
-        return [header];
+                title: entry.title || LiteGraph.NODE_TITLE_COLOR,
+                body: entry.body || LiteGraph.NODE_DEFAULT_COLOR,
+            };
+            tbody.appendChild(this.templateColorRow(data, "regex"));
+        });
+
+        table.appendChild(tbody);
+        return table;
     }
 
     createColorPalettes() {
-        if (PANEL_STATIC !== undefined) {
-            return PANEL_STATIC;
-        }
+        const table = $el("table.flexible-table");
+        const tbody = $el("tbody");
 
-        var data = {};
-        let colorTable = null;
-        const header =
-            $el("table.flexible-table", [
-                colorTable = $el("thead", [
-                ]),
-            ])
-
-        // get categories to generate on the fly
-        const category = []
-        const all_nodes = Object.entries(NODE_LIST ? NODE_LIST : []);
-        all_nodes.sort((a, b) => {
+        const all_nodes = Object.entries(NODE_LIST || []).sort((a, b) => {
             const categoryComparison = a[1].category.toLowerCase().localeCompare(b[1].category.toLowerCase());
-            // Move items with empty category or starting with underscore to the end
-            if (a[1].category == "" || a[1].category.startsWith("_")) {
-                return 1;
-            } else if (b[1].category == "" || b[1].category.startsWith("_")) {
-                return -1;
-            } else {
-                return categoryComparison;
-            }
+            return categoryComparison;
         });
 
-        // groups + nodes
-        const alts = CONFIG_COLOR
-        const background = [alts?.backA, alts?.backB]
-        const background_title = [alts?.titleA, alts?.titleB]
-        let background_index = 0
-        all_nodes.forEach(entry => {
-            var name = entry[0]
-            var cat = entry[1].category
-            var meow = cat.split("/")[0]
+        const alts = CONFIG_COLOR;
+        const background = [alts?.backA, alts?.backB];
+        const background_title = [alts?.titleA, alts?.titleB];
+        let background_index = 0;
+        const categories = [];
 
-            if (!category.includes(meow))
-            {
-                // major category first?
-                background_index = (background_index + 1) % 2
-                data = {
-                    name: meow,
-                }
-                if (Object.prototype.hasOwnProperty.call(CONFIG_THEME, meow)) {
-                    data.title = CONFIG_THEME?.[meow].title
-                    data.body = CONFIG_THEME?.[meow].body
-                }
-                colorTable.appendChild($el("tbody", this.templateColorRow(data, "header")))
-                category.push(meow)
+        all_nodes.forEach(([name, node]) => {
+            const category = node.category;
+            const majorCategory = category.split("/")[0];
+
+            if (!categories.includes(majorCategory)) {
+                background_index = (background_index + 1) % 2;
+                const data = {
+                    name: majorCategory,
+                    title: CONFIG_THEME?.[majorCategory]?.title,
+                    body: CONFIG_THEME?.[majorCategory]?.body,
+                };
+                tbody.appendChild(this.templateColorRow(data, "header"));
+                categories.push(majorCategory);
             }
 
-            if(category.includes(cat) == false) {
-                background_index = (background_index + 1) % 2
-                data = {
-                    name: cat,
+            if (!categories.includes(category)) {
+                background_index = (background_index + 1) % 2;
+                const data = {
+                    name: category,
+                    title: CONFIG_THEME?.[category]?.title,
+                    body: CONFIG_THEME?.[category]?.body,
                     background: background_title[background_index] || LiteGraph.WIDGET_BGCOLOR
-                }
-
-                if (Object.prototype.hasOwnProperty.call(CONFIG_THEME, cat)) {
-                    data.title = CONFIG_THEME?.[cat].title
-                    data.body = CONFIG_THEME?.[cat].body
-                }
-                colorTable.appendChild($el("tbody", this.templateColorRow(data, "header")))
-                category.push(cat)
+                };
+                tbody.appendChild(this.templateColorRow(data, "category"));
+                categories.push(category);
             }
 
-            const who = CONFIG_THEME[name] || {};
-            data = {
+            const nodeConfig = CONFIG_THEME[name] || {};
+            const data = {
                 name: name,
-                title: who.title,
-                body: who.body,
+                title: nodeConfig.title,
+                body: nodeConfig.body,
                 background: background[background_index] || LiteGraph.NODE_DEFAULT_COLOR
-            }
-            colorTable.appendChild($el("tbody", this.templateColorRow(data, "block")))
-        })
-        PANEL_STATIC = [header];
-        return PANEL_STATIC;
+            };
+            tbody.appendChild(this.templateColorRow(data, "block"));
+        });
+
+        table.appendChild(tbody);
+        return table;
     }
 
     getRandomTitle() {
@@ -445,14 +177,14 @@ class JovimetrixPanelColorize {
 
     createContent() {
         const content = $el("div.jov-panel-color", [
-                    $el("div.jov-title", [
-                        $el("div.jov-title-header", { textContent: this.getRandomTitle() }),
-                    ]),
-                    $el("div.jov-config-color", this.createRegexPalettes()),
-                    $el("div.jov-config-color", this.createColorPalettes()),
-                ]);
+            $el("div.jov-title", [
+                $el("div.jov-title-header", { textContent: this.getRandomTitle() }),
+            ]),
+            $el("div.jov-config-color", [this.createRegexPalettes()]),
+            $el("div.jov-config-color", [this.createColorPalettes()]),
+        ]);
 
-        this.initializeColorPicker(content);
+        // this.initializeColorPicker(content);
         return content;
     }
 }
@@ -511,52 +243,84 @@ app.registerExtension({
             }
             drawNodeShape.apply(this, arguments);
         };
+
+        PICKER = Pickr.create({
+            el: button,
+            theme: 'classic',  // You can change this to any theme you prefer
+            default: button.dataset.color || '#ffffff',  // Set to button's current color or a default color
+            components: {
+                // Color picker components
+                preview: true,
+                opacity: true,
+                hue: true,
+
+                interaction: {
+                    hex: true,
+                    rgba: true,
+                    input: true,
+                    save: true
+                }
+            }
+        });
+
+        // Event handler for when color is changed
+        colorPicker.on('save', (color) => {
+            const newColor = color.toHEXA().toString();
+            button.style.backgroundColor = newColor;
+            button.dataset.color = newColor;
+
+            // Update your configuration based on the identifier
+            const [type, index, colorType] = button.dataset.identifier.split('.');
+            if (type === 'regex') {
+                CONFIG_REGEX[index][colorType] = newColor;
+                apiJovimetrix(`${USER}.color.regex`, CONFIG_REGEX, "config");
+            } else {
+                const themeConfig = CONFIG_THEME[type] || (CONFIG_THEME[type] = {});
+                themeConfig[colorType] = newColor;
+                apiJovimetrix(`${USER}.color.theme.${type}`, CONFIG_THEME[type], "config");
+            }
+
+            if (CONFIG_COLOR.overwrite) {
+                nodeColorAll();
+            }
+
+            colorPicker.hide();
+        });
+
     },
-    /*
     async beforeRegisterNodeDef(nodeType) {
         const onNodeCreated = nodeType.prototype.onNodeCreated;
         nodeType.prototype.onNodeCreated = async function () {
             const me = onNodeCreated?.apply(this, arguments);
-            if (this) {
-                nodeColorReset(this, false);
-            }
+            nodeColorReset(this, false);
             return me;
         }
-    },*/
+    },
     async afterConfigureGraph() {
-        console.info("Initializing Jovimetrix Colorizer Panel");
-        try {
-            [NODE_LIST, CONFIG_CORE] = await Promise.all([
-                apiGet("/object_info"),
-                apiGet("/jovimetrix/config")
-            ]);
-            CONFIG_USER = CONFIG_CORE.user.default;
-            CONFIG_COLOR = CONFIG_USER.color;
-            CONFIG_REGEX = CONFIG_COLOR.regex || [];
-            CONFIG_THEME = CONFIG_COLOR.theme;
 
-            console.info("Jovimetrix Colorizer Configuration loaded");
-        } catch (error) {
-            console.error("Error initializing Jovimetrix Colorizer Panel:", error);
+        if (CONTENT === undefined) {
+            console.info("Initializing Jovimetrix Colorizer Panel");
+            try {
+                [NODE_LIST, CONFIG_CORE] = await Promise.all([
+                    apiGet("/object_info"),
+                    apiGet("/jovimetrix/config")
+                ]);
+                CONFIG_USER = CONFIG_CORE.user.default;
+                CONFIG_COLOR = CONFIG_USER.color;
+                CONFIG_REGEX = CONFIG_COLOR.regex || [];
+                CONFIG_THEME = CONFIG_COLOR.theme;
+            } catch (error) {
+                console.error("Error initializing Jovimetrix Colorizer Panel:", error);
+            }
+
+            PANEL_COLORIZE = new JovimetrixPanelColorize();
+            // refresh once seems to fix missing info on first use
+            CONTENT = PANEL_COLORIZE.createContent();
+            console.info("Jovimetrix Colorizer Panel initialized successfully");
         }
 
-        PANEL_COLORIZE = new JovimetrixPanelColorize();
-        // refresh once seems to fix missing info on first use
-        CONTENT = PANEL_COLORIZE.createContent();
         if (CONFIG_USER.color.overwrite) {
             nodeColorAll();
         }
-        console.info("Jovimetrix Colorizer Panel initialized successfully");
     }
-    /*
-    async refreshComboInNodes() {
-
-    }*/
 })
-
-document.addEventListener("keydown", (event) => {
-    if (event.key === "T" || event.key === "B") {
-        const elm = document.querySelector(".jov-panel-color-input");
-        ColorPicker.createInstance(elm, {});  // Pass your config if needed
-    }
-});

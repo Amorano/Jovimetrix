@@ -337,14 +337,14 @@ COLORIZATION STYLE
 COLORIZATION STYLE
 */
 .jov-panel-color {
-  padding: 4px;
   max-width: 100%;
   max-height: 100%;
   overflow: auto;
-  border-radius: 2px;
-  border: 1px solid var(--border-color);
-  margin: 15px;
-  padding: 15px;
+  margin: 0px;
+  padding: 0px;
+  table-layout: fixed;
+  text-align: left;
+  background-color: var(--bg-color);
 }
 
 .jov-panel-color-title {
@@ -355,6 +355,10 @@ COLORIZATION STYLE
   text-transform: uppercase;
 }
 
+.jov-panel-color-category {
+  text-transform: uppercase;
+}
+
 .jov-panel-color table {
   width: 100%;
   border-collapse: collapse;
@@ -362,9 +366,21 @@ COLORIZATION STYLE
 
 .jov-panel-color th,
 .jov-panel-color td {
-  border: 1px solid var(--border-color);
-  background-color: var(--comfy-input-bg);
-  color: var(--fg-color);
+  vertical-align: middle;
+}
+
+.jov-panel-color td.fixed-size {
+  width: 24px;
+  height: 24px;
+}
+
+.jov-panel-color td button {
+  border: 0px outset;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 24px;
+  height: 24px;
 }
 
 .jov-panel-color input[type="checkbox"] {
@@ -379,20 +395,6 @@ COLORIZATION STYLE
   align-items: center;
   justify-content: center;
   margin-top: 10px;
-}
-
-.jov-panel-color-input {
-  width: 25px;
-}
-
-.flexible-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.flexible-table td {
-  vertical-align: middle;
-  text-align: left;
 }
 
 @media screen and (max-width: 600px) {

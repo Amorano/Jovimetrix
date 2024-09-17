@@ -55,12 +55,7 @@ export function setting_store(id, val) {
 }
 
 export function setting_make(category, name, type, tip, value, attrs={}, options=[], proto=undefined) {
-    const key = `JOVIMETRIX 🔺🟩🔵.${category}.${name}`
-    console.info(category, name, key, value)
-    //if (app.ui.settings.getSettingValue(key, undefined) !== undefined) {
-        //return;
-    //}
-
+    const key = `JOVIMETRIX 🔺🟩🔵.${category}.${name}`;
     const setting_root = `Comfy.Settings.jov.${key}`;
     const local = localStorage.getItem(setting_root);
     value = local ? local : value;

@@ -1,6 +1,6 @@
 // name: NORMAL BLEND
 // desc: Blend two Normal maps
-// category: UTILITY
+// category: COMPOSE
 
 uniform sampler2D imageA; //                 | Input image A to blend with image B
 uniform sampler2D imageB; //                 | Input image B to blend with image A

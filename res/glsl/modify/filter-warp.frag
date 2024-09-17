@@ -1,6 +1,6 @@
 // name: DIRECTIONAL WARP
 // desc: Domain warp an image with a direction and distortion map
-// category: FILTER
+// category: MODIFY
 
 #include .lib/const.lib
 
