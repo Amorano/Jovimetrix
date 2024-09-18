@@ -95,9 +95,21 @@ If those nodes have descriptions written in HTML or Markdown, they will be conve
 
 ## UPDATES
 
-**2024/09/09** @1.2.38:
-* QUEUEs will signal true (TRIGGER) on complete unless halted
+**2024/09/18** @1.2.39:
+* `COMPARISON` node updated to support NONE for all inputs
+* Fixed bad inputs for IMAGE/MASK where they were compound use on slots
+* Cleaner API Message routes
+* new include system for GLSL shaders
+* GLSL: color, camera, const, curve, noise, sdf, shading and vector library supports
+* new `GLSL COLOR PALETTE` node based on cosines
+* new `GLSL INVERT` node
+* new `GLSL FILTER RANGE` node
+* Supported Versions:
+  * ComfyUI 0.1.3+
+  * ComfyUI Frontend 1.2.30+
 
+**2024/09/09** @1.2.38:
+* `QUEUE`s will signal true (TRIGGER) on complete unless halted
 * Supported Versions:
   * ComfyUI 0.1.3+
   * ComfyUI Frontend 1.2.30+
@@ -147,13 +159,6 @@ If those nodes have descriptions written in HTML or Markdown, they will be conve
 * `MODE` setting for most nodes has been defaulted to `MATTE`. The older `NONE` setting has been removed.
 * Thanks to [christian-byrne](https://github.com/christian-byrne) for squashing a bug in [the help sidebar!](https://github.com/Amorano/Jovimetrix/pull/55)
 * Thanks to [Ainaemaet](https://github.com/Ainaemaet) for cleaning up the `STREAM READER` Node device list [when no devices are present](https://github.com/Amorano/Jovimetrix/pull/53)!
-* Supports Versions:
-  * ComfyUI 0.1.3+
-  * ComfyUI Frontend 1.2.30+
-
-**2024/08/31** @1.2.32:
-* Better MASK/ALPHA support for `BLEND`, `ADJUST` and `QUEUE`
-* Cleaner Markdown outputs
 * Supports Versions:
   * ComfyUI 0.1.3+
   * ComfyUI Frontend 1.2.30+

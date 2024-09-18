@@ -1,12 +1,11 @@
 [project]
 name = "jovimetrix"
 description = "Integrates Webcam, MIDI, Spout and GLSL shader support. Animation via tick. Parameter manipulation with wave generator. Math operations with Unary and Binary support. Value conversion for all major types (int, string, list, dict, Image, Mask). Shape mask generation, image stacking and channel ops, batch splitting, merging and randomizing, load images and video from anywhere, dynamic bus routing with a single node, export support for GIPHY, save output anywhere! flatten, crop, transform; check colorblindness, make stereogram or stereoscopic images, or liner interpolate values and more."
-version = "1.2.38"
+version = "1.2.39"
 license = { file = "LICENSE" }
 dependencies = [
     "aenum>=3.1.15,<4",
     "blendmodes>=2024.1.1",
-    "cupy-cuda12x>=13.3.0",
     "daltonlens>=0.1.5",
     "glfw>=2.7.0",
     "loguru>=0.7.2",
