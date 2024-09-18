@@ -19,11 +19,10 @@ from loguru import logger
 from comfy.utils import ProgressBar
 from folder_paths import get_output_directory
 
-from Jovimetrix import JOV_TYPE_ANY, JOV_TYPE_IMAGE, \
-    Lexicon, JOVBaseNode, deep_merge
+from Jovimetrix import JOV_TYPE_IMAGE, Lexicon, JOVBaseNode, deep_merge
 
-from Jovimetrix.sup.util import EnumConvertType, \
-    path_next, parse_param, zip_longest_fill
+from Jovimetrix.sup.util import EnumConvertType, path_next, parse_param, \
+    zip_longest_fill
 
 from Jovimetrix.sup.image import tensor2cv, tensor2pil
 

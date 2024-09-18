@@ -3,6 +3,7 @@ Jovimetrix - http://www.github.com/amorano/jovimetrix
 Support
 """
 
+from enum import Enum
 from typing import Tuple
 
 import cv2
@@ -11,10 +12,34 @@ import numpy as np
 
 from loguru import logger
 
-from Jovimetrix.sup.image import TYPE_IMAGE, EnumEdge, EnumInterpolation, \
-    TYPE_fCOORD2D, bgr2image, cv2tensor, image2bgr, image_crop_center, tensor2cv
+from Jovimetrix.sup.image import TYPE_IMAGE, TYPE_PIXEL, EnumInterpolation, \
+    EnumScaleMode, TYPE_fCOORD2D, bgr2image, cv2tensor, image2bgr, \
+    image_crop_center, image_matte, tensor2cv
 
-from Jovimetrix.sup.image.misc import image_histogram
+# ==============================================================================
+# === ENUMERATION ===
+# ==============================================================================
+
+class EnumEdge(Enum):
+    CLIP = 1
+    WRAP = 2
+    WRAPX = 3
+    WRAPY = 4
+
+class EnumMirrorMode(Enum):
+    NONE = -1
+    X = 0
+    FLIP_X = 10
+    Y = 20
+    FLIP_Y = 30
+    XY = 40
+    X_FLIP_Y = 50
+    FLIP_XY = 60
+    FLIP_X_FLIP_Y = 70
+
+# ==============================================================================
+# === IMAGE ===
+# ==============================================================================
 
 def image_contrast(image: TYPE_IMAGE, value: float) -> TYPE_IMAGE:
     image, alpha, cc = image2bgr(image)
@@ -108,6 +133,14 @@ def image_gamma(image: TYPE_IMAGE, value: float) -> TYPE_IMAGE:
         # now back to the original "format"
     return bgr2image(image, alpha, cc == 1)
 
+def image_histogram(image:TYPE_IMAGE, bins=256) -> TYPE_IMAGE:
+    bins = max(image.max(), bins) + 1
+    flatImage = image.flatten()
+    histogram = np.zeros(bins)
+    for pixel in flatImage:
+        histogram[pixel] += 1
+    return histogram
+
 def image_histogram_normalize(image:TYPE_IMAGE)-> TYPE_IMAGE:
     L = image.max()
     nonEqualizedHistogram = image_histogram(image, bins=L)
@@ -153,6 +186,89 @@ def image_invert(image: TYPE_IMAGE, value: float) -> TYPE_IMAGE:
     inverted_image = 255 - image
     return ((1 - value) * image + value * inverted_image).astype(np.uint8)
 
+def image_mirror(image: TYPE_IMAGE, mode:EnumMirrorMode, x:float=0.5,
+                 y:float=0.5) -> TYPE_IMAGE:
+    cc = image.shape[2] if image.ndim == 3 else 1
+    height, width = image.shape[:2]
+
+    def mirror(img:TYPE_IMAGE, axis:int, reverse:bool=False) -> TYPE_IMAGE:
+        pivot = x if axis == 1 else y
+        flip = cv2.flip(img, axis)
+        pivot = np.clip(pivot, 0, 1)
+        if reverse:
+            pivot = 1. - pivot
+            flip, img = img, flip
+
+        scalar = height if axis == 0 else width
+        slice1 = int(pivot * scalar)
+        slice1w = scalar - slice1
+        slice2w = min(scalar - slice1w, slice1w)
+
+        if cc >= 3:
+            output = np.zeros((height, width, cc), dtype=np.uint8)
+        else:
+            output = np.zeros((height, width), dtype=np.uint8)
+
+        if axis == 0:
+            output[:slice1, :] = img[:slice1, :]
+            output[slice1:slice1 + slice2w, :] = flip[slice1w:slice1w + slice2w, :]
+        else:
+            output[:, :slice1] = img[:, :slice1]
+            output[:, slice1:slice1 + slice2w] = flip[:, slice1w:slice1w + slice2w]
+
+        return output
+
+    if mode in [EnumMirrorMode.X, EnumMirrorMode.FLIP_X, EnumMirrorMode.XY, EnumMirrorMode.FLIP_XY, EnumMirrorMode.X_FLIP_Y, EnumMirrorMode.FLIP_X_FLIP_Y]:
+        reverse = mode in [EnumMirrorMode.FLIP_X, EnumMirrorMode.FLIP_XY, EnumMirrorMode.FLIP_X_FLIP_Y]
+        image = mirror(image, 1, reverse)
+
+    if mode not in [EnumMirrorMode.NONE, EnumMirrorMode.X, EnumMirrorMode.FLIP_X]:
+        reverse = mode in [EnumMirrorMode.FLIP_Y, EnumMirrorMode.FLIP_X_FLIP_Y, EnumMirrorMode.X_FLIP_Y]
+        image = mirror(image, 0, reverse)
+
+    return image
+
+def image_pixelate(image: TYPE_IMAGE, amount:float=1.)-> TYPE_IMAGE:
+
+    h, w = image.shape[:2]
+    amount = max(0, min(1, amount))
+    block_size_h = max(1, (h * amount))
+    block_size_w = max(1, (w * amount))
+    num_blocks_h = int(np.ceil(h / block_size_h))
+    num_blocks_w = int(np.ceil(w / block_size_w))
+    block_size_h = h // num_blocks_h
+    block_size_w = w // num_blocks_w
+    pixelated_image = image.copy()
+
+    for i in range(num_blocks_h):
+        for j in range(num_blocks_w):
+            # Calculate block boundaries
+            y_start = i * block_size_h
+            y_end = min((i + 1) * block_size_h, h)
+            x_start = j * block_size_w
+            x_end = min((j + 1) * block_size_w, w)
+
+            # Average color values within the block
+            block_average = np.mean(image[y_start:y_end, x_start:x_end], axis=(0, 1))
+
+            # Fill the block with the average color
+            pixelated_image[y_start:y_end, x_start:x_end] = block_average
+
+    return pixelated_image.astype(np.uint8)
+
+def image_posterize(image: TYPE_IMAGE, levels:int=256) -> TYPE_IMAGE:
+    divisor = 256 / max(2, min(256, levels))
+    return (np.floor(image / divisor) * int(divisor)).astype(np.uint8)
+
+def image_quantize(image:TYPE_IMAGE, levels:int=256, iterations:int=10,
+                   epsilon:float=0.2) -> TYPE_IMAGE:
+    levels = int(max(2, min(256, levels)))
+    pixels = np.float32(image)
+    criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, iterations, epsilon)
+    _, labels, centers = cv2.kmeans(pixels, levels, None, criteria, 5, cv2.KMEANS_RANDOM_CENTERS)
+    centers = np.uint8(centers)
+    return centers[labels.flatten()].reshape(image.shape)
+
 def image_rotate(image: TYPE_IMAGE, angle: float, center:TYPE_fCOORD2D=(0.5, 0.5),
                  edge:EnumEdge=EnumEdge.CLIP) -> TYPE_IMAGE:
 
@@ -184,6 +300,52 @@ def image_scale(image: TYPE_IMAGE, scale:TYPE_fCOORD2D=(1.0, 1.0),
     if edge != EnumEdge.CLIP:
         image = image_crop_center(image, w, h)
     return image
+
+def image_scalefit(image: TYPE_IMAGE, width: int, height:int,
+                mode:EnumScaleMode=EnumScaleMode.MATTE,
+                sample:EnumInterpolation=EnumInterpolation.LANCZOS4,
+                matte:TYPE_PIXEL=(0,0,0,0)) -> TYPE_IMAGE:
+
+    match mode:
+        case EnumScaleMode.MATTE:
+            image = image_matte(image, matte, width, height)
+
+        case EnumScaleMode.ASPECT:
+            h, w = image.shape[:2]
+            ratio = max(width, height) / max(w, h)
+            image = cv2.resize(image, None, fx=ratio, fy=ratio, interpolation=sample.value)
+
+        case EnumScaleMode.ASPECT_SHORT:
+            h, w = image.shape[:2]
+            ratio = min(width, height) / min(w, h)
+            image = cv2.resize(image, None, fx=ratio, fy=ratio, interpolation=sample.value)
+
+        case EnumScaleMode.CROP:
+            image = image_crop_center(image, width, height)
+            matte = (*matte[:3], 0)
+            image = image_matte(image, matte, width, height)
+
+        case EnumScaleMode.FIT:
+            image = cv2.resize(image, (width, height), interpolation=sample.value)
+
+    if image.ndim == 2:
+        image = np.expand_dims(image, -1)
+    return image
+
+def image_sharpen(image:TYPE_IMAGE, kernel_size=None, sigma:float=1.0,
+                amount:float=1.0, threshold:float=0) -> TYPE_IMAGE:
+    """Return a sharpened version of the image, using an unsharp mask."""
+
+    kernel_size = (kernel_size, kernel_size) if kernel_size else (5, 5)
+    blurred = cv2.GaussianBlur(image, kernel_size, sigma)
+    sharpened = float(amount + 1) * image - float(amount) * blurred
+    sharpened = np.maximum(sharpened, np.zeros(sharpened.shape))
+    sharpened = np.minimum(sharpened, 255 * np.ones(sharpened.shape))
+    sharpened = sharpened.round().astype(np.uint8)
+    if threshold > 0:
+        low_contrast_mask = np.absolute(image - blurred) < threshold
+        np.copyto(sharpened, image, where=low_contrast_mask)
+    return sharpened
 
 def image_translate(image: TYPE_IMAGE, offset: TYPE_fCOORD2D=(0.0, 0.0),
                     edge: EnumEdge=EnumEdge.CLIP, border_value:int=0) -> TYPE_IMAGE:

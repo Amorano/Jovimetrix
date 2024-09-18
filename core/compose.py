@@ -20,26 +20,32 @@ from Jovimetrix import JOV_TYPE_IMAGE, JOVBaseNode, JOVImageNode, Lexicon, \
 from Jovimetrix.sup.util import EnumConvertType, parse_dynamic, parse_param, \
     zip_longest_fill
 
-from Jovimetrix.sup.image import MIN_IMAGE_SIZE, EnumImageType, EnumColorTheory, \
-    EnumProjection, EnumScaleMode, EnumEdge, EnumMirrorMode, EnumOrientation, \
-    EnumPixelSwizzle, EnumBlendType, EnumCBDeficiency, EnumCBSimulator, \
-    EnumColorMap, EnumAdjustOP, EnumThreshold, EnumInterpolation, \
-    EnumThresholdAdapt, cv2tensor_full, image_blend, image_crop, image_crop_center, image_flatten, \
+from Jovimetrix.sup.image import MIN_IMAGE_SIZE, EnumImageType, EnumScaleMode, \
+    EnumInterpolation, cv2tensor_full, image_blend, image_crop, image_crop_center, \
     image_grayscale, image_mask, image_mask_add, image_matte, image_minmax, \
-    image_scalefit, tensor2cv, cv2tensor, pixel_eval, image_convert, channel_merge, \
-    channel_solid, channel_swap, image_crop_polygonal
+    tensor2cv, cv2tensor, pixel_eval, image_convert, image_crop_polygonal
 
-from Jovimetrix.sup.image.color import color_match_lut, color_match_reinhard, \
-    color_theory, color_blind
+from Jovimetrix.sup.image.color import EnumCBDeficiency, EnumCBSimulator, \
+    EnumColorMap, EnumColorTheory, color_match_lut, color_match_reinhard, \
+    color_theory, color_blind, image_gradient_map
 
-from Jovimetrix.sup.image.adjust import image_contrast, image_edge_wrap, \
-    image_equalize, image_filter, image_gamma, image_hsv, image_invert, \
-    image_transform
+from Jovimetrix.sup.image.adjust import EnumEdge, EnumMirrorMode, image_contrast, \
+    image_edge_wrap, image_equalize, image_filter, image_gamma, image_hsv, \
+    image_invert, image_mirror, image_pixelate, image_posterize, image_quantize, \
+    image_scalefit, image_sharpen, image_transform
 
-from Jovimetrix.sup.image.misc import image_gradient_map, image_stack, \
-    image_mirror, image_threshold, image_quantize, image_levels, \
-    morph_edge_detect, remap_sphere, image_sharpen, morph_emboss, remap_fisheye, \
-    remap_perspective, remap_polar, image_split, image_pixelate, image_posterize
+from Jovimetrix.sup.image.misc import EnumProjection, EnumThreshold, \
+    EnumThresholdAdapt, image_threshold, morph_edge_detect, morph_emboss, \
+    image_split
+
+from Jovimetrix.sup.image.channel import EnumPixelSwizzle, channel_merge, \
+    channel_solid
+
+from Jovimetrix.sup.image.compose import EnumAdjustOP, EnumBlendType, \
+    EnumOrientation, image_flatten, image_levels, image_stack
+
+from Jovimetrix.sup.image.mapping import remap_fisheye, remap_perspective, \
+    remap_polar, remap_sphere
 
 # =============================================================================
 
@@ -433,7 +439,8 @@ Generate a color harmony based on the selected scheme. Supported schemes include
             "optional": {
                 Lexicon.PIXEL: (JOV_TYPE_IMAGE, {}),
                 Lexicon.SCHEME: (EnumColorTheory._member_names_, {"default": EnumColorTheory.COMPLIMENTARY.name}),
-                Lexicon.VALUE: ("INT", {"default": 45, "mij": -90, "maj": 90, "tooltips": "Custom angle of separation to use when calculating colors"}),
+                Lexicon.VALUE: ("INT", {"default": 45, "mij": -90, "maj": 90,
+                                        "tooltips": "Custom angle of separation to use when calculating colors"}),
                 Lexicon.INVERT: ("BOOLEAN", {"default": False})
             }
         })
@@ -865,7 +872,6 @@ Swap pixel values between two input images based on specified channel swizzle op
                 if (who := EnumPixelSwizzle[who]) != EnumPixelSwizzle.CONSTANT:
                     side = who.value % 10
                     idx = who.value // 10
-                    print(chan, side, idx, i, who)
                     out[:,:,i] = (pB if side == 1 else pA)[:,:,chan]
 
             images.append(cv2tensor_full(out))

@@ -3,6 +3,7 @@ Jovimetrix - http://www.github.com/amorano/jovimetrix
 Image Color Support
 """
 
+from enum import Enum
 from typing import Tuple
 
 import cv2
@@ -12,12 +13,142 @@ from daltonlens import simulate
 from skimage import exposure
 from blendmodes.blend import BlendType
 
-from Jovimetrix.sup.image import TYPE_IMAGE, TYPE_PIXEL, EnumCBDeficiency, \
-    EnumCBSimulator, EnumColorTheory, bgr2hsv, hsv2bgr, image_blend, \
-    image_convert, image_mask, image_mask_add, pixel_hsv_adjust
+from Jovimetrix.sup.image import TYPE_IMAGE, TYPE_PIXEL, bgr2hsv, hsv2bgr, \
+    image_blend, image_convert, image_grayscale, image_mask, image_mask_add
 
 # =============================================================================
-# === COLOR FUNCTIONS ===
+# === ENUMERATION ===
+# =============================================================================
+
+class EnumColorMap(Enum):
+    AUTUMN = cv2.COLORMAP_AUTUMN
+    BONE = cv2.COLORMAP_BONE
+    JET = cv2.COLORMAP_JET
+    WINTER = cv2.COLORMAP_WINTER
+    RAINBOW = cv2.COLORMAP_RAINBOW
+    OCEAN = cv2.COLORMAP_OCEAN
+    SUMMER = cv2.COLORMAP_SUMMER
+    SPRING = cv2.COLORMAP_SPRING
+    COOL = cv2.COLORMAP_COOL
+    HSV = cv2.COLORMAP_HSV
+    PINK = cv2.COLORMAP_PINK
+    HOT = cv2.COLORMAP_HOT
+    PARULA = cv2.COLORMAP_PARULA
+    MAGMA = cv2.COLORMAP_MAGMA
+    INFERNO = cv2.COLORMAP_INFERNO
+    PLASMA = cv2.COLORMAP_PLASMA
+    VIRIDIS = cv2.COLORMAP_VIRIDIS
+    CIVIDIS = cv2.COLORMAP_CIVIDIS
+    TWILIGHT = cv2.COLORMAP_TWILIGHT
+    TWILIGHT_SHIFTED = cv2.COLORMAP_TWILIGHT_SHIFTED
+    TURBO = cv2.COLORMAP_TURBO
+    DEEPGREEN = cv2.COLORMAP_DEEPGREEN
+
+class EnumColorTheory(Enum):
+    COMPLIMENTARY = 0
+    MONOCHROMATIC = 1
+    SPLIT_COMPLIMENTARY = 2
+    ANALOGOUS = 3
+    TRIADIC = 4
+    # TETRADIC = 5
+    SQUARE = 6
+    COMPOUND = 8
+    # DOUBLE_COMPLIMENTARY = 9
+    CUSTOM_TETRAD = 9
+
+class EnumCBDeficiency(Enum):
+    PROTAN = simulate.Deficiency.PROTAN
+    DEUTAN = simulate.Deficiency.DEUTAN
+    TRITAN = simulate.Deficiency.TRITAN
+
+class EnumCBSimulator(Enum):
+    AUTOSELECT = 0
+    BRETTEL1997 = 1
+    COBLISV1 = 2
+    COBLISV2 = 3
+    MACHADO2009 = 4
+    VIENOT1999 = 5
+    VISCHECK = 6
+
+# ==============================================================================
+# === COLOR SPACE CONVERSION ===
+# ==============================================================================
+
+def gamma2linear(image: TYPE_IMAGE) -> TYPE_IMAGE:
+    """Gamma correction for old PCs/CRT monitors"""
+    return np.power(image, 2.2)
+
+def linear2gamma(image: TYPE_IMAGE) -> TYPE_IMAGE:
+    """Inverse gamma correction for old PCs/CRT monitors"""
+    return np.power(np.clip(image, 0., 1.), 1.0 / 2.2)
+
+def sRGB2Linear(image: TYPE_IMAGE) -> TYPE_IMAGE:
+    """Convert sRGB to linearRGB, removing the gamma correction.
+    Works for grayscale, RGB, or RGBA images.
+    """
+    image = image.astype(float) / 255.0
+
+    # If the image has an alpha channel, separate it
+    if image.shape[-1] == 4:
+        rgb = image[..., :3]
+        alpha = image[..., 3]
+    else:
+        rgb = image
+        alpha = None
+
+    gamma = ((rgb + 0.055) / 1.055) ** 2.4
+    scale = rgb / 12.92
+    rgb = np.where(rgb > 0.04045, gamma, scale)
+
+    # Recombine the alpha channel if it exists
+    if alpha is not None:
+        image = np.concatenate((rgb, alpha[..., np.newaxis]), axis=-1)
+    else:
+        image = rgb
+    return (image * 255).astype(np.uint8)
+
+def linear2sRGB(image: TYPE_IMAGE) -> TYPE_IMAGE:
+    """Convert linearRGB to sRGB, applying the gamma correction.
+    Works for grayscale, RGB, or RGBA images.
+    """
+    image = image.astype(float) / 255.0
+
+    # If the image has an alpha channel, separate it
+    if image.shape[-1] == 4:
+        rgb = image[..., :3]
+        alpha = image[..., 3]
+    else:
+        rgb = image
+        alpha = None
+
+    higher = 1.055 * np.power(rgb, 1.0 / 2.4) - 0.055
+    lower = rgb * 12.92
+    rgb = np.where(rgb > 0.0031308, higher, lower)
+
+    # Recombine the alpha channel if it exists
+    if alpha is not None:
+        image = np.concatenate((rgb, alpha[..., np.newaxis]), axis=-1)
+    else:
+        image = rgb
+    return np.clip(image * 255.0, 0, 255).astype(np.uint8)
+
+# ==============================================================================
+# === PIXEL ===
+# ==============================================================================
+
+def pixel_hsv_adjust(color:TYPE_PIXEL, hue:int=0, saturation:int=0, value:int=0,
+                     mod_color:bool=True, mod_sat:bool=False,
+                     mod_value:bool=False) -> TYPE_PIXEL:
+    """Adjust an HSV type pixel.
+    OpenCV uses... H: 0-179, S: 0-255, V: 0-255"""
+    hsv = [0, 0, 0]
+    hsv[0] = (color[0] + hue) % 180 if mod_color else np.clip(color[0] + hue, 0, 180)
+    hsv[1] = (color[1] + saturation) % 255 if mod_sat else np.clip(color[1] + saturation, 0, 255)
+    hsv[2] = (color[2] + value) % 255 if mod_value else np.clip(color[2] + value, 0, 255)
+    return hsv
+
+# =============================================================================
+# === COLOR MATCH ===
 # =============================================================================
 
 @cuda.jit
@@ -186,6 +317,10 @@ def color_mean(image: TYPE_IMAGE) -> TYPE_IMAGE:
             int(np.mean(image[:,:,2])) ]
     return color
 
+# ==============================================================================
+# === COLOR ANALYSIS ===
+# ==============================================================================
+
 def color_theory_complementary(color: TYPE_PIXEL) -> TYPE_PIXEL:
     color = bgr2hsv(color)
     color_a = pixel_hsv_adjust(color, 90, 0, 0)
@@ -284,3 +419,18 @@ def color_theory(image: TYPE_IMAGE, custom:int=0, scheme: EnumColorTheory=EnumCo
         np.full((h, w, 3), c, dtype=np.uint8),
         np.full((h, w, 3), d, dtype=np.uint8),
     )
+
+#
+#
+#
+
+# Adapted from WAS Suite -- gradient_map
+# https://github.com/WASasquatch/was-node-suite-comfyui
+def image_gradient_map(image:TYPE_IMAGE, gradient_map:TYPE_IMAGE, reverse:bool=False) -> TYPE_IMAGE:
+    if reverse:
+        gradient_map = gradient_map[:,:,::-1]
+    grey = image_grayscale(image)
+    cmap = image_convert(gradient_map, 3)
+    cmap = cv2.resize(cmap, (256, 256))
+    cmap = cmap[0,:,:].reshape((256, 1, 3)).astype(np.uint8)
+    return cv2.applyColorMap(grey, cmap)

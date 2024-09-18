@@ -316,8 +316,8 @@ def parse_param(data:dict, key:str, typ:EnumConvertType, default: Any,
     elif isinstance(val, (torch.Tensor,)):
         if val.ndim > 3:
             val = [t for t in val]
-        elif val.ndim == 3:
-            val = [v.unsqueeze(-1) for v in val]
+        else:
+            val = [val]
     elif isinstance(val, (list, tuple, set)):
         if len(val) == 0:
             val = [None]

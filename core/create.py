@@ -19,21 +19,23 @@ from Jovimetrix import JOV_TYPE_IMAGE, JOVBaseNode, JOVImageNode, Lexicon, \
 from Jovimetrix.sup.util import EnumConvertType, parse_param, zip_longest_fill
 
 from Jovimetrix.sup.image import MIN_IMAGE_SIZE, EnumScaleMode, EnumInterpolation, \
-    EnumEdge, EnumImageType, EnumShapes, channel_solid, cv2tensor, cv2tensor_full, \
-    image_mask_add, image_matte, image_scalefit, tensor2cv, pil2cv
+    EnumImageType, cv2tensor, cv2tensor_full, image_mask_add, image_matte, \
+    tensor2cv, pil2cv
+
+from Jovimetrix.sup.image.channel import channel_solid
 
 from Jovimetrix.sup.image.compose import image_mask_binary
 
-from Jovimetrix.sup.image.adjust import image_invert, image_rotate, image_transform, image_translate
+from Jovimetrix.sup.image.adjust import EnumEdge, image_invert, image_rotate, \
+    image_scalefit, image_transform, image_translate
 
-from Jovimetrix.sup.image.misc import image_stereogram, shape_ellipse, \
+from Jovimetrix.sup.image.misc import EnumShapes, image_stereogram, shape_ellipse, \
     shape_polygon, shape_quad
 
 from Jovimetrix.sup.text import EnumAlignment, EnumJustify, font_names, \
     text_autosize, text_draw
 
 from Jovimetrix.sup.audio import graph_sausage
-
 
 # =============================================================================
 
@@ -58,17 +60,17 @@ Generate a constant image or mask of a specified size and color. It can be used 
                 Lexicon.PIXEL: (JOV_TYPE_IMAGE, {"tooltips":"Optional Image to Matte with Selected Color"}),
                 Lexicon.RGBA_A: ("VEC4INT", {"default": (0, 0, 0, 255),
                                         "rgb": True, "tooltips": "Constant Color to Output"}),
+                Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.MATTE.name}),
                 Lexicon.WH: ("VEC2INT", {"default": (512, 512),
                                     "label": [Lexicon.W, Lexicon.H],
                                     "tooltips": "Desired Width and Height of the Color Output"}),
-                Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.MATTE.name}),
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
             }
         })
         return Lexicon._parse(d, cls)
 
-    def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
-        pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
+    def run(self, **kw) -> Tuple[torch.Tensor, ...]:
+        pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, [None])
         matte = parse_param(kw, Lexicon.RGBA_A, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)
         mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.MATTE.name)

@@ -9,7 +9,7 @@ import os
 import re
 import sys
 from pathlib import Path
-from enum import Enum, EnumType
+from enum import Enum, EnumMeta as EnumType
 from typing import Any, Dict, Tuple
 
 import cv2

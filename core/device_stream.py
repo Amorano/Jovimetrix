@@ -23,12 +23,15 @@ from Jovimetrix.sup.stream import camera_list, monitor_list, window_list, \
     monitor_capture, window_capture, StreamingServer, StreamManager, \
     MediaStreamDevice, JOV_SPOUT
 
+from Jovimetrix.sup.image.adjust import image_scalefit
+
+from Jovimetrix.sup.image.channel import channel_solid
+
 if JOV_SPOUT:
     from Jovimetrix.sup.stream import SpoutSender, MediaStreamSpout
 
-from Jovimetrix.sup.image import channel_solid, \
-    cv2tensor_full, image_convert, pixel_eval, tensor2cv, image_scalefit, \
-    EnumInterpolation, EnumScaleMode, EnumImageType, MIN_IMAGE_SIZE
+from Jovimetrix.sup.image import cv2tensor_full, image_convert, pixel_eval, \
+    tensor2cv, EnumInterpolation, EnumScaleMode, EnumImageType, MIN_IMAGE_SIZE
 
 # =============================================================================
 

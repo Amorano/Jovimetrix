@@ -7,7 +7,7 @@ Device -- MIDI
     type 2 (asynchronous): each track is independent of the others
 """
 
-from typing import Any, Tuple
+from typing import Tuple
 from math import isclose
 from queue import Queue
 

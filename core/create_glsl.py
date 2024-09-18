@@ -10,6 +10,7 @@ from typing import Any, Tuple
 import torch
 from loguru import logger
 
+
 try:
     from server import PromptServer
     from aiohttp import web
@@ -23,8 +24,10 @@ from Jovimetrix import JOV_TYPE_IMAGE, Lexicon, JOVImageNode, \
 from Jovimetrix.sup.util import EnumConvertType, parse_param, \
     parse_value
 
+from Jovimetrix.sup.image.adjust import image_scalefit
+
 from Jovimetrix.sup.image import MIN_IMAGE_SIZE, EnumInterpolation, \
-    EnumScaleMode, cv2tensor_full, image_convert, image_scalefit, tensor2cv
+    EnumScaleMode, cv2tensor_full, image_convert, tensor2cv
 
 import Jovimetrix.sup.shader as glsl_enums
 

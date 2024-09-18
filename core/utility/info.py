@@ -227,6 +227,34 @@ Exports and Displays immediate information about images.
             cc = 1
         return count, width, height, cc, (width, height), (width, height, cc)
 
+class Passthru(JOVBaseNode):
+    NAME = "PASSTHRU (JOV) 🚌"
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
+    RETURN_TYPES = ()
+    RETURN_NAMES = ()
+    SORT = 860
+    DESCRIPTION = """
+Passes the data into python so it can be probed.
+"""
+    OUTPUT_NODE = True
+
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        d = super().INPUT_TYPES()
+        d = deep_merge(d, {
+            "optional": {
+                Lexicon.UNKNOWN: (JOV_TYPE_ANY, {"default": None, "tooltips":"Pass through data."}),
+            }
+        })
+        return Lexicon._parse(d, cls)
+
+    def run(self, **kw) -> Tuple[Any, ...]:
+        inout = parse_param(kw, Lexicon.UNKNOWN, EnumConvertType.ANY, [None])
+        for x in inout:
+            logger.info(f"{type(x)}")
+            # logger.info(dir(x))
+        return ()
+
 class RouteNode(JOVBaseNode):
     NAME = "ROUTE (JOV) 🚌"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
