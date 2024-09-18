@@ -7,7 +7,7 @@
 import { app } from "../../../scripts/app.js";
 import { $el } from "../../../scripts/ui.js";
 import { apiGet, apiJovimetrix, setting_make } from "../util/util_api.js";
-import { colorContrast, colorRGB2Hex } from "../util/util.js";
+import { colorContrast } from "../util/util.js";
 
 let PICKER, PANEL_COLORIZE, CONTENT, NODE_LIST, CONFIG_CORE, CONFIG_USER, CONFIG_COLOR, CONFIG_REGEX, CONFIG_THEME;
 const USER = "user.default";
@@ -64,7 +64,7 @@ class JovimetrixPanelColorize {
 
         button.addEventListener('click', () => {
             PICKER.setColor(button.dataset.color || '#ffffff');
-            PICKER.show();
+            showColorPicker(button);
         });
 
         return button;
@@ -189,6 +189,58 @@ class JovimetrixPanelColorize {
     }
 }
 
+// Function to create or show the color picker on a button press
+function showColorPicker(button) {
+    const colorValue = button.dataset.color || '#ffffff';
+    if (!PICKER) {
+        // Initialize the color picker once
+        PICKER = Pickr.create({
+            el: button,
+            theme: 'classic', // or any theme
+            default: colorValue, // Set the correct initial color
+            components: {
+                // Main components
+                preview: true,
+                opacity: true,
+                hue: true,
+
+                // Input / interaction
+                interaction: {
+                    hex: true,
+                    rgba: true,
+                    input: true,
+                    save: true
+                }
+            }
+        });
+
+        PICKER.on('save', (color) => {
+            const newColor = color.toHEXA().toString();
+            button.style.backgroundColor = newColor;
+            button.dataset.color = newColor;
+
+            const [type, index, colorType] = button.dataset.identifier.split('.');
+
+            if (type === 'regex') {
+                CONFIG_REGEX[index][colorType] = newColor;
+                apiJovimetrix(`${USER}.color.regex`, CONFIG_REGEX, "config");
+            } else {
+                const themeConfig = CONFIG_THEME[type] || (CONFIG_THEME[type] = {});
+                themeConfig[colorType] = newColor;
+                apiJovimetrix(`${USER}.color.theme.${type}`, CONFIG_THEME[type], "config");
+            }
+
+            if (CONFIG_COLOR.overwrite) {
+                nodeColorAll();
+            }
+
+            PICKER.hide();
+        });
+    }
+    PICKER.setColor(colorValue);
+    PICKER.show();
+}
+
 app.extensionManager.registerSidebarTab({
     id: "jovimetrix.sidebar.colorizer",
     icon: "pi pi-palette",
@@ -243,50 +295,6 @@ app.registerExtension({
             }
             drawNodeShape.apply(this, arguments);
         };
-
-        PICKER = Pickr.create({
-            el: button,
-            theme: 'classic',  // You can change this to any theme you prefer
-            default: button.dataset.color || '#ffffff',  // Set to button's current color or a default color
-            components: {
-                // Color picker components
-                preview: true,
-                opacity: true,
-                hue: true,
-
-                interaction: {
-                    hex: true,
-                    rgba: true,
-                    input: true,
-                    save: true
-                }
-            }
-        });
-
-        // Event handler for when color is changed
-        colorPicker.on('save', (color) => {
-            const newColor = color.toHEXA().toString();
-            button.style.backgroundColor = newColor;
-            button.dataset.color = newColor;
-
-            // Update your configuration based on the identifier
-            const [type, index, colorType] = button.dataset.identifier.split('.');
-            if (type === 'regex') {
-                CONFIG_REGEX[index][colorType] = newColor;
-                apiJovimetrix(`${USER}.color.regex`, CONFIG_REGEX, "config");
-            } else {
-                const themeConfig = CONFIG_THEME[type] || (CONFIG_THEME[type] = {});
-                themeConfig[colorType] = newColor;
-                apiJovimetrix(`${USER}.color.theme.${type}`, CONFIG_THEME[type], "config");
-            }
-
-            if (CONFIG_COLOR.overwrite) {
-                nodeColorAll();
-            }
-
-            colorPicker.hide();
-        });
-
     },
     async beforeRegisterNodeDef(nodeType) {
         const onNodeCreated = nodeType.prototype.onNodeCreated;

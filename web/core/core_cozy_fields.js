@@ -14,7 +14,7 @@ let g_highlight;
 
 app.registerExtension({
     name: "jovimetrix.cozy.fields",
-    setup() {
+    async setup() {
         setting_make("Color 🎨", "Style", "combo",
             "Style to draw nodes.",
             "ComfyUI Default",

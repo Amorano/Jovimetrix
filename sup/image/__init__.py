@@ -250,6 +250,7 @@ class EnumPixelSwizzle(Enum):
     GREEN_A = 10
     BLUE_A = 0
     ALPHA_A = 30
+
     RED_B = 21
     GREEN_B = 11
     BLUE_B = 1
@@ -288,7 +289,7 @@ def image_load(url: str) -> Tuple[TYPE_IMAGE, ...]:
             else:
                 img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
         elif img.ndim < 3:
-            img = np.expand_dims(img, axis=2)
+            img = np.expand_dims(img, -1)
 
     except Exception:
         logger.debug(f"load image fallback to PIL {url}")
@@ -306,7 +307,10 @@ def image_load(url: str) -> Tuple[TYPE_IMAGE, ...]:
         raise Exception(f"No file found at {url}")
 
     mask = image_mask(img)
-    img = image_blend(img, img, mask)
+    if img.ndim == 3 and img.shape[2] == 4:
+        img = image_blend(img, img, mask)
+        img[:,:,3] = mask
+
     return img, mask
 
 def image_load_data(data: str) -> TYPE_IMAGE:
@@ -772,17 +776,19 @@ def channel_merge(channels: List[TYPE_IMAGE]) -> TYPE_IMAGE:
 
 def channel_swap(imageA:TYPE_IMAGE, swap_ot:EnumPixelSwizzle,
                 imageB:TYPE_IMAGE, swap_in:EnumPixelSwizzle) -> TYPE_IMAGE:
+
     index_out = int(swap_ot.value / 10)
     cc_out = imageA.shape[2] if imageA.ndim == 3 else 1
+
     # swap channel is out of range of image size
     if index_out > cc_out:
         return imageA
+
     index_in = int(swap_in.value / 10)
     cc_in = imageB.shape[2] if imageB.ndim == 3 else 1
     if index_in > cc_in:
         return imageA
-    h, w = imageA.shape[:2]
-    imageB = image_scalefit(imageB, w, h, EnumScaleMode.FIT)
+
     imageA[:,:,index_out] = imageB[:,:,index_in]
     return imageA
 
@@ -827,8 +833,8 @@ def image_blend(imageA: TYPE_IMAGE, imageB: TYPE_IMAGE, mask:Optional[TYPE_IMAGE
 
     return image_crop_center(image, w, h)
 
-def image_convert(image: TYPE_IMAGE, channels: int, width:int=None, height:int=None,
-                  matte:Tuple[int,...]=(0,0,0,0)) -> TYPE_IMAGE:
+def image_convert(image: TYPE_IMAGE, channels: int, width: int=None, height: int=None,
+                  matte: Tuple[int, ...]=(0, 0, 0, 0)) -> TYPE_IMAGE:
     """Force image format to a specific number of channels.
 
     Args:
@@ -837,34 +843,35 @@ def image_convert(image: TYPE_IMAGE, channels: int, width:int=None, height:int=N
         width (int): Desired width. `None` means leave unchanged.
         height (int): Desired height. `None` means leave unchanged.
         matte (tuple): RGBA color to use as background color for transparent areas.
+
     Returns:
         TYPE_IMAGE: Image with the specified number of channels.
     """
 
     if image.ndim == 2:
-        # Expand grayscale image to have a channel dimension
         image = np.expand_dims(image, -1)
 
-    # 1, 3 or 4
-    if (channels := max(1, min(4, channels))) == 2:
-        channels = 1
-    cc = image.shape[2] if image.ndim == 3 else 1
-
+    cc = image.shape[2]
     if cc != channels:
         if channels == 1:
-            image = image_grayscale(image)
+            image = image[..., :1]
 
         elif channels == 3:
             if cc == 1:
-                image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
+                image = np.repeat(image, 3, axis=2)
             elif cc == 4:
-                image = cv2.cvtColor(image, cv2.COLOR_BGRA2BGR)
+                image = image[..., :3]
 
-        elif cc == 1:
-            image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGRA)
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2BGRA)
+        elif channels == 4:
+            if cc == 1:
+                alpha_channel = np.full(image.shape[:2] + (1,), matte[3], dtype=image.dtype)
+                image = np.repeat(image, 3, axis=2)
+                image = np.concatenate((image, alpha_channel), axis=2)
+            elif cc == 3:
+                alpha_channel = np.full(image.shape[:2] + (1,), matte[3], dtype=image.dtype)
+                image = np.concatenate((image, alpha_channel), axis=2)
 
-    # if there is expansion, it should be on a black canvas?
+    # If there is expansion, use matte as background and crop/resize if necessary
     if width is not None or height is not None:
         h, w = image.shape[:2]
         width = width or w
@@ -927,7 +934,7 @@ def image_flatten(image: List[TYPE_IMAGE], width:int=None, height:int=None,
                   sample:EnumInterpolation=EnumInterpolation.LANCZOS4) -> TYPE_IMAGE:
 
     if mode == EnumScaleMode.MATTE:
-        width, height = image_minmax(image)[1:]
+        width, height, _, _ = image_minmax(image)[1:]
     else:
         h, w = image[0].shape[:2]
         width = width or w
@@ -964,23 +971,29 @@ def image_grayscale(image: TYPE_IMAGE, use_alpha: bool = False) -> TYPE_IMAGE:
         return image
 
     if image.shape[2] == 4:
-        # Convert RGBA to grayscale
         grayscale = cv2.cvtColor(image, cv2.COLOR_BGRA2GRAY)
         if use_alpha:
-            # Normalize alpha to [0, 1]
             alpha_channel = image[:, :, 3] / 255.0
             grayscale = (grayscale * alpha_channel).astype(np.uint8)
         return grayscale
 
-    # Convert RGB to grayscale
     return cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-def image_mask(image:TYPE_IMAGE, color:TYPE_PIXEL=255) -> TYPE_IMAGE:
-    """Create a mask from the image, preserving transparency."""
+def image_mask(image: TYPE_IMAGE, color: TYPE_PIXEL = 255) -> TYPE_IMAGE:
+    """Create a mask from the image, preserving transparency.
+
+    Args:
+        image (TYPE_IMAGE): Input image, assumed to be 2D or 3D (with or without alpha channel).
+        color (TYPE_PIXEL): Value to fill the mask (default is 255).
+
+    Returns:
+        TYPE_IMAGE: Mask of the image, either the alpha channel or a full mask of the given color.
+    """
     if image.ndim == 3 and image.shape[2] == 4:
         return image[..., 3]
-    image = np.ones_like(image, dtype=np.uint8) * color
-    return image[:,:,0]
+
+    h, w = image.shape[:2]
+    return np.ones((h, w), dtype=np.uint8) * color
 
 def image_mask_add(image:TYPE_IMAGE, mask:TYPE_IMAGE=None, alpha:float=255) -> TYPE_IMAGE:
     """Put custom mask into an image. If there is no mask, alpha is applied.

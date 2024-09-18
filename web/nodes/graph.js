@@ -13,7 +13,7 @@ const _prefix = '❔'
 
 app.registerExtension({
 	name: 'jovimetrix.node.' + _id,
-    init() {
+    async init() {
         LGraphCanvas.link_type_colors['JOV_VG_0'] = "#A00";
         LGraphCanvas.link_type_colors['JOV_VG_1'] = "#0A0";
         LGraphCanvas.link_type_colors['JOV_VG_2'] = "#00A";

@@ -755,11 +755,10 @@ try:
     @PromptServer.instance.routes.post("/jovimetrix/message")
     async def jovimetrix_message_post(request) -> Any:
         json_data = await request.json()
-        response = web.json_response()
-        if (did := json_data.get("id", None)) is not None:
+        if (did := json_data.get("id")) is not None:
             ComfyAPIMessage.MESSAGE[str(did)] = json_data
-            response = web.json_response(json_data)
-        return response
+            return web.json_response(json_data)
+        return web.json_response({})
 
     @PromptServer.instance.routes.get("/jovimetrix/config")
     async def jovimetrix_config(request) -> Any:

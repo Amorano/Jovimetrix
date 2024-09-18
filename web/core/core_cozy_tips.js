@@ -72,7 +72,7 @@ app.registerExtension({
             })
         }
     },
-    setup() {
+    async setup() {
         const tooltipEl = $el("div.jov-graph-tooltip", {
             parent: document.body,
         });

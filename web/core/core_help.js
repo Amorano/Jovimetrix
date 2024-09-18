@@ -80,7 +80,7 @@ jovimetrixEvents.addEventListener('jovimetrixHelpRequested', async (event) => {
 
 app.registerExtension({
     name: "jovimetrix.help",
-    setup() {
+    async setup() {
         const onSelectionChange = app.canvas.onSelectionChange;
         app.canvas.onSelectionChange = function(selectedNodes) {
             const me = onSelectionChange?.apply(this);

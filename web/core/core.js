@@ -1,6 +1,20 @@
 /**
  * File: core.js
  *
+ * ASYNC
+    init
+    setup
+    registerCustomNodes
+    nodeCreated
+    beforeRegisterNodeDef
+    getCustomWidgets
+    afterConfigureGraph
+    refreshComboInNodes
+
+    NON-ASYNC
+    onNodeOutputsUpdated
+    beforeRegisterVueAppNodeDefs
+    loadedGraphNode
  * Project: Jovimetrix
  */
 
@@ -8,7 +22,7 @@ import { app } from "../../../scripts/app.js"
 
 app.registerExtension({
     name: "jovimetrix",
-    init() {
+    async init() {
         const styleTagId = 'jovimetrix-stylesheet';
         let styleTag = document.getElementById(styleTagId);
         if (styleTag) {

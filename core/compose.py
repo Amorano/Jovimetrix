@@ -828,37 +828,46 @@ Swap pixel values between two input images based on specified channel swizzle op
         images = []
         pbar = ProgressBar(len(params))
         for idx, (pA, pB, r, swap_r, g, swap_g, b, swap_b, a, swap_a) in enumerate(params):
-            pA = tensor2cv(pA) if pA is not None else channel_solid(chan=EnumImageType.BGRA)
-            h, w = pA.shape[:2]
+            if pA is None:
+                if pB is None:
+                    out = channel_solid(chan=EnumImageType.BGRA)
+                    images.append(cv2tensor_full(out))
+                    pbar.update_absolute(idx)
+                    continue
+
+                h, w = pB.shape[:2]
+                pA = channel_solid(w, h, chan=EnumImageType.BGRA)
+            else:
+                h, w = pA.shape[:2]
+                pA = tensor2cv(pA)
+
             pB = tensor2cv(pB) if pB is not None else channel_solid(w, h, chan=EnumImageType.BGRA)
-            out = channel_solid(w, h, (r,g,b,a), EnumImageType.BGRA)
+            out = channel_solid(w, h, (b,g,r,a), EnumImageType.BGRA)
+
+            images.append(cv2tensor_full(pB))
+            pbar.update_absolute(idx)
+            continue
 
             if len(pA) < 2 or pA.shape[2] < 4:
                 pA = image_convert(pA, 4)
             if len(pB) < 2 or pB.shape[2] < 4:
                 pB = image_convert(pB, 4)
 
-            # crop fit?
-            pB = image_scalefit(pB, w, h, EnumScaleMode.CROP)
 
-            def swapper(swap_out:EnumPixelSwizzle, swap_in:EnumPixelSwizzle) -> np.ndarray[Any]:
-                target = out
-                swap_in = EnumPixelSwizzle[swap_in]
-                if swap_in in [EnumPixelSwizzle.RED_A, EnumPixelSwizzle.GREEN_A,
-                            EnumPixelSwizzle.BLUE_A, EnumPixelSwizzle.ALPHA_A]:
-                    target = pA
-                elif swap_in in [EnumPixelSwizzle.RED_B, EnumPixelSwizzle.GREEN_B,
-                            EnumPixelSwizzle.BLUE_B, EnumPixelSwizzle.ALPHA_B]:
-                    target = pB
-                elif swap_in != EnumPixelSwizzle.CONSTANT:
-                    target = channel_swap(pA, swap_out, pB, swap_in)
-                return target
 
-            # logger.debug(swap_r, swap_g, swap_b, swap_a)
-            out[..., 0] = swapper(EnumPixelSwizzle.BLUE_A, swap_b)[..., 0]
-            out[:,:,1] = swapper(EnumPixelSwizzle.GREEN_A, swap_g)[:,:,1]
-            out[:,:,2] = swapper(EnumPixelSwizzle.RED_A, swap_r)[:,:,2]
-            out[..., 3] = swapper(EnumPixelSwizzle.ALPHA_A, swap_a)[..., 3]
+            # matte scale/pad
+            sh, sw = pB.shape[:2]
+            if h != sh or w != sw:
+                pB = image_scalefit(pB, w, h, EnumScaleMode.MATTE)
+                pB = image_scalefit(pB, w, h, EnumScaleMode.CROP)
+
+            for i, (chan, who) in enumerate([(2, swap_r), (1, swap_g), (0, swap_b), (3, swap_a)]):
+                if (who := EnumPixelSwizzle[who]) != EnumPixelSwizzle.CONSTANT:
+                    side = who.value % 10
+                    idx = who.value // 10
+                    print(chan, side, idx, i, who)
+                    out[:,:,i] = (pB if side == 1 else pA)[:,:,chan]
+
             images.append(cv2tensor_full(out))
             pbar.update_absolute(idx)
         return [torch.cat(i, dim=0) for i in zip(*images)]
