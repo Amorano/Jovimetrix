@@ -18,7 +18,7 @@ from Jovimetrix import JOV_TYPE_IMAGE, JOVBaseNode, JOVImageNode, Lexicon, \
 
 from Jovimetrix.sup.util import EnumConvertType, parse_param, zip_longest_fill
 
-from Jovimetrix.sup.image import MIN_IMAGE_SIZE, EnumScaleMode, EnumInterpolation, \
+from Jovimetrix.sup.image import MIN_IMAGE_SIZE, \
     EnumImageType, cv2tensor, cv2tensor_full, image_mask_add, image_matte, \
     tensor2cv, pil2cv
 
@@ -26,8 +26,8 @@ from Jovimetrix.sup.image.channel import channel_solid
 
 from Jovimetrix.sup.image.compose import image_mask_binary
 
-from Jovimetrix.sup.image.adjust import EnumEdge, image_invert, image_rotate, \
-    image_scalefit, image_transform, image_translate
+from Jovimetrix.sup.image.adjust import EnumEdge, EnumScaleMode, EnumInterpolation, \
+    image_invert, image_rotate, image_scalefit, image_transform, image_translate
 
 from Jovimetrix.sup.image.misc import EnumShapes, image_stereogram, shape_ellipse, \
     shape_polygon, shape_quad
@@ -70,7 +70,7 @@ Generate a constant image or mask of a specified size and color. It can be used 
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[torch.Tensor, ...]:
-        pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, [None])
+        pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
         matte = parse_param(kw, Lexicon.RGBA_A, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)
         mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.MATTE.name)

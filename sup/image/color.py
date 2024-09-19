@@ -14,7 +14,9 @@ from skimage import exposure
 from blendmodes.blend import BlendType
 
 from Jovimetrix.sup.image import TYPE_IMAGE, TYPE_PIXEL, bgr2hsv, hsv2bgr, \
-    image_blend, image_convert, image_grayscale, image_mask, image_mask_add
+    image_convert, image_mask, image_mask_add
+
+from Jovimetrix.sup.image.compose import image_blend
 
 # =============================================================================
 # === ENUMERATION ===
@@ -434,3 +436,26 @@ def image_gradient_map(image:TYPE_IMAGE, gradient_map:TYPE_IMAGE, reverse:bool=F
     cmap = cv2.resize(cmap, (256, 256))
     cmap = cmap[0,:,:].reshape((256, 1, 3)).astype(np.uint8)
     return cv2.applyColorMap(grey, cmap)
+
+def image_grayscale(image: TYPE_IMAGE, use_alpha: bool = False) -> TYPE_IMAGE:
+    """Convert image to grayscale, optionally using the alpha channel if present.
+
+    Args:
+        image (TYPE_IMAGE): Input image, potentially with multiple channels.
+        use_alpha (bool): If True and the image has 4 channels, multiply the grayscale
+                          values by the alpha channel. Defaults to False.
+
+    Returns:
+        TYPE_IMAGE: Grayscale image, optionally alpha-multiplied.
+    """
+    if image.ndim == 2 or image.shape[2] == 1:
+        return image
+
+    if image.shape[2] == 4:
+        grayscale = cv2.cvtColor(image, cv2.COLOR_BGRA2GRAY)
+        if use_alpha:
+            alpha_channel = image[:, :, 3] / 255.0
+            grayscale = (grayscale * alpha_channel).astype(np.uint8)
+        return grayscale
+
+    return cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)

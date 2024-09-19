@@ -17,13 +17,12 @@ from io import BytesIO
 import math
 import base64
 from enum import Enum
-from typing import List, Optional, Tuple
+from typing import List, Tuple
 
 import cv2
 import torch
 import numpy as np
 from PIL import Image, ImageOps
-from blendmodes.blend import BlendType, blendLayers
 
 from loguru import logger
 
@@ -72,29 +71,9 @@ class EnumImageType(Enum):
     BGR = 30
     BGRA = 40
 
-class EnumInterpolation(Enum):
-    NEAREST = cv2.INTER_NEAREST
-    LINEAR = cv2.INTER_LINEAR
-    CUBIC = cv2.INTER_CUBIC
-    AREA = cv2.INTER_AREA
-    LANCZOS4 = cv2.INTER_LANCZOS4
-    LINEAR_EXACT = cv2.INTER_LINEAR_EXACT
-    NEAREST_EXACT = cv2.INTER_NEAREST_EXACT
-    # INTER_MAX = cv2.INTER_MAX
-    # WARP_FILL_OUTLIERS = cv2.WARP_FILL_OUTLIERS
-    # WARP_INVERSE_MAP = cv2.WARP_INVERSE_MAP
-
 class EnumIntFloat(Enum):
     FLOAT = 0
     INT = 1
-
-class EnumScaleMode(Enum):
-    # NONE = 0
-    MATTE = 0
-    CROP = 20
-    FIT = 10
-    ASPECT = 30
-    ASPECT_SHORT = 35
 
 # ==============================================================================
 # === CONVERSION ===
@@ -131,20 +110,26 @@ def b64_2_cv(base64_string) -> TYPE_IMAGE:
 
 def cv2pil(image: TYPE_IMAGE) -> Image.Image:
     """Convert a CV2 image to a PIL Image."""
-    if (cc := image.shape[2] if len(image.shape) > 2 else 1) > 1:
+    if image.ndim > 2:
+        cc = image.shape[2]
         if cc == 3:
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        else:
+        elif cc == 4:
             image = cv2.cvtColor(image, cv2.COLOR_BGRA2RGBA)
+        else:
+            image = np.squeeze(image, axis=-1)
     return Image.fromarray(image)
 
-def cv2tensor(image: np.ndarray, mask: bool = False) -> torch.Tensor:
+def cv2tensor(image: TYPE_IMAGE, mask: bool=False) -> torch.Tensor:
     """Convert a CV2 image to a torch tensor, with handling for grayscale/mask."""
-    if mask or image.ndim < 3:
-        if (image.ndim == 3 and image.shape[2] == 1):
-            image = image_mask(image)
+    if image.ndim < 3:
+        image = np.expand_dims(image, -1)
+
+    if image.shape[2] != 1 and mask:
+        if image.shape[2] == 4:
+            image = cv2.cvtColor(image, cv2.COLOR_BGRA2GRAY)
         else:
-            image = image_grayscale(image)
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
     image = image.astype(np.float32) / 255.0
     return torch.from_numpy(image).unsqueeze(0)
@@ -287,220 +272,6 @@ def pixel_eval(color: TYPE_PIXEL,
 # === IMAGE ===
 # ==============================================================================
 
-def image_blend(imageA: TYPE_IMAGE, imageB: TYPE_IMAGE, mask:Optional[TYPE_IMAGE]=None,
-                blendOp:BlendType=BlendType.NORMAL, alpha:float=1) -> TYPE_IMAGE:
-    """Blending that will expand to the largest image pre-operation."""
-
-    h1, w1 = imageA.shape[:2]
-    h2, w2 = imageB.shape[:2]
-    w = max(w1, w2)
-    h = max(h1, h2)
-
-    # logger.debug([w, h, imageA.shape, imageB.shape])
-    images = []
-    for img in [imageA, imageB]:
-        img = image_convert(img, 4, w, h)
-        images.append(img)
-
-    imageA = images[0]
-    imageB = images[1]
-    old_mask = image_mask(imageB)
-    if mask is None:
-        mask = old_mask
-    else:
-        mask = image_convert(mask, 1, w, h)
-        mask = mask[..., 0][:,:]
-        mask = cv2.bitwise_and(mask, old_mask)
-
-    imageA = cv2pil(imageA)
-    imageB[..., 3] = mask
-    imageB = cv2pil(imageB)
-    alpha = np.clip(alpha, 0, 1)
-    image = blendLayers(imageA, imageB, blendOp.value, alpha)
-    image = pil2cv(image)
-
-    return image_crop_center(image, w, h)
-
-def image_convert(image: TYPE_IMAGE, channels: int, width: int=None, height: int=None,
-                  matte: Tuple[int, ...]=(0, 0, 0, 0)) -> TYPE_IMAGE:
-    """Force image format to a specific number of channels.
-    Args:
-        image (TYPE_IMAGE): Input image.
-        channels (int): Desired number of channels (1, 3, or 4).
-        width (int): Desired width. `None` means leave unchanged.
-        height (int): Desired height. `None` means leave unchanged.
-        matte (tuple): RGBA color to use as background color for transparent areas.
-    Returns:
-        TYPE_IMAGE: Image with the specified number of channels.
-    """
-    if image.ndim == 2:
-        image = np.expand_dims(image, axis=-1)
-
-    if (cc := image.shape[2]) != channels:
-        if   cc == 1 and channels == 3:
-            image = np.repeat(image, 3, axis=2)
-        elif cc == 1 and channels == 4:
-            rgb = np.repeat(image, 3, axis=2)
-            alpha = np.full(image.shape[:2] + (1,), matte[3], dtype=image.dtype)
-            image = np.concatenate([rgb, alpha], axis=2)
-        elif cc == 3 and channels == 1:
-            image = np.mean(image, axis=2, keepdims=True).astype(image.dtype)
-        elif cc == 3 and channels == 4:
-            alpha = np.full(image.shape[:2] + (1,), matte[3], dtype=image.dtype)
-            image = np.concatenate([image, alpha], axis=2)
-        elif cc == 4 and channels == 1:
-            rgb = image[..., :3]
-            alpha = image[..., 3:4] / 255.0
-            image = (np.mean(rgb, axis=2, keepdims=True) * alpha).astype(image.dtype)
-        elif cc == 4 and channels == 3:
-            image = image[..., :3]
-
-    # Resize if width or height is specified
-    h, w = image.shape[:2]
-    new_width = width if width is not None else w
-    new_height = height if height is not None else h
-    if (new_width, new_height) != (w, h):
-        # Create a new image with the matte color
-        new_image = np.full((new_height, new_width, channels), matte[:channels], dtype=image.dtype)
-        paste_x = (new_width - w) // 2
-        paste_y = (new_height - h) // 2
-        new_image[paste_y:paste_y+h, paste_x:paste_x+w] = image[:h, :w]
-        image = new_image
-
-    return image
-
-def image_crop_polygonal(image: TYPE_IMAGE, points: List[TYPE_fCOORD2D]) -> TYPE_IMAGE:
-    cc = image.shape[2] if image.ndim == 3 else 1
-    height, width = image.shape[:2]
-    point_mask = np.zeros((height, width), dtype=np.uint8)
-    points = np.array(points, np.int32).reshape((-1, 1, 2))
-    point_mask = cv2.fillPoly(point_mask, [points], 255)
-    x, y, w, h = cv2.boundingRect(point_mask)
-    cropped_image = cv2.resize(image[y:y+h, x:x+w], (w, h)).astype(np.uint8)
-    # Apply the mask to the cropped image
-    point_mask_cropped = cv2.resize(point_mask[y:y+h, x:x+w], (w, h))
-    if cc == 4:
-        mask = image_mask(image, 0)
-        alpha_channel = cv2.resize(mask[y:y+h, x:x+w], (w, h))
-        cropped_image = cv2.cvtColor(cropped_image, cv2.COLOR_BGRA2BGR)
-        cropped_image = cv2.bitwise_and(cropped_image, cropped_image, mask=point_mask_cropped)
-        return image_mask_add(cropped_image, alpha_channel)
-    elif cc == 1:
-        cropped_image = cv2.cvtColor(cropped_image, cv2.COLOR_GRAY2BGR)
-        cropped_image = cv2.bitwise_and(cropped_image, cropped_image, mask=point_mask_cropped)
-        return image_convert(cropped_image, cc)
-    return cv2.bitwise_and(cropped_image, cropped_image, mask=point_mask_cropped)
-
-def image_crop(image: TYPE_IMAGE, width:int=None, height:int=None, offset:Tuple[float, float]=(0, 0)) -> TYPE_IMAGE:
-    h, w = image.shape[:2]
-    width = width if width is not None else w
-    height = height if height is not None else h
-    x, y = offset
-    x = max(0, min(width, x))
-    y = max(0, min(width, y))
-    x2 = max(0, min(width, x + width))
-    y2 = max(0, min(height, y + height))
-    points = [(x, y), (x2, y), (x2, y2), (x, y2)]
-    return image_crop_polygonal(image, points)
-
-def image_crop_center(image: TYPE_IMAGE, width:int=None, height:int=None) -> TYPE_IMAGE:
-    """Helper crop function to find the "center" of the area of interest."""
-    h, w = image.shape[:2]
-    cx = w // 2
-    cy = h // 2
-    width = w if width is None else width
-    height = h if height is None else height
-    x1 = max(0, int(cx - width // 2))
-    y1 = max(0, int(cy - height // 2))
-    x2 = min(w, int(cx + width // 2)) - 1
-    y2 = min(h, int(cy + height // 2)) - 1
-    points = [(x1, y1), (x2, y1), (x2, y2), (x1, y2)]
-    return image_crop_polygonal(image, points)
-
-def image_grayscale(image: TYPE_IMAGE, use_alpha: bool = False) -> TYPE_IMAGE:
-    """Convert image to grayscale, optionally using the alpha channel if present.
-
-    Args:
-        image (TYPE_IMAGE): Input image, potentially with multiple channels.
-        use_alpha (bool): If True and the image has 4 channels, multiply the grayscale
-                          values by the alpha channel. Defaults to False.
-
-    Returns:
-        TYPE_IMAGE: Grayscale image, optionally alpha-multiplied.
-    """
-    if image.ndim == 2 or image.shape[2] == 1:
-        return image
-
-    if image.shape[2] == 4:
-        grayscale = cv2.cvtColor(image, cv2.COLOR_BGRA2GRAY)
-        if use_alpha:
-            alpha_channel = image[:, :, 3] / 255.0
-            grayscale = (grayscale * alpha_channel).astype(np.uint8)
-        return grayscale
-
-    return cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
-def image_lerp(imageA: TYPE_IMAGE, imageB:TYPE_IMAGE, mask:TYPE_IMAGE=None,
-               alpha:float=1.) -> TYPE_IMAGE:
-
-    imageA = imageA.astype(np.float32)
-    imageB = imageB.astype(np.float32)
-
-    # establish mask
-    alpha = np.clip(alpha, 0, 1)
-    if mask is None:
-        height, width = imageA.shape[:2]
-        mask = np.ones((height, width, 1), dtype=np.float32)
-    else:
-        # normalize the mask
-        mask = mask.astype(np.float32)
-        mask = (mask - mask.min()) / (mask.max() - mask.min()) * alpha
-
-    # LERP
-    imageA = cv2.multiply(1. - mask, imageA)
-    imageB = cv2.multiply(mask, imageB)
-    imageA = (cv2.add(imageA, imageB) / 255. - 0.5) * 2.0
-    imageA = (imageA * 255).astype(np.uint8)
-    return np.clip(imageA, 0, 255)
-
-def image_load(url: str) -> Tuple[TYPE_IMAGE, ...]:
-    try:
-        img = cv2.imread(url, cv2.IMREAD_UNCHANGED)
-        if img is None:
-            raise ValueError(f"{url} could not be loaded.")
-
-        img = image_normalize(img)
-        # logger.debug(f"load image {url}: {img.ndim} {img.shape}")
-        if img.ndim == 3:
-            if img.shape[2] == 4:
-                img = cv2.cvtColor(img, cv2.COLOR_RGBA2BGRA)
-            else:
-                img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-        elif img.ndim < 3:
-            img = np.expand_dims(img, -1)
-
-    except Exception:
-        logger.debug(f"load image fallback to PIL {url}")
-        try:
-            img = Image.open(url)
-            img = ImageOps.exif_transpose(img)
-            img = np.array(img)
-            if img.dtype != np.uint8:
-                img = np.clip(np.array(img * 255), 0, 255).astype(dtype=np.uint8)
-        except Exception as e:
-            logger.error(str(e))
-            raise Exception(f"Error loading image: {e}")
-
-    if img is None:
-        raise Exception(f"No file found at {url}")
-
-    mask = image_mask(img)
-    if img.ndim == 3 and img.shape[2] == 4:
-        img = image_blend(img, img, mask)
-        img[:,:,3] = mask
-
-    return img, mask
-
 def image_mask(image: TYPE_IMAGE, color: TYPE_PIXEL = 255) -> TYPE_IMAGE:
     """Create a mask from the image, preserving transparency.
 
@@ -575,9 +346,9 @@ def image_matte(image: TYPE_IMAGE, color: TYPE_iRGBA=(0,0,0,255), width: int=Non
         image = image[y_offset:y_offset + image_height, x_offset:x_offset + image_width, :]
     return matte
 
-def image_matte(image: TYPE_IMAGE, color: TYPE_iRGBA= (0, 0, 0, 255), width: int = None, height: int = None) -> TYPE_IMAGE:
+def image_matte(image: TYPE_IMAGE, color: TYPE_iRGBA=(0, 0, 0, 255), width: int=None, height: int=None) -> TYPE_IMAGE:
     """
-    Puts an RGBA image atop a colored matte expanding or clipping the image if requested.
+    Puts an RGB(A) image atop a colored matte expanding or clipping the image if requested.
 
     Args:
         image (TYPE_IMAGE): The input RGBA image.
@@ -595,7 +366,7 @@ def image_matte(image: TYPE_IMAGE, color: TYPE_iRGBA= (0, 0, 0, 255), width: int
     height = height or image_height
 
     # Create a solid matte with the specified color
-    matte = np.full((height, width, 4), color, dtype=np.uint8)
+    matte = np.full((height, width, 4), color, dtype=image.dtype)
 
     # Calculate the center position for the image on the matte
     x_offset = (width - image_width) // 2
@@ -621,6 +392,118 @@ def image_matte(image: TYPE_IMAGE, color: TYPE_iRGBA= (0, 0, 0, 255), width: int
         matte[y_offset:y_offset + image_height, x_offset:x_offset + image_width, :3] = image[:, :, :3]
 
     return matte
+
+def image_convert(image: TYPE_IMAGE, channels: int, width: int=None, height: int=None,
+                  matte: Tuple[int, ...]=(0, 0, 0, 0)) -> TYPE_IMAGE:
+    """Force image format to a specific number of channels.
+    Args:
+        image (TYPE_IMAGE): Input image.
+        channels (int): Desired number of channels (1, 3, or 4).
+        width (int): Desired width. `None` means leave unchanged.
+        height (int): Desired height. `None` means leave unchanged.
+        matte (tuple): RGBA color to use as background color for transparent areas.
+    Returns:
+        TYPE_IMAGE: Image with the specified number of channels.
+    """
+    if image.ndim == 2:
+        image = np.expand_dims(image, axis=-1)
+
+    if (cc := image.shape[2]) != channels:
+        if   cc == 1 and channels == 3:
+            image = np.repeat(image, 3, axis=2)
+        elif cc == 1 and channels == 4:
+            rgb = np.repeat(image, 3, axis=2)
+            alpha = np.full(image.shape[:2] + (1,), matte[3], dtype=image.dtype)
+            image = np.concatenate([rgb, alpha], axis=2)
+        elif cc == 3 and channels == 1:
+            image = np.mean(image, axis=2, keepdims=True).astype(image.dtype)
+        elif cc == 3 and channels == 4:
+            alpha = np.full(image.shape[:2] + (1,), matte[3], dtype=image.dtype)
+            image = np.concatenate([image, alpha], axis=2)
+        elif cc == 4 and channels == 1:
+            rgb = image[..., :3]
+            alpha = image[..., 3:4] / 255.0
+            image = (np.mean(rgb, axis=2, keepdims=True) * alpha).astype(image.dtype)
+        elif cc == 4 and channels == 3:
+            image = image[..., :3]
+
+    # Resize if width or height is specified
+    h, w = image.shape[:2]
+    new_width = width if width is not None else w
+    new_height = height if height is not None else h
+    if (new_width, new_height) != (w, h):
+        # Create a new image with the matte color
+        new_image = np.full((new_height, new_width, channels), matte[:channels], dtype=image.dtype)
+        paste_x = (new_width - w) // 2
+        paste_y = (new_height - h) // 2
+        new_image[paste_y:paste_y+h, paste_x:paste_x+w] = image[:h, :w]
+        image = new_image
+
+    return image
+
+def image_lerp(imageA: TYPE_IMAGE, imageB:TYPE_IMAGE, mask:TYPE_IMAGE=None,
+               alpha:float=1.) -> TYPE_IMAGE:
+
+    imageA = imageA.astype(np.float32)
+    imageB = imageB.astype(np.float32)
+
+    # establish mask
+    alpha = np.clip(alpha, 0, 1)
+    if mask is None:
+        height, width = imageA.shape[:2]
+        mask = np.ones((height, width, 1), dtype=np.float32)
+    else:
+        # normalize the mask
+        mask = mask.astype(np.float32)
+        mask = (mask - mask.min()) / (mask.max() - mask.min()) * alpha
+
+    # LERP
+    imageA = cv2.multiply(1. - mask, imageA)
+    imageB = cv2.multiply(mask, imageB)
+    imageA = (cv2.add(imageA, imageB) / 255. - 0.5) * 2.0
+    imageA = (imageA * 255).astype(imageA.dtype)
+    return np.clip(imageA, 0, 255)
+
+def image_load(url: str) -> Tuple[TYPE_IMAGE, TYPE_IMAGE]:
+    try:
+        img = cv2.imread(url, cv2.IMREAD_UNCHANGED)
+        if img is None:
+            raise ValueError(f"{url} could not be loaded.")
+
+        img = image_normalize(img)
+        # logger.debug(f"load image {url}: {img.ndim} {img.shape}")
+        if img.ndim == 3:
+            if img.shape[2] == 4:
+                img = cv2.cvtColor(img, cv2.COLOR_RGBA2BGRA)
+            else:
+                img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+        elif img.ndim < 3:
+            img = np.expand_dims(img, -1)
+
+    except Exception:
+        logger.debug(f"load image fallback to PIL {url}")
+        try:
+            img = Image.open(url)
+            img = ImageOps.exif_transpose(img)
+            img = np.array(img)
+            if img.dtype != np.uint8:
+                img = np.clip(np.array(img * 255), 0, 255).astype(dtype=np.uint8)
+        except Exception as e:
+            logger.error(str(e))
+            raise Exception(f"Error loading image: {e}")
+
+    if img is None:
+        raise Exception(f"No file found at {url}")
+
+    mask = image_mask(img)
+    """
+    if img.ndim == 3 and img.shape[2] == 4:
+        alpha = mask / 255.0
+        img[..., :3] = img[..., :3] * alpha[..., None]
+        img[:,:,3] = mask
+    """
+
+    return img, mask
 
 def image_minmax(image:List[TYPE_IMAGE]) -> Tuple[int, int, int, int]:
     h_min = w_min = 100000000000

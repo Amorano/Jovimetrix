@@ -12,9 +12,11 @@ from PIL import Image, ImageChops, ImageOps
 from loguru import logger
 
 from Jovimetrix.sup.image import TYPE_IMAGE, TYPE_PIXEL, cv2pil, image_convert, \
-    image_grayscale, image_matte, pil2cv
+    image_matte, pil2cv
 
 from Jovimetrix.sup.image.channel import channel_add
+
+from Jovimetrix.sup.image.color import image_grayscale
 
 from Jovimetrix.sup.util import grid_make
 

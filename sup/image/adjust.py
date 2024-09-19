@@ -4,7 +4,7 @@ Support
 """
 
 from enum import Enum
-from typing import Tuple
+from typing import List, Tuple
 
 import cv2
 import torch
@@ -12,9 +12,11 @@ import numpy as np
 
 from loguru import logger
 
-from Jovimetrix.sup.image import TYPE_IMAGE, TYPE_PIXEL, EnumInterpolation, \
-    EnumScaleMode, TYPE_fCOORD2D, bgr2image, cv2tensor, image2bgr, \
-    image_crop_center, image_matte, tensor2cv
+from Jovimetrix.sup.image import MIN_IMAGE_SIZE, TYPE_IMAGE, TYPE_PIXEL, \
+    TYPE_fCOORD2D, bgr2image, cv2tensor, image2bgr, image_convert, \
+    image_matte, image_minmax, tensor2cv
+
+from Jovimetrix.sup.image.compose import image_crop_center
 
 # ==============================================================================
 # === ENUMERATION ===
@@ -26,6 +28,18 @@ class EnumEdge(Enum):
     WRAPX = 3
     WRAPY = 4
 
+class EnumInterpolation(Enum):
+    NEAREST = cv2.INTER_NEAREST
+    LINEAR = cv2.INTER_LINEAR
+    CUBIC = cv2.INTER_CUBIC
+    AREA = cv2.INTER_AREA
+    LANCZOS4 = cv2.INTER_LANCZOS4
+    LINEAR_EXACT = cv2.INTER_LINEAR_EXACT
+    NEAREST_EXACT = cv2.INTER_NEAREST_EXACT
+    # INTER_MAX = cv2.INTER_MAX
+    # WARP_FILL_OUTLIERS = cv2.WARP_FILL_OUTLIERS
+    # WARP_INVERSE_MAP = cv2.WARP_INVERSE_MAP
+
 class EnumMirrorMode(Enum):
     NONE = -1
     X = 0
@@ -36,6 +50,14 @@ class EnumMirrorMode(Enum):
     X_FLIP_Y = 50
     FLIP_XY = 60
     FLIP_X_FLIP_Y = 70
+
+class EnumScaleMode(Enum):
+    # NONE = 0
+    MATTE = 0
+    CROP = 20
+    FIT = 10
+    ASPECT = 30
+    ASPECT_SHORT = 35
 
 # ==============================================================================
 # === IMAGE ===
@@ -119,6 +141,28 @@ def image_filter(image:TYPE_IMAGE, start:Tuple[int]=(128,128,128),
         output_image = torch.cat([output_image, old_alpha.unsqueeze(2)], dim=2)
 
     return tensor2cv(output_image), mask.cpu().numpy().astype(np.uint8) * 255
+
+def image_flatten(image: List[TYPE_IMAGE], width:int=None, height:int=None,
+                  mode=EnumScaleMode.MATTE,
+                  sample:EnumInterpolation=EnumInterpolation.LANCZOS4) -> TYPE_IMAGE:
+
+    if mode == EnumScaleMode.MATTE:
+        width, height, _, _ = image_minmax(image)[1:]
+    else:
+        h, w = image[0].shape[:2]
+        width = width or w
+        height = height or h
+
+    current = np.zeros((height, width, 4), dtype=np.uint8)
+    for x in image:
+        if mode != EnumScaleMode.MATTE:
+            x = image_scalefit(x, width, height, mode, sample)
+        x = image_matte(x, (0,0,0,0), width, height)
+        x = image_scalefit(x, width, height, EnumScaleMode.CROP, sample)
+        x = image_convert(x, 4)
+        #@TODO: ADD VARIOUS COMP OPS?
+        current = cv2.add(current, x)
+    return current
 
 def image_gamma(image: TYPE_IMAGE, value: float) -> TYPE_IMAGE:
     # preserve original format
@@ -322,8 +366,6 @@ def image_scalefit(image: TYPE_IMAGE, width: int, height:int,
 
         case EnumScaleMode.CROP:
             image = image_crop_center(image, width, height)
-            matte = (*matte[:3], 0)
-            image = image_matte(image, matte, width, height)
 
         case EnumScaleMode.FIT:
             image = cv2.resize(image, (width, height), interpolation=sample.value)

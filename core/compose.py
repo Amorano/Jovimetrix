@@ -20,19 +20,19 @@ from Jovimetrix import JOV_TYPE_IMAGE, JOVBaseNode, JOVImageNode, Lexicon, \
 from Jovimetrix.sup.util import EnumConvertType, parse_dynamic, parse_param, \
     zip_longest_fill
 
-from Jovimetrix.sup.image import MIN_IMAGE_SIZE, EnumImageType, EnumScaleMode, \
-    EnumInterpolation, cv2tensor_full, image_blend, image_crop, image_crop_center, \
-    image_grayscale, image_mask, image_mask_add, image_matte, image_minmax, \
-    tensor2cv, cv2tensor, pixel_eval, image_convert, image_crop_polygonal
+from Jovimetrix.sup.image import MIN_IMAGE_SIZE, EnumImageType, \
+    cv2tensor_full, image_mask, image_mask_add, image_matte, \
+    image_minmax, tensor2cv, cv2tensor, pixel_eval, image_convert
 
 from Jovimetrix.sup.image.color import EnumCBDeficiency, EnumCBSimulator, \
     EnumColorMap, EnumColorTheory, color_match_lut, color_match_reinhard, \
-    color_theory, color_blind, image_gradient_map
+    color_theory, color_blind, image_gradient_map, image_grayscale
 
-from Jovimetrix.sup.image.adjust import EnumEdge, EnumMirrorMode, image_contrast, \
-    image_edge_wrap, image_equalize, image_filter, image_gamma, image_hsv, \
-    image_invert, image_mirror, image_pixelate, image_posterize, image_quantize, \
-    image_scalefit, image_sharpen, image_transform
+from Jovimetrix.sup.image.adjust import EnumEdge, EnumMirrorMode, EnumScaleMode, \
+    EnumInterpolation, image_contrast, image_edge_wrap, image_equalize, \
+    image_filter, image_gamma, image_hsv, image_invert, image_mirror, \
+    image_pixelate, image_posterize, image_quantize, image_scalefit, \
+    image_sharpen, image_transform, image_flatten
 
 from Jovimetrix.sup.image.misc import EnumProjection, EnumThreshold, \
     EnumThresholdAdapt, image_threshold, morph_edge_detect, morph_emboss, \
@@ -42,7 +42,8 @@ from Jovimetrix.sup.image.channel import EnumPixelSwizzle, channel_merge, \
     channel_solid
 
 from Jovimetrix.sup.image.compose import EnumAdjustOP, EnumBlendType, \
-    EnumOrientation, image_flatten, image_levels, image_stack
+    EnumOrientation, image_levels, image_stack, image_blend, \
+    image_crop, image_crop_center, image_crop_polygonal
 
 from Jovimetrix.sup.image.mapping import remap_fisheye, remap_perspective, \
     remap_polar, remap_sphere

@@ -26,11 +26,12 @@ from Jovimetrix import JOV_TYPE_ANY, ROOT, Lexicon, JOVBaseNode, deep_merge, \
 
 from Jovimetrix.sup.util import EnumConvertType, parse_dynamic, parse_param
 
-from Jovimetrix.sup.image import MIN_IMAGE_SIZE, IMAGE_FORMATS, EnumInterpolation, \
-    EnumScaleMode, cv2tensor, cv2tensor_full, image_convert, \
+from Jovimetrix.sup.image import MIN_IMAGE_SIZE, IMAGE_FORMATS, \
+    cv2tensor, cv2tensor_full, image_convert, \
     image_matte, tensor2cv, image_load
 
-from Jovimetrix.sup.image.adjust import image_scalefit
+from Jovimetrix.sup.image.adjust import EnumScaleMode, EnumInterpolation, \
+    image_scalefit
 
 from Jovimetrix.sup.image.compose import image_by_size
 

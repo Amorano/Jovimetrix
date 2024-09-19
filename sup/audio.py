@@ -10,10 +10,10 @@ from PIL import Image, ImageDraw
 
 from loguru import logger
 
-from Jovimetrix.sup.image import TYPE_PIXEL, EnumImageType, EnumScaleMode, \
+from Jovimetrix.sup.image import TYPE_PIXEL, EnumImageType, \
     pixel_eval, pil2cv
 
-from Jovimetrix.sup.image.adjust import image_scalefit
+from Jovimetrix.sup.image.adjust import EnumScaleMode, image_scalefit
 
 # =============================================================================
 

@@ -23,7 +23,8 @@ from Jovimetrix.sup.stream import camera_list, monitor_list, window_list, \
     monitor_capture, window_capture, StreamingServer, StreamManager, \
     MediaStreamDevice, JOV_SPOUT
 
-from Jovimetrix.sup.image.adjust import image_scalefit
+from Jovimetrix.sup.image.adjust import EnumScaleMode, EnumInterpolation, \
+    image_scalefit
 
 from Jovimetrix.sup.image.channel import channel_solid
 
@@ -31,7 +32,7 @@ if JOV_SPOUT:
     from Jovimetrix.sup.stream import SpoutSender, MediaStreamSpout
 
 from Jovimetrix.sup.image import cv2tensor_full, image_convert, pixel_eval, \
-    tensor2cv, EnumInterpolation, EnumScaleMode, EnumImageType, MIN_IMAGE_SIZE
+    tensor2cv, EnumImageType, MIN_IMAGE_SIZE
 
 # =============================================================================
 
@@ -327,8 +328,6 @@ Sends frames to a specified route, typically for live streaming or recording pur
             if self.__device is not None:
                 w, h = wihi
                 matte = pixel_eval(matte, EnumImageType.BGRA)
-                # images = parse_value(images, EnumConvertType.IMAGE, images)
-                # for img in images:
                 if images is None:
                     img = channel_solid(w, h, matte, EnumImageType.RGBA)
                 else:

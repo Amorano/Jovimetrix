@@ -5,19 +5,17 @@ Image Composition Operation Support
 
 from enum import Enum
 import sys
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 import cv2
 import numpy as np
-from blendmodes.blend import BlendType
+from blendmodes.blend import BlendType, blendLayers
 
 from loguru import logger
 
-from Jovimetrix.sup.image import TYPE_IMAGE, TYPE_PIXEL, EnumInterpolation, \
-    EnumScaleMode, bgr2image, image2bgr, image_blend, image_convert, \
-    image_mask, image_matte, image_minmax
-
-from Jovimetrix.sup.image.adjust import image_scalefit
+from Jovimetrix.sup.image import TYPE_IMAGE, TYPE_PIXEL, \
+    TYPE_fCOORD2D, bgr2image, cv2pil, image2bgr, image_convert, \
+    image_mask, image_mask_add, image_matte, pil2cv
 
 # ==============================================================================
 # === ENUMERATION ===
@@ -114,27 +112,80 @@ def pixel_convert(color:TYPE_PIXEL, size:int=4, alpha:int=255) -> TYPE_PIXEL:
 These are core functions that most of the support image libraries require.
 """
 
-def image_flatten(image: List[TYPE_IMAGE], width:int=None, height:int=None,
-                  mode=EnumScaleMode.MATTE,
-                  sample:EnumInterpolation=EnumInterpolation.LANCZOS4) -> TYPE_IMAGE:
+def image_blend(imageA: TYPE_IMAGE, imageB: TYPE_IMAGE, mask:Optional[TYPE_IMAGE]=None,
+                blendOp:BlendType=BlendType.NORMAL, alpha:float=1) -> TYPE_IMAGE:
+    """Blending that will expand to the largest image pre-operation."""
 
-    if mode == EnumScaleMode.MATTE:
-        width, height, _, _ = image_minmax(image)[1:]
+    h1, w1 = imageA.shape[:2]
+    h2, w2 = imageB.shape[:2]
+    w = max(w1, w2)
+    h = max(h1, h2)
+    imageA = cv2pil(imageA)
+
+    old_mask = image_mask(imageB)
+    imageB = image_convert(imageB, 4)
+
+    if mask is None:
+        mask = old_mask
     else:
-        h, w = image[0].shape[:2]
-        width = width or w
-        height = height or h
+        mask = image_convert(mask, 1, w, h)
+        mask = mask[..., 0][:,:]
+        mask = cv2.bitwise_and(mask, old_mask)
 
-    current = np.zeros((height, width, 4), dtype=np.uint8)
-    for x in image:
-        if mode != EnumScaleMode.MATTE:
-            x = image_scalefit(x, width, height, mode, sample)
-        x = image_matte(x, (0,0,0,0), width, height)
-        x = image_scalefit(x, width, height, EnumScaleMode.CROP, sample)
-        x = image_convert(x, 4)
-        #@TODO: ADD VARIOUS COMP OPS?
-        current = cv2.add(current, x)
-    return current
+    imageB[..., 3] = mask
+    imageB = cv2pil(imageB)
+    alpha = np.clip(alpha, 0, 1)
+    image = blendLayers(imageA, imageB, blendOp.value, alpha)
+    image = pil2cv(image)
+    return image_crop_center(image, w, h)
+
+def image_crop_polygonal(image: TYPE_IMAGE, points: List[TYPE_fCOORD2D]) -> TYPE_IMAGE:
+    cc = image.shape[2] if image.ndim == 3 else 1
+    height, width = image.shape[:2]
+    point_mask = np.zeros((height, width), dtype=np.uint8)
+    points = np.array(points, np.int32).reshape((-1, 1, 2))
+    point_mask = cv2.fillPoly(point_mask, [points], 255)
+    x, y, w, h = cv2.boundingRect(point_mask)
+    cropped_image = cv2.resize(image[y:y+h, x:x+w], (w, h)).astype(np.uint8)
+    # Apply the mask to the cropped image
+    point_mask_cropped = cv2.resize(point_mask[y:y+h, x:x+w], (w, h))
+    if cc == 4:
+        mask = image_mask(image, 0)
+        alpha_channel = cv2.resize(mask[y:y+h, x:x+w], (w, h))
+        cropped_image = cv2.cvtColor(cropped_image, cv2.COLOR_BGRA2BGR)
+        cropped_image = cv2.bitwise_and(cropped_image, cropped_image, mask=point_mask_cropped)
+        return image_mask_add(cropped_image, alpha_channel)
+    elif cc == 1:
+        cropped_image = cv2.cvtColor(cropped_image, cv2.COLOR_GRAY2BGR)
+        cropped_image = cv2.bitwise_and(cropped_image, cropped_image, mask=point_mask_cropped)
+        return image_convert(cropped_image, cc)
+    return cv2.bitwise_and(cropped_image, cropped_image, mask=point_mask_cropped)
+
+def image_crop(image: TYPE_IMAGE, width:int=None, height:int=None, offset:Tuple[float, float]=(0, 0)) -> TYPE_IMAGE:
+    h, w = image.shape[:2]
+    width = width if width is not None else w
+    height = height if height is not None else h
+    x, y = offset
+    x = max(0, min(width, x))
+    y = max(0, min(width, y))
+    x2 = max(0, min(width, x + width))
+    y2 = max(0, min(height, y + height))
+    points = [(x, y), (x2, y), (x2, y2), (x, y2)]
+    return image_crop_polygonal(image, points)
+
+def image_crop_center(image: TYPE_IMAGE, width:int=None, height:int=None) -> TYPE_IMAGE:
+    """Helper crop function to find the "center" of the area of interest."""
+    h, w = image.shape[:2]
+    cx = w // 2
+    cy = h // 2
+    width = w if width is None else width
+    height = h if height is None else height
+    x1 = max(0, int(cx - width // 2))
+    y1 = max(0, int(cy - height // 2))
+    x2 = min(w, int(cx + width // 2)) - 1
+    y2 = min(h, int(cy + height // 2)) - 1
+    points = [(x1, y1), (x2, y1), (x2, y2), (x1, y2)]
+    return image_crop_polygonal(image, points)
 
 def image_flatten_mask(image:TYPE_IMAGE, matte:Tuple=(0,0,0,255)) -> Tuple[TYPE_IMAGE, TYPE_IMAGE|None]:
     """Flatten the image with its own alpha channel, if any."""

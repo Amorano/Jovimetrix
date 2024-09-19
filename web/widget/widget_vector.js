@@ -200,19 +200,19 @@ const VectorWidget = (app, inputName, options, initial, desc='') => {
     }
 
     widget.serializeValue = async () => {
-        if (widget.value === null) {
+        const value = widget.value;
+        if (value === null) {
             return null;
         }
-        let value = widget.value;
-        if (Array.isArray(widget.value)) {
-            value = widget.value.reduce((acc, tuple, index) => ({ ...acc, [index]: tuple }), {});
-        }
 
+        if (Array.isArray(value)) {
+            return value.reduce((acc, tuple, index) => ({ ...acc, [index]: tuple }), {});
+        }
         return value;
     }
 
-    widget.desc = desc
-    return widget
+    widget.desc = desc;
+    return widget;
 }
 
 app.registerExtension({
