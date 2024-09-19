@@ -254,8 +254,8 @@ def color_match_histogram(image: TYPE_IMAGE, usermap: TYPE_IMAGE) -> TYPE_IMAGE:
     image = cv2.cvtColor(image, cv2.COLOR_LAB2BGR)
     image = image_blend(usermap, image, blendOp=BlendType.LUMINOSITY)
     image = image_convert(image, cc)
-    if cc == 4:
-        image[..., 3] = alpha[..., 0]
+    #if cc == 4:
+    #    image[..., 3] = alpha[..., 0]
     return image
 
 def color_match_reinhard(image: TYPE_IMAGE, target: TYPE_IMAGE) -> TYPE_IMAGE:

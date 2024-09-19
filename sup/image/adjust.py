@@ -18,9 +18,9 @@ from Jovimetrix.sup.image import MIN_IMAGE_SIZE, TYPE_IMAGE, TYPE_PIXEL, \
 
 from Jovimetrix.sup.image.compose import image_crop_center
 
-# ==============================================================================
+# =============================================================================
 # === ENUMERATION ===
-# ==============================================================================
+# =============================================================================
 
 class EnumEdge(Enum):
     CLIP = 1
@@ -58,6 +58,16 @@ class EnumScaleMode(Enum):
     FIT = 10
     ASPECT = 30
     ASPECT_SHORT = 35
+
+class EnumThreshold(Enum):
+    BINARY = cv2.THRESH_BINARY
+    TRUNC = cv2.THRESH_TRUNC
+    TOZERO = cv2.THRESH_TOZERO
+
+class EnumThresholdAdapt(Enum):
+    ADAPT_NONE = -1
+    ADAPT_MEAN = cv2.ADAPTIVE_THRESH_MEAN_C
+    ADAPT_GAUSS = cv2.ADAPTIVE_THRESH_GAUSSIAN_C
 
 # ==============================================================================
 # === IMAGE ===
@@ -389,6 +399,25 @@ def image_sharpen(image:TYPE_IMAGE, kernel_size=None, sigma:float=1.0,
         np.copyto(sharpened, image, where=low_contrast_mask)
     return sharpened
 
+def image_threshold(image:TYPE_IMAGE, threshold:float=0.5,
+                    mode:EnumThreshold=EnumThreshold.BINARY,
+                    adapt:EnumThresholdAdapt=EnumThresholdAdapt.ADAPT_NONE,
+                    block:int=3, const:float=0.) -> TYPE_IMAGE:
+
+    const = max(-100, min(100, const))
+    block = max(3, block if block % 2 == 1 else block + 1)
+    image, alpha, cc = image2bgr(image)
+    if adapt != EnumThresholdAdapt.ADAPT_NONE:
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        gray = cv2.adaptiveThreshold(gray, 255, adapt.value, cv2.THRESH_BINARY, block, const)
+        gray = cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
+        # gray = np.stack([gray, gray, gray], axis=-1)
+        image = cv2.bitwise_and(image, gray)
+    else:
+        threshold = int(threshold * 255)
+        _, image = cv2.threshold(image, threshold, 255, mode.value)
+    return bgr2image(image, alpha, cc == 1)
+
 def image_translate(image: TYPE_IMAGE, offset: TYPE_fCOORD2D=(0.0, 0.0),
                     edge: EnumEdge=EnumEdge.CLIP, border_value:int=0) -> TYPE_IMAGE:
     """
@@ -436,3 +465,25 @@ def image_transform(image: TYPE_IMAGE, offset:TYPE_fCOORD2D=(0.0, 0.0),
     if offset[0] != 0. or offset[1] != 0.:
         image = image_translate(image, offset, edge)
     return image
+
+# MORPHOLOGY
+
+def morph_edge_detect(image: TYPE_IMAGE,
+                    ksize: int=3,
+                    low: float=0.27,
+                    high:float=0.6) -> TYPE_IMAGE:
+
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    ksize = max(3, ksize)
+    image = cv2.GaussianBlur(src=image, ksize=(ksize, ksize+2), sigmaX=0.5)
+    # Perform Canny edge detection
+    return cv2.Canny(image, int(low * 255), int(high * 255))
+
+def morph_emboss(image: TYPE_IMAGE, amount: float=1., kernel: int=2) -> TYPE_IMAGE:
+    kernel = max(2, kernel)
+    kernel = np.array([
+        [-kernel,   -kernel+1,    0],
+        [-kernel+1,   kernel-1,     1],
+        [kernel-2,    kernel-1,     2]
+    ]) * amount
+    return cv2.filter2D(src=image, ddepth=-1, kernel=kernel)

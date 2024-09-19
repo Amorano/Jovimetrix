@@ -24,13 +24,13 @@ from Jovimetrix.sup.image import MIN_IMAGE_SIZE, \
 
 from Jovimetrix.sup.image.channel import channel_solid
 
-from Jovimetrix.sup.image.compose import image_mask_binary
+from Jovimetrix.sup.image.compose import EnumShapes, \
+    shape_ellipse, shape_polygon, shape_quad, image_mask_binary
 
 from Jovimetrix.sup.image.adjust import EnumEdge, EnumScaleMode, EnumInterpolation, \
     image_invert, image_rotate, image_scalefit, image_transform, image_translate
 
-from Jovimetrix.sup.image.misc import EnumShapes, image_stereogram, shape_ellipse, \
-    shape_polygon, shape_quad
+from Jovimetrix.sup.image.mapping import image_stereogram
 
 from Jovimetrix.sup.text import EnumAlignment, EnumJustify, font_names, \
     text_autosize, text_draw
@@ -85,6 +85,7 @@ Generate a constant image or mask of a specified size and color. It can be used 
                 images.append(cv2tensor_full(pA))
             else:
                 pA = tensor2cv(pA)
+                print(pA.shape)
                 mode = EnumScaleMode[mode]
                 if mode != EnumScaleMode.MATTE:
                     sample = EnumInterpolation[sample]

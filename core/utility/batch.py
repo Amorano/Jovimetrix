@@ -292,7 +292,7 @@ class QueueBaseNode(JOVBaseNode):
         return entries
 
     # turn Q element into actual hard type
-    def process(self, q_data: Any) -> Tuple[torch.Tensor, torch.Tensor] | str | dict:
+    def process(self, q_data: Any) -> torch.Tensor | str | dict:
         # single Q cache to skip loading single entries over and over
         # @TODO: MRU cache strategy
         if (val := self.__last_q_value.get(q_data, None)) is not None:
@@ -373,10 +373,10 @@ class QueueBaseNode(JOVBaseNode):
                 for idx, d in enumerate(data):
                     d = image_convert(d, mc)
                     d = image_matte(d, (0,0,0,0), width=mw, height=mh)
-                    # d = cv2tensor(d)
+                    d = cv2tensor(d)
                     ret.append(d)
                     pbar.update_absolute(idx)
-                # data = torch.cat(ret, dim=0)
+                data = torch.cat(ret, dim=0)
                 data = ret
         elif wait == True:
             info += f" PAUSED"

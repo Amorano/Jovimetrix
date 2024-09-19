@@ -3,12 +3,13 @@ Jovimetrix - http://www.github.com/amorano/jovimetrix
 Image Composition Operation Support
 """
 
-from enum import Enum
 import sys
+from enum import Enum
 from typing import List, Optional, Tuple
 
 import cv2
 import numpy as np
+from PIL import Image, ImageDraw
 from blendmodes.blend import BlendType, blendLayers
 
 from loguru import logger
@@ -90,6 +91,13 @@ class EnumOrientation(Enum):
     VERTICAL = 1
     GRID = 2
 
+class EnumShapes(Enum):
+    CIRCLE = 0
+    SQUARE = 1
+    ELLIPSE = 2
+    RECTANGLE = 3
+    POLYGON = 4
+
 # ==============================================================================
 # === PIXEL ===
 # ==============================================================================
@@ -114,30 +122,34 @@ These are core functions that most of the support image libraries require.
 
 def image_blend(imageA: TYPE_IMAGE, imageB: TYPE_IMAGE, mask:Optional[TYPE_IMAGE]=None,
                 blendOp:BlendType=BlendType.NORMAL, alpha:float=1) -> TYPE_IMAGE:
-    """Blending that will expand to the largest image pre-operation."""
+    """Blending that will size to the largest input's background."""
 
-    h1, w1 = imageA.shape[:2]
-    h2, w2 = imageB.shape[:2]
-    w = max(w1, w2)
-    h = max(h1, h2)
+    # prep A
+    h, w = imageA.shape[:2]
+    imageA = image_convert(imageA, 4, w, h)
     imageA = cv2pil(imageA)
 
+    # prep B
+    cc = imageB.shape[2] if imageB.ndim > 2 else 1
+    imageB = image_convert(imageB, 4, w, h)
     old_mask = image_mask(imageB)
-    imageB = image_convert(imageB, 4)
 
     if mask is None:
         mask = old_mask
     else:
         mask = image_convert(mask, 1, w, h)
         mask = mask[..., 0][:,:]
-        mask = cv2.bitwise_and(mask, old_mask)
+        if cc == 4:
+            mask = cv2.bitwise_and(mask, old_mask)
 
     imageB[..., 3] = mask
     imageB = cv2pil(imageB)
     alpha = np.clip(alpha, 0, 1)
     image = blendLayers(imageA, imageB, blendOp.value, alpha)
     image = pil2cv(image)
-    return image_crop_center(image, w, h)
+    if cc == 4:
+        image = image_mask_add(image, mask)
+    return image
 
 def image_crop_polygonal(image: TYPE_IMAGE, points: List[TYPE_fCOORD2D]) -> TYPE_IMAGE:
     cc = image.shape[2] if image.ndim == 3 else 1
@@ -303,6 +315,22 @@ def image_by_size(image_list: List[TYPE_IMAGE],
 
     return img, width, height
 
+def image_split(image: TYPE_IMAGE) -> Tuple[TYPE_IMAGE, ...]:
+    h, w = image.shape[:2]
+
+    # Grayscale image
+    if image.ndim == 2 or image.shape[2] == 1:
+        r = g = b = image
+        a = np.full((h, w), 255, dtype=image.dtype)
+
+    # BGR image
+    elif image.shape[2] == 3:
+        r, g, b = cv2.split(image)
+        a = np.full((h, w), 255, dtype=image.dtype)
+    else:
+        r, g, b, a = cv2.split(image)
+    return r, g, b, a
+
 def image_stack(image_list: List[TYPE_IMAGE],
                 axis:EnumOrientation=EnumOrientation.HORIZONTAL,
                 stride:int=0, matte:TYPE_PIXEL=(0,0,0,255)) -> TYPE_IMAGE:
@@ -340,4 +368,36 @@ def image_stack(image_list: List[TYPE_IMAGE],
 
         case EnumOrientation.VERTICAL:
             image = np.vstack(images)
+    return image
+
+# =============================================================================
+# === SHAPE ===
+# =============================================================================
+
+def shape_ellipse(width: int, height: int, sizeX:float=1., sizeY:float=1.,
+                  fill:TYPE_PIXEL=255, back:TYPE_PIXEL=0) -> Image:
+    sizeX = max(0.5, sizeX / 2 + 0.5)
+    sizeY = max(0.5, sizeY / 2 + 0.5)
+    xy = [(width * (1. - sizeX), height * (1. - sizeY)),(width * sizeX, height * sizeY)]
+    image = Image.new("RGB", (width, height), back)
+    ImageDraw.Draw(image).ellipse(xy, fill=fill)
+    return image
+
+def shape_quad(width: int, height: int, sizeX:float=1., sizeY:float=1.,
+               fill:TYPE_PIXEL=255, back:TYPE_PIXEL=0) -> Image:
+    sizeX = max(0.5, sizeX / 2 + 0.5)
+    sizeY = max(0.5, sizeY / 2 + 0.5)
+    xy = [(width * (1. - sizeX), height * (1. - sizeY)),(width * sizeX, height * sizeY)]
+    image = Image.new("RGB", (width, height), back)
+    ImageDraw.Draw(image).rectangle(xy, fill=fill)
+    return image
+
+def shape_polygon(width: int, height: int, size: float=1., sides: int=3,
+                  fill:TYPE_PIXEL=255, back:TYPE_PIXEL=0) -> Image:
+    size = max(0.00001, size)
+    r = min(width, height) * size * 0.5
+    xy = (width * 0.5, height * 0.5, r)
+    image = Image.new("RGB", (width, height), back)
+    d = ImageDraw.Draw(image)
+    d.regular_polygon(xy, sides, fill=fill)
     return image

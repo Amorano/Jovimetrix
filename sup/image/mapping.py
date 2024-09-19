@@ -3,6 +3,7 @@ Jovimetrix - http://www.github.com/amorano/jovimetrix
 Coordinates and Mapping
 """
 
+from enum import Enum
 from typing import Any, List, Tuple
 
 import cv2
@@ -14,6 +15,17 @@ from Jovimetrix.sup.image import TAU, TYPE_IMAGE, TYPE_fCOORD2D, image_lerp, \
     image_normalize
 
 from Jovimetrix.sup.image.color import image_grayscale
+
+# =============================================================================
+# === ENUMERATION ===
+# =============================================================================
+
+class EnumProjection(Enum):
+    NORMAL = 0
+    POLAR = 5
+    SPHERICAL = 10
+    FISHEYE = 15
+    PERSPECTIVE = 20
 
 # =============================================================================
 # === IMAGE ===
@@ -31,6 +43,31 @@ def image_mirror_mandela(imageA: np.ndarray, imageB: np.ndarray) -> Tuple[np.nda
     bottom = np.hstack([-np.flip(imageB, axis=0), -np.flip(imageB)])
     imageB = np.vstack([top, bottom])
     return imageA, imageB
+
+def image_stereogram(image: TYPE_IMAGE, depth: TYPE_IMAGE, divisions:int=8,
+                     mix:float=0.33, gamma:float=0.33, shift:float=1.) -> TYPE_IMAGE:
+    height, width = depth.shape[:2]
+    out = np.zeros((height, width, 3), dtype=np.uint8)
+    image = cv2.resize(image, (width, height))
+    image = image_convert(image, 3)
+    depth = image_convert(depth, 3)
+    noise = np.random.randint(0, max(1, int(gamma * 255)), (height, width, 3), dtype=np.uint8)
+    # noise = cv2.cvtColor(noise, cv2.COLOR_GRAY2BGR)
+    image = cv2.addWeighted(image, 1. - mix, noise, mix, 0)
+
+    pattern_width = width // divisions
+    # shift -= 1
+    for y in range(height):
+        for x in range(width):
+            if x < pattern_width:
+                out[y, x] = image[y, x]
+            else:
+                # out[y, x] = out[y, x - pattern_width + int(shift * invert)]
+                offset = depth[y, x][0] // divisions
+                pos = x - pattern_width + int(shift * offset)
+                # pos = max(-pattern_width, min(pattern_width, pos))
+                out[y, x] = out[y, pos]
+    return out
 
 # =============================================================================
 # === COORDINATES ===

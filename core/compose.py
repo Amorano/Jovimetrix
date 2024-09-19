@@ -29,24 +29,21 @@ from Jovimetrix.sup.image.color import EnumCBDeficiency, EnumCBSimulator, \
     color_theory, color_blind, image_gradient_map, image_grayscale
 
 from Jovimetrix.sup.image.adjust import EnumEdge, EnumMirrorMode, EnumScaleMode, \
-    EnumInterpolation, image_contrast, image_edge_wrap, image_equalize, \
-    image_filter, image_gamma, image_hsv, image_invert, image_mirror, \
-    image_pixelate, image_posterize, image_quantize, image_scalefit, \
-    image_sharpen, image_transform, image_flatten
-
-from Jovimetrix.sup.image.misc import EnumProjection, EnumThreshold, \
-    EnumThresholdAdapt, image_threshold, morph_edge_detect, morph_emboss, \
-    image_split
+    EnumInterpolation, EnumThreshold, EnumThresholdAdapt, image_contrast, \
+    image_edge_wrap, image_equalize, image_filter, image_gamma, image_hsv, \
+    image_invert, image_mirror, image_pixelate, image_posterize, image_quantize, \
+    image_scalefit, image_sharpen, image_transform, image_flatten, \
+    image_threshold, morph_edge_detect, morph_emboss
 
 from Jovimetrix.sup.image.channel import EnumPixelSwizzle, channel_merge, \
     channel_solid
 
 from Jovimetrix.sup.image.compose import EnumAdjustOP, EnumBlendType, \
-    EnumOrientation, image_levels, image_stack, image_blend, \
+    EnumOrientation, image_levels, image_split, image_stack, image_blend, \
     image_crop, image_crop_center, image_crop_polygonal
 
-from Jovimetrix.sup.image.mapping import remap_fisheye, remap_perspective, \
-    remap_polar, remap_sphere
+from Jovimetrix.sup.image.mapping import EnumProjection, remap_fisheye, \
+    remap_perspective, remap_polar, remap_sphere
 
 # =============================================================================
 
@@ -121,7 +118,6 @@ Enhance and modify images with various effects such as blurring, sharpening, col
         pbar = ProgressBar(len(params))
         for idx, (pA, mask, op, radius, val, lohi, lmh, hsv, contrast, gamma, matte, invert) in enumerate(params):
             pA = tensor2cv(pA) if pA is not None else channel_solid(chan=EnumImageType.BGR)
-            alpha = image_mask(pA) if pA.ndim == 3 and pA.shape[2] == 4 else None
 
             match EnumAdjustOP[op]:
                 case EnumAdjustOP.INVERT:
@@ -201,15 +197,12 @@ Enhance and modify images with various effects such as blurring, sharpening, col
                 case EnumAdjustOP.CLOSE:
                     img_new = cv2.morphologyEx(pA, cv2.MORPH_CLOSE, (radius, radius), iterations=int(val))
 
-            h, w = pA.shape[:2]
-            mask = channel_solid(w, h, (255,255,255,255)) if mask is None else tensor2cv(mask)
-            mask = image_grayscale(mask)
-            if invert:
-                mask = 255 - mask
-            pA = image_blend(pA, img_new, mask)
-            if alpha is not None:
-                pA = image_mask_add(pA, alpha)
+            if mask is not None:
+                mask = tensor2cv(mask)
+                if invert:
+                    mask = 255 - mask
 
+            pA = image_blend(pA, img_new, mask)
             images.append(cv2tensor_full(pA, matte))
             pbar.update_absolute(idx)
         return [torch.cat(i, dim=0) for i in zip(*images)]
@@ -261,30 +254,21 @@ Combine two input images using various blending modes, such as normal, screen, m
             if flip:
                 pA, pB = pB, pA
 
-            w, h = MIN_IMAGE_SIZE, MIN_IMAGE_SIZE
-            if pA is not None:
-                h, w = pA.shape[:2]
-            elif pB is not None:
-                h, w = pB.shape[:2]
-            elif mask is not None:
-                h, w = mask.shape[:2]
-
             if pA is None:
-                pA = channel_solid(w, h, matte, chan=EnumImageType.BGRA)
+                pA = channel_solid(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, matte, chan=EnumImageType.BGRA)
             else:
                 pA = tensor2cv(pA)
                 matted = pixel_eval(matte, EnumImageType.BGRA)
                 pA = image_matte(pA, matted)
 
             if pB is None:
-                pB = pA
+                pB = channel_solid(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, matte, chan=EnumImageType.BGRA)
             else:
                 pB = tensor2cv(pB)
 
             if mask is not None:
                 mask = tensor2cv(mask)
-                mask = image_grayscale(mask)
-
+                # mask = image_grayscale(mask)
                 if invert:
                     mask = 255 - mask
 
@@ -293,9 +277,8 @@ Combine two input images using various blending modes, such as normal, screen, m
 
             mode = EnumScaleMode[mode]
             if mode != EnumScaleMode.MATTE:
-                w, h = wihi
                 sample = EnumInterpolation[sample]
-                img = image_scalefit(img, w, h, mode, sample)
+                img = image_scalefit(img, *wihi, mode, sample)
 
             img = cv2tensor_full(img, matte)
             images.append(img)

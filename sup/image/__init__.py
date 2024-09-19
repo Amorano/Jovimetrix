@@ -120,23 +120,25 @@ def cv2pil(image: TYPE_IMAGE) -> Image.Image:
             image = np.squeeze(image, axis=-1)
     return Image.fromarray(image)
 
-def cv2tensor(image: TYPE_IMAGE, mask: bool=False) -> torch.Tensor:
+def cv2tensor(image: TYPE_IMAGE, grayscale: bool=False) -> torch.Tensor:
     """Convert a CV2 image to a torch tensor, with handling for grayscale/mask."""
-    if image.ndim < 3:
-        image = np.expand_dims(image, -1)
+    if grayscale or image.ndim < 3 or image.shape[2] == 1:
+        if image.ndim < 3:
+            image = np.expand_dims(image, -1)
 
-    if image.shape[2] != 1 and mask:
         if image.shape[2] == 4:
             image = cv2.cvtColor(image, cv2.COLOR_BGRA2GRAY)
-        else:
+        elif image.shape[2] == 3:
             image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+        image = np.squeeze(image, axis=-1)
 
     image = image.astype(np.float32) / 255.0
     return torch.from_numpy(image).unsqueeze(0)
 
-def cv2tensor_full(image: TYPE_IMAGE, matte:TYPE_PIXEL=0) -> Tuple[torch.Tensor, ...]:
+def cv2tensor_full(image: TYPE_IMAGE, matte:TYPE_PIXEL=(0,0,0,255)) -> Tuple[torch.Tensor, ...]:
     rgba = image_convert(image, 4, matte=matte)
-    rgb = image_matte(image, matte)[:,:,:3]
+    rgb = image_convert(image, 3)
     mask = image_mask(image)
     rgba = torch.from_numpy(rgba.astype(np.float32) / 255.0).unsqueeze(0)
     rgb = torch.from_numpy(rgb.astype(np.float32) / 255.0).unsqueeze(0)
@@ -176,14 +178,11 @@ def pil2tensor(image: Image.Image) -> torch.Tensor:
 
 def tensor2cv(tensor: torch.Tensor) -> TYPE_IMAGE:
     """Convert a torch Tensor to a numpy ndarray."""
-    if tensor.ndim == 4 and tensor.shape[0] != 1:
+    if tensor.ndim > 3:
         raise Exception("Tensor is batch of tensors")
 
     if tensor.ndim < 3:
-        # tensor = (255.0 - tensor).unsqueeze(-1)
-        tensor = tensor.unsqueeze(-1)
-    else:
-        tensor = tensor.squeeze()
+        tensor = 1. - tensor.unsqueeze(-1)
 
     tensor = tensor.cpu().numpy()
     return np.clip(255.0 * tensor, 0, 255).astype(np.uint8)
@@ -394,7 +393,7 @@ def image_matte(image: TYPE_IMAGE, color: TYPE_iRGBA=(0, 0, 0, 255), width: int=
     return matte
 
 def image_convert(image: TYPE_IMAGE, channels: int, width: int=None, height: int=None,
-                  matte: Tuple[int, ...]=(0, 0, 0, 0)) -> TYPE_IMAGE:
+                  matte: Tuple[int, ...]=(0, 0, 0, 255)) -> TYPE_IMAGE:
     """Force image format to a specific number of channels.
     Args:
         image (TYPE_IMAGE): Input image.
@@ -437,6 +436,66 @@ def image_convert(image: TYPE_IMAGE, channels: int, width: int=None, height: int
         paste_x = (new_width - w) // 2
         paste_y = (new_height - h) // 2
         new_image[paste_y:paste_y+h, paste_x:paste_x+w] = image[:h, :w]
+        image = new_image
+
+    return image
+
+def image_convert(image: TYPE_IMAGE, channels: int, width: int=None, height: int=None,
+                  matte: Tuple[int, ...]=(0, 0, 0, 255)) -> TYPE_IMAGE:
+    """Force image format to a specific number of channels.
+    Args:
+        image (TYPE_IMAGE): Input image.
+        channels (int): Desired number of channels (1, 3, or 4).
+        width (int): Desired width. `None` means leave unchanged.
+        height (int): Desired height. `None` means leave unchanged.
+        matte (tuple): RGBA color to use as background color for transparent areas.
+    Returns:
+        TYPE_IMAGE: Image with the specified number of channels.
+    """
+    if image.ndim == 2:
+        image = np.expand_dims(image, axis=-1)
+
+    if (cc := image.shape[2]) != channels:
+        if   cc == 1 and channels == 3:
+            image = np.repeat(image, 3, axis=2)
+        elif cc == 1 and channels == 4:
+            rgb = np.repeat(image, 3, axis=2)
+            alpha = np.full(image.shape[:2] + (1,), matte[3], dtype=image.dtype)
+            image = np.concatenate([rgb, alpha], axis=2)
+        elif cc == 3 and channels == 1:
+            image = np.mean(image, axis=2, keepdims=True).astype(image.dtype)
+        elif cc == 3 and channels == 4:
+            alpha = np.full(image.shape[:2] + (1,), matte[3], dtype=image.dtype)
+            image = np.concatenate([image, alpha], axis=2)
+        elif cc == 4 and channels == 1:
+            rgb = image[..., :3]
+            alpha = image[..., 3:4] / 255.0
+            image = (np.mean(rgb, axis=2, keepdims=True) * alpha).astype(image.dtype)
+        elif cc == 4 and channels == 3:
+            image = image[..., :3]
+
+    # Resize if width or height is specified
+    h, w = image.shape[:2]
+    new_width = width if width is not None else w
+    new_height = height if height is not None else h
+    if (new_width, new_height) != (w, h):
+        # Create a new canvas with the specified dimensions and matte color
+        new_image = np.full((new_height, new_width, channels), matte[:channels], dtype=image.dtype)
+
+        # Calculate the region of the original image to copy over
+        src_x1 = max(0, (w - new_width) // 2) if new_width < w else 0
+        src_y1 = max(0, (h - new_height) // 2) if new_height < h else 0
+        src_x2 = src_x1 + min(w, new_width)
+        src_y2 = src_y1 + min(h, new_height)
+
+        # Calculate the region of the new image to paste onto
+        dst_x1 = max(0, (new_width - w) // 2) if new_width > w else 0
+        dst_y1 = max(0, (new_height - h) // 2) if new_height > h else 0
+        dst_x2 = dst_x1 + (src_x2 - src_x1)
+        dst_y2 = dst_y1 + (src_y2 - src_y1)
+
+        # Place the original image onto the new image
+        new_image[dst_y1:dst_y2, dst_x1:dst_x2] = image[src_y1:src_y2, src_x1:src_x2]
         image = new_image
 
     return image
