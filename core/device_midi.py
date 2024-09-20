@@ -22,11 +22,11 @@ from Jovimetrix.sup.util import EnumConvertType, parse_param
 from Jovimetrix.sup.midi import MIDIMessage, MIDINoteOnFilter, MIDIServerThread,\
       midi_device_names
 
-# =============================================================================
+# ==============================================================================
 
 JOV_CATEGORY = "DEVICE"
 
-# =============================================================================
+# ==============================================================================
 
 class MIDIMessageNode(JOVBaseNode):
     NAME = "MIDI MESSAGE (JOV) 🎛️"

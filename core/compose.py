@@ -21,12 +21,12 @@ from Jovimetrix.sup.util import EnumConvertType, parse_dynamic, parse_param, \
     zip_longest_fill
 
 from Jovimetrix.sup.image import MIN_IMAGE_SIZE, EnumImageType, \
-    cv2tensor_full, image_mask, image_mask_add, image_matte, \
-    image_minmax, tensor2cv, cv2tensor, pixel_eval, image_convert
+    image_mask, image_mask_add, image_matte, image_minmax, image_convert, \
+    cv2tensor, cv2tensor_full, tensor2cv
 
 from Jovimetrix.sup.image.color import EnumCBDeficiency, EnumCBSimulator, \
     EnumColorMap, EnumColorTheory, color_match_lut, color_match_reinhard, \
-    color_theory, color_blind, image_gradient_map, image_grayscale
+    color_theory, color_blind, color_top_used, image_gradient_map, pixel_eval
 
 from Jovimetrix.sup.image.adjust import EnumEdge, EnumMirrorMode, EnumScaleMode, \
     EnumInterpolation, EnumThreshold, EnumThresholdAdapt, image_contrast, \
@@ -45,7 +45,7 @@ from Jovimetrix.sup.image.compose import EnumAdjustOP, EnumBlendType, \
 from Jovimetrix.sup.image.mapping import EnumProjection, remap_fisheye, \
     remap_perspective, remap_polar, remap_sphere
 
-# =============================================================================
+# ==============================================================================
 
 JOV_CATEGORY = "COMPOSE"
 
@@ -65,7 +65,7 @@ class EnumCropMode(Enum):
     HEAD = 15
     BODY = 25
 
-# =============================================================================
+# ==============================================================================
 
 class AdjustNode(JOVImageNode):
     NAME = "ADJUST (JOV) 🕸️"
@@ -118,18 +118,19 @@ Enhance and modify images with various effects such as blurring, sharpening, col
         pbar = ProgressBar(len(params))
         for idx, (pA, mask, op, radius, val, lohi, lmh, hsv, contrast, gamma, matte, invert) in enumerate(params):
             pA = tensor2cv(pA) if pA is not None else channel_solid(chan=EnumImageType.BGR)
+            img_new = image_convert(pA, 3)
 
             match EnumAdjustOP[op]:
                 case EnumAdjustOP.INVERT:
-                    img_new = image_invert(pA, val)
+                    img_new = image_invert(img_new, val)
 
                 case EnumAdjustOP.LEVELS:
                     l, m, h = lmh
-                    img_new = image_levels(pA, l, h, m, gamma)
+                    img_new = image_levels(img_new, l, h, m, gamma)
 
                 case EnumAdjustOP.HSV:
                     h, s, v = hsv
-                    img_new = image_hsv(pA, h, s, v)
+                    img_new = image_hsv(img_new, h, s, v)
                     if contrast != 0:
                         img_new = image_contrast(img_new, 1 - contrast)
 
@@ -138,74 +139,78 @@ Enhance and modify images with various effects such as blurring, sharpening, col
 
                 case EnumAdjustOP.FIND_EDGES:
                     lo, hi = lohi
-                    img_new = morph_edge_detect(pA, low=lo, high=hi)
+                    img_new = morph_edge_detect(img_new, low=lo, high=hi)
 
                 case EnumAdjustOP.BLUR:
-                    img_new = cv2.blur(pA, (radius, radius))
+                    img_new = cv2.blur(img_new, (radius, radius))
 
                 case EnumAdjustOP.STACK_BLUR:
                     r = min(radius, 1399)
                     if r % 2 == 0:
                         r += 1
-                    img_new = cv2.stackBlur(pA, (r, r))
+                    img_new = cv2.stackBlur(img_new, (r, r))
 
                 case EnumAdjustOP.GAUSSIAN_BLUR:
                     r = min(radius, 999)
                     if r % 2 == 0:
                         r += 1
-                    img_new = cv2.GaussianBlur(pA, (r, r), sigmaX=val)
+                    img_new = cv2.GaussianBlur(img_new, (r, r), sigmaX=val)
 
                 case EnumAdjustOP.MEDIAN_BLUR:
                     r = min(radius, 357)
                     if r % 2 == 0:
                         r += 1
-                    img_new = cv2.medianBlur(pA, r)
+                    img_new = cv2.medianBlur(img_new, r)
 
                 case EnumAdjustOP.SHARPEN:
                     r = min(radius, 511)
                     if r % 2 == 0:
                         r += 1
-                    img_new = image_sharpen(pA, kernel_size=r, amount=val)
+                    img_new = image_sharpen(img_new, kernel_size=r, amount=val)
 
                 case EnumAdjustOP.EMBOSS:
-                    img_new = morph_emboss(pA, val, radius)
+                    img_new = morph_emboss(img_new, val, radius)
 
                 case EnumAdjustOP.EQUALIZE:
-                    img_new = image_equalize(pA)
+                    img_new = image_equalize(img_new)
 
                 case EnumAdjustOP.PIXELATE:
-                    img_new = image_pixelate(pA, val / 255.)
+                    img_new = image_pixelate(img_new, val / 255.)
 
                 case EnumAdjustOP.QUANTIZE:
-                    img_new = image_quantize(pA, int(val))
+                    img_new = image_quantize(img_new, int(val))
 
                 case EnumAdjustOP.POSTERIZE:
-                    img_new = image_posterize(pA, int(val))
+                    img_new = image_posterize(img_new, int(val))
 
                 case EnumAdjustOP.OUTLINE:
-                    img_new = cv2.morphologyEx(pA, cv2.MORPH_GRADIENT, (radius, radius))
+                    img_new = cv2.morphologyEx(img_new, cv2.MORPH_GRADIENT, (radius, radius))
 
                 case EnumAdjustOP.DILATE:
-                    img_new = cv2.dilate(pA, (radius, radius), iterations=int(val))
+                    img_new = cv2.dilate(img_new, (radius, radius), iterations=int(val))
 
                 case EnumAdjustOP.ERODE:
-                    img_new = cv2.erode(pA, (radius, radius), iterations=int(val))
+                    img_new = cv2.erode(img_new, (radius, radius), iterations=int(val))
 
                 case EnumAdjustOP.OPEN:
-                    img_new = cv2.morphologyEx(pA, cv2.MORPH_OPEN, (radius, radius), iterations=int(val))
+                    img_new = cv2.morphologyEx(img_new, cv2.MORPH_OPEN, (radius, radius), iterations=int(val))
 
                 case EnumAdjustOP.CLOSE:
-                    img_new = cv2.morphologyEx(pA, cv2.MORPH_CLOSE, (radius, radius), iterations=int(val))
+                    img_new = cv2.morphologyEx(img_new, cv2.MORPH_CLOSE, (radius, radius), iterations=int(val))
 
             if mask is not None:
                 mask = tensor2cv(mask)
                 if invert:
                     mask = 255 - mask
 
-            pA = image_blend(pA, img_new, mask)
+            img_new = image_blend(pA, img_new, mask)
+            if pA.ndim == 3 and pA.shape[2] == 4:
+                mask = image_mask(pA)
+                img_new = image_mask_add(mask)
+
             images.append(cv2tensor_full(pA, matte))
             pbar.update_absolute(idx)
-        return [torch.cat(i, dim=0) for i in zip(*images)]
+        return [torch.stack(i) for i in zip(*images)]
 
 class BlendNode(JOVImageNode):
     NAME = "BLEND (JOV) ⚗️"
@@ -283,7 +288,7 @@ Combine two input images using various blending modes, such as normal, screen, m
             img = cv2tensor_full(img, matte)
             images.append(img)
             pbar.update_absolute(idx)
-        return [torch.cat(i, dim=0) for i in zip(*images)]
+        return [torch.stack(i) for i in zip(*images)]
 
 class ColorBlindNode(JOVImageNode):
     NAME = "COLOR BLIND (JOV) 👁‍🗨"
@@ -322,7 +327,7 @@ Simulate color blindness effects on images. You can select various types of colo
             pA = color_blind(pA, deficiency, simulator, severity)
             images.append(cv2tensor_full(pA))
             pbar.update_absolute(idx)
-        return [torch.cat(i, dim=0) for i in zip(*images)]
+        return [torch.stack(i) for i in zip(*images)]
 
 class ColorMatchNode(JOVImageNode):
     NAME = "COLOR MATCH (JOV) 💞"
@@ -404,7 +409,49 @@ Adjust the color scheme of one image to match another with the Color Match Node.
 
             images.append(cv2tensor_full(pA, matte))
             pbar.update_absolute(idx)
-        return [torch.cat(i, dim=0) for i in zip(*images)]
+        return [torch.stack(i) for i in zip(*images)]
+
+
+class ColorKMeansNode(JOVBaseNode):
+    NAME = "COLOR MEANS (JOV) 〰️"
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
+    RETURN_TYPES = ("IMAGE", )
+    RETURN_NAMES = (Lexicon.IMAGE,)
+    DESCRIPTION = """
+Output the top K colors of an Image in order of most->least used.
+"""
+
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        d = super().INPUT_TYPES()
+        d = deep_merge(d, {
+            "optional": {
+                Lexicon.PIXEL: (JOV_TYPE_IMAGE, {}),
+                Lexicon.VALUE: ("INT", {"default": 5, "mij": 0, "maj": 255, "tooltips":"The top K colors to select."}),
+                Lexicon.WH: ("VEC2INT", {"default": (128, 256), "mij":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
+            }
+        })
+        return Lexicon._parse(d, cls)
+
+    def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
+        kcolors = parse_param(kw, Lexicon.VALUE, EnumConvertType.INT, 1)
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(128, 256)], MIN_IMAGE_SIZE)
+        params = list(zip_longest_fill(pA, kcolors, wihi))
+        images = []
+        pbar = ProgressBar(len(params) * sum(kcolors))
+        for idx, (pA, kcolors, wihi) in enumerate(params):
+            if pA is None:
+                pA = channel_solid(chan=EnumImageType.BGRA)
+
+            pA = tensor2cv(pA)
+            colors = color_top_used(pA, kcolors)
+            for c in colors:
+                c = channel_solid(*wihi, color=c)
+                images.append(cv2tensor(c).unsqueeze(0))
+            pbar.update_absolute(idx)
+
+        return [torch.stack(i) for i in zip(*images)]
 
 class ColorTheoryNode(JOVBaseNode):
     NAME = "COLOR THEORY (JOV) 🛞"
@@ -512,7 +559,7 @@ Extract a portion of an input image or resize it. It supports various cropping m
                 pA = image_crop_center(pA, width, height)
             images.append(cv2tensor_full(pA, matte))
             pbar.update_absolute(idx)
-        return [torch.cat(i, dim=0) for i in zip(*images)]
+        return [torch.stack(i) for i in zip(*images)]
 
 class FilterMaskNode(JOVImageNode):
     NAME = "FILTER MASK (JOV) 🤿"
@@ -557,7 +604,7 @@ Create masks based on specific color ranges within an image. Specify the color r
             img[..., 3] = mask[:,:]
             images.append(cv2tensor_full(img, matte))
             pbar.update_absolute(idx)
-        return [torch.cat(i, dim=0) for i in zip(*images)]
+        return [torch.stack(i) for i in zip(*images)]
 
 class Flatten(JOVImageNode):
     NAME = "FLATTEN (JOV) ⬇️"
@@ -603,7 +650,7 @@ Combine multiple input images into a single image by summing their pixel values.
             current = image_flatten(pA)
             images.append(cv2tensor_full(current, matte))
             pbar.update_absolute(idx)
-        return [torch.cat(i, dim=0) for i in zip(*images)]
+        return [torch.stack(i) for i in zip(*images)]
 
 class GradientMap(JOVImageNode):
     NAME = "GRADIENT MAP (JOV) 🇲🇺"
@@ -659,7 +706,7 @@ Remaps an input image using a gradient lookup table (LUT). The gradient image wi
                 pA = image_mask_add(pA, mask)
             images.append(cv2tensor_full(pA, matte))
             pbar.update_absolute(idx)
-        return [torch.cat(i, dim=0) for i in zip(*images)]
+        return [torch.stack(i) for i in zip(*images)]
 
 class PixelMergeNode(JOVImageNode):
     NAME = "PIXEL MERGE (JOV) 🫂"
@@ -735,7 +782,7 @@ Combines individual color channels (red, green, blue) along with an optional mas
 
             images.append(cv2tensor_full(img, matte))
             pbar.update_absolute(idx)
-        return [torch.cat(i, dim=0) for i in zip(*images)]
+        return [torch.stack(i) for i in zip(*images)]
 
 class PixelSplitNode(JOVBaseNode):
     NAME = "PIXEL SPLIT (JOV) 💔"
@@ -771,7 +818,7 @@ Takes an input image and splits it into its individual color channels (red, gree
             pA = channel_solid(chan=EnumImageType.BGRA) if pA is None else tensor2cv(pA)
             images.append([cv2tensor(x, True) for x in image_split(pA)])
             pbar.update_absolute(idx)
-        return [torch.cat(i, dim=0) for i in zip(*images)]
+        return [torch.stack(i) for i in zip(*images)]
 
 class PixelSwapNode(JOVImageNode):
     NAME = "PIXEL SWAP (JOV) 🔃"
@@ -860,7 +907,7 @@ Swap pixel values between two input images based on specified channel swizzle op
 
             images.append(cv2tensor_full(out))
             pbar.update_absolute(idx)
-        return [torch.cat(i, dim=0) for i in zip(*images)]
+        return [torch.stack(i) for i in zip(*images)]
 
 class StackNode(JOVImageNode):
     NAME = "STACK (JOV) ➕"
@@ -954,7 +1001,7 @@ Define a range and apply it to an image for segmentation and feature extraction.
                 pA = image_invert(pA, 1)
             images.append(cv2tensor_full(pA))
             pbar.update_absolute(idx)
-        return [torch.cat(i, dim=0) for i in zip(*images)]
+        return [torch.stack(i) for i in zip(*images)]
 
 class TransformNode(JOVImageNode):
     NAME = "TRANSFORM (JOV) 🏝️"
@@ -1054,7 +1101,7 @@ Apply various geometric transformations to images, including translation, rotati
 
             images.append(cv2tensor_full(pA, matte))
             pbar.update_absolute(idx)
-        return [torch.cat(i, dim=0) for i in zip(*images)]
+        return [torch.stack(i) for i in zip(*images)]
 
 '''
 class HistogramNode(JOVImageSimple):

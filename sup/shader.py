@@ -23,7 +23,7 @@ from Jovimetrix import ROOT
 from Jovimetrix.sup.util import EnumConvertType, parse_value, load_file
 from Jovimetrix.sup.image import image_convert
 
-# =============================================================================
+# ==============================================================================
 
 IMAGE_SIZE_DEFAULT = 512
 IMAGE_SIZE_MIN = 64
@@ -117,7 +117,7 @@ RE_INCLUDE = re.compile(r"^\s+?#include\s+?([A-Za-z\_\-\.\\\/]{3,})$", re.MULTIL
 RE_VARIABLE = re.compile(r"uniform\s+(\w+)\s+(\w+);\s*(?:\/\/\s*([^;|]*))?\s*(?:;\s*([^;|]*))?\s*(?:;\s*([^;|]*))?\s*(?:;\s*([^;|]*))?\s*(?:;\s*([^;|]*))?\s*(?:\|\s*(.*))?$", re.MULTILINE)
 RE_SHADER_META = re.compile(r"^\/\/\s?([A-Za-z_]{3,}):\s?(.+)$", re.MULTILINE)
 
-# =============================================================================
+# ==============================================================================
 
 class CompileException(Exception): pass
 

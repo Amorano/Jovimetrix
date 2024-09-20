@@ -22,11 +22,11 @@ from Jovimetrix.sup.util import EnumConvertType, decode_tensor, parse_dynamic, \
 
 from Jovimetrix.sup.image import MIN_IMAGE_SIZE, pil2tensor
 
-# =============================================================================
+# ==============================================================================
 
 JOV_CATEGORY = "UTILITY"
 
-# =============================================================================
+# ==============================================================================
 
 class AkashicData:
     def __init__(self, **kw) -> None:

@@ -11,14 +11,14 @@ import numpy as np
 
 from loguru import logger
 
-from Jovimetrix.sup.image import TAU, TYPE_IMAGE, TYPE_fCOORD2D, image_lerp, \
-    image_normalize
+from Jovimetrix.sup.image import TAU, TYPE_IMAGE, TYPE_fCOORD2D, \
+    image_convert, image_lerp, image_normalize
 
 from Jovimetrix.sup.image.color import image_grayscale
 
-# =============================================================================
+# ==============================================================================
 # === ENUMERATION ===
-# =============================================================================
+# ==============================================================================
 
 class EnumProjection(Enum):
     NORMAL = 0
@@ -27,9 +27,9 @@ class EnumProjection(Enum):
     FISHEYE = 15
     PERSPECTIVE = 20
 
-# =============================================================================
+# ==============================================================================
 # === IMAGE ===
-# =============================================================================
+# ==============================================================================
 
 def image_mirror_mandela(imageA: np.ndarray, imageB: np.ndarray) -> Tuple[np.ndarray, ...]:
     """Merge 4 flipped copies of input images to make them wrap.
@@ -69,9 +69,9 @@ def image_stereogram(image: TYPE_IMAGE, depth: TYPE_IMAGE, divisions:int=8,
                 out[y, x] = out[y, pos]
     return out
 
-# =============================================================================
+# ==============================================================================
 # === COORDINATES ===
-# =============================================================================
+# ==============================================================================
 
 def coord_cart2polar(x: float, y: float) -> TYPE_fCOORD2D:
     r = np.sqrt(x**2 + y**2)
@@ -122,9 +122,9 @@ def coord_sphere(width: int, height: int, radius: float) -> Tuple[TYPE_IMAGE, TY
     y_image = (y + 1) * (height - 1) / 2
     return x_image.astype(np.float32), y_image.astype(np.float32)
 
-# =============================================================================
+# ==============================================================================
 # === MAPPING ===
-# =============================================================================
+# ==============================================================================
 
 def remap_fisheye(image: TYPE_IMAGE, distort: float) -> TYPE_IMAGE:
     cc = image.shape[2] if image.ndim == 3 else 1

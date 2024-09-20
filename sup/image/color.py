@@ -4,23 +4,27 @@ Image Color Support
 """
 
 from enum import Enum
-from typing import Tuple
+from typing import List, Tuple
 
 import cv2
 import numpy as np
 from numba import cuda
-from daltonlens import simulate
 from skimage import exposure
+from sklearn.cluster import KMeans
+from daltonlens import simulate
 from blendmodes.blend import BlendType
 
-from Jovimetrix.sup.image import TYPE_IMAGE, TYPE_PIXEL, bgr2hsv, hsv2bgr, \
-    image_convert, image_mask, image_mask_add
+from loguru import logger
+
+from Jovimetrix.sup.image import TYPE_IMAGE, TYPE_PIXEL, EnumGrayscaleCrunch, \
+    EnumImageType, EnumIntFloat, bgr2hsv, hsv2bgr, image_convert, image_mask, \
+    image_mask_add
 
 from Jovimetrix.sup.image.compose import image_blend
 
-# =============================================================================
+# ==============================================================================
 # === ENUMERATION ===
-# =============================================================================
+# ==============================================================================
 
 class EnumColorMap(Enum):
     AUTUMN = cv2.COLORMAP_AUTUMN
@@ -138,6 +142,63 @@ def linear2sRGB(image: TYPE_IMAGE) -> TYPE_IMAGE:
 # === PIXEL ===
 # ==============================================================================
 
+def pixel_eval(color: TYPE_PIXEL,
+            target: EnumImageType=EnumImageType.BGR,
+            precision:EnumIntFloat=EnumIntFloat.INT,
+            crunch:EnumGrayscaleCrunch=EnumGrayscaleCrunch.MEAN) -> Tuple[TYPE_PIXEL] | TYPE_PIXEL:
+    """Evaluates R(GB)(A) pixels in range (0-255) into target target pixel type."""
+
+    def parse_single_color(c: TYPE_PIXEL) -> TYPE_PIXEL:
+        if not isinstance(c, int):
+            c = np.clip(c, 0, 1)
+            if precision == EnumIntFloat.INT:
+                c = int(c * 255)
+        else:
+            c = np.clip(c, 0, 255)
+            if precision == EnumIntFloat.FLOAT:
+                c /= 255
+        return c
+
+    # make sure we are an RGBA value already
+    if isinstance(color, (float, int)):
+        color = tuple([parse_single_color(color)])
+    elif isinstance(color, (set, tuple, list)):
+        color = tuple([parse_single_color(c) for c in color])
+
+    if target == EnumImageType.GRAYSCALE:
+        alpha = 1
+        if len(color) > 3:
+            alpha = color[3]
+            if precision == EnumIntFloat.INT:
+                alpha /= 255
+            color = color[:3]
+        match crunch:
+            case EnumGrayscaleCrunch.LOW:
+                val = min(color) * alpha
+            case EnumGrayscaleCrunch.HIGH:
+                val = max(color) * alpha
+            case EnumGrayscaleCrunch.MEAN:
+                val = np.mean(color) * alpha
+        if precision == EnumIntFloat.INT:
+            val = int(val)
+        return val
+
+    if len(color) < 3:
+        color += (0,) * (3 - len(color))
+
+    if target in [EnumImageType.RGB, EnumImageType.BGR]:
+        color = color[:3]
+        if target == EnumImageType.BGR:
+            color = color[::-1]
+        return color
+
+    if len(color) < 4:
+        color += (255,)
+
+    if target == EnumImageType.BGRA:
+        color = tuple(color[2::-1]) + tuple([color[-1]])
+    return color
+
 def pixel_hsv_adjust(color:TYPE_PIXEL, hue:int=0, saturation:int=0, value:int=0,
                      mod_color:bool=True, mod_sat:bool=False,
                      mod_value:bool=False) -> TYPE_PIXEL:
@@ -149,9 +210,9 @@ def pixel_hsv_adjust(color:TYPE_PIXEL, hue:int=0, saturation:int=0, value:int=0,
     hsv[2] = (color[2] + value) % 255 if mod_value else np.clip(color[2] + value, 0, 255)
     return hsv
 
-# =============================================================================
+# ==============================================================================
 # === COLOR MATCH ===
-# =============================================================================
+# ==============================================================================
 
 @cuda.jit
 def kmeans_kernel(pixels, centroids, assignments) -> None:
@@ -318,6 +379,56 @@ def color_mean(image: TYPE_IMAGE) -> TYPE_IMAGE:
             int(np.mean(image[:,:,1])),
             int(np.mean(image[:,:,2])) ]
     return color
+
+def color_top_used(image: TYPE_IMAGE, top_n: int=8) -> List[Tuple[int, int, int]]:
+    """
+    Colors in an image sorted from most used to least used.
+
+    Args:
+        image (np.ndarray): Input image in HxWxC format.
+        top_n (int): Number of top colors to return.
+
+    Returns:
+        List[Tuple[int, int, int]]: List of top `top_n` colors.
+    """
+    pixels = image.reshape(-1, 3)
+    dtype = [('r', np.uint8), ('g', np.uint8), ('b', np.uint8)]
+    structured_pixels = pixels.view(dtype)
+    unique_colors, counts = np.unique(structured_pixels, return_counts=True)
+    # Sort colors by count in descending order
+    sorted_indices = np.argsort(-counts)
+    top_colors = unique_colors[sorted_indices][:top_n]
+
+    return [tuple(color) for color in top_colors]
+
+def color_top_used(image: TYPE_IMAGE, top_n: int=8) -> List[Tuple[int, int, int]]:
+    """
+    Find dominant colors in an image using k-means clustering.
+
+    Args:
+        image (np.ndarray): Input image in HxWxC format, assumed to be RGB.
+        top_n (int): Number of top colors to return.
+
+    Returns:
+        List[Tuple[int, int, int]]: List of top `top_n` colors.
+    """
+    if image.ndim < 3:
+        image = np.expand_dims(image, axis=-1)
+
+    if image.shape[2] != 3:
+        image = image_convert(image, 3)
+
+    pixels = image.reshape(-1, 3)
+    kmeans = KMeans(n_clusters=int(top_n), n_init=10)
+    kmeans.fit(pixels)
+    dominant_colors = kmeans.cluster_centers_
+    dominant_colors = np.round(dominant_colors).astype(int)
+    sorted_colors = sorted(
+        zip(dominant_colors, kmeans.labels_),
+        key=lambda x: np.sum(kmeans.labels_ == x[1]),
+        reverse=True
+    )
+    return [tuple(color) for color, _ in sorted_colors]
 
 # ==============================================================================
 # === COLOR ANALYSIS ===

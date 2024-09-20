@@ -31,10 +31,12 @@ from Jovimetrix.sup.image.channel import channel_solid
 if JOV_SPOUT:
     from Jovimetrix.sup.stream import SpoutSender, MediaStreamSpout
 
-from Jovimetrix.sup.image import cv2tensor_full, image_convert, pixel_eval, \
-    tensor2cv, EnumImageType, MIN_IMAGE_SIZE
+from Jovimetrix.sup.image import EnumImageType, MIN_IMAGE_SIZE, image_convert, \
+    cv2tensor_full, tensor2cv
 
-# =============================================================================
+from Jovimetrix.sup.image.color import pixel_eval
+
+# ==============================================================================
 
 JOV_CATEGORY = "DEVICE"
 
@@ -51,7 +53,7 @@ class EnumStreamType(Enum):
     WINDOW = 40
     SPOUT = 50
 
-# =============================================================================
+# ==============================================================================
 
 class StreamReaderNode(JOVBaseNode):
     NAME = "STREAM READER (JOV) 📺"
@@ -267,7 +269,7 @@ Capture frames from various sources such as URLs, cameras, monitors, windows, or
 
         if len(images) == 0:
             images.append(self.__empty)
-        return [torch.cat(i, dim=0) for i in zip(*images)]
+        return [torch.stack(i) for i in zip(*images)]
 
 class StreamWriterNode(JOVBaseNode):
     NAME = "STREAM WRITER (JOV) 🎞️"

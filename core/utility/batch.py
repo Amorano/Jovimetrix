@@ -27,15 +27,14 @@ from Jovimetrix import JOV_TYPE_ANY, ROOT, Lexicon, JOVBaseNode, deep_merge, \
 from Jovimetrix.sup.util import EnumConvertType, parse_dynamic, parse_param
 
 from Jovimetrix.sup.image import MIN_IMAGE_SIZE, IMAGE_FORMATS, \
-    cv2tensor, cv2tensor_full, image_convert, \
-    image_matte, tensor2cv, image_load
+    image_convert, image_matte, image_load, cv2tensor, cv2tensor_full, tensor2cv
 
 from Jovimetrix.sup.image.adjust import EnumScaleMode, EnumInterpolation, \
     image_scalefit
 
 from Jovimetrix.sup.image.compose import image_by_size
 
-# =============================================================================
+# ==============================================================================
 
 JOV_CATEGORY = "UTILITY"
 
@@ -51,7 +50,7 @@ class ContainsAnyDict(dict):
     def __contains__(self, key) -> Literal[True]:
         return True
 
-# =============================================================================
+# ==============================================================================
 
 class ArrayNode(JOVBaseNode):
     NAME = "ARRAY (JOV) 📚"
@@ -358,30 +357,41 @@ class QueueBaseNode(JOVBaseNode):
         if (batched := parse_param(kw, Lexicon.BATCH, EnumConvertType.BOOLEAN, False)[0]) == True:
             data = []
             mw, mh, mc = 0, 0, 0
-            pbar = ProgressBar(self.__len)
             for idx in range(self.__len):
                 ret = self.process(self.__q[idx])
                 if isinstance(ret, (np.ndarray,)):
                     h, w, c = ret.shape
                     mw, mh, mc = max(mw, w), max(mh, h), max(mc, c)
                 data.append(ret)
-                pbar.update_absolute(idx)
 
             if mw != 0 or mh != 0 or mc != 0:
                 ret = []
                 pbar = ProgressBar(self.__len)
+                mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.MATTE.name)[0]
+                mode = EnumScaleMode[mode]
+                sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)[0]
+                sample = EnumInterpolation[sample]
+                wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)[0]
+                w2, h2 = wihi
+                matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)[0]
+                matte_alpha = matte[3]
+                matte = matte[:3] + [0]
+
                 for idx, d in enumerate(data):
                     d = image_convert(d, mc)
-                    d = image_matte(d, (0,0,0,0), width=mw, height=mh)
-                    d = cv2tensor(d)
-                    ret.append(d)
+                    if mode != EnumScaleMode.MATTE:
+                        d = image_scalefit(d, w2, h2, mode=mode, sample=sample)
+                    else:
+                        d = image_matte(d, matte, width=mw, height=mh)
+                    ret.append(cv2tensor(d))
                     pbar.update_absolute(idx)
-                data = torch.cat(ret, dim=0)
-                data = ret
+                data = torch.stack(ret)
         elif wait == True:
             info += f" PAUSED"
         else:
             data = self.process(self.__q[self.__index])
+            if isinstance(data, (np.ndarray,)):
+                data = cv2tensor(data).unsqueeze(0)
             self.__index += 1
 
         self.__previous = data
@@ -426,10 +436,9 @@ Manage a queue of items, such as file paths or data. Supports various formats in
         data, aa, ba, ca, da = super().run(ident, **kw)
         if isinstance(data, (list, )):
             if isinstance(data[0], (np.ndarray,)):
-                data = [cv2tensor(d) for d in data]
-                data = torch.cat(data, dim=0)
+                data = torch.stack([cv2tensor(d).unsqueeze(0) for d in data])
         elif isinstance(data, (np.ndarray,)):
-            data = cv2tensor(data)
+            data = cv2tensor(data).unsqueeze(0)
         return data, aa, ba, ca, da
 
 class QueueTooNode(QueueBaseNode):
@@ -473,18 +482,12 @@ Manage a queue of specific items: media files. Supports various image and video 
         }
         return Lexicon._parse(d, cls)
 
+"""
     def run(self, ident, **kw) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, str, int, int]:
         data, _, current, index, total = super().run(ident, **kw)
         if not isinstance(data, (list, )):
             data = [data]
 
-        mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.MATTE.name)[0]
-        mode = EnumScaleMode[mode]
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)[0]
-        w, h = wihi
-        sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)[0]
-        sample = EnumInterpolation[sample]
-        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)[0]
         images = []
         pbar = ProgressBar(len(data))
         for idx, image in enumerate(data):
@@ -493,5 +496,6 @@ Manage a queue of specific items: media files. Supports various image and video 
                 image = image_scalefit(image, w, h, mode, sample)
             images.append(cv2tensor_full(image, matte))
             pbar.update_absolute(idx)
-        images = [torch.cat(i, dim=0) for i in zip(*images)]
-        return *images, current, index, total
+        images = [torch.stack(i.unsqueeze(0)) for i in zip(*images)]
+        return data, current, index, total
+"""

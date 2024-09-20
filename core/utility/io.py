@@ -26,7 +26,7 @@ from Jovimetrix.sup.util import EnumConvertType, path_next, parse_param, \
 
 from Jovimetrix.sup.image import tensor2cv, tensor2pil
 
-# =============================================================================
+# ==============================================================================
 
 JOV_CATEGORY = "UTILITY"
 
@@ -41,7 +41,7 @@ if (JOV_GIFSKI := os.getenv("JOV_GIFSKI", None)) is not None:
 else:
     logger.warning("no gifski support")
 
-# =============================================================================
+# ==============================================================================
 
 class ExportNode(JOVBaseNode):
     NAME = "EXPORT (JOV) 📽"

@@ -28,7 +28,7 @@ from Jovimetrix.sup.util import EnumConvertType, EnumSwizzle, parse_dynamic, \
 
 from Jovimetrix.sup.anim import EnumWave, EnumEase, ease_op, wave_op
 
-# =============================================================================
+# ==============================================================================
 
 JOV_CATEGORY = "CALC"
 
@@ -43,7 +43,7 @@ JOV_DELAY_MAX = 600
 try: JOV_DELAY_MAX = int(os.getenv("JOV_DELAY_MAX", JOV_DELAY_MAX))
 except: pass
 
-# =============================================================================
+# ==============================================================================
 
 class EnumBinaryOperation(Enum):
     ADD = 0
@@ -153,7 +153,7 @@ class Results(object):
         self.fixed = []
         self.trigger = []
 
-# =============================================================================
+# ==============================================================================
 
 # Dictionary to map each operation to its corresponding function
 OP_UNARY = {
@@ -183,7 +183,7 @@ OP_UNARY = {
     EnumUnaryOperation.GAMMA: lambda x: gamma(x) if x > 0 else 0,
 }
 
-# =============================================================================
+# ==============================================================================
 
 class CalcUnaryOPNode(JOVBaseNode):
     NAME = "OP UNARY (JOV) 🎲"
@@ -539,7 +539,7 @@ Evaluates two inputs (A and B) with a specified comparison operators and optiona
         outs, vals = zip(*results)
         if isinstance(outs[0], (torch.Tensor,)):
             if len(outs) > 1:
-                outs = torch.cat(outs, dim=0)
+                outs = torch.stack(outs)
             else:
                 outs = outs[0].unsqueeze(0)
         else:

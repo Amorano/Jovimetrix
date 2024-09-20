@@ -5,6 +5,7 @@
     "BLEND (JOV) \u2697\ufe0f": "Combine two input images using various blending modes, such as normal, screen, multiply, overlay, etc",
     "COLOR BLIND (JOV) \ud83d\udc41\u200d\ud83d\udde8": "Simulate color blindness effects on images",
     "COLOR MATCH (JOV) \ud83d\udc9e": "Adjust the color scheme of one image to match another with the Color Match Node",
+    "COLOR MEANS (JOV) \u3030\ufe0f": "Output the top K colors of an Image in order of most->least used",
     "COLOR THEORY (JOV) \ud83d\udede": "Generate a color harmony based on the selected scheme",
     "COMPARISON (JOV) \ud83d\udd75\ud83c\udffd": "Evaluates two inputs (A and B) with a specified comparison operators and optional values for successful and failed comparisons",
     "CONSTANT (JOV) \ud83d\udfea": "Generate a constant image or mask of a specified size and color",

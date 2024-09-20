@@ -15,8 +15,8 @@ from blendmodes.blend import BlendType, blendLayers
 from loguru import logger
 
 from Jovimetrix.sup.image import TYPE_IMAGE, TYPE_PIXEL, \
-    TYPE_fCOORD2D, bgr2image, cv2pil, image2bgr, image_convert, \
-    image_mask, image_mask_add, image_matte, pil2cv
+    TYPE_fCOORD2D, image_convert, image_mask, image_mask_add, image_matte, \
+    bgr2image, cv2pil, image2bgr, pil2cv
 
 # ==============================================================================
 # === ENUMERATION ===
@@ -370,9 +370,9 @@ def image_stack(image_list: List[TYPE_IMAGE],
             image = np.vstack(images)
     return image
 
-# =============================================================================
+# ==============================================================================
 # === SHAPE ===
-# =============================================================================
+# ==============================================================================
 
 def shape_ellipse(width: int, height: int, sizeX:float=1., sizeY:float=1.,
                   fill:TYPE_PIXEL=255, back:TYPE_PIXEL=0) -> Image:

@@ -10,20 +10,21 @@ from PIL import Image, ImageDraw
 
 from loguru import logger
 
-from Jovimetrix.sup.image import TYPE_PIXEL, EnumImageType, \
-    pixel_eval, pil2cv
+from Jovimetrix.sup.image import TYPE_PIXEL, EnumImageType, pil2cv
+
+from Jovimetrix.sup.image.color import pixel_eval
 
 from Jovimetrix.sup.image.adjust import EnumScaleMode, image_scalefit
 
-# =============================================================================
+# ==============================================================================
 
 class EnumGraphType(Enum):
     NORMAL = 0
     SOUNDCLOUD = 1
 
-# =============================================================================
+# ==============================================================================
 # === VISUALIZE ===
-# =============================================================================
+# ==============================================================================
 
 def graph_sausage(data: np.ndarray, bar_count:int, width:int, height:int,
                     thickness: float = 0.5, offset: float = 0.0,

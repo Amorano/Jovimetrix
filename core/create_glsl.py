@@ -27,8 +27,8 @@ from Jovimetrix.sup.util import EnumConvertType, parse_param, \
 from Jovimetrix.sup.image.adjust import EnumInterpolation, EnumScaleMode, \
     image_scalefit
 
-from Jovimetrix.sup.image import MIN_IMAGE_SIZE, cv2tensor_full, \
-    image_convert, tensor2cv
+from Jovimetrix.sup.image import MIN_IMAGE_SIZE, image_convert, tensor2cv, \
+    cv2tensor_full
 
 import Jovimetrix.sup.shader as glsl_enums
 
@@ -36,11 +36,11 @@ from Jovimetrix.sup.shader import JOV_ROOT_GLSL, GLSL_PROGRAMS, PROG_FRAGMENT, \
     PROG_VERTEX, PTYPE, CompileException, EnumGLSLEdge, GLSLShader, shader_meta, \
     load_file_glsl
 
-# =============================================================================
+# ==============================================================================
 
 JOV_CATEGORY = "CREATE"
 
-# =============================================================================
+# ==============================================================================
 
 try:
     @PromptServer.instance.routes.get("/jovimetrix/glsl")
@@ -173,7 +173,7 @@ class GLSLNodeBase(JOVImageNode):
             self.__delta += step
             comfy_message(ident, "jovi-glsl-time", {"id": ident, "t": self.__delta})
             pbar.update_absolute(idx)
-        return [torch.cat(i, dim=0) for i in zip(*images)]
+        return [torch.stack(i) for i in zip(*images)]
 
 class GLSLNode(GLSLNodeBase):
     NAME = "GLSL (JOV) 🍩"

@@ -26,9 +26,9 @@ from PIL import Image, ImageOps
 
 from loguru import logger
 
-# =============================================================================
+# ==============================================================================
 # === GLOBAL ===
-# =============================================================================
+# ==============================================================================
 
 MIN_IMAGE_SIZE: int = 32
 HALFPI: float = math.pi / 2
@@ -37,9 +37,9 @@ TAU: float = math.pi * 2
 IMAGE_FORMATS: List[str] = [ex for ex, f in Image.registered_extensions().items()
                             if f in Image.OPEN]
 
-# =============================================================================
+# ==============================================================================
 # === TYPE ===
-# =============================================================================
+# ==============================================================================
 
 TYPE_fCOORD2D = Tuple[float, float]
 TYPE_fCOORD3D = Tuple[float, float, float]
@@ -55,9 +55,9 @@ TYPE_PIXEL = int | float | TYPE_iRGB | TYPE_iRGBA | TYPE_fRGB | TYPE_fRGBA
 TYPE_IMAGE = np.ndarray | torch.Tensor
 TYPE_VECTOR = TYPE_IMAGE | TYPE_PIXEL
 
-# =============================================================================
+# ==============================================================================
 # === ENUMERATION ===
-# =============================================================================
+# ==============================================================================
 
 class EnumGrayscaleCrunch(Enum):
     LOW = 0
@@ -134,15 +134,17 @@ def cv2tensor(image: TYPE_IMAGE, grayscale: bool=False) -> torch.Tensor:
         image = np.squeeze(image, axis=-1)
 
     image = image.astype(np.float32) / 255.0
-    return torch.from_numpy(image).unsqueeze(0)
+    return torch.from_numpy(image) #.unsqueeze(0)
 
-def cv2tensor_full(image: TYPE_IMAGE, matte:TYPE_PIXEL=(0,0,0,255)) -> Tuple[torch.Tensor, ...]:
-    rgba = image_convert(image, 4, matte=matte)
-    rgb = image_convert(image, 3)
+def cv2tensor_full(image: TYPE_IMAGE, matte:TYPE_PIXEL=(0,0,0,255)) \
+    -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+
+    rgba = image_convert(image, 4)
+    rgb = image_matte(rgba, matte)[...,:3]
     mask = image_mask(image)
-    rgba = torch.from_numpy(rgba.astype(np.float32) / 255.0).unsqueeze(0)
-    rgb = torch.from_numpy(rgb.astype(np.float32) / 255.0).unsqueeze(0)
-    mask = torch.from_numpy(mask.astype(np.float32) / 255.0).unsqueeze(0)
+    rgba = torch.from_numpy(rgba.astype(np.float32) / 255.0)
+    rgb = torch.from_numpy(rgb.astype(np.float32) / 255.0)
+    mask = torch.from_numpy(mask.astype(np.float32) / 255.0)
     return rgba, rgb, mask
 
 def hsv2bgr(hsl_color: TYPE_PIXEL) -> TYPE_PIXEL:
@@ -176,13 +178,16 @@ def pil2tensor(image: Image.Image) -> torch.Tensor:
     image = np.array(image).astype(np.float32) / 255.0
     return torch.from_numpy(image).unsqueeze(0)
 
-def tensor2cv(tensor: torch.Tensor) -> TYPE_IMAGE:
+def tensor2cv(tensor: torch.Tensor, invert_mask:bool=True) -> TYPE_IMAGE:
     """Convert a torch Tensor to a numpy ndarray."""
     if tensor.ndim > 3:
         raise Exception("Tensor is batch of tensors")
 
     if tensor.ndim < 3:
-        tensor = 1. - tensor.unsqueeze(-1)
+        tensor = tensor.unsqueeze(-1)
+
+    if tensor.shape[2] == 1 and invert_mask:
+        tensor = 1. - tensor
 
     tensor = tensor.cpu().numpy()
     return np.clip(255.0 * tensor, 0, 255).astype(np.uint8)
@@ -205,67 +210,6 @@ def mixlabLayer2cv(layer: dict) -> torch.Tensor:
         image = tensor2cv(image)
         mask = tensor2cv(mask)
     return image_mask_add(image, mask)
-
-# ==============================================================================
-# === PIXEL ===
-# ==============================================================================
-
-def pixel_eval(color: TYPE_PIXEL,
-            target: EnumImageType=EnumImageType.BGR,
-            precision:EnumIntFloat=EnumIntFloat.INT,
-            crunch:EnumGrayscaleCrunch=EnumGrayscaleCrunch.MEAN) -> Tuple[TYPE_PIXEL] | TYPE_PIXEL:
-    """Evaluates R(GB)(A) pixels in range (0-255) into target target pixel type."""
-
-    def parse_single_color(c: TYPE_PIXEL) -> TYPE_PIXEL:
-        if not isinstance(c, int):
-            c = np.clip(c, 0, 1)
-            if precision == EnumIntFloat.INT:
-                c = int(c * 255)
-        else:
-            c = np.clip(c, 0, 255)
-            if precision == EnumIntFloat.FLOAT:
-                c /= 255
-        return c
-
-    # make sure we are an RGBA value already
-    if isinstance(color, (float, int)):
-        color = tuple([parse_single_color(color)])
-    elif isinstance(color, (set, tuple, list)):
-        color = tuple([parse_single_color(c) for c in color])
-
-    if target == EnumImageType.GRAYSCALE:
-        alpha = 1
-        if len(color) > 3:
-            alpha = color[3]
-            if precision == EnumIntFloat.INT:
-                alpha /= 255
-            color = color[:3]
-        match crunch:
-            case EnumGrayscaleCrunch.LOW:
-                val = min(color) * alpha
-            case EnumGrayscaleCrunch.HIGH:
-                val = max(color) * alpha
-            case EnumGrayscaleCrunch.MEAN:
-                val = np.mean(color) * alpha
-        if precision == EnumIntFloat.INT:
-            val = int(val)
-        return val
-
-    if len(color) < 3:
-        color += (0,) * (3 - len(color))
-
-    if target in [EnumImageType.RGB, EnumImageType.BGR]:
-        color = color[:3]
-        if target == EnumImageType.BGR:
-            color = color[::-1]
-        return color
-
-    if len(color) < 4:
-        color += (255,)
-
-    if target == EnumImageType.BGRA:
-        color = tuple(color[2::-1]) + tuple([color[-1]])
-    return color
 
 # ==============================================================================
 # === IMAGE ===

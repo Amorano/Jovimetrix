@@ -12,15 +12,15 @@ import numpy as np
 
 from loguru import logger
 
-from Jovimetrix.sup.image import MIN_IMAGE_SIZE, TYPE_IMAGE, TYPE_PIXEL, \
-    TYPE_fCOORD2D, bgr2image, cv2tensor, image2bgr, image_convert, \
-    image_matte, image_minmax, tensor2cv
+from Jovimetrix.sup.image import TYPE_IMAGE, TYPE_PIXEL, \
+    TYPE_fCOORD2D, image_convert, image_matte, image_minmax, bgr2image, \
+    cv2tensor, image2bgr, tensor2cv
 
 from Jovimetrix.sup.image.compose import image_crop_center
 
-# =============================================================================
+# ==============================================================================
 # === ENUMERATION ===
-# =============================================================================
+# ==============================================================================
 
 class EnumEdge(Enum):
     CLIP = 1

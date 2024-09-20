@@ -15,7 +15,7 @@ from PIL import Image, ImageChops, ImageOps
 from loguru import logger
 
 from Jovimetrix.sup.image import TYPE_IMAGE, TYPE_PIXEL, TYPE_iRGB, \
-    cv2pil, image_convert, image_matte, pil2cv
+    image_convert, image_matte, cv2pil, pil2cv
 
 from Jovimetrix.sup.image.channel import channel_add
 

@@ -18,17 +18,17 @@ from Jovimetrix import JOV_TYPE_IMAGE, JOVBaseNode, JOVImageNode, Lexicon, \
 
 from Jovimetrix.sup.util import EnumConvertType, parse_param, zip_longest_fill
 
-from Jovimetrix.sup.image import MIN_IMAGE_SIZE, \
-    EnumImageType, cv2tensor, cv2tensor_full, image_mask_add, image_matte, \
-    tensor2cv, pil2cv
+from Jovimetrix.sup.image import MIN_IMAGE_SIZE, EnumImageType, image_mask_add, \
+    image_matte, cv2tensor, cv2tensor_full, tensor2cv, pil2cv
 
 from Jovimetrix.sup.image.channel import channel_solid
 
 from Jovimetrix.sup.image.compose import EnumShapes, \
     shape_ellipse, shape_polygon, shape_quad, image_mask_binary
 
-from Jovimetrix.sup.image.adjust import EnumEdge, EnumScaleMode, EnumInterpolation, \
-    image_invert, image_rotate, image_scalefit, image_transform, image_translate
+from Jovimetrix.sup.image.adjust import EnumEdge, EnumScaleMode, \
+    EnumInterpolation, image_invert, image_rotate, image_scalefit, \
+    image_transform, image_translate
 
 from Jovimetrix.sup.image.mapping import image_stereogram
 
@@ -37,11 +37,11 @@ from Jovimetrix.sup.text import EnumAlignment, EnumJustify, font_names, \
 
 from Jovimetrix.sup.audio import graph_sausage
 
-# =============================================================================
+# ==============================================================================
 
 JOV_CATEGORY = "CREATE"
 
-# =============================================================================
+# ==============================================================================
 
 class ConstantNode(JOVImageNode):
     NAME = "CONSTANT (JOV) 🟪"
@@ -85,14 +85,14 @@ Generate a constant image or mask of a specified size and color. It can be used 
                 images.append(cv2tensor_full(pA))
             else:
                 pA = tensor2cv(pA)
-                print(pA.shape)
                 mode = EnumScaleMode[mode]
                 if mode != EnumScaleMode.MATTE:
                     sample = EnumInterpolation[sample]
                     pA = image_scalefit(pA, width, height, mode, sample)
                 images.append(cv2tensor_full(pA, matte))
             pbar.update_absolute(idx)
-        return [torch.cat(i, dim=0) for i in zip(*images)]
+        # return [torch.cat(i) for i in zip(*images)]
+        return [torch.stack(i) for i in zip(*images)]
 
 class ShapeNode(JOVImageNode):
     NAME = "SHAPE GEN (JOV) ✨"
@@ -171,7 +171,7 @@ Create n-sided polygons. These shapes can be customized by adjusting parameters 
 
             images.append([cv2tensor(pB), cv2tensor(matte), cv2tensor(mask, True)])
             pbar.update_absolute(idx)
-        return [torch.cat(i, dim=0) for i in zip(*images)]
+        return [torch.stack(i) for i in zip(*images)]
 
 class StereogramNode(JOVImageNode):
     NAME = "STEREOGRAM (JOV) 📻"
@@ -216,7 +216,7 @@ Generates false perception 3D images from 2D input. Set tile divisions, noise, g
             pA = image_stereogram(pA, depth, divisions, noise, gamma, shift)
             images.append(cv2tensor_full(pA))
             pbar.update_absolute(idx)
-        return [torch.cat(i, dim=0) for i in zip(*images)]
+        return [torch.stack(i) for i in zip(*images)]
 
 class StereoscopicNode(JOVBaseNode):
     NAME = "STEREOSCOPIC (JOV) 🕶️"
@@ -253,7 +253,7 @@ Simulates depth perception in images by generating stereoscopic views. It accept
             disparity_map *= baseline * focal_length
             images.append(cv2tensor(pA))
             pbar.update_absolute(idx)
-        return torch.cat(images, dim=0)
+        return torch.stack(images)
 
 class TextNode(JOVImageNode):
     NAME = "TEXT GEN (JOV) 📝"
@@ -355,7 +355,7 @@ Generates images containing text based on parameters such as font, size, alignme
                     img = image_invert(img, 1)
                 images.append(cv2tensor_full(img, matte))
             pbar.update_absolute(idx)
-        return [torch.cat(i, dim=0) for i in zip(*images)]
+        return [torch.stack(i) for i in zip(*images)]
 
 class WaveGraphNode(JOVImageNode):
     NAME = "WAVE GRAPH (JOV) ▶ ılıılı"
@@ -399,4 +399,4 @@ The Wave Graph node visualizes audio waveforms as bars. Adjust parameters like t
                 img = graph_sausage(wave[0], bars, width, height, thickness=thick, color_line=rgb_a, color_back=matte)
             images.append(cv2tensor_full(img))
             pbar.update_absolute(idx)
-        return [torch.cat(i, dim=0) for i in zip(*images)]
+        return [torch.stack(i) for i in zip(*images)]
