@@ -35,8 +35,6 @@ from Jovimetrix.sup.image.mapping import image_stereogram
 from Jovimetrix.sup.text import EnumAlignment, EnumJustify, font_names, \
     text_autosize, text_draw
 
-from Jovimetrix.sup.audio import graph_sausage
-
 # ==============================================================================
 
 JOV_CATEGORY = "CREATE"
@@ -354,49 +352,5 @@ Generates images containing text based on parameters such as font, size, alignme
                 if invert:
                     img = image_invert(img, 1)
                 images.append(cv2tensor_full(img, matte))
-            pbar.update_absolute(idx)
-        return [torch.stack(i) for i in zip(*images)]
-
-class WaveGraphNode(JOVImageNode):
-    NAME = "WAVE GRAPH (JOV) ▶ ılıılı"
-    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    DESCRIPTION = """
-The Wave Graph node visualizes audio waveforms as bars. Adjust parameters like the number of bars, bar thickness, and colors.
-"""
-
-    @classmethod
-    def INPUT_TYPES(cls) -> dict:
-        d = super().INPUT_TYPES()
-        d = deep_merge(d, {
-            "optional": {
-                Lexicon.WAVE: ("AUDIO", {"default": None, "tooltips": "Audio Wave Object"}),
-                Lexicon.VALUE: ("INT", {"default": 100, "mij": 32, "maj": 8192,
-                                        "tooltips": "Number of Vertical bars to try to fit within the specified Width x Height"}),
-                Lexicon.THICK: ("FLOAT", {"default": 0.72, "mij": 0, "maj": 1, "step": 0.01,
-                                        "tooltips": "The percentage of fullness for each bar; currently scaled from the left only"}),
-                Lexicon.WH: ("VEC2INT", {"default": (256, 256), "mij":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H], "tooltips": "Final output size of the wave bar graph"}),
-                Lexicon.RGBA_A: ("VEC4INT", {"default": (128, 128, 0, 255), "rgb": True, "tooltips": "Bar Color"}),
-                Lexicon.MATTE: ("VEC4INT", {"default": (0, 128, 128, 255), "rgb": True})
-            }
-        })
-        return Lexicon._parse(d, cls)
-
-    def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
-        wave = parse_param(kw, Lexicon.WAVE, EnumConvertType.ANY, [0])
-        bars = parse_param(kw, Lexicon.VALUE, EnumConvertType.INT, 50, 1, 8192)
-        thick = parse_param(kw, Lexicon.THICK, EnumConvertType.FLOAT, 0.75, 0, 1)
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)
-        rgb_a = parse_param(kw, Lexicon.RGBA_A, EnumConvertType.VEC4INT, [(196, 0, 196)], 0, 255)
-        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(42, 12, 42, 255)], 0, 255)
-        params = list(zip_longest_fill(wave, bars, wihi, thick, rgb_a, matte))
-        images = []
-        pbar = ProgressBar(len(params))
-        for idx, (wave, bars, wihi, thick, rgb_a, matte) in enumerate(params):
-            width, height = wihi
-            if wave is None:
-                img = channel_solid(width, height, matte, EnumImageType.BGRA)
-            else:
-                img = graph_sausage(wave[0], bars, width, height, thickness=thick, color_line=rgb_a, color_back=matte)
-            images.append(cv2tensor_full(img))
             pbar.update_absolute(idx)
         return [torch.stack(i) for i in zip(*images)]

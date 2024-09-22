@@ -89,7 +89,7 @@ def grid_make(data: List[Any]) -> Tuple[List[List[Any]], int, int]:
 
 def load_file(fname: str) -> str | None:
     try:
-        with open(fname, 'r') as f:
+        with open(fname, 'r', encoding='utf-8') as f:
             return f.read()
     except Exception as e:
         logger.error(e)

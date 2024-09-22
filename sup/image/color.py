@@ -9,6 +9,7 @@ from typing import List, Tuple
 import cv2
 import numpy as np
 from numba import cuda
+from scipy.spatial import KDTree
 from skimage import exposure
 from sklearn.cluster import KMeans
 from daltonlens import simulate
@@ -303,6 +304,100 @@ def color_blind(image: TYPE_IMAGE, deficiency:EnumCBDeficiency,
         image = image_mask_add(image, mask)
     return image
 
+def color_lut_full(dominant_colors: List[Tuple[int, int, int]]) -> TYPE_IMAGE:
+    """
+    Create a 3D LUT by mapping each RGB value to the closest dominant color.
+
+    Args:
+        dominant_colors (List[Tuple[int, int, int]]): List of top colors as (R, G, B) tuples.
+
+    Returns:
+        TYPE_IMAGE: 3D LUT with shape (256, 256, 256, 3).
+    """
+    kdtree = KDTree(dominant_colors)
+    lut = np.zeros((256, 256, 256, 3), dtype=np.uint8)
+
+    # Fill the LUT with the closest dominant colors
+    for r in range(256):
+        for g in range(256):
+            for b in range(256):
+                _, index = kdtree.query([r, g, b])
+                lut[r, g, b] = dominant_colors[index]
+
+    return lut
+
+def color_lut_match(image: TYPE_IMAGE, colormap:int=cv2.COLORMAP_JET,
+                    usermap:TYPE_IMAGE=None, num_colors:int=255) -> TYPE_IMAGE:
+    """Colorize one input based on built in cv2 color maps or a user defined image."""
+    cc = image.shape[2] if image.ndim == 3 else 1
+    if cc == 4:
+        alpha = image_mask(image)
+
+    image = image_convert(image, 3)
+    if usermap is not None:
+        usermap = image_convert(usermap, 3)
+        colormap = color_image2lut(usermap, num_colors)
+
+    image = cv2.applyColorMap(image, colormap)
+    image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+
+    image = cv2.addWeighted(image, 0.5, image, 0.5, 0)
+    image = image_convert(image, cc)
+
+    if cc == 4:
+        image[..., 3] = alpha[..., 0]
+    return image
+
+def color_lut_palette(colors: List[Tuple[int, int, int]], size: int=32) -> TYPE_IMAGE:
+    """
+    Create a color palette LUT as a 2D image from the top colors.
+
+    Args:
+        colors (List[Tuple[int, int, int]]): List of top colors as (R, G, B) tuples.
+        size (int): Size of each color square in the palette.
+
+    Returns:
+        np.ndarray: 2D image representing the LUT.
+    """
+    num_colors = len(colors)
+    width = size * num_colors
+    lut_image = np.zeros((size, width, 3), dtype=np.uint8)
+
+    for i, color in enumerate(colors):
+        x_start = i * size
+        x_end = x_start + size
+        lut_image[:, x_start:x_end] = color
+
+    return lut_image
+
+def color_lut_tonal(colors: List[Tuple[int, int, int]], width: int=256, height: int=32) -> TYPE_IMAGE:
+    """
+    Create a 2D tonal palette LUT as a grid image from the top colors.
+
+    Args:
+        colors (List[Tuple[int, int, int]]): List of top colors as (R, G, B) tuples.
+        width (int): Width of each gradient row.
+        height (int): Height of each color row.
+
+    Returns:
+        TYPE_IMAGE: 2D image representing the tonal palette LUT.
+    """
+    num_colors = len(colors)
+    lut_image = np.zeros((height * num_colors, width, 3), dtype=np.uint8)
+
+    for i, color in enumerate(colors):
+        row_start = i * height
+        row_end = row_start + height
+        gradient = np.zeros((height, width, 3), dtype=np.uint8)
+
+        for x in range(width):
+            factor = x / width
+            gradient[:, x] = np.array(color) * (1 - factor) + np.array([0, 0, 0]) * factor
+
+        lut_image[row_start:row_end] = gradient
+
+    return lut_image
+
 def color_match_histogram(image: TYPE_IMAGE, usermap: TYPE_IMAGE) -> TYPE_IMAGE:
     """Colorize one input based on the histogram matches."""
     cc = image.shape[2] if image.ndim == 3 else 1
@@ -344,28 +439,6 @@ def color_match_reinhard(image: TYPE_IMAGE, target: TYPE_IMAGE) -> TYPE_IMAGE:
     lab_tar = cv2.convertScaleAbs(lab_ori * ratio + offset)
     return cv2.cvtColor(lab_tar, cv2.COLOR_Lab2BGR)
 
-def color_match_lut(image: TYPE_IMAGE, colormap:int=cv2.COLORMAP_JET,
-                    usermap:TYPE_IMAGE=None, num_colors:int=255) -> TYPE_IMAGE:
-    """Colorize one input based on built in cv2 color maps or a user defined image."""
-    cc = image.shape[2] if image.ndim == 3 else 1
-    if cc == 4:
-        alpha = image_mask(image)
-
-    image = image_convert(image, 3)
-    if usermap is not None:
-        usermap = image_convert(usermap, 3)
-        colormap = color_image2lut(usermap, num_colors)
-
-    image = cv2.applyColorMap(image, colormap)
-    image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-
-    image = cv2.addWeighted(image, 0.5, image, 0.5, 0)
-    image = image_convert(image, cc)
-
-    if cc == 4:
-        image[..., 3] = alpha[..., 0]
-    return image
-
 def color_mean(image: TYPE_IMAGE) -> TYPE_IMAGE:
     color = [0, 0, 0]
     cc = image.shape[2] if image.ndim == 3 else 1
@@ -379,27 +452,6 @@ def color_mean(image: TYPE_IMAGE) -> TYPE_IMAGE:
             int(np.mean(image[:,:,1])),
             int(np.mean(image[:,:,2])) ]
     return color
-
-def color_top_used(image: TYPE_IMAGE, top_n: int=8) -> List[Tuple[int, int, int]]:
-    """
-    Colors in an image sorted from most used to least used.
-
-    Args:
-        image (np.ndarray): Input image in HxWxC format.
-        top_n (int): Number of top colors to return.
-
-    Returns:
-        List[Tuple[int, int, int]]: List of top `top_n` colors.
-    """
-    pixels = image.reshape(-1, 3)
-    dtype = [('r', np.uint8), ('g', np.uint8), ('b', np.uint8)]
-    structured_pixels = pixels.view(dtype)
-    unique_colors, counts = np.unique(structured_pixels, return_counts=True)
-    # Sort colors by count in descending order
-    sorted_indices = np.argsort(-counts)
-    top_colors = unique_colors[sorted_indices][:top_n]
-
-    return [tuple(color) for color in top_colors]
 
 def color_top_used(image: TYPE_IMAGE, top_n: int=8) -> List[Tuple[int, int, int]]:
     """
@@ -537,16 +589,19 @@ def color_theory(image: TYPE_IMAGE, custom:int=0, scheme: EnumColorTheory=EnumCo
 #
 #
 
+def image_gradient_expand(image: TYPE_IMAGE) -> None:
+    image = image_convert(image, 3)
+    image = cv2.resize(image, (256, 256))
+    return image[0,:,:].reshape((256, 1, 3)).astype(np.uint8)
+
 # Adapted from WAS Suite -- gradient_map
 # https://github.com/WASasquatch/was-node-suite-comfyui
-def image_gradient_map(image:TYPE_IMAGE, gradient_map:TYPE_IMAGE, reverse:bool=False) -> TYPE_IMAGE:
+def image_gradient_map(image:TYPE_IMAGE, color_map:TYPE_IMAGE, reverse:bool=False) -> TYPE_IMAGE:
     if reverse:
-        gradient_map = gradient_map[:,:,::-1]
-    grey = image_grayscale(image)
-    cmap = image_convert(gradient_map, 3)
-    cmap = cv2.resize(cmap, (256, 256))
-    cmap = cmap[0,:,:].reshape((256, 1, 3)).astype(np.uint8)
-    return cv2.applyColorMap(grey, cmap)
+        color_map = color_map[:,:,::-1]
+    gray = image_grayscale(image)
+    color_map = image_gradient_expand(color_map)
+    return cv2.applyColorMap(gray, color_map)
 
 def image_grayscale(image: TYPE_IMAGE, use_alpha: bool = False) -> TYPE_IMAGE:
     """Convert image to grayscale, optionally using the alpha channel if present.

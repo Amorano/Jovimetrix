@@ -176,9 +176,7 @@
 
 .jov-panel-doc img {
   display: block;
-  max-width: 512px;
-  max-height: 70vh;
-  width: 100%;
+  width: 95%;
   height: auto;
   object-fit: contain;
   margin: 4px auto;

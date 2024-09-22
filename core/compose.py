@@ -25,8 +25,9 @@ from Jovimetrix.sup.image import MIN_IMAGE_SIZE, EnumImageType, \
     cv2tensor, cv2tensor_full, tensor2cv
 
 from Jovimetrix.sup.image.color import EnumCBDeficiency, EnumCBSimulator, \
-    EnumColorMap, EnumColorTheory, color_match_lut, color_match_reinhard, \
-    color_theory, color_blind, color_top_used, image_gradient_map, pixel_eval
+    EnumColorMap, EnumColorTheory, color_lut_match, color_lut_palette, \
+    color_lut_tonal, color_match_reinhard, color_theory, color_blind, \
+    color_top_used, image_gradient_expand, image_gradient_map, pixel_eval
 
 from Jovimetrix.sup.image.adjust import EnumEdge, EnumMirrorMode, EnumScaleMode, \
     EnumInterpolation, EnumThreshold, EnumThresholdAdapt, image_contrast, \
@@ -208,7 +209,7 @@ Enhance and modify images with various effects such as blurring, sharpening, col
                 mask = image_mask(pA)
                 img_new = image_mask_add(mask)
 
-            images.append(cv2tensor_full(pA, matte))
+            images.append(cv2tensor_full(img_new, matte))
             pbar.update_absolute(idx)
         return [torch.stack(i) for i in zip(*images)]
 
@@ -396,7 +397,7 @@ Adjust the color scheme of one image to match another with the Color Match Node.
                     if cmap == EnumColorMatchMap.PRESET_MAP:
                         pB = None
                     colormap = EnumColorMap[colormap]
-                    pA = color_match_lut(pA, colormap.value, pB, num_colors)
+                    pA = color_lut_match(pA, colormap.value, pB, num_colors)
 
                 case EnumColorMatchMode.REINHARD:
                     pA = color_match_reinhard(pA, pB)
@@ -411,14 +412,13 @@ Adjust the color scheme of one image to match another with the Color Match Node.
             pbar.update_absolute(idx)
         return [torch.stack(i) for i in zip(*images)]
 
-
 class ColorKMeansNode(JOVBaseNode):
     NAME = "COLOR MEANS (JOV) 〰️"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = ("IMAGE", )
-    RETURN_NAMES = (Lexicon.IMAGE,)
+    RETURN_TYPES = ("IMAGE", "IMAGE", "JLUT",)
+    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.PALETTE, Lexicon.INVERT, Lexicon.LUT,)
     DESCRIPTION = """
-Output the top K colors of an Image in order of most->least used.
+The top-k colors ordered from most->least used as a strip, tonal palette and 3D LUT.
 """
 
     @classmethod
@@ -427,31 +427,46 @@ Output the top K colors of an Image in order of most->least used.
         d = deep_merge(d, {
             "optional": {
                 Lexicon.PIXEL: (JOV_TYPE_IMAGE, {}),
-                Lexicon.VALUE: ("INT", {"default": 5, "mij": 0, "maj": 255, "tooltips":"The top K colors to select."}),
+                Lexicon.VALUE: ("INT", {"default": 6, "mij": 1, "maj": 255, "tooltips":"The top K colors to select."}),
+                Lexicon.SIZE: ("INT", {"default": 16, "mij": 1, "maj": 256, "tooltips":"Height of the tones in the strip. Width is based on input."}),
                 Lexicon.WH: ("VEC2INT", {"default": (128, 256), "mij":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
+            },
+            "outputs": {
+                0: ("IMAGE", {"tooltips":"Sequence of top-K colors. Count depends on value in `VAL`."}),
+                1: ("IMAGE", {"tooltips":"Simple Tone palette based on result top-K colors. Width is taken from input."}),
+                2: ("JLUT", {"tooltips":"Full 3D LUT of the image mapped to the resultant top-K colors chosen."}),
             }
         })
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
-        kcolors = parse_param(kw, Lexicon.VALUE, EnumConvertType.INT, 1)
+        kcolors = parse_param(kw, Lexicon.VALUE, EnumConvertType.INT, 6, 1, 255)
+        lut_height = parse_param(kw, Lexicon.LUT, EnumConvertType.INT, 16, 1, 256)
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(128, 256)], MIN_IMAGE_SIZE)
-        params = list(zip_longest_fill(pA, kcolors, wihi))
+
+        params = list(zip_longest_fill(pA, kcolors, lut_height, wihi))
         images = []
         pbar = ProgressBar(len(params) * sum(kcolors))
-        for idx, (pA, kcolors, wihi) in enumerate(params):
+        for idx, (pA, kcolors, lut_height, wihi) in enumerate(params):
             if pA is None:
                 pA = channel_solid(chan=EnumImageType.BGRA)
 
             pA = tensor2cv(pA)
+            h, w = pA.shape[:2]
+
             colors = color_top_used(pA, kcolors)
-            for c in colors:
-                c = channel_solid(*wihi, color=c)
-                images.append(cv2tensor(c).unsqueeze(0))
+            # size down to 1px strip then expand to 256 for full gradient
+            gradient = color_lut_palette(colors, 1)
+            gradient = image_gradient_expand(gradient)
+            top_colors = torch.stack([cv2tensor(channel_solid(*wihi, color=c)) for c in colors])
+            lut_tonal = cv2tensor(color_lut_tonal(colors, width=w, height=lut_height)).unsqueeze(0)
+            # lut_full = cv2tensor(color_lut_full(colors)).unsqueeze(0)
+            print(lut_tonal.shape)
+            images.append([top_colors, lut_tonal, lut_tonal])
             pbar.update_absolute(idx)
 
-        return [torch.stack(i) for i in zip(*images)]
+        return list(zip(*images))
 
 class ColorTheoryNode(JOVBaseNode):
     NAME = "COLOR THEORY (JOV) 🛞"
@@ -493,7 +508,7 @@ Generate a color harmony based on the selected scheme. Supported schemes include
                 img = (image_invert(s, 1) for s in img)
             images.append([cv2tensor(a) for a in img])
             pbar.update_absolute(idx)
-        return [torch.cat(i, dim=0) for i in zip(*images)]
+        return [torch.stack(i) for i in zip(*images)]
 
 class CropNode(JOVImageNode):
     NAME = "CROP (JOV) ✂️"
@@ -883,29 +898,6 @@ Swap pixel values between two input images based on specified channel swizzle op
             out = channel_solid(w, h, (b,g,r,a), EnumImageType.BGRA)
 
             images.append(cv2tensor_full(pB))
-            pbar.update_absolute(idx)
-            continue
-
-            if len(pA) < 2 or pA.shape[2] < 4:
-                pA = image_convert(pA, 4)
-            if len(pB) < 2 or pB.shape[2] < 4:
-                pB = image_convert(pB, 4)
-
-
-
-            # matte scale/pad
-            sh, sw = pB.shape[:2]
-            if h != sh or w != sw:
-                pB = image_scalefit(pB, w, h, EnumScaleMode.MATTE)
-                pB = image_scalefit(pB, w, h, EnumScaleMode.CROP)
-
-            for i, (chan, who) in enumerate([(2, swap_r), (1, swap_g), (0, swap_b), (3, swap_a)]):
-                if (who := EnumPixelSwizzle[who]) != EnumPixelSwizzle.CONSTANT:
-                    side = who.value % 10
-                    idx = who.value // 10
-                    out[:,:,i] = (pB if side == 1 else pA)[:,:,chan]
-
-            images.append(cv2tensor_full(out))
             pbar.update_absolute(idx)
         return [torch.stack(i) for i in zip(*images)]
 

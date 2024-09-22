@@ -153,6 +153,7 @@ class Lexicon(metaclass=LexiconMeta):
     BATCH_MODE = 'MODE', "Make, merge, splice or split a batch or list"
     BBOX = '🔲', "Define an inner bounding box using relative coordinates [0..1] as a box region to clip."
     BI = '💙', "Blue Channel"
+    BIT = '', "Numerical Bits (0 or 1)"
     BLACK = '⬛', "Black Channel"
     BLBR = 'BL-BR', "Bottom Left - Bottom Right"
     BLUR = 'BLUR', "Blur"
@@ -239,6 +240,7 @@ class Lexicon(metaclass=LexiconMeta):
     LO = 'LO', "Low"
     LOHI = 'LoHi', "Low and High"
     LOOP = '🔄', "Loop"
+    LUT = '😎', "Size of each output lut palette square"
     M = '🖤', "Alpha Channel"
     MARGIN = 'MARGIN', "Whitespace padding around canvas"
     MASK = '😷', "Mask or Image to use as Mask to control where adjustments are applied"
@@ -260,6 +262,7 @@ class Lexicon(metaclass=LexiconMeta):
     ORIENT = '🧭', "Orientation"
     OVERWRITE = 'OVERWRITE', "Overwrite"
     PAD = 'PAD', "Padding"
+    PALETTE = '🎨', "Palette"
     PARAM = 'PARAM', "Parameters"
     PASS_IN = '📥', "Pass In"
     PASS_OUT = '📤', "Pass Out"
@@ -538,7 +541,7 @@ def match_combo(lst: List[Any] | Tuple[Any]) -> str:
     return "STRING"
 
 def template_load(fname: str) -> Template:
-    with open(ROOT_DOC / fname, 'r') as f:
+    with open(ROOT_DOC / fname, 'r', encoding='utf-8') as f:
         data = Template(f.read())
     return data
 
@@ -747,6 +750,11 @@ def comfy_message(ident:str, route:str, data:dict) -> None:
     PromptServer.instance.send_sync(route, data)
 
 try:
+
+    @PromptServer.instance.routes.get("/jovimetrix")
+    async def jovimetrix_home(request) -> Any:
+        data = template_load('home.html')
+        return web.Response(text=data.template, content_type='text/html')
 
     @PromptServer.instance.routes.get("/jovimetrix/message")
     async def jovimetrix_message(request) -> Any:

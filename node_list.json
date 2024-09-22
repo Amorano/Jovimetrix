@@ -2,10 +2,11 @@
     "ADJUST (JOV) \ud83d\udd78\ufe0f": "Enhance and modify images with various effects such as blurring, sharpening, color tweaks, and edge detection",
     "AKASHIC (JOV) \ud83d\udcd3": "Visualize data",
     "ARRAY (JOV) \ud83d\udcda": "Processes a batch of data based on the selected mode, such as merging, picking, slicing, random selection, or indexing",
+    "BIT SPLIT (JOV) \u2b44": "Split an input into separate bits",
     "BLEND (JOV) \u2697\ufe0f": "Combine two input images using various blending modes, such as normal, screen, multiply, overlay, etc",
     "COLOR BLIND (JOV) \ud83d\udc41\u200d\ud83d\udde8": "Simulate color blindness effects on images",
     "COLOR MATCH (JOV) \ud83d\udc9e": "Adjust the color scheme of one image to match another with the Color Match Node",
-    "COLOR MEANS (JOV) \u3030\ufe0f": "Output the top K colors of an Image in order of most->least used",
+    "COLOR MEANS (JOV) \u3030\ufe0f": "The top-k colors ordered from most->least used as a strip, tonal palette and 3D LUT",
     "COLOR THEORY (JOV) \ud83d\udede": "Generate a color harmony based on the selected scheme",
     "COMPARISON (JOV) \ud83d\udd75\ud83c\udffd": "Evaluates two inputs (A and B) with a specified comparison operators and optional values for successful and failed comparisons",
     "CONSTANT (JOV) \ud83d\udfea": "Generate a constant image or mask of a specified size and color",
@@ -60,6 +61,5 @@
     "TICK (JOV) \u23f1": "A timer and frame counter, emitting pulses or signals based on time intervals",
     "TRANSFORM (JOV) \ud83c\udfdd\ufe0f": "Apply various geometric transformations to images, including translation, rotation, scaling, mirroring, tiling and perspective projection",
     "VALUE (JOV) \ud83e\uddec": "Supplies raw or default values for various data types, supporting vector input with components for X, Y, Z, and W",
-    "WAVE GEN (JOV) \ud83c\udf0a": "Produce waveforms like sine, square, or sawtooth with adjustable frequency, amplitude, phase, and offset",
-    "WAVE GRAPH (JOV) \u25b6 \u0131l\u0131\u0131l\u0131": "The Wave Graph node visualizes audio waveforms as bars"
+    "WAVE GEN (JOV) \ud83c\udf0a": "Produce waveforms like sine, square, or sawtooth with adjustable frequency, amplitude, phase, and offset"
 }

@@ -24,7 +24,7 @@ from nodes import interrupt_processing
 from Jovimetrix import JOV_TYPE_ANY, ROOT, Lexicon, JOVBaseNode, deep_merge, \
     comfy_message, parse_reset
 
-from Jovimetrix.sup.util import EnumConvertType, parse_dynamic, parse_param
+from Jovimetrix.sup.util import EnumConvertType, load_file, parse_dynamic, parse_param
 
 from Jovimetrix.sup.image import MIN_IMAGE_SIZE, IMAGE_FORMATS, \
     image_convert, image_matte, image_load, cv2tensor, cv2tensor_full, tensor2cv
@@ -212,7 +212,7 @@ class QueueBaseNode(JOVBaseNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = (JOV_TYPE_ANY, JOV_TYPE_ANY, "STRING", "INT", "INT", "BOOLEAN")
     RETURN_NAMES = (Lexicon.ANY_OUT, Lexicon.QUEUE, Lexicon.CURRENT, Lexicon.INDEX, Lexicon.TOTAL, Lexicon.TRIGGER, )
-    VIDEO_FORMATS = IMAGE_FORMATS + ['.wav', '.mp3', '.webm', '.mp4', '.avi', '.wmv', '.mkv', '.mov', '.mxf']
+    VIDEO_FORMATS = ['.wav', '.mp3', '.webm', '.mp4', '.avi', '.wmv', '.mkv', '.mov', '.mxf']
 
     @classmethod
     def IS_CHANGED(cls, *arg, **kw) -> float:
@@ -258,7 +258,7 @@ class QueueBaseNode(JOVBaseNode):
             path = Path(parts[0])
             path2 = Path(ROOT / parts[0])
             if path.exists() or path2.exists():
-                philter = parts[1].split(',') if len(parts) > 1 and isinstance(parts[1], str) else self.VIDEO_FORMATS
+                philter = parts[1].split(',') if len(parts) > 1 and isinstance(parts[1], str) else self.VIDEO_FORMATS + IMAGE_FORMATS
                 path = path if path.exists() else path2
 
                 file_names = [str(path.resolve())]
@@ -300,8 +300,11 @@ class QueueBaseNode(JOVBaseNode):
             if not os.path.isfile(q_data):
                 return q_data
             _, ext = os.path.splitext(q_data)
-            if ext in self.VIDEO_FORMATS:
+            if ext in IMAGE_FORMATS:
                 data = image_load(q_data)[0]
+                self.__last_q_value[q_data] = data
+            elif ext in self.VIDEO_FORMATS:
+                data = load_file(q_data)
                 self.__last_q_value[q_data] = data
             elif ext == '.json':
                 with open(q_data, 'r', encoding='utf-8') as f:
@@ -398,7 +401,7 @@ class QueueBaseNode(JOVBaseNode):
         comfy_message(ident, "jovi-queue-ping", self.status)
         if stop and batched:
             interrupt_processing()
-        return data, self.__q, self.__current, self.__index_last+1, self.__len
+        return data, self.__q, self.__current, self.__index_last+1, self.__len, self.__index == self.__index_last or batched
 
     @property
     def status(self) -> dict[str, Any]:
@@ -432,6 +435,7 @@ Manage a queue of items, such as file paths or data. Supports various formats in
         })
         return Lexicon._parse(d, cls)
 
+"""
     def run(self, ident, **kw) -> Tuple[Any, List[str], str, int, int]:
         data, aa, ba, ca, da = super().run(ident, **kw)
         if isinstance(data, (list, )):
@@ -440,6 +444,7 @@ Manage a queue of items, such as file paths or data. Supports various formats in
         elif isinstance(data, (np.ndarray,)):
             data = cv2tensor(data).unsqueeze(0)
         return data, aa, ba, ca, da
+"""
 
 class QueueTooNode(QueueBaseNode):
     NAME = "QUEUE TOO (JOV) 🗃"
@@ -482,20 +487,13 @@ Manage a queue of specific items: media files. Supports various image and video 
         }
         return Lexicon._parse(d, cls)
 
-"""
-    def run(self, ident, **kw) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, str, int, int]:
-        data, _, current, index, total = super().run(ident, **kw)
-        if not isinstance(data, (list, )):
-            data = [data]
-
-        images = []
-        pbar = ProgressBar(len(data))
-        for idx, image in enumerate(data):
-            if mode != EnumScaleMode.MATTE:
-                image = tensor2cv(image)
-                image = image_scalefit(image, w, h, mode, sample)
-            images.append(cv2tensor_full(image, matte))
-            pbar.update_absolute(idx)
-        images = [torch.stack(i.unsqueeze(0)) for i in zip(*images)]
-        return data, current, index, total
-"""
+    def run(self, ident, **kw) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, str, int, int, bool]:
+        data, _, current, index, total, trigger = super().run(ident, **kw)
+        if not isinstance(data, (torch.Tensor, )):
+            data = [None, None, None]
+        else:
+            matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)[0]
+            data = [tensor2cv(d) for d in data]
+            data = [cv2tensor_full(d, matte) for d in data]
+            data = [torch.stack(d) for d in zip(*data)]
+        return *data, current, index, total, trigger

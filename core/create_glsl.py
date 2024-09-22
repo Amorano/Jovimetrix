@@ -131,6 +131,7 @@ class GLSLNodeBase(JOVImageNode):
         variables = kw.copy()
         for p in [Lexicon.MODE, Lexicon.WH, Lexicon.SAMPLE, Lexicon.MATTE, Lexicon.BATCH, Lexicon.TIME, Lexicon.FPS, Lexicon.EDGE]:
             variables.pop(p, None)
+        print(variables)
 
         self.__glsl.fps = parse_param(kw, Lexicon.FPS, EnumConvertType.INT, 24, 1, 120)[0]
         if batch > 0 or self.__delta != delta:
@@ -166,10 +167,7 @@ class GLSLNodeBase(JOVImageNode):
             img = self.__glsl.render(self.__delta, edge, **vars)
             if mode != EnumScaleMode.MATTE:
                 img = image_scalefit(img, w, h, mode, sample)
-            img = cv2tensor_full(img, matte)
-
-            images.append(img)
-
+            images.append(cv2tensor_full(img, matte))
             self.__delta += step
             comfy_message(ident, "jovi-glsl-time", {"id": ident, "t": self.__delta})
             pbar.update_absolute(idx)

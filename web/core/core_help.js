@@ -19,14 +19,17 @@ if (!window.jovimetrixEvents) {
 const jovimetrixEvents = window.jovimetrixEvents;
 
 const JOV_HELP_URL = "./api/jovimetrix/doc";
+const JOV_HOME = "./api/jovimetrix";
 const JOV_WEBWIKI_URL = "https://github.com/Amorano/Jovimetrix/wiki/Z.-REFERENCE#";
 
-async function load_help(name) {
-    if (name in CACHE_DOCUMENTATION) {
-        return CACHE_DOCUMENTATION[name];
+async function load_help(name, absolute=false) {
+    let url = JOV_HOME;
+    if (!absolute) {
+        if (name in CACHE_DOCUMENTATION) {
+            return CACHE_DOCUMENTATION[name];
+        }
+        url = `${JOV_HELP_URL}/${name}`;
     }
-
-    const url = `${JOV_HELP_URL}/${name}`;
 
     // Check if data is already cached
     const result = fetch(url,
@@ -67,6 +70,7 @@ app.extensionManager.registerSidebarTab({
     type: "custom",
     render: async (el) => {
         PANEL = el;
+        PANEL.innerHTML = await load_help("home", true);
     }
 });
 

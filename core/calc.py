@@ -75,6 +75,8 @@ class EnumBinaryOperation(Enum):
     UNION = 80
     INTERSECTION = 81
     DIFFERENCE = 82
+    # WEIRD ONES
+    BASE = 90
 
 class EnumComparison(Enum):
     EQUAL = 0
@@ -184,6 +186,39 @@ OP_UNARY = {
 }
 
 # ==============================================================================
+
+class BitSplitNode(JOVBaseNode):
+    NAME = "BIT SPLIT (JOV) ⭄"
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
+    RETURN_TYPES = (JOV_TYPE_NUMBER, "BOOLEAN",)
+    RETURN_NAMES = (Lexicon.BIT, Lexicon.BOOLEAN,)
+    SORT = 10
+    DESCRIPTION = """
+Split an input into separate bits. `BOOL`, `INT` and `FLOAT` use their numbers,
+`STRING` is treated as a list of `CHARACTER`. `IMAGE` and `MASK` will return a
+`TRUE` bit for any non-black pixel, as a stream of bits for all pixels in the
+image.
+"""
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        d = super().INPUT_TYPES()
+        d = deep_merge(d, {
+            "optional": {
+                Lexicon.UNKNOWN: (JOV_TYPE_FULL, {"default": None}),
+                Lexicon.VALUE: ("INT", {"default": 8, "min": 1, "max": 64, "tooltips":"Number of output bits requested"}),
+                Lexicon.VALUE: ("INT", {"default": 8, "min": 1, "max": 64, "tooltips":"Number of output bits requested"}),
+                Lexicon.VALUE: ("BOOLEAN", {"default": 8, "min": 1, "max": 64, "tooltips":"Number of output bits requested"})
+            },
+            "outputs": {
+                0: (Lexicon.BIT, {"tooltips":"Bits as Numerical output (0 or 1)"}),
+                1: (Lexicon.BOOLEAN, {"tooltips":"Bits as Boolean output (True or False)"}),
+            }
+        })
+        return Lexicon._parse(d, cls)
+
+    def run(self, **kw) -> Tuple[bool]:
+
+        return (0,)
 
 class CalcUnaryOPNode(JOVBaseNode):
     NAME = "OP UNARY (JOV) 🎲"
@@ -415,6 +450,10 @@ Execute binary operations like addition, subtraction, multiplication, division, 
                 case EnumBinaryOperation.INTERSECTION:
                     val = list(set(val_a) & set(val_b))
                 case EnumBinaryOperation.DIFFERENCE:
+                    val = list(set(val_a) - set(val_b))
+
+                # WEIRD
+                case EnumBinaryOperation.BASE:
                     val = list(set(val_a) - set(val_b))
 
             # cast into correct type....
