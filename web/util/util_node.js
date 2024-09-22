@@ -39,16 +39,10 @@ export const nodeCleanup = (node) => {
 
 export function nodeFitHeight(node) {
     const size_old = node.size;
-    const size = node.computeSize();
+    node.computeSize();
     node.setDirtyCanvas(true, true);
     app.graph.setDirtyCanvas(true, true);
-    node.setSize([size_old[0], size[1]]);
-}
-
-export function nodeFitHeight2(node) {
-    node.setSize(node.computeSize());
-    node.setDirtyCanvas(true, true);
-    app.graph.setDirtyCanvas(true, true);
+    node.setSize([Math.max(size_old[0], node.size[0]), Math.max(size_old[1], node.size[1])]);
 }
 
 /**
