@@ -9,8 +9,11 @@ import { $el } from "../../../scripts/ui.js";
 import { apiGet, apiJovimetrix, setting_make } from "../util/util_api.js";
 import { colorContrast } from "../util/util.js";
 
-let PANEL_COLORIZE, NODE_LIST, CONFIG_CORE, CONFIG_USER, CONFIG_COLOR, CONFIG_REGEX, CONFIG_THEME;
+// import iro from '@jaames/iro';
+
 const USER = "user.default";
+
+let PANEL_COLORIZE, NODE_LIST, CONFIG_CORE, CONFIG_USER, CONFIG_COLOR, CONFIG_REGEX, CONFIG_THEME;
 
 // Recursively get color by category in theme
 function getColorByCategory(find_me) {
@@ -76,10 +79,24 @@ class JovimetrixPanelColorize {
             this.showPicker(event.target, button.dataset.color);
         });
 
+        button.addEventListener('mousedown', (event) => {
+            event.stopPropagation();
+            if (event.ctrlKey) {
+                const node = button.dataset.identifier;
+                // remove the node from the config?
+                // const titleColor = data.title || LiteGraph.NODE_DEFAULT_COLOR;
+                // const bodyColor = data.body || LiteGraph.NODE_DEFAULT_COLOR;
+                app.graph.setDirtyCanvas(true, true);
+            } else {
+                this.currentButton = button;
+                this.showPicker(event.target, button.dataset.color);
+            }
+        });
+
         return button;
     }
 
-    createPicker() {
+    showPicker(buttonElement, color) {
         if (!this.picker) {
             try {
                 this.pickerWrapper = $el('div.picker-wrapper', {
@@ -87,7 +104,7 @@ class JovimetrixPanelColorize {
                         position: 'absolute',
                         zIndex: '9999',
                         backgroundColor: '#fff',
-                        padding: '10px',
+                        padding: '5px',
                         borderRadius: '5px',
                         boxShadow: '0 0 10px rgba(0,0,0,0.2)',
                         display: 'none'
@@ -109,12 +126,22 @@ class JovimetrixPanelColorize {
                     onclick: () => this.hidePicker(true)
                 });
 
+                const resetButton = $el('button', {
+                    textContent: 'Reset',
+                    onclick: () => {
+                        this.picker.color.set(LiteGraph.NODE_DEFAULT_COLOR);
+                    }
+                });
+
                 const applyButton = $el('button', {
                     textContent: 'Apply',
-                    onclick: () => this.applyColor()
+                    onclick: () => {
+                        this.applyColor();
+                    }
                 });
 
                 buttonWrapper.appendChild(cancelButton);
+                buttonWrapper.appendChild(resetButton);
                 buttonWrapper.appendChild(applyButton);
 
                 this.pickerWrapper.appendChild(pickerElement);
@@ -129,16 +156,17 @@ class JovimetrixPanelColorize {
                     display: 'block',
                     layout: [
                         {
-                            component: iro.ui.Box,
-                        },
-                        {
                             component: iro.ui.Slider,
                             options: { sliderType: 'hue' }
                         },
                         {
                             component: iro.ui.Slider,
-                            options: { sliderType: 'alpha' }
-                        }
+                            options: { sliderType: 'value' }
+                        },
+                        {
+                            component: iro.ui.Slider,
+                            options: { sliderType: 'saturation' }
+                        },
                     ]
                 });
 
@@ -151,18 +179,9 @@ class JovimetrixPanelColorize {
                 console.error('Error creating Picker:', error);
             }
         }
-    }
-
-    showPicker(buttonElement, color) {
-        console.log('Showing picker for button:', buttonElement, 'with color:', color);
-        if (!this.picker) {
-            this.createPicker();
-        }
         if (this.picker) {
             try {
                 this.picker.color.set(color || '#ffffff');
-
-                // Position picker
                 const buttonRect = buttonElement.getBoundingClientRect();
                 const pickerRect = this.pickerWrapper.getBoundingClientRect();
 
@@ -180,11 +199,7 @@ class JovimetrixPanelColorize {
                 this.pickerWrapper.style.left = `${left}px`;
                 this.pickerWrapper.style.top = `${top}px`;
                 this.pickerWrapper.style.display = 'block';
-
-                // Update recent colors
                 this.updateRecentColors(color);
-
-                // console.log('Picker shown at position:', left, top);
             } catch (error) {
                 console.error('Error showing picker:', error);
             }
@@ -194,7 +209,6 @@ class JovimetrixPanelColorize {
     }
 
     hidePicker(cancelled = false) {
-        console.log('Hiding picker');
         if (this.picker) {
             try {
                 this.pickerWrapper.style.display = 'none';
@@ -205,7 +219,6 @@ class JovimetrixPanelColorize {
                     this.updateConfig(newColor);
                 }
                 this.currentButton = null;
-                console.log('Picker hidden');
             } catch (error) {
                 console.error('Error hiding picker:', error);
             }
@@ -264,21 +277,18 @@ class JovimetrixPanelColorize {
     }
 
     templateColorRow(data, type = "block") {
-        const isRegex = type === "regex";
-        const nameCell = isRegex
-            ? $el("td", [
-                $el("input", {
-                    value: data.name,
-                    onchange: (e) => this.updateColor(data.idx, e.target.value)
-                })
-              ])
-            :
-            $el("td", { textContent: data.name });
+        const titleColor = data.title || LiteGraph.NODE_DEFAULT_COLOR;
+        const bodyColor = data.body || LiteGraph.NODE_DEFAULT_COLOR;
 
         return $el("tr", {}, [
-            $el("td", {}, [this.createColorButton("T", data.title, `${data.name}.${data.idx}.title`)]),
-            $el("td", {}, [this.createColorButton("B", data.body, `${data.name}.${data.idx}.body`)]),
-            nameCell
+            $el("td", {}, [this.createColorButton("T", titleColor, `${data.name}.${data.idx}.title`)]),
+            $el("td", {}, [this.createColorButton("B", bodyColor, `${data.name}.${data.idx}.body`)]),
+            (type === "regex") ? $el("td", [
+                $el("input", {
+                    value: data.name
+                })
+              ])
+            : $el("td", { textContent: data.name })
         ]);
     }
 
@@ -297,12 +307,12 @@ class JovimetrixPanelColorize {
         });
 
         table.appendChild(tbody);
-        return table;
+        return table, tbody;
     }
 
-    createColorPalettes() {
-        const table = $el("table.flexible-table");
-        const tbody = $el("tbody");
+    createColorPalettes(tbody) {
+        //const table = $el("table.flexible-table");
+        //const tbody = $el("tbody");
 
         const all_nodes = Object.entries(NODE_LIST || []).sort((a, b) => {
             const categoryComparison = a[1].category.toLowerCase().localeCompare(b[1].category.toLowerCase());
@@ -352,8 +362,8 @@ class JovimetrixPanelColorize {
             tbody.appendChild(this.templateColorRow(data, "block"));
         });
 
-        table.appendChild(tbody);
-        return table;
+        //table.appendChild(tbody);
+        //return table;
     }
 
     getRandomTitle() {
@@ -370,12 +380,14 @@ class JovimetrixPanelColorize {
 
     createContent() {
         if (!this.content) {
+            const header = this.createRegexPalettes();
+            this.createColorPalettes(header);
+
             this.content = $el("div.jov-panel-color", [
                 $el("div.jov-title", [
                     $el("div.jov-title-header", { textContent: this.getRandomTitle() }),
                 ]),
-                $el("div.jov-config-color", [this.createRegexPalettes()]),
-                $el("div.jov-config-color", [this.createColorPalettes()]),
+                $el("div.jov-config-color", [header])
             ]);
 
             // Add a global click event listener to hide the picker when clicking outside

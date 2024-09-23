@@ -2,7 +2,6 @@
     "user": {
         "default": {
             "color": {
-                "overwrite": true,
                 "titleA": "#312929",
                 "backA": "#050303",
                 "titleB": "#293129",
@@ -44,10 +43,20 @@
                         "title": "#0A0A0A"
                     }
                 },
-                "contrast": true,
-                "tooltips": "#FF7227EF",
-                "style": "ComfyUI Default"
+                "overwrite": true
             }
+        }
+    },
+    "JOVIMETRIX \ud83d\udd3a\ud83d\udfe9\ud83d\udd35": {
+        "Color \ud83c\udfa8": {
+            "Style": "ComfyUI Default",
+            "Thickness": 1,
+            "Highlight": "#3A3",
+            "Synchronize": true,
+            "Auto-Contrast": true
+        },
+        "Tooltips \ud83d\udcdd": {
+            "Delay": 50
         }
     }
 }
