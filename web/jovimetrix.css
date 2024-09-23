@@ -158,6 +158,8 @@
   font: 0.9em monospace;
   overflow: auto;
   width: 100%;
+  margin: 4px;
+  padding: 4px;
   box-sizing: border-box;
   scrollbar-width: thin;
   scrollbar-color: var(--fg-color) var(--bg-color);
@@ -166,12 +168,10 @@
 .jov-panel-doc h2, .jov-panel-doc h3 {
   width: 100%;
   text-align: center;
-  margin: 3px 0;
 }
 
 .jov-panel-doc p {
   max-width: 100%;
-  margin: 2px auto;
 }
 
 .jov-panel-doc img {
@@ -179,7 +179,6 @@
   width: 95%;
   height: auto;
   object-fit: contain;
-  margin: 4px auto;
 }
 
 .jov-panel-doc table {
@@ -337,7 +336,8 @@ COLORIZATION STYLE
 .jov-panel-color {
   max-width: 100%;
   max-height: 100%;
-  overflow: auto;
+  overflow: visible;
+  position: relative;
   margin: 0px;
   padding: 0px;
   table-layout: fixed;
@@ -424,4 +424,9 @@ COLORIZATION STYLE
     white-space: nowrap;
     font-weight: bold;
   }
+}
+
+article {
+  margin: 4px;
+  padding: 4px;
 }

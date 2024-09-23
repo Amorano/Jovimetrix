@@ -422,7 +422,7 @@ class JOVBaseNode:
         return True
 
     @classmethod
-    def INPUT_TYPES(cls, prompt:bool=False, extra_png:bool=False) -> dict:
+    def INPUT_TYPES(cls, prompt:bool=False, extra_png:bool=False, dynprompt:bool=False) -> dict:
         data = {
             "required": {},
             "hidden": {
@@ -433,6 +433,9 @@ class JOVBaseNode:
             data["hidden"]["prompt"] = "PROMPT"
         if extra_png:
             data["hidden"]["extra_pnginfo"] = "EXTRA_PNGINFO"
+
+        if dynprompt:
+            data["hidden"]["dynprompt"] = "DYNPROMPT"
         return data
 
 class JOVImageNode(JOVBaseNode):
@@ -715,6 +718,19 @@ def deep_merge(d1: dict, d2: dict) -> dict:
             d1[key] = d2[key]
     return d1
 
+def update_nested_dict(d, path, value) -> None:
+    keys = path.split('.')
+    current = d
+    for key in keys[:-1]:
+        current = current.setdefault(key, {})
+    last_key = keys[-1]
+
+    # Check if the key already exists
+    if last_key in current and isinstance(current[last_key], dict):
+        current[last_key].update(value)
+    else:
+        current[last_key] = value
+
 # ==============================================================================
 # === API RESPONSE ===
 # ==============================================================================
@@ -785,7 +801,6 @@ try:
             return
 
         global JOV_CONFIG
-        from Jovimetrix.sup.util import update_nested_dict
         update_nested_dict(JOV_CONFIG, did, value)
         with open(JOV_CONFIG_FILE, 'w', encoding='utf-8') as f:
             json.dump(JOV_CONFIG, f, indent=4)

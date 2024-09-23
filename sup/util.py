@@ -346,19 +346,6 @@ def path_next(pattern: str) -> str:
         a, b = (c, b) if os.path.exists(pattern % c) else (a, c)
     return pattern % b
 
-def update_nested_dict(d, path, value) -> None:
-    keys = path.split('.')
-    current = d
-    for key in keys[:-1]:
-        current = current.setdefault(key, {})
-    last_key = keys[-1]
-
-    # Check if the key already exists
-    if last_key in current and isinstance(current[last_key], dict):
-        current[last_key].update(value)
-    else:
-        current[last_key] = value
-
 def vector_swap(pA: Any, pB: Any, swap_x: EnumSwizzle, x:float, swap_y:EnumSwizzle, y:float,
                 swap_z:EnumSwizzle, z:float, swap_w:EnumSwizzle, w:float) -> List[float]:
     """Swap out a vector's values with another vector's values, or a constant fill."""
