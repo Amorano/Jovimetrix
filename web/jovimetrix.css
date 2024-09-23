@@ -353,7 +353,29 @@ COLORIZATION STYLE
   text-transform: uppercase;
 }
 
-.jov-panel-color-category {
+/* Light Theme */
+.jov-panel-color-cat_major.light {
+  background-color: #D3D3D3;
+  color: #333;
+  text-transform: uppercase;
+}
+
+.jov-panel-color-cat_minor.light {
+  background-color: #A9A9A9;
+  color: #333;
+  text-transform: uppercase;
+}
+
+/* Dark Theme */
+.jov-panel-color-cat_major.dark {
+  background-color: #4B4B4B;
+  color: #F1F1F1;
+  text-transform: uppercase;
+}
+
+.jov-panel-color-cat_minor.dark {
+  background-color: #2E2E2E;
+  color: #F1F1F1;
   text-transform: uppercase;
 }
 

@@ -157,7 +157,7 @@ def image_flatten(image: List[TYPE_IMAGE], width:int=None, height:int=None,
                   sample:EnumInterpolation=EnumInterpolation.LANCZOS4) -> TYPE_IMAGE:
 
     if mode == EnumScaleMode.MATTE:
-        width, height, _, _ = image_minmax(image)[1:]
+        width, height = image_minmax(image)[2:]
     else:
         h, w = image[0].shape[:2]
         width = width or w

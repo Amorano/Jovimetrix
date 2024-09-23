@@ -5,6 +5,7 @@
  */
 
 import { app } from "../../../scripts/app.js"
+import { nodeFitHeight } from "./util_node.js"
 
 const _REGEX = /\d/;
 
@@ -210,15 +211,17 @@ export function widgetProcessAny(widget, subtype="FLOAT") {
 
 export function widgetToWidget(node, widget) {
     widgetShow(widget);
-    const sz = node.size;
+    //const sz = node.size;
     node.removeInput(node.inputs.findIndex((i) => i.widget?.name == widget.name));
 
     for (const widget of node.widgets) {
         widget.last_y -= LiteGraph.NODE_SLOT_HEIGHT;
     }
+    nodeFitHeight(node);
 
     // Restore original size but grow if needed
-    node.setSize([Math.max(sz[0], node.size[0]), Math.max(sz[1], node.size[1])]);
+    //node.setSize([Math.max(sz[0], node.size[0]), Math.max(sz[1], node.size[1])]);
+    //node.setSize([Math.max(sz[0], node.size[0]), Math.max(sz[1], node.size[1])]);
 }
 
 export function widgetToInput(node, widget, config) {
@@ -227,7 +230,7 @@ export function widgetToInput(node, widget, config) {
     const { linkType } = widget_get_type(config);
 
     // Add input and store widget config for creating on primitive node
-    const sz = node.size
+    //const sz = node.size
     node.addInput(widget.name, linkType, {
         widget: { name: widget.name, config },
     })
@@ -235,9 +238,10 @@ export function widgetToInput(node, widget, config) {
     for (const widget of node.widgets) {
         widget.last_y += LiteGraph.NODE_SLOT_HEIGHT;
     }
+    nodeFitHeight(node);
 
     // Restore original size but grow if needed
-    node.setSize([Math.max(sz[0], node.size[0]), Math.max(sz[1], node.size[1])])
+    //node.setSize([Math.max(sz[0], node.size[0]), Math.max(sz[1], node.size[1])])
 }
 
 export function widgetGetHovered() {

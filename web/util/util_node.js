@@ -42,7 +42,7 @@ export function nodeFitHeight(node) {
     node.computeSize();
     node.setDirtyCanvas(true, true);
     app.graph.setDirtyCanvas(true, true);
-    node.setSize([Math.max(size_old[0], node.size[0]), Math.max(size_old[1], node.size[1])]);
+    node.setSize([Math.max(size_old[0], node.size[0]), Math.min(size_old[1], node.size[1])]);
 }
 
 /**

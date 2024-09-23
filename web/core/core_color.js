@@ -53,6 +53,15 @@ function nodeColorAll() {
     app.canvas.setDirty(true);
 }
 
+function applyTheme(theme) {
+    const majorElements = document.querySelectorAll('.jov-panel-color-cat_major');
+    const minorElements = document.querySelectorAll('.jov-panel-color-cat_minor');
+    majorElements.forEach(el => el.classList.remove('light', 'dark'));
+    minorElements.forEach(el => el.classList.remove('light', 'dark'));
+    majorElements.forEach(el => el.classList.add(theme));
+    minorElements.forEach(el => el.classList.add(theme));
+}
+
 class JovimetrixPanelColorize {
     constructor() {
         this.content = null;
@@ -60,6 +69,7 @@ class JovimetrixPanelColorize {
         this.picker = null;
         this.pickerWrapper = null;
         this.recentColors = [];
+        this.title_content = "HI!"
     }
 
     createColorButton(label, color, identifier) {
@@ -276,11 +286,11 @@ class JovimetrixPanelColorize {
         });
     }
 
-    templateColorRow(data, type = "block") {
+    templateColorRow(data, type, classList="jov-panel-color-category") {
         const titleColor = data.title || LiteGraph.NODE_DEFAULT_COLOR;
         const bodyColor = data.body || LiteGraph.NODE_DEFAULT_COLOR;
 
-        return $el("tr", {}, [
+        const element = $el("tr", {}, [
             $el("td", {}, [this.createColorButton("T", titleColor, `${data.name}.${data.idx}.title`)]),
             $el("td", {}, [this.createColorButton("B", bodyColor, `${data.name}.${data.idx}.body`)]),
             (type === "regex") ? $el("td", [
@@ -290,6 +300,10 @@ class JovimetrixPanelColorize {
               ])
             : $el("td", { textContent: data.name })
         ]);
+        if (classList) {
+            element.classList.add(classList);
+        }
+        return element;
     }
 
     createRegexPalettes() {
@@ -311,9 +325,6 @@ class JovimetrixPanelColorize {
     }
 
     createColorPalettes(tbody) {
-        //const table = $el("table.flexible-table");
-        //const tbody = $el("tbody");
-
         const all_nodes = Object.entries(NODE_LIST || []).sort((a, b) => {
             const categoryComparison = a[1].category.toLowerCase().localeCompare(b[1].category.toLowerCase());
             return categoryComparison;
@@ -331,24 +342,24 @@ class JovimetrixPanelColorize {
 
             if (!categories.includes(majorCategory)) {
                 background_index = (background_index + 1) % 2;
-                const data = {
+                const element = {
                     name: majorCategory,
                     title: CONFIG_THEME?.[majorCategory]?.title,
                     body: CONFIG_THEME?.[majorCategory]?.body,
                 };
-                tbody.appendChild(this.templateColorRow(data, "header"));
+                tbody.appendChild(this.templateColorRow(element, null, "jov-panel-color-cat_major"));
                 categories.push(majorCategory);
             }
 
             if (!categories.includes(category)) {
                 background_index = (background_index + 1) % 2;
-                const data = {
+                const element = {
                     name: category,
                     title: CONFIG_THEME?.[category]?.title,
                     body: CONFIG_THEME?.[category]?.body,
                     background: background_title[background_index] || LiteGraph.WIDGET_BGCOLOR
                 };
-                tbody.appendChild(this.templateColorRow(data, "category"));
+                tbody.appendChild(this.templateColorRow(element, null, "jov-panel-color-cat_minor"));
                 categories.push(category);
             }
 
@@ -359,7 +370,7 @@ class JovimetrixPanelColorize {
                 body: nodeConfig.body,
                 background: background[background_index] || LiteGraph.NODE_DEFAULT_COLOR
             };
-            tbody.appendChild(this.templateColorRow(data, "block"));
+            tbody.appendChild(this.templateColorRow(data));
         });
 
         //table.appendChild(tbody);
@@ -383,20 +394,22 @@ class JovimetrixPanelColorize {
             const header = this.createRegexPalettes();
             this.createColorPalettes(header);
 
+            this.title_content = $el("div.jov-title-header", { textContent: "EMPTY" });
             this.content = $el("div.jov-panel-color", [
-                $el("div.jov-title", [
-                    $el("div.jov-title-header", { textContent: this.getRandomTitle() }),
-                ]),
-                $el("div.jov-config-color", [header])
+                $el("div.jov-title", [this.title_content]),
+                $el("div.jov-config-color", [header]),
+                $el("div.button", []),
             ]);
 
-            // Add a global click event listener to hide the picker when clicking outside
+            // hide the picker when clicking outside
             document.addEventListener('click', (event) => {
                 if (this.picker && !this.pickerWrapper.contains(event.target) && !event.target.classList.contains('color-button')) {
                     this.hidePicker(true);
                 }
             });
         }
+        applyTheme('light');
+        this.title_content.textContent = this.getRandomTitle();
         return this.content;
     }
 }

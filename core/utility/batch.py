@@ -435,17 +435,6 @@ Manage a queue of items, such as file paths or data. Supports various formats in
         })
         return Lexicon._parse(d, cls)
 
-"""
-    def run(self, ident, **kw) -> Tuple[Any, List[str], str, int, int]:
-        data, aa, ba, ca, da = super().run(ident, **kw)
-        if isinstance(data, (list, )):
-            if isinstance(data[0], (np.ndarray,)):
-                data = torch.stack([cv2tensor(d).unsqueeze(0) for d in data])
-        elif isinstance(data, (np.ndarray,)):
-            data = cv2tensor(data).unsqueeze(0)
-        return data, aa, ba, ca, da
-"""
-
 class QueueTooNode(QueueBaseNode):
     NAME = "QUEUE TOO (JOV) 🗃"
     RETURN_TYPES = ("IMAGE", "IMAGE", "MASK", "STRING", "INT", "INT", "BOOLEAN")
@@ -458,7 +447,7 @@ Manage a queue of specific items: media files. Supports various image and video 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = super().INPUT_TYPES()
-        d = {
+        d = deep_merge(d, {
             "optional": {
                 Lexicon.QUEUE: ("STRING", {"multiline": True, "default": "./res/img/test-a.png"}),
                 Lexicon.RECURSE: ("BOOLEAN", {"default": False}),
@@ -468,7 +457,6 @@ Manage a queue of specific items: media files. Supports various image and video 
                 Lexicon.STOP: ("BOOLEAN", {"default": False, "tooltips":"When the Queue is out of items, send a `HALT` to ComfyUI."}),
                 Lexicon.LOOP: ("BOOLEAN", {"default": True, "tooltips":"If the queue should loop around the end when reached. If `False`, at the end of the Queue, if there are more iterations, it will just send the previous image."}),
                 Lexicon.RESET: ("BOOLEAN", {"default": False, "tooltips":"Reset the queue back to index 1"}),
-                #
                 Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.MATTE.name}),
                 Lexicon.WH: ("VEC2INT", {"default": (512, 512), "mij":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
@@ -483,8 +471,8 @@ Manage a queue of specific items: media files. Supports various image and video 
                 5: (Lexicon.TOTAL, {"tooltips":"Total items in the current Queue List"}),
                 6: (Lexicon.TRIGGER, {"tooltips":"Send a True signal when the queue end index is reached"}),
             },
-            "hidden": d.get("hidden", {}),
-        }
+            "hidden": d.get("hidden", {})
+        })
         return Lexicon._parse(d, cls)
 
     def run(self, ident, **kw) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, str, int, int, bool]:
@@ -492,7 +480,8 @@ Manage a queue of specific items: media files. Supports various image and video 
         if not isinstance(data, (torch.Tensor, )):
             data = [None, None, None]
         else:
-            matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)[0]
+            logger.debug(kw[Lexicon.MATTE])
+            matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)[0]
             data = [tensor2cv(d) for d in data]
             data = [cv2tensor_full(d, matte) for d in data]
             data = [torch.stack(d) for d in zip(*data)]

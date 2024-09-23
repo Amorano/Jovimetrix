@@ -205,9 +205,7 @@ image.
         d = deep_merge(d, {
             "optional": {
                 Lexicon.UNKNOWN: (JOV_TYPE_FULL, {"default": None}),
-                Lexicon.VALUE: ("INT", {"default": 8, "min": 1, "max": 64, "tooltips":"Number of output bits requested"}),
-                Lexicon.VALUE: ("INT", {"default": 8, "min": 1, "max": 64, "tooltips":"Number of output bits requested"}),
-                Lexicon.VALUE: ("BOOLEAN", {"default": 8, "min": 1, "max": 64, "tooltips":"Number of output bits requested"})
+                Lexicon.VALUE: ("INT", {"default": 8, "min": 1, "max": 64, "tooltips":"Number of output bits requested."})
             },
             "outputs": {
                 0: (Lexicon.BIT, {"tooltips":"Bits as Numerical output (0 or 1)"}),
