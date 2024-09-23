@@ -188,7 +188,7 @@ Provides advanced filtering capabilities for MIDI messages based on various crit
 
     def run(self, **kw) -> Tuple[bool]:
         message: MIDIMessage = kw.get(Lexicon.MIDI, None)
-        note_on: str = parse_param(kw, Lexicon.ON, EnumConvertType.STRING, MIDINoteOnFilter.IGNORE.name)[0]
+        note_on: str = parse_param(kw, Lexicon.ON, MIDINoteOnFilter, MIDINoteOnFilter.IGNORE.name)[0]
         chan: str = parse_param(kw, Lexicon.CHANNEL, EnumConvertType.STRING, "")[0]
         ctrl: str = parse_param(kw, Lexicon.CONTROL, EnumConvertType.STRING, "")[0]
         note: str = parse_param(kw, Lexicon.NOTE, EnumConvertType.STRING, "")[0]
@@ -241,7 +241,7 @@ Filter MIDI messages based on various criteria, including MIDI mode (such as not
     def run(self, **kw) -> Tuple[MIDIMessage, bool]:
 
         message: MIDIMessage = parse_param(kw, Lexicon.MIDI, EnumConvertType.ANY, [None])[0]
-        note_on = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, MIDINoteOnFilter.IGNORE.name)[0]
+        note_on = parse_param(kw, Lexicon.MODE, MIDINoteOnFilter, MIDINoteOnFilter.IGNORE.name)[0]
         chan = parse_param(kw, Lexicon.CHANNEL, EnumConvertType.INT, -1)[0]
         ctrl = parse_param(kw, Lexicon.CONTROL, EnumConvertType.INT, -1)[0]
         note = parse_param(kw, Lexicon.NOTE, EnumConvertType.INT, -1)[0]

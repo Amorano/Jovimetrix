@@ -12,11 +12,13 @@ import numpy as np
 
 from loguru import logger
 
-from Jovimetrix.sup.image import TYPE_IMAGE, TYPE_PIXEL, \
+from Jovimetrix.sup.image import TYPE_IMAGE, TYPE_PIXEL, EnumImageType, \
     TYPE_fCOORD2D, image_convert, image_matte, image_minmax, bgr2image, \
     cv2tensor, image2bgr, tensor2cv
 
 from Jovimetrix.sup.image.compose import image_crop_center
+
+from Jovimetrix.sup.image.channel import EnumPixelSwizzle, channel_solid
 
 # ==============================================================================
 # === ENUMERATION ===
@@ -398,6 +400,32 @@ def image_sharpen(image:TYPE_IMAGE, kernel_size=None, sigma:float=1.0,
         low_contrast_mask = np.absolute(image - blurred) < threshold
         np.copyto(sharpened, image, where=low_contrast_mask)
     return sharpened
+
+def image_swap_channels(imgA:TYPE_IMAGE, imgB:TYPE_IMAGE,
+                        swap_in:Tuple[EnumPixelSwizzle, ...],
+                        matte:Tuple[int,...]=(0,0,0,255)) -> TYPE_IMAGE:
+    """Up-convert and swap all 4-channels of an image with another or a constant."""
+    imgA = image_convert(imgA, 4)
+    h,w = imgA.shape[:2]
+
+    imgB = image_convert(imgB, 4)
+    imgB = image_matte(imgB, (0,0,0,0), w, h)
+    imgB = image_scalefit(imgB, w, h, EnumScaleMode.CROP)
+
+    matte = (matte[2], matte[1], matte[0], matte[3])
+    out = channel_solid(w, h, matte, EnumImageType.BGRA)
+    swap_out = (EnumPixelSwizzle.RED_A,EnumPixelSwizzle.GREEN_A,
+                EnumPixelSwizzle.BLUE_A,EnumPixelSwizzle.ALPHA_A)
+
+    for idx, swap in enumerate(swap_in):
+        if swap != EnumPixelSwizzle.CONSTANT:
+            source_idx = swap.value // 10
+            source_ab = swap.value % 10
+            source = [imgA, imgB][source_ab]
+            target_idx = swap_out[idx].value // 10
+            out[:,:,target_idx] = source[:,:,source_idx]
+
+    return out
 
 def image_threshold(image:TYPE_IMAGE, threshold:float=0.5,
                     mode:EnumThreshold=EnumThreshold.BINARY,

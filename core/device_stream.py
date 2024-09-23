@@ -142,12 +142,9 @@ Capture frames from various sources such as URLs, cameras, monitors, windows, or
         rate = 1. / rate
         width, height = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)])[0]
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0,0,0,255)], 0, 255)[0]
-        mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.MATTE.name)[0]
-        mode = EnumScaleMode[mode]
-        sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)[0]
-        sample = EnumInterpolation[sample]
-        source = parse_param(kw, Lexicon.SOURCE, EnumConvertType.STRING, EnumStreamType.URL.name)[0]
-        source = EnumStreamType[source]
+        mode = parse_param(kw, Lexicon.MODE, EnumScaleMode, EnumScaleMode.MATTE.name)[0]
+        sample = parse_param(kw, Lexicon.SAMPLE, EnumInterpolation, EnumInterpolation.LANCZOS4.name)[0]
+        source = parse_param(kw, Lexicon.SOURCE, EnumStreamType, EnumStreamType.URL.name)[0]
         if source == EnumStreamType.MONITOR:
             self.__deviceType = EnumStreamType.MONITOR
             if (which := parse_param(kw, Lexicon.MONITOR, EnumConvertType.STRING, "NONE")[0]) != "NONE":
@@ -225,7 +222,7 @@ Capture frames from various sources such as URLs, cameras, monitors, windows, or
                 if type(self.__device) == MediaStreamDevice:
                     self.__device.zoom = parse_param(kw, Lexicon.ZOOM, EnumConvertType.FLOAT, 0, 0, 1)[0]
 
-                orient = parse_param(kw, Lexicon.ORIENT, EnumConvertType.STRING, EnumCanvasOrientation.NORMAL.name)[0]
+                orient = parse_param(kw, Lexicon.ORIENT, EnumCanvasOrientation, EnumCanvasOrientation.NORMAL.name)[0]
 
                 self.__device
 
@@ -314,8 +311,8 @@ Sends frames to a specified route, typically for live streaming or recording pur
         images = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0,0,0,0)], 0, 255)
-        mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.MATTE.name)
-        sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)
+        mode = parse_param(kw, Lexicon.MODE, EnumScaleMode, EnumScaleMode.MATTE.name)
+        sample = parse_param(kw, Lexicon.SAMPLE, EnumInterpolation, EnumInterpolation.LANCZOS4.name)
         params = list(zip_longest_fill(route, images, wihi, matte, mode, sample))
         pbar = ProgressBar(len(params))
         for idx, (route, images, wihi, matte, mode, sample) in enumerate(params):
@@ -380,9 +377,9 @@ Sends frames to a specified Spout receiver application for real-time video shari
             images = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
             host = parse_param(kw, Lexicon.ROUTE, EnumConvertType.STRING, "")
             #fps = parse_param(kw, Lexicon.FPS, EnumConvertType.INT, 30)
-            mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.MATTE.name)
+            mode = parse_param(kw, Lexicon.MODE, EnumScaleMode, EnumScaleMode.MATTE.name)
             wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)
-            sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)
+            sample = parse_param(kw, Lexicon.SAMPLE, EnumInterpolation, EnumInterpolation.LANCZOS4.name)
             matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0,0,0,0)], 0, 255)
             # results = []
             params = list(zip_longest_fill(images, host, mode, wihi, sample, matte))
@@ -392,7 +389,7 @@ Sends frames to a specified Spout receiver application for real-time video shari
                 matte = pixel_eval(matte, EnumImageType.BGRA)
                 w, h = wihi
                 img = channel_solid(w, h, chan=EnumImageType.BGRA) if img is None else tensor2cv(img)
-                if (mode := EnumScaleMode[mode]) != EnumScaleMode.MATTE:
+                if mode != EnumScaleMode.MATTE:
                     img = image_scalefit(img, w, h, mode, sample, matte)
                 img = image_convert(img, 4)
                 self.__sender.frame = img

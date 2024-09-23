@@ -71,8 +71,8 @@ Generate a constant image or mask of a specified size and color. It can be used 
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
         matte = parse_param(kw, Lexicon.RGBA_A, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)
-        mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.MATTE.name)
-        sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)
+        mode = parse_param(kw, Lexicon.MODE, EnumScaleMode, EnumScaleMode.MATTE.name)
+        sample = parse_param(kw, Lexicon.SAMPLE, EnumInterpolation, EnumInterpolation.LANCZOS4.name)
         images = []
         params = list(zip_longest_fill(pA, matte, wihi, mode, sample))
         pbar = ProgressBar(len(params))
@@ -83,9 +83,7 @@ Generate a constant image or mask of a specified size and color. It can be used 
                 images.append(cv2tensor_full(pA))
             else:
                 pA = tensor2cv(pA)
-                mode = EnumScaleMode[mode]
                 if mode != EnumScaleMode.MATTE:
-                    sample = EnumInterpolation[sample]
                     pA = image_scalefit(pA, width, height, mode, sample)
                 images.append(cv2tensor_full(pA, matte))
             pbar.update_absolute(idx)
@@ -119,10 +117,10 @@ Create n-sided polygons. These shapes can be customized by adjusting parameters 
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
-        shape = parse_param(kw, Lexicon.SHAPE, EnumConvertType.STRING, EnumShapes.CIRCLE.name)
+        shape = parse_param(kw, Lexicon.SHAPE, EnumShapes, EnumShapes.CIRCLE.name)
         sides = parse_param(kw, Lexicon.SIDES, EnumConvertType.INT, 3, 3, 100)
         angle = parse_param(kw, Lexicon.ANGLE, EnumConvertType.FLOAT, 0)
-        edge = parse_param(kw, Lexicon.EDGE, EnumConvertType.STRING, EnumEdge.CLIP.name)
+        edge = parse_param(kw, Lexicon.EDGE, EnumEdge, EnumEdge.CLIP.name)
         offset = parse_param(kw, Lexicon.XY, EnumConvertType.VEC2, [(0, 0)])
         size = parse_param(kw, Lexicon.SIZE, EnumConvertType.VEC2, [(1, 1)], zero=0.001)
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(256, 256)], MIN_IMAGE_SIZE)
@@ -135,8 +133,6 @@ Create n-sided polygons. These shapes can be customized by adjusting parameters 
         for idx, (shape, sides, offset, angle, edge, size, wihi, color, matte, blur) in enumerate(params):
             width, height = wihi
             sizeX, sizeY = size
-            edge = EnumEdge[edge]
-            shape = EnumShapes[shape]
             fill = color[:3][::-1]
             back = matte[:3]
 
@@ -303,14 +299,14 @@ Generates images containing text based on parameters such as font, size, alignme
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0,0,0,255)], 0, 255)
         columns = parse_param(kw, Lexicon.COLUMNS, EnumConvertType.INT, 0)
         font_size = parse_param(kw, Lexicon.FONT_SIZE, EnumConvertType.INT, 1)
-        align = parse_param(kw, Lexicon.ALIGN, EnumConvertType.STRING, EnumAlignment.CENTER.name)
-        justify = parse_param(kw, Lexicon.JUSTIFY, EnumConvertType.STRING, EnumJustify.CENTER.name)
+        align = parse_param(kw, Lexicon.ALIGN, EnumAlignment, EnumAlignment.CENTER.name)
+        justify = parse_param(kw, Lexicon.JUSTIFY, EnumJustify, EnumJustify.CENTER.name)
         margin = parse_param(kw, Lexicon.MARGIN, EnumConvertType.INT, 0)
         line_spacing = parse_param(kw, Lexicon.SPACING, EnumConvertType.INT, 25)
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)
         pos = parse_param(kw, Lexicon.XY, EnumConvertType.VEC2, [(0, 0)], -1, 1)
         angle = parse_param(kw, Lexicon.ANGLE, EnumConvertType.INT, 0)
-        edge = parse_param(kw, Lexicon.EDGE, EnumConvertType.STRING, EnumEdge.CLIP.name)
+        edge = parse_param(kw, Lexicon.EDGE, EnumEdge, EnumEdge.CLIP.name)
         invert = parse_param(kw, Lexicon.INVERT, EnumConvertType.BOOLEAN, False)
         images = []
         params = list(zip_longest_fill(full_text, font_idx, autosize, letter, color,
@@ -324,9 +320,6 @@ Generates images containing text based on parameters such as font, size, alignme
 
             width, height = wihi
             font_name = self.FONTS[font_idx]
-            align = EnumAlignment[align]
-            justify = EnumJustify[justify]
-            edge = EnumEdge[edge]
             full_text = str(full_text)
 
             if letter:

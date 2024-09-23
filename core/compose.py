@@ -33,8 +33,8 @@ from Jovimetrix.sup.image.adjust import EnumEdge, EnumMirrorMode, EnumScaleMode,
     EnumInterpolation, EnumThreshold, EnumThresholdAdapt, image_contrast, \
     image_edge_wrap, image_equalize, image_filter, image_gamma, image_hsv, \
     image_invert, image_mirror, image_pixelate, image_posterize, image_quantize, \
-    image_scalefit, image_sharpen, image_transform, image_flatten, \
-    image_threshold, morph_edge_detect, morph_emboss
+    image_scalefit, image_sharpen, image_swap_channels, image_transform, \
+    image_flatten, image_threshold, morph_edge_detect, morph_emboss
 
 from Jovimetrix.sup.image.channel import EnumPixelSwizzle, channel_merge, \
     channel_solid
@@ -103,7 +103,7 @@ Enhance and modify images with various effects such as blurring, sharpening, col
     def run(self, **kw)  -> Tuple[torch.Tensor, ...]:
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
         mask = parse_param(kw, Lexicon.MASK, EnumConvertType.IMAGE, None)
-        op = parse_param(kw, Lexicon.FUNC, EnumConvertType.STRING, EnumAdjustOP.BLUR.name)
+        op = parse_param(kw, Lexicon.FUNC, EnumAdjustOP, EnumAdjustOP.BLUR.name)
         radius = parse_param(kw, Lexicon.RADIUS, EnumConvertType.INT, 3, 3)
         val = parse_param(kw, Lexicon.VALUE, EnumConvertType.FLOAT, 0, 0)
         lohi = parse_param(kw, Lexicon.LOHI, EnumConvertType.VEC2, [(0, 1)], 0, 1)
@@ -121,7 +121,7 @@ Enhance and modify images with various effects such as blurring, sharpening, col
             pA = tensor2cv(pA) if pA is not None else channel_solid(chan=EnumImageType.BGR)
             img_new = image_convert(pA, 3)
 
-            match EnumAdjustOP[op]:
+            match op:
                 case EnumAdjustOP.INVERT:
                     img_new = image_invert(img_new, val)
 
@@ -245,12 +245,12 @@ Combine two input images using various blending modes, such as normal, screen, m
         pA = parse_param(kw, Lexicon.PIXEL_A, EnumConvertType.IMAGE, None)
         pB = parse_param(kw, Lexicon.PIXEL_B, EnumConvertType.IMAGE, None)
         mask = parse_param(kw, Lexicon.MASK, EnumConvertType.MASK, None)
-        func = parse_param(kw, Lexicon.FUNC, EnumConvertType.STRING, EnumBlendType.NORMAL.name)
+        func = parse_param(kw, Lexicon.FUNC, EnumBlendType, EnumBlendType.NORMAL.name)
         alpha = parse_param(kw, Lexicon.A, EnumConvertType.FLOAT, 1, 0, 1)
         flip = parse_param(kw, Lexicon.FLIP, EnumConvertType.BOOLEAN, False)
-        mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.MATTE.name)
+        mode = parse_param(kw, Lexicon.MODE, EnumScaleMode, EnumScaleMode.MATTE.name)
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)
-        sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)
+        sample = parse_param(kw, Lexicon.SAMPLE, EnumInterpolation, EnumInterpolation.LANCZOS4.name)
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
         invert = parse_param(kw, Lexicon.INVERT, EnumConvertType.BOOLEAN, False)
         params = list(zip_longest_fill(pA, pB, mask, func, alpha, flip, mode, wihi, sample, matte, invert))
@@ -278,12 +278,9 @@ Combine two input images using various blending modes, such as normal, screen, m
                 if invert:
                     mask = 255 - mask
 
-            func = EnumBlendType[func]
             img = image_blend(pA, pB, mask, func, alpha)
 
-            mode = EnumScaleMode[mode]
             if mode != EnumScaleMode.MATTE:
-                sample = EnumInterpolation[sample]
                 img = image_scalefit(img, *wihi, mode, sample)
 
             img = cv2tensor_full(img, matte)
@@ -315,16 +312,14 @@ Simulate color blindness effects on images. You can select various types of colo
 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
-        deficiency = parse_param(kw, Lexicon.DEFICIENCY, EnumConvertType.STRING, EnumCBDeficiency.PROTAN.name)
-        simulator = parse_param(kw, Lexicon.SIMULATOR, EnumConvertType.STRING, EnumCBSimulator.AUTOSELECT.name)
+        deficiency = parse_param(kw, Lexicon.DEFICIENCY, EnumCBDeficiency, EnumCBDeficiency.PROTAN.name)
+        simulator = parse_param(kw, Lexicon.SIMULATOR, EnumCBSimulator, EnumCBSimulator.AUTOSELECT.name)
         severity = parse_param(kw, Lexicon.VALUE, EnumConvertType.FLOAT, 1)
         params = list(zip_longest_fill(pA, deficiency, simulator, severity))
         images = []
         pbar = ProgressBar(len(params))
         for idx, (pA, deficiency, simulator, severity) in enumerate(params):
             pA = channel_solid(chan=EnumImageType.BGRA) if pA is None else tensor2cv(pA)
-            deficiency = EnumCBDeficiency[deficiency]
-            simulator = EnumCBSimulator[simulator]
             pA = color_blind(pA, deficiency, simulator, severity)
             images.append(cv2tensor_full(pA))
             pbar.update_absolute(idx)
@@ -362,9 +357,9 @@ Adjust the color scheme of one image to match another with the Color Match Node.
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         pA = parse_param(kw, Lexicon.PIXEL_A, EnumConvertType.IMAGE, None)
         pB = parse_param(kw, Lexicon.PIXEL_B, EnumConvertType.IMAGE, None)
-        colormatch_mode = parse_param(kw, Lexicon.COLORMATCH_MODE, EnumConvertType.STRING, EnumColorMatchMode.REINHARD.name)
-        colormatch_map = parse_param(kw, Lexicon.COLORMATCH_MAP, EnumConvertType.STRING, EnumColorMatchMap.USER_MAP.name)
-        colormap = parse_param(kw, Lexicon.COLORMAP, EnumConvertType.STRING, EnumColorMap.HSV.name)
+        colormatch_mode = parse_param(kw, Lexicon.COLORMATCH_MODE, EnumColorMatchMode, EnumColorMatchMode.REINHARD.name)
+        colormatch_map = parse_param(kw, Lexicon.COLORMATCH_MAP, EnumColorMatchMap, EnumColorMatchMap.USER_MAP.name)
+        colormap = parse_param(kw, Lexicon.COLORMAP, EnumColorMap, EnumColorMap.HSV.name)
         num_colors = parse_param(kw, Lexicon.VALUE, EnumConvertType.INT, 255)
         flip = parse_param(kw, Lexicon.FLIP, EnumConvertType.BOOLEAN, False)
         invert = parse_param(kw, Lexicon.INVERT, EnumConvertType.BOOLEAN, False)
@@ -390,13 +385,10 @@ Adjust the color scheme of one image to match another with the Color Match Node.
             else:
                 pB = tensor2cv(pB)
 
-            mode = EnumColorMatchMode[mode]
             match mode:
                 case EnumColorMatchMode.LUT:
-                    cmap = EnumColorMatchMap[cmap]
                     if cmap == EnumColorMatchMap.PRESET_MAP:
                         pB = None
-                    colormap = EnumColorMap[colormap]
                     pA = color_lut_match(pA, colormap.value, pB, num_colors)
 
                 case EnumColorMatchMode.REINHARD:
@@ -494,7 +486,7 @@ Generate a color harmony based on the selected scheme. Supported schemes include
 
     def run(self, **kw) -> Tuple[List[torch.Tensor], List[torch.Tensor]]:
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
-        scheme = parse_param(kw, Lexicon.SCHEME, EnumConvertType.STRING, EnumColorTheory.COMPLIMENTARY.name)
+        scheme = parse_param(kw, Lexicon.SCHEME, EnumColorTheory, EnumColorTheory.COMPLIMENTARY.name)
         user = parse_param(kw, Lexicon.VALUE, EnumConvertType.INT, 0, -180, 180)
         invert = parse_param(kw, Lexicon.INVERT, EnumConvertType.BOOLEAN, False)
         params = list(zip_longest_fill(pA, scheme, user, invert))
@@ -502,7 +494,6 @@ Generate a color harmony based on the selected scheme. Supported schemes include
         pbar = ProgressBar(len(params))
         for idx, (img, target, user, invert) in enumerate(params):
             img = tensor2cv(img) if img is not None else channel_solid(chan=EnumImageType.BGRA)
-            target = EnumColorTheory[target]
             img = color_theory(img, user, target)
             if invert:
                 img = (image_invert(s, 1) for s in img)
@@ -536,7 +527,7 @@ Extract a portion of an input image or resize it. It supports various cropping m
 
     def run(self, **kw) -> Tuple[List[torch.Tensor], List[torch.Tensor]]:
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
-        func = parse_param(kw, Lexicon.FUNC, EnumConvertType.STRING, EnumCropMode.CENTER.name)
+        func = parse_param(kw, Lexicon.FUNC, EnumCropMode, EnumCropMode.CENTER.name)
         # if less than 1 then use as scalar, over 1 = int(size)
         xy = parse_param(kw, Lexicon.XY, EnumConvertType.VEC2, [(0, 0,)], 1)
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)
@@ -553,7 +544,6 @@ Extract a portion of an input image or resize it. It supports various cropping m
             if pA.ndim == 3 and pA.shape[2] == 4:
                 alpha = image_mask(pA)
 
-            func = EnumCropMode[func]
             if func == EnumCropMode.FREE:
                 x1, y1, x2, y2 = tltr
                 x4, y4, x3, y3 = blbr
@@ -563,7 +553,6 @@ Extract a portion of an input image or resize it. It supports various cropping m
                 if alpha is not None:
                     alpha = image_crop_polygonal(alpha, points)
                     pA[..., 3] = alpha[..., 0][:,:]
-
             elif func == EnumCropMode.XY:
                 pA = image_crop(pA, width, height, xy)
             elif func == EnumCropMode.HEAD:
@@ -651,17 +640,15 @@ Combine multiple input images into a single image by summing their pixel values.
         # be less dumb when merging
         pA = [tensor2cv(i) for img in imgs for i in img]
         # logger.debug(f"{len(pA)}  {pA[0].shape}")
-        mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.MATTE.name)
+        mode = parse_param(kw, Lexicon.MODE, EnumScaleMode, EnumScaleMode.MATTE.name)
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)
-        sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)
+        sample = parse_param(kw, Lexicon.SAMPLE, EnumInterpolation, EnumInterpolation.LANCZOS4.name)
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
 
         images = []
         params = list(zip_longest_fill(mode, sample, wihi, matte))
         pbar = ProgressBar(len(params))
         for idx, (mode, sample, wihi, matte) in enumerate(params):
-            mode = EnumScaleMode[mode]
-            sample = EnumInterpolation[sample]
             current = image_flatten(pA)
             images.append(cv2tensor_full(current, matte))
             pbar.update_absolute(idx)
@@ -695,9 +682,9 @@ Remaps an input image using a gradient lookup table (LUT). The gradient image wi
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
         gradient = parse_param(kw, Lexicon.GRADIENT, EnumConvertType.IMAGE, None)
         flip = parse_param(kw, Lexicon.FLIP, EnumConvertType.BOOLEAN, False)
-        mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.MATTE.name)
+        mode = parse_param(kw, Lexicon.MODE, EnumScaleMode, EnumScaleMode.MATTE.name)
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)
-        sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)
+        sample = parse_param(kw, Lexicon.SAMPLE, EnumInterpolation, EnumInterpolation.LANCZOS4.name)
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
         images = []
         params = list(zip_longest_fill(pA, gradient, flip, mode, sample, wihi, matte))
@@ -710,13 +697,9 @@ Remaps an input image using a gradient lookup table (LUT). The gradient image wi
 
             gradient = channel_solid(chan=EnumImageType.BGR) if gradient is None else tensor2cv(gradient)
             pA = image_gradient_map(pA, gradient)
-            # @TODO: pattern o' scale... when make it a lambda?
-            mode = EnumScaleMode[mode]
             if mode != EnumScaleMode.MATTE:
                 w, h = wihi
-                sample = EnumInterpolation[sample]
                 pA = image_scalefit(pA, w, h, mode, sample)
-            #
             if mask is not None:
                 pA = image_mask_add(pA, mask)
             images.append(cv2tensor_full(pA, matte))
@@ -757,9 +740,9 @@ Combines individual color channels (red, green, blue) along with an optional mas
         G = parse_param(kw, Lexicon.G, EnumConvertType.MASK, None)
         B = parse_param(kw, Lexicon.B, EnumConvertType.MASK, None)
         A = parse_param(kw, Lexicon.A, EnumConvertType.MASK, None)
-        mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.MATTE.name)
+        mode = parse_param(kw, Lexicon.MODE, EnumScaleMode, EnumScaleMode.MATTE.name)
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)
-        sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)
+        sample = parse_param(kw, Lexicon.SAMPLE, EnumInterpolation, EnumInterpolation.LANCZOS4.name)
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
         flip = parse_param(kw, Lexicon.FLIP, EnumConvertType.VEC4, [(0, 0, 0, 0)], 0., 1.)
         invert = parse_param(kw, Lexicon.INVERT, EnumConvertType.BOOLEAN, False)
@@ -786,10 +769,8 @@ Combines individual color channels (red, green, blue) along with an optional mas
 
             img = channel_merge(img)
 
-            mode = EnumScaleMode[mode]
             if mode != EnumScaleMode.MATTE:
                 w, h = wihi
-                sample = EnumInterpolation[sample]
                 img = image_scalefit(img, w, h, mode, sample)
 
             if invert == True:
@@ -852,16 +833,13 @@ Swap pixel values between two input images based on specified channel swizzle op
                 Lexicon.PIXEL_B: (JOV_TYPE_IMAGE, {}),
                 Lexicon.SWAP_R: (EnumPixelSwizzle._member_names_,
                                 {"default": EnumPixelSwizzle.RED_A.name}),
-                Lexicon.R: ("INT", {"default": 0, "mij": 0, "maj": 255}),
                 Lexicon.SWAP_G: (EnumPixelSwizzle._member_names_,
                                 {"default": EnumPixelSwizzle.GREEN_A.name}),
-                Lexicon.G: ("INT", {"default": 0, "mij": 0, "maj": 255}),
                 Lexicon.SWAP_B: (EnumPixelSwizzle._member_names_,
                                 {"default": EnumPixelSwizzle.BLUE_A.name}),
-                Lexicon.B: ("INT", {"default": 0, "mij": 0, "maj": 255}),
                 Lexicon.SWAP_A: (EnumPixelSwizzle._member_names_,
                                 {"default": EnumPixelSwizzle.ALPHA_A.name}),
-                Lexicon.A: ("INT", {"default": 0, "mij": 0, "maj": 255}),
+                Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True})
             }
         })
         return Lexicon._parse(d, cls)
@@ -869,18 +847,15 @@ Swap pixel values between two input images based on specified channel swizzle op
     def run(self, **kw)  -> Tuple[torch.Tensor, torch.Tensor]:
         pA = parse_param(kw, Lexicon.PIXEL_A, EnumConvertType.IMAGE, None)
         pB = parse_param(kw, Lexicon.PIXEL_B, EnumConvertType.IMAGE, None)
-        swap_r = parse_param(kw, Lexicon.SWAP_R, EnumConvertType.STRING, EnumPixelSwizzle.RED_A.name)
-        r = parse_param(kw, Lexicon.R, EnumConvertType.INT, 0, 0, 255)
-        swap_g = parse_param(kw, Lexicon.SWAP_G, EnumConvertType.STRING, EnumPixelSwizzle.GREEN_A.name)
-        g = parse_param(kw, Lexicon.G, EnumConvertType.INT, 0, 0, 255)
-        swap_b = parse_param(kw, Lexicon.SWAP_B, EnumConvertType.STRING, EnumPixelSwizzle.BLUE_A.name)
-        b = parse_param(kw, Lexicon.B, EnumConvertType.INT, 0, 0, 255)
-        swap_a = parse_param(kw, Lexicon.SWAP_A, EnumConvertType.STRING, EnumPixelSwizzle.ALPHA_A.name)
-        a = parse_param(kw, Lexicon.A, EnumConvertType.INT, 0, 0, 255)
-        params = list(zip_longest_fill(pA, pB, r, swap_r, g, swap_g, b, swap_b, a, swap_a))
+        swap_r = parse_param(kw, Lexicon.SWAP_R, EnumPixelSwizzle, EnumPixelSwizzle.RED_A.name)
+        swap_g = parse_param(kw, Lexicon.SWAP_G, EnumPixelSwizzle, EnumPixelSwizzle.GREEN_A.name)
+        swap_b = parse_param(kw, Lexicon.SWAP_B, EnumPixelSwizzle, EnumPixelSwizzle.BLUE_A.name)
+        swap_a = parse_param(kw, Lexicon.SWAP_A, EnumPixelSwizzle, EnumPixelSwizzle.ALPHA_A.name)
+        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
+        params = list(zip_longest_fill(pA, pB, swap_r, swap_g, swap_b, swap_a, matte))
         images = []
         pbar = ProgressBar(len(params))
-        for idx, (pA, pB, r, swap_r, g, swap_g, b, swap_b, a, swap_a) in enumerate(params):
+        for idx, (pA, pB, swap_r, swap_g, swap_b, swap_a, matte) in enumerate(params):
             if pA is None:
                 if pB is None:
                     out = channel_solid(chan=EnumImageType.BGRA)
@@ -893,11 +868,16 @@ Swap pixel values between two input images based on specified channel swizzle op
             else:
                 h, w = pA.shape[:2]
                 pA = tensor2cv(pA)
+                pA = image_convert(pA, 4)
 
             pB = tensor2cv(pB) if pB is not None else channel_solid(w, h, chan=EnumImageType.BGRA)
-            out = channel_solid(w, h, (b,g,r,a), EnumImageType.BGRA)
+            pB = image_convert(pB, 4)
+            pB = image_matte(pB, (0,0,0,0), w, h)
+            pB = image_scalefit(pB, w, h, EnumScaleMode.CROP)
 
-            images.append(cv2tensor_full(pB))
+            out = image_swap_channels(pA, pB, (swap_r, swap_g, swap_b, swap_a), matte)
+
+            images.append(cv2tensor_full(out))
             pbar.update_absolute(idx)
         return [torch.stack(i) for i in zip(*images)]
 
@@ -936,18 +916,15 @@ Merge multiple input images into a single composite image by stacking them along
             data.extend(i)
         images = [tensor2cv(i) for i in data]
 
-        axis = parse_param(kw, Lexicon.AXIS, EnumConvertType.STRING, EnumOrientation.GRID.name)[0]
+        axis = parse_param(kw, Lexicon.AXIS, EnumOrientation, EnumOrientation.GRID.name)[0]
         stride = parse_param(kw, Lexicon.STEP, EnumConvertType.INT, 1)[0]
-        mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.MATTE.name)[0]
+        mode = parse_param(kw, Lexicon.MODE, EnumScaleMode, EnumScaleMode.MATTE.name)[0]
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)[0]
-        sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)[0]
+        sample = parse_param(kw, Lexicon.SAMPLE, EnumInterpolation, EnumInterpolation.LANCZOS4.name)[0]
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)[0]
-        axis = EnumOrientation[axis]
         img = image_stack(images, axis, stride) #, matte)
-        mode = EnumScaleMode[mode]
         if mode != EnumScaleMode.MATTE:
             w, h = wihi
-            sample = EnumInterpolation[sample]
             img = image_scalefit(img, w, h, mode, sample)
         return cv2tensor_full(img, matte)
 
@@ -976,8 +953,8 @@ Define a range and apply it to an image for segmentation and feature extraction.
 
     def run(self, **kw)  -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
-        mode = parse_param(kw, Lexicon.FUNC, EnumConvertType.STRING, EnumThreshold.BINARY.name)
-        adapt = parse_param(kw, Lexicon.ADAPT, EnumConvertType.STRING, EnumThresholdAdapt.ADAPT_NONE.name)
+        mode = parse_param(kw, Lexicon.FUNC, EnumThreshold, EnumThreshold.BINARY.name)
+        adapt = parse_param(kw, Lexicon.ADAPT, EnumThresholdAdapt, EnumThresholdAdapt.ADAPT_NONE.name)
         threshold = parse_param(kw, Lexicon.THRESHOLD, EnumConvertType.FLOAT, 1, 0, 1)
         block = parse_param(kw, Lexicon.SIZE, EnumConvertType.INT, 3, 3)
         invert = parse_param(kw, Lexicon.INVERT, EnumConvertType.BOOLEAN, False)
@@ -986,8 +963,6 @@ Define a range and apply it to an image for segmentation and feature extraction.
         pbar = ProgressBar(len(params))
         for idx, (pA, mode, adapt, th, block, invert) in enumerate(params):
             pA = tensor2cv(pA) if pA is not None else channel_solid(chan=EnumImageType.BGRA)
-            mode = EnumThreshold[mode]
-            adapt = EnumThresholdAdapt[adapt]
             pA = image_threshold(pA, th, mode, adapt, block)
             if invert == True:
                 pA = image_invert(pA, 1)
@@ -1033,17 +1008,17 @@ Apply various geometric transformations to images, including translation, rotati
         offset = parse_param(kw, Lexicon.XY, EnumConvertType.VEC2, [(0, 0)], -2.5, 2.5)
         angle = parse_param(kw, Lexicon.ANGLE, EnumConvertType.FLOAT, 0)
         size = parse_param(kw, Lexicon.SIZE, EnumConvertType.VEC2, [(1, 1)], 0.001)
-        edge = parse_param(kw, Lexicon.EDGE, EnumConvertType.STRING, EnumEdge.CLIP.name)
-        mirror = parse_param(kw, Lexicon.MIRROR, EnumConvertType.STRING, EnumMirrorMode.NONE.name)
+        edge = parse_param(kw, Lexicon.EDGE, EnumEdge, EnumEdge.CLIP.name)
+        mirror = parse_param(kw, Lexicon.MIRROR, EnumMirrorMode, EnumMirrorMode.NONE.name)
         mirror_pivot = parse_param(kw, Lexicon.PIVOT, EnumConvertType.VEC2, [(0.5, 0.5)], 0, 1)
         tile_xy = parse_param(kw, Lexicon.TILE, EnumConvertType.VEC2, [(1., 1.)], 1)
-        proj = parse_param(kw, Lexicon.PROJECTION, EnumConvertType.STRING, EnumProjection.NORMAL.name)
+        proj = parse_param(kw, Lexicon.PROJECTION, EnumProjection, EnumProjection.NORMAL.name)
         tltr = parse_param(kw, Lexicon.TLTR, EnumConvertType.VEC4, [(0, 0, 1, 0)], 0, 1)
         blbr = parse_param(kw, Lexicon.BLBR, EnumConvertType.VEC4, [(0, 1, 1, 1)], 0, 1)
         strength = parse_param(kw, Lexicon.STRENGTH, EnumConvertType.FLOAT, 1, 0, 1)
-        mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.MATTE.name)
+        mode = parse_param(kw, Lexicon.MODE, EnumScaleMode, EnumScaleMode.MATTE.name)
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)
-        sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)
+        sample = parse_param(kw, Lexicon.SAMPLE, EnumInterpolation, EnumInterpolation.LANCZOS4.name)
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
         params = list(zip_longest_fill(pA, offset, angle, size, edge, tile_xy, mirror, mirror_pivot, proj, strength, tltr, blbr, mode, wihi, sample, matte))
         images = []
@@ -1051,12 +1026,9 @@ Apply various geometric transformations to images, including translation, rotati
         for idx, (pA, offset, angle, size, edge, tile_xy, mirror, mirror_pivot, proj, strength, tltr, blbr, mode, wihi, sample, matte) in enumerate(params):
             pA = tensor2cv(pA) if pA is not None else channel_solid(chan=EnumImageType.BGRA)
             h, w = pA.shape[:2]
-            edge = EnumEdge[edge]
-            sample = EnumInterpolation[sample]
             pA = image_transform(pA, offset, angle, size, sample, edge)
             pA = image_crop_center(pA, w, h)
 
-            mirror = EnumMirrorMode[mirror]
             if mirror != EnumMirrorMode.NONE:
                 mpx, mpy = mirror_pivot
                 pA = image_mirror(pA, mirror, mpx, mpy)
@@ -1067,7 +1039,6 @@ Apply various geometric transformations to images, including translation, rotati
                 pA = image_edge_wrap(pA, tx / 2 - 0.5, ty / 2 - 0.5)
                 pA = image_scalefit(pA, w, h, EnumScaleMode.FIT, sample)
 
-            proj = EnumProjection[proj]
             match proj:
                 case EnumProjection.PERSPECTIVE:
                     x1, y1, x2, y2 = tltr
@@ -1086,7 +1057,6 @@ Apply various geometric transformations to images, including translation, rotati
             if proj != EnumProjection.NORMAL:
                 pA = image_scalefit(pA, w, h, EnumScaleMode.FIT, sample)
 
-            mode = EnumScaleMode[mode]
             if mode != EnumScaleMode.MATTE:
                 w, h = wihi
                 pA = image_scalefit(pA, w, h, mode, sample)

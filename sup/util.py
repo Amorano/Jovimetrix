@@ -140,7 +140,9 @@ def parse_value(val:Any, typ:EnumConvertType, default: Any,
     if typ == EnumConvertType.ANY:
         return val
 
-    if isinstance(default, torch.Tensor) and typ not in [EnumConvertType.IMAGE, EnumConvertType.MASK, EnumConvertType.LATENT]:
+    if isinstance(default, torch.Tensor) and typ not in [EnumConvertType.IMAGE,
+                                                         EnumConvertType.MASK,
+                                                         EnumConvertType.LATENT]:
         h, w = default.shape[:2]
         cc = default.shape[2] if len(default.shape) > 2 else 1
         default = (w, h, cc)
@@ -160,7 +162,9 @@ def parse_value(val:Any, typ:EnumConvertType, default: Any,
         # wacky color struct?
         elif 'r' in val:
             val = [val.get(c, 0) for c in 'rgba']
-    elif isinstance(val, torch.Tensor) and typ not in [EnumConvertType.IMAGE, EnumConvertType.MASK, EnumConvertType.LATENT]:
+    elif isinstance(val, torch.Tensor) and typ not in [EnumConvertType.IMAGE,
+                                                       EnumConvertType.MASK,
+                                                       EnumConvertType.LATENT]:
         h, w = val.shape[:2]
         cc = val.shape[2] if len(val.shape) > 2 else 1
         val = (w, h, cc)
@@ -264,6 +268,9 @@ def parse_value(val:Any, typ:EnumConvertType, default: Any,
             color = torch.tensor(color, dtype=torch.int32).tolist()
             new_val = torch.empty((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 1), dtype=torch.uint8)
             new_val[0,:,:] = color
+
+    elif issubclass(typ, Enum):
+        new_val = typ[val]
 
     if typ == EnumConvertType.COORD2D:
         new_val = {'x': new_val[0], 'y': new_val[1]}

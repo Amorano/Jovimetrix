@@ -109,14 +109,12 @@ class GLSLNodeBase(JOVImageNode):
         delta = parse_param(kw, Lexicon.TIME, EnumConvertType.FLOAT, 0)[0]
 
         # everybody wang comp tonight
-        mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.MATTE.name)[0]
-        mode = EnumScaleMode[mode]
+        mode = parse_param(kw, Lexicon.MODE, EnumScaleMode, EnumScaleMode.MATTE.name)[0]
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)[0]
-        sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)[0]
-        sample = EnumInterpolation[sample]
+        sample = parse_param(kw, Lexicon.SAMPLE, EnumInterpolation, EnumInterpolation.LANCZOS4.name)[0]
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)[0]
-        edge_x = parse_param(kw, Lexicon.EDGE_X, EnumConvertType.STRING, EnumGLSLEdge.CLAMP.name)[0]
-        edge_y = parse_param(kw, Lexicon.EDGE_Y, EnumConvertType.STRING, EnumGLSLEdge.CLAMP.name)[0]
+        edge_x = parse_param(kw, Lexicon.EDGE_X, EnumGLSLEdge, EnumGLSLEdge.CLAMP.name)[0]
+        edge_y = parse_param(kw, Lexicon.EDGE_Y, EnumGLSLEdge, EnumGLSLEdge.CLAMP.name)[0]
         edge = (edge_x, edge_y)
 
         try:

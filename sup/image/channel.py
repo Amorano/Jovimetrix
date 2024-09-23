@@ -20,16 +20,16 @@ from Jovimetrix.sup.image.color import pixel_eval
 # ==============================================================================
 
 class EnumPixelSwizzle(Enum):
-    RED_A = 20
+    RED_A = 0
     GREEN_A = 10
-    BLUE_A = 0
+    BLUE_A = 20
     ALPHA_A = 30
 
-    RED_B = 21
+    RED_B = 1
     GREEN_B = 11
-    BLUE_B = 1
+    BLUE_B = 21
     ALPHA_B = 31
-    CONSTANT = 50
+    CONSTANT = 52
 
 # ==============================================================================
 # === CHANNEL ===
@@ -123,5 +123,6 @@ def channel_swap(imageA:TYPE_IMAGE, swap_ot:EnumPixelSwizzle,
     if index_in > cc_in:
         return imageA
 
-    imageA[:,:,index_out] = imageB[:,:,index_in]
-    return imageA
+    img = imageA.copy()
+    img[:,:,index_out] = imageB[:,:,index_in]
+    return img

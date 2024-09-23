@@ -102,7 +102,7 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
             logger.warn("no data for list")
             return (None, [], 0)
         data_list = [item for sublist in data_list for item in sublist]
-        mode = parse_param(kw, Lexicon.BATCH_MODE, EnumConvertType.STRING, EnumBatchMode.MERGE.name)[0]
+        mode = parse_param(kw, Lexicon.BATCH_MODE, EnumBatchMode, EnumBatchMode.MERGE.name)[0]
         index = parse_param(kw, Lexicon.INDEX, EnumConvertType.INT, 0, 0)[0]
         slice_range = parse_param(kw, Lexicon.RANGE, EnumConvertType.VEC3INT, [(0, 0, 1)])[0]
         indices = parse_param(kw, Lexicon.STRING, EnumConvertType.STRING, "")[0]
@@ -142,7 +142,6 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
         if flip:
             data = data[::-1]
 
-        mode = EnumBatchMode[mode]
         if mode == EnumBatchMode.PICK:
             index = index if index < len(data) else -1
             data = [data[index]]
@@ -370,10 +369,8 @@ class QueueBaseNode(JOVBaseNode):
             if mw != 0 or mh != 0 or mc != 0:
                 ret = []
                 pbar = ProgressBar(self.__len)
-                mode = parse_param(kw, Lexicon.MODE, EnumConvertType.STRING, EnumScaleMode.MATTE.name)[0]
-                mode = EnumScaleMode[mode]
-                sample = parse_param(kw, Lexicon.SAMPLE, EnumConvertType.STRING, EnumInterpolation.LANCZOS4.name)[0]
-                sample = EnumInterpolation[sample]
+                mode = parse_param(kw, Lexicon.MODE, EnumScaleMode, EnumScaleMode.MATTE.name)[0]
+                sample = parse_param(kw, Lexicon.SAMPLE, EnumInterpolation, EnumInterpolation.LANCZOS4.name)[0]
                 wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)[0]
                 w2, h2 = wihi
                 matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)[0]
