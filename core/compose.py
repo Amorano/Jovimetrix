@@ -25,8 +25,8 @@ from Jovimetrix.sup.image import MIN_IMAGE_SIZE, EnumImageType, \
     cv2tensor, cv2tensor_full, tensor2cv
 
 from Jovimetrix.sup.image.color import EnumCBDeficiency, EnumCBSimulator, \
-    EnumColorMap, EnumColorTheory, color_lut_match, color_lut_palette, \
-    color_lut_tonal, color_match_reinhard, color_theory, color_blind, \
+    EnumColorMap, EnumColorTheory, color_lut_full, color_lut_match, color_lut_palette, \
+    color_lut_tonal, color_lut_visualize, color_match_reinhard, color_theory, color_blind, \
     color_top_used, image_gradient_expand, image_gradient_map, pixel_eval
 
 from Jovimetrix.sup.image.adjust import EnumEdge, EnumMirrorMode, EnumScaleMode, \
@@ -207,7 +207,9 @@ Enhance and modify images with various effects such as blurring, sharpening, col
             img_new = image_blend(pA, img_new, mask)
             if pA.ndim == 3 and pA.shape[2] == 4:
                 mask = image_mask(pA)
-                img_new = image_mask_add(mask)
+                img_new = image_convert(img_new, 4)
+                img_new[:,:,3] = mask
+            #    img_new = image_mask_add(mask)
 
             images.append(cv2tensor_full(img_new, matte))
             pbar.update_absolute(idx)
@@ -407,8 +409,8 @@ Adjust the color scheme of one image to match another with the Color Match Node.
 class ColorKMeansNode(JOVBaseNode):
     NAME = "COLOR MEANS (JOV) 〰️"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = ("IMAGE", "IMAGE", "JLUT",)
-    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.PALETTE, Lexicon.INVERT, Lexicon.LUT,)
+    RETURN_TYPES = ("IMAGE", "IMAGE", "IMAGE", "JLUT", "IMAGE",)
+    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.PALETTE, Lexicon.GRADIENT, Lexicon.LUT, Lexicon.RGB, )
     DESCRIPTION = """
 The top-k colors ordered from most->least used as a strip, tonal palette and 3D LUT.
 """
@@ -419,46 +421,54 @@ The top-k colors ordered from most->least used as a strip, tonal palette and 3D 
         d = deep_merge(d, {
             "optional": {
                 Lexicon.PIXEL: (JOV_TYPE_IMAGE, {}),
-                Lexicon.VALUE: ("INT", {"default": 6, "mij": 1, "maj": 255, "tooltips":"The top K colors to select."}),
-                Lexicon.SIZE: ("INT", {"default": 16, "mij": 1, "maj": 256, "tooltips":"Height of the tones in the strip. Width is based on input."}),
-                Lexicon.WH: ("VEC2INT", {"default": (128, 256), "mij":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
+                Lexicon.VALUE: ("INT", {"default": 12, "mij": 1, "maj": 255, "tooltips":"The top K colors to select."}),
+                Lexicon.SIZE: ("INT", {"default": 32, "mij": 1, "maj": 256, "tooltips":"Height of the tones in the strip. Width is based on input."}),
+                Lexicon.COUNT: ("INT", {"default": 33, "mij": 3, "maj": 256, "tooltips":"Number of nodes to use in interpolation of full LUT (256 is every pixel)."}),
+                Lexicon.WH: ("VEC2INT", {"default": (256, 256), "mij":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
             },
             "outputs": {
                 0: ("IMAGE", {"tooltips":"Sequence of top-K colors. Count depends on value in `VAL`."}),
                 1: ("IMAGE", {"tooltips":"Simple Tone palette based on result top-K colors. Width is taken from input."}),
-                2: ("JLUT", {"tooltips":"Full 3D LUT of the image mapped to the resultant top-K colors chosen."}),
+                2: ("IMAGE", {"tooltips":"Gradient of top-K colors."}),
+                3: ("JLUT",  {"tooltips":"Full 3D LUT of the image mapped to the resultant top-K colors chosen."}),
+                4: ("IMAGE", {"tooltips":"Visualization of full 3D .cube LUT in JLUT output"}),
             }
         })
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
-        kcolors = parse_param(kw, Lexicon.VALUE, EnumConvertType.INT, 6, 1, 255)
-        lut_height = parse_param(kw, Lexicon.LUT, EnumConvertType.INT, 16, 1, 256)
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(128, 256)], MIN_IMAGE_SIZE)
+        kcolors = parse_param(kw, Lexicon.VALUE, EnumConvertType.INT, 12, 1, 255)
+        lut_height = parse_param(kw, Lexicon.SIZE, EnumConvertType.INT, 32, 1, 256)
+        nodes = parse_param(kw, Lexicon.COUNT, EnumConvertType.INT, 33, 1, 255)
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(256, 256)], MIN_IMAGE_SIZE)
 
-        params = list(zip_longest_fill(pA, kcolors, lut_height, wihi))
-        images = []
+        params = list(zip_longest_fill(pA, kcolors, nodes, lut_height, wihi))
+        top_colors = []
+        lut_tonal = []
+        lut_full = []
+        lut_visualized = []
+        gradients = []
         pbar = ProgressBar(len(params) * sum(kcolors))
-        for idx, (pA, kcolors, lut_height, wihi) in enumerate(params):
+        for idx, (pA, kcolors, nodes, lut_height, wihi) in enumerate(params):
             if pA is None:
                 pA = channel_solid(chan=EnumImageType.BGRA)
 
             pA = tensor2cv(pA)
-            h, w = pA.shape[:2]
-
             colors = color_top_used(pA, kcolors)
+
             # size down to 1px strip then expand to 256 for full gradient
-            gradient = color_lut_palette(colors, 1)
-            gradient = image_gradient_expand(gradient)
-            top_colors = torch.stack([cv2tensor(channel_solid(*wihi, color=c)) for c in colors])
-            lut_tonal = cv2tensor(color_lut_tonal(colors, width=w, height=lut_height)).unsqueeze(0)
-            # lut_full = cv2tensor(color_lut_full(colors)).unsqueeze(0)
-            print(lut_tonal.shape)
-            images.append([top_colors, lut_tonal, lut_tonal])
+            top_colors.extend([cv2tensor(channel_solid(*wihi, color=c)) for c in colors])
+            lut_tonal.append(cv2tensor(color_lut_tonal(colors, width=pA.shape[1], height=lut_height)))
+            full = color_lut_full(colors, nodes)
+            lut_full.append(torch.from_numpy(full))
+            lut_visualized.append(cv2tensor(color_lut_visualize(full, wihi[1])))
+            gradient = image_gradient_expand(color_lut_palette(colors, 1))
+            gradient = cv2.resize(gradient, wihi)
+            gradients.append(cv2tensor(gradient))
             pbar.update_absolute(idx)
 
-        return list(zip(*images))
+        return torch.stack(top_colors), torch.stack(lut_tonal), torch.stack(gradients), lut_full, torch.stack(lut_visualized),
 
 class ColorTheoryNode(JOVBaseNode):
     NAME = "COLOR THEORY (JOV) 🛞"

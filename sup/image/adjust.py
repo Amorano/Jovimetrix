@@ -119,15 +119,15 @@ def image_filter(image:TYPE_IMAGE, start:Tuple[int]=(128,128,128),
         Tuple[np.ndarray, np.ndarray]: A tuple containing the filtered image and the mask.
     """
     old_alpha = None
-    image: torch.tensor = cv2tensor(image)
-    cc = image.shape[2]
+    new_image = cv2tensor(image)
+    cc = image.shape[2] if image.ndim > 2 else 1
     if cc == 4:
-        old_alpha = image[..., 3]
-        new_image = image[:, :, :3]
+        old_alpha = new_image[..., 3]
+        new_image = new_image[:, :, :3]
     elif cc == 1:
-        new_image = np.repeat(image, 3, axis=2)
-    else:
-        new_image = image
+        if new_image.ndim == 2:
+            new_image = new_image.unsqueeze(-1)
+        new_image = torch.repeat_interleave(new_image, 3, dim=2)
 
     fuzz = torch.tensor(fuzz, dtype=torch.float64, device="cpu")
     start = torch.tensor(start, dtype=torch.float64, device="cpu") / 255.

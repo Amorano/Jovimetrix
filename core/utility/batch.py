@@ -193,16 +193,20 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
             for d in data:
                 d = tensor2cv(d)
                 d = image_convert(d, 4)
-                d = image_matte(d, (0,0,0,0), w, h)
+                #d = image_matte(d, (0,0,0,0), w, h)
                 # logger.debug(d.shape)
                 result.append(cv2tensor(d))
-            data = torch.stack([r.squeeze(0) for r in result], dim=0)
+
+            if len(result) > 1:
+                data = torch.stack(result)
+            else:
+                data = result[0].unsqueeze(0)
             size = data.shape[0]
 
         if count > 0:
             data = data[0:count]
 
-        if len(data) == 1:
+        if not output_is_image and len(data) == 1:
             data = data[0]
 
         return data, size, full_list, len(full_list)

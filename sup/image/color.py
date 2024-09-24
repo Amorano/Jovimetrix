@@ -24,6 +24,12 @@ from Jovimetrix.sup.image import TYPE_IMAGE, TYPE_PIXEL, EnumGrayscaleCrunch, \
 from Jovimetrix.sup.image.compose import image_blend
 
 # ==============================================================================
+# === TYPE ===
+# ==============================================================================
+
+TYPE_LUT = Tuple[256, 256, 256, 3]
+
+# ==============================================================================
 # === ENUMERATION ===
 # ==============================================================================
 
@@ -304,26 +310,24 @@ def color_blind(image: TYPE_IMAGE, deficiency:EnumCBDeficiency,
         image = image_mask_add(image, mask)
     return image
 
-def color_lut_full(dominant_colors: List[Tuple[int, int, int]]) -> TYPE_IMAGE:
+def color_lut_full(dominant_colors: List[Tuple[int, int, int]], nodes:int=33) -> TYPE_IMAGE:
     """
     Create a 3D LUT by mapping each RGB value to the closest dominant color.
+    This version is optimized for speed using vectorization.
 
     Args:
         dominant_colors (List[Tuple[int, int, int]]): List of top colors as (R, G, B) tuples.
 
     Returns:
-        TYPE_IMAGE: 3D LUT with shape (256, 256, 256, 3).
+        np.ndarray: 3D LUT with shape (n, n, n, 3).
     """
+
     kdtree = KDTree(dominant_colors)
-    lut = np.zeros((256, 256, 256, 3), dtype=np.uint8)
-
-    # Fill the LUT with the closest dominant colors
-    for r in range(256):
-        for g in range(256):
-            for b in range(256):
-                _, index = kdtree.query([r, g, b])
-                lut[r, g, b] = dominant_colors[index]
-
+    r, g, b = np.mgrid[0:nodes, 0:nodes, 0:nodes]
+    rgb = np.stack([r, g, b], axis=-1).reshape(-1, 3)
+    _, indices = kdtree.query(rgb)
+    lut = np.array(dominant_colors)[indices]
+    lut = lut.reshape(nodes, nodes, nodes, 3).astype(np.uint8)
     return lut
 
 def color_lut_match(image: TYPE_IMAGE, colormap:int=cv2.COLORMAP_JET,
@@ -397,6 +401,76 @@ def color_lut_tonal(colors: List[Tuple[int, int, int]], width: int=256, height: 
         lut_image[row_start:row_end] = gradient
 
     return lut_image
+
+def color_lut_visualize(lut: TYPE_LUT, size: int=512) -> TYPE_IMAGE:
+    """
+    Visualize a 3D LUT as a 2D image.
+
+    Args:
+        lut (np.ndarray): 3D LUT with shape (n, n, n, 3).
+        size (int): Size of the output image (square). Default is 2048.
+
+    Returns:
+        PIL.Image.Image: 2D visualization of the 3D LUT.
+    """
+    if len(lut.shape) != 4 or lut.shape[3] != 3 or lut.shape[0] != lut.shape[1] or lut.shape[1] != lut.shape[2]:
+        raise ValueError("LUT must have shape (n, n, n, 3) where n is the number of nodes per dimension")
+
+    # 8 for a 256^3 LUT
+    n = lut.shape[0]
+    vis_n = int(np.ceil(np.cbrt(n)))
+
+    # Calculate the size of each small square, ensuring it's at least 1 pixel
+    square_size = max(1, size // (vis_n * vis_n))
+
+    # Recalculate the actual image size based on the square size
+    actual_size = square_size * vis_n * vis_n
+    img = np.zeros((actual_size, actual_size, 3), dtype=np.uint8)
+
+    for b in range(n):
+        # Calculate position of the current slice
+        slice_y = (b // vis_n) * square_size * vis_n
+        slice_x = (b % vis_n) * square_size * vis_n
+
+        # Extract the slice from the LUT
+        slice_data = lut[:, :, b]
+        slice_resized = cv2.resize(slice_data, (square_size * vis_n, square_size * vis_n), interpolation=cv2.INTER_NEAREST)
+
+        # Ensure we don't go out of bounds
+        end_y = min(slice_y + square_size * vis_n, actual_size)
+        end_x = min(slice_x + square_size * vis_n, actual_size)
+        img[slice_y:end_y, slice_x:end_x] = slice_resized[:end_y-slice_y, :end_x-slice_x]
+
+    return cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+
+def color_lut_xport(lut: TYPE_LUT, f_out: str) -> None:
+    """
+    Save a 3D LUT as a .cube file.
+
+    Args:
+        lut (np.ndarray): 3D LUT with shape (256, 256, 256, 3).
+        filename (str): Output filename (should end with .cube).
+        title (str, optional): Title for the LUT. Defaults to "3D LUT".
+
+    Returns:
+        None
+    """
+    if lut.shape != (256, 256, 256, 3):
+        raise ValueError("LUT must have shape (256, 256, 256, 3)")
+
+    if not filename.lower().endswith('.cube'):
+        filename += '.cube'
+
+    with open(f_out, 'w') as f:
+        f.write(f"TITLE 3D LUT\n")
+        f.write("LUT_3D_SIZE 256\n")
+        f.write("DOMAIN_MIN 0 0 0\n")
+        f.write("DOMAIN_MAX 1 1 1\n\n")
+        for b in range(256):
+            for g in range(256):
+                for r in range(256):
+                    color = lut[r, g, b]
+                    f.write(f"{color[0]/255:.6f} {color[1]/255:.6f} {color[2]/255:.6f}\n")
 
 def color_match_histogram(image: TYPE_IMAGE, usermap: TYPE_IMAGE) -> TYPE_IMAGE:
     """Colorize one input based on the histogram matches."""
@@ -592,7 +666,7 @@ def color_theory(image: TYPE_IMAGE, custom:int=0, scheme: EnumColorTheory=EnumCo
 def image_gradient_expand(image: TYPE_IMAGE) -> None:
     image = image_convert(image, 3)
     image = cv2.resize(image, (256, 256))
-    return image[0,:,:].reshape((256, 1, 3)).astype(np.uint8)
+    return image[0,:,:].reshape((256, 1, 3))
 
 # Adapted from WAS Suite -- gradient_map
 # https://github.com/WASasquatch/was-node-suite-comfyui
