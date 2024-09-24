@@ -27,7 +27,7 @@ from Jovimetrix.sup.image.compose import image_blend
 # === TYPE ===
 # ==============================================================================
 
-TYPE_LUT = Tuple[256, 256, 256, 3]
+TYPE_LUT = Tuple[int, int, int, int]
 
 # ==============================================================================
 # === ENUMERATION ===

@@ -765,7 +765,6 @@ Manipulate strings through filtering
             return ([],)
         # flat list of ALL the dynamic inputs...
         data_list = flatten(data_list)
-        print(123, data_list)
         # single operation mode -- like array node
         op = parse_param(kw, Lexicon.FUNC, EnumConvertString, EnumConvertString.SPLIT.name)[0]
         key = parse_param(kw, Lexicon.KEY, EnumConvertType.STRING, "")[0]
@@ -796,7 +795,6 @@ Manipulate strings through filtering
                         results.append(x)
         if len(results) == 0:
             results = [""]
-        print(results)
         return (results, [len(r) for r in results],) if len(results) > 1 else (results[0], len(results[0]),)
 
 class SwizzleNode(JOVBaseNode):

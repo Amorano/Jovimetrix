@@ -420,7 +420,7 @@ class GLSLShader:
                 gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_LINEAR)
 
                 for idx, text_wrap in enumerate([gl.GL_TEXTURE_WRAP_S, gl.GL_TEXTURE_WRAP_T]):
-                    match EnumGLSLEdge[tile_edge[idx]]:
+                    match tile_edge[idx]:
                         case EnumGLSLEdge.WRAP:
                             gl.glTexParameteri(gl.GL_TEXTURE_2D, text_wrap, gl.GL_REPEAT)
                         case EnumGLSLEdge.MIRROR:

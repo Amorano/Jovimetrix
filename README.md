@@ -96,7 +96,7 @@ If those nodes have descriptions written in HTML or Markdown, they will be conve
 
 ## UPDATES
 
-**2024/09/21** @1.2.40:
+**2024/09/21** @1.2.41:
 * Colorizer panel ported to new frontend.
 * numerical bit conversion for Number fields, String fields (character bits) and Image fields (pixels on/off)
 * new `COLOR MEANS` node will generate color palettes of the top-k colors of an input

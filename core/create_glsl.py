@@ -104,7 +104,7 @@ class GLSLNodeBase(JOVImageNode):
         self.__glsl = GLSLShader()
         self.__delta = 0
 
-    def run(self, ident, **kw) -> tuple[torch.Tensor]:
+    def run(self, ident, **kw) -> Tuple[torch.Tensor]:
         batch = parse_param(kw, Lexicon.BATCH, EnumConvertType.INT, 0, 0, 1048576)[0]
         delta = parse_param(kw, Lexicon.TIME, EnumConvertType.FLOAT, 0)[0]
 
