@@ -921,10 +921,7 @@ Merge multiple input images into a single composite image by stacking them along
         if len(images) == 0:
             logger.warning("no images to stack")
             return
-        data = []
-        for i in images:
-            data.extend(i)
-        images = [tensor2cv(i) for i in data]
+        images = [tensor2cv(img) for sublist in images for img in sublist]
 
         axis = parse_param(kw, Lexicon.AXIS, EnumOrientation, EnumOrientation.GRID.name)[0]
         stride = parse_param(kw, Lexicon.STEP, EnumConvertType.INT, 1)[0]
@@ -936,7 +933,8 @@ Merge multiple input images into a single composite image by stacking them along
         if mode != EnumScaleMode.MATTE:
             w, h = wihi
             img = image_scalefit(img, w, h, mode, sample)
-        return cv2tensor_full(img, matte)
+        rgba, rgb, mask = cv2tensor_full(img, matte)
+        return rgba.unsqueeze(0), rgb.unsqueeze(0), mask.unsqueeze(0)
 
 class ThresholdNode(JOVImageNode):
     NAME = "THRESHOLD (JOV) 📉"

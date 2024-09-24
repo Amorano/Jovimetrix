@@ -129,7 +129,6 @@ class GLSLNodeBase(JOVImageNode):
         variables = kw.copy()
         for p in [Lexicon.MODE, Lexicon.WH, Lexicon.SAMPLE, Lexicon.MATTE, Lexicon.BATCH, Lexicon.TIME, Lexicon.FPS, Lexicon.EDGE]:
             variables.pop(p, None)
-        print(variables)
 
         self.__glsl.fps = parse_param(kw, Lexicon.FPS, EnumConvertType.INT, 24, 1, 120)[0]
         if batch > 0 or self.__delta != delta:

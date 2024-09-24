@@ -44,6 +44,20 @@ try: JOV_DELAY_MAX = int(os.getenv("JOV_DELAY_MAX", JOV_DELAY_MAX))
 except: pass
 
 # ==============================================================================
+# === LAMBDA ===
+# ==============================================================================
+
+LAMBDA_FLATTEN = lambda data: [item for sublist in data for item in sublist]
+
+def flatten(data):
+    if isinstance(data, list):
+        return [a for i in data for a in flatten(i)]
+    else:
+        return [data]
+
+# ==============================================================================
+# === ENUMERATION ===
+# ==============================================================================
 
 class EnumBinaryOperation(Enum):
     ADD = 0
@@ -148,15 +162,6 @@ class EnumUnaryOperation(Enum):
     IS_EVEN = 90
     IS_ODD = 91
 
-class Results(object):
-    def __init__(self, *arg, **kw) -> None:
-        self.frame = []
-        self.lin = []
-        self.fixed = []
-        self.trigger = []
-
-# ==============================================================================
-
 # Dictionary to map each operation to its corresponding function
 OP_UNARY = {
     EnumUnaryOperation.ABS: lambda x: math.fabs(x),
@@ -186,6 +191,15 @@ OP_UNARY = {
 }
 
 # ==============================================================================
+# === CLASS ===
+# ==============================================================================
+
+class ResultObject(object):
+    def __init__(self, *arg, **kw) -> None:
+        self.frame = []
+        self.lin = []
+        self.fixed = []
+        self.trigger = []
 
 class BitSplitNode(JOVBaseNode):
     NAME = "BIT SPLIT (JOV) ⭄"
@@ -750,7 +764,8 @@ Manipulate strings through filtering
             logger.warn("no data for list")
             return ([],)
         # flat list of ALL the dynamic inputs...
-        data_list = [item for sublist in data_list for item in sublist]
+        data_list = flatten(data_list)
+        print(123, data_list)
         # single operation mode -- like array node
         op = parse_param(kw, Lexicon.FUNC, EnumConvertString, EnumConvertString.SPLIT.name)[0]
         key = parse_param(kw, Lexicon.KEY, EnumConvertType.STRING, "")[0]
@@ -761,7 +776,7 @@ Manipulate strings through filtering
             case EnumConvertString.SPLIT:
                 results = data_list
                 if key != "":
-                    results = [r.split(key) for r in data_list]
+                    results = flatten([r.split(key) for r in data_list])
             case EnumConvertString.JOIN:
                 results = [key.join(data_list)]
             case EnumConvertString.FIND:
@@ -781,6 +796,7 @@ Manipulate strings through filtering
                         results.append(x)
         if len(results) == 0:
             results = [""]
+        print(results)
         return (results, [len(r) for r in results],) if len(results) > 1 else (results[0], len(results[0]),)
 
 class SwizzleNode(JOVBaseNode):
@@ -907,7 +923,7 @@ A timer and frame counter, emitting pulses or signals based on time intervals. I
         if loop == 0 and (parse_reset(ident) > 0 or reset):
             self.__frame = 0
         trigger = None
-        results = Results()
+        results = ResultObject()
         pbar = ProgressBar(batch)
         step = stride if stride != 0 else max(1, loop / batch)
         for idx in range(batch):

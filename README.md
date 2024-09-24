@@ -9,7 +9,7 @@
 </div></h2>
 
 <h3><div align="center">
-JOVIMETRIX IS ONLY GUARANTEED TO SUPPORT <a href="https://github.com/comfyanonymous/ComfyUI">COMFYUI 0.1.2+</a> and <a href="https://github.com/Comfy-Org/ComfyUI_frontend">FRONTEND 1.2.30+</a><br>
+JOVIMETRIX IS ONLY GUARANTEED TO SUPPORT <a href="https://github.com/comfyanonymous/ComfyUI">COMFYUI 0.1.3+</a> and <a href="https://github.com/Comfy-Org/ComfyUI_frontend">FRONTEND 1.2.40+</a><br>
 IF YOU NEED AN OLDER VERSION, PLEASE DO NOT UPDATE.
 </div></h3>
 
@@ -47,16 +47,17 @@ Please consider sponsoring me if you enjoy the results of my work, code or docum
 * GLSL shader support
 * * `GLSL Node`  provides raw access to Vertex and Fragment shaders
 * * `Dynamic GLSL` dynamically convert existing GLSL scripts file into ComfyUI nodes at runtime
-* * Hand written GLSL nodes to speed up specific tasks better done on the GPU (10x speedup in most cases)
+* * Over 20+ Hand written GLSL nodes to speed up specific tasks better done on the GPU (10x speedup in most cases)
 * `STREAM READER` node to capture monitor, webcam or url media
 * `STREAM WRITER` node to export media to a HTTP/HTTPS server for OBS or other 3rd party streaming software
 * `SPOUT` streaming support *WINDOWS ONLY*
 * MIDI device read support with `MIDI FILTER` and `MIDI FILTER EZ` nodes to drive other node parameters
 * Full Text generation support using installed system fonts
-* Basic parameteric shape (Circle, Square, Polygon) generator
+* Basic parametric shape (Circle, Square, Polygon) generator
 * `COLOR BLIND` check support
 * `COLOR MATCH` against existing images or create a custom LUT
 * Generate `COLOR THEORY` spreads from an existing image
+* `COLOR MEANS` to generate palettes for existing images to keep other images in the same tonal ranges
 * `PIXEL SPLIT` separate the channels of an image to manipulate and `PIXEL MERGE` them back together
 * `STACK` a series of images into a new single image vertically, horizontally or in a grid
 * Or `FLATTEN` a batch of images into a single image with each image subsequently added on top (slap comp)
@@ -95,6 +96,16 @@ If those nodes have descriptions written in HTML or Markdown, they will be conve
 
 ## UPDATES
 
+**2024/09/21** @1.2.40:
+* Colorizer panel ported to new frontend.
+* numerical bit conversion for Number fields, String fields (character bits) and Image fields (pixels on/off)
+* new `COLOR MEANS` node will generate color palettes of the top-k colors of an input
+* new `BIT SPLIT` node will turn inputs into streams of bits used for modulation and triggering of other inputs
+
+* Officially Supported Versions:
+  * ComfyUI 0.1.3+
+  * ComfyUI Frontend 1.2.40+
+
 **2024/09/18** @1.2.39:
 * `COMPARISON` node updated to support NONE for all inputs
 * Fixed bad inputs for IMAGE/MASK where they were compound use on slots
@@ -104,23 +115,18 @@ If those nodes have descriptions written in HTML or Markdown, they will be conve
 * new `GLSL COLOR PALETTE` node based on cosines
 * new `GLSL INVERT` node
 * new `GLSL FILTER RANGE` node
-* Supported Versions:
+* Officially Supported Versions:
   * ComfyUI 0.1.3+
   * ComfyUI Frontend 1.2.30+
 
 **2024/09/09** @1.2.38:
 * `QUEUE`s will signal true (TRIGGER) on complete unless halted
-* Supported Versions:
-  * ComfyUI 0.1.3+
-  * ComfyUI Frontend 1.2.30+
-
-**2024/09/09** @1.2.37:
 * doubled speed of midi reader when idle
 * reduced GLSL footprint for color conversions
 * * sorry if that blew someone's network!
 * new `GLSL COLOR PALETTE` node based on cosines
 * new `GLSL HSV ADJUST`
-* Supported Versions:
+* Officially Supported Versions:
   * ComfyUI 0.1.3+
   * ComfyUI Frontend 1.2.30+
 
@@ -133,7 +139,7 @@ If those nodes have descriptions written in HTML or Markdown, they will be conve
 * new `GLSL CONICAL GRADIENT` Node
 * new `EDGE` mode for `GLSL shaders`: Clamp, Wrap, Mirror
 * `QUEUE TOO` Node updated to support batch
-* Supported Versions:
+* Officially Supported Versions:
   * ComfyUI 0.1.3+
   * ComfyUI Frontend 1.2.30+
 
@@ -143,23 +149,6 @@ If those nodes have descriptions written in HTML or Markdown, they will be conve
 * Allow slice reversal in `ARRAY` Node
 * `GLSL` Nodes allow for `IMAGE or MASK` input for RGB(A)
 * NOTE ADJUSTED VERSION NUMBERS TO SHOW OLDEST COMFYUI and FRONTEND VERSIONS SUPPORTED:
-  * ComfyUI 0.1.3+
-  * ComfyUI Frontend 1.2.30+
-
-**2024/09/04** @1.2.34:
-* Import change for chromium tab crash
-* Added ComfyUI default "tooltips" as last fallback for help docs
-* Supports Versions:
-  * ComfyUI 0.1.3+
-  * ComfyUI Frontend 1.2.30+
-
-**2024/09/03** @1.2.33:
-* New `QUEUE TOO` Node focused on efficient image media loading.
-* Better reporting in `AKASHIC` Node for core ComfyUI types.
-* `MODE` setting for most nodes has been defaulted to `MATTE`. The older `NONE` setting has been removed.
-* Thanks to [christian-byrne](https://github.com/christian-byrne) for squashing a bug in [the help sidebar!](https://github.com/Amorano/Jovimetrix/pull/55)
-* Thanks to [Ainaemaet](https://github.com/Ainaemaet) for cleaning up the `STREAM READER` Node device list [when no devices are present](https://github.com/Amorano/Jovimetrix/pull/53)!
-* Supports Versions:
   * ComfyUI 0.1.3+
   * ComfyUI Frontend 1.2.30+
 
