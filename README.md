@@ -96,6 +96,10 @@ If those nodes have descriptions written in HTML or Markdown, they will be conve
 
 ## UPDATES
 
+**2024/10/03** @1.2.42:
+* OpenGL support for macOS with Silicon processors and Linux with Arm64 CPU (aarch64)
+* Shout out to [BigCat88](https://github.com/bigcat88) for the PR to fix the above
+
 **2024/09/21** @1.2.41:
 * Colorizer panel ported to new frontend.
 * numerical bit conversion for Number fields, String fields (character bits) and Image fields (pixels on/off)
