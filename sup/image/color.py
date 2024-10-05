@@ -278,7 +278,7 @@ def color_image2lut(image: np.ndarray, num_colors: int = 256) -> np.ndarray:
     lut = np.zeros((256, 1, 3), dtype=np.uint8)
     lut[:num_colors] = np.clip(centroids, 0, 255).reshape(-1, 1, 3).astype(np.uint8)
     # logger.debug(f"Final LUT range: { np.min(lut)} {np.max(lut)}")
-    return np.asnumpy(lut)
+    return np.asarray(lut)
 
 def color_blind(image: TYPE_IMAGE, deficiency:EnumCBDeficiency,
                     simulator:EnumCBSimulator=EnumCBSimulator.AUTOSELECT,
