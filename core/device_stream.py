@@ -93,7 +93,6 @@ Capture frames from various sources such as URLs, cameras, monitors, windows, or
             if names: # Check if the list is not empty
                 names.pop()
 
-
         d = deep_merge(d, {
             "optional": {
                 Lexicon.SOURCE: (names, {"default": EnumStreamType.URL.name}),
@@ -266,7 +265,8 @@ Capture frames from various sources such as URLs, cameras, monitors, windows, or
 
         if len(images) == 0:
             images.append(self.__empty)
-        return [torch.stack(i) for i in zip(*images)]
+        self.__last = [torch.stack(i) for i in zip(*images)]
+        return self.__last
 
 class StreamWriterNode(JOVBaseNode):
     NAME = "STREAM WRITER (JOV) 🎞️"

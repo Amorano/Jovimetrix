@@ -98,9 +98,6 @@ def monitor_list() -> dict:
 def window_list() -> dict:
     return {}
 
-def window_capture(hwnd:int, dpi:bool=True, clientOnly:bool=True) -> cv2.Mat:
-    return np.array((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=np.uint8)
-
 if sys.platform.startswith('win'):
 
     import win32gui
@@ -118,8 +115,7 @@ if sys.platform.startswith('win'):
         win32gui.EnumWindows(window_enum_handler, None)
         return _windows
 
-    def window_capture(hwnd:int, dpi:bool=True, clientOnly:bool=True) -> cv2.Mat:
-        # hwnd = win32gui.FindWindow(None, 'Calculator')
+    def window_capture(hwnd:str, dpi:bool=True, clientOnly:bool=True) -> cv2.Mat:
         if dpi:
             windll.user32.SetProcessDPIAware()
 
@@ -165,6 +161,73 @@ if sys.platform.startswith('win'):
 
         win32gui.ReleaseDC(hwnd, hwndDC)
         return im
+
+elif sys.platform.startswith('darwin'):
+    from Quartz import CGWindowListCopyWindowInfo, kCGNullWindowID, kCGWindowListOptionAll
+    import Quartz
+
+    def get_window_dimensions(hwnd):
+        window_info_list = Quartz.CGWindowListCopyWindowInfo(Quartz.kCGWindowListOptionIncludingWindow, hwnd)
+
+        for window_info in window_info_list:
+            window_id = window_info[Quartz.kCGWindowNumber]
+            if window_id == hwnd:
+                bounds = window_info[Quartz.kCGWindowBounds]
+                width = bounds['Width']
+                height = bounds['Height']
+                left = bounds['X']
+                top = bounds['Y']
+                return {"top": top, "left": left, "width": width, "height": height}
+
+        return None
+
+    def window_list() -> dict:
+        _windows = {}
+        window_list = Quartz.CGWindowListCopyWindowInfo(
+            Quartz.kCGWindowListOptionOnScreenOnly | Quartz.kCGWindowListExcludeDesktopElements,
+            Quartz.kCGNullWindowID
+        )
+        for window in window_list:
+            hwnd = window[Quartz.kCGWindowNumber]
+            name = window.get(Quartz.kCGWindowName, 'Unnamed Window')
+            if name and name not in ['Dock', 'Menu Bar']:
+                _windows[hwnd] = name
+        return _windows
+
+    def window_capture(hwnd:str, dpi:bool=True, clientOnly:bool=True) -> np.ndarray:
+        dimensions = get_window_dimensions(hwnd)
+        if dimensions is None:
+            return None
+
+        """
+        rect = CGRectMake(dimensions['left'], dimensions['top'], dimensions['width'], dimensions['height'])
+
+        # Capture the window image
+        image_ref = CGWindowListCreateImage(rect, Quartz.kCGWindowListOptionIncludingWindow, hwnd, Quartz.kCGWindowImageOptionNone)
+
+        if image_ref is None:
+            return None
+
+        # Convert Quartz image to a numpy array (you may need to install pyobjc-framework-Quartz)
+        width = Quartz.CGImageGetWidth(image_ref)
+        height = Quartz.CGImageGetHeight(image_ref)
+        color_space = Quartz.CGColorSpaceCreateDeviceRGB()
+
+        # Create a bitmap context for pixel data
+        context = Quartz.CGBitmapContextCreate(None, width, height, 8, width * 4, color_space, Quartz.kCGImageAlphaPremultipliedFirst)
+        Quartz.CGContextDrawImage(context, Quartz.CGRectMake(0, 0, width, height), image_ref)
+
+        # Get the pixel data from the context
+        data = Quartz.CGBitmapContextGetData(context)
+        image = np.frombuffer(data, dtype=np.uint8).reshape((height, width, 4))
+
+        # Convert from BGRA to BGR
+        return cv2.cvtColor(image, cv2.COLOR_BGRA2BGR)
+        """
+
+        with mss() as sct:
+            screenshot = np.array(sct.grab(dimensions))
+        return cv2.cvtColor(screenshot, cv2.COLOR_BGRA2BGR)
 
 # ==============================================================================
 # === MEDIA ===
