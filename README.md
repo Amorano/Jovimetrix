@@ -96,6 +96,9 @@ If those nodes have descriptions written in HTML or Markdown, they will be conve
 
 ## UPDATES
 
+**2024/10/13** @1.2.43:
+* Attempt to patch MacOS for STREAMREADER to capture windows (ref: [Issue 60](https://github.com/Amorano/Jovimetrix/issues/60))
+
 **2024/10/03** @1.2.42:
 * OpenGL support for macOS with Silicon processors and Linux with Arm64 CPU (aarch64)
 * Shout out to [BigCat88](https://github.com/bigcat88) for the PR to fix the above
@@ -105,7 +108,6 @@ If those nodes have descriptions written in HTML or Markdown, they will be conve
 * numerical bit conversion for Number fields, String fields (character bits) and Image fields (pixels on/off)
 * new `COLOR MEANS` node will generate color palettes of the top-k colors of an input
 * new `BIT SPLIT` node will turn inputs into streams of bits used for modulation and triggering of other inputs
-
 * Officially Supported Versions:
   * ComfyUI 0.1.3+
   * ComfyUI Frontend 1.2.40+

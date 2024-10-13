@@ -21,3 +21,4 @@ scikit-learn>=1.5.1
 SpoutGL>=0.0.6; platform_system=="Windows"
 stereoscopy[auto_align]>=2.0.1
 vnoise>=0.1.0
+pyobjc-framework-Quartz>=7.3; platform_system=='Darwin'
