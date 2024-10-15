@@ -195,7 +195,6 @@ Provides advanced filtering capabilities for MIDI messages based on various crit
         value: str = parse_param(kw, Lexicon.VALUE, EnumConvertType.STRING, "")[0]
         normal: str = parse_param(kw, Lexicon.NORMALIZE, EnumConvertType.STRING, "")[0]
 
-        note_on = MIDINoteOnFilter[note_on]
         if note_on != MIDINoteOnFilter.IGNORE:
             if note_on == MIDINoteOnFilter.NOTE_ON and message.note_on != True:
                 return message, False,

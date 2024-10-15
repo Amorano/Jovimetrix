@@ -96,6 +96,9 @@ If those nodes have descriptions written in HTML or Markdown, they will be conve
 
 ## UPDATES
 
+**2024/10/13** @1.2.44:
+* Updated MIDI to use new ENUMs (thanks for the bug report bframes!)
+
 **2024/10/13** @1.2.43:
 * Attempt to patch MacOS for STREAMREADER to capture windows (ref: [Issue 60](https://github.com/Amorano/Jovimetrix/issues/60))
 
