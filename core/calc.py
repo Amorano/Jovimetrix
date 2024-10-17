@@ -685,7 +685,7 @@ Additionally, you can specify the easing function (EASE) and the desired output 
         a_xyzw = parse_param(kw, Lexicon.IN_A+Lexicon.IN_A, EnumConvertType.VEC4, [(0, 0, 0, 0)])
         b_xyzw = parse_param(kw, Lexicon.IN_B+Lexicon.IN_B, EnumConvertType.VEC4, [(1, 1, 1, 1)])
         alpha = parse_param(kw, Lexicon.FLOAT,EnumConvertType.VEC4, [(0.5,0.5,0.5,0.5)], 0, 1)
-        op = parse_param(kw, Lexicon.EASE, EnumConvertType.STRING, "NONE")
+        op = parse_param(kw, Lexicon.EASE, EnumEase, EnumEase.SIN_IN_OUT.name)
         typ = parse_param(kw, Lexicon.TYPE, EnumNumberType, EnumNumberType.FLOAT.name)
         values = []
         params = list(zip_longest_fill(A, B, a_xyzw, b_xyzw, alpha, op, typ))
@@ -714,8 +714,8 @@ Additionally, you can specify the easing function (EASE) and the desired output 
             if op == "NONE":
                 val = [val_b[x] * alpha[x] + val_a[x] * (1 - alpha[x]) for x in range(size)]
             else:
-                ease = EnumEase[op]
-                val = [ease_op(ease, val_a[x], val_b[x], alpha=alpha[x]) for x in range(size)]
+                # ease = EnumEase[op]
+                val = [ease_op(op, val_a[x], val_b[x], alpha=alpha[x]) for x in range(size)]
 
             convert = int if "INT" in typ.name else float
             ret = []

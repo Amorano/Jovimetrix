@@ -96,7 +96,10 @@ If those nodes have descriptions written in HTML or Markdown, they will be conve
 
 ## UPDATES
 
-**2024/10/13** @1.2.44:
+**2024/10/16** @1.2.45:
+* ENUMs cleaned for all usages (someone send coffee bucks to bframes for the bug checks!)
+
+**2024/10/14** @1.2.44:
 * Updated MIDI to use new ENUMs (thanks for the bug report bframes!)
 
 **2024/10/13** @1.2.43:
