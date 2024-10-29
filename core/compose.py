@@ -40,7 +40,7 @@ from Jovimetrix.sup.image.channel import EnumPixelSwizzle, channel_merge, \
     channel_solid
 
 from Jovimetrix.sup.image.compose import EnumAdjustOP, EnumBlendType, \
-    EnumOrientation, image_levels, image_split, image_stack, image_blend, \
+    EnumOrientation, image_by_size, image_levels, image_split, image_stack, image_blend, \
     image_crop, image_crop_center, image_crop_polygonal
 
 from Jovimetrix.sup.image.mapping import EnumProjection, remap_fisheye, \
@@ -262,17 +262,32 @@ Combine two input images using various blending modes, such as normal, screen, m
             if flip:
                 pA, pB = pB, pA
 
+            width, height = MIN_IMAGE_SIZE, MIN_IMAGE_SIZE
             if pA is None:
-                pA = channel_solid(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, matte, chan=EnumImageType.BGRA)
+                if pB is None:
+                    if mask is None:
+                        images.append(img)
+                        pbar.update_absolute(idx)
+                        continue
+                    else:
+                        height, width = mask.shape[:2]
+                else:
+                    height, width = pB.shape[:2]
+            else:
+                height, width = pA.shape[:2]
+
+            if pA is None:
+                pA = channel_solid(width, height, matte, chan=EnumImageType.BGRA)
             else:
                 pA = tensor2cv(pA)
                 matted = pixel_eval(matte, EnumImageType.BGRA)
                 pA = image_matte(pA, matted)
 
             if pB is None:
-                pB = channel_solid(MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, matte, chan=EnumImageType.BGRA)
+                pB = channel_solid(width, height, matte, chan=EnumImageType.BGRA)
             else:
                 pB = tensor2cv(pB)
+                print(pB.shape)
 
             if mask is not None:
                 mask = tensor2cv(mask)
@@ -283,7 +298,9 @@ Combine two input images using various blending modes, such as normal, screen, m
             img = image_blend(pA, pB, mask, func, alpha)
 
             if mode != EnumScaleMode.MATTE:
-                img = image_scalefit(img, *wihi, mode, sample)
+                # or mode != EnumScaleMode.RESIZE_MATTE:
+                width, height = wihi
+                img = image_scalefit(img, width, height, mode, sample)
 
             img = cv2tensor_full(img, matte)
             images.append(img)

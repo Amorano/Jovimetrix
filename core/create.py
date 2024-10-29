@@ -137,16 +137,10 @@ Create n-sided polygons. These shapes can be customized by adjusting parameters 
             back = matte[:3]
 
             match shape:
-                case EnumShapes.RECTANGLE:
+                case EnumShapes.RECTANGLE | EnumShapes.SQUARE:
                     pA = shape_quad(width, height, sizeX, sizeY, fill, back)
 
-                case EnumShapes.SQUARE:
-                    pA = shape_quad(width, height, sizeX, sizeX, fill, back)
-
-                case EnumShapes.ELLIPSE:
-                    pA = shape_ellipse(width, height, sizeX, sizeY, fill, back)
-
-                case EnumShapes.CIRCLE:
+                case EnumShapes.ELLIPSE | EnumShapes.CIRCLE:
                     pA = shape_ellipse(width, height, sizeX, sizeY, fill, back)
 
                 case EnumShapes.POLYGON:

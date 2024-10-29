@@ -60,6 +60,7 @@ class EnumScaleMode(Enum):
     FIT = 10
     ASPECT = 30
     ASPECT_SHORT = 35
+    RESIZE_MATTE = 40
 
 class EnumThreshold(Enum):
     BINARY = cv2.THRESH_BINARY
@@ -167,7 +168,7 @@ def image_flatten(image: List[TYPE_IMAGE], width:int=None, height:int=None,
 
     current = np.zeros((height, width, 4), dtype=np.uint8)
     for x in image:
-        if mode != EnumScaleMode.MATTE:
+        if mode != EnumScaleMode.MATTE and mode != EnumScaleMode.RESIZE_MATTE:
             x = image_scalefit(x, width, height, mode, sample)
         x = image_matte(x, (0,0,0,0), width, height)
         x = image_scalefit(x, width, height, EnumScaleMode.CROP, sample)
@@ -363,7 +364,7 @@ def image_scalefit(image: TYPE_IMAGE, width: int, height:int,
                 matte:TYPE_PIXEL=(0,0,0,0)) -> TYPE_IMAGE:
 
     match mode:
-        case EnumScaleMode.MATTE:
+        case EnumScaleMode.MATTE | EnumScaleMode.RESIZE_MATTE:
             image = image_matte(image, matte, width, height)
 
         case EnumScaleMode.ASPECT:
