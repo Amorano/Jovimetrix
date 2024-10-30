@@ -96,6 +96,11 @@ If those nodes have descriptions written in HTML or Markdown, they will be conve
 
 ## UPDATES
 
+**2024/10/29** @1.2.46:
+* `DELAY` node updated maintain ComfyUI zoom (fixes issue #61)
+* Added Enable/Disable for Screensaver mode in `DELAY` node (added option from issue #61)
+* Added `Resize Matte` for nodes with `MODE` operator
+
 **2024/10/16** @1.2.45:
 * ENUMs cleaned for all usages (someone send coffee bucks to bframes for the bug checks!)
 
