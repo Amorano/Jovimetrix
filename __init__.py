@@ -193,6 +193,7 @@ class Lexicon(metaclass=LexiconMeta):
     EDGE = 'EDGE', "Clip or Wrap the Canvas Edge"
     EDGE_X = 'EDGE_X', "Clip or Wrap the Canvas Edge"
     EDGE_Y = 'EDGE_Y', "Clip or Wrap the Canvas Edge"
+    ENABLE = 'ENABLE', "Enable or Disable"
     END = 'END', "End of the range"
     FALSE = '🇫', "False"
     FILEN = '💾', "File Name"
@@ -779,6 +780,7 @@ try:
     @PromptServer.instance.routes.post("/jovimetrix/message")
     async def jovimetrix_message_post(request) -> Any:
         json_data = await request.json()
+        print(json_data)
         if (did := json_data.get("id")) is not None:
             ComfyAPIMessage.MESSAGE[str(did)] = json_data
             return web.json_response(json_data)

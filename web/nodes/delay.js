@@ -25,6 +25,7 @@ app.registerExtension({
         nodeType.prototype.onNodeCreated = async function () {
             const me = onNodeCreated?.apply(this);
             const widget_time = this.widgets.find(w => w.name == '⏱');
+            const widget_enable = this.widgets.find(w => w.name == 'ENABLE');
             this.total_timeout = 0;
             let showing = false;
             let delay_modal;
@@ -34,9 +35,11 @@ app.registerExtension({
                 if (showing || event.detail.id != self.id) {
                     return;
                 }
-                if (widget_time.value > 5) {
+
+                if (widget_time.value > 4 && widget_enable.value == true) {
                     bubbles();
                 }
+
                 showing = true;
                 delay_modal = domShowModal(`
                     <div class="jov-modal-content">
@@ -64,7 +67,6 @@ app.registerExtension({
 
                 showing = false;
                 window.bubbles_alive = false;
-                // app.canvas.setDirty(true);
             }
 
             async function python_delay_update() {

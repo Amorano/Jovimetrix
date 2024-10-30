@@ -12,47 +12,33 @@ export const bewm = function(ex, ey) {
     const colors = [ '#ffc000', '#ff3b3b', '#ff8400' ];
     const bubbles = 25;
 
-    const explode = (x, y) => {
+    const explode = () => {
         let particles = [];
-        let ratio = window.devicePixelRatio;
-        let c = document.createElement('canvas');
-        let ctx = c.getContext('2d');
-
-        c.style.position = 'absolute';
-        c.style.left = (x - 100) + 'px';
-        c.style.top = (y - 100) + 'px';
-        c.style.pointerEvents = 'none';
-        c.style.width = 200 + 'px';
-        c.style.height = 200 + 'px';
-        c.style.zIndex = 100;
-        c.width = 200 * ratio;
-        c.height = 200 * ratio;
-        document.body.appendChild(c);
+        const ctx = app.canvas;
+        const canvas = ctx.getContext('2d');
+        ctx.style.pointerEvents = 'none';
 
         for(var i = 0; i < bubbles; i++) {
             particles.push({
-                x: c.width / 2,
-                y: c.height / 2,
+                x: canvas.width / 2,
+                y: canvas.height / 2,
                 radius: r(20, 30),
                 color: colors[Math.floor(Math.random() * colors.length)],
                 rotation: r(0, 360, true),
-                speed: r(8, 12),
+                speed: r(12, 16),
                 friction: 0.9,
                 opacity: r(0, 0.5, true),
                 yVel: 0,
-                gravity: 0.1
+                gravity: 0.15
             });
         }
-
-        render(particles, ctx, c.width, c.height);
-        setTimeout(() => document.body.removeChild(c), 1000);
+        render(particles, ctx);
     }
 
-    const render = (particles, ctx, width, height) => {
-        requestAnimationFrame(() => render(particles, ctx, width, height));
-        ctx.clearRect(0, 0, width, height);
+    const render = (particles, ctx) => {
+        requestAnimationFrame(() => render(particles, ctx));
 
-        particles.forEach((p, i) => {
+        particles.forEach((p) => {
             p.x += p.speed * Math.cos(p.rotation * Math.PI / 180);
             p.y += p.speed * Math.sin(p.rotation * Math.PI / 180);
 
@@ -70,8 +56,6 @@ export const bewm = function(ex, ey) {
             ctx.arc(p.x, p.y, p.radius, 0, 2 * Math.PI, false);
             ctx.fill();
         });
-
-        return ctx;
     }
 
     const r = (a, b, c) => parseFloat((Math.random() * ((a ? a : 1) - (b ? b : 0)) + (b ? b : 0)).toFixed(c ? c : 0));
@@ -85,14 +69,11 @@ export const bubbles = function() {
     let mouseX;
     let mouseY;
 
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-
     const particleArray = [];
     class Particle {
-        constructor(mx = 0, my = 0) {
-            this.x = Math.random() * canvas.width;
-            this.y = canvas.height;
+        constructor() {
+            this.x = Math.random() * canvas.width * 0.85;
+            this.y = canvas.height * 0.85;
             this.radius = Math.random() * 30;
             this.dx = Math.random() - 0.5
             this.dx = Math.sign(this.dx) * Math.random() * 1.27;
@@ -124,8 +105,6 @@ export const bubbles = function() {
         }
 
         move() {
-            // this.dx = (Math.random() - 0.5) * 2.27;
-            // this.dy = (Math.random() - 0.5) * 1.5;
             this.x = this.x + this.dx + (Math.random() - 0.5) * 0.5;
             this.y = this.y - this.dy + (Math.random() - 0.5) * 1.5;
 
@@ -158,16 +137,10 @@ export const bubbles = function() {
                 particleArray.push(particle);
             }
         } else {
-            canvas.removeEventListener("resize", handleResize);
             canvas.removeEventListener("mousemove", handleMouseMove);
             particleArray.length = 0; // Clear the particleArray
             return;
         }
-    };
-
-    const handleResize = () => {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
     };
 
     const handleMouseMove = (event) => {
@@ -175,8 +148,7 @@ export const bubbles = function() {
         mouseY = event.clientY;
     };
 
-    canvas.addEventListener("resize", handleResize);
-    // canvas.addEventListener("mousemove", handleMouseMove);
+    canvas.addEventListener("mousemove", handleMouseMove);
     animate();
 }
 

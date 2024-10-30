@@ -600,7 +600,7 @@ class DelayNode(JOVBaseNode):
     RETURN_NAMES = (Lexicon.PASS_OUT,)
     SORT = 240
     DESCRIPTION = """
-Introduce pauses in the workflow that accept an optional input to pass through and a timer parameter to specify the duration of the delay. If no timer is provided, it defaults to a maximum delay. During the delay, it periodically checks for messages to interrupt the delay. Once the delay is completed, it returns the input passed to it.
+Introduce pauses in the workflow that accept an optional input to pass through and a timer parameter to specify the duration of the delay. If no timer is provided, it defaults to a maximum delay. During the delay, it periodically checks for messages to interrupt the delay. Once the delay is completed, it returns the input passed to it. You can disable the screensaver with the `ENABLE` option
 """
 
     @classmethod
@@ -610,9 +610,10 @@ Introduce pauses in the workflow that accept an optional input to pass through a
             "optional": {
                 Lexicon.PASS_IN: (JOV_TYPE_ANY, {"default": None}),
                 Lexicon.TIMER: ("INT", {"default" : 0, "mij": -1}),
+                Lexicon.ENABLE: ("BOOLEAN", {"default": True, "tooltips":"Enable or disable the screensaver"})
             },
             "outputs": {
-                0: (Lexicon.PASS_OUT, {"tooltips":f"Pass through data when the delay ends"})
+                0: (Lexicon.PASS_OUT, {"tooltips":"Pass through data when the delay ends"})
             }
         })
         return Lexicon._parse(d, cls)
@@ -623,14 +624,17 @@ Introduce pauses in the workflow that accept an optional input to pass through a
             delay = JOV_DELAY_MAX
         if delay > JOV_DELAY_MIN:
             comfy_message(ident, "jovi-delay-user", {"id": ident, "timeout": delay})
+        # enable = parse_param(kw, Lexicon.ENABLE, EnumConvertType.BOOLEAN, True)
+
         step = 1
         pbar = ProgressBar(delay)
         while step <= delay:
             try:
                 data = ComfyAPIMessage.poll(ident, timeout=1)
-                if data.get('cmd', False):
-                    interrupt_processing(True)
-                    logger.warning(f"delay [cancelled] ({step}): {ident}")
+                if data.get('id', None) == ident:
+                    if data.get('cmd', False) == False:
+                        interrupt_processing(True)
+                        logger.warning(f"delay [cancelled] ({step}): {ident}")
                     break
             except TimedOutException as _:
                 if step % 10 == 0:
