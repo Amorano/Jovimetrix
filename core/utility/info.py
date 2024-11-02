@@ -85,7 +85,7 @@ Visualize data. It accepts various types of data, including images, text, and ot
                     ret = ""
                 else:
                     try:
-                        ret = json.dumps(val, indent=3)
+                        ret = json.dumps(val, indent=3, separators=(',', ': '))
                     except Exception as e:
                         ret = str(e)
 
@@ -107,14 +107,21 @@ Visualize data. It accepts various types of data, including images, text, and ot
                         ret = decode_tensor(val[0][0])
                         typ = "CONDITIONING"
                     else:
-                        ret = '\n\t' + '\n\t'.join(str(v) for v in val)
+                        if all(isinstance(i, list) for i in val):
+                            # Serialize each inner list on a separate line
+                            inner_lists = [json.dumps(i, separators=(',', ': ')) for i in val]
+                            ret = "[\n  " + ",\n  ".join(inner_lists) + "\n]"
+                        else:
+                            # Single list on one line
+                            ret = json.dumps(val, separators=(',', ': '))
+                            # ret = '\n\t' + '\n\t'.join(str(v) for v in val)
             elif isinstance(val, bool):
                 ret = "True" if val else "False"
             elif isinstance(val, torch.Tensor):
                 ret = decode_tensor(val)
             else:
                 ret = str(ret)
-            return f"({ret}) [{typ}]"
+            return f"{ret} {{{typ}}}"
 
         for x in o:
             output["ui"]["text"].append(__parse(x))
