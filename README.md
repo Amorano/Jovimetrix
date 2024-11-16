@@ -96,6 +96,10 @@ If those nodes have descriptions written in HTML or Markdown, they will be conve
 
 ## UPDATES
 
+**2024/11/16** @1.2.47:
+* Better list handling for `VALUE` node et. al.
+* Wave defaults for offset/phase adjusted to be zero (0)
+
 **2024/10/29** @1.2.46:
 * `DELAY` node updated maintain ComfyUI zoom (fixes issue #61)
 * Added Enable/Disable for Screensaver mode in `DELAY` node (added option from issue #61)
@@ -133,39 +137,6 @@ If those nodes have descriptions written in HTML or Markdown, they will be conve
 * new `GLSL INVERT` node
 * new `GLSL FILTER RANGE` node
 * Officially Supported Versions:
-  * ComfyUI 0.1.3+
-  * ComfyUI Frontend 1.2.30+
-
-**2024/09/09** @1.2.38:
-* `QUEUE`s will signal true (TRIGGER) on complete unless halted
-* doubled speed of midi reader when idle
-* reduced GLSL footprint for color conversions
-* * sorry if that blew someone's network!
-* new `GLSL COLOR PALETTE` node based on cosines
-* new `GLSL HSV ADJUST`
-* Officially Supported Versions:
-  * ComfyUI 0.1.3+
-  * ComfyUI Frontend 1.2.30+
-
-**2024/09/08** @1.2.36:
-* MIDI `MIDI FILTER` and `MIDI FILTER EZ` Nodes cleaned up
-* `COMPARISON` Node value conversion fixed
-* new `GLSL TRANSFORM` Node -- offset, rotate and tile
-* new `GLSL POSTERIZE` Node
-* new `GLSL WARP` Node -- warps image based on distortion and strength mask
-* new `GLSL CONICAL GRADIENT` Node
-* new `EDGE` mode for `GLSL shaders`: Clamp, Wrap, Mirror
-* `QUEUE TOO` Node updated to support batch
-* Officially Supported Versions:
-  * ComfyUI 0.1.3+
-  * ComfyUI Frontend 1.2.30+
-
-**2024/09/05** @1.2.35:
-* `VALUE` Node defaults fixed on save
-* `Colorizer` Panel is a undergoing major re-constructive surgery
-* Allow slice reversal in `ARRAY` Node
-* `GLSL` Nodes allow for `IMAGE or MASK` input for RGB(A)
-* NOTE ADJUSTED VERSION NUMBERS TO SHOW OLDEST COMFYUI and FRONTEND VERSIONS SUPPORTED:
   * ComfyUI 0.1.3+
   * ComfyUI Frontend 1.2.30+
 

@@ -10,6 +10,8 @@ from typing import Tuple, Union
 import numpy as np
 from numba import jit
 
+from loguru import logger
+
 __all__ = ["Ease", "Wave"]
 
 TYPE_NUMBER = Union[int|float|np.ndarray]
@@ -331,7 +333,7 @@ def wave_gaussian(phase: float, mean: float, amplitude: float, offset: float,
 def wave_op(op: EnumEase, phase: float, frequency: float, amplitude: float,
             offset: float, timestep: float, std_dev: float=1) -> np.ndarray:
 
-    op = op.lower()
+    op = op.name.lower()
     if (func := getattr(MODULE, f"wave_{op}", None)) is None:
         raise BadOperatorException(str(op))
     """

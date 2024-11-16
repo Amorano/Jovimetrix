@@ -266,9 +266,8 @@ Combine two input images using various blending modes, such as normal, screen, m
             if pA is None:
                 if pB is None:
                     if mask is None:
-                        images.append(img)
-                        pbar.update_absolute(idx)
-                        continue
+                        if mode != EnumScaleMode.MATTE:
+                            width, height = wihi
                     else:
                         height, width = mask.shape[:2]
                 else:

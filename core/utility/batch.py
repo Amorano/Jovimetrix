@@ -55,8 +55,10 @@ class ContainsAnyDict(dict):
 class ArrayNode(JOVBaseNode):
     NAME = "ARRAY (JOV) 📚"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = (JOV_TYPE_ANY, "INT", JOV_TYPE_ANY, "INT")
-    RETURN_NAMES = (Lexicon.ANY_OUT, Lexicon.LENGTH, Lexicon.LIST, Lexicon.LENGTH2)
+    INPUT_IS_LIST = True
+    RETURN_TYPES = (JOV_TYPE_ANY, "INT", JOV_TYPE_ANY, "INT", JOV_TYPE_ANY)
+    RETURN_NAMES = (Lexicon.ANY_OUT, Lexicon.LENGTH, Lexicon.LIST, Lexicon.LENGTH2, Lexicon.LIST)
+    OUTPUT_IS_LIST = (False, False, False, False, True)
     SORT = 50
     DESCRIPTION = """
 Processes a batch of data based on the selected mode, such as merging, picking, slicing, random selection, or indexing. Allows for flipping the order of processed items and dividing the data into chunks.
@@ -73,7 +75,7 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
                 Lexicon.STRING: ("STRING", {"default": "", "tooltips":"Comma separated list of indicies to export"}),
                 Lexicon.SEED: ("INT", {"default": 0, "mij": 0, "maj": sys.maxsize}),
                 Lexicon.COUNT: ("INT", {"default": 0, "mij": 0, "maj": sys.maxsize, "tooltips":"How many items to return"}),
-                Lexicon.FLIP: ("BOOLEAN", {"default": False, "tooltips":"invert the calculated output list"}),
+                Lexicon.FLIP: ("BOOLEAN", {"default": False, "tooltips":"reverse the calculated output list"}),
                 Lexicon.BATCH_CHUNK: ("INT", {"default": 0, "mij": 0,}),
             },
             "outputs": {
@@ -81,6 +83,7 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
                 1: (Lexicon.LENGTH, {"tooltips":"Length of output list"}),
                 2: (Lexicon.LIST, {"tooltips":"Full list"}),
                 3: (Lexicon.LENGTH2, {"tooltips":"Length of all input elements"}),
+                4: (Lexicon.LIST, {"tooltips":"The elements as a COMFYUI list output"}),
             }
         })
         return Lexicon._parse(d, cls)
@@ -137,10 +140,12 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
             logger.warning("no data for list")
             return None, 0, None, 0
 
-        data = full_list.copy()
+        print(full_list)
 
         if flip:
-            data = data[::-1]
+            full_list.reverse()
+
+        data = full_list.copy()
 
         if mode == EnumBatchMode.PICK:
             index = index if index < len(data) else -1
@@ -188,7 +193,7 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
 
         size = len(data)
         if output_is_image:
-            _, w, h = image_by_size(data)
+            # _, w, h = image_by_size(data)
             result = []
             for d in data:
                 d = tensor2cv(d)
@@ -209,7 +214,7 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
         if not output_is_image and len(data) == 1:
             data = data[0]
 
-        return data, size, full_list, len(full_list)
+        return data, size, full_list, len(full_list), data
 
 class QueueBaseNode(JOVBaseNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"

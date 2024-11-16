@@ -951,6 +951,7 @@ A timer and frame counter, emitting pulses or signals based on time intervals. I
 class ValueNode(JOVBaseNode):
     NAME = "VALUE (JOV) 🧬"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
+    INPUT_IS_LIST = True
     RETURN_TYPES = (JOV_TYPE_NUMBER, JOV_TYPE_NUMBER, JOV_TYPE_NUMBER, JOV_TYPE_NUMBER, JOV_TYPE_NUMBER,)
     RETURN_NAMES = (Lexicon.ANY_OUT, Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W)
     SORT = 5
@@ -999,7 +1000,7 @@ Supplies raw or default values for various data types, supporting vector input w
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[bool]:
-        raw = parse_param(kw, Lexicon.IN_A, EnumConvertType.ANY, [0])
+        raw = parse_param(kw, Lexicon.IN_A, EnumConvertType.ANY, [0], skip_list=True)
         r_x = parse_param(kw, Lexicon.X, EnumConvertType.FLOAT, None, -sys.maxsize, sys.maxsize)
         r_y = parse_param(kw, Lexicon.Y, EnumConvertType.FLOAT, None, -sys.maxsize, sys.maxsize)
         r_z = parse_param(kw, Lexicon.Z, EnumConvertType.FLOAT, None, -sys.maxsize, sys.maxsize)
@@ -1054,8 +1055,8 @@ Supplies raw or default values for various data types, supporting vector input w
                         else:
                             val[i] = random.randint(mn, mx)
 
-            extra = parse_value(val, typ, val) or [0]
-            ret = [val]
+            extra = parse_value(val, typ, val) or [0, 0, 0, 0]
+            ret = []
             ret.extend(extra)
             results.append(ret)
             pbar.update_absolute(idx)
@@ -1094,8 +1095,8 @@ Produce waveforms like sine, square, or sawtooth with adjustable frequency, ampl
         op = parse_param(kw, Lexicon.WAVE, EnumWave, EnumWave.SIN.name)
         freq = parse_param(kw, Lexicon.FREQ, EnumConvertType.FLOAT, 1, 0, sys.maxsize)
         amp = parse_param(kw, Lexicon.AMP, EnumConvertType.FLOAT, 1, 0, sys.maxsize)
-        phase = parse_param(kw, Lexicon.PHASE, EnumConvertType.FLOAT, 0, 1)
-        shift = parse_param(kw, Lexicon.OFFSET, EnumConvertType.FLOAT, 0, 1)
+        phase = parse_param(kw, Lexicon.PHASE, EnumConvertType.FLOAT, 0)
+        shift = parse_param(kw, Lexicon.OFFSET, EnumConvertType.FLOAT, 0)
         delta_time = parse_param(kw, Lexicon.TIME, EnumConvertType.FLOAT, 0, 0, sys.maxsize)
         invert = parse_param(kw, Lexicon.INVERT, EnumConvertType.BOOLEAN, False)
         abs = parse_param(kw, Lexicon.ABSOLUTE, EnumConvertType.BOOLEAN, False)
@@ -1103,10 +1104,10 @@ Produce waveforms like sine, square, or sawtooth with adjustable frequency, ampl
         params = list(zip_longest_fill(op, freq, amp, phase, shift, delta_time, invert, abs))
         pbar = ProgressBar(len(params))
         for idx, (op, freq, amp, phase, shift, delta_time, invert, abs) in enumerate(params):
-            val = wave_op(op, phase, freq, amp, shift, delta_time)
             # freq = 1. / freq
             if invert:
                 amp = 1. / val
+            val = wave_op(op, phase, freq, amp, shift, delta_time)
             if abs:
                 val = np.abs(val)
             val = max(-sys.maxsize, min(val, sys.maxsize))

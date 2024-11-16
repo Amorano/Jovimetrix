@@ -278,7 +278,7 @@ def parse_value(val:Any, typ:EnumConvertType, default: Any,
 
 def parse_param(data:dict, key:str, typ:EnumConvertType, default: Any,
                 clip_min: Optional[float]=None, clip_max: Optional[float]=None,
-                zero:int=0) -> List[Any]:
+                zero:int=0, skip_list=False) -> List[Any]:
     """Convenience because of the dictionary parameters.
     Convert list of values into a list of specified type.
     """
@@ -331,7 +331,10 @@ def parse_param(data:dict, key:str, typ:EnumConvertType, default: Any,
         if len(val) == 0:
             val = [None]
         elif isinstance(val, (tuple, set,)):
-            val = list(val)
+            if skip_list == False:
+                val = list(val)
+            else:
+                val = val[0][0]
     elif issubclass(type(val), (Enum,)):
         val = [str(val.name)]
 
