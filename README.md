@@ -96,6 +96,10 @@ If those nodes have descriptions written in HTML or Markdown, they will be conve
 
 ## UPDATES
 
+**2024/11/24** @1.2.48:
+* requirements update for OpenGL Accelerate
+* Fixed bad escape sequence in header in image/__init__
+
 **2024/11/16** @1.2.47:
 * Better list handling for `VALUE` node et. al.
 * Wave defaults for offset/phase adjusted to be zero (0)
