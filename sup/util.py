@@ -332,7 +332,7 @@ def parse_param(data:dict, key:str, typ:EnumConvertType, default: Any,
             val = [None]
         elif isinstance(val, (tuple, set,)):
             if skip_list == False:
-                val = list(val)
+                val = [val]
             else:
                 val = val[0][0]
     elif issubclass(type(val), (Enum,)):

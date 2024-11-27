@@ -1031,10 +1031,7 @@ Supplies raw or default values for various data types, supporting vector input w
 
             val = parse_value(raw, typ, default)
             val2 = parse_value(default2, typ, default2)
-            typ = EnumConvertType.VEC4 if typ in [EnumConvertType.VEC4, EnumConvertType.VEC3, \
-                                                EnumConvertType.VEC2, EnumConvertType.FLOAT] \
-                                                else EnumConvertType.VEC4INT
-            # logger.debug(val, val2)
+
             # check if set to randomize....
             self.UPDATE = False
             if seed != 0 and isinstance(val, (tuple, list,)) and isinstance(val2, (tuple, list,)):
@@ -1050,15 +1047,16 @@ Supplies raw or default values for various data types, supporting vector input w
                         if old_seed != seed:
                             random.seed(seed)
                             old_seed = seed
-                        if typ == EnumConvertType.VEC4:
+                        if typ in [EnumConvertType.VEC2, EnumConvertType.VEC3, EnumConvertType.VEC4]:
                             val[i] = mn + random.random() * (mx - mn)
                         else:
                             val[i] = random.randint(mn, mx)
 
-            extra = parse_value(val, typ, val) or [0, 0, 0, 0]
-            ret = []
-            ret.extend(extra)
-            results.append(ret)
+            out = parse_value(val, typ, val) or [0]
+            items = [0,0,0,0]
+            for i in range(len(out)):
+                items[i] = out[i]
+            results.append([out, *items])
             pbar.update_absolute(idx)
         if len(results) < 2:
             return results[0]

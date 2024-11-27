@@ -96,6 +96,9 @@ If those nodes have descriptions written in HTML or Markdown, they will be conve
 
 ## UPDATES
 
+**2024/11/26** @1.2.49:
+* cleaning up debug statements
+
 **2024/11/24** @1.2.48:
 * requirements update for OpenGL Accelerate
 * Fixed bad escape sequence in header in image/__init__
@@ -121,28 +124,6 @@ If those nodes have descriptions written in HTML or Markdown, they will be conve
 **2024/10/03** @1.2.42:
 * OpenGL support for macOS with Silicon processors and Linux with Arm64 CPU (aarch64)
 * Shout out to [BigCat88](https://github.com/bigcat88) for the PR to fix the above
-
-**2024/09/21** @1.2.41:
-* Colorizer panel ported to new frontend.
-* numerical bit conversion for Number fields, String fields (character bits) and Image fields (pixels on/off)
-* new `COLOR MEANS` node will generate color palettes of the top-k colors of an input
-* new `BIT SPLIT` node will turn inputs into streams of bits used for modulation and triggering of other inputs
-* Officially Supported Versions:
-  * ComfyUI 0.1.3+
-  * ComfyUI Frontend 1.2.40+
-
-**2024/09/18** @1.2.39:
-* `COMPARISON` node updated to support NONE for all inputs
-* Fixed bad inputs for IMAGE/MASK where they were compound use on slots
-* Cleaner API Message routes
-* new include system for GLSL shaders
-* GLSL: color, camera, const, curve, noise, sdf, shading and vector library supports
-* new `GLSL COLOR PALETTE` node based on cosines
-* new `GLSL INVERT` node
-* new `GLSL FILTER RANGE` node
-* Officially Supported Versions:
-  * ComfyUI 0.1.3+
-  * ComfyUI Frontend 1.2.30+
 
 # INSTALLATION
 

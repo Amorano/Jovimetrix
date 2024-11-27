@@ -140,8 +140,6 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
             logger.warning("no data for list")
             return None, 0, None, 0
 
-        print(full_list)
-
         if flip:
             full_list.reverse()
 

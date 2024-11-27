@@ -286,7 +286,6 @@ Combine two input images using various blending modes, such as normal, screen, m
                 pB = channel_solid(width, height, matte, chan=EnumImageType.BGRA)
             else:
                 pB = tensor2cv(pB)
-                print(pB.shape)
 
             if mask is not None:
                 mask = tensor2cv(mask)
