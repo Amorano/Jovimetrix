@@ -47,7 +47,6 @@ const VectorWidget = (app, inputName, options, initial, desc='') => {
     const label_center = label_full/2;
     /** @type {HTMLInputElement} */
     let picker;
-    let isDragging;
 
     widget.draw = function(ctx, node, width, Y, height) {
         if ((app.canvas.ds.scale < 0.50) || (!this.type.startsWith("VEC") && this.type != "COORD2D")) return;
@@ -122,16 +121,20 @@ const VectorWidget = (app, inputName, options, initial, desc='') => {
         widget.value[idx] = (precision == 0) ? Number(v) : parseFloat(v).toFixed(precision);
     }
 
-    /** @this: IWidget */
-    widget.mouse = function (e, pos, node) {
-        let delta = 0;
-        if (e.type == 'pointerdown' && isDragging === undefined) {
-            const x = pos[0] - label_full;
-            const size = Object.keys(this.value).length;
-            const element_width = (node.size[0] - label_full - widget_padding * 1.25) / size;
-            const index = Math.floor(x / element_width);
+    /** @todo ▶️, ⌨️, 😀 */
+    widget.onPointerDown = function (pointer, node, canvas) {
+        const e = pointer.eDown
+        const x = e.canvasX - node.pos[0] - label_full;
+        const size = Object.keys(this.value).length;
+        const element_width = (node.size[0] - label_full - widget_padding * 1.25) / size;
+        const index = Math.floor(x / element_width);
+        
+        pointer.onClick = (eUp) => {
+            const pos = [eUp.canvasX - node.pos[0], eUp.canvasY - node.pos[1]]
+            let isPrompt = false
+            
             if (index >= 0 && index < size) {
-                isDragging = { name: this.name, idx: index}
+                isPrompt = true
             } else if (this.options?.rgb) {
                 const rgba = Object.values(this?.value || []);
                 let color = colorRGB2Hex(rgba.slice(0, 3));
@@ -156,51 +159,48 @@ const VectorWidget = (app, inputName, options, initial, desc='') => {
                     picker.value = color;
                     picker.click();
                 } else if (x < 0 && rgba.length > 2) {
-                    const target = Object.values(rgba.map(item => 255 - item)).slice(0, 3);
+                    const target = Object.values(rgba.map((item) => 255 - item)).slice(0, 3);
                     this.value = Object.values(this.value);
                     this.value.splice(0, 3, ...target);
                 }
             }
-        }
+            if (!isPrompt) return
 
-        if (isDragging !== undefined && isDragging.idx > -1 && isDragging.name == this.name) {
-            const idx = isDragging.idx
             const old_value = { ...this.value };
-            if (e.type == 'pointermove' && e.deltaX) {
-                let v = parseFloat(this.value[idx]);
-                v += this.options.step * Math.sign(e.deltaX);
-                clamp(this, v, idx);
-            } else if (e.type == 'pointerup') {
-                isDragging = undefined
-                if (e.click_time < 150 && delta == 0) {
-                    const label = this.options?.label ? this.name + '➖' + this.options.label?.[idx] : this.name;
-                    LGraphCanvas.active_canvas.prompt(label, this.value[idx], function(v) {
-                        if (/^[0-9+\-*/()\s]+|\d+\.\d+$/.test(v)) {
-                            try {
-                                v = eval(v);
-                            } catch {
-                                // Suppressed exception
-                            }
-                        }
-                        if (this.value[idx] != v) {
-                            setTimeout(
-                                function () {
-                                    clamp(this, v, idx);
-                                    domInnerValueChange(node, pos, this, this.value, e);
-                                }.bind(this), 20)
-                        }
-                    }.bind(this), e);
-                }
+            const label = this.options?.label ? this.name + '➖' + this.options.label?.[index] : this.name;
 
-                if (old_value != this.value) {
+            LGraphCanvas.active_canvas.prompt(label, this.value[index], function(v) {
+                if (/^[0-9+\-*/()\s]+|\d+\.\d+$/.test(v)) {
+                    try {
+                        v = eval(v);
+                    } catch {
+                        // Suppressed exception
+                    }
+                }
+                if (this.value[index] != v) {
                     setTimeout(
                         function () {
-                            domInnerValueChange(node, pos, this, this.value, e)
+                            clamp(this, v, index);
+                            domInnerValueChange(node, pos, this, this.value, eUp);
                         }.bind(this), 20)
                 }
+            }.bind(this), eUp);
+
+            if (old_value != this.value) {
+                setTimeout(
+                    function () {
+                        domInnerValueChange(node, pos, this, this.value, e);
+                    }.bind(this), 20);
             }
         }
-        app.canvas.setDirty(true, true);
+
+        pointer.onDrag = (eMove) => {
+            if (!eMove.deltaX || !(index > -1)) return;
+
+            let v = parseFloat(this.value[index]);
+            v += this.options.step * Math.sign(eMove.deltaX);
+            clamp(this, v, index);
+        }
     }
 
     widget.serializeValue = async () => {
