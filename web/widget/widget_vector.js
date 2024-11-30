@@ -7,9 +7,11 @@ import { app } from "../../../scripts/app.js"
 import { widgetToInput, widgetToWidget } from '../util/util_widget.js'
 import { domInnerValueChange, colorHex2RGB, colorRGB2Hex } from '../util/util.js'
 import { $el } from "../../../scripts/ui.js"
+/** @import { IWidget, LGraphCanvas } from '../../types/litegraph/litegraph.d.ts' */
 
 const VectorWidget = (app, inputName, options, initial, desc='') => {
     const values = options[1]?.default || initial;
+    /** @type {IWidget} */
     const widget = {
         name: inputName,
         type: options[0],
@@ -43,6 +45,7 @@ const VectorWidget = (app, inputName, options, initial, desc='') => {
     const widget_padding = 30;
     const label_full = 72;
     const label_center = label_full/2;
+    /** @type {HTMLInputElement} */
     let picker;
     let isDragging;
 
@@ -119,6 +122,7 @@ const VectorWidget = (app, inputName, options, initial, desc='') => {
         widget.value[idx] = (precision == 0) ? Number(v) : parseFloat(v).toFixed(precision);
     }
 
+    /** @this: IWidget */
     widget.mouse = function (e, pos, node) {
         let delta = 0;
         if (e.type == 'pointerdown' && isDragging === undefined) {
