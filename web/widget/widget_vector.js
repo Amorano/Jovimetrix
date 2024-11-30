@@ -131,13 +131,13 @@ const VectorWidget = (app, inputName, options, initial, desc='') => {
         const size = Object.keys(this.value).length;
         const element_width = (node.size[0] - label_full - widget_padding * 1.25) / size;
         const index = Math.floor(x / element_width);
-        
+
         pointer.onClick = (eUp) => {
             if (index >= 0 && index < size) {
                 const pos = [eUp.canvasX - node.pos[0], eUp.canvasY - node.pos[1]]
                 const old_value = { ...this.value };
                 const label = this.options?.label ? this.name + '➖' + this.options.label?.[index] : this.name;
-    
+
                 LGraphCanvas.active_canvas.prompt(label, this.value[index], function(v) {
                     if (/^[0-9+\-*/()\s]+|\d+\.\d+$/.test(v)) {
                         try {
@@ -154,7 +154,7 @@ const VectorWidget = (app, inputName, options, initial, desc='') => {
                             }.bind(this), 20)
                     }
                 }.bind(this), eUp);
-    
+
                 if (old_value != this.value) {
                     setTimeout(
                         function () {
@@ -168,31 +168,33 @@ const VectorWidget = (app, inputName, options, initial, desc='') => {
 
             const rgba = Object.values(this?.value || []);
             const color = colorRGB2Hex(rgba.slice(0, 3));
-            if (index == size) {
-                if (!picker) {
-                    picker = $el("input", {
-                        type: "color",
-                        parent: document.body,
-                        style: {
-                            display: "none",
-                        },
-                    });
-                    picker.onchange = () => {
-                        if (picker.value) {
-                            this.value = colorHex2RGB(picker.value);
-                            if (rgba.length > 3) {
-                                this.value.push(rgba[3])
-                            }
-                        }
-                    };
-                }
-                picker.value = color;
-                picker.click();
-            } else if (x < 0 && rgba.length > 2) {
+
+            if (index != size && (x < 0 && rgba.length > 2)) {
                 const target = Object.values(rgba.map((item) => 255 - item)).slice(0, 3);
                 this.value = Object.values(this.value);
                 this.value.splice(0, 3, ...target);
+                return
             }
+
+            if (!picker) {
+                picker = $el("input", {
+                    type: "color",
+                    parent: document.body,
+                    style: {
+                        display: "none",
+                    },
+                });
+                picker.onchange = () => {
+                    if (picker.value) {
+                        this.value = colorHex2RGB(picker.value);
+                        if (rgba.length > 3) {
+                            this.value.push(rgba[3])
+                        }
+                    }
+                };
+            }
+            picker.value = color;
+            picker.click();
         }
 
         pointer.onDrag = (eMove) => {
