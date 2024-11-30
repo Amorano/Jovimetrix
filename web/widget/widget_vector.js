@@ -158,7 +158,7 @@ const VectorWidget = (app, inputName, options, initial, desc='') => {
                 if (old_value != this.value) {
                     setTimeout(
                         function () {
-                            domInnerValueChange(node, pos, this, this.value, e);
+                            domInnerValueChange(node, pos, this, this.value, eUp);
                         }.bind(this), 20);
                 }
 
