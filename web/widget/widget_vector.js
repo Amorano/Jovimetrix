@@ -121,7 +121,10 @@ const VectorWidget = (app, inputName, options, initial, desc='') => {
         widget.value[idx] = (precision == 0) ? Number(v) : parseFloat(v).toFixed(precision);
     }
 
-    /** @todo ▶️, ⌨️, 😀 */
+    /**
+     * @todo ▶️, 🖱️, 😀
+     * @this IWidget
+     */
     widget.onPointerDown = function (pointer, node, canvas) {
         const e = pointer.eDown
         const x = e.canvasX - node.pos[0] - label_full;
@@ -130,67 +133,65 @@ const VectorWidget = (app, inputName, options, initial, desc='') => {
         const index = Math.floor(x / element_width);
         
         pointer.onClick = (eUp) => {
-            const pos = [eUp.canvasX - node.pos[0], eUp.canvasY - node.pos[1]]
-            let isPrompt = false
-            
             if (index >= 0 && index < size) {
-                isPrompt = true
-            } else if (this.options?.rgb) {
-                const rgba = Object.values(this?.value || []);
-                let color = colorRGB2Hex(rgba.slice(0, 3));
-                if (index == size) {
-                    if (!picker) {
-                        picker = $el("input", {
-                            type: "color",
-                            parent: document.body,
-                            style: {
-                                display: "none",
-                            },
-                        });
-                        picker.onchange = () => {
-                            if (picker.value) {
-                                this.value = colorHex2RGB(picker.value);
-                                if (rgba.length > 3) {
-                                    this.value.push(rgba[3])
-                                }
-                            }
-                        };
+                const pos = [eUp.canvasX - node.pos[0], eUp.canvasY - node.pos[1]]
+                const old_value = { ...this.value };
+                const label = this.options?.label ? this.name + '➖' + this.options.label?.[index] : this.name;
+    
+                LGraphCanvas.active_canvas.prompt(label, this.value[index], function(v) {
+                    if (/^[0-9+\-*/()\s]+|\d+\.\d+$/.test(v)) {
+                        try {
+                            v = eval(v);
+                        } catch {
+                            // Suppressed exception
+                        }
                     }
-                    picker.value = color;
-                    picker.click();
-                } else if (x < 0 && rgba.length > 2) {
-                    const target = Object.values(rgba.map((item) => 255 - item)).slice(0, 3);
-                    this.value = Object.values(this.value);
-                    this.value.splice(0, 3, ...target);
-                }
-            }
-            if (!isPrompt) return
-
-            const old_value = { ...this.value };
-            const label = this.options?.label ? this.name + '➖' + this.options.label?.[index] : this.name;
-
-            LGraphCanvas.active_canvas.prompt(label, this.value[index], function(v) {
-                if (/^[0-9+\-*/()\s]+|\d+\.\d+$/.test(v)) {
-                    try {
-                        v = eval(v);
-                    } catch {
-                        // Suppressed exception
+                    if (this.value[index] != v) {
+                        setTimeout(
+                            function () {
+                                clamp(this, v, index);
+                                domInnerValueChange(node, pos, this, this.value, eUp);
+                            }.bind(this), 20)
                     }
-                }
-                if (this.value[index] != v) {
+                }.bind(this), eUp);
+    
+                if (old_value != this.value) {
                     setTimeout(
                         function () {
-                            clamp(this, v, index);
-                            domInnerValueChange(node, pos, this, this.value, eUp);
-                        }.bind(this), 20)
+                            domInnerValueChange(node, pos, this, this.value, e);
+                        }.bind(this), 20);
                 }
-            }.bind(this), eUp);
 
-            if (old_value != this.value) {
-                setTimeout(
-                    function () {
-                        domInnerValueChange(node, pos, this, this.value, e);
-                    }.bind(this), 20);
+                return
+            }
+            if (!this.options?.rgb) return;
+
+            const rgba = Object.values(this?.value || []);
+            const color = colorRGB2Hex(rgba.slice(0, 3));
+            if (index == size) {
+                if (!picker) {
+                    picker = $el("input", {
+                        type: "color",
+                        parent: document.body,
+                        style: {
+                            display: "none",
+                        },
+                    });
+                    picker.onchange = () => {
+                        if (picker.value) {
+                            this.value = colorHex2RGB(picker.value);
+                            if (rgba.length > 3) {
+                                this.value.push(rgba[3])
+                            }
+                        }
+                    };
+                }
+                picker.value = color;
+                picker.click();
+            } else if (x < 0 && rgba.length > 2) {
+                const target = Object.values(rgba.map((item) => 255 - item)).slice(0, 3);
+                this.value = Object.values(this.value);
+                this.value.splice(0, 3, ...target);
             }
         }
 
