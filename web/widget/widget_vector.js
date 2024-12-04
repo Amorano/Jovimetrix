@@ -181,20 +181,35 @@ const VectorWidget = (app, inputName, options, initial, desc='') => {
                     type: "color",
                     parent: document.body,
                     style: {
-                        display: "none",
+                        position: "fixed",
+                        left: `${eUp.clientX}px`,
+                        top: `${eUp.clientY}px`,
+                        height: "0px",
+                        width: "0px",
+                        padding: "0px",
+                        opacity: 0,
                     },
                 });
-                picker.onchange = () => {
-                    if (picker.value) {
-                        this.value = colorHex2RGB(picker.value);
-                        if (rgba.length > 3) {
-                            this.value.push(rgba[3])
-                        }
+                picker.addEventListener('blur', () => picker.style.display = 'none')
+                picker.addEventListener('input', () => {
+                    if (!picker.value) return;
+
+                    widget.value = colorHex2RGB(picker.value);
+                    if (rgba.length > 3) {
+                        widget.value.push(rgba[3]);
                     }
-                };
+                    canvas.setDirty(true)
+                })
+            } else {
+                picker.style.display = 'revert'
+                picker.style.left = `${eUp.clientX}px`
+                picker.style.top = `${eUp.clientY}px`
             }
             picker.value = color;
-            picker.click();
+            requestAnimationFrame(() => {
+                picker.showPicker()
+                picker.focus()
+            })
         }
 
         pointer.onDrag = (eMove) => {
