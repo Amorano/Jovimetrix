@@ -96,6 +96,10 @@ If those nodes have descriptions written in HTML or Markdown, they will be conve
 
 ## UPDATES
 
+**2024/12/04** @1.2.52:
+* vector widget updated to use new events by (webfiltered)[https://github.com/webfiltered]
+* colorpicker updated to pop in place (Chrome only atm) by (webfiltered)[https://github.com/webfiltered]
+
 **2024/12/04** @1.2.51:
 * attempt to fix string field length being shrunk `AKASHIC` node.
 * version up requirements for aiohttp, glfw, matplotlib, mss, pillow, pywin32, scikit-learn

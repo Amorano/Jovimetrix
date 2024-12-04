@@ -177,6 +177,10 @@ const VectorWidget = (app, inputName, options, initial, desc='') => {
             }
 
             if (!picker) {
+                // firefox?
+                //position: "absolute", // Use absolute positioning for consistency
+                //left: `${eUp.pageX}px`, // Use pageX for more consistent placement
+                //top: `${eUp.pageY}px`,
                 picker = $el("input", {
                     type: "color",
                     parent: document.body,
