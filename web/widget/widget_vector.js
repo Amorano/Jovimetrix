@@ -7,9 +7,11 @@ import { app } from "../../../scripts/app.js"
 import { widgetToInput, widgetToWidget } from '../util/util_widget.js'
 import { domInnerValueChange, colorHex2RGB, colorRGB2Hex } from '../util/util.js'
 import { $el } from "../../../scripts/ui.js"
+/** @import { IWidget, LGraphCanvas } from '../../types/litegraph/litegraph.d.ts' */
 
 const VectorWidget = (app, inputName, options, initial, desc='') => {
     const values = options[1]?.default || initial;
+    /** @type {IWidget} */
     const widget = {
         name: inputName,
         type: options[0],
@@ -43,8 +45,8 @@ const VectorWidget = (app, inputName, options, initial, desc='') => {
     const widget_padding = 30;
     const label_full = 72;
     const label_center = label_full/2;
+    /** @type {HTMLInputElement} */
     let picker;
-    let isDragging;
 
     widget.draw = function(ctx, node, width, Y, height) {
         if ((app.canvas.ds.scale < 0.50) || (!this.type.startsWith("VEC") && this.type != "COORD2D")) return;
@@ -119,84 +121,89 @@ const VectorWidget = (app, inputName, options, initial, desc='') => {
         widget.value[idx] = (precision == 0) ? Number(v) : parseFloat(v).toFixed(precision);
     }
 
-    widget.mouse = function (e, pos, node) {
-        let delta = 0;
-        if (e.type == 'pointerdown' && isDragging === undefined) {
-            const x = pos[0] - label_full;
-            const size = Object.keys(this.value).length;
-            const element_width = (node.size[0] - label_full - widget_padding * 1.25) / size;
-            const index = Math.floor(x / element_width);
-            if (index >= 0 && index < size) {
-                isDragging = { name: this.name, idx: index}
-            } else if (this.options?.rgb) {
-                const rgba = Object.values(this?.value || []);
-                let color = colorRGB2Hex(rgba.slice(0, 3));
-                if (index == size) {
-                    if (!picker) {
-                        picker = $el("input", {
-                            type: "color",
-                            parent: document.body,
-                            style: {
-                                display: "none",
-                            },
-                        });
-                        picker.onchange = () => {
-                            if (picker.value) {
-                                this.value = colorHex2RGB(picker.value);
-                                if (rgba.length > 3) {
-                                    this.value.push(rgba[3])
-                                }
-                            }
-                        };
-                    }
-                    picker.value = color;
-                    picker.click();
-                } else if (x < 0 && rgba.length > 2) {
-                    const target = Object.values(rgba.map(item => 255 - item)).slice(0, 3);
-                    this.value = Object.values(this.value);
-                    this.value.splice(0, 3, ...target);
-                }
-            }
-        }
+    /**
+     * @todo ▶️, 🖱️, 😀
+     * @this IWidget
+     */
+    widget.onPointerDown = function (pointer, node, canvas) {
+        const e = pointer.eDown
+        const x = e.canvasX - node.pos[0] - label_full;
+        const size = Object.keys(this.value).length;
+        const element_width = (node.size[0] - label_full - widget_padding * 1.25) / size;
+        const index = Math.floor(x / element_width);
 
-        if (isDragging !== undefined && isDragging.idx > -1 && isDragging.name == this.name) {
-            const idx = isDragging.idx
-            const old_value = { ...this.value };
-            if (e.type == 'pointermove' && e.deltaX) {
-                let v = parseFloat(this.value[idx]);
-                v += this.options.step * Math.sign(e.deltaX);
-                clamp(this, v, idx);
-            } else if (e.type == 'pointerup') {
-                isDragging = undefined
-                if (e.click_time < 150 && delta == 0) {
-                    const label = this.options?.label ? this.name + '➖' + this.options.label?.[idx] : this.name;
-                    LGraphCanvas.active_canvas.prompt(label, this.value[idx], function(v) {
-                        if (/^[0-9+\-*/()\s]+|\d+\.\d+$/.test(v)) {
-                            try {
-                                v = eval(v);
-                            } catch {
-                                // Suppressed exception
-                            }
+        pointer.onClick = (eUp) => {
+            if (index >= 0 && index < size) {
+                const pos = [eUp.canvasX - node.pos[0], eUp.canvasY - node.pos[1]]
+                const old_value = { ...this.value };
+                const label = this.options?.label ? this.name + '➖' + this.options.label?.[index] : this.name;
+
+                LGraphCanvas.active_canvas.prompt(label, this.value[index], function(v) {
+                    if (/^[0-9+\-*/()\s]+|\d+\.\d+$/.test(v)) {
+                        try {
+                            v = eval(v);
+                        } catch {
+                            // Suppressed exception
                         }
-                        if (this.value[idx] != v) {
-                            setTimeout(
-                                function () {
-                                    clamp(this, v, idx);
-                                    domInnerValueChange(node, pos, this, this.value, e);
-                                }.bind(this), 20)
-                        }
-                    }.bind(this), e);
-                }
+                    }
+                    if (this.value[index] != v) {
+                        setTimeout(
+                            function () {
+                                clamp(this, v, index);
+                                domInnerValueChange(node, pos, this, this.value, eUp);
+                            }.bind(this), 20)
+                    }
+                }.bind(this), eUp);
 
                 if (old_value != this.value) {
                     setTimeout(
                         function () {
-                            domInnerValueChange(node, pos, this, this.value, e)
-                        }.bind(this), 20)
+                            domInnerValueChange(node, pos, this, this.value, eUp);
+                        }.bind(this), 20);
                 }
+
+                return
             }
+            if (!this.options?.rgb) return;
+
+            const rgba = Object.values(this?.value || []);
+            const color = colorRGB2Hex(rgba.slice(0, 3));
+
+            if (index != size && (x < 0 && rgba.length > 2)) {
+                const target = Object.values(rgba.map((item) => 255 - item)).slice(0, 3);
+                this.value = Object.values(this.value);
+                this.value.splice(0, 3, ...target);
+                return
+            }
+
+            if (!picker) {
+                picker = $el("input", {
+                    type: "color",
+                    parent: document.body,
+                    style: {
+                        display: "none",
+                    },
+                });
+                picker.onchange = () => {
+                    if (picker.value) {
+                        this.value = colorHex2RGB(picker.value);
+                        if (rgba.length > 3) {
+                            this.value.push(rgba[3])
+                        }
+                    }
+                };
+            }
+            picker.value = color;
+            picker.click();
         }
-        app.canvas.setDirty(true, true);
+
+        pointer.onDrag = (eMove) => {
+            if (!eMove.deltaX || !(index > -1)) return;
+
+            let v = parseFloat(this.value[index]);
+            v += this.options.step * Math.sign(eMove.deltaX);
+            clamp(this, v, index);
+        }
     }
 
     widget.serializeValue = async () => {
