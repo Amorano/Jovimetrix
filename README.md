@@ -96,6 +96,11 @@ If those nodes have descriptions written in HTML or Markdown, they will be conve
 
 ## UPDATES
 
+**2024/12/03** @1.2.50:
+* parse_param updated for GLSL nodes
+* bug: GLSL nodes were not parsing LIST as an animation LIST
+* removed `skip_list` mechanism for parameters
+
 **2024/11/26** @1.2.49:
 * cleaning up debug statements
 

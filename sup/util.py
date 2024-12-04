@@ -278,17 +278,17 @@ def parse_value(val:Any, typ:EnumConvertType, default: Any,
 
 def parse_param(data:dict, key:str, typ:EnumConvertType, default: Any,
                 clip_min: Optional[float]=None, clip_max: Optional[float]=None,
-                zero:int=0, skip_list=False) -> List[Any]:
+                zero:int=0) -> List[Any]:
     """Convenience because of the dictionary parameters.
     Convert list of values into a list of specified type.
     """
     val = data.get(key, default)
     if typ == EnumConvertType.ANY:
-        if isinstance(val, (list,)):
-            val = tuple([val])
-        elif val is None:
+        if val is None:
             val = [default]
-        #return val
+            return val
+        elif isinstance(val, (list,)):
+            val = val[0]
 
     if isinstance(val, (str,)):
         try: val = json.loads(val.replace("'", '"'))
@@ -328,13 +328,8 @@ def parse_param(data:dict, key:str, typ:EnumConvertType, default: Any,
         else:
             val = [t.unsqueeze(-1) for t in val]
     elif isinstance(val, (list, tuple, set)):
-        if len(val) == 0:
-            val = [None]
-        elif isinstance(val, (tuple, set,)):
-            if skip_list == False:
-                val = [val]
-            else:
-                val = val[0][0]
+        if isinstance(val, (tuple, set,)):
+            val = list(val)
     elif issubclass(type(val), (Enum,)):
         val = [str(val.name)]
 

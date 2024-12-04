@@ -147,6 +147,8 @@ class GLSLNodeBase(JOVImageNode):
                     var = [image_convert(tensor2cv(v), 4) for v in var]
                     if firstImage is None:
                         firstImage = var[0]
+                elif isinstance(var, (list, tuple,)):
+                    batch = max(batch, len(var))
 
                 variables[k] = var if isinstance(var, (list, tuple,)) else [var]
 

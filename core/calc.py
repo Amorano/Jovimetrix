@@ -1000,7 +1000,7 @@ Supplies raw or default values for various data types, supporting vector input w
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[bool]:
-        raw = parse_param(kw, Lexicon.IN_A, EnumConvertType.ANY, [0], skip_list=True)
+        raw = parse_param(kw, Lexicon.IN_A, EnumConvertType.ANY, 0)
         r_x = parse_param(kw, Lexicon.X, EnumConvertType.FLOAT, None, -sys.maxsize, sys.maxsize)
         r_y = parse_param(kw, Lexicon.Y, EnumConvertType.FLOAT, None, -sys.maxsize, sys.maxsize)
         r_z = parse_param(kw, Lexicon.Z, EnumConvertType.FLOAT, None, -sys.maxsize, sys.maxsize)
@@ -1052,10 +1052,13 @@ Supplies raw or default values for various data types, supporting vector input w
                         else:
                             val[i] = random.randint(mn, mx)
 
-            out = parse_value(val, typ, val) or [0]
-            items = [0,0,0,0]
-            for i in range(len(out)):
-                items[i] = out[i]
+            out = parse_value(val, typ, val) or 0.
+            items = [0.,0.,0.,0.]
+            if not isinstance(out, (list, tuple,)):
+                items[0] = out
+            else:
+                for i in range(len(out)):
+                    items[i] = out[i]
             results.append([out, *items])
             pbar.update_absolute(idx)
         if len(results) < 2:
@@ -1091,11 +1094,11 @@ Produce waveforms like sine, square, or sawtooth with adjustable frequency, ampl
 
     def run(self, **kw) -> Tuple[float, int]:
         op = parse_param(kw, Lexicon.WAVE, EnumWave, EnumWave.SIN.name)
-        freq = parse_param(kw, Lexicon.FREQ, EnumConvertType.FLOAT, 1, 0, sys.maxsize)
-        amp = parse_param(kw, Lexicon.AMP, EnumConvertType.FLOAT, 1, 0, sys.maxsize)
-        phase = parse_param(kw, Lexicon.PHASE, EnumConvertType.FLOAT, 0)
-        shift = parse_param(kw, Lexicon.OFFSET, EnumConvertType.FLOAT, 0)
-        delta_time = parse_param(kw, Lexicon.TIME, EnumConvertType.FLOAT, 0, 0, sys.maxsize)
+        freq = parse_param(kw, Lexicon.FREQ, EnumConvertType.FLOAT, 1., 0.000001, sys.maxsize)
+        amp = parse_param(kw, Lexicon.AMP, EnumConvertType.FLOAT, 1., 0., sys.maxsize)
+        phase = parse_param(kw, Lexicon.PHASE, EnumConvertType.FLOAT, 0.)
+        shift = parse_param(kw, Lexicon.OFFSET, EnumConvertType.FLOAT, 0.)
+        delta_time = parse_param(kw, Lexicon.TIME, EnumConvertType.FLOAT, 0., 0., sys.maxsize)
         invert = parse_param(kw, Lexicon.INVERT, EnumConvertType.BOOLEAN, False)
         abs = parse_param(kw, Lexicon.ABSOLUTE, EnumConvertType.BOOLEAN, False)
         results = []
@@ -1112,7 +1115,8 @@ Produce waveforms like sine, square, or sawtooth with adjustable frequency, ampl
             results.append([val, int(val)])
             pbar.update_absolute(idx)
         return *list(zip(*results)),
-        # return [list(x) for x in (zip(*results))]
+        # results = [list(x) for x in (zip(*results))]
+        return results
 
 '''
 class ParameterNode(JOVBaseNode):
