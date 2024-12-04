@@ -96,6 +96,10 @@ If those nodes have descriptions written in HTML or Markdown, they will be conve
 
 ## UPDATES
 
+**2024/12/04** @1.2.51:
+* attempt to fix string field length being shrunk `AKASHIC` node.
+* version up requirements for aiohttp, glfw, matplotlib, mss, pillow, pywin32, scikit-learn
+
 **2024/12/03** @1.2.50:
 * parse_param updated for GLSL nodes
 * bug: GLSL nodes were not parsing LIST as an animation LIST
@@ -119,16 +123,6 @@ If those nodes have descriptions written in HTML or Markdown, they will be conve
 
 **2024/10/16** @1.2.45:
 * ENUMs cleaned for all usages (someone send coffee bucks to bframes for the bug checks!)
-
-**2024/10/14** @1.2.44:
-* Updated MIDI to use new ENUMs (thanks for the bug report bframes!)
-
-**2024/10/13** @1.2.43:
-* Attempt to patch MacOS for STREAMREADER to capture windows (ref: [Issue 60](https://github.com/Amorano/Jovimetrix/issues/60))
-
-**2024/10/03** @1.2.42:
-* OpenGL support for macOS with Silicon processors and Linux with Arm64 CPU (aarch64)
-* Shout out to [BigCat88](https://github.com/bigcat88) for the PR to fix the above
 
 # INSTALLATION
 

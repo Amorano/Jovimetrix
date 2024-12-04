@@ -30,7 +30,7 @@ app.registerExtension({
                     },
                 ], app).widget;
             this.message.value = "";
-            //this.message.computeSize = () => [0, this.widgets.length * LiteGraph.NODE_TITLE_HEIGHT * 2];
+            this.message.computeSize = () => [0, this.widgets.length * LiteGraph.NODE_TITLE_HEIGHT * 2];
             return me;
         }
 
