@@ -40,9 +40,9 @@ export const nodeCleanup = (node) => {
 export function nodeFitHeight(node) {
     const size_old = node.size;
     node.computeSize();
-    node.setDirtyCanvas(true, true);
-    app.graph.setDirtyCanvas(true, true);
     node.setSize([Math.max(size_old[0], node.size[0]), Math.min(size_old[1], node.size[1])]);
+    node.setDirtyCanvas(!0, !1);
+    app.graph.setDirtyCanvas(!0, !1);
 }
 
 /**
@@ -140,7 +140,7 @@ export function nodeAddDynamic(nodeType, prefix, dynamic_type='*', index_start=0
         if (refresh) {
             clean_inputs(this);
         }
-        nodeFitHeight(this);
+        // nodeFitHeight(this);
         return me;
     }
 }

@@ -11,7 +11,7 @@ mss>=10.0.0
 numba>=0.60.0
 numpy>=1.26.4,<2.0.0
 opencv-contrib-python>=4.10.0.84
-Pillow>=11.0.0
+Pillow>=10.2.0
 PyOpenGL>=3.1.7
 PyOpenGL-accelerate>=3.1.7; platform_system=="Windows"
 pywin32>=308; platform_system=="Windows"
