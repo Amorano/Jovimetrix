@@ -3,7 +3,6 @@ Jovimetrix - http://www.github.com/amorano/jovimetrix
 Calculation
 """
 
-import os
 import sys
 import math
 import random
@@ -17,10 +16,9 @@ from scipy.special import gamma
 from loguru import logger
 
 from comfy.utils import ProgressBar
-from nodes import interrupt_processing
 
 from Jovimetrix import JOV_TYPE_ANY, JOV_TYPE_FULL, JOV_TYPE_NUMBER, \
-    JOV_TYPE_VECTOR, Lexicon, JOVBaseNode, ComfyAPIMessage, TimedOutException, \
+    JOV_TYPE_VECTOR, Lexicon, JOVBaseNode, \
     comfy_message, deep_merge, parse_reset
 
 from Jovimetrix.sup.util import EnumConvertType, EnumSwizzle, parse_dynamic, \
@@ -31,17 +29,6 @@ from Jovimetrix.sup.anim import EnumWave, EnumEase, ease_op, wave_op
 # ==============================================================================
 
 JOV_CATEGORY = "CALC"
-
-# min amount of time before showing the cancel dialog
-JOV_DELAY_MIN = 5
-try: JOV_DELAY_MIN = int(os.getenv("JOV_DELAY_MIN", JOV_DELAY_MIN))
-except: pass
-JOV_DELAY_MIN = max(1, JOV_DELAY_MIN)
-
-# max 10 minutes to start
-JOV_DELAY_MAX = 600
-try: JOV_DELAY_MAX = int(os.getenv("JOV_DELAY_MAX", JOV_DELAY_MAX))
-except: pass
 
 # ==============================================================================
 # === LAMBDA ===
@@ -592,56 +579,6 @@ Evaluates two inputs (A and B) with a specified comparison operators and optiona
         else:
             outs = list(outs)
         return outs, *vals,
-
-class DelayNode(JOVBaseNode):
-    NAME = "DELAY (JOV) ✋🏽"
-    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = (JOV_TYPE_ANY,)
-    RETURN_NAMES = (Lexicon.PASS_OUT,)
-    SORT = 240
-    DESCRIPTION = """
-Introduce pauses in the workflow that accept an optional input to pass through and a timer parameter to specify the duration of the delay. If no timer is provided, it defaults to a maximum delay. During the delay, it periodically checks for messages to interrupt the delay. Once the delay is completed, it returns the input passed to it. You can disable the screensaver with the `ENABLE` option
-"""
-
-    @classmethod
-    def INPUT_TYPES(cls) -> dict:
-        d = super().INPUT_TYPES()
-        d = deep_merge(d, {
-            "optional": {
-                Lexicon.PASS_IN: (JOV_TYPE_ANY, {"default": None}),
-                Lexicon.TIMER: ("INT", {"default" : 0, "mij": -1}),
-                Lexicon.ENABLE: ("BOOLEAN", {"default": True, "tooltips":"Enable or disable the screensaver"})
-            },
-            "outputs": {
-                0: (Lexicon.PASS_OUT, {"tooltips":"Pass through data when the delay ends"})
-            }
-        })
-        return Lexicon._parse(d, cls)
-
-    def run(self, ident, **kw) -> Tuple[Any]:
-        delay = parse_param(kw, Lexicon.TIMER, EnumConvertType.INT, -1, 0, JOV_DELAY_MAX)[0]
-        if delay < 0:
-            delay = JOV_DELAY_MAX
-        if delay > JOV_DELAY_MIN:
-            comfy_message(ident, "jovi-delay-user", {"id": ident, "timeout": delay})
-        # enable = parse_param(kw, Lexicon.ENABLE, EnumConvertType.BOOLEAN, True)
-
-        step = 1
-        pbar = ProgressBar(delay)
-        while step <= delay:
-            try:
-                data = ComfyAPIMessage.poll(ident, timeout=1)
-                if data.get('id', None) == ident:
-                    if data.get('cmd', False) == False:
-                        interrupt_processing(True)
-                        logger.warning(f"delay [cancelled] ({step}): {ident}")
-                    break
-            except TimedOutException as _:
-                if step % 10 == 0:
-                    logger.info(f"delay [continue] ({step}): {ident}")
-            pbar.update_absolute(step)
-            step += 1
-        return kw[Lexicon.PASS_IN],
 
 class LerpNode(JOVBaseNode):
     NAME = "LERP (JOV) 🔰"

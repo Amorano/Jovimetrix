@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 
 from loguru import logger
 
-from Jovimetrix import JOV_TYPE_ANY, JOV_TYPE_IMAGE, DynamicInputType, \
+from Jovimetrix import JOV_TYPE_ANY, JOV_TYPE_IMAGE, \
     Lexicon, JOVBaseNode, deep_merge, parse_reset
 
 from Jovimetrix.sup.util import EnumConvertType, decode_tensor, parse_dynamic, \
@@ -233,64 +233,3 @@ Exports and Displays immediate information about images.
             count, height, width = image.shape
             cc = 1
         return count, width, height, cc, (width, height), (width, height, cc)
-
-class Passthru(JOVBaseNode):
-    NAME = "PASSTHRU (JOV) 🚌"
-    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = ()
-    RETURN_NAMES = ()
-    SORT = 860
-    DESCRIPTION = """
-Passes the data into python so it can be probed.
-"""
-    OUTPUT_NODE = True
-
-    @classmethod
-    def INPUT_TYPES(cls) -> dict:
-        d = super().INPUT_TYPES()
-        d = deep_merge(d, {
-            "optional": {
-                Lexicon.UNKNOWN: (JOV_TYPE_ANY, {"default": None, "tooltips":"Pass through data."}),
-            }
-        })
-        return Lexicon._parse(d, cls)
-
-    def run(self, **kw) -> Tuple[Any, ...]:
-        inout = parse_param(kw, Lexicon.UNKNOWN, EnumConvertType.ANY, [None])
-        for x in inout:
-            logger.info(f"{type(x)}")
-            # logger.info(dir(x))
-        return ()
-
-class RouteNode(JOVBaseNode):
-    NAME = "ROUTE (JOV) 🚌"
-    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = ("BUS",) + (JOV_TYPE_ANY,) * 127
-    RETURN_NAMES = (Lexicon.ROUTE,)
-    SORT = 850
-    DESCRIPTION = """
-Routes the input data from the optional input ports to the output port, preserving the order of inputs. The `PASS_IN` optional input is directly passed through to the output, while other optional inputs are collected and returned as tuples, preserving the order of insertion.
-"""
-
-    @classmethod
-    def INPUT_TYPES(cls) -> dict:
-        d = super().INPUT_TYPES()
-        d = deep_merge(d, {
-            "optional": DynamicInputType(JOV_TYPE_ANY),
-            """
-            "optional": {
-                Lexicon.ROUTE: ("BUS", {"default": None, "tooltips":"Pass through another route node to pre-populate the outputs."}),
-            },
-            """
-            "outputs": {
-                0: (Lexicon.ROUTE, {"tooltips":"Pass through for Route node"})
-            }
-        })
-        return Lexicon._parse(d, cls)
-
-    def run(self, **kw) -> Tuple[Any, ...]:
-        inout = parse_param(kw, Lexicon.ROUTE, EnumConvertType.ANY, [None])
-        vars = kw.copy()
-        vars.pop(Lexicon.ROUTE, None)
-        vars.pop('ident', None)
-        return inout, *vars.values(),

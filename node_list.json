@@ -39,7 +39,6 @@
     "MIDI READER (JOV) \ud83c\udfb9": "Captures MIDI messages from an external MIDI device or controller",
     "OP BINARY (JOV) \ud83c\udf1f": "Execute binary operations like addition, subtraction, multiplication, division, and bitwise operations on input values, supporting various data types and vector sizes",
     "OP UNARY (JOV) \ud83c\udfb2": "Perform single function operations like absolute value, mean, median, mode, magnitude, normalization, maximum, or minimum on input values",
-    "PASSTHRU (JOV) \ud83d\ude8c": "Passes the data into python so it can be probed",
     "PIXEL MERGE (JOV) \ud83e\udec2": "Combines individual color channels (red, green, blue) along with an optional mask channel to create a composite image",
     "PIXEL SPLIT (JOV) \ud83d\udc94": "Takes an input image and splits it into its individual color channels (red, green, blue), along with a mask channel",
     "PIXEL SWAP (JOV) \ud83d\udd03": "Swap pixel values between two input images based on specified channel swizzle operations",

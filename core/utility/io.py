@@ -7,7 +7,7 @@ import os
 import json
 from uuid import uuid4
 from pathlib import Path
-from typing import Any
+from typing import Any, Tuple
 
 import torch
 import numpy as np
@@ -18,8 +18,11 @@ from loguru import logger
 
 from comfy.utils import ProgressBar
 from folder_paths import get_output_directory
+from nodes import interrupt_processing
 
-from Jovimetrix import JOV_TYPE_IMAGE, Lexicon, JOVBaseNode, deep_merge
+from Jovimetrix import JOV_TYPE_ANY, JOV_TYPE_IMAGE, Lexicon, JOVBaseNode, \
+    ComfyAPIMessage, TimedOutException, DynamicInputType, \
+    comfy_message, deep_merge
 
 from Jovimetrix.sup.util import EnumConvertType, path_next, parse_param, \
     zip_longest_fill
@@ -29,6 +32,17 @@ from Jovimetrix.sup.image import tensor2cv, tensor2pil
 # ==============================================================================
 
 JOV_CATEGORY = "UTILITY"
+
+# min amount of time before showing the cancel dialog
+JOV_DELAY_MIN = 5
+try: JOV_DELAY_MIN = int(os.getenv("JOV_DELAY_MIN", JOV_DELAY_MIN))
+except: pass
+JOV_DELAY_MIN = max(1, JOV_DELAY_MIN)
+
+# max 10 minutes to start
+JOV_DELAY_MAX = 600
+try: JOV_DELAY_MAX = int(os.getenv("JOV_DELAY_MAX", JOV_DELAY_MAX))
+except: pass
 
 FORMATS = ["gif", "png", "jpg"]
 if (JOV_GIFSKI := os.getenv("JOV_GIFSKI", None)) is not None:
@@ -42,6 +56,56 @@ else:
     logger.warning("no gifski support")
 
 # ==============================================================================
+
+class DelayNode(JOVBaseNode):
+    NAME = "DELAY (JOV) ✋🏽"
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
+    RETURN_TYPES = (JOV_TYPE_ANY,)
+    RETURN_NAMES = (Lexicon.PASS_OUT,)
+    SORT = 240
+    DESCRIPTION = """
+Introduce pauses in the workflow that accept an optional input to pass through and a timer parameter to specify the duration of the delay. If no timer is provided, it defaults to a maximum delay. During the delay, it periodically checks for messages to interrupt the delay. Once the delay is completed, it returns the input passed to it. You can disable the screensaver with the `ENABLE` option
+"""
+
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        d = super().INPUT_TYPES()
+        d = deep_merge(d, {
+            "optional": {
+                Lexicon.PASS_IN: (JOV_TYPE_ANY, {"default": None}),
+                Lexicon.TIMER: ("INT", {"default" : 0, "mij": -1}),
+                Lexicon.ENABLE: ("BOOLEAN", {"default": True, "tooltips":"Enable or disable the screensaver"})
+            },
+            "outputs": {
+                0: (Lexicon.PASS_OUT, {"tooltips":"Pass through data when the delay ends"})
+            }
+        })
+        return Lexicon._parse(d, cls)
+
+    def run(self, ident, **kw) -> Tuple[Any]:
+        delay = parse_param(kw, Lexicon.TIMER, EnumConvertType.INT, -1, 0, JOV_DELAY_MAX)[0]
+        if delay < 0:
+            delay = JOV_DELAY_MAX
+        if delay > JOV_DELAY_MIN:
+            comfy_message(ident, "jovi-delay-user", {"id": ident, "timeout": delay})
+        # enable = parse_param(kw, Lexicon.ENABLE, EnumConvertType.BOOLEAN, True)
+
+        step = 1
+        pbar = ProgressBar(delay)
+        while step <= delay:
+            try:
+                data = ComfyAPIMessage.poll(ident, timeout=1)
+                if data.get('id', None) == ident:
+                    if data.get('cmd', False) == False:
+                        interrupt_processing(True)
+                        logger.warning(f"delay [cancelled] ({step}): {ident}")
+                    break
+            except TimedOutException as _:
+                if step % 10 == 0:
+                    logger.info(f"delay [continue] ({step}): {ident}")
+            pbar.update_absolute(step)
+            step += 1
+        return kw[Lexicon.PASS_IN],
 
 class ExportNode(JOVBaseNode):
     NAME = "EXPORT (JOV) 📽"
@@ -139,6 +203,39 @@ Responsible for saving images or animations to disk. It supports various output 
             for img in images:
                 img.save(output(format), optimize=optimize)
         return ()
+
+class RouteNode(JOVBaseNode):
+    NAME = "ROUTE (JOV) 🚌"
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
+    RETURN_TYPES = ("BUS",) + (JOV_TYPE_ANY,) * 127
+    RETURN_NAMES = (Lexicon.ROUTE,)
+    SORT = 850
+    DESCRIPTION = """
+Routes the input data from the optional input ports to the output port, preserving the order of inputs. The `PASS_IN` optional input is directly passed through to the output, while other optional inputs are collected and returned as tuples, preserving the order of insertion.
+"""
+
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        d = super().INPUT_TYPES()
+        d = deep_merge(d, {
+            "optional": DynamicInputType(JOV_TYPE_ANY),
+            """
+            "optional": {
+                Lexicon.ROUTE: ("BUS", {"default": None, "tooltips":"Pass through another route node to pre-populate the outputs."}),
+            },
+            """
+            "outputs": {
+                0: (Lexicon.ROUTE, {"tooltips":"Pass through for Route node"})
+            }
+        })
+        return Lexicon._parse(d, cls)
+
+    def run(self, **kw) -> Tuple[Any, ...]:
+        inout = parse_param(kw, Lexicon.ROUTE, EnumConvertType.ANY, [None])
+        vars = kw.copy()
+        vars.pop(Lexicon.ROUTE, None)
+        vars.pop('ident', None)
+        return inout, *vars.values(),
 
 class SaveOutput(JOVBaseNode):
     NAME = "SAVE OUTPUT (JOV) 💾"

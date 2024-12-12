@@ -11,7 +11,7 @@ from io import BytesIO
 import math
 import base64
 from enum import Enum
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 import cv2
 import torch
@@ -45,9 +45,9 @@ TYPE_iRGBA = Tuple[int, int, int, int]
 TYPE_fRGB  = Tuple[float, float, float]
 TYPE_fRGBA = Tuple[float, float, float, float]
 
-TYPE_PIXEL = int | float | TYPE_iRGB | TYPE_iRGBA | TYPE_fRGB | TYPE_fRGBA
-TYPE_IMAGE = np.ndarray | torch.Tensor
-TYPE_VECTOR = TYPE_IMAGE | TYPE_PIXEL
+TYPE_PIXEL = Union[int, float, TYPE_iRGB, TYPE_iRGBA, TYPE_fRGB, TYPE_fRGBA]
+TYPE_IMAGE = Union[np.ndarray, torch.Tensor]
+TYPE_VECTOR = Union[TYPE_IMAGE, TYPE_PIXEL]
 
 # ==============================================================================
 # === ENUMERATION ===
