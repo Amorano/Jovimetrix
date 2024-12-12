@@ -95,17 +95,17 @@ export function widgetHide(node, widget, suffix = '') {
     widget.computeSize = () => [0, -4];
 
     widget.origSerializeValue = widget.serializeValue;
-    widget.serializeValue = () => {
-		// Prevent serializing the widget if we have no input linked
-		if (!node.inputs) {
-			return undefined;
-		}
+    widget.serializeValue = async () => {
+        // Prevent serializing the widget if we have no input linked
+        if (!node.inputs) {
+            return undefined;
+        }
 
-		let node_input = node.inputs.find((i) => i.widget?.name == widget.name);
-		if (!node_input || !node_input.link) {
-			return undefined;
-		}
-		return widget.origSerializeValue ? widget.origSerializeValue() : widget.value;
+        let node_input = node.inputs.find((i) => i.widget?.name == widget.name);
+        if (!node_input || !node_input.link) {
+            return undefined;
+        }
+        return widget.origSerializeValue ? widget.origSerializeValue() : widget.value;
     }
 
     // Hide any linked widgets, e.g. seed+seedControl
@@ -125,8 +125,10 @@ export function widgetShow(widget) {
     widget.computeSize = widget.origComputeSize;
     delete widget.origComputeSize;
 
-    widget.serializeValue = widget.origSerializeValue;
-    delete widget.origSerializeValue;
+    if (widget.origSerializeValue) {
+        widget.serializeValue = widget.origSerializeValue;
+        delete widget.origSerializeValue;
+    }
 
     widget.hidden = false;
     if (widget?.linkedWidgets) {

@@ -217,17 +217,15 @@ Routes the input data from the optional input ports to the output port, preservi
     @classmethod
     def INPUT_TYPES(cls) -> dict:
         d = super().INPUT_TYPES()
-        d = deep_merge(d, {
-            "optional": DynamicInputType(JOV_TYPE_ANY),
-            """
+        e = {
             "optional": {
                 Lexicon.ROUTE: ("BUS", {"default": None, "tooltips":"Pass through another route node to pre-populate the outputs."}),
             },
-            """
             "outputs": {
                 0: (Lexicon.ROUTE, {"tooltips":"Pass through for Route node"})
             }
-        })
+        }
+        d = deep_merge(d, e)
         return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[Any, ...]:

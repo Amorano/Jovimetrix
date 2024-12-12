@@ -38,7 +38,7 @@ app.registerExtension({
                 widget_param = this.addInput('PARAM', 'JDICT');
             }
             widget_param.serializeValue = async () =>
-                self.inputs.reduce((result, widget) =>
+                this.inputs.reduce((result, widget) =>
                     ({ ...result, [widget.name]: widget.value }), {});
             widgetHide(this, widget_param, '-jov');
 

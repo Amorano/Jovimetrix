@@ -25,26 +25,6 @@ app.registerExtension({
         const onNodeCreated = nodeType.prototype.onNodeCreated
         nodeType.prototype.onNodeCreated = function () {
             const me = onNodeCreated?.apply(this);
-            /*
-            variables = kw.copy()
-            for p in [Lexicon.TIME, Lexicon.BATCH, Lexicon.FPS, Lexicon.WAIT, Lexicon.RESET, Lexicon.WH, Lexicon.MATTE, Lexicon.PROG_VERT, Lexicon.PROG_FRAG]:
-                variables.pop(p, None)
-            */
-
-            let widget_param = this.inputs?.find(w => w.name == 'PARAM');
-            if (widget_param === undefined) {
-                widget_param = this.addInput('PARAM', 'JDICT');
-            }
-            widget_param.serializeValue = async () =>
-                self.inputs.reduce((result, widget) =>
-                    ({ ...result, [widget.name]: widget.value }), {});
-            widgetHide(this, widget_param, '-jov');
-
-            const self = this;
-            widget_param.serializeValue = async () =>
-                self.inputs.slice(1).reduce((result, widget) =>
-                    ({ ...result, [widget.name]: widget.value }), {});
-
             this.addInput(_prefix, _dynamic_type);
             nodeOutputsClear(this, 1);
             return me;
@@ -103,6 +83,7 @@ app.registerExtension({
             nodeFitHeight(this);
             return me;
         }
+
         return nodeType;
 	}
 })
