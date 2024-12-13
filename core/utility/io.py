@@ -82,6 +82,10 @@ Introduce pauses in the workflow that accept an optional input to pass through a
         })
         return Lexicon._parse(d, cls)
 
+    @classmethod
+    def IS_CHANGED(cls, **kw) -> float:
+        return float('nan')
+
     def run(self, ident, **kw) -> Tuple[Any]:
         delay = parse_param(kw, Lexicon.TIMER, EnumConvertType.INT, -1, 0, JOV_DELAY_MAX)[0]
         if delay < 0:

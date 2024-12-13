@@ -117,7 +117,7 @@ Capture frames from various sources such as URLs, cameras, monitors, windows, or
 
     @classmethod
     def IS_CHANGED(cls, **kw) -> float:
-        return float("nan")
+        return float('nan')
 
     def __init__(self, *arg, **kw) -> None:
         super().__init__(*arg, **kw)
@@ -296,7 +296,7 @@ Sends frames to a specified route, typically for live streaming or recording pur
     """
     @classmethod
     def IS_CHANGED(cls, **kw) -> float:
-        return float("nan")
+        return float('nan')
     """
 
     def __init__(self, *arg, **kw) -> None:
@@ -367,7 +367,7 @@ Sends frames to a specified Spout receiver application for real-time video shari
 
         @classmethod
         def IS_CHANGED(cls, **kw) -> float:
-            return float("nan")
+            return float('nan')
 
         def __init__(self, *arg, **kw) -> None:
             super().__init__(*arg, **kw)

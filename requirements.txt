@@ -13,7 +13,6 @@ numpy>=1.26.4,<2.0.0
 opencv-contrib-python>=4.10.0.84
 Pillow>=10.2.0
 PyOpenGL>=3.1.7
-PyOpenGL-accelerate>=3.1.7; platform_system=="Windows"
 pywin32>=308; platform_system=="Windows"
 requests>=2.32.3
 scikit-image>=0.24.0

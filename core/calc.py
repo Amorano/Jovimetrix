@@ -835,7 +835,7 @@ A timer and frame counter, emitting pulses or signals based on time intervals. I
     """
     @classmethod
     def IS_CHANGED(cls, **kw) -> float:
-        return float("nan")
+        return float('nan')
     """
 
     def __init__(self, *arg, **kw) -> None:

@@ -195,7 +195,7 @@ Execute custom GLSL (OpenGL Shading Language) fragment shaders to generate image
 
     @classmethod
     def IS_CHANGED(cls, **kw) -> float:
-        return float("NaN")
+        return float('nan')
 
 class GLSLNodeDynamic(GLSLNodeBase):
 
