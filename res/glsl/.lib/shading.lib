@@ -8,30 +8,30 @@
 // PROTOTYPES
 // =============================================================================
 
-vec3 lib_shading_fresnel(vec3 F0, vec3 h, vec3 l);          // Computes the Fresnel reflection factor
-vec3 lib_shading_phong_light(vec3 pos, vec3 color);         //
-vec3 lib_shading_phong(vec3 v, vec3 n, vec3 dir, vec3 eye); // Computes Phong shading for a given point
+vec3 shading_fresnel(vec3 F0, vec3 h, vec3 l);          // Computes the Fresnel reflection factor
+vec3 shading_phong_light(vec3 pos, vec3 color);         //
+vec3 shading_phong(vec3 v, vec3 n, vec3 dir, vec3 eye); // Computes Phong shading for a given point
 
 // =============================================================================
 // PHONG
 // =============================================================================
 
 // Computes the Fresnel reflection factor
-vec3 lib_shading_fresnel(vec3 F0, vec3 h, vec3 l) {
+vec3 shading_fresnel(vec3 F0, vec3 h, vec3 l) {
     return F0 + (1.0 - F0) * pow(clamp(1.0 - dot(h, l), 0.0, 1.0), 5.0);
 }
 
-vec3 lib_shading_phong_light(vec3 pos, vec3 color) {
+vec3 shading_phong_light(vec3 pos, vec3 color) {
     vec3 vl = normalize(pos - v);
     vec3 diffuse = Kd * vec3(max(0.0, dot(vl, n)));
     vec3 specular = vec3(max(0.0, dot(vl, ref)));
-    vec3 F = lib_shading_fresnel(Ks, normalize(vl - dir), vl);
+    vec3 F = shading_fresnel(Ks, normalize(vl - dir), vl);
     specular = pow(specular, vec3(shininess));
     return color * mix(diffuse, specular, F);
 }
 
 // Computes Phong shading for a given point
-vec3 lib_shading_phong(vec3 v, vec3 n, vec3 dir, vec3 eye) {
+vec3 shading_phong(vec3 v, vec3 n, vec3 dir, vec3 eye) {
     vec3 final = vec3(0.0);
 
     // Define material properties
@@ -44,14 +44,14 @@ vec3 lib_shading_phong(vec3 v, vec3 n, vec3 dir, vec3 eye) {
     {
         vec3 light_pos = vec3(20.0, 20.0, 20.0);
         vec3 light_color = vec3(1.0, 0.7, 0.7);
-        final += lib_shading_phong_light(light_pos, light_color);
+        final += shading_phong_light(light_pos, light_color);
     }
 
     // Light 1
     {
         vec3 light_pos = vec3(-20.0, -20.0, -30.0);
         vec3 light_color = vec3(0.5, 0.7, 1.0);
-        final += lib_shading_phong_light(light_pos, light_color);
+        final += shading_phong_light(light_pos, light_color);
     }
     return final;
 }

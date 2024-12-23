@@ -2,21 +2,21 @@
 // SIGNED DISTANCE
 //------------------------------------------------------------------------------
 
-float lib_sdf_polygon2D(vec2 p, vec2 center, float radius, int sides, float starFactor);
-float lib_sdf_star2D(vec2 p, float r, float t);
-float lib_sdf_heart2D(vec2 p);
-float lib_sdf_ellipse2D(vec2 p, vec2 radii);
-float lib_sdf_circle2D(vec2 p, float r);
+float sdf_polygon2D(vec2 p, vec2 center, float radius, int sides, float starFactor);
+float sdf_star2D(vec2 p, float r, float t);
+float sdf_heart2D(vec2 p);
+float sdf_ellipse2D(vec2 p, vec2 radii);
+float sdf_circle2D(vec2 p, float r);
 
 //------------------------------------------------------------------------------
 // SUPPORT FUNCTIONS
 //------------------------------------------------------------------------------
 
-float lib_sdf_union(float d1, float d2);
-float lib_sdf_subtract(float d1, float d2);
-float lib_sdf_round(vec2 s, float r);
-float lib_sdf_hollow(vec2 s, float thickness);
-vec3 lib_sdf_hollow(vec3 shape, float r);
+float sdf_union(float d1, float d2);
+float sdf_subtract(float d1, float d2);
+float sdf_round(vec2 s, float r);
+float sdf_hollow(vec2 s, float thickness);
+vec3 sdf_hollow(vec3 shape, float r);
 
 //------------------------------------------------------------------------------
 // SHAPE
@@ -27,30 +27,31 @@ vec3 lib_sdf_hollow(vec3 shape, float r);
 //------------------------------------------------------------------------------
 
 // Signed distance box of size radius
-float lib_sdf_box(vec2 p, vec2 radius)
+float sdf_box(vec2 p, vec2 radius)
 {
     vec2 d = abs(p)-radius;
     return length(max(d,0.0)) + min(maxcomp(d),0.0);
 }
 
-float lib_sdf_box(vec3 p, vec3 radius)
+float sdf_box(vec3 p, vec3 radius)
 {
     vec2 d = abs(p)-radius;
     return length(max(d,0.0)) + min(maxcomp(d),0.0);
+    // return length(max(d, 0.0)) + min(max(d.x, max(d.y, d.z)), 0.0);
 }
 
-float lib_sdf_box(vec4 p, vec4 radius)
+float sdf_box(vec4 p, vec4 radius)
 {
     vec2 d = abs(p)-radius;
     return length(max(d,0.0)) + min(maxcomp(d),0.0);
 }
 
 // Computes the signed distance from a point to a sphere
-float lib_sdf_sphere(vec3 p, float r) {
+float sdf_sphere(vec3 p, float r) {
     return length(p) - r;
 }
 
-float lib_sdf_cylinder(vec3 p, float r, float h) {
+float sdf_cylinder(vec3 p, float r, float h) {
     vec2 d = vec2(length(p.xy) - r, abs(p.z) - h * 0.5);
     return length(max(d, 0.0)) + min(max(d.x, d.y), 0.0);
 }
@@ -59,7 +60,7 @@ float lib_sdf_cylinder(vec3 p, float r, float h) {
 
 
 
-float lib_sdf_polygon(vec2 p, vec2 center, float r, int sides, float starFactor) {
+float sdf_polygon(vec2 p, vec2 center, float r, int sides, float starFactor) {
     float angle = M_TAU / float(sides);
     float dist = 1e30; // Initialize to a large value
 
@@ -86,16 +87,16 @@ float lib_sdf_polygon(vec2 p, vec2 center, float r, int sides, float starFactor)
     return dist;
 }
 
-float lib_sdf_ellipse(vec2 p, vec2 radii) {
+float sdf_ellipse(vec2 p, vec2 radii) {
     vec2 q = abs(p) - radii;
     return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0);
 }
 
-float lib_sdf_circle(vec2 p, float r) {
+float sdf_circle(vec2 p, float r) {
     return length(p) - r;
 }
 
-float lib_sdf_star(vec2 p, float r, float t) {
+float sdf_star(vec2 p, float r, float t) {
     float theta = atan(p.y, p.x);
     float radius = length(p);
     float angle = mod(theta, M_TAU / max(1., t));
@@ -105,7 +106,7 @@ float lib_sdf_star(vec2 p, float r, float t) {
     return d;
 }
 
-float lib_sdf_heart(vec2 p) {
+float sdf_heart(vec2 p) {
     float x = p.x;
     float y = p.y;
     float a = 1.0 - x * x - (5.0 * y / 4.0 - sqrt(abs(x))) * (5.0 * y / 4.0 - sqrt(abs(x)));
@@ -117,46 +118,46 @@ float lib_sdf_heart(vec2 p) {
 //------------------------------------------------------------------------------
 
 // Repeats the space with periodic boundary conditions
-vec3 lib_sdf_repeat(vec3 p, vec3 c) {
+vec3 sdf_repeat(vec3 p, vec3 c) {
     return mod(p, c) - 0.5 * c;
 }
 
 // Union of two distances
-float lib_sdf_union(float d1, float d2) {
+float sdf_union(float d1, float d2) {
     return min(d1, d2);
 }
 
 // Smooth union of two distances
-float lib_sdf_unionSmooth(float a, float b, float k) {
+float sdf_unionSmooth(float a, float b, float k) {
     float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
     return mix(b, a, h) - k * h * (1.0 - h);
 }
 
 // Intersection of two distances
-float lib_sdf_intersection(float d1, float d2) {
+float sdf_intersection(float d1, float d2) {
     return max(d1, d2);
 }
 
 // Subtraction of two distances
-float lib_sdf_difference(float d1, float d2) {
+float sdf_difference(float d1, float d2) {
     return max(d1, -d2);
 }
 
-float lib_sdf_hollow2(vec2 s, float thickness) {
+float sdf_hollow2(vec2 s, float thickness) {
     return abs(s) - thickness;
 }
 
-vec3 lib_sdf_hollow3(vec3 shape, float r) {
+vec3 sdf_hollow3(vec3 shape, float r) {
     return vec3(abs(shape.x) - r, sign(shape.x) * shape.yz);
 }
 
 // Displacement effect using sine functions
-float lib_sdf_displacement(vec3 p) {
+float sdf_displacement(vec3 p) {
     return sin(p.x) * sin(p.y) * sin(p.z);
 }
 
 // Applies a twisting transformation to a point
-vec3 lib_sdf_twist(vec3 p, float a) {
+vec3 sdf_twist(vec3 p, float a) {
     float c = cos(a * p.y);
     float s = sin(a * p.y);
     mat2 m = mat2(c, -s, s, c);
@@ -168,7 +169,7 @@ vec3 lib_sdf_twist(vec3 p, float a) {
 //------------------------------------------------------------------------------
 
 // Computes ray-box intersection and returns true if intersection occurs
-bool lib_intersection_aabb(vec3 o, vec3 dir, vec3 bmin, vec3 bmax, inout vec2 e) {
+bool intersection_aabb(vec3 o, vec3 dir, vec3 bmin, vec3 bmax, inout vec2 e) {
     vec3 a = (bmin - o) / dir;
     vec3 b = (bmax - o) / dir;
     vec3 s = min(a, b);
@@ -190,11 +191,11 @@ float dist_field(vec3 p) {
     // p = sdTwist(p, 3.0);
 
     // Compute distances to box and sphere
-    float d0 = lib_sdf_box(p, vec3(0.5));
-    float d1 = lib_sdf_sphere(p, 0.6);
+    float d0 = sdf_box(p, vec3(0.5));
+    float d1 = sdf_sphere(p, 0.6);
 
     // Combine distances using intersection
-    return lib_sdf_intersection(d1, d0);
+    return sdf_intersection(d1, d0);
 
     // Optionally include displacement and smooth union
     // return d + sfDisp(p * 2.5);

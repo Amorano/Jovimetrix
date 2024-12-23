@@ -2,29 +2,54 @@
 // CURVE
 //------------------------------------------------------------------------------
 
+//------------------------------------------------------------------------------
+// EASE
+//------------------------------------------------------------------------------
+
+#define EASE_IN_OUT_SINE(t)  (-0.5 * (cos(M_PI * (t)) - 1.0))
+#define EASE_IN_OUT_CIRC(t)  (((t) < 1.0) ? (-0.5 * (sqrt(1.0 - (t) * (t)) - 1.0)) : (0.5 * (sqrt(1.0 - ((t)-2.0) * ((t)-2.0)) + 1.0)))
+#define EASE_IN_OUT_QUAD(t)  (((t) < 0.5) ? (2.0 * (t) * (t)) : (-2.0 * (t) * (t) + 4.0 * (t) - 1.0))
+#define EASE_IN_EXPO(t)     ((t) == 0.0 ? 0.0 : pow(2.0, 10.0 * (t) - 10.0))
+#define EASE_OUT_EXPO(t)    ((t) == 1.0 ? 1.0 : 1.0 - pow(2.0, -10.0 * (t)))
+#define EASE_IN_ELASTIC(t)  (sin(-13.0 * M_PI_2 * ((t) + 1.0)) * pow(2.0, -10.0 * (t)))
+
+#define DECAY_EXP(t, lambda)  exp(-lambda * (t))
+#define INTERP_SS(a, b, t)  mix((a), (b), smoothstep(0.0, 1.0, (t)))
+#define INTERP_BOUNCE(t)  abs(sin(M_TAU * (t) * (1.0 - (t))))
+#define INTERP_BOUNCE_VEC(a, b, t)  mix((a), (b), INTERP_BOUNCE(t))
+
+#define INTERP_HERMITE_VEC(a, b, tangentA, tangentB, t)  \
+    ( \
+        float h00 = 2.0 * (t) * (t) * (t) - 3.0 * (t) * (t) + 1.0; \
+        float h10 = (t) * (t) * (t) - 2.0 * (t) * (t) + (t); \
+        float h01 = -2.0 * (t) * (t) * (t) + 3.0 * (t) * (t); \
+        float h11 = (t) * (t) * (t) - (t) * (t); \
+        (h00 * (a) + h10 * (tangentA) + h01 * (b) + h11 * (tangentB)) \
+    )
+
 // =============================================================================
 // PROTOTYPES
 // =============================================================================
 
-vec2 lib_curve_bezierCubic(vec2 p0, vec2 p1, vec2 p2, vec2 p3, float t);
-vec3 lib_curve_bezierCubic(vec3 p0, vec3 p1, vec3 p2, vec3 p3, float t);
-vec2 lib_curve_bezierQuadratic(vec2 p0, vec2 p1, vec2 p2, float t);
-vec3 lib_curve_bezierQuadratic(vec3 p0, vec3 p1, vec3 p2, float t);
-vec2 lib_curve_catmullRom(vec2 p0, vec2 p1, vec2 p2, vec2 p3, float t);
-vec3 lib_curve_catmullRom(vec3 p0, vec3 p1, vec3 p2, vec3 p3, float t);
+vec2 curve_bezierCubic(vec2 p0, vec2 p1, vec2 p2, vec2 p3, float t);
+vec3 curve_bezierCubic(vec3 p0, vec3 p1, vec3 p2, vec3 p3, float t);
+vec2 curve_bezierQuadratic(vec2 p0, vec2 p1, vec2 p2, float t);
+vec3 curve_bezierQuadratic(vec3 p0, vec3 p1, vec3 p2, float t);
+vec2 curve_catmullRom(vec2 p0, vec2 p1, vec2 p2, vec2 p3, float t);
+vec3 curve_catmullRom(vec3 p0, vec3 p1, vec3 p2, vec3 p3, float t);
 
 //------------------------------------------------------------------------------
 // CUBIC BEZIER CURVE
 //------------------------------------------------------------------------------
 
 // Cubic Bezier curve for 2D vectors
-vec2 lib_curve_bezierCubic(vec2 p0, vec2 p1, vec2 p2, vec2 p3, float t) {
+vec2 curve_bezierCubic(vec2 p0, vec2 p1, vec2 p2, vec2 p3, float t) {
     float u = 1.0 - t;
     return u * u * u * p0 + 3.0 * u * u * t * p1 + 3.0 * u * t * t * p2 + t * t * t * p3;
 }
 
 // Cubic Bezier curve between four control points
-vec3 lib_curve_bezierCubic(vec3 p0, vec3 p1, vec3 p2, vec3 p3, float t) {
+vec3 curve_bezierCubic(vec3 p0, vec3 p1, vec3 p2, vec3 p3, float t) {
     float u = 1.0 - t;
     return u * u * u * p0 + 3.0 * u * u * t * p1 + 3.0 * u * t * t * p2 + t * t * t * p3;
 }
@@ -34,13 +59,13 @@ vec3 lib_curve_bezierCubic(vec3 p0, vec3 p1, vec3 p2, vec3 p3, float t) {
 //------------------------------------------------------------------------------
 
 // Quadratic Bezier curve for 2D vectors
-vec2 lib_curve_bezierQuadratic(vec2 p0, vec2 p1, vec2 p2, float t) {
+vec2 curve_bezierQuadratic(vec2 p0, vec2 p1, vec2 p2, float t) {
     float u = 1.0 - t;
     return u * u * p0 + 2.0 * u * t * p1 + t * t * p2;
 }
 
 // Quadratic Bezier curve between three control points
-vec3 lib_curve_bezierQuadratic(vec3 p0, vec3 p1, vec3 p2, float t) {
+vec3 curve_bezierQuadratic(vec3 p0, vec3 p1, vec3 p2, float t) {
     float u = 1.0 - t;
     return u * u * p0 + 2.0 * u * t * p1 + t * t * p2;
 }
@@ -50,7 +75,7 @@ vec3 lib_curve_bezierQuadratic(vec3 p0, vec3 p1, vec3 p2, float t) {
 //------------------------------------------------------------------------------
 
 // Catmull-Rom spline for 2D vectors
-vec2 lib_curve_catmullRom(vec2 p0, vec2 p1, vec2 p2, vec2 p3, float t) {
+vec2 curve_catmullRom(vec2 p0, vec2 p1, vec2 p2, vec2 p3, float t) {
     vec2 a = 2.0 * p1;
     vec2 b = p2 - p0;
     vec2 c = 2.0 * p0 - 5.0 * p1 + 4.0 * p2 - p3;
@@ -59,7 +84,7 @@ vec2 lib_curve_catmullRom(vec2 p0, vec2 p1, vec2 p2, vec2 p3, float t) {
 }
 
 // Catmull-Rom spline between four points
-vec3 lib_curve_catmullRom(vec3 p0, vec3 p1, vec3 p2, vec3 p3, float t) {
+vec3 curve_catmullRom(vec3 p0, vec3 p1, vec3 p2, vec3 p3, float t) {
     vec3 a = 2.0 * p1;
     vec3 b = p2 - p0;
     vec3 c = 2.0 * p0 - 5.0 * p1 + 4.0 * p2 - p3;

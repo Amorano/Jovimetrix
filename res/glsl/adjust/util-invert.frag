@@ -1,6 +1,6 @@
 // name: INVERT
 // desc: Invert the channels of an image along a scalar [0..1] range.
-// category: ADJUST
+// category: COLOR
 
 uniform sampler2D image;  //             | 4-channel data
 uniform vec4 invert;      // 0,0,0,0;0;1 | amount to invert each channel

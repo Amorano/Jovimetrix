@@ -1,0 +1,14 @@
+//------------------------------------------------------------------------------
+// CONSTANT
+//------------------------------------------------------------------------------
+
+#define M_C         299792458.0        // Speed of light in meters per second (m/s)
+#define M_G         9.80665            // Gravitational acceleration on Earth (m/s²)
+#define M_PLANCK    6.62607015e-34     // Planck's constant (Js)
+#define M_KB        1.380649e-23       // Boltzmann constant (J/K)
+#define M_MASS_E    9.10938356e-31     // Mass of electron (kg)
+#define M_CHARGE_E  1.602176634e-19    // Elementary charge (C)
+
+#define M_AVOGADRO  6.02214076e23      // Avogadro's number
+#define M_R_GAS     8.31446261815324   // Universal gas constant (J/(mol·K))
+#define M_STEFAN    5.670374419e-8     // Stefan-Boltzmann constant (W/(m²·K⁴))

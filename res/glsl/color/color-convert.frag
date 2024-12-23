@@ -2,7 +2,7 @@
 // desc: Convert an image from one color space (RGB, HSV, LAB, XYZ) to another.
 // category: COLOR
 
-#include .lib/color.lib
+#include .lib/convert.lib
 
 uniform sampler2D image; // | Image to convert
 uniform int operator;    // EnumGLSLColorConvert | conversion operation to perform.
@@ -14,32 +14,32 @@ uniform int operator;    // EnumGLSLColorConvert | conversion operation to perfo
 vec3 convertColor(vec3 color, int operator) {
     // RGB
     if (operator == 0) {
-        return rgb2hsv(color);
+        return convert_rgb2hsv(color);
     } else if (operator == 1) {
-        return rgb2lab(color);
+        return convert_rgb2lab(color);
     } else if (operator == 2) {
-        return rgb2xyz(color);
+        return convert_rgb2xyz(color);
     // HSV
     } else if (operator == 10) {
-        return hsv2rgb(color);
+        return convert_hsv2rgb(color);
     } else if (operator == 11) {
-        return hsv2lab(color);
+        return convert_hsv2lab(color);
     } else if (operator == 12) {
-        return hsv2xyz(color);
+        return convert_hsv2xyz(color);
     // LAB
     } else if (operator == 20) {
-        return lab2rgb(color);
+        return convert_lab2rgb(color);
     } else if (operator == 21) {
-        return lab2hsv(color);
+        return convert_lab2hsv(color);
     } else if (operator == 22) {
-        return lab2xyz(color);
+        return convert_lab2xyz(color);
     // XYZ
     } else if (operator == 30) {
-        return xyz2rgb(color);
+        return convert_xyz2rgb(color);
     } else if (operator == 31) {
-        return xyz2hsv(color);
+        return convert_xyz2hsv(color);
     } else if (operator == 32) {
-        return xyz2lab(color);
+        return convert_xyz2lab(color);
     }
     return color;
 }

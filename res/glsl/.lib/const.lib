@@ -2,63 +2,37 @@
 // CONSTANT
 //------------------------------------------------------------------------------
 
-#define M_EPSILON  1.0e-10            // zero value for float comparisons
+#define M_EPSILON   1.0e-10            // zero value for float comparisons
 
-#define M_DEG2RAD 0.017453292519943   // Degree to radian conversion factor
-#define M_RAD2DEG 57.29577951308232   // Radian to degree conversion factor
-#define M_TAU      6.283185307179586  // Tau (2 * Pi)
-#define M_PI       3.141592653589793  // Pi
-#define M_PI_2     1.570796326794896  // Pi divided by 2 (π/2)
-#define M_PI_4     0.785398163397448  // Pi divided by 4 (π/4)
-#define M_3PI_4    2.356194490192345  // 3 * Pi divided by 4 (3π/4)
+#define M_DEG2RAD   0.017453292519943  // Degree to radian conversion factor
+#define M_RAD2DEG   57.29577951308232  // Radian to degree conversion factor
 
-#define M_PHI      1.618033988749895  // Golden ratio (φ)
-#define M_PHI_INV  0.618033988749895  // Inverse of golden ratio (1/φ)
-#define M_PHI_SQ   2.618033988749895  // Square of the golden ratio (φ^2)
+#define M_TAU       6.283185307179586  // TAU (2 * π)
+#define M_TAU_INV   0.159154943091895  // TAU Inverse (1 / TAU)
 
-#define M_E        2.718281828459045  // Euler's number (base of natural logarithm)
-#define M_LOG2E    1.442695040888963  // Log base 2 of e
-#define M_LOG10E   0.434294481903252  // Log base 10 of e
-#define M_LN2      0.693147180559945  // Natural log of 2
-#define M_LN10     2.302585092994046  // Natural log of 10
+#define M_PI        3.141592653589793  // π
+#define M_PI_INV    0.318309886183790  // π Inverse (1 / π)
+#define M_PI_2      1.570796326794896  // π divided by 2 (π / 2)
+#define M_PI_4      0.785398163397448  // π divided by 4 (π / 4)
+#define M_3PI_4     2.356194490192345  // 3 * π divided by 4 (3π / 4)
 
-#define M_SQRT2    1.414213562373095  // Square root of 2
-#define M_SQRT3    1.732050807568877  // Square root of 3
-#define M_SQRT1_2  0.707106781186547  // 1 divided by square root of 2 (1/sqrt(2))
-#define M_SQRT1_3  0.577350269189626  // 1 divided by square root of 3 (1/sqrt(3))
+#define M_PHI       1.618033988749895  // Golden ratio (φ)
+#define M_PHI_INV   0.618033988749895  // Inverse of golden ratio (1 / φ)
+#define M_PHI_SQ    2.618033988749895  // Square of the golden ratio (φ^2)
+#define M_PHI_SQRT5 0.723606797749979  // φ / √5 (useful for fibonacci spherical distribution)
+#define M_GOLD_ANG  2.399963229728653  // Golden angle in radians
 
-//------------------------------------------------------------------------------
-// PHYSICS
-//------------------------------------------------------------------------------
+#define M_E         2.718281828459045  // Euler's number (base of natural logarithm)
+#define M_LOG2E     1.442695040888963  // Log base 2 of e
+#define M_LOG10E    0.434294481903252  // Log base 10 of e
+#define M_LN2       0.693147180559945  // Natural log of 2
+#define M_LN10      2.302585092994046  // Natural log of 10
 
-#define M_C        299792458.0        // Speed of light in meters per second (m/s)
-#define M_G        9.80665            // Gravitational acceleration on Earth (m/s²)
-#define M_PLANCK   6.62607015e-34     // Planck's constant (Js)
-#define M_KB       1.380649e-23       // Boltzmann constant (J/K)
-#define M_MASS_E   9.10938356e-31     // Mass of electron (kg)
-#define M_CHARGE_E 1.602176634e-19    // Elementary charge (C)
-
-//------------------------------------------------------------------------------
-// EASE
-//------------------------------------------------------------------------------
-
-#define EASE_IN_OUT_SINE(t)  (-0.5 * (cos(M_PI * (t)) - 1.0))
-#define EASE_IN_OUT_CIRC(t)  (((t) < 1.0) ? (-0.5 * (sqrt(1.0 - (t) * (t)) - 1.0)) : (0.5 * (sqrt(1.0 - ((t)-2.0) * ((t)-2.0)) + 1.0)))
-#define EASE_IN_OUT_QUAD(t)  (((t) < 0.5) ? (2.0 * (t) * (t)) : (-2.0 * (t) * (t) + 4.0 * (t) - 1.0))
-
-#define DECAY_EXP(t, lambda)  exp(-lambda * (t))
-#define INTERP_SS(a, b, t)  mix((a), (b), smoothstep(0.0, 1.0, (t)))
-#define INTERP_BOUNCE(t)  abs(sin(M_TAU * (t) * (1.0 - (t))))
-#define INTERP_BOUNCE_VEC(a, b, t)  mix((a), (b), INTERP_BOUNCE(t))
-
-#define INTERP_HERMITE_VEC(a, b, tangentA, tangentB, t)  \
-    ( \
-        float h00 = 2.0 * (t) * (t) * (t) - 3.0 * (t) * (t) + 1.0; \
-        float h10 = (t) * (t) * (t) - 2.0 * (t) * (t) + (t); \
-        float h01 = -2.0 * (t) * (t) * (t) + 3.0 * (t) * (t); \
-        float h11 = (t) * (t) * (t) - (t) * (t); \
-        (h00 * (a) + h10 * (tangentA) + h01 * (b) + h11 * (tangentB)) \
-    )
+#define M_SQRT2     1.414213562373095  // Square root of 2
+#define M_SQRT3     1.732050807568877  // Square root of 3
+#define M_SQRT2_INV 0.707106781186547  // 1 divided by square root of 2 (1 / sqrt(2))
+#define M_SQRT3_INV 0.577350269189626  // 1 divided by square root of 3 (1 / sqrt(3))
+#define M_SQRT5     2.236067977499790  // Square root of 5
 
 //------------------------------------------------------------------------------
 // GENERAL

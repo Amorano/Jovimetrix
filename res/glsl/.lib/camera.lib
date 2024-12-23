@@ -8,15 +8,15 @@
 // PROTOTYPES
 // =============================================================================
 
-vec3 lib_camera_eye(float fov, vec2 size, vec2 pos);
-mat3 lib_camera_eye(vec3 pos, vec3 target, float roll);
+vec3 camera_eye(float fov, vec2 size, vec2 pos);
+mat3 camera_eye(vec3 pos, vec3 target, float roll);
 
 //------------------------------------------------------------------------------
 // TRANSFORM
 //------------------------------------------------------------------------------
 
 // Camera direction based on field of view and screen position
-vec3 lib_camera_eye(float fov, vec2 size, vec2 pos) {
+vec3 camera_eye(float fov, vec2 size, vec2 pos) {
     vec2 xy = pos - size * 0.5;
     float cot_half_fov = tan((90.0 - fov * 0.5) * M_DEG2RAD);
     float z = size.y * 0.5 * cot_half_fov;
@@ -24,7 +24,7 @@ vec3 lib_camera_eye(float fov, vec2 size, vec2 pos) {
 }
 
 // Camera view based on eye, target, and roll angle
-mat3 lib_camera_eye(vec3 pos, vec3 target, float roll)
+mat3 camera_eye(vec3 pos, vec3 target, float roll)
 {
     vec3 cw = normalize(target-pos);
     vec3 cp = vec3(sin(roll), cos(roll),0.0);

@@ -6,52 +6,82 @@
 // PROTOTYPES
 // =============================================================================
 
-float lib_noise_dithered(vec2 p);
+float noise_hash11(float p);
+float noise_hash21(vec2 p);
+vec3 noise_hash33(vec3 p);
+float noise_blue(vec2 uv);
 
-float lib_noise_rand(vec2 co);
-float lib_noise_rand(vec3 co);
-float lib_noise_rand(vec4 co);
+float dither_noise(vec2 p);
+vec3 dither_blueNoise(vec3 color, vec2 uv, float strength);
+vec3 dither_quantizedBlueNoise(vec3 color, vec2 uv, float levels);
 
-float lib_noise_gradient(float x);
-float lib_noise_gradient(vec2 p);
-float lib_noise_gradient(vec3 p);
-float lib_noise_gradient(vec4 p);
+float noise_rand(vec2 co);
+float noise_rand(vec3 co);
+float noise_rand(vec4 co);
 
-float lib_noise_fbm(vec2 x, float H, int octaves);
-float lib_noise_fbm(vec3 x, float H, int octaves);
-float lib_noise_fbm(vec4 x, float H, int octaves);
+float noise_gradient(float x);
+float noise_gradient(vec2 p);
+float noise_gradient(vec3 p);
+float noise_gradient(vec4 p);
 
-float lib_noise_value(vec2 p);
-float lib_noise_value(vec3 p);
-float lib_noise_value(vec3 p);
+float noise_fbm(vec2 x, float H, int octaves);
+float noise_fbm(vec3 x, float H, int octaves);
+float noise_fbm(vec4 x, float H, int octaves);
 
-float lib_noise_simplex(vec2 v);
-float lib_noise_simplex(vec3 v);
-float lib_noise_simplex(vec4 v);
+float noise_value(vec2 p);
+float noise_value(vec3 p);
+float noise_value(vec3 p);
 
-float lib_noise_perlin(vec2 p);
-float lib_noise_perlin(vec3 p);
-float lib_noise_perlin(vec4 p);
+float noise_simplex(vec2 v);
+float noise_simplex(vec3 v);
+float noise_simplex(vec4 v);
 
-float lib_noise_fractal(vec2 p, float octaves, float persistence);
-float lib_noise_fractal(vec3 p, float octaves, float persistence);
-float lib_noise_fractal(vec4 p, float octaves, float persistence);
+float noise_perlin(vec2 p);
+float noise_perlin(vec3 p);
+float noise_perlin(vec4 p);
 
-vec2 lib_noise_voronoi(vec2 p);
-vec2 lib_noise_voronoi(vec3 p);
-vec2 lib_noise_voronoi(vec4 p);
+float noise_fractal(vec2 p, float octaves, float persistence);
+float noise_fractal(vec3 p, float octaves, float persistence);
+float noise_fractal(vec4 p, float octaves, float persistence);
 
-float lib_noise_worley(vec2 p, int num_cells);
-float lib_noise_worley(vec3 p, int num_cells);
-float lib_noise_worley(vec4 p, int num_cells);
+vec2 noise_voronoi(vec2 p);
+vec2 noise_voronoi(vec3 p);
+vec2 noise_voronoi(vec4 p);
 
-float lib_noise_turbulence(vec2 p, float size);
-float lib_noise_turbulence(vec3 p, float size);
-float lib_noise_turbulence(vec3 p, float size);
+float noise_worley(vec2 p, int num_cells);
+float noise_worley(vec3 p, int num_cells);
+float noise_worley(vec4 p, int num_cells);
 
-vec2 lib_noise_smooth(int hash, vec2 p);
-vec3 lib_noise_smooth(int hash, vec3 p);
-vec4 lib_noise_smooth(int hash, vec4 p);
+float noise_turbulence(vec2 p, float size);
+float noise_turbulence(vec3 p, float size);
+float noise_turbulence(vec3 p, float size);
+
+vec2 noise_smooth(int hash, vec2 p);
+vec3 noise_smooth(int hash, vec3 p);
+vec4 noise_smooth(int hash, vec4 p);
+
+float noise_flow(vec2 p, float time, float strength);
+vec2 noise_curl(vec2 p, float epsilon);
+
+float noise_warp(vec2 p, float strength);
+vec3 noise_warp3D(vec3 p, float strength);
+
+float noise_ridge(vec2 p, float offset);
+float noise_ridgeMult(vec2 p, float frequency, float lacunarity, float gain, int octaves);
+
+float noise_hybrid(vec2 p, float voronoiWeight)
+float noise_spiral(vec2 p, float arms, float spin);
+float noise_billowed(vec2 p);
+float noise_swiss(vec2 p, float scale);
+
+float noise_terraced(vec2 p, float steps);
+float noise_erosion(vec2 p, float roughness);
+float noise_river(vec2 p, float width);
+
+float noise_stars(vec2 p, float density, float size);
+float noise_galaxy(vec2 p, float arms, float twist, float chaos);
+float noise_nebula(vec2 p, float scale, float detail);
+float noise_cosmicWeb(vec2 p, float scale);
 
 //
 //
@@ -69,16 +99,66 @@ vec4 grad(vec4 g, vec4 p) {
     return g * (2.0 * p - 1.0);
 }
 
+//------------------------------------------------------------------------------
+// HASH NOISE
+//------------------------------------------------------------------------------
+
+// Hash function for procedural noise
+float noise_hash11(float p) {
+    p = fract(p * .1031);
+    p *= p + 33.33;
+    return fract(p * p);
+}
+
+// 2D to 1D hash
+float noise_hash21(vec2 p) {
+    vec3 p3 = fract(vec3(p.xyx) * .1031);
+    p3 += dot(p3, p3.yzx + 33.33);
+    return fract((p3.x + p3.y) * p3.z);
+}
+
+// Hash function for blue noise
+vec3 noise_hash33(vec3 p) {
+    p = fract(p * vec3(443.8975, 397.2973, 491.1871));
+    p += dot(p.zxy, p.yxz + 19.19);
+    return fract(vec3(p.x * p.y, p.y * p.z, p.z * p.x));
+}
+
+//------------------------------------------------------------------------------
+// BLUE NOISE
+//------------------------------------------------------------------------------
+
+// Generate high-quality blue noise
+float noise_blue(vec2 uv) {
+    vec3 p = vec3(uv, 0.0);
+    float t = fract(0.0);
+    vec3 n1 = hash33(floor(p));
+    vec3 n2 = hash33(ceil(p));
+    return mix(n1.x, n2.x, smoothstep(0.0, 1.0, t));
+}
 
 //------------------------------------------------------------------------------
 // DITHERED NOISE
 //------------------------------------------------------------------------------
 
 // Dithered noise
-float lib_noise_dithered(vec2 p) {
-    float base = lib_noise_perlin(p);
+float dither_noise(vec2 p) {
+    float base = noise_perlin(p);
     float dither = fract(sin(dot(floor(p), vec2(12.9898, 78.233))) * 43758.5453123);
     return base + dither * 0.5;
+}
+
+// Improved blue noise dithering
+vec3 dither_blueNoise(vec3 color, vec2 uv, float strength) {
+    float noise = blueNoise(uv);
+    return color + (noise - 0.5) * strength;
+}
+
+// Quantized dithering with blue noise
+vec3 dither_quantizedBlueNoise(vec3 color, vec2 uv, float levels) {
+    float noise = blueNoise(uv);
+    vec3 quantized = floor(color * levels + (noise - 0.5)) / levels;
+    return clamp(quantized, 0.0, 1.0);
 }
 
 //------------------------------------------------------------------------------
@@ -86,23 +166,23 @@ float lib_noise_dithered(vec2 p) {
 //------------------------------------------------------------------------------
 
 // 1D Random Noise function
-float lib_noise_rand(float co) {
+float noise_rand(float co) {
     // Compute hash value for the input coordinate
     return fract(sin(co * 12.9898) * 43758.5453);
 }
 
 // Generate a pseudo-random value based on a 2D coordinate
-float lib_noise_rand(vec2 co) {
+float noise_rand(vec2 co) {
     return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453123);
 }
 
 // Generate a pseudo-random value based on a 3D coordinate
-float lib_noise_rand(vec3 co) {
+float noise_rand(vec3 co) {
     return fract(sin(dot(co, vec3(12.9898, 78.233, 45.678))) * 43758.5453123);
 }
 
 // Generate a pseudo-random value based on a 4D coordinate
-float lib_noise_rand(vec4 co) {
+float noise_rand(vec4 co) {
     return fract(sin(dot(co, vec4(12.9898, 78.233, 45.678, 94.673))) * 43758.5453123);
 }
 
@@ -110,39 +190,39 @@ float lib_noise_rand(vec4 co) {
 // NOISE GRADIENT
 //------------------------------------------------------------------------------
 
-float lib_noise_gradient(float x) {
+float noise_gradient(float x) {
     float i = floor(x);
     float f = fract(x);
-    return mix(lib_noise_rand(i), lib_noise_rand(i + 1.0), smoothstep(0.,1.,f));
+    return mix(noise_rand(i), noise_rand(i + 1.0), smoothstep(0.,1.,f));
 }
 
 // Generate a 2D gradient noise value
-float lib_noise_gradient(vec2 p) {
+float noise_gradient(vec2 p) {
     vec2 i = floor(p);
     vec2 f = fract(p);
 
-    float a = lib_noise_rand(i);
-    float b = lib_noise_rand(i + vec2(1.0, 0.0));
-    float c = lib_noise_rand(i + vec2(0.0, 1.0));
-    float d = lib_noise_rand(i + vec2(1.0, 1.0));
+    float a = noise_rand(i);
+    float b = noise_rand(i + vec2(1.0, 0.0));
+    float c = noise_rand(i + vec2(0.0, 1.0));
+    float d = noise_rand(i + vec2(1.0, 1.0));
 
     vec2 u = smoothstep(0.,1.,f);
     return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
 }
 
 // Generate a 3D gradient noise value
-float lib_noise_gradient(vec3 p) {
+float noise_gradient(vec3 p) {
     vec3 i = floor(p);
     vec3 f = fract(p);
 
-    float a  = lib_noise_rand(i);
-    float b  = lib_noise_rand(i + vec3(1.0, 0.0, 0.0));
-    float c  = lib_noise_rand(i + vec3(0.0, 1.0, 0.0));
-    float d  = lib_noise_rand(i + vec3(1.0, 1.0, 0.0));
-    float e  = lib_noise_rand(i + vec3(0.0, 0.0, 1.0));
-    float f0 = lib_noise_rand(i + vec3(1.0, 0.0, 1.0));
-    float g0 = lib_noise_rand(i + vec3(0.0, 1.0, 1.0));
-    float h0 = lib_noise_rand(i + vec3(1.0, 1.0, 1.0));
+    float a  = noise_rand(i);
+    float b  = noise_rand(i + vec3(1.0, 0.0, 0.0));
+    float c  = noise_rand(i + vec3(0.0, 1.0, 0.0));
+    float d  = noise_rand(i + vec3(1.0, 1.0, 0.0));
+    float e  = noise_rand(i + vec3(0.0, 0.0, 1.0));
+    float f0 = noise_rand(i + vec3(1.0, 0.0, 1.0));
+    float g0 = noise_rand(i + vec3(0.0, 1.0, 1.0));
+    float h0 = noise_rand(i + vec3(1.0, 1.0, 1.0));
 
     vec3 u = smoothstep(0.,1.,f);
     float v0 = mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
@@ -151,27 +231,27 @@ float lib_noise_gradient(vec3 p) {
 }
 
 // Generate a 4D gradient noise value
-float lib_noise_gradient(vec4 p) {
+float noise_gradient(vec4 p) {
     vec4 i = floor(p);
     vec4 f = fract(p);
 
     // Compute random values at the corners of the hypercube
-    float a  = lib_noise_rand(i);
-    float b  = lib_noise_rand(i + vec4(1.0, 0.0, 0.0, 0.0));
-    float c  = lib_noise_rand(i + vec4(0.0, 1.0, 0.0, 0.0));
-    float d  = lib_noise_rand(i + vec4(1.0, 1.0, 0.0, 0.0));
-    float e  = lib_noise_rand(i + vec4(0.0, 0.0, 1.0, 0.0));
-    float f0 = lib_noise_rand(i + vec4(1.0, 0.0, 1.0, 0.0));
-    float g0 = lib_noise_rand(i + vec4(0.0, 1.0, 1.0, 0.0));
-    float h0 = lib_noise_rand(i + vec4(1.0, 1.0, 1.0, 0.0));
-    float i1 = lib_noise_rand(i + vec4(0.0, 0.0, 0.0, 1.0));
-    float j1 = lib_noise_rand(i + vec4(1.0, 0.0, 0.0, 1.0));
-    float k1 = lib_noise_rand(i + vec4(0.0, 1.0, 0.0, 1.0));
-    float l1 = lib_noise_rand(i + vec4(1.0, 1.0, 0.0, 1.0));
-    float m1 = lib_noise_rand(i + vec4(0.0, 0.0, 1.0, 1.0));
-    float n1 = lib_noise_rand(i + vec4(1.0, 0.0, 1.0, 1.0));
-    float o1 = lib_noise_rand(i + vec4(0.0, 1.0, 1.0, 1.0));
-    float p1 = lib_noise_rand(i + vec4(1.0, 1.0, 1.0, 1.0));
+    float a  = noise_rand(i);
+    float b  = noise_rand(i + vec4(1.0, 0.0, 0.0, 0.0));
+    float c  = noise_rand(i + vec4(0.0, 1.0, 0.0, 0.0));
+    float d  = noise_rand(i + vec4(1.0, 1.0, 0.0, 0.0));
+    float e  = noise_rand(i + vec4(0.0, 0.0, 1.0, 0.0));
+    float f0 = noise_rand(i + vec4(1.0, 0.0, 1.0, 0.0));
+    float g0 = noise_rand(i + vec4(0.0, 1.0, 1.0, 0.0));
+    float h0 = noise_rand(i + vec4(1.0, 1.0, 1.0, 0.0));
+    float i1 = noise_rand(i + vec4(0.0, 0.0, 0.0, 1.0));
+    float j1 = noise_rand(i + vec4(1.0, 0.0, 0.0, 1.0));
+    float k1 = noise_rand(i + vec4(0.0, 1.0, 0.0, 1.0));
+    float l1 = noise_rand(i + vec4(1.0, 1.0, 0.0, 1.0));
+    float m1 = noise_rand(i + vec4(0.0, 0.0, 1.0, 1.0));
+    float n1 = noise_rand(i + vec4(1.0, 0.0, 1.0, 1.0));
+    float o1 = noise_rand(i + vec4(0.0, 1.0, 1.0, 1.0));
+    float p1 = noise_rand(i + vec4(1.0, 1.0, 1.0, 1.0));
 
     vec4 u = smoothstep(0.,1.,f);
     float v0 = mix(mix(mix(a, b, u.x), mix(c, d, u.x), u.y),
@@ -188,7 +268,7 @@ float lib_noise_gradient(vec4 p) {
 
 #define MAX_OCTAVES 12
 
-float lib_noise_fbm(vec2 x, float H, int octaves)
+float noise_fbm(vec2 x, float H, int octaves)
 {
     float G = exp2(-H);
     float f = 1.0;
@@ -197,14 +277,14 @@ float lib_noise_fbm(vec2 x, float H, int octaves)
     octaves = min(octaves, MAX_OCTAVES);
     for( int i=0; i < octaves; i++ )
     {
-        t += a * lib_noise_rand(f*x);
+        t += a * noise_rand(f*x);
         f *= 2.0;
         a *= G;
     }
     return t;
 }
 
-float lib_noise_fbm(vec3 x, float H, int octaves)
+float noise_fbm(vec3 x, float H, int octaves)
 {
     float G = exp2(-H);
     float f = 1.0;
@@ -213,14 +293,14 @@ float lib_noise_fbm(vec3 x, float H, int octaves)
     octaves = min(octaves, MAX_OCTAVES);
     for( int i=0; i<octaves; i++ )
     {
-        t += a * lib_noise_rand(f*x);
+        t += a * noise_rand(f*x);
         f *= 2.0;
         a *= G;
     }
     return t;
 }
 
-float lib_noise_fbm(vec4 x, float H, int octaves)
+float noise_fbm(vec4 x, float H, int octaves)
 {
     float G = exp2(-H);
     float f = 1.0;
@@ -229,7 +309,7 @@ float lib_noise_fbm(vec4 x, float H, int octaves)
     octaves = min(octaves, MAX_OCTAVES);
     for( int i=0; i<octaves; i++ )
     {
-        t += a * lib_noise_rand(f*x);
+        t += a * noise_rand(f*x);
         f *= 2.0;
         a *= G;
     }
@@ -241,32 +321,32 @@ float lib_noise_fbm(vec4 x, float H, int octaves)
 //------------------------------------------------------------------------------
 
 // Value noise function for 2D
-float lib_noise_value(vec2 p) {
+float noise_value(vec2 p) {
     vec2 i = floor(p);
     vec2 f = fract(p);
 
-    float a = lib_noise_rand(i);
-    float b = lib_noise_rand(i + vec2(1.0, 0.0));
-    float c = lib_noise_rand(i + vec2(0.0, 1.0));
-    float d = lib_noise_rand(i + vec2(1.0, 1.0));
+    float a = noise_rand(i);
+    float b = noise_rand(i + vec2(1.0, 0.0));
+    float c = noise_rand(i + vec2(0.0, 1.0));
+    float d = noise_rand(i + vec2(1.0, 1.0));
 
     vec2 u = smoothstep(0.,1.,f);
     return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
 }
 
 // Value noise function for 3D
-float lib_noise_value(vec3 p) {
+float noise_value(vec3 p) {
     vec3 i = floor(p);
     vec3 f = fract(p);
 
-    float a = lib_noise_rand(i);
-    float b = lib_noise_rand(i + vec3(1.0, 0.0, 0.0));
-    float c = lib_noise_rand(i + vec3(0.0, 1.0, 0.0));
-    float d = lib_noise_rand(i + vec3(1.0, 1.0, 0.0));
-    float e = lib_noise_rand(i + vec3(0.0, 0.0, 1.0));
-    float f1 = lib_noise_rand(i + vec3(1.0, 0.0, 1.0));
-    float g = lib_noise_rand(i + vec3(0.0, 1.0, 1.0));
-    float h = lib_noise_rand(i + vec3(1.0, 1.0, 1.0));
+    float a = noise_rand(i);
+    float b = noise_rand(i + vec3(1.0, 0.0, 0.0));
+    float c = noise_rand(i + vec3(0.0, 1.0, 0.0));
+    float d = noise_rand(i + vec3(1.0, 1.0, 0.0));
+    float e = noise_rand(i + vec3(0.0, 0.0, 1.0));
+    float f1 = noise_rand(i + vec3(1.0, 0.0, 1.0));
+    float g = noise_rand(i + vec3(0.0, 1.0, 1.0));
+    float h = noise_rand(i + vec3(1.0, 1.0, 1.0));
 
     vec3 u = smoothstep(0.,1.,f);
     return mix(
@@ -276,26 +356,26 @@ float lib_noise_value(vec3 p) {
     );
 }
 
-float lib_noise_value(vec4 p) {
+float noise_value(vec4 p) {
     vec4 i = floor(p);
     vec4 f = fract(p);
 
-    float a  = lib_noise_rand(i);
-    float b  = lib_noise_rand(i + vec4(1.0, 0.0, 0.0, 0.0));
-    float c  = lib_noise_rand(i + vec4(0.0, 1.0, 0.0, 0.0));
-    float d  = lib_noise_rand(i + vec4(1.0, 1.0, 0.0, 0.0));
-    float e  = lib_noise_rand(i + vec4(0.0, 0.0, 1.0, 0.0));
-    float f0 = lib_noise_rand(i + vec4(1.0, 0.0, 1.0, 0.0));
-    float g0 = lib_noise_rand(i + vec4(0.0, 1.0, 1.0, 0.0));
-    float h0 = lib_noise_rand(i + vec4(1.0, 1.0, 1.0, 0.0));
-    float i1 = lib_noise_rand(i + vec4(0.0, 0.0, 0.0, 1.0));
-    float j1 = lib_noise_rand(i + vec4(1.0, 0.0, 0.0, 1.0));
-    float k1 = lib_noise_rand(i + vec4(0.0, 1.0, 0.0, 1.0));
-    float l1 = lib_noise_rand(i + vec4(1.0, 1.0, 0.0, 1.0));
-    float m1 = lib_noise_rand(i + vec4(0.0, 0.0, 1.0, 1.0));
-    float n1 = lib_noise_rand(i + vec4(1.0, 0.0, 1.0, 1.0));
-    float o1 = lib_noise_rand(i + vec4(0.0, 1.0, 1.0, 1.0));
-    float p1 = lib_noise_rand(i + vec4(1.0, 1.0, 1.0, 1.0));
+    float a  = noise_rand(i);
+    float b  = noise_rand(i + vec4(1.0, 0.0, 0.0, 0.0));
+    float c  = noise_rand(i + vec4(0.0, 1.0, 0.0, 0.0));
+    float d  = noise_rand(i + vec4(1.0, 1.0, 0.0, 0.0));
+    float e  = noise_rand(i + vec4(0.0, 0.0, 1.0, 0.0));
+    float f0 = noise_rand(i + vec4(1.0, 0.0, 1.0, 0.0));
+    float g0 = noise_rand(i + vec4(0.0, 1.0, 1.0, 0.0));
+    float h0 = noise_rand(i + vec4(1.0, 1.0, 1.0, 0.0));
+    float i1 = noise_rand(i + vec4(0.0, 0.0, 0.0, 1.0));
+    float j1 = noise_rand(i + vec4(1.0, 0.0, 0.0, 1.0));
+    float k1 = noise_rand(i + vec4(0.0, 1.0, 0.0, 1.0));
+    float l1 = noise_rand(i + vec4(1.0, 1.0, 0.0, 1.0));
+    float m1 = noise_rand(i + vec4(0.0, 0.0, 1.0, 1.0));
+    float n1 = noise_rand(i + vec4(1.0, 0.0, 1.0, 1.0));
+    float o1 = noise_rand(i + vec4(0.0, 1.0, 1.0, 1.0));
+    float p1 = noise_rand(i + vec4(1.0, 1.0, 1.0, 1.0));
 
     vec4 u = smoothstep(0.,1.,f);
     float v0 = mix(mix(mix(a, b, u.x), mix(c, d, u.x), u.y), mix(mix(e, f0, u.x), mix(g0, h0, u.x), u.y), u.z);
@@ -309,7 +389,7 @@ float lib_noise_value(vec4 p) {
 //------------------------------------------------------------------------------
 
 // 2D Simplex noise function (simplified)
-float lib_noise_simplex(vec2 v) {
+float noise_simplex(vec2 v) {
     const vec2 C = vec2(0.211324865405187, 0.366025403784439); // (3 - sqrt(3)) / 6
     vec2  i  = floor(v + (v.x + v.y) * C);
     vec2  x0 = v - i + (i.x + i.y) * C;
@@ -326,9 +406,9 @@ float lib_noise_simplex(vec2 v) {
     float t2 = 0.5 - dot(p2, p2);
 
     // Fade curve function
-    vec3 g0 = lib_noise_smooth(int(i.x + i.y) & 3, p);
-    vec3 g1 = lib_noise_smooth(int(i.x + i.y + 1.) & 3, p1);
-    vec3 g2 = lib_noise_smooth(int(i.x + i.y + 2.) & 3, p2);
+    vec3 g0 = noise_smooth(int(i.x + i.y) & 3, p);
+    vec3 g1 = noise_smooth(int(i.x + i.y + 1.) & 3, p1);
+    vec3 g2 = noise_smooth(int(i.x + i.y + 2.) & 3, p2);
 
     t0 = t0 < 0.0 ? 0.0 : t0 * t0 * t0 * t0 * dot(g0, p);
     t1 = t1 < 0.0 ? 0.0 : t1 * t1 * t1 * t1 * dot(g1, p1);
@@ -337,7 +417,7 @@ float lib_noise_simplex(vec2 v) {
 }
 
 // 3D Simplex Noise function
-float lib_noise_simplex(vec3 p) {
+float noise_simplex(vec3 p) {
     // Simplex noise constants
     const vec3 C = vec3(1.0 / 6.0, 1.0 / 3.0, 1.0 / 2.0);
 
@@ -361,7 +441,7 @@ float lib_noise_simplex(vec3 p) {
 }
 
 // 4D Simplex Noise function
-float lib_noise_simplex(vec4 p) {
+float noise_simplex(vec4 p) {
     // Simplex noise constants
     const vec4 C = vec4(0.138196601125010, 0.276393202250020, 0.414589803375030, 0.552786404500040);
 
@@ -391,61 +471,61 @@ float lib_noise_simplex(vec4 p) {
 
 // Generate 2D Perlin noise
 // Generate 2D Perlin noise
-float lib_noise_perlin(vec2 p) {
+float noise_perlin(vec2 p) {
     vec2 i = floor(p);
     vec2 f = fract(p);
     vec2 u = smoothstep(0.,1.,f);
 
-    float a = lib_noise_rand(i);
-    float b = lib_noise_rand(i + vec2(1.0, 0.0));
-    float c = lib_noise_rand(i + vec2(0.0, 1.0));
-    float d = lib_noise_rand(i + vec2(1.0, 1.0));
+    float a = noise_rand(i);
+    float b = noise_rand(i + vec2(1.0, 0.0));
+    float c = noise_rand(i + vec2(0.0, 1.0));
+    float d = noise_rand(i + vec2(1.0, 1.0));
 
     return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
 }
 
 // 3D Perlin Noise function
 // 3D Perlin Noise function
-float lib_noise_perlin(vec3 p) {
+float noise_perlin(vec3 p) {
     vec3 i = floor(p);
     vec3 f = fract(p);
     vec3 u = smoothstep(0.,1.,f);
 
-    float a = lib_noise_rand(i);
-    float b = lib_noise_rand(i + vec3(1.0, 0.0, 0.0));
-    float c = lib_noise_rand(i + vec3(0.0, 1.0, 0.0));
-    float d = lib_noise_rand(i + vec3(1.0, 1.0, 0.0));
-    float e = lib_noise_rand(i + vec3(0.0, 0.0, 1.0));
-    float f0 = lib_noise_rand(i + vec3(1.0, 0.0, 1.0));
-    float g0 = lib_noise_rand(i + vec3(0.0, 1.0, 1.0));
-    float h0 = lib_noise_rand(i + vec3(1.0, 1.0, 1.0));
+    float a = noise_rand(i);
+    float b = noise_rand(i + vec3(1.0, 0.0, 0.0));
+    float c = noise_rand(i + vec3(0.0, 1.0, 0.0));
+    float d = noise_rand(i + vec3(1.0, 1.0, 0.0));
+    float e = noise_rand(i + vec3(0.0, 0.0, 1.0));
+    float f0 = noise_rand(i + vec3(1.0, 0.0, 1.0));
+    float g0 = noise_rand(i + vec3(0.0, 1.0, 1.0));
+    float h0 = noise_rand(i + vec3(1.0, 1.0, 1.0));
 
     return mix(mix(mix(a, b, u.x), mix(c, d, u.x), u.y), mix(mix(e, f0, u.x), mix(g0, h0, u.x), u.y), u.z);
 }
 
 // 4D Perlin Noise function
 // 4D Perlin Noise function
-float lib_noise_perlin(vec4 p) {
+float noise_perlin(vec4 p) {
     vec4 i = floor(p);
     vec4 f = fract(p);
     vec4 u = smoothstep(0.,1.,f);
 
-    float a = lib_noise_rand(i);
-    float b = lib_noise_rand(i + vec4(1.0, 0.0, 0.0, 0.0));
-    float c = lib_noise_rand(i + vec4(0.0, 1.0, 0.0, 0.0));
-    float d = lib_noise_rand(i + vec4(1.0, 1.0, 0.0, 0.0));
-    float e = lib_noise_rand(i + vec4(0.0, 0.0, 1.0, 0.0));
-    float f0 = lib_noise_rand(i + vec4(1.0, 0.0, 1.0, 0.0));
-    float g0 = lib_noise_rand(i + vec4(0.0, 1.0, 1.0, 0.0));
-    float h0 = lib_noise_rand(i + vec4(1.0, 1.0, 1.0, 0.0));
-    float i1 = lib_noise_rand(i + vec4(0.0, 0.0, 0.0, 1.0));
-    float j1 = lib_noise_rand(i + vec4(1.0, 0.0, 0.0, 1.0));
-    float k1 = lib_noise_rand(i + vec4(0.0, 1.0, 0.0, 1.0));
-    float l1 = lib_noise_rand(i + vec4(1.0, 1.0, 0.0, 1.0));
-    float m1 = lib_noise_rand(i + vec4(0.0, 0.0, 1.0, 1.0));
-    float n1 = lib_noise_rand(i + vec4(1.0, 0.0, 1.0, 1.0));
-    float o1 = lib_noise_rand(i + vec4(0.0, 1.0, 1.0, 1.0));
-    float p1 = lib_noise_rand(i + vec4(1.0, 1.0, 1.0, 1.0));
+    float a = noise_rand(i);
+    float b = noise_rand(i + vec4(1.0, 0.0, 0.0, 0.0));
+    float c = noise_rand(i + vec4(0.0, 1.0, 0.0, 0.0));
+    float d = noise_rand(i + vec4(1.0, 1.0, 0.0, 0.0));
+    float e = noise_rand(i + vec4(0.0, 0.0, 1.0, 0.0));
+    float f0 = noise_rand(i + vec4(1.0, 0.0, 1.0, 0.0));
+    float g0 = noise_rand(i + vec4(0.0, 1.0, 1.0, 0.0));
+    float h0 = noise_rand(i + vec4(1.0, 1.0, 1.0, 0.0));
+    float i1 = noise_rand(i + vec4(0.0, 0.0, 0.0, 1.0));
+    float j1 = noise_rand(i + vec4(1.0, 0.0, 0.0, 1.0));
+    float k1 = noise_rand(i + vec4(0.0, 1.0, 0.0, 1.0));
+    float l1 = noise_rand(i + vec4(1.0, 1.0, 0.0, 1.0));
+    float m1 = noise_rand(i + vec4(0.0, 0.0, 1.0, 1.0));
+    float n1 = noise_rand(i + vec4(1.0, 0.0, 1.0, 1.0));
+    float o1 = noise_rand(i + vec4(0.0, 1.0, 1.0, 1.0));
+    float p1 = noise_rand(i + vec4(1.0, 1.0, 1.0, 1.0));
 
     return mix(mix(mix(a, b, u.x), mix(c, d, u.x), u.y), mix(mix(e, f0, u.x), mix(g0, h0, u.x), u.y), u.z);
 }
@@ -455,14 +535,14 @@ float lib_noise_perlin(vec4 p) {
 //------------------------------------------------------------------------------
 
 // 2D Fractal noise function with Perlin noise
-float lib_noise_fractal(vec2 p, float octaves, float persistence) {
+float noise_fractal(vec2 p, float octaves, float persistence) {
     float total     = 0.0;
     float frequency = 1.0;
     float amplitude = 1.0;
     float max_value = 0.0;
 
     for (float i = 0.0; i < octaves; i++) {
-        total     += lib_noise_gradient(p * frequency) * amplitude;
+        total     += noise_gradient(p * frequency) * amplitude;
         max_value += amplitude;
         amplitude *= persistence;
         frequency *= 2.0;
@@ -472,14 +552,14 @@ float lib_noise_fractal(vec2 p, float octaves, float persistence) {
 }
 
 // 3D Fractal noise function with Perlin noise
-float lib_noise_fractal(vec3 p, float octaves, float persistence) {
+float noise_fractal(vec3 p, float octaves, float persistence) {
     float total     = 0.0;
     float frequency = 1.0;
     float amplitude = 1.0;
     float max_value = 0.0;
 
     for (float i = 0.0; i < octaves; i++) {
-        total     += lib_noise_gradient(p * frequency) * amplitude;
+        total     += noise_gradient(p * frequency) * amplitude;
         max_value += amplitude;
         amplitude *= persistence;
         frequency *= 2.0;
@@ -489,14 +569,14 @@ float lib_noise_fractal(vec3 p, float octaves, float persistence) {
 }
 
 // 4D Fractal noise function with Perlin noise
-float lib_noise_fractal(vec4 p, float octaves, float persistence) {
+float noise_fractal(vec4 p, float octaves, float persistence) {
     float total     = 0.0;
     float frequency = 1.0;
     float amplitude = 1.0;
     float max_value = 0.0;
 
     for (float i = 0.0; i < octaves; i++) {
-        total     += lib_noise_gradient(p * frequency) * amplitude;
+        total     += noise_gradient(p * frequency) * amplitude;
         max_value += amplitude;
         amplitude *= persistence;
         frequency *= 2.0;
@@ -509,7 +589,7 @@ float lib_noise_fractal(vec4 p, float octaves, float persistence) {
 //------------------------------------------------------------------------------
 
 // Voronoi noise function for 2D
-vec2 lib_noise_voronoi(vec2 p) {
+vec2 noise_voronoi(vec2 p) {
     vec2 n = floor(p);
     vec2 f = fract(p);
 
@@ -517,7 +597,7 @@ vec2 lib_noise_voronoi(vec2 p) {
     for (int j = -1; j <= 1; j++) {
         for (int i = -1; i <= 1; i++) {
             vec2 g = vec2(float(i), float(j));
-            vec2 o = vec2(lib_noise_rand(n + g));
+            vec2 o = vec2(noise_rand(n + g));
             vec2 r = g + o - f;
             float d = dot(r, r);
             if (d < m.x) {
@@ -532,7 +612,7 @@ vec2 lib_noise_voronoi(vec2 p) {
 }
 
 // Voronoi noise function for 3D
-vec2 lib_noise_voronoi(vec3 p) {
+vec2 noise_voronoi(vec3 p) {
     vec3 i = floor(p);
     vec3 f = fract(p);
 
@@ -557,7 +637,7 @@ vec2 lib_noise_voronoi(vec3 p) {
 }
 
 // Voronoi noise function for 4D
-vec2 lib_noise_voronoi(vec4 p) {
+vec2 noise_voronoi(vec4 p) {
     vec4 i = floor(p);
     vec4 f = fract(p);
 
@@ -588,7 +668,7 @@ vec2 lib_noise_voronoi(vec4 p) {
 //------------------------------------------------------------------------------
 
 // 2D Worley noise function (Cellular noise)
-float lib_noise_worley(vec2 p, int num_cells) {
+float noise_worley(vec2 p, int num_cells) {
     vec2  i = floor(p);
     vec2  f = fract(p);
     float d = 1.0; // Initial distance (for min distance to feature points)
@@ -596,7 +676,7 @@ float lib_noise_worley(vec2 p, int num_cells) {
     for (int x = -num_cells; x <= num_cells; ++x) {
         for (int y = -num_cells; y <= num_cells; ++y) {
             vec2  cell   = vec2(float(x), float(y));
-            vec2  point  = cell + vec2(lib_noise_rand(i + cell), lib_noise_rand(i + cell + vec2(42.0, 17.0)));
+            vec2  point  = cell + vec2(noise_rand(i + cell), noise_rand(i + cell + vec2(42.0, 17.0)));
             vec2  offset = point - f;
             float len    = length(offset);
             d = min(d, len);
@@ -607,7 +687,7 @@ float lib_noise_worley(vec2 p, int num_cells) {
 }
 
 // 3D Worley noise function (Cellular noise)
-float lib_noise_worley(vec3 p, int num_cells) {
+float noise_worley(vec3 p, int num_cells) {
     vec3  i = floor(p);
     vec3  f = fract(p);
     float d = 1.0; // Initial distance (for min distance to feature points)
@@ -616,9 +696,9 @@ float lib_noise_worley(vec3 p, int num_cells) {
         for (int y = -num_cells; y <= num_cells; ++y) {
             for (int z = -num_cells; z <= num_cells; ++z) {
                 vec3  cell   = vec3(float(x), float(y), float(z));
-                vec3  point  = cell + vec3(lib_noise_rand(i + cell),
-                                        lib_noise_rand(i + cell + vec3(42.0, 17.0, 23.0)),
-                                        lib_noise_rand(i + cell + vec3(23.0, 31.0, 51.0)));
+                vec3  point  = cell + vec3(noise_rand(i + cell),
+                                        noise_rand(i + cell + vec3(42.0, 17.0, 23.0)),
+                                        noise_rand(i + cell + vec3(23.0, 31.0, 51.0)));
                 vec3  offset = point - f;
                 float len    = length(offset);
                 d = min(d, len);
@@ -630,7 +710,7 @@ float lib_noise_worley(vec3 p, int num_cells) {
 }
 
 // 4D Worley Noise function
-float lib_noise_worley(vec4 p, int num_cells) {
+float noise_worley(vec4 p, int num_cells) {
     // Grid cell dimensions
     float cell_size = 1.0 / float(num_cells);
 
@@ -673,12 +753,12 @@ float lib_noise_worley(vec4 p, int num_cells) {
 //------------------------------------------------------------------------------
 
 // Turbulence function using 2D Perlin noise
-float lib_noise_turbulence(vec2 p, float size) {
+float noise_turbulence(vec2 p, float size) {
     float value = 0.0;
     float initial_size = size;
 
     while (size >= 1.0) {
-        value += lib_noise_perlin(p / size) * size;
+        value += noise_perlin(p / size) * size;
         size /= 2.0;
     }
 
@@ -686,24 +766,24 @@ float lib_noise_turbulence(vec2 p, float size) {
 }
 
 // Turbulence function using 3D Perlin noise
-float lib_noise_turbulence(vec3 p, float size) {
+float noise_turbulence(vec3 p, float size) {
     float value = 0.0;
     float initial_size = size;
 
     while (size >= 1.0) {
-        value += lib_noise_gradient(p / size) * size;
+        value += noise_gradient(p / size) * size;
         size /= 2.0;
     }
 
     return 0.5 * value / initial_size;
 }
 
-float lib_noise_turbulence(vec4 p, float size) {
+float noise_turbulence(vec4 p, float size) {
     float total = 0.0;
     float scale = 1.0;
 
     while (size > 1.0) {
-        total += abs(lib_noise_gradient(p * scale)) / scale;
+        total += abs(noise_gradient(p * scale)) / scale;
         scale *= 2.0;
         size /= 2.0;
     }
@@ -716,7 +796,7 @@ float lib_noise_turbulence(vec4 p, float size) {
 //------------------------------------------------------------------------------
 
 // Gradient function for 2D
-vec2 lib_noise_smooth(int hash, vec2 p) {
+vec2 noise_smooth(int hash, vec2 p) {
     const vec2 grad[4] = vec2[](
         vec2( 1.0,  1.0),
         vec2(-1.0,  1.0),
@@ -727,7 +807,7 @@ vec2 lib_noise_smooth(int hash, vec2 p) {
 }
 
 // Gradient function for 3D
-vec3 lib_noise_smooth(int hash, vec3 p) {
+vec3 noise_smooth(int hash, vec3 p) {
     const vec3 grad[12] = vec3[](
         vec3( 1.0,  1.0,  0.0),
         vec3(-1.0,  1.0,  0.0),
@@ -745,7 +825,7 @@ vec3 lib_noise_smooth(int hash, vec3 p) {
     return grad[hash % 12];
 }
 
-vec4 lib_noise_smooth(int hash, vec4 p) {
+vec4 noise_smooth(int hash, vec4 p) {
     const vec4 grad[32] = vec4[](
         vec4( 1.0,  1.0,  1.0,  0.0),
         vec4(-1.0,  1.0,  1.0,  0.0),
@@ -781,4 +861,202 @@ vec4 lib_noise_smooth(int hash, vec4 p) {
         vec4( 0.0, -1.0, -1.0, -1.0)
     );
     return grad[hash & 31];
+}
+
+//------------------------------------------------------------------------------
+// FLOW NOISE
+//------------------------------------------------------------------------------
+
+float noise_flow(vec2 p, float time, float strength) {
+    vec2 flow = vec2(
+        noise_perlin(vec2(p.x * 0.5 + time * 0.5, p.y * 0.5)),
+        noise_perlin(vec2(p.x * 0.5 + 40.0 + time * 0.5, p.y * 0.5 + 40.0))
+    );
+    return noise_perlin(p + flow * strength);
+}
+
+// Curl noise for 2D vector field
+vec2 noise_curl(vec2 p, float epsilon) {
+    float n1 = noise_perlin(vec2(p.x, p.y + epsilon));
+    float n2 = noise_perlin(vec2(p.x, p.y - epsilon));
+    float n3 = noise_perlin(vec2(p.x + epsilon, p.y));
+    float n4 = noise_perlin(vec2(p.x - epsilon, p.y));
+
+    float x = n1 - n2;
+    float y = n4 - n3;
+
+    return vec2(x, y) / (2.0 * epsilon);
+}
+
+//------------------------------------------------------------------------------
+// DOMAIN WARPING
+//------------------------------------------------------------------------------
+
+float noise_warp(vec2 p, float strength) {
+    vec2 q = vec2(
+        noise_perlin(p + vec2(0.0, 0.0)),
+        noise_perlin(p + vec2(5.2, 1.3))
+    );
+
+    vec2 r = vec2(
+        noise_perlin(p + strength * q + vec2(1.7, 9.2)),
+        noise_perlin(p + strength * q + vec2(8.3, 2.8))
+    );
+
+    return noise_perlin(p + strength * r);
+}
+
+vec3 noise_warp3D(vec3 p, float strength) {
+    vec3 q = vec3(
+        noise_perlin(vec3(p.x, p.y, p.z)),
+        noise_perlin(vec3(p.x + 5.2, p.y + 1.3, p.z + 2.1)),
+        noise_perlin(vec3(p.x + 1.7, p.y + 9.2, p.z + 3.5))
+    );
+
+    return q * strength;
+}
+
+//------------------------------------------------------------------------------
+// RIDGED NOISE
+//------------------------------------------------------------------------------
+
+float noise_ridge(vec2 p, float offset) {
+    float n = noise_perlin(p);
+    n = abs(n);     // Create creases
+    n = offset - n; // Invert so creases are at top
+    n = n * n;      // Sharpen creases
+    return n;
+}
+
+float noise_ridgeMult(vec2 p, float frequency, float lacunarity, float gain, int octaves) {
+    float sum = 0.0;
+    float amp = 0.5;
+    float prev = 1.0;
+
+    for(int i = 0; i < octaves; i++) {
+        float n = noise_ridge(p * frequency, 1.0);
+        sum += n * amp * prev;
+        prev = n;
+        frequency *= lacunarity;
+        amp *= gain;
+    }
+    return sum;
+}
+
+//------------------------------------------------------------------------------
+// HYBRID NOISE
+//------------------------------------------------------------------------------
+
+// Combines Perlin and Voronoi for organic patterns
+float noise_hybrid(vec2 p, float voronoiWeight) {
+    float perlin = noise_perlin(p);
+    vec2 voronoi = noise_voronoi(p * 2.0);
+    return mix(perlin, voronoi.x, voronoiWeight);
+}
+
+// Creates spiral noise pattern
+float noise_spiral(vec2 p, float arms, float spin) {
+    float angle = atan(p.y, p.x);
+    float dist = length(p);
+    float spiral = noise_perlin(vec2(dist * arms + angle * spin, dist));
+    return spiral;
+}
+
+// Billowed noise (absolute value of Perlin)
+float noise_billowed(vec2 p) {
+    return abs(noise_perlin(p * 2.0) * 2.0 - 1.0);
+}
+
+// Swiss noise (multiplies different frequencies)
+float noise_swiss(vec2 p, float scale) {
+    float noise1 = noise_perlin(p);
+    float noise2 = noise_perlin(p * scale);
+    return noise1 * noise2;
+}
+
+//------------------------------------------------------------------------------
+// TERRAIN NOISE
+//------------------------------------------------------------------------------
+
+// Terraced noise for plateaus
+float noise_terraced(vec2 p, float steps) {
+    float noise = noise_perlin(p);
+    return floor(noise * steps) / steps;
+}
+
+// Erosion-like noise
+float noise_erosion(vec2 p, float roughness) {
+    float base = noise_perlin(p);
+    float detail = noise_ridge(p * 4.0, 1.0);
+    return base - detail * roughness;
+}
+
+// River network noise
+float noise_river(vec2 p, float width) {
+    vec2 flow = noise_curl(p, 0.1);
+    float pattern = noise_perlin(p + flow);
+    return smoothstep(-width, width, pattern);
+}
+
+//------------------------------------------------------------------------------
+// SPACE NOISE
+//------------------------------------------------------------------------------
+
+// Star field noise (creates points of light)
+float noise_stars(vec2 p, float density, float size) {
+    vec2 cell = floor(p);
+    vec2 local = fract(p);
+
+    float minDist = 1.0;
+
+    for(int y = -1; y <= 1; y++) {
+        for(int x = -1; x <= 1; x++) {
+            vec2 offset = vec2(float(x), float(y));
+            vec2 neighbor = cell + offset;
+
+            float rand = noise_rand(neighbor);
+            if(rand > (1.0 - density)) {
+                vec2 pos = offset + vec2(noise_rand(neighbor * 49.0),
+                                      noise_rand(neighbor * 73.0));
+                float dist = length(local - pos);
+                minDist = min(minDist, dist);
+            }
+        }
+    }
+
+    return smoothstep(size, 0.0, minDist);
+}
+
+// Galaxy-like spiral noise
+float noise_galaxy(vec2 p, float arms, float twist, float chaos) {
+    float angle = atan(p.y, p.x);
+    float dist = length(p);
+    float arm_factor = (angle * arms + dist * twist) / (2.0 * M_PI);
+    float base = fract(arm_factor);
+    float noise = noise_perlin(p * chaos);
+    return smoothstep(0.5, 0.0, abs(base - 0.5) + noise * 0.3);
+}
+
+// Nebula-like noise
+float noise_nebula(vec2 p, float scale, float detail) {
+    float base = noise_fbm(p * scale, 0.5, 6);
+    float fine = noise_perlin(p * scale * detail);
+    return base * fine;
+}
+
+// Cosmic web noise (interconnected structure)
+float noise_cosmicWeb(vec2 p, float scale) {
+    vec2 id = floor(p * scale);
+    vec2 f = fract(p * scale);
+
+    float min_dist = 1.0;
+    for(int y = -1; y <= 1; y++) {
+        for(int x = -1; x <= 1; x++) {
+            vec2 offset = vec2(x, y);
+            vec2 pos = offset + noise_hash33(vec3(id + offset, 0.0)).xy;
+            min_dist = min(min_dist, length(f - pos));
+        }
+    }
+
+    return 1.0 - smoothstep(0.0, 0.3, min_dist);
 }

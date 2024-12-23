@@ -17,21 +17,21 @@
 // PROTOTYPE
 // =============================================================================
 
-float lib_vec_ndot(in vec2 a, in vec2 b);
-mat3 lib_vec_rotationXY(vec2 angle);
-vec2 lib_vec_rotate2(vec2 v, float angle);
+float vec_ndot(in vec2 a, in vec2 b);
+mat3 vec_rotationXY(vec2 angle);
+vec2 vec_rotate2(vec2 v, float angle);
 
 //------------------------------------------------------------------------------
 // ANGLE
 //------------------------------------------------------------------------------
 
 // Compute the "negative dot product" of two 2D vectors
-float lib_vec_ndot(in vec2 a, in vec2 b) {
+float vec_ndot(in vec2 a, in vec2 b) {
     return a.x*b.x - a.y*b.y;
 }
 
 // Creates a rotation matrix for pitch, yaw
-mat3 lib_vec_rotationXY( vec2 angle ) {
+mat3 vec_rotationXY( vec2 angle ) {
     vec2 c = cos( angle );
     vec2 s = sin( angle );
 
@@ -43,7 +43,7 @@ mat3 lib_vec_rotationXY( vec2 angle ) {
 }
 
 // Rotates a 2D vector by angle in radians
-vec2 lib_vec_rotate2(vec2 v, float angle) {
+vec2 vec_rotate2(vec2 v, float angle) {
     float cosA = cos(angle);
     float sinA = sin(angle);
     return vec2(
