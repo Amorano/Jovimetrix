@@ -96,8 +96,10 @@ If those nodes have descriptions written in HTML or Markdown, they will be conve
 
 ## UPDATES
 
-**2024/12/22** @1.2.55:
+**2024/12/27** @1.2.55:
 * updated GLSL programs/libs to match new breakout repository
+* explicit requirements loosened
+* PyOpenGL-accelerate allowed for python 3.11 and older
 
 **2024/12/12** @1.2.54:
 * reduced convoluted logic for `ROUTE` node
@@ -123,25 +125,6 @@ If those nodes have descriptions written in HTML or Markdown, they will be conve
 * parse_param updated for GLSL nodes
 * bug: GLSL nodes were not parsing LIST as an animation LIST
 * removed `skip_list` mechanism for parameters
-
-**2024/11/26** @1.2.49:
-* cleaning up debug statements
-
-**2024/11/24** @1.2.48:
-* requirements update for OpenGL Accelerate
-* Fixed bad escape sequence in header in image/__init__
-
-**2024/11/16** @1.2.47:
-* Better list handling for `VALUE` node et. al.
-* Wave defaults for offset/phase adjusted to be zero (0)
-
-**2024/10/29** @1.2.46:
-* `DELAY` node updated maintain ComfyUI zoom (fixes issue #61)
-* Added Enable/Disable for Screensaver mode in `DELAY` node (added option from issue #61)
-* Added `Resize Matte` for nodes with `MODE` operator
-
-**2024/10/16** @1.2.45:
-* ENUMs cleaned for all usages (someone send coffee bucks to bframes for the bug checks!)
 
 # INSTALLATION
 
