@@ -96,12 +96,15 @@ If those nodes have descriptions written in HTML or Markdown, they will be conve
 
 ## UPDATES
 
-**2024/12/04** @1.2.54:
+**2024/12/22** @1.2.55:
+* updated GLSL programs/libs to match new breakout repository
+
+**2024/12/12** @1.2.54:
 * reduced convoluted logic for `ROUTE` node
 * rolled back PILLOW requirement to 10.2.0
 * fixed requirements for opengl-accelerate
 
-**2024/12/04** @1.2.53:
+**2024/12/05** @1.2.53:
 * rolled back pillow requirement to 10.2.0 or above
 * akashic node now sizes and reports correct outputs for all inputs (with labels)
 * NEW VERSION REQUIREMENTS (only guarenteed to work 100% with):

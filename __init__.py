@@ -35,7 +35,7 @@ images, or liner interpolate values and more.
     AkashicNode, ArrayNode, ExportNode, ValueGraphNode, ImageInfoNode, QueueNode,
     QueueTooNode, RouteNode, SaveOutputNode
 
-@version: 1.2.54
+@version: 1.2.55
 """
 
 import os
