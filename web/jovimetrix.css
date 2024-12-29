@@ -417,6 +417,27 @@ COLORIZATION STYLE
   margin-top: 10px;
 }
 
+.jov-search-input {
+  width: calc(100% - 16px);
+  margin: 8px;
+  padding: 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--input-background-color);
+  color: var(--input-text-color);
+  font-size: 14px;
+}
+
+.jov-search-input:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 2px rgba(var(--accent-color-rgb), 0.2);
+}
+
+.jov-search-input::placeholder {
+  color: var(--text-color-secondary);
+}
+
 @media screen and (max-width: 600px) {
   .flexible-table, .flexible-table tbody, .flexible-table tr, .flexible-table td {
     display: block;

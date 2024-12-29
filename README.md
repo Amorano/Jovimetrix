@@ -76,25 +76,29 @@ Please consider sponsoring me if you enjoy the results of my work, code or docum
 
 ### HELP SYSTEM
 
-<div align="center">
-
-![CLICKING NODES FOR HELP](res/wiki/help_002.png)
-</div>
-
 The built-in help system will dynamically parse any nodes found at the ComfyUI API endpoint:
 
 `<comfyui_web_root>/object_info`
 
 If those nodes have descriptions written in HTML or Markdown, they will be converted into HTML for presentation in the panel.
 
+<div align="center">
+<img src="https://github.com/user-attachments/assets/075f6f9b-b27b-4a6f-84da-a6db486446ff" alt="Clicking Nodes for Help" width="512"/>
+</div>
+
 ### NODE COLORS
 
-<div align="center">
+You can colorize nodes via their `title` or `body`. This can be done to the node's `category` as well, so you can quickly color groups of nodes.
 
-![alt text](res/wiki/color_001.png)
+<div align="center">
+<img src="https://github.com/user-attachments/assets/8de9561a-b231-4a49-a63a-4fd5fdba64d9" alt="node color panel" width="512"/>
 </div>
 
 ## UPDATES
+
+**2024/12/29** @1.2.56:
+* added a filter to the top so you can find the nodes easier
+* better "theme" supported highlights for major node packs and their sub-cateogories
 
 **2024/12/27** @1.2.55:
 * updated GLSL programs/libs to match new breakout repository

@@ -68,6 +68,61 @@ class JovimetrixPanelColorize {
         this.pickerWrapper = null;
         this.recentColors = [];
         this.title_content = "HI!"
+        this.searchInput = null;
+        this.tbody = null;
+    }
+
+    createSearchInput() {
+        this.searchInput = $el("input", {
+            type: "text",
+            placeholder: "Filter nodes...",
+            className: "jov-search-input",
+            oninput: (e) => this.filterItems(e.target.value)
+        });
+        return this.searchInput;
+    }
+
+    filterItems(searchTerm) {
+        if (!this.tbody) return;
+
+        const searchLower = searchTerm.toLowerCase();
+        const rows = this.tbody.querySelectorAll('tr');
+
+        rows.forEach(row => {
+            const nameCell = row.querySelector('td:last-child');
+            if (!nameCell) return;
+
+            const text = nameCell.textContent.toLowerCase();
+            const categoryMatch = row.classList.contains('jov-panel-color-cat_major') ||
+                                row.classList.contains('jov-panel-color-cat_minor');
+
+            // Show categories if they or their children match
+            if (categoryMatch) {
+                const siblingRows = this.getNextSiblingRowsUntilCategory(row);
+                const hasVisibleChildren = siblingRows.some(sibling => {
+                    const siblingText = sibling.querySelector('td:last-child')?.textContent.toLowerCase() || '';
+                    return siblingText.includes(searchLower);
+                });
+
+                row.style.display = hasVisibleChildren || text.includes(searchLower) ? '' : 'none';
+            } else {
+                row.style.display = text.includes(searchLower) ? '' : 'none';
+            }
+        });
+    }
+
+    getNextSiblingRowsUntilCategory(categoryRow) {
+        const siblings = [];
+        let currentRow = categoryRow.nextElementSibling;
+
+        while (currentRow &&
+               !currentRow.classList.contains('jov-panel-color-cat_major') &&
+               !currentRow.classList.contains('jov-panel-color-cat_minor')) {
+            siblings.push(currentRow);
+            currentRow = currentRow.nextElementSibling;
+        }
+
+        return siblings;
     }
 
     createColorButton(label, color, identifier) {
@@ -276,7 +331,7 @@ class JovimetrixPanelColorize {
         });
     }
 
-    templateColorRow(data, type, classList="jov-panel-color-category") {
+    templateColorRow2(data, type, classList="jov-panel-color-category") {
         const titleColor = data.title || LiteGraph.NODE_DEFAULT_COLOR;
         const bodyColor = data.body || LiteGraph.NODE_DEFAULT_COLOR;
 
@@ -296,9 +351,38 @@ class JovimetrixPanelColorize {
         return element;
     }
 
+    templateColorRow(data, type, classList = "jov-panel-color-category") {
+        const titleColor = data.title || LiteGraph.NODE_DEFAULT_COLOR;
+        const bodyColor = data.body || LiteGraph.NODE_DEFAULT_COLOR;
+
+        // Determine background color based on class
+        let rowClass = classList;
+        let style = {};
+
+        if (classList === "jov-panel-color-cat_major") {
+             // Darker background for major categories
+            style.backgroundColor = "var(--border-color)";
+        } else if (classList === "jov-panel-color-cat_minor") {
+            style.backgroundColor = "var(--tr-odd-bg-color)";
+        }
+
+        const element = $el("tr", { className: rowClass, style }, [
+            $el("td", {}, [this.createColorButton("T", titleColor, `${data.name}.${data.idx}.title`)]),
+            $el("td", {}, [this.createColorButton("B", bodyColor, `${data.name}.${data.idx}.body`)]),
+            (type === "regex") ? $el("td", [
+                $el("input", {
+                    value: data.name
+                })
+            ])
+            : $el("td", { textContent: data.name })
+        ]);
+
+        return element;
+    }
+
     createRegexPalettes() {
         const table = $el("table.flexible-table");
-        const tbody = $el("tbody");
+        this.tbody = $el("tbody");
 
         (CONFIG_COLOR?.regex || []).forEach((entry, idx) => {
             const data = {
@@ -307,14 +391,14 @@ class JovimetrixPanelColorize {
                 title: entry.title || LiteGraph.NODE_TITLE_COLOR,
                 body: entry.body || LiteGraph.NODE_DEFAULT_COLOR,
             };
-            tbody.appendChild(this.templateColorRow(data, "regex"));
+            this.tbody.appendChild(this.templateColorRow(data, "regex"));
         });
 
-        table.appendChild(tbody);
-        return table, tbody;
+        table.appendChild(this.tbody);
+        return table;
     }
 
-    createColorPalettes(tbody) {
+    createColorPalettes() {
         const all_nodes = Object.entries(NODE_LIST || []).sort((a, b) => {
             const categoryComparison = a[1].category.toLowerCase().localeCompare(b[1].category.toLowerCase());
             return categoryComparison;
@@ -337,7 +421,7 @@ class JovimetrixPanelColorize {
                     title: CONFIG_THEME?.[majorCategory]?.title,
                     body: CONFIG_THEME?.[majorCategory]?.body,
                 };
-                tbody.appendChild(this.templateColorRow(element, null, "jov-panel-color-cat_major"));
+                this.tbody.appendChild(this.templateColorRow(element, null, "jov-panel-color-cat_major"));
                 categories.push(majorCategory);
             }
 
@@ -349,7 +433,7 @@ class JovimetrixPanelColorize {
                     body: CONFIG_THEME?.[category]?.body,
                     background: background_title[background_index] || LiteGraph.WIDGET_BGCOLOR
                 };
-                tbody.appendChild(this.templateColorRow(element, null, "jov-panel-color-cat_minor"));
+                this.tbody.appendChild(this.templateColorRow(element, null, "jov-panel-color-cat_minor"));
                 categories.push(category);
             }
 
@@ -360,7 +444,7 @@ class JovimetrixPanelColorize {
                 body: nodeConfig.body,
                 background: background[background_index] || LiteGraph.NODE_DEFAULT_COLOR
             };
-            tbody.appendChild(this.templateColorRow(data));
+            this.tbody.appendChild(this.templateColorRow(data));
         });
 
         //table.appendChild(tbody);
@@ -381,13 +465,14 @@ class JovimetrixPanelColorize {
 
     createContent() {
         if (!this.content) {
-            const header = this.createRegexPalettes();
-            this.createColorPalettes(header);
+            const table = this.createRegexPalettes();
+            this.createColorPalettes();
 
             this.title_content = $el("div.jov-title-header", { textContent: "EMPTY" });
             this.content = $el("div.jov-panel-color", [
                 $el("div.jov-title", [this.title_content]),
-                $el("div.jov-config-color", [header]),
+                this.createSearchInput(),  // Add search input
+                $el("div.jov-config-color", [table]),
                 $el("div.button", []),
             ]);
 
