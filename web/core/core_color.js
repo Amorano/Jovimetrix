@@ -9,8 +9,6 @@ import { $el } from "../../../scripts/ui.js";
 import { apiGet, apiJovimetrix, setting_make } from "../util/util_api.js";
 import { colorContrast } from "../util/util.js";
 
-// import iro from '@jaames/iro';
-
 const USER = "user.default";
 
 let PANEL_COLORIZE, NODE_LIST, CONFIG_CORE, CONFIG_USER, CONFIG_COLOR, CONFIG_REGEX, CONFIG_THEME;
@@ -91,16 +89,8 @@ class JovimetrixPanelColorize {
 
         button.addEventListener('mousedown', (event) => {
             event.stopPropagation();
-            if (event.ctrlKey) {
-                const node = button.dataset.identifier;
-                // remove the node from the config?
-                // const titleColor = data.title || LiteGraph.NODE_DEFAULT_COLOR;
-                // const bodyColor = data.body || LiteGraph.NODE_DEFAULT_COLOR;
-                app.graph.setDirtyCanvas(true, true);
-            } else {
-                this.currentButton = button;
-                this.showPicker(event.target, button.dataset.color);
-            }
+            this.currentButton = button;
+            this.showPicker(event.target, button.dataset.color);
         });
 
         return button;
