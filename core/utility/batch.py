@@ -258,34 +258,36 @@ class QueueBaseNode(JOVBaseNode):
             if len(line) == 0:
                 continue
 
-            # <directory>;png,gif,jpg
-            parts = [part.strip() for part in line.split(';')]
-            data = [parts[0]]
-            path = Path(parts[0])
-            path2 = Path(ROOT / parts[0])
-            if path.exists() or path2.exists():
-                philter = parts[1].split(',') if len(parts) > 1 and isinstance(parts[1], str) else self.VIDEO_FORMATS + IMAGE_FORMATS
-                path = path if path.exists() else path2
+            data = [line]
 
-                file_names = [str(path.resolve())]
-                if path.is_dir():
-                    if recurse:
-                        file_names = [str(file.resolve()) for file in path.rglob('*') if file.is_file()]
+            # <directory>;*.png;*.gif;*.jpg
+            base_path_str, tail = os.path.split(line)
+            filters = [p.strip() for p in tail.split(';')]
+
+            base_path = Path(base_path_str)
+            if base_path.is_absolute():
+                search_dir = base_path if base_path.is_dir() else base_path.parent
+            else:
+                search_dir = (ROOT / base_path).resolve()
+
+            # Check if the base directory exists
+            if search_dir.exists():
+                if search_dir.is_dir():
+                    new_data = []
+                    filters = filters if len(filters) > 0 and isinstance(filters[0], str) else IMAGE_FORMATS
+                    for pattern in filters:
+                        found = glob.glob(str(search_dir / pattern), recursive=recurse)
+                        new_data.extend([str(Path(f).resolve()) for f in found if Path(f).is_file()])
+                    if len(new_data):
+                        data = new_data
+                elif search_dir.is_file():
+                    path = str(search_dir.resolve())
+                    if path.lower().endswith('.txt'):
+                        with open(path, 'r', encoding='utf-8') as f:
+                            data = f.read().split('\n')
                     else:
-                        file_names = [str(file.resolve()) for file in path.iterdir() if file.is_file()]
-                new_data = [fname for fname in file_names if any(fname.endswith(pat) for pat in philter)]
-
-                if len(new_data):
-                    data = new_data
-            elif path.is_file() or path2.is_file():
-                path = path if path.is_file() else path2
-                path = str(path.resolve())
-                if path.lower().endswith('.txt'):
-                    with open(path, 'r', encoding='utf-8') as f:
-                        data = f.read().split('\n')
-                else:
-                    data = [path]
-            elif len(results := glob.glob(str(path2))) > 0:
+                        data = [path]
+            elif len(results := glob.glob(str(search_dir))) > 0:
                 data = [x.replace('\\', '/') for x in results]
 
             if len(data):
@@ -309,9 +311,9 @@ class QueueBaseNode(JOVBaseNode):
             if ext in IMAGE_FORMATS:
                 data = image_load(q_data)[0]
                 self.__last_q_value[q_data] = data
-            elif ext in self.VIDEO_FORMATS:
-                data = load_file(q_data)
-                self.__last_q_value[q_data] = data
+            #elif ext in self.VIDEO_FORMATS:
+            #    data = load_file(q_data)
+            #    self.__last_q_value[q_data] = data
             elif ext == '.json':
                 with open(q_data, 'r', encoding='utf-8') as f:
                     self.__last_q_value[q_data] = json.load(f)
@@ -325,7 +327,7 @@ class QueueBaseNode(JOVBaseNode):
             self.__q = None
             self.__index = 0
 
-        if (new_val := parse_param(kw, Lexicon.VALUE, EnumConvertType.INT, self.__index)[0]) > 0:
+        if (new_val := parse_param(kw, Lexicon.VALUE, EnumConvertType.INT, 0)[0]) > 0:
             self.__index = new_val - 1
 
         if self.__q is None:
@@ -405,7 +407,7 @@ class QueueBaseNode(JOVBaseNode):
         comfy_message(ident, "jovi-queue-ping", self.status)
         if stop and batched:
             interrupt_processing()
-        return data, self.__q, self.__current, self.__index_last+1, self.__len, self.__index == self.__index_last or batched
+        return data, self.__q, self.__current, self.__index, self.__len, self.__index == self.__index_last or batched
 
     @property
     def status(self) -> dict[str, Any]:
@@ -484,7 +486,6 @@ Manage a queue of specific items: media files. Supports various image and video 
         if not isinstance(data, (torch.Tensor, )):
             data = [None, None, None]
         else:
-            logger.debug(kw[Lexicon.MATTE])
             matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)[0]
             data = [tensor2cv(d) for d in data]
             data = [cv2tensor_full(d, matte) for d in data]

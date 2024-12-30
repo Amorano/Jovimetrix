@@ -65,6 +65,7 @@ app.registerExtension({
             const widget_reset = this.widgets.find(w => w.name == 'RESET');
             const widget_stop = this.widgets.find(w => w.name == 'STOP');
             const widget_loop = this.widgets.find(w => w.name == '🔄');
+            /*
             widget_batch.callback = () => {
                 widgetHide(this, widget_value);
                 widgetHide(this, widget_hold);
@@ -97,6 +98,7 @@ app.registerExtension({
                 }
                 nodeFitHeight(this);
             }
+            */
 
             widget_queue.inputEl.addEventListener('input', function () {
                 const value = widget_queue.value.split('\n');
