@@ -664,7 +664,6 @@ Combine multiple input images into a single image by summing their pixel values.
 
         # be less dumb when merging
         pA = [tensor2cv(i) for img in imgs for i in img]
-        # logger.debug(f"{len(pA)}  {pA[0].shape}")
         mode = parse_param(kw, Lexicon.MODE, EnumScaleMode, EnumScaleMode.MATTE.name)
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)
         sample = parse_param(kw, Lexicon.SAMPLE, EnumInterpolation, EnumInterpolation.LANCZOS4.name)

@@ -199,11 +199,6 @@ def image_crop_center(image: TYPE_IMAGE, width:int=None, height:int=None) -> TYP
     points = [(x1, y1), (x2, y1), (x2, y2), (x1, y2)]
     return image_crop_polygonal(image, points)
 
-def image_flatten_mask(image:TYPE_IMAGE, matte:Tuple=(0,0,0,255)) -> Tuple[TYPE_IMAGE, TYPE_IMAGE|None]:
-    """Flatten the image with its own alpha channel, if any."""
-    mask = image_mask(image)
-    return image_blend(image, image, mask), mask
-
 def image_levels(image: np.ndarray, black_point:int=0, white_point=255,
         mid_point=128, gamma=1.0) -> np.ndarray:
     """

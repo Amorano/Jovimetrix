@@ -13,7 +13,7 @@ import numpy as np
 from loguru import logger
 
 from Jovimetrix.sup.image import TYPE_IMAGE, TYPE_PIXEL, EnumImageType, \
-    TYPE_fCOORD2D, image_convert, image_matte, image_minmax, bgr2image, \
+    TYPE_fCOORD2D, image_convert, image_mask_add, image_matte, image_minmax, bgr2image, \
     cv2tensor, image2bgr, tensor2cv
 
 from Jovimetrix.sup.image.compose import image_crop_center
@@ -166,7 +166,8 @@ def image_flatten(image: List[TYPE_IMAGE], width:int=None, height:int=None,
         width = width or w
         height = height or h
 
-    current = np.zeros((height, width, 4), dtype=np.uint8)
+    current = np.zeros((height, width, 3), dtype=np.uint8)
+    current = image_mask_add(current)
     for x in image:
         if mode != EnumScaleMode.MATTE and mode != EnumScaleMode.RESIZE_MATTE:
             x = image_scalefit(x, width, height, mode, sample)

@@ -96,6 +96,12 @@ You can colorize nodes via their `title` or `body`. This can be done to the node
 
 ## UPDATES
 
+**2024/12/30** @1.2.57:
+* fixed composition problem in `FLATTEN` -- was returning alpha 0 channel
+* better queue filtering
+* removed goofy control hiding in Q nodes -- make better later
+* no pre-load for "video" in Q nodes -- let something else load it
+
 **2024/12/29** @1.2.56:
 * added a filter to the top so you can find the nodes easier
 * better "theme" supported highlights for major node packs and their sub-cateogories

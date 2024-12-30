@@ -35,7 +35,7 @@ images, or liner interpolate values and more.
     AkashicNode, ArrayNode, ExportNode, ValueGraphNode, ImageInfoNode, QueueNode,
     QueueTooNode, RouteNode, SaveOutputNode
 
-@version: 1.2.56
+@version: 1.2.57
 """
 
 import os
@@ -886,7 +886,7 @@ except Exception as e:
 
 def parse_reset(ident:str) -> int:
     try:
-        data = ComfyAPIMessage.poll(ident, timeout=0)
+        data = ComfyAPIMessage.poll(ident, timeout=0.05)
         ret = data.get('cmd', None)
         return ret == 'reset'
     except TimedOutException as e:
