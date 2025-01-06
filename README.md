@@ -96,6 +96,9 @@ You can colorize nodes via their `title` or `body`. This can be done to the node
 
 ## UPDATES
 
+**2024/01/06** @1.2.58:
+* removed duplicate functions
+
 **2024/12/30** @1.2.57:
 * fixed composition problem in `FLATTEN` -- was returning alpha 0 channel
 * better queue filtering

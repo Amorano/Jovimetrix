@@ -9,7 +9,7 @@
                     http://www.github.com/amorano/jovimetrix
 
 @title: Jovimetrix
-@author: amorano
+@author: Alexander G. Morano
 @category: Compositing
 @reference: https://github.com/Amorano/Jovimetrix
 @tags: adjust, animate, compose, compositing, composition, device, flow, video,
@@ -35,8 +35,13 @@ images, or liner interpolate values and more.
     AkashicNode, ArrayNode, ExportNode, ValueGraphNode, ImageInfoNode, QueueNode,
     QueueTooNode, RouteNode, SaveOutputNode
 
-@version: 1.2.57
+@version: 1.2.58
 """
+
+__all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS", "WEB_DIRECTORY"]
+__author__ = """Alexander G. Morano"""
+__email__ = "amorano@gmail.com"
+__version__ = "1.2.58"
 
 import os
 import re
@@ -65,8 +70,6 @@ NODE_LIST_MAP = {}
 NODE_CLASS_MAPPINGS = {}
 NODE_DISPLAY_NAME_MAPPINGS = {}
 WEB_DIRECTORY = "./web"
-
-__all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS", "WEB_DIRECTORY"]
 
 ROOT = Path(__file__).resolve().parent
 ROOT_COMFY = ROOT.parent.parent

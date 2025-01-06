@@ -14,17 +14,27 @@ import matplotlib.pyplot as plt
 
 from loguru import logger
 
-from Jovimetrix import JOV_TYPE_ANY, JOV_TYPE_IMAGE, \
-    Lexicon, JOVBaseNode, deep_merge, parse_reset
+from Jovimetrix import JOV_TYPE_IMAGE, Lexicon, JOVBaseNode, deep_merge, parse_reset
 
-from Jovimetrix.sup.util import EnumConvertType, decode_tensor, parse_dynamic, \
-    parse_param
+from Jovimetrix.sup.util import EnumConvertType, parse_dynamic, parse_param
 
 from Jovimetrix.sup.image import MIN_IMAGE_SIZE, pil2tensor
 
 # ==============================================================================
 
 JOV_CATEGORY = "UTILITY"
+
+# ==============================================================================
+# === SUPPORT ===
+# ==============================================================================
+
+def decode_tensor(tensor: torch.Tensor) -> str:
+    if tensor.ndim > 3:
+        b, h, w, cc = tensor.shape
+    else:
+        cc = 1
+        b, h, w = tensor.shape
+    return f"{b}x{w}x{h}x{cc}"
 
 # ==============================================================================
 

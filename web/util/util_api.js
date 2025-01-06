@@ -36,7 +36,6 @@ export async function apiJovimetrix(id, cmd, route="message") {
     }
 }
 
-
 export async function local_get(url, d) {
     const v = localStorage.getItem(url)
     if (v && !isNaN(+v)) {

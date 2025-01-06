@@ -130,8 +130,7 @@ def cv2tensor(image: TYPE_IMAGE, grayscale: bool=False) -> torch.Tensor:
     image = image.astype(np.float32) / 255.0
     return torch.from_numpy(image) #.unsqueeze(0)
 
-def cv2tensor_full(image: TYPE_IMAGE, matte:TYPE_PIXEL=(0,0,0,255)) \
-    -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+def cv2tensor_full(image: TYPE_IMAGE, matte:TYPE_PIXEL=(0,0,0,255)) -> Tuple[torch.Tensor, ...]:
 
     rgba = image_convert(image, 4)
     rgb = image_matte(rgba, matte)[...,:3]
@@ -235,54 +234,6 @@ def image_mask_add(image:TYPE_IMAGE, mask:TYPE_IMAGE=None, alpha:float=255) -> T
     image[..., 3] = mask if mask.ndim == 2 else mask[:, :, 0]
     return image
 
-def image_matte(image: TYPE_IMAGE, color: TYPE_iRGBA=(0,0,0,255), width: int=None, height: int=None) -> TYPE_IMAGE:
-    """
-    Puts an RGBA image atop a colored matte expanding or clipping the image if requested.
-
-    Args:
-        image (TYPE_IMAGE): The input RGBA image.
-        color (TYPE_iRGBA): The color of the matte as a tuple (R, G, B, A).
-        width (int, optional): The width of the matte. Defaults to the image width.
-        height (int, optional): The height of the matte. Defaults to the image height.
-
-    Returns:
-        TYPE_IMAGE: Composited RGBA image on a matte with original alpha channel.
-    """
-
-    #if image.ndim != 4 or image.shape[2] != 4:
-    #    return image
-
-    # Determine the dimensions of the image and the matte
-    image_height, image_width = image.shape[:2]
-    width = width or image_width
-    height = height or image_height
-
-    # Create a solid matte with the specified color
-    matte = np.full((height, width, 4), color, dtype=np.uint8)
-
-    # Extract the alpha channel from the image
-    alpha = None
-    if image.ndim == 3 and image.shape[2] == 4:
-        alpha = image[:, :, 3] / 255.0
-
-    # Calculate the center position for the image on the matte
-    x_offset = (width - image_width) // 2
-    y_offset = (height - image_height) // 2
-
-    if alpha is not None:
-        # Place the image onto the matte using the alpha channel for blending
-        for c in range(0, 3):
-            matte[y_offset:y_offset + image_height, x_offset:x_offset + image_width, c] = \
-                (1 - alpha) * matte[y_offset:y_offset + image_height, x_offset:x_offset + image_width, c] + \
-                alpha * image[:, :, c]
-
-        # Set the alpha channel of the matte to the maximum of the matte's and the image's alpha
-        matte[y_offset:y_offset + image_height, x_offset:x_offset + image_width, 3] = \
-            np.maximum(matte[y_offset:y_offset + image_height, x_offset:x_offset + image_width, 3], image[:, :, 3])
-    else:
-        image = image[y_offset:y_offset + image_height, x_offset:x_offset + image_width, :]
-    return matte
-
 def image_matte(image: TYPE_IMAGE, color: TYPE_iRGBA=(0, 0, 0, 255), width: int=None, height: int=None) -> TYPE_IMAGE:
     """
     Puts an RGB(A) image atop a colored matte expanding or clipping the image if requested.
@@ -329,54 +280,6 @@ def image_matte(image: TYPE_IMAGE, color: TYPE_iRGBA=(0, 0, 0, 255), width: int=
         matte[y_offset:y_offset + image_height, x_offset:x_offset + image_width, :3] = image[:, :, :3]
 
     return matte
-
-def image_convert(image: TYPE_IMAGE, channels: int, width: int=None, height: int=None,
-                  matte: Tuple[int, ...]=(0, 0, 0, 255)) -> TYPE_IMAGE:
-    """Force image format to a specific number of channels.
-    Args:
-        image (TYPE_IMAGE): Input image.
-        channels (int): Desired number of channels (1, 3, or 4).
-        width (int): Desired width. `None` means leave unchanged.
-        height (int): Desired height. `None` means leave unchanged.
-        matte (tuple): RGBA color to use as background color for transparent areas.
-    Returns:
-        TYPE_IMAGE: Image with the specified number of channels.
-    """
-    if image.ndim == 2:
-        image = np.expand_dims(image, axis=-1)
-
-    if (cc := image.shape[2]) != channels:
-        if   cc == 1 and channels == 3:
-            image = np.repeat(image, 3, axis=2)
-        elif cc == 1 and channels == 4:
-            rgb = np.repeat(image, 3, axis=2)
-            alpha = np.full(image.shape[:2] + (1,), matte[3], dtype=image.dtype)
-            image = np.concatenate([rgb, alpha], axis=2)
-        elif cc == 3 and channels == 1:
-            image = np.mean(image, axis=2, keepdims=True).astype(image.dtype)
-        elif cc == 3 and channels == 4:
-            alpha = np.full(image.shape[:2] + (1,), matte[3], dtype=image.dtype)
-            image = np.concatenate([image, alpha], axis=2)
-        elif cc == 4 and channels == 1:
-            rgb = image[..., :3]
-            alpha = image[..., 3:4] / 255.0
-            image = (np.mean(rgb, axis=2, keepdims=True) * alpha).astype(image.dtype)
-        elif cc == 4 and channels == 3:
-            image = image[..., :3]
-
-    # Resize if width or height is specified
-    h, w = image.shape[:2]
-    new_width = width if width is not None else w
-    new_height = height if height is not None else h
-    if (new_width, new_height) != (w, h):
-        # Create a new image with the matte color
-        new_image = np.full((new_height, new_width, channels), matte[:channels], dtype=image.dtype)
-        paste_x = (new_width - w) // 2
-        paste_y = (new_height - h) // 2
-        new_image[paste_y:paste_y+h, paste_x:paste_x+w] = image[:h, :w]
-        image = new_image
-
-    return image
 
 def image_convert(image: TYPE_IMAGE, channels: int, width: int=None, height: int=None,
                   matte: Tuple[int, ...]=(0, 0, 0, 255)) -> TYPE_IMAGE:
