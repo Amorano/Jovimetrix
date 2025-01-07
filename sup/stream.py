@@ -26,7 +26,8 @@ from comfy.cli_args import args as cmd_args
 from loguru import logger
 
 # SPOUT SUPPORT
-JOV_SPOUT = os.getenv("JOV_SPOUT", 'true').strip().lower() in ('true', '1', 't')
+JOV_SPOUT = os.getenv("JOV_SPOUT", 'true' if sys.platform.startswith('win') else 'false').strip().lower() in ('true', '1', 't')
+
 if JOV_SPOUT:
     try:
         import SpoutGL
@@ -64,7 +65,11 @@ except Exception as e:
 # === SCREEN / WINDOW CAPTURE ===
 # ==============================================================================
 
-def monitor_capture_all(width:int=None, height:int=None) -> cv2.Mat:
+is_dockerenv = os.path.exists('/.dockerenv')
+
+def monitor_capture_all(width:int=None, height:int=None) -> np.ndarray:
+    if is_dockerenv:
+        return None
     img = ImageGrab.grab(all_screens=True)
     img = np.array(img, dtype='uint8')
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -72,7 +77,9 @@ def monitor_capture_all(width:int=None, height:int=None) -> cv2.Mat:
         return cv2.resize(img, (width, height))
     return img
 
-def monitor_capture(monitor:int=0, tlwh:Tuple[int, int, int, int]=None, width:int=None, height:int=None) -> cv2.Mat:
+def monitor_capture(monitor:int=0, tlwh:Tuple[int, int, int, int]=None, width:int=None, height:int=None) -> np.ndarray:
+    if is_dockerenv:
+        return None
     with mss.mss() as sct:
         region = sct.monitors[monitor]
         if tlwh is not None:
@@ -90,6 +97,8 @@ def monitor_capture(monitor:int=0, tlwh:Tuple[int, int, int, int]=None, width:in
         return img
 
 def monitor_list() -> dict:
+    if is_dockerenv:
+        return {}
     ret = {}
     with mss.mss() as sct:
         ret = {i:v for i, v in enumerate(sct.monitors)}
@@ -115,7 +124,7 @@ if sys.platform.startswith('win'):
         win32gui.EnumWindows(window_enum_handler, None)
         return _windows
 
-    def window_capture(hwnd:str, dpi:bool=True, clientOnly:bool=True) -> cv2.Mat:
+    def window_capture(hwnd:str, dpi:bool=True, clientOnly:bool=True) -> np.ndarray:
         if dpi:
             windll.user32.SetProcessDPIAware()
 
@@ -630,7 +639,7 @@ class StreamingServer(metaclass=Singleton):
         self.__thread_server.start()
         self.__thread_capture = threading.Thread(target=self.__capture, daemon=True)
         self.__thread_capture.start()
-        logger.info("STARTED")
+        logger.info(f"STARTED {self.__address}:{self.__port}")
 
     def __server(self) -> None:
         handler = lambda *args: StreamingHandler(StreamingServer.OUT, *args)

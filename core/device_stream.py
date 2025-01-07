@@ -19,9 +19,16 @@ from Jovimetrix import JOV_TYPE_IMAGE, JOVBaseNode, Lexicon, deep_merge
 
 from Jovimetrix.sup.util import EnumConvertType, parse_param, zip_longest_fill
 
+import os
+is_dockerenv = os.path.exists('/.dockerenv')
+
 from Jovimetrix.sup.stream import camera_list, monitor_list, window_list, \
-    monitor_capture, window_capture, StreamingServer, StreamManager, \
+    monitor_capture, StreamingServer, StreamManager, \
     MediaStreamDevice, JOV_SPOUT
+
+if sys.platform.startswith('win') or sys.platform.startswith('darwin'):
+    from Jovimetrix.sup.stream import window_capture
+
 
 from Jovimetrix.sup.image.adjust import EnumScaleMode, EnumInterpolation, \
     image_scalefit
@@ -98,8 +105,6 @@ Capture frames from various sources such as URLs, cameras, monitors, windows, or
                 Lexicon.SOURCE: (names, {"default": EnumStreamType.URL.name}),
                 Lexicon.URL: ("STRING", {"default": "", "dynamicPrompts": False}),
                 Lexicon.CAMERA: (cls.CAMERAS, {"default": camera_default, "choice": "list of system streaming devices"}),
-                Lexicon.MONITOR: (monitor, {"default": monitor[0], "choice": "list of system monitor devices"}),
-                Lexicon.WINDOW: (window, {"default": window_default, "choice": "list of available system windows"}),
                 Lexicon.DPI: ("BOOLEAN", {"default": True}),
                 Lexicon.BBOX: ("VEC4", {"default": (0, 0, 1, 1), "label": [Lexicon.TOP, Lexicon.LEFT, Lexicon.BOTTOM, Lexicon.RIGHT]}),
                 Lexicon.FPS: ("INT", {"mij": 1, "maj": 60, "default": 30}),
@@ -113,6 +118,13 @@ Capture frames from various sources such as URLs, cameras, monitors, windows, or
                 Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True})
             }
         })
+
+        if not is_dockerenv:
+            d["optional"].update({
+                Lexicon.MONITOR: (monitor, {"default": monitor[0], "choice": "list of system monitor devices"}),
+                Lexicon.WINDOW: (window, {"default": window_default, "choice": "list of available system windows"})
+            })
+
         return Lexicon._parse(d, cls)
 
     @classmethod
