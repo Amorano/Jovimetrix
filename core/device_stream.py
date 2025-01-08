@@ -23,8 +23,12 @@ from ..sup.util import EnumConvertType, \
     parse_param, zip_longest_fill
 
 from ..sup.stream import camera_list, monitor_list, window_list, \
-    monitor_capture, window_capture, StreamingServer, StreamManager, \
+    monitor_capture, StreamingServer, StreamManager, \
     MediaStreamDevice, JOV_SPOUT
+
+if not JOV_DOCKERENV:
+    from ..sup.stream import window_capture
+
 
 from ..sup.image.adjust import EnumScaleMode, EnumInterpolation, \
     image_scalefit
@@ -90,6 +94,10 @@ Capture frames from various sources such as URLs, cameras, monitors, windows, or
             monitor = [f"{i} - {v['width']}x{v['height']}" for i, v in enumerate(monitors.values())]
         except:
             pass
+
+        # would be empty if monitors.values() is empty
+        if len(monitor) == 0:
+            monitor = ["NONE"]
 
         window = []
         if sys.platform.startswith('win'):
