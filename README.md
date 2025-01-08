@@ -96,6 +96,10 @@ You can colorize nodes via their `title` or `body`. This can be done to the node
 
 ## UPDATES
 
+**2024/01/07** @1.2.59:
+* monitor/screen capture ignore on Docker use [ecosky](https://github.com/ecosky)
+* adjusted to relative imports for ComfyUI-Manager
+
 **2024/01/06** @1.2.58:
 * removed duplicate functions
 
@@ -129,15 +133,6 @@ You can colorize nodes via their `title` or `body`. This can be done to the node
 **2024/12/04** @1.2.52:
 * vector widget updated to use new events by [webfiltered](https://github.com/webfiltered)
 * colorpicker updated to pop in place (Chrome only atm) by [webfiltered](https://github.com/webfiltered)
-
-**2024/12/04** @1.2.51:
-* attempt to fix string field length being shrunk `AKASHIC` node.
-* version up requirements for aiohttp, glfw, matplotlib, mss, pillow, pywin32, scikit-learn
-
-**2024/12/03** @1.2.50:
-* parse_param updated for GLSL nodes
-* bug: GLSL nodes were not parsing LIST as an animation LIST
-* removed `skip_list` mechanism for parameters
 
 # INSTALLATION
 

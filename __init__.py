@@ -35,13 +35,13 @@ images, or liner interpolate values and more.
     AkashicNode, ArrayNode, ExportNode, ValueGraphNode, ImageInfoNode, QueueNode,
     QueueTooNode, RouteNode, SaveOutputNode
 
-@version: 1.2.58
+@version: 1.2.59
 """
 
 __all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS", "WEB_DIRECTORY"]
 __author__ = """Alexander G. Morano"""
 __email__ = "amorano@gmail.com"
-__version__ = "1.2.58"
+__version__ = "1.2.59"
 
 import os
 import re
@@ -75,7 +75,6 @@ ROOT = Path(__file__).resolve().parent
 ROOT_COMFY = ROOT.parent.parent
 ROOT_DOC = ROOT / 'res/doc'
 
-
 JOV_CONFIG = {}
 JOV_WEB = ROOT / 'web'
 JOV_DEFAULT = JOV_WEB / 'default.json'
@@ -91,6 +90,8 @@ JOV_INTERNAL = os.getenv("JOV_INTERNAL", 'false').strip().lower() in ('true', '1
 
 # direct the documentation output -- used to build jovimetrix-examples
 JOV_INTERNAL_DOC = os.getenv("JOV_INTERNAL_DOC", str(ROOT / "_doc"))
+
+JOV_DOCKERENV = os.path.exists('/.dockerenv')
 
 # The object_info route data -- cached
 COMFYUI_OBJ_DATA = {}

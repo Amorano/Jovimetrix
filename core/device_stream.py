@@ -15,16 +15,16 @@ from loguru import logger
 
 from comfy.utils import ProgressBar
 
-from .. import JOV_TYPE_IMAGE, \
+from .. import JOV_DOCKERENV, JOV_TYPE_IMAGE, \
     JOVBaseNode, Lexicon, \
     deep_merge
 
 from ..sup.util import EnumConvertType, \
     parse_param, zip_longest_fill
 
-from ..sup.stream import JOV_SPOUT, \
-    StreamingServer, StreamManager, MediaStreamDevice, \
-    camera_list, monitor_list, window_list, monitor_capture, window_capture
+from ..sup.stream import camera_list, monitor_list, window_list, \
+    monitor_capture, window_capture, StreamingServer, StreamManager, \
+    MediaStreamDevice, JOV_SPOUT
 
 from ..sup.image.adjust import EnumScaleMode, EnumInterpolation, \
     image_scalefit
@@ -43,6 +43,10 @@ from ..sup.image.color import pixel_eval
 # ==============================================================================
 
 JOV_CATEGORY = "DEVICE"
+
+# ==============================================================================
+# == ENUMERATION ==
+# ==============================================================================
 
 class EnumCanvasOrientation(Enum):
     NORMAL = 0
@@ -117,6 +121,11 @@ Capture frames from various sources such as URLs, cameras, monitors, windows, or
                 Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True})
             }
         })
+
+        if JOV_DOCKERENV:
+            d["optional"].pop(Lexicon.MONITOR)
+            d["optional"].pop(Lexicon.WINDOW)
+
         return Lexicon._parse(d, cls)
 
     @classmethod

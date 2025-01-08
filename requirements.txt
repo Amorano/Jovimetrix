@@ -4,7 +4,7 @@ blendmodes
 daltonlens
 glfw
 loguru
-markdown
+markdownify
 matplotlib
 mido[ports-rtmidi]
 mss

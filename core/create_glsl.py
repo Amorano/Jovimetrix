@@ -35,6 +35,8 @@ from ..sup.shader import JOV_ROOT_GLSL, GLSL_PROGRAMS, PROG_FRAGMENT, \
     CompileException, EnumGLSLEdge, GLSLShader, \
     shader_meta, load_file_glsl
 
+from ..sup import shader as glsl_enums
+
 # ==============================================================================
 
 JOV_CATEGORY = "CREATE"
