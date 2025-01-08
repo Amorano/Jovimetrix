@@ -21,18 +21,16 @@ from loguru import logger
 from comfy.utils import ProgressBar
 from nodes import interrupt_processing
 
-from Jovimetrix import JOV_TYPE_ANY, ROOT, Lexicon, JOVBaseNode, deep_merge, \
+from ... import JOV_TYPE_ANY, ROOT, Lexicon, JOVBaseNode, deep_merge, \
     comfy_message, parse_reset
 
-from Jovimetrix.sup.util import EnumConvertType, load_file, parse_dynamic, parse_param
+from ...sup.util import EnumConvertType, parse_dynamic, parse_param
 
-from Jovimetrix.sup.image import MIN_IMAGE_SIZE, IMAGE_FORMATS, \
+from ...sup.image import MIN_IMAGE_SIZE, IMAGE_FORMATS, \
     image_convert, image_matte, image_load, cv2tensor, cv2tensor_full, tensor2cv
 
-from Jovimetrix.sup.image.adjust import EnumScaleMode, EnumInterpolation, \
+from ...sup.image.adjust import EnumScaleMode, EnumInterpolation, \
     image_scalefit
-
-from Jovimetrix.sup.image.compose import image_by_size
 
 # ==============================================================================
 

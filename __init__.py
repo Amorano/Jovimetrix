@@ -947,16 +947,24 @@ class Session(metaclass=Singleton):
             if fname.stem.startswith('_'):
                 continue
             if fname.stem in JOV_IGNORE_NODE or fname.stem+'.py' in JOV_IGNORE_NODE:
-                logger.warning(f"💀 [IGNORED] Jovimetrix.core.{fname.stem}")
+                logger.warning(f"💀 [IGNORED] .core.{fname.stem}")
                 continue
 
+            module = inspect.getmodule(inspect.stack()[0][0]).__name__
             try:
-                route = str(fname).replace("\\", "/").split("Jovimetrix/core/")[1]
+                route = str(fname).replace("\\", "/")
+                route = route.split(f"{module}/core/")[1]
                 route = route.split('.')[0].replace('/', '.')
-                module = f"Jovimetrix.core.{route}"
-                module = importlib.import_module(module)
             except Exception as e:
                 logger.warning(f"module failed {fname}")
+                logger.warning(str(e))
+                continue
+
+            module = f"{module}.core.{route}"
+            try:
+                module = importlib.import_module(module)
+            except Exception as e:
+                logger.warning(f"module failed {module}")
                 logger.warning(str(e))
                 continue
 

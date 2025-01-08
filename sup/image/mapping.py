@@ -11,10 +11,10 @@ import numpy as np
 
 from loguru import logger
 
-from Jovimetrix.sup.image import TAU, TYPE_IMAGE, TYPE_fCOORD2D, \
+from . import TAU, TYPE_IMAGE, TYPE_fCOORD2D, \
     image_convert, image_lerp, image_normalize
 
-from Jovimetrix.sup.image.color import image_grayscale
+from .color import image_grayscale
 
 # ==============================================================================
 # === ENUMERATION ===

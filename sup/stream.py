@@ -38,9 +38,10 @@ if JOV_SPOUT:
 else:
     logger.warning("SKIPPING SPOUT GL SUPPORT")
 
-from Jovimetrix import Singleton
+from .. import Singleton
 
-from Jovimetrix.sup.image import image_load, TYPE_PIXEL, MIN_IMAGE_SIZE, pil2cv
+from .image import TYPE_PIXEL, \
+    image_load, pil2cv
 
 # ==============================================================================
 

@@ -10,7 +10,6 @@ from typing import Any, Tuple
 import torch
 from loguru import logger
 
-
 try:
     from server import PromptServer
     from aiohttp import web
@@ -18,23 +17,23 @@ except:
     pass
 from comfy.utils import ProgressBar
 
-from Jovimetrix import JOV_TYPE_IMAGE, Lexicon, JOVImageNode, \
+from .. import JOV_TYPE_IMAGE, \
+    Lexicon, JOVImageNode, \
     comfy_message, deep_merge
 
-from Jovimetrix.sup.util import EnumConvertType, parse_param, \
-    parse_value
+from ..sup.util import EnumConvertType, \
+    parse_param, parse_value
 
-from Jovimetrix.sup.image.adjust import EnumInterpolation, EnumScaleMode, \
+from ..sup.image.adjust import EnumInterpolation, EnumScaleMode, \
     image_scalefit
 
-from Jovimetrix.sup.image import MIN_IMAGE_SIZE, image_convert, tensor2cv, \
-    cv2tensor_full
+from ..sup.image import MIN_IMAGE_SIZE, \
+    image_convert, tensor2cv, cv2tensor_full
 
-import Jovimetrix.sup.shader as glsl_enums
-
-from Jovimetrix.sup.shader import JOV_ROOT_GLSL, GLSL_PROGRAMS, PROG_FRAGMENT, \
-    PROG_VERTEX, PTYPE, CompileException, EnumGLSLEdge, GLSLShader, shader_meta, \
-    load_file_glsl
+from ..sup.shader import JOV_ROOT_GLSL, GLSL_PROGRAMS, PROG_FRAGMENT, \
+    PROG_VERTEX, PTYPE, \
+    CompileException, EnumGLSLEdge, GLSLShader, \
+    shader_meta, load_file_glsl
 
 # ==============================================================================
 

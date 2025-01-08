@@ -19,9 +19,12 @@ import OpenGL.GL as gl
 
 from loguru import logger
 
-from Jovimetrix import ROOT
-from Jovimetrix.sup.util import EnumConvertType, parse_value, load_file
-from Jovimetrix.sup.image import image_convert
+from .. import ROOT
+
+from ..sup.util import EnumConvertType, \
+    parse_value, load_file
+
+from .image import image_convert
 
 # ==============================================================================
 

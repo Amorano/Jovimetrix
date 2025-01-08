@@ -17,14 +17,14 @@ from loguru import logger
 
 from comfy.utils import ProgressBar
 
-from Jovimetrix import JOV_TYPE_ANY, JOV_TYPE_FULL, JOV_TYPE_NUMBER, \
-    JOV_TYPE_VECTOR, Lexicon, JOVBaseNode, \
+from .. import JOV_TYPE_ANY, JOV_TYPE_FULL, JOV_TYPE_NUMBER, JOV_TYPE_VECTOR, \
+    Lexicon, JOVBaseNode, \
     comfy_message, deep_merge, parse_reset
 
-from Jovimetrix.sup.util import EnumConvertType, EnumSwizzle, parse_dynamic, \
-    parse_param, parse_value, vector_swap, zip_longest_fill
+from ..sup.util import EnumConvertType, EnumSwizzle, \
+    parse_dynamic, parse_param, parse_value, vector_swap, zip_longest_fill
 
-from Jovimetrix.sup.anim import EnumWave, EnumEase, ease_op, wave_op
+from ..sup.anim import EnumWave, EnumEase, ease_op, wave_op
 
 # ==============================================================================
 

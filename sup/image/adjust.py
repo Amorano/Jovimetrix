@@ -12,13 +12,15 @@ import numpy as np
 
 from loguru import logger
 
-from Jovimetrix.sup.image import TYPE_IMAGE, TYPE_PIXEL, EnumImageType, \
-    TYPE_fCOORD2D, image_convert, image_mask_add, image_matte, image_minmax, bgr2image, \
+from . import TYPE_IMAGE, TYPE_PIXEL, TYPE_fCOORD2D, \
+    EnumImageType, \
+    image_convert, image_mask_add, image_matte, image_minmax, bgr2image, \
     cv2tensor, image2bgr, tensor2cv
 
-from Jovimetrix.sup.image.compose import image_crop_center
+from .compose import image_crop_center
 
-from Jovimetrix.sup.image.channel import EnumPixelSwizzle, channel_solid
+from .channel import EnumPixelSwizzle, \
+    channel_solid
 
 # ==============================================================================
 # === ENUMERATION ===

@@ -17,11 +17,11 @@ from blendmodes.blend import BlendType
 
 from loguru import logger
 
-from Jovimetrix.sup.image import TYPE_IMAGE, TYPE_PIXEL, EnumGrayscaleCrunch, \
-    EnumImageType, EnumIntFloat, bgr2hsv, hsv2bgr, image_convert, image_mask, \
-    image_mask_add
+from . import TYPE_IMAGE, TYPE_PIXEL, \
+    EnumGrayscaleCrunch, EnumImageType, EnumIntFloat, \
+    bgr2hsv, hsv2bgr, image_convert, image_mask, image_mask_add
 
-from Jovimetrix.sup.image.compose import image_blend
+from .compose import image_blend
 
 # ==============================================================================
 # === TYPE ===

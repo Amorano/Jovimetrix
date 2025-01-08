@@ -14,11 +14,9 @@ import matplotlib.pyplot as plt
 
 from loguru import logger
 
-from Jovimetrix import JOV_TYPE_IMAGE, Lexicon, JOVBaseNode, deep_merge, parse_reset
-
-from Jovimetrix.sup.util import EnumConvertType, parse_dynamic, parse_param
-
-from Jovimetrix.sup.image import MIN_IMAGE_SIZE, pil2tensor
+from ... import JOV_TYPE_IMAGE, Lexicon, JOVBaseNode, deep_merge, parse_reset
+from ...sup.util import EnumConvertType, parse_dynamic, parse_param
+from ...sup.image import MIN_IMAGE_SIZE, pil2tensor
 
 # ==============================================================================
 

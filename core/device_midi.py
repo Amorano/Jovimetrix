@@ -15,11 +15,11 @@ from loguru import logger
 
 from comfy.utils import ProgressBar
 
-from Jovimetrix import JOVBaseNode, Lexicon, deep_merge
+from .. import JOVBaseNode, Lexicon, deep_merge
 
-from Jovimetrix.sup.util import EnumConvertType, parse_param
+from ..sup.util import EnumConvertType, parse_param
 
-from Jovimetrix.sup.midi import MIDIMessage, MIDINoteOnFilter, MIDIServerThread,\
+from ..sup.midi import MIDIMessage, MIDINoteOnFilter, MIDIServerThread,\
       midi_device_names
 
 # ==============================================================================

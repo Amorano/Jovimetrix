@@ -14,8 +14,8 @@ from blendmodes.blend import BlendType, blendLayers
 
 from loguru import logger
 
-from Jovimetrix.sup.image import TYPE_IMAGE, TYPE_PIXEL, \
-    TYPE_fCOORD2D, image_convert, image_mask, image_mask_add, image_matte, \
+from . import TYPE_IMAGE, TYPE_PIXEL, TYPE_fCOORD2D, \
+    image_convert, image_mask, image_mask_add, image_matte, \
     bgr2image, cv2pil, image2bgr, pil2cv
 
 # ==============================================================================

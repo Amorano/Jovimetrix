@@ -20,14 +20,14 @@ from comfy.utils import ProgressBar
 from folder_paths import get_output_directory
 from nodes import interrupt_processing
 
-from Jovimetrix import JOV_TYPE_ANY, JOV_TYPE_IMAGE, Lexicon, JOVBaseNode, \
-    ComfyAPIMessage, TimedOutException, DynamicInputType, \
+from ... import JOV_TYPE_ANY, JOV_TYPE_IMAGE, \
+    Lexicon, JOVBaseNode, ComfyAPIMessage, TimedOutException, \
     comfy_message, deep_merge
 
-from Jovimetrix.sup.util import EnumConvertType, path_next, parse_param, \
+from ...sup.util import EnumConvertType, path_next, parse_param, \
     zip_longest_fill
 
-from Jovimetrix.sup.image import tensor2cv, tensor2pil
+from ...sup.image import tensor2cv, tensor2pil
 
 # ==============================================================================
 

@@ -14,14 +14,14 @@ from PIL import Image, ImageChops, ImageOps
 
 from loguru import logger
 
-from Jovimetrix.sup.image import TYPE_IMAGE, TYPE_PIXEL, TYPE_iRGB, \
+from . import TYPE_IMAGE, TYPE_PIXEL, TYPE_iRGB, \
     image_convert, image_matte, cv2pil, pil2cv
 
-from Jovimetrix.sup.image.channel import channel_add
+from .channel import channel_add
 
-from Jovimetrix.sup.image.color import image_grayscale
+from .color import image_grayscale
 
-from Jovimetrix.sup.util import grid_make
+from ..util import grid_make
 
 def image_crop_head(image: TYPE_IMAGE) -> TYPE_IMAGE:
     """

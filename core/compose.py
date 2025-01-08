@@ -14,37 +14,39 @@ from loguru import logger
 
 from comfy.utils import ProgressBar
 
-from Jovimetrix import JOV_TYPE_IMAGE, JOVBaseNode, JOVImageNode, Lexicon, \
+from .. import JOV_TYPE_IMAGE, \
+    JOVBaseNode, JOVImageNode, Lexicon, \
     deep_merge
 
-from Jovimetrix.sup.util import EnumConvertType, parse_dynamic, parse_param, \
-    zip_longest_fill
+from ..sup.util import EnumConvertType, \
+    parse_dynamic, parse_param, zip_longest_fill
 
-from Jovimetrix.sup.image import MIN_IMAGE_SIZE, EnumImageType, \
+from ..sup.image import MIN_IMAGE_SIZE, \
+    EnumImageType, \
     image_mask, image_mask_add, image_matte, image_minmax, image_convert, \
     cv2tensor, cv2tensor_full, tensor2cv
 
-from Jovimetrix.sup.image.color import EnumCBDeficiency, EnumCBSimulator, \
-    EnumColorMap, EnumColorTheory, color_lut_full, color_lut_match, color_lut_palette, \
+from ..sup.image.color import EnumCBDeficiency, EnumCBSimulator, EnumColorMap, EnumColorTheory, \
+    color_lut_full, color_lut_match, color_lut_palette, \
     color_lut_tonal, color_lut_visualize, color_match_reinhard, color_theory, color_blind, \
     color_top_used, image_gradient_expand, image_gradient_map, pixel_eval
 
-from Jovimetrix.sup.image.adjust import EnumEdge, EnumMirrorMode, EnumScaleMode, \
-    EnumInterpolation, EnumThreshold, EnumThresholdAdapt, image_contrast, \
-    image_edge_wrap, image_equalize, image_filter, image_gamma, image_hsv, \
-    image_invert, image_mirror, image_pixelate, image_posterize, image_quantize, \
-    image_scalefit, image_sharpen, image_swap_channels, image_transform, \
-    image_flatten, image_threshold, morph_edge_detect, morph_emboss
+from ..sup.image.adjust import EnumEdge, EnumMirrorMode, EnumScaleMode, \
+    EnumInterpolation, EnumThreshold, EnumThresholdAdapt, \
+    image_contrast, image_edge_wrap, image_equalize, image_filter, image_gamma,  \
+    image_hsv, image_invert, image_mirror, image_pixelate, image_posterize, \
+    image_quantize, image_scalefit, image_sharpen, image_swap_channels, \
+    image_transform, image_flatten, image_threshold, morph_edge_detect, morph_emboss
 
-from Jovimetrix.sup.image.channel import EnumPixelSwizzle, channel_merge, \
-    channel_solid
+from ..sup.image.channel import EnumPixelSwizzle, \
+    channel_merge, channel_solid
 
-from Jovimetrix.sup.image.compose import EnumAdjustOP, EnumBlendType, \
-    EnumOrientation, image_by_size, image_levels, image_split, image_stack, image_blend, \
+from ..sup.image.compose import EnumAdjustOP, EnumBlendType, EnumOrientation, \
+    image_levels, image_split, image_stack, image_blend, \
     image_crop, image_crop_center, image_crop_polygonal
 
-from Jovimetrix.sup.image.mapping import EnumProjection, remap_fisheye, \
-    remap_perspective, remap_polar, remap_sphere
+from ..sup.image.mapping import EnumProjection, \
+    remap_fisheye, remap_perspective, remap_polar, remap_sphere
 
 # ==============================================================================
 

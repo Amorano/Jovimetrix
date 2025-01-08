@@ -10,10 +10,10 @@ import numpy as np
 
 from loguru import logger
 
-from Jovimetrix.sup.image import MIN_IMAGE_SIZE, TYPE_IMAGE, TYPE_PIXEL, \
+from . import MIN_IMAGE_SIZE, TYPE_IMAGE, TYPE_PIXEL, \
     EnumImageType
 
-from Jovimetrix.sup.image.color import pixel_eval
+from .color import pixel_eval
 
 # ==============================================================================
 # === ENUMERATION ===

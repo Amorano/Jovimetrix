@@ -15,26 +15,30 @@ from loguru import logger
 
 from comfy.utils import ProgressBar
 
-from Jovimetrix import JOV_TYPE_IMAGE, JOVBaseNode, Lexicon, deep_merge
+from .. import JOV_TYPE_IMAGE, \
+    JOVBaseNode, Lexicon, \
+    deep_merge
 
-from Jovimetrix.sup.util import EnumConvertType, parse_param, zip_longest_fill
+from ..sup.util import EnumConvertType, \
+    parse_param, zip_longest_fill
 
-from Jovimetrix.sup.stream import camera_list, monitor_list, window_list, \
-    monitor_capture, window_capture, StreamingServer, StreamManager, \
-    MediaStreamDevice, JOV_SPOUT
+from ..sup.stream import JOV_SPOUT, \
+    StreamingServer, StreamManager, MediaStreamDevice, \
+    camera_list, monitor_list, window_list, monitor_capture, window_capture
 
-from Jovimetrix.sup.image.adjust import EnumScaleMode, EnumInterpolation, \
+from ..sup.image.adjust import EnumScaleMode, EnumInterpolation, \
     image_scalefit
 
-from Jovimetrix.sup.image.channel import channel_solid
+from ..sup.image.channel import channel_solid
 
 if JOV_SPOUT:
-    from Jovimetrix.sup.stream import SpoutSender, MediaStreamSpout
+    from ..sup.stream import SpoutSender, MediaStreamSpout
 
-from Jovimetrix.sup.image import EnumImageType, MIN_IMAGE_SIZE, image_convert, \
-    cv2tensor_full, tensor2cv
+from ..sup.image import MIN_IMAGE_SIZE, \
+    EnumImageType, \
+    image_convert, cv2tensor_full, tensor2cv
 
-from Jovimetrix.sup.image.color import pixel_eval
+from ..sup.image.color import pixel_eval
 
 # ==============================================================================
 
