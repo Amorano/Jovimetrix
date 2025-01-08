@@ -90,6 +90,10 @@ Capture frames from various sources such as URLs, cameras, monitors, windows, or
         except:
             pass
 
+        # would be empty if monitors.values() is empty
+        if len(monitor) == 0:
+            monitor = ["NONE"]
+
         window = []
         if sys.platform.startswith('win'):
             window = [f"{v} - {k}" for k, v in window_list().items()]
@@ -105,6 +109,8 @@ Capture frames from various sources such as URLs, cameras, monitors, windows, or
                 Lexicon.SOURCE: (names, {"default": EnumStreamType.URL.name}),
                 Lexicon.URL: ("STRING", {"default": "", "dynamicPrompts": False}),
                 Lexicon.CAMERA: (cls.CAMERAS, {"default": camera_default, "choice": "list of system streaming devices"}),
+                Lexicon.MONITOR: (monitor, {"default": monitor[0], "choice": "list of system monitor devices"}),
+                Lexicon.WINDOW: (window, {"default": window_default, "choice": "list of available system windows"}),
                 Lexicon.DPI: ("BOOLEAN", {"default": True}),
                 Lexicon.BBOX: ("VEC4", {"default": (0, 0, 1, 1), "label": [Lexicon.TOP, Lexicon.LEFT, Lexicon.BOTTOM, Lexicon.RIGHT]}),
                 Lexicon.FPS: ("INT", {"mij": 1, "maj": 60, "default": 30}),
@@ -118,12 +124,6 @@ Capture frames from various sources such as URLs, cameras, monitors, windows, or
                 Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True})
             }
         })
-
-        if not is_dockerenv:
-            d["optional"].update({
-                Lexicon.MONITOR: (monitor, {"default": monitor[0], "choice": "list of system monitor devices"}),
-                Lexicon.WINDOW: (window, {"default": window_default, "choice": "list of available system windows"})
-            })
 
         return Lexicon._parse(d, cls)
 
