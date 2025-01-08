@@ -34,14 +34,11 @@ images, or liner interpolate values and more.
     StreamReaderNode, StreamWriterNode,
     AkashicNode, ArrayNode, ExportNode, ValueGraphNode, ImageInfoNode, QueueNode,
     QueueTooNode, RouteNode, SaveOutputNode
-
-@version: 1.2.59
 """
 
 __all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS", "WEB_DIRECTORY"]
 __author__ = """Alexander G. Morano"""
 __email__ = "amorano@gmail.com"
-__version__ = "1.2.59"
 
 import os
 import re
@@ -54,6 +51,7 @@ import inspect
 import importlib
 from pathlib import Path
 from string import Template
+from types import ModuleType
 from typing import Any, Dict, List, Literal, Tuple
 
 try:
@@ -66,7 +64,6 @@ from server import PromptServer
 
 from loguru import logger
 
-NODE_LIST_MAP = {}
 NODE_CLASS_MAPPINGS = {}
 NODE_DISPLAY_NAME_MAPPINGS = {}
 WEB_DIRECTORY = "./web"
@@ -899,7 +896,7 @@ def parse_reset(ident:str) -> int:
         logger.error(str(e))
 
 # ==============================================================================
-# === SESSION ===
+# === NODE LOADER ===
 # ==============================================================================
 
 def configLoad(fname:Path, as_json:bool=True) -> Any | list[str] | None:
@@ -914,117 +911,108 @@ def configLoad(fname:Path, as_json:bool=True) -> Any | list[str] | None:
         logger.error(e)
     return []
 
-class Session(metaclass=Singleton):
-    CLASS_MAPPINGS = {}
-    CLASS_MAPPINGS_WIP = {}
+def load_module(name: str) -> None|ModuleType:
+    module = inspect.getmodule(inspect.stack()[0][0]).__name__
+    try:
+        route = str(name).replace("\\", "/")
+        route = route.split(f"{module}/core/")[1]
+        route = route.split('.')[0].replace('/', '.')
+    except Exception as e:
+        logger.warning(f"module failed {name}")
+        logger.warning(str(e))
+        return
 
-    @classmethod
-    def ignore_files(cls, d, files) -> list[str]|None:
-        return [x for x in files if x.endswith('.json') or x.endswith('.html')]
+    try:
+        module = f"{module}.core.{route}"
+        module = importlib.import_module(module)
+    except Exception as e:
+        logger.warning(f"module failed {module}")
+        logger.warning(str(e))
+        return
 
-    def __init__(self, *arg, **kw) -> None:
-        global JOV_CONFIG, JOV_IGNORE_NODE, NODE_CLASS_MAPPINGS, NODE_DISPLAY_NAME_MAPPINGS, NODE_LIST_MAP
-        found = False
-        if JOV_CONFIG_FILE.exists():
-            JOV_CONFIG = configLoad(JOV_CONFIG_FILE)
-            # is this an old config, copy default (sorry, not sorry)
-            found = JOV_CONFIG.get('user', None) is not None
+    return module
 
-        if not found:
-            try:
-                shutil.copy2(JOV_DEFAULT, JOV_CONFIG_FILE)
-                logger.warning("---> DEFAULT CONFIGURATION <---")
-            except Exception as e:
-                logger.error("MAJOR 😿😰😬🥟 BLUNDERCATS 🥟😬😰😿")
-                logger.error(e)
+def loader():
+    global JOV_CONFIG, JOV_IGNORE_NODE, NODE_CLASS_MAPPINGS, NODE_DISPLAY_NAME_MAPPINGS
+    NODE_LIST_MAP = {}
 
-        if JOV_IGNORE_NODE.exists():
-            JOV_IGNORE_NODE = configLoad(JOV_IGNORE_NODE, False)
-        else:
-            JOV_IGNORE_NODE = []
+    found = False
+    if JOV_CONFIG_FILE.exists():
+        JOV_CONFIG = configLoad(JOV_CONFIG_FILE)
+        # is this an old config, copy default (sorry, not sorry)
+        found = JOV_CONFIG.get('user', None) is not None
 
-        node_count = 0
-        for fname in ROOT.glob('core/**/*.py'):
-            if fname.stem.startswith('_'):
-                continue
-            if fname.stem in JOV_IGNORE_NODE or fname.stem+'.py' in JOV_IGNORE_NODE:
-                logger.warning(f"💀 [IGNORED] .core.{fname.stem}")
-                continue
+    if not found:
+        try:
+            shutil.copy2(JOV_DEFAULT, JOV_CONFIG_FILE)
+            logger.warning("---> DEFAULT CONFIGURATION <---")
+        except Exception as e:
+            logger.error("MAJOR 😿😰😬🥟 BLUNDERCATS 🥟😬😰😿")
+            logger.error(e)
 
-            module = inspect.getmodule(inspect.stack()[0][0]).__name__
-            try:
-                route = str(fname).replace("\\", "/")
-                route = route.split(f"{module}/core/")[1]
-                route = route.split('.')[0].replace('/', '.')
-            except Exception as e:
-                logger.warning(f"module failed {fname}")
-                logger.warning(str(e))
-                continue
+    if JOV_IGNORE_NODE.exists():
+        JOV_IGNORE_NODE = configLoad(JOV_IGNORE_NODE, False)
+    else:
+        JOV_IGNORE_NODE = []
 
-            module = f"{module}.core.{route}"
-            try:
-                module = importlib.import_module(module)
-            except Exception as e:
-                logger.warning(f"module failed {module}")
-                logger.warning(str(e))
-                continue
+    for fname in ROOT.glob('core/**/*.py'):
+        if fname.stem.startswith('_'):
+            continue
 
-            # check if there is a dynamic register function....
-            try:
-                for class_name, class_def in module.import_dynamic():
-                    setattr(module, class_name, class_def)
-                    logger.debug(f"shader: {class_name}")
-            except Exception as e:
-                pass
+        if fname.stem in JOV_IGNORE_NODE or fname.stem+'.py' in JOV_IGNORE_NODE:
+            logger.warning(f"💀 [IGNORED] .core.{fname.stem}")
+            continue
 
-            classes = inspect.getmembers(module, inspect.isclass)
-            for class_name, class_object in classes:
-                # assume both attrs are good enough....
-                if not class_name.endswith('BaseNode') and hasattr(class_object, 'NAME') and hasattr(class_object, 'CATEGORY'):
-                    if (name := class_object.NAME) in JOV_IGNORE_NODE:
-                        logger.warning(f"😥 {name}")
-                        continue
+        if (module := load_module(fname)) is None:
+            continue
 
-                    if hasattr(class_object, 'POST'):
-                        class_object.CATEGORY = "JOVIMETRIX 🔺🟩🔵/WIP ☣️💣"
-                        Session.CLASS_MAPPINGS_WIP[name] = class_object
-                    else:
-                        Session.CLASS_MAPPINGS[name] = class_object
+        # check if there is a dynamic register function....
+        try:
+            for class_name, class_def in module.import_dynamic():
+                setattr(module, class_name, class_def)
+        except Exception as e:
+            pass
 
-                    if not name.endswith(Lexicon.GLSL_CUSTOM):
-                        desc = class_object.DESCRIPTION if hasattr(class_object, 'DESCRIPTION') else name
-                        NODE_LIST_MAP[name] = desc.split('.')[0].strip('\n')
-                    else:
-                        logger.debug(f"customs {name}")
-                    node_count += 1
+        classes = inspect.getmembers(module, inspect.isclass)
+        for class_name, class_object in classes:
+            # assume both attrs are good enough....
+            if not class_name.endswith('BaseNode') and hasattr(class_object, 'NAME') and hasattr(class_object, 'CATEGORY'):
+                if (name := class_object.NAME) in JOV_IGNORE_NODE:
+                    logger.warning(f"😥 {name}")
+                    continue
 
-            logger.info(f"✅ {module.__name__}")
-        logger.info(f"{node_count} nodes loaded")
+                name = class_object.NAME
+                NODE_DISPLAY_NAME_MAPPINGS[name] = name
+                NODE_CLASS_MAPPINGS[name] = class_object
 
-        NODE_DISPLAY_NAME_MAPPINGS = {k: v.NAME_PRETTY if hasattr(v, 'NAME_PRETTY') else k for k, v in Session.CLASS_MAPPINGS.items()}
-        Session.CLASS_MAPPINGS.update({k: v for k, v in Session.CLASS_MAPPINGS_WIP.items()})
-        NODE_DISPLAY_NAME_MAPPINGS.update({k: k for k in Session.CLASS_MAPPINGS_WIP.keys()})
-        Session.CLASS_MAPPINGS = {x[0] : x[1] for x in sorted(Session.CLASS_MAPPINGS.items(),
-                                                              key=lambda item: getattr(item[1], 'SORT', 0))}
-        # now sort the categories...
-        for c in ["CREATE", "ADJUST", "COMPOSE", "IMAGE",
-                  "CALC", "ANIMATE", "FLOW", "DEVICE", "AUDIO",
-                  "UTILITY", "WIP ☣️💣"]:
+                if not name.endswith(Lexicon.GLSL_CUSTOM):
+                    desc = class_object.DESCRIPTION if hasattr(class_object, 'DESCRIPTION') else name
+                    NODE_LIST_MAP[name] = desc.split('.')[0].strip('\n')
+                else:
+                    logger.debug(f"customs {name}")
 
-            prime = Session.CLASS_MAPPINGS.copy()
-            for k, v in prime.items():
-                if v.CATEGORY.endswith(c):
-                    NODE_CLASS_MAPPINGS[k] = v
-                    Session.CLASS_MAPPINGS.pop(k)
-                    logger.debug(f"✅ {k} :: {NODE_DISPLAY_NAME_MAPPINGS[k]}")
+    NODE_CLASS_MAPPINGS = {x[0] : x[1] for x in sorted(NODE_CLASS_MAPPINGS.items(),
+                                                            key=lambda item: getattr(item[1], 'SORT', 0))}
 
-        # anything we dont know about sort last...
-        for k, v in Session.CLASS_MAPPINGS.items():
-            NODE_CLASS_MAPPINGS[k] = v
+    # now sort the categories...
+    prime = NODE_CLASS_MAPPINGS.copy()
+    NODE_CLASS_MAPPINGS = {}
+    for c in ["CREATE", "ADJUST", "COMPOSE", "IMAGE",
+                "CALC", "ANIMATE", "FLOW", "DEVICE", "AUDIO",
+                "UTILITY"]:
 
-        # only do the list on local runs...
-        if JOV_INTERNAL:
-            with open(str(ROOT) + "/node_list.json", "w", encoding="utf-8") as f:
-                json.dump(NODE_LIST_MAP, f, sort_keys=True, indent=4 )
+        for k, v in prime.items():
+            if v.CATEGORY.endswith(c):
+                NODE_CLASS_MAPPINGS[k] = v
 
-session = Session()
+    keys = NODE_CLASS_MAPPINGS.keys()
+    for name in keys:
+        logger.debug(f"✅ {name}")
+    logger.info(f"{len(keys)} nodes loaded")
+
+    # only do the list on local runs...
+    if JOV_INTERNAL:
+        with open(str(ROOT) + "/node_list.json", "w", encoding="utf-8") as f:
+            json.dump(NODE_LIST_MAP, f, sort_keys=True, indent=4 )
+
+loader()

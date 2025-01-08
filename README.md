@@ -96,6 +96,9 @@ You can colorize nodes via their `title` or `body`. This can be done to the node
 
 ## UPDATES
 
+**2024/01/08** @1.2.60:
+* cleaned up node loader to match breakout repositories
+
 **2024/01/07** @1.2.59:
 * monitor/screen capture ignore on Docker use [ecosky](https://github.com/ecosky)
 * adjusted to relative imports for ComfyUI-Manager
@@ -122,17 +125,6 @@ You can colorize nodes via their `title` or `body`. This can be done to the node
 * reduced convoluted logic for `ROUTE` node
 * rolled back PILLOW requirement to 10.2.0
 * fixed requirements for opengl-accelerate
-
-**2024/12/05** @1.2.53:
-* rolled back pillow requirement to 10.2.0 or above
-* akashic node now sizes and reports correct outputs for all inputs (with labels)
-* NEW VERSION REQUIREMENTS (only guarenteed to work 100% with):
-* * ComfyUI 0.3.6 or greater
-* * ComfyUI Frontend 1.5.3 or greater
-
-**2024/12/04** @1.2.52:
-* vector widget updated to use new events by [webfiltered](https://github.com/webfiltered)
-* colorpicker updated to pop in place (Chrome only atm) by [webfiltered](https://github.com/webfiltered)
 
 # INSTALLATION
 
