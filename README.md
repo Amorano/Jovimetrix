@@ -96,6 +96,10 @@ You can colorize nodes via their `title` or `body`. This can be done to the node
 
 ## UPDATES
 
+**2024/01/08** @1.2.61:
+* living in the stupidest timeline where case-sensitivty matters for URLS in chrome...
+* fixed stylesheet reference in help
+
 **2024/01/08** @1.2.60:
 * cleaned up node loader to match breakout repositories
 

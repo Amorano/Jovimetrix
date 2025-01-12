@@ -37,7 +37,7 @@ app.registerExtension({
             id: styleTagId,
             rel: 'stylesheet',
             type: 'text/css',
-            href: 'extensions/Jovimetrix/jovimetrix.css'
+            href: 'extensions/jovimetrix/jovimetrix.css'
         }));
 	}
 });
