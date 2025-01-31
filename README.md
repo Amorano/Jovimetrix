@@ -96,6 +96,9 @@ You can colorize nodes via their `title` or `body`. This can be done to the node
 
 ## UPDATES
 
+**2024/01/30** @1.2.62:
+* `QUEUE` nodes can do URL loading of images
+
 **2024/01/08** @1.2.61:
 * living in the stupidest timeline where case-sensitivty matters for URLS in chrome...
 * fixed stylesheet reference in help

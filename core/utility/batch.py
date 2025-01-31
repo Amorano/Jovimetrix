@@ -257,36 +257,36 @@ class QueueBaseNode(JOVBaseNode):
                 continue
 
             data = [line]
+            if not line.lower().startswith("http"):
+                # <directory>;*.png;*.gif;*.jpg
+                base_path_str, tail = os.path.split(line)
+                filters = [p.strip() for p in tail.split(';')]
 
-            # <directory>;*.png;*.gif;*.jpg
-            base_path_str, tail = os.path.split(line)
-            filters = [p.strip() for p in tail.split(';')]
+                base_path = Path(base_path_str)
+                if base_path.is_absolute():
+                    search_dir = base_path if base_path.is_dir() else base_path.parent
+                else:
+                    search_dir = (ROOT / base_path).resolve()
 
-            base_path = Path(base_path_str)
-            if base_path.is_absolute():
-                search_dir = base_path if base_path.is_dir() else base_path.parent
-            else:
-                search_dir = (ROOT / base_path).resolve()
-
-            # Check if the base directory exists
-            if search_dir.exists():
-                if search_dir.is_dir():
-                    new_data = []
-                    filters = filters if len(filters) > 0 and isinstance(filters[0], str) else IMAGE_FORMATS
-                    for pattern in filters:
-                        found = glob.glob(str(search_dir / pattern), recursive=recurse)
-                        new_data.extend([str(Path(f).resolve()) for f in found if Path(f).is_file()])
-                    if len(new_data):
-                        data = new_data
-                elif search_dir.is_file():
-                    path = str(search_dir.resolve())
-                    if path.lower().endswith('.txt'):
-                        with open(path, 'r', encoding='utf-8') as f:
-                            data = f.read().split('\n')
-                    else:
-                        data = [path]
-            elif len(results := glob.glob(str(search_dir))) > 0:
-                data = [x.replace('\\', '/') for x in results]
+                # Check if the base directory exists
+                if search_dir.exists():
+                    if search_dir.is_dir():
+                        new_data = []
+                        filters = filters if len(filters) > 0 and isinstance(filters[0], str) else IMAGE_FORMATS
+                        for pattern in filters:
+                            found = glob.glob(str(search_dir / pattern), recursive=recurse)
+                            new_data.extend([str(Path(f).resolve()) for f in found if Path(f).is_file()])
+                        if len(new_data):
+                            data = new_data
+                    elif search_dir.is_file():
+                        path = str(search_dir.resolve())
+                        if path.lower().endswith('.txt'):
+                            with open(path, 'r', encoding='utf-8') as f:
+                                data = f.read().split('\n')
+                        else:
+                            data = [path]
+                elif len(results := glob.glob(str(search_dir))) > 0:
+                    data = [x.replace('\\', '/') for x in results]
 
             if len(data):
                 ret = []
@@ -303,8 +303,6 @@ class QueueBaseNode(JOVBaseNode):
         if (val := self.__last_q_value.get(q_data, None)) is not None:
             return val
         if isinstance(q_data, (str,)):
-            if not os.path.isfile(q_data):
-                return q_data
             _, ext = os.path.splitext(q_data)
             if ext in IMAGE_FORMATS:
                 data = image_load(q_data)[0]

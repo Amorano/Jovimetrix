@@ -10,6 +10,7 @@ import io
 from io import BytesIO
 import math
 import base64
+import requests
 from enum import Enum
 from typing import List, Tuple, Union
 
@@ -365,13 +366,12 @@ def image_lerp(imageA: TYPE_IMAGE, imageB:TYPE_IMAGE, mask:TYPE_IMAGE=None,
     return np.clip(imageA, 0, 255)
 
 def image_load(url: str) -> Tuple[TYPE_IMAGE, TYPE_IMAGE]:
-    try:
-        img = cv2.imread(url, cv2.IMREAD_UNCHANGED)
-        if img is None:
-            raise ValueError(f"{url} could not be loaded.")
-
+    if url.lower().startswith("http"):
+        response = requests.get(url, stream=True)
+        response.raise_for_status()
+        img_array = np.asarray(bytearray(response.content), dtype=np.uint8)
+        img = cv2.imdecode(img_array, cv2.IMREAD_UNCHANGED)
         img = image_normalize(img)
-        # logger.debug(f"load image {url}: {img.ndim} {img.shape}")
         if img.ndim == 3:
             if img.shape[2] == 4:
                 img = cv2.cvtColor(img, cv2.COLOR_RGBA2BGRA)
@@ -379,18 +379,33 @@ def image_load(url: str) -> Tuple[TYPE_IMAGE, TYPE_IMAGE]:
                 img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
         elif img.ndim < 3:
             img = np.expand_dims(img, -1)
-
-    except Exception:
-        logger.debug(f"load image fallback to PIL {url}")
+    else:
         try:
-            img = Image.open(url)
-            img = ImageOps.exif_transpose(img)
-            img = np.array(img)
-            if img.dtype != np.uint8:
-                img = np.clip(np.array(img * 255), 0, 255).astype(dtype=np.uint8)
-        except Exception as e:
-            logger.error(str(e))
-            raise Exception(f"Error loading image: {e}")
+            img = cv2.imread(url, cv2.IMREAD_UNCHANGED)
+            if img is None:
+                raise ValueError(f"{url} could not be loaded.")
+
+            img = image_normalize(img)
+            # logger.debug(f"load image {url}: {img.ndim} {img.shape}")
+            if img.ndim == 3:
+                if img.shape[2] == 4:
+                    img = cv2.cvtColor(img, cv2.COLOR_RGBA2BGRA)
+                else:
+                    img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+            elif img.ndim < 3:
+                img = np.expand_dims(img, -1)
+
+        except Exception:
+            logger.debug(f"load image fallback to PIL {url}")
+            try:
+                img = Image.open(url)
+                img = ImageOps.exif_transpose(img)
+                img = np.array(img)
+                if img.dtype != np.uint8:
+                    img = np.clip(np.array(img * 255), 0, 255).astype(dtype=np.uint8)
+            except Exception as e:
+                # logger.error(str(e))
+                raise Exception(f"Error loading image: {e}")
 
     if img is None:
         raise Exception(f"No file found at {url}")
