@@ -426,6 +426,7 @@ class JOVBaseNode:
     @classmethod
     def INPUT_TYPES(cls, prompt:bool=False, extra_png:bool=False, dynprompt:bool=False) -> dict:
         data = {
+            "optional": {},
             "required": {},
             "hidden": {
                 "ident": "UNIQUE_ID"
@@ -443,18 +444,11 @@ class JOVBaseNode:
 class JOVImageNode(JOVBaseNode):
     RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
-
-    @classmethod
-    def INPUT_TYPES(cls) -> dict:
-        d = super().INPUT_TYPES()
-        d = deep_merge(d, {
-            "outputs": {
-                0: ("IMAGE", {"tooltips":"Full channel [RGBA] image. If there is an alpha, the image will be masked out with it when using this output."}),
-                1: ("IMAGE", {"tooltips":"Three channel [RGB] image. There will be no alpha."}),
-                2: ("MASK", {"tooltips":"Single channel mask output."}),
-            }
-        })
-        return Lexicon._parse(d, cls)
+    OUTPUT_TOOLTIPS = (
+        "Full channel [RGBA] image. If there is an alpha, the image will be masked out with it when using this output.",
+        "Three channel [RGB] image. There will be no alpha.",
+        "Single channel mask output."
+    )
 
 class DynamicInputType(dict):
     """A special class to make flexible nodes that pass data to our python handlers.
