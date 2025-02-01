@@ -158,32 +158,51 @@ Provides advanced filtering capabilities for MIDI messages based on various crit
 
     def __filter(self, data:int, value:str) -> bool:
         """Parse strings with number ranges into number ranges.
+            Supports:
+                - Single numbers: "1, 2" (equals)
+                - Closed ranges: "5-10" (between inclusive)
+                - Open ranges: "-100" (less than or equal to 100)
+                - Open ranges: "50-" (greater than or equal to 50)
+
             1, 5-10, 2
-        Would check == 1, == 2 and 5 <= x <= 10
+            Would check == 1, == 2 and 5 <= x <= 10
         """
         value = value.strip()
-        if value == "" or len(value) == 0 or value is None:
+        if not value:
             return True
+
         ranges = value.split(',')
         for item in ranges:
             item = item.strip()
-            if '-' in item:
+
+            if item.startswith('-'):
+                try:
+                    bound = float(item[1:])
+                    if data <= bound:
+                        return True
+                except ValueError:
+                    continue
+            elif item.endswith('-'):
+                try:
+                    bound = float(item[:-1])
+                    if data >= bound:
+                        return True
+                except ValueError:
+                    continue
+            elif '-' in item:
                 try:
                     a, b = map(float, item.split('-'))
                     if a <= data <= b:
                         return True
                 except ValueError:
-                    pass
-                except Exception as e:
-                    logger.error(e)
+                    continue
+            # Handle single number
             else:
                 try:
                     if isclose(data, float(item)):
                         return True
                 except ValueError:
-                    pass
-                except Exception as e:
-                    logger.error(e)
+                    continue
         return False
 
     def run(self, **kw) -> Tuple[bool]:
@@ -196,19 +215,19 @@ Provides advanced filtering capabilities for MIDI messages based on various crit
         normal: str = parse_param(kw, Lexicon.NORMALIZE, EnumConvertType.STRING, "")[0]
 
         if note_on != MIDINoteOnFilter.IGNORE:
-            if note_on == MIDINoteOnFilter.NOTE_ON and message.note_on != True:
+            if note_on == MIDINoteOnFilter.NOTE_ON and not message.note_on:
                 return message, False,
-            if note_on == MIDINoteOnFilter.NOTE_OFF and message.note_on != False:
+            if note_on == MIDINoteOnFilter.NOTE_OFF and message.note_on:
                 return message, False,
-        elif self.__filter(message.channel, chan) == False:
+        if self.__filter(message.channel, chan) == False:
             return message, False,
-        elif self.__filter(message.control, ctrl) == False:
+        if self.__filter(message.control, ctrl) == False:
             return message, False,
-        elif self.__filter(message.note, note) == False:
+        if self.__filter(message.note, note) == False:
             return message, False,
-        elif self.__filter(message.value, value) == False:
+        if self.__filter(message.value, value) == False:
             return message, False,
-        elif self.__filter(message.normal, normal) == False:
+        if self.__filter(message.normal, normal) == False:
             return message, False,
         return message, True,
 

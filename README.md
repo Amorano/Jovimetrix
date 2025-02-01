@@ -51,7 +51,10 @@ Please consider sponsoring me if you enjoy the results of my work, code or docum
 * `STREAM READER` node to capture monitor, webcam or url media
 * `STREAM WRITER` node to export media to a HTTP/HTTPS server for OBS or other 3rd party streaming software
 * `SPOUT` streaming support *WINDOWS ONLY*
-* MIDI device read support with `MIDI FILTER` and `MIDI FILTER EZ` nodes to drive other node parameters
+* `MIDI READER` Captures MIDI messages from an external MIDI device or controller
+* `MIDI MESSAGE` Processes MIDI messages received from an external MIDI controller or device
+* `MIDI FILTER` (advanced filter) to select messages from MIDI streams and devices
+* `MIDI FILTER EZ` simpler interface to filter single messages from MIDI streams and devices
 * Full Text generation support using installed system fonts
 * Basic parametric shape (Circle, Square, Polygon) generator
 * `COLOR BLIND` check support
@@ -95,6 +98,16 @@ You can colorize nodes via their `title` or `body`. This can be done to the node
 </div>
 
 ## UPDATES
+
+**2024/02/01** @1.2.63:
+* Fixed `MIDI FILTER` to parse all filters for trigger
+* Better `MIDI FILTER` ranges:
+* * Single numbers: "1, 2" (equals)
+* * Closed ranges: "5-10" (between inclusive)
+* * Open ranges: "-100" (less than or equal to 100)
+* * Open ranges: "50-" (greater than or equal to 50)
+* * 1, 5-10, 2
+* * * would check == 1, == 2 and 5 <= x <= 10
 
 **2024/01/30** @1.2.62:
 * `QUEUE` nodes can do URL loading of images
