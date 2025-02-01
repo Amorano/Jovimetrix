@@ -265,18 +265,17 @@ Filter MIDI messages based on various criteria, including MIDI mode (such as not
         note = parse_param(kw, Lexicon.NOTE, EnumConvertType.INT, -1)[0]
         value = parse_param(kw, Lexicon.VALUE, EnumConvertType.INT, -1)[0]
 
-        # note_on = MIDINoteOnFilter[note_on]
         if note_on != MIDINoteOnFilter.IGNORE:
-            if note_on == MIDINoteOnFilter.NOTE_ON and message.note_on != True:
+            if note_on == MIDINoteOnFilter.NOTE_ON and not message.note_on:
                 return message, False,
-            if note_on == MIDINoteOnFilter.NOTE_OFF and message.note_on != False:
+            if note_on == MIDINoteOnFilter.NOTE_OFF and message.note_on:
                 return message, False,
-        elif chan > -1 and message.channel != chan:
+        if chan > -1 and message.channel != chan:
             return message, False,
-        elif ctrl > -1 and message.control != ctrl:
+        if ctrl > -1 and message.control != ctrl:
             return message, False,
-        elif note > -1 and message.note != note:
+        if note > -1 and message.note != note:
             return message, False,
-        elif value > -1 and message.value != value:
+        if value > -1 and message.value != value:
             return message, False,
         return message, True,

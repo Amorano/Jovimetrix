@@ -28,14 +28,9 @@ Please consider sponsoring me if you enjoy the results of my work, code or docum
 
 <div align="center">
 
-[![BE A GITHUB SPONSOR ❤️](https://img.shields.io/badge/sponsor-30363D?style=for-the-badge&logo=GitHub-Sponsors&logoColor=#EA4AAA)](https://github.com/sponsors/Amorano)
-
-[![DIRECTLY SUPPORT ME VIA PAYPAL](https://img.shields.io/badge/PayPal-00457C?style=for-the-badge&logo=paypal&logoColor=white)](https://www.paypal.com/paypalme/onarom)
-
-[![PATREON SUPPORTER](https://img.shields.io/badge/Patreon-F96854?style=for-the-badge&logo=patreon&logoColor=white)](https://www.patreon.com/joviex)
-
-[![SUPPORT ME ON KO-FI!](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/alexandermorano)
-
+&nbsp;|&nbsp;|&nbsp;|&nbsp;
+-|-|-|-
+[![BE A GITHUB SPONSOR ❤️](https://img.shields.io/badge/sponsor-30363D?style=for-the-badge&logo=GitHub-Sponsors&logoColor=#EA4AAA)](https://github.com/sponsors/Amorano) | [![DIRECTLY SUPPORT ME VIA PAYPAL](https://img.shields.io/badge/PayPal-00457C?style=for-the-badge&logo=paypal&logoColor=white)](https://www.paypal.com/paypalme/onarom) | [![PATREON SUPPORTER](https://img.shields.io/badge/Patreon-F96854?style=for-the-badge&logo=patreon&logoColor=white)](https://www.patreon.com/joviex) | [![SUPPORT ME ON KO-FI!](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/alexandermorano)
 </div>
 
 ## HIGHLIGHTS
@@ -99,6 +94,10 @@ You can colorize nodes via their `title` or `body`. This can be done to the node
 
 ## UPDATES
 
+**2024/02/01** @1.2.64:
+* patched `MIDI FILTER EZ` to work for all filters not just the first found
+* cleanup pyproject for registry
+
 **2024/02/01** @1.2.63:
 * Fixed `MIDI FILTER` to parse all filters for trigger
 * Better `MIDI FILTER` ranges:
@@ -115,36 +114,6 @@ You can colorize nodes via their `title` or `body`. This can be done to the node
 **2024/01/08** @1.2.61:
 * living in the stupidest timeline where case-sensitivty matters for URLS in chrome...
 * fixed stylesheet reference in help
-
-**2024/01/08** @1.2.60:
-* cleaned up node loader to match breakout repositories
-
-**2024/01/07** @1.2.59:
-* monitor/screen capture ignore on Docker use [ecosky](https://github.com/ecosky)
-* adjusted to relative imports for ComfyUI-Manager
-
-**2024/01/06** @1.2.58:
-* removed duplicate functions
-
-**2024/12/30** @1.2.57:
-* fixed composition problem in `FLATTEN` -- was returning alpha 0 channel
-* better queue filtering
-* removed goofy control hiding in Q nodes -- make better later
-* no pre-load for "video" in Q nodes -- let something else load it
-
-**2024/12/29** @1.2.56:
-* added a filter to the top so you can find the nodes easier
-* better "theme" supported highlights for major node packs and their sub-cateogories
-
-**2024/12/27** @1.2.55:
-* updated GLSL programs/libs to match new breakout repository
-* explicit requirements loosened
-* PyOpenGL-accelerate allowed for python 3.11 and older
-
-**2024/12/12** @1.2.54:
-* reduced convoluted logic for `ROUTE` node
-* rolled back PILLOW requirement to 10.2.0
-* fixed requirements for opengl-accelerate
 
 # INSTALLATION
 

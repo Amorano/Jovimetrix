@@ -1,8 +1,20 @@
 [project]
 name = "jovimetrix"
 description = "Integrates Webcam, MIDI, Spout and GLSL shader support. Animation via tick. Parameter manipulation with wave generator. Math operations with Unary and Binary support. Value conversion for all major types (int, string, list, dict, Image, Mask). Shape mask generation, image stacking and channel ops, batch splitting, merging and randomizing, load images and video from anywhere, dynamic bus routing with a single node, export support for GIPHY, save output anywhere! flatten, crop, transform; check colorblindness, make stereogram or stereoscopic images, or liner interpolate values and more."
-version = "1.2.63"
+version = "1.2.64"
 license = { file = "LICENSE" }
+readme = "README.md"
+authors = [{ name = "Alexander G. Morano", email = "amorano@gmail.com" }]
+classifiers = [
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Intended Audience :: Developers",
+]
+requires-python = ">=3.11"
 dependencies = [
     "aenum",
     "aiohttp",
@@ -32,9 +44,12 @@ dependencies = [
 ]
 
 [project.urls]
+Homepage = "https://github.com/Amorano/Jovimetrix"
+Documentation = "https://github.com/Amorano/Jovimetrix/wiki"
 Repository = "https://github.com/Amorano/Jovimetrix"
+Issues = "https://github.com/Amorano/Jovimetrix/issues"
 
 [tool.comfy]
 PublisherId = "amorano"
 DisplayName = "Jovimetrix"
-Icon = "https://raw.githubusercontent.com/Amorano/Jovimetrix-examples/master/res/logo-jovimetrix.png"
+Icon = "https://avatars.githubusercontent.com/u/225178?s=48&v=4"
