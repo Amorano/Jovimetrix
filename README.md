@@ -94,7 +94,7 @@ You can colorize nodes via their `title` or `body`. This can be done to the node
 
 ## UPDATES
 
-**2024/02/01** @1.2.65:
+**2024/02/01** @1.2.66:
 * patched `MIDI FILTER EZ` to work for all filters not just the first found
 * cleanup pyproject for registry
 * proper logo for registry
