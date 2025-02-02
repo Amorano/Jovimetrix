@@ -270,6 +270,7 @@ def import_dynamic() -> Tuple[str,...]:
             continue
         meta = shader_meta(shader)
         if meta.get('hide', False):
+            logger.warning(f"hide shader file {fname}")
             continue
 
         name = meta.get('name', name.split('.')[0]).upper()

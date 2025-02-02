@@ -94,6 +94,9 @@ You can colorize nodes via their `title` or `body`. This can be done to the node
 
 ## UPDATES
 
+**2024/02/02** @1.2.67:
+* fixed `GLSL` nodes missing from parse due to category sort
+
 **2024/02/01** @1.2.66:
 * patched `MIDI FILTER EZ` to work for all filters not just the first found
 * cleanup pyproject for registry

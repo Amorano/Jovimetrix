@@ -876,7 +876,7 @@ except Exception as e:
     logger.error(e)
 
 # ==============================================================================
-# === SUPPORT FUNCTIONS ===
+# === SUPPORT ===
 # ==============================================================================
 
 def parse_reset(ident:str) -> int:
@@ -888,10 +888,6 @@ def parse_reset(ident:str) -> int:
         return -1
     except Exception as e:
         logger.error(str(e))
-
-# ==============================================================================
-# === NODE LOADER ===
-# ==============================================================================
 
 def configLoad(fname:Path, as_json:bool=True) -> Any | list[str] | None:
     try:
@@ -988,17 +984,6 @@ def loader():
     NODE_CLASS_MAPPINGS = {x[0] : x[1] for x in sorted(NODE_CLASS_MAPPINGS.items(),
                                                             key=lambda item: getattr(item[1], 'SORT', 0))}
 
-    # now sort the categories...
-    prime = NODE_CLASS_MAPPINGS.copy()
-    NODE_CLASS_MAPPINGS = {}
-    for c in ["CREATE", "ADJUST", "COMPOSE", "IMAGE",
-                "CALC", "ANIMATE", "FLOW", "DEVICE", "AUDIO",
-                "UTILITY"]:
-
-        for k, v in prime.items():
-            if v.CATEGORY.endswith(c):
-                NODE_CLASS_MAPPINGS[k] = v
-
     keys = NODE_CLASS_MAPPINGS.keys()
     for name in keys:
         logger.debug(f"✅ {name}")
@@ -1008,5 +993,9 @@ def loader():
     if JOV_INTERNAL:
         with open(str(ROOT) + "/node_list.json", "w", encoding="utf-8") as f:
             json.dump(NODE_LIST_MAP, f, sort_keys=True, indent=4 )
+
+# ==============================================================================
+# === BOOTSTRAP ===
+# ==============================================================================
 
 loader()
