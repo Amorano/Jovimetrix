@@ -57,6 +57,13 @@ class ArrayNode(JOVBaseNode):
     RETURN_TYPES = (JOV_TYPE_ANY, "INT", JOV_TYPE_ANY, "INT", JOV_TYPE_ANY)
     RETURN_NAMES = (Lexicon.ANY_OUT, Lexicon.LENGTH, Lexicon.LIST, Lexicon.LENGTH2, Lexicon.LIST)
     OUTPUT_IS_LIST = (False, False, False, False, True)
+    OUTPUT_TOOLTIPS = (
+        "Output list from selected operation",
+        "Length of output list",
+        "Full list",
+        "Length of all input elements",
+        "The elements as a COMFYUI list output"
+    )
     SORT = 50
     DESCRIPTION = """
 Processes a batch of data based on the selected mode, such as merging, picking, slicing, random selection, or indexing. Allows for flipping the order of processed items and dividing the data into chunks.
@@ -67,21 +74,14 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                Lexicon.BATCH_MODE: (EnumBatchMode._member_names_, {"default": EnumBatchMode.MERGE.name, "tooltips":"Select a single index, specific range, custom index list or randomized"}),
-                Lexicon.INDEX: ("INT", {"default": 0, "mij": 0, "tooltips":"Selected list position"}),
+                Lexicon.BATCH_MODE: (EnumBatchMode._member_names_, {"default": EnumBatchMode.MERGE.name, "tooltip":"Select a single index, specific range, custom index list or randomized"}),
+                Lexicon.INDEX: ("INT", {"default": 0, "min": 0, "tooltip":"Selected list position"}),
                 Lexicon.RANGE: ("VEC3INT", {"default": (0, 0, 1), "mij": 0}),
-                Lexicon.STRING: ("STRING", {"default": "", "tooltips":"Comma separated list of indicies to export"}),
-                Lexicon.SEED: ("INT", {"default": 0, "mij": 0, "maj": sys.maxsize}),
-                Lexicon.COUNT: ("INT", {"default": 0, "mij": 0, "maj": sys.maxsize, "tooltips":"How many items to return"}),
-                Lexicon.FLIP: ("BOOLEAN", {"default": False, "tooltips":"reverse the calculated output list"}),
-                Lexicon.BATCH_CHUNK: ("INT", {"default": 0, "mij": 0,}),
-            },
-            "outputs": {
-                0: (Lexicon.ANY_OUT, {"tooltips":"Output list from selected operation"}),
-                1: (Lexicon.LENGTH, {"tooltips":"Length of output list"}),
-                2: (Lexicon.LIST, {"tooltips":"Full list"}),
-                3: (Lexicon.LENGTH2, {"tooltips":"Length of all input elements"}),
-                4: (Lexicon.LIST, {"tooltips":"The elements as a COMFYUI list output"}),
+                Lexicon.STRING: ("STRING", {"default": "", "tooltip":"Comma separated list of indicies to export"}),
+                Lexicon.SEED: ("INT", {"default": 0, "min": 0, "max": sys.maxsize}),
+                Lexicon.COUNT: ("INT", {"default": 0, "min": 0, "max": sys.maxsize, "tooltip":"How many items to return"}),
+                Lexicon.FLIP: ("BOOLEAN", {"default": False, "tooltip":"reverse the calculated output list"}),
+                Lexicon.BATCH_CHUNK: ("INT", {"default": 0, "min": 0,}),
             }
         })
         return Lexicon._parse(d, cls)
@@ -229,12 +229,12 @@ class QueueBaseNode(JOVBaseNode):
             "optional": {
                 Lexicon.QUEUE: ("STRING", {"multiline": True, "default": "./res/img/test-a.png"}),
                 Lexicon.RECURSE: ("BOOLEAN", {"default": False}),
-                Lexicon.BATCH: ("BOOLEAN", {"default": False, "tooltips":"Load all items, if they are loadable items, i.e. batch load images from the Queue's list. This can consume a lot of memory depending on the list size and each item size."}),
-                Lexicon.VALUE: ("INT", {"mij": 0, "default": 0, "tooltips": "The current index for the current queue item"}),
-                Lexicon.WAIT: ("BOOLEAN", {"default": False, "tooltips":"Hold the item at the current queue index"}),
-                Lexicon.STOP: ("BOOLEAN", {"default": False, "tooltips":"When the Queue is out of items, send a `HALT` to ComfyUI."}),
-                Lexicon.LOOP: ("BOOLEAN", {"default": True, "tooltips":"If the queue should loop around the end when reached. If `False`, at the end of the Queue, if there are more iterations, it will just send the previous image."}),
-                Lexicon.RESET: ("BOOLEAN", {"default": False, "tooltips":"Reset the queue back to index 1"}),
+                Lexicon.BATCH: ("BOOLEAN", {"default": False, "tooltip":"Load all items, if they are loadable items, i.e. batch load images from the Queue's list. This can consume a lot of memory depending on the list size and each item size."}),
+                Lexicon.VALUE: ("INT", {"min": 0, "default": 0, "tooltip": "The current index for the current queue item"}),
+                Lexicon.WAIT: ("BOOLEAN", {"default": False, "tooltip":"Hold the item at the current queue index"}),
+                Lexicon.STOP: ("BOOLEAN", {"default": False, "tooltip":"When the Queue is out of items, send a `HALT` to ComfyUI."}),
+                Lexicon.LOOP: ("BOOLEAN", {"default": True, "tooltip":"If the queue should loop around the end when reached. If `False`, at the end of the Queue, if there are more iterations, it will just send the previous image."}),
+                Lexicon.RESET: ("BOOLEAN", {"default": False, "tooltip":"Reset the queue back to index 1"}),
             }
         })
         return Lexicon._parse(d, cls)
@@ -427,12 +427,12 @@ Manage a queue of items, such as file paths or data. Supports various formats in
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "outputs": {
-                0: (Lexicon.ANY_OUT, {"tooltips":"Current item selected from the Queue list"}),
-                1: (Lexicon.QUEUE, {"tooltips":"The entire Queue list"}),
-                2: (Lexicon.CURRENT, {"tooltips":"Current item selected from the Queue list as a string"}),
-                3: (Lexicon.INDEX, {"tooltips":"Current index for the selected item in the Queue list"}),
-                4: (Lexicon.TOTAL, {"tooltips":"Total items in the current Queue List"}),
-                5: (Lexicon.TRIGGER, {"tooltips":"Send a True signal when the queue end index is reached"}),
+                0: (Lexicon.ANY_OUT, {"tooltip":"Current item selected from the Queue list"}),
+                1: (Lexicon.QUEUE, {"tooltip":"The entire Queue list"}),
+                2: (Lexicon.CURRENT, {"tooltip":"Current item selected from the Queue list as a string"}),
+                3: (Lexicon.INDEX, {"tooltip":"Current index for the selected item in the Queue list"}),
+                4: (Lexicon.TOTAL, {"tooltip":"Total items in the current Queue List"}),
+                5: (Lexicon.TRIGGER, {"tooltip":"Send a True signal when the queue end index is reached"}),
             }
         })
         return Lexicon._parse(d, cls)
@@ -453,25 +453,25 @@ Manage a queue of specific items: media files. Supports various image and video 
             "optional": {
                 Lexicon.QUEUE: ("STRING", {"multiline": True, "default": "./res/img/test-a.png"}),
                 Lexicon.RECURSE: ("BOOLEAN", {"default": False}),
-                Lexicon.BATCH: ("BOOLEAN", {"default": False, "tooltips":"Load all items, if they are loadable items, i.e. batch load images from the Queue's list"}),
-                Lexicon.VALUE: ("INT", {"mij": 0, "default": 0, "tooltips": "The current index for the current queue item"}),
-                Lexicon.WAIT: ("BOOLEAN", {"default": False, "tooltips":"Hold the item at the current queue index"}),
-                Lexicon.STOP: ("BOOLEAN", {"default": False, "tooltips":"When the Queue is out of items, send a `HALT` to ComfyUI."}),
-                Lexicon.LOOP: ("BOOLEAN", {"default": True, "tooltips":"If the queue should loop around the end when reached. If `False`, at the end of the Queue, if there are more iterations, it will just send the previous image."}),
-                Lexicon.RESET: ("BOOLEAN", {"default": False, "tooltips":"Reset the queue back to index 1"}),
+                Lexicon.BATCH: ("BOOLEAN", {"default": False, "tooltip":"Load all items, if they are loadable items, i.e. batch load images from the Queue's list"}),
+                Lexicon.VALUE: ("INT", {"default": 0, "min": 0, "tooltip": "The current index for the current queue item"}),
+                Lexicon.WAIT: ("BOOLEAN", {"default": False, "tooltip":"Hold the item at the current queue index"}),
+                Lexicon.STOP: ("BOOLEAN", {"default": False, "tooltip":"When the Queue is out of items, send a `HALT` to ComfyUI."}),
+                Lexicon.LOOP: ("BOOLEAN", {"default": True, "tooltip":"If the queue should loop around the end when reached. If `False`, at the end of the Queue, if there are more iterations, it will just send the previous image."}),
+                Lexicon.RESET: ("BOOLEAN", {"default": False, "tooltip":"Reset the queue back to index 1"}),
                 Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.MATTE.name}),
                 Lexicon.WH: ("VEC2INT", {"default": (512, 512), "mij":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
                 Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True}),
             },
             "outputs": {
-                0: ("IMAGE", {"tooltips":"Full channel [RGBA] image. If there is an alpha, the image will be masked out with it when using this output."}),
-                1: ("IMAGE", {"tooltips":"Three channel [RGB] image. There will be no alpha."}),
-                2: ("MASK", {"tooltips":"Single channel mask output."}),
-                3: (Lexicon.CURRENT, {"tooltips":"Current item selected from the Queue list as a string"}),
-                4: (Lexicon.INDEX, {"tooltips":"Current index for the selected item in the Queue list"}),
-                5: (Lexicon.TOTAL, {"tooltips":"Total items in the current Queue List"}),
-                6: (Lexicon.TRIGGER, {"tooltips":"Send a True signal when the queue end index is reached"}),
+                0: ("IMAGE", {"tooltip":"Full channel [RGBA] image. If there is an alpha, the image will be masked out with it when using this output."}),
+                1: ("IMAGE", {"tooltip":"Three channel [RGB] image. There will be no alpha."}),
+                2: ("MASK", {"tooltip":"Single channel mask output."}),
+                3: (Lexicon.CURRENT, {"tooltip":"Current item selected from the Queue list as a string"}),
+                4: (Lexicon.INDEX, {"tooltip":"Current index for the selected item in the Queue list"}),
+                5: (Lexicon.TOTAL, {"tooltip":"Total items in the current Queue List"}),
+                6: (Lexicon.TRIGGER, {"tooltip":"Send a True signal when the queue end index is reached"}),
             },
             "hidden": d.get("hidden", {})
         })

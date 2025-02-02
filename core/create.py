@@ -56,13 +56,13 @@ Generate a constant image or mask of a specified size and color. It can be used 
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                Lexicon.PIXEL: (JOV_TYPE_IMAGE, {"tooltips":"Optional Image to Matte with Selected Color"}),
+                Lexicon.PIXEL: (JOV_TYPE_IMAGE, {"tooltip":"Optional Image to Matte with Selected Color"}),
                 Lexicon.RGBA_A: ("VEC4INT", {"default": (0, 0, 0, 255),
-                                        "rgb": True, "tooltips": "Constant Color to Output"}),
+                                        "rgb": True, "tooltip": "Constant Color to Output"}),
                 Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.MATTE.name}),
                 Lexicon.WH: ("VEC2INT", {"default": (512, 512),
                                     "label": [Lexicon.W, Lexicon.H],
-                                    "tooltips": "Desired Width and Height of the Color Output"}),
+                                    "tooltip": "Desired Width and Height of the Color Output"}),
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
             }
         })
@@ -104,15 +104,15 @@ Create n-sided polygons. These shapes can be customized by adjusting parameters 
         d = deep_merge(d, {
             "optional": {
                 Lexicon.SHAPE: (EnumShapes._member_names_, {"default": EnumShapes.CIRCLE.name}),
-                Lexicon.SIDES: ("INT", {"default": 3, "mij": 3, "maj": 100}),
-                Lexicon.RGBA_A: ("VEC4INT", {"default": (255, 255, 255, 255), "rgb": True, "tooltips": "Main Shape Color"}),
-                Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True, "tooltips": "Background Color"}),
+                Lexicon.SIDES: ("INT", {"default": 3, "min": 3, "max": 100}),
+                Lexicon.RGBA_A: ("VEC4INT", {"default": (255, 255, 255, 255), "rgb": True, "tooltip": "Main Shape Color"}),
+                Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True, "tooltip": "Background Color"}),
                 Lexicon.WH: ("VEC2INT", {"default": (256, 256), "mij":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
                 Lexicon.XY: ("VEC2", {"default": (0, 0,), "step": 0.01, "label": [Lexicon.X, Lexicon.Y]}),
-                Lexicon.ANGLE: ("FLOAT", {"default": 0, "mij": -180, "maj": 180, "step": 0.01}),
+                Lexicon.ANGLE: ("FLOAT", {"default": 0, "min": -180, "max": 180, "step": 0.01}),
                 Lexicon.SIZE: ("VEC2", {"default": (1., 1.), "step": 0.01, "label": [Lexicon.X, Lexicon.Y]}),
                 Lexicon.EDGE: (EnumEdge._member_names_, {"default": EnumEdge.CLIP.name}),
-                Lexicon.BLUR: ("FLOAT", {"default": 0, "mij": 0, "step": 0.01, "tooltips": "Edge blur amount (Gaussian blur)"}),
+                Lexicon.BLUR: ("FLOAT", {"default": 0, "min": 0, "step": 0.01, "tooltip": "Edge blur amount (Gaussian blur)"}),
             }
         })
         return Lexicon._parse(d, cls)
@@ -176,10 +176,10 @@ Generates false perception 3D images from 2D input. Set tile divisions, noise, g
             "optional": {
                 Lexicon.PIXEL: (JOV_TYPE_IMAGE, {}),
                 Lexicon.DEPTH: (JOV_TYPE_IMAGE, {}),
-                Lexicon.TILE: ("INT", {"default": 8, "mij": 1}),
-                Lexicon.NOISE: ("FLOAT", {"default": 0.33, "mij": 0, "maj": 1, "step": 0.01}),
-                Lexicon.GAMMA: ("FLOAT", {"default": 0.33, "mij": 0, "maj": 1, "step": 0.01}),
-                Lexicon.SHIFT: ("FLOAT", {"default": 1., "mij": -1, "maj": 1, "step": 0.01}),
+                Lexicon.TILE: ("INT", {"default": 8, "min": 1}),
+                Lexicon.NOISE: ("FLOAT", {"default": 0.33, "min": 0, "max": 1, "step": 0.01}),
+                Lexicon.GAMMA: ("FLOAT", {"default": 0.33, "min": 0, "max": 1, "step": 0.01}),
+                Lexicon.SHIFT: ("FLOAT", {"default": 1., "min": -1, "max": 1, "step": 0.01}),
                 Lexicon.INVERT: ("BOOLEAN", {"default": False}),
             }
         })
@@ -220,9 +220,9 @@ Simulates depth perception in images by generating stereoscopic views. It accept
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                Lexicon.PIXEL: (JOV_TYPE_IMAGE, {"tooltips":"Optional Image to Matte with Selected Color"}),
-                Lexicon.INT: ("FLOAT", {"default": 0.1, "mij": 0, "maj": 1, "step": 0.01, "tooltips":"Baseline"}),
-                Lexicon.FOCAL: ("FLOAT", {"default": 500, "mij": 0, "step": 0.01}),
+                Lexicon.PIXEL: (JOV_TYPE_IMAGE, {"tooltip":"Optional Image to Matte with Selected Color"}),
+                Lexicon.INT: ("FLOAT", {"default": 0.1, "min": 0, "max": 1, "step": 0.01, "tooltip":"Baseline"}),
+                Lexicon.FOCAL: ("FLOAT", {"default": 500, "min": 0, "step": 0.01}),
             }
         })
         return Lexicon._parse(d, cls)
@@ -260,27 +260,27 @@ Generates images containing text based on parameters such as font, size, alignme
             "optional": {
                 Lexicon.STRING: ("STRING", {"default": "jovimetrix", "multiline": True,
                                             "dynamicPrompts": False,
-                                            "tooltips": "Your Message"}),
+                                            "tooltip": "Your Message"}),
                 Lexicon.FONT: (cls.FONT_NAMES, {"default": cls.FONT_NAMES[0]}),
                 Lexicon.LETTER: ("BOOLEAN", {"default": False}),
                 Lexicon.AUTOSIZE: ("BOOLEAN", {"default": False}),
-                Lexicon.RGBA_A: ("VEC4INT", {"default": (255, 255, 255, 255), "rgb": True, "tooltips": "Color of the letters"}),
+                Lexicon.RGBA_A: ("VEC4INT", {"default": (255, 255, 255, 255), "rgb": True, "tooltip": "Color of the letters"}),
                 Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True}),
-                Lexicon.COLUMNS: ("INT", {"default": 0, "mij": 0}),
+                Lexicon.COLUMNS: ("INT", {"default": 0, "min": 0}),
                 # if auto on, hide these...
-                Lexicon.FONT_SIZE: ("INT", {"default": 16, "mij": 8}),
+                Lexicon.FONT_SIZE: ("INT", {"default": 16, "min": 8}),
                 Lexicon.ALIGN: (EnumAlignment._member_names_, {"default": EnumAlignment.CENTER.name}),
                 Lexicon.JUSTIFY: (EnumJustify._member_names_, {"default": EnumJustify.CENTER.name}),
-                Lexicon.MARGIN: ("INT", {"default": 0, "mij": -1024, "maj": 1024}),
-                Lexicon.SPACING: ("INT", {"default": 25, "mij": -1024, "maj": 1024}),
+                Lexicon.MARGIN: ("INT", {"default": 0, "min": -1024, "max": 1024}),
+                Lexicon.SPACING: ("INT", {"default": 25, "min": -1024, "max": 1024}),
                 Lexicon.WH: ("VEC2INT", {"default": (256, 256),
                                     "mij":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
                 Lexicon.XY: ("VEC2", {"default": (0, 0,), "mij": -1, "maj": 1, "step": 0.01,
                                       "label": [Lexicon.X, Lexicon.Y],
-                                      "tooltips":"Offset the position"}),
+                                      "tooltip":"Offset the position"}),
                 Lexicon.ANGLE: ("FLOAT", {"default": 0, "step": 0.01}),
                 Lexicon.EDGE: (EnumEdge._member_names_, {"default": EnumEdge.CLIP.name}),
-                Lexicon.INVERT: ("BOOLEAN", {"default": False, "tooltips": "Invert the mask input"})
+                Lexicon.INVERT: ("BOOLEAN", {"default": False, "tooltip": "Invert the mask input"})
             }
         })
         return Lexicon._parse(d, cls)

@@ -85,19 +85,19 @@ Enhance and modify images with various effects such as blurring, sharpening, col
                 Lexicon.PIXEL: (JOV_TYPE_IMAGE, {}),
                 Lexicon.MASK: (JOV_TYPE_IMAGE, {}),
                 Lexicon.FUNC: (EnumAdjustOP._member_names_, {"default": EnumAdjustOP.BLUR.name,
-                                                            "tooltips":"Type of adjustment (e.g., blur, sharpen, invert)"}),
-                Lexicon.RADIUS: ("INT", {"default": 3, "mij": 3}),
-                Lexicon.VALUE: ("FLOAT", {"default": 1, "mij": 0, "step": 0.01}),
+                                                            "tooltip":"Type of adjustment (e.g., blur, sharpen, invert)"}),
+                Lexicon.RADIUS: ("INT", {"default": 3, "min": 3}),
+                Lexicon.VALUE: ("FLOAT", {"default": 1, "min": 0, "step": 0.01}),
                 Lexicon.LOHI: ("VEC2", {"default": (0, 1),
                                         "mij": 0, "maj": 1, "step": 0.01, "label": [Lexicon.LO, Lexicon.HI]}),
                 Lexicon.LMH: ("VEC3", {"default": (0, 0.5, 1),
                                         "mij": 0, "maj": 1, "step": 0.01, "label": [Lexicon.LO, Lexicon.MID, Lexicon.HI]}),
                 Lexicon.HSV: ("VEC3",{"default": (0, 1, 1),
                                     "mij": 0, "maj": 1, "step": 0.01,  "label": [Lexicon.H, Lexicon.S, Lexicon.V]}),
-                Lexicon.CONTRAST: ("FLOAT", {"default": 0, "mij": 0, "maj": 1, "step": 0.01}),
-                Lexicon.GAMMA: ("FLOAT", {"default": 1, "mij": 0.00001, "maj": 1, "step": 0.01}),
+                Lexicon.CONTRAST: ("FLOAT", {"default": 0, "min": 0, "max": 1, "step": 0.01}),
+                Lexicon.GAMMA: ("FLOAT", {"default": 1, "min": 0.00001, "max": 1, "step": 0.01}),
                 Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True}),
-                Lexicon.INVERT: ("BOOLEAN", {"default": False, "tooltips": "Invert the mask input"})
+                Lexicon.INVERT: ("BOOLEAN", {"default": False, "tooltip": "Invert the mask input"})
             }
         })
         return Lexicon._parse(d, cls)
@@ -230,13 +230,13 @@ Combine two input images using various blending modes, such as normal, screen, m
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                Lexicon.PIXEL_A: (JOV_TYPE_IMAGE, {"tooltips": "Background Plate"}),
-                Lexicon.PIXEL_B: (JOV_TYPE_IMAGE, {"tooltips": "Image to Overlay on Background Plate"}),
-                Lexicon.MASK: (JOV_TYPE_IMAGE, {"tooltips": "Optional Mask to use for Alpha Blend Operation. If empty, will use the ALPHA of B"}),
-                Lexicon.FUNC: (EnumBlendType._member_names_, {"default": EnumBlendType.NORMAL.name, "tooltips": "Blending Operation"}),
-                Lexicon.A: ("FLOAT", {"default": 1, "mij": 0, "maj": 1, "step": 0.01, "tooltips": "Amount of Blending to Perform on the Selected Operation"}),
+                Lexicon.PIXEL_A: (JOV_TYPE_IMAGE, {"tooltip": "Background Plate"}),
+                Lexicon.PIXEL_B: (JOV_TYPE_IMAGE, {"tooltip": "Image to Overlay on Background Plate"}),
+                Lexicon.MASK: (JOV_TYPE_IMAGE, {"tooltip": "Optional Mask to use for Alpha Blend Operation. If empty, will use the ALPHA of B"}),
+                Lexicon.FUNC: (EnumBlendType._member_names_, {"default": EnumBlendType.NORMAL.name, "tooltip": "Blending Operation"}),
+                Lexicon.A: ("FLOAT", {"default": 1, "min": 0, "max": 1, "step": 0.01, "tooltip": "Amount of Blending to Perform on the Selected Operation"}),
                 Lexicon.FLIP: ("BOOLEAN", {"default": False}),
-                Lexicon.INVERT: ("BOOLEAN", {"default": False, "tooltips": "Invert the mask input"}),
+                Lexicon.INVERT: ("BOOLEAN", {"default": False, "tooltip": "Invert the mask input"}),
                 Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.MATTE.name}),
                 Lexicon.WH: ("VEC2INT", {"default": (512, 512), "mij":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
@@ -324,7 +324,7 @@ Simulate color blindness effects on images. You can select various types of colo
                                             {"default": EnumCBDeficiency.PROTAN.name}),
                 Lexicon.SIMULATOR: (EnumCBSimulator._member_names_,
                                             {"default": EnumCBSimulator.AUTOSELECT.name}),
-                Lexicon.VALUE: ("FLOAT", {"default": 1, "mij": 0, "maj": 1, "step": 0.001, "tooltips":"alpha blending"}),
+                Lexicon.VALUE: ("FLOAT", {"default": 1, "min": 0, "max": 1, "step": 0.001, "tooltip":"alpha blending"}),
             }
         })
         return Lexicon._parse(d, cls)
@@ -364,10 +364,10 @@ Adjust the color scheme of one image to match another with the Color Match Node.
                                             {"default": EnumColorMatchMap.USER_MAP.name}),
                 Lexicon.COLORMAP: (EnumColorMap._member_names_,
                                     {"default": EnumColorMap.HSV.name}),
-                Lexicon.VALUE: ("INT", {"default": 255, "mij": 0, "maj": 255, "tooltips":"The number of colors to use from the LUT during the remap. Will quantize the LUT range."}),
+                Lexicon.VALUE: ("INT", {"default": 255, "min": 0, "max": 255, "tooltip":"The number of colors to use from the LUT during the remap. Will quantize the LUT range."}),
                 Lexicon.FLIP: ("BOOLEAN", {"default": False}),
                 Lexicon.INVERT: ("BOOLEAN", {"default": False,
-                                                "tooltips": "Invert the color match output"}),
+                                                "tooltip": "Invert the color match output"}),
                 Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True}),
             }
         })
@@ -438,17 +438,17 @@ The top-k colors ordered from most->least used as a strip, tonal palette and 3D 
         d = deep_merge(d, {
             "optional": {
                 Lexicon.PIXEL: (JOV_TYPE_IMAGE, {}),
-                Lexicon.VALUE: ("INT", {"default": 12, "mij": 1, "maj": 255, "tooltips":"The top K colors to select."}),
-                Lexicon.SIZE: ("INT", {"default": 32, "mij": 1, "maj": 256, "tooltips":"Height of the tones in the strip. Width is based on input."}),
-                Lexicon.COUNT: ("INT", {"default": 33, "mij": 3, "maj": 256, "tooltips":"Number of nodes to use in interpolation of full LUT (256 is every pixel)."}),
+                Lexicon.VALUE: ("INT", {"default": 12, "min": 1, "max": 255, "tooltip":"The top K colors to select."}),
+                Lexicon.SIZE: ("INT", {"default": 32, "min": 1, "max": 256, "tooltip":"Height of the tones in the strip. Width is based on input."}),
+                Lexicon.COUNT: ("INT", {"default": 33, "min": 3, "max": 256, "tooltip":"Number of nodes to use in interpolation of full LUT (256 is every pixel)."}),
                 Lexicon.WH: ("VEC2INT", {"default": (256, 256), "mij":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
             },
             "outputs": {
-                0: ("IMAGE", {"tooltips":"Sequence of top-K colors. Count depends on value in `VAL`."}),
-                1: ("IMAGE", {"tooltips":"Simple Tone palette based on result top-K colors. Width is taken from input."}),
-                2: ("IMAGE", {"tooltips":"Gradient of top-K colors."}),
-                3: ("JLUT",  {"tooltips":"Full 3D LUT of the image mapped to the resultant top-K colors chosen."}),
-                4: ("IMAGE", {"tooltips":"Visualization of full 3D .cube LUT in JLUT output"}),
+                0: ("IMAGE", {"tooltip":"Sequence of top-K colors. Count depends on value in `VAL`."}),
+                1: ("IMAGE", {"tooltip":"Simple Tone palette based on result top-K colors. Width is taken from input."}),
+                2: ("IMAGE", {"tooltip":"Gradient of top-K colors."}),
+                3: ("JLUT",  {"tooltip":"Full 3D LUT of the image mapped to the resultant top-K colors chosen."}),
+                4: ("IMAGE", {"tooltip":"Visualization of full 3D .cube LUT in JLUT output"}),
             }
         })
         return Lexicon._parse(d, cls)
@@ -504,8 +504,8 @@ Generate a color harmony based on the selected scheme. Supported schemes include
             "optional": {
                 Lexicon.PIXEL: (JOV_TYPE_IMAGE, {}),
                 Lexicon.SCHEME: (EnumColorTheory._member_names_, {"default": EnumColorTheory.COMPLIMENTARY.name}),
-                Lexicon.VALUE: ("INT", {"default": 45, "mij": -90, "maj": 90,
-                                        "tooltips": "Custom angle of separation to use when calculating colors"}),
+                Lexicon.VALUE: ("INT", {"default": 45, "min": -90, "max": 90,
+                                        "tooltip": "Custom angle of separation to use when calculating colors"}),
                 Lexicon.INVERT: ("BOOLEAN", {"default": False})
             }
         })
@@ -607,9 +607,9 @@ Create masks based on specific color ranges within an image. Specify the color r
             "optional": {
                 Lexicon.PIXEL_A: (JOV_TYPE_IMAGE, {}),
                 Lexicon.START: ("VEC3INT", {"default": (128, 128, 128), "rgb": True}),
-                Lexicon.BOOLEAN: ("BOOLEAN", {"default": False, "tooltips": "use an end point (start->end) when calculating the filter range"}),
+                Lexicon.BOOLEAN: ("BOOLEAN", {"default": False, "tooltip": "use an end point (start->end) when calculating the filter range"}),
                 Lexicon.END: ("VEC3INT", {"default": (128, 128, 128), "rgb": True}),
-                Lexicon.FLOAT: ("VEC3", {"default": (0.5,0.5,0.5), "mij":0, "maj":1, "step": 0.01, "tooltips": "the fuzziness use to extend the start and end range(s)"}),
+                Lexicon.FLOAT: ("VEC3", {"default": (0.5,0.5,0.5), "mij":0, "maj":1, "step": 0.01, "tooltip": "the fuzziness use to extend the start and end range(s)"}),
                 Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True}),
             }
         })
@@ -693,9 +693,9 @@ Remaps an input image using a gradient lookup table (LUT). The gradient image wi
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                Lexicon.PIXEL: (JOV_TYPE_IMAGE, {"tooltips":"Image to remap with gradient input"}),
-                Lexicon.GRADIENT: (JOV_TYPE_IMAGE, {"tooltips":f"Look up table (LUT) to remap the input image in `{Lexicon.PIXEL}`"}),
-                Lexicon.FLIP: ("BOOLEAN", {"default":False, "tooltips":"Reverse the gradient from left-to-right "}),
+                Lexicon.PIXEL: (JOV_TYPE_IMAGE, {"tooltip":"Image to remap with gradient input"}),
+                Lexicon.GRADIENT: (JOV_TYPE_IMAGE, {"tooltip":f"Look up table (LUT) to remap the input image in `{Lexicon.PIXEL}`"}),
+                Lexicon.FLIP: ("BOOLEAN", {"default":False, "tooltip":"Reverse the gradient from left-to-right "}),
                 Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.MATTE.name}),
                 Lexicon.WH: ("VEC2INT", {"default": (512, 512), "mij":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
@@ -754,8 +754,8 @@ Combines individual color channels (red, green, blue) along with an optional mas
                 Lexicon.WH: ("VEC2INT", {"default": (512, 512), "mij":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
                 Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True}),
-                Lexicon.FLIP: ("VEC4", {"mij":0, "maj":1, "step": 0.01, "tooltips": "Invert specific input prior to merging. R, G, B, A."}),
-                Lexicon.INVERT: ("BOOLEAN", {"default": False, "tooltips": "Invert the final merged output"})
+                Lexicon.FLIP: ("VEC4", {"mij":0, "maj":1, "step": 0.01, "tooltip": "Invert specific input prior to merging. R, G, B, A."}),
+                Lexicon.INVERT: ("BOOLEAN", {"default": False, "tooltip": "Invert the final merged output"})
             }
         })
         return Lexicon._parse(d, cls)
@@ -824,10 +824,10 @@ Takes an input image and splits it into its individual color channels (red, gree
                 Lexicon.PIXEL: (JOV_TYPE_IMAGE, {})
             },
             "outputs": {
-                0: ("MASK", {"tooltips":"Single channel output of Red Channel."}),
-                1: ("MASK", {"tooltips":"Single channel output of Green Channel"}),
-                2: ("MASK", {"tooltips":"Single channel output of Blue Channel"}),
-                3: ("MASK", {"tooltips":"Single channel output of Alpha Channel"}),
+                0: ("MASK", {"tooltip":"Single channel output of Red Channel."}),
+                1: ("MASK", {"tooltip":"Single channel output of Green Channel"}),
+                2: ("MASK", {"tooltip":"Single channel output of Blue Channel"}),
+                3: ("MASK", {"tooltip":"Single channel output of Alpha Channel"}),
             }
         })
         return Lexicon._parse(d, cls)
@@ -921,9 +921,9 @@ Merge multiple input images into a single composite image by stacking them along
         d = deep_merge(d, {
             "optional": {
                 Lexicon.AXIS: (EnumOrientation._member_names_, {"default": EnumOrientation.GRID.name,
-                                                                "tooltips":"Choose the direction in which to stack the images. Options include horizontal, vertical, or a grid layout"}),
-                Lexicon.STEP: ("INT", {"mij": 0, "default": 1,
-                                    "tooltips":"Specify the spacing between each stacked image. This determines how far apart the images are from each other"}),
+                                                                "tooltip":"Choose the direction in which to stack the images. Options include horizontal, vertical, or a grid layout"}),
+                Lexicon.STEP: ("INT", {"min": 0, "default": 1,
+                                    "tooltip":"Specify the spacing between each stacked image. This determines how far apart the images are from each other"}),
                 Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.MATTE.name}),
                 Lexicon.WH: ("VEC2INT", {"default": (512, 512), "mij":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
@@ -968,9 +968,9 @@ Define a range and apply it to an image for segmentation and feature extraction.
                 Lexicon.ADAPT: ( EnumThresholdAdapt._member_names_,
                                 {"default": EnumThresholdAdapt.ADAPT_NONE.name}),
                 Lexicon.FUNC: ( EnumThreshold._member_names_, {"default": EnumThreshold.BINARY.name}),
-                Lexicon.THRESHOLD: ("FLOAT", {"default": 0.5, "mij": 0, "maj": 1, "step": 0.005}),
-                Lexicon.SIZE: ("INT", {"default": 3, "mij": 3, "maj": 103}),
-                Lexicon.INVERT: ("BOOLEAN", {"default": False, "tooltips": "Invert the mask input"})
+                Lexicon.THRESHOLD: ("FLOAT", {"default": 0.5, "min": 0, "max": 1, "step": 0.005}),
+                Lexicon.SIZE: ("INT", {"default": 3, "min": 3, "max": 103}),
+                Lexicon.INVERT: ("BOOLEAN", {"default": False, "tooltip": "Invert the mask input"})
             }
         })
         return Lexicon._parse(d, cls)
@@ -1018,7 +1018,7 @@ Apply various geometric transformations to images, including translation, rotati
                 Lexicon.PROJECTION: (EnumProjection._member_names_, {"default": EnumProjection.NORMAL.name}),
                 Lexicon.TLTR: ("VEC4", {"default": (0, 0, 1, 0), "step": 0.005,  "label": [Lexicon.TOP, Lexicon.LEFT, Lexicon.TOP, Lexicon.RIGHT]}),
                 Lexicon.BLBR: ("VEC4", {"default": (0, 1, 1, 1), "step": 0.005, "label": [Lexicon.BOTTOM, Lexicon.LEFT, Lexicon.BOTTOM, Lexicon.RIGHT]}),
-                Lexicon.STRENGTH: ("FLOAT", {"default": 1, "mij": 0, "step": 0.005}),
+                Lexicon.STRENGTH: ("FLOAT", {"default": 1, "min": 0, "step": 0.005}),
                 Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.MATTE.name}),
                 Lexicon.WH: ("VEC2INT", {"default": (512, 512), "mij":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),

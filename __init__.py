@@ -376,21 +376,13 @@ class Lexicon(metaclass=LexiconMeta):
                 continue
             for k, v in entry.items():
                 widget_data = v[1] if isinstance(v, (tuple, list,)) and len(v) > 1 else {}
-                # jovimetrix
-                if (tip := widget_data.get("tooltips", None)) is None:
-                    # cached
-                    if (tip := cls._tooltipsDB.get(k), None) is None:
-                        # comfyui standard
-                        if (tip := widget_data.get("tooltip", None)) is None:
-                            logger.warning(f"no {k}")
-                            continue
+                tip = widget_data.get("tooltip", cls._tooltipsDB.get(k, None))
                 if cat == "outputs":
                     data["outputs"][k] = tip
                 else:
                     data[k] = tip
         if node.get("optional", None) is None:
             node["optional"] = {}
-        node["optional"]["tooltips"] = ("JTOOLTIP", {"default": data})
         return node
 
 # ==============================================================================
@@ -571,7 +563,7 @@ def json2html(json_dict: dict) -> str:
         for param_key, param_meta in v.items():
             typ = param_meta.get('type', 'UNKNOWN').upper()
             typ = ', '.join([x.strip() for x in typ.split(',')])
-            tool = param_meta.get("tooltips", '')
+            tool = param_meta.get("tooltip", '')
             default = html.escape(str(param_meta.get('default', '')))
             ch = ', '.join(param_meta.get('choice', []))
             rows.append(HTML_input_row.substitute(
@@ -656,12 +648,12 @@ def get_node_info(node_data: dict) -> Dict[str, Any]:
                 # only stuff that makes sense...
                 junk = ['default', 'min', 'max']
                 meta = node_param_meta[param_key][1]
-                if (tip := meta.get("tooltips", None)) is None:
+                if (tip := meta.get("tooltip", None)) is None:
                     if (tip := Lexicon._tooltipsDB.get(param_key, None)) is None:
                         # logger.warning(f"no tooltip for {node_class}[{k}]::{param_key}")
-                        junk.append("tooltips")
+                        junk.append("tooltip")
                         tip = "Unknown Explanation!"
-                input_parameters[k][param_key]["tooltips"] = tip
+                input_parameters[k][param_key]["tooltip"] = tip
                 for scrape in junk:
                     if (val := meta.get(scrape, None)) is not None and val != "":
                         input_parameters[k][param_key][scrape] = val

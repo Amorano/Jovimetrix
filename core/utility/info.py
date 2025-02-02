@@ -152,11 +152,11 @@ Visualize a series of data points over time. It accepts a dynamic number of valu
         d = deep_merge(d, {
             "optional": {
                 Lexicon.RESET: ("BOOLEAN", {"default": False}),
-                Lexicon.VALUE: ("INT", {"default": 60, "mij": 0, "tooltips":"Number of values to graph and display"}),
+                Lexicon.VALUE: ("INT", {"default": 60, "min": 0, "tooltip":"Number of values to graph and display"}),
                 Lexicon.WH: ("VEC2INT", {"default": (512, 512), "mij":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]})
             },
             "outputs": {
-                0: (Lexicon.IMAGE, {"tooltips":"The graphed image"}),
+                0: (Lexicon.IMAGE, {"tooltip":"The graphed image"}),
             }
         })
         return Lexicon._parse(d, cls)
@@ -223,10 +223,10 @@ Exports and Displays immediate information about images.
                 Lexicon.PIXEL_A: (JOV_TYPE_IMAGE,),
             },
             "outputs": {
-                0: (Lexicon.INT, {"tooltips":"Batch count"}),
+                0: (Lexicon.INT, {"tooltip":"Batch count"}),
                 1: (Lexicon.W,),
                 2: (Lexicon.H,),
-                3: (Lexicon.C, {"tooltips":"Number of image channels. 1 (Grayscale), 3 (RGB) or 4 (RGBA)"}),
+                3: (Lexicon.C, {"tooltip":"Number of image channels. 1 (Grayscale), 3 (RGB) or 4 (RGBA)"}),
                 4: (Lexicon.WH,),
                 5: (Lexicon.WHC,),
             }

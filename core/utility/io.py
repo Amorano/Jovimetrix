@@ -73,11 +73,11 @@ Introduce pauses in the workflow that accept an optional input to pass through a
         d = deep_merge(d, {
             "optional": {
                 Lexicon.PASS_IN: (JOV_TYPE_ANY, {"default": None}),
-                Lexicon.TIMER: ("INT", {"default" : 0, "mij": -1}),
-                Lexicon.ENABLE: ("BOOLEAN", {"default": True, "tooltips":"Enable or disable the screensaver"})
+                Lexicon.TIMER: ("INT", {"default" : 0, "min": -1}),
+                Lexicon.ENABLE: ("BOOLEAN", {"default": True, "tooltip":"Enable or disable the screensaver"})
             },
             "outputs": {
-                0: (Lexicon.PASS_OUT, {"tooltips":"Pass through data when the delay ends"})
+                0: (Lexicon.PASS_OUT, {"tooltip":"Pass through data when the delay ends"})
             }
         })
         return Lexicon._parse(d, cls)
@@ -134,12 +134,12 @@ Responsible for saving images or animations to disk. It supports various output 
                 # GIF ONLY
                 Lexicon.OPTIMIZE: ("BOOLEAN", {"default": False}),
                 # GIFSKI ONLY
-                Lexicon.QUALITY: ("INT", {"default": 90, "mij": 1, "maj": 100}),
-                Lexicon.QUALITY_M: ("INT", {"default": 100, "mij": 1, "maj": 100}),
+                Lexicon.QUALITY: ("INT", {"default": 90, "min": 1, "max": 100}),
+                Lexicon.QUALITY_M: ("INT", {"default": 100, "min": 1, "max": 100}),
                 # GIF OR GIFSKI
-                Lexicon.FPS: ("INT", {"default": 24, "mij": 1, "maj": 60}),
+                Lexicon.FPS: ("INT", {"default": 24, "min": 1, "max": 60}),
                 # GIF OR GIFSKI
-                Lexicon.LOOP: ("INT", {"default": 0, "mij": 0}),
+                Lexicon.LOOP: ("INT", {"default": 0, "min": 0}),
             }
         })
         return Lexicon._parse(d, cls)
@@ -223,10 +223,10 @@ Routes the input data from the optional input ports to the output port, preservi
         d = super().INPUT_TYPES()
         e = {
             "optional": {
-                Lexicon.ROUTE: ("BUS", {"default": None, "tooltips":"Pass through another route node to pre-populate the outputs."}),
+                Lexicon.ROUTE: ("BUS", {"default": None, "tooltip":"Pass through another route node to pre-populate the outputs."}),
             },
             "outputs": {
-                0: (Lexicon.ROUTE, {"tooltips":"Pass through for Route node"})
+                0: (Lexicon.ROUTE, {"tooltip":"Pass through for Route node"})
             }
         }
         d = deep_merge(d, e)

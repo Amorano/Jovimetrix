@@ -185,9 +185,9 @@ Execute custom GLSL (OpenGL Shading Language) fragment shaders to generate image
         d = super().INPUT_TYPES()
         opts = d.get('optional', {})
         opts.update({
-            Lexicon.BATCH: ("INT", {"default": 0, "mij": 0, "maj": 1048576}),
-            Lexicon.FPS: ("INT", {"default": 24, "mij": 1, "maj": 120}),
-            Lexicon.TIME: ("FLOAT", {"default": 0, "step": 0.0001, "mij": 0}),
+            Lexicon.BATCH: ("INT", {"default": 0, "min": 0, "max": 1048576}),
+            Lexicon.FPS: ("INT", {"default": 24, "min": 1, "max": 120}),
+            Lexicon.TIME: ("FLOAT", {"default": 0, "step": 0.0001, "min": 0}),
             Lexicon.PROG_VERT: ("STRING", {"default": PROG_VERTEX, "multiline": True, "dynamicPrompts": False}),
             Lexicon.PROG_FRAG: ("STRING", {"default": PROG_FRAGMENT, "multiline": True, "dynamicPrompts": False}),
         })
@@ -253,7 +253,7 @@ class GLSLNodeDynamic(GLSLNodeBase):
                                 params['rgb'] = True
 
                 if tooltip is not None:
-                    params["tooltips"] = tooltip
+                    params["tooltip"] = tooltip
                 data[name] = (type_name, params,)
 
         data.update(opts)

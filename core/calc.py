@@ -206,11 +206,11 @@ image.
         d = deep_merge(d, {
             "optional": {
                 Lexicon.UNKNOWN: (JOV_TYPE_FULL, {"default": None}),
-                Lexicon.VALUE: ("INT", {"default": 8, "min": 1, "max": 64, "tooltips":"Number of output bits requested."})
+                Lexicon.VALUE: ("INT", {"default": 8, "min": 1, "max": 64, "tooltip":"Number of output bits requested."})
             },
             "outputs": {
-                0: (Lexicon.BIT, {"tooltips":"Bits as Numerical output (0 or 1)"}),
-                1: (Lexicon.BOOLEAN, {"tooltips":"Bits as Boolean output (True or False)"}),
+                0: (Lexicon.BIT, {"tooltip":"Bits as Numerical output (0 or 1)"}),
+                1: (Lexicon.BOOLEAN, {"tooltip":"Bits as Boolean output (True or False)"}),
             }
         })
         return Lexicon._parse(d, cls)
@@ -238,7 +238,7 @@ Perform single function operations like absolute value, mean, median, mode, magn
                 Lexicon.FUNC: (EnumUnaryOperation._member_names_, {"default": EnumUnaryOperation.ABS.name})
             },
             "outputs": {
-                0: (Lexicon.UNKNOWN, {"tooltips":"Output type will match the input type"}),
+                0: (Lexicon.UNKNOWN, {"tooltip":"Output type will match the input type"}),
             }
         })
         return Lexicon._parse(d, cls)
@@ -337,22 +337,22 @@ Execute binary operations like addition, subtraction, multiplication, division, 
         d = deep_merge(d, {
             "optional": {
                 Lexicon.IN_A: (JOV_TYPE_FULL, {"default": None,
-                                        "tooltips":"Passes a raw value directly, or supplies defaults for any value inputs without connections"}),
+                                        "tooltip":"Passes a raw value directly, or supplies defaults for any value inputs without connections"}),
                 Lexicon.IN_B: (JOV_TYPE_FULL, {"default": None,
-                                        "tooltips":"Passes a raw value directly, or supplies defaults for any value inputs without connections"}),
-                Lexicon.FUNC: (EnumBinaryOperation._member_names_, {"default": EnumBinaryOperation.ADD.name, "tooltips":"Arithmetic operation to perform"}),
+                                        "tooltip":"Passes a raw value directly, or supplies defaults for any value inputs without connections"}),
+                Lexicon.FUNC: (EnumBinaryOperation._member_names_, {"default": EnumBinaryOperation.ADD.name, "tooltip":"Arithmetic operation to perform"}),
                 Lexicon.TYPE: (names_convert, {"default": names_convert[2],
-                                            "tooltips":"Output type desired from resultant operation"}),
+                                            "tooltip":"Output type desired from resultant operation"}),
                 Lexicon.FLIP: ("BOOLEAN", {"default": False}),
                 Lexicon.IN_A+Lexicon.IN_A: ("VEC4", {"default": (0,0,0,0),
                                         "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W],
-                                        "tooltips":"value vector"}),
+                                        "tooltip":"value vector"}),
                 Lexicon.IN_B+Lexicon.IN_B: ("VEC4", {"default": (0,0,0,0),
                                         "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W],
-                                        "tooltips":"value vector"}),
+                                        "tooltip":"value vector"}),
             },
             "outputs": {
-                0: (Lexicon.UNKNOWN, {"tooltips":"Output type will match the input type"}),
+                0: (Lexicon.UNKNOWN, {"tooltip":"Output type will match the input type"}),
             }
         })
         return Lexicon._parse(d, cls)
@@ -476,17 +476,17 @@ Evaluates two inputs (A and B) with a specified comparison operators and optiona
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                Lexicon.IN_A: (JOV_TYPE_FULL, {"default": 0, "tooltips":"Master Comparator"}),
-                Lexicon.IN_B: (JOV_TYPE_FULL, {"default": 0, "tooltips":"Secondary Comparator"}),
+                Lexicon.IN_A: (JOV_TYPE_FULL, {"default": 0, "tooltip":"Master Comparator"}),
+                Lexicon.IN_B: (JOV_TYPE_FULL, {"default": 0, "tooltip":"Secondary Comparator"}),
                 Lexicon.COMP_A: (JOV_TYPE_ANY, {"default": 0}),
                 Lexicon.COMP_B: (JOV_TYPE_ANY, {"default": 0}),
                 Lexicon.COMPARE: (EnumComparison._member_names_, {"default": EnumComparison.EQUAL.name}),
                 Lexicon.FLIP: ("BOOLEAN", {"default": False}),
-                Lexicon.INVERT: ("BOOLEAN", {"default": False, "tooltips":"reverse the successful and failure inputs"}),
+                Lexicon.INVERT: ("BOOLEAN", {"default": False, "tooltip":"reverse the successful and failure inputs"}),
             },
             "outputs": {
-                0: (Lexicon.TRIGGER, {"tooltips":f"Outputs the input at {Lexicon.IN_A} or {Lexicon.IN_B} depending on which evaluated `TRUE`"}),
-                1: (Lexicon.VALUE, {"tooltips":"The comparison result value"}),
+                0: (Lexicon.TRIGGER, {"tooltip":f"Outputs the input at {Lexicon.IN_A} or {Lexicon.IN_B} depending on which evaluated `TRUE`"}),
+                1: (Lexicon.VALUE, {"tooltip":"The comparison result value"}),
             }
         })
         return Lexicon._parse(d, cls)
@@ -600,22 +600,22 @@ Additionally, you can specify the easing function (EASE) and the desired output 
         names_convert = EnumConvertType._member_names_[:10]
         d = deep_merge(d, {
             "optional": {
-                Lexicon.IN_A: (JOV_TYPE_FULL, {"tooltips": "Custom Start Point"}),
-                Lexicon.IN_B: (JOV_TYPE_FULL, {"tooltips": "Custom End Point"}),
+                Lexicon.IN_A: (JOV_TYPE_FULL, {"tooltip": "Custom Start Point"}),
+                Lexicon.IN_B: (JOV_TYPE_FULL, {"tooltip": "Custom End Point"}),
                 Lexicon.FLOAT: ("VEC4", {"default": (0.5, 0.5, 0.5, 0.5),
                                          "mij": 0., "maj": 1.0,
                                          # "step": 0.001, "round": 0.0001, "precision": 5,
-                                         "tooltips": "Blend Amount. 0 = full A, 1 = full B"}),
+                                         "tooltip": "Blend Amount. 0 = full A, 1 = full B"}),
                 Lexicon.IN_A+Lexicon.IN_A: ("VEC4", {"default": (0, 0, 0, 0),
-                                        "tooltips":"default value vector for A"}),
+                                        "tooltip":"default value vector for A"}),
                 Lexicon.IN_B+Lexicon.IN_B: ("VEC4", {"default": (1,1,1,1),
-                                        "tooltips":"default value vector for B"}),
+                                        "tooltip":"default value vector for B"}),
                 Lexicon.TYPE: (names_convert, {"default": "FLOAT",
-                                            "tooltips":"Output type desired from resultant operation"}),
+                                            "tooltip":"Output type desired from resultant operation"}),
                 Lexicon.EASE: (["NONE"] + EnumEase._member_names_, {"default": "NONE"}),
             },
             "outputs": {
-                0: (Lexicon.ANY_OUT, {"tooltips":f"Output can vary depending on the type chosen in the {Lexicon.TYPE} parameter"})
+                0: (Lexicon.ANY_OUT, {"tooltip":f"Output can vary depending on the type chosen in the {Lexicon.TYPE} parameter"})
             }
         })
         return Lexicon._parse(d, cls)
@@ -690,10 +690,10 @@ Manipulate strings through filtering
             "optional": {
                 # split, join, replace, trim/lift
                 Lexicon.FUNC: (EnumConvertString._member_names_, {"default": EnumConvertString.SPLIT.name,
-                                                                  "tooltips":"Operation to perform on the input string"}),
-                Lexicon.KEY: ("STRING", {"default":"", "dynamicPrompt":False, "tooltips":"Delimiter (SPLIT/JOIN) or string to use as search string (FIND/REPLACE)."}),
+                                                                  "tooltip":"Operation to perform on the input string"}),
+                Lexicon.KEY: ("STRING", {"default":"", "dynamicPrompt":False, "tooltip":"Delimiter (SPLIT/JOIN) or string to use as search string (FIND/REPLACE)."}),
                 Lexicon.REPLACE: ("STRING", {"default":"", "dynamicPrompt":False}),
-                Lexicon.RANGE: ("VEC3INT", {"default":(0, -1, 1), "tooltips":"Start, End and Step. Values will clip to the actual list size(s)."}),
+                Lexicon.RANGE: ("VEC3INT", {"default":(0, -1, 1), "tooltip":"Start, End and Step. Values will clip to the actual list size(s)."}),
             }
         })
         return Lexicon._parse(d, cls)
@@ -757,7 +757,7 @@ Swap components between two vectors based on specified swizzle patterns and valu
                 Lexicon.IN_A: (JOV_TYPE_VECTOR, {}),
                 Lexicon.IN_B: (JOV_TYPE_VECTOR, {}),
                 Lexicon.TYPE: (names_convert, {"default": names_convert[2],
-                                            "tooltips":"Output type desired from resultant operation"}),
+                                            "tooltip":"Output type desired from resultant operation"}),
                 Lexicon.SWAP_X: (EnumSwizzle._member_names_, {"default": EnumSwizzle.A_X.name}),
                 Lexicon.SWAP_Y: (EnumSwizzle._member_names_, {"default": EnumSwizzle.A_Y.name}),
                 Lexicon.SWAP_Z: (EnumSwizzle._member_names_, {"default": EnumSwizzle.A_Z.name, "step": 0.01}),
@@ -802,32 +802,32 @@ A timer and frame counter, emitting pulses or signals based on time intervals. I
             "optional": {
                 # data to pass on a pulse of the loop
                 Lexicon.TRIGGER: (JOV_TYPE_ANY, {"default": None,
-                                             "tooltips":"Output to send when beat (BPM setting) is hit"}),
+                                             "tooltip":"Output to send when beat (BPM setting) is hit"}),
                 # forces a MOD on CYCLE
-                Lexicon.VALUE: ("INT", {"mij": 0, "default": 0, "mij": 0, "maj": sys.maxsize,
-                                        "tooltips": "the current frame number of the tick"}),
-                Lexicon.LOOP: ("INT", {"mij": 0, "maj": sys.maxsize, "default": 0,
-                                       "tooltips": "number of frames before looping starts. 0 means continuous playback (no loop point)"}),
+                Lexicon.VALUE: ("INT", {"default": 0, "min": 0, "max": sys.maxsize,
+                                        "tooltip": "the current frame number of the tick"}),
+                Lexicon.LOOP: ("INT", {"min": 0, "max": sys.maxsize, "default": 0,
+                                       "tooltip": "number of frames before looping starts. 0 means continuous playback (no loop point)"}),
                 #
-                Lexicon.FPS: ("INT", {"mij": 1, "default": 24,
-                                      "tooltips": "Fixed frame step rate based on FPS (1/FPS)"}),
-                Lexicon.BPM: ("INT", {"mij": 1, "maj": 60000, "default": 120,
-                                        "tooltips": "BPM trigger rate to send the input. If input is empty, TRUE is sent on trigger"}),
-                Lexicon.NOTE: ("INT", {"default": 4, "mij": 1, "maj": 256,
-                                    "tooltips":"Number of beats per measure. Quarter note is 4, Eighth is 8, 16 is 16, etc."}),
+                Lexicon.FPS: ("INT", {"min": 1, "default": 24,
+                                      "tooltip": "Fixed frame step rate based on FPS (1/FPS)"}),
+                Lexicon.BPM: ("INT", {"min": 1, "max": 60000, "default": 120,
+                                        "tooltip": "BPM trigger rate to send the input. If input is empty, TRUE is sent on trigger"}),
+                Lexicon.NOTE: ("INT", {"default": 4, "min": 1, "max": 256,
+                                    "tooltip":"Number of beats per measure. Quarter note is 4, Eighth is 8, 16 is 16, etc."}),
                 # stick the current "count"
                 Lexicon.WAIT: ("BOOLEAN", {"default": False}),
                 # manual total = 0
                 Lexicon.RESET: ("BOOLEAN", {"default": False}),
                 # how many frames to dump....
-                Lexicon.BATCH: ("INT", {"mij": 1, "default": 1, "maj": 32767, "tooltips": "Number of frames wanted"}),
-                Lexicon.STEP: ("INT", {"default": 0, "mij": 0, "maj": sys.maxsize}),
+                Lexicon.BATCH: ("INT", {"default": 1, "min": 1, "max": 32767, "tooltip": "Number of frames wanted"}),
+                Lexicon.STEP: ("INT", {"default": 0, "min": 0, "max": sys.maxsize}),
             },
             "outputs": {
-                0: (Lexicon.VALUE, {"tooltips":"Current value for the configured tick"}),
-                1: (Lexicon.LINEAR, {"tooltips":"Normalized tick value (0..1) based on BPM and Loop"}),
-                2: (Lexicon.FPS, {"tooltips":"Current 'frame' in the tick based on FPS setting"}),
-                3: (Lexicon.TRIGGER, {"tooltips":"Based on the BPM settings, on beat hit, output the input at '⚡'"}),
+                0: (Lexicon.VALUE, {"tooltip":"Current value for the configured tick"}),
+                1: (Lexicon.LINEAR, {"tooltip":"Normalized tick value (0..1) based on BPM and Loop"}),
+                2: (Lexicon.FPS, {"tooltip":"Current 'frame' in the tick based on FPS setting"}),
+                3: (Lexicon.TRIGGER, {"tooltip":"Based on the BPM settings, on beat hit, output the input at '⚡'"}),
             }
         })
         return Lexicon._parse(d, cls)
@@ -909,9 +909,9 @@ Supplies raw or default values for various data types, supporting vector input w
         d = deep_merge(d, {
             "optional": {
                 Lexicon.IN_A: (JOV_TYPE_ANY, {"default": None,
-                                        "tooltips":"Passes a raw value directly, or supplies defaults for any value inputs without connections"}),
+                                        "tooltip":"Passes a raw value directly, or supplies defaults for any value inputs without connections"}),
                 Lexicon.TYPE: (typ, {"default": EnumConvertType.BOOLEAN.name,
-                                    "tooltips":"Take the input and convert it into the selected type."}),
+                                    "tooltip":"Take the input and convert it into the selected type."}),
                 Lexicon.X: (JOV_TYPE_ANY, {"default": 0, "mij": -sys.maxsize,
                                     "maj": sys.maxsize, "step": 0.01, "forceInput": True}),
                 Lexicon.Y: (JOV_TYPE_ANY, {"default": 0, "mij": -sys.maxsize,
@@ -919,18 +919,18 @@ Supplies raw or default values for various data types, supporting vector input w
                 Lexicon.Z: (JOV_TYPE_ANY, {"default": 0, "mij": -sys.maxsize,
                                     "maj": sys.maxsize, "step": 0.01, "forceInput": True}),
                 Lexicon.W: (JOV_TYPE_ANY, {"default": 0, "mij": -sys.maxsize,
-                                    "maj": sys.maxsize, "step": 0.01,                                 "forceInput": True}),
+                                    "maj": sys.maxsize, "step": 0.01, "forceInput": True}),
                 Lexicon.IN_A+Lexicon.IN_A: ("VEC4", {"default": (0, 0, 0, 0),
                                     #"mij": -sys.maxsize, "maj": sys.maxsize,
                                     "step": 0.01,
                                     "label": [Lexicon.X, Lexicon.Y],
-                                    "tooltips":"default value vector for A"}),
-                Lexicon.SEED: ("INT", {"default": 0, "mij": 0, "maj": sys.maxsize}),
+                                    "tooltip":"default value vector for A"}),
+                Lexicon.SEED: ("INT", {"default": 0, "min": 0, "max": sys.maxsize}),
                 Lexicon.IN_B+Lexicon.IN_B: ("VEC4", {"default": (1,1,1,1),
                                     #"mij": -sys.maxsize, "maj": sys.maxsize,
                                     "step": 0.01,
                                     "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W],
-                                    "tooltips":"default value vector for B"}),
+                                    "tooltip":"default value vector for B"}),
                 Lexicon.STRING: ("STRING", {"default": "", "dynamicPrompts": False, "multiline": True}),
             }
         })
@@ -1019,11 +1019,11 @@ Produce waveforms like sine, square, or sawtooth with adjustable frequency, ampl
         d = deep_merge(d, {
             "optional": {
                 Lexicon.WAVE: (EnumWave._member_names_, {"default": EnumWave.SIN.name}),
-                Lexicon.FREQ: ("FLOAT", {"default": 1, "mij": 0, "maj": sys.maxsize, "step": 0.01}),
-                Lexicon.AMP: ("FLOAT", {"default": 1, "mij": 0, "maj": sys.maxsize, "step": 0.01}),
-                Lexicon.PHASE: ("FLOAT", {"default": 0, "mij": 0.0, "maj": 1.0, "step": 0.001, }),
-                Lexicon.OFFSET: ("FLOAT", {"default": 0, "mij": 0.0, "maj": 1.0, "step": 0.001, }),
-                Lexicon.TIME: ("FLOAT", {"default": 0, "mij": 0, "maj": sys.maxsize, "step": 0.0001}),
+                Lexicon.FREQ: ("FLOAT", {"default": 1, "min": 0, "max": sys.maxsize, "step": 0.01}),
+                Lexicon.AMP: ("FLOAT", {"default": 1, "min": 0, "max": sys.maxsize, "step": 0.01}),
+                Lexicon.PHASE: ("FLOAT", {"default": 0, "min": 0.0, "max": 1.0, "step": 0.001, }),
+                Lexicon.OFFSET: ("FLOAT", {"default": 0, "min": 0.0, "max": 1.0, "step": 0.001, }),
+                Lexicon.TIME: ("FLOAT", {"default": 0, "min": 0, "max": sys.maxsize, "step": 0.0001}),
                 Lexicon.INVERT: ("BOOLEAN", {"default": False}),
             }
         })
