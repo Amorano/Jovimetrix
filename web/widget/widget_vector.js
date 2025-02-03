@@ -242,7 +242,7 @@ const VectorWidget = (app, inputName, options, initial, desc='') => {
 }
 
 app.registerExtension({
-    name: "jovimetrix.widget.spinner",
+    name: "jovi.widget.spinner",
     async getCustomWidgets(app) {
         return {
             VEC2: (node, inputName, inputData, app) => ({

@@ -1,54 +1,116 @@
 /**
  * File: core_color.js
  * Project: Jovimetrix
- *
  */
 
 import { app } from "../../../scripts/app.js";
 import { $el } from "../../../scripts/ui.js";
-import { apiGet, apiJovimetrix, setting_make } from "../util/util_api.js";
+import { apiGet } from "../util/util_api.js";
 import { colorContrast } from "../util/util.js";
 
-const USER = "user.default";
+let PANEL_COLORIZE, NODE_LIST;
 
-let PANEL_COLORIZE, NODE_LIST, CONFIG_CORE, CONFIG_USER, CONFIG_COLOR, CONFIG_REGEX, CONFIG_THEME;
+function getColor(node) {
+    // regex overrides first
+    const CONFIG_REGEX = app.extensionManager.setting.get('jovi.color.regex');
 
-// Recursively get color by category in theme
-function getColorByCategory(find_me) {
-    let color = NODE_LIST?.[find_me];
-    if (color?.category) {
-        let k = color.category;
-        while (k) {
-            if (CONFIG_THEME?.[k]) return CONFIG_THEME[k];
-            k = k.substring(0, k.lastIndexOf("/"));
+    for (const { regex, ...colors } of CONFIG_REGEX || []) {
+        if (regex && node.type.match(new RegExp(regex, "i"))) {
+            return colors;
         }
     }
+
+    // explicit color set first...
+    const CONFIG_THEME = app.extensionManager.setting.get('jovi.color.theme');
+    const newColor = CONFIG_THEME?.[node.type]
+        ?? (function() {
+            let color = NODE_LIST?.[node.type];
+            if (color?.category) {
+                let k = color.category;
+                while (k) {
+                    if (CONFIG_THEME?.[k]) {
+                        return CONFIG_THEME[k];
+                    }
+                    k = k.substring(0, k.lastIndexOf("/"));
+                }
+            }
+            return null;
+        })();
+
+    return newColor;
 }
 
-// Get the CONFIG entry for a node by name
-function nodeColorGet(node) {
-    // Look for matching regex pattern
-    for (const { regex, ...colors } of CONFIG_REGEX || []) {
-        if (regex && node.type.match(new RegExp(regex, "i"))) return colors;
+const origDrawNode = LGraphCanvas.prototype.drawNode;
+LGraphCanvas.prototype.drawNode = function (node, ctx) {
+    // STASH THE CURRENT COLOR STATE
+    const origTitle = node.constructor.title_text_color;
+    const origSelectedTitleColor = LiteGraph.NODE_SELECTED_TITLE_COLOR;
+    const origNodeTextColor = LiteGraph.NODE_TEXT_COLOR;
+    const origWidgetSecondaryTextColor = LiteGraph.WIDGET_SECONDARY_TEXT_COLOR;
+    const origWidgetTextColor = LiteGraph.WIDGET_TEXT_COLOR;
+    const origNodeTitleColor = LiteGraph.NODE_TITLE_COLOR;
+    const origWidgetBGColor = LiteGraph.WIDGET_BGCOLOR;
+
+    const new_color = getColor(node);
+
+    if (new_color) {
+        // Title text
+        // node.constructor.title_text_color = '#00FF00'
+
+        // Title text when node is selected
+        //LiteGraph.NODE_SELECTED_TITLE_COLOR = '#FF00FF'
+
+        //const contrast = localStorage["JOVIMETRIX 🔺🟩🔵.Color 🎨.Auto-Contrast"] || false;
+        //if (contrast == true) {
+            //var color = this.color || LiteGraph.NODE_TITLE_COLOR;
+            ///var bgcolor = this.bgcolor || LiteGraph.WIDGET_BGCOLOR;
+        if (new_color?.title) {
+            node.constructor.title_text_color = colorContrast(new_color.title) ? "#000" : "#FFF";
+            LiteGraph.NODE_SELECTED_TITLE_COLOR = colorContrast(new_color.title) ? "#000" : "#FFF";
+        }
+            //LiteGraph.NODE_TEXT_COLOR = colorContrast(bgcolor) ? "#000" : "#FFF";
+        //}
+
+        // Slot label text
+        //LiteGraph.NODE_TEXT_COLOR = '#7777FF'
+
+        // Widget Text
+        //LiteGraph.WIDGET_SECONDARY_TEXT_COLOR = "#FFFFFF"
+
+        // Widget controls + field text
+        //LiteGraph.WIDGET_TEXT_COLOR = '#FF0000';
+
+        // Widget control BG color
+        // LiteGraph.WIDGET_BGCOLOR
+
+        // node's title bar background color
+        if (new_color?.title) {
+            // LiteGraph.NODE_TITLE_COLOR = new_color.title;
+            //node.constructor.color = new_color.title;
+            node.color = new_color.title;
+        }
+
+        // node's body background color
+        if (new_color?.body) {
+            // LiteGraph.WIDGET_BGCOLOR = new_color.body;
+            node.bgcolor = new_color.body;
+        }
     }
-    // Check theme first by node name, then by category
-    return CONFIG_THEME?.[node.type] || getColorByCategory(node.type);
-}
 
-// Refresh the color of a node
-function nodeColorReset(node, refresh = true) {
-    const color = nodeColorGet(node);
-    if (color) {
-        node.bgcolor = color.body || node.bgcolor;
-        node.color = color.title || node.color;
+    const res = origDrawNode.apply(this, arguments);
+
+    // Default back to last pushed state ComfyUI colors
+    if (new_color) {
+        node.constructor.title_text_color = origTitle;
+        LiteGraph.NODE_SELECTED_TITLE_COLOR = origSelectedTitleColor;
+        LiteGraph.NODE_TEXT_COLOR = origNodeTextColor;
+        LiteGraph.WIDGET_SECONDARY_TEXT_COLOR = origWidgetSecondaryTextColor;
+        LiteGraph.WIDGET_TEXT_COLOR = origWidgetTextColor;
+        LiteGraph.NODE_TITLE_COLOR = origNodeTitleColor;
+        LiteGraph.WIDGET_BGCOLOR = origWidgetBGColor;
     }
-    if (refresh) node?.graph?.setDirtyCanvas(true, true);
-}
 
-// Apply color to all nodes
-function nodeColorAll() {
-    app.graph._nodes.forEach(nodeColorReset);
-    app.canvas.setDirty(true);
+    return res;
 }
 
 function applyTheme(theme) {
@@ -136,7 +198,6 @@ class JovimetrixPanelColorize {
         });
 
         button.addEventListener('click', (event) => {
-            // console.log('Button clicked:', label, color, identifier);
             event.stopPropagation();
             this.currentButton = button;
             this.showPicker(event.target, button.dataset.color);
@@ -190,8 +251,8 @@ class JovimetrixPanelColorize {
 
                 const applyButton = $el('button', {
                     textContent: 'Apply',
-                    onclick: () => {
-                        this.applyColor();
+                    onclick: async () => {
+                        await this.applyColor();
                     }
                 });
 
@@ -263,7 +324,7 @@ class JovimetrixPanelColorize {
         }
     }
 
-    hidePicker(cancelled = false) {
+    async hidePicker(cancelled = false) {
         if (this.picker) {
             try {
                 this.pickerWrapper.style.display = 'none';
@@ -271,7 +332,7 @@ class JovimetrixPanelColorize {
                     const newColor = this.picker.color.hexString;
                     this.currentButton.style.backgroundColor = newColor;
                     this.currentButton.dataset.color = newColor;
-                    this.updateConfig(newColor);
+                    await this.updateConfig(newColor);
                 }
                 this.currentButton = null;
             } catch (error) {
@@ -280,28 +341,37 @@ class JovimetrixPanelColorize {
         }
     }
 
-    applyColor() {
+    async applyColor() {
         if (this.currentButton && this.picker) {
             const newColor = this.picker.color.hexString;
             this.currentButton.style.backgroundColor = newColor;
             this.currentButton.dataset.color = newColor;
-            this.updateConfig(newColor);
-            this.hidePicker();
+            await this.updateConfig(newColor);
+            await this.hidePicker();
         }
     }
 
-    updateConfig(newColor) {
+    async updateConfig(newColor) {
         const [type, index, colorType] = this.currentButton.dataset.identifier.split('.');
-        if (type === 'regex') {
+        console.info(type, index, colorType);
+        if (type === '') {
+            const CONFIG_REGEX = app.extensionManager.setting.get('jovi.color.regex');
             CONFIG_REGEX[index][colorType] = newColor;
-            apiJovimetrix(`${USER}.color.regex`, CONFIG_REGEX, "config");
+            try {
+                await app.extensionManager.setting.set("jovi.color.regex", CONFIG_REGEX);
+            } catch (error) {
+                console.error(`Error changing setting: ${error}`);
+            }
         } else {
-            const themeConfig = CONFIG_THEME[type] || (CONFIG_THEME[type] = {});
-            themeConfig[colorType] = newColor;
-            apiJovimetrix(`${USER}.color.theme.${type}`, CONFIG_THEME[type], "config");
-        }
-        if (CONFIG_COLOR.overwrite) {
-            nodeColorAll();
+            const CONFIG_THEME = app.extensionManager.setting.get('jovi.color.theme');
+            CONFIG_THEME[type] = CONFIG_THEME[type] || (CONFIG_THEME[type] = {});
+            CONFIG_THEME[type][colorType] = newColor;
+            try {
+                await app.extensionManager.setting.set("jovi.color.theme", CONFIG_THEME);
+            } catch (error) {
+                console.error(`Error changing setting: ${error}`);
+            }
+            //apiJovimetrix(`${USER}.color.theme.${type}`, CONFIG_THEME[type], "config");
         }
     }
 
@@ -331,26 +401,6 @@ class JovimetrixPanelColorize {
         });
     }
 
-    templateColorRow2(data, type, classList="jov-panel-color-category") {
-        const titleColor = data.title || LiteGraph.NODE_DEFAULT_COLOR;
-        const bodyColor = data.body || LiteGraph.NODE_DEFAULT_COLOR;
-
-        const element = $el("tr", {}, [
-            $el("td", {}, [this.createColorButton("T", titleColor, `${data.name}.${data.idx}.title`)]),
-            $el("td", {}, [this.createColorButton("B", bodyColor, `${data.name}.${data.idx}.body`)]),
-            (type === "regex") ? $el("td", [
-                $el("input", {
-                    value: data.name
-                })
-              ])
-            : $el("td", { textContent: data.name })
-        ]);
-        if (classList) {
-            element.classList.add(classList);
-        }
-        return element;
-    }
-
     templateColorRow(data, type, classList = "jov-panel-color-category") {
         const titleColor = data.title || LiteGraph.NODE_DEFAULT_COLOR;
         const bodyColor = data.body || LiteGraph.NODE_DEFAULT_COLOR;
@@ -360,7 +410,7 @@ class JovimetrixPanelColorize {
         let style = {};
 
         if (classList === "jov-panel-color-cat_major") {
-             // Darker background for major categories
+            // Darker background for major categories
             style.backgroundColor = "var(--border-color)";
         } else if (classList === "jov-panel-color-cat_minor") {
             style.backgroundColor = "var(--tr-odd-bg-color)";
@@ -384,7 +434,8 @@ class JovimetrixPanelColorize {
         const table = $el("table.flexible-table");
         this.tbody = $el("tbody");
 
-        (CONFIG_COLOR?.regex || []).forEach((entry, idx) => {
+        const CONFIG_REGEX = app.extensionManager.setting.get('jovi.color.regex') || [];
+        CONFIG_REGEX.forEach((entry, idx) => {
             const data = {
                 idx: idx,
                 name: entry.regex,
@@ -404,11 +455,9 @@ class JovimetrixPanelColorize {
             return categoryComparison;
         });
 
-        const alts = CONFIG_COLOR;
-        const background = [alts?.backA, alts?.backB];
-        const background_title = [alts?.titleA, alts?.titleB];
         let background_index = 0;
         const categories = [];
+        const CONFIG_THEME = app.extensionManager.setting.get('jovi.color.theme');
 
         all_nodes.forEach(([name, node]) => {
             const category = node.category;
@@ -430,8 +479,7 @@ class JovimetrixPanelColorize {
                 const element = {
                     name: category,
                     title: CONFIG_THEME?.[category]?.title,
-                    body: CONFIG_THEME?.[category]?.body,
-                    background: background_title[background_index] || LiteGraph.WIDGET_BGCOLOR
+                    body: CONFIG_THEME?.[category]?.body
                 };
                 this.tbody.appendChild(this.templateColorRow(element, null, "jov-panel-color-cat_minor"));
                 categories.push(category);
@@ -441,14 +489,10 @@ class JovimetrixPanelColorize {
             const data = {
                 name: name,
                 title: nodeConfig.title,
-                body: nodeConfig.body,
-                background: background[background_index] || LiteGraph.NODE_DEFAULT_COLOR
+                body: nodeConfig.body
             };
             this.tbody.appendChild(this.templateColorRow(data));
         });
-
-        //table.appendChild(tbody);
-        //return table;
     }
 
     getRandomTitle() {
@@ -507,74 +551,52 @@ app.extensionManager.registerSidebarTab({
 
 app.registerExtension({
     name: "jovimetrix.color",
-    async setup() {
-        // Option for user to contrast text for better readability
-        const original_color = LiteGraph.NODE_TEXT_COLOR;
-
-        function colorAll(checked) {
-            CONFIG_USER.color.overwrite = checked;
-            apiJovimetrix(`${USER}.color.overwrite`, CONFIG_USER.color.overwrite, "config");
-            if (CONFIG_USER?.color?.overwrite) {
-                nodeColorAll();
-            }
-        }
-
-        setting_make("Color 🎨", "Auto-Contrast", "boolean",
-            "Auto-contrast the title text for all nodes for better readability",
-            true
-        );
-
-        setting_make("Color 🎨", "Synchronize", "boolean",
-            "Synchronize color updates from color panel",
-            true,
-            {},
-            [],
-            colorAll
-        );
-
-        const drawNodeShape = LGraphCanvas.prototype.drawNodeShape;
-        LGraphCanvas.prototype.drawNodeShape = function() {
-            const contrast = localStorage["Comfy.Settings.jov.user.default.color.contrast"] || false;
-            if (contrast == true) {
-                var color = this.color || LiteGraph.NODE_TITLE_COLOR;
-                var bgcolor = this.bgcolor || LiteGraph.WIDGET_BGCOLOR;
-                this.node_title_color = colorContrast(color) ? "#000" : "#FFF";
-                LiteGraph.NODE_TEXT_COLOR = colorContrast(bgcolor) ? "#000" : "#FFF";
-            } else {
-                this.node_title_color = original_color
-                LiteGraph.NODE_TEXT_COLOR = original_color;
-            }
-            drawNodeShape.apply(this, arguments);
-        };
-    },
-    async beforeRegisterNodeDef(nodeType) {
-        const onNodeCreated = nodeType.prototype.onNodeCreated;
-        nodeType.prototype.onNodeCreated = async function () {
-            const me = onNodeCreated?.apply(this, arguments);
-            nodeColorReset(this, false);
-            return me;
-        }
-    },
+    settings: [
+        {
+            id: "jovi.color.regex",
+            name: "Regex Entries for Jovimetrix Colorizer",
+            type: "hidden",
+            defaultValue: {}
+        },
+        {
+            id: "jovi.color.theme",
+            name: "Node theme entries for Jovimetrix Colorizer",
+            type: "hidden",
+            defaultValue: {}
+        },
+    ],
     async afterConfigureGraph() {
-        if (!CONFIG_USER) {
-            console.info("Initializing Jovimetrix Colorizer Panel");
+
+        [NODE_LIST] = await Promise.all([
+            apiGet("/object_info")
+        ]);
+
+        if (!app.extensionManager.setting.get('jovi.color.regex')) {
+            let CONFIG_CORE
             try {
-                [NODE_LIST, CONFIG_CORE] = await Promise.all([
-                    apiGet("/object_info"),
+                [CONFIG_CORE] = await Promise.all([
                     apiGet("/jovimetrix/config")
                 ]);
-                CONFIG_USER = CONFIG_CORE.user.default;
-                CONFIG_COLOR = CONFIG_USER.color;
-                CONFIG_REGEX = CONFIG_COLOR.regex || [];
-                CONFIG_THEME = CONFIG_COLOR.theme;
+
+                const CONFIG_REGEX = CONFIG_CORE.user.default.color.regex || [];
+                const CONFIG_THEME = CONFIG_CORE.user.default.color.theme;
+
+                try {
+                    await app.extensionManager.setting.set("jovi.color.regex", CONFIG_REGEX);
+                } catch (error) {
+                    console.error(`Error changing setting: ${error}`);
+                }
+
+                try {
+                    await app.extensionManager.setting.set("jovi.color.theme", CONFIG_THEME);
+                } catch (error) {
+                    console.error(`Error changing setting: ${error}`);
+                }
+
+                console.info("Jovimetrix Colorizer Panel initialized successfully");
             } catch (error) {
                 console.error("Error initializing Jovimetrix Colorizer Panel:", error);
             }
-            console.info("Jovimetrix Colorizer Panel initialized successfully");
-        }
-
-        if (CONFIG_USER.color.overwrite) {
-            nodeColorAll();
         }
     }
 });

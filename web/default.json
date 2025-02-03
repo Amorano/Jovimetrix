@@ -2,25 +2,21 @@
     "user": {
         "default": {
             "color": {
-                "titleA": "#312929",
-                "backA": "#050303",
-                "titleB": "#293129",
-                "backB": "#030503",
                 "regex": [
                     {
-                        "regex": ""
+                        "title": "#A23DA2"
                     },
                     {
-                        "regex": ""
+                        "title": "#A23DA2"
                     },
                     {
-                        "regex": ""
+                        "title": "#A23DA2"
                     },
                     {
-                        "regex": ""
+                        "title": "#A23DA2"
                     },
                     {
-                        "regex": ""
+                        "title": "#A23DA2"
                     }
                 ],
                 "theme": {
@@ -28,7 +24,7 @@
                         "title": "#A23DA2"
                     },
                     "JOVIMETRIX \ud83d\udd3a\ud83d\udfe9\ud83d\udd35/CREATE": {
-                        "title": "#1f991f"
+                        "title": "#1b871b"
                     },
                     "JOVIMETRIX \ud83d\udd3a\ud83d\udfe9\ud83d\udd35/COMPOSE": {
                         "title": "#5C1F9A"
@@ -42,21 +38,8 @@
                     "JOVIMETRIX \ud83d\udd3a\ud83d\udfe9\ud83d\udd35/UTILITY": {
                         "title": "#0A0A0A"
                     }
-                },
-                "overwrite": true
+                }
             }
-        }
-    },
-    "JOVIMETRIX \ud83d\udd3a\ud83d\udfe9\ud83d\udd35": {
-        "Color \ud83c\udfa8": {
-            "Style": "ComfyUI Default",
-            "Thickness": 1,
-            "Highlight": "#3A3",
-            "Synchronize": true,
-            "Auto-Contrast": true
-        },
-        "Tooltips \ud83d\udcdd": {
-            "Delay": 50
         }
     }
 }
