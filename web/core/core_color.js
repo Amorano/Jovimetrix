@@ -8,11 +8,26 @@ import { $el } from "../../../scripts/ui.js";
 import { apiGet } from "../util/util_api.js";
 import { colorContrast } from "../util/util.js";
 
+const setting_regex = 'jovi.color.regex';
+const setting_theme = 'jovi.color.theme';
+
 let PANEL_COLORIZE, NODE_LIST;
+
+function normalizeHex(hex) {
+    if (!hex.startsWith('#')) {
+        hex = '#' + hex;
+    }
+
+    // If shorthand (e.g., #333), expand it to full form (#333333)
+    if (hex.length === 4) {
+        return '#' + hex[1] + hex[1] + hex[2] + hex[2] + hex[3] + hex[3];
+    }
+    return hex.toLowerCase();
+}
 
 function getColor(node) {
     // regex overrides first
-    const CONFIG_REGEX = app.extensionManager.setting.get('jovi.color.regex');
+    const CONFIG_REGEX = app.extensionManager.setting.get(setting_regex);
 
     for (const { regex, ...colors } of CONFIG_REGEX || []) {
         if (regex && node.type.match(new RegExp(regex, "i"))) {
@@ -21,7 +36,7 @@ function getColor(node) {
     }
 
     // explicit color set first...
-    const CONFIG_THEME = app.extensionManager.setting.get('jovi.color.theme');
+    const CONFIG_THEME = app.extensionManager.setting.get(setting_theme);
     const newColor = CONFIG_THEME?.[node.type]
         ?? (function() {
             let color = NODE_LIST?.[node.type];
@@ -60,16 +75,10 @@ LGraphCanvas.prototype.drawNode = function (node, ctx) {
         // Title text when node is selected
         //LiteGraph.NODE_SELECTED_TITLE_COLOR = '#FF00FF'
 
-        //const contrast = localStorage["JOVIMETRIX 🔺🟩🔵.Color 🎨.Auto-Contrast"] || false;
-        //if (contrast == true) {
-            //var color = this.color || LiteGraph.NODE_TITLE_COLOR;
-            ///var bgcolor = this.bgcolor || LiteGraph.WIDGET_BGCOLOR;
         if (new_color?.title) {
             node.constructor.title_text_color = colorContrast(new_color.title) ? "#000" : "#FFF";
             LiteGraph.NODE_SELECTED_TITLE_COLOR = colorContrast(new_color.title) ? "#000" : "#FFF";
         }
-            //LiteGraph.NODE_TEXT_COLOR = colorContrast(bgcolor) ? "#000" : "#FFF";
-        //}
 
         // Slot label text
         //LiteGraph.NODE_TEXT_COLOR = '#7777FF'
@@ -85,14 +94,11 @@ LGraphCanvas.prototype.drawNode = function (node, ctx) {
 
         // node's title bar background color
         if (new_color?.title) {
-            // LiteGraph.NODE_TITLE_COLOR = new_color.title;
-            //node.constructor.color = new_color.title;
             node.color = new_color.title;
         }
 
         // node's body background color
         if (new_color?.body) {
-            // LiteGraph.WIDGET_BGCOLOR = new_color.body;
             node.bgcolor = new_color.body;
         }
     }
@@ -125,9 +131,9 @@ function applyTheme(theme) {
 class JovimetrixPanelColorize {
     constructor() {
         this.content = null;
-        this.currentButton = null;
         this.picker = null;
         this.pickerWrapper = null;
+        this.buttonCurrent = null;
         this.recentColors = [];
         this.title_content = "HI!"
         this.searchInput = null;
@@ -187,195 +193,179 @@ class JovimetrixPanelColorize {
         return siblings;
     }
 
-    createColorButton(label, color, identifier) {
+    createColorButton(type, name, color, idx) {
+        const label = type == "title" ? "T" : type == "body" ? "B" : "X";
         const button = $el('button.color-button', {
             style: { backgroundColor: color },
-            dataset: { color: color, identifier: identifier },
+            dataset: {
+                type: type,
+                name: name,
+                color: color,
+                colorOld: color,
+                idx: idx
+            },
             value: label,
             content: label,
             textContent: label,
             label: label
         });
 
-        button.addEventListener('click', (event) => {
-            event.stopPropagation();
-            this.currentButton = button;
-            this.showPicker(event.target, button.dataset.color);
-        });
-
         button.addEventListener('mousedown', (event) => {
             event.stopPropagation();
-            this.currentButton = button;
-            this.showPicker(event.target, button.dataset.color);
+            if (this.buttonCurrent) {
+                this.buttonCurrent.dataset.colorOld = normalizeHex(this.buttonCurrent.dataset.color);
+            }
+            this.buttonCurrent = event.target;
+            this.showPicker(event.target);
         });
 
         return button;
     }
 
-    showPicker(buttonElement, color) {
+    async updateConfig() {
+        const cb = this.buttonCurrent.dataset;
+        if (cb.idx && cb.idx !== "undefined") {
+            const CONFIG_REGEX = app.extensionManager.setting.get(setting_regex);
+            CONFIG_REGEX[cb.idx][cb.type] = cb.color;
+            await app.extensionManager.setting.set(setting_regex, CONFIG_REGEX);
+        } else {
+            const CONFIG_THEME = app.extensionManager.setting.get(setting_theme);
+            CONFIG_THEME[cb.name] = CONFIG_THEME[cb.name] || (CONFIG_THEME[cb.name] = {});
+
+            let colorCheck = LiteGraph.NODE_DEFAULT_BGCOLOR;
+            if (cb.type === "title") {
+                colorCheck = LiteGraph.NODE_DEFAULT_COLOR;
+            } else if (cb.type === "text") {
+                colorCheck = LiteGraph.NODE_TEXT_COLOR;
+            }
+            colorCheck = normalizeHex(colorCheck);
+            if (cb.color === colorCheck && CONFIG_THEME[cb.name] && CONFIG_THEME[cb.name].hasOwnProperty(cb.type)) {
+                delete CONFIG_THEME[cb.name][cb.type];
+            } else {
+                CONFIG_THEME[cb.name][cb.type] = cb.color;
+            }
+            await app.extensionManager.setting.set(setting_theme, CONFIG_THEME);
+        }
+
+        this.buttonCurrent.style.backgroundColor = cb.color;
+        app.canvas.setDirty(true);
+    }
+
+    async pickerCancel() {
+        this.buttonCurrent.dataset.colorOld = normalizeHex(this.buttonCurrent.dataset.colorOld);
+        this.buttonCurrent.dataset.color = this.buttonCurrent.dataset.colorOld;
+        this.pickerWrapper.style.display = 'none';
+        await this.updateConfig();
+        this.buttonCurrent = null;
+    }
+
+    async pickerReset() {
+        let colorCheck = LiteGraph.NODE_DEFAULT_BGCOLOR;
+        if (this.buttonCurrent.dataset.type === "title") {
+            colorCheck = LiteGraph.NODE_DEFAULT_COLOR;
+        } else if (this.buttonCurrent.dataset.type === "text") {
+            colorCheck = LiteGraph.NODE_TEXT_COLOR
+        }
+        this.buttonCurrent.dataset.color = colorCheck;
+        await this.updateConfig();
+        await this.picker.color.set(this.buttonCurrent.dataset.color);
+    }
+
+    async pickerColorChange(color) {
+        this.buttonCurrent.style.backgroundColor = color;
+        this.buttonCurrent.dataset.color = color;
+        await this.updateConfig();
+    }
+
+    showPicker(button) {
         if (!this.picker) {
-            try {
-                this.pickerWrapper = $el('div.picker-wrapper', {
-                    style: {
-                        position: 'absolute',
-                        zIndex: '9999',
-                        backgroundColor: '#fff',
-                        padding: '5px',
-                        borderRadius: '5px',
-                        boxShadow: '0 0 10px rgba(0,0,0,0.2)',
-                        display: 'none'
-                    }
-                });
 
-                const pickerElement = $el('div.picker');
-                const recentColorsElement = $el('div.recent-colors');
-                const buttonWrapper = $el('div.button-wrapper', {
-                    style: {
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        marginTop: '10px'
-                    }
-                });
-
-                const cancelButton = $el('button', {
-                    textContent: 'Cancel',
-                    onclick: () => this.hidePicker(true)
-                });
-
-                const resetButton = $el('button', {
-                    textContent: 'Reset',
-                    onclick: () => {
-                        this.picker.color.set(LiteGraph.NODE_DEFAULT_COLOR);
-                    }
-                });
-
-                const applyButton = $el('button', {
-                    textContent: 'Apply',
-                    onclick: async () => {
-                        await this.applyColor();
-                    }
-                });
-
-                buttonWrapper.appendChild(cancelButton);
-                buttonWrapper.appendChild(resetButton);
-                buttonWrapper.appendChild(applyButton);
-
-                this.pickerWrapper.appendChild(pickerElement);
-                this.pickerWrapper.appendChild(recentColorsElement);
-                this.pickerWrapper.appendChild(buttonWrapper);
-
-                document.body.appendChild(this.pickerWrapper);
-
-                this.picker = new iro.ColorPicker(pickerElement, {
-                    width: 200,
-                    color: '#ffffff',
-                    display: 'block',
-                    layout: [
-                        {
-                            component: iro.ui.Slider,
-                            options: { sliderType: 'hue' }
-                        },
-                        {
-                            component: iro.ui.Slider,
-                            options: { sliderType: 'value' }
-                        },
-                        {
-                            component: iro.ui.Slider,
-                            options: { sliderType: 'saturation' }
-                        },
-                    ]
-                });
-
-                this.picker.on('color:change', (color) => {
-                    if (this.currentButton) {
-                        this.currentButton.style.backgroundColor = color.hexString;
-                    }
-                });
-            } catch (error) {
-                console.error('Error creating Picker:', error);
-            }
-        }
-        if (this.picker) {
-            try {
-                this.picker.color.set(color || '#ffffff');
-                const buttonRect = buttonElement.getBoundingClientRect();
-                const pickerRect = this.pickerWrapper.getBoundingClientRect();
-
-                let left = buttonRect.left;
-                let top = buttonRect.bottom + 5;
-
-                if (left + pickerRect.width > window.innerWidth) {
-                    left = window.innerWidth - pickerRect.width - 5;
+            this.pickerWrapper = $el('div.picker-wrapper', {
+                style: {
+                    position: 'absolute',
+                    zIndex: '9999',
+                    backgroundColor: '#fff',
+                    padding: '5px',
+                    borderRadius: '5px',
+                    boxShadow: '0 0 10px rgba(0,0,0,0.2)',
+                    display: 'none'
                 }
+            });
 
-                if (top + pickerRect.height > window.innerHeight) {
-                    top = buttonRect.top - pickerRect.height - 5;
+            const pickerElement = $el('div.picker');
+            const recentColorsElement = $el('div.recent-colors');
+            const buttonWrapper = $el('div.button-wrapper', {
+                style: {
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    marginTop: '10px'
                 }
+            });
+            const cancelButton = $el('button', {
+                textContent: 'Cancel',
+                onclick: async () => this.pickerCancel()
+            });
 
-                this.pickerWrapper.style.left = `${left}px`;
-                this.pickerWrapper.style.top = `${top}px`;
-                this.pickerWrapper.style.display = 'block';
-                this.updateRecentColors(color);
-            } catch (error) {
-                console.error('Error showing picker:', error);
-            }
-        } else {
-            console.error('Picker not created successfully');
+            const resetButton = $el('button', {
+                textContent: 'Reset',
+                onclick: async () => this.pickerReset()
+            });
+
+            buttonWrapper.appendChild(cancelButton);
+            buttonWrapper.appendChild(resetButton);
+
+            this.pickerWrapper.appendChild(pickerElement);
+            this.pickerWrapper.appendChild(recentColorsElement);
+            this.pickerWrapper.appendChild(buttonWrapper);
+
+            document.body.appendChild(this.pickerWrapper);
+
+            this.picker = new iro.ColorPicker(pickerElement, {
+                width: 200,
+                color: '#ffffff',
+                display: 'block',
+                layout: [
+                    {
+                        component: iro.ui.Slider,
+                        options: { sliderType: 'hue' }
+                    },
+                    {
+                        component: iro.ui.Slider,
+                        options: { sliderType: 'value' }
+                    },
+                    {
+                        component: iro.ui.Slider,
+                        options: { sliderType: 'saturation' }
+                    },
+                ]
+            });
+
+            this.picker.on('color:change', async (color) => this.pickerColorChange(color.hexString));
         }
+
+        this.picker.color.set(button.dataset.color || '#ffffff');
+        const buttonRect = button.getBoundingClientRect();
+        const pickerRect = this.pickerWrapper.getBoundingClientRect();
+
+        let left = buttonRect.left;
+        let top = buttonRect.bottom + 5;
+
+        if (left + pickerRect.width > window.innerWidth) {
+            left = window.innerWidth - pickerRect.width - 5;
+        }
+
+        if (top + pickerRect.height > window.innerHeight) {
+            top = buttonRect.top - pickerRect.height - 5;
+        }
+
+        this.pickerWrapper.style.left = `${left}px`;
+        this.pickerWrapper.style.top = `${top}px`;
+        this.pickerWrapper.style.display = 'block';
+        this.updateRecentColors(button);
     }
 
-    async hidePicker(cancelled = false) {
-        if (this.picker) {
-            try {
-                this.pickerWrapper.style.display = 'none';
-                if (!cancelled && this.currentButton) {
-                    const newColor = this.picker.color.hexString;
-                    this.currentButton.style.backgroundColor = newColor;
-                    this.currentButton.dataset.color = newColor;
-                    await this.updateConfig(newColor);
-                }
-                this.currentButton = null;
-            } catch (error) {
-                console.error('Error hiding picker:', error);
-            }
-        }
-    }
-
-    async applyColor() {
-        if (this.currentButton && this.picker) {
-            const newColor = this.picker.color.hexString;
-            this.currentButton.style.backgroundColor = newColor;
-            this.currentButton.dataset.color = newColor;
-            await this.updateConfig(newColor);
-            await this.hidePicker();
-        }
-    }
-
-    async updateConfig(newColor) {
-        const [type, index, colorType] = this.currentButton.dataset.identifier.split('.');
-        console.info(type, index, colorType);
-        if (type === '') {
-            const CONFIG_REGEX = app.extensionManager.setting.get('jovi.color.regex');
-            CONFIG_REGEX[index][colorType] = newColor;
-            try {
-                await app.extensionManager.setting.set("jovi.color.regex", CONFIG_REGEX);
-            } catch (error) {
-                console.error(`Error changing setting: ${error}`);
-            }
-        } else {
-            const CONFIG_THEME = app.extensionManager.setting.get('jovi.color.theme');
-            CONFIG_THEME[type] = CONFIG_THEME[type] || (CONFIG_THEME[type] = {});
-            CONFIG_THEME[type][colorType] = newColor;
-            try {
-                await app.extensionManager.setting.set("jovi.color.theme", CONFIG_THEME);
-            } catch (error) {
-                console.error(`Error changing setting: ${error}`);
-            }
-            //apiJovimetrix(`${USER}.color.theme.${type}`, CONFIG_THEME[type], "config");
-        }
-    }
-
-    updateRecentColors(color) {
+    updateRecentColors(button) {
+        const color = button.dataset.color;
         if (!this.recentColors.includes(color)) {
             this.recentColors.unshift(color);
             if (this.recentColors.length > 5) {
@@ -403,7 +393,8 @@ class JovimetrixPanelColorize {
 
     templateColorRow(data, type, classList = "jov-panel-color-category") {
         const titleColor = data.title || LiteGraph.NODE_DEFAULT_COLOR;
-        const bodyColor = data.body || LiteGraph.NODE_DEFAULT_COLOR;
+        const bodyColor = data.body || LiteGraph.NODE_DEFAULT_BGCOLOR;
+        const textColor = data.text || LiteGraph.NODE_TEXT_COLOR;
 
         // Determine background color based on class
         let rowClass = classList;
@@ -417,8 +408,9 @@ class JovimetrixPanelColorize {
         }
 
         const element = $el("tr", { className: rowClass, style }, [
-            $el("td", {}, [this.createColorButton("T", titleColor, `${data.name}.${data.idx}.title`)]),
-            $el("td", {}, [this.createColorButton("B", bodyColor, `${data.name}.${data.idx}.body`)]),
+            $el("td", {}, [this.createColorButton("title", data.name, titleColor, data.idx)]),
+            $el("td", {}, [this.createColorButton("body", data.name, bodyColor, data.idx)]),
+            $el("td", {}, [this.createColorButton("text", data.name, textColor, data.idx)]),
             (type === "regex") ? $el("td", [
                 $el("input", {
                     value: data.name
@@ -434,13 +426,14 @@ class JovimetrixPanelColorize {
         const table = $el("table.flexible-table");
         this.tbody = $el("tbody");
 
-        const CONFIG_REGEX = app.extensionManager.setting.get('jovi.color.regex') || [];
+        const CONFIG_REGEX = app.extensionManager.setting.get(setting_regex) || [];
         CONFIG_REGEX.forEach((entry, idx) => {
             const data = {
                 idx: idx,
                 name: entry.regex,
                 title: entry.title || LiteGraph.NODE_TITLE_COLOR,
-                body: entry.body || LiteGraph.NODE_DEFAULT_COLOR,
+                body: entry.body || LiteGraph.WIDGET_BGCOLOR,
+                text: entry.body || LiteGraph.NODE_TEXT_COLOR
             };
             this.tbody.appendChild(this.templateColorRow(data, "regex"));
         });
@@ -457,9 +450,9 @@ class JovimetrixPanelColorize {
 
         let background_index = 0;
         const categories = [];
-        const CONFIG_THEME = app.extensionManager.setting.get('jovi.color.theme');
+        const CONFIG_THEME = app.extensionManager.setting.get(setting_theme);
 
-        all_nodes.forEach(([name, node]) => {
+        all_nodes.forEach(([nodeName, node]) => {
             const category = node.category;
             const majorCategory = category.split("/")[0];
 
@@ -469,6 +462,7 @@ class JovimetrixPanelColorize {
                     name: majorCategory,
                     title: CONFIG_THEME?.[majorCategory]?.title,
                     body: CONFIG_THEME?.[majorCategory]?.body,
+                    text: CONFIG_THEME?.[majorCategory]?.text
                 };
                 this.tbody.appendChild(this.templateColorRow(element, null, "jov-panel-color-cat_major"));
                 categories.push(majorCategory);
@@ -479,17 +473,19 @@ class JovimetrixPanelColorize {
                 const element = {
                     name: category,
                     title: CONFIG_THEME?.[category]?.title,
-                    body: CONFIG_THEME?.[category]?.body
+                    body: CONFIG_THEME?.[category]?.body,
+                    text: CONFIG_THEME?.[category]?.text
                 };
                 this.tbody.appendChild(this.templateColorRow(element, null, "jov-panel-color-cat_minor"));
                 categories.push(category);
             }
 
-            const nodeConfig = CONFIG_THEME[name] || {};
+            const nodeConfig = CONFIG_THEME[nodeName] || {};
             const data = {
-                name: name,
+                name: nodeName,
                 title: nodeConfig.title,
-                body: nodeConfig.body
+                body: nodeConfig.body,
+                text: nodeConfig.text
             };
             this.tbody.appendChild(this.templateColorRow(data));
         });
@@ -521,9 +517,12 @@ class JovimetrixPanelColorize {
             ]);
 
             // hide the picker when clicking outside
-            document.addEventListener('click', (event) => {
+            document.addEventListener('click', async (event) => {
                 if (this.picker && !this.pickerWrapper.contains(event.target) && !event.target.classList.contains('color-button')) {
-                    this.hidePicker(true);
+                    this.pickerWrapper.style.display = 'none';
+                    if (this.buttonCurrent) {
+                        this.buttonCurrent.dataset.colorOld = normalizeHex(this.buttonCurrent.dataset.color);
+                    }
                 }
             });
         }
@@ -553,13 +552,13 @@ app.registerExtension({
     name: "jovimetrix.color",
     settings: [
         {
-            id: "jovi.color.regex",
+            id: setting_regex,
             name: "Regex Entries for Jovimetrix Colorizer",
             type: "hidden",
             defaultValue: {}
         },
         {
-            id: "jovi.color.theme",
+            id: setting_theme,
             name: "Node theme entries for Jovimetrix Colorizer",
             type: "hidden",
             defaultValue: {}
@@ -571,8 +570,8 @@ app.registerExtension({
             apiGet("/object_info")
         ]);
 
-        if (!app.extensionManager.setting.get('jovi.color.regex')) {
-            let CONFIG_CORE
+        if (!app.extensionManager.setting.get(setting_regex)) {
+            let CONFIG_CORE;
             try {
                 [CONFIG_CORE] = await Promise.all([
                     apiGet("/jovimetrix/config")
@@ -582,18 +581,16 @@ app.registerExtension({
                 const CONFIG_THEME = CONFIG_CORE.user.default.color.theme;
 
                 try {
-                    await app.extensionManager.setting.set("jovi.color.regex", CONFIG_REGEX);
+                    await app.extensionManager.setting.set(setting_regex, CONFIG_REGEX);
                 } catch (error) {
                     console.error(`Error changing setting: ${error}`);
                 }
 
                 try {
-                    await app.extensionManager.setting.set("jovi.color.theme", CONFIG_THEME);
+                    await app.extensionManager.setting.set(setting_theme, CONFIG_THEME);
                 } catch (error) {
                     console.error(`Error changing setting: ${error}`);
                 }
-
-                console.info("Jovimetrix Colorizer Panel initialized successfully");
             } catch (error) {
                 console.error("Error initializing Jovimetrix Colorizer Panel:", error);
             }
