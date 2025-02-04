@@ -193,6 +193,10 @@ class BitSplitNode(JOVBaseNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = (JOV_TYPE_NUMBER, "BOOLEAN",)
     RETURN_NAMES = (Lexicon.BIT, Lexicon.BOOLEAN,)
+    OUTPUT_TOOLTIPS = (
+        "Bits as Numerical output (0 or 1)",
+        "Bits as Boolean output (True or False)"
+    )
     SORT = 10
     DESCRIPTION = """
 Split an input into separate bits. `BOOL`, `INT` and `FLOAT` use their numbers,
@@ -207,13 +211,9 @@ image.
             "optional": {
                 Lexicon.UNKNOWN: (JOV_TYPE_FULL, {"default": None}),
                 Lexicon.VALUE: ("INT", {"default": 8, "min": 1, "max": 64, "tooltip":"Number of output bits requested."})
-            },
-            "outputs": {
-                0: (Lexicon.BIT, {"tooltip":"Bits as Numerical output (0 or 1)"}),
-                1: (Lexicon.BOOLEAN, {"tooltip":"Bits as Boolean output (True or False)"}),
             }
         })
-        return Lexicon._parse(d, cls)
+        return Lexicon._parse(d)
 
     def run(self, **kw) -> Tuple[bool]:
 
@@ -224,6 +224,9 @@ class CalcUnaryOPNode(JOVBaseNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = (JOV_TYPE_NUMBER,)
     RETURN_NAMES = (Lexicon.UNKNOWN,)
+    OUTPUT_TOOLTIPS = (
+        "Output type will match the input type"
+    )
     SORT = 10
     DESCRIPTION = """
 Perform single function operations like absolute value, mean, median, mode, magnitude, normalization, maximum, or minimum on input values.
@@ -236,12 +239,9 @@ Perform single function operations like absolute value, mean, median, mode, magn
             "optional": {
                 Lexicon.IN_A: (JOV_TYPE_FULL, {"default": None}),
                 Lexicon.FUNC: (EnumUnaryOperation._member_names_, {"default": EnumUnaryOperation.ABS.name})
-            },
-            "outputs": {
-                0: (Lexicon.UNKNOWN, {"tooltip":"Output type will match the input type"}),
             }
         })
-        return Lexicon._parse(d, cls)
+        return Lexicon._parse(d)
 
     def run(self, **kw) -> Tuple[bool]:
         results = []
@@ -325,6 +325,10 @@ class CalcBinaryOPNode(JOVBaseNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = (JOV_TYPE_NUMBER,)
     RETURN_NAMES = (Lexicon.UNKNOWN,)
+    OUTPUT_TOOLTIPS = (
+        "Output type will match the input type"
+    )
+
     SORT = 20
     DESCRIPTION = """
 Execute binary operations like addition, subtraction, multiplication, division, and bitwise operations on input values, supporting various data types and vector sizes.
@@ -350,12 +354,9 @@ Execute binary operations like addition, subtraction, multiplication, division, 
                 Lexicon.IN_B+Lexicon.IN_B: ("VEC4", {"default": (0,0,0,0),
                                         "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W],
                                         "tooltip":"value vector"}),
-            },
-            "outputs": {
-                0: (Lexicon.UNKNOWN, {"tooltip":"Output type will match the input type"}),
             }
         })
-        return Lexicon._parse(d, cls)
+        return Lexicon._parse(d)
 
     def run(self, **kw) -> Tuple[bool]:
         results = []
@@ -466,6 +467,10 @@ class ComparisonNode(JOVBaseNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = (JOV_TYPE_ANY, JOV_TYPE_NUMBER,)
     RETURN_NAMES = (Lexicon.TRIGGER, Lexicon.VALUE,)
+    OUTPUT_TOOLTIPS = (
+        f"Outputs the input at {Lexicon.IN_A} or {Lexicon.IN_B} depending on which evaluated `TRUE`",
+        "The comparison result value"
+    )
     SORT = 130
     DESCRIPTION = """
 Evaluates two inputs (A and B) with a specified comparison operators and optional values for successful and failed comparisons. The node performs the specified operation element-wise between corresponding elements of A and B. If the comparison is successful for all elements, it returns the success value; otherwise, it returns the failure value. The node supports various comparison operators such as EQUAL, GREATER_THAN, LESS_THAN, AND, OR, IS, IN, etc.
@@ -483,13 +488,9 @@ Evaluates two inputs (A and B) with a specified comparison operators and optiona
                 Lexicon.COMPARE: (EnumComparison._member_names_, {"default": EnumComparison.EQUAL.name}),
                 Lexicon.FLIP: ("BOOLEAN", {"default": False}),
                 Lexicon.INVERT: ("BOOLEAN", {"default": False, "tooltip":"reverse the successful and failure inputs"}),
-            },
-            "outputs": {
-                0: (Lexicon.TRIGGER, {"tooltip":f"Outputs the input at {Lexicon.IN_A} or {Lexicon.IN_B} depending on which evaluated `TRUE`"}),
-                1: (Lexicon.VALUE, {"tooltip":"The comparison result value"}),
             }
         })
-        return Lexicon._parse(d, cls)
+        return Lexicon._parse(d)
 
     def run(self, **kw) -> Tuple[Any, Any]:
         A = parse_param(kw, Lexicon.IN_A, EnumConvertType.ANY, [0])
@@ -585,6 +586,9 @@ class LerpNode(JOVBaseNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = (JOV_TYPE_FULL,)
     RETURN_NAMES = (Lexicon.ANY_OUT,)
+    OUTPUT_TOOLTIPS = (
+        f"Output can vary depending on the type chosen in the {Lexicon.TYPE} parameter"
+    )
     SORT = 30
     DESCRIPTION = """
 Calculate linear interpolation between two values or vectors based on a blending factor (alpha).
@@ -613,12 +617,9 @@ Additionally, you can specify the easing function (EASE) and the desired output 
                 Lexicon.TYPE: (names_convert, {"default": "FLOAT",
                                             "tooltip":"Output type desired from resultant operation"}),
                 Lexicon.EASE: (["NONE"] + EnumEase._member_names_, {"default": "NONE"}),
-            },
-            "outputs": {
-                0: (Lexicon.ANY_OUT, {"tooltip":f"Output can vary depending on the type chosen in the {Lexicon.TYPE} parameter"})
             }
         })
-        return Lexicon._parse(d, cls)
+        return Lexicon._parse(d)
 
     def run(self, **kw) -> Tuple[Any, Any]:
         A = parse_param(kw, Lexicon.IN_A, EnumConvertType.ANY, [0])
@@ -696,7 +697,7 @@ Manipulate strings through filtering
                 Lexicon.RANGE: ("VEC3INT", {"default":(0, -1, 1), "tooltip":"Start, End and Step. Values will clip to the actual list size(s)."}),
             }
         })
-        return Lexicon._parse(d, cls)
+        return Lexicon._parse(d)
 
     def run(self, **kw)  -> Tuple[torch.Tensor, torch.Tensor]:
         # turn any all inputs into the
@@ -765,7 +766,7 @@ Swap components between two vectors based on specified swizzle patterns and valu
                 Lexicon.VEC: ("VEC4", {"default": (0,0,0,0), "mij": -sys.maxsize, "maj": sys.maxsize, "step": 0.01})
             }
         })
-        return Lexicon._parse(d, cls)
+        return Lexicon._parse(d)
 
     def run(self, **kw)  -> Tuple[torch.Tensor, torch.Tensor]:
         pA = parse_param(kw, Lexicon.IN_A, EnumConvertType.VEC4, [(0,0,0,0)])
@@ -790,6 +791,12 @@ class TickNode(JOVBaseNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = ("INT", "FLOAT", "FLOAT", JOV_TYPE_ANY)
     RETURN_NAMES = (Lexicon.VALUE, Lexicon.LINEAR, Lexicon.FPS, Lexicon.TRIGGER)
+    OUTPUT_TOOLTIPS = (
+        "Current value for the configured tick",
+        "Normalized tick value (0..1) based on BPM and Loop",
+        "Current 'frame' in the tick based on FPS setting",
+        "Based on the BPM settings, on beat hit, output the input at '⚡'"
+    )
     SORT = 50
     DESCRIPTION = """
 A timer and frame counter, emitting pulses or signals based on time intervals. It allows precise synchronization and control over animation sequences, with options to adjust FPS, BPM, and loop points. This node is useful for generating time-based events or driving animations with rhythmic precision.
@@ -822,15 +829,9 @@ A timer and frame counter, emitting pulses or signals based on time intervals. I
                 # how many frames to dump....
                 Lexicon.BATCH: ("INT", {"default": 1, "min": 1, "max": 32767, "tooltip": "Number of frames wanted"}),
                 Lexicon.STEP: ("INT", {"default": 0, "min": 0, "max": sys.maxsize}),
-            },
-            "outputs": {
-                0: (Lexicon.VALUE, {"tooltip":"Current value for the configured tick"}),
-                1: (Lexicon.LINEAR, {"tooltip":"Normalized tick value (0..1) based on BPM and Loop"}),
-                2: (Lexicon.FPS, {"tooltip":"Current 'frame' in the tick based on FPS setting"}),
-                3: (Lexicon.TRIGGER, {"tooltip":"Based on the BPM settings, on beat hit, output the input at '⚡'"}),
             }
         })
-        return Lexicon._parse(d, cls)
+        return Lexicon._parse(d)
 
     """
     @classmethod
@@ -934,7 +935,7 @@ Supplies raw or default values for various data types, supporting vector input w
                 Lexicon.STRING: ("STRING", {"default": "", "dynamicPrompts": False, "multiline": True}),
             }
         })
-        return Lexicon._parse(d, cls)
+        return Lexicon._parse(d)
 
     def run(self, **kw) -> Tuple[bool]:
         raw = parse_param(kw, Lexicon.IN_A, EnumConvertType.ANY, 0)
@@ -1027,7 +1028,7 @@ Produce waveforms like sine, square, or sawtooth with adjustable frequency, ampl
                 Lexicon.INVERT: ("BOOLEAN", {"default": False}),
             }
         })
-        return Lexicon._parse(d, cls)
+        return Lexicon._parse(d)
 
     def run(self, **kw) -> Tuple[float, int]:
         op = parse_param(kw, Lexicon.WAVE, EnumWave, EnumWave.SIN.name)
@@ -1074,7 +1075,7 @@ class ParameterNode(JOVBaseNode):
                 Lexicon.PASS_IN: (JOV_TYPE_ANY, {"default": None}),
             }
         })
-        return Lexicon._parse(d, cls)
+        return Lexicon._parse(d)
 
     def run(self, ident, **kw) -> Tuple[Any]:
         return kw[Lexicon.PASS_IN],

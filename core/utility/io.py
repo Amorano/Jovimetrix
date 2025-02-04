@@ -62,6 +62,9 @@ class DelayNode(JOVBaseNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = (JOV_TYPE_ANY,)
     RETURN_NAMES = (Lexicon.PASS_OUT,)
+    OUTPUT_TOOLTIPS = (
+        "Pass through data when the delay ends"
+    )
     SORT = 240
     DESCRIPTION = """
 Introduce pauses in the workflow that accept an optional input to pass through and a timer parameter to specify the duration of the delay. If no timer is provided, it defaults to a maximum delay. During the delay, it periodically checks for messages to interrupt the delay. Once the delay is completed, it returns the input passed to it. You can disable the screensaver with the `ENABLE` option
@@ -72,15 +75,15 @@ Introduce pauses in the workflow that accept an optional input to pass through a
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                Lexicon.PASS_IN: (JOV_TYPE_ANY, {"default": None}),
-                Lexicon.TIMER: ("INT", {"default" : 0, "min": -1}),
-                Lexicon.ENABLE: ("BOOLEAN", {"default": True, "tooltip":"Enable or disable the screensaver"})
-            },
-            "outputs": {
-                0: (Lexicon.PASS_OUT, {"tooltip":"Pass through data when the delay ends"})
+                Lexicon.PASS_IN: (JOV_TYPE_ANY, {"default": None,
+                                                 "tooltip":"The data that should be held until the timer completes."}),
+                Lexicon.TIMER: ("INT", {"default" : 0, "min": -1,
+                                        "tooltip":"How long to delay if enabled. 0 means no delay."}),
+                Lexicon.ENABLE: ("BOOLEAN", {"default": True,
+                                             "tooltip":"Enable or disable the screensaver."})
             }
         })
-        return Lexicon._parse(d, cls)
+        return Lexicon._parse(d)
 
     @classmethod
     def IS_CHANGED(cls, **kw) -> float:
@@ -127,22 +130,32 @@ Responsible for saving images or animations to disk. It supports various output 
         d = deep_merge(d, {
             "optional": {
                 Lexicon.PIXEL: (JOV_TYPE_IMAGE, {}),
-                Lexicon.PASS_OUT: ("STRING", {"default": get_output_directory(), "default_top":"<comfy output dir>"}),
-                Lexicon.FORMAT: (FORMATS, {"default": FORMATS[0]}),
-                Lexicon.PREFIX: ("STRING", {"default": "jovi"}),
-                Lexicon.OVERWRITE: ("BOOLEAN", {"default": False}),
+                Lexicon.PASS_OUT: ("STRING", {"default": get_output_directory(),
+                                              "default_top":"<comfy output dir>",
+                                              "tooltip":"Pass through another route node to pre-populate the outputs."}),
+                Lexicon.FORMAT: (FORMATS, {"default": FORMATS[0],
+                                              "tooltip":"Pass through another route node to pre-populate the outputs."}),
+                Lexicon.PREFIX: ("STRING", {"default": "jovi",
+                                              "tooltip":"Pass through another route node to pre-populate the outputs."}),
+                Lexicon.OVERWRITE: ("BOOLEAN", {"default": False,
+                                              "tooltip":"Pass through another route node to pre-populate the outputs."}),
                 # GIF ONLY
-                Lexicon.OPTIMIZE: ("BOOLEAN", {"default": False}),
+                Lexicon.OPTIMIZE: ("BOOLEAN", {"default": False,
+                                              "tooltip":"Pass through another route node to pre-populate the outputs."}),
                 # GIFSKI ONLY
-                Lexicon.QUALITY: ("INT", {"default": 90, "min": 1, "max": 100}),
-                Lexicon.QUALITY_M: ("INT", {"default": 100, "min": 1, "max": 100}),
+                Lexicon.QUALITY: ("INT", {"default": 90, "min": 1, "max": 100,
+                                              "tooltip":"Pass through another route node to pre-populate the outputs."}),
+                Lexicon.QUALITY_M: ("INT", {"default": 100, "min": 1, "max": 100,
+                                              "tooltip":"Pass through another route node to pre-populate the outputs."}),
                 # GIF OR GIFSKI
-                Lexicon.FPS: ("INT", {"default": 24, "min": 1, "max": 60}),
+                Lexicon.FPS: ("INT", {"default": 24, "min": 1, "max": 60,
+                                              "tooltip":"Pass through another route node to pre-populate the outputs."}),
                 # GIF OR GIFSKI
-                Lexicon.LOOP: ("INT", {"default": 0, "min": 0}),
+                Lexicon.LOOP: ("INT", {"default": 0, "min": 0,
+                                              "tooltip":"Pass through another route node to pre-populate the outputs."}),
             }
         })
-        return Lexicon._parse(d, cls)
+        return Lexicon._parse(d)
 
     def run(self, **kw) -> None:
         images = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
@@ -213,6 +226,9 @@ class RouteNode(JOVBaseNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = ("BUS",) + (JOV_TYPE_ANY,) * 127
     RETURN_NAMES = (Lexicon.ROUTE,)
+    OUTPUT_TOOLTIPS = (
+        "Pass through for Route node"
+    )
     SORT = 850
     DESCRIPTION = """
 Routes the input data from the optional input ports to the output port, preserving the order of inputs. The `PASS_IN` optional input is directly passed through to the output, while other optional inputs are collected and returned as tuples, preserving the order of insertion.
@@ -224,13 +240,10 @@ Routes the input data from the optional input ports to the output port, preservi
         e = {
             "optional": {
                 Lexicon.ROUTE: ("BUS", {"default": None, "tooltip":"Pass through another route node to pre-populate the outputs."}),
-            },
-            "outputs": {
-                0: (Lexicon.ROUTE, {"tooltip":"Pass through for Route node"})
             }
         }
         d = deep_merge(d, e)
-        return Lexicon._parse(d, cls)
+        return Lexicon._parse(d)
 
     def run(self, **kw) -> Tuple[Any, ...]:
         inout = parse_param(kw, Lexicon.ROUTE, EnumConvertType.ANY, [None])
@@ -254,15 +267,20 @@ Save the output image along with its metadata to the specified path. Supports sa
         d = super().INPUT_TYPES(True, True)
         d = deep_merge(d, {
             "optional": {
-                "image": ("IMAGE",),
-                "path": ("STRING", {"default": "", "dynamicPrompts":False}),
-                "fname": ("STRING", {"default": "output", "dynamicPrompts":False}),
-                "metadata": ("JSON", {}),
-                "usermeta": ("STRING", {"multiline": True, "dynamicPrompts":False,
-                                        "default": ""}),
+                "image": ("IMAGE", {"default": None,
+                                    "tooltip":""}),
+                "path": ("STRING", {"default": "", "dynamicPrompts":False,
+                                    "tooltip":"Destination path to save the output"}),
+                "fname": ("STRING", {"default": "output", "dynamicPrompts":False,
+                                     "tooltip":"Filename of the output"}),
+                "metadata": ("JSON", {"default": None,
+                                      "tooltip":"Extra metadata to save in the file"}),
+                "usermeta": ("STRING", {"default": "", "multiline": True,
+                                        "dynamicPrompts":False,
+                                        "tooltip":"Custom user metadat to save with the file"}),
             }
         })
-        return Lexicon._parse(d, cls)
+        return Lexicon._parse(d)
 
     def run(self, **kw) -> dict[str, Any]:
         image = parse_param(kw, 'image', EnumConvertType.IMAGE, None)

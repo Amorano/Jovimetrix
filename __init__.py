@@ -222,7 +222,7 @@ class Lexicon(metaclass=LexiconMeta):
     HI = 'HI', "High / Top of range"
     HSV = 'HSV', "Hue, Saturation and Value"
     HOLD = '⚠️', "Hold"
-    IMAGE = '🖼️', "Image"
+    IMAGE = '🖼️', "RGB-A color image with alpha channel"
     IN_A = '🅰️', "Input A"
     IN_B = '🅱️', "Input B"
     INDEX = 'INDEX', "Current item index in the Queue list"
@@ -246,7 +246,7 @@ class Lexicon(metaclass=LexiconMeta):
     M = '🖤', "Alpha Channel"
     MARGIN = 'MARGIN', "Whitespace padding around canvas"
     MASK = '😷', "Mask or Image to use as Mask to control where adjustments are applied"
-    MATTE = 'MATTE', "Define a background color for padding, if necessary. This is useful when images do not fit perfectly into the designated area and need a filler color"
+    MATTE = 'MATTE', "Background color for padding"
     MAX = 'MAX', "Maximum"
     MI = '🤍', "Alpha Channel"
     MID = 'MID', "Middle"
@@ -283,7 +283,7 @@ class Lexicon(metaclass=LexiconMeta):
     PROJECTION = 'PROJ', "Projection"
     QUALITY = 'QUALITY', "Quality"
     QUALITY_M = 'MOTION', "Motion Quality"
-    QUEUE = 'Q', "Queue"
+    QUEUE = 'Q', "Current items to process during Queue iteration."
     R = '🟥', "Red"
     RADIUS = '🅡', "Radius"
     RANDOM = 'RNG', "Random"
@@ -304,7 +304,7 @@ class Lexicon(metaclass=LexiconMeta):
     ROUND = 'ROUND', "Round to the nearest decimal place, or 0 for integer mode"
     ROUTE = '🚌', "Route"
     S = '🇸', "Saturation"
-    SAMPLE = '🎞️', "Select the method for resizing images. Options range from nearest neighbor to advanced methods like Lanczos, ensuring the best quality for the specific use case"
+    SAMPLE = '🎞️', "Method for resizing images."
     SCHEME = 'SCHEME', "Scheme"
     SEED = 'seed', "Random generator's initial value"
     SEGMENT = 'SEGMENT', "Number of parts which the input image should be split"
@@ -365,24 +365,19 @@ class Lexicon(metaclass=LexiconMeta):
     ZOOM = '🔎', "ZOOM"
 
     @classmethod
-    def _parse(cls, node: dict, node_cls: object) -> dict:
-        name = node_cls.NAME.split(" (JOV)")[0].replace(" ", "-").replace(' GEN', 'GENERATOR')
-        sep = "%EF%B8%8F-" if name in MARKDOWN else "-"
-        cat = '/'.join(node_cls.CATEGORY.split('/')[1:])
-        # WIKI URL
-        data = {"_": sep + name, "*": node_cls.NAME, "outputs": {}}
+    def _parse(cls, node: dict) -> dict:
         for cat, entry in node.items():
-            if cat not in ['optional', 'required', 'outputs']:
+            if cat not in ['optional', 'required']:
                 continue
             for k, v in entry.items():
-                widget_data = v[1] if isinstance(v, (tuple, list,)) and len(v) > 1 else {}
-                tip = widget_data.get("tooltip", cls._tooltipsDB.get(k, None))
-                if cat == "outputs":
-                    data["outputs"][k] = tip
-                else:
-                    data[k] = tip
-        if node.get("optional", None) is None:
-            node["optional"] = {}
+                if (widget_data := v[1] if isinstance(v, (tuple, list,)) and len(v) > 1 else None) is None:
+                    continue
+                if (tip := widget_data.get("tooltip", None)):
+                    continue
+                if (tip := cls._tooltipsDB.get(k, None)) is None:
+                    continue
+                widget_data["tooltip"] = tip
+                node[cat][k] = (v[0], widget_data)
         return node
 
 # ==============================================================================

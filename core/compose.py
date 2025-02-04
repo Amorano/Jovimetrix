@@ -100,7 +100,7 @@ Enhance and modify images with various effects such as blurring, sharpening, col
                 Lexicon.INVERT: ("BOOLEAN", {"default": False, "tooltip": "Invert the mask input"})
             }
         })
-        return Lexicon._parse(d, cls)
+        return Lexicon._parse(d)
 
     def run(self, **kw)  -> Tuple[torch.Tensor, ...]:
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
@@ -243,7 +243,7 @@ Combine two input images using various blending modes, such as normal, screen, m
                 Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True})
             }
         })
-        return Lexicon._parse(d, cls)
+        return Lexicon._parse(d)
 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
         pA = parse_param(kw, Lexicon.PIXEL_A, EnumConvertType.IMAGE, None)
@@ -327,7 +327,7 @@ Simulate color blindness effects on images. You can select various types of colo
                 Lexicon.VALUE: ("FLOAT", {"default": 1, "min": 0, "max": 1, "step": 0.001, "tooltip":"alpha blending"}),
             }
         })
-        return Lexicon._parse(d, cls)
+        return Lexicon._parse(d)
 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
@@ -371,7 +371,7 @@ Adjust the color scheme of one image to match another with the Color Match Node.
                 Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True}),
             }
         })
-        return Lexicon._parse(d, cls)
+        return Lexicon._parse(d)
 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         pA = parse_param(kw, Lexicon.PIXEL_A, EnumConvertType.IMAGE, None)
@@ -428,6 +428,13 @@ class ColorKMeansNode(JOVBaseNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = ("IMAGE", "IMAGE", "IMAGE", "JLUT", "IMAGE",)
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.PALETTE, Lexicon.GRADIENT, Lexicon.LUT, Lexicon.RGB, )
+    OUTPUT_TOOLTIPS = (
+        "Sequence of top-K colors. Count depends on value in `VAL`.",
+        "Simple Tone palette based on result top-K colors. Width is taken from input.",
+        "Gradient of top-K colors.",
+        "Full 3D LUT of the image mapped to the resultant top-K colors chosen.",
+        "Visualization of full 3D .cube LUT in JLUT output"
+    )
     DESCRIPTION = """
 The top-k colors ordered from most->least used as a strip, tonal palette and 3D LUT.
 """
@@ -442,16 +449,9 @@ The top-k colors ordered from most->least used as a strip, tonal palette and 3D 
                 Lexicon.SIZE: ("INT", {"default": 32, "min": 1, "max": 256, "tooltip":"Height of the tones in the strip. Width is based on input."}),
                 Lexicon.COUNT: ("INT", {"default": 33, "min": 3, "max": 256, "tooltip":"Number of nodes to use in interpolation of full LUT (256 is every pixel)."}),
                 Lexicon.WH: ("VEC2INT", {"default": (256, 256), "mij":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
-            },
-            "outputs": {
-                0: ("IMAGE", {"tooltip":"Sequence of top-K colors. Count depends on value in `VAL`."}),
-                1: ("IMAGE", {"tooltip":"Simple Tone palette based on result top-K colors. Width is taken from input."}),
-                2: ("IMAGE", {"tooltip":"Gradient of top-K colors."}),
-                3: ("JLUT",  {"tooltip":"Full 3D LUT of the image mapped to the resultant top-K colors chosen."}),
-                4: ("IMAGE", {"tooltip":"Visualization of full 3D .cube LUT in JLUT output"}),
             }
         })
-        return Lexicon._parse(d, cls)
+        return Lexicon._parse(d)
 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
@@ -509,7 +509,7 @@ Generate a color harmony based on the selected scheme. Supported schemes include
                 Lexicon.INVERT: ("BOOLEAN", {"default": False})
             }
         })
-        return Lexicon._parse(d, cls)
+        return Lexicon._parse(d)
 
     def run(self, **kw) -> Tuple[List[torch.Tensor], List[torch.Tensor]]:
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
@@ -550,7 +550,7 @@ Extract a portion of an input image or resize it. It supports various cropping m
                 Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True})
             }
         })
-        return Lexicon._parse(d, cls)
+        return Lexicon._parse(d)
 
     def run(self, **kw) -> Tuple[List[torch.Tensor], List[torch.Tensor]]:
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
@@ -613,7 +613,7 @@ Create masks based on specific color ranges within an image. Specify the color r
                 Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True}),
             }
         })
-        return Lexicon._parse(d, cls)
+        return Lexicon._parse(d)
 
     def run(self, **kw) -> Tuple[Any, ...]:
         pA = parse_param(kw, Lexicon.PIXEL_A, EnumConvertType.IMAGE, None)
@@ -656,7 +656,7 @@ Combine multiple input images into a single image by summing their pixel values.
                 Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True})
             }
         })
-        return Lexicon._parse(d, cls)
+        return Lexicon._parse(d)
 
     def run(self, **kw) -> torch.Tensor:
         imgs = parse_dynamic(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
@@ -702,7 +702,7 @@ Remaps an input image using a gradient lookup table (LUT). The gradient image wi
                 Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True})
             }
         })
-        return Lexicon._parse(d, cls)
+        return Lexicon._parse(d)
 
     def run(self, **kw) -> torch.Tensor:
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
@@ -758,7 +758,7 @@ Combines individual color channels (red, green, blue) along with an optional mas
                 Lexicon.INVERT: ("BOOLEAN", {"default": False, "tooltip": "Invert the final merged output"})
             }
         })
-        return Lexicon._parse(d, cls)
+        return Lexicon._parse(d)
 
     def run(self, **kw)  -> Tuple[torch.Tensor, torch.Tensor]:
         rgba = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
@@ -811,6 +811,12 @@ class PixelSplitNode(JOVBaseNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = ("MASK", "MASK", "MASK", "MASK",)
     RETURN_NAMES = (Lexicon.RI, Lexicon.GI, Lexicon.BI, Lexicon.MI)
+    OUTPUT_TOOLTIPS = (
+        "Single channel output of Red Channel.",
+        "Single channel output of Green Channel",
+        "Single channel output of Blue Channel",
+        "Single channel output of Alpha Channel"
+    )
     SORT = 40
     DESCRIPTION = """
 Takes an input image and splits it into its individual color channels (red, green, blue), along with a mask channel. This node is useful for separating different color components of an image for further processing or analysis.
@@ -822,15 +828,9 @@ Takes an input image and splits it into its individual color channels (red, gree
         d = deep_merge(d, {
             "optional": {
                 Lexicon.PIXEL: (JOV_TYPE_IMAGE, {})
-            },
-            "outputs": {
-                0: ("MASK", {"tooltip":"Single channel output of Red Channel."}),
-                1: ("MASK", {"tooltip":"Single channel output of Green Channel"}),
-                2: ("MASK", {"tooltip":"Single channel output of Blue Channel"}),
-                3: ("MASK", {"tooltip":"Single channel output of Alpha Channel"}),
             }
         })
-        return Lexicon._parse(d, cls)
+        return Lexicon._parse(d)
 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
         images = []
@@ -868,7 +868,7 @@ Swap pixel values between two input images based on specified channel swizzle op
                 Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True})
             }
         })
-        return Lexicon._parse(d, cls)
+        return Lexicon._parse(d)
 
     def run(self, **kw)  -> Tuple[torch.Tensor, torch.Tensor]:
         pA = parse_param(kw, Lexicon.PIXEL_A, EnumConvertType.IMAGE, None)
@@ -930,7 +930,7 @@ Merge multiple input images into a single composite image by stacking them along
                 Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True})
             }
         })
-        return Lexicon._parse(d, cls)
+        return Lexicon._parse(d)
 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
         images = parse_dynamic(kw, Lexicon.IMAGE, EnumConvertType.IMAGE, None)
@@ -973,7 +973,7 @@ Define a range and apply it to an image for segmentation and feature extraction.
                 Lexicon.INVERT: ("BOOLEAN", {"default": False, "tooltip": "Invert the mask input"})
             }
         })
-        return Lexicon._parse(d, cls)
+        return Lexicon._parse(d)
 
     def run(self, **kw)  -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
@@ -1025,7 +1025,7 @@ Apply various geometric transformations to images, including translation, rotati
                 Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True})
             }
         })
-        return Lexicon._parse(d, cls)
+        return Lexicon._parse(d)
 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
@@ -1108,7 +1108,7 @@ The Histogram Node generates a histogram representation of the input image, show
                 Lexicon.PIXEL: (JOV_TYPE_IMAGE, {}),
             }
         })
-        return Lexicon._parse(d, cls)
+        return Lexicon._parse(d)
 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         pA = parse_param(kw, Lexicon.PIXEL, None), EnumConvertType.IMAGE, None)

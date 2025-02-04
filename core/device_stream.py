@@ -16,7 +16,7 @@ from loguru import logger
 from comfy.utils import ProgressBar
 
 from .. import JOV_DOCKERENV, JOV_TYPE_IMAGE, \
-    JOVBaseNode, Lexicon, \
+    JOVBaseNode, JOVImageNode, Lexicon, \
     deep_merge
 
 from ..sup.util import EnumConvertType, \
@@ -67,11 +67,9 @@ class EnumStreamType(Enum):
 
 # ==============================================================================
 
-class StreamReaderNode(JOVBaseNode):
+class StreamReaderNode(JOVImageNode):
     NAME = "STREAM READER (JOV) 📺"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
-    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
     SORT = 50
     CAMERAS = None
     DESCRIPTION = """
@@ -134,7 +132,7 @@ Capture frames from various sources such as URLs, cameras, monitors, windows, or
             d["optional"].pop(Lexicon.MONITOR)
             d["optional"].pop(Lexicon.WINDOW)
 
-        return Lexicon._parse(d, cls)
+        return Lexicon._parse(d)
 
     @classmethod
     def IS_CHANGED(cls, **kw) -> float:
@@ -312,7 +310,7 @@ Sends frames to a specified route, typically for live streaming or recording pur
                 Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 0), "rgb": True})
             }
         })
-        return Lexicon._parse(d, cls)
+        return Lexicon._parse(d)
 
     """
     @classmethod
@@ -384,7 +382,7 @@ Sends frames to a specified Spout receiver application for real-time video shari
                     Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True})
                 }
             })
-            return Lexicon._parse(d, cls)
+            return Lexicon._parse(d)
 
         @classmethod
         def IS_CHANGED(cls, **kw) -> float:

@@ -45,8 +45,6 @@ JOV_CATEGORY = "CREATE"
 class ConstantNode(JOVImageNode):
     NAME = "CONSTANT (JOV) 🟪"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
-    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK)
     DESCRIPTION = """
 Generate a constant image or mask of a specified size and color. It can be used to create solid color backgrounds or matte images for compositing with other visual elements. The node allows you to define the desired width and height of the output and specify the RGBA color value for the constant output. Additionally, you can input an optional image to use as a matte with the selected color.
 """
@@ -66,7 +64,7 @@ Generate a constant image or mask of a specified size and color. It can be used 
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
             }
         })
-        return Lexicon._parse(d, cls)
+        return Lexicon._parse(d)
 
     def run(self, **kw) -> Tuple[torch.Tensor, ...]:
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
@@ -115,7 +113,7 @@ Create n-sided polygons. These shapes can be customized by adjusting parameters 
                 Lexicon.BLUR: ("FLOAT", {"default": 0, "min": 0, "step": 0.01, "tooltip": "Edge blur amount (Gaussian blur)"}),
             }
         })
-        return Lexicon._parse(d, cls)
+        return Lexicon._parse(d)
 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
         shape = parse_param(kw, Lexicon.SHAPE, EnumShapes, EnumShapes.CIRCLE.name)
@@ -183,7 +181,7 @@ Generates false perception 3D images from 2D input. Set tile divisions, noise, g
                 Lexicon.INVERT: ("BOOLEAN", {"default": False}),
             }
         })
-        return Lexicon._parse(d, cls)
+        return Lexicon._parse(d)
 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
@@ -225,7 +223,7 @@ Simulates depth perception in images by generating stereoscopic views. It accept
                 Lexicon.FOCAL: ("FLOAT", {"default": 500, "min": 0, "step": 0.01}),
             }
         })
-        return Lexicon._parse(d, cls)
+        return Lexicon._parse(d)
 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
@@ -283,7 +281,7 @@ Generates images containing text based on parameters such as font, size, alignme
                 Lexicon.INVERT: ("BOOLEAN", {"default": False, "tooltip": "Invert the mask input"})
             }
         })
-        return Lexicon._parse(d, cls)
+        return Lexicon._parse(d)
 
     def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
         full_text = parse_param(kw, Lexicon.STRING, EnumConvertType.STRING, "jovimetrix")

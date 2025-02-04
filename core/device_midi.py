@@ -28,11 +28,22 @@ JOV_CATEGORY = "DEVICE"
 
 # ==============================================================================
 
-class MIDIMessageNode(JOVBaseNode):
-    NAME = "MIDI MESSAGE (JOV) 🎛️"
-    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
+class MIDIHeader(JOVBaseNode):
     RETURN_TYPES = ('JMIDIMSG', 'BOOLEAN', 'INT', 'INT', 'INT', 'FLOAT', 'FLOAT', )
     RETURN_NAMES = (Lexicon.MIDI, Lexicon.ON, Lexicon.CHANNEL, Lexicon.CONTROL, Lexicon.NOTE, Lexicon.VALUE, Lexicon.NORMALIZE, )
+    OUTPUT_TOOLTIPS = (
+        "MIDI bus that contains the full MIDI message",
+        "The state of the note -- either `ON` or `OFF`",
+        "MIDI channel sent in the MIDI message",
+        "The control number sent in the MIDI message",
+        "Note value (0-127) sent in the MIDI message",
+        "If this was a control messge, the control value (0-127) sent in the MIDI message",
+        "If this was a control messge, the control value normalized to 0-1",
+    )
+
+class MIDIMessageNode(MIDIHeader):
+    NAME = "MIDI MESSAGE (JOV) 🎛️"
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     SORT = 10
     DESCRIPTION = """
 Processes MIDI messages received from an external MIDI controller or device. It accepts MIDI messages as input and returns various attributes of the MIDI message, including whether the message is valid, the MIDI channel, control number, note number, value, and normalized value. This node is useful for integrating MIDI control into creative projects, allowing users to respond to MIDI input in real-time.
@@ -46,7 +57,7 @@ Processes MIDI messages received from an external MIDI controller or device. It 
                 Lexicon.MIDI: ('JMIDIMSG', {"default": None})
             }
         })
-        return Lexicon._parse(d, cls)
+        return Lexicon._parse(d)
 
     def run(self, **kw) -> Tuple[object, bool, int, int, int, float, float]:
         message: MIDIMessage = parse_param(kw, Lexicon.MIDI, EnumConvertType.ANY, [None])
@@ -60,11 +71,9 @@ Processes MIDI messages received from an external MIDI controller or device. It 
             pbar.update_absolute(idx)
         return list(zip(*results))
 
-class MIDIReaderNode(JOVBaseNode):
+class MIDIReaderNode(MIDIHeader):
     NAME = "MIDI READER (JOV) 🎹"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = ('JMIDIMSG', 'BOOLEAN', 'INT', 'INT', 'INT', 'FLOAT', 'FLOAT',)
-    RETURN_NAMES = (Lexicon.MIDI, Lexicon.ON, Lexicon.CHANNEL, Lexicon.CONTROL, Lexicon.NOTE, Lexicon.VALUE, Lexicon.NORMALIZE,)
     SORT = 5
     DEVICES = midi_device_names()
     DESCRIPTION = """
@@ -81,7 +90,7 @@ Captures MIDI messages from an external MIDI device or controller. It monitors M
                 Lexicon.DEVICE : (cls.DEVICES, {"default": cls.DEVICES[0] if len(cls.DEVICES) > 0 else None})
             }
         })
-        return Lexicon._parse(d, cls)
+        return Lexicon._parse(d)
 
     @classmethod
     def IS_CHANGED(cls, **kw) -> float:
@@ -134,6 +143,10 @@ class MIDIFilterNode(JOVBaseNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = ("JMIDIMSG", "BOOLEAN", )
     RETURN_NAMES = (Lexicon.MIDI, Lexicon.TRIGGER,)
+    OUTPUT_TOOLTIPS = (
+        "The amount of blurriness (0->1.0) of the input image.",
+        "The amount of blurriness (0->1.0) of the input image.",
+    )
     SORT = 20
     EPSILON = 1e-6
     DESCRIPTION = """
@@ -154,7 +167,7 @@ Provides advanced filtering capabilities for MIDI messages based on various crit
                 Lexicon.NORMALIZE: ("STRING", {"default": ""}),
             }
         })
-        return Lexicon._parse(d, cls)
+        return Lexicon._parse(d)
 
     def __filter(self, data:int, value:str) -> bool:
         """Parse strings with number ranges into number ranges.
@@ -236,6 +249,10 @@ class MIDIFilterEZNode(JOVBaseNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = ("JMIDIMSG", "BOOLEAN", )
     RETURN_NAMES = (Lexicon.MIDI, Lexicon.TRIGGER,)
+    OUTPUT_TOOLTIPS = (
+        "The amount of blurriness (0->1.0) of the input image.",
+        "The amount of blurriness (0->1.0) of the input image.",
+    )
     SORT = 25
     DESCRIPTION = """
 Filter MIDI messages based on various criteria, including MIDI mode (such as note on or note off), MIDI channel, control number, note number, value, and normalized value. This node is useful for processing MIDI input and selectively passing through only the desired messages. It helps simplify MIDI data handling by allowing you to focus on specific types of MIDI events.
@@ -254,7 +271,7 @@ Filter MIDI messages based on various criteria, including MIDI mode (such as not
                 Lexicon.VALUE: ("INT", {"default": -1, "min": -1, "max": 127}),
             }
         })
-        return Lexicon._parse(d, cls)
+        return Lexicon._parse(d)
 
     def run(self, **kw) -> Tuple[MIDIMessage, bool]:
 

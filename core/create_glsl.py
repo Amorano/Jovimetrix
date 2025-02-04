@@ -98,7 +98,7 @@ class GLSLNodeBase(JOVImageNode):
                 Lexicon.EDGE_Y: (EnumGLSLEdge._member_names_, {"default": EnumGLSLEdge.CLAMP.name}),
             }
         })
-        return Lexicon._parse(d, cls)
+        return Lexicon._parse(d)
 
     def __init__(self, *arg, **kw) -> None:
         super().__init__(*arg, **kw)
@@ -192,7 +192,7 @@ Execute custom GLSL (OpenGL Shading Language) fragment shaders to generate image
             Lexicon.PROG_FRAG: ("STRING", {"default": PROG_FRAGMENT, "multiline": True, "dynamicPrompts": False}),
         })
         d['optional'] = opts
-        return Lexicon._parse(d, cls)
+        return Lexicon._parse(d)
 
     @classmethod
     def IS_CHANGED(cls, **kw) -> float:

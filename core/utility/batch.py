@@ -74,17 +74,33 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                Lexicon.BATCH_MODE: (EnumBatchMode._member_names_, {"default": EnumBatchMode.MERGE.name, "tooltip":"Select a single index, specific range, custom index list or randomized"}),
-                Lexicon.INDEX: ("INT", {"default": 0, "min": 0, "tooltip":"Selected list position"}),
-                Lexicon.RANGE: ("VEC3INT", {"default": (0, 0, 1), "mij": 0}),
-                Lexicon.STRING: ("STRING", {"default": "", "tooltip":"Comma separated list of indicies to export"}),
-                Lexicon.SEED: ("INT", {"default": 0, "min": 0, "max": sys.maxsize}),
-                Lexicon.COUNT: ("INT", {"default": 0, "min": 0, "max": sys.maxsize, "tooltip":"How many items to return"}),
-                Lexicon.FLIP: ("BOOLEAN", {"default": False, "tooltip":"reverse the calculated output list"}),
-                Lexicon.BATCH_CHUNK: ("INT", {"default": 0, "min": 0,}),
+                Lexicon.BATCH_MODE: (EnumBatchMode._member_names_, {
+                    "default": EnumBatchMode.MERGE.name,
+                    "tooltip":"Select a single index, specific range, custom index list or randomized"}),
+                Lexicon.INDEX: ("INT", {
+                    "default": 0, "min": 0,
+                    "tooltip":"Selected list position"}),
+                Lexicon.RANGE: ("VEC3INT", {
+                    "default": (0, 0, 1), "mij": 0,
+                    "tooltip":"The start, end and step for the range"}),
+                Lexicon.STRING: ("STRING", {
+                    "default": "",
+                    "tooltip":"Comma separated list of indicies to export"}),
+                Lexicon.SEED: ("INT", {
+                    "default": 0, "min": 0, "max": sys.maxsize,
+                    "tooltip":"Random seed value"}),
+                Lexicon.COUNT: ("INT", {
+                    "default": 0, "min": 0, "max": sys.maxsize,
+                    "tooltip":"How many items to return"}),
+                Lexicon.FLIP: ("BOOLEAN", {
+                    "default": False,
+                    "tooltip":"reverse the calculated output list"}),
+                Lexicon.BATCH_CHUNK: ("INT", {
+                    "default": 0, "min": 0,
+                    "tooltip":"How many items to put inside each 'batched' output. 0 means put all items in a single batch."}),
             }
         })
-        return Lexicon._parse(d, cls)
+        return Lexicon._parse(d)
 
     @classmethod
     def batched(cls, iterable, chunk_size, expand:bool=False, fill:Any=None) -> list:
@@ -227,17 +243,32 @@ class QueueBaseNode(JOVBaseNode):
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                Lexicon.QUEUE: ("STRING", {"multiline": True, "default": "./res/img/test-a.png"}),
-                Lexicon.RECURSE: ("BOOLEAN", {"default": False}),
-                Lexicon.BATCH: ("BOOLEAN", {"default": False, "tooltip":"Load all items, if they are loadable items, i.e. batch load images from the Queue's list. This can consume a lot of memory depending on the list size and each item size."}),
-                Lexicon.VALUE: ("INT", {"min": 0, "default": 0, "tooltip": "The current index for the current queue item"}),
-                Lexicon.WAIT: ("BOOLEAN", {"default": False, "tooltip":"Hold the item at the current queue index"}),
-                Lexicon.STOP: ("BOOLEAN", {"default": False, "tooltip":"When the Queue is out of items, send a `HALT` to ComfyUI."}),
-                Lexicon.LOOP: ("BOOLEAN", {"default": True, "tooltip":"If the queue should loop around the end when reached. If `False`, at the end of the Queue, if there are more iterations, it will just send the previous image."}),
-                Lexicon.RESET: ("BOOLEAN", {"default": False, "tooltip":"Reset the queue back to index 1"}),
+                Lexicon.QUEUE: ("STRING", {
+                    "default": "./res/img/test-a.png", "multiline": True}),
+                Lexicon.RECURSE: ("BOOLEAN", {
+                    "default": False,
+                    "tooltip":"Recurse through all subdirectories found"}),
+                Lexicon.BATCH: ("BOOLEAN", {
+                    "default": False,
+                    "tooltip":"Load all items, if they are loadable items, i.e. batch load images from the Queue's list."}),
+                Lexicon.VALUE: ("INT", {
+                    "default": 0, "min": 0,
+                    "tooltip": "The current index for the current queue item"}),
+                Lexicon.WAIT: ("BOOLEAN", {
+                    "default": False,
+                    "tooltip":"Hold the item at the current queue index"}),
+                Lexicon.STOP: ("BOOLEAN", {
+                    "default": False,
+                    "tooltip":"When the Queue is out of items, send a `HALT` to ComfyUI."}),
+                Lexicon.LOOP: ("BOOLEAN", {
+                    "default": True,
+                    "tooltip":"If the queue should loop. If `False` and if there are more iterations, will send the previous image."}),
+                Lexicon.RESET: ("BOOLEAN", {
+                    "default": False,
+                    "tooltip":"Reset the queue back to index 1"}),
             }
         })
-        return Lexicon._parse(d, cls)
+        return Lexicon._parse(d)
 
     def __init__(self) -> None:
         self.__index = 0
@@ -417,30 +448,32 @@ class QueueBaseNode(JOVBaseNode):
 
 class QueueNode(QueueBaseNode):
     NAME = "QUEUE (JOV) 🗃"
+    OUTPUT_TOOLTIPS = (
+        "Current item selected from the Queue list",
+        "The entire Queue list",
+        "Current item selected from the Queue list as a string",
+        "Current index for the selected item in the Queue list",
+        "Total items in the current Queue List",
+        "Send a True signal when the queue end index is reached"
+    )
     SORT = 450
     DESCRIPTION = """
 Manage a queue of items, such as file paths or data. Supports various formats including images, videos, text files, and JSON files. You can specify the current index for the queue item, enable pausing the queue, or reset it back to the first index. The node outputs the current item in the queue, the entire queue, the current index, and the total number of items in the queue.
 """
 
-    @classmethod
-    def INPUT_TYPES(cls) -> dict:
-        d = super().INPUT_TYPES()
-        d = deep_merge(d, {
-            "outputs": {
-                0: (Lexicon.ANY_OUT, {"tooltip":"Current item selected from the Queue list"}),
-                1: (Lexicon.QUEUE, {"tooltip":"The entire Queue list"}),
-                2: (Lexicon.CURRENT, {"tooltip":"Current item selected from the Queue list as a string"}),
-                3: (Lexicon.INDEX, {"tooltip":"Current index for the selected item in the Queue list"}),
-                4: (Lexicon.TOTAL, {"tooltip":"Total items in the current Queue List"}),
-                5: (Lexicon.TRIGGER, {"tooltip":"Send a True signal when the queue end index is reached"}),
-            }
-        })
-        return Lexicon._parse(d, cls)
-
 class QueueTooNode(QueueBaseNode):
     NAME = "QUEUE TOO (JOV) 🗃"
     RETURN_TYPES = ("IMAGE", "IMAGE", "MASK", "STRING", "INT", "INT", "BOOLEAN")
     RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK, Lexicon.CURRENT, Lexicon.INDEX, Lexicon.TOTAL, Lexicon.TRIGGER, )
+    OUTPUT_TOOLTIPS = (
+        "Full channel [RGBA] image. If there is an alpha, the image will be masked out with it when using this output",
+        "Three channel [RGB] image. There will be no alpha",
+        "Single channel mask output",
+        "Current item selected from the Queue list as a string",
+        "Current index for the selected item in the Queue list",
+        "Total items in the current Queue List",
+        "Send a True signal when the queue end index is reached"
+    )
     SORT = 500
     DESCRIPTION = """
 Manage a queue of specific items: media files. Supports various image and video formats. You can specify the current index for the queue item, enable pausing the queue, or reset it back to the first index. The node outputs the current item in the queue, the entire queue, the current index, and the total number of items in the queue.
@@ -451,31 +484,47 @@ Manage a queue of specific items: media files. Supports various image and video 
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                Lexicon.QUEUE: ("STRING", {"multiline": True, "default": "./res/img/test-a.png"}),
-                Lexicon.RECURSE: ("BOOLEAN", {"default": False}),
-                Lexicon.BATCH: ("BOOLEAN", {"default": False, "tooltip":"Load all items, if they are loadable items, i.e. batch load images from the Queue's list"}),
-                Lexicon.VALUE: ("INT", {"default": 0, "min": 0, "tooltip": "The current index for the current queue item"}),
-                Lexicon.WAIT: ("BOOLEAN", {"default": False, "tooltip":"Hold the item at the current queue index"}),
-                Lexicon.STOP: ("BOOLEAN", {"default": False, "tooltip":"When the Queue is out of items, send a `HALT` to ComfyUI."}),
-                Lexicon.LOOP: ("BOOLEAN", {"default": True, "tooltip":"If the queue should loop around the end when reached. If `False`, at the end of the Queue, if there are more iterations, it will just send the previous image."}),
-                Lexicon.RESET: ("BOOLEAN", {"default": False, "tooltip":"Reset the queue back to index 1"}),
-                Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.MATTE.name}),
-                Lexicon.WH: ("VEC2INT", {"default": (512, 512), "mij":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
-                Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
-                Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True}),
-            },
-            "outputs": {
-                0: ("IMAGE", {"tooltip":"Full channel [RGBA] image. If there is an alpha, the image will be masked out with it when using this output."}),
-                1: ("IMAGE", {"tooltip":"Three channel [RGB] image. There will be no alpha."}),
-                2: ("MASK", {"tooltip":"Single channel mask output."}),
-                3: (Lexicon.CURRENT, {"tooltip":"Current item selected from the Queue list as a string"}),
-                4: (Lexicon.INDEX, {"tooltip":"Current index for the selected item in the Queue list"}),
-                5: (Lexicon.TOTAL, {"tooltip":"Total items in the current Queue List"}),
-                6: (Lexicon.TRIGGER, {"tooltip":"Send a True signal when the queue end index is reached"}),
+                Lexicon.QUEUE: ("STRING", {
+                    "default": "./res/img/test-a.png", "multiline": True,
+                    "tooltip": ""}),
+                Lexicon.RECURSE: ("BOOLEAN", {
+                    "default": False,
+                    "tooltip": "Search within sub-directories"}),
+                Lexicon.BATCH: ("BOOLEAN", {
+                    "default": False,
+                    "tooltip":"Load all items, if they are loadable items, i.e. batch load images from the Queue's list"}),
+                Lexicon.VALUE: ("INT", {
+                    "default": 0, "min": 0,
+                    "tooltip": "Current index for the current queue item"}),
+                Lexicon.WAIT: ("BOOLEAN", {
+                    "default": False,
+                    "tooltip":"Hold the item at the current queue index"}),
+                Lexicon.STOP: ("BOOLEAN", {
+                    "default": False,
+                    "tooltip":"When the Queue is out of items, send a `HALT` to ComfyUI."}),
+                Lexicon.LOOP: ("BOOLEAN", {
+                    "default": True,
+                    "tooltip":"If the queue should loop. If `False` and there are more iterations, will send the previous image."}),
+                Lexicon.RESET: ("BOOLEAN", {
+                    "default": False,
+                    "tooltip":"Reset the queue back to index 1"}),
+                Lexicon.MODE: (EnumScaleMode._member_names_, {
+                    "default": EnumScaleMode.MATTE.name,
+                    "tooltip": "Decide whether the images should be resized to fit"}),
+                Lexicon.WH: ("VEC2INT", {
+                    "default": (512, 512), "mij":MIN_IMAGE_SIZE,
+                    "label": [Lexicon.W, Lexicon.H],
+                    "tooltip": "Width and Height"}),
+                Lexicon.SAMPLE: (EnumInterpolation._member_names_, {
+                    "default": EnumInterpolation.LANCZOS4.name,
+                    "tooltip": "Method for resizing images."}),
+                Lexicon.MATTE: ("VEC4INT", {
+                    "default": (0, 0, 0, 255), "rgb": True,
+                    "tooltip": "Background color for padding"}),
             },
             "hidden": d.get("hidden", {})
         })
-        return Lexicon._parse(d, cls)
+        return Lexicon._parse(d)
 
     def run(self, ident, **kw) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, str, int, int, bool]:
         data, _, current, index, total, trigger = super().run(ident, **kw)

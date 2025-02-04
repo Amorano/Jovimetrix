@@ -12,8 +12,6 @@ import numpy as np
 from PIL import Image
 import matplotlib.pyplot as plt
 
-from loguru import logger
-
 from ... import JOV_TYPE_IMAGE, Lexicon, JOVBaseNode, deep_merge, parse_reset
 from ...sup.util import EnumConvertType, parse_dynamic, parse_param
 from ...sup.image import MIN_IMAGE_SIZE, pil2tensor
@@ -35,11 +33,17 @@ def decode_tensor(tensor: torch.Tensor) -> str:
     return f"{b}x{w}x{h}x{cc}"
 
 # ==============================================================================
+# === CLASS -- SUPPORT ===
+# ==============================================================================
 
 class AkashicData:
     def __init__(self, **kw) -> None:
         for k, v in kw.items():
             setattr(self, k, v)
+
+# ==============================================================================
+# === CLASS ===
+# ==============================================================================
 
 class AkashicNode(JOVBaseNode):
     NAME = "AKASHIC (JOV) 📓"
@@ -50,11 +54,6 @@ class AkashicNode(JOVBaseNode):
     DESCRIPTION = """
 Visualize data. It accepts various types of data, including images, text, and other types. If no input is provided, it returns an empty result. The output consists of a dictionary containing UI-related information, such as base64-encoded images and text representations of the input data.
 """
-
-    @classmethod
-    def INPUT_TYPES(cls) -> dict:
-        d = super().INPUT_TYPES()
-        return Lexicon._parse(d, cls)
 
     def run(self, **kw) -> Tuple[Any, Any]:
         kw.pop('ident', None)
@@ -141,6 +140,9 @@ class GraphNode(JOVBaseNode):
     OUTPUT_NODE = True
     RETURN_TYPES = ("IMAGE", )
     RETURN_NAMES = (Lexicon.IMAGE,)
+    OUTPUT_TOOLTIPS = (
+        "The graphed image"
+    )
     SORT = 15
     DESCRIPTION = """
 Visualize a series of data points over time. It accepts a dynamic number of values to graph and display, with options to reset the graph or specify the number of values. The output is an image displaying the graph, allowing users to analyze trends and patterns.
@@ -151,15 +153,19 @@ Visualize a series of data points over time. It accepts a dynamic number of valu
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                Lexicon.RESET: ("BOOLEAN", {"default": False}),
-                Lexicon.VALUE: ("INT", {"default": 60, "min": 0, "tooltip":"Number of values to graph and display"}),
-                Lexicon.WH: ("VEC2INT", {"default": (512, 512), "mij":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]})
-            },
-            "outputs": {
-                0: (Lexicon.IMAGE, {"tooltip":"The graphed image"}),
+                Lexicon.RESET: ("BOOLEAN", {
+                    "default": False,
+                    "tooltip":"Clear the graph history"}),
+                Lexicon.VALUE: ("INT", {
+                    "default": 60, "min": 0,
+                    "tooltip":"Number of values to graph and display"}),
+                Lexicon.WH: ("VEC2INT", {
+                    "default": (512, 512), "mij":MIN_IMAGE_SIZE,
+                    "label": [Lexicon.W, Lexicon.H],
+                    "tooltip":"Width and Height of the graph output"}),
             }
         })
-        return Lexicon._parse(d, cls)
+        return Lexicon._parse(d)
 
     @classmethod
     def IS_CHANGED(cls) -> float:
@@ -210,6 +216,14 @@ class ImageInfoNode(JOVBaseNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = ("INT", "INT", "INT", "INT", "VEC2", "VEC3")
     RETURN_NAMES = (Lexicon.INT, Lexicon.W, Lexicon.H, Lexicon.C, Lexicon.WH, Lexicon.WHC)
+    OUTPUT_TOOLTIPS = (
+        "Batch count",
+        "Width",
+        "Height",
+        "Channels",
+        "Width & Height as a VEC2",
+        "Width, Height and Channels as a VEC3"
+    )
     SORT = 55
     DESCRIPTION = """
 Exports and Displays immediate information about images.
@@ -220,18 +234,12 @@ Exports and Displays immediate information about images.
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                Lexicon.PIXEL_A: (JOV_TYPE_IMAGE,),
-            },
-            "outputs": {
-                0: (Lexicon.INT, {"tooltip":"Batch count"}),
-                1: (Lexicon.W,),
-                2: (Lexicon.H,),
-                3: (Lexicon.C, {"tooltip":"Number of image channels. 1 (Grayscale), 3 (RGB) or 4 (RGBA)"}),
-                4: (Lexicon.WH,),
-                5: (Lexicon.WHC,),
+                Lexicon.PIXEL_A: (JOV_TYPE_IMAGE, {
+                    "default": None,
+                    "tooltip":"The image to examine"})
             }
         })
-        return Lexicon._parse(d, cls)
+        return Lexicon._parse(d)
 
     def run(self, **kw) -> Tuple[int, list]:
         image = kw.get(Lexicon.PIXEL_A, None)
