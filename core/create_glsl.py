@@ -258,7 +258,7 @@ class GLSLNodeDynamic(GLSLNodeBase):
 
         data.update(opts)
         original_params['optional'] = data
-        return Lexicon._parse(original_params, cls)
+        return Lexicon._parse(original_params)
 
 def import_dynamic() -> Tuple[str,...]:
     ret = []

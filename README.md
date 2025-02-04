@@ -86,13 +86,20 @@ If those nodes have descriptions written in HTML or Markdown, they will be conve
 
 ### NODE COLORS
 
-You can colorize nodes via their `title` or `body`. This can be done to the node's `category` as well, so you can quickly color groups of nodes.
+You can colorize nodes via their `title background`, `node body` or `title text`. This can be done to the node's `category` as well, so you can quickly color groups of nodes.
 
 <div align="center">
 <img src="https://github.com/user-attachments/assets/8de9561a-b231-4a49-a63a-4fd5fdba64d9" alt="node color panel" width="512"/>
 </div>
 
 ## UPDATES
+
+**2024/02/03** @1.3.0:
+* added colorizer option for `title text`
+* settings deprecated and removed from ComfyUI settings panel
+* colorizer setting migrated to ComfyUI per user settings
+* automatic contrast option for non-colored nodes
+* all tooltips migrated to ComfyUI core tooltips
 
 **2024/02/02** @1.2.67:
 * fixed `GLSL` nodes missing from parse due to category sort

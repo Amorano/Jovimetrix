@@ -577,12 +577,12 @@ def json2html(json_dict: dict) -> str:
     # Generate output content
     output_rows = []
     for k, v in json_dict['output_parameters'].items():
-        tool = Lexicon._tooltipsDB.get(k, "")
-        # tool = '<br>'.join(textwrap.wrap(tool, 65))
+        data = v.split('$')
+        #desc = '<br>'.join(textwrap.wrap(data[1], 60))
         output_rows.append(HTML_output_row.substitute(
             name=html.escape(k),
-            type=html.escape(v),
-            description=tool
+            type=html.escape(data[0]),
+            description=html.escape(data[1])
         ))
 
     # Fill in the main template
@@ -656,9 +656,13 @@ def get_node_info(node_data: dict) -> Dict[str, Any]:
     ]
 
     output_parameters = {}
+    tooltips = node_data.get('output_tooltips', [])
     return_names = [t.lower() for t in node_data.get('output_name', [])]
-    for t, n in zip(return_types, return_names):
-        output_parameters[n] = ', '.join([x.strip() for x in t.split(',')])
+    for name, typ, tip in zip(return_names, return_types, tooltips):
+        if tip == "":
+            tip = Lexicon._tooltipsDB.get(name, "")
+        output_parameters[name] = '$'.join([typ, tip])
+
 
     data = {
         "class": node_data['name'],
