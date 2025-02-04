@@ -620,10 +620,6 @@ def get_node_info(node_data: dict) -> Dict[str, Any]:
 
         input_parameters[k] = {}
         for param_key, param_meta in node_param_meta.items():
-            # skip list
-            if param_key in ['tooltips']:
-                continue
-
             lst = None
             typ = param_meta[0]
             if isinstance(typ, list):

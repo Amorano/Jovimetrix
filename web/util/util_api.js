@@ -7,11 +7,6 @@
 import { app } from "../../../scripts/app.js"
 import { api } from "../../../scripts/api.js"
 
-export async function apiGet(url) {
-    var response = await api.fetchApi(url, { cache: "no-store" })
-    return await response.json()
-}
-
 export async function apiJovimetrix(id, cmd, route="message") {
     try {
         const response = await api.fetchApi(`/jovimetrix/${route}`, {

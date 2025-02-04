@@ -4,14 +4,18 @@
  */
 
 import { app } from "../../../scripts/app.js";
+import { api } from "../../../scripts/api.js"
 import { $el } from "../../../scripts/ui.js";
-import { apiGet } from "../util/util_api.js";
-import { colorContrast } from "../util/util.js";
 
 const setting_regex = 'jovi.color.regex';
 const setting_theme = 'jovi.color.theme';
 
 let PANEL_COLORIZE, NODE_LIST;
+
+async function apiGet(url) {
+    var response = await api.fetchApi(url, { cache: "no-store" })
+    return await response.json()
+}
 
 function normalizeHex(hex) {
     if (!hex.startsWith('#')) {
@@ -20,9 +24,25 @@ function normalizeHex(hex) {
 
     // If shorthand (e.g., #333), expand it to full form (#333333)
     if (hex.length === 4) {
-        return '#' + hex[1] + hex[1] + hex[2] + hex[2] + hex[3] + hex[3];
+        hex = '#' + hex[1] + hex[1] + hex[2] + hex[2] + hex[3] + hex[3];
     }
     return hex.toLowerCase();
+}
+
+function colorHex2RGB(hex) {
+    hex = hex.replace(/^#/, '');
+    const bigint = parseInt(hex, 16);
+    const r = (bigint >> 16) & 255;
+    const g = (bigint >> 8) & 255;
+    const b = bigint & 255;
+    return [r, g, b];
+}
+
+function colorContrast(hexColor) {
+    const rgb = colorHex2RGB(hexColor);
+    const normalizedRGB = rgb.map(value => value / 255);
+    const L = 0.2126 * normalizedRGB[0] + 0.7152 * normalizedRGB[1] + 0.0722 * normalizedRGB[2];
+    return L > 0.420 ? "#000" : "#CCC";
 }
 
 function getColor(node) {
@@ -69,15 +89,16 @@ LGraphCanvas.prototype.drawNode = function (node, ctx) {
     const new_color = getColor(node);
 
     if (new_color) {
-        // Title text
-        // node.constructor.title_text_color = '#00FF00'
-
         // Title text when node is selected
         //LiteGraph.NODE_SELECTED_TITLE_COLOR = '#FF00FF'
 
-        if (new_color?.title) {
-            node.constructor.title_text_color = colorContrast(new_color.title) ? "#000" : "#FFF";
-            LiteGraph.NODE_SELECTED_TITLE_COLOR = colorContrast(new_color.title) ? "#000" : "#FFF";
+        if (new_color?.text) {
+            node.constructor.title_text_color = new_color.text;
+        } else {
+            const color = node.constructor.title_text_color;
+            if (color) {
+                node.constructor.title_text_color = colorContrast(color);
+            }
         }
 
         // Slot label text
@@ -224,9 +245,10 @@ class JovimetrixPanelColorize {
 
     async updateConfig() {
         const cb = this.buttonCurrent.dataset;
+        const color = normalizeHex(cb.color)
         if (cb.idx && cb.idx !== "undefined") {
             const CONFIG_REGEX = app.extensionManager.setting.get(setting_regex);
-            CONFIG_REGEX[cb.idx][cb.type] = cb.color;
+            CONFIG_REGEX[cb.idx][cb.type] = color;
             await app.extensionManager.setting.set(setting_regex, CONFIG_REGEX);
         } else {
             const CONFIG_THEME = app.extensionManager.setting.get(setting_theme);
@@ -239,15 +261,15 @@ class JovimetrixPanelColorize {
                 colorCheck = LiteGraph.NODE_TEXT_COLOR;
             }
             colorCheck = normalizeHex(colorCheck);
-            if (cb.color === colorCheck && CONFIG_THEME[cb.name] && CONFIG_THEME[cb.name].hasOwnProperty(cb.type)) {
+            if (color === colorCheck && CONFIG_THEME[cb.name] && CONFIG_THEME[cb.name].hasOwnProperty(cb.type)) {
                 delete CONFIG_THEME[cb.name][cb.type];
-            } else {
-                CONFIG_THEME[cb.name][cb.type] = cb.color;
+            } else if (color !== colorCheck) {
+                CONFIG_THEME[cb.name][cb.type] = color;
             }
             await app.extensionManager.setting.set(setting_theme, CONFIG_THEME);
         }
 
-        this.buttonCurrent.style.backgroundColor = cb.color;
+        this.buttonCurrent.style.backgroundColor = color;
         app.canvas.setDirty(true);
     }
 
@@ -264,11 +286,11 @@ class JovimetrixPanelColorize {
         if (this.buttonCurrent.dataset.type === "title") {
             colorCheck = LiteGraph.NODE_DEFAULT_COLOR;
         } else if (this.buttonCurrent.dataset.type === "text") {
-            colorCheck = LiteGraph.NODE_TEXT_COLOR
+            colorCheck = LiteGraph.NODE_TEXT_COLOR;
         }
         this.buttonCurrent.dataset.color = colorCheck;
         await this.updateConfig();
-        await this.picker.color.set(this.buttonCurrent.dataset.color);
+        await this.picker.color.set(colorCheck);
     }
 
     async pickerColorChange(color) {

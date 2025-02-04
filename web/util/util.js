@@ -140,15 +140,6 @@ export function domShowModal(innerHTML, eventCallback, timeout=null) {
     });
 }
 
-export function colorHex2RGB(hex) {
-  hex = hex.replace(/^#/, '');
-  const bigint = parseInt(hex, 16);
-  const r = (bigint >> 16) & 255;
-  const g = (bigint >> 8) & 255;
-  const b = bigint & 255;
-  return [r, g, b];
-}
-
 /*
 * Parse a string "255,255,255,255" or a List[255,255,255,255] into hex
 */
@@ -179,8 +170,4 @@ export function colorLerpHex(colorStart, colorEnd, lerp) {
   return colorRGB2Hex(lerpedRGB);
 }
 
-export function colorContrast(hexColor) {
-    const rgb = colorHex2RGB(hexColor);
-    const L = 0.2126 * rgb[0] / 255. + 0.7152 * rgb[1] / 255. + 0.0722 * rgb[2] / 255.;
-    return L > 0.790 ? "#000" : "#CCC";
-}
+
