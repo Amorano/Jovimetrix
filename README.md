@@ -94,7 +94,7 @@ You can colorize nodes via their `title background`, `node body` or `title text`
 
 ## UPDATES
 
-**2024/02/04** @1.6.5:
+**2024/02/04** @1.6.10:
 * adjusted new default color config to old defaults
 
 **2024/02/04** @1.6.0:

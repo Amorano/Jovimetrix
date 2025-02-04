@@ -74,7 +74,6 @@ ROOT_DOC = ROOT / 'res/doc'
 
 JOV_CONFIG = {}
 JOV_WEB = ROOT / 'web'
-JOV_DEFAULT = JOV_WEB / 'default.json'
 JOV_CONFIG_FILE = JOV_WEB / 'config.json'
 
 # nodes to skip on import; for online systems; skip Export, Streamreader, etc...
@@ -775,34 +774,6 @@ try:
             JOV_CONFIG = configLoad(JOV_CONFIG_FILE)
         return web.json_response(JOV_CONFIG)
 
-    @PromptServer.instance.routes.post("/jovimetrix/config")
-    async def jovimetrix_config_post(request) -> Any:
-        json_data = await request.json()
-        did = json_data.get("id", None)
-        value = json_data.get("cmd", None)
-        if did is None or value is None:
-            logger.error("bad config {}", json_data)
-            return
-
-        global JOV_CONFIG
-        update_nested_dict(JOV_CONFIG, did, value)
-        with open(JOV_CONFIG_FILE, 'w', encoding='utf-8') as f:
-            json.dump(JOV_CONFIG, f, indent=4)
-        return web.json_response(json_data)
-
-    @PromptServer.instance.routes.post("/jovimetrix/config/clear")
-    async def jovimetrix_config_post(request) -> Any:
-        json_data = await request.json()
-        name = json_data['name']
-        global JOV_CONFIG
-        try:
-            del JOV_CONFIG['color'][name]
-        except KeyError as _:
-            pass
-        with open(JOV_CONFIG_FILE, 'w', encoding='utf-8') as f:
-            json.dump(JOV_CONFIG, f)
-        return web.json_response(json_data)
-
     async def object_info(node_class: str, scheme:str, host: str) -> Any:
         global COMFYUI_OBJ_DATA
         if (info := COMFYUI_OBJ_DATA.get(node_class, None)) is None:
@@ -913,19 +884,8 @@ def loader():
     global JOV_CONFIG, JOV_IGNORE_NODE, NODE_CLASS_MAPPINGS, NODE_DISPLAY_NAME_MAPPINGS
     NODE_LIST_MAP = {}
 
-    found = False
     if JOV_CONFIG_FILE.exists():
         JOV_CONFIG = configLoad(JOV_CONFIG_FILE)
-        # is this an old config, copy default (sorry, not sorry)
-        found = JOV_CONFIG.get('user', None) is not None
-
-    if not found:
-        try:
-            shutil.copy2(JOV_DEFAULT, JOV_CONFIG_FILE)
-            logger.warning("---> DEFAULT CONFIGURATION <---")
-        except Exception as e:
-            logger.error("MAJOR 😿😰😬🥟 BLUNDERCATS 🥟😬😰😿")
-            logger.error(e)
 
     if JOV_IGNORE_NODE.exists():
         JOV_IGNORE_NODE = configLoad(JOV_IGNORE_NODE, False)

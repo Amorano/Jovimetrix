@@ -468,7 +468,7 @@ class JovimetrixPanelColorize {
         const categories = [];
         const CONFIG_THEME = app.extensionManager.setting.get(setting_theme);
 
-        NODE_LIST.forEach(([nodeName, node]) => {
+        Object.entries(NODE_LIST).forEach(([nodeName, node]) => {
             const category = node.category;
             const majorCategory = category.split("/")?.[0];
 
