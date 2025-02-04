@@ -5,9 +5,31 @@
 
 import { app } from "../../../scripts/app.js"
 import { widgetToInput, widgetToWidget } from '../util/util_widget.js'
-import { domInnerValueChange, colorHex2RGB, colorRGB2Hex } from '../util/util.js'
+import { domInnerValueChange } from '../util/util.js'
 import { $el } from "../../../scripts/ui.js"
 /** @import { IWidget, LGraphCanvas } from '../../types/litegraph/litegraph.d.ts' */
+
+function colorHex2RGB(hex) {
+    hex = hex.replace(/^#/, '');
+    const bigint = parseInt(hex, 16);
+    const r = (bigint >> 16) & 255;
+    const g = (bigint >> 8) & 255;
+    const b = bigint & 255;
+    return [r, g, b];
+}
+
+function colorRGB2Hex(input) {
+    const rgbArray = typeof input == 'string' ? input.match(/\d+/g) : input;
+    if (rgbArray.length < 3) {
+        throw new Error('input not 3 or 4 values');
+    }
+    const hexValues = rgbArray.map((value, index) => {
+        if (index == 3 && !value) return 'ff';
+        const hex = parseInt(value).toString(16);
+        return hex.length == 1 ? '0' + hex : hex;
+    });
+    return '#' + hexValues.slice(0, 3).join('') + (hexValues[3] || '');
+}
 
 const VectorWidget = (app, inputName, options, initial, desc='') => {
     const values = options[1]?.default || initial;

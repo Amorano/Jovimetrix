@@ -48,7 +48,6 @@ function colorContrast(hexColor) {
 function getColor(node) {
     // regex overrides first
     const CONFIG_REGEX = app.extensionManager.setting.get(setting_regex);
-
     for (const { regex, ...colors } of CONFIG_REGEX || []) {
         if (regex && node.type.match(new RegExp(regex, "i"))) {
             return colors;
@@ -59,17 +58,14 @@ function getColor(node) {
     const CONFIG_THEME = app.extensionManager.setting.get(setting_theme);
     const newColor = CONFIG_THEME?.[node.type]
         ?? (function() {
-            let color = NODE_LIST?.[node.type];
-            if (color?.category) {
-                let k = color.category;
-                while (k) {
-                    if (CONFIG_THEME?.[k]) {
-                        return CONFIG_THEME[k];
-                    }
-                    k = k.substring(0, k.lastIndexOf("/"));
+            const color = NODE_LIST[node.type];
+            let k = color?.category;
+            while (k) {
+                if (CONFIG_THEME?.[k]) {
+                    return CONFIG_THEME[k];
                 }
+                k = k.substring(0, k.lastIndexOf("/"));
             }
-            return null;
         })();
 
     return newColor;
@@ -448,7 +444,10 @@ class JovimetrixPanelColorize {
         const table = $el("table.flexible-table");
         this.tbody = $el("tbody");
 
-        const CONFIG_REGEX = app.extensionManager.setting.get(setting_regex) || [];
+        let CONFIG_REGEX = app.extensionManager.setting.get(setting_regex) || [];
+        if (!Array.isArray(CONFIG_REGEX)) {
+            CONFIG_REGEX = []
+        }
         CONFIG_REGEX.forEach((entry, idx) => {
             const data = {
                 idx: idx,
@@ -465,18 +464,13 @@ class JovimetrixPanelColorize {
     }
 
     createColorPalettes() {
-        const all_nodes = Object.entries(NODE_LIST || []).sort((a, b) => {
-            const categoryComparison = a[1].category.toLowerCase().localeCompare(b[1].category.toLowerCase());
-            return categoryComparison;
-        });
-
         let background_index = 0;
         const categories = [];
         const CONFIG_THEME = app.extensionManager.setting.get(setting_theme);
 
-        all_nodes.forEach(([nodeName, node]) => {
+        NODE_LIST.forEach(([nodeName, node]) => {
             const category = node.category;
-            const majorCategory = category.split("/")[0];
+            const majorCategory = category.split("/")?.[0];
 
             if (!categories.includes(majorCategory)) {
                 background_index = (background_index + 1) % 2;
@@ -586,36 +580,52 @@ app.registerExtension({
             defaultValue: {}
         },
     ],
-    async afterConfigureGraph() {
+    async setup() {
 
-        [NODE_LIST] = await Promise.all([
-            apiGet("/object_info")
-        ]);
+        const all_nodes = await apiGet("/object_info");
+        NODE_LIST = Object.entries(all_nodes).sort((a, b) => {
+            const categoryA = a[1].category.toLowerCase();
+            const categoryB = b[1].category.toLowerCase();
 
-        if (!app.extensionManager.setting.get(setting_regex)) {
-            let CONFIG_CORE;
-            try {
-                [CONFIG_CORE] = await Promise.all([
-                    apiGet("/jovimetrix/config")
-                ]);
+            // First, sort by category
+            if (categoryA < categoryB) return -1;
+            if (categoryA > categoryB) return 1;
 
-                const CONFIG_REGEX = CONFIG_CORE.user.default.color.regex || [];
-                const CONFIG_THEME = CONFIG_CORE.user.default.color.theme;
+            // If categories are equal, sort by key name
+            return a[0].toLowerCase().localeCompare(b[0].toLowerCase());
+        });
+        NODE_LIST = Object.fromEntries(NODE_LIST);
 
-                try {
-                    await app.extensionManager.setting.set(setting_regex, CONFIG_REGEX);
-                } catch (error) {
-                    console.error(`Error changing setting: ${error}`);
-                }
+        const CONFIG_CORE = await apiGet("/jovimetrix/config");
 
-                try {
-                    await app.extensionManager.setting.set(setting_theme, CONFIG_THEME);
-                } catch (error) {
-                    console.error(`Error changing setting: ${error}`);
-                }
-            } catch (error) {
-                console.error("Error initializing Jovimetrix Colorizer Panel:", error);
-            }
+        if (!Array.isArray(app.extensionManager.setting.get(setting_regex))) {
+            const CONFIG_REGEX = CONFIG_CORE?.user?.default?.color?.regex || [];
+            await app.extensionManager.setting.set(setting_regex, CONFIG_REGEX);
         }
+
+        if (!Array.isArray(app.extensionManager.setting.get(setting_theme))) {
+            const CONFIG_THEME = CONFIG_CORE?.user?.default?.color?.theme || {
+                "JOVIMETRIX \ud83d\udd3a\ud83d\udfe9\ud83d\udd35": {
+                    title: "#A23DA2"
+                },
+                "JOVIMETRIX \ud83d\udd3a\ud83d\udfe9\ud83d\udd35/CREATE": {
+                    title: "#1b871b"
+                },
+                "JOVIMETRIX \ud83d\udd3a\ud83d\udfe9\ud83d\udd35/COMPOSE": {
+                    title: "#5C1F9A"
+                },
+                "JOVIMETRIX \ud83d\udd3a\ud83d\udfe9\ud83d\udd35/CALC": {
+                    title: "#993838"
+                },
+                "JOVIMETRIX \ud83d\udd3a\ud83d\udfe9\ud83d\udd35/DEVICE": {
+                    title: "#1f9999"
+                },
+                "JOVIMETRIX \ud83d\udd3a\ud83d\udfe9\ud83d\udd35/UTILITY": {
+                    title: "#0A0A0A"
+                }
+            }
+            await app.extensionManager.setting.set(setting_theme, CONFIG_THEME);
+        }
+
     }
 });
