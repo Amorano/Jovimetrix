@@ -94,7 +94,7 @@ You can colorize nodes via their `title background`, `node body` or `title text`
 
 ## UPDATES
 
-**2024/02/03** @1.3.0:
+**2024/02/04** @1.6.0:
 * added colorizer option for `title text`
 * settings deprecated and removed from ComfyUI settings panel
 * colorizer setting migrated to ComfyUI per user settings
