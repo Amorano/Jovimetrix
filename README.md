@@ -94,6 +94,9 @@ You can colorize nodes via their `title background`, `node body` or `title text`
 
 ## UPDATES
 
+**2024/02/06** @1.7.05:
+* updated `QUEUE` and `QUEUE TOO` progress while loading all images as "batch"
+
 **2024/02/05** @1.7.02:
 * polish on regex parsing for uniforms -- supports are much more lenient on spacing
 

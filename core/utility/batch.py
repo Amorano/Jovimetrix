@@ -404,14 +404,13 @@ class QueueBaseNode(JOVBaseNode):
 
             if mw != 0 or mh != 0 or mc != 0:
                 ret = []
-                pbar = ProgressBar(self.__len)
                 mode = parse_param(kw, Lexicon.MODE, EnumScaleMode, EnumScaleMode.MATTE.name)[0]
                 sample = parse_param(kw, Lexicon.SAMPLE, EnumInterpolation, EnumInterpolation.LANCZOS4.name)[0]
                 wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)[0]
                 w2, h2 = wihi
                 matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)[0]
-                matte_alpha = matte[3]
-                matte = matte[:3] + [0]
+                matte = [matte[0], matte[1], matte[2], 0]
+                pbar = ProgressBar(self.__len)
 
                 for idx, d in enumerate(data):
                     d = image_convert(d, mc)
