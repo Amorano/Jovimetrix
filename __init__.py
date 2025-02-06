@@ -932,8 +932,8 @@ def loader():
                                                             key=lambda item: getattr(item[1], 'SORT', 0))}
 
     keys = NODE_CLASS_MAPPINGS.keys()
-    for name in keys:
-        logger.debug(f"✅ {name}")
+    #for name in keys:
+    #    logger.debug(f"✅ {name}")
     logger.info(f"{len(keys)} nodes loaded")
 
     # only do the list on local runs...

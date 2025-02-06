@@ -597,11 +597,20 @@ app.registerExtension({
         NODE_LIST = Object.fromEntries(NODE_LIST);
 
         const CONFIG_CORE = await apiGet("/jovimetrix/config");
-
-        if (!Array.isArray(app.extensionManager.setting.get(setting_regex))) {
-            const CONFIG_REGEX = CONFIG_CORE?.user?.default?.color?.regex || [];
-            await app.extensionManager.setting.set(setting_regex, CONFIG_REGEX);
+        let CONFIG_REGEX = app.extensionManager.setting.get(setting_regex);
+        if (!Array.isArray(CONFIG_REGEX)) {
+            CONFIG_REGEX = CONFIG_CORE?.user?.default?.color?.regex || [
+                { "regex": "" },
+                { "regex": "" },
+                { "regex": "" },
+                { "regex": "" },
+                { "regex": "" }
+            ];
         }
+        while (CONFIG_REGEX.length < 5) {
+            CONFIG_REGEX.push({ "regex": "" });
+        }
+        await app.extensionManager.setting.set(setting_regex, CONFIG_REGEX);
 
         if (!Array.isArray(app.extensionManager.setting.get(setting_theme))) {
             const CONFIG_THEME = CONFIG_CORE?.user?.default?.color?.theme || {

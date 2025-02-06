@@ -433,7 +433,7 @@ class GLSLShader:
 
                 gl.glUniform1i(p_loc, texture_index)
                 texture_index += 1
-            elif val:
+            else:
                 funct = LAMBDA_UNIFORM[p_type]
                 if isinstance(p_value, EnumType):
                     val = p_value[val].value
