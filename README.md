@@ -94,6 +94,9 @@ You can colorize nodes via their `title background`, `node body` or `title text`
 
 ## UPDATES
 
+**2024/02/05** @1.7.02:
+* polish on regex parsing for uniforms -- supports are much more lenient on spacing
+
 **2024/02/05** @1.7.0:
 * regex entries default to [5] fields
 * [issue #4](https://github.com/Amorano/Jovi_GLSL/issues/4) value in uniforms for `GLSL nodes` were cancelling  values being set

@@ -117,7 +117,7 @@ logger.info(f"  vertex programs: {len(GLSL_PROGRAMS['vertex'])}")
 logger.info(f"fragment programs: {len(GLSL_PROGRAMS['fragment'])}")
 
 RE_INCLUDE = re.compile(r"^\s+?#include\s+?([A-Za-z\_\-\.\\\/]{3,})$", re.MULTILINE)
-RE_VARIABLE = re.compile(r"uniform\s+(\w+)\s+(\w+);\s*(?:\/\/\s*([^;|]*))?\s*(?:;\s*([^;|]*))?\s*(?:;\s*([^;|]*))?\s*(?:;\s*([^;|]*))?\s*(?:;\s*([^;|]*))?\s*(?:\|\s*(.*))?$", re.MULTILINE)
+RE_VARIABLE = re.compile(r"^\s*uniform\s+(\w+)\s+(\w+)\s*;\s*(?:\/\/\s*([^;|]*))?(?:\s*;\s*([^;|]*))?(?:\s*;\s*([^;|]*))?(?:\s*;\s*([^;|]*))?(?:\s*;\s*([^;|]*))?(?:\s*\|[\t\f ]*([^\r\n]*))?$", re.MULTILINE)
 RE_SHADER_META = re.compile(r"^\/\/\s?([A-Za-z_]{3,}):\s?(.+)$", re.MULTILINE)
 
 # ==============================================================================
