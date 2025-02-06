@@ -17,7 +17,7 @@ from . import TYPE_IMAGE, TYPE_PIXEL, TYPE_fCOORD2D, \
     image_convert, image_mask_add, image_matte, image_minmax, bgr2image, \
     cv2tensor, image2bgr, tensor2cv
 
-from .compose import image_crop_center
+from .compose import image_blend, image_crop_center
 
 from .channel import EnumPixelSwizzle, \
     channel_solid
@@ -367,8 +367,13 @@ def image_scalefit(image: TYPE_IMAGE, width: int, height:int,
                 matte:TYPE_PIXEL=(0,0,0,0)) -> TYPE_IMAGE:
 
     match mode:
-        case EnumScaleMode.MATTE | EnumScaleMode.RESIZE_MATTE:
+        case EnumScaleMode.MATTE:
             image = image_matte(image, matte, width, height)
+
+        case EnumScaleMode.RESIZE_MATTE:
+            canvas = np.full((height, width, 4), matte, dtype=image.dtype)
+            image = image_blend(canvas, image)
+            #image = image_matte(image, matte, width, height)
 
         case EnumScaleMode.ASPECT:
             h, w = image.shape[:2]
