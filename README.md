@@ -94,6 +94,9 @@ You can colorize nodes via their `title background`, `node body` or `title text`
 
 ## UPDATES
 
+**2024/02/07** @1.7.08:
+* `JOV_SCAN_DEVICES` reset to default off.
+
 **2024/02/06** @1.7.06:
 * `RESIZE_MATTE` option updated to allow transparent mattes
 
