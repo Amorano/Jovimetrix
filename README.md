@@ -94,7 +94,7 @@ You can colorize nodes via their `title background`, `node body` or `title text`
 
 ## UPDATES
 
-**2024/02/10** @1.7.12:
+**2024/02/10** @1.7.13:
 * cleared serialization bug
 * better "docker" environment check
 * cleaner type hints

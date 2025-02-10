@@ -76,7 +76,7 @@ app.registerExtension({
                 }
                 nodeFitHeight(self);
             }
-            setTimeout(source.callback(), 10);
+            setTimeout(() => { source.callback(); }, 10);
             return me;
         }
     }
