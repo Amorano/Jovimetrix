@@ -9,12 +9,12 @@ matplotlib
 mido[ports-rtmidi]
 mss
 numba
-numpy>=1.26.4,<2.0.0; python_version < '3.12'
-numpy>=2.0.0; python_version > '3.11'
+numpy>=1.26.4,<2.0.0; python_version <= '3.11'
+numpy>=2.0.0; python_version >= '3.12'
 opencv-contrib-python
 Pillow
 PyOpenGL
-PyOpenGL-accelerate; python_version < '3.12'
+PyOpenGL_accelerate
 pywin32; platform_system=="Windows"
 requests
 scikit-image
