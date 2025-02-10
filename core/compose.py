@@ -245,7 +245,7 @@ Combine two input images using various blending modes, such as normal, screen, m
         })
         return Lexicon._parse(d)
 
-    def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
+    def run(self, **kw) -> Tuple[torch.Tensor, ...]:
         pA = parse_param(kw, Lexicon.PIXEL_A, EnumConvertType.IMAGE, None)
         pB = parse_param(kw, Lexicon.PIXEL_B, EnumConvertType.IMAGE, None)
         mask = parse_param(kw, Lexicon.MASK, EnumConvertType.MASK, None)
@@ -760,7 +760,7 @@ Combines individual color channels (red, green, blue) along with an optional mas
         })
         return Lexicon._parse(d)
 
-    def run(self, **kw)  -> Tuple[torch.Tensor, torch.Tensor]:
+    def run(self, **kw)  -> Tuple[torch.Tensor, ...]:
         rgba = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
         R = parse_param(kw, Lexicon.R, EnumConvertType.MASK, None)
         G = parse_param(kw, Lexicon.G, EnumConvertType.MASK, None)
@@ -832,7 +832,7 @@ Takes an input image and splits it into its individual color channels (red, gree
         })
         return Lexicon._parse(d)
 
-    def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
+    def run(self, **kw) -> Tuple[torch.Tensor, ...]:
         images = []
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
         pbar = ProgressBar(len(pA))
@@ -870,7 +870,7 @@ Swap pixel values between two input images based on specified channel swizzle op
         })
         return Lexicon._parse(d)
 
-    def run(self, **kw)  -> Tuple[torch.Tensor, torch.Tensor]:
+    def run(self, **kw)  -> Tuple[torch.Tensor, ...]:
         pA = parse_param(kw, Lexicon.PIXEL_A, EnumConvertType.IMAGE, None)
         pB = parse_param(kw, Lexicon.PIXEL_B, EnumConvertType.IMAGE, None)
         swap_r = parse_param(kw, Lexicon.SWAP_R, EnumPixelSwizzle, EnumPixelSwizzle.RED_A.name)
@@ -932,7 +932,7 @@ Merge multiple input images into a single composite image by stacking them along
         })
         return Lexicon._parse(d)
 
-    def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
+    def run(self, **kw) -> Tuple[torch.Tensor, ...]:
         images = parse_dynamic(kw, Lexicon.IMAGE, EnumConvertType.IMAGE, None)
         if len(images) == 0:
             logger.warning("no images to stack")
@@ -1027,7 +1027,7 @@ Apply various geometric transformations to images, including translation, rotati
         })
         return Lexicon._parse(d)
 
-    def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
+    def run(self, **kw) -> Tuple[torch.Tensor, ...]:
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
         offset = parse_param(kw, Lexicon.XY, EnumConvertType.VEC2, [(0, 0)], -2.5, 2.5)
         angle = parse_param(kw, Lexicon.ANGLE, EnumConvertType.FLOAT, 0)

@@ -94,11 +94,16 @@ You can colorize nodes via their `title background`, `node body` or `title text`
 
 ## UPDATES
 
-**2024/02/07** @1.7.9:
+**2024/02/10** @1.7.12:
+* cleared serialization bug
+* better "docker" environment check
+* cleaner type hints
+
+**2024/02/08** @1.7.9:
 * moved to proper semantic version numbers
 * PyOpenGL-accelerate updated to 3.1.9
 * better versioning in requirements around numpy
-
+* cleaner
 **2024/02/07** @1.7.08:
 * `JOV_SCAN_DEVICES` reset to default off.
 

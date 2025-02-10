@@ -699,7 +699,7 @@ Manipulate strings through filtering
         })
         return Lexicon._parse(d)
 
-    def run(self, **kw)  -> Tuple[torch.Tensor, torch.Tensor]:
+    def run(self, **kw) -> Tuple[torch.Tensor, ...]:
         # turn any all inputs into the
         data_list = parse_dynamic(kw, Lexicon.UNKNOWN, EnumConvertType.ANY, [""])
         if data_list is None:
@@ -768,7 +768,7 @@ Swap components between two vectors based on specified swizzle patterns and valu
         })
         return Lexicon._parse(d)
 
-    def run(self, **kw)  -> Tuple[torch.Tensor, torch.Tensor]:
+    def run(self, **kw) -> Tuple[torch.Tensor, ...]:
         pA = parse_param(kw, Lexicon.IN_A, EnumConvertType.VEC4, [(0,0,0,0)])
         pB = parse_param(kw, Lexicon.IN_B, EnumConvertType.VEC4, [(0,0,0,0)])
         swap_x = parse_param(kw, Lexicon.SWAP_X, EnumSwizzle, EnumSwizzle.A_X.name)

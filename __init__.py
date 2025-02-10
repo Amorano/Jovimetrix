@@ -87,7 +87,16 @@ JOV_INTERNAL = os.getenv("JOV_INTERNAL", 'false').strip().lower() in ('true', '1
 # direct the documentation output -- used to build jovimetrix-examples
 JOV_INTERNAL_DOC = os.getenv("JOV_INTERNAL_DOC", str(ROOT / "_doc"))
 
-JOV_DOCKERENV = os.path.exists('/.dockerenv')
+JOV_DOCKERENV = False
+try:
+    with open('/proc/1/cgroup', 'rt') as f:
+        content = f.read()
+        JOV_DOCKERENV = any(x in content for x in ['docker', 'kubepods', 'containerd'])
+except FileNotFoundError:
+    pass
+
+if JOV_DOCKERENV:
+    logger.info("RUNNING IN A DOCKER")
 
 # The object_info route data -- cached
 COMFYUI_OBJ_DATA = {}

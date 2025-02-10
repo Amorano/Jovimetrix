@@ -94,20 +94,6 @@ export function widgetHide(node, widget, suffix = '') {
     widget.origComputeSize = widget.computeSize;
     widget.computeSize = () => [0, -4];
 
-    widget.origSerializeValue = widget.serializeValue;
-    widget.serializeValue = async () => {
-        // Prevent serializing the widget if we have no input linked
-        if (!node.inputs) {
-            return undefined;
-        }
-
-        let node_input = node.inputs.find((i) => i.widget?.name == widget.name);
-        if (!node_input || !node_input.link) {
-            return undefined;
-        }
-        return widget.origSerializeValue ? widget.origSerializeValue() : widget.value;
-    }
-
     // Hide any linked widgets, e.g. seed+seedControl
     if (widget.linkedWidgets) {
         for (const w of widget.linkedWidgets) {

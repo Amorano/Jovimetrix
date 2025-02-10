@@ -9,8 +9,7 @@ import { app } from "../../../scripts/app.js";
 import { ComfyWidgets } from "../../../scripts/widgets.js"
 import { apiJovimetrix } from '../util/util_api.js'
 import { flashBackgroundColor } from '../util/util_fun.js'
-import { nodeFitHeight, TypeSlotEvent, TypeSlot } from '../util/util_node.js'
-import { widgetHide, widgetShow } from '../util/util_widget.js'
+import { TypeSlotEvent, TypeSlot } from '../util/util_node.js'
 import { widgetSizeModeHook } from '../util/util_jov.js'
 
 const _id1 = "QUEUE (JOV) 🗃";
@@ -60,45 +59,8 @@ app.registerExtension({
 
             const widget_queue = this.widgets.find(w => w.name == 'Q');
             const widget_batch = this.widgets.find(w => w.name == 'BATCH');
-            const widget_value = this.widgets.find(w => w.name == 'VAL');
             const widget_hold = this.widgets.find(w => w.name == '✋🏽');
             const widget_reset = this.widgets.find(w => w.name == 'RESET');
-            const widget_stop = this.widgets.find(w => w.name == 'STOP');
-            const widget_loop = this.widgets.find(w => w.name == '🔄');
-            /*
-            widget_batch.callback = () => {
-                widgetHide(this, widget_value);
-                widgetHide(this, widget_hold);
-                widgetHide(this, widget_stop);
-                widgetHide(this, widget_loop);
-                widgetHide(this, widget_reset);
-                if (widget_batch.value == false) {
-                    widgetShow(widget_value);
-                    widgetShow(widget_hold);
-                    if (widget_hold.value == false) {
-                        widgetShow(widget_stop);
-                        widgetShow(widget_loop);
-                        widgetShow(widget_reset);
-                    }
-                }
-                nodeFitHeight(this);
-            }
-
-            widget_hold.callback = () => {
-                if (widget_batch.value == true) {
-                    return;
-                }
-                widgetHide(this, widget_stop);
-                widgetHide(this, widget_loop);
-                widgetHide(this, widget_reset);
-                if (widget_hold.value == false) {
-                    widgetShow(widget_stop);
-                    widgetShow(widget_loop);
-                    widgetShow(widget_reset);
-                }
-                nodeFitHeight(this);
-            }
-            */
 
             widget_queue.inputEl.addEventListener('input', function () {
                 const value = widget_queue.value.split('\n');

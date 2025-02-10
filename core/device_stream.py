@@ -29,7 +29,6 @@ from ..sup.stream import camera_list, monitor_list, window_list, \
 if not JOV_DOCKERENV:
     from ..sup.stream import window_capture
 
-
 from ..sup.image.adjust import EnumScaleMode, EnumInterpolation, \
     image_scalefit
 
@@ -150,7 +149,7 @@ Capture frames from various sources such as URLs, cameras, monitors, windows, or
         self.__empty = (a, e, m,)
         self.__last = [(a, e, m,)]
 
-    def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor]:
+    def run(self, *arg, **kw) -> Tuple[torch.Tensor, ...]:
         wait = parse_param(kw, Lexicon.WAIT, EnumConvertType.BOOLEAN, False)[0]
         if wait:
             return self.__last
