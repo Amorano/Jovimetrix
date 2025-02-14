@@ -53,7 +53,8 @@ class StreamMissingException(Exception): pass
 # ==============================================================================
 
 cfg = ConfigParser()
-JOV_SCAN_DEVICES = os.getenv("JOV_SCAN_DEVICES", "True").lower() in ['1', 'true', 'on']
+JOV_SCAN_DEVICES = os.getenv("JOV_SCAN_DEVICES", "False").lower() in ['1', 'true', 'on']
+logger.info(f"JOV_SCAN_DEVICES [{JOV_SCAN_DEVICES}]")
 JOV_STREAM_HOST = os.getenv("JOV_STREAM_HOST", '')
 JOV_STREAM_PORT = 7227
 try:

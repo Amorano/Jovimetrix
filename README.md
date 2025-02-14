@@ -94,6 +94,9 @@ You can colorize nodes via their `title background`, `node body` or `title text`
 
 ## UPDATES
 
+**2024/02/10** @1.7.15:
+* forced "OFF" the auto-scan for web cameras. Kept defaulting to on regardless of setting.
+
 **2024/02/10** @1.7.13:
 * cleared serialization bug
 * better "docker" environment check

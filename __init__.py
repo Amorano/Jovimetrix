@@ -14,14 +14,11 @@
 @reference: https://github.com/Amorano/Jovimetrix
 @tags: adjust, animate, compose, compositing, composition, device, flow, video,
 mask, shape, webcam, animation, logic
-@description: Integrates Webcam, MIDI, Spout and GLSL shader support. Animation
-via tick. Parameter manipulation with wave generator. Math operations with Unary
-and Binary support. Value conversion for all major types (int, string, list,
-dict, Image, Mask). Shape mask generation, image stacking and channel ops, batch
-splitting, merging and randomizing, load images and video from anywhere, dynamic
-bus routing with a single node, export support for GIPHY, save output anywhere!
-flatten, crop, transform; check colorblindness, make stereogram or stereoscopic
-images, or liner interpolate values and more.
+@description: Webcam, MIDI, Spout, GIPHY and OpenGL (GLSL) support.
+Animation via tick. Wave-based parameter modulation, Math operations with
+Unary and Binary support, universal Value conversion for all major
+types (int, string, list, dict, Image, Mask), shape masking, image channel ops,
+batch processing, dynamic bus routing. Queue & Load from URLs.
 @node list:
     ConstantNode, GLSLNode, ShapeNode, StereogramNode, StereoscopicNode, TextNode,
     WaveGraphNode,
