@@ -129,13 +129,13 @@ def cv2tensor(image: TYPE_IMAGE, grayscale: bool=False) -> torch.Tensor:
         image = np.squeeze(image, axis=-1)
 
     image = image.astype(np.float32) / 255.0
-    return torch.from_numpy(image) #.unsqueeze(0)
+    return torch.from_numpy(image)
 
 def cv2tensor_full(image: TYPE_IMAGE, matte:TYPE_PIXEL=(0,0,0,255)) -> Tuple[torch.Tensor, ...]:
 
     rgba = image_convert(image, 4)
-    rgb = image_matte(rgba, matte)[...,:3]
-    mask = image_mask(image)
+    rgb = rgba[...,:3]
+    mask = rgba[...,3]
     rgba = torch.from_numpy(rgba.astype(np.float32) / 255.0)
     rgb = torch.from_numpy(rgb.astype(np.float32) / 255.0)
     mask = torch.from_numpy(mask.astype(np.float32) / 255.0)
