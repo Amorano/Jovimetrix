@@ -43,7 +43,6 @@ import sys
 import html
 import time
 import json
-import shutil
 import inspect
 import importlib
 from pathlib import Path

@@ -608,7 +608,6 @@ Additionally, you can specify the easing function (EASE) and the desired output 
                 Lexicon.IN_B: (JOV_TYPE_FULL, {"tooltip": "Custom End Point"}),
                 Lexicon.FLOAT: ("VEC4", {"default": (0.5, 0.5, 0.5, 0.5),
                                          "mij": 0., "maj": 1.0,
-                                         # "step": 0.001, "round": 0.0001, "precision": 5,
                                          "tooltip": "Blend Amount. 0 = full A, 1 = full B"}),
                 Lexicon.IN_A+Lexicon.IN_A: ("VEC4", {"default": (0, 0, 0, 0),
                                         "tooltip":"default value vector for A"}),
@@ -889,7 +888,7 @@ A timer and frame counter, emitting pulses or signals based on time intervals. I
 class ValueNode(JOVBaseNode):
     NAME = "VALUE (JOV) 🧬"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    INPUT_IS_LIST = True
+    # INPUT_IS_LIST = True
     RETURN_TYPES = (JOV_TYPE_NUMBER, JOV_TYPE_NUMBER, JOV_TYPE_NUMBER, JOV_TYPE_NUMBER, JOV_TYPE_NUMBER,)
     RETURN_NAMES = (Lexicon.ANY_OUT, Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W)
     SORT = 5
@@ -1009,6 +1008,7 @@ class WaveGeneratorNode(JOVBaseNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = ("FLOAT", "INT", )
     RETURN_NAMES = (Lexicon.FLOAT, Lexicon.INT, )
+    OUTPUT_IS_LIST = (True, True, )
     SORT = 90
     DESCRIPTION = """
 Produce waveforms like sine, square, or sawtooth with adjustable frequency, amplitude, phase, and offset. It's handy for creating oscillating patterns or controlling animation dynamics. This node emits both continuous floating-point values and integer representations of the generated waves.
@@ -1038,23 +1038,135 @@ Produce waveforms like sine, square, or sawtooth with adjustable frequency, ampl
         shift = parse_param(kw, Lexicon.OFFSET, EnumConvertType.FLOAT, 0.)
         delta_time = parse_param(kw, Lexicon.TIME, EnumConvertType.FLOAT, 0., 0., sys.maxsize)
         invert = parse_param(kw, Lexicon.INVERT, EnumConvertType.BOOLEAN, False)
-        abs = parse_param(kw, Lexicon.ABSOLUTE, EnumConvertType.BOOLEAN, False)
+        absolute = parse_param(kw, Lexicon.ABSOLUTE, EnumConvertType.BOOLEAN, False)
         results = []
-        params = list(zip_longest_fill(op, freq, amp, phase, shift, delta_time, invert, abs))
+        params = list(zip_longest_fill(op, freq, amp, phase, shift, delta_time, invert, absolute))
         pbar = ProgressBar(len(params))
-        for idx, (op, freq, amp, phase, shift, delta_time, invert, abs) in enumerate(params):
+        for idx, (op, freq, amp, phase, shift, delta_time, invert, absolute) in enumerate(params):
             # freq = 1. / freq
             if invert:
                 amp = 1. / val
             val = wave_op(op, phase, freq, amp, shift, delta_time)
-            if abs:
+            if absolute:
                 val = np.abs(val)
             val = max(-sys.maxsize, min(val, sys.maxsize))
             results.append([val, int(val)])
             pbar.update_absolute(idx)
         return *list(zip(*results)),
-        # results = [list(x) for x in (zip(*results))]
-        return results
+
+class Vector2Node(JOVBaseNode):
+    NAME = "VECTOR2 INT (JOV)"
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
+    RETURN_TYPES = ("VEC2", "VEC2INT", )
+    RETURN_NAMES = ("VEC2", "VEC2INT", )
+    OUTPUT_IS_LIST = (True, True, )
+    SORT = 290
+    DESCRIPTION = """
+Outputs a VEC2 or VEC2INT.
+"""
+
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        d = super().INPUT_TYPES()
+        d = deep_merge(d, {
+            "optional": {
+                "X": ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01}),
+                "Y": ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01}),
+            }
+        })
+        return Lexicon._parse(d)
+
+    def run(self, **kw) -> Tuple[Tuple[float, ...], Tuple[int, ...]]:
+        x = parse_param(kw, "X", EnumConvertType.FLOAT, 0, -sys.maxsize, sys.maxsize)
+        y = parse_param(kw, "Y", EnumConvertType.FLOAT, 0, -sys.maxsize, sys.maxsize)
+        results = []
+        params = list(zip_longest_fill(x, y))
+        pbar = ProgressBar(len(params))
+        for idx, (x, y) in enumerate(params):
+            x = round(x, 6)
+            y = round(y, 6)
+            results.append([(x, y,), (int(x), int(y),)])
+            pbar.update_absolute(idx)
+        return *list(zip(*results)),
+
+class Vector3Node(JOVBaseNode):
+    NAME = "VECTOR3 INT (JOV)"
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
+    RETURN_TYPES = ("VEC3", "VEC3INT", )
+    RETURN_NAMES = ("VEC3", "VEC3INT", )
+    OUTPUT_IS_LIST = (True, True, )
+    SORT = 292
+    DESCRIPTION = """
+Outputs a VEC3 or VEC3INT.
+"""
+
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        d = super().INPUT_TYPES()
+        d = deep_merge(d, {
+            "optional": {
+                "X": ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01}),
+                "Y": ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01}),
+                "Z": ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01}),
+            }
+        })
+        return Lexicon._parse(d)
+
+    def run(self, **kw) -> Tuple[Tuple[float, ...], Tuple[int, ...]]:
+        x = parse_param(kw, "X", EnumConvertType.FLOAT, 0, -sys.maxsize, sys.maxsize)
+        y = parse_param(kw, "Y", EnumConvertType.FLOAT, 0, -sys.maxsize, sys.maxsize)
+        z = parse_param(kw, "Z", EnumConvertType.FLOAT, 0, -sys.maxsize, sys.maxsize)
+        results = []
+        params = list(zip_longest_fill(x, y, z))
+        pbar = ProgressBar(len(params))
+        for idx, (x, y, z) in enumerate(params):
+            x = round(x, 6)
+            y = round(y, 6)
+            z = round(z, 6)
+            results.append([(x, y, z,), (int(x), int(y), int(z),)])
+            pbar.update_absolute(idx)
+        return *list(zip(*results)),
+
+class Vector4Node(JOVBaseNode):
+    NAME = "VECTOR4 INT (JOV)"
+    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
+    RETURN_TYPES = ("VEC4", "VEC4INT", )
+    RETURN_NAMES = ("VEC4", "VEC4INT", )
+    OUTPUT_IS_LIST = (True, True, )
+    SORT = 294
+    DESCRIPTION = """
+Outputs a VEC4 or VEC4INT.
+"""
+
+    @classmethod
+    def INPUT_TYPES(cls) -> dict:
+        d = super().INPUT_TYPES()
+        d = deep_merge(d, {
+            "optional": {
+                "X": ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01}),
+                "Y": ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01}),
+                "Z": ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01}),
+                "W": ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01}),
+            }
+        })
+        return Lexicon._parse(d)
+
+    def run(self, **kw) -> Tuple[Tuple[float, ...], Tuple[int, ...]]:
+        x = parse_param(kw, "X", EnumConvertType.FLOAT, 0, -sys.maxsize, sys.maxsize)
+        y = parse_param(kw, "Y", EnumConvertType.FLOAT, 0, -sys.maxsize, sys.maxsize)
+        z = parse_param(kw, "Z", EnumConvertType.FLOAT, 0, -sys.maxsize, sys.maxsize)
+        w = parse_param(kw, "W", EnumConvertType.FLOAT, 0, -sys.maxsize, sys.maxsize)
+        results = []
+        params = list(zip_longest_fill(x, y, z, w))
+        pbar = ProgressBar(len(params))
+        for idx, (x, y, z, w,) in enumerate(params):
+            x = round(x, 6)
+            y = round(y, 6)
+            z = round(z, 6)
+            w = round(w, 6)
+            results.append([(x, y, z, w,), (int(x), int(y), int(z), int(w),)])
+            pbar.update_absolute(idx)
+        return *list(zip(*results)),
 
 '''
 class ParameterNode(JOVBaseNode):

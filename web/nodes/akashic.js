@@ -6,7 +6,7 @@
 
 import { app } from "../../../scripts/app.js"
 import { ComfyWidgets } from '../../../scripts/widgets.js';
-import { nodeFitHeight, nodeAddDynamic } from '../util/util_node.js'
+import { nodeAddDynamic } from '../util/util_node.js'
 
 const _prefix = '📥'
 const _id = "AKASHIC (JOV) 📓"
@@ -38,10 +38,10 @@ app.registerExtension({
                     textWidget.inputEl.style.backgroundColor = "transparent";
                     textWidget.value = this.inputs[i].name + "::\n";
                     const msg = message["text"][i];
-                    if (msg.split("],[").length > 1) {
-                        textWidget.value += msg.split("],[").join("],\n[");
-                    } else {
+                    if (!msg.split("],[").length > 1) {
                         textWidget.value += msg.split(",").join(",\n");
+                    } else {
+                        textWidget.value += msg;
                     }
                 }
             }

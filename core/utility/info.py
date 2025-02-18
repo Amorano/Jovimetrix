@@ -81,7 +81,7 @@ Visualize data. It accepts various types of data, including images, text, and ot
 
                 # vector patch....
                 elif 'xyzw' in val:
-                    val = {"xyzw"[i]:x for i, x in enumerate(val["xyzw"])}
+                    val = val["xyzw"]
                     typ = "VECTOR"
                 # latents....
                 elif 'samples' in val:
@@ -100,35 +100,23 @@ Visualize data. It accepts various types of data, including images, text, and ot
                 ret = ''
                 if (size := len(val)) > 0:
                     if type(val) == np.ndarray:
-                        if len(q := q()) == 1:
-                            ret += f"{q[0]}"
-                        elif q > 1:
-                            ret += f"{q[1]}x{q[0]}"
-                        else:
-                            ret += f"{q[1]}x{q[0]}x{q[2]}"
-                            # typ = "NUMPY ARRAY"
+                        typ = "NUMPY ARRAY"
                     elif isinstance(val[0], (torch.Tensor,)):
                         ret = decode_tensor(val[0])
                         typ = type(val[0])
                     elif size == 1 and isinstance(val[0], (list,)) and isinstance(val[0][0], (torch.Tensor,)):
                         ret = decode_tensor(val[0][0])
                         typ = "CONDITIONING"
-                    else:
-                        if all(isinstance(i, list) for i in val):
-                            # Serialize each inner list on a separate line
-                            inner_lists = [json.dumps(i, separators=(',', ': ')) for i in val]
-                            ret = "[\n  " + ",\n  ".join(inner_lists) + "\n]"
-                        else:
-                            # Single list on one line
-                            ret = json.dumps(val, separators=(',', ': '))
-                            # ret = '\n\t' + '\n\t'.join(str(v) for v in val)
+                    elif all(isinstance(i, list) for i in val):
+                        # Serialize each inner list on a separate line
+                        ret = [json.dumps(i, separators=(',', ': ')) for i in val]
             elif isinstance(val, bool):
                 ret = "True" if val else "False"
             elif isinstance(val, torch.Tensor):
                 ret = decode_tensor(val)
             else:
                 ret = str(ret)
-            return f"{ret} {{{typ}}}"
+            return json.dumps({typ: val}, separators=(',', ': '))
 
         for x in o:
             output["ui"]["text"].append(__parse(x))

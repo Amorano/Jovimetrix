@@ -48,6 +48,10 @@ const VectorWidget = (app, inputName, options, initial, desc='') => {
         widget.options.label = ['🟥', '🟩', '🟦', 'ALPHA'];
     }
 
+    widget.options.precision = 4;
+    widget.options.step = 0.0075;
+    widget.options.round = 1 / 10 ** widget.options.step;
+
     if (options[0].endsWith('INT')) {
         widget.options.step = 1;
         widget.options.round = 1;
@@ -57,9 +61,6 @@ const VectorWidget = (app, inputName, options, initial, desc='') => {
         if (widget.options?.rgb || false) {
             widget.options.maj = 1;
         }
-        widget.options.precision = widget.options?.precision || 6;
-        widget.options.step = widget.options?.step || 0.0075;
-        widget.options.round = widget.options?.round || 1 / 10 ** widget.options.step;
     }
 
     const offset_y = 4;
@@ -111,11 +112,7 @@ const VectorWidget = (app, inputName, options, initial, desc='') => {
             // value
             ctx.fillStyle = LiteGraph.WIDGET_TEXT_COLOR
             const it = this.value[idx.toString()];
-            const precision = widget.options?.precision || 0;
-            let value = Number(it);
-            if (precision > 0) {
-                value = value.toFixed(Math.min(2, precision));
-            }
+            let value = (widget.options.precision == 0) ? Number(it) : parseFloat(it).toFixed(widget.options.precision);
             converted.push(value);
             const text = value.toString();
             ctx.fillText(text, x + element_width2 - text.length * 3.3, Y + height/2 + offset_y);
@@ -139,8 +136,7 @@ const VectorWidget = (app, inputName, options, initial, desc='') => {
     function clamp(widget, v, idx) {
         v = Math.min(v, widget.options?.maj !== undefined ? widget.options.maj : v);
         v = Math.max(v, widget.options?.mij !== undefined ? widget.options.mij : v);
-        const precision = widget.options?.precision || 0;
-        widget.value[idx] = (precision == 0) ? Number(v) : parseFloat(v).toFixed(precision);
+        widget.value[idx] = (widget.options.precision == 0) ? Number(v) : parseFloat(v).toFixed(widget.options.precision);
     }
 
     /**

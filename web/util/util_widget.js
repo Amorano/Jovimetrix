@@ -153,7 +153,7 @@ export function widgetShowVector(widget, values={}, type) {
 
     widget.options.step = 1;
     widget.options.round = 1;
-    widget.options.precision = 6;
+    widget.options.precision = 0;
     if (widget.type != 'toggle') {
         let size = 1;
         const match = _REGEX.exec(widget.type);
@@ -163,11 +163,13 @@ export function widgetShowVector(widget, values={}, type) {
         if (!widget.type.endsWith('INT') && widget.type != 'BOOLEAN') {
             widget.options.step = 0.01;
             widget.options.round = 0.001;
+            widget.options.precision = 4;
         }
 
         widget.value = {};
         for (let i = 0; i < size; i++) {
-            widget.value[i] = widget.type.endsWith('INT') ? Math.round(values[i]) : Number(values[i]);
+            widget.value[i] = (widget.options.precision == 0) ? Number(values[i]) : parseFloat(values[i]).toFixed(widget.options.precision);
+            //widget.value[i] = !widget.type.endsWith('INT') ? Math.round(values[i]) : Number(values[i]);
         }
     } else {
         widget.value = values[0] ? true : false;

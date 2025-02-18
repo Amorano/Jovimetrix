@@ -7,7 +7,6 @@
 import { app } from "../../../scripts/app.js"
 import { widgetHookAB } from '../util/util_jov.js'
 
-
 const _id = "OP BINARY (JOV) 🌟"
 
 app.registerExtension({

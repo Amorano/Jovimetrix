@@ -60,5 +60,8 @@
     "TICK (JOV) \u23f1": "A timer and frame counter, emitting pulses or signals based on time intervals",
     "TRANSFORM (JOV) \ud83c\udfdd\ufe0f": "Apply various geometric transformations to images, including translation, rotation, scaling, mirroring, tiling and perspective projection",
     "VALUE (JOV) \ud83e\uddec": "Supplies raw or default values for various data types, supporting vector input with components for X, Y, Z, and W",
+    "VECTOR2 INT (JOV)": "Outputs a VEC2 or VEC2INT",
+    "VECTOR3 INT (JOV)": "Outputs a VEC3 or VEC3INT",
+    "VECTOR4 INT (JOV)": "Outputs a VEC4 or VEC4INT",
     "WAVE GEN (JOV) \ud83c\udf0a": "Produce waveforms like sine, square, or sawtooth with adjustable frequency, amplitude, phase, and offset"
 }
