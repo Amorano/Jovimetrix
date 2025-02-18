@@ -9,6 +9,19 @@ import { domInnerValueChange } from '../util/util.js'
 import { $el } from "../../../scripts/ui.js"
 /** @import { IWidget, LGraphCanvas } from '../../types/litegraph/litegraph.d.ts' */
 
+function isVersionLess(v1, v2) {
+    const parts1 = v1.split('.').map(Number);
+    const parts2 = v2.split('.').map(Number);
+
+    for (let i = 0; i < Math.max(parts1.length, parts2.length); i++) {
+        const num1 = parts1[i] || 0;
+        const num2 = parts2[i] || 0;
+        if (num1 < num2) return true;
+        if (num1 > num2) return false;
+    }
+    return false; // They are equal
+}
+
 function colorHex2RGB(hex) {
     hex = hex.replace(/^#/, '');
     const bigint = parseInt(hex, 16);
@@ -284,6 +297,10 @@ app.registerExtension({
         }
     },
     async beforeRegisterNodeDef(nodeType, nodeData, app) {
+        const version = window.__COMFYUI_FRONTEND_VERSION__;
+        if (!isVersionLess(version, "1.10.3")) {
+            return;
+        }
         const myTypes = ['RGB', 'VEC2', 'VEC3', 'VEC4', 'VEC2INT', 'VEC3INT', 'VEC4INT']
         const inputTypes = nodeData.input;
         if (inputTypes) {

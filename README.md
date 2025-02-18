@@ -81,7 +81,7 @@ The built-in help system will dynamically parse any nodes found at the ComfyUI A
 If those nodes have descriptions written in HTML or Markdown, they will be converted into HTML for presentation in the panel.
 
 <div align="center">
-<img src="https://github.com/user-attachments/assets/075f6f9b-b27b-4a6f-84da-a6db486446ff" alt="Clicking Nodes for Help" width="512"/>
+<img src="https://github.com/user-attachments/assets/075f6f9b-b27b-4a6f-84da-a6db486446ff" alt="Clicking Nodes for Help" width="384"/>
 </div>
 
 ### NODE COLORS
@@ -89,10 +89,22 @@ If those nodes have descriptions written in HTML or Markdown, they will be conve
 You can colorize nodes via their `title background`, `node body` or `title text`. This can be done to the node's `category` as well, so you can quickly color groups of nodes.
 
 <div align="center">
-<img src="https://github.com/user-attachments/assets/8de9561a-b231-4a49-a63a-4fd5fdba64d9" alt="node color panel" width="512"/>
+<img src="https://github.com/user-attachments/assets/8de9561a-b231-4a49-a63a-4fd5fdba64d9" alt="node color panel" width="256"/>
 </div>
 
 ## UPDATES
+
+**2024/02/17** @1.7.20:
+* changed to newer conversion logic on frontend 1.10.3+ -- `VECTOR` types will auto-switch to conversion logic based on version
+* Fix for `VALUE NODE` to properly output vector data -- node in deprecation mode
+* Added explcit `VECTOR2 / INT`, `VECTOR3 / INT`, `VECTOR4 / INT` nodes for value input
+* Restructure to remove old UX hide/show widget features for compatibility with frontend (1.10.3+)
+* Added `BATCH` output to `TICK NODE` so you can get a normal comfyui list (top output) and a Jovimetrix list (BATCH)
+
+<div align="center">
+<img src="https://github.com/user-attachments/assets/8ed13e6a-218c-468a-a480-53ab55b04d21" alt="explicit vector node supports" width="640"/>
+<img src="https://github.com/user-attachments/assets/4459855c-c4e6-4739-811e-a6c90aa5a90c" alt="TICK Node Batch Support Output" width="384"/>
+</div>
 
 **2024/02/14** @1.7.17:
 * cleaning up image support before split into Jovi_Comp
@@ -126,41 +138,6 @@ You can colorize nodes via their `title background`, `node body` or `title text`
 **2024/02/05** @1.7.0:
 * regex entries default to [5] fields
 * [issue #4](https://github.com/Amorano/Jovi_GLSL/issues/4) value in uniforms for `GLSL nodes` were cancelling  values being set
-
-**2024/02/04** @1.6.10:
-* adjusted new default color config to old defaults
-
-**2024/02/04** @1.6.0:
-* added colorizer option for `title text`
-* settings deprecated and removed from ComfyUI settings panel
-* colorizer setting migrated to ComfyUI per user settings
-* automatic contrast option for non-colored nodes
-* all tooltips migrated to ComfyUI core tooltips
-
-**2024/02/02** @1.2.67:
-* fixed `GLSL` nodes missing from parse due to category sort
-
-**2024/02/01** @1.2.66:
-* patched `MIDI FILTER EZ` to work for all filters not just the first found
-* cleanup pyproject for registry
-* proper logo for registry
-
-**2024/02/01** @1.2.63:
-* Fixed `MIDI FILTER` to parse all filters for trigger
-* Better `MIDI FILTER` ranges:
-* * Single numbers: "1, 2" (equals)
-* * Closed ranges: "5-10" (between inclusive)
-* * Open ranges: "-100" (less than or equal to 100)
-* * Open ranges: "50-" (greater than or equal to 50)
-* * 1, 5-10, 2
-* * * would check == 1, == 2 and 5 <= x <= 10
-
-**2024/01/30** @1.2.62:
-* `QUEUE` nodes can do URL loading of images
-
-**2024/01/08** @1.2.61:
-* living in the stupidest timeline where case-sensitivty matters for URLS in chrome...
-* fixed stylesheet reference in help
 
 # INSTALLATION
 

@@ -34,8 +34,10 @@ app.registerExtension({
                 for (let i = 0; i < this.inputs.length-1; i++) {
                     let textWidget = ComfyWidgets["STRING"](this, this.inputs[i].name, ["STRING", { multiline: true }], app).widget;
                     textWidget.inputEl.readOnly = true;
-                    textWidget.inputEl.style.border = "none";
-                    textWidget.inputEl.style.backgroundColor = "transparent";
+                    textWidget.inputEl.style.margin = "1px";
+                    textWidget.inputEl.style.padding = "1px";
+                    textWidget.inputEl.style.border = "1px";
+                    textWidget.inputEl.style.backgroundColor = "#222";
                     textWidget.value = this.inputs[i].name + "::\n";
                     const msg = message["text"][i];
                     if (!msg.split("],[").length > 1) {
