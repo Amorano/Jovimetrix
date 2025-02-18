@@ -7,7 +7,7 @@ import os
 import json
 from uuid import uuid4
 from pathlib import Path
-from typing import Any, Tuple
+from typing import Any, Dict, Tuple
 
 import torch
 import numpy as np
@@ -22,7 +22,7 @@ from nodes import interrupt_processing
 
 from ... import JOV_TYPE_ANY, JOV_TYPE_IMAGE, \
     Lexicon, JOVBaseNode, ComfyAPIMessage, TimedOutException, \
-    comfy_message, deep_merge
+    comfy_send_message, deep_merge
 
 from ...sup.util import EnumConvertType, path_next, parse_param, \
     zip_longest_fill
@@ -71,7 +71,7 @@ Introduce pauses in the workflow that accept an optional input to pass through a
 """
 
     @classmethod
-    def INPUT_TYPES(cls) -> dict:
+    def INPUT_TYPES(cls) -> Dict[str, str]:
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
@@ -94,7 +94,7 @@ Introduce pauses in the workflow that accept an optional input to pass through a
         if delay < 0:
             delay = JOV_DELAY_MAX
         if delay > JOV_DELAY_MIN:
-            comfy_message(ident, "jovi-delay-user", {"id": ident, "timeout": delay})
+            comfy_send_message(ident, "jovi-delay-user", {"id": ident, "timeout": delay})
         # enable = parse_param(kw, Lexicon.ENABLE, EnumConvertType.BOOLEAN, True)
 
         step = 1
@@ -125,7 +125,7 @@ Responsible for saving images or animations to disk. It supports various output 
 """
 
     @classmethod
-    def INPUT_TYPES(cls) -> dict:
+    def INPUT_TYPES(cls) -> Dict[str, str]:
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
@@ -235,7 +235,7 @@ Routes the input data from the optional input ports to the output port, preservi
 """
 
     @classmethod
-    def INPUT_TYPES(cls) -> dict:
+    def INPUT_TYPES(cls) -> Dict[str, str]:
         d = super().INPUT_TYPES()
         e = {
             "optional": {
@@ -263,7 +263,7 @@ Save the output image along with its metadata to the specified path. Supports sa
 """
 
     @classmethod
-    def INPUT_TYPES(cls) -> dict:
+    def INPUT_TYPES(cls) -> Dict[str, str]:
         d = super().INPUT_TYPES(True, True)
         d = deep_merge(d, {
             "optional": {

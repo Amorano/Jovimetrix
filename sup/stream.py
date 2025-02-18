@@ -10,7 +10,7 @@ import json
 import time
 import array
 import threading
-from typing import Any, List, Tuple
+from typing import Any, Dict, List, Tuple
 from itertools import repeat
 from configparser import ConfigParser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -97,7 +97,7 @@ def monitor_capture(monitor:int=0, tlwh:Tuple[int, int, int, int]=None, width:in
             img = cv2.resize(img, (width, height))
         return img
 
-def monitor_list() -> dict:
+def monitor_list() -> Dict[str, str]:
     if JOV_DOCKERENV:
         return {}
     ret = {}
@@ -105,7 +105,7 @@ def monitor_list() -> dict:
         ret = {i:v for i, v in enumerate(sct.monitors)}
     return ret
 
-def window_list() -> dict:
+def window_list() -> Dict[str, str]:
     return {}
 
 if sys.platform.startswith('win'):
@@ -114,7 +114,7 @@ if sys.platform.startswith('win'):
     import win32ui
     from ctypes import windll
 
-    def window_list() -> dict:
+    def window_list() -> Dict[str, str]:
         _windows = {}
         def window_enum_handler(hwnd, ctx) -> None:
             if win32gui.IsWindowVisible(hwnd):
@@ -191,7 +191,7 @@ elif sys.platform.startswith('darwin'):
 
         return None
 
-    def window_list() -> dict:
+    def window_list() -> Dict[str, str]:
         _windows = {}
         window_list = Quartz.CGWindowListCopyWindowInfo(
             Quartz.kCGWindowListOptionOnScreenOnly | Quartz.kCGWindowListExcludeDesktopElements,

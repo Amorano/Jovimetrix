@@ -7,11 +7,9 @@ Device -- MIDI
     type 2 (asynchronous): each track is independent of the others
 """
 
-from typing import Tuple
+from typing import Dict, Tuple
 from math import isclose
 from queue import Queue
-
-from loguru import logger
 
 from comfy.utils import ProgressBar
 
@@ -50,7 +48,7 @@ Processes MIDI messages received from an external MIDI controller or device. It 
 """
 
     @classmethod
-    def INPUT_TYPES(cls) -> dict:
+    def INPUT_TYPES(cls) -> Dict[str, str]:
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
@@ -83,7 +81,7 @@ Captures MIDI messages from an external MIDI device or controller. It monitors M
     CHANGED = False
 
     @classmethod
-    def INPUT_TYPES(cls) -> dict:
+    def INPUT_TYPES(cls) -> Dict[str, str]:
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
@@ -154,7 +152,7 @@ Provides advanced filtering capabilities for MIDI messages based on various crit
 """
 
     @classmethod
-    def INPUT_TYPES(cls) -> dict:
+    def INPUT_TYPES(cls) -> Dict[str, str]:
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
@@ -259,7 +257,7 @@ Filter MIDI messages based on various criteria, including MIDI mode (such as not
 """
 
     @classmethod
-    def INPUT_TYPES(cls) -> dict:
+    def INPUT_TYPES(cls) -> Dict[str, str]:
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {

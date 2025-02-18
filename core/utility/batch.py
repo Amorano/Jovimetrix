@@ -11,7 +11,7 @@ import random
 from enum import Enum
 from pathlib import Path
 from itertools import zip_longest
-from typing import Any, List, Literal, Tuple
+from typing import Any, Dict, List, Literal, Tuple
 
 import torch
 import numpy as np
@@ -22,7 +22,7 @@ from comfy.utils import ProgressBar
 from nodes import interrupt_processing
 
 from ... import JOV_TYPE_ANY, ROOT, Lexicon, JOVBaseNode, deep_merge, \
-    comfy_message, parse_reset
+    comfy_send_message, parse_reset
 
 from ...sup.util import EnumConvertType, parse_dynamic, parse_param
 
@@ -70,7 +70,7 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
 """
 
     @classmethod
-    def INPUT_TYPES(cls) -> dict:
+    def INPUT_TYPES(cls) -> Dict[str, str]:
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
@@ -239,7 +239,7 @@ class QueueBaseNode(JOVBaseNode):
         return float('nan')
 
     @classmethod
-    def INPUT_TYPES(cls) -> dict:
+    def INPUT_TYPES(cls) -> Dict[str, str]:
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
@@ -373,7 +373,7 @@ class QueueBaseNode(JOVBaseNode):
         # make sure we have more to process if are a single fire queue
         stop = parse_param(kw, Lexicon.STOP, EnumConvertType.BOOLEAN, False)[0]
         if stop and self.__index >= self.__len:
-            comfy_message(ident, "jovi-queue-done", self.status)
+            comfy_send_message(ident, "jovi-queue-done", self.status)
             interrupt_processing()
             return self.__previous, self.__q, self.__current, self.__index_last+1, self.__len
 
@@ -430,7 +430,7 @@ class QueueBaseNode(JOVBaseNode):
             self.__index += 1
 
         self.__previous = data
-        comfy_message(ident, "jovi-queue-ping", self.status)
+        comfy_send_message(ident, "jovi-queue-ping", self.status)
         if stop and batched:
             interrupt_processing()
         return data, self.__q, self.__current, self.__index, self.__len, self.__index == self.__index_last or batched
@@ -479,7 +479,7 @@ Manage a queue of specific items: media files. Supports various image and video 
 """
 
     @classmethod
-    def INPUT_TYPES(cls) -> dict:
+    def INPUT_TYPES(cls) -> Dict[str, str]:
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {

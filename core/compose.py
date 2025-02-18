@@ -4,7 +4,7 @@ Composition
 """
 
 from enum import Enum
-from typing import Any, List, Tuple
+from typing import Any, Dict, List, Tuple
 
 import cv2
 import torch
@@ -78,7 +78,7 @@ Enhance and modify images with various effects such as blurring, sharpening, col
 """
 
     @classmethod
-    def INPUT_TYPES(cls) -> dict:
+    def INPUT_TYPES(cls) -> Dict[str, str]:
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
@@ -226,7 +226,7 @@ Combine two input images using various blending modes, such as normal, screen, m
 """
 
     @classmethod
-    def INPUT_TYPES(cls) -> dict:
+    def INPUT_TYPES(cls) -> Dict[str, str]:
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
@@ -315,7 +315,7 @@ Simulate color blindness effects on images. You can select various types of colo
 """
 
     @classmethod
-    def INPUT_TYPES(cls) -> dict:
+    def INPUT_TYPES(cls) -> Dict[str, str]:
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
@@ -352,7 +352,7 @@ Adjust the color scheme of one image to match another with the Color Match Node.
 """
 
     @classmethod
-    def INPUT_TYPES(cls) -> dict:
+    def INPUT_TYPES(cls) -> Dict[str, str]:
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
@@ -440,7 +440,7 @@ The top-k colors ordered from most->least used as a strip, tonal palette and 3D 
 """
 
     @classmethod
-    def INPUT_TYPES(cls) -> dict:
+    def INPUT_TYPES(cls) -> Dict[str, str]:
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
@@ -498,7 +498,7 @@ Generate a color harmony based on the selected scheme. Supported schemes include
 """
 
     @classmethod
-    def INPUT_TYPES(cls) -> dict:
+    def INPUT_TYPES(cls) -> Dict[str, str]:
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
@@ -537,7 +537,7 @@ Extract a portion of an input image or resize it. It supports various cropping m
 """
 
     @classmethod
-    def INPUT_TYPES(cls) -> dict:
+    def INPUT_TYPES(cls) -> Dict[str, str]:
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
@@ -601,7 +601,7 @@ Create masks based on specific color ranges within an image. Specify the color r
 """
 
     @classmethod
-    def INPUT_TYPES(cls) -> dict:
+    def INPUT_TYPES(cls) -> Dict[str, str]:
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
@@ -646,7 +646,7 @@ Combine multiple input images into a single image by summing their pixel values.
 """
 
     @classmethod
-    def INPUT_TYPES(cls) -> dict:
+    def INPUT_TYPES(cls) -> Dict[str, str]:
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
@@ -689,7 +689,7 @@ Remaps an input image using a gradient lookup table (LUT). The gradient image wi
 """
 
     @classmethod
-    def INPUT_TYPES(cls) -> dict:
+    def INPUT_TYPES(cls) -> Dict[str, str]:
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
@@ -741,7 +741,7 @@ Combines individual color channels (red, green, blue) along with an optional mas
 """
 
     @classmethod
-    def INPUT_TYPES(cls) -> dict:
+    def INPUT_TYPES(cls) -> Dict[str, str]:
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
@@ -823,7 +823,7 @@ Takes an input image and splits it into its individual color channels (red, gree
 """
 
     @classmethod
-    def INPUT_TYPES(cls) -> dict:
+    def INPUT_TYPES(cls) -> Dict[str, str]:
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
@@ -851,7 +851,7 @@ Swap pixel values between two input images based on specified channel swizzle op
 """
 
     @classmethod
-    def INPUT_TYPES(cls) -> dict:
+    def INPUT_TYPES(cls) -> Dict[str, str]:
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
@@ -916,7 +916,7 @@ Merge multiple input images into a single composite image by stacking them along
 """
 
     @classmethod
-    def INPUT_TYPES(cls) -> dict:
+    def INPUT_TYPES(cls) -> Dict[str, str]:
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
@@ -960,7 +960,7 @@ Define a range and apply it to an image for segmentation and feature extraction.
 """
 
     @classmethod
-    def INPUT_TYPES(cls) -> dict:
+    def INPUT_TYPES(cls) -> Dict[str, str]:
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
@@ -1003,7 +1003,7 @@ Apply various geometric transformations to images, including translation, rotati
 """
 
     @classmethod
-    def INPUT_TYPES(cls) -> dict:
+    def INPUT_TYPES(cls) -> Dict[str, str]:
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
@@ -1101,7 +1101,7 @@ The Histogram Node generates a histogram representation of the input image, show
 """
 
     @classmethod
-    def INPUT_TYPES(cls) -> dict:
+    def INPUT_TYPES(cls) -> Dict[str, str]:
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {

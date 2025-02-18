@@ -5,7 +5,7 @@ Creation
 
 import sys
 from pathlib import Path
-from typing import Any, Tuple
+from typing import Any, Dict, Tuple
 
 import torch
 from loguru import logger
@@ -19,7 +19,7 @@ from comfy.utils import ProgressBar
 
 from .. import JOV_TYPE_IMAGE, \
     Lexicon, JOVImageNode, \
-    comfy_message, deep_merge
+    comfy_send_message, deep_merge
 
 from ..sup.util import EnumConvertType, \
     parse_param, parse_value
@@ -86,7 +86,7 @@ class GLSLNodeBase(JOVImageNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/GLSL"
 
     @classmethod
-    def INPUT_TYPES(cls) -> dict:
+    def INPUT_TYPES(cls) -> Dict[str, str]:
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
@@ -122,7 +122,7 @@ class GLSLNodeBase(JOVImageNode):
             self.__glsl.vertex = getattr(self, 'VERTEX', kw.pop(Lexicon.PROG_VERT, None))
             self.__glsl.fragment = getattr(self, 'FRAGMENT', kw.pop(Lexicon.PROG_FRAG, None))
         except CompileException as e:
-            comfy_message(ident, "jovi-glsl-error", {"id": ident, "e": str(e)})
+            comfy_send_message(ident, "jovi-glsl-error", {"id": ident, "e": str(e)})
             logger.error(self.NAME)
             logger.error(e)
             return
@@ -169,7 +169,7 @@ class GLSLNodeBase(JOVImageNode):
                 img = image_scalefit(img, w, h, mode, sample)
             images.append(cv2tensor_full(img, matte))
             self.__delta += step
-            comfy_message(ident, "jovi-glsl-time", {"id": ident, "t": self.__delta})
+            comfy_send_message(ident, "jovi-glsl-time", {"id": ident, "t": self.__delta})
             pbar.update_absolute(idx)
         return [torch.stack(i) for i in zip(*images)]
 
@@ -181,7 +181,7 @@ Execute custom GLSL (OpenGL Shading Language) fragment shaders to generate image
 """
 
     @classmethod
-    def INPUT_TYPES(cls) -> dict:
+    def INPUT_TYPES(cls) -> Dict[str, str]:
         d = super().INPUT_TYPES()
         opts = d.get('optional', {})
         opts.update({
@@ -203,7 +203,7 @@ class GLSLNodeDynamic(GLSLNodeBase):
     PARAM = None
 
     @classmethod
-    def INPUT_TYPES(cls) -> dict:
+    def INPUT_TYPES(cls) -> Dict[str, str]:
         original_params = super().INPUT_TYPES()
         opts = original_params.get('optional', {})
         opts.update({

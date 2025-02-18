@@ -6,7 +6,7 @@ Device -- WEBCAM, REMOTE URLS, SPOUT
 import sys
 import time
 import uuid
-from typing import Tuple
+from typing import Dict, Tuple
 from enum import Enum
 
 import cv2
@@ -76,7 +76,7 @@ Capture frames from various sources such as URLs, cameras, monitors, windows, or
 """
 
     @classmethod
-    def INPUT_TYPES(cls) -> dict:
+    def INPUT_TYPES(cls) -> Dict[str, str]:
         d = super().INPUT_TYPES()
 
         if cls.CAMERAS is None:
@@ -297,7 +297,7 @@ Sends frames to a specified route, typically for live streaming or recording pur
 """
 
     @classmethod
-    def INPUT_TYPES(cls) -> dict:
+    def INPUT_TYPES(cls) -> Dict[str, str]:
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
@@ -368,7 +368,7 @@ Sends frames to a specified Spout receiver application for real-time video shari
 """
 
         @classmethod
-        def INPUT_TYPES(cls) -> dict:
+        def INPUT_TYPES(cls) -> Dict[str, str]:
             d = super().INPUT_TYPES()
             d = deep_merge(d, {
                 "optional": {

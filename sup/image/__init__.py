@@ -6,20 +6,17 @@
      Copyright 2023 Alexander Morano (Joviex)
 """
 
-import io
-from io import BytesIO
 import math
 import base64
 import requests
 from enum import Enum
+from io import BytesIO
 from typing import List, Tuple, Union
 
 import cv2
 import torch
 import numpy as np
 from PIL import Image, ImageOps
-
-from loguru import logger
 
 # ==============================================================================
 # === GLOBAL ===
@@ -54,21 +51,12 @@ TYPE_VECTOR = Union[TYPE_IMAGE, TYPE_PIXEL]
 # === ENUMERATION ===
 # ==============================================================================
 
-class EnumGrayscaleCrunch(Enum):
-    LOW = 0
-    HIGH = 1
-    MEAN = 2
-
 class EnumImageType(Enum):
     GRAYSCALE = 0
     RGB = 10
     RGBA = 20
     BGR = 30
     BGRA = 40
-
-class EnumIntFloat(Enum):
-    FLOAT = 0
-    INT = 1
 
 # ==============================================================================
 # === CONVERSION ===
@@ -92,13 +80,13 @@ def b64_2_tensor(base64str: str) -> torch.Tensor:
 def b64_2_pil(base64_string):
     prefix, base64_data = base64_string.split(",", 1)
     image_data = base64.b64decode(base64_data)
-    image_stream = io.BytesIO(image_data)
+    image_stream = BytesIO(image_data)
     return Image.open(image_stream)
 
 def b64_2_cv(base64_string) -> TYPE_IMAGE:
     _, data = base64_string.split(",", 1)
     data = base64.b64decode(data)
-    data = io.BytesIO(data)
+    data = BytesIO(data)
     data = Image.open(data)
     data = np.array(data)
     return cv2.cvtColor(data, cv2.COLOR_RGB2BGR)
@@ -386,7 +374,6 @@ def image_load(url: str) -> Tuple[TYPE_IMAGE, TYPE_IMAGE]:
                 raise ValueError(f"{url} could not be loaded.")
 
             img = image_normalize(img)
-            # logger.debug(f"load image {url}: {img.ndim} {img.shape}")
             if img.ndim == 3:
                 if img.shape[2] == 4:
                     img = cv2.cvtColor(img, cv2.COLOR_RGBA2BGRA)
@@ -396,7 +383,6 @@ def image_load(url: str) -> Tuple[TYPE_IMAGE, TYPE_IMAGE]:
                 img = np.expand_dims(img, -1)
 
         except Exception:
-            logger.debug(f"load image fallback to PIL {url}")
             try:
                 img = Image.open(url)
                 img = ImageOps.exif_transpose(img)
@@ -404,7 +390,6 @@ def image_load(url: str) -> Tuple[TYPE_IMAGE, TYPE_IMAGE]:
                 if img.dtype != np.uint8:
                     img = np.clip(np.array(img * 255), 0, 255).astype(dtype=np.uint8)
             except Exception as e:
-                # logger.error(str(e))
                 raise Exception(f"Error loading image: {e}")
 
     if img is None:

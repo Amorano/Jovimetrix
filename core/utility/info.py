@@ -5,7 +5,7 @@ Utility
 
 import io
 import json
-from typing import Any, Tuple
+from typing import Any, Dict, Tuple
 
 import torch
 import numpy as np
@@ -137,7 +137,7 @@ Visualize a series of data points over time. It accepts a dynamic number of valu
 """
 
     @classmethod
-    def INPUT_TYPES(cls) -> dict:
+    def INPUT_TYPES(cls) -> Dict[str, str]:
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
@@ -218,7 +218,7 @@ Exports and Displays immediate information about images.
 """
 
     @classmethod
-    def INPUT_TYPES(cls) -> dict:
+    def INPUT_TYPES(cls) -> Dict[str, str]:
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {

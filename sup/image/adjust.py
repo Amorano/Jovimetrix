@@ -10,16 +10,16 @@ import cv2
 import torch
 import numpy as np
 
-from loguru import logger
-
-from . import TYPE_IMAGE, TYPE_PIXEL, TYPE_fCOORD2D, \
-    EnumImageType, \
+from . import \
+    TYPE_IMAGE, TYPE_PIXEL, \
+    TYPE_fCOORD2D, EnumImageType, \
     image_convert, image_mask_add, image_matte, image_minmax, bgr2image, \
     cv2tensor, image2bgr, tensor2cv
 
 from .compose import image_blend, image_crop_center
 
-from .channel import EnumPixelSwizzle, \
+from .channel import \
+    EnumPixelSwizzle, \
     channel_solid
 
 # ==============================================================================

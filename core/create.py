@@ -3,13 +3,12 @@ Jovimetrix - http://www.github.com/amorano/jovimetrix
 Creation
 """
 
-from typing import Tuple
+from typing import Dict, Tuple
 
 import torch
 import numpy as np
 from PIL import ImageFont
 from skimage.filters import gaussian
-from loguru import logger
 
 from comfy.utils import ProgressBar
 
@@ -50,7 +49,7 @@ Generate a constant image or mask of a specified size and color. It can be used 
 """
 
     @classmethod
-    def INPUT_TYPES(cls) -> dict:
+    def INPUT_TYPES(cls) -> Dict[str, str]:
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
@@ -97,7 +96,7 @@ Create n-sided polygons. These shapes can be customized by adjusting parameters 
 """
 
     @classmethod
-    def INPUT_TYPES(cls) -> dict:
+    def INPUT_TYPES(cls) -> Dict[str, str]:
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
@@ -168,7 +167,7 @@ Generates false perception 3D images from 2D input. Set tile divisions, noise, g
 """
 
     @classmethod
-    def INPUT_TYPES(cls) -> dict:
+    def INPUT_TYPES(cls) -> Dict[str, str]:
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
@@ -214,7 +213,7 @@ class StereoscopicNode(JOVBaseNode):
 Simulates depth perception in images by generating stereoscopic views. It accepts an optional input image for color matte. Adjust baseline and focal length for customized depth effects.
 """
     @classmethod
-    def INPUT_TYPES(cls) -> dict:
+    def INPUT_TYPES(cls) -> Dict[str, str]:
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
@@ -252,7 +251,7 @@ Generates images containing text based on parameters such as font, size, alignme
 """
 
     @classmethod
-    def INPUT_TYPES(cls) -> dict:
+    def INPUT_TYPES(cls) -> Dict[str, str]:
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {

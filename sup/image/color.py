@@ -15,10 +15,8 @@ from sklearn.cluster import KMeans
 from daltonlens import simulate
 from blendmodes.blend import BlendType
 
-from loguru import logger
-
 from . import TYPE_IMAGE, TYPE_PIXEL, \
-    EnumGrayscaleCrunch, EnumImageType, EnumIntFloat, \
+    EnumImageType, \
     bgr2hsv, hsv2bgr, image_convert, image_mask, image_mask_add
 
 from .compose import image_blend
@@ -32,6 +30,15 @@ TYPE_LUT = Tuple[int, int, int, int]
 # ==============================================================================
 # === ENUMERATION ===
 # ==============================================================================
+
+class EnumIntFloat(Enum):
+    FLOAT = 0
+    INT = 1
+
+class EnumGrayscaleCrunch(Enum):
+    LOW = 0
+    HIGH = 1
+    MEAN = 2
 
 class EnumColorMap(Enum):
     AUTUMN = cv2.COLORMAP_AUTUMN

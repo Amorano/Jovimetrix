@@ -369,7 +369,7 @@ class Lexicon(metaclass=LexiconMeta):
     ZOOM = '🔎', "ZOOM"
 
     @classmethod
-    def _parse(cls, node: dict) -> dict:
+    def _parse(cls, node: dict) -> Dict[str, str]:
         for cat, entry in node.items():
             if cat not in ['optional', 'required']:
                 continue
@@ -415,7 +415,7 @@ class JOVBaseNode:
         return True
 
     @classmethod
-    def INPUT_TYPES(cls, prompt:bool=False, extra_png:bool=False, dynprompt:bool=False) -> dict:
+    def INPUT_TYPES(cls, prompt:bool=False, extra_png:bool=False, dynprompt:bool=False) -> Dict[str, str]:
         data = {
             "optional": {},
             "required": {},
@@ -685,7 +685,7 @@ def get_node_info(node_data: dict) -> Dict[str, Any]:
         data[".md"] = md
     return data
 
-def deep_merge(d1: dict, d2: dict) -> dict:
+def deep_merge(d1: dict, d2: dict) -> Dict[str, str]:
     """
     Deep merge multiple dictionaries recursively.
 
@@ -734,12 +734,12 @@ class ComfyAPIMessage:
 
     @classmethod
     def poll(cls, ident, period=0.01, timeout=3) -> Any:
-        _t = time.monotonic()
+        _t = time.perf_counter()
         if isinstance(ident, (set, list, tuple, )):
             ident = ident[0]
         sid = str(ident)
         logger.debug(f'sid {sid} -- {cls.MESSAGE}')
-        while not (sid in cls.MESSAGE) and time.monotonic() - _t < timeout:
+        while not (sid in cls.MESSAGE) and time.perf_counter() - _t < timeout:
             time.sleep(period)
 
         if not (sid in cls.MESSAGE):
@@ -748,95 +748,90 @@ class ComfyAPIMessage:
         dat = cls.MESSAGE.pop(sid)
         return dat
 
-def comfy_message(ident:str, route:str, data:dict) -> None:
+def comfy_send_message(ident:str, route:str, data:dict) -> None:
     data['id'] = ident
     PromptServer.instance.send_sync(route, data)
 
-try:
+@PromptServer.instance.routes.get("/jovimetrix")
+async def jovimetrix_home(request) -> Any:
+    data = template_load('home.html')
+    return web.Response(text=data.template, content_type='text/html')
 
-    @PromptServer.instance.routes.get("/jovimetrix")
-    async def jovimetrix_home(request) -> Any:
-        data = template_load('home.html')
-        return web.Response(text=data.template, content_type='text/html')
+@PromptServer.instance.routes.get("/jovimetrix/message")
+async def jovimetrix_message(request) -> Any:
+    return web.json_response(ComfyAPIMessage.MESSAGE)
 
-    @PromptServer.instance.routes.get("/jovimetrix/message")
-    async def jovimetrix_message(request) -> Any:
-        return web.json_response(ComfyAPIMessage.MESSAGE)
+@PromptServer.instance.routes.post("/jovimetrix/message")
+async def jovimetrix_message_post(request) -> Any:
+    json_data = await request.json()
+    logger.info(json_data)
+    if (did := json_data.get("id")) is not None:
+        ComfyAPIMessage.MESSAGE[str(did)] = json_data
+        return web.json_response(json_data)
+    return web.json_response({})
 
-    @PromptServer.instance.routes.post("/jovimetrix/message")
-    async def jovimetrix_message_post(request) -> Any:
-        json_data = await request.json()
-        logger.info(json_data)
-        if (did := json_data.get("id")) is not None:
-            ComfyAPIMessage.MESSAGE[str(did)] = json_data
-            return web.json_response(json_data)
-        return web.json_response({})
+@PromptServer.instance.routes.get("/jovimetrix/config")
+async def jovimetrix_config(request) -> Any:
+    global JOV_CONFIG, JOV_CONFIG_FILE
+    if len(JOV_CONFIG) == 0:
+        JOV_CONFIG = configLoad(JOV_CONFIG_FILE)
+    return web.json_response(JOV_CONFIG)
 
-    @PromptServer.instance.routes.get("/jovimetrix/config")
-    async def jovimetrix_config(request) -> Any:
-        global JOV_CONFIG, JOV_CONFIG_FILE
-        if len(JOV_CONFIG) == 0:
-            JOV_CONFIG = configLoad(JOV_CONFIG_FILE)
-        return web.json_response(JOV_CONFIG)
+async def object_info(node_class: str, scheme:str, host: str) -> Any:
+    global COMFYUI_OBJ_DATA
+    if (info := COMFYUI_OBJ_DATA.get(node_class, None)) is None:
+        # look up via the route...
+        url = f"{scheme}://{host}/object_info/{node_class}"
 
-    async def object_info(node_class: str, scheme:str, host: str) -> Any:
-        global COMFYUI_OBJ_DATA
-        if (info := COMFYUI_OBJ_DATA.get(node_class, None)) is None:
-            # look up via the route...
-            url = f"{scheme}://{host}/object_info/{node_class}"
-
-            # Make an asynchronous HTTP request using aiohttp.ClientSession
-            async with ClientSession() as session:
-                try:
-                    async with session.get(url) as response:
-                        if response.status == 200:
-                            info = await response.json()
-                            if (data := info.get(node_class, None)) is not None:
-                                info = get_node_info(data)
-                            else:
-                                info = {'.html': f"No data for {node_class}"}
-                            COMFYUI_OBJ_DATA[node_class] = info
+        # Make an asynchronous HTTP request using aiohttp.ClientSession
+        async with ClientSession() as session:
+            try:
+                async with session.get(url) as response:
+                    if response.status == 200:
+                        info = await response.json()
+                        if (data := info.get(node_class, None)) is not None:
+                            info = get_node_info(data)
                         else:
-                            info = {'.html': f"Failed to get docs {node_class}, status: {response.status}"}
-                            logger.error(info)
-                except Exception as e:
-                    logger.error(f"Failed to get docs {node_class}")
-                    logger.exception(e)
-                    info = {'.html': f"Failed to get docs {node_class}\n{e}"}
+                            info = {'.html': f"No data for {node_class}"}
+                        COMFYUI_OBJ_DATA[node_class] = info
+                    else:
+                        info = {'.html': f"Failed to get docs {node_class}, status: {response.status}"}
+                        logger.error(info)
+            except Exception as e:
+                logger.error(f"Failed to get docs {node_class}")
+                logger.exception(e)
+                info = {'.html': f"Failed to get docs {node_class}\n{e}"}
 
-        return info
+    return info
 
-    @PromptServer.instance.routes.get("/jovimetrix/doc")
-    async def jovimetrix_doc(request) -> Any:
+@PromptServer.instance.routes.get("/jovimetrix/doc")
+async def jovimetrix_doc(request) -> Any:
 
-        for node_class in NODE_CLASS_MAPPINGS.keys():
-            if COMFYUI_OBJ_DATA.get(node_class, None) is None:
-                COMFYUI_OBJ_DATA[node_class] = await object_info(node_class, request.scheme, request.host)
-
-            node = NODE_DISPLAY_NAME_MAPPINGS[node_class]
-            fname = node.split(" (JOV)")[0]
-            path = Path(JOV_INTERNAL_DOC.replace("{name}", fname))
-            path.mkdir(parents=True, exist_ok=True)
-
-            if JOV_INTERNAL:
-                if (md := COMFYUI_OBJ_DATA[node_class].get('.md', None)) is not None:
-                    with open(str(path / f"{fname}.md"), "w", encoding='utf-8') as f:
-                        f.write(md)
-
-                with open(str(path / f"{fname}.html"), "w", encoding='utf-8') as f:
-                    f.write(COMFYUI_OBJ_DATA[node_class]['.html'])
-
-        return web.json_response(COMFYUI_OBJ_DATA)
-
-    @PromptServer.instance.routes.get("/jovimetrix/doc/{node}")
-    async def jovimetrix_doc_node_comfy(request) -> Any:
-        node_class = request.match_info.get('node')
+    for node_class in NODE_CLASS_MAPPINGS.keys():
         if COMFYUI_OBJ_DATA.get(node_class, None) is None:
             COMFYUI_OBJ_DATA[node_class] = await object_info(node_class, request.scheme, request.host)
-        return web.Response(text=COMFYUI_OBJ_DATA[node_class]['.html'], content_type='text/html')
 
-except Exception as e:
-    logger.error(e)
+        node = NODE_DISPLAY_NAME_MAPPINGS[node_class]
+        fname = node.split(" (JOV)")[0]
+        path = Path(JOV_INTERNAL_DOC.replace("{name}", fname))
+        path.mkdir(parents=True, exist_ok=True)
+
+        if JOV_INTERNAL:
+            if (md := COMFYUI_OBJ_DATA[node_class].get('.md', None)) is not None:
+                with open(str(path / f"{fname}.md"), "w", encoding='utf-8') as f:
+                    f.write(md)
+
+            with open(str(path / f"{fname}.html"), "w", encoding='utf-8') as f:
+                f.write(COMFYUI_OBJ_DATA[node_class]['.html'])
+
+    return web.json_response(COMFYUI_OBJ_DATA)
+
+@PromptServer.instance.routes.get("/jovimetrix/doc/{node}")
+async def jovimetrix_doc_node_comfy(request) -> Any:
+    node_class = request.match_info.get('node')
+    if COMFYUI_OBJ_DATA.get(node_class, None) is None:
+        COMFYUI_OBJ_DATA[node_class] = await object_info(node_class, request.scheme, request.host)
+    return web.Response(text=COMFYUI_OBJ_DATA[node_class]['.html'], content_type='text/html')
 
 # ==============================================================================
 # === SUPPORT ===
