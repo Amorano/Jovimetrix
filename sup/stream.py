@@ -243,7 +243,7 @@ elif sys.platform.startswith('darwin'):
 # === MEDIA ===
 # ==============================================================================
 
-def camera_list() -> list:
+def camera_list() -> List[str]:
     camera_list = {}
     global JOV_SCAN_DEVICES
 

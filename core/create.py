@@ -262,7 +262,7 @@ Generates images containing text based on parameters such as font, size, alignme
                 Lexicon.LETTER: ("BOOLEAN", {"default": False}),
                 Lexicon.AUTOSIZE: ("BOOLEAN", {"default": False}),
                 Lexicon.RGBA_A: ("VEC4INT", {"default": (255, 255, 255, 255), "rgb": True, "tooltip": "Color of the letters"}),
-                Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True}),
+                Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True, "tooltip": "Background Color"}),
                 Lexicon.COLUMNS: ("INT", {"default": 0, "min": 0}),
                 # if auto on, hide these...
                 Lexicon.FONT_SIZE: ("INT", {"default": 16, "min": 8}),

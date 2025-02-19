@@ -22,7 +22,7 @@ from nodes import interrupt_processing
 
 from ... import JOV_TYPE_ANY, JOV_TYPE_IMAGE, \
     Lexicon, JOVBaseNode, ComfyAPIMessage, TimedOutException, \
-    comfy_send_message, deep_merge
+    comfy_api_post, deep_merge
 
 from ...sup.util import EnumConvertType, path_next, parse_param, \
     zip_longest_fill
@@ -94,7 +94,7 @@ Introduce pauses in the workflow that accept an optional input to pass through a
         if delay < 0:
             delay = JOV_DELAY_MAX
         if delay > JOV_DELAY_MIN:
-            comfy_send_message(ident, "jovi-delay-user", {"id": ident, "timeout": delay})
+            comfy_api_post("jovi-delay-user", ident, {"id": ident, "timeout": delay})
         # enable = parse_param(kw, Lexicon.ENABLE, EnumConvertType.BOOLEAN, True)
 
         step = 1

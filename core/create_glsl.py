@@ -19,7 +19,7 @@ from comfy.utils import ProgressBar
 
 from .. import JOV_TYPE_IMAGE, \
     Lexicon, JOVImageNode, \
-    comfy_send_message, deep_merge
+    comfy_api_post, deep_merge
 
 from ..sup.util import EnumConvertType, \
     parse_param, parse_value
@@ -122,7 +122,7 @@ class GLSLNodeBase(JOVImageNode):
             self.__glsl.vertex = getattr(self, 'VERTEX', kw.pop(Lexicon.PROG_VERT, None))
             self.__glsl.fragment = getattr(self, 'FRAGMENT', kw.pop(Lexicon.PROG_FRAG, None))
         except CompileException as e:
-            comfy_send_message(ident, "jovi-glsl-error", {"id": ident, "e": str(e)})
+            comfy_api_post("jovi-glsl-error", ident, {"id": ident, "e": str(e)})
             logger.error(self.NAME)
             logger.error(e)
             return
@@ -169,7 +169,7 @@ class GLSLNodeBase(JOVImageNode):
                 img = image_scalefit(img, w, h, mode, sample)
             images.append(cv2tensor_full(img, matte))
             self.__delta += step
-            comfy_send_message(ident, "jovi-glsl-time", {"id": ident, "t": self.__delta})
+            comfy_api_post("jovi-glsl-time", ident, {"id": ident, "t": self.__delta})
             pbar.update_absolute(idx)
         return [torch.stack(i) for i in zip(*images)]
 

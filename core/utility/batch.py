@@ -22,7 +22,7 @@ from comfy.utils import ProgressBar
 from nodes import interrupt_processing
 
 from ... import JOV_TYPE_ANY, ROOT, Lexicon, JOVBaseNode, deep_merge, \
-    comfy_send_message, parse_reset
+    comfy_api_post, parse_reset
 
 from ...sup.util import EnumConvertType, parse_dynamic, parse_param
 
@@ -103,7 +103,7 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
         return Lexicon._parse(d)
 
     @classmethod
-    def batched(cls, iterable, chunk_size, expand:bool=False, fill:Any=None) -> list:
+    def batched(cls, iterable, chunk_size, expand:bool=False, fill:Any=None) -> List[Any]:
         if expand:
             iterator = iter(iterable)
             return zip_longest(*[iterator] * chunk_size, fillvalue=fill)
@@ -373,7 +373,7 @@ class QueueBaseNode(JOVBaseNode):
         # make sure we have more to process if are a single fire queue
         stop = parse_param(kw, Lexicon.STOP, EnumConvertType.BOOLEAN, False)[0]
         if stop and self.__index >= self.__len:
-            comfy_send_message(ident, "jovi-queue-done", self.status)
+            comfy_api_post("jovi-queue-done", ident, self.status)
             interrupt_processing()
             return self.__previous, self.__q, self.__current, self.__index_last+1, self.__len
 
@@ -430,7 +430,7 @@ class QueueBaseNode(JOVBaseNode):
             self.__index += 1
 
         self.__previous = data
-        comfy_send_message(ident, "jovi-queue-ping", self.status)
+        comfy_api_post("jovi-queue-ping", ident, self.status)
         if stop and batched:
             interrupt_processing()
         return data, self.__q, self.__current, self.__index, self.__len, self.__index == self.__index_last or batched

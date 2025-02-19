@@ -19,7 +19,7 @@ from comfy.utils import ProgressBar
 
 from .. import JOV_TYPE_ANY, JOV_TYPE_FULL, JOV_TYPE_NUMBER, JOV_TYPE_VECTOR, \
     Lexicon, JOVBaseNode, \
-    comfy_send_message, deep_merge, parse_reset
+    comfy_api_post, deep_merge, parse_reset
 
 from ..sup.util import EnumConvertType, EnumSwizzle, \
     parse_dynamic, parse_param, parse_value, vector_swap, zip_longest_fill
@@ -880,7 +880,7 @@ A timer and frame counter, emitting pulses or signals based on time intervals. I
             pbar.update_absolute(idx)
 
         if batch < 2:
-            comfy_send_message(ident, "jovi-tick", {"i": self.__frame})
+            comfy_api_post("jovi-tick", ident, {"i": self.__frame})
         return (results.frame, results.lin, results.fixed, results.trigger, results.batch,)
 
 class ValueNode(JOVBaseNode):

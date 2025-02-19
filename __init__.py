@@ -748,22 +748,22 @@ class ComfyAPIMessage:
         dat = cls.MESSAGE.pop(sid)
         return dat
 
-def comfy_send_message(ident:str, route:str, data:dict) -> None:
+def comfy_api_post(route:str, ident:str, data:dict) -> None:
     data['id'] = ident
     PromptServer.instance.send_sync(route, data)
 
 @PromptServer.instance.routes.get("/jovimetrix")
-async def jovimetrix_home(request) -> Any:
+async def jovimetrix_home(req) -> Any:
     data = template_load('home.html')
     return web.Response(text=data.template, content_type='text/html')
 
 @PromptServer.instance.routes.get("/jovimetrix/message")
-async def jovimetrix_message(request) -> Any:
+async def jovimetrix_message(req) -> Any:
     return web.json_response(ComfyAPIMessage.MESSAGE)
 
 @PromptServer.instance.routes.post("/jovimetrix/message")
-async def jovimetrix_message_post(request) -> Any:
-    json_data = await request.json()
+async def jovimetrix_message_post(req) -> Any:
+    json_data = await req.json()
     logger.info(json_data)
     if (did := json_data.get("id")) is not None:
         ComfyAPIMessage.MESSAGE[str(did)] = json_data
@@ -771,7 +771,7 @@ async def jovimetrix_message_post(request) -> Any:
     return web.json_response({})
 
 @PromptServer.instance.routes.get("/jovimetrix/config")
-async def jovimetrix_config(request) -> Any:
+async def jovimetrix_config(req) -> Any:
     global JOV_CONFIG, JOV_CONFIG_FILE
     if len(JOV_CONFIG) == 0:
         JOV_CONFIG = configLoad(JOV_CONFIG_FILE)
@@ -805,11 +805,11 @@ async def object_info(node_class: str, scheme:str, host: str) -> Any:
     return info
 
 @PromptServer.instance.routes.get("/jovimetrix/doc")
-async def jovimetrix_doc(request) -> Any:
+async def jovimetrix_doc(req) -> Any:
 
     for node_class in NODE_CLASS_MAPPINGS.keys():
         if COMFYUI_OBJ_DATA.get(node_class, None) is None:
-            COMFYUI_OBJ_DATA[node_class] = await object_info(node_class, request.scheme, request.host)
+            COMFYUI_OBJ_DATA[node_class] = await object_info(node_class, req.scheme, req.host)
 
         node = NODE_DISPLAY_NAME_MAPPINGS[node_class]
         fname = node.split(" (JOV)")[0]
@@ -827,10 +827,10 @@ async def jovimetrix_doc(request) -> Any:
     return web.json_response(COMFYUI_OBJ_DATA)
 
 @PromptServer.instance.routes.get("/jovimetrix/doc/{node}")
-async def jovimetrix_doc_node_comfy(request) -> Any:
-    node_class = request.match_info.get('node')
+async def jovimetrix_doc_node_comfy(req) -> Any:
+    node_class = req.match_info.get('node')
     if COMFYUI_OBJ_DATA.get(node_class, None) is None:
-        COMFYUI_OBJ_DATA[node_class] = await object_info(node_class, request.scheme, request.host)
+        COMFYUI_OBJ_DATA[node_class] = await object_info(node_class, req.scheme, req.host)
     return web.Response(text=COMFYUI_OBJ_DATA[node_class]['.html'], content_type='text/html')
 
 # ==============================================================================
