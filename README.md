@@ -94,6 +94,11 @@ You can colorize nodes via their `title background`, `node body` or `title text`
 
 ## UPDATES
 
+**2024/02/18** @1.7.25:
+* nomenclature alignment for breakout repos
+* better typehints
+*
+
 **2024/02/17** @1.7.20:
 * changed to newer conversion logic on frontend 1.10.3+ -- `VECTOR` types will auto-switch to conversion logic based on version
 * Fix for `VALUE NODE` to properly output vector data -- node in deprecation mode
@@ -105,6 +110,11 @@ You can colorize nodes via their `title background`, `node body` or `title text`
 <img src="https://github.com/user-attachments/assets/8ed13e6a-218c-468a-a480-53ab55b04d21" alt="explicit vector node supports" width="640"/>
 <img src="https://github.com/user-attachments/assets/4459855c-c4e6-4739-811e-a6c90aa5a90c" alt="TICK Node Batch Support Output" width="384"/>
 </div>
+
+**2024/02/22** @1.7.25:
+* cleanup api names
+* cleaned up typehints
+* fixed stupid bug that would just overwrite color defaults on refresh
 
 **2024/02/14** @1.7.17:
 * cleaning up image support before split into Jovi_Comp
@@ -123,21 +133,6 @@ You can colorize nodes via their `title background`, `node body` or `title text`
 * PyOpenGL-accelerate updated to 3.1.9
 * better versioning in requirements around numpy
 * cleaner
-**2024/02/07** @1.7.08:
-* `JOV_SCAN_DEVICES` reset to default off.
-
-**2024/02/06** @1.7.06:
-* `RESIZE_MATTE` option updated to allow transparent mattes
-
-**2024/02/06** @1.7.05:
-* updated `QUEUE` and `QUEUE TOO` progress while loading all images as "batch"
-
-**2024/02/05** @1.7.02:
-* polish on regex parsing for uniforms -- supports are much more lenient on spacing
-
-**2024/02/05** @1.7.0:
-* regex entries default to [5] fields
-* [issue #4](https://github.com/Amorano/Jovi_GLSL/issues/4) value in uniforms for `GLSL nodes` were cancelling  values being set
 
 # INSTALLATION
 

@@ -12,7 +12,7 @@ const setting_theme = 'jovi.color.theme';
 
 let PANEL_COLORIZE, NODE_LIST;
 
-async function apiGet(url) {
+async function api_get(url) {
     var response = await api.fetchApi(url, { cache: "no-store" })
     return await response.json()
 }
@@ -582,7 +582,7 @@ app.registerExtension({
     ],
     async setup() {
 
-        const all_nodes = await apiGet("/object_info");
+        const all_nodes = await api_get("/object_info");
         NODE_LIST = Object.entries(all_nodes).sort((a, b) => {
             const categoryA = a[1].category.toLowerCase();
             const categoryB = b[1].category.toLowerCase();
@@ -596,7 +596,7 @@ app.registerExtension({
         });
         NODE_LIST = Object.fromEntries(NODE_LIST);
 
-        const CONFIG_CORE = await apiGet("/jovimetrix/config");
+        const CONFIG_CORE = await api_get("/jovimetrix/config");
         let CONFIG_REGEX = app.extensionManager.setting.get(setting_regex);
         if (!Array.isArray(CONFIG_REGEX)) {
             CONFIG_REGEX = CONFIG_CORE?.user?.default?.color?.regex || [
@@ -612,7 +612,8 @@ app.registerExtension({
         }
         await app.extensionManager.setting.set(setting_regex, CONFIG_REGEX);
 
-        if (!Array.isArray(app.extensionManager.setting.get(setting_theme))) {
+        let CONFIG_THEME = app.extensionManager.setting.get(setting_theme);
+        if (Object.keys(CONFIG_THEME).length === 0) {
             const CONFIG_THEME = CONFIG_CORE?.user?.default?.color?.theme || {
                 "JOVIMETRIX \ud83d\udd3a\ud83d\udfe9\ud83d\udd35": {
                     title: "#A23DA2"
