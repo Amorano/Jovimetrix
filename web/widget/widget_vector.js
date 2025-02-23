@@ -1,12 +1,11 @@
 /**
  * File: widget_vector.js
- * Project: Jovimetrix
  */
 
+
 import { app } from "../../../scripts/app.js"
-import { widgetToInput, widgetToWidget } from '../util/util_widget.js'
-import { domInnerValueChange } from '../util/util.js'
 import { $el } from "../../../scripts/ui.js"
+import { widgetToInput, widgetToWidget, domInnerValueChange } from './util_jov.js'
 /** @import { IWidget, LGraphCanvas } from '../../types/litegraph/litegraph.d.ts' */
 
 function isVersionLess(v1, v2) {
@@ -164,7 +163,11 @@ const VectorWidget = (app, inputName, options, initial, desc='') => {
         const index = Math.floor(x / element_width);
 
         pointer.onClick = (eUp) => {
-            if (index >= 0 && index < size) {
+            /* if click on header, reset to defaults */
+            if (index == -1) {
+                widget.value = Object.assign({}, widget.options.default);
+            }
+            else if (index >= 0 && index < size) {
                 const pos = [eUp.canvasX - node.pos[0], eUp.canvasY - node.pos[1]]
                 const old_value = { ...this.value };
                 const label = this.options?.label ? this.name + '➖' + this.options.label?.[index] : this.name;

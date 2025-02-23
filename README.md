@@ -111,6 +111,9 @@ You can colorize nodes via their `title background`, `node body` or `title text`
 <img src="https://github.com/user-attachments/assets/4459855c-c4e6-4739-811e-a6c90aa5a90c" alt="TICK Node Batch Support Output" width="384"/>
 </div>
 
+**2024/02/23** @1.7.26:
+* vector fields can now be reset by clicking on the header of the field
+
 **2024/02/22** @1.7.25:
 * cleanup api names
 * cleaned up typehints
