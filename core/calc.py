@@ -973,7 +973,7 @@ Supplies raw or default values for various data types, supporting vector input w
         return Lexicon._parse(d)
 
     def run(self, **kw) -> Tuple[bool]:
-        raw = parse_param(kw, Lexicon.IN_A, EnumConvertType.ANY, 0)
+        raw = parse_param(kw, Lexicon.IN_A, EnumConvertType.ANY, [0])
         r_x = parse_param(kw, Lexicon.X, EnumConvertType.FLOAT, None, -sys.maxsize, sys.maxsize)
         r_y = parse_param(kw, Lexicon.Y, EnumConvertType.FLOAT, None, -sys.maxsize, sys.maxsize)
         r_z = parse_param(kw, Lexicon.Z, EnumConvertType.FLOAT, None, -sys.maxsize, sys.maxsize)
