@@ -110,6 +110,29 @@ MARKDOWN = [
 ]
 
 # ==============================================================================
+# === TYPE ===
+# ==============================================================================
+
+class AnyType(str):
+    """AnyType input wildcard trick taken from pythongossss's:
+
+    https://github.com/pythongosssss/ComfyUI-Custom-Scripts
+    """
+    def __ne__(self, __value: object) -> bool:
+        return False
+
+JOV_TYPE_ANY = AnyType("*")
+
+# want to make explicit entries; comfy only looks for single type
+JOV_TYPE_NUMBER = "BOOLEAN,FLOAT,INT"
+JOV_TYPE_VECTOR = "VEC2,VEC3,VEC4,VEC2INT,VEC3INT,VEC4INT,COORD2D,COORD3D"
+JOV_TYPE_NUMERICAL = f"{JOV_TYPE_NUMBER},{JOV_TYPE_VECTOR}"
+JOV_TYPE_IMAGE = "IMAGE,MASK"
+JOV_TYPE_FULL = f"{JOV_TYPE_NUMBER},{JOV_TYPE_IMAGE}"
+
+JOV_TYPE_FULL = JOV_TYPE_ANY
+
+# ==============================================================================
 # === LEXICON ===
 # ==============================================================================
 
@@ -406,12 +429,9 @@ class JOVBaseNode:
     NOT_IDEMPOTENT = True
     RETURN_TYPES = ()
     FUNCTION = "run"
-    # instance map for caching
-    INSTANCE = {}
 
     @classmethod
-    def VALIDATE_INPUTS(cls, *arg, **kw) -> bool:
-        # logger.debug(f'validate -- {arg} {kw}')
+    def VALIDATE_INPUTS(cls, input_types) -> bool:
         return True
 
     @classmethod
@@ -458,14 +478,6 @@ class DynamicInputType(dict):
     def __contains__(self, key: Any) -> Literal[True]:
         return True
 
-class AnyType(str):
-    """AnyType input wildcard trick taken from pythongossss's:
-
-    https://github.com/pythongosssss/ComfyUI-Custom-Scripts
-    """
-    def __ne__(self, __value: object) -> bool:
-        return False
-
 class DynamicOutputType(tuple):
     """A special class that will return additional "AnyType" strings beyond defined values.
 
@@ -477,21 +489,6 @@ class DynamicOutputType(tuple):
         if index > len(self) - 1:
             return AnyType("*")
         return super().__getitem__(index)
-
-JOV_TYPE_ANY = AnyType("*")
-
-# want to make explicit entries; comfy only looks for single type
-JOV_TYPE_COMFY = "BOOLEAN,FLOAT,INT"
-JOV_TYPE_VECTOR = "VEC2,VEC3,VEC4,VEC2INT,VEC3INT,VEC4INT,COORD2D"
-JOV_TYPE_NUMBER = f"{JOV_TYPE_COMFY},{JOV_TYPE_VECTOR}"
-JOV_TYPE_IMAGE = "IMAGE,MASK"
-JOV_TYPE_FULL = f"{JOV_TYPE_NUMBER},{JOV_TYPE_IMAGE}"
-
-JOV_TYPE_COMFY = JOV_TYPE_ANY
-JOV_TYPE_VECTOR = JOV_TYPE_ANY
-JOV_TYPE_NUMBER = JOV_TYPE_ANY
-JOV_TYPE_IMAGE = JOV_TYPE_ANY
-JOV_TYPE_FULL = JOV_TYPE_ANY
 
 # ==============================================================================
 # === DOCUMENTATION SUPPORT

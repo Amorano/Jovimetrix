@@ -64,7 +64,7 @@ Visualize data. It accepts various types of data, including images, text, and ot
             return output
 
         def __parse(val) -> str:
-            ret = val
+            ret = ''
             typ = ''.join(repr(type(val)).split("'")[1:2])
             if isinstance(val, dict):
                 # mixlab layer?
@@ -95,11 +95,10 @@ Visualize data. It accepts various types of data, including images, text, and ot
                         ret = json.dumps(val, indent=3, separators=(',', ': '))
                     except Exception as e:
                         ret = str(e)
-
             elif isinstance(val, (tuple, set, list,)):
-                ret = ''
                 if (size := len(val)) > 0:
-                    if type(val) == np.ndarray:
+                    if isinstance(val, (np.ndarray,)):
+                        ret = str(val)
                         typ = "NUMPY ARRAY"
                     elif isinstance(val[0], (torch.Tensor,)):
                         ret = decode_tensor(val[0])
@@ -107,16 +106,20 @@ Visualize data. It accepts various types of data, including images, text, and ot
                     elif size == 1 and isinstance(val[0], (list,)) and isinstance(val[0][0], (torch.Tensor,)):
                         ret = decode_tensor(val[0][0])
                         typ = "CONDITIONING"
-                    elif all(isinstance(i, list) for i in val):
-                        # Serialize each inner list on a separate line
-                        ret = [json.dumps(i, separators=(',', ': ')) for i in val]
+                    elif all(isinstance(i, (tuple, set, list)) for i in val):
+                        ret = "[\n" + ",\n".join(f"  {row}" for row in val) + "\n]"
+                        # ret = json.dumps(val, indent=4)
+                    elif all(isinstance(i, (bool, int, float)) for i in val):
+                        ret = ','.join([str(x) for x in val])
+                    else:
+                        ret = str(val)
             elif isinstance(val, bool):
                 ret = "True" if val else "False"
             elif isinstance(val, torch.Tensor):
                 ret = decode_tensor(val)
             else:
-                ret = str(ret)
-            return json.dumps({typ: val}, separators=(',', ': '))
+                ret = str(val)
+            return json.dumps({typ: ret}, separators=(',', ': '))
 
         for x in o:
             output["ui"]["text"].append(__parse(x))

@@ -38,13 +38,10 @@ app.registerExtension({
                     textWidget.inputEl.style.padding = "1px";
                     textWidget.inputEl.style.border = "1px";
                     textWidget.inputEl.style.backgroundColor = "#222";
-                    textWidget.value = this.inputs[i].name + "::\n";
-                    const msg = message["text"][i];
-                    if (!msg.split("],[").length > 1) {
-                        textWidget.value += msg.split(",").join(",\n");
-                    } else {
-                        textWidget.value += msg;
-                    }
+                    textWidget.value = this.inputs[i].name + " ";
+                    textWidget.value += message["text"][i]
+                        .replace(/\\n/g, '\n')
+                        .replace(/"/g, '');
                 }
             }
             return me;

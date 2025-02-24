@@ -3,11 +3,12 @@ Jovimetrix - http://www.github.com/amorano/jovimetrix
 Calculation
 """
 
+import struct
 import sys
 import math
 import random
 from enum import Enum
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, List, Tuple
 from collections import Counter
 
 import torch
@@ -17,7 +18,7 @@ from loguru import logger
 
 from comfy.utils import ProgressBar
 
-from .. import JOV_TYPE_ANY, JOV_TYPE_FULL, JOV_TYPE_NUMBER, JOV_TYPE_VECTOR, \
+from .. import JOV_TYPE_ANY, JOV_TYPE_FULL, JOV_TYPE_NUMBER, JOV_TYPE_NUMERICAL, \
     Lexicon, JOVBaseNode, \
     comfy_api_post, deep_merge, parse_reset
 
@@ -31,7 +32,7 @@ from ..sup.anim import EnumWave, EnumEase, ease_op, wave_op
 JOV_CATEGORY = "CALC"
 
 # ==============================================================================
-# === LAMBDA ===
+# === SUPPORT ===
 # ==============================================================================
 
 LAMBDA_FLATTEN = lambda data: [item for sublist in data for item in sublist]
@@ -41,6 +42,17 @@ def flatten(data):
         return [a for i in data for a in flatten(i)]
     else:
         return [data]
+
+def to_bits(value):
+    if isinstance(value, int):
+        return bin(value)[2:]
+    elif isinstance(value, float):
+        packed = struct.pack('>d', value)
+        return ''.join(f'{byte:08b}' for byte in packed)
+    elif isinstance(value, str):
+        return ''.join(f'{ord(c):08b}' for c in value)
+    else:
+        raise TypeError(f"Unsupported type: {type(value)}")
 
 # ==============================================================================
 # === ENUMERATION ===
@@ -192,7 +204,7 @@ class ResultObject(object):
 class BitSplitNode(JOVBaseNode):
     NAME = "BIT SPLIT (JOV) ⭄"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = (JOV_TYPE_NUMBER, "BOOLEAN",)
+    RETURN_TYPES = (JOV_TYPE_ANY, "BOOLEAN",)
     RETURN_NAMES = (Lexicon.BIT, Lexicon.BOOLEAN,)
     OUTPUT_TOOLTIPS = (
         "Bits as Numerical output (0 or 1)",
@@ -200,30 +212,55 @@ class BitSplitNode(JOVBaseNode):
     )
     SORT = 10
     DESCRIPTION = """
-Split an input into separate bits. `BOOL`, `INT` and `FLOAT` use their numbers,
-`STRING` is treated as a list of `CHARACTER`. `IMAGE` and `MASK` will return a
-`TRUE` bit for any non-black pixel, as a stream of bits for all pixels in the
-image.
+Split an input into separate bits.
+BOOL, INT and FLOAT use their numbers,
+STRING is treated as a list of CHARACTER.
+IMAGE and MASK will return a TRUE bit for any non-black pixel, as a stream of bits for all pixels in the image.
 """
     @classmethod
     def INPUT_TYPES(cls) -> Dict[str, str]:
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                Lexicon.UNKNOWN: (JOV_TYPE_FULL, {"default": None}),
-                Lexicon.VALUE: ("INT", {"default": 8, "min": 1, "max": 64, "tooltip":"Number of output bits requested."})
+                "VALUE": (JOV_TYPE_FULL, {"default": None, "tooltip":"the value to convert into bits"}),
+                "BITS": ("INT", {"default": 8, "min": 1, "max": 64, "tooltip":"number of output bits requested"}),
+                "MSB": ("BOOLEAN", {"default": False, "tooltip":"return the most signifigant bits (True) or least signifigant bits first"})
             }
         })
         return Lexicon._parse(d)
 
-    def run(self, **kw) -> Tuple[bool]:
-
-        return (0,)
+    def run(self, **kw) -> Tuple[List[int], List[bool]]:
+        value = parse_param(kw, "VALUE", EnumConvertType.ANY, [0])
+        bits = parse_param(kw, "BITS", EnumConvertType.INT, 8, 1, 64)
+        msb = parse_param(kw, "MSB", EnumConvertType.INT, False)
+        params = list(zip_longest_fill(value, bits))
+        pbar = ProgressBar(len(params))
+        results = []
+        for idx, (value, bits) in enumerate(params):
+            bit_repr = to_bits(value)
+            if len(bit_repr) > bits:
+                if msb:
+                    bit_repr = bit_repr[bits]
+                else:
+                    bit_repr = bit_repr[-bits:]
+            elif msb:
+                bit_repr = bit_repr.zfill(bits)
+            else:
+                bit_repr = bit_repr.ljust(bits, '0')
+            int_bits = []
+            bool_bits = []
+            for b in bit_repr:
+                bit = int(b)
+                int_bits.append(bit)
+                bool_bits.append(bool(bit))
+            results.append([int_bits, bool_bits])
+            pbar.update_absolute(idx)
+        return *list(zip(*results)),
 
 class CalcUnaryOPNode(JOVBaseNode):
     NAME = "OP UNARY (JOV) 🎲"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = (JOV_TYPE_NUMBER,)
+    RETURN_TYPES = (JOV_TYPE_ANY,)
     RETURN_NAMES = (Lexicon.UNKNOWN,)
     OUTPUT_TOOLTIPS = (
         "Output type will match the input type"
@@ -324,7 +361,7 @@ Perform single function operations like absolute value, mean, median, mode, magn
 class CalcBinaryOPNode(JOVBaseNode):
     NAME = "OP BINARY (JOV) 🌟"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = (JOV_TYPE_NUMBER,)
+    RETURN_TYPES = (JOV_TYPE_ANY,)
     RETURN_NAMES = (Lexicon.UNKNOWN,)
     OUTPUT_TOOLTIPS = (
         "Output type will match the input type"
@@ -466,10 +503,10 @@ Execute binary operations like addition, subtraction, multiplication, division, 
 class ComparisonNode(JOVBaseNode):
     NAME = "COMPARISON (JOV) 🕵🏽"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = (JOV_TYPE_ANY, JOV_TYPE_NUMBER,)
+    RETURN_TYPES = (JOV_TYPE_ANY, JOV_TYPE_ANY,)
     RETURN_NAMES = (Lexicon.TRIGGER, Lexicon.VALUE,)
     OUTPUT_TOOLTIPS = (
-        f"Outputs the input at {Lexicon.IN_A} or {Lexicon.IN_B} depending on which evaluated `TRUE`",
+        f"Outputs the input at {Lexicon.IN_A} or {Lexicon.IN_B} depending on which evaluated TRUE",
         "The comparison result value"
     )
     SORT = 130
@@ -585,7 +622,7 @@ Evaluates two inputs (A and B) with a specified comparison operators and optiona
 class LerpNode(JOVBaseNode):
     NAME = "LERP (JOV) 🔰"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = (JOV_TYPE_FULL,)
+    RETURN_TYPES = (JOV_TYPE_ANY,)
     RETURN_NAMES = (Lexicon.ANY_OUT,)
     OUTPUT_TOOLTIPS = (
         f"Output can vary depending on the type chosen in the {Lexicon.TYPE} parameter"
@@ -742,7 +779,7 @@ Manipulate strings through filtering
 class SwizzleNode(JOVBaseNode):
     NAME = "SWIZZLE (JOV) 😵"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = (JOV_TYPE_VECTOR,)
+    RETURN_TYPES = (JOV_TYPE_ANY,)
     RETURN_NAMES = (Lexicon.ANY_OUT,)
     SORT = 40
     DESCRIPTION = """
@@ -755,8 +792,8 @@ Swap components between two vectors based on specified swizzle patterns and valu
         names_convert = EnumConvertType._member_names_[3:10]
         d = deep_merge(d, {
             "optional": {
-                Lexicon.IN_A: (JOV_TYPE_VECTOR, {}),
-                Lexicon.IN_B: (JOV_TYPE_VECTOR, {}),
+                Lexicon.IN_A: (JOV_TYPE_NUMERICAL, {}),
+                Lexicon.IN_B: (JOV_TYPE_NUMERICAL, {}),
                 Lexicon.TYPE: (names_convert, {"default": names_convert[2],
                                             "tooltip":"Output type desired from resultant operation"}),
                 Lexicon.SWAP_X: (EnumSwizzle._member_names_, {"default": EnumSwizzle.A_X.name}),
@@ -886,8 +923,7 @@ A timer and frame counter, emitting pulses or signals based on time intervals. I
 class ValueNode(JOVBaseNode):
     NAME = "VALUE (JOV) 🧬"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    # INPUT_IS_LIST = True
-    RETURN_TYPES = (JOV_TYPE_NUMBER, JOV_TYPE_NUMBER, JOV_TYPE_NUMBER, JOV_TYPE_NUMBER, JOV_TYPE_NUMBER,)
+    RETURN_TYPES = (JOV_TYPE_ANY, JOV_TYPE_ANY, JOV_TYPE_ANY, JOV_TYPE_ANY, JOV_TYPE_ANY,)
     RETURN_NAMES = (Lexicon.ANY_OUT, Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W)
     SORT = 5
     DESCRIPTION = """
@@ -910,22 +946,24 @@ Supplies raw or default values for various data types, supporting vector input w
                                         "tooltip":"Passes a raw value directly, or supplies defaults for any value inputs without connections"}),
                 Lexicon.TYPE: (typ, {"default": EnumConvertType.BOOLEAN.name,
                                     "tooltip":"Take the input and convert it into the selected type."}),
-                Lexicon.X: (JOV_TYPE_ANY, {"default": 0, "mij": -sys.maxsize,
+                Lexicon.X: (JOV_TYPE_NUMERICAL, {"default": 0, "mij": -sys.maxsize,
                                     "maj": sys.maxsize, "step": 0.01, "forceInput": True}),
-                Lexicon.Y: (JOV_TYPE_ANY, {"default": 0, "mij": -sys.maxsize,
+                Lexicon.Y: (JOV_TYPE_NUMERICAL, {"default": 0, "mij": -sys.maxsize,
                                     "maj": sys.maxsize, "step": 0.01, "forceInput": True}),
-                Lexicon.Z: (JOV_TYPE_ANY, {"default": 0, "mij": -sys.maxsize,
+                Lexicon.Z: (JOV_TYPE_NUMERICAL, {"default": 0, "mij": -sys.maxsize,
                                     "maj": sys.maxsize, "step": 0.01, "forceInput": True}),
-                Lexicon.W: (JOV_TYPE_ANY, {"default": 0, "mij": -sys.maxsize,
+                Lexicon.W: (JOV_TYPE_NUMERICAL, {"default": 0, "mij": -sys.maxsize,
                                     "maj": sys.maxsize, "step": 0.01, "forceInput": True}),
                 Lexicon.IN_A+Lexicon.IN_A: ("VEC4", {"default": (0, 0, 0, 0),
                                     #"mij": -sys.maxsize, "maj": sys.maxsize,
+                                    "precision": 2,
                                     "step": 0.01,
                                     "label": [Lexicon.X, Lexicon.Y],
                                     "tooltip":"default value vector for A"}),
                 Lexicon.SEED: ("INT", {"default": 0, "min": 0, "max": sys.maxsize}),
                 Lexicon.IN_B+Lexicon.IN_B: ("VEC4", {"default": (1,1,1,1),
                                     #"mij": -sys.maxsize, "maj": sys.maxsize,
+                                    "precision": 2,
                                     "step": 0.01,
                                     "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W],
                                     "tooltip":"default value vector for B"}),
@@ -1070,8 +1108,8 @@ Outputs a VEC2 or VEC2INT.
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                "X": ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "tooltip": "1st channel value"}),
-                "Y": ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "tooltip": "2nd channel value"}),
+                "X": (JOV_TYPE_NUMBER, {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "tooltip": "1st channel value"}),
+                "Y": (JOV_TYPE_NUMBER, {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "tooltip": "2nd channel value"}),
             }
         })
         return Lexicon._parse(d)
@@ -1079,44 +1117,6 @@ Outputs a VEC2 or VEC2INT.
     def run(self, **kw) -> Tuple[Tuple[float, ...], Tuple[int, ...]]:
         x = parse_param(kw, "X", EnumConvertType.FLOAT, 0, -sys.maxsize, sys.maxsize)
         y = parse_param(kw, "Y", EnumConvertType.FLOAT, 0, -sys.maxsize, sys.maxsize)
-        results = []
-        params = list(zip_longest_fill(x, y))
-        pbar = ProgressBar(len(params))
-        for idx, (x, y) in enumerate(params):
-            x = round(x, 6)
-            y = round(y, 6)
-            results.append([(x, y,), (int(x), int(y),)])
-            pbar.update_absolute(idx)
-        return *list(zip(*results)),
-
-class Vector2IntNode(JOVBaseNode):
-    NAME = "VECTOR2INT (JOV)"
-    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = ("VEC2", "VEC2INT", )
-    RETURN_NAMES = ("VEC2", "VEC2INT", )
-    OUTPUT_TOOLTIPS = (
-        "Vector2 with float values",
-        "Vector2 with integer values",
-    )
-    SORT = 291
-    DESCRIPTION = """
-Outputs a VEC2 or VEC2INT.
-"""
-
-    @classmethod
-    def INPUT_TYPES(cls) -> Dict[str, str]:
-        d = super().INPUT_TYPES()
-        d = deep_merge(d, {
-            "optional": {
-                "X": ("INT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 1, "tooltip": "1st channel value"}),
-                "Y": ("INT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 1, "tooltip": "2nd channel value"}),
-            }
-        })
-        return Lexicon._parse(d)
-
-    def run(self, **kw) -> Tuple[Tuple[float, ...], Tuple[int, ...]]:
-        x = parse_param(kw, "X", EnumConvertType.INT, 0, -sys.maxsize, sys.maxsize)
-        y = parse_param(kw, "Y", EnumConvertType.INT, 0, -sys.maxsize, sys.maxsize)
         results = []
         params = list(zip_longest_fill(x, y))
         pbar = ProgressBar(len(params))
@@ -1146,9 +1146,9 @@ Outputs a VEC3 or VEC3INT.
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                "X": ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "tooltip": "1st channel value"}),
-                "Y": ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "tooltip": "2nd channel value"}),
-                "Z": ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "tooltip": "3rd channel value"}),
+                "X": (JOV_TYPE_NUMBER, {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "tooltip": "1st channel value"}),
+                "Y": (JOV_TYPE_NUMBER, {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "tooltip": "2nd channel value"}),
+                "Z": (JOV_TYPE_NUMBER, {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "tooltip": "3rd channel value"}),
             }
         })
         return Lexicon._parse(d)
@@ -1157,47 +1157,6 @@ Outputs a VEC3 or VEC3INT.
         x = parse_param(kw, "X", EnumConvertType.FLOAT, 0, -sys.maxsize, sys.maxsize)
         y = parse_param(kw, "Y", EnumConvertType.FLOAT, 0, -sys.maxsize, sys.maxsize)
         z = parse_param(kw, "Z", EnumConvertType.FLOAT, 0, -sys.maxsize, sys.maxsize)
-        results = []
-        params = list(zip_longest_fill(x, y, z))
-        pbar = ProgressBar(len(params))
-        for idx, (x, y, z) in enumerate(params):
-            x = round(x, 6)
-            y = round(y, 6)
-            z = round(z, 6)
-            results.append([(x, y, z,), (int(x), int(y), int(z),)])
-            pbar.update_absolute(idx)
-        return *list(zip(*results)),
-
-class Vector3IntNode(JOVBaseNode):
-    NAME = "VECTOR3INT (JOV)"
-    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = ("VEC3", "VEC3INT", )
-    RETURN_NAMES = ("VEC3", "VEC3INT", )
-    OUTPUT_TOOLTIPS = (
-        "Vector3 with float values",
-        "Vector3 with integer values",
-    )
-    SORT = 293
-    DESCRIPTION = """
-Outputs a VEC3 or VEC3INT.
-"""
-
-    @classmethod
-    def INPUT_TYPES(cls) -> Dict[str, str]:
-        d = super().INPUT_TYPES()
-        d = deep_merge(d, {
-            "optional": {
-                "X": ("INT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 1, "tooltip": "1st channel value"}),
-                "Y": ("INT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 1, "tooltip": "2nd channel value"}),
-                "Z": ("INT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 1, "tooltip": "3rd channel value"}),
-            }
-        })
-        return Lexicon._parse(d)
-
-    def run(self, **kw) -> Tuple[Tuple[float, ...], Tuple[int, ...]]:
-        x = parse_param(kw, "X", EnumConvertType.INT, 0, -sys.maxsize, sys.maxsize)
-        y = parse_param(kw, "Y", EnumConvertType.INT, 0, -sys.maxsize, sys.maxsize)
-        z = parse_param(kw, "Z", EnumConvertType.INT, 0, -sys.maxsize, sys.maxsize)
         results = []
         params = list(zip_longest_fill(x, y, z))
         pbar = ProgressBar(len(params))
@@ -1228,10 +1187,10 @@ Outputs a VEC4 or VEC4INT.
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                "X": ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "tooltip": "1st channel value"}),
-                "Y": ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "tooltip": "2nd channel value"}),
-                "Z": ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "tooltip": "3rd channel value"}),
-                "W": ("FLOAT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "tooltip": "4th channel value"}),
+                "X": (JOV_TYPE_NUMBER, {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "tooltip": "1st channel value"}),
+                "Y": (JOV_TYPE_NUMBER, {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "tooltip": "2nd channel value"}),
+                "Z": (JOV_TYPE_NUMBER, {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "tooltip": "3rd channel value"}),
+                "W": (JOV_TYPE_NUMBER, {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "tooltip": "4th channel value"}),
             }
         })
         return Lexicon._parse(d)
@@ -1241,50 +1200,6 @@ Outputs a VEC4 or VEC4INT.
         y = parse_param(kw, "Y", EnumConvertType.FLOAT, 0, -sys.maxsize, sys.maxsize)
         z = parse_param(kw, "Z", EnumConvertType.FLOAT, 0, -sys.maxsize, sys.maxsize)
         w = parse_param(kw, "W", EnumConvertType.FLOAT, 0, -sys.maxsize, sys.maxsize)
-        results = []
-        params = list(zip_longest_fill(x, y, z, w))
-        pbar = ProgressBar(len(params))
-        for idx, (x, y, z, w,) in enumerate(params):
-            x = round(x, 6)
-            y = round(y, 6)
-            z = round(z, 6)
-            w = round(w, 6)
-            results.append([(x, y, z, w,), (int(x), int(y), int(z), int(w),)])
-            pbar.update_absolute(idx)
-        return *list(zip(*results)),
-
-class Vector4IntNode(JOVBaseNode):
-    NAME = "VECTOR4INT (JOV)"
-    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = ("VEC4", "VEC4INT", )
-    RETURN_NAMES = ("VEC4", "VEC4INT", )
-    OUTPUT_TOOLTIPS = (
-        "Vector4 with float values",
-        "Vector4 with integer values",
-    )
-    SORT = 295
-    DESCRIPTION = """
-Outputs a VEC4 or VEC4INT.
-"""
-
-    @classmethod
-    def INPUT_TYPES(cls) -> Dict[str, str]:
-        d = super().INPUT_TYPES()
-        d = deep_merge(d, {
-            "optional": {
-                "X": ("INT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 1, "tooltip": "1st channel value"}),
-                "Y": ("INT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 1, "tooltip": "2nd channel value"}),
-                "Z": ("INT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 1, "tooltip": "3rd channel value"}),
-                "W": ("INT", {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 1, "tooltip": "4th channel value"}),
-            }
-        })
-        return Lexicon._parse(d)
-
-    def run(self, **kw) -> Tuple[Tuple[float, ...], Tuple[int, ...]]:
-        x = parse_param(kw, "X", EnumConvertType.INT, 0, -sys.maxsize, sys.maxsize)
-        y = parse_param(kw, "Y", EnumConvertType.INT, 0, -sys.maxsize, sys.maxsize)
-        z = parse_param(kw, "Z", EnumConvertType.INT, 0, -sys.maxsize, sys.maxsize)
-        w = parse_param(kw, "W", EnumConvertType.INT, 0, -sys.maxsize, sys.maxsize)
         results = []
         params = list(zip_longest_fill(x, y, z, w))
         pbar = ProgressBar(len(params))

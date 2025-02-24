@@ -277,10 +277,9 @@ def parse_param(data:dict, key:str, typ:EnumConvertType, default: Any,
     val = data.get(key, default)
     if typ == EnumConvertType.ANY:
         if val is None:
-            val = [default]
-            return val
-        elif isinstance(val, (list,)):
-            val = val[0]
+            return [default]
+        #elif isinstance(val, (list,)):
+        #    val = val[0]
 
     if isinstance(val, (str,)):
         try: val = json.loads(val.replace("'", '"'))
