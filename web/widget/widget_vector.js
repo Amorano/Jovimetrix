@@ -2,10 +2,10 @@
  * File: widget_vector.js
  */
 
-
 import { app } from "../../../scripts/app.js"
 import { $el } from "../../../scripts/ui.js"
-import { widgetToInput, widgetToWidget, domInnerValueChange } from './util_jov.js'
+import { widgetToInput, widgetToWidget } from '../util/util_widget.js'
+import { domInnerValueChange } from '../util/util.js'
 /** @import { IWidget, LGraphCanvas } from '../../types/litegraph/litegraph.d.ts' */
 
 function isVersionLess(v1, v2) {
