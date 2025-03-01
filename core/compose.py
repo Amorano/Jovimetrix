@@ -1008,6 +1008,7 @@ Apply various geometric transformations to images, including translation, rotati
         d = deep_merge(d, {
             "optional": {
                 Lexicon.PIXEL: (JOV_TYPE_IMAGE, {}),
+                Lexicon.MASK: (JOV_TYPE_IMAGE, {}),
                 Lexicon.XY: ("VEC2", {"default": (0, 0,), "mij": -1, "maj": 1, "step": 0.01, "label": [Lexicon.X, Lexicon.Y]}),
                 Lexicon.ANGLE: ("FLOAT", {"default": 0, "step": 0.01}),
                 Lexicon.SIZE: ("VEC2", {"default": (1., 1.), "mij": 0.001, "step": 0.01, "label": [Lexicon.X, Lexicon.Y]}),
@@ -1029,6 +1030,7 @@ Apply various geometric transformations to images, including translation, rotati
 
     def run(self, **kw) -> Tuple[torch.Tensor, ...]:
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
+        mask = parse_param(kw, Lexicon.MASK, EnumConvertType.IMAGE, None)
         offset = parse_param(kw, Lexicon.XY, EnumConvertType.VEC2, [(0, 0)], -2.5, 2.5)
         angle = parse_param(kw, Lexicon.ANGLE, EnumConvertType.FLOAT, 0)
         size = parse_param(kw, Lexicon.SIZE, EnumConvertType.VEC2, [(1, 1)], 0.001)
@@ -1044,11 +1046,15 @@ Apply various geometric transformations to images, including translation, rotati
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)
         sample = parse_param(kw, Lexicon.SAMPLE, EnumInterpolation, EnumInterpolation.LANCZOS4.name)
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
-        params = list(zip_longest_fill(pA, offset, angle, size, edge, tile_xy, mirror, mirror_pivot, proj, strength, tltr, blbr, mode, wihi, sample, matte))
+        params = list(zip_longest_fill(pA, mask, offset, angle, size, edge, tile_xy, mirror, mirror_pivot, proj, strength, tltr, blbr, mode, wihi, sample, matte))
         images = []
         pbar = ProgressBar(len(params))
-        for idx, (pA, offset, angle, size, edge, tile_xy, mirror, mirror_pivot, proj, strength, tltr, blbr, mode, wihi, sample, matte) in enumerate(params):
+        for idx, (pA, mask, offset, angle, size, edge, tile_xy, mirror, mirror_pivot, proj, strength, tltr, blbr, mode, wihi, sample, matte) in enumerate(params):
             pA = tensor2cv(pA) if pA is not None else channel_solid(chan=EnumImageType.BGRA)
+            if mask is not None:
+                mask = tensor2cv(mask)
+                pA = image_mask_add(pA, mask)
+
             h, w = pA.shape[:2]
             pA = image_transform(pA, offset, angle, size, sample, edge)
             pA = image_crop_center(pA, w, h)

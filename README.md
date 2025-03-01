@@ -111,6 +111,9 @@ You can colorize nodes via their `title background`, `node body` or `title text`
 <img src="https://github.com/user-attachments/assets/4459855c-c4e6-4739-811e-a6c90aa5a90c" alt="TICK Node Batch Support Output" width="384"/>
 </div>
 
+**2024/02/25** @1.7.30:
+* direct mask support for `TRANSFORM NODE`
+
 **2024/02/25** @1.7.28:
 * fixed import bug in widget_vector
 * cleaner akashic output
