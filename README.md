@@ -111,40 +111,25 @@ You can colorize nodes via their `title background`, `node body` or `title text`
 <img src="https://github.com/user-attachments/assets/4459855c-c4e6-4739-811e-a6c90aa5a90c" alt="TICK Node Batch Support Output" width="384"/>
 </div>
 
-**2024/02/25** @1.7.30:
+**2025/03/01** @1.7.31:
+* fixed all the year dates in readme since I have been writing 2024! =D
+
+**2025/03/01** @1.7.30:
 * direct mask support for `TRANSFORM NODE`
 
-**2024/02/25** @1.7.28:
+**2025/02/25** @1.7.28:
 * fixed import bug in widget_vector
 * cleaner akashic output
 * valid types for specific node inputs
 * updated value node to return [0] (list) instead of just an int when empty
 
-**2024/02/23** @1.7.26:
+**2025/02/23** @1.7.26:
 * vector fields can now be reset by clicking on the header of the field
 
-**2024/02/22** @1.7.25:
+**2025/02/22** @1.7.25:
 * cleanup api names
 * cleaned up typehints
 * fixed stupid bug that would just overwrite color defaults on refresh
-
-**2024/02/14** @1.7.17:
-* cleaning up image support before split into Jovi_Comp
-
-**2024/02/14** @1.7.15:
-* forced "OFF" the auto-scan for web cameras. Kept defaulting to on regardless of setting.
-[reference issue 80](https://github.com/Amorano/Jovimetrix/issues/80)
-
-**2024/02/10** @1.7.13:
-* cleared serialization bug
-* better "docker" environment check
-* cleaner type hints
-
-**2024/02/08** @1.7.9:
-* moved to proper semantic version numbers
-* PyOpenGL-accelerate updated to 3.1.9
-* better versioning in requirements around numpy
-* cleaner
 
 # INSTALLATION
 
