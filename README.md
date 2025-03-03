@@ -94,22 +94,13 @@ You can colorize nodes via their `title background`, `node body` or `title text`
 
 ## UPDATES
 
-**2024/02/18** @1.7.25:
-* nomenclature alignment for breakout repos
-* better typehints
-*
+**IF YOU ARE USING AN OLD VERSION THAT HAS COLOR CONFIGURATIONS THAT NO LONGER WORK, I CAN HELP YOU MIGRATE THEM. JUST START A TICKET OR SEND A MESSAGE**
 
-**2024/02/17** @1.7.20:
-* changed to newer conversion logic on frontend 1.10.3+ -- `VECTOR` types will auto-switch to conversion logic based on version
-* Fix for `VALUE NODE` to properly output vector data -- node in deprecation mode
-* Added explcit `VECTOR2 / INT`, `VECTOR3 / INT`, `VECTOR4 / INT` nodes for value input
-* Restructure to remove old UX hide/show widget features for compatibility with frontend (1.10.3+)
-* Added `BATCH` output to `TICK NODE` so you can get a normal comfyui list (top output) and a Jovimetrix list (BATCH)
-
-<div align="center">
-<img src="https://github.com/user-attachments/assets/8ed13e6a-218c-468a-a480-53ab55b04d21" alt="explicit vector node supports" width="640"/>
-<img src="https://github.com/user-attachments/assets/4459855c-c4e6-4739-811e-a6c90aa5a90c" alt="TICK Node Batch Support Output" width="384"/>
-</div>
+**2025/03/02** @1.7.33:
+* aligned core_color to match breakout updates
+* fixed configuration bug when no configuration present
+* moved color defaults to top and better entries
+* removed old config file route
 
 **2025/03/01** @1.7.31:
 * fixed all the year dates in readme since I have been writing 2024! =D
@@ -130,6 +121,18 @@ You can colorize nodes via their `title background`, `node body` or `title text`
 * cleanup api names
 * cleaned up typehints
 * fixed stupid bug that would just overwrite color defaults on refresh
+
+**2025/02/17** @1.7.20:
+* changed to newer conversion logic on frontend 1.10.3+ -- `VECTOR` types will auto-switch to conversion logic based on version
+* Fix for `VALUE NODE` to properly output vector data -- node in deprecation mode
+* Added explcit `VECTOR2 / INT`, `VECTOR3 / INT`, `VECTOR4 / INT` nodes for value input
+* Restructure to remove old UX hide/show widget features for compatibility with frontend (1.10.3+)
+* Added `BATCH` output to `TICK NODE` so you can get a normal comfyui list (top output) and a Jovimetrix list (BATCH)
+
+<div align="center">
+<img src="https://github.com/user-attachments/assets/8ed13e6a-218c-468a-a480-53ab55b04d21" alt="explicit vector node supports" width="640"/>
+<img src="https://github.com/user-attachments/assets/4459855c-c4e6-4739-811e-a6c90aa5a90c" alt="TICK Node Batch Support Output" width="384"/>
+</div>
 
 # INSTALLATION
 

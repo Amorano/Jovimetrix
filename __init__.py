@@ -70,7 +70,6 @@ ROOT_DOC = ROOT / 'res/doc'
 
 JOV_CONFIG = {}
 JOV_WEB = ROOT / 'web'
-JOV_CONFIG_FILE = JOV_WEB / 'config.json'
 
 # nodes to skip on import; for online systems; skip Export, Streamreader, etc...
 JOV_IGNORE_NODE = ROOT / 'ignore.txt'
@@ -767,13 +766,6 @@ async def jovimetrix_message_post(req) -> Any:
         return web.json_response(json_data)
     return web.json_response({})
 
-@PromptServer.instance.routes.get("/jovimetrix/config")
-async def jovimetrix_config(req) -> Any:
-    global JOV_CONFIG, JOV_CONFIG_FILE
-    if len(JOV_CONFIG) == 0:
-        JOV_CONFIG = configLoad(JOV_CONFIG_FILE)
-    return web.json_response(JOV_CONFIG)
-
 async def object_info(node_class: str, scheme:str, host: str) -> Any:
     global COMFYUI_OBJ_DATA
     if (info := COMFYUI_OBJ_DATA.get(node_class, None)) is None:
@@ -880,9 +872,6 @@ def load_module(name: str) -> None|ModuleType:
 def loader():
     global JOV_CONFIG, JOV_IGNORE_NODE, NODE_CLASS_MAPPINGS, NODE_DISPLAY_NAME_MAPPINGS
     NODE_LIST_MAP = {}
-
-    if JOV_CONFIG_FILE.exists():
-        JOV_CONFIG = configLoad(JOV_CONFIG_FILE)
 
     if JOV_IGNORE_NODE.exists():
         JOV_IGNORE_NODE = configLoad(JOV_IGNORE_NODE, False)
