@@ -1,6 +1,5 @@
 """
-Jovimetrix - http://www.github.com/amorano/jovimetrix
-GLSL Support
+Jovimetrix - GLSL Support
 
 Blended from old ModernGL implementation + Audio_Scheduler & Fill Node Pack
 """

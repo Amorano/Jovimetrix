@@ -1,6 +1,5 @@
 """
-Jovimetrix - http://www.github.com/amorano/jovimetrix
-UTIL support
+Jovimetrix - UTIL support
 """
 
 import os

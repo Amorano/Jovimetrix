@@ -1,6 +1,5 @@
 """
-Jovimetrix - http://www.github.com/amorano/jovimetrix
-Animation Support
+Jovimetrix - Animation Support
 """
 
 import inspect
@@ -9,8 +8,6 @@ from typing import Tuple, Union
 
 import numpy as np
 from numba import jit
-
-from loguru import logger
 
 __all__ = ["Ease", "Wave"]
 

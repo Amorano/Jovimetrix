@@ -1,6 +1,5 @@
 """
-Jovimetrix - http://www.github.com/amorano/jovimetrix
-Support
+Jovimetrix - Support
 """
 
 from enum import Enum

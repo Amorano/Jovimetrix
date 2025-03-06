@@ -6,7 +6,6 @@
  █████   ██████    ████   ██ ██      ██ ███████    ██    ██   ██ ██ ██   ██ 
 
               Animation, Image Compositing & Procedural Creation
-                    http://www.github.com/amorano/jovimetrix
 
 @title: Jovimetrix
 @author: Alexander G. Morano

@@ -1,6 +1,5 @@
 """
-Jovimetrix - http://www.github.com/amorano/jovimetrix
-Device -- WEBCAM, REMOTE URLS, SPOUT
+Jovimetrix - Device -- WEBCAM, REMOTE URLS, SPOUT
 """
 
 import sys

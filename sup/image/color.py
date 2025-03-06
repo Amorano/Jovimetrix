@@ -1,6 +1,5 @@
 """
-Jovimetrix - http://www.github.com/amorano/jovimetrix
-Image Color Support
+Jovimetrix - Image Color Support
 """
 
 from enum import Enum

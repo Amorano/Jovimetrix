@@ -1,6 +1,5 @@
 """
-Jovimetrix - http://www.github.com/amorano/jovimetrix
-MIDI support
+Jovimetrix - MIDI support
 """
 
 import time

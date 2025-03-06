@@ -1,6 +1,5 @@
 """
-Jovimetrix - http://www.github.com/amorano/jovimetrix
-Noise Support
+Jovimetrix - Noise Support
 """
 
 from enum import Enum

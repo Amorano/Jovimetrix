@@ -1,6 +1,5 @@
 """
-Jovimetrix - http://www.github.com/amorano/jovimetrix
-Composition
+Jovimetrix - Composition
 """
 
 from enum import Enum

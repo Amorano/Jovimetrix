@@ -1,6 +1,5 @@
 """
-Jovimetrix - http://www.github.com/amorano/jovimetrix
-Calculation
+Jovimetrix - Calculation
 """
 
 import struct

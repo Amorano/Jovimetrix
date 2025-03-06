@@ -1,6 +1,5 @@
 """
-Jovimetrix - http://www.github.com/amorano/jovimetrix
-Utility
+Jovimetrix - Utility
 """
 
 import io

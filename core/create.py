@@ -1,6 +1,5 @@
 """
-Jovimetrix - http://www.github.com/amorano/jovimetrix
-Creation
+Jovimetrix - Creation
 """
 
 from typing import Dict, Tuple

@@ -1,6 +1,5 @@
 """
-Jovimetrix - http://www.github.com/amorano/jovimetrix
-Coordinates and Mapping
+Jovimetrix - Coordinates and Mapping
 """
 
 from enum import Enum
@@ -8,8 +7,6 @@ from typing import Any, List, Tuple
 
 import cv2
 import numpy as np
-
-from loguru import logger
 
 from . import TAU, TYPE_IMAGE, TYPE_fCOORD2D, \
     image_convert, image_lerp, image_normalize

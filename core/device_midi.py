@@ -1,6 +1,5 @@
 """
-Jovimetrix - http://www.github.com/amorano/jovimetrix
-Device -- MIDI
+Jovimetrix - Device -- MIDI
 
     type 0 (single track): all messages are saved in one track
     type 1 (synchronous): all tracks start at the same time

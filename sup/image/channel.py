@@ -1,14 +1,11 @@
 """
-Jovimetrix - http://www.github.com/amorano/jovimetrix
-Channel Ops
+Jovimetrix - Channel Ops
 """
 
 from enum import Enum
 from typing import List
 
 import numpy as np
-
-from loguru import logger
 
 from . import MIN_IMAGE_SIZE, TYPE_IMAGE, TYPE_PIXEL, \
     EnumImageType

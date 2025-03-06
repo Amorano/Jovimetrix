@@ -1,14 +1,11 @@
 """
-Jovimetrix - http://www.github.com/amorano/jovimetrix
-Audio Support
+Jovimetrix - Audio Support
 """
 
 from enum import Enum
 
 import numpy as np
 from PIL import Image, ImageDraw
-
-from loguru import logger
 
 from .image import TYPE_PIXEL, \
     EnumImageType, \

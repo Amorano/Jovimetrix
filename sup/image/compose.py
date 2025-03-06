@@ -1,6 +1,5 @@
 """
-Jovimetrix - http://www.github.com/amorano/jovimetrix
-Image Composition Operation Support
+Jovimetrix - Image Composition Operation Support
 """
 
 import sys
@@ -11,8 +10,6 @@ import cv2
 import numpy as np
 from PIL import Image, ImageDraw
 from blendmodes.blend import BlendType, blendLayers
-
-from loguru import logger
 
 from . import TYPE_IMAGE, TYPE_PIXEL, TYPE_fCOORD2D, \
     image_convert, image_mask, image_mask_add, image_matte, \

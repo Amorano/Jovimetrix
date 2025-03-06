@@ -1,6 +1,5 @@
 """
-Jovimetrix - http://www.github.com/amorano/jovimetrix
-Media Stream Support
+Jovimetrix - Media Stream Support
 """
 
 import os

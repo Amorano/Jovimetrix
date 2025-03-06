@@ -1,6 +1,5 @@
 """
-Jovimetrix - http://www.github.com/amorano/jovimetrix
-Creation
+Jovimetrix GLSL Creation
 """
 
 import sys
