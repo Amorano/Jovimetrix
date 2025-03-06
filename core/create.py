@@ -18,7 +18,7 @@ from .. import JOV_TYPE_IMAGE, \
 from ..sup.util import EnumConvertType, \
     parse_param, zip_longest_fill
 
-from ..sup.image import MIN_IMAGE_SIZE, EnumImageType, \
+from ..sup.image import MIN_IMAGE_SIZE, EnumImageType, image_convert, image_mask, \
     image_mask_add, image_matte, cv2tensor, cv2tensor_full, tensor2cv, pil2cv
 
 from ..sup.image.channel import channel_solid
@@ -53,6 +53,7 @@ Generate a constant image or mask of a specified size and color. It can be used 
         d = deep_merge(d, {
             "optional": {
                 Lexicon.PIXEL: (JOV_TYPE_IMAGE, {"tooltip":"Optional Image to Matte with Selected Color"}),
+                Lexicon.MASK: (JOV_TYPE_IMAGE, {"tooltip":"Override Image mask"}),
                 Lexicon.RGBA_A: ("VEC4INT", {"default": (0, 0, 0, 255),
                                         "rgb": True, "tooltip": "Constant Color to Output"}),
                 Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.MATTE.name}),
@@ -66,25 +67,32 @@ Generate a constant image or mask of a specified size and color. It can be used 
 
     def run(self, **kw) -> Tuple[torch.Tensor, ...]:
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
+        mask = parse_param(kw, Lexicon.MASK, EnumConvertType.IMAGE, None)
         matte = parse_param(kw, Lexicon.RGBA_A, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)
         mode = parse_param(kw, Lexicon.MODE, EnumScaleMode, EnumScaleMode.MATTE.name)
         sample = parse_param(kw, Lexicon.SAMPLE, EnumInterpolation, EnumInterpolation.LANCZOS4.name)
         images = []
-        params = list(zip_longest_fill(pA, matte, wihi, mode, sample))
+        params = list(zip_longest_fill(pA, mask, matte, wihi, mode, sample))
         pbar = ProgressBar(len(params))
-        for idx, (pA, matte, wihi, mode, sample) in enumerate(params):
+        for idx, (pA, mask, matte, wihi, mode, sample) in enumerate(params):
             width, height = wihi
+            if mask is not None:
+                mask = tensor2cv(mask)
             if pA is None:
                 pA = channel_solid(width, height, matte, EnumImageType.BGRA)
+                if mask is not None:
+                    pA = image_mask_add(pA, mask)
                 images.append(cv2tensor_full(pA))
             else:
                 pA = tensor2cv(pA)
+                pA = image_convert(pA, 4)
+                if mask is not None:
+                    pA = image_mask_add(pA, mask)
                 if mode != EnumScaleMode.MATTE:
                     pA = image_scalefit(pA, width, height, mode, sample)
                 images.append(cv2tensor_full(pA, matte))
             pbar.update_absolute(idx)
-        # return [torch.cat(i) for i in zip(*images)]
         return [torch.stack(i) for i in zip(*images)]
 
 class ShapeNode(JOVImageNode):

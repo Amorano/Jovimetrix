@@ -118,7 +118,8 @@ def cv2tensor(image: TYPE_IMAGE, grayscale: bool=False) -> torch.Tensor:
 def cv2tensor_full(image: TYPE_IMAGE, matte:TYPE_PIXEL=(0,0,0,255)) -> Tuple[torch.Tensor, ...]:
 
     rgba = image_convert(image, 4)
-    rgb = rgba[...,:3]
+    # rgb = rgba[...,:3]
+    rgb = image_matte(rgba, matte)[...,:3]
     mask = rgba[...,3]
     rgba = torch.from_numpy(rgba.astype(np.float32) / 255.0)
     rgb = torch.from_numpy(rgb.astype(np.float32) / 255.0)
@@ -284,7 +285,7 @@ def image_convert(image: TYPE_IMAGE, channels: int, width: int=None, height: int
         image = np.expand_dims(image, axis=-1)
 
     if (cc := image.shape[2]) != channels:
-        if   cc == 1 and channels == 3:
+        if cc == 1 and channels == 3:
             image = np.repeat(image, 3, axis=2)
         elif cc == 1 and channels == 4:
             rgb = np.repeat(image, 3, axis=2)

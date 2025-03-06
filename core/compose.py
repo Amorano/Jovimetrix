@@ -788,6 +788,8 @@ Combines individual color channels (red, green, blue) along with an optional mas
             for i, x in enumerate(img):
                 if x is None:
                     x = np.full((h_max, w_max), matte[i], dtype=np.uint8)
+                else:
+                    x = image_scalefit(x, w_max, h_max, EnumScaleMode.ASPECT)
                 if flip[i] > 0:
                     x = image_invert(x, flip[i])
                 img[i] = x
@@ -1008,7 +1010,7 @@ Apply various geometric transformations to images, including translation, rotati
         d = deep_merge(d, {
             "optional": {
                 Lexicon.PIXEL: (JOV_TYPE_IMAGE, {}),
-                Lexicon.MASK: (JOV_TYPE_IMAGE, {}),
+                Lexicon.MASK: (JOV_TYPE_IMAGE, {"tooltip":"Override Image mask"}),
                 Lexicon.XY: ("VEC2", {"default": (0., 0.,), "mij": -1., "maj": 1., "step": 0.01, "label": [Lexicon.X, Lexicon.Y]}),
                 Lexicon.ANGLE: ("FLOAT", {"default": 0., "step": 0.1}),
                 Lexicon.SIZE: ("VEC2", {"default": (1., 1.), "mij": 0.001, "step": 0.01, "label": [Lexicon.X, Lexicon.Y]}),

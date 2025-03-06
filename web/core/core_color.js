@@ -1,7 +1,4 @@
-/**
- * File: core_color.js
- * Project: Jovimetrix
- */
+/**/
 
 import { app } from "../../../scripts/app.js";
 import { api } from "../../../scripts/api.js"
@@ -68,8 +65,12 @@ function getColor(node) {
     const CONFIG_REGEX = app.extensionManager.setting.get(SETTING_REGEX);
     if (Array.isArray(CONFIG_REGEX)) {
         for (const { regex, ...colors } of CONFIG_REGEX) {
-            if (regex && node.type.match(new RegExp(regex, "i"))) {
-                return colors;
+            try {
+                if (regex && node.type.match(new RegExp(regex, "i"))) {
+                    return colors;
+                }
+            } catch (error) {
+                // console.warn("Invalid regular expression:", regex, error);
             }
         }
     }
@@ -165,16 +166,29 @@ class JovimetrixPanelColorize {
         return siblings;
     }
 
-    createColorButton(type, name, color, idx) {
+    createRegexEntry(data) {
+        const field = $el("input", { value: data.name });
+        field.addEventListener("input", (event) => {
+            console.log("Input changed:", event.target.value);
+            // React to changes, e.g., validate regex, update UI, etc.
+            const CONFIG_REGEX = app.extensionManager.setting.get(SETTING_REGEX);
+            CONFIG_REGEX[data.idx]["regex"] = event.target.value;
+            app.extensionManager.setting.set(SETTING_REGEX, CONFIG_REGEX);
+            app.canvas.setDirty(true);
+        });
+        return field;
+    }
+
+    createColorButton(type, color, data) {
         const label = type == "title" ? "T" : type == "body" ? "B" : "X";
         const button = $el('button.color-button', {
             style: { backgroundColor: color },
             dataset: {
                 type: type,
-                name: name,
+                name: data.name,
                 color: color,
                 colorOld: color,
-                idx: idx
+                idx: data.idx
             },
             value: label,
             content: label,
@@ -190,7 +204,6 @@ class JovimetrixPanelColorize {
             this.buttonCurrent = event.target;
             this.showPicker(event.target);
         });
-
         return button;
     }
 
@@ -381,15 +394,12 @@ class JovimetrixPanelColorize {
         }
 
         const element = $el("tr", { className: rowClass, style }, [
-            $el("td", {}, [this.createColorButton("title", data.name, titleColor, data.idx)]),
-            $el("td", {}, [this.createColorButton("body", data.name, bodyColor, data.idx)]),
-            $el("td", {}, [this.createColorButton("text", data.name, textColor, data.idx)]),
-            (type === "regex") ? $el("td", [
-                $el("input", {
-                    value: data.name
-                })
-            ])
-            : $el("td", { textContent: data.name })
+            $el("td", {}, [this.createColorButton("title", titleColor, data)]),
+            $el("td", {}, [this.createColorButton("body", bodyColor, data)]),
+            $el("td", {}, [this.createColorButton("text", textColor, data)]),
+            (type === "regex") ?
+                $el("td", {}, [this.createRegexEntry(data)]) :
+                $el("td", { textContent: data.name })
         ]);
 
         return element;
@@ -407,9 +417,9 @@ class JovimetrixPanelColorize {
             const data = {
                 idx: idx,
                 name: entry.regex,
-                title: entry.title || LiteGraph.NODE_TITLE_COLOR,
-                body: entry.body || LiteGraph.WIDGET_BGCOLOR,
-                text: entry.body || LiteGraph.NODE_TEXT_COLOR
+                title: entry.title,
+                body: entry.body,
+                text: entry.body
             };
             this.tbody.appendChild(this.templateColorRow(data, "regex"));
         });
