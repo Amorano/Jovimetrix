@@ -274,7 +274,7 @@ Perform single function operations like absolute value, mean, median, mode, magn
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                Lexicon.IN_A: (JOV_TYPE_FULL, {"default": None}),
+                Lexicon.IN_A: (JOV_TYPE_NUMERICAL, {"default": None}),
                 Lexicon.FUNC: (EnumUnaryOperation._member_names_, {"default": EnumUnaryOperation.ABS.name})
             }
         })
@@ -377,9 +377,9 @@ Execute binary operations like addition, subtraction, multiplication, division, 
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                Lexicon.IN_A: (JOV_TYPE_FULL, {"default": None,
+                Lexicon.IN_A: (JOV_TYPE_NUMERICAL, {"default": None,
                                         "tooltip":"Passes a raw value directly, or supplies defaults for any value inputs without connections"}),
-                Lexicon.IN_B: (JOV_TYPE_FULL, {"default": None,
+                Lexicon.IN_B: (JOV_TYPE_NUMERICAL, {"default": None,
                                         "tooltip":"Passes a raw value directly, or supplies defaults for any value inputs without connections"}),
                 Lexicon.FUNC: (EnumBinaryOperation._member_names_, {"default": EnumBinaryOperation.ADD.name, "tooltip":"Arithmetic operation to perform"}),
                 Lexicon.TYPE: (names_convert, {"default": names_convert[2],

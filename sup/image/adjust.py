@@ -472,6 +472,8 @@ def image_translate(image: TYPE_IMAGE, offset: TYPE_fCOORD2D=(0.0, 0.0),
         height, width = img.shape[:2]
         scalarX = 0.333 if edge in [EnumEdge.WRAP, EnumEdge.WRAPX] else 1.0
         scalarY = 0.333 if edge in [EnumEdge.WRAP, EnumEdge.WRAPY] else 1.0
+        scalarX = 1.0
+        scalarY = 1.0
 
         M = np.float32([[1, 0, offset[0] * width * scalarX], [0, 1, offset[1] * height * scalarY]])
         if edge == EnumEdge.CLIP:

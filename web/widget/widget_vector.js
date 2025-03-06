@@ -1,6 +1,4 @@
-/**
- * File: widget_vector.js
- */
+/**/
 
 import { app } from "../../../scripts/app.js"
 import { $el } from "../../../scripts/ui.js"
@@ -164,8 +162,9 @@ const VectorWidget = (app, inputName, options, initial, desc='') => {
 
         pointer.onClick = (eUp) => {
             /* if click on header, reset to defaults */
-            if (index == -1) {
-                widget.value = Object.assign({}, widget.options.default);
+            if (index == -1 && eUp.shiftKey) {
+                widget.value = Object.assign([], widget.options.default);
+                return;
             }
             else if (index >= 0 && index < size) {
                 const pos = [eUp.canvasX - node.pos[0], eUp.canvasY - node.pos[1]]
@@ -200,7 +199,7 @@ const VectorWidget = (app, inputName, options, initial, desc='') => {
             }
             if (!this.options?.rgb) return;
 
-            const rgba = Object.values(this?.value || []);
+            const rgba = widget.value;
             const color = colorRGB2Hex(rgba.slice(0, 3));
 
             if (index != size && (x < 0 && rgba.length > 2)) {

@@ -216,6 +216,8 @@ def image_mask_add(image:TYPE_IMAGE, mask:TYPE_IMAGE=None, alpha:float=255) -> T
     """
     image = image_convert(image, 4)
     mask = image_mask(image, alpha) if mask is None else image_convert(mask, 1)
+    h, w, c = image.shape
+    mask = cv2.resize(mask, (w, h))
     image[..., 3] = mask if mask.ndim == 2 else mask[:, :, 0]
     return image
 

@@ -786,13 +786,14 @@ Combines individual color channels (red, green, blue) along with an optional mas
 
             _, _, w_max, h_max = image_minmax(img)
             for i, x in enumerate(img):
-                img[i] = x
                 if x is None:
-                    img[i] = np.full((h_max, w_max), matte[i], dtype=np.uint8)
+                    x = np.full((h_max, w_max), matte[i], dtype=np.uint8)
                 if flip[i] > 0:
-                    img[i] = image_invert(x, flip[i])
+                    x = image_invert(x, flip[i])
+                img[i] = x
 
             img = channel_merge(img)
+            img = image_invert(img, 1)
 
             if mode != EnumScaleMode.MATTE:
                 w, h = wihi
@@ -1008,16 +1009,16 @@ Apply various geometric transformations to images, including translation, rotati
             "optional": {
                 Lexicon.PIXEL: (JOV_TYPE_IMAGE, {}),
                 Lexicon.MASK: (JOV_TYPE_IMAGE, {}),
-                Lexicon.XY: ("VEC2", {"default": (0, 0,), "mij": -1, "maj": 1, "step": 0.01, "label": [Lexicon.X, Lexicon.Y]}),
-                Lexicon.ANGLE: ("FLOAT", {"default": 0, "step": 0.01}),
+                Lexicon.XY: ("VEC2", {"default": (0., 0.,), "mij": -1., "maj": 1., "step": 0.01, "label": [Lexicon.X, Lexicon.Y]}),
+                Lexicon.ANGLE: ("FLOAT", {"default": 0., "step": 0.1}),
                 Lexicon.SIZE: ("VEC2", {"default": (1., 1.), "mij": 0.001, "step": 0.01, "label": [Lexicon.X, Lexicon.Y]}),
-                Lexicon.TILE: ("VEC2", {"default": (1., 1.), "mij": 1, "step": 0.01, "label": [Lexicon.X, Lexicon.Y]}),
+                Lexicon.TILE: ("VEC2", {"default": (1., 1.), "mij": 1., "step": 0.01, "label": [Lexicon.X, Lexicon.Y]}),
                 Lexicon.EDGE: (EnumEdge._member_names_, {"default": EnumEdge.CLIP.name}),
                 Lexicon.MIRROR: (EnumMirrorMode._member_names_, {"default": EnumMirrorMode.NONE.name}),
                 Lexicon.PIVOT: ("VEC2", {"default": (0.5, 0.5), "step": 0.005, "label": [Lexicon.X, Lexicon.Y]}),
                 Lexicon.PROJECTION: (EnumProjection._member_names_, {"default": EnumProjection.NORMAL.name}),
-                Lexicon.TLTR: ("VEC4", {"default": (0, 0, 1, 0), "step": 0.005,  "label": [Lexicon.TOP, Lexicon.LEFT, Lexicon.TOP, Lexicon.RIGHT]}),
-                Lexicon.BLBR: ("VEC4", {"default": (0, 1, 1, 1), "step": 0.005, "label": [Lexicon.BOTTOM, Lexicon.LEFT, Lexicon.BOTTOM, Lexicon.RIGHT]}),
+                Lexicon.TLTR: ("VEC4", {"default": (0., 0., 1., 0.), "mij": 0., "maj": 1., "step": 0.005, "label": [Lexicon.TOP, Lexicon.LEFT, Lexicon.TOP, Lexicon.RIGHT]}),
+                Lexicon.BLBR: ("VEC4", {"default": (0., 1., 1., 1.), "mij": 0., "maj": 1., "step": 0.005, "label": [Lexicon.BOTTOM, Lexicon.LEFT, Lexicon.BOTTOM, Lexicon.RIGHT]}),
                 Lexicon.STRENGTH: ("FLOAT", {"default": 1, "min": 0, "step": 0.005}),
                 Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.MATTE.name}),
                 Lexicon.WH: ("VEC2INT", {"default": (512, 512), "mij":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
@@ -1030,16 +1031,16 @@ Apply various geometric transformations to images, including translation, rotati
     def run(self, **kw) -> Tuple[torch.Tensor, ...]:
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
         mask = parse_param(kw, Lexicon.MASK, EnumConvertType.IMAGE, None)
-        offset = parse_param(kw, Lexicon.XY, EnumConvertType.VEC2, [(0, 0)], -2.5, 2.5)
+        offset = parse_param(kw, Lexicon.XY, EnumConvertType.VEC2, [(0., 0.)], -2.5, 2.5)
         angle = parse_param(kw, Lexicon.ANGLE, EnumConvertType.FLOAT, 0)
-        size = parse_param(kw, Lexicon.SIZE, EnumConvertType.VEC2, [(1, 1)], 0.001)
+        size = parse_param(kw, Lexicon.SIZE, EnumConvertType.VEC2, [(1., 1.)], 0.001)
         edge = parse_param(kw, Lexicon.EDGE, EnumEdge, EnumEdge.CLIP.name)
         mirror = parse_param(kw, Lexicon.MIRROR, EnumMirrorMode, EnumMirrorMode.NONE.name)
         mirror_pivot = parse_param(kw, Lexicon.PIVOT, EnumConvertType.VEC2, [(0.5, 0.5)], 0, 1)
         tile_xy = parse_param(kw, Lexicon.TILE, EnumConvertType.VEC2, [(1., 1.)], 1)
         proj = parse_param(kw, Lexicon.PROJECTION, EnumProjection, EnumProjection.NORMAL.name)
-        tltr = parse_param(kw, Lexicon.TLTR, EnumConvertType.VEC4, [(0, 0, 1, 0)], 0, 1)
-        blbr = parse_param(kw, Lexicon.BLBR, EnumConvertType.VEC4, [(0, 1, 1, 1)], 0, 1)
+        tltr = parse_param(kw, Lexicon.TLTR, EnumConvertType.VEC4, [(0., 0., 1., 0.)], 0, 1)
+        blbr = parse_param(kw, Lexicon.BLBR, EnumConvertType.VEC4, [(0., 1., 1., 1.)], 0, 1)
         strength = parse_param(kw, Lexicon.STRENGTH, EnumConvertType.FLOAT, 1, 0, 1)
         mode = parse_param(kw, Lexicon.MODE, EnumScaleMode, EnumScaleMode.MATTE.name)
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)
