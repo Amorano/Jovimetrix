@@ -199,7 +199,8 @@ const VectorWidget = (app, inputName, options, initial, desc='') => {
             }
             if (!this.options?.rgb) return;
 
-            const rgba = widget.value;
+            //const rgba = widget.value;
+            const rgba = Object.values(this?.value || []);
             const color = colorRGB2Hex(rgba.slice(0, 3));
 
             if (index != size && (x < 0 && rgba.length > 2)) {

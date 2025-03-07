@@ -139,7 +139,7 @@ Create n-sided polygons. These shapes can be customized by adjusting parameters 
             width, height = wihi
             sizeX, sizeY = size
             fill = color[:3][::-1]
-            back = matte[:3]
+            back = matte[:3][::-1]
 
             match shape:
                 case EnumShapes.RECTANGLE | EnumShapes.SQUARE:
@@ -276,7 +276,7 @@ Generates images containing text based on parameters such as font, size, alignme
                 Lexicon.ALIGN: (EnumAlignment._member_names_, {"default": EnumAlignment.CENTER.name}),
                 Lexicon.JUSTIFY: (EnumJustify._member_names_, {"default": EnumJustify.CENTER.name}),
                 Lexicon.MARGIN: ("INT", {"default": 0, "min": -1024, "max": 1024}),
-                Lexicon.SPACING: ("INT", {"default": 25, "min": -1024, "max": 1024}),
+                Lexicon.SPACING: ("INT", {"default": 0, "min": -1024, "max": 1024}),
                 Lexicon.WH: ("VEC2INT", {"default": (256, 256),
                                     "mij":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
                 Lexicon.XY: ("VEC2", {"default": (0, 0,), "mij": -1, "maj": 1, "step": 0.01,
@@ -301,7 +301,7 @@ Generates images containing text based on parameters such as font, size, alignme
         align = parse_param(kw, Lexicon.ALIGN, EnumAlignment, EnumAlignment.CENTER.name)
         justify = parse_param(kw, Lexicon.JUSTIFY, EnumJustify, EnumJustify.CENTER.name)
         margin = parse_param(kw, Lexicon.MARGIN, EnumConvertType.INT, 0)
-        line_spacing = parse_param(kw, Lexicon.SPACING, EnumConvertType.INT, 25)
+        line_spacing = parse_param(kw, Lexicon.SPACING, EnumConvertType.INT, 0)
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)
         pos = parse_param(kw, Lexicon.XY, EnumConvertType.VEC2, [(0, 0)], -1, 1)
         angle = parse_param(kw, Lexicon.ANGLE, EnumConvertType.INT, 0)
