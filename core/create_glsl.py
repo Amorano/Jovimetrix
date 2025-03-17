@@ -18,7 +18,7 @@ from comfy.utils import ProgressBar
 
 from .. import \
     JOV_TYPE_IMAGE, \
-    InputType, Lexicon, JOVImageNode, \
+    InputType, Lexicon, JOVImageNode, RGBAMaskType, \
     comfy_api_post, deep_merge
 
 from ..sup.util import \
@@ -108,7 +108,7 @@ class GLSLNodeBase(JOVImageNode):
         self.__glsl = GLSLShader()
         self.__delta = 0
 
-    def run(self, ident, **kw) -> Tuple[torch.Tensor]:
+    def run(self, ident, **kw) -> RGBAMaskType:
         batch = parse_param(kw, Lexicon.BATCH, EnumConvertType.INT, 0, 0, 1048576)[0]
         delta = parse_param(kw, Lexicon.TIME, EnumConvertType.FLOAT, 0)[0]
 

@@ -49,6 +49,8 @@ from string import Template
 from types import ModuleType
 from typing import Any, Dict, List, Literal, Tuple, TypeAlias
 
+import torch
+
 try:
     from markdownify import markdownify
 except:
@@ -121,6 +123,8 @@ class AnyType(str):
 
 JOV_TYPE_ANY = AnyType("*")
 
+TensorType: TypeAlias = torch.Tensor
+RGBAMaskType: TypeAlias = Tuple[TensorType, ...]
 InputType: TypeAlias = Dict[str, Tuple[str|List[str], Dict[str, Any]]]
 
 # want to make explicit entries; comfy only looks for single type

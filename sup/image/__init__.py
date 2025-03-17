@@ -14,6 +14,8 @@ import torch
 import numpy as np
 from PIL import Image, ImageOps
 
+from ... import RGBAMaskType
+
 # ==============================================================================
 # === GLOBAL ===
 # ==============================================================================
@@ -115,7 +117,7 @@ def cv2tensor(image: TYPE_IMAGE, grayscale: bool=False) -> torch.Tensor:
     image = image.astype(np.float32) / 255.0
     return torch.from_numpy(image)
 
-def cv2tensor_full(image: TYPE_IMAGE, matte:TYPE_PIXEL=(0,0,0,255)) -> Tuple[torch.Tensor, ...]:
+def cv2tensor_full(image: TYPE_IMAGE, matte:TYPE_PIXEL=(0,0,0,255)) -> RGBAMaskType:
 
     rgba = image_convert(image, 4)
     # rgb = rgba[...,:3]
@@ -352,7 +354,7 @@ def image_lerp(imageA: TYPE_IMAGE, imageB:TYPE_IMAGE, mask:TYPE_IMAGE=None,
     imageA = (imageA * 255).astype(imageA.dtype)
     return np.clip(imageA, 0, 255)
 
-def image_load(url: str) -> Tuple[TYPE_IMAGE, TYPE_IMAGE]:
+def image_load(url: str) -> Tuple[TYPE_IMAGE, ...]:
     if url.lower().startswith("http"):
         response = requests.get(url, stream=True)
         response.raise_for_status()
@@ -404,7 +406,7 @@ def image_load(url: str) -> Tuple[TYPE_IMAGE, TYPE_IMAGE]:
 
     return img, mask
 
-def image_minmax(image:List[TYPE_IMAGE]) -> Tuple[int, int, int, int]:
+def image_minmax(image:List[TYPE_IMAGE]) -> Tuple[int, ...]:
     h_min = w_min = 100000000000
     h_max = w_max = MIN_IMAGE_SIZE
     for img in image:

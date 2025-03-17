@@ -16,7 +16,7 @@ from comfy.utils import ProgressBar
 
 from .. import \
     JOV_DOCKERENV, JOV_TYPE_IMAGE, \
-    InputType, JOVBaseNode, JOVImageNode, Lexicon, \
+    InputType, JOVBaseNode, JOVImageNode, Lexicon, RGBAMaskType, \
     deep_merge
 
 from ..sup.util import \
@@ -153,7 +153,7 @@ Capture frames from various sources such as URLs, cameras, monitors, windows, or
         self.__empty = (a, e, m,)
         self.__last = [(a, e, m,)]
 
-    def run(self, *arg, **kw) -> Tuple[torch.Tensor, ...]:
+    def run(self, *arg, **kw) -> RGBAMaskType:
         wait = parse_param(kw, Lexicon.WAIT, EnumConvertType.BOOLEAN, False)[0]
         if wait:
             return self.__last

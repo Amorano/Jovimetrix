@@ -13,7 +13,7 @@ from comfy.utils import ProgressBar
 
 from .. import \
     JOV_TYPE_IMAGE, \
-    InputType, JOVBaseNode, JOVImageNode, Lexicon, \
+    InputType, JOVBaseNode, JOVImageNode, Lexicon, RGBAMaskType, \
     deep_merge
 
 from ..sup.util import \
@@ -72,7 +72,7 @@ Generate a constant image or mask of a specified size and color. It can be used 
         })
         return Lexicon._parse(d)
 
-    def run(self, **kw) -> Tuple[torch.Tensor, ...]:
+    def run(self, **kw) -> RGBAMaskType:
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
         mask = parse_param(kw, Lexicon.MASK, EnumConvertType.IMAGE, None)
         matte = parse_param(kw, Lexicon.RGBA_A, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
@@ -128,7 +128,7 @@ Create n-sided polygons. These shapes can be customized by adjusting parameters 
         })
         return Lexicon._parse(d)
 
-    def run(self, **kw) -> Tuple[torch.Tensor, ...]:
+    def run(self, **kw) -> RGBAMaskType:
         shape = parse_param(kw, Lexicon.SHAPE, EnumShapes, EnumShapes.CIRCLE.name)
         sides = parse_param(kw, Lexicon.SIDES, EnumConvertType.INT, 3, 3, 100)
         angle = parse_param(kw, Lexicon.ANGLE, EnumConvertType.FLOAT, 0)
@@ -196,7 +196,7 @@ Generates false perception 3D images from 2D input. Set tile divisions, noise, g
         })
         return Lexicon._parse(d)
 
-    def run(self, **kw) -> Tuple[torch.Tensor, ...]:
+    def run(self, **kw) -> RGBAMaskType:
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
         depth = parse_param(kw, Lexicon.DEPTH, EnumConvertType.IMAGE, None)
         divisions = parse_param(kw, Lexicon.TILE, EnumConvertType.INT, 1, 1, 8)
@@ -296,7 +296,7 @@ Generates images containing text based on parameters such as font, size, alignme
         })
         return Lexicon._parse(d)
 
-    def run(self, **kw) -> Tuple[torch.Tensor, ...]:
+    def run(self, **kw) -> RGBAMaskType:
         full_text = parse_param(kw, Lexicon.STRING, EnumConvertType.STRING, "jovimetrix")
         font_idx = parse_param(kw, Lexicon.FONT, EnumConvertType.STRING, self.FONT_NAMES[0])
         autosize = parse_param(kw, Lexicon.AUTOSIZE, EnumConvertType.BOOLEAN, False)
