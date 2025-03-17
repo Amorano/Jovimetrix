@@ -1,8 +1,4 @@
-/**
- * File: util_widget.js
- * Project: Jovimetrix
- *
- */
+/**/
 
 import { app } from "../../../scripts/app.js"
 import { nodeFitHeight } from "./util_node.js"

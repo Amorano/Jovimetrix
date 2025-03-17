@@ -1,8 +1,4 @@
-/**
- * File: util_fun.js
- * Project: Jovimetrix
- *
- */
+/**/
 
 import { app } from "../../../scripts/app.js";
 

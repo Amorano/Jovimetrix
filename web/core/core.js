@@ -1,7 +1,5 @@
 /**
- * File: core.js
- *
- * ASYNC
+    ASYNC
     init
     setup
     registerCustomNodes
@@ -15,8 +13,7 @@
     onNodeOutputsUpdated
     beforeRegisterVueAppNodeDefs
     loadedGraphNode
- * Project: Jovimetrix
- */
+  */
 
 import { app } from "../../../scripts/app.js"
 

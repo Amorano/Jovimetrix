@@ -1,8 +1,4 @@
-/**
- * File: route.js
- * Project: Jovimetrix
- *
- */
+/**/
 
 import { app } from "../../../scripts/app.js"
 import {

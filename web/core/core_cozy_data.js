@@ -1,8 +1,4 @@
-/**
- * File: core_cozy_data.js
- * Project: Jovimetrix
- *
- */
+/**/
 
 import { app } from "../../../scripts/app.js"
 

@@ -1,8 +1,4 @@
-/**
- * File: queue_too.js
- * Project: Jovimetrix
- *
- */
+/**/
 
 import { api } from "../../../scripts/api.js";
 import { app } from "../../../scripts/app.js";

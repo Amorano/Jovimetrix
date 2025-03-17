@@ -1,8 +1,4 @@
-/**
- * File: util_jov.js
- * Project: Jovimetrix
- *
- */
+/**/
 
 import { nodeFitHeight } from './util_node.js'
 import { widgetShowVector, widget_type_name, widgetHide, widgetShow } from './util_widget.js'

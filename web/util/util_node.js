@@ -1,8 +1,4 @@
-/**
- * File: util_node.js
- * Project: Jovimetrix
- *
- */
+/**/
 
 /*
 parse a json into a graph

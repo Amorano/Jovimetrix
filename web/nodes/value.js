@@ -1,8 +1,4 @@
-/**
- * File: value.js
- * Project: Jovimetrix
- *
- */
+/**/
 
 import { app } from "../../../scripts/app.js"
 import { widgetHookAB } from '../util/util_jov.js'

@@ -1,9 +1,4 @@
-/**
- * File: lerp
- * .js
- * Project: Jovimetrix
- *
- */
+/**/
 
 import { app } from "../../../scripts/app.js"
 import { widgetHookControl, widgetHookAB } from '../util/util_jov.js'
