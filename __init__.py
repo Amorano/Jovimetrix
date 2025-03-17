@@ -47,7 +47,7 @@ import importlib
 from pathlib import Path
 from string import Template
 from types import ModuleType
-from typing import Any, Dict, List, Literal, Tuple
+from typing import Any, Dict, List, Literal, Tuple, TypeAlias
 
 try:
     from markdownify import markdownify
@@ -120,6 +120,8 @@ class AnyType(str):
         return False
 
 JOV_TYPE_ANY = AnyType("*")
+
+InputType: TypeAlias = Dict[str, Tuple[str|List[str], Dict[str, Any]]]
 
 # want to make explicit entries; comfy only looks for single type
 JOV_TYPE_NUMBER = "BOOLEAN,FLOAT,INT"

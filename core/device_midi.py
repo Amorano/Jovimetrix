@@ -6,18 +6,23 @@ Jovimetrix - Device -- MIDI
     type 2 (asynchronous): each track is independent of the others
 """
 
-from typing import Dict, Tuple
+from typing import Tuple
 from math import isclose
 from queue import Queue
 
 from comfy.utils import ProgressBar
 
-from .. import JOVBaseNode, Lexicon, deep_merge
+from .. import \
+    InputType, JOVBaseNode, Lexicon, \
+    deep_merge
 
-from ..sup.util import EnumConvertType, parse_param
+from ..sup.util import \
+    EnumConvertType, \
+    parse_param
 
-from ..sup.midi import MIDIMessage, MIDINoteOnFilter, MIDIServerThread,\
-      midi_device_names
+from ..sup.midi import \
+    MIDIMessage, MIDINoteOnFilter, MIDIServerThread, \
+    midi_device_names
 
 # ==============================================================================
 
@@ -47,7 +52,7 @@ Processes MIDI messages received from an external MIDI controller or device. It 
 """
 
     @classmethod
-    def INPUT_TYPES(cls) -> Dict[str, str]:
+    def INPUT_TYPES(cls) -> InputType:
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
@@ -80,7 +85,7 @@ Captures MIDI messages from an external MIDI device or controller. It monitors M
     CHANGED = False
 
     @classmethod
-    def INPUT_TYPES(cls) -> Dict[str, str]:
+    def INPUT_TYPES(cls) -> InputType:
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
@@ -151,7 +156,7 @@ Provides advanced filtering capabilities for MIDI messages based on various crit
 """
 
     @classmethod
-    def INPUT_TYPES(cls) -> Dict[str, str]:
+    def INPUT_TYPES(cls) -> InputType:
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
@@ -256,7 +261,7 @@ Filter MIDI messages based on various criteria, including MIDI mode (such as not
 """
 
     @classmethod
-    def INPUT_TYPES(cls) -> Dict[str, str]:
+    def INPUT_TYPES(cls) -> InputType:
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {

@@ -7,7 +7,7 @@ import sys
 import math
 import random
 from enum import Enum
-from typing import Any, Dict, List, Tuple
+from typing import Any, List, Tuple
 from collections import Counter
 
 import torch
@@ -17,14 +17,18 @@ from loguru import logger
 
 from comfy.utils import ProgressBar
 
-from .. import JOV_TYPE_ANY, JOV_TYPE_FULL, JOV_TYPE_NUMBER, JOV_TYPE_NUMERICAL, \
-    Lexicon, JOVBaseNode, \
+from .. import \
+    JOV_TYPE_ANY, JOV_TYPE_FULL, JOV_TYPE_NUMBER, JOV_TYPE_NUMERICAL, \
+    InputType, Lexicon, JOVBaseNode, \
     comfy_api_post, deep_merge, parse_reset
 
-from ..sup.util import EnumConvertType, EnumSwizzle, \
+from ..sup.util import \
+    EnumConvertType, EnumSwizzle, \
     parse_dynamic, parse_param, parse_value, vector_swap, zip_longest_fill
 
-from ..sup.anim import EnumWave, EnumEase, ease_op, wave_op
+from ..sup.anim import \
+    EnumWave, EnumEase, \
+    ease_op, wave_op
 
 # ==============================================================================
 
@@ -217,7 +221,7 @@ STRING is treated as a list of CHARACTER.
 IMAGE and MASK will return a TRUE bit for any non-black pixel, as a stream of bits for all pixels in the image.
 """
     @classmethod
-    def INPUT_TYPES(cls) -> Dict[str, str]:
+    def INPUT_TYPES(cls) -> InputType:
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
@@ -270,7 +274,7 @@ Perform single function operations like absolute value, mean, median, mode, magn
 """
 
     @classmethod
-    def INPUT_TYPES(cls) -> Dict[str, str]:
+    def INPUT_TYPES(cls) -> InputType:
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
@@ -372,7 +376,7 @@ Execute binary operations like addition, subtraction, multiplication, division, 
 """
 
     @classmethod
-    def INPUT_TYPES(cls) -> Dict[str, str]:
+    def INPUT_TYPES(cls) -> InputType:
         names_convert = EnumConvertType._member_names_[:10]
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
@@ -514,7 +518,7 @@ Evaluates two inputs (A and B) with a specified comparison operators and optiona
 """
 
     @classmethod
-    def INPUT_TYPES(cls) -> Dict[str, str]:
+    def INPUT_TYPES(cls) -> InputType:
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
@@ -636,7 +640,7 @@ Additionally, you can specify the easing function (EASE) and the desired output 
 """
 
     @classmethod
-    def INPUT_TYPES(cls) -> Dict[str, str]:
+    def INPUT_TYPES(cls) -> InputType:
         d = super().INPUT_TYPES()
         names_convert = EnumConvertType._member_names_[:10]
         d = deep_merge(d, {
@@ -721,7 +725,7 @@ Manipulate strings through filtering
 """
 
     @classmethod
-    def INPUT_TYPES(cls) -> Dict[str, str]:
+    def INPUT_TYPES(cls) -> InputType:
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
@@ -786,7 +790,7 @@ Swap components between two vectors based on specified swizzle patterns and valu
 """
 
     @classmethod
-    def INPUT_TYPES(cls) -> Dict[str, str]:
+    def INPUT_TYPES(cls) -> InputType:
         d = super().INPUT_TYPES()
         names_convert = EnumConvertType._member_names_[3:10]
         d = deep_merge(d, {
@@ -841,7 +845,7 @@ A timer and frame counter, emitting pulses or signals based on time intervals. I
 """
 
     @classmethod
-    def INPUT_TYPES(cls) -> Dict[str, str]:
+    def INPUT_TYPES(cls) -> InputType:
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
@@ -931,7 +935,7 @@ Supplies raw or default values for various data types, supporting vector input w
     UPDATE = False
 
     @classmethod
-    def INPUT_TYPES(cls) -> Dict[str, str]:
+    def INPUT_TYPES(cls) -> InputType:
         d = super().INPUT_TYPES()
 
         typ = EnumConvertType._member_names_
@@ -1049,7 +1053,7 @@ Produce waveforms like sine, square, or sawtooth with adjustable frequency, ampl
 """
 
     @classmethod
-    def INPUT_TYPES(cls) -> Dict[str, str]:
+    def INPUT_TYPES(cls) -> InputType:
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
@@ -1103,7 +1107,7 @@ Outputs a VEC2 or VEC2INT.
 """
 
     @classmethod
-    def INPUT_TYPES(cls) -> Dict[str, str]:
+    def INPUT_TYPES(cls) -> InputType:
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
@@ -1141,7 +1145,7 @@ Outputs a VEC3 or VEC3INT.
 """
 
     @classmethod
-    def INPUT_TYPES(cls) -> Dict[str, str]:
+    def INPUT_TYPES(cls) -> InputType:
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
@@ -1182,7 +1186,7 @@ Outputs a VEC4 or VEC4INT.
 """
 
     @classmethod
-    def INPUT_TYPES(cls) -> Dict[str, str]:
+    def INPUT_TYPES(cls) -> InputType:
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
@@ -1223,7 +1227,7 @@ class ParameterNode(JOVBaseNode):
 """
 
     @classmethod
-    def INPUT_TYPES(cls) -> Dict[str, str]:
+    def INPUT_TYPES(cls) -> InputType:
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {

@@ -5,7 +5,7 @@ Jovimetrix - Device -- WEBCAM, REMOTE URLS, SPOUT
 import sys
 import time
 import uuid
-from typing import Dict, Tuple
+from typing import Tuple
 from enum import Enum
 
 import cv2
@@ -14,21 +14,25 @@ from loguru import logger
 
 from comfy.utils import ProgressBar
 
-from .. import JOV_DOCKERENV, JOV_TYPE_IMAGE, \
-    JOVBaseNode, JOVImageNode, Lexicon, \
+from .. import \
+    JOV_DOCKERENV, JOV_TYPE_IMAGE, \
+    InputType, JOVBaseNode, JOVImageNode, Lexicon, \
     deep_merge
 
-from ..sup.util import EnumConvertType, \
+from ..sup.util import \
+    EnumConvertType, \
     parse_param, zip_longest_fill
 
-from ..sup.stream import camera_list, monitor_list, window_list, \
-    monitor_capture, StreamingServer, StreamManager, \
-    MediaStreamDevice, JOV_SPOUT
+from ..sup.stream import \
+    JOV_SPOUT, \
+    StreamingServer, StreamManager, MediaStreamDevice, \
+    camera_list, monitor_list, window_list, monitor_capture
 
 if not JOV_DOCKERENV:
     from ..sup.stream import window_capture
 
-from ..sup.image.adjust import EnumScaleMode, EnumInterpolation, \
+from ..sup.image.adjust import \
+    EnumScaleMode, EnumInterpolation, \
     image_scalefit
 
 from ..sup.image.channel import channel_solid
@@ -36,7 +40,8 @@ from ..sup.image.channel import channel_solid
 if JOV_SPOUT:
     from ..sup.stream import SpoutSender, MediaStreamSpout
 
-from ..sup.image import MIN_IMAGE_SIZE, \
+from ..sup.image import \
+    MIN_IMAGE_SIZE, \
     EnumImageType, \
     image_convert, cv2tensor_full, tensor2cv
 
@@ -75,7 +80,7 @@ Capture frames from various sources such as URLs, cameras, monitors, windows, or
 """
 
     @classmethod
-    def INPUT_TYPES(cls) -> Dict[str, str]:
+    def INPUT_TYPES(cls) -> InputType:
         d = super().INPUT_TYPES()
 
         if cls.CAMERAS is None:
@@ -296,7 +301,7 @@ Sends frames to a specified route, typically for live streaming or recording pur
 """
 
     @classmethod
-    def INPUT_TYPES(cls) -> Dict[str, str]:
+    def INPUT_TYPES(cls) -> InputType:
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
@@ -367,7 +372,7 @@ Sends frames to a specified Spout receiver application for real-time video shari
 """
 
         @classmethod
-        def INPUT_TYPES(cls) -> Dict[str, str]:
+        def INPUT_TYPES(cls) -> InputType:
             d = super().INPUT_TYPES()
             d = deep_merge(d, {
                 "optional": {

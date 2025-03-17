@@ -4,16 +4,25 @@ Jovimetrix - Utility
 
 import io
 import json
-from typing import Any, Dict, Tuple
+from typing import Any, Tuple
 
 import torch
 import numpy as np
 from PIL import Image
 import matplotlib.pyplot as plt
 
-from ... import JOV_TYPE_IMAGE, Lexicon, JOVBaseNode, deep_merge, parse_reset
-from ...sup.util import EnumConvertType, parse_dynamic, parse_param
-from ...sup.image import MIN_IMAGE_SIZE, pil2tensor
+from ... import \
+    JOV_TYPE_IMAGE, \
+    InputType, Lexicon, JOVBaseNode, \
+    deep_merge, parse_reset
+
+from ...sup.util import \
+    EnumConvertType, \
+    parse_dynamic, parse_param
+
+from ...sup.image import \
+    MIN_IMAGE_SIZE, \
+    pil2tensor
 
 # ==============================================================================
 
@@ -139,7 +148,7 @@ Visualize a series of data points over time. It accepts a dynamic number of valu
 """
 
     @classmethod
-    def INPUT_TYPES(cls) -> Dict[str, str]:
+    def INPUT_TYPES(cls) -> InputType:
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
@@ -220,7 +229,7 @@ Exports and Displays immediate information about images.
 """
 
     @classmethod
-    def INPUT_TYPES(cls) -> Dict[str, str]:
+    def INPUT_TYPES(cls) -> InputType:
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {

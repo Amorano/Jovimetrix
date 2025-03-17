@@ -10,7 +10,7 @@ import random
 from enum import Enum
 from pathlib import Path
 from itertools import zip_longest
-from typing import Any, Dict, List, Literal, Tuple
+from typing import Any, List, Literal, Tuple
 
 import torch
 import numpy as np
@@ -20,15 +20,21 @@ from loguru import logger
 from comfy.utils import ProgressBar
 from nodes import interrupt_processing
 
-from ... import JOV_TYPE_ANY, ROOT, Lexicon, JOVBaseNode, deep_merge, \
-    comfy_api_post, parse_reset
+from ... import \
+    JOV_TYPE_ANY, ROOT, \
+    InputType, Lexicon, JOVBaseNode, \
+    deep_merge, comfy_api_post, parse_reset
 
-from ...sup.util import EnumConvertType, parse_dynamic, parse_param
+from ...sup.util import \
+    EnumConvertType, \
+    parse_dynamic, parse_param
 
-from ...sup.image import MIN_IMAGE_SIZE, IMAGE_FORMATS, \
+from ...sup.image import \
+    MIN_IMAGE_SIZE, IMAGE_FORMATS, \
     image_convert, image_matte, image_load, cv2tensor, cv2tensor_full, tensor2cv
 
-from ...sup.image.adjust import EnumScaleMode, EnumInterpolation, \
+from ...sup.image.adjust import \
+    EnumScaleMode, EnumInterpolation, \
     image_scalefit
 
 # ==============================================================================
@@ -69,7 +75,7 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
 """
 
     @classmethod
-    def INPUT_TYPES(cls) -> Dict[str, str]:
+    def INPUT_TYPES(cls) -> InputType:
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
@@ -238,7 +244,7 @@ class QueueBaseNode(JOVBaseNode):
         return float('nan')
 
     @classmethod
-    def INPUT_TYPES(cls) -> Dict[str, str]:
+    def INPUT_TYPES(cls) -> InputType:
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
@@ -478,7 +484,7 @@ Manage a queue of specific items: media files. Supports various image and video 
 """
 
     @classmethod
-    def INPUT_TYPES(cls) -> Dict[str, str]:
+    def INPUT_TYPES(cls) -> InputType:
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {

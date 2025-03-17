@@ -2,7 +2,7 @@
 Jovimetrix - Creation
 """
 
-from typing import Dict, Tuple
+from typing import Tuple
 
 import torch
 import numpy as np
@@ -11,27 +11,34 @@ from skimage.filters import gaussian
 
 from comfy.utils import ProgressBar
 
-from .. import JOV_TYPE_IMAGE, \
-    JOVBaseNode, JOVImageNode, Lexicon, \
+from .. import \
+    JOV_TYPE_IMAGE, \
+    InputType, JOVBaseNode, JOVImageNode, Lexicon, \
     deep_merge
 
-from ..sup.util import EnumConvertType, \
+from ..sup.util import \
+    EnumConvertType, \
     parse_param, zip_longest_fill
 
-from ..sup.image import MIN_IMAGE_SIZE, EnumImageType, image_convert, image_mask, \
-    image_mask_add, image_matte, cv2tensor, cv2tensor_full, tensor2cv, pil2cv
+from ..sup.image import \
+    MIN_IMAGE_SIZE, \
+    EnumImageType, \
+    image_convert, image_mask_add, image_matte, cv2tensor, cv2tensor_full, tensor2cv, pil2cv
 
 from ..sup.image.channel import channel_solid
 
-from ..sup.image.compose import EnumShapes, \
+from ..sup.image.compose import \
+    EnumShapes, \
     shape_ellipse, shape_polygon, shape_quad, image_mask_binary
 
-from ..sup.image.adjust import EnumEdge, EnumScaleMode, EnumInterpolation, \
+from ..sup.image.adjust import \
+    EnumEdge, EnumScaleMode, EnumInterpolation, \
     image_invert, image_rotate, image_scalefit, image_transform, image_translate
 
 from ..sup.image.mapping import image_stereogram
 
-from ..sup.text import EnumAlignment, EnumJustify, \
+from ..sup.text import \
+    EnumAlignment, EnumJustify, \
     font_names, text_autosize, text_draw
 
 # ==============================================================================
@@ -48,7 +55,7 @@ Generate a constant image or mask of a specified size and color. It can be used 
 """
 
     @classmethod
-    def INPUT_TYPES(cls) -> Dict[str, str]:
+    def INPUT_TYPES(cls) -> InputType:
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
@@ -103,7 +110,7 @@ Create n-sided polygons. These shapes can be customized by adjusting parameters 
 """
 
     @classmethod
-    def INPUT_TYPES(cls) -> Dict[str, str]:
+    def INPUT_TYPES(cls) -> InputType:
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
@@ -174,7 +181,7 @@ Generates false perception 3D images from 2D input. Set tile divisions, noise, g
 """
 
     @classmethod
-    def INPUT_TYPES(cls) -> Dict[str, str]:
+    def INPUT_TYPES(cls) -> InputType:
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
@@ -220,7 +227,7 @@ class StereoscopicNode(JOVBaseNode):
 Simulates depth perception in images by generating stereoscopic views. It accepts an optional input image for color matte. Adjust baseline and focal length for customized depth effects.
 """
     @classmethod
-    def INPUT_TYPES(cls) -> Dict[str, str]:
+    def INPUT_TYPES(cls) -> InputType:
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
@@ -258,7 +265,7 @@ Generates images containing text based on parameters such as font, size, alignme
 """
 
     @classmethod
-    def INPUT_TYPES(cls) -> Dict[str, str]:
+    def INPUT_TYPES(cls) -> InputType:
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {

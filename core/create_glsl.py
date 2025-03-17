@@ -4,7 +4,7 @@ Jovimetrix GLSL Creation
 
 import sys
 from pathlib import Path
-from typing import Any, Dict, Tuple
+from typing import Any, Tuple
 
 import torch
 from loguru import logger
@@ -16,21 +16,25 @@ except:
     pass
 from comfy.utils import ProgressBar
 
-from .. import JOV_TYPE_IMAGE, \
-    Lexicon, JOVImageNode, \
+from .. import \
+    JOV_TYPE_IMAGE, \
+    InputType, Lexicon, JOVImageNode, \
     comfy_api_post, deep_merge
 
-from ..sup.util import EnumConvertType, \
+from ..sup.util import \
+    EnumConvertType, \
     parse_param, parse_value
 
-from ..sup.image.adjust import EnumInterpolation, EnumScaleMode, \
+from ..sup.image.adjust import \
+    EnumInterpolation, EnumScaleMode, \
     image_scalefit
 
-from ..sup.image import MIN_IMAGE_SIZE, \
+from ..sup.image import \
+    MIN_IMAGE_SIZE, \
     image_convert, tensor2cv, cv2tensor_full
 
-from ..sup.shader import JOV_ROOT_GLSL, GLSL_PROGRAMS, PROG_FRAGMENT, \
-    PROG_VERTEX, PTYPE, \
+from ..sup.shader import \
+    JOV_ROOT_GLSL, GLSL_PROGRAMS, PROG_FRAGMENT, PROG_VERTEX, PTYPE, \
     CompileException, EnumGLSLEdge, GLSLShader, \
     shader_meta, load_file_glsl
 
@@ -85,7 +89,7 @@ class GLSLNodeBase(JOVImageNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/GLSL"
 
     @classmethod
-    def INPUT_TYPES(cls) -> Dict[str, str]:
+    def INPUT_TYPES(cls) -> InputType:
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
@@ -180,7 +184,7 @@ Execute custom GLSL (OpenGL Shading Language) fragment shaders to generate image
 """
 
     @classmethod
-    def INPUT_TYPES(cls) -> Dict[str, str]:
+    def INPUT_TYPES(cls) -> InputType:
         d = super().INPUT_TYPES()
         opts = d.get('optional', {})
         opts.update({
@@ -202,7 +206,7 @@ class GLSLNodeDynamic(GLSLNodeBase):
     PARAM = None
 
     @classmethod
-    def INPUT_TYPES(cls) -> Dict[str, str]:
+    def INPUT_TYPES(cls) -> InputType:
         original_params = super().INPUT_TYPES()
         opts = original_params.get('optional', {})
         opts.update({
