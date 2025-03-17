@@ -6,6 +6,43 @@ import { widgetToInput, widgetToWidget } from '../util/util_widget.js'
 import { domInnerValueChange } from '../util/util.js'
 /** @import { IWidget, LGraphCanvas } from '../../types/litegraph/litegraph.d.ts' */
 
+const GET_CONFIG = Symbol();
+const TYPES = ['RGB', 'VEC2', 'VEC3', 'VEC4', 'VEC2INT', 'VEC3INT', 'VEC4INT']
+const TYPES_ACCEPT = 'RGB, VEC2, VEC3, VEC4, VEC2INT, VEC3INT, VEC4INT, FLOAT, INT, BOOLEAN'
+
+function convertToInput(node, widget) {
+    // hideWidget(node, widget);
+    //const { type } = getWidgetType(config);
+    // const [oldWidth, oldHeight] = node.size;
+    /*
+    const config = [
+        widget.type,
+        widget.options || {}
+    ];
+    */
+    //const inputIsOptional = !!widget.options?.inputIsOptional;
+    //widget.options.type = TYPES_ACCEPT;
+    const input = node.addInput(widget.name, widget.type, {
+        // @ts-expect-error [GET_CONFIG] is not a valid property of IWidget
+        widget: { name: widget.name, [GET_CONFIG]: () => [
+            widget.type,
+            widget.options || {}
+        ] },
+        //...inputIsOptional ? { shape: LiteGraph.SlotShape.HollowCircle } : {}
+        ...{ shape: LiteGraph.SlotShape.HollowCircle }
+    });
+    /*
+    for (const widget2 of node.widgets) {
+        widget2.last_y += LiteGraph.NODE_SLOT_HEIGHT;
+    }
+    node.setSize([
+        Math.max(oldWidth, node.size[0]),
+        Math.max(oldHeight, node.size[1])
+    ]);
+    */
+    return input;
+}
+
 function isVersionLess(v1, v2) {
     const parts1 = v1.split('.').map(Number);
     const parts2 = v2.split('.').map(Number);
@@ -58,7 +95,7 @@ const VectorWidget = (app, inputName, options, initial, desc='') => {
         widget.options.label = ['🟥', '🟩', '🟦', 'ALPHA'];
     }
 
-    widget.options.precision = 4;
+    widget.options.precision = 3;
     widget.options.step = 0.0075;
     widget.options.round = 1 / 10 ** widget.options.step;
 
@@ -300,49 +337,63 @@ app.registerExtension({
         }
     },
     async beforeRegisterNodeDef(nodeType, nodeData, app) {
-        const version = window.__COMFYUI_FRONTEND_VERSION__;
-        if (!isVersionLess(version, "1.10.3")) {
+        const inputTypes = nodeData.input;
+        if (inputTypes.length == 0) {
             return;
         }
-        const myTypes = ['RGB', 'VEC2', 'VEC3', 'VEC4', 'VEC2INT', 'VEC3INT', 'VEC4INT']
-        const inputTypes = nodeData.input;
-        if (inputTypes) {
-            const matchingTypes = ['required', 'optional']
-                .flatMap(type => Object.entries(inputTypes[type] || [])
-                    .filter(([_, value]) => myTypes.includes(value[0]))
-                );
 
-            // CLEANUP ON REMOVE
-            if (matchingTypes.length > 0) {
-                // MENU CONVERSIONS
-                const getExtraMenuOptions = nodeType.prototype.getExtraMenuOptions;
-                nodeType.prototype.getExtraMenuOptions = function (_, options) {
-                    const me = getExtraMenuOptions?.apply(this, arguments);
-                    const widgetToInputArray = [];
-                    for (const [widgetName, additionalInfo] of matchingTypes) {
-                        const widget = Object.values(this.widgets).find(m => m.name == widgetName);
-                        if (myTypes.includes(widget.type) || widget.type.endsWith('-jov')) {
-                            if (!widget.hidden) {
-                                const widgetToInputObject = {
-                                    content: `Convert ${widgetName} to input`,
-                                    callback: () => widgetToInput(this, widget, additionalInfo)
-                                };
-                                widgetToInputArray.push(widgetToInputObject);
-                            } else {
-                                const widgetToInputObject = {
-                                    content: `Convert ${widgetName} to widget`,
-                                    callback: () => widgetToWidget(this, widget, additionalInfo)
-                                };
-                                widgetToInputArray.push(widgetToInputObject);
-                            }
-                        }
-                    }
-                    if (widgetToInputArray.length) {
-                        options.push(...widgetToInputArray, null);
-                    }
-                    return me;
-                };
-            }
+        const matchingTypes = ['required', 'optional']
+        .flatMap(type => Object.entries(inputTypes[type] || [])
+            .filter(([_, value]) => TYPES.includes(value[0]))
+        );
+        if (matchingTypes.length == 0) {
+            return;
         }
+
+        const version = window.__COMFYUI_FRONTEND_VERSION__;
+        if (!isVersionLess(version, "1.10.3")) {
+
+            const onNodeCreated = nodeType.prototype.onNodeCreated;
+            nodeType.prototype.onNodeCreated = async function () {
+                const me = onNodeCreated?.apply(this);
+                Object.entries(this.widgets).forEach(([key, widget]) => {
+                    if (!TYPES.includes(widget.type)) {
+                        return;
+                    }
+                    convertToInput(this, widget);
+                });
+                return me;
+            }
+            return;
+        }
+
+        // MENU CONVERSIONS
+        const getExtraMenuOptions = nodeType.prototype.getExtraMenuOptions;
+        nodeType.prototype.getExtraMenuOptions = function (_, options) {
+            const me = getExtraMenuOptions?.apply(this, arguments);
+            const widgetToInputArray = [];
+            for (const [widgetName, additionalInfo] of matchingTypes) {
+                const widget = Object.values(this.widgets).find(m => m.name == widgetName);
+                if (TYPES.includes(widget.type) || widget.type.endsWith('-jov')) {
+                    if (!widget.hidden) {
+                        const widgetToInputObject = {
+                            content: `Convert ${widgetName} to input`,
+                            callback: () => widgetToInput(this, widget, additionalInfo)
+                        };
+                        widgetToInputArray.push(widgetToInputObject);
+                    } else {
+                        const widgetToInputObject = {
+                            content: `Convert ${widgetName} to widget`,
+                            callback: () => widgetToWidget(this, widget, additionalInfo)
+                        };
+                        widgetToInputArray.push(widgetToInputObject);
+                    }
+                }
+            }
+            if (widgetToInputArray.length) {
+                options.push(...widgetToInputArray, null);
+            }
+            return me;
+        };
     }
 })

@@ -15,7 +15,7 @@ from comfy.utils import ProgressBar
 
 from .. import \
     JOV_TYPE_IMAGE, \
-    JOVBaseNode, JOVImageNode, Lexicon, InputType, \
+    JOVBaseNode, JOVImageNode, Lexicon, InputType, RGBAMaskType, \
     deep_merge
 
 from ..sup.util import \
@@ -109,7 +109,7 @@ Enhance and modify images with various effects such as blurring, sharpening, col
         })
         return Lexicon._parse(d)
 
-    def run(self, **kw)  -> Tuple[torch.Tensor, ...]:
+    def run(self, **kw) -> RGBAMaskType:
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
         mask = parse_param(kw, Lexicon.MASK, EnumConvertType.IMAGE, None)
         op = parse_param(kw, Lexicon.FUNC, EnumAdjustOP, EnumAdjustOP.BLUR.name)
@@ -252,7 +252,7 @@ Combine two input images using various blending modes, such as normal, screen, m
         })
         return Lexicon._parse(d)
 
-    def run(self, **kw) -> Tuple[torch.Tensor, ...]:
+    def run(self, **kw) -> RGBAMaskType:
         pA = parse_param(kw, Lexicon.PIXEL_A, EnumConvertType.IMAGE, None)
         pB = parse_param(kw, Lexicon.PIXEL_B, EnumConvertType.IMAGE, None)
         mask = parse_param(kw, Lexicon.MASK, EnumConvertType.MASK, None)
@@ -336,7 +336,7 @@ Simulate color blindness effects on images. You can select various types of colo
         })
         return Lexicon._parse(d)
 
-    def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    def run(self, **kw) -> RGBAMaskType:
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
         deficiency = parse_param(kw, Lexicon.DEFICIENCY, EnumCBDeficiency, EnumCBDeficiency.PROTAN.name)
         simulator = parse_param(kw, Lexicon.SIMULATOR, EnumCBSimulator, EnumCBSimulator.AUTOSELECT.name)
@@ -380,7 +380,7 @@ Adjust the color scheme of one image to match another with the Color Match Node.
         })
         return Lexicon._parse(d)
 
-    def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    def run(self, **kw) -> RGBAMaskType:
         pA = parse_param(kw, Lexicon.PIXEL_A, EnumConvertType.IMAGE, None)
         pB = parse_param(kw, Lexicon.PIXEL_B, EnumConvertType.IMAGE, None)
         colormatch_mode = parse_param(kw, Lexicon.COLORMATCH_MODE, EnumColorMatchMode, EnumColorMatchMode.REINHARD.name)
@@ -460,7 +460,7 @@ The top-k colors ordered from most->least used as a strip, tonal palette and 3D 
         })
         return Lexicon._parse(d)
 
-    def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    def run(self, **kw) -> RGBAMaskType:
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
         kcolors = parse_param(kw, Lexicon.VALUE, EnumConvertType.INT, 12, 1, 255)
         lut_height = parse_param(kw, Lexicon.SIZE, EnumConvertType.INT, 32, 1, 256)
@@ -559,7 +559,7 @@ Extract a portion of an input image or resize it. It supports various cropping m
         })
         return Lexicon._parse(d)
 
-    def run(self, **kw) -> Tuple[List[torch.Tensor], List[torch.Tensor]]:
+    def run(self, **kw) -> RGBAMaskType:
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
         func = parse_param(kw, Lexicon.FUNC, EnumCropMode, EnumCropMode.CENTER.name)
         # if less than 1 then use as scalar, over 1 = int(size)
@@ -622,7 +622,7 @@ Create masks based on specific color ranges within an image. Specify the color r
         })
         return Lexicon._parse(d)
 
-    def run(self, **kw) -> Tuple[Any, ...]:
+    def run(self, **kw) -> RGBAMaskType:
         pA = parse_param(kw, Lexicon.PIXEL_A, EnumConvertType.IMAGE, None)
         start = parse_param(kw, Lexicon.START, EnumConvertType.VEC3INT, [(128,128,128)], 0, 255)
         use_range = parse_param(kw, Lexicon.BOOLEAN, EnumConvertType.VEC3, [(0,0,0)], 0, 255)
@@ -665,7 +665,7 @@ Combine multiple input images into a single image by summing their pixel values.
         })
         return Lexicon._parse(d)
 
-    def run(self, **kw) -> torch.Tensor:
+    def run(self, **kw) -> RGBAMaskType:
         imgs = parse_dynamic(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
         if imgs is None:
             logger.error("no images to flatten")
@@ -711,7 +711,7 @@ Remaps an input image using a gradient lookup table (LUT). The gradient image wi
         })
         return Lexicon._parse(d)
 
-    def run(self, **kw) -> torch.Tensor:
+    def run(self, **kw) -> RGBAMaskType:
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
         gradient = parse_param(kw, Lexicon.GRADIENT, EnumConvertType.IMAGE, None)
         flip = parse_param(kw, Lexicon.FLIP, EnumConvertType.BOOLEAN, False)
@@ -767,7 +767,7 @@ Combines individual color channels (red, green, blue) along with an optional mas
         })
         return Lexicon._parse(d)
 
-    def run(self, **kw)  -> Tuple[torch.Tensor, ...]:
+    def run(self, **kw) -> RGBAMaskType:
         rgba = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
         R = parse_param(kw, Lexicon.R, EnumConvertType.MASK, None)
         G = parse_param(kw, Lexicon.G, EnumConvertType.MASK, None)
@@ -842,7 +842,7 @@ Takes an input image and splits it into its individual color channels (red, gree
         })
         return Lexicon._parse(d)
 
-    def run(self, **kw) -> Tuple[torch.Tensor, ...]:
+    def run(self, **kw) -> RGBAMaskType:
         images = []
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
         pbar = ProgressBar(len(pA))
@@ -880,7 +880,7 @@ Swap pixel values between two input images based on specified channel swizzle op
         })
         return Lexicon._parse(d)
 
-    def run(self, **kw)  -> Tuple[torch.Tensor, ...]:
+    def run(self, **kw) -> RGBAMaskType:
         pA = parse_param(kw, Lexicon.PIXEL_A, EnumConvertType.IMAGE, None)
         pB = parse_param(kw, Lexicon.PIXEL_B, EnumConvertType.IMAGE, None)
         swap_r = parse_param(kw, Lexicon.SWAP_R, EnumPixelSwizzle, EnumPixelSwizzle.RED_A.name)
@@ -942,7 +942,7 @@ Merge multiple input images into a single composite image by stacking them along
         })
         return Lexicon._parse(d)
 
-    def run(self, **kw) -> Tuple[torch.Tensor, ...]:
+    def run(self, **kw) -> RGBAMaskType:
         images = parse_dynamic(kw, Lexicon.IMAGE, EnumConvertType.IMAGE, None)
         if len(images) == 0:
             logger.warning("no images to stack")
@@ -985,7 +985,7 @@ Define a range and apply it to an image for segmentation and feature extraction.
         })
         return Lexicon._parse(d)
 
-    def run(self, **kw)  -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    def run(self, **kw) -> RGBAMaskType:
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
         mode = parse_param(kw, Lexicon.FUNC, EnumThreshold, EnumThreshold.BINARY.name)
         adapt = parse_param(kw, Lexicon.ADAPT, EnumThresholdAdapt, EnumThresholdAdapt.ADAPT_NONE.name)
@@ -1014,7 +1014,7 @@ Apply various geometric transformations to images, including translation, rotati
 
     @classmethod
     def INPUT_TYPES(cls) -> InputType:
-        d = super().INPUT_TYPES()
+        d = super().INPUT_TYPES(prompt=True, dynprompt=True)
         d = deep_merge(d, {
             "optional": {
                 Lexicon.PIXEL: (JOV_TYPE_IMAGE, {}),
@@ -1038,7 +1038,7 @@ Apply various geometric transformations to images, including translation, rotati
         })
         return Lexicon._parse(d)
 
-    def run(self, **kw) -> Tuple[torch.Tensor, ...]:
+    def run(self, **kw) -> RGBAMaskType:
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
         mask = parse_param(kw, Lexicon.MASK, EnumConvertType.IMAGE, None)
         offset = parse_param(kw, Lexicon.XY, EnumConvertType.VEC2, [(0., 0.)], -2.5, 2.5)
@@ -1126,7 +1126,7 @@ The Histogram Node generates a histogram representation of the input image, show
         })
         return Lexicon._parse(d)
 
-    def run(self, **kw) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    def run(self, **kw) -> RGBAMaskType:
         pA = parse_param(kw, Lexicon.PIXEL, None), EnumConvertType.IMAGE, None)
         params = list(zip_longest_fill(pA,))
         images = []

@@ -159,7 +159,7 @@ export function widgetShowVector(widget, values={}, type) {
         if (!widget.type.endsWith('INT') && widget.type != 'BOOLEAN') {
             widget.options.step = 0.01;
             widget.options.round = 0.001;
-            widget.options.precision = 4;
+            widget.options.precision = 3;
         }
 
         widget.value = {};

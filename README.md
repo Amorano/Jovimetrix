@@ -96,6 +96,11 @@ You can colorize nodes via their `title background`, `node body` or `title text`
 
 **IF YOU ARE USING AN OLD VERSION THAT HAS COLOR CONFIGURATIONS THAT NO LONGER WORK, I CAN HELP YOU MIGRATE THEM. JUST START A TICKET OR SEND A MESSAGE**
 
+**2025/03/17** @1.7.40:
+* allow vectors to be inline inputs + widget cause waiting for ComfyUI team is painful
+* changed precision default to 3
+* merged new action trigger from ComfyUI team
+
 **2025/03/06** @1.7.34:
 * prep for Purz stream
 * removed security scanner failures for in-line http links
