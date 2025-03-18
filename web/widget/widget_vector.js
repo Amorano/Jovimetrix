@@ -11,36 +11,37 @@ const TYPES = ['RGB', 'VEC2', 'VEC3', 'VEC4', 'VEC2INT', 'VEC3INT', 'VEC4INT']
 const TYPES_ACCEPT = 'RGB, VEC2, VEC3, VEC4, VEC2INT, VEC3INT, VEC4INT, FLOAT, INT, BOOLEAN'
 
 function convertToInput(node, widget) {
-    // hideWidget(node, widget);
-    //const { type } = getWidgetType(config);
-    // const [oldWidth, oldHeight] = node.size;
-    /*
-    const config = [
-        widget.type,
-        widget.options || {}
-    ];
-    */
-    //const inputIsOptional = !!widget.options?.inputIsOptional;
-    //widget.options.type = TYPES_ACCEPT;
     const input = node.addInput(widget.name, widget.type, {
         // @ts-expect-error [GET_CONFIG] is not a valid property of IWidget
         widget: { name: widget.name, [GET_CONFIG]: () => [
             widget.type,
             widget.options || {}
         ] },
-        //...inputIsOptional ? { shape: LiteGraph.SlotShape.HollowCircle } : {}
         ...{ shape: LiteGraph.SlotShape.HollowCircle }
     });
-    /*
-    for (const widget2 of node.widgets) {
-        widget2.last_y += LiteGraph.NODE_SLOT_HEIGHT;
-    }
-    node.setSize([
-        Math.max(oldWidth, node.size[0]),
-        Math.max(oldHeight, node.size[1])
-    ]);
-    */
     return input;
+}
+
+function removeConvertToWidgetEntries(menuArray, widgetNames) {
+    function recursiveFilter(menu) {
+        return menu.filter(item => {
+            // Keep non-matching items
+            if (!item || !item.content) return true;
+
+            // Remove this item
+            if (widgetNames.some(name => item.content === `Convert ${name} to Widget`)) {
+                return false;
+            }
+
+            // Recursively filter submenus if they exist
+            if (item.submenu && item.submenu.options) {
+                item.submenu.options = recursiveFilter(item.submenu.options);
+            }
+            return true;
+        });
+    }
+
+    return recursiveFilter(menuArray);
 }
 
 function isVersionLess(v1, v2) {
@@ -350,9 +351,10 @@ app.registerExtension({
             return;
         }
 
+        const getExtraMenuOptions = nodeType.prototype.getExtraMenuOptions;
+
         const version = window.__COMFYUI_FRONTEND_VERSION__;
         if (!isVersionLess(version, "1.10.3")) {
-
             const onNodeCreated = nodeType.prototype.onNodeCreated;
             nodeType.prototype.onNodeCreated = async function () {
                 const me = onNodeCreated?.apply(this);
@@ -364,11 +366,18 @@ app.registerExtension({
                 });
                 return me;
             }
+
+            nodeType.prototype.getExtraMenuOptions = function (_, options) {
+                const me = getExtraMenuOptions?.apply(this, arguments);
+                const widgets = matchingTypes.map(item => item[0]);
+                options = removeConvertToWidgetEntries(options, widgets);
+                console.info(options)
+                return me;
+            }
             return;
         }
 
         // MENU CONVERSIONS
-        const getExtraMenuOptions = nodeType.prototype.getExtraMenuOptions;
         nodeType.prototype.getExtraMenuOptions = function (_, options) {
             const me = getExtraMenuOptions?.apply(this, arguments);
             const widgetToInputArray = [];
