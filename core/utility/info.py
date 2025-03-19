@@ -168,7 +168,7 @@ Visualize a series of data points over time. It accepts a dynamic number of valu
 
     @classmethod
     def IS_CHANGED(cls) -> float:
-        return float('nan')
+        return float("NaN")
 
     def __init__(self, *arg, **kw) -> None:
         super().__init__(*arg, **kw)

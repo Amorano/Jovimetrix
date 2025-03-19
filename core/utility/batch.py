@@ -241,7 +241,7 @@ class QueueBaseNode(JOVBaseNode):
 
     @classmethod
     def IS_CHANGED(cls, *arg, **kw) -> float:
-        return float('nan')
+        return float("NaN")
 
     @classmethod
     def INPUT_TYPES(cls) -> InputType:

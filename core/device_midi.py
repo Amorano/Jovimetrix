@@ -98,7 +98,7 @@ Captures MIDI messages from an external MIDI device or controller. It monitors M
     def IS_CHANGED(cls, **kw) -> float:
         if cls.CHANGED:
             cls.CHANGED = False
-            return float('nan')
+            return float("NaN")
 
     def __init__(self, *arg, **kw) -> None:
         super().__init__(*arg, **kw)
