@@ -96,6 +96,9 @@ You can colorize nodes via their `title background`, `node body` or `title text`
 
 **IF YOU ARE USING AN OLD VERSION THAT HAS COLOR CONFIGURATIONS THAT NO LONGER WORK, I CAN HELP YOU MIGRATE THEM. JUST START A TICKET OR SEND A MESSAGE**
 
+**2025/03/25** @1.7.45:
+* dunno how to work around comfyui not doing type conversion
+
 **2025/03/18** @1.7.42:
 * updated numby jit to ignore python objects
 * aligned float("NaN") constructs
