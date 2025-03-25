@@ -10,7 +10,7 @@ const GET_CONFIG = Symbol();
 const TYPES = ['RGB', 'VEC2', 'VEC3', 'VEC4', 'VEC2INT', 'VEC3INT', 'VEC4INT']
 const TYPES_ACCEPT = 'RGB, VEC2, VEC3, VEC4, VEC2INT, VEC3INT, VEC4INT, FLOAT, INT, BOOLEAN'
 
-function convertToInput(node, widget) {
+async function convertToInput(node, widget) {
     const input = node.addInput(widget.name, widget.type, {
         // @ts-expect-error [GET_CONFIG] is not a valid property of IWidget
         widget: { name: widget.name, [GET_CONFIG]: () => [
@@ -355,14 +355,15 @@ app.registerExtension({
 
         const version = window.__COMFYUI_FRONTEND_VERSION__;
         if (!isVersionLess(version, "1.10.3")) {
+            /*
             const onNodeCreated = nodeType.prototype.onNodeCreated;
             nodeType.prototype.onNodeCreated = async function () {
                 const me = onNodeCreated?.apply(this);
-                Object.entries(this.widgets).forEach(([key, widget]) => {
+                Object.entries(this.widgets).forEach( async ([key, widget]) => {
                     if (!TYPES.includes(widget.type)) {
                         return;
                     }
-                    convertToInput(this, widget);
+                    await convertToInput(this, widget);
                 });
                 return me;
             }
@@ -371,9 +372,9 @@ app.registerExtension({
                 const me = getExtraMenuOptions?.apply(this, arguments);
                 const widgets = matchingTypes.map(item => item[0]);
                 options = removeConvertToWidgetEntries(options, widgets);
-                console.info(options)
                 return me;
             }
+                */
             return;
         }
 
