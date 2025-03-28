@@ -96,6 +96,9 @@ You can colorize nodes via their `title background`, `node body` or `title text`
 
 **IF YOU ARE USING AN OLD VERSION THAT HAS COLOR CONFIGURATIONS THAT NO LONGER WORK, I CAN HELP YOU MIGRATE THEM. JUST START A TICKET OR SEND A MESSAGE**
 
+**2025/03/28** @1.7.46:
+* updated requirements for numpy to only be >=1.26.4
+
 **2025/03/25** @1.7.45:
 * dunno how to work around comfyui not doing type conversion
 
@@ -117,18 +120,6 @@ You can colorize nodes via their `title background`, `node body` or `title text`
 * fix inversion in pixel merge
 * defaults for regex colorizer entries
 * fall through for constant node input
-
-**2025/03/02** @1.7.33:
-* aligned core_color to match breakout updates
-* fixed configuration bug when no configuration present
-* moved color defaults to top and better entries
-* removed old config file route
-
-**2025/03/01** @1.7.31:
-* fixed all the year dates in readme since I have been writing 2024! =D
-
-**2025/03/01** @1.7.30:
-* direct mask support for `TRANSFORM NODE`
 
 <div align="center">
 <img src="https://github.com/user-attachments/assets/8ed13e6a-218c-468a-a480-53ab55b04d21" alt="explicit vector node supports" width="640"/>
