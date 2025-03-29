@@ -2,23 +2,16 @@ aenum
 aiohttp
 blendmodes
 daltonlens
-glfw
 loguru
 markdownify
 matplotlib
-mido[ports-rtmidi]
-mss
 numba
 numpy>=1.26.4
 opencv-contrib-python
 Pillow
-PyOpenGL
-PyOpenGL_accelerate
 pywin32; platform_system=="Windows"
 requests
 scikit-image
 scikit-learn
-SpoutGL; platform_system=="Windows"
 stereoscopy[auto_align]
-vnoise
 pyobjc-framework-Quartz; platform_system=='Darwin'

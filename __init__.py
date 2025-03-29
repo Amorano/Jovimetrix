@@ -12,22 +12,19 @@
 @category: Compositing
 @reference: https://github.com/Amorano/Jovimetrix
 @tags: adjust, animate, compose, compositing, composition, device, flow, video,
-mask, shape, webcam, animation, logic
-@description: Webcam, MIDI, Spout, GIPHY and OpenGL (GLSL) support.
-Animation via tick. Wave-based parameter modulation, Math operations with
+mask, shape, animation, logic
+@description: GIPHY. Animation via tick.
+Wave-based parameter modulation, Math operations with
 Unary and Binary support, universal Value conversion for all major
 types (int, string, list, dict, Image, Mask), shape masking, image channel ops,
 batch processing, dynamic bus routing. Queue & Load from URLs.
 @node list:
-    ConstantNode, GLSLNode, ShapeNode, StereogramNode, StereoscopicNode, TextNode,
-    WaveGraphNode,
+    ConstantNode, ShapeNode, StereogramNode, StereoscopicNode, TextNode,
     AdjustNode, BlendNode, ColorBlindNode, ColorMatchNode, ColorTheoryNode, CropNode,
     FilterMaskNode, FlattenNode, GradientMapNode, PixelMergeNode, PixelSplitNode,
     PixelSwapNode, StackNode, ThresholdNode,TransformNode,
     ComparisonNode, DelayNode, LerpNode, CalcUnaryOPNode, CalcBinaryOPNode,
     StringerNode, SwizzleNode, TickNode, ValueNode, WaveGeneratorNode,
-    MIDIFilterNode, MIDIFilterEZNode, MIDIMessageNode, MIDIReaderNode, SpoutWriter,
-    StreamReaderNode, StreamWriterNode,
     AkashicNode, ArrayNode, ExportNode, ValueGraphNode, ImageInfoNode, QueueNode,
     QueueTooNode, RouteNode, SaveOutputNode
 """
@@ -39,24 +36,17 @@ __email__ = "amorano@gmail.com"
 import os
 import re
 import sys
-import html
 import time
 import json
 import inspect
 import importlib
 from pathlib import Path
-from string import Template
 from types import ModuleType
 from typing import Any, Dict, List, Literal, Tuple, TypeAlias
 
 import torch
 
-try:
-    from markdownify import markdownify
-except:
-    markdownify = None
-
-from aiohttp import web, ClientSession
+from aiohttp import web
 from server import PromptServer
 
 from loguru import logger
@@ -465,227 +455,6 @@ class JOVImageNode(JOVBaseNode):
         "Single channel mask output."
     )
 
-class DynamicInputType(dict):
-    """A special class to make flexible nodes that pass data to our python handlers.
-
-    Enables both flexible/dynamic input types or a dynamic number of inputs.
-
-    original sourced from rgthree:
-        https://github.com/rgthree/rgthree-comfy/blob/dd534e5384be8cf0c0fa35865afe2126ba75ac55/py/utils.py
-    """
-    def __init__(self, type: Any) -> None:
-        self.type = type
-
-    def __getitem__(self, key: Any) -> Tuple[Any]:
-        return (self.type, )
-
-    def __contains__(self, key: Any) -> Literal[True]:
-        return True
-
-class DynamicOutputType(tuple):
-    """A special class that will return additional "AnyType" strings beyond defined values.
-
-    original sourced from Trung0246:
-        https://github.com/Trung0246/ComfyUI-0246/blob/fb16466a82553aebdc4d851a483847c2dc0cb953/utils.py#L51
-
-    """
-    def __getitem__(self, index) -> Any:
-        if index > len(self) - 1:
-            return AnyType("*")
-        return super().__getitem__(index)
-
-# ==============================================================================
-# === DOCUMENTATION SUPPORT
-# ==============================================================================
-
-"""
-JUDICIOUS BORROWING FROM SALT.AI DOCUMENTATION PROJECT:
-https://github.com/get-salt-AI/SaltAI_Documentation_Tools
-"""
-
-def collapse_repeating_parameters(params_dict: Dict[str, Any]) -> Dict[str, Any]:
-    """Collapses repeating parameters like `input_blocks.0`,...`input_blocks.10` into 1 parameter `input_blocks.i`."""
-    collapsed = {}
-    pattern_seen = {}
-    for param_category in params_dict:
-        collapsed[param_category] = {}
-        for param_name, param_type in params_dict[param_category].items():
-            pattern = r"\.\d+"
-            generic_pattern, n = re.subn(pattern, ".{}", param_name)
-            if n > 0:
-                letters = (letter for letter in "ijklmnopqrstuvwxyzabcdefgh")
-                generic_pattern = re.sub(r"\{\}", lambda _: next(letters), generic_pattern)
-                if generic_pattern not in pattern_seen:
-                    pattern_seen[generic_pattern] = True
-                    collapsed[param_category][generic_pattern] = param_type
-            else:
-                collapsed[param_category][param_name] = param_type
-    return collapsed
-
-def match_combo(lst: List[Any] | Tuple[Any]) -> str:
-    """Detects comfy dtype for a combo parameter."""
-    types_matcher = {
-        "str": "STRING", "float": "FLOAT", "int": "INT", "bool": "BOOLEAN"
-    }
-    if len(lst) > 0:
-        return f"{types_matcher.get(type(lst[0]).__name__, 'STRING')}"
-    return "STRING"
-
-def template_load(fname: str) -> Template:
-    with open(ROOT_DOC / fname, 'r', encoding='utf-8') as f:
-        data = Template(f.read())
-    return data
-
-HTML_input_section = template_load('template_section.html')
-HTML_input_row = template_load('template_param_input.html')
-HTML_output_row = template_load('template_param_output.html')
-HTML_template_node = template_load('template_node.html')
-HTML_template_node_plain = template_load('template_node_plain.html')
-
-def json2html(json_dict: dict) -> str:
-    """Convert JSON to HTML using templates for all HTML elements."""
-    name = json_dict['name']
-    boop = name.split(' (JOV)')[0].strip()
-    root1 = root2 = ""
-    template_node = HTML_template_node_plain
-    if " (JOV)" in name:
-        template_node = HTML_template_node
-        boop2 = boop.replace(" ", "%20")
-        root1 = f"https://github.com/Amorano/Jovimetrix-examples/blob/master/node/{boop2}/{boop2}.md"
-        root2 = f"https://raw.githubusercontent.com/Amorano/Jovimetrix-examples/master/node/{boop2}/{boop2}.png"
-
-    # Generate input content
-    input_sections = []
-    for k, v in json_dict['input_parameters'].items():
-        if not v:
-            continue
-        rows = []
-        for param_key, param_meta in v.items():
-            typ = param_meta.get('type', 'UNKNOWN').upper()
-            typ = ', '.join([x.strip() for x in typ.split(',')])
-            tool = param_meta.get("tooltip", '')
-            default = html.escape(str(param_meta.get('default', '')))
-            ch = ', '.join(param_meta.get('choice', []))
-            rows.append(HTML_input_row.substitute(
-                param_key=html.escape(param_key),
-                type=typ,
-                tooltip=tool,
-                default=default,
-                choice=ch
-            ))
-
-        input_sections.append(HTML_input_section.substitute(
-            name=html.escape(k.upper()),
-            rows=''.join(rows)
-        ))
-
-    # Generate output content
-    output_rows = []
-    for k, v in json_dict['output_parameters'].items():
-        data = v.split('$')
-        #desc = '<br>'.join(textwrap.wrap(data[1], 60))
-        output_rows.append(HTML_output_row.substitute(
-            name=html.escape(k),
-            type=html.escape(data[0]),
-            description=html.escape(data[1])
-        ))
-
-    # Fill in the main template
-    description = json_dict['description']
-    #if not "<div>" in description and not "<p>" in description:
-        #description = markdown.markdown(description)
-        # description = html.escape(description)
-    description = description.replace('\n', '<br>').replace(f"('", '').replace(f"')", '')
-
-    html_content = template_node.substitute(
-        title=html.escape(name),
-        name=html.escape(name),
-        root1=root1,
-        category=html.escape(json_dict['category']),
-        documentation=description,
-        root2=root2,
-        boop=html.escape(boop),
-        output_node=json_dict['output_node'],
-        input_content=''.join(input_sections),
-        output_content=''.join(output_rows)
-    )
-    return html_content
-
-def get_node_info(node_data: dict) -> Dict[str, Any]:
-    """Transform node object_info route result into .html."""
-    input_parameters = {}
-    for k, node_param_meta in node_data.get('input', {}).items():
-        if not k in ["required", "optional"]:
-            continue
-
-        input_parameters[k] = {}
-        for param_key, param_meta in node_param_meta.items():
-            lst = None
-            typ = param_meta[0]
-            if isinstance(typ, list):
-                typ = match_combo(typ)
-                lst = param_meta
-            input_parameters[k][param_key] = {
-                "type": typ
-            }
-            try:
-                meta = param_meta[1]
-                if lst is not None:
-                    if (choice_list := meta.get('choice', None)) is None:
-                        data = [x.replace('_', ' ') for x in lst[0]][:JOV_LIST_MAX]
-                        input_parameters[k][param_key]["choice"] = data
-                        meta.update(lst[1])
-                    else:
-                        input_parameters[k][param_key]["choice"] = [choice_list][:JOV_LIST_MAX]
-                        meta['default'] = 'dynamic'
-                elif (default_top := meta.get('default_top', None)) is not None:
-                    meta['default'] = default_top
-
-                # only stuff that makes sense...
-                junk = ['default', 'min', 'max']
-                meta = node_param_meta[param_key][1]
-                if (tip := meta.get("tooltip", None)) is None:
-                    if (tip := Lexicon._tooltipsDB.get(param_key, None)) is None:
-                        # logger.warning(f"no tooltip for {node_class}[{k}]::{param_key}")
-                        junk.append("tooltip")
-                        tip = "Unknown Explanation!"
-                input_parameters[k][param_key]["tooltip"] = tip
-                for scrape in junk:
-                    if (val := meta.get(scrape, None)) is not None and val != "":
-                        input_parameters[k][param_key][scrape] = val
-            except IndexError:
-                pass
-
-    return_types = [
-        match_combo(x) if isinstance(x, list) or isinstance(x, tuple) else x for x in node_data.get('output', [])
-    ]
-
-    output_parameters = {}
-    tooltips = node_data.get('output_tooltips', [])
-    return_names = [t.lower() for t in node_data.get('output_name', [])]
-    for name, typ, tip in zip(return_names, return_types, tooltips):
-        if tip == "":
-            tip = Lexicon._tooltipsDB.get(name, "")
-        output_parameters[name] = '$'.join([typ, tip])
-
-
-    data = {
-        "class": node_data['name'],
-        "input_parameters": collapse_repeating_parameters(input_parameters),
-        "output_parameters": output_parameters,
-        "name": node_data['name'],
-        "output_node": node_data['output_node'],
-        "category": node_data['category'].strip('\n').strip(),
-        "description": node_data['description']
-    }
-    data[".html"] = json2html(data)
-    if markdownify:
-        md = markdownify(data[".html"], keep_inline_images_in=True)
-        md = md.split('\n')[8:]
-        md = '\n'.join([m for m in md if m != ''])
-        data[".md"] = md
-    return data
-
 def deep_merge(d1: dict, d2: dict) -> Dict[str, str]:
     """
     Deep merge multiple dictionaries recursively.
@@ -705,19 +474,6 @@ def deep_merge(d1: dict, d2: dict) -> Dict[str, str]:
         else:
             d1[key] = d2[key]
     return d1
-
-def update_nested_dict(d, path, value) -> None:
-    keys = path.split('.')
-    current = d
-    for key in keys[:-1]:
-        current = current.setdefault(key, {})
-    last_key = keys[-1]
-
-    # Check if the key already exists
-    if last_key in current and isinstance(current[last_key], dict):
-        current[last_key].update(value)
-    else:
-        current[last_key] = value
 
 # ==============================================================================
 # === API RESPONSE ===
@@ -753,11 +509,6 @@ def comfy_api_post(route:str, ident:str, data:dict) -> None:
     data['id'] = ident
     PromptServer.instance.send_sync(route, data)
 
-@PromptServer.instance.routes.get("/jovimetrix")
-async def jovimetrix_home(req) -> Any:
-    data = template_load('home.html')
-    return web.Response(text=data.template, content_type='text/html')
-
 @PromptServer.instance.routes.get("/jovimetrix/message")
 async def jovimetrix_message(req) -> Any:
     return web.json_response(ComfyAPIMessage.MESSAGE)
@@ -770,62 +521,6 @@ async def jovimetrix_message_post(req) -> Any:
         ComfyAPIMessage.MESSAGE[str(did)] = json_data
         return web.json_response(json_data)
     return web.json_response({})
-
-async def object_info(node_class: str, scheme:str, host: str) -> Any:
-    global COMFYUI_OBJ_DATA
-    if (info := COMFYUI_OBJ_DATA.get(node_class, None)) is None:
-        # look up via the route...
-        url = f"{scheme}://{host}/object_info/{node_class}"
-
-        # Make an asynchronous HTTP request using aiohttp.ClientSession
-        async with ClientSession() as session:
-            try:
-                async with session.get(url) as response:
-                    if response.status == 200:
-                        info = await response.json()
-                        if (data := info.get(node_class, None)) is not None:
-                            info = get_node_info(data)
-                        else:
-                            info = {'.html': f"No data for {node_class}"}
-                        COMFYUI_OBJ_DATA[node_class] = info
-                    else:
-                        info = {'.html': f"Failed to get docs {node_class}, status: {response.status}"}
-                        logger.error(info)
-            except Exception as e:
-                logger.error(f"Failed to get docs {node_class}")
-                logger.exception(e)
-                info = {'.html': f"Failed to get docs {node_class}\n{e}"}
-
-    return info
-
-@PromptServer.instance.routes.get("/jovimetrix/doc")
-async def jovimetrix_doc(req) -> Any:
-
-    for node_class in NODE_CLASS_MAPPINGS.keys():
-        if COMFYUI_OBJ_DATA.get(node_class, None) is None:
-            COMFYUI_OBJ_DATA[node_class] = await object_info(node_class, req.scheme, req.host)
-
-        node = NODE_DISPLAY_NAME_MAPPINGS[node_class]
-        fname = node.split(" (JOV)")[0]
-        path = Path(JOV_INTERNAL_DOC.replace("{name}", fname))
-        path.mkdir(parents=True, exist_ok=True)
-
-        if JOV_INTERNAL:
-            if (md := COMFYUI_OBJ_DATA[node_class].get('.md', None)) is not None:
-                with open(str(path / f"{fname}.md"), "w", encoding='utf-8') as f:
-                    f.write(md)
-
-            with open(str(path / f"{fname}.html"), "w", encoding='utf-8') as f:
-                f.write(COMFYUI_OBJ_DATA[node_class]['.html'])
-
-    return web.json_response(COMFYUI_OBJ_DATA)
-
-@PromptServer.instance.routes.get("/jovimetrix/doc/{node}")
-async def jovimetrix_doc_node_comfy(req) -> Any:
-    node_class = req.match_info.get('node')
-    if COMFYUI_OBJ_DATA.get(node_class, None) is None:
-        COMFYUI_OBJ_DATA[node_class] = await object_info(node_class, req.scheme, req.host)
-    return web.Response(text=COMFYUI_OBJ_DATA[node_class]['.html'], content_type='text/html')
 
 # ==============================================================================
 # === SUPPORT ===

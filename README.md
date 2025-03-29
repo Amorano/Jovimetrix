@@ -39,19 +39,8 @@ Please consider sponsoring me if you enjoy the results of my work, code or docum
 * Vector support for 2, 3, 4 size tuples of integer or float type
 * Specific RGB/RGBA color vector support that provides a color picker
 * All Image inputs support RGBA, RGB or pure MASK input
-* GLSL shader support
-* * `GLSL Node`  provides raw access to Vertex and Fragment shaders
-* * `Dynamic GLSL` dynamically convert existing GLSL scripts file into ComfyUI nodes at runtime
-* * Over 20+ Hand written GLSL nodes to speed up specific tasks better done on the GPU (10x speedup in most cases)
-* `STREAM READER` node to capture monitor, webcam or url media
-* `STREAM WRITER` node to export media to a HTTP/HTTPS server for OBS or other 3rd party streaming software
-* `SPOUT` streaming support *WINDOWS ONLY*
-* `MIDI READER` Captures MIDI messages from an external MIDI device or controller
-* `MIDI MESSAGE` Processes MIDI messages received from an external MIDI controller or device
-* `MIDI FILTER` (advanced filter) to select messages from MIDI streams and devices
-* `MIDI FILTER EZ` simpler interface to filter single messages from MIDI streams and devices
 * Full Text generation support using installed system fonts
-* Basic parametric shape (Circle, Square, Polygon) generator
+* Basic parametric shape (Circle, Square, Polygon) generator~~
 * `COLOR BLIND` check support
 * `COLOR MATCH` against existing images or create a custom LUT
 * Generate `COLOR THEORY` spreads from an existing image
@@ -69,32 +58,100 @@ Please consider sponsoring me if you enjoy the results of my work, code or docum
 * Manipulate vectors with the `SWIZZLE` node to swap their XYZW positions
 * `DELAY` execution at certain parts in a workflow, with or without a timeout
 * Generate curve data with the `TICK` and `WAVE GEN` nodes
-* Help System for *ALL NODES* that will auto-parse unknown knows for their type data and descriptions
-* Colorization for *ALL NODES* using their own node settings, their node group or via regex pattern matching
 
-### HELP SYSTEM
+<br>
 
-The built-in help system will dynamically parse any nodes found at the ComfyUI API endpoint:
+<h1>AS OF VERSION 2.0.0, THESE NODES HAVE MIGRATED TO OTHER, SMALLER PACKAGES</h1>
 
-`<comfyui_web_root>/object_info`
+Migrated to [GLSL SHADERS](https://github.com/Amorano/Jovi_GLSL)
 
-If those nodes have descriptions written in HTML or Markdown, they will be converted into HTML for presentation in the panel.
+~~* GLSL shader support~~
+~~* * `GLSL Node`  provides raw access to Vertex and Fragment shaders~~
+~~* * `Dynamic GLSL` dynamically convert existing GLSL scripts file into ComfyUI nodes at runtime~~
+~~* * Over 20+ Hand written GLSL nodes to speed up specific tasks better done on the GPU (10x speedup in most cases)~~
 
-<div align="center">
-<img src="https://github.com/user-attachments/assets/075f6f9b-b27b-4a6f-84da-a6db486446ff" alt="Clicking Nodes for Help" width="384"/>
-</div>
+Migrated to [Jovi_Capture](https://github.com/Amorano/Jovi_Capture)
 
-### NODE COLORS
+~~* `STREAM READER` node to capture monitor, webcam or url media~~
+~~* `STREAM WRITER` node to export media to a HTTP/HTTPS server for OBS or other 3rd party streaming software~~
 
-You can colorize nodes via their `title background`, `node body` or `title text`. This can be done to the node's `category` as well, so you can quickly color groups of nodes.
+Migrated to [Jovi_Spout](https://github.com/Amorano/Jovi_Spout)
 
-<div align="center">
-<img src="https://github.com/user-attachments/assets/8de9561a-b231-4a49-a63a-4fd5fdba64d9" alt="node color panel" width="256"/>
-</div>
+~~* `SPOUT` streaming support *WINDOWS ONLY*~~
+
+Migrated to [Jovi_MIDI](https://github.com/Amorano/Jovi_MIDI)
+
+~~* `MIDI READER` Captures MIDI messages from an external MIDI device or controller~~
+~~* `MIDI MESSAGE` Processes MIDI messages received from an external MIDI controller or device~~
+~~* `MIDI FILTER` (advanced filter) to select messages from MIDI streams and devices~~
+~~* `MIDI FILTER EZ` simpler interface to filter single messages from MIDI streams and devices~~
+
+Migrated to [Node Help](https://github.com/Amorano/Jovi_Help)
+
+~~* Help System for *ALL NODES* that will auto-parse unknown knows for their type data and descriptions~~
+
+Migrated to [Node Colorization](https://github.com/Amorano/Jovi_Colorizer)
+
+~~* Colorization for *ALL NODES* using their own node settings, their node group or via regex pattern matching~~
 
 ## UPDATES
 
-**IF YOU ARE USING AN OLD VERSION THAT HAS COLOR CONFIGURATIONS THAT NO LONGER WORK, I CAN HELP YOU MIGRATE THEM. JUST START A TICKET OR SEND A MESSAGE**
+<h2>DO NOT UPDATE JOVIMETRIX PAST VERSION 1.7.50 IF YOU DONT WANT TO LOSE A BUNCH OF NODES</h2>
+
+Nodes that have been removed are in various other packages now. You can install those specific packages to get the functionality back, but I have no way to migrate the actual connections -- you will need to do that manually. **
+
+Nodes that have been migrated:
+
+* ALL MIDI NODES:
+* * MIDIMessageNode
+* * MIDIReaderNode
+* * MIDIFilterNode
+* * MIDIFilterEZNode
+
+[Migrated to Jovi_MIDI](https://github.com/Amorano/Jovi_MIDI)
+
+* ALL STREAMING NODES:
+* * StreamReaderNode
+* * StreamWriterNode
+
+[Migrated to Jovi_Capture](https://github.com/Amorano/Jovi_Capture)
+
+* * SpoutWriterNode
+
+[Migrated to Jovi_Spout](https://github.com/Amorano/Jovi_Spout)
+
+* ALL GLSL NODES:
+* * GLSL
+* * GLSL BLEND LINEAR
+* * GLSL COLOR CONVERSION
+* * GLSL COLOR PALETTE
+* * GLSL CONICAL GRADIENT
+* * GLSL DIRECTIONAL WARP
+* * GLSL FILTER RANGE
+* * GLSL GRAYSCALE
+* * GLSL HSV ADJUST
+* * GLSL INVERT
+* * GLSL NORMAL
+* * GLSL NORMAL BLEND
+* * GLSL POSTERIZE
+* * GLSL TRANSFORM
+
+[Migrated to Jovi_GLSL](https://github.com/Amorano/Jovi_GLSL)
+
+**2025/03/29** @2.0.0:
+* REMOVED ALL STREAMING, MIDI and GLSL nodes for new packages, HELP System and Node Colorization system:
+
+   [Web camera, Monitor Capture, Window Capture](https://github.com/Amorano/Jovi_Capture)
+
+   [MIDI capture and MIDI message parsing](https://github.com/Amorano/Jovi_MIDI)
+
+   [GLSL Shaders](https://github.com/Amorano/Jovi_GLSL)
+
+   [SPOUT Streaming support](https://github.com/Amorano/Jovi_Spout)
+
+   [Node Colorization](https://github.com/Amorano/Jovi_Colorizer)
+
+   [Node Help](https://github.com/Amorano/Jovi_Help)
 
 **2025/03/28** @1.7.46:
 * updated requirements for numpy to only be >=1.26.4

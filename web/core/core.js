@@ -29,12 +29,5 @@ app.registerExtension({
         document.head.appendChild(Object.assign(document.createElement('script'), {
             src: "https://cdn.jsdelivr.net/npm/@jaames/iro@5"
         }));
-
-        document.head.appendChild(Object.assign(document.createElement('link'), {
-            id: styleTagId,
-            rel: 'stylesheet',
-            type: 'text/css',
-            href: 'extensions/jovimetrix/jovimetrix.css'
-        }));
 	}
 });
