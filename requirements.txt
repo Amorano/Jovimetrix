@@ -6,7 +6,7 @@ loguru
 markdownify
 matplotlib
 numba
-numpy>=1.26.4
+numpy<=1.26.4
 opencv-contrib-python
 Pillow
 pywin32; platform_system=="Windows"
@@ -14,4 +14,5 @@ requests
 scikit-image
 scikit-learn
 stereoscopy[auto_align]
+vnoise
 pyobjc-framework-Quartz; platform_system=='Darwin'

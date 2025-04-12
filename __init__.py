@@ -550,24 +550,19 @@ def configLoad(fname:Path, as_json:bool=True) -> Any | list[str] | None:
 
 def load_module(name: str) -> None|ModuleType:
     module = inspect.getmodule(inspect.stack()[0][0]).__name__
+    module = module.replace("\\", "/")
+    route = str(name).replace("\\", "/")
     try:
-        route = str(name).replace("\\", "/")
-        route = route.split(f"{module}/core/")[1]
-        route = route.split('.')[0].replace('/', '.')
+        module = module.split("/")[-1]
+        route = route.split(f"{module}/")[1]
+        route = route.split('.')[0]
+        route = route.replace('/', '.')
+        module = f"{module}.{route}"
+        return importlib.import_module(module)
     except Exception as e:
-        logger.warning(f"module failed {name}")
+        logger.warning(f"file failed {name}")
+        logger.warning(f"module {module}")
         logger.warning(str(e))
-        return
-
-    try:
-        module = f"{module}.core.{route}"
-        module = importlib.import_module(module)
-    except Exception as e:
-        logger.warning(f"module failed {module}")
-        logger.warning(str(e))
-        return
-
-    return module
 
 def loader():
     global JOV_CONFIG, JOV_IGNORE_NODE, NODE_CLASS_MAPPINGS, NODE_DISPLAY_NAME_MAPPINGS
