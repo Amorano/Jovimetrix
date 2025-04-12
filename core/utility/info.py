@@ -35,9 +35,13 @@ JOV_CATEGORY = "UTILITY"
 def decode_tensor(tensor: torch.Tensor) -> str:
     if tensor.ndim > 3:
         b, h, w, cc = tensor.shape
-    else:
+    elif tensor.ndim > 2:
         cc = 1
         b, h, w = tensor.shape
+    else:
+        b = 1
+        cc = 1
+        h, w = tensor.shape
     return f"{b}x{w}x{h}x{cc}"
 
 # ==============================================================================
@@ -130,7 +134,12 @@ Visualize data. It accepts various types of data, including images, text, and ot
             return json.dumps({typ: ret}, separators=(',', ': '))
 
         for x in o:
-            output["ui"]["text"].append(__parse(x))
+            data = ""
+            if len(x) > 1:
+                data += "::\n"
+            for p in x:
+                data += __parse(p) + "\n"
+            output["ui"]["text"].append(data)
         return output
 
 class GraphNode(JOVBaseNode):

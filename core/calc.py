@@ -881,7 +881,7 @@ A timer and frame counter, emitting pulses or signals based on time intervals. I
         self.__frame = 0
 
     def run(self, ident, **kw) -> Tuple[int, float, float, Any]:
-        passthru = parse_param(kw, Lexicon.TRIGGER, EnumConvertType.ANY, [None])[0]
+        passthru = parse_param(kw, Lexicon.TRIGGER, EnumConvertType.ANY, None)[0]
         stride = parse_param(kw, Lexicon.STEP, EnumConvertType.INT, 0, 0, sys.maxsize)[0]
         loop = parse_param(kw, Lexicon.LOOP, EnumConvertType.INT, 0, 0, sys.maxsize)[0]
         self.__frame = parse_param(kw, Lexicon.VALUE, EnumConvertType.INT, self.__frame, 0, sys.maxsize)[0]

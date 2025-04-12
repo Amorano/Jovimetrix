@@ -14,5 +14,4 @@ requests
 scikit-image
 scikit-learn
 stereoscopy[auto_align]
-vnoise
 pyobjc-framework-Quartz; platform_system=='Darwin'

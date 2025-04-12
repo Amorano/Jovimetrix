@@ -114,7 +114,18 @@ def parse_dynamic(data:dict, prefix:str, typ:EnumConvertType, default: Any) -> L
         for k in keys:
             if k.startswith(f"{i}_") or k.startswith(f"{i}_{prefix}_"):
                 val = parse_param(data, k, typ, default)
-                vals.append(val)
+                if isinstance(val, (list, set, tuple,)):
+                    vals.extend(val)
+                elif isinstance(val, (torch.Tensor,)):
+                    # a batch of RGB(A)
+                    if val.ndim > 3:
+                        val = [t for t in val]
+                    # a batch of Grayscale
+                    else:
+                        val = [t.unsqueeze(-1) for t in val]
+                    vals.extend(val)
+                else:
+                    vals.append(val)
                 found = True
                 break
 
@@ -270,62 +281,75 @@ def parse_value(val:Any, typ:EnumConvertType, default: Any,
 def parse_param(data:dict, key:str, typ:EnumConvertType, default: Any,
                 clip_min: Optional[float]=None, clip_max: Optional[float]=None,
                 zero:int=0) -> List[Any]:
-    """Convenience because of the dictionary parameters.
-    Convert list of values into a list of specified type.
-    """
-    val = data.get(key, default)
+    """Convenience because of the dictionary parameters."""
+    values = data.get(key, default)
     if typ == EnumConvertType.ANY:
-        if val is None:
+        if values is None:
             return [default]
-        #elif isinstance(val, (list,)):
-        #    val = val[0]
+    return parse_param_list(values, typ, default, clip_min, clip_max, zero)
 
-    if isinstance(val, (str,)):
-        try: val = json.loads(val.replace("'", '"'))
-        except json.JSONDecodeError: pass
-    # see if we are a Jovimetrix hacked vector blob... {0:x, 1:y, 2:z, 3:w}
-    elif isinstance(val, dict):
-        # mixlab layer?
-        if (image := val.get('image', None)) is not None:
-            ret = image
-            if (mask := val.get('mask', None)) is not None:
-                while len(mask.shape) < len(image.shape):
-                    mask = mask.unsqueeze(-1)
-                ret = torch.cat((image, mask), dim=-1)
-            if ret.ndim > 3:
-                val = [t for t in ret]
-            elif ret.ndim == 3:
-                val = [v.unsqueeze(-1) for v in ret]
-        # vector patch....
-        elif 'xyzw' in val:
-            val = tuple(x for x in val["xyzw"])
-        # latents....
-        elif 'samples' in val:
-            val = tuple(x for x in val["samples"])
-        elif ('0' in val) or (0 in val):
-            val = tuple(val.get(i, val.get(str(i), 0)) for i in range(min(len(val), 4)))
-        elif 'x' in val and 'y' in val:
-            val = tuple(val.get(c, 0) for c in 'xyzw')
-        elif 'r' in val and 'g' in val:
-            val = tuple(val.get(c, 0) for c in 'rgba')
-        elif len(val) == 0:
-            val = tuple()
-    elif isinstance(val, (torch.Tensor,)):
-        # a batch of RGB(A)
-        if val.ndim > 3:
-            val = [t for t in val]
-        # a batch of Grayscale
+def parse_param_list(values:Any, typ:EnumConvertType, default: Any,
+                clip_min: Optional[float]=None, clip_max: Optional[float]=None,
+                zero:int=0) -> List[Any]:
+    """Convert list of values into a list of specified type."""
+
+    if not isinstance(values, (list,)):
+        values = [values]
+
+    value_array = []
+    for val in values:
+        if isinstance(val, (str,)):
+            try: val = json.loads(val.replace("'", '"'))
+            except json.JSONDecodeError: pass
+            value_array.append(val)
+        # see if we are a Jovimetrix hacked vector blob... {0:x, 1:y, 2:z, 3:w}
+        elif isinstance(val, dict):
+            # mixlab layer?
+            if (image := val.get('image', None)) is not None:
+                ret = image
+                if (mask := val.get('mask', None)) is not None:
+                    while len(mask.shape) < len(image.shape):
+                        mask = mask.unsqueeze(-1)
+                    ret = torch.cat((image, mask), dim=-1)
+                if ret.ndim > 3:
+                    val = [t for t in ret]
+                elif ret.ndim == 3:
+                    val = [v.unsqueeze(-1) for v in ret]
+                value_array.extend(val)
+            # vector patch....
+            elif 'xyzw' in val:
+                val = tuple(x for x in val["xyzw"])
+            # latents....
+            elif 'samples' in val:
+                val = tuple(x for x in val["samples"])
+            elif ('0' in val) or (0 in val):
+                val = tuple(val.get(i, val.get(str(i), 0)) for i in range(min(len(val), 4)))
+            elif 'x' in val and 'y' in val:
+                val = tuple(val.get(c, 0) for c in 'xyzw')
+            elif 'r' in val and 'g' in val:
+                val = tuple(val.get(c, 0) for c in 'rgba')
+            elif len(val) == 0:
+                val = tuple()
+            value_array.append(val)
+        elif isinstance(val, (torch.Tensor,)):
+            # a batch of RGB(A)
+            if val.ndim > 3:
+                val = [t for t in val]
+            # a batch of Grayscale
+            else:
+                val = [t.unsqueeze(-1) for t in val]
+            value_array.extend(val)
+        elif isinstance(val, (list, tuple, set)):
+            if isinstance(val, (tuple, set,)):
+                val = list(val)
+            value_array.append(val)
+        elif issubclass(type(val), (Enum,)):
+            val = str(val.name)
+            value_array.append(val)
         else:
-            val = [t.unsqueeze(-1) for t in val]
-    elif isinstance(val, (list, tuple, set)):
-        if isinstance(val, (tuple, set,)):
-            val = list(val)
-    elif issubclass(type(val), (Enum,)):
-        val = [str(val.name)]
+            value_array.append(val)
 
-    if not isinstance(val, (list,)):
-        val = [val]
-    return [parse_value(v, typ, default, clip_min, clip_max, zero) for v in val]
+    return [parse_value(v, typ, default, clip_min, clip_max, zero) for v in value_array]
 
 def path_next(pattern: str) -> str:
     """

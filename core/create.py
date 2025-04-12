@@ -97,7 +97,7 @@ Generate a constant image or mask of a specified size and color. It can be used 
                 if mask is not None:
                     pA = image_mask_add(pA, mask)
                 if mode != EnumScaleMode.MATTE:
-                    pA = image_scalefit(pA, width, height, mode, sample)
+                    pA = image_scalefit(pA, width, height, mode, sample, matte)
                 images.append(cv2tensor_full(pA, matte))
             pbar.update_absolute(idx)
         return [torch.stack(i) for i in zip(*images)]

@@ -34,7 +34,6 @@ __author__ = """Alexander G. Morano"""
 __email__ = "amorano@gmail.com"
 
 import os
-import re
 import sys
 import time
 import json
@@ -42,7 +41,7 @@ import inspect
 import importlib
 from pathlib import Path
 from types import ModuleType
-from typing import Any, Dict, List, Literal, Tuple, TypeAlias
+from typing import Any, Dict, List, Tuple, TypeAlias
 
 import torch
 
@@ -420,6 +419,7 @@ class Singleton(type):
 # ==============================================================================
 
 class JOVBaseNode:
+    INPUT_IS_LIST = True
     NOT_IDEMPOTENT = True
     RETURN_TYPES = ()
     FUNCTION = "run"

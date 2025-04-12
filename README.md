@@ -96,7 +96,7 @@ Migrated to [Node Colorization](https://github.com/Amorano/Jovi_Colorizer)
 
 ## UPDATES
 
-<h2>DO NOT UPDATE JOVIMETRIX PAST VERSION 1.7.50 IF YOU DONT WANT TO LOSE A BUNCH OF NODES</h2>
+<h2>DO NOT UPDATE JOVIMETRIX PAST VERSION 1.7.48 IF YOU DONT WANT TO LOSE A BUNCH OF NODES</h2>
 
 Nodes that have been removed are in various other packages now. You can install those specific packages to get the functionality back, but I have no way to migrate the actual connections -- you will need to do that manually. **
 
@@ -138,26 +138,35 @@ Nodes that have been migrated:
 
 [Migrated to Jovi_GLSL](https://github.com/Amorano/Jovi_GLSL)
 
-**2025/03/29** @2.0.0:
+**2025/04/12** @2.0.0:
 * REMOVED ALL STREAMING, MIDI and GLSL nodes for new packages, HELP System and Node Colorization system:
 
-   [Web camera, Monitor Capture, Window Capture](https://github.com/Amorano/Jovi_Capture)
+   [Jovi_Capture - Web camera, Monitor Capture, Window Capture](https://github.com/Amorano/Jovi_Capture)
 
-   [MIDI capture and MIDI message parsing](https://github.com/Amorano/Jovi_MIDI)
+   [Jovi_MIDI - MIDI capture and MIDI message parsing](https://github.com/Amorano/Jovi_MIDI)
 
-   [GLSL Shaders](https://github.com/Amorano/Jovi_GLSL)
+   [Jovi_GLSL - GLSL Shaders](https://github.com/Amorano/Jovi_GLSL)
 
-   [SPOUT Streaming support](https://github.com/Amorano/Jovi_Spout)
+   [Jovi_Spout - SPOUT Streaming support](https://github.com/Amorano/Jovi_Spout)
 
-   [Node Colorization](https://github.com/Amorano/Jovi_Colorizer)
+   [Jovi_Colorizer - Node Colorization](https://github.com/Amorano/Jovi_Colorizer)
 
-   [Node Help](https://github.com/Amorano/Jovi_Help)
+   [Jovi_Help - Node Help](https://github.com/Amorano/Jovi_Help)
+
+* all nodes will accept `LIST` or `BATCH` and process as if all elements are in a list.
+* patched constant node to work with `MATTE_RESIZE`
+* patched import loader to work with old/new comfyui
+* missing array web node partial
+* removed array and no one even noticed.
+* all inputs should be treated as a list even single elements []
+
 
 **2025/03/28** @1.7.46:
-* updated requirements for numpy to only be >=1.26.4
+* ~~updated requirements for numpy to only be >=1.26.4~~
+* removed to keep numba working with numpy < 2.0
 
 **2025/03/25** @1.7.45:
-* dunno how to work around comfyui not doing type conversion
+* no work around comfyui not doing type conversion past version 1.10.14
 
 **2025/03/18** @1.7.42:
 * updated numby jit to ignore python objects

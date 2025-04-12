@@ -267,6 +267,7 @@ Combine two input images using various blending modes, such as normal, screen, m
         params = list(zip_longest_fill(pA, pB, mask, func, alpha, flip, mode, wihi, sample, matte, invert))
         images = []
         pbar = ProgressBar(len(params))
+        print(len(pA), len(pB))
         for idx, (pA, pB, mask, func, alpha, flip, mode, wihi, sample, matte, invert) in enumerate(params):
             if flip:
                 pA, pB = pB, pA
@@ -563,7 +564,7 @@ Extract a portion of an input image or resize it. It supports various cropping m
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
         func = parse_param(kw, Lexicon.FUNC, EnumCropMode, EnumCropMode.CENTER.name)
         # if less than 1 then use as scalar, over 1 = int(size)
-        xy = parse_param(kw, Lexicon.XY, EnumConvertType.VEC2, [(0, 0,)], 1)
+        xy = parse_param(kw, Lexicon.XY, EnumConvertType.VEC2, [(0, 0,)], 0, 1)
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)
         tltr = parse_param(kw, Lexicon.TLTR, EnumConvertType.VEC4, [(0, 0, 0, 1,)], 0, 1)
         blbr = parse_param(kw, Lexicon.BLBR, EnumConvertType.VEC4, [(1, 0, 1, 1,)], 0, 1)
@@ -933,7 +934,7 @@ Merge multiple input images into a single composite image by stacking them along
                 Lexicon.AXIS: (EnumOrientation._member_names_, {"default": EnumOrientation.GRID.name,
                                                                 "tooltip":"Choose the direction in which to stack the images. Options include horizontal, vertical, or a grid layout"}),
                 Lexicon.STEP: ("INT", {"min": 0, "default": 1,
-                                    "tooltip":"Specify the spacing between each stacked image. This determines how far apart the images are from each other"}),
+                                    "tooltip":"How many images are placed before a new row starts (stride)."}),
                 Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.MATTE.name}),
                 Lexicon.WH: ("VEC2INT", {"default": (512, 512), "mij":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),

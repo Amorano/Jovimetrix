@@ -371,8 +371,8 @@ def image_scalefit(image: TYPE_IMAGE, width: int, height:int,
 
         case EnumScaleMode.RESIZE_MATTE:
             canvas = np.full((height, width, 4), matte, dtype=image.dtype)
+            image = image_matte(image, (0,0,0,0), width, height)
             image = image_blend(canvas, image)
-            #image = image_matte(image, matte, width, height)
 
         case EnumScaleMode.ASPECT:
             h, w = image.shape[:2]

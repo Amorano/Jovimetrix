@@ -129,7 +129,7 @@ def image_blend(imageA: TYPE_IMAGE, imageB: TYPE_IMAGE, mask:Optional[TYPE_IMAGE
     # prep B
     cc = imageB.shape[2] if imageB.ndim > 2 else 1
     imageB = image_convert(imageB, 4, w, h)
-    old_mask = image_mask(imageB)
+    old_mask = image_mask(imageB, 0)
 
     if mask is None:
         mask = old_mask

@@ -119,7 +119,7 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
         self.__seed = None
 
     def run(self, **kw) -> Tuple[int, list]:
-        data_list = parse_dynamic(kw, Lexicon.UNKNOWN, EnumConvertType.ANY, [None])
+        data_list = parse_dynamic(kw, Lexicon.UNKNOWN, EnumConvertType.ANY, None)
         if data_list is None:
             logger.warn("no data for list")
             return (None, [], 0)
