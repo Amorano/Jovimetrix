@@ -9,7 +9,7 @@ matplotlib
 mido[ports-rtmidi]
 mss
 numba
-numpy>=1.26.4
+numpy<=1.26.4
 opencv-contrib-python
 Pillow
 PyOpenGL
