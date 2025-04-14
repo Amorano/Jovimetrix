@@ -3,10 +3,9 @@
 import { api } from "../../../scripts/api.js";
 import { app } from "../../../scripts/app.js";
 import { ComfyWidgets } from "../../../scripts/widgets.js"
-import { apiJovimetrix } from '../util/util_api.js'
 import { flashBackgroundColor } from '../util/util_fun.js'
 import { TypeSlotEvent, TypeSlot } from '../util/util_node.js'
-import { widgetSizeModeHook } from '../util/util_jov.js'
+import { apiJovimetrix, widgetSizeModeHook } from '../util/util_jov.js'
 
 const _id1 = "QUEUE (JOV) 🗃";
 const _id2 = "QUEUE TOO (JOV) 🗃";

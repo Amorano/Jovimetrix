@@ -3,7 +3,7 @@
 import { api } from "../../../scripts/api.js";
 import { app } from "../../../scripts/app.js";
 import { domShowModal } from '../util/util.js'
-import { apiJovimetrix } from '../util/util_api.js'
+import { apiJovimetrix } from '../util/util_jov.js'
 import { bubbles } from '../util/util_fun.js'
 
 const _id = "DELAY (JOV) ✋🏽"

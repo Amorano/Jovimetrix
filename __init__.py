@@ -35,9 +35,6 @@ __email__ = "amorano@gmail.com"
 from pathlib import Path
 from typing import Any, Dict
 
-from aiohttp import web
-from server import PromptServer
-
 from cozy_comfyui import \
     logger
 
@@ -275,20 +272,3 @@ NODE_CLASS_MAPPINGS, NODE_DISPLAY_NAME_MAPPINGS = loader(ROOT,
                                                          "core",
                                                          f"{PACKAGE} 🔺🟩🔵",
                                                          False)
-
-# ==============================================================================
-# === API RESPONSE ===
-# ==============================================================================
-
-@PromptServer.instance.routes.get("/jovimetrix/message")
-async def jovimetrix_message(req) -> Any:
-    return web.json_response(ComfyAPIMessage.MESSAGE)
-
-@PromptServer.instance.routes.post("/jovimetrix/message")
-async def jovimetrix_message_post(req) -> Any:
-    json_data = await req.json()
-    logger.info(json_data)
-    if (did := json_data.get("id")) is not None:
-        ComfyAPIMessage.MESSAGE[str(did)] = json_data
-        return web.json_response(json_data)
-    return web.json_response({})

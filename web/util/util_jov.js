@@ -1,7 +1,32 @@
 /**/
 
+import { api } from "../../../scripts/api.js"
 import { nodeFitHeight } from './util_node.js'
 import { widgetShowVector, widget_type_name, widgetHide, widgetShow } from './util_widget.js'
+
+export async function apiJovimetrix(id, cmd, route="message") {
+    try {
+        const response = await api.fetchApi(`/cozy_comfyui/${route}`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                id: id,
+                cmd: cmd
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error(`Error: ${response.status} - ${response.statusText}`);
+        }
+        return response;
+
+    } catch (error) {
+        console.error("API call to Jovimetrix failed:", error);
+        throw error; // or return { success: false, message: error.message }
+    }
+}
 
 export function widgetSizeModeHook(nodeType, always_wh=false) {
     const onNodeCreated = nodeType.prototype.onNodeCreated

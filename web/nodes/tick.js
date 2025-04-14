@@ -2,7 +2,7 @@
 
 import { api } from "../../../scripts/api.js";
 import { app } from "../../../scripts/app.js"
-import { apiJovimetrix } from '../util/util_api.js'
+import { apiJovimetrix } from '../util/util_jov.js'
 
 const _id = "TICK (JOV) ⏱";
 const EVENT_JOVI_TICK = "jovi-tick";

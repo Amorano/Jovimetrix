@@ -1,9 +1,6 @@
 aenum
-aiohttp
 blendmodes
 daltonlens
-loguru
-markdownify
 matplotlib
 numba
 numpy<2
