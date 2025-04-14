@@ -1,6 +1,4 @@
-"""
-Jovimetrix - Coordinates and Mapping
-"""
+""" Jovimetrix - Coordinates and Mapping """
 
 from enum import Enum
 from typing import Any, List, Tuple
@@ -8,8 +6,16 @@ from typing import Any, List, Tuple
 import cv2
 import numpy as np
 
-from . import TAU, TYPE_IMAGE, TYPE_fCOORD2D, \
-    image_convert, image_lerp, image_normalize
+from cozy_comfyui.image import \
+    TAU, \
+    Coord2D_Float, ImageType
+
+from cozy_comfyui.image.convert import \
+    ImageType, \
+    image_convert
+
+from cozy_comfyui.image.misc import \
+    image_lerp, image_normalize
 
 from .color import image_grayscale
 
@@ -41,8 +47,8 @@ def image_mirror_mandela(imageA: np.ndarray, imageB: np.ndarray) -> Tuple[np.nda
     imageB = np.vstack([top, bottom])
     return imageA, imageB
 
-def image_stereogram(image: TYPE_IMAGE, depth: TYPE_IMAGE, divisions:int=8,
-                     mix:float=0.33, gamma:float=0.33, shift:float=1.) -> TYPE_IMAGE:
+def image_stereogram(image: ImageType, depth: ImageType, divisions:int=8,
+                     mix:float=0.33, gamma:float=0.33, shift:float=1.) -> ImageType:
     height, width = depth.shape[:2]
     out = np.zeros((height, width, 3), dtype=np.uint8)
     image = cv2.resize(image, (width, height))
@@ -70,17 +76,17 @@ def image_stereogram(image: TYPE_IMAGE, depth: TYPE_IMAGE, divisions:int=8,
 # === COORDINATES ===
 # ==============================================================================
 
-def coord_cart2polar(x: float, y: float) -> TYPE_fCOORD2D:
+def coord_cart2polar(x: float, y: float) -> Coord2D_Float:
     r = np.sqrt(x**2 + y**2)
     theta = np.arctan2(y, x)
     return r, theta
 
-def coord_polar2cart(r: float, theta: float) -> TYPE_fCOORD2D:
+def coord_polar2cart(r: float, theta: float) -> Coord2D_Float:
     x = r * np.cos(theta)
     y = r * np.sin(theta)
     return x, y
 
-def coord_default(width:int, height:int, origin:TYPE_fCOORD2D=None) -> TYPE_fCOORD2D:
+def coord_default(width:int, height:int, origin:Coord2D_Float=None) -> Coord2D_Float:
     """Creates x & y coords for the indicies in a numpy array "data".
     "origin" defaults to the center of the image. Specify origin=(0,0)
     to set the origin to the lower left corner of the image."""
@@ -93,7 +99,7 @@ def coord_default(width:int, height:int, origin:TYPE_fCOORD2D=None) -> TYPE_fCOO
     y -= origin_y
     return x, y
 
-def coord_fisheye(width: int, height: int, distortion: float) -> Tuple[TYPE_IMAGE, TYPE_IMAGE]:
+def coord_fisheye(width: int, height: int, distortion: float) -> Tuple[ImageType, ImageType]:
     map_x, map_y = np.meshgrid(np.linspace(0., 1., width), np.linspace(0., 1., height))
     # normalized
     xnd, ynd = (2 * map_x - 1), (2 * map_y - 1)
@@ -104,13 +110,13 @@ def coord_fisheye(width: int, height: int, distortion: float) -> Tuple[TYPE_IMAG
     xu, yu = ((xdu + 1) * width) / 2, ((ydu + 1) * height) / 2
     return xu.astype(np.float32), yu.astype(np.float32)
 
-def coord_perspective(width: int, height: int, pts: List[TYPE_fCOORD2D]) -> TYPE_IMAGE:
+def coord_perspective(width: int, height: int, pts: List[Coord2D_Float]) -> ImageType:
     object_pts = np.float32([[0, 0], [width, 0], [width, height], [0, height]])
     pts = np.float32(pts)
     pts = np.column_stack([pts[:, 0], pts[:, 1]])
     return cv2.getPerspectiveTransform(object_pts, pts)
 
-def coord_sphere(width: int, height: int, radius: float) -> Tuple[TYPE_IMAGE, TYPE_IMAGE]:
+def coord_sphere(width: int, height: int, radius: float) -> Tuple[ImageType, ImageType]:
     theta, phi = np.meshgrid(np.linspace(0, TAU, width), np.linspace(0, np.pi, height))
     x = radius * np.sin(phi) * np.cos(theta)
     y = radius * np.sin(phi) * np.sin(theta)
@@ -123,7 +129,7 @@ def coord_sphere(width: int, height: int, radius: float) -> Tuple[TYPE_IMAGE, TY
 # === MAPPING ===
 # ==============================================================================
 
-def remap_fisheye(image: TYPE_IMAGE, distort: float) -> TYPE_IMAGE:
+def remap_fisheye(image: ImageType, distort: float) -> ImageType:
     cc = image.shape[2] if image.ndim == 3 else 1
     height, width = image.shape[:2]
     if cc == 1:
@@ -134,7 +140,7 @@ def remap_fisheye(image: TYPE_IMAGE, distort: float) -> TYPE_IMAGE:
     #    image = image[..., 0]
     return image
 
-def remap_perspective(image: TYPE_IMAGE, pts: list) -> TYPE_IMAGE:
+def remap_perspective(image: ImageType, pts: list) -> ImageType:
     cc = image.shape[2] if image.ndim == 3 else 1
     height, width = image.shape[:2]
     if cc == 1:
@@ -145,14 +151,14 @@ def remap_perspective(image: TYPE_IMAGE, pts: list) -> TYPE_IMAGE:
     #    image = image[..., 0]
     return image
 
-def remap_polar(image: TYPE_IMAGE) -> TYPE_IMAGE:
+def remap_polar(image: ImageType) -> ImageType:
     """Re-projects a 3D numpy array ("data") into a polar coordinate system.
     "origin" is a tuple of (x0, y0) and defaults to the center of the image."""
     h, w = image.shape[:2]
     radius = max(w, h)
     return cv2.linearPolar(image, (h // 2, w // 2), radius // 2, cv2.WARP_INVERSE_MAP)
 
-def remap_sphere(image: TYPE_IMAGE, radius: float) -> TYPE_IMAGE:
+def remap_sphere(image: ImageType, radius: float) -> ImageType:
     height, width = image.shape[:2]
     map_x, map_y = coord_sphere(width, height, radius)
     return cv2.remap(image, map_x, map_y, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
@@ -174,7 +180,7 @@ def depth_from_gradient(grad_x, grad_y):
     Z /= np.max(Z)
     return Z
 
-def height_from_normal(image: TYPE_IMAGE, tile:bool=True) -> TYPE_IMAGE:
+def height_from_normal(image: ImageType, tile:bool=True) -> ImageType:
     """Computes a height map from the given normal map."""
     image = np.transpose(image, (2, 0, 1))
     flip_img = np.flip(image, axis=1)
@@ -195,7 +201,7 @@ def height_from_normal(image: TYPE_IMAGE, tile:bool=True) -> TYPE_IMAGE:
     image = np.transpose(image, (1, 2, 0))
     return image
 
-def curvature_from_normal(image: TYPE_IMAGE, blur_radius:int=2)-> TYPE_IMAGE:
+def curvature_from_normal(image: ImageType, blur_radius:int=2)-> ImageType:
     """Computes a curvature map from the given normal map."""
     image = np.transpose(image, (2, 0, 1))
     blur_factor = 1 / 2 ** min(8, max(2, blur_radius))
@@ -233,7 +239,7 @@ def curvature_from_normal(image: TYPE_IMAGE, blur_radius:int=2)-> TYPE_IMAGE:
     image = (image - image.min()) / (image.max() - image.min()) * 255
     return image.astype(np.uint8)
 
-def roughness_from_normal(image: TYPE_IMAGE) -> TYPE_IMAGE:
+def roughness_from_normal(image: ImageType) -> ImageType:
     """Roughness from a normal map."""
     up_vector = np.array([0, 0, 1])
     image = 1 - np.dot(image, up_vector)
@@ -241,7 +247,7 @@ def roughness_from_normal(image: TYPE_IMAGE) -> TYPE_IMAGE:
     image = (255 * image).astype(np.uint8)
     return image_grayscale(image)
 
-def roughness_from_albedo(image: TYPE_IMAGE) -> TYPE_IMAGE:
+def roughness_from_albedo(image: ImageType) -> ImageType:
     """Roughness from an albedo map."""
     kernel_size = 3
     image = cv2.Laplacian(image, cv2.CV_64F, ksize=kernel_size)
@@ -249,8 +255,8 @@ def roughness_from_albedo(image: TYPE_IMAGE) -> TYPE_IMAGE:
     image = (255 * image).astype(np.uint8)
     return image_grayscale(image)
 
-def roughness_from_albedo_normal(albedo: TYPE_IMAGE, normal: TYPE_IMAGE,
-                                 blur:int=2, blend:float=0.5, iterations:int=3) -> TYPE_IMAGE:
+def roughness_from_albedo_normal(albedo: ImageType, normal: ImageType,
+                                 blur:int=2, blend:float=0.5, iterations:int=3) -> ImageType:
     normal = roughness_from_normal(normal)
     normal = image_normalize(normal)
     albedo = roughness_from_albedo(albedo)

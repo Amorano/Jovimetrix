@@ -1,18 +1,20 @@
-"""
-Jovimetrix - TEXT support
-"""
+""" Jovimetrix - TEXT support """
 
-from enum import Enum
 import textwrap
+from enum import Enum
 from typing import List, Tuple
 
 from matplotlib import font_manager
 from PIL import Image, ImageFont, ImageDraw
 
-from loguru import logger
+from cozy_comfyui import \
+    logger
 
-from .image import TYPE_IMAGE, TYPE_PIXEL, \
-    pil2cv
+from cozy_comfyui.image import \
+    PixelType, ImageType
+
+from cozy_comfyui.image.convert import \
+    pil_to_cv
 
 # ==============================================================================
 
@@ -69,7 +71,7 @@ def text_draw(full_text: str, font: ImageFont,
               align: EnumAlignment=EnumAlignment.CENTER,
               justify: EnumJustify=EnumJustify.CENTER,
               margin: int=0, line_spacing: int=0,
-              color: TYPE_PIXEL=(255,255,255,255)) -> TYPE_IMAGE:
+              color: PixelType=(255,255,255,255)) -> ImageType:
 
     img = Image.new("RGBA", (width, height))
     draw = ImageDraw.Draw(img)
@@ -99,5 +101,5 @@ def text_draw(full_text: str, font: ImageFont,
         # x = min(width - line_width, max(line_width, x))
         draw.text((x, y), line, fill=color, font=font)
         y += height_delta
-    return pil2cv(img)
+    return pil_to_cv(img)
 

@@ -1,6 +1,4 @@
-"""
-Jovimetrix - Creation
-"""
+""" Jovimetrix - Creation """
 
 from typing import Tuple
 
@@ -11,19 +9,24 @@ from skimage.filters import gaussian
 
 from comfy.utils import ProgressBar
 
+from cozy_comfyui import \
+    IMAGE_SIZE_MIN, \
+    InputType, EnumConvertType, RGBAMaskType, TensorType, \
+    deep_merge, parse_param, zip_longest_fill
+
+from cozy_comfyui.node import \
+    COZY_TYPE_IMAGE, \
+    CozyBaseNode, CozyImageNode
+
+from cozy_comfyui.image import \
+    EnumImageType
+
+from cozy_comfyui.image.convert import \
+    image_matte, image_mask_add, image_convert, pil_to_cv, cv_to_tensor, \
+    cv_to_tensor_full, tensor_to_cv
+
 from .. import \
-    JOV_TYPE_IMAGE, \
-    InputType, JOVBaseNode, JOVImageNode, Lexicon, RGBAMaskType, \
-    deep_merge
-
-from ..sup.util import \
-    EnumConvertType, \
-    parse_param, zip_longest_fill
-
-from ..sup.image import \
-    MIN_IMAGE_SIZE, \
-    EnumImageType, \
-    image_convert, image_mask_add, image_matte, cv2tensor, cv2tensor_full, tensor2cv, pil2cv
+    Lexicon
 
 from ..sup.image.channel import channel_solid
 
@@ -41,13 +44,13 @@ from ..sup.text import \
     EnumAlignment, EnumJustify, \
     font_names, text_autosize, text_draw
 
-# ==============================================================================
-
 JOV_CATEGORY = "CREATE"
 
 # ==============================================================================
+# === CLASS ===
+# ==============================================================================
 
-class ConstantNode(JOVImageNode):
+class ConstantNode(CozyImageNode):
     NAME = "CONSTANT (JOV) 🟪"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     DESCRIPTION = """
@@ -59,8 +62,8 @@ Generate a constant image or mask of a specified size and color. It can be used 
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                Lexicon.PIXEL: (JOV_TYPE_IMAGE, {"tooltip":"Optional Image to Matte with Selected Color"}),
-                Lexicon.MASK: (JOV_TYPE_IMAGE, {"tooltip":"Override Image mask"}),
+                Lexicon.PIXEL: (COZY_TYPE_IMAGE, {"tooltip":"Optional Image to Matte with Selected Color"}),
+                Lexicon.MASK: (COZY_TYPE_IMAGE, {"tooltip":"Override Image mask"}),
                 Lexicon.RGBA_A: ("VEC4INT", {"default": (0, 0, 0, 255),
                                         "rgb": True, "tooltip": "Constant Color to Output"}),
                 Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.MATTE.name}),
@@ -76,7 +79,7 @@ Generate a constant image or mask of a specified size and color. It can be used 
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
         mask = parse_param(kw, Lexicon.MASK, EnumConvertType.IMAGE, None)
         matte = parse_param(kw, Lexicon.RGBA_A, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], IMAGE_SIZE_MIN)
         mode = parse_param(kw, Lexicon.MODE, EnumScaleMode, EnumScaleMode.MATTE.name)
         sample = parse_param(kw, Lexicon.SAMPLE, EnumInterpolation, EnumInterpolation.LANCZOS4.name)
         images = []
@@ -85,24 +88,24 @@ Generate a constant image or mask of a specified size and color. It can be used 
         for idx, (pA, mask, matte, wihi, mode, sample) in enumerate(params):
             width, height = wihi
             if mask is not None:
-                mask = tensor2cv(mask)
+                mask = tensor_to_cv(mask)
             if pA is None:
                 pA = channel_solid(width, height, matte, EnumImageType.BGRA)
                 if mask is not None:
                     pA = image_mask_add(pA, mask)
-                images.append(cv2tensor_full(pA))
+                images.append(cv_to_tensor_full(pA))
             else:
-                pA = tensor2cv(pA)
+                pA = tensor_to_cv(pA)
                 pA = image_convert(pA, 4)
                 if mask is not None:
                     pA = image_mask_add(pA, mask)
                 if mode != EnumScaleMode.MATTE:
                     pA = image_scalefit(pA, width, height, mode, sample, matte)
-                images.append(cv2tensor_full(pA, matte))
+                images.append(cv_to_tensor_full(pA, matte))
             pbar.update_absolute(idx)
         return [torch.stack(i) for i in zip(*images)]
 
-class ShapeNode(JOVImageNode):
+class ShapeNode(CozyImageNode):
     NAME = "SHAPE GEN (JOV) ✨"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     DESCRIPTION = """
@@ -118,7 +121,7 @@ Create n-sided polygons. These shapes can be customized by adjusting parameters 
                 Lexicon.SIDES: ("INT", {"default": 3, "min": 3, "max": 100}),
                 Lexicon.RGBA_A: ("VEC4INT", {"default": (255, 255, 255, 255), "rgb": True, "tooltip": "Main Shape Color"}),
                 Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True, "tooltip": "Background Color"}),
-                Lexicon.WH: ("VEC2INT", {"default": (256, 256), "mij":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
+                Lexicon.WH: ("VEC2INT", {"default": (256, 256), "mij":IMAGE_SIZE_MIN, "label": [Lexicon.W, Lexicon.H]}),
                 Lexicon.XY: ("VEC2", {"default": (0, 0,), "step": 0.01, "label": [Lexicon.X, Lexicon.Y]}),
                 Lexicon.ANGLE: ("FLOAT", {"default": 0, "min": -180, "max": 180, "step": 0.01}),
                 Lexicon.SIZE: ("VEC2", {"default": (1., 1.), "step": 0.01, "label": [Lexicon.X, Lexicon.Y]}),
@@ -135,7 +138,7 @@ Create n-sided polygons. These shapes can be customized by adjusting parameters 
         edge = parse_param(kw, Lexicon.EDGE, EnumEdge, EnumEdge.CLIP.name)
         offset = parse_param(kw, Lexicon.XY, EnumConvertType.VEC2, [(0, 0)])
         size = parse_param(kw, Lexicon.SIZE, EnumConvertType.VEC2, [(1, 1)], zero=0.001)
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(256, 256)], MIN_IMAGE_SIZE)
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(256, 256)], IMAGE_SIZE_MIN)
         color = parse_param(kw, Lexicon.RGBA_A, EnumConvertType.VEC4INT, [(255, 255, 255, 255)], 0, 255)
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
         blur = parse_param(kw, Lexicon.BLUR, EnumConvertType.FLOAT, 0)
@@ -158,7 +161,7 @@ Create n-sided polygons. These shapes can be customized by adjusting parameters 
                 case EnumShapes.POLYGON:
                     pA = shape_polygon(width, height, sizeX, sides, fill, back)
 
-            pA = pil2cv(pA)
+            pA = pil_to_cv(pA)
             pA = image_transform(pA, offset, angle, edge=edge)
             if blur > 0:
                 # @TODO: Do blur on larger canvas to remove wrap bleed.
@@ -169,11 +172,11 @@ Create n-sided polygons. These shapes can be customized by adjusting parameters 
             pB = image_mask_add(pA, mask)
             matte = image_matte(pB, matte)
 
-            images.append([cv2tensor(pB), cv2tensor(matte), cv2tensor(mask, True)])
+            images.append([cv_to_tensor(pB), cv_to_tensor(matte), cv_to_tensor(mask, True)])
             pbar.update_absolute(idx)
         return [torch.stack(i) for i in zip(*images)]
 
-class StereogramNode(JOVImageNode):
+class StereogramNode(CozyImageNode):
     NAME = "STEREOGRAM (JOV) 📻"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     DESCRIPTION = """
@@ -185,8 +188,8 @@ Generates false perception 3D images from 2D input. Set tile divisions, noise, g
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                Lexicon.PIXEL: (JOV_TYPE_IMAGE, {}),
-                Lexicon.DEPTH: (JOV_TYPE_IMAGE, {}),
+                Lexicon.PIXEL: (COZY_TYPE_IMAGE, {}),
+                Lexicon.DEPTH: (COZY_TYPE_IMAGE, {}),
                 Lexicon.TILE: ("INT", {"default": 8, "min": 1}),
                 Lexicon.NOISE: ("FLOAT", {"default": 0.33, "min": 0, "max": 1, "step": 0.01}),
                 Lexicon.GAMMA: ("FLOAT", {"default": 0.33, "min": 0, "max": 1, "step": 0.01}),
@@ -208,17 +211,17 @@ Generates false perception 3D images from 2D input. Set tile divisions, noise, g
         images = []
         pbar = ProgressBar(len(params))
         for idx, (pA, depth, divisions, noise, gamma, shift, invert) in enumerate(params):
-            pA = channel_solid(chan=EnumImageType.BGRA) if pA is None else tensor2cv(pA)
+            pA = channel_solid(chan=EnumImageType.BGRA) if pA is None else tensor_to_cv(pA)
             h, w = pA.shape[:2]
-            depth = channel_solid(w, h, chan=EnumImageType.BGRA) if depth is None else tensor2cv(depth)
+            depth = channel_solid(w, h, chan=EnumImageType.BGRA) if depth is None else tensor_to_cv(depth)
             if invert:
                 depth = image_invert(depth, 1.0)
             pA = image_stereogram(pA, depth, divisions, noise, gamma, shift)
-            images.append(cv2tensor_full(pA))
+            images.append(cv_to_tensor_full(pA))
             pbar.update_absolute(idx)
         return [torch.stack(i) for i in zip(*images)]
 
-class StereoscopicNode(JOVBaseNode):
+class StereoscopicNode(CozyBaseNode):
     NAME = "STEREOSCOPIC (JOV) 🕶️"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = ("IMAGE", )
@@ -231,14 +234,14 @@ Simulates depth perception in images by generating stereoscopic views. It accept
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                Lexicon.PIXEL: (JOV_TYPE_IMAGE, {"tooltip":"Optional Image to Matte with Selected Color"}),
+                Lexicon.PIXEL: (COZY_TYPE_IMAGE, {"tooltip":"Optional Image to Matte with Selected Color"}),
                 Lexicon.INT: ("FLOAT", {"default": 0.1, "min": 0, "max": 1, "step": 0.01, "tooltip":"Baseline"}),
                 Lexicon.FOCAL: ("FLOAT", {"default": 500, "min": 0, "step": 0.01}),
             }
         })
         return Lexicon._parse(d)
 
-    def run(self, **kw) -> Tuple[torch.Tensor]:
+    def run(self, **kw) -> Tuple[TensorType]:
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
         baseline = parse_param(kw, Lexicon.INT, EnumConvertType.FLOAT, 0, 0.1, 1)
         focal_length = parse_param(kw, Lexicon.VALUE, EnumConvertType.FLOAT, 500, 0)
@@ -246,16 +249,16 @@ Simulates depth perception in images by generating stereoscopic views. It accept
         params = list(zip_longest_fill(pA, baseline, focal_length))
         pbar = ProgressBar(len(params))
         for idx, (pA, baseline, focal_length) in enumerate(params):
-            pA = tensor2cv(pA) if pA is not None else channel_solid(chan=EnumImageType.GRAYSCALE)
+            pA = tensor_to_cv(pA) if pA is not None else channel_solid(chan=EnumImageType.GRAYSCALE)
             # Convert depth image to disparity map
             disparity_map = np.divide(1.0, pA.astype(np.float32), where=pA!=0)
             # Compute disparity values based on baseline and focal length
             disparity_map *= baseline * focal_length
-            images.append(cv2tensor(pA))
+            images.append(cv_to_tensor(pA))
             pbar.update_absolute(idx)
         return torch.stack(images)
 
-class TextNode(JOVImageNode):
+class TextNode(CozyImageNode):
     NAME = "TEXT GEN (JOV) 📝"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     FONTS = font_names()
@@ -285,7 +288,7 @@ Generates images containing text based on parameters such as font, size, alignme
                 Lexicon.MARGIN: ("INT", {"default": 0, "min": -1024, "max": 1024}),
                 Lexicon.SPACING: ("INT", {"default": 0, "min": -1024, "max": 1024}),
                 Lexicon.WH: ("VEC2INT", {"default": (256, 256),
-                                    "mij":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
+                                    "mij":IMAGE_SIZE_MIN, "label": [Lexicon.W, Lexicon.H]}),
                 Lexicon.XY: ("VEC2", {"default": (0, 0,), "mij": -1, "maj": 1, "step": 0.01,
                                       "label": [Lexicon.X, Lexicon.Y],
                                       "tooltip":"Offset the position"}),
@@ -309,7 +312,7 @@ Generates images containing text based on parameters such as font, size, alignme
         justify = parse_param(kw, Lexicon.JUSTIFY, EnumJustify, EnumJustify.CENTER.name)
         margin = parse_param(kw, Lexicon.MARGIN, EnumConvertType.INT, 0)
         line_spacing = parse_param(kw, Lexicon.SPACING, EnumConvertType.INT, 0)
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], IMAGE_SIZE_MIN)
         pos = parse_param(kw, Lexicon.XY, EnumConvertType.VEC2, [(0, 0)], -1, 1)
         angle = parse_param(kw, Lexicon.ANGLE, EnumConvertType.INT, 0)
         edge = parse_param(kw, Lexicon.EDGE, EnumEdge, EnumEdge.CLIP.name)
@@ -350,6 +353,6 @@ Generates images containing text based on parameters such as font, size, alignme
                 img = image_translate(img, pos, edge=edge)
                 if invert:
                     img = image_invert(img, 1)
-                images.append(cv2tensor_full(img, matte))
+                images.append(cv_to_tensor_full(img, matte))
             pbar.update_absolute(idx)
         return [torch.stack(i) for i in zip(*images)]

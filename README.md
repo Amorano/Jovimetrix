@@ -138,6 +138,10 @@ Nodes that have been migrated:
 
 [Migrated to Jovi_GLSL](https://github.com/Amorano/Jovi_GLSL)
 
+**2025/04/14** @2.0.1:
+* numpy version set for < 2.0.0
+* core supports switched to [cozy_comfyui](https://github.com/cozy-comfyui/cozy_comfyui)
+
 **2025/04/12** @2.0.0:
 * REMOVED ALL STREAMING, MIDI and GLSL nodes for new packages, HELP System and Node Colorization system:
 

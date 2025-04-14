@@ -1,6 +1,4 @@
-"""
-Jovimetrix - Utility
-"""
+""" Jovimetrix - Utility """
 
 import os
 import json
@@ -13,23 +11,31 @@ import numpy as np
 from PIL import Image
 from PIL.PngImagePlugin import PngInfo
 
-from loguru import logger
-
 from comfy.utils import ProgressBar
 from folder_paths import get_output_directory
 from nodes import interrupt_processing
 
+from cozy_comfyui import \
+    logger, \
+    InputType, EnumConvertType, \
+    deep_merge, parse_param, parse_param_list, zip_longest_fill
+
+from cozy_comfyui.node import \
+    COZY_TYPE_IMAGE, COZY_TYPE_ANY, \
+    CozyBaseNode
+
+from cozy_comfyui.image.convert import \
+    tensor_to_pil, tensor_to_cv
+
+from cozy_comfyui.api import \
+    TimedOutException, \
+    comfy_api_post
+
 from ... import \
-    JOV_TYPE_ANY, JOV_TYPE_IMAGE, \
-    InputType, Lexicon, JOVBaseNode, ComfyAPIMessage, TimedOutException, \
-    comfy_api_post, deep_merge
+    Lexicon, ComfyAPIMessage
 
-from ...sup.util import \
-    EnumConvertType, \
-    path_next, parse_param, zip_longest_fill
-
-from ...sup.image import tensor2cv, tensor2pil
-
+# ==============================================================================
+# === GLOBAL ===
 # ==============================================================================
 
 JOV_CATEGORY = "UTILITY"
@@ -57,11 +63,31 @@ else:
     logger.warning("no gifski support")
 
 # ==============================================================================
+# === SUPPORT ===
+# ==============================================================================
 
-class DelayNode(JOVBaseNode):
+def path_next(pattern: str) -> str:
+    """
+    Finds the next free path in an sequentially named list of files
+    """
+    i = 1
+    while os.path.exists(pattern % i):
+        i = i * 2
+
+    a, b = (i // 2, i)
+    while a + 1 < b:
+        c = (a + b) // 2
+        a, b = (c, b) if os.path.exists(pattern % c) else (a, c)
+    return pattern % b
+
+# ==============================================================================
+# === CLASS ===
+# ==============================================================================
+
+class DelayNode(CozyBaseNode):
     NAME = "DELAY (JOV) ✋🏽"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = (JOV_TYPE_ANY,)
+    RETURN_TYPES = (COZY_TYPE_ANY,)
     RETURN_NAMES = (Lexicon.PASS_OUT,)
     OUTPUT_TOOLTIPS = (
         "Pass through data when the delay ends"
@@ -76,7 +102,7 @@ Introduce pauses in the workflow that accept an optional input to pass through a
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                Lexicon.PASS_IN: (JOV_TYPE_ANY, {"default": None,
+                Lexicon.PASS_IN: (COZY_TYPE_ANY, {"default": None,
                                                  "tooltip":"The data that should be held until the timer completes."}),
                 Lexicon.TIMER: ("INT", {"default" : 0, "min": -1,
                                         "tooltip":"How long to delay if enabled. 0 means no delay."}),
@@ -115,7 +141,7 @@ Introduce pauses in the workflow that accept an optional input to pass through a
             step += 1
         return kw[Lexicon.PASS_IN],
 
-class ExportNode(JOVBaseNode):
+class ExportNode(CozyBaseNode):
     NAME = "EXPORT (JOV) 📽"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     OUTPUT_NODE = True
@@ -130,7 +156,7 @@ Responsible for saving images or animations to disk. It supports various output 
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                Lexicon.PIXEL: (JOV_TYPE_IMAGE, {}),
+                Lexicon.PIXEL: (COZY_TYPE_IMAGE, {}),
                 Lexicon.PASS_OUT: ("STRING", {"default": get_output_directory(),
                                               "default_top":"<comfy output dir>",
                                               "tooltip":"Pass through another route node to pre-populate the outputs."}),
@@ -179,7 +205,7 @@ Responsible for saving images or animations to disk. It supports various output 
                 path = path_next(path)
             return path
 
-        images = [tensor2pil(i) for i in images]
+        images = [tensor_to_pil(i) for i in images]
         if format == "gifski":
             root = output_dir / f"{suffix}_{uuid4().hex[:16]}"
             # logger.debug(root)
@@ -222,10 +248,10 @@ Responsible for saving images or animations to disk. It supports various output 
                 img.save(output(format), optimize=optimize)
         return ()
 
-class RouteNode(JOVBaseNode):
+class RouteNode(CozyBaseNode):
     NAME = "ROUTE (JOV) 🚌"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = ("BUS",) + (JOV_TYPE_ANY,) * 127
+    RETURN_TYPES = ("BUS",) + (COZY_TYPE_ANY,) * 127
     RETURN_NAMES = (Lexicon.ROUTE,)
     OUTPUT_TOOLTIPS = (
         "Pass through for Route node"
@@ -247,13 +273,23 @@ Routes the input data from the optional input ports to the output port, preservi
         return Lexicon._parse(d)
 
     def run(self, **kw) -> Tuple[Any, ...]:
-        inout = parse_param(kw, Lexicon.ROUTE, EnumConvertType.ANY, [None])
+        inout = parse_param(kw, Lexicon.ROUTE, EnumConvertType.ANY, None)
         vars = kw.copy()
         vars.pop(Lexicon.ROUTE, None)
         vars.pop('ident', None)
-        return inout, *vars.values(),
 
-class SaveOutput(JOVBaseNode):
+        parsed = []
+        values = list(vars.values())
+        print('values', len(values))
+        for x in values:
+            print(type(x))
+            p = parse_param_list(x, EnumConvertType.ANY, None)
+            parsed.append(p)
+        junk = *parsed,
+        print(len(junk))
+        return inout, parsed,
+
+class SaveOutput(CozyBaseNode):
     NAME = "SAVE OUTPUT (JOV) 💾"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     OUTPUT_NODE = True
@@ -308,7 +344,7 @@ Save the output image along with its metadata to the specified path. Supports sa
                 logger.error(usermeta)
             metadata["prompt"] = prompt
             metadata["workflow"] = json.dumps(pnginfo)
-            image = tensor2cv(image)
+            image = tensor_to_cv(image)
             image = Image.fromarray(np.clip(image, 0, 255).astype(np.uint8))
             meta_png = PngInfo()
             for x in metadata:

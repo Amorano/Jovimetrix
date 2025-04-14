@@ -1,6 +1,4 @@
-"""
-Jovimetrix - Utility
-"""
+""" Jovimetrix - Utility """
 
 import io
 import json
@@ -12,17 +10,22 @@ from PIL import Image
 import matplotlib.pyplot as plt
 
 from ... import \
-    JOV_TYPE_IMAGE, \
-    InputType, Lexicon, JOVBaseNode, \
-    deep_merge, parse_reset
+    Lexicon
 
-from ...sup.util import \
-    EnumConvertType, \
-    parse_dynamic, parse_param
+from cozy_comfyui import \
+    IMAGE_SIZE_MIN, \
+    InputType, EnumConvertType, TensorType, \
+    deep_merge, parse_dynamic, parse_param
 
-from ...sup.image import \
-    MIN_IMAGE_SIZE, \
-    pil2tensor
+from cozy_comfyui.node import \
+    COZY_TYPE_IMAGE, \
+    CozyBaseNode
+
+from cozy_comfyui.image.convert import \
+    pil_to_tensor
+
+from cozy_comfyui.api import \
+    parse_reset
 
 # ==============================================================================
 
@@ -32,7 +35,7 @@ JOV_CATEGORY = "UTILITY"
 # === SUPPORT ===
 # ==============================================================================
 
-def decode_tensor(tensor: torch.Tensor) -> str:
+def decode_tensor(tensor: TensorType) -> str:
     if tensor.ndim > 3:
         b, h, w, cc = tensor.shape
     elif tensor.ndim > 2:
@@ -57,7 +60,7 @@ class AkashicData:
 # === CLASS ===
 # ==============================================================================
 
-class AkashicNode(JOVBaseNode):
+class AkashicNode(CozyBaseNode):
     NAME = "AKASHIC (JOV) 📓"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_NAMES = ()
@@ -112,10 +115,10 @@ Visualize data. It accepts various types of data, including images, text, and ot
                     if isinstance(val, (np.ndarray,)):
                         ret = str(val)
                         typ = "NUMPY ARRAY"
-                    elif isinstance(val[0], (torch.Tensor,)):
+                    elif isinstance(val[0], (TensorType,)):
                         ret = decode_tensor(val[0])
                         typ = type(val[0])
-                    elif size == 1 and isinstance(val[0], (list,)) and isinstance(val[0][0], (torch.Tensor,)):
+                    elif size == 1 and isinstance(val[0], (list,)) and isinstance(val[0][0], (TensorType,)):
                         ret = decode_tensor(val[0][0])
                         typ = "CONDITIONING"
                     elif all(isinstance(i, (tuple, set, list)) for i in val):
@@ -127,7 +130,7 @@ Visualize data. It accepts various types of data, including images, text, and ot
                         ret = str(val)
             elif isinstance(val, bool):
                 ret = "True" if val else "False"
-            elif isinstance(val, torch.Tensor):
+            elif isinstance(val, TensorType):
                 ret = decode_tensor(val)
             else:
                 ret = str(val)
@@ -142,7 +145,7 @@ Visualize data. It accepts various types of data, including images, text, and ot
             output["ui"]["text"].append(data)
         return output
 
-class GraphNode(JOVBaseNode):
+class GraphNode(CozyBaseNode):
     NAME = "GRAPH (JOV) 📈"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     OUTPUT_NODE = True
@@ -168,7 +171,7 @@ Visualize a series of data points over time. It accepts a dynamic number of valu
                     "default": 60, "min": 0,
                     "tooltip":"Number of values to graph and display"}),
                 Lexicon.WH: ("VEC2INT", {
-                    "default": (512, 512), "mij":MIN_IMAGE_SIZE,
+                    "default": (512, 512), "mij":IMAGE_SIZE_MIN,
                     "label": [Lexicon.W, Lexicon.H],
                     "tooltip":"Width and Height of the graph output"}),
             }
@@ -184,7 +187,7 @@ Visualize a series of data points over time. It accepts a dynamic number of valu
         self.__history = []
         self.__fig, self.__ax = plt.subplots(figsize=(5.12, 5.12))
 
-    def run(self, ident, **kw) -> Tuple[torch.Tensor]:
+    def run(self, ident, **kw) -> Tuple[TensorType]:
         slice = parse_param(kw, Lexicon.VALUE, EnumConvertType.INT, 60)[0]
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], 1)[0]
         if parse_reset(ident) > 0 or parse_param(kw, Lexicon.RESET, EnumConvertType.BOOLEAN, False)[0]:
@@ -217,13 +220,13 @@ Visualize a series of data points over time. It accepts a dynamic number of valu
         self.__fig.savefig(buffer, format="png")
         buffer.seek(0)
         image = Image.open(buffer)
-        return (pil2tensor(image),)
+        return (pil_to_tensor(image),)
 
-class ImageInfoNode(JOVBaseNode):
+class ImageInfoNode(CozyBaseNode):
     NAME = "IMAGE INFO (JOV) 📚"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = ("INT", "INT", "INT", "INT", "VEC2", "VEC3")
-    RETURN_NAMES = (Lexicon.INT, Lexicon.W, Lexicon.H, Lexicon.C, Lexicon.WH, Lexicon.WHC)
+    RETURN_NAMES = (Lexicon.INT, Lexicon.W, Lexicon.H, "C", Lexicon.WH, Lexicon.WHC)
     OUTPUT_TOOLTIPS = (
         "Batch count",
         "Width",
@@ -242,7 +245,7 @@ Exports and Displays immediate information about images.
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                Lexicon.PIXEL_A: (JOV_TYPE_IMAGE, {
+                Lexicon.PIXEL_A: (COZY_TYPE_IMAGE, {
                     "default": None,
                     "tooltip":"The image to examine"})
             }

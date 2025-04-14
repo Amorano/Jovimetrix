@@ -6,7 +6,7 @@ loguru
 markdownify
 matplotlib
 numba
-numpy<=1.26.4
+numpy<2
 opencv-contrib-python
 Pillow
 pywin32; platform_system=="Windows"

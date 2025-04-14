@@ -1,3 +1,4 @@
+""" Joviemtrix - Ze Supports """
 
 import math
 import urllib
@@ -12,18 +13,58 @@ from scipy import ndimage
 from skimage.metrics import structural_similarity as ssim
 from PIL import Image, ImageChops, ImageOps
 
-from loguru import logger
+from cozy_comfyui import \
+    logger, \
+    TensorType
 
-from . import TYPE_IMAGE, TYPE_PIXEL, TYPE_iRGB, \
-    image_convert, image_matte, cv2pil, pil2cv
+from cozy_comfyui.image import \
+    PixelType, \
+    ImageType, RGB_Int
+
+from cozy_comfyui.image.convert import \
+    image_convert, pil_to_cv, cv_to_pil, \
+    image_matte
 
 from .channel import channel_add
 
 from .color import image_grayscale
 
-from ..util import grid_make
+# ==============================================================================
+# === SUPPORT ===
+# ==============================================================================
 
-def image_crop_head(image: TYPE_IMAGE) -> TYPE_IMAGE:
+def grid_make(data: List[Any]) -> Tuple[List[List[Any]], int, int]:
+    """
+    Create a 2D grid from a 1D list.
+
+    Args:
+        data (List[Any]): Input data.
+
+    Returns:
+        Tuple[List[List[Any]], int, int]: A tuple containing the 2D grid, number of columns,
+        and number of rows.
+    """
+    size = len(data)
+    grid = int(math.sqrt(size))
+    if grid * grid < size:
+        grid += 1
+    if grid < 1:
+        return [], 0, 0
+
+    rows = size // grid
+    if size % grid != 0:
+        rows += 1
+
+    ret = []
+    cols = 0
+    for j in range(rows):
+        end = min((j + 1) * grid, len(data))
+        cols = max(cols, end - j * grid)
+        d = [data[i] for i in range(j * grid, end)]
+        ret.append(d)
+    return ret, cols, rows
+
+def image_crop_head(image: ImageType) -> ImageType:
     """
     Given a file path or np.ndarray image with a face,
     returns cropped np.ndarray around the largest detected
@@ -203,7 +244,7 @@ def image_crop_head(image: TYPE_IMAGE) -> TYPE_IMAGE:
         return [int(v1), int(v2), int(h1), int(h2)]
     '''
 
-def image_detect(image: TYPE_IMAGE) -> Tuple[TYPE_IMAGE, Tuple[int, ...]]:
+def image_detect(image: ImageType) -> Tuple[ImageType, Tuple[int, ...]]:
     gray = image_grayscale(image)
     _, thresh = cv2.threshold(gray, 128, 255, cv2.THRESH_BINARY_INV)
     # contours
@@ -215,8 +256,8 @@ def image_detect(image: TYPE_IMAGE) -> Tuple[TYPE_IMAGE, Tuple[int, ...]]:
     cropped_image = image[y:y+h, x:x+w]
     return cropped_image, (x, y, w, h)
 
-def image_diff(imageA: TYPE_IMAGE, imageB: TYPE_IMAGE, threshold:int=0,
-               color:TYPE_PIXEL=(255, 0, 0)) -> Tuple[TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE, TYPE_IMAGE, float]:
+def image_diff(imageA: ImageType, imageB: ImageType, threshold:int=0,
+               color:PixelType=(255, 0, 0)) -> Tuple[ImageType, ImageType, ImageType, ImageType, float]:
     """imageA, imageB, diff, thresh, score
     """
     h1, w1 = imageA.shape[:2]
@@ -259,7 +300,7 @@ def image_disparity(imageA: np.ndarray) -> np.ndarray:
     disparity_map = np.divide(1.0, imageA, where=imageA != 0)
     return np.where(imageA == 0, 1, disparity_map)
 
-def image_histogram_statistics(histogram:np.ndarray, L=256)-> TYPE_IMAGE:
+def image_histogram_statistics(histogram:np.ndarray, L=256)-> ImageType:
     sumPixels = np.sum(histogram)
     normalizedHistogram = histogram/sumPixels
     mean = 0
@@ -280,7 +321,7 @@ def image_gradient_map2(image, gradient_map):
     np.take(cmap.reshape(-1, 3), grey_reshaped, axis=0, out=result.reshape(-1, 3))
     return result
 
-def image_grid(data: List[TYPE_IMAGE], width: int, height: int) -> TYPE_IMAGE:
+def image_grid(data: List[ImageType], width: int, height: int) -> ImageType:
     #@TODO: makes poor assumption all images are the same dimensions.
     chunks, col, row = grid_make(data)
     frame = np.zeros((height * row, width * col, 4), dtype=np.uint8)
@@ -297,14 +338,14 @@ def image_grid(data: List[TYPE_IMAGE], width: int, height: int) -> TYPE_IMAGE:
 
     return frame
 
-def image_merge(imageA: TYPE_IMAGE, imageB: TYPE_IMAGE, axis: int=0,
-                flip: bool=False) -> TYPE_IMAGE:
+def image_merge(imageA: ImageType, imageB: ImageType, axis: int=0,
+                flip: bool=False) -> ImageType:
     if flip:
         imageA, imageB = imageB, imageA
     axis = 1 if axis == "HORIZONTAL" else 0
     return np.concatenate((imageA, imageB), axis=axis)
 
-def image_recenter(image: TYPE_IMAGE) -> TYPE_IMAGE:
+def image_recenter(image: ImageType) -> ImageType:
     cropped_image = image_detect(image)[0]
     new_image = np.zeros(image.shape, dtype=np.uint8)
     paste_x = (new_image.shape[1] - cropped_image.shape[1]) // 2
@@ -312,7 +353,7 @@ def image_recenter(image: TYPE_IMAGE) -> TYPE_IMAGE:
     new_image[paste_y:paste_y+cropped_image.shape[0], paste_x:paste_x+cropped_image.shape[1]] = cropped_image
     return new_image
 
-def image_stereo_shift(image: TYPE_IMAGE, depth: TYPE_IMAGE, shift:float=10) -> TYPE_IMAGE:
+def image_stereo_shift(image: ImageType, depth: ImageType, shift:float=10) -> ImageType:
     # Ensure base image has alpha
     image = image_convert(image, 4)
     depth = image_convert(depth, 1)
@@ -326,7 +367,7 @@ def image_stereo_shift(image: TYPE_IMAGE, depth: TYPE_IMAGE, shift:float=10) -> 
                 continue
             shifted_data[y][x2] = image[y][x]
 
-    shifted_image = cv2pil(shifted_data)
+    shifted_image = cv_to_pil(shifted_data)
     alphas_image = Image.fromarray(
         ndimage.binary_fill_holes(
             ImageChops.invert(
@@ -335,11 +376,11 @@ def image_stereo_shift(image: TYPE_IMAGE, depth: TYPE_IMAGE, shift:float=10) -> 
         )
     ).convert("1")
     shifted_image.putalpha(ImageChops.invert(alphas_image))
-    return pil2cv(shifted_image)
+    return pil_to_cv(shifted_image)
 
 # KERNELS
 
-def MEDIAN3x3(image: TYPE_IMAGE) -> TYPE_IMAGE:
+def MEDIAN3x3(image: ImageType) -> ImageType:
     height, width = image.shape[:2]
     out = np.zeros([height, width])
     for i in range(1, height-1):
@@ -360,7 +401,7 @@ def MEDIAN3x3(image: TYPE_IMAGE) -> TYPE_IMAGE:
             out[i, j]= temp[4]
     return out
 
-def kernel(stride: int) -> TYPE_IMAGE:
+def kernel(stride: int) -> ImageType:
     """
     Generate a kernel matrix with a specific stride.
 
@@ -371,7 +412,7 @@ def kernel(stride: int) -> TYPE_IMAGE:
     - stride (int): The size of the square kernel matrix.
 
     Returns:
-    - TYPE_IMAGE: The generated kernel matrix.
+    - ImageType: The generated kernel matrix.
 
     Example:
     >>> KERNEL(3)
@@ -396,7 +437,7 @@ def kernel(stride: int) -> TYPE_IMAGE:
 #
 #
 
-def image_load_exr(url: str) -> Tuple[TYPE_IMAGE, TYPE_IMAGE]:
+def image_load_exr(url: str) -> Tuple[ImageType, ImageType]:
     """
     exr_file     = OpenEXR.InputFile(url)
     exr_header   = exr_file.header()
@@ -414,7 +455,7 @@ def image_load_exr(url: str) -> Tuple[TYPE_IMAGE, TYPE_IMAGE]:
     """
     pass
 
-def image_load_from_url(url: str, stream:bool=True) -> TYPE_IMAGE:
+def image_load_from_url(url: str, stream:bool=True) -> ImageType:
     """Creates a CV2 BGR image from a url."""
     try:
         image  = urllib.request.urlopen(url)
@@ -423,7 +464,7 @@ def image_load_from_url(url: str, stream:bool=True) -> TYPE_IMAGE:
     except:
         try:
             image = Image.open(requests.get(url, stream=stream).raw)
-            return pil2cv(image)
+            return pil_to_cv(image)
         except Exception as e:
             logger.error(str(e))
 
@@ -440,11 +481,11 @@ def image_save_gif(fpath:str, images: List[Image.Image], fps: int=0,
         save_all=True
     )
 
-def image_load_data(data: str) -> TYPE_IMAGE:
+def image_load_data(data: str) -> ImageType:
     img = ImageOps.exif_transpose(data)
-    return pil2cv(img)
+    return pil_to_cv(img)
 
-def image_gradient(width:int, height:int, color_map:dict=None) -> TYPE_IMAGE:
+def image_gradient(width:int, height:int, color_map:dict=None) -> ImageType:
     if color_map is None:
         color_map = {0: (0,0,0,255)}
     else:
@@ -458,7 +499,7 @@ def image_gradient(width:int, height:int, color_map:dict=None) -> TYPE_IMAGE:
     def gaussian(x, a, b, c, d=0) -> Any:
         return a * math.exp(-(x - b)**2 / (2 * c**2)) + d
 
-    def pixel(x, spread:int=1) -> TYPE_iRGB:
+    def pixel(x, spread:int=1) -> RGB_Int:
         ws = widthf / (spread * len(color_map))
         r = sum([gaussian(x, p[0], k * widthf, ws) for k, p in color_map.items()])
         g = sum([gaussian(x, p[1], k * widthf, ws) for k, p in color_map.items()])
@@ -469,9 +510,9 @@ def image_gradient(width:int, height:int, color_map:dict=None) -> TYPE_IMAGE:
         r, g, b = pixel(x)
         for y in range(height):
             draw[x, y] = r, g, b
-    return pil2cv(image)
+    return pil_to_cv(image)
 
-def torch_rgb2hsv(rgb: torch.Tensor) -> torch.Tensor:
+def torch_rgb2hsv(rgb: TensorType) -> TensorType:
     cmax, cmax_idx = torch.max(rgb, dim=1, keepdim=True)
     cmin = torch.min(rgb, dim=1, keepdim=True)[0]
     delta = cmax - cmin
@@ -485,11 +526,11 @@ def torch_rgb2hsv(rgb: torch.Tensor) -> torch.Tensor:
     hsv_h[cmax_idx == 2] = (((rgb[:, 0:1] - rgb[:, 1:2]) / delta) + 4)[cmax_idx == 2]
     hsv_h[cmax_idx == 3] = 0.
     hsv_h /= 6.
-    hsv_s = torch.where(cmax == 0, torch.tensor(0.).type_as(rgb), delta / cmax)
+    hsv_s = torch.where(cmax == 0, TensorType(0.).type_as(rgb), delta / cmax)
     hsv_v = cmax
     return torch.cat([hsv_h, hsv_s, hsv_v], dim=1)
 
-def torch_hsv2rgb(hsv: torch.Tensor) -> torch.Tensor:
+def torch_hsv2rgb(hsv: TensorType) -> TensorType:
     hsv_h, hsv_s, hsv_l = hsv[:, 0:1], hsv[:, 1:2], hsv[:, 2:3]
     _c = hsv_l * hsv_s
     _x = _c * (- torch.abs(hsv_h * 6. % 2. - 1) + 1.)
@@ -507,7 +548,7 @@ def torch_hsv2rgb(hsv: torch.Tensor) -> torch.Tensor:
     rgb += _m
     return rgb
 
-def torch_rgb2hsl(rgb: torch.Tensor) -> torch.Tensor:
+def torch_rgb2hsl(rgb: TensorType) -> TensorType:
     cmax, cmax_idx = torch.max(rgb, dim=1, keepdim=True)
     cmin = torch.min(rgb, dim=1, keepdim=True)[0]
     delta = cmax - cmin
@@ -529,7 +570,7 @@ def torch_rgb2hsl(rgb: torch.Tensor) -> torch.Tensor:
     hsl_s[hsl_l_l0_5] = ((cmax - cmin) / (- hsl_l * 2. + 2.))[hsl_l_l0_5]
     return torch.cat([hsl_h, hsl_s, hsl_l], dim=1)
 
-def torch_hsl2rgb(hsl: torch.Tensor) -> torch.Tensor:
+def torch_hsl2rgb(hsl: TensorType) -> TensorType:
     hsl_h, hsl_s, hsl_l = hsl[:, 0:1], hsl[:, 1:2], hsl[:, 2:3]
     _c = (-torch.abs(hsl_l * 2. - 1.) + 1) * hsl_s
     _x = _c * (-torch.abs(hsl_h * 6. % 2. - 1) + 1.)

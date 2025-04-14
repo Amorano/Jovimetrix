@@ -1,6 +1,4 @@
-"""
-Jovimetrix - Image Composition Operation Support
-"""
+""" Jovimetrix - Image Composition Operation Support """
 
 import sys
 from enum import Enum
@@ -11,9 +9,14 @@ import numpy as np
 from PIL import Image, ImageDraw
 from blendmodes.blend import BlendType, blendLayers
 
-from . import TYPE_IMAGE, TYPE_PIXEL, TYPE_fCOORD2D, \
-    image_convert, image_mask, image_mask_add, image_matte, \
-    bgr2image, cv2pil, image2bgr, pil2cv
+from cozy_comfyui.image import \
+    PixelType, \
+    Coord2D_Float, ImageType
+
+from cozy_comfyui.image.convert import \
+    ImageType, \
+    image_matte, image_mask, image_mask_add, \
+    image_convert, image_to_bgr, bgr_to_image, cv_to_pil, pil_to_cv
 
 # ==============================================================================
 # === ENUMERATION ===
@@ -99,7 +102,7 @@ class EnumShapes(Enum):
 # === PIXEL ===
 # ==============================================================================
 
-def pixel_convert(color:TYPE_PIXEL, size:int=4, alpha:int=255) -> TYPE_PIXEL:
+def pixel_convert(color:PixelType, size:int=4, alpha:int=255) -> PixelType:
     """Convert X channel pixel into Y channel pixel."""
     if (cc := len(color)) == size:
         return color
@@ -117,14 +120,14 @@ def pixel_convert(color:TYPE_PIXEL, size:int=4, alpha:int=255) -> TYPE_PIXEL:
 These are core functions that most of the support image libraries require.
 """
 
-def image_blend(imageA: TYPE_IMAGE, imageB: TYPE_IMAGE, mask:Optional[TYPE_IMAGE]=None,
-                blendOp:BlendType=BlendType.NORMAL, alpha:float=1) -> TYPE_IMAGE:
+def image_blend(imageA: ImageType, imageB: ImageType, mask:Optional[ImageType]=None,
+                blendOp:BlendType=BlendType.NORMAL, alpha:float=1) -> ImageType:
     """Blending that will size to the largest input's background."""
 
     # prep A
     h, w = imageA.shape[:2]
     imageA = image_convert(imageA, 4, w, h)
-    imageA = cv2pil(imageA)
+    imageA = cv_to_pil(imageA)
 
     # prep B
     cc = imageB.shape[2] if imageB.ndim > 2 else 1
@@ -140,15 +143,15 @@ def image_blend(imageA: TYPE_IMAGE, imageB: TYPE_IMAGE, mask:Optional[TYPE_IMAGE
             mask = cv2.bitwise_and(mask, old_mask)
 
     imageB[..., 3] = mask
-    imageB = cv2pil(imageB)
+    imageB = cv_to_pil(imageB)
     alpha = np.clip(alpha, 0, 1)
     image = blendLayers(imageA, imageB, blendOp.value, alpha)
-    image = pil2cv(image)
+    image = pil_to_cv(image)
     if cc == 4:
         image = image_mask_add(image, mask)
     return image
 
-def image_crop_polygonal(image: TYPE_IMAGE, points: List[TYPE_fCOORD2D]) -> TYPE_IMAGE:
+def image_crop_polygonal(image: ImageType, points: List[Coord2D_Float]) -> ImageType:
     cc = image.shape[2] if image.ndim == 3 else 1
     height, width = image.shape[:2]
     point_mask = np.zeros((height, width), dtype=np.uint8)
@@ -170,7 +173,7 @@ def image_crop_polygonal(image: TYPE_IMAGE, points: List[TYPE_fCOORD2D]) -> TYPE
         return image_convert(cropped_image, cc)
     return cv2.bitwise_and(cropped_image, cropped_image, mask=point_mask_cropped)
 
-def image_crop(image: TYPE_IMAGE, width:int=None, height:int=None, offset:Tuple[float, float]=(0, 0)) -> TYPE_IMAGE:
+def image_crop(image: ImageType, width:int=None, height:int=None, offset:Tuple[float, float]=(0, 0)) -> ImageType:
     h, w = image.shape[:2]
     width = width if width is not None else w
     height = height if height is not None else h
@@ -182,7 +185,7 @@ def image_crop(image: TYPE_IMAGE, width:int=None, height:int=None, offset:Tuple[
     points = [(x, y), (x2, y), (x2, y2), (x, y2)]
     return image_crop_polygonal(image, points)
 
-def image_crop_center(image: TYPE_IMAGE, width:int=None, height:int=None) -> TYPE_IMAGE:
+def image_crop_center(image: ImageType, width:int=None, height:int=None) -> ImageType:
     """Helper crop function to find the "center" of the area of interest."""
     h, w = image.shape[:2]
     cx = w // 2
@@ -212,7 +215,7 @@ def image_levels(image: np.ndarray, black_point:int=0, white_point=255,
         numpy.ndarray: Adjusted image tensor.
     """
 
-    image, alpha, cc = image2bgr(image)
+    image, alpha, cc = image_to_bgr(image)
 
     # Convert points and gamma to float32 for calculations
     black = np.array([black_point] * 3, dtype=np.float32)
@@ -227,18 +230,18 @@ def image_levels(image: np.ndarray, black_point:int=0, white_point=255,
     image = (image - mid) / (1.0 - mid)
     image = (image ** (1 / inGamma)) * (outWhite - outBlack) + outBlack
     image = np.clip(image, 0, 255).astype(np.uint8)
-    return bgr2image(image, alpha, cc == 1)
+    return bgr_to_image(image, alpha, cc == 1)
 
-def image_mask_binary(image: TYPE_IMAGE) -> TYPE_IMAGE:
+def image_mask_binary(image: ImageType) -> ImageType:
     """
     Convert an image to a binary mask where non-black pixels are 1 and black pixels are 0.
     Supports BGR, single-channel grayscale, and RGBA images.
 
     Args:
-        image (TYPE_IMAGE): Input image in BGR, grayscale, or RGBA format.
+        image (ImageType): Input image in BGR, grayscale, or RGBA format.
 
     Returns:
-        TYPE_IMAGE: Binary mask with the same width and height as the input image, where
+        ImageType: Binary mask with the same width and height as the input image, where
                     pixels are 1 for non-black and 0 for black.
     """
     if image.ndim == 2:
@@ -265,8 +268,8 @@ def image_mask_binary(image: TYPE_IMAGE) -> TYPE_IMAGE:
         mask = np.expand_dims(mask, -1)
     return mask.astype(np.uint8)
 
-def image_by_size(image_list: List[TYPE_IMAGE],
-                  enumSize: EnumImageBySize=EnumImageBySize.LARGEST) -> Tuple[TYPE_IMAGE, int, int]:
+def image_by_size(image_list: List[ImageType],
+                  enumSize: EnumImageBySize=EnumImageBySize.LARGEST) -> Tuple[ImageType, int, int]:
 
     img = None
     mega, width, height = 0, 0, 0
@@ -307,7 +310,7 @@ def image_by_size(image_list: List[TYPE_IMAGE],
 
     return img, width, height
 
-def image_split(image: TYPE_IMAGE) -> Tuple[TYPE_IMAGE, ...]:
+def image_split(image: ImageType) -> Tuple[ImageType, ...]:
     h, w = image.shape[:2]
 
     # Grayscale image
@@ -323,9 +326,9 @@ def image_split(image: TYPE_IMAGE) -> Tuple[TYPE_IMAGE, ...]:
         r, g, b, a = cv2.split(image)
     return r, g, b, a
 
-def image_stack(image_list: List[TYPE_IMAGE],
+def image_stack(image_list: List[ImageType],
                 axis:EnumOrientation=EnumOrientation.HORIZONTAL,
-                stride:int=0, matte:TYPE_PIXEL=(0,0,0,255)) -> TYPE_IMAGE:
+                stride:int=0, matte:PixelType=(0,0,0,255)) -> ImageType:
 
     _, width, height = image_by_size(image_list)
     images = [image_matte(image_convert(i, 4), matte, width, height) for i in image_list]
@@ -367,7 +370,7 @@ def image_stack(image_list: List[TYPE_IMAGE],
 # ==============================================================================
 
 def shape_ellipse(width: int, height: int, sizeX:float=1., sizeY:float=1.,
-                  fill:TYPE_PIXEL=255, back:TYPE_PIXEL=0) -> Image:
+                  fill:PixelType=255, back:PixelType=0) -> Image:
     sizeX = max(0.5, sizeX / 2 + 0.5)
     sizeY = max(0.5, sizeY / 2 + 0.5)
     xy = [(width * (1. - sizeX), height * (1. - sizeY)),(width * sizeX, height * sizeY)]
@@ -376,7 +379,7 @@ def shape_ellipse(width: int, height: int, sizeX:float=1., sizeY:float=1.,
     return image
 
 def shape_quad(width: int, height: int, sizeX:float=1., sizeY:float=1.,
-               fill:TYPE_PIXEL=255, back:TYPE_PIXEL=0) -> Image:
+               fill:PixelType=255, back:PixelType=0) -> Image:
     sizeX = max(0.5, sizeX / 2 + 0.5)
     sizeY = max(0.5, sizeY / 2 + 0.5)
     xy = [(width * (1. - sizeX), height * (1. - sizeY)),(width * sizeX, height * sizeY)]
@@ -385,7 +388,7 @@ def shape_quad(width: int, height: int, sizeX:float=1., sizeY:float=1.,
     return image
 
 def shape_polygon(width: int, height: int, size: float=1., sides: int=3,
-                  fill:TYPE_PIXEL=255, back:TYPE_PIXEL=0) -> Image:
+                  fill:PixelType=255, back:PixelType=0) -> Image:
     size = max(0.00001, size)
     r = min(width, height) * size * 0.5
     xy = (width * 0.5, height * 0.5, r)

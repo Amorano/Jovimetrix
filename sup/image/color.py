@@ -1,6 +1,4 @@
-"""
-Jovimetrix - Image Color Support
-"""
+""" Jovimetrix - Image Color Support """
 
 from enum import Enum
 from typing import List, Tuple
@@ -14,9 +12,13 @@ from sklearn.cluster import KMeans
 from daltonlens import simulate
 from blendmodes.blend import BlendType
 
-from . import TYPE_IMAGE, TYPE_PIXEL, \
-    EnumImageType, \
-    bgr2hsv, hsv2bgr, image_convert, image_mask, image_mask_add
+from cozy_comfyui.image import \
+    PixelType, \
+    EnumImageType, ImageType
+
+from cozy_comfyui.image.convert import \
+    ImageType, \
+    image_mask, image_mask_add, image_convert, hsv_to_bgr, bgr_to_hsv
 
 from .compose import image_blend
 
@@ -93,15 +95,15 @@ class EnumCBSimulator(Enum):
 # === COLOR SPACE CONVERSION ===
 # ==============================================================================
 
-def gamma2linear(image: TYPE_IMAGE) -> TYPE_IMAGE:
+def gamma2linear(image: ImageType) -> ImageType:
     """Gamma correction for old PCs/CRT monitors"""
     return np.power(image, 2.2)
 
-def linear2gamma(image: TYPE_IMAGE) -> TYPE_IMAGE:
+def linear2gamma(image: ImageType) -> ImageType:
     """Inverse gamma correction for old PCs/CRT monitors"""
     return np.power(np.clip(image, 0., 1.), 1.0 / 2.2)
 
-def sRGB2Linear(image: TYPE_IMAGE) -> TYPE_IMAGE:
+def sRGB2Linear(image: ImageType) -> ImageType:
     """Convert sRGB to linearRGB, removing the gamma correction.
     Works for grayscale, RGB, or RGBA images.
     """
@@ -126,7 +128,7 @@ def sRGB2Linear(image: TYPE_IMAGE) -> TYPE_IMAGE:
         image = rgb
     return (image * 255).astype(np.uint8)
 
-def linear2sRGB(image: TYPE_IMAGE) -> TYPE_IMAGE:
+def linear2sRGB(image: ImageType) -> ImageType:
     """Convert linearRGB to sRGB, applying the gamma correction.
     Works for grayscale, RGB, or RGBA images.
     """
@@ -155,13 +157,13 @@ def linear2sRGB(image: TYPE_IMAGE) -> TYPE_IMAGE:
 # === PIXEL ===
 # ==============================================================================
 
-def pixel_eval(color: TYPE_PIXEL,
+def pixel_eval(color: PixelType,
             target: EnumImageType=EnumImageType.BGR,
             precision:EnumIntFloat=EnumIntFloat.INT,
-            crunch:EnumGrayscaleCrunch=EnumGrayscaleCrunch.MEAN) -> Tuple[TYPE_PIXEL] | TYPE_PIXEL:
+            crunch:EnumGrayscaleCrunch=EnumGrayscaleCrunch.MEAN) -> Tuple[PixelType] | PixelType:
     """Evaluates R(GB)(A) pixels in range (0-255) into target target pixel type."""
 
-    def parse_single_color(c: TYPE_PIXEL) -> TYPE_PIXEL:
+    def parse_single_color(c: PixelType) -> PixelType:
         if not isinstance(c, int):
             c = np.clip(c, 0, 1)
             if precision == EnumIntFloat.INT:
@@ -212,9 +214,9 @@ def pixel_eval(color: TYPE_PIXEL,
         color = tuple(color[2::-1]) + tuple([color[-1]])
     return color
 
-def pixel_hsv_adjust(color:TYPE_PIXEL, hue:int=0, saturation:int=0, value:int=0,
+def pixel_hsv_adjust(color:PixelType, hue:int=0, saturation:int=0, value:int=0,
                      mod_color:bool=True, mod_sat:bool=False,
-                     mod_value:bool=False) -> TYPE_PIXEL:
+                     mod_value:bool=False) -> PixelType:
     """Adjust an HSV type pixel.
     OpenCV uses... H: 0-179, S: 0-255, V: 0-255"""
     hsv = [0, 0, 0]
@@ -286,9 +288,9 @@ def color_image2lut(image: np.ndarray, num_colors: int = 256) -> np.ndarray:
     # logger.debug(f"Final LUT range: { np.min(lut)} {np.max(lut)}")
     return np.asarray(lut)
 
-def color_blind(image: TYPE_IMAGE, deficiency:EnumCBDeficiency,
+def color_blind(image: ImageType, deficiency:EnumCBDeficiency,
                     simulator:EnumCBSimulator=EnumCBSimulator.AUTOSELECT,
-                    severity:float=1.0) -> TYPE_IMAGE:
+                    severity:float=1.0) -> ImageType:
 
     cc = image.shape[2] if image.ndim == 3 else 1
     if cc == 4:
@@ -316,7 +318,7 @@ def color_blind(image: TYPE_IMAGE, deficiency:EnumCBDeficiency,
         image = image_mask_add(image, mask)
     return image
 
-def color_lut_full(dominant_colors: List[Tuple[int, int, int]], nodes:int=33) -> TYPE_IMAGE:
+def color_lut_full(dominant_colors: List[Tuple[int, int, int]], nodes:int=33) -> ImageType:
     """
     Create a 3D LUT by mapping each RGB value to the closest dominant color.
     This version is optimized for speed using vectorization.
@@ -336,8 +338,8 @@ def color_lut_full(dominant_colors: List[Tuple[int, int, int]], nodes:int=33) ->
     lut = lut.reshape(nodes, nodes, nodes, 3).astype(np.uint8)
     return lut
 
-def color_lut_match(image: TYPE_IMAGE, colormap:int=cv2.COLORMAP_JET,
-                    usermap:TYPE_IMAGE=None, num_colors:int=255) -> TYPE_IMAGE:
+def color_lut_match(image: ImageType, colormap:int=cv2.COLORMAP_JET,
+                    usermap:ImageType=None, num_colors:int=255) -> ImageType:
     """Colorize one input based on built in cv2 color maps or a user defined image."""
     cc = image.shape[2] if image.ndim == 3 else 1
     if cc == 4:
@@ -358,7 +360,7 @@ def color_lut_match(image: TYPE_IMAGE, colormap:int=cv2.COLORMAP_JET,
         image[..., 3] = alpha[..., 0]
     return image
 
-def color_lut_palette(colors: List[Tuple[int, int, int]], size: int=32) -> TYPE_IMAGE:
+def color_lut_palette(colors: List[Tuple[int, int, int]], size: int=32) -> ImageType:
     """
     Create a color palette LUT as a 2D image from the top colors.
 
@@ -380,7 +382,7 @@ def color_lut_palette(colors: List[Tuple[int, int, int]], size: int=32) -> TYPE_
 
     return lut_image
 
-def color_lut_tonal(colors: List[Tuple[int, int, int]], width: int=256, height: int=32) -> TYPE_IMAGE:
+def color_lut_tonal(colors: List[Tuple[int, int, int]], width: int=256, height: int=32) -> ImageType:
     """
     Create a 2D tonal palette LUT as a grid image from the top colors.
 
@@ -390,7 +392,7 @@ def color_lut_tonal(colors: List[Tuple[int, int, int]], width: int=256, height: 
         height (int): Height of each color row.
 
     Returns:
-        TYPE_IMAGE: 2D image representing the tonal palette LUT.
+        ImageType: 2D image representing the tonal palette LUT.
     """
     num_colors = len(colors)
     lut_image = np.zeros((height * num_colors, width, 3), dtype=np.uint8)
@@ -408,7 +410,7 @@ def color_lut_tonal(colors: List[Tuple[int, int, int]], width: int=256, height: 
 
     return lut_image
 
-def color_lut_visualize(lut: TYPE_LUT, size: int=512) -> TYPE_IMAGE:
+def color_lut_visualize(lut: TYPE_LUT, size: int=512) -> ImageType:
     """
     Visualize a 3D LUT as a 2D image.
 
@@ -478,7 +480,7 @@ def color_lut_xport(lut: TYPE_LUT, f_out: str) -> None:
                     color = lut[r, g, b]
                     f.write(f"{color[0]/255:.6f} {color[1]/255:.6f} {color[2]/255:.6f}\n")
 
-def color_match_histogram(image: TYPE_IMAGE, usermap: TYPE_IMAGE) -> TYPE_IMAGE:
+def color_match_histogram(image: ImageType, usermap: ImageType) -> ImageType:
     """Colorize one input based on the histogram matches."""
     cc = image.shape[2] if image.ndim == 3 else 1
     if cc == 4:
@@ -494,7 +496,7 @@ def color_match_histogram(image: TYPE_IMAGE, usermap: TYPE_IMAGE) -> TYPE_IMAGE:
     #    image[..., 3] = alpha[..., 0]
     return image
 
-def color_match_reinhard(image: TYPE_IMAGE, target: TYPE_IMAGE) -> TYPE_IMAGE:
+def color_match_reinhard(image: ImageType, target: ImageType) -> ImageType:
     """
     Apply Reinhard color matching to an image based on a target image.
     Works only for BGR images and returns an BGR image.
@@ -502,11 +504,11 @@ def color_match_reinhard(image: TYPE_IMAGE, target: TYPE_IMAGE) -> TYPE_IMAGE:
     based on https://www.cs.tau.ac.il/~turkel/imagepapers/ColorTransfer.
 
     Args:
-        image (TYPE_IMAGE): The input image (BGR or BGRA or Grayscale).
-        target (TYPE_IMAGE): The target image (BGR or BGRA or Grayscale).
+        image (ImageType): The input image (BGR or BGRA or Grayscale).
+        target (ImageType): The target image (BGR or BGRA or Grayscale).
 
     Returns:
-        TYPE_IMAGE: The color-matched image in BGR format.
+        ImageType: The color-matched image in BGR format.
     """
     target = image_convert(target, 3)
     lab_tar = cv2.cvtColor(target, cv2.COLOR_BGR2Lab)
@@ -519,7 +521,7 @@ def color_match_reinhard(image: TYPE_IMAGE, target: TYPE_IMAGE) -> TYPE_IMAGE:
     lab_tar = cv2.convertScaleAbs(lab_ori * ratio + offset)
     return cv2.cvtColor(lab_tar, cv2.COLOR_Lab2BGR)
 
-def color_mean(image: TYPE_IMAGE) -> TYPE_IMAGE:
+def color_mean(image: ImageType) -> ImageType:
     color = [0, 0, 0]
     cc = image.shape[2] if image.ndim == 3 else 1
     if cc == 1:
@@ -533,7 +535,7 @@ def color_mean(image: TYPE_IMAGE) -> TYPE_IMAGE:
             int(np.mean(image[:,:,2])) ]
     return color
 
-def color_top_used(image: TYPE_IMAGE, top_n: int=8) -> List[Tuple[int, int, int]]:
+def color_top_used(image: ImageType, top_n: int=8) -> List[Tuple[int, int, int]]:
     """
     Find dominant colors in an image using k-means clustering.
 
@@ -566,57 +568,57 @@ def color_top_used(image: TYPE_IMAGE, top_n: int=8) -> List[Tuple[int, int, int]
 # === COLOR ANALYSIS ===
 # ==============================================================================
 
-def color_theory_complementary(color: TYPE_PIXEL) -> TYPE_PIXEL:
-    color = bgr2hsv(color)
+def color_theory_complementary(color: PixelType) -> PixelType:
+    color = bgr_to_hsv(color)
     color_a = pixel_hsv_adjust(color, 90, 0, 0)
-    return hsv2bgr(color_a)
+    return hsv_to_bgr(color_a)
 
-def color_theory_monochromatic(color: TYPE_PIXEL) -> Tuple[TYPE_PIXEL, ...]:
-    color = bgr2hsv(color)
+def color_theory_monochromatic(color: PixelType) -> Tuple[PixelType, ...]:
+    color = bgr_to_hsv(color)
     sat = 255 / 5
     val = 255 / 5
     color_a = pixel_hsv_adjust(color, 0, -1 * sat, -1 * val, mod_sat=True, mod_value=True)
     color_b = pixel_hsv_adjust(color, 0, -2 * sat, -2 * val, mod_sat=True, mod_value=True)
     color_c = pixel_hsv_adjust(color, 0, -3 * sat, -3 * val, mod_sat=True, mod_value=True)
     color_d = pixel_hsv_adjust(color, 0, -4 * sat, -4 * val, mod_sat=True, mod_value=True)
-    return hsv2bgr(color_a), hsv2bgr(color_b), hsv2bgr(color_c), hsv2bgr(color_d)
+    return hsv_to_bgr(color_a), hsv_to_bgr(color_b), hsv_to_bgr(color_c), hsv_to_bgr(color_d)
 
-def color_theory_split_complementary(color: TYPE_PIXEL) -> Tuple[TYPE_PIXEL, ...]:
-    color = bgr2hsv(color)
+def color_theory_split_complementary(color: PixelType) -> Tuple[PixelType, ...]:
+    color = bgr_to_hsv(color)
     color_a = pixel_hsv_adjust(color, 75, 0, 0)
     color_b = pixel_hsv_adjust(color, 105, 0, 0)
-    return hsv2bgr(color_a), hsv2bgr(color_b)
+    return hsv_to_bgr(color_a), hsv_to_bgr(color_b)
 
-def color_theory_analogous(color: TYPE_PIXEL) -> Tuple[TYPE_PIXEL, ...]:
-    color = bgr2hsv(color)
+def color_theory_analogous(color: PixelType) -> Tuple[PixelType, ...]:
+    color = bgr_to_hsv(color)
     color_a = pixel_hsv_adjust(color, 30, 0, 0)
     color_b = pixel_hsv_adjust(color, 15, 0, 0)
     color_c = pixel_hsv_adjust(color, 165, 0, 0)
     color_d = pixel_hsv_adjust(color, 150, 0, 0)
-    return hsv2bgr(color_a), hsv2bgr(color_b), hsv2bgr(color_c), hsv2bgr(color_d)
+    return hsv_to_bgr(color_a), hsv_to_bgr(color_b), hsv_to_bgr(color_c), hsv_to_bgr(color_d)
 
-def color_theory_triadic(color: TYPE_PIXEL) -> Tuple[TYPE_PIXEL, ...]:
-    color = bgr2hsv(color)
+def color_theory_triadic(color: PixelType) -> Tuple[PixelType, ...]:
+    color = bgr_to_hsv(color)
     color_a = pixel_hsv_adjust(color, 60, 0, 0)
     color_b = pixel_hsv_adjust(color, 120, 0, 0)
-    return hsv2bgr(color_a), hsv2bgr(color_b)
+    return hsv_to_bgr(color_a), hsv_to_bgr(color_b)
 
-def color_theory_compound(color: TYPE_PIXEL) -> Tuple[TYPE_PIXEL, ...]:
-    color = bgr2hsv(color)
+def color_theory_compound(color: PixelType) -> Tuple[PixelType, ...]:
+    color = bgr_to_hsv(color)
     color_a = pixel_hsv_adjust(color, 90, 0, 0)
     color_b = pixel_hsv_adjust(color, 120, 0, 0)
     color_c = pixel_hsv_adjust(color, 150, 0, 0)
-    return hsv2bgr(color_a), hsv2bgr(color_b), hsv2bgr(color_c)
+    return hsv_to_bgr(color_a), hsv_to_bgr(color_b), hsv_to_bgr(color_c)
 
-def color_theory_square(color: TYPE_PIXEL) -> Tuple[TYPE_PIXEL, ...]:
-    color = bgr2hsv(color)
+def color_theory_square(color: PixelType) -> Tuple[PixelType, ...]:
+    color = bgr_to_hsv(color)
     color_a = pixel_hsv_adjust(color, 45, 0, 0)
     color_b = pixel_hsv_adjust(color, 90, 0, 0)
     color_c = pixel_hsv_adjust(color, 135, 0, 0)
-    return hsv2bgr(color_a), hsv2bgr(color_b), hsv2bgr(color_c)
+    return hsv_to_bgr(color_a), hsv_to_bgr(color_b), hsv_to_bgr(color_c)
 
-def color_theory_tetrad_custom(color: TYPE_PIXEL, delta:int=0) -> Tuple[TYPE_PIXEL, ...]:
-    color = bgr2hsv(color)
+def color_theory_tetrad_custom(color: PixelType, delta:int=0) -> Tuple[PixelType, ...]:
+    color = bgr_to_hsv(color)
 
     # modulus on neg and pos
     while delta < 0:
@@ -630,9 +632,9 @@ def color_theory_tetrad_custom(color: TYPE_PIXEL, delta:int=0) -> Tuple[TYPE_PIX
     # just gimme a compliment
     color_c = pixel_hsv_adjust(color, 90 - delta, 0, 0)
     color_d = pixel_hsv_adjust(color, 90 + delta, 0, 0)
-    return hsv2bgr(color_a), hsv2bgr(color_b), hsv2bgr(color_c), hsv2bgr(color_d)
+    return hsv_to_bgr(color_a), hsv_to_bgr(color_b), hsv_to_bgr(color_c), hsv_to_bgr(color_d)
 
-def color_theory(image: TYPE_IMAGE, custom:int=0, scheme: EnumColorTheory=EnumColorTheory.COMPLIMENTARY) -> Tuple[TYPE_IMAGE, ...]:
+def color_theory(image: ImageType, custom:int=0, scheme: EnumColorTheory=EnumColorTheory.COMPLIMENTARY) -> Tuple[ImageType, ...]:
 
     b = [0,0,0]
     c = [0,0,0]
@@ -669,30 +671,30 @@ def color_theory(image: TYPE_IMAGE, custom:int=0, scheme: EnumColorTheory=EnumCo
 #
 #
 
-def image_gradient_expand(image: TYPE_IMAGE) -> None:
+def image_gradient_expand(image: ImageType) -> None:
     image = image_convert(image, 3)
     image = cv2.resize(image, (256, 256))
     return image[0,:,:].reshape((256, 1, 3))
 
 # Adapted from WAS Suite -- gradient_map
 # https://github.com/WASasquatch/was-node-suite-comfyui
-def image_gradient_map(image:TYPE_IMAGE, color_map:TYPE_IMAGE, reverse:bool=False) -> TYPE_IMAGE:
+def image_gradient_map(image:ImageType, color_map:ImageType, reverse:bool=False) -> ImageType:
     if reverse:
         color_map = color_map[:,:,::-1]
     gray = image_grayscale(image)
     color_map = image_gradient_expand(color_map)
     return cv2.applyColorMap(gray, color_map)
 
-def image_grayscale(image: TYPE_IMAGE, use_alpha: bool = False) -> TYPE_IMAGE:
+def image_grayscale(image: ImageType, use_alpha: bool = False) -> ImageType:
     """Convert image to grayscale, optionally using the alpha channel if present.
 
     Args:
-        image (TYPE_IMAGE): Input image, potentially with multiple channels.
+        image (ImageType): Input image, potentially with multiple channels.
         use_alpha (bool): If True and the image has 4 channels, multiply the grayscale
                           values by the alpha channel. Defaults to False.
 
     Returns:
-        TYPE_IMAGE: Grayscale image, optionally alpha-multiplied.
+        ImageType: Grayscale image, optionally alpha-multiplied.
     """
     if image.ndim == 2 or image.shape[2] == 1:
         return image

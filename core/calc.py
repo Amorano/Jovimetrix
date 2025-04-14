@@ -1,11 +1,9 @@
-"""
-Jovimetrix - Calculation
-"""
+""" Jovimetrix - Calculation """
 
-import struct
 import sys
 import math
 import random
+import struct
 from enum import Enum
 from typing import Any, List, Tuple
 from collections import Counter
@@ -13,49 +11,29 @@ from collections import Counter
 import torch
 import numpy as np
 from scipy.special import gamma
-from loguru import logger
 
 from comfy.utils import ProgressBar
 
-from .. import \
-    JOV_TYPE_ANY, JOV_TYPE_FULL, JOV_TYPE_NUMBER, JOV_TYPE_NUMERICAL, \
-    InputType, Lexicon, JOVBaseNode, \
-    comfy_api_post, deep_merge, parse_reset
+from cozy_comfyui import \
+    logger, \
+    TensorType, InputType, EnumConvertType, \
+    deep_merge, parse_dynamic, parse_param, parse_value, zip_longest_fill
 
-from ..sup.util import \
-    EnumConvertType, EnumSwizzle, \
-    parse_dynamic, parse_param, parse_value, vector_swap, zip_longest_fill
+from cozy_comfyui.node import \
+    COZY_TYPE_ANY, COZY_TYPE_NUMERICAL, COZY_TYPE_NUMBER, COZY_TYPE_FULL, \
+    CozyBaseNode
+
+from cozy_comfyui.api import \
+    comfy_api_post, parse_reset
+
+from .. import \
+    Lexicon
 
 from ..sup.anim import \
     EnumWave, EnumEase, \
     ease_op, wave_op
 
-# ==============================================================================
-
 JOV_CATEGORY = "CALC"
-
-# ==============================================================================
-# === SUPPORT ===
-# ==============================================================================
-
-LAMBDA_FLATTEN = lambda data: [item for sublist in data for item in sublist]
-
-def flatten(data):
-    if isinstance(data, list):
-        return [a for i in data for a in flatten(i)]
-    else:
-        return [data]
-
-def to_bits(value):
-    if isinstance(value, int):
-        return bin(value)[2:]
-    elif isinstance(value, float):
-        packed = struct.pack('>d', value)
-        return ''.join(f'{byte:08b}' for byte in packed)
-    elif isinstance(value, str):
-        return ''.join(f'{ord(c):08b}' for c in value)
-    else:
-        raise TypeError(f"Unsupported type: {type(value)}")
 
 # ==============================================================================
 # === ENUMERATION ===
@@ -127,6 +105,17 @@ class EnumNumberType(Enum):
     INT = 0
     FLOAT = 10
 
+class EnumSwizzle(Enum):
+    A_X = 0
+    A_Y = 10
+    A_Z = 20
+    A_W = 30
+    B_X = 9
+    B_Y = 11
+    B_Z = 21
+    B_W = 31
+    CONSTANT = 40
+
 class EnumUnaryOperation(Enum):
     ABS = 0
     FLOOR = 1
@@ -193,6 +182,47 @@ OP_UNARY = {
 }
 
 # ==============================================================================
+# === SUPPORT ===
+# ==============================================================================
+
+LAMBDA_FLATTEN = lambda data: [item for sublist in data for item in sublist]
+
+def flatten(data):
+    if isinstance(data, list):
+        return [a for i in data for a in flatten(i)]
+    else:
+        return [data]
+
+def to_bits(value):
+    if isinstance(value, int):
+        return bin(value)[2:]
+    elif isinstance(value, float):
+        packed = struct.pack('>d', value)
+        return ''.join(f'{byte:08b}' for byte in packed)
+    elif isinstance(value, str):
+        return ''.join(f'{ord(c):08b}' for c in value)
+    else:
+        raise TypeError(f"Unsupported type: {type(value)}")
+
+def vector_swap(pA: Any, pB: Any, swap_x: EnumSwizzle, x:float, swap_y:EnumSwizzle, y:float,
+                swap_z:EnumSwizzle, z:float, swap_w:EnumSwizzle, w:float) -> List[float]:
+    """Swap out a vector's values with another vector's values, or a constant fill."""
+    def parse(target, targetB, swap, val) -> float:
+        if swap == EnumSwizzle.CONSTANT:
+            return val
+        if swap in [EnumSwizzle.B_X, EnumSwizzle.B_Y, EnumSwizzle.B_Z, EnumSwizzle.B_W]:
+            target = targetB
+        swap = int(swap.value / 10)
+        return target[swap] if swap < len(target) else 0
+
+    return [
+        parse(pA, pB, swap_x, x),
+        parse(pA, pB, swap_y, y),
+        parse(pA, pB, swap_z, z),
+        parse(pA, pB, swap_w, w)
+    ]
+
+# ==============================================================================
 # === CLASS ===
 # ==============================================================================
 
@@ -204,11 +234,11 @@ class ResultObject(object):
         self.trigger = []
         self.batch = []
 
-class BitSplitNode(JOVBaseNode):
+class BitSplitNode(CozyBaseNode):
     NAME = "BIT SPLIT (JOV) ⭄"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = (JOV_TYPE_ANY, "BOOLEAN",)
-    RETURN_NAMES = (Lexicon.BIT, Lexicon.BOOLEAN,)
+    RETURN_TYPES = (COZY_TYPE_ANY, "BOOLEAN",)
+    RETURN_NAMES = ("BIT", Lexicon.BOOLEAN,)
     OUTPUT_TOOLTIPS = (
         "Bits as Numerical output (0 or 1)",
         "Bits as Boolean output (True or False)"
@@ -225,7 +255,7 @@ IMAGE and MASK will return a TRUE bit for any non-black pixel, as a stream of bi
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                "VALUE": (JOV_TYPE_FULL, {"default": None, "tooltip":"the value to convert into bits"}),
+                "VALUE": (COZY_TYPE_FULL, {"default": None, "tooltip":"the value to convert into bits"}),
                 "BITS": ("INT", {"default": 8, "min": 1, "max": 64, "tooltip":"number of output bits requested"}),
                 "MSB": ("BOOLEAN", {"default": False, "tooltip":"return the most signifigant bits (True) or least signifigant bits first"})
             }
@@ -260,10 +290,10 @@ IMAGE and MASK will return a TRUE bit for any non-black pixel, as a stream of bi
             pbar.update_absolute(idx)
         return *list(zip(*results)),
 
-class CalcUnaryOPNode(JOVBaseNode):
+class CalcUnaryOPNode(CozyBaseNode):
     NAME = "OP UNARY (JOV) 🎲"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = (JOV_TYPE_ANY,)
+    RETURN_TYPES = (COZY_TYPE_ANY,)
     RETURN_NAMES = (Lexicon.UNKNOWN,)
     OUTPUT_TOOLTIPS = (
         "Output type will match the input type"
@@ -278,7 +308,7 @@ Perform single function operations like absolute value, mean, median, mode, magn
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                Lexicon.IN_A: (JOV_TYPE_NUMERICAL, {"default": None}),
+                Lexicon.IN_A: (COZY_TYPE_NUMERICAL, {"default": None}),
                 Lexicon.FUNC: (EnumUnaryOperation._member_names_, {"default": EnumUnaryOperation.ABS.name})
             }
         })
@@ -304,7 +334,7 @@ Perform single function operations like absolute value, mean, median, mode, magn
                 typ = EnumConvertType(len(A) * 10)
             elif isinstance(A, (dict,)):
                 typ = EnumConvertType.DICT
-            elif isinstance(A, (torch.Tensor,)):
+            elif isinstance(A, (TensorType,)):
                 typ = EnumConvertType.IMAGE
 
             val = parse_value(A, typ, 0)
@@ -361,10 +391,10 @@ Perform single function operations like absolute value, mean, median, mode, magn
             pbar.update_absolute(idx)
         return (results,)
 
-class CalcBinaryOPNode(JOVBaseNode):
+class CalcBinaryOPNode(CozyBaseNode):
     NAME = "OP BINARY (JOV) 🌟"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = (JOV_TYPE_ANY,)
+    RETURN_TYPES = (COZY_TYPE_ANY,)
     RETURN_NAMES = (Lexicon.UNKNOWN,)
     OUTPUT_TOOLTIPS = (
         "Output type will match the input type"
@@ -381,9 +411,9 @@ Execute binary operations like addition, subtraction, multiplication, division, 
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                Lexicon.IN_A: (JOV_TYPE_NUMERICAL, {"default": None,
+                Lexicon.IN_A: (COZY_TYPE_NUMERICAL, {"default": None,
                                         "tooltip":"Passes a raw value directly, or supplies defaults for any value inputs without connections"}),
-                Lexicon.IN_B: (JOV_TYPE_NUMERICAL, {"default": None,
+                Lexicon.IN_B: (COZY_TYPE_NUMERICAL, {"default": None,
                                         "tooltip":"Passes a raw value directly, or supplies defaults for any value inputs without connections"}),
                 Lexicon.FUNC: (EnumBinaryOperation._member_names_, {"default": EnumBinaryOperation.ADD.name, "tooltip":"Arithmetic operation to perform"}),
                 Lexicon.TYPE: (names_convert, {"default": names_convert[2],
@@ -503,10 +533,10 @@ Execute binary operations like addition, subtraction, multiplication, division, 
             pbar.update_absolute(idx)
         return results
 
-class ComparisonNode(JOVBaseNode):
+class ComparisonNode(CozyBaseNode):
     NAME = "COMPARISON (JOV) 🕵🏽"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = (JOV_TYPE_ANY, JOV_TYPE_ANY,)
+    RETURN_TYPES = (COZY_TYPE_ANY, COZY_TYPE_ANY,)
     RETURN_NAMES = (Lexicon.TRIGGER, Lexicon.VALUE,)
     OUTPUT_TOOLTIPS = (
         f"Outputs the input at {Lexicon.IN_A} or {Lexicon.IN_B} depending on which evaluated TRUE",
@@ -522,10 +552,10 @@ Evaluates two inputs (A and B) with a specified comparison operators and optiona
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                Lexicon.IN_A: (JOV_TYPE_FULL, {"default": 0, "tooltip":"Master Comparator"}),
-                Lexicon.IN_B: (JOV_TYPE_FULL, {"default": 0, "tooltip":"Secondary Comparator"}),
-                Lexicon.COMP_A: (JOV_TYPE_ANY, {"default": 0}),
-                Lexicon.COMP_B: (JOV_TYPE_ANY, {"default": 0}),
+                Lexicon.IN_A: (COZY_TYPE_FULL, {"default": 0, "tooltip":"Master Comparator"}),
+                Lexicon.IN_B: (COZY_TYPE_FULL, {"default": 0, "tooltip":"Secondary Comparator"}),
+                Lexicon.COMP_A: (COZY_TYPE_ANY, {"default": 0}),
+                Lexicon.COMP_B: (COZY_TYPE_ANY, {"default": 0}),
                 Lexicon.COMPARE: (EnumComparison._member_names_, {"default": EnumComparison.EQUAL.name}),
                 Lexicon.FLIP: ("BOOLEAN", {"default": False}),
                 Lexicon.INVERT: ("BOOLEAN", {"default": False, "tooltip":"reverse the successful and failure inputs"}),
@@ -613,7 +643,7 @@ Evaluates two inputs (A and B) with a specified comparison operators and optiona
             pbar.update_absolute(idx)
 
         outs, vals = zip(*results)
-        if isinstance(outs[0], (torch.Tensor,)):
+        if isinstance(outs[0], (TensorType,)):
             if len(outs) > 1:
                 outs = torch.stack(outs)
             else:
@@ -622,10 +652,10 @@ Evaluates two inputs (A and B) with a specified comparison operators and optiona
             outs = list(outs)
         return outs, *vals,
 
-class LerpNode(JOVBaseNode):
+class LerpNode(CozyBaseNode):
     NAME = "LERP (JOV) 🔰"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = (JOV_TYPE_ANY,)
+    RETURN_TYPES = (COZY_TYPE_ANY,)
     RETURN_NAMES = (Lexicon.ANY_OUT,)
     OUTPUT_TOOLTIPS = (
         f"Output can vary depending on the type chosen in the {Lexicon.TYPE} parameter"
@@ -645,8 +675,8 @@ Additionally, you can specify the easing function (EASE) and the desired output 
         names_convert = EnumConvertType._member_names_[:10]
         d = deep_merge(d, {
             "optional": {
-                Lexicon.IN_A: (JOV_TYPE_FULL, {"tooltip": "Custom Start Point"}),
-                Lexicon.IN_B: (JOV_TYPE_FULL, {"tooltip": "Custom End Point"}),
+                Lexicon.IN_A: (COZY_TYPE_FULL, {"tooltip": "Custom Start Point"}),
+                Lexicon.IN_B: (COZY_TYPE_FULL, {"tooltip": "Custom End Point"}),
                 Lexicon.FLOAT: ("VEC4", {"default": (0.5, 0.5, 0.5, 0.5),
                                          "mij": 0., "maj": 1.0,
                                          "tooltip": "Blend Amount. 0 = full A, 1 = full B"}),
@@ -714,7 +744,7 @@ Additionally, you can specify the easing function (EASE) and the desired output 
             pbar.update_absolute(idx)
         return [values]
 
-class StringerNode(JOVBaseNode):
+class StringerNode(CozyBaseNode):
     NAME = "STRINGER (JOV) 🪀"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = ("STRING", "INT",)
@@ -739,7 +769,7 @@ Manipulate strings through filtering
         })
         return Lexicon._parse(d)
 
-    def run(self, **kw) -> Tuple[torch.Tensor, ...]:
+    def run(self, **kw) -> Tuple[TensorType, ...]:
         # turn any all inputs into the
         data_list = parse_dynamic(kw, Lexicon.UNKNOWN, EnumConvertType.ANY, [""])
         if data_list is None:
@@ -779,10 +809,10 @@ Manipulate strings through filtering
             results = [""]
         return (results, [len(r) for r in results],) if len(results) > 1 else (results[0], len(results[0]),)
 
-class SwizzleNode(JOVBaseNode):
+class SwizzleNode(CozyBaseNode):
     NAME = "SWIZZLE (JOV) 😵"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = (JOV_TYPE_ANY,)
+    RETURN_TYPES = (COZY_TYPE_ANY,)
     RETURN_NAMES = (Lexicon.ANY_OUT,)
     SORT = 40
     DESCRIPTION = """
@@ -795,8 +825,8 @@ Swap components between two vectors based on specified swizzle patterns and valu
         names_convert = EnumConvertType._member_names_[3:10]
         d = deep_merge(d, {
             "optional": {
-                Lexicon.IN_A: (JOV_TYPE_NUMERICAL, {}),
-                Lexicon.IN_B: (JOV_TYPE_NUMERICAL, {}),
+                Lexicon.IN_A: (COZY_TYPE_NUMERICAL, {}),
+                Lexicon.IN_B: (COZY_TYPE_NUMERICAL, {}),
                 Lexicon.TYPE: (names_convert, {"default": names_convert[2],
                                             "tooltip":"Output type desired from resultant operation"}),
                 Lexicon.SWAP_X: (EnumSwizzle._member_names_, {"default": EnumSwizzle.A_X.name}),
@@ -808,7 +838,7 @@ Swap components between two vectors based on specified swizzle patterns and valu
         })
         return Lexicon._parse(d)
 
-    def run(self, **kw) -> Tuple[torch.Tensor, ...]:
+    def run(self, **kw) -> Tuple[TensorType, ...]:
         pA = parse_param(kw, Lexicon.IN_A, EnumConvertType.VEC4, [(0,0,0,0)])
         pB = parse_param(kw, Lexicon.IN_B, EnumConvertType.VEC4, [(0,0,0,0)])
         swap_x = parse_param(kw, Lexicon.SWAP_X, EnumSwizzle, EnumSwizzle.A_X.name)
@@ -826,10 +856,10 @@ Swap components between two vectors based on specified swizzle patterns and valu
             pbar.update_absolute(idx)
         return results
 
-class TickNode(JOVBaseNode):
+class TickNode(CozyBaseNode):
     NAME = "TICK (JOV) ⏱"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = ("INT", "FLOAT", "FLOAT", JOV_TYPE_ANY, JOV_TYPE_ANY,)
+    RETURN_TYPES = ("INT", "FLOAT", "FLOAT", COZY_TYPE_ANY, COZY_TYPE_ANY,)
     RETURN_NAMES = (Lexicon.VALUE, Lexicon.LINEAR, Lexicon.FPS, Lexicon.TRIGGER, Lexicon.BATCH,)
     OUTPUT_IS_LIST = (True, False, False, False, False,)
     OUTPUT_TOOLTIPS = (
@@ -850,7 +880,7 @@ A timer and frame counter, emitting pulses or signals based on time intervals. I
         d = deep_merge(d, {
             "optional": {
                 # data to pass on a pulse of the loop
-                Lexicon.TRIGGER: (JOV_TYPE_ANY, {"default": None,
+                Lexicon.TRIGGER: (COZY_TYPE_ANY, {"default": None,
                                              "tooltip":"Output to send when beat (BPM setting) is hit"}),
                 # forces a MOD on CYCLE
                 Lexicon.VALUE: ("INT", {"default": 0, "min": 0, "max": sys.maxsize,
@@ -923,10 +953,10 @@ A timer and frame counter, emitting pulses or signals based on time intervals. I
             comfy_api_post("jovi-tick", ident, {"i": self.__frame})
         return (results.frame, results.lin, results.fixed, results.trigger, results.batch,)
 
-class ValueNode(JOVBaseNode):
+class ValueNode(CozyBaseNode):
     NAME = "VALUE (JOV) 🧬"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = (JOV_TYPE_ANY, JOV_TYPE_ANY, JOV_TYPE_ANY, JOV_TYPE_ANY, JOV_TYPE_ANY,)
+    RETURN_TYPES = (COZY_TYPE_ANY, COZY_TYPE_ANY, COZY_TYPE_ANY, COZY_TYPE_ANY, COZY_TYPE_ANY,)
     RETURN_NAMES = (Lexicon.ANY_OUT, Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W)
     SORT = 5
     DESCRIPTION = """
@@ -945,17 +975,17 @@ Supplies raw or default values for various data types, supporting vector input w
 
         d = deep_merge(d, {
             "optional": {
-                Lexicon.IN_A: (JOV_TYPE_ANY, {"default": None,
+                Lexicon.IN_A: (COZY_TYPE_ANY, {"default": None,
                                         "tooltip":"Passes a raw value directly, or supplies defaults for any value inputs without connections"}),
                 Lexicon.TYPE: (typ, {"default": EnumConvertType.BOOLEAN.name,
                                     "tooltip":"Take the input and convert it into the selected type."}),
-                Lexicon.X: (JOV_TYPE_NUMERICAL, {"default": 0, "mij": -sys.maxsize,
+                Lexicon.X: (COZY_TYPE_NUMERICAL, {"default": 0, "mij": -sys.maxsize,
                                     "maj": sys.maxsize, "step": 0.01, "forceInput": True}),
-                Lexicon.Y: (JOV_TYPE_NUMERICAL, {"default": 0, "mij": -sys.maxsize,
+                Lexicon.Y: (COZY_TYPE_NUMERICAL, {"default": 0, "mij": -sys.maxsize,
                                     "maj": sys.maxsize, "step": 0.01, "forceInput": True}),
-                Lexicon.Z: (JOV_TYPE_NUMERICAL, {"default": 0, "mij": -sys.maxsize,
+                Lexicon.Z: (COZY_TYPE_NUMERICAL, {"default": 0, "mij": -sys.maxsize,
                                     "maj": sys.maxsize, "step": 0.01, "forceInput": True}),
-                Lexicon.W: (JOV_TYPE_NUMERICAL, {"default": 0, "mij": -sys.maxsize,
+                Lexicon.W: (COZY_TYPE_NUMERICAL, {"default": 0, "mij": -sys.maxsize,
                                     "maj": sys.maxsize, "step": 0.01, "forceInput": True}),
                 Lexicon.IN_A+Lexicon.IN_A: ("VEC4", {"default": (0, 0, 0, 0),
                                     #"mij": -sys.maxsize, "maj": sys.maxsize,
@@ -1041,7 +1071,7 @@ Supplies raw or default values for various data types, supporting vector input w
             return results[0]
         return *list(zip(*results)),
 
-class WaveGeneratorNode(JOVBaseNode):
+class WaveGeneratorNode(CozyBaseNode):
     NAME = "WAVE GEN (JOV) 🌊"
     NAME_PRETTY = "WAVE GEN (JOV) 🌊"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
@@ -1092,7 +1122,7 @@ Produce waveforms like sine, square, or sawtooth with adjustable frequency, ampl
             pbar.update_absolute(idx)
         return *list(zip(*results)),
 
-class Vector2Node(JOVBaseNode):
+class Vector2Node(CozyBaseNode):
     NAME = "VECTOR2 (JOV)"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = ("VEC2", "VEC2INT", )
@@ -1111,8 +1141,8 @@ Outputs a VEC2 or VEC2INT.
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                "X": (JOV_TYPE_NUMBER, {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "tooltip": "1st channel value"}),
-                "Y": (JOV_TYPE_NUMBER, {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "tooltip": "2nd channel value"}),
+                "X": (COZY_TYPE_NUMBER, {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "tooltip": "1st channel value"}),
+                "Y": (COZY_TYPE_NUMBER, {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "tooltip": "2nd channel value"}),
             }
         })
         return Lexicon._parse(d)
@@ -1130,7 +1160,7 @@ Outputs a VEC2 or VEC2INT.
             pbar.update_absolute(idx)
         return *list(zip(*results)),
 
-class Vector3Node(JOVBaseNode):
+class Vector3Node(CozyBaseNode):
     NAME = "VECTOR3 (JOV)"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = ("VEC3", "VEC3INT", )
@@ -1149,9 +1179,9 @@ Outputs a VEC3 or VEC3INT.
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                "X": (JOV_TYPE_NUMBER, {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "tooltip": "1st channel value"}),
-                "Y": (JOV_TYPE_NUMBER, {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "tooltip": "2nd channel value"}),
-                "Z": (JOV_TYPE_NUMBER, {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "tooltip": "3rd channel value"}),
+                "X": (COZY_TYPE_NUMBER, {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "tooltip": "1st channel value"}),
+                "Y": (COZY_TYPE_NUMBER, {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "tooltip": "2nd channel value"}),
+                "Z": (COZY_TYPE_NUMBER, {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "tooltip": "3rd channel value"}),
             }
         })
         return Lexicon._parse(d)
@@ -1171,7 +1201,7 @@ Outputs a VEC3 or VEC3INT.
             pbar.update_absolute(idx)
         return *list(zip(*results)),
 
-class Vector4Node(JOVBaseNode):
+class Vector4Node(CozyBaseNode):
     NAME = "VECTOR4 (JOV)"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = ("VEC4", "VEC4INT", )
@@ -1190,10 +1220,10 @@ Outputs a VEC4 or VEC4INT.
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                "X": (JOV_TYPE_NUMBER, {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "tooltip": "1st channel value"}),
-                "Y": (JOV_TYPE_NUMBER, {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "tooltip": "2nd channel value"}),
-                "Z": (JOV_TYPE_NUMBER, {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "tooltip": "3rd channel value"}),
-                "W": (JOV_TYPE_NUMBER, {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "tooltip": "4th channel value"}),
+                "X": (COZY_TYPE_NUMBER, {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "tooltip": "1st channel value"}),
+                "Y": (COZY_TYPE_NUMBER, {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "tooltip": "2nd channel value"}),
+                "Z": (COZY_TYPE_NUMBER, {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "tooltip": "3rd channel value"}),
+                "W": (COZY_TYPE_NUMBER, {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "tooltip": "4th channel value"}),
             }
         })
         return Lexicon._parse(d)
@@ -1216,7 +1246,7 @@ Outputs a VEC4 or VEC4INT.
         return *list(zip(*results)),
 
 '''
-class ParameterNode(JOVBaseNode):
+class ParameterNode(CozyBaseNode):
     NAME = "PARAMETER (JOV) ⚙️"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = ()
@@ -1231,7 +1261,7 @@ class ParameterNode(JOVBaseNode):
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                Lexicon.PASS_IN: (JOV_TYPE_ANY, {"default": None}),
+                Lexicon.PASS_IN: (COZY_TYPE_ANY, {"default": None}),
             }
         })
         return Lexicon._parse(d)

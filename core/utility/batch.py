@@ -1,6 +1,4 @@
-"""
-Jovimetrix - Utility
-"""
+""" Jovimetrix - Utility """
 
 import os
 import sys
@@ -15,26 +13,38 @@ from typing import Any, List, Literal, Tuple
 import torch
 import numpy as np
 
-from loguru import logger
-
 from comfy.utils import ProgressBar
 from nodes import interrupt_processing
 
+from cozy_comfyui import \
+    logger, \
+    IMAGE_SIZE_MIN, \
+    InputType, EnumConvertType, TensorType, \
+    deep_merge, parse_dynamic, parse_param
+
+from cozy_comfyui.node import \
+    COZY_TYPE_ANY, \
+    CozyBaseNode
+
+from cozy_comfyui.image import \
+    IMAGE_FORMATS
+
+from cozy_comfyui.image.convert import \
+    image_convert, cv_to_tensor, cv_to_tensor_full, tensor_to_cv, image_matte
+
+from cozy_comfyui.image.misc import \
+    EnumInterpolation, \
+    image_load
+
+from cozy_comfyui.api import \
+    parse_reset, comfy_api_post
+
 from ... import \
-    JOV_TYPE_ANY, ROOT, \
-    InputType, Lexicon, JOVBaseNode, \
-    deep_merge, comfy_api_post, parse_reset
-
-from ...sup.util import \
-    EnumConvertType, \
-    parse_dynamic, parse_param
-
-from ...sup.image import \
-    MIN_IMAGE_SIZE, IMAGE_FORMATS, \
-    image_convert, image_matte, image_load, cv2tensor, cv2tensor_full, tensor2cv
+    ROOT, \
+    Lexicon
 
 from ...sup.image.adjust import \
-    EnumScaleMode, EnumInterpolation, \
+    EnumScaleMode, \
     image_scalefit
 
 # ==============================================================================
@@ -55,11 +65,11 @@ class ContainsAnyDict(dict):
 
 # ==============================================================================
 
-class ArrayNode(JOVBaseNode):
+class ArrayNode(CozyBaseNode):
     NAME = "ARRAY (JOV) 📚"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     INPUT_IS_LIST = True
-    RETURN_TYPES = (JOV_TYPE_ANY, "INT", JOV_TYPE_ANY, "INT", JOV_TYPE_ANY)
+    RETURN_TYPES = (COZY_TYPE_ANY, "INT", COZY_TYPE_ANY, "INT", COZY_TYPE_ANY)
     RETURN_NAMES = (Lexicon.ANY_OUT, Lexicon.LENGTH, Lexicon.LIST, Lexicon.LENGTH2, Lexicon.LIST)
     OUTPUT_IS_LIST = (False, False, False, False, True)
     OUTPUT_TOOLTIPS = (
@@ -143,7 +153,7 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
                 data = b["samples"]
                 full_list.extend(data)
                 output_is_latent = True
-            elif isinstance(b, torch.Tensor):
+            elif isinstance(b, TensorType):
                 # logger.debug(b.shape)
                 if b.ndim == 4:
                     full_list.extend([i for i in b])
@@ -213,11 +223,11 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
             # _, w, h = image_by_size(data)
             result = []
             for d in data:
-                d = tensor2cv(d)
+                d = tensor_to_cv(d)
                 d = image_convert(d, 4)
                 #d = image_matte(d, (0,0,0,0), w, h)
                 # logger.debug(d.shape)
-                result.append(cv2tensor(d))
+                result.append(cv_to_tensor(d))
 
             if len(result) > 1:
                 data = torch.stack(result)
@@ -233,9 +243,9 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
 
         return data, size, full_list, len(full_list), data
 
-class QueueBaseNode(JOVBaseNode):
+class QueueBaseNode(CozyBaseNode):
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
-    RETURN_TYPES = (JOV_TYPE_ANY, JOV_TYPE_ANY, "STRING", "INT", "INT", "BOOLEAN")
+    RETURN_TYPES = (COZY_TYPE_ANY, COZY_TYPE_ANY, "STRING", "INT", "INT", "BOOLEAN")
     RETURN_NAMES = (Lexicon.ANY_OUT, Lexicon.QUEUE, Lexicon.CURRENT, Lexicon.INDEX, Lexicon.TOTAL, Lexicon.TRIGGER, )
     VIDEO_FORMATS = ['.wav', '.mp3', '.webm', '.mp4', '.avi', '.wmv', '.mkv', '.mov', '.mxf']
 
@@ -333,7 +343,7 @@ class QueueBaseNode(JOVBaseNode):
         return entries
 
     # turn Q element into actual hard type
-    def process(self, q_data: Any) -> torch.Tensor | str | dict:
+    def process(self, q_data: Any) -> TensorType | str | dict:
         # single Q cache to skip loading single entries over and over
         # @TODO: MRU cache strategy
         if (val := self.__last_q_value.get(q_data, None)) is not None:
@@ -411,7 +421,7 @@ class QueueBaseNode(JOVBaseNode):
                 ret = []
                 mode = parse_param(kw, Lexicon.MODE, EnumScaleMode, EnumScaleMode.MATTE.name)[0]
                 sample = parse_param(kw, Lexicon.SAMPLE, EnumInterpolation, EnumInterpolation.LANCZOS4.name)[0]
-                wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)[0]
+                wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], IMAGE_SIZE_MIN)[0]
                 w2, h2 = wihi
                 matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)[0]
                 matte = [matte[0], matte[1], matte[2], 0]
@@ -423,7 +433,7 @@ class QueueBaseNode(JOVBaseNode):
                         d = image_scalefit(d, w2, h2, mode=mode, sample=sample)
                     else:
                         d = image_matte(d, matte, width=mw, height=mh)
-                    ret.append(cv2tensor(d))
+                    ret.append(cv_to_tensor(d))
                     pbar.update_absolute(idx)
                 data = torch.stack(ret)
         elif wait == True:
@@ -431,7 +441,7 @@ class QueueBaseNode(JOVBaseNode):
         else:
             data = self.process(self.__q[self.__index])
             if isinstance(data, (np.ndarray,)):
-                data = cv2tensor(data).unsqueeze(0)
+                data = cv_to_tensor(data).unsqueeze(0)
             self.__index += 1
 
         self.__previous = data
@@ -516,7 +526,7 @@ Manage a queue of specific items: media files. Supports various image and video 
                     "default": EnumScaleMode.MATTE.name,
                     "tooltip": "Decide whether the images should be resized to fit"}),
                 Lexicon.WH: ("VEC2INT", {
-                    "default": (512, 512), "mij":MIN_IMAGE_SIZE,
+                    "default": (512, 512), "mij":IMAGE_SIZE_MIN,
                     "label": [Lexicon.W, Lexicon.H],
                     "tooltip": "Width and Height"}),
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {
@@ -530,13 +540,13 @@ Manage a queue of specific items: media files. Supports various image and video 
         })
         return Lexicon._parse(d)
 
-    def run(self, ident, **kw) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, str, int, int, bool]:
+    def run(self, ident, **kw) -> Tuple[TensorType, TensorType, TensorType, str, int, int, bool]:
         data, _, current, index, total, trigger = super().run(ident, **kw)
-        if not isinstance(data, (torch.Tensor, )):
+        if not isinstance(data, (TensorType, )):
             data = [None, None, None]
         else:
             matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)[0]
-            data = [tensor2cv(d) for d in data]
-            data = [cv2tensor_full(d, matte) for d in data]
+            data = [tensor_to_cv(d) for d in data]
+            data = [cv_to_tensor_full(d, matte) for d in data]
             data = [torch.stack(d) for d in zip(*data)]
         return *data, current, index, total, trigger

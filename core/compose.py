@@ -1,32 +1,39 @@
-"""
-Jovimetrix - Composition
-"""
+""" Jovimetrix - Composition """
 
 from enum import Enum
-from typing import Any, List, Tuple
+from typing import List, Tuple
 
 import cv2
 import torch
 import numpy as np
 
-from loguru import logger
-
 from comfy.utils import ProgressBar
 
+from cozy_comfyui import \
+    logger, \
+    IMAGE_SIZE_MIN, \
+    InputType, RGBAMaskType, EnumConvertType, TensorType, \
+    deep_merge, parse_param, parse_dynamic, zip_longest_fill
+
+from cozy_comfyui.node import \
+    COZY_TYPE_IMAGE, \
+    CozyBaseNode, CozyImageNode
+
+from cozy_comfyui.image import \
+    EnumImageType
+
+from cozy_comfyui.image.crop import \
+    image_crop, image_crop_center, image_crop_polygonal
+
+from cozy_comfyui.image.convert import \
+    image_mask, image_matte, image_mask_add, image_convert, tensor_to_cv, \
+    cv_to_tensor, cv_to_tensor_full
+
+from cozy_comfyui.image.misc import \
+    image_minmax
+
 from .. import \
-    JOV_TYPE_IMAGE, \
-    JOVBaseNode, JOVImageNode, Lexicon, InputType, RGBAMaskType, \
-    deep_merge
-
-from ..sup.util import \
-    EnumConvertType, \
-    parse_dynamic, parse_param, zip_longest_fill
-
-from ..sup.image import \
-    MIN_IMAGE_SIZE, \
-    EnumImageType, \
-    image_mask, image_mask_add, image_matte, image_minmax, image_convert, \
-    cv2tensor, cv2tensor_full, tensor2cv
+    Lexicon
 
 from ..sup.image.color import \
     EnumCBDeficiency, EnumCBSimulator, EnumColorMap, EnumColorTheory, \
@@ -48,16 +55,17 @@ from ..sup.image.channel import \
 
 from ..sup.image.compose import \
     EnumAdjustOP, EnumBlendType, EnumOrientation, \
-    image_levels, image_split, image_stack, image_blend, \
-    image_crop, image_crop_center, image_crop_polygonal
+    image_levels, image_split, image_stack, image_blend
 
 from ..sup.image.mapping import \
     EnumProjection, \
     remap_fisheye, remap_perspective, remap_polar, remap_sphere
 
-# ==============================================================================
-
 JOV_CATEGORY = "COMPOSE"
+
+# ==============================================================================
+# === ENUMERATION ===
+# ==============================================================================
 
 class EnumColorMatchMode(Enum):
     REINHARD = 30
@@ -76,8 +84,10 @@ class EnumCropMode(Enum):
     BODY = 25
 
 # ==============================================================================
+# === CLASS ===
+# ==============================================================================
 
-class AdjustNode(JOVImageNode):
+class AdjustNode(CozyImageNode):
     NAME = "ADJUST (JOV) 🕸️"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     DESCRIPTION = """
@@ -89,8 +99,8 @@ Enhance and modify images with various effects such as blurring, sharpening, col
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                Lexicon.PIXEL: (JOV_TYPE_IMAGE, {}),
-                Lexicon.MASK: (JOV_TYPE_IMAGE, {}),
+                Lexicon.PIXEL: (COZY_TYPE_IMAGE, {}),
+                Lexicon.MASK: (COZY_TYPE_IMAGE, {}),
                 Lexicon.FUNC: (EnumAdjustOP._member_names_, {"default": EnumAdjustOP.BLUR.name,
                                                             "tooltip":"Type of adjustment (e.g., blur, sharpen, invert)"}),
                 Lexicon.RADIUS: ("INT", {"default": 3, "min": 3}),
@@ -127,7 +137,7 @@ Enhance and modify images with various effects such as blurring, sharpening, col
         images = []
         pbar = ProgressBar(len(params))
         for idx, (pA, mask, op, radius, val, lohi, lmh, hsv, contrast, gamma, matte, invert) in enumerate(params):
-            pA = tensor2cv(pA) if pA is not None else channel_solid(chan=EnumImageType.BGR)
+            pA = tensor_to_cv(pA) if pA is not None else channel_solid(chan=EnumImageType.BGR)
             img_new = image_convert(pA, 3)
 
             match op:
@@ -209,7 +219,7 @@ Enhance and modify images with various effects such as blurring, sharpening, col
                     img_new = cv2.morphologyEx(img_new, cv2.MORPH_CLOSE, (radius, radius), iterations=int(val))
 
             if mask is not None:
-                mask = tensor2cv(mask)
+                mask = tensor_to_cv(mask)
                 if invert:
                     mask = 255 - mask
 
@@ -220,11 +230,11 @@ Enhance and modify images with various effects such as blurring, sharpening, col
                 img_new[:,:,3] = mask
             #    img_new = image_mask_add(mask)
 
-            images.append(cv2tensor_full(img_new, matte))
+            images.append(cv_to_tensor_full(img_new, matte))
             pbar.update_absolute(idx)
         return [torch.stack(i) for i in zip(*images)]
 
-class BlendNode(JOVImageNode):
+class BlendNode(CozyImageNode):
     NAME = "BLEND (JOV) ⚗️"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     SORT = 10
@@ -237,15 +247,15 @@ Combine two input images using various blending modes, such as normal, screen, m
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                Lexicon.PIXEL_A: (JOV_TYPE_IMAGE, {"tooltip": "Background Plate"}),
-                Lexicon.PIXEL_B: (JOV_TYPE_IMAGE, {"tooltip": "Image to Overlay on Background Plate"}),
-                Lexicon.MASK: (JOV_TYPE_IMAGE, {"tooltip": "Optional Mask to use for Alpha Blend Operation. If empty, will use the ALPHA of B"}),
+                Lexicon.PIXEL_A: (COZY_TYPE_IMAGE, {"tooltip": "Background Plate"}),
+                Lexicon.PIXEL_B: (COZY_TYPE_IMAGE, {"tooltip": "Image to Overlay on Background Plate"}),
+                Lexicon.MASK: (COZY_TYPE_IMAGE, {"tooltip": "Optional Mask to use for Alpha Blend Operation. If empty, will use the ALPHA of B"}),
                 Lexicon.FUNC: (EnumBlendType._member_names_, {"default": EnumBlendType.NORMAL.name, "tooltip": "Blending Operation"}),
                 Lexicon.A: ("FLOAT", {"default": 1, "min": 0, "max": 1, "step": 0.01, "tooltip": "Amount of Blending to Perform on the Selected Operation"}),
                 Lexicon.FLIP: ("BOOLEAN", {"default": False}),
                 Lexicon.INVERT: ("BOOLEAN", {"default": False, "tooltip": "Invert the mask input"}),
                 Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.MATTE.name}),
-                Lexicon.WH: ("VEC2INT", {"default": (512, 512), "mij":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
+                Lexicon.WH: ("VEC2INT", {"default": (512, 512), "mij":IMAGE_SIZE_MIN, "label": [Lexicon.W, Lexicon.H]}),
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
                 Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True})
             }
@@ -260,7 +270,7 @@ Combine two input images using various blending modes, such as normal, screen, m
         alpha = parse_param(kw, Lexicon.A, EnumConvertType.FLOAT, 1, 0, 1)
         flip = parse_param(kw, Lexicon.FLIP, EnumConvertType.BOOLEAN, False)
         mode = parse_param(kw, Lexicon.MODE, EnumScaleMode, EnumScaleMode.MATTE.name)
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], IMAGE_SIZE_MIN)
         sample = parse_param(kw, Lexicon.SAMPLE, EnumInterpolation, EnumInterpolation.LANCZOS4.name)
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
         invert = parse_param(kw, Lexicon.INVERT, EnumConvertType.BOOLEAN, False)
@@ -272,7 +282,7 @@ Combine two input images using various blending modes, such as normal, screen, m
             if flip:
                 pA, pB = pB, pA
 
-            width, height = MIN_IMAGE_SIZE, MIN_IMAGE_SIZE
+            width, height = IMAGE_SIZE_MIN, IMAGE_SIZE_MIN
             if pA is None:
                 if pB is None:
                     if mask is None:
@@ -288,17 +298,17 @@ Combine two input images using various blending modes, such as normal, screen, m
             if pA is None:
                 pA = channel_solid(width, height, matte, chan=EnumImageType.BGRA)
             else:
-                pA = tensor2cv(pA)
+                pA = tensor_to_cv(pA)
                 matted = pixel_eval(matte, EnumImageType.BGRA)
                 pA = image_matte(pA, matted)
 
             if pB is None:
                 pB = channel_solid(width, height, matte, chan=EnumImageType.BGRA)
             else:
-                pB = tensor2cv(pB)
+                pB = tensor_to_cv(pB)
 
             if mask is not None:
-                mask = tensor2cv(mask)
+                mask = tensor_to_cv(mask)
                 # mask = image_grayscale(mask)
                 if invert:
                     mask = 255 - mask
@@ -310,12 +320,12 @@ Combine two input images using various blending modes, such as normal, screen, m
                 width, height = wihi
                 img = image_scalefit(img, width, height, mode, sample)
 
-            img = cv2tensor_full(img, matte)
+            img = cv_to_tensor_full(img, matte)
             images.append(img)
             pbar.update_absolute(idx)
         return [torch.stack(i) for i in zip(*images)]
 
-class ColorBlindNode(JOVImageNode):
+class ColorBlindNode(CozyImageNode):
     NAME = "COLOR BLIND (JOV) 👁‍🗨"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     DESCRIPTION = """
@@ -327,7 +337,7 @@ Simulate color blindness effects on images. You can select various types of colo
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                Lexicon.PIXEL: (JOV_TYPE_IMAGE, {}),
+                Lexicon.PIXEL: (COZY_TYPE_IMAGE, {}),
                 Lexicon.DEFICIENCY: (EnumCBDeficiency._member_names_,
                                             {"default": EnumCBDeficiency.PROTAN.name}),
                 Lexicon.SIMULATOR: (EnumCBSimulator._member_names_,
@@ -346,13 +356,13 @@ Simulate color blindness effects on images. You can select various types of colo
         images = []
         pbar = ProgressBar(len(params))
         for idx, (pA, deficiency, simulator, severity) in enumerate(params):
-            pA = channel_solid(chan=EnumImageType.BGRA) if pA is None else tensor2cv(pA)
+            pA = channel_solid(chan=EnumImageType.BGRA) if pA is None else tensor_to_cv(pA)
             pA = color_blind(pA, deficiency, simulator, severity)
-            images.append(cv2tensor_full(pA))
+            images.append(cv_to_tensor_full(pA))
             pbar.update_absolute(idx)
         return [torch.stack(i) for i in zip(*images)]
 
-class ColorMatchNode(JOVImageNode):
+class ColorMatchNode(CozyImageNode):
     NAME = "COLOR MATCH (JOV) 💞"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     DESCRIPTION = """
@@ -364,8 +374,8 @@ Adjust the color scheme of one image to match another with the Color Match Node.
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                Lexicon.PIXEL_A: (JOV_TYPE_IMAGE, {}),
-                Lexicon.PIXEL_B: (JOV_TYPE_IMAGE, {}),
+                Lexicon.PIXEL_A: (COZY_TYPE_IMAGE, {}),
+                Lexicon.PIXEL_B: (COZY_TYPE_IMAGE, {}),
                 Lexicon.COLORMATCH_MODE: (EnumColorMatchMode._member_names_,
                                             {"default": EnumColorMatchMode.REINHARD.name}),
                 Lexicon.COLORMATCH_MAP: (EnumColorMatchMap._member_names_,
@@ -402,7 +412,7 @@ Adjust the color scheme of one image to match another with the Color Match Node.
             if pA is None:
                 pA = channel_solid(chan=EnumImageType.BGR)
             else:
-                pA = tensor2cv(pA)
+                pA = tensor_to_cv(pA)
                 if pA.ndim == 3 and pA.shape[2] == 4:
                     mask = image_mask(pA)
 
@@ -410,7 +420,7 @@ Adjust the color scheme of one image to match another with the Color Match Node.
             if pB is None:
                 pB = channel_solid(chan=EnumImageType.BGR)
             else:
-                pB = tensor2cv(pB)
+                pB = tensor_to_cv(pB)
 
             match mode:
                 case EnumColorMatchMode.LUT:
@@ -427,11 +437,11 @@ Adjust the color scheme of one image to match another with the Color Match Node.
             if mask is not None:
                 pA = image_mask_add(pA, mask)
 
-            images.append(cv2tensor_full(pA, matte))
+            images.append(cv_to_tensor_full(pA, matte))
             pbar.update_absolute(idx)
         return [torch.stack(i) for i in zip(*images)]
 
-class ColorKMeansNode(JOVBaseNode):
+class ColorKMeansNode(CozyBaseNode):
     NAME = "COLOR MEANS (JOV) 〰️"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = ("IMAGE", "IMAGE", "IMAGE", "JLUT", "IMAGE",)
@@ -452,11 +462,11 @@ The top-k colors ordered from most->least used as a strip, tonal palette and 3D 
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                Lexicon.PIXEL: (JOV_TYPE_IMAGE, {}),
+                Lexicon.PIXEL: (COZY_TYPE_IMAGE, {}),
                 Lexicon.VALUE: ("INT", {"default": 12, "min": 1, "max": 255, "tooltip":"The top K colors to select."}),
                 Lexicon.SIZE: ("INT", {"default": 32, "min": 1, "max": 256, "tooltip":"Height of the tones in the strip. Width is based on input."}),
                 Lexicon.COUNT: ("INT", {"default": 33, "min": 3, "max": 256, "tooltip":"Number of nodes to use in interpolation of full LUT (256 is every pixel)."}),
-                Lexicon.WH: ("VEC2INT", {"default": (256, 256), "mij":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
+                Lexicon.WH: ("VEC2INT", {"default": (256, 256), "mij":IMAGE_SIZE_MIN, "label": [Lexicon.W, Lexicon.H]}),
             }
         })
         return Lexicon._parse(d)
@@ -466,7 +476,7 @@ The top-k colors ordered from most->least used as a strip, tonal palette and 3D 
         kcolors = parse_param(kw, Lexicon.VALUE, EnumConvertType.INT, 12, 1, 255)
         lut_height = parse_param(kw, Lexicon.SIZE, EnumConvertType.INT, 32, 1, 256)
         nodes = parse_param(kw, Lexicon.COUNT, EnumConvertType.INT, 33, 1, 255)
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(256, 256)], MIN_IMAGE_SIZE)
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(256, 256)], IMAGE_SIZE_MIN)
 
         params = list(zip_longest_fill(pA, kcolors, nodes, lut_height, wihi))
         top_colors = []
@@ -479,23 +489,23 @@ The top-k colors ordered from most->least used as a strip, tonal palette and 3D 
             if pA is None:
                 pA = channel_solid(chan=EnumImageType.BGRA)
 
-            pA = tensor2cv(pA)
+            pA = tensor_to_cv(pA)
             colors = color_top_used(pA, kcolors)
 
             # size down to 1px strip then expand to 256 for full gradient
-            top_colors.extend([cv2tensor(channel_solid(*wihi, color=c)) for c in colors])
-            lut_tonal.append(cv2tensor(color_lut_tonal(colors, width=pA.shape[1], height=lut_height)))
+            top_colors.extend([cv_to_tensor(channel_solid(*wihi, color=c)) for c in colors])
+            lut_tonal.append(cv_to_tensor(color_lut_tonal(colors, width=pA.shape[1], height=lut_height)))
             full = color_lut_full(colors, nodes)
             lut_full.append(torch.from_numpy(full))
-            lut_visualized.append(cv2tensor(color_lut_visualize(full, wihi[1])))
+            lut_visualized.append(cv_to_tensor(color_lut_visualize(full, wihi[1])))
             gradient = image_gradient_expand(color_lut_palette(colors, 1))
             gradient = cv2.resize(gradient, wihi)
-            gradients.append(cv2tensor(gradient))
+            gradients.append(cv_to_tensor(gradient))
             pbar.update_absolute(idx)
 
         return torch.stack(top_colors), torch.stack(lut_tonal), torch.stack(gradients), lut_full, torch.stack(lut_visualized),
 
-class ColorTheoryNode(JOVBaseNode):
+class ColorTheoryNode(CozyBaseNode):
     NAME = "COLOR THEORY (JOV) 🛞"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = ("IMAGE", "IMAGE", "IMAGE", "IMAGE", "IMAGE")
@@ -510,7 +520,7 @@ Generate a color harmony based on the selected scheme. Supported schemes include
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                Lexicon.PIXEL: (JOV_TYPE_IMAGE, {}),
+                Lexicon.PIXEL: (COZY_TYPE_IMAGE, {}),
                 Lexicon.SCHEME: (EnumColorTheory._member_names_, {"default": EnumColorTheory.COMPLIMENTARY.name}),
                 Lexicon.VALUE: ("INT", {"default": 45, "min": -90, "max": 90,
                                         "tooltip": "Custom angle of separation to use when calculating colors"}),
@@ -519,7 +529,7 @@ Generate a color harmony based on the selected scheme. Supported schemes include
         })
         return Lexicon._parse(d)
 
-    def run(self, **kw) -> Tuple[List[torch.Tensor], List[torch.Tensor]]:
+    def run(self, **kw) -> Tuple[List[TensorType], List[TensorType]]:
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
         scheme = parse_param(kw, Lexicon.SCHEME, EnumColorTheory, EnumColorTheory.COMPLIMENTARY.name)
         user = parse_param(kw, Lexicon.VALUE, EnumConvertType.INT, 0, -180, 180)
@@ -528,15 +538,15 @@ Generate a color harmony based on the selected scheme. Supported schemes include
         images = []
         pbar = ProgressBar(len(params))
         for idx, (img, target, user, invert) in enumerate(params):
-            img = tensor2cv(img) if img is not None else channel_solid(chan=EnumImageType.BGRA)
+            img = tensor_to_cv(img) if img is not None else channel_solid(chan=EnumImageType.BGRA)
             img = color_theory(img, user, target)
             if invert:
                 img = (image_invert(s, 1) for s in img)
-            images.append([cv2tensor(a) for a in img])
+            images.append([cv_to_tensor(a) for a in img])
             pbar.update_absolute(idx)
         return [torch.stack(i) for i in zip(*images)]
 
-class CropNode(JOVImageNode):
+class CropNode(CozyImageNode):
     NAME = "CROP (JOV) ✂️"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     SORT = 5
@@ -549,10 +559,10 @@ Extract a portion of an input image or resize it. It supports various cropping m
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                Lexicon.PIXEL: (JOV_TYPE_IMAGE, {}),
+                Lexicon.PIXEL: (COZY_TYPE_IMAGE, {}),
                 Lexicon.FUNC: (EnumCropMode._member_names_, {"default": EnumCropMode.CENTER.name}),
                 Lexicon.XY: ("VEC2", {"default": (0, 0), "mij": 0.5, "maj": 0.5, "step": 0.01, "label": [Lexicon.X, Lexicon.Y]}),
-                Lexicon.WH: ("VEC2INT", {"default": (512, 512), "mij": MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
+                Lexicon.WH: ("VEC2INT", {"default": (512, 512), "mij": IMAGE_SIZE_MIN, "label": [Lexicon.W, Lexicon.H]}),
                 Lexicon.TLTR: ("VEC4", {"default": (0, 0, 0, 1), "mij": 0, "maj": 1, "step": 0.01, "label": [Lexicon.TOP, Lexicon.LEFT, Lexicon.TOP, Lexicon.RIGHT]}),
                 Lexicon.BLBR: ("VEC4", {"default": (1, 0, 1, 1), "mij": 0, "maj": 1, "step": 0.01,  "label": [Lexicon.BOTTOM, Lexicon.LEFT, Lexicon.BOTTOM, Lexicon.RIGHT]}),
                 Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True})
@@ -565,7 +575,7 @@ Extract a portion of an input image or resize it. It supports various cropping m
         func = parse_param(kw, Lexicon.FUNC, EnumCropMode, EnumCropMode.CENTER.name)
         # if less than 1 then use as scalar, over 1 = int(size)
         xy = parse_param(kw, Lexicon.XY, EnumConvertType.VEC2, [(0, 0,)], 0, 1)
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], IMAGE_SIZE_MIN)
         tltr = parse_param(kw, Lexicon.TLTR, EnumConvertType.VEC4, [(0, 0, 0, 1,)], 0, 1)
         blbr = parse_param(kw, Lexicon.BLBR, EnumConvertType.VEC4, [(1, 0, 1, 1,)], 0, 1)
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
@@ -574,7 +584,7 @@ Extract a portion of an input image or resize it. It supports various cropping m
         pbar = ProgressBar(len(params))
         for idx, (pA, func, xy, wihi, tltr, blbr, matte) in enumerate(params):
             width, height = wihi
-            pA = tensor2cv(pA) if pA is not None else channel_solid(width, height)
+            pA = tensor_to_cv(pA) if pA is not None else channel_solid(width, height)
             alpha = None
             if pA.ndim == 3 and pA.shape[2] == 4:
                 alpha = image_mask(pA)
@@ -596,11 +606,11 @@ Extract a portion of an input image or resize it. It supports various cropping m
                 pass
             else:
                 pA = image_crop_center(pA, width, height)
-            images.append(cv2tensor_full(pA, matte))
+            images.append(cv_to_tensor_full(pA, matte))
             pbar.update_absolute(idx)
         return [torch.stack(i) for i in zip(*images)]
 
-class FilterMaskNode(JOVImageNode):
+class FilterMaskNode(CozyImageNode):
     NAME = "FILTER MASK (JOV) 🤿"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     SORT = 700
@@ -613,7 +623,7 @@ Create masks based on specific color ranges within an image. Specify the color r
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                Lexicon.PIXEL_A: (JOV_TYPE_IMAGE, {}),
+                Lexicon.PIXEL_A: (COZY_TYPE_IMAGE, {}),
                 Lexicon.START: ("VEC3INT", {"default": (128, 128, 128), "rgb": True}),
                 Lexicon.BOOLEAN: ("BOOLEAN", {"default": False, "tooltip": "use an end point (start->end) when calculating the filter range"}),
                 Lexicon.END: ("VEC3INT", {"default": (128, 128, 128), "rgb": True}),
@@ -634,18 +644,18 @@ Create masks based on specific color ranges within an image. Specify the color r
         images = []
         pbar = ProgressBar(len(params))
         for idx, (pA, start, use_range, end, fuzz, matte) in enumerate(params):
-            img = np.zeros((MIN_IMAGE_SIZE, MIN_IMAGE_SIZE, 3), dtype=np.uint8) if pA is None else tensor2cv(pA)
+            img = np.zeros((IMAGE_SIZE_MIN, IMAGE_SIZE_MIN, 3), dtype=np.uint8) if pA is None else tensor_to_cv(pA)
 
             img, mask = image_filter(img, start, end, fuzz, use_range)
             if img.shape[2] == 3:
                 alpha_channel = np.zeros((img.shape[0], img.shape[1], 1), dtype=img.dtype)
                 img = np.concatenate((img, alpha_channel), axis=2)
             img[..., 3] = mask[:,:]
-            images.append(cv2tensor_full(img, matte))
+            images.append(cv_to_tensor_full(img, matte))
             pbar.update_absolute(idx)
         return [torch.stack(i) for i in zip(*images)]
 
-class Flatten(JOVImageNode):
+class Flatten(CozyImageNode):
     NAME = "FLATTEN (JOV) ⬇️"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     SORT = 500
@@ -659,7 +669,7 @@ Combine multiple input images into a single image by summing their pixel values.
         d = deep_merge(d, {
             "optional": {
                 Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.MATTE.name}),
-                Lexicon.WH: ("VEC2INT", {"default": (512, 512), "mij":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
+                Lexicon.WH: ("VEC2INT", {"default": (512, 512), "mij":IMAGE_SIZE_MIN, "label": [Lexicon.W, Lexicon.H]}),
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
                 Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True})
             }
@@ -673,9 +683,9 @@ Combine multiple input images into a single image by summing their pixel values.
             return ()
 
         # be less dumb when merging
-        pA = [tensor2cv(i) for img in imgs for i in img]
+        pA = [tensor_to_cv(i) for img in imgs for i in img]
         mode = parse_param(kw, Lexicon.MODE, EnumScaleMode, EnumScaleMode.MATTE.name)
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], IMAGE_SIZE_MIN)
         sample = parse_param(kw, Lexicon.SAMPLE, EnumInterpolation, EnumInterpolation.LANCZOS4.name)
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
 
@@ -684,11 +694,11 @@ Combine multiple input images into a single image by summing their pixel values.
         pbar = ProgressBar(len(params))
         for idx, (mode, sample, wihi, matte) in enumerate(params):
             current = image_flatten(pA)
-            images.append(cv2tensor_full(current, matte))
+            images.append(cv_to_tensor_full(current, matte))
             pbar.update_absolute(idx)
         return [torch.stack(i) for i in zip(*images)]
 
-class GradientMap(JOVImageNode):
+class GradientMap(CozyImageNode):
     NAME = "GRADIENT MAP (JOV) 🇲🇺"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     SORT = 550
@@ -701,11 +711,11 @@ Remaps an input image using a gradient lookup table (LUT). The gradient image wi
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                Lexicon.PIXEL: (JOV_TYPE_IMAGE, {"tooltip":"Image to remap with gradient input"}),
-                Lexicon.GRADIENT: (JOV_TYPE_IMAGE, {"tooltip":f"Look up table (LUT) to remap the input image in `{Lexicon.PIXEL}`"}),
+                Lexicon.PIXEL: (COZY_TYPE_IMAGE, {"tooltip":"Image to remap with gradient input"}),
+                Lexicon.GRADIENT: (COZY_TYPE_IMAGE, {"tooltip":f"Look up table (LUT) to remap the input image in `{Lexicon.PIXEL}`"}),
                 Lexicon.FLIP: ("BOOLEAN", {"default":False, "tooltip":"Reverse the gradient from left-to-right "}),
                 Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.MATTE.name}),
-                Lexicon.WH: ("VEC2INT", {"default": (512, 512), "mij":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
+                Lexicon.WH: ("VEC2INT", {"default": (512, 512), "mij":IMAGE_SIZE_MIN, "label": [Lexicon.W, Lexicon.H]}),
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
                 Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True})
             }
@@ -717,30 +727,30 @@ Remaps an input image using a gradient lookup table (LUT). The gradient image wi
         gradient = parse_param(kw, Lexicon.GRADIENT, EnumConvertType.IMAGE, None)
         flip = parse_param(kw, Lexicon.FLIP, EnumConvertType.BOOLEAN, False)
         mode = parse_param(kw, Lexicon.MODE, EnumScaleMode, EnumScaleMode.MATTE.name)
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], IMAGE_SIZE_MIN)
         sample = parse_param(kw, Lexicon.SAMPLE, EnumInterpolation, EnumInterpolation.LANCZOS4.name)
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
         images = []
         params = list(zip_longest_fill(pA, gradient, flip, mode, sample, wihi, matte))
         pbar = ProgressBar(len(params))
         for idx, (pA, gradient, flip, mode, sample, wihi, matte) in enumerate(params):
-            pA = channel_solid(chan=EnumImageType.BGR) if pA is None else tensor2cv(pA)
+            pA = channel_solid(chan=EnumImageType.BGR) if pA is None else tensor_to_cv(pA)
             mask = None
             if pA.ndim == 3 and pA.shape[2] == 4:
                 mask = image_mask(pA)
 
-            gradient = channel_solid(chan=EnumImageType.BGR) if gradient is None else tensor2cv(gradient)
+            gradient = channel_solid(chan=EnumImageType.BGR) if gradient is None else tensor_to_cv(gradient)
             pA = image_gradient_map(pA, gradient)
             if mode != EnumScaleMode.MATTE:
                 w, h = wihi
                 pA = image_scalefit(pA, w, h, mode, sample)
             if mask is not None:
                 pA = image_mask_add(pA, mask)
-            images.append(cv2tensor_full(pA, matte))
+            images.append(cv_to_tensor_full(pA, matte))
             pbar.update_absolute(idx)
         return [torch.stack(i) for i in zip(*images)]
 
-class PixelMergeNode(JOVImageNode):
+class PixelMergeNode(CozyImageNode):
     NAME = "PIXEL MERGE (JOV) 🫂"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     SORT = 45
@@ -753,13 +763,13 @@ Combines individual color channels (red, green, blue) along with an optional mas
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                Lexicon.PIXEL: (JOV_TYPE_IMAGE, {}),
-                Lexicon.R: (JOV_TYPE_IMAGE, {}),
-                Lexicon.G: (JOV_TYPE_IMAGE, {}),
-                Lexicon.B: (JOV_TYPE_IMAGE, {}),
-                Lexicon.A: (JOV_TYPE_IMAGE, {}),
+                Lexicon.PIXEL: (COZY_TYPE_IMAGE, {}),
+                Lexicon.R: (COZY_TYPE_IMAGE, {}),
+                Lexicon.G: (COZY_TYPE_IMAGE, {}),
+                Lexicon.B: (COZY_TYPE_IMAGE, {}),
+                Lexicon.A: (COZY_TYPE_IMAGE, {}),
                 Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.MATTE.name}),
-                Lexicon.WH: ("VEC2INT", {"default": (512, 512), "mij":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
+                Lexicon.WH: ("VEC2INT", {"default": (512, 512), "mij":IMAGE_SIZE_MIN, "label": [Lexicon.W, Lexicon.H]}),
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
                 Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True}),
                 Lexicon.FLIP: ("VEC4", {"mij":0, "maj":1, "step": 0.01, "tooltip": "Invert specific input prior to merging. R, G, B, A."}),
@@ -775,7 +785,7 @@ Combines individual color channels (red, green, blue) along with an optional mas
         B = parse_param(kw, Lexicon.B, EnumConvertType.MASK, None)
         A = parse_param(kw, Lexicon.A, EnumConvertType.MASK, None)
         mode = parse_param(kw, Lexicon.MODE, EnumScaleMode, EnumScaleMode.MATTE.name)
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], IMAGE_SIZE_MIN)
         sample = parse_param(kw, Lexicon.SAMPLE, EnumInterpolation, EnumInterpolation.LANCZOS4.name)
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
         flip = parse_param(kw, Lexicon.FLIP, EnumConvertType.VEC4, [(0, 0, 0, 0)], 0., 1.)
@@ -786,12 +796,12 @@ Combines individual color channels (red, green, blue) along with an optional mas
         for idx, (rgba, r, g, b, a, mode, wihi, sample, matte, flip, invert) in enumerate(params):
             replace = r, g, b, a
             if rgba is not None:
-                rgba = tensor2cv(rgba)
+                rgba = tensor_to_cv(rgba)
                 rgba = image_convert(rgba, 4)
                 rgba = image_split(rgba)
-                img = [tensor2cv(replace[i]) if replace[i] is not None else x for i, x in enumerate(rgba)]
+                img = [tensor_to_cv(replace[i]) if replace[i] is not None else x for i, x in enumerate(rgba)]
             else:
-                img = [tensor2cv(x) if x is not None else x for x in replace]
+                img = [tensor_to_cv(x) if x is not None else x for x in replace]
 
             _, _, w_max, h_max = image_minmax(img)
             for i, x in enumerate(img):
@@ -813,11 +823,11 @@ Combines individual color channels (red, green, blue) along with an optional mas
             if invert == True:
                 img = image_invert(img, 1)
 
-            images.append(cv2tensor_full(img, matte))
+            images.append(cv_to_tensor_full(img, matte))
             pbar.update_absolute(idx)
         return [torch.stack(i) for i in zip(*images)]
 
-class PixelSplitNode(JOVBaseNode):
+class PixelSplitNode(CozyBaseNode):
     NAME = "PIXEL SPLIT (JOV) 💔"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     RETURN_TYPES = ("MASK", "MASK", "MASK", "MASK",)
@@ -838,7 +848,7 @@ Takes an input image and splits it into its individual color channels (red, gree
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                Lexicon.PIXEL: (JOV_TYPE_IMAGE, {})
+                Lexicon.PIXEL: (COZY_TYPE_IMAGE, {})
             }
         })
         return Lexicon._parse(d)
@@ -848,12 +858,12 @@ Takes an input image and splits it into its individual color channels (red, gree
         pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
         pbar = ProgressBar(len(pA))
         for idx, pA in enumerate(pA):
-            pA = channel_solid(chan=EnumImageType.BGRA) if pA is None else tensor2cv(pA)
-            images.append([cv2tensor(x, True) for x in image_split(pA)])
+            pA = channel_solid(chan=EnumImageType.BGRA) if pA is None else tensor_to_cv(pA)
+            images.append([cv_to_tensor(x, True) for x in image_split(pA)])
             pbar.update_absolute(idx)
         return [torch.stack(i) for i in zip(*images)]
 
-class PixelSwapNode(JOVImageNode):
+class PixelSwapNode(CozyImageNode):
     NAME = "PIXEL SWAP (JOV) 🔃"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     SORT = 48
@@ -866,8 +876,8 @@ Swap pixel values between two input images based on specified channel swizzle op
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                Lexicon.PIXEL_A: (JOV_TYPE_IMAGE, {}),
-                Lexicon.PIXEL_B: (JOV_TYPE_IMAGE, {}),
+                Lexicon.PIXEL_A: (COZY_TYPE_IMAGE, {}),
+                Lexicon.PIXEL_B: (COZY_TYPE_IMAGE, {}),
                 Lexicon.SWAP_R: (EnumPixelSwizzle._member_names_,
                                 {"default": EnumPixelSwizzle.RED_A.name}),
                 Lexicon.SWAP_G: (EnumPixelSwizzle._member_names_,
@@ -896,7 +906,7 @@ Swap pixel values between two input images based on specified channel swizzle op
             if pA is None:
                 if pB is None:
                     out = channel_solid(chan=EnumImageType.BGRA)
-                    images.append(cv2tensor_full(out))
+                    images.append(cv_to_tensor_full(out))
                     pbar.update_absolute(idx)
                     continue
 
@@ -904,21 +914,21 @@ Swap pixel values between two input images based on specified channel swizzle op
                 pA = channel_solid(w, h, chan=EnumImageType.BGRA)
             else:
                 h, w = pA.shape[:2]
-                pA = tensor2cv(pA)
+                pA = tensor_to_cv(pA)
                 pA = image_convert(pA, 4)
 
-            pB = tensor2cv(pB) if pB is not None else channel_solid(w, h, chan=EnumImageType.BGRA)
+            pB = tensor_to_cv(pB) if pB is not None else channel_solid(w, h, chan=EnumImageType.BGRA)
             pB = image_convert(pB, 4)
             pB = image_matte(pB, (0,0,0,0), w, h)
             pB = image_scalefit(pB, w, h, EnumScaleMode.CROP)
 
             out = image_swap_channels(pA, pB, (swap_r, swap_g, swap_b, swap_a), matte)
 
-            images.append(cv2tensor_full(out))
+            images.append(cv_to_tensor_full(out))
             pbar.update_absolute(idx)
         return [torch.stack(i) for i in zip(*images)]
 
-class StackNode(JOVImageNode):
+class StackNode(CozyImageNode):
     NAME = "STACK (JOV) ➕"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     SORT = 75
@@ -936,7 +946,7 @@ Merge multiple input images into a single composite image by stacking them along
                 Lexicon.STEP: ("INT", {"min": 0, "default": 1,
                                     "tooltip":"How many images are placed before a new row starts (stride)."}),
                 Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.MATTE.name}),
-                Lexicon.WH: ("VEC2INT", {"default": (512, 512), "mij":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
+                Lexicon.WH: ("VEC2INT", {"default": (512, 512), "mij":IMAGE_SIZE_MIN, "label": [Lexicon.W, Lexicon.H]}),
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
                 Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True})
             }
@@ -948,22 +958,22 @@ Merge multiple input images into a single composite image by stacking them along
         if len(images) == 0:
             logger.warning("no images to stack")
             return
-        images = [tensor2cv(img) for sublist in images for img in sublist]
+        images = [tensor_to_cv(img) for sublist in images for img in sublist]
 
         axis = parse_param(kw, Lexicon.AXIS, EnumOrientation, EnumOrientation.GRID.name)[0]
         stride = parse_param(kw, Lexicon.STEP, EnumConvertType.INT, 1)[0]
         mode = parse_param(kw, Lexicon.MODE, EnumScaleMode, EnumScaleMode.MATTE.name)[0]
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)[0]
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], IMAGE_SIZE_MIN)[0]
         sample = parse_param(kw, Lexicon.SAMPLE, EnumInterpolation, EnumInterpolation.LANCZOS4.name)[0]
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)[0]
         img = image_stack(images, axis, stride) #, matte)
         if mode != EnumScaleMode.MATTE:
             w, h = wihi
             img = image_scalefit(img, w, h, mode, sample)
-        rgba, rgb, mask = cv2tensor_full(img, matte)
+        rgba, rgb, mask = cv_to_tensor_full(img, matte)
         return rgba.unsqueeze(0), rgb.unsqueeze(0), mask.unsqueeze(0)
 
-class ThresholdNode(JOVImageNode):
+class ThresholdNode(CozyImageNode):
     NAME = "THRESHOLD (JOV) 📉"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     DESCRIPTION = """
@@ -975,7 +985,7 @@ Define a range and apply it to an image for segmentation and feature extraction.
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                Lexicon.PIXEL: (JOV_TYPE_IMAGE, {}),
+                Lexicon.PIXEL: (COZY_TYPE_IMAGE, {}),
                 Lexicon.ADAPT: ( EnumThresholdAdapt._member_names_,
                                 {"default": EnumThresholdAdapt.ADAPT_NONE.name}),
                 Lexicon.FUNC: ( EnumThreshold._member_names_, {"default": EnumThreshold.BINARY.name}),
@@ -997,15 +1007,15 @@ Define a range and apply it to an image for segmentation and feature extraction.
         images = []
         pbar = ProgressBar(len(params))
         for idx, (pA, mode, adapt, th, block, invert) in enumerate(params):
-            pA = tensor2cv(pA) if pA is not None else channel_solid(chan=EnumImageType.BGRA)
+            pA = tensor_to_cv(pA) if pA is not None else channel_solid(chan=EnumImageType.BGRA)
             pA = image_threshold(pA, th, mode, adapt, block)
             if invert == True:
                 pA = image_invert(pA, 1)
-            images.append(cv2tensor_full(pA))
+            images.append(cv_to_tensor_full(pA))
             pbar.update_absolute(idx)
         return [torch.stack(i) for i in zip(*images)]
 
-class TransformNode(JOVImageNode):
+class TransformNode(CozyImageNode):
     NAME = "TRANSFORM (JOV) 🏝️"
     CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
     SORT = 0
@@ -1018,8 +1028,8 @@ Apply various geometric transformations to images, including translation, rotati
         d = super().INPUT_TYPES(prompt=True, dynprompt=True)
         d = deep_merge(d, {
             "optional": {
-                Lexicon.PIXEL: (JOV_TYPE_IMAGE, {}),
-                Lexicon.MASK: (JOV_TYPE_IMAGE, {"tooltip":"Override Image mask"}),
+                Lexicon.PIXEL: (COZY_TYPE_IMAGE, {}),
+                Lexicon.MASK: (COZY_TYPE_IMAGE, {"tooltip":"Override Image mask"}),
                 Lexicon.XY: ("VEC2", {"default": (0., 0.,), "mij": -1., "maj": 1., "step": 0.01, "label": [Lexicon.X, Lexicon.Y]}),
                 Lexicon.ANGLE: ("FLOAT", {"default": 0., "step": 0.1}),
                 Lexicon.SIZE: ("VEC2", {"default": (1., 1.), "mij": 0.001, "step": 0.01, "label": [Lexicon.X, Lexicon.Y]}),
@@ -1032,7 +1042,7 @@ Apply various geometric transformations to images, including translation, rotati
                 Lexicon.BLBR: ("VEC4", {"default": (0., 1., 1., 1.), "mij": 0., "maj": 1., "step": 0.005, "label": [Lexicon.BOTTOM, Lexicon.LEFT, Lexicon.BOTTOM, Lexicon.RIGHT]}),
                 Lexicon.STRENGTH: ("FLOAT", {"default": 1, "min": 0, "step": 0.005}),
                 Lexicon.MODE: (EnumScaleMode._member_names_, {"default": EnumScaleMode.MATTE.name}),
-                Lexicon.WH: ("VEC2INT", {"default": (512, 512), "mij":MIN_IMAGE_SIZE, "label": [Lexicon.W, Lexicon.H]}),
+                Lexicon.WH: ("VEC2INT", {"default": (512, 512), "mij":IMAGE_SIZE_MIN, "label": [Lexicon.W, Lexicon.H]}),
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
                 Lexicon.MATTE: ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True})
             }
@@ -1054,16 +1064,16 @@ Apply various geometric transformations to images, including translation, rotati
         blbr = parse_param(kw, Lexicon.BLBR, EnumConvertType.VEC4, [(0., 1., 1., 1.)], 0, 1)
         strength = parse_param(kw, Lexicon.STRENGTH, EnumConvertType.FLOAT, 1, 0, 1)
         mode = parse_param(kw, Lexicon.MODE, EnumScaleMode, EnumScaleMode.MATTE.name)
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], MIN_IMAGE_SIZE)
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], IMAGE_SIZE_MIN)
         sample = parse_param(kw, Lexicon.SAMPLE, EnumInterpolation, EnumInterpolation.LANCZOS4.name)
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
         params = list(zip_longest_fill(pA, mask, offset, angle, size, edge, tile_xy, mirror, mirror_pivot, proj, strength, tltr, blbr, mode, wihi, sample, matte))
         images = []
         pbar = ProgressBar(len(params))
         for idx, (pA, mask, offset, angle, size, edge, tile_xy, mirror, mirror_pivot, proj, strength, tltr, blbr, mode, wihi, sample, matte) in enumerate(params):
-            pA = tensor2cv(pA) if pA is not None else channel_solid(chan=EnumImageType.BGRA)
+            pA = tensor_to_cv(pA) if pA is not None else channel_solid(chan=EnumImageType.BGRA)
             if mask is not None:
-                mask = tensor2cv(mask)
+                mask = tensor_to_cv(mask)
                 pA = image_mask_add(pA, mask)
 
             h, w = pA.shape[:2]
@@ -1102,7 +1112,7 @@ Apply various geometric transformations to images, including translation, rotati
                 w, h = wihi
                 pA = image_scalefit(pA, w, h, mode, sample)
 
-            images.append(cv2tensor_full(pA, matte))
+            images.append(cv_to_tensor_full(pA, matte))
             pbar.update_absolute(idx)
         return [torch.stack(i) for i in zip(*images)]
 
@@ -1122,7 +1132,7 @@ The Histogram Node generates a histogram representation of the input image, show
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                Lexicon.PIXEL: (JOV_TYPE_IMAGE, {}),
+                Lexicon.PIXEL: (COZY_TYPE_IMAGE, {}),
             }
         })
         return Lexicon._parse(d)
@@ -1135,7 +1145,7 @@ The Histogram Node generates a histogram representation of the input image, show
         for idx, (pA, ) in enumerate(params):
             pA = image_histogram(pA)
             pA = image_histogram_normalize(pA)
-            images.append(cv2tensor(pA))
+            images.append(cv_to_tensor(pA))
             pbar.update_absolute(idx)
         return list(zip(*images))
 '''

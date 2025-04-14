@@ -1,6 +1,4 @@
-"""
-Jovimetrix - Support
-"""
+""" Jovimetrix - Support """
 
 from enum import Enum
 from typing import List, Tuple
@@ -9,13 +7,23 @@ import cv2
 import torch
 import numpy as np
 
-from . import \
-    TYPE_IMAGE, TYPE_PIXEL, \
-    TYPE_fCOORD2D, EnumImageType, \
-    image_convert, image_mask_add, image_matte, image_minmax, bgr2image, \
-    cv2tensor, image2bgr, tensor2cv
+from cozy_comfyui import \
+    TensorType
 
-from .compose import image_blend, image_crop_center
+from cozy_comfyui.image import \
+    PixelType, \
+    Coord2D_Float, EnumImageType, ImageType
+
+from cozy_comfyui.image.convert import \
+    ImageType, \
+    image_matte, image_mask_add, image_convert, image_to_bgr, bgr_to_image, \
+    cv_to_tensor, tensor_to_cv
+
+from cozy_comfyui.image.misc import \
+    image_minmax
+
+from .compose import \
+    image_blend, image_crop_center
 
 from .channel import \
     EnumPixelSwizzle, \
@@ -77,36 +85,36 @@ class EnumThresholdAdapt(Enum):
 # === IMAGE ===
 # ==============================================================================
 
-def image_contrast(image: TYPE_IMAGE, value: float) -> TYPE_IMAGE:
-    image, alpha, cc = image2bgr(image)
+def image_contrast(image: ImageType, value: float) -> ImageType:
+    image, alpha, cc = image_to_bgr(image)
     mean_value = np.mean(image)
     image = (image - mean_value) * value + mean_value
     image = np.clip(image, 0, 255).astype(np.uint8)
-    return bgr2image(image, alpha, cc == 1)
+    return bgr_to_image(image, alpha, cc == 1)
 
-def image_edge_wrap(image: TYPE_IMAGE, tileX: float=1., tileY: float=1.,
-                    edge:EnumEdge=EnumEdge.WRAP) -> TYPE_IMAGE:
+def image_edge_wrap(image: ImageType, tileX: float=1., tileY: float=1.,
+                    edge:EnumEdge=EnumEdge.WRAP) -> ImageType:
     """TILING."""
     height, width = image.shape[:2]
     tileX = int(width * tileX) if edge in [EnumEdge.WRAP, EnumEdge.WRAPX] else 0
     tileY = int(height * tileY) if edge in [EnumEdge.WRAP, EnumEdge.WRAPY] else 0
     return cv2.copyMakeBorder(image, tileY, tileY, tileX, tileX, cv2.BORDER_WRAP)
 
-def image_equalize(image:TYPE_IMAGE) -> TYPE_IMAGE:
-    image, alpha, cc = image2bgr(image)
+def image_equalize(image:ImageType) -> ImageType:
+    image, alpha, cc = image_to_bgr(image)
     image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     image = cv2.equalizeHist(image)
     image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
-    return bgr2image(image, alpha, cc == 1)
+    return bgr_to_image(image, alpha, cc == 1)
 
-def image_exposure(image: TYPE_IMAGE, value: float) -> TYPE_IMAGE:
-    image, alpha, cc = image2bgr(image)
+def image_exposure(image: ImageType, value: float) -> ImageType:
+    image, alpha, cc = image_to_bgr(image)
     image = np.clip(image * value, 0, 255).astype(np.uint8)
-    return bgr2image(image, alpha, cc == 1)
+    return bgr_to_image(image, alpha, cc == 1)
 
-def image_filter(image:TYPE_IMAGE, start:Tuple[int]=(128,128,128),
+def image_filter(image:ImageType, start:Tuple[int]=(128,128,128),
                  end:Tuple[int]=(128,128,128), fuzz:Tuple[float]=(0.5,0.5,0.5),
-                 use_range:bool=False) -> Tuple[TYPE_IMAGE, TYPE_IMAGE]:
+                 use_range:bool=False) -> Tuple[ImageType, ImageType]:
     """Filter an image based on a range threshold.
     It can use a start point with fuzziness factor and/or a start and end point with fuzziness on both points.
 
@@ -121,7 +129,7 @@ def image_filter(image:TYPE_IMAGE, start:Tuple[int]=(128,128,128),
         Tuple[np.ndarray, np.ndarray]: A tuple containing the filtered image and the mask.
     """
     old_alpha = None
-    new_image = cv2tensor(image)
+    new_image = cv_to_tensor(image)
     cc = image.shape[2] if image.ndim > 2 else 1
     if cc == 4:
         old_alpha = new_image[..., 3]
@@ -131,9 +139,9 @@ def image_filter(image:TYPE_IMAGE, start:Tuple[int]=(128,128,128),
             new_image = new_image.unsqueeze(-1)
         new_image = torch.repeat_interleave(new_image, 3, dim=2)
 
-    fuzz = torch.tensor(fuzz, dtype=torch.float64, device="cpu")
-    start = torch.tensor(start, dtype=torch.float64, device="cpu") / 255.
-    end = torch.tensor(end, dtype=torch.float64, device="cpu") / 255.
+    fuzz = TensorType(fuzz, dtype=torch.float64, device="cpu")
+    start = TensorType(start, dtype=torch.float64, device="cpu") / 255.
+    end = TensorType(end, dtype=torch.float64, device="cpu") / 255.
     if not use_range:
         end = start
     start -= fuzz
@@ -154,11 +162,11 @@ def image_filter(image:TYPE_IMAGE, start:Tuple[int]=(128,128,128),
     if old_alpha is not None:
         output_image = torch.cat([output_image, old_alpha.unsqueeze(2)], dim=2)
 
-    return tensor2cv(output_image), mask.cpu().numpy().astype(np.uint8) * 255
+    return tensor_to_cv(output_image), mask.cpu().numpy().astype(np.uint8) * 255
 
-def image_flatten(image: List[TYPE_IMAGE], width:int=None, height:int=None,
+def image_flatten(image: List[ImageType], width:int=None, height:int=None,
                   mode=EnumScaleMode.MATTE,
-                  sample:EnumInterpolation=EnumInterpolation.LANCZOS4) -> TYPE_IMAGE:
+                  sample:EnumInterpolation=EnumInterpolation.LANCZOS4) -> ImageType:
 
     if mode == EnumScaleMode.MATTE:
         width, height = image_minmax(image)[2:]
@@ -179,9 +187,9 @@ def image_flatten(image: List[TYPE_IMAGE], width:int=None, height:int=None,
         current = cv2.add(current, x)
     return current
 
-def image_gamma(image: TYPE_IMAGE, value: float) -> TYPE_IMAGE:
+def image_gamma(image: ImageType, value: float) -> ImageType:
     # preserve original format
-    image, alpha, cc = image2bgr(image)
+    image, alpha, cc = image_to_bgr(image)
     if value <= 0:
         image = (image * 0).astype(np.uint8)
     else:
@@ -190,9 +198,9 @@ def image_gamma(image: TYPE_IMAGE, value: float) -> TYPE_IMAGE:
         lookUpTable = np.clip(table, 0, 255).astype(np.uint8)
         image = cv2.LUT(image, lookUpTable)
         # now back to the original "format"
-    return bgr2image(image, alpha, cc == 1)
+    return bgr_to_image(image, alpha, cc == 1)
 
-def image_histogram(image:TYPE_IMAGE, bins=256) -> TYPE_IMAGE:
+def image_histogram(image:ImageType, bins=256) -> ImageType:
     bins = max(image.max(), bins) + 1
     flatImage = image.flatten()
     histogram = np.zeros(bins)
@@ -200,7 +208,7 @@ def image_histogram(image:TYPE_IMAGE, bins=256) -> TYPE_IMAGE:
         histogram[pixel] += 1
     return histogram
 
-def image_histogram_normalize(image:TYPE_IMAGE)-> TYPE_IMAGE:
+def image_histogram_normalize(image:ImageType)-> ImageType:
     L = image.max()
     nonEqualizedHistogram = image_histogram(image, bins=L)
     sumPixels = np.sum(nonEqualizedHistogram)
@@ -211,17 +219,17 @@ def image_histogram_normalize(image:TYPE_IMAGE)-> TYPE_IMAGE:
     flatEqualizedImage = [transformMap[p] for p in flatNonEqualizedImage]
     return np.reshape(flatEqualizedImage, image.shape)
 
-def image_hsv(image: TYPE_IMAGE, hue: float, saturation: float, value: float) -> TYPE_IMAGE:
-    image, alpha, cc = image2bgr(image)
+def image_hsv(image: ImageType, hue: float, saturation: float, value: float) -> ImageType:
+    image, alpha, cc = image_to_bgr(image)
     image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
     hue *= 255
     image[:, :, 0] = (image[:, :, 0] + hue) % 180
     image[:, :, 1] = np.clip(image[:, :, 1] * saturation, 0, 255)
     image[:, :, 2] = np.clip(image[:, :, 2] * value, 0, 255)
     image = cv2.cvtColor(image, cv2.COLOR_HSV2BGR)
-    return bgr2image(image, alpha, cc == 1)
+    return bgr_to_image(image, alpha, cc == 1)
 
-def image_invert(image: TYPE_IMAGE, value: float) -> TYPE_IMAGE:
+def image_invert(image: ImageType, value: float) -> ImageType:
     """
     Invert an Grayscale, RGB or RGBA image using a specified inversion intensity.
 
@@ -245,12 +253,12 @@ def image_invert(image: TYPE_IMAGE, value: float) -> TYPE_IMAGE:
     inverted_image = 255 - image
     return ((1 - value) * image + value * inverted_image).astype(np.uint8)
 
-def image_mirror(image: TYPE_IMAGE, mode:EnumMirrorMode, x:float=0.5,
-                 y:float=0.5) -> TYPE_IMAGE:
+def image_mirror(image: ImageType, mode:EnumMirrorMode, x:float=0.5,
+                 y:float=0.5) -> ImageType:
     cc = image.shape[2] if image.ndim == 3 else 1
     height, width = image.shape[:2]
 
-    def mirror(img:TYPE_IMAGE, axis:int, reverse:bool=False) -> TYPE_IMAGE:
+    def mirror(img:ImageType, axis:int, reverse:bool=False) -> ImageType:
         pivot = x if axis == 1 else y
         flip = cv2.flip(img, axis)
         pivot = np.clip(pivot, 0, 1)
@@ -287,7 +295,7 @@ def image_mirror(image: TYPE_IMAGE, mode:EnumMirrorMode, x:float=0.5,
 
     return image
 
-def image_pixelate(image: TYPE_IMAGE, amount:float=1.)-> TYPE_IMAGE:
+def image_pixelate(image: ImageType, amount:float=1.)-> ImageType:
 
     h, w = image.shape[:2]
     amount = max(0, min(1, amount))
@@ -315,12 +323,12 @@ def image_pixelate(image: TYPE_IMAGE, amount:float=1.)-> TYPE_IMAGE:
 
     return pixelated_image.astype(np.uint8)
 
-def image_posterize(image: TYPE_IMAGE, levels:int=256) -> TYPE_IMAGE:
+def image_posterize(image: ImageType, levels:int=256) -> ImageType:
     divisor = 256 / max(2, min(256, levels))
     return (np.floor(image / divisor) * int(divisor)).astype(np.uint8)
 
-def image_quantize(image:TYPE_IMAGE, levels:int=256, iterations:int=10,
-                   epsilon:float=0.2) -> TYPE_IMAGE:
+def image_quantize(image:ImageType, levels:int=256, iterations:int=10,
+                   epsilon:float=0.2) -> ImageType:
     levels = int(max(2, min(256, levels)))
     pixels = np.float32(image)
     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, iterations, epsilon)
@@ -328,8 +336,8 @@ def image_quantize(image:TYPE_IMAGE, levels:int=256, iterations:int=10,
     centers = np.uint8(centers)
     return centers[labels.flatten()].reshape(image.shape)
 
-def image_rotate(image: TYPE_IMAGE, angle: float, center:TYPE_fCOORD2D=(0.5, 0.5),
-                 edge:EnumEdge=EnumEdge.CLIP) -> TYPE_IMAGE:
+def image_rotate(image: ImageType, angle: float, center:Coord2D_Float=(0.5, 0.5),
+                 edge:EnumEdge=EnumEdge.CLIP) -> ImageType:
 
     h, w = image.shape[:2]
     if edge != EnumEdge.CLIP:
@@ -343,9 +351,9 @@ def image_rotate(image: TYPE_IMAGE, angle: float, center:TYPE_fCOORD2D=(0.5, 0.5
         image = image_crop_center(image, w, h)
     return image
 
-def image_scale(image: TYPE_IMAGE, scale:TYPE_fCOORD2D=(1.0, 1.0),
+def image_scale(image: ImageType, scale:Coord2D_Float=(1.0, 1.0),
                 sample:EnumInterpolation=EnumInterpolation.LANCZOS4,
-                edge:EnumEdge=EnumEdge.CLIP) -> TYPE_IMAGE:
+                edge:EnumEdge=EnumEdge.CLIP) -> ImageType:
 
     h, w = image.shape[:2]
     if edge != EnumEdge.CLIP:
@@ -360,10 +368,10 @@ def image_scale(image: TYPE_IMAGE, scale:TYPE_fCOORD2D=(1.0, 1.0),
         image = image_crop_center(image, w, h)
     return image
 
-def image_scalefit(image: TYPE_IMAGE, width: int, height:int,
+def image_scalefit(image: ImageType, width: int, height:int,
                 mode:EnumScaleMode=EnumScaleMode.MATTE,
                 sample:EnumInterpolation=EnumInterpolation.LANCZOS4,
-                matte:TYPE_PIXEL=(0,0,0,0)) -> TYPE_IMAGE:
+                matte:PixelType=(0,0,0,0)) -> ImageType:
 
     match mode:
         case EnumScaleMode.MATTE:
@@ -394,8 +402,8 @@ def image_scalefit(image: TYPE_IMAGE, width: int, height:int,
         image = np.expand_dims(image, -1)
     return image
 
-def image_sharpen(image:TYPE_IMAGE, kernel_size=None, sigma:float=1.0,
-                amount:float=1.0, threshold:float=0) -> TYPE_IMAGE:
+def image_sharpen(image:ImageType, kernel_size=None, sigma:float=1.0,
+                amount:float=1.0, threshold:float=0) -> ImageType:
     """Return a sharpened version of the image, using an unsharp mask."""
 
     kernel_size = (kernel_size, kernel_size) if kernel_size else (5, 5)
@@ -409,9 +417,9 @@ def image_sharpen(image:TYPE_IMAGE, kernel_size=None, sigma:float=1.0,
         np.copyto(sharpened, image, where=low_contrast_mask)
     return sharpened
 
-def image_swap_channels(imgA:TYPE_IMAGE, imgB:TYPE_IMAGE,
+def image_swap_channels(imgA:ImageType, imgB:ImageType,
                         swap_in:Tuple[EnumPixelSwizzle, ...],
-                        matte:Tuple[int,...]=(0,0,0,255)) -> TYPE_IMAGE:
+                        matte:Tuple[int,...]=(0,0,0,255)) -> ImageType:
     """Up-convert and swap all 4-channels of an image with another or a constant."""
     imgA = image_convert(imgA, 4)
     h,w = imgA.shape[:2]
@@ -435,14 +443,14 @@ def image_swap_channels(imgA:TYPE_IMAGE, imgB:TYPE_IMAGE,
 
     return out
 
-def image_threshold(image:TYPE_IMAGE, threshold:float=0.5,
+def image_threshold(image:ImageType, threshold:float=0.5,
                     mode:EnumThreshold=EnumThreshold.BINARY,
                     adapt:EnumThresholdAdapt=EnumThresholdAdapt.ADAPT_NONE,
-                    block:int=3, const:float=0.) -> TYPE_IMAGE:
+                    block:int=3, const:float=0.) -> ImageType:
 
     const = max(-100, min(100, const))
     block = max(3, block if block % 2 == 1 else block + 1)
-    image, alpha, cc = image2bgr(image)
+    image, alpha, cc = image_to_bgr(image)
     if adapt != EnumThresholdAdapt.ADAPT_NONE:
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         gray = cv2.adaptiveThreshold(gray, 255, adapt.value, cv2.THRESH_BINARY, block, const)
@@ -452,23 +460,23 @@ def image_threshold(image:TYPE_IMAGE, threshold:float=0.5,
     else:
         threshold = int(threshold * 255)
         _, image = cv2.threshold(image, threshold, 255, mode.value)
-    return bgr2image(image, alpha, cc == 1)
+    return bgr_to_image(image, alpha, cc == 1)
 
-def image_translate(image: TYPE_IMAGE, offset: TYPE_fCOORD2D=(0.0, 0.0),
-                    edge: EnumEdge=EnumEdge.CLIP, border_value:int=0) -> TYPE_IMAGE:
+def image_translate(image: ImageType, offset: Coord2D_Float=(0.0, 0.0),
+                    edge: EnumEdge=EnumEdge.CLIP, border_value:int=0) -> ImageType:
     """
     Translates an image by a given offset. Supports various edge handling methods.
 
     Args:
-        image (TYPE_IMAGE): Input image as a numpy array.
-        offset (TYPE_fCOORD2D): Tuple (offset_x, offset_y) representing the translation offset.
+        image (ImageType): Input image as a numpy array.
+        offset (Coord2D_Float): Tuple (offset_x, offset_y) representing the translation offset.
         edge (EnumEdge): Enum representing edge handling method. Options are 'CLIP', 'WRAP', 'WRAPX', 'WRAPY'.
 
     Returns:
-        TYPE_IMAGE: Translated image.
+        ImageType: Translated image.
     """
 
-    def translate(img: TYPE_IMAGE) -> TYPE_IMAGE:
+    def translate(img: ImageType) -> ImageType:
         height, width = img.shape[:2]
         scalarX = 0.333 if edge in [EnumEdge.WRAP, EnumEdge.WRAPX] else 1.0
         scalarY = 0.333 if edge in [EnumEdge.WRAP, EnumEdge.WRAPY] else 1.0
@@ -485,10 +493,10 @@ def image_translate(image: TYPE_IMAGE, offset: TYPE_fCOORD2D=(0.0, 0.0),
 
     return translate(image)
 
-def image_transform(image: TYPE_IMAGE, offset:TYPE_fCOORD2D=(0.0, 0.0),
-                    angle:float=0, scale:TYPE_fCOORD2D=(1.0, 1.0),
+def image_transform(image: ImageType, offset:Coord2D_Float=(0.0, 0.0),
+                    angle:float=0, scale:Coord2D_Float=(1.0, 1.0),
                     sample:EnumInterpolation=EnumInterpolation.LANCZOS4,
-                    edge:EnumEdge=EnumEdge.CLIP) -> TYPE_IMAGE:
+                    edge:EnumEdge=EnumEdge.CLIP) -> ImageType:
     sX, sY = scale
     if sX < 0:
         image = cv2.flip(image, 1)
@@ -506,10 +514,10 @@ def image_transform(image: TYPE_IMAGE, offset:TYPE_fCOORD2D=(0.0, 0.0),
 
 # MORPHOLOGY
 
-def morph_edge_detect(image: TYPE_IMAGE,
+def morph_edge_detect(image: ImageType,
                     ksize: int=3,
                     low: float=0.27,
-                    high:float=0.6) -> TYPE_IMAGE:
+                    high:float=0.6) -> ImageType:
 
     image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     ksize = max(3, ksize)
@@ -517,7 +525,7 @@ def morph_edge_detect(image: TYPE_IMAGE,
     # Perform Canny edge detection
     return cv2.Canny(image, int(low * 255), int(high * 255))
 
-def morph_emboss(image: TYPE_IMAGE, amount: float=1., kernel: int=2) -> TYPE_IMAGE:
+def morph_emboss(image: ImageType, amount: float=1., kernel: int=2) -> ImageType:
     kernel = max(2, kernel)
     kernel = np.array([
         [-kernel,   -kernel+1,    0],

@@ -1,6 +1,4 @@
-"""
-Jovimetrix - Animation Support
-"""
+""" Jovimetrix - Animation Support """
 
 import inspect
 from enum import Enum

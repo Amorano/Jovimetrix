@@ -1,14 +1,19 @@
-"""
-Jovimetrix - Channel Ops
-"""
+""" Jovimetrix - Channel Ops """
 
 from enum import Enum
 from typing import List
 
 import numpy as np
 
-from . import MIN_IMAGE_SIZE, TYPE_IMAGE, TYPE_PIXEL, \
-    EnumImageType
+from cozy_comfyui import \
+    IMAGE_SIZE_MIN
+
+from cozy_comfyui.image import \
+    PixelType, \
+    EnumImageType, ImageType
+
+from cozy_comfyui.image.convert import \
+    ImageType
 
 from .color import pixel_eval
 
@@ -32,7 +37,7 @@ class EnumPixelSwizzle(Enum):
 # === CHANNEL ===
 # ==============================================================================
 
-def channel_add(image:TYPE_IMAGE, color:TYPE_PIXEL=255) -> TYPE_IMAGE:
+def channel_add(image:ImageType, color:PixelType=255) -> ImageType:
     """
     This function adds a new channel with a solid color to an image.
 
@@ -40,12 +45,12 @@ def channel_add(image:TYPE_IMAGE, color:TYPE_PIXEL=255) -> TYPE_IMAGE:
     NumPy array. The function assumes that the image has a shape attribute that
     returns a tuple representing the dimensions of the image (height, width, and
     channels if it's a color image)
-    :type image: TYPE_IMAGE
+    :type image: ImageType
     :param color: The `color` parameter in the `channel_add` function represents the
     color value that will be added as a new channel to the input image. The default
     value for `color` is 255, which is typically a white color in grayscale images,
     defaults to 255
-    :type color: TYPE_PIXEL (optional)
+    :type color: PixelType (optional)
     :return: The function `channel_add` returns a new image with an additional
     channel appended to the original image. The new channel has a solid color
     specified by the `color` parameter.
@@ -55,8 +60,8 @@ def channel_add(image:TYPE_IMAGE, color:TYPE_PIXEL=255) -> TYPE_IMAGE:
     new = channel_solid(w, h, color, EnumImageType.GRAYSCALE)
     return np.concatenate([image, new], axis=-1)
 
-def channel_solid(width:int=MIN_IMAGE_SIZE, height:int=MIN_IMAGE_SIZE, color:TYPE_PIXEL=(0, 0, 0, 255),
-                chan:EnumImageType=EnumImageType.BGR) -> TYPE_IMAGE:
+def channel_solid(width:int=IMAGE_SIZE_MIN, height:int=IMAGE_SIZE_MIN, color:PixelType=(0, 0, 0, 255),
+                chan:EnumImageType=EnumImageType.BGR) -> ImageType:
 
     if chan == EnumImageType.GRAYSCALE:
         color = pixel_eval(color, EnumImageType.GRAYSCALE)
@@ -78,7 +83,7 @@ def channel_solid(width:int=MIN_IMAGE_SIZE, height:int=MIN_IMAGE_SIZE, color:TYP
         color = color[2::-1]
     return np.full((height, width, 4), color, dtype=np.uint8)
 
-def channel_merge(channels: List[TYPE_IMAGE]) -> TYPE_IMAGE:
+def channel_merge(channels: List[ImageType]) -> ImageType:
     max_height = max(ch.shape[0] for ch in channels if ch is not None)
     max_width = max(ch.shape[1] for ch in channels if ch is not None)
     num_channels = len(channels)
@@ -105,8 +110,8 @@ def channel_merge(channels: List[TYPE_IMAGE]) -> TYPE_IMAGE:
         output = output[..., 0]
     return output
 
-def channel_swap(imageA:TYPE_IMAGE, swap_ot:EnumPixelSwizzle,
-                imageB:TYPE_IMAGE, swap_in:EnumPixelSwizzle) -> TYPE_IMAGE:
+def channel_swap(imageA:ImageType, swap_ot:EnumPixelSwizzle,
+                imageB:ImageType, swap_in:EnumPixelSwizzle) -> ImageType:
 
     index_out = int(swap_ot.value / 10)
     cc_out = imageA.shape[2] if imageA.ndim == 3 else 1
