@@ -326,7 +326,7 @@ def image_split(image: ImageType) -> Tuple[ImageType, ...]:
         r, g, b, a = cv2.split(image)
     return r, g, b, a
 
-def image_stack(image_list: List[ImageType],
+def image_stacker(image_list: List[ImageType],
                 axis:EnumOrientation=EnumOrientation.HORIZONTAL,
                 stride:int=0, matte:PixelType=(0,0,0,255)) -> ImageType:
 

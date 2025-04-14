@@ -21,14 +21,18 @@ from cozy_comfyui.node import \
 from cozy_comfyui.image import \
     EnumImageType
 
+from cozy_comfyui.image.misc import \
+    image_stack
+
 from cozy_comfyui.image.convert import \
-    image_matte, image_mask_add, image_convert, pil_to_cv, cv_to_tensor, \
-    cv_to_tensor_full, tensor_to_cv
+    image_matte, image_mask_add, image_convert, \
+    pil_to_cv, cv_to_tensor, cv_to_tensor_full, tensor_to_cv
 
 from .. import \
     Lexicon
 
-from ..sup.image.channel import channel_solid
+from ..sup.image.channel import \
+    channel_solid
 
 from ..sup.image.compose import \
     EnumShapes, \
@@ -38,7 +42,8 @@ from ..sup.image.adjust import \
     EnumEdge, EnumScaleMode, EnumInterpolation, \
     image_invert, image_rotate, image_scalefit, image_transform, image_translate
 
-from ..sup.image.mapping import image_stereogram
+from ..sup.image.mapping import \
+    image_stereogram
 
 from ..sup.text import \
     EnumAlignment, EnumJustify, \
@@ -103,7 +108,7 @@ Generate a constant image or mask of a specified size and color. It can be used 
                     pA = image_scalefit(pA, width, height, mode, sample, matte)
                 images.append(cv_to_tensor_full(pA, matte))
             pbar.update_absolute(idx)
-        return [torch.stack(i) for i in zip(*images)]
+        return image_stack(images)
 
 class ShapeNode(CozyImageNode):
     NAME = "SHAPE GEN (JOV) ✨"
@@ -174,7 +179,7 @@ Create n-sided polygons. These shapes can be customized by adjusting parameters 
 
             images.append([cv_to_tensor(pB), cv_to_tensor(matte), cv_to_tensor(mask, True)])
             pbar.update_absolute(idx)
-        return [torch.stack(i) for i in zip(*images)]
+        return image_stack(images)
 
 class StereogramNode(CozyImageNode):
     NAME = "STEREOGRAM (JOV) 📻"
@@ -219,7 +224,7 @@ Generates false perception 3D images from 2D input. Set tile divisions, noise, g
             pA = image_stereogram(pA, depth, divisions, noise, gamma, shift)
             images.append(cv_to_tensor_full(pA))
             pbar.update_absolute(idx)
-        return [torch.stack(i) for i in zip(*images)]
+        return image_stack(images)
 
 class StereoscopicNode(CozyBaseNode):
     NAME = "STEREOSCOPIC (JOV) 🕶️"
@@ -355,4 +360,4 @@ Generates images containing text based on parameters such as font, size, alignme
                     img = image_invert(img, 1)
                 images.append(cv_to_tensor_full(img, matte))
             pbar.update_absolute(idx)
-        return [torch.stack(i) for i in zip(*images)]
+        return image_stack(images)

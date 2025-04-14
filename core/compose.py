@@ -30,7 +30,7 @@ from cozy_comfyui.image.convert import \
     cv_to_tensor, cv_to_tensor_full
 
 from cozy_comfyui.image.misc import \
-    image_minmax
+    image_minmax, image_stack
 
 from .. import \
     Lexicon
@@ -55,7 +55,7 @@ from ..sup.image.channel import \
 
 from ..sup.image.compose import \
     EnumAdjustOP, EnumBlendType, EnumOrientation, \
-    image_levels, image_split, image_stack, image_blend
+    image_levels, image_split, image_stacker, image_blend
 
 from ..sup.image.mapping import \
     EnumProjection, \
@@ -232,7 +232,7 @@ Enhance and modify images with various effects such as blurring, sharpening, col
 
             images.append(cv_to_tensor_full(img_new, matte))
             pbar.update_absolute(idx)
-        return [torch.stack(i) for i in zip(*images)]
+        return image_stack(images)
 
 class BlendNode(CozyImageNode):
     NAME = "BLEND (JOV) ⚗️"
@@ -323,7 +323,7 @@ Combine two input images using various blending modes, such as normal, screen, m
             img = cv_to_tensor_full(img, matte)
             images.append(img)
             pbar.update_absolute(idx)
-        return [torch.stack(i) for i in zip(*images)]
+        return image_stack(images)
 
 class ColorBlindNode(CozyImageNode):
     NAME = "COLOR BLIND (JOV) 👁‍🗨"
@@ -360,7 +360,7 @@ Simulate color blindness effects on images. You can select various types of colo
             pA = color_blind(pA, deficiency, simulator, severity)
             images.append(cv_to_tensor_full(pA))
             pbar.update_absolute(idx)
-        return [torch.stack(i) for i in zip(*images)]
+        return image_stack(images)
 
 class ColorMatchNode(CozyImageNode):
     NAME = "COLOR MATCH (JOV) 💞"
@@ -439,7 +439,7 @@ Adjust the color scheme of one image to match another with the Color Match Node.
 
             images.append(cv_to_tensor_full(pA, matte))
             pbar.update_absolute(idx)
-        return [torch.stack(i) for i in zip(*images)]
+        return image_stack(images)
 
 class ColorKMeansNode(CozyBaseNode):
     NAME = "COLOR MEANS (JOV) 〰️"
@@ -544,7 +544,7 @@ Generate a color harmony based on the selected scheme. Supported schemes include
                 img = (image_invert(s, 1) for s in img)
             images.append([cv_to_tensor(a) for a in img])
             pbar.update_absolute(idx)
-        return [torch.stack(i) for i in zip(*images)]
+        return image_stack(images)
 
 class CropNode(CozyImageNode):
     NAME = "CROP (JOV) ✂️"
@@ -608,7 +608,7 @@ Extract a portion of an input image or resize it. It supports various cropping m
                 pA = image_crop_center(pA, width, height)
             images.append(cv_to_tensor_full(pA, matte))
             pbar.update_absolute(idx)
-        return [torch.stack(i) for i in zip(*images)]
+        return image_stack(images)
 
 class FilterMaskNode(CozyImageNode):
     NAME = "FILTER MASK (JOV) 🤿"
@@ -653,7 +653,7 @@ Create masks based on specific color ranges within an image. Specify the color r
             img[..., 3] = mask[:,:]
             images.append(cv_to_tensor_full(img, matte))
             pbar.update_absolute(idx)
-        return [torch.stack(i) for i in zip(*images)]
+        return image_stack(images)
 
 class Flatten(CozyImageNode):
     NAME = "FLATTEN (JOV) ⬇️"
@@ -696,7 +696,7 @@ Combine multiple input images into a single image by summing their pixel values.
             current = image_flatten(pA)
             images.append(cv_to_tensor_full(current, matte))
             pbar.update_absolute(idx)
-        return [torch.stack(i) for i in zip(*images)]
+        return image_stack(images)
 
 class GradientMap(CozyImageNode):
     NAME = "GRADIENT MAP (JOV) 🇲🇺"
@@ -748,7 +748,7 @@ Remaps an input image using a gradient lookup table (LUT). The gradient image wi
                 pA = image_mask_add(pA, mask)
             images.append(cv_to_tensor_full(pA, matte))
             pbar.update_absolute(idx)
-        return [torch.stack(i) for i in zip(*images)]
+        return image_stack(images)
 
 class PixelMergeNode(CozyImageNode):
     NAME = "PIXEL MERGE (JOV) 🫂"
@@ -825,7 +825,7 @@ Combines individual color channels (red, green, blue) along with an optional mas
 
             images.append(cv_to_tensor_full(img, matte))
             pbar.update_absolute(idx)
-        return [torch.stack(i) for i in zip(*images)]
+        return image_stack(images)
 
 class PixelSplitNode(CozyBaseNode):
     NAME = "PIXEL SPLIT (JOV) 💔"
@@ -861,7 +861,7 @@ Takes an input image and splits it into its individual color channels (red, gree
             pA = channel_solid(chan=EnumImageType.BGRA) if pA is None else tensor_to_cv(pA)
             images.append([cv_to_tensor(x, True) for x in image_split(pA)])
             pbar.update_absolute(idx)
-        return [torch.stack(i) for i in zip(*images)]
+        return image_stack(images)
 
 class PixelSwapNode(CozyImageNode):
     NAME = "PIXEL SWAP (JOV) 🔃"
@@ -926,7 +926,7 @@ Swap pixel values between two input images based on specified channel swizzle op
 
             images.append(cv_to_tensor_full(out))
             pbar.update_absolute(idx)
-        return [torch.stack(i) for i in zip(*images)]
+        return image_stack(images)
 
 class StackNode(CozyImageNode):
     NAME = "STACK (JOV) ➕"
@@ -966,7 +966,7 @@ Merge multiple input images into a single composite image by stacking them along
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], IMAGE_SIZE_MIN)[0]
         sample = parse_param(kw, Lexicon.SAMPLE, EnumInterpolation, EnumInterpolation.LANCZOS4.name)[0]
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)[0]
-        img = image_stack(images, axis, stride) #, matte)
+        img = image_stacker(images, axis, stride) #, matte)
         if mode != EnumScaleMode.MATTE:
             w, h = wihi
             img = image_scalefit(img, w, h, mode, sample)
@@ -1013,7 +1013,7 @@ Define a range and apply it to an image for segmentation and feature extraction.
                 pA = image_invert(pA, 1)
             images.append(cv_to_tensor_full(pA))
             pbar.update_absolute(idx)
-        return [torch.stack(i) for i in zip(*images)]
+        return image_stack(images)
 
 class TransformNode(CozyImageNode):
     NAME = "TRANSFORM (JOV) 🏝️"
@@ -1114,7 +1114,7 @@ Apply various geometric transformations to images, including translation, rotati
 
             images.append(cv_to_tensor_full(pA, matte))
             pbar.update_absolute(idx)
-        return [torch.stack(i) for i in zip(*images)]
+        return image_stack(images)
 
 '''
 class HistogramNode(JOVImageSimple):
@@ -1147,5 +1147,5 @@ The Histogram Node generates a histogram representation of the input image, show
             pA = image_histogram_normalize(pA)
             images.append(cv_to_tensor(pA))
             pbar.update_absolute(idx)
-        return list(zip(*images))
+        return image_stack(images)
 '''
