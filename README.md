@@ -63,7 +63,7 @@ Please consider sponsoring me if you enjoy the results of my work, code or docum
 
 <h1>AS OF VERSION 2.0.0, THESE NODES HAVE MIGRATED TO OTHER, SMALLER PACKAGES</h1>
 
-Migrated to [GLSL SHADERS](https://github.com/Amorano/Jovi_GLSL)
+Migrated to [Jovi_GLSL](https://github.com/Amorano/Jovi_GLSL)
 
 ~~* GLSL shader support~~
 ~~* * `GLSL Node`  provides raw access to Vertex and Fragment shaders~~
@@ -86,11 +86,11 @@ Migrated to [Jovi_MIDI](https://github.com/Amorano/Jovi_MIDI)
 ~~* `MIDI FILTER` (advanced filter) to select messages from MIDI streams and devices~~
 ~~* `MIDI FILTER EZ` simpler interface to filter single messages from MIDI streams and devices~~
 
-Migrated to [Node Help](https://github.com/Amorano/Jovi_Help)
+Migrated to [Jovi_Help](https://github.com/Amorano/Jovi_Help)
 
 ~~* Help System for *ALL NODES* that will auto-parse unknown knows for their type data and descriptions~~
 
-Migrated to [Node Colorization](https://github.com/Amorano/Jovi_Colorizer)
+Migrated to [Jovi_Colorizer](https://github.com/Amorano/Jovi_Colorizer)
 
 ~~* Colorization for *ALL NODES* using their own node settings, their node group or via regex pattern matching~~
 
@@ -137,6 +137,13 @@ Nodes that have been migrated:
 * * GLSL TRANSFORM
 
 [Migrated to Jovi_GLSL](https://github.com/Amorano/Jovi_GLSL)
+
+**2025/04/17** @2.0.4:
+* fixed bug in resize_matte `MODE` that would fail when the matte was smaller than the input image
+* migrated to image_crop functions to cozy_comfyui
+
+**2025/04/15** @2.0.3:
+* migrated to image_stack in cozy_comfyui
 
 **2025/04/14** @2.0.2:
 * migrated out old routes to cozy_comfyui

@@ -19,11 +19,14 @@ from cozy_comfyui.image.convert import \
     image_matte, image_mask_add, image_convert, image_to_bgr, bgr_to_image, \
     cv_to_tensor, tensor_to_cv
 
+from cozy_comfyui.image.crop import \
+    image_crop_center
+
 from cozy_comfyui.image.misc import \
     image_minmax
 
 from .compose import \
-    image_blend, image_crop_center
+    image_blend
 
 from .channel import \
     EnumPixelSwizzle, \
@@ -378,6 +381,9 @@ def image_scalefit(image: ImageType, width: int, height:int,
             image = image_matte(image, matte, width, height)
 
         case EnumScaleMode.RESIZE_MATTE:
+            h, w = image.shape[:2]
+            width = max(width, w)
+            height = max(height, h)
             canvas = np.full((height, width, 4), matte, dtype=image.dtype)
             image = image_matte(image, (0,0,0,0), width, height)
             image = image_blend(canvas, image)
