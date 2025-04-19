@@ -138,6 +138,9 @@ Nodes that have been migrated:
 
 [Migrated to Jovi_GLSL](https://github.com/Amorano/Jovi_GLSL)
 
+**2025/04/19** @2.0.6:
+* fixed reset message from JS
+
 **2025/04/19** @2.0.5:
 * patched new frontend input mechanism for dynamic inputs
 * reduced requirements
