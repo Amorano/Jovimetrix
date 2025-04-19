@@ -59,7 +59,6 @@ export function nodeAddDynamic(nodeType, prefix, dynamic_type='*', index_start=0
             return;
         }
 
-        let idx = index_start;
         if (self?.outputs && match_output) {
             while (self.outputs.length > index_start) {
                 self.removeOutput(self.outputs.length-1);
@@ -70,8 +69,10 @@ export function nodeAddDynamic(nodeType, prefix, dynamic_type='*', index_start=0
             return;
         }
 
-        idx = index_start
+        let idx = index_start;
+        let offset = 0;
         while (idx < self.inputs.length-1) {
+            console.log(self.inputs[idx])
             const slot = self.inputs[idx];
             const parts = slot.name.split('_');
             if (parts.length == 2 && self.graph) {
@@ -84,7 +85,7 @@ export function nodeAddDynamic(nodeType, prefix, dynamic_type='*', index_start=0
                     }
                 } else {
                     const name = parts.slice(1).join('');
-                    self.inputs[idx].name = `${idx}_${name}`;
+                    self.inputs[idx].name = `${offset}_${name}`;
                     if (match_output) {
                         while(self.outputs.length-1 < idx) {
                             self.addOutput(prefix, dynamic_type);
@@ -94,6 +95,7 @@ export function nodeAddDynamic(nodeType, prefix, dynamic_type='*', index_start=0
 
                     }
                     idx += 1;
+                    offset += 1;
                 }
             } else {
                 idx += 1;

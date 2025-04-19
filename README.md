@@ -138,6 +138,11 @@ Nodes that have been migrated:
 
 [Migrated to Jovi_GLSL](https://github.com/Amorano/Jovi_GLSL)
 
+**2025/04/19** @2.0.5:
+* patched new frontend input mechanism for dynamic inputs
+* reduced requirements
+* removed old vector conversions waiting for new frontend mechanism
+
 **2025/04/17** @2.0.4:
 * fixed bug in resize_matte `MODE` that would fail when the matte was smaller than the input image
 * migrated to image_crop functions to cozy_comfyui

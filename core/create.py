@@ -36,14 +36,11 @@ from ..sup.image.channel import \
 
 from ..sup.image.compose import \
     EnumShapes, \
-    shape_ellipse, shape_polygon, shape_quad, image_mask_binary
+    shape_ellipse, shape_polygon, shape_quad, image_mask_binary, image_stereogram
 
 from ..sup.image.adjust import \
     EnumEdge, EnumScaleMode, EnumInterpolation, \
     image_invert, image_rotate, image_scalefit, image_transform, image_translate
-
-from ..sup.image.mapping import \
-    image_stereogram
 
 from ..sup.text import \
     EnumAlignment, EnumJustify, \

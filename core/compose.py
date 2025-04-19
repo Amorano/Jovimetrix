@@ -683,7 +683,7 @@ Combine multiple input images into a single image by summing their pixel values.
             return ()
 
         # be less dumb when merging
-        pA = [tensor_to_cv(i) for img in imgs for i in img]
+        pA = [tensor_to_cv(i) for i in imgs]
         mode = parse_param(kw, Lexicon.MODE, EnumScaleMode, EnumScaleMode.MATTE.name)
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], IMAGE_SIZE_MIN)
         sample = parse_param(kw, Lexicon.SAMPLE, EnumInterpolation, EnumInterpolation.LANCZOS4.name)
@@ -958,8 +958,7 @@ Merge multiple input images into a single composite image by stacking them along
         if len(images) == 0:
             logger.warning("no images to stack")
             return
-        images = [tensor_to_cv(img) for sublist in images for img in sublist]
-
+        images = [tensor_to_cv(i) for i in images]
         axis = parse_param(kw, Lexicon.AXIS, EnumOrientation, EnumOrientation.GRID.name)[0]
         stride = parse_param(kw, Lexicon.STEP, EnumConvertType.INT, 1)[0]
         mode = parse_param(kw, Lexicon.MODE, EnumScaleMode, EnumScaleMode.MATTE.name)[0]

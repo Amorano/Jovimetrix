@@ -2,60 +2,8 @@
 
 import { app } from "../../../scripts/app.js"
 import { $el } from "../../../scripts/ui.js"
-import { widgetToInput, widgetToWidget } from '../util/util_widget.js'
 import { domInnerValueChange } from '../util/util.js'
 /** @import { IWidget, LGraphCanvas } from '../../types/litegraph/litegraph.d.ts' */
-
-const GET_CONFIG = Symbol();
-const TYPES = ['RGB', 'VEC2', 'VEC3', 'VEC4', 'VEC2INT', 'VEC3INT', 'VEC4INT']
-const TYPES_ACCEPT = 'RGB, VEC2, VEC3, VEC4, VEC2INT, VEC3INT, VEC4INT, FLOAT, INT, BOOLEAN'
-
-async function convertToInput(node, widget) {
-    const input = node.addInput(widget.name, widget.type, {
-        // @ts-expect-error [GET_CONFIG] is not a valid property of IWidget
-        widget: { name: widget.name, [GET_CONFIG]: () => [
-            widget.type,
-            widget.options || {}
-        ] },
-        ...{ shape: LiteGraph.SlotShape.HollowCircle }
-    });
-    return input;
-}
-
-function removeConvertToWidgetEntries(menuArray, widgetNames) {
-    function recursiveFilter(menu) {
-        return menu.filter(item => {
-            // Keep non-matching items
-            if (!item || !item.content) return true;
-
-            // Remove this item
-            if (widgetNames.some(name => item.content === `Convert ${name} to Widget`)) {
-                return false;
-            }
-
-            // Recursively filter submenus if they exist
-            if (item.submenu && item.submenu.options) {
-                item.submenu.options = recursiveFilter(item.submenu.options);
-            }
-            return true;
-        });
-    }
-
-    return recursiveFilter(menuArray);
-}
-
-function isVersionLess(v1, v2) {
-    const parts1 = v1.split('.').map(Number);
-    const parts2 = v2.split('.').map(Number);
-
-    for (let i = 0; i < Math.max(parts1.length, parts2.length); i++) {
-        const num1 = parts1[i] || 0;
-        const num2 = parts2[i] || 0;
-        if (num1 < num2) return true;
-        if (num1 > num2) return false;
-    }
-    return false; // They are equal
-}
 
 function colorHex2RGB(hex) {
     hex = hex.replace(/^#/, '');
@@ -79,16 +27,18 @@ function colorRGB2Hex(input) {
     return '#' + hexValues.slice(0, 3).join('') + (hexValues[3] || '');
 }
 
-const VectorWidget = (app, inputName, options, initial, desc='') => {
+const VectorWidget = (app, inputName, options, initial) => {
     const values = options[1]?.default || initial;
     /** @type {IWidget} */
     const widget = {
         name: inputName,
+        type2: options[0],
         type: options[0],
         y: 0,
         value: values,
         options: options[1]
     }
+    //widget.options.type = "STRING"; //`BOOLEAN,INT,FLOAT,${options[0]}`;
 
     if (widget.options?.rgb || false) {
         widget.options.maj = 255;
@@ -100,7 +50,7 @@ const VectorWidget = (app, inputName, options, initial, desc='') => {
     widget.options.step = 0.0075;
     widget.options.round = 1 / 10 ** widget.options.step;
 
-    if (options[0].endsWith('INT')) {
+    if (widget.type2.endsWith('INT')) {
         widget.options.step = 1;
         widget.options.round = 1;
         widget.options.precision = 0;
@@ -120,7 +70,7 @@ const VectorWidget = (app, inputName, options, initial, desc='') => {
     let picker;
 
     widget.draw = function(ctx, node, width, Y, height) {
-        if ((app.canvas.ds.scale < 0.50) || (!this.type.startsWith("VEC") && this.type != "COORD2D")) return;
+        if ((app.canvas.ds.scale < 0.50) || (!this.type2.startsWith("VEC") && this.type2 != "COORD2D")) return;
         ctx.save()
         ctx.beginPath()
         ctx.lineWidth = 1
@@ -175,7 +125,7 @@ const VectorWidget = (app, inputName, options, initial, desc='') => {
                 console.error(converted, e);
                 ctx.fillStyle = "#FFF";
             }
-            ctx.roundRect(width - 1.17 * widget_padding, Y+1, 19, height-2, 16);
+            ctx.roundRect(width-1.17 * widget_padding, Y+1, 19, height-2, 16);
             ctx.fill()
         }
         ctx.restore()
@@ -309,7 +259,6 @@ const VectorWidget = (app, inputName, options, initial, desc='') => {
         return value;
     }
 
-    widget.desc = desc;
     return widget;
 }
 
@@ -336,74 +285,5 @@ app.registerExtension({
                 widget: node.addCustomWidget(VectorWidget(app, inputName, inputData, [0, 0, 0, 0])),
             })
         }
-    },
-    async beforeRegisterNodeDef(nodeType, nodeData, app) {
-        const inputTypes = nodeData.input;
-        if (inputTypes.length == 0) {
-            return;
-        }
-
-        const matchingTypes = ['required', 'optional']
-        .flatMap(type => Object.entries(inputTypes[type] || [])
-            .filter(([_, value]) => TYPES.includes(value[0]))
-        );
-        if (matchingTypes.length == 0) {
-            return;
-        }
-
-        const getExtraMenuOptions = nodeType.prototype.getExtraMenuOptions;
-
-        const version = window.__COMFYUI_FRONTEND_VERSION__;
-        if (!isVersionLess(version, "1.10.3")) {
-            /*
-            const onNodeCreated = nodeType.prototype.onNodeCreated;
-            nodeType.prototype.onNodeCreated = async function () {
-                const me = onNodeCreated?.apply(this);
-                Object.entries(this.widgets).forEach( async ([key, widget]) => {
-                    if (!TYPES.includes(widget.type)) {
-                        return;
-                    }
-                    await convertToInput(this, widget);
-                });
-                return me;
-            }
-
-            nodeType.prototype.getExtraMenuOptions = function (_, options) {
-                const me = getExtraMenuOptions?.apply(this, arguments);
-                const widgets = matchingTypes.map(item => item[0]);
-                options = removeConvertToWidgetEntries(options, widgets);
-                return me;
-            }
-                */
-            return;
-        }
-
-        // MENU CONVERSIONS
-        nodeType.prototype.getExtraMenuOptions = function (_, options) {
-            const me = getExtraMenuOptions?.apply(this, arguments);
-            const widgetToInputArray = [];
-            for (const [widgetName, additionalInfo] of matchingTypes) {
-                const widget = Object.values(this.widgets).find(m => m.name == widgetName);
-                if (TYPES.includes(widget.type) || widget.type.endsWith('-jov')) {
-                    if (!widget.hidden) {
-                        const widgetToInputObject = {
-                            content: `Convert ${widgetName} to input`,
-                            callback: () => widgetToInput(this, widget, additionalInfo)
-                        };
-                        widgetToInputArray.push(widgetToInputObject);
-                    } else {
-                        const widgetToInputObject = {
-                            content: `Convert ${widgetName} to widget`,
-                            callback: () => widgetToWidget(this, widget, additionalInfo)
-                        };
-                        widgetToInputArray.push(widgetToInputObject);
-                    }
-                }
-            }
-            if (widgetToInputArray.length) {
-                options.push(...widgetToInputArray, null);
-            }
-            return me;
-        };
     }
 })

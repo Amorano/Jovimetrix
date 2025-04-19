@@ -33,7 +33,9 @@ from cozy_comfyui.image.convert import \
     image_convert, cv_to_tensor, cv_to_tensor_full, tensor_to_cv, image_matte
 
 from cozy_comfyui.image.misc import \
-    EnumInterpolation, \
+    EnumInterpolation
+
+from cozy_comfyui.image.io import \
     image_load
 
 from cozy_comfyui.api import \
@@ -133,7 +135,7 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
         if data_list is None:
             logger.warn("no data for list")
             return (None, [], 0)
-        data_list = [item for sublist in data_list for item in sublist]
+        # data_list = [item for sublist in data_list for item in sublist]
         mode = parse_param(kw, Lexicon.BATCH_MODE, EnumBatchMode, EnumBatchMode.MERGE.name)[0]
         index = parse_param(kw, Lexicon.INDEX, EnumConvertType.INT, 0, 0)[0]
         slice_range = parse_param(kw, Lexicon.RANGE, EnumConvertType.VEC3INT, [(0, 0, 1)])[0]

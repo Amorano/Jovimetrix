@@ -185,14 +185,6 @@ OP_UNARY = {
 # === SUPPORT ===
 # ==============================================================================
 
-LAMBDA_FLATTEN = lambda data: [item for sublist in data for item in sublist]
-
-def flatten(data):
-    if isinstance(data, list):
-        return [a for i in data for a in flatten(i)]
-    else:
-        return [data]
-
 def to_bits(value):
     if isinstance(value, int):
         return bin(value)[2:]
@@ -776,7 +768,7 @@ Manipulate strings through filtering
             logger.warn("no data for list")
             return ([],)
         # flat list of ALL the dynamic inputs...
-        data_list = flatten(data_list)
+        #data_list = flatten(data_list)
         # single operation mode -- like array node
         op = parse_param(kw, Lexicon.FUNC, EnumConvertString, EnumConvertString.SPLIT.name)[0]
         key = parse_param(kw, Lexicon.KEY, EnumConvertType.STRING, "")[0]
@@ -787,7 +779,7 @@ Manipulate strings through filtering
             case EnumConvertString.SPLIT:
                 results = data_list
                 if key != "":
-                    results = flatten([r.split(key) for r in data_list])
+                    results = [r.split(key) for r in data_list]
             case EnumConvertString.JOIN:
                 results = [key.join(data_list)]
             case EnumConvertString.FIND:
