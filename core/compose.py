@@ -277,7 +277,6 @@ Combine two input images using various blending modes, such as normal, screen, m
         params = list(zip_longest_fill(pA, pB, mask, func, alpha, flip, mode, wihi, sample, matte, invert))
         images = []
         pbar = ProgressBar(len(params))
-        print(len(pA), len(pB))
         for idx, (pA, pB, mask, func, alpha, flip, mode, wihi, sample, matte, invert) in enumerate(params):
             if flip:
                 pA, pB = pB, pA

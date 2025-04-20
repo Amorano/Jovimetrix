@@ -78,7 +78,6 @@ def text_draw(full_text: str, font: ImageFont,
     text_lines = full_text.split('\n')
     count = len(text_lines)
     height_max = text_size(draw, full_text, font)[1] + line_spacing * (count-1)
-    # print(height_max)
     height_delta = height_max / count
     # find the bounding box of this
 

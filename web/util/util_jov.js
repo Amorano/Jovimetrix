@@ -4,7 +4,7 @@ import { api } from "../../../scripts/api.js"
 import { nodeFitHeight } from './util_node.js'
 import { widgetShowVector, widget_type_name, widgetHide, widgetShow } from './util_widget.js'
 
-export async function apiJovimetrix(id, cmd, route="message") {
+export async function apiJovimetrix(id, cmd, data=null, route="message", ) {
     try {
         const response = await api.fetchApi(`/cozy_comfyui/${route}`, {
             method: "POST",
@@ -13,7 +13,8 @@ export async function apiJovimetrix(id, cmd, route="message") {
             },
             body: JSON.stringify({
                 id: id,
-                cmd: cmd
+                cmd: cmd,
+                data: data
             }),
         });
 

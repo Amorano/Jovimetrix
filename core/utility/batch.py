@@ -367,7 +367,8 @@ class QueueBaseNode(CozyBaseNode):
 
         self.__ident = ident
         # should work headless as well
-        if parse_reset(ident) > 0 or parse_param(kw, Lexicon.RESET, EnumConvertType.BOOLEAN, False)[0]:
+        reset = parse_reset(ident) > 0
+        if reset or parse_param(kw, Lexicon.RESET, EnumConvertType.BOOLEAN, False)[0]:
             self.__q = None
             self.__index = 0
 

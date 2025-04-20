@@ -280,13 +280,10 @@ Routes the input data from the optional input ports to the output port, preservi
 
         parsed = []
         values = list(vars.values())
-        print('values', len(values))
         for x in values:
-            print(type(x))
             p = parse_param_list(x, EnumConvertType.ANY, None)
             parsed.append(p)
         junk = *parsed,
-        print(len(junk))
         return inout, parsed,
 
 class SaveOutput(CozyBaseNode):

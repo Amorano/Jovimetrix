@@ -72,7 +72,6 @@ export function nodeAddDynamic(nodeType, prefix, dynamic_type='*', index_start=0
         let idx = index_start;
         let offset = 0;
         while (idx < self.inputs.length-1) {
-            console.log(self.inputs[idx])
             const slot = self.inputs[idx];
             const parts = slot.name.split('_');
             if (parts.length == 2 && self.graph) {
