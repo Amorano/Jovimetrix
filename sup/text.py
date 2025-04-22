@@ -2,7 +2,7 @@
 
 import textwrap
 from enum import Enum
-from typing import List, Tuple
+from typing import List
 
 from matplotlib import font_manager
 from PIL import Image, ImageFont, ImageDraw
@@ -38,13 +38,13 @@ def font_names() -> List[str]:
         logger.warn(e)
     return {}
 
-def text_size(draw: ImageDraw, text:str, font:ImageFont) -> Tuple[int, int]:
+def text_size(draw: ImageDraw, text:str, font:ImageFont) -> tuple[int, int]:
     bbox = draw.textbbox((0, 0), text, font=font)
     text_width = bbox[2] - bbox[0]
     text_height = bbox[3] - bbox[1]
     return text_width, text_height
 
-def text_autosize(text:str, font:str, width:int, height:int, columns:int=0) -> Tuple[str, int, int, int]:
+def text_autosize(text:str, font:str, width:int, height:int, columns:int=0) -> tuple[str, int, int, int]:
     img = Image.new("L", (width, height))
     draw = ImageDraw.Draw(img)
     if columns != 0:

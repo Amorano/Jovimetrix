@@ -1,7 +1,7 @@
 """ Jovimetrix - Coordinates and Mapping """
 
 from enum import Enum
-from typing import List, Tuple
+from typing import List
 
 import cv2
 import numpy as np
@@ -51,7 +51,7 @@ def coord_default(width:int, height:int, origin:Coord2D_Float=None) -> Coord2D_F
     y -= origin_y
     return x, y
 
-def coord_fisheye(width: int, height: int, distortion: float) -> Tuple[ImageType, ImageType]:
+def coord_fisheye(width: int, height: int, distortion: float) -> tuple[ImageType, ImageType]:
     map_x, map_y = np.meshgrid(np.linspace(0., 1., width), np.linspace(0., 1., height))
     # normalized
     xnd, ynd = (2 * map_x - 1), (2 * map_y - 1)
@@ -68,7 +68,7 @@ def coord_perspective(width: int, height: int, pts: List[Coord2D_Float]) -> Imag
     pts = np.column_stack([pts[:, 0], pts[:, 1]])
     return cv2.getPerspectiveTransform(object_pts, pts)
 
-def coord_sphere(width: int, height: int, radius: float) -> Tuple[ImageType, ImageType]:
+def coord_sphere(width: int, height: int, radius: float) -> tuple[ImageType, ImageType]:
     theta, phi = np.meshgrid(np.linspace(0, TAU, width), np.linspace(0, np.pi, height))
     x = radius * np.sin(phi) * np.cos(theta)
     y = radius * np.sin(phi) * np.sin(theta)

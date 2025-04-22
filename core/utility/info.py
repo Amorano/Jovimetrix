@@ -2,7 +2,7 @@
 
 import io
 import json
-from typing import Any, Tuple
+from typing import Any
 
 import torch
 import numpy as np
@@ -26,8 +26,6 @@ from cozy_comfyui.image.convert import \
 
 from cozy_comfyui.api import \
     parse_reset
-
-# ==============================================================================
 
 JOV_CATEGORY = "UTILITY"
 
@@ -62,7 +60,7 @@ class AkashicData:
 
 class AkashicNode(CozyBaseNode):
     NAME = "AKASHIC (JOV) 📓"
-    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
+    CATEGORY = JOV_CATEGORY
     RETURN_NAMES = ()
     OUTPUT_NODE = True
     SORT = 10
@@ -70,7 +68,7 @@ class AkashicNode(CozyBaseNode):
 Visualize data. It accepts various types of data, including images, text, and other types. If no input is provided, it returns an empty result. The output consists of a dictionary containing UI-related information, such as base64-encoded images and text representations of the input data.
 """
 
-    def run(self, **kw) -> Tuple[Any, Any]:
+    def run(self, **kw) -> tuple[Any, Any]:
         kw.pop('ident', None)
         o = kw.values()
         output = {"ui": {"b64_images": [], "text": []}}
@@ -147,7 +145,7 @@ Visualize data. It accepts various types of data, including images, text, and ot
 
 class GraphNode(CozyBaseNode):
     NAME = "GRAPH (JOV) 📈"
-    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
+    CATEGORY = JOV_CATEGORY
     OUTPUT_NODE = True
     RETURN_TYPES = ("IMAGE", )
     RETURN_NAMES = (Lexicon.IMAGE,)
@@ -164,10 +162,10 @@ Visualize a series of data points over time. It accepts a dynamic number of valu
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                Lexicon.RESET: ("BOOLEAN", {
+                "RESET": ("BOOLEAN", {
                     "default": False,
                     "tooltip":"Clear the graph history"}),
-                Lexicon.VALUE: ("INT", {
+                "VAL": ("INT", {
                     "default": 60, "min": 0,
                     "tooltip":"Number of values to graph and display"}),
                 Lexicon.WH: ("VEC2INT", {
@@ -187,10 +185,10 @@ Visualize a series of data points over time. It accepts a dynamic number of valu
         self.__history = []
         self.__fig, self.__ax = plt.subplots(figsize=(5.12, 5.12))
 
-    def run(self, ident, **kw) -> Tuple[TensorType]:
-        slice = parse_param(kw, Lexicon.VALUE, EnumConvertType.INT, 60)[0]
+    def run(self, ident, **kw) -> tuple[TensorType]:
+        slice = parse_param(kw, "VAL", EnumConvertType.INT, 60)[0]
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], 1)[0]
-        if parse_reset(ident) > 0 or parse_param(kw, Lexicon.RESET, EnumConvertType.BOOLEAN, False)[0]:
+        if parse_reset(ident) > 0 or parse_param(kw, "RESET", EnumConvertType.BOOLEAN, False)[0]:
             self.__history = []
         longest_edge = 0
         dynamic = parse_dynamic(kw, Lexicon.UNKNOWN, EnumConvertType.FLOAT, 0)
@@ -224,7 +222,7 @@ Visualize a series of data points over time. It accepts a dynamic number of valu
 
 class ImageInfoNode(CozyBaseNode):
     NAME = "IMAGE INFO (JOV) 📚"
-    CATEGORY = f"JOVIMETRIX 🔺🟩🔵/{JOV_CATEGORY}"
+    CATEGORY = JOV_CATEGORY
     RETURN_TYPES = ("INT", "INT", "INT", "INT", "VEC2", "VEC3")
     RETURN_NAMES = (Lexicon.INT, Lexicon.W, Lexicon.H, "C", Lexicon.WH, Lexicon.WHC)
     OUTPUT_TOOLTIPS = (
@@ -252,7 +250,7 @@ Exports and Displays immediate information about images.
         })
         return Lexicon._parse(d)
 
-    def run(self, **kw) -> Tuple[int, list]:
+    def run(self, **kw) -> tuple[int, list]:
         image = kw.get(Lexicon.PIXEL_A, None)
         if image.ndim == 4:
             count, height, width, cc = image.shape

@@ -1,7 +1,7 @@
 """ Jovimetrix - Support """
 
 from enum import Enum
-from typing import List, Tuple
+from typing import List
 
 import cv2
 import torch
@@ -16,8 +16,8 @@ from cozy_comfyui.image import \
 
 from cozy_comfyui.image.convert import \
     ImageType, \
-    image_matte, image_mask_add, image_convert, image_to_bgr, bgr_to_image, \
-    cv_to_tensor, tensor_to_cv
+    image_matte, image_mask_add, image_convert, image_to_bgr, \
+    bgr_to_image, cv_to_tensor, tensor_to_cv
 
 from cozy_comfyui.image.crop import \
     image_crop_center
@@ -115,9 +115,9 @@ def image_exposure(image: ImageType, value: float) -> ImageType:
     image = np.clip(image * value, 0, 255).astype(np.uint8)
     return bgr_to_image(image, alpha, cc == 1)
 
-def image_filter(image:ImageType, start:Tuple[int]=(128,128,128),
-                 end:Tuple[int]=(128,128,128), fuzz:Tuple[float]=(0.5,0.5,0.5),
-                 use_range:bool=False) -> Tuple[ImageType, ImageType]:
+def image_filter(image:ImageType, start:tuple[int]=(128,128,128),
+                 end:tuple[int]=(128,128,128), fuzz:tuple[float]=(0.5,0.5,0.5),
+                 use_range:bool=False) -> tuple[ImageType, ImageType]:
     """Filter an image based on a range threshold.
     It can use a start point with fuzziness factor and/or a start and end point with fuzziness on both points.
 
@@ -129,7 +129,7 @@ def image_filter(image:ImageType, start:Tuple[int]=(128,128,128),
         use_range (bool): Boolean indicating whether to use a start and end range or just the start point with fuzziness.
 
     Returns:
-        Tuple[np.ndarray, np.ndarray]: A tuple containing the filtered image and the mask.
+        tuple[np.ndarray, np.ndarray]: A tuple containing the filtered image and the mask.
     """
     old_alpha = None
     new_image = cv_to_tensor(image)
@@ -424,8 +424,8 @@ def image_sharpen(image:ImageType, kernel_size=None, sigma:float=1.0,
     return sharpened
 
 def image_swap_channels(imgA:ImageType, imgB:ImageType,
-                        swap_in:Tuple[EnumPixelSwizzle, ...],
-                        matte:Tuple[int,...]=(0,0,0,255)) -> ImageType:
+                        swap_in:tuple[EnumPixelSwizzle, ...],
+                        matte:tuple[int,...]=(0,0,0,255)) -> ImageType:
     """Up-convert and swap all 4-channels of an image with another or a constant."""
     imgA = image_convert(imgA, 4)
     h,w = imgA.shape[:2]

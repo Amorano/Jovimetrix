@@ -2,7 +2,7 @@
 
 import sys
 from enum import Enum
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
 import cv2
 import numpy as np
@@ -221,7 +221,7 @@ def image_mask_binary(image: ImageType) -> ImageType:
     return mask.astype(np.uint8)
 
 def image_by_size(image_list: List[ImageType],
-                  enumSize: EnumImageBySize=EnumImageBySize.LARGEST) -> Tuple[ImageType, int, int]:
+                  enumSize: EnumImageBySize=EnumImageBySize.LARGEST) -> tuple[ImageType, int, int]:
 
     img = None
     mega, width, height = 0, 0, 0
@@ -262,7 +262,7 @@ def image_by_size(image_list: List[ImageType],
 
     return img, width, height
 
-def image_split(image: ImageType) -> Tuple[ImageType, ...]:
+def image_split(image: ImageType) -> tuple[ImageType, ...]:
     h, w = image.shape[:2]
 
     # Grayscale image

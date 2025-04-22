@@ -1,7 +1,7 @@
 """ Jovimetrix - Image Color Support """
 
 from enum import Enum
-from typing import List, Tuple
+from typing import List
 
 import cv2
 import numpy as np
@@ -26,7 +26,7 @@ from .compose import image_blend
 # === TYPE ===
 # ==============================================================================
 
-TYPE_LUT = Tuple[int, int, int, int]
+TYPE_LUT = tuple[int, int, int, int]
 
 # ==============================================================================
 # === ENUMERATION ===
@@ -160,7 +160,7 @@ def linear2sRGB(image: ImageType) -> ImageType:
 def pixel_eval(color: PixelType,
             target: EnumImageType=EnumImageType.BGR,
             precision:EnumIntFloat=EnumIntFloat.INT,
-            crunch:EnumGrayscaleCrunch=EnumGrayscaleCrunch.MEAN) -> Tuple[PixelType] | PixelType:
+            crunch:EnumGrayscaleCrunch=EnumGrayscaleCrunch.MEAN) -> tuple[PixelType] | PixelType:
     """Evaluates R(GB)(A) pixels in range (0-255) into target target pixel type."""
 
     def parse_single_color(c: PixelType) -> PixelType:
@@ -318,13 +318,13 @@ def color_blind(image: ImageType, deficiency:EnumCBDeficiency,
         image = image_mask_add(image, mask)
     return image
 
-def color_lut_full(dominant_colors: List[Tuple[int, int, int]], nodes:int=33) -> ImageType:
+def color_lut_full(dominant_colors: List[tuple[int, int, int]], nodes:int=33) -> ImageType:
     """
     Create a 3D LUT by mapping each RGB value to the closest dominant color.
     This version is optimized for speed using vectorization.
 
     Args:
-        dominant_colors (List[Tuple[int, int, int]]): List of top colors as (R, G, B) tuples.
+        dominant_colors (List[tuple[int, int, int]]): List of top colors as (R, G, B) tuples.
 
     Returns:
         np.ndarray: 3D LUT with shape (n, n, n, 3).
@@ -360,12 +360,12 @@ def color_lut_match(image: ImageType, colormap:int=cv2.COLORMAP_JET,
         image[..., 3] = alpha[..., 0]
     return image
 
-def color_lut_palette(colors: List[Tuple[int, int, int]], size: int=32) -> ImageType:
+def color_lut_palette(colors: List[tuple[int, int, int]], size: int=32) -> ImageType:
     """
     Create a color palette LUT as a 2D image from the top colors.
 
     Args:
-        colors (List[Tuple[int, int, int]]): List of top colors as (R, G, B) tuples.
+        colors (List[tuple[int, int, int]]): List of top colors as (R, G, B) tuples.
         size (int): Size of each color square in the palette.
 
     Returns:
@@ -382,12 +382,12 @@ def color_lut_palette(colors: List[Tuple[int, int, int]], size: int=32) -> Image
 
     return lut_image
 
-def color_lut_tonal(colors: List[Tuple[int, int, int]], width: int=256, height: int=32) -> ImageType:
+def color_lut_tonal(colors: List[tuple[int, int, int]], width: int=256, height: int=32) -> ImageType:
     """
     Create a 2D tonal palette LUT as a grid image from the top colors.
 
     Args:
-        colors (List[Tuple[int, int, int]]): List of top colors as (R, G, B) tuples.
+        colors (List[tuple[int, int, int]]): List of top colors as (R, G, B) tuples.
         width (int): Width of each gradient row.
         height (int): Height of each color row.
 
@@ -535,7 +535,7 @@ def color_mean(image: ImageType) -> ImageType:
             int(np.mean(image[:,:,2])) ]
     return color
 
-def color_top_used(image: ImageType, top_n: int=8) -> List[Tuple[int, int, int]]:
+def color_top_used(image: ImageType, top_n: int=8) -> List[tuple[int, int, int]]:
     """
     Find dominant colors in an image using k-means clustering.
 
@@ -544,7 +544,7 @@ def color_top_used(image: ImageType, top_n: int=8) -> List[Tuple[int, int, int]]
         top_n (int): Number of top colors to return.
 
     Returns:
-        List[Tuple[int, int, int]]: List of top `top_n` colors.
+        List[tuple[int, int, int]]: List of top `top_n` colors.
     """
     if image.ndim < 3:
         image = np.expand_dims(image, axis=-1)
@@ -573,7 +573,7 @@ def color_theory_complementary(color: PixelType) -> PixelType:
     color_a = pixel_hsv_adjust(color, 90, 0, 0)
     return hsv_to_bgr(color_a)
 
-def color_theory_monochromatic(color: PixelType) -> Tuple[PixelType, ...]:
+def color_theory_monochromatic(color: PixelType) -> tuple[PixelType, ...]:
     color = bgr_to_hsv(color)
     sat = 255 / 5
     val = 255 / 5
@@ -583,13 +583,13 @@ def color_theory_monochromatic(color: PixelType) -> Tuple[PixelType, ...]:
     color_d = pixel_hsv_adjust(color, 0, -4 * sat, -4 * val, mod_sat=True, mod_value=True)
     return hsv_to_bgr(color_a), hsv_to_bgr(color_b), hsv_to_bgr(color_c), hsv_to_bgr(color_d)
 
-def color_theory_split_complementary(color: PixelType) -> Tuple[PixelType, ...]:
+def color_theory_split_complementary(color: PixelType) -> tuple[PixelType, ...]:
     color = bgr_to_hsv(color)
     color_a = pixel_hsv_adjust(color, 75, 0, 0)
     color_b = pixel_hsv_adjust(color, 105, 0, 0)
     return hsv_to_bgr(color_a), hsv_to_bgr(color_b)
 
-def color_theory_analogous(color: PixelType) -> Tuple[PixelType, ...]:
+def color_theory_analogous(color: PixelType) -> tuple[PixelType, ...]:
     color = bgr_to_hsv(color)
     color_a = pixel_hsv_adjust(color, 30, 0, 0)
     color_b = pixel_hsv_adjust(color, 15, 0, 0)
@@ -597,27 +597,27 @@ def color_theory_analogous(color: PixelType) -> Tuple[PixelType, ...]:
     color_d = pixel_hsv_adjust(color, 150, 0, 0)
     return hsv_to_bgr(color_a), hsv_to_bgr(color_b), hsv_to_bgr(color_c), hsv_to_bgr(color_d)
 
-def color_theory_triadic(color: PixelType) -> Tuple[PixelType, ...]:
+def color_theory_triadic(color: PixelType) -> tuple[PixelType, ...]:
     color = bgr_to_hsv(color)
     color_a = pixel_hsv_adjust(color, 60, 0, 0)
     color_b = pixel_hsv_adjust(color, 120, 0, 0)
     return hsv_to_bgr(color_a), hsv_to_bgr(color_b)
 
-def color_theory_compound(color: PixelType) -> Tuple[PixelType, ...]:
+def color_theory_compound(color: PixelType) -> tuple[PixelType, ...]:
     color = bgr_to_hsv(color)
     color_a = pixel_hsv_adjust(color, 90, 0, 0)
     color_b = pixel_hsv_adjust(color, 120, 0, 0)
     color_c = pixel_hsv_adjust(color, 150, 0, 0)
     return hsv_to_bgr(color_a), hsv_to_bgr(color_b), hsv_to_bgr(color_c)
 
-def color_theory_square(color: PixelType) -> Tuple[PixelType, ...]:
+def color_theory_square(color: PixelType) -> tuple[PixelType, ...]:
     color = bgr_to_hsv(color)
     color_a = pixel_hsv_adjust(color, 45, 0, 0)
     color_b = pixel_hsv_adjust(color, 90, 0, 0)
     color_c = pixel_hsv_adjust(color, 135, 0, 0)
     return hsv_to_bgr(color_a), hsv_to_bgr(color_b), hsv_to_bgr(color_c)
 
-def color_theory_tetrad_custom(color: PixelType, delta:int=0) -> Tuple[PixelType, ...]:
+def color_theory_tetrad_custom(color: PixelType, delta:int=0) -> tuple[PixelType, ...]:
     color = bgr_to_hsv(color)
 
     # modulus on neg and pos
@@ -634,7 +634,7 @@ def color_theory_tetrad_custom(color: PixelType, delta:int=0) -> Tuple[PixelType
     color_d = pixel_hsv_adjust(color, 90 + delta, 0, 0)
     return hsv_to_bgr(color_a), hsv_to_bgr(color_b), hsv_to_bgr(color_c), hsv_to_bgr(color_d)
 
-def color_theory(image: ImageType, custom:int=0, scheme: EnumColorTheory=EnumColorTheory.COMPLIMENTARY) -> Tuple[ImageType, ...]:
+def color_theory(image: ImageType, custom:int=0, scheme: EnumColorTheory=EnumColorTheory.COMPLIMENTARY) -> tuple[ImageType, ...]:
 
     b = [0,0,0]
     c = [0,0,0]
