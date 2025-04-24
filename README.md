@@ -138,7 +138,10 @@ Nodes that have been migrated:
 
 [Migrated to Jovi_GLSL](https://github.com/Amorano/Jovi_GLSL)
 
-**2025/04/23** @2.0.9:
+**2025/04/24** @2.0.10:
+* `SHAPE NODE` fixed for transparency blends when using blurred masks
+
+**2025/04/24** @2.0.9:
 * removed inversion in pixel splitter
 
 **2025/04/23** @2.0.8:
@@ -180,33 +183,6 @@ Nodes that have been migrated:
 * missing array web node partial
 * removed array and no one even noticed.
 * all inputs should be treated as a list even single elements []
-
-
-**2025/03/28** @1.7.46:
-* ~~updated requirements for numpy to only be >=1.26.4~~
-* removed to keep numba working with numpy < 2.0
-
-**2025/03/25** @1.7.45:
-* no work around comfyui not doing type conversion past version 1.10.14
-
-**2025/03/18** @1.7.42:
-* updated numby jit to ignore python objects
-* aligned float("NaN") constructs
-
-**2025/03/18** @1.7.40:
-* allow vectors to be inline inputs + widget cause waiting for ComfyUI team is painful
-* changed precision default to 3
-* merged new action trigger from ComfyUI team
-
-**2025/03/06** @1.7.34:
-* prep for Purz stream
-* removed security scanner failures for in-line http links
-* auto-size masks during mask add
-* fix some limits on transform node
-* better constraints for UNARY and BINARY OP nodes
-* fix inversion in pixel merge
-* defaults for regex colorizer entries
-* fall through for constant node input
 
 <div align="center">
 <img src="https://github.com/user-attachments/assets/8ed13e6a-218c-468a-a480-53ab55b04d21" alt="explicit vector node supports" width="640"/>

@@ -34,7 +34,8 @@ from ..sup.image.channel import \
 
 from ..sup.image.compose import \
     EnumShapes, \
-    shape_ellipse, shape_polygon, shape_quad, image_mask_binary, image_stereogram
+    image_blend, shape_ellipse, shape_polygon, shape_quad, image_mask_binary, \
+    image_stereogram
 
 from ..sup.image.adjust import \
     EnumEdge, EnumScaleMode, EnumInterpolation, \
@@ -149,30 +150,33 @@ Create n-sided polygons. These shapes can be customized by adjusting parameters 
             width, height = wihi
             sizeX, sizeY = size
             fill = color[:3][::-1]
-            back = matte[:3][::-1]
 
             match shape:
                 case EnumShapes.RECTANGLE | EnumShapes.SQUARE:
-                    pA = shape_quad(width, height, sizeX, sizeY, fill, back)
+                    rgb = shape_quad(width, height, sizeX, sizeY, fill)
 
                 case EnumShapes.ELLIPSE | EnumShapes.CIRCLE:
-                    pA = shape_ellipse(width, height, sizeX, sizeY, fill, back)
+                    rgb = shape_ellipse(width, height, sizeX, sizeY, fill)
 
                 case EnumShapes.POLYGON:
-                    pA = shape_polygon(width, height, sizeX, sides, fill, back)
+                    rgb = shape_polygon(width, height, sizeX, sides, fill)
 
-            pA = pil_to_cv(pA)
-            pA = image_transform(pA, offset, angle, edge=edge)
+            rgb = pil_to_cv(rgb)
+            rgb = image_transform(rgb, offset, angle, edge=edge)
+            mask = image_mask_binary(rgb)
+
             if blur > 0:
                 # @TODO: Do blur on larger canvas to remove wrap bleed.
-                pA = (gaussian(pA, sigma=blur, channel_axis=2) * 255).astype(np.uint8)
+                rgb = (gaussian(rgb, sigma=blur, channel_axis=2) * 255).astype(np.uint8)
+                mask = (gaussian(mask, sigma=blur, channel_axis=2) * 255).astype(np.uint8)
 
-            pA = image_matte(pA, matte)
-            mask = image_mask_binary(pA)
-            pB = image_mask_add(pA, mask)
-            matte = image_matte(pB, matte)
+            back = list(matte[:3]) + [255]
+            canvas = np.full((height, width, 4), back, dtype=rgb.dtype)
+            rgba = image_blend(canvas, rgb, mask)
+            rgba = image_mask_add(rgba, mask)
+            rgb = image_convert(rgba, 3)
 
-            images.append([cv_to_tensor(pB), cv_to_tensor(matte), cv_to_tensor(mask, True)])
+            images.append([cv_to_tensor(rgba), cv_to_tensor(rgb), cv_to_tensor(mask, True)])
             pbar.update_absolute(idx)
         return image_stack(images)
 
