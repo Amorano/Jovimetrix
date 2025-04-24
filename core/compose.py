@@ -399,7 +399,7 @@ Combines individual color channels (red, green, blue) along with an optional mas
                 img[i] = x
 
             img = channel_merge(img)
-            img = image_invert(img, 1)
+            # img = image_invert(img, 1)
 
             if mode != EnumScaleMode.MATTE:
                 w, h = wihi

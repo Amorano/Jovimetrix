@@ -138,6 +138,9 @@ Nodes that have been migrated:
 
 [Migrated to Jovi_GLSL](https://github.com/Amorano/Jovi_GLSL)
 
+**2025/04/23** @2.0.9:
+* removed inversion in pixel splitter
+
 **2025/04/23** @2.0.8:
 * categories aligned to new comfy-cozy support
 
