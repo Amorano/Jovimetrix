@@ -138,6 +138,9 @@ Nodes that have been migrated:
 
 [Migrated to Jovi_GLSL](https://github.com/Amorano/Jovi_GLSL)
 
+**2025/04/23** @2.0.8:
+* categories aligned to new comfy-cozy support
+
 **2025/04/19** @2.0.7:
 * all JS messages fixed
 
@@ -152,16 +155,6 @@ Nodes that have been migrated:
 **2025/04/17** @2.0.4:
 * fixed bug in resize_matte `MODE` that would fail when the matte was smaller than the input image
 * migrated to image_crop functions to cozy_comfyui
-
-**2025/04/15** @2.0.3:
-* migrated to image_stack in cozy_comfyui
-
-**2025/04/14** @2.0.2:
-* migrated out old routes to cozy_comfyui
-
-**2025/04/14** @2.0.1:
-* numpy version set for < 2.0.0
-* core supports switched to [cozy_comfyui](https://github.com/cozy-comfyui/cozy_comfyui)
 
 **2025/04/12** @2.0.0:
 * REMOVED ALL STREAMING, MIDI and GLSL nodes for new packages, HELP System and Node Colorization system:
