@@ -38,7 +38,16 @@ const VectorWidget = (app, inputName, options, initial) => {
         value: values,
         options: options[1]
     }
-    //widget.options.type = "STRING"; //`BOOLEAN,INT,FLOAT,${options[0]}`;
+
+    widget.options.precision = 3;
+    widget.options.step = 0.01;
+    widget.options.round = 1 / 10 ** widget.options.step;
+
+    if (widget.options?.rgb || widget.options?.int || false) {
+        widget.options.step = 1;
+        widget.options.round = 1;
+        widget.options.precision = 0;
+    }
 
     if (widget.options?.rgb || false) {
         widget.options.maj = 255;
@@ -46,26 +55,12 @@ const VectorWidget = (app, inputName, options, initial) => {
         widget.options.label = ['🟥', '🟩', '🟦', 'ALPHA'];
     }
 
-    widget.options.precision = 3;
-    widget.options.step = 0.0075;
-    widget.options.round = 1 / 10 ** widget.options.step;
-
-    if (widget.type2.endsWith('INT')) {
-        widget.options.step = 1;
-        widget.options.round = 1;
-        widget.options.precision = 0;
-        widget.options.step = 1;
-    } else {
-        if (widget.options?.rgb || false) {
-            widget.options.maj = 1;
-        }
-    }
-
     const offset_y = 4;
     const widget_padding_left = 13;
     const widget_padding = 30;
     const label_full = 72;
-    const label_center = label_full/2;
+    const label_center = label_full / 2;
+
     /** @type {HTMLInputElement} */
     let picker;
 
