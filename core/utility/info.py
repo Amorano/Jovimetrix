@@ -9,6 +9,8 @@ import numpy as np
 from PIL import Image
 import matplotlib.pyplot as plt
 
+from comfy.utils import ProgressBar
+
 from ... import \
     Lexicon
 
@@ -46,17 +48,13 @@ def decode_tensor(tensor: TensorType) -> str:
     return f"{b}x{w}x{h}x{cc}"
 
 # ==============================================================================
-# === CLASS -- SUPPORT ===
+# === CLASS ===
 # ==============================================================================
 
 class AkashicData:
     def __init__(self, **kw) -> None:
         for k, v in kw.items():
             setattr(self, k, v)
-
-# ==============================================================================
-# === CLASS ===
-# ==============================================================================
 
 class AkashicNode(CozyBaseNode):
     NAME = "AKASHIC (JOV) 📓"
@@ -251,10 +249,6 @@ Exports and Displays immediate information about images.
         return Lexicon._parse(d)
 
     def run(self, **kw) -> tuple[int, list]:
-        image = kw.get(Lexicon.PIXEL_A, None)
-        if image.ndim == 4:
-            count, height, width, cc = image.shape
-        else:
-            count, height, width = image.shape
-            cc = 1
-        return count, width, height, cc, (width, height), (width, height, cc)
+        image = parse_param(kw, Lexicon.PIXEL_A, EnumConvertType.IMAGE, None)
+        height, width, cc = image[0].shape
+        return (len(image), width, height, cc, (width, height), (width, height, cc))
