@@ -44,32 +44,35 @@ Supplies raw or default values for various data types, supporting vector input w
 
         d = deep_merge(d, {
             "optional": {
-                Lexicon.IN_A: (COZY_TYPE_ANY, {"default": None,
-                                        "tooltip":"Passes a raw value directly, or supplies defaults for any value inputs without connections"}),
-                Lexicon.TYPE: (typ, {"default": EnumConvertType.BOOLEAN.name,
-                                    "tooltip":"Take the input and convert it into the selected type."}),
-                Lexicon.X: (COZY_TYPE_NUMERICAL, {"default": 0, "mij": -sys.maxsize,
-                                    "maj": sys.maxsize, "step": 0.01, "forceInput": True}),
-                Lexicon.Y: (COZY_TYPE_NUMERICAL, {"default": 0, "mij": -sys.maxsize,
-                                    "maj": sys.maxsize, "step": 0.01, "forceInput": True}),
-                Lexicon.Z: (COZY_TYPE_NUMERICAL, {"default": 0, "mij": -sys.maxsize,
-                                    "maj": sys.maxsize, "step": 0.01, "forceInput": True}),
-                Lexicon.W: (COZY_TYPE_NUMERICAL, {"default": 0, "mij": -sys.maxsize,
-                                    "maj": sys.maxsize, "step": 0.01, "forceInput": True}),
-                Lexicon.IN_A+Lexicon.IN_A: ("VEC4", {"default": (0, 0, 0, 0),
-                                    #"mij": -sys.maxsize, "maj": sys.maxsize,
-                                    "precision": 2,
-                                    "step": 0.01,
-                                    "label": [Lexicon.X, Lexicon.Y],
-                                    "tooltip":"default value vector for A"}),
+                Lexicon.IN_A: (COZY_TYPE_ANY, {
+                    "default": None,
+                    "tooltip":"Passes a raw value directly, or supplies defaults for any value inputs without connections"}),
+                Lexicon.TYPE: (typ, {
+                    "default": EnumConvertType.BOOLEAN.name,
+                    "tooltip":"Take the input and convert it into the selected type."}),
+                Lexicon.X: (COZY_TYPE_NUMERICAL, {
+                    "default": 0, "mij": -sys.maxsize, "maj": sys.maxsize,
+                    "forceInput": True}),
+                Lexicon.Y: (COZY_TYPE_NUMERICAL, {
+                    "default": 0, "mij": -sys.maxsize, "maj": sys.maxsize,
+                    "forceInput": True}),
+                Lexicon.Z: (COZY_TYPE_NUMERICAL, {
+                    "default": 0, "mij": -sys.maxsize, "maj": sys.maxsize,
+                    "forceInput": True}),
+                Lexicon.W: (COZY_TYPE_NUMERICAL, {
+                    "default": 0, "mij": -sys.maxsize, "maj": sys.maxsize,
+                    "forceInput": True}),
+                Lexicon.IN_A+Lexicon.IN_A: ("VEC4", {
+                    "default": (0, 0, 0, 0), #"mij": -sys.maxsize, "maj": sys.maxsize,
+                    "label": [Lexicon.X, Lexicon.Y],
+                    "tooltip":"default value vector for A"}),
                 "SEED": ("INT", {"default": 0, "min": 0, "max": sys.maxsize}),
-                Lexicon.IN_B+Lexicon.IN_B: ("VEC4", {"default": (1,1,1,1),
-                                    #"mij": -sys.maxsize, "maj": sys.maxsize,
-                                    "precision": 2,
-                                    "step": 0.01,
-                                    "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W],
-                                    "tooltip":"default value vector for B"}),
-                Lexicon.STRING: ("STRING", {"default": "", "dynamicPrompts": False, "multiline": True}),
+                Lexicon.IN_B+Lexicon.IN_B: ("VEC4", {
+                    "default": (1,1,1,1), #"mij": -sys.maxsize, "maj": sys.maxsize,
+                    "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W],
+                    "tooltip":"default value vector for B"}),
+                Lexicon.STRING: ("STRING", {
+                    "default": "", "dynamicPrompts": False, "multiline": True}),
             }
         })
         return Lexicon._parse(d)
@@ -159,12 +162,12 @@ Outputs a VEC2 or VEC2INT.
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                "X": (COZY_TYPE_NUMBER, {"default": 0,
-                                         "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01,
-                                         "tooltip": "1st channel value"}),
-                "Y": (COZY_TYPE_NUMBER, {"default": 0,
-                                         "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01,
-                                         "tooltip": "2nd channel value"}),
+                "X": (COZY_TYPE_NUMBER, {
+                    "default": 0, "min": -sys.maxsize, "max": sys.maxsize,
+                    "tooltip": "1st channel value"}),
+                "Y": (COZY_TYPE_NUMBER, {
+                    "default": 0, "min": -sys.maxsize, "max": sys.maxsize,
+                    "tooltip": "2nd channel value"}),
             }
         })
         return Lexicon._parse(d)
@@ -201,9 +204,15 @@ Outputs a VEC3 or VEC3INT.
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                "X": (COZY_TYPE_NUMBER, {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "tooltip": "1st channel value"}),
-                "Y": (COZY_TYPE_NUMBER, {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "tooltip": "2nd channel value"}),
-                "Z": (COZY_TYPE_NUMBER, {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "tooltip": "3rd channel value"}),
+                "X": (COZY_TYPE_NUMBER, {
+                    "default": 0, "min": -sys.maxsize, "max": sys.maxsize,
+                    "tooltip": "1st channel value"}),
+                "Y": (COZY_TYPE_NUMBER, {
+                    "default": 0, "min": -sys.maxsize, "max": sys.maxsize,
+                    "tooltip": "2nd channel value"}),
+                "Z": (COZY_TYPE_NUMBER, {
+                    "default": 0, "min": -sys.maxsize, "max": sys.maxsize,
+                    "tooltip": "3rd channel value"}),
             }
         })
         return Lexicon._parse(d)
@@ -242,10 +251,18 @@ Outputs a VEC4 or VEC4INT.
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                "X": (COZY_TYPE_NUMBER, {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "tooltip": "1st channel value"}),
-                "Y": (COZY_TYPE_NUMBER, {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "tooltip": "2nd channel value"}),
-                "Z": (COZY_TYPE_NUMBER, {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "tooltip": "3rd channel value"}),
-                "W": (COZY_TYPE_NUMBER, {"default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.01, "tooltip": "4th channel value"}),
+                "X": (COZY_TYPE_NUMBER, {
+                    "default": 0, "min": -sys.maxsize, "max": sys.maxsize,
+                    "tooltip": "1st channel value"}),
+                "Y": (COZY_TYPE_NUMBER, {
+                    "default": 0, "min": -sys.maxsize, "max": sys.maxsize,
+                    "tooltip": "2nd channel value"}),
+                "Z": (COZY_TYPE_NUMBER, {
+                    "default": 0, "min": -sys.maxsize, "max": sys.maxsize,
+                    "tooltip": "3rd channel value"}),
+                "W": (COZY_TYPE_NUMBER, {
+                    "default": 0, "min": -sys.maxsize, "max": sys.maxsize,
+                    "tooltip": "4th channel value"}),
             }
         })
         return Lexicon._parse(d)

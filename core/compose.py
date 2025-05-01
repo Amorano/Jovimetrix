@@ -67,20 +67,30 @@ Advanced options include pixelation, quantization, and morphological operations 
             "optional": {
                 Lexicon.PIXEL: (COZY_TYPE_IMAGE, {}),
                 Lexicon.MASK: (COZY_TYPE_IMAGE, {}),
-                Lexicon.FUNC: (EnumAdjustOP._member_names_, {"default": EnumAdjustOP.BLUR.name,
-                                                            "tooltip":"Type of adjustment (e.g., blur, sharpen, invert)"}),
-                Lexicon.RADIUS: ("INT", {"default": 3, "min": 3}),
+                Lexicon.FUNC: (EnumAdjustOP._member_names_, {
+                    "default": EnumAdjustOP.BLUR.name,
+                    "tooltip":"Type of adjustment (e.g., blur, sharpen, invert)"}),
+                Lexicon.RADIUS: ("INT", {
+                    "default": 3, "min": 3}),
                 "VAL": ("FLOAT", {"default": 1, "min": 0, "step": 0.01}),
-                "LoHi": ("VEC2", {"default": (0, 1),
-                                        "mij": 0, "maj": 1, "step": 0.01, "label": ["Low", "HI"]}),
-                "LMH": ("VEC3", {"default": (0, 0.5, 1),
-                                        "mij": 0, "maj": 1, "step": 0.01, "label": ["Low", "MID", "HI"]}),
-                "HSV": ("VEC3",{"default": (0, 1, 1),
-                                    "mij": 0, "maj": 1, "step": 0.01,  "label": [Lexicon.H, Lexicon.S, Lexicon.V]}),
-                Lexicon.CONTRAST: ("FLOAT", {"default": 0, "min": 0, "max": 1, "step": 0.01}),
-                Lexicon.GAMMA: ("FLOAT", {"default": 1, "min": 0.00001, "max": 1, "step": 0.01}),
-                "MATTE": ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True}),
-                Lexicon.INVERT: ("BOOLEAN", {"default": False, "tooltip": "Invert the mask input"})
+                "LoHi": ("VEC2", {
+                    "default": (0, 1), "mij": 0, "maj": 1,
+                    "label": ["Low", "HI"]}),
+                "LMH": ("VEC3", {
+                    "default": (0, 0.5, 1), "mij": 0, "maj": 1,
+                    "label": ["Low", "MID", "HI"]}),
+                "HSV": ("VEC3",{
+                    "default": (0, 1, 1), "mij": 0, "maj": 1,
+                    "label": [Lexicon.H, Lexicon.S, Lexicon.V]}),
+                Lexicon.CONTRAST: ("FLOAT", {
+                    "default": 0, "min": 0, "max": 1, "step": 0.01}),
+                Lexicon.GAMMA: ("FLOAT", {
+                    "default": 1, "min": 0.00001, "max": 1, "step": 0.01}),
+                "MATTE": ("VEC4", {
+                    "default": (0, 0, 0, 255), "rgb": True}),
+                Lexicon.INVERT: ("BOOLEAN", {
+                    "default": False,
+                    "tooltip": "Invert the mask input"})
             }
         })
         return Lexicon._parse(d)
@@ -213,17 +223,31 @@ Combine two input images using various blending modes, such as normal, screen, m
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                Lexicon.PIXEL_A: (COZY_TYPE_IMAGE, {"tooltip": "Background Plate"}),
-                Lexicon.PIXEL_B: (COZY_TYPE_IMAGE, {"tooltip": "Image to Overlay on Background Plate"}),
-                Lexicon.MASK: (COZY_TYPE_IMAGE, {"tooltip": "Optional Mask to use for Alpha Blend Operation. If empty, will use the ALPHA of B"}),
-                Lexicon.FUNC: (EnumBlendType._member_names_, {"default": EnumBlendType.NORMAL.name, "tooltip": "Blending Operation"}),
-                Lexicon.A: ("FLOAT", {"default": 1, "min": 0, "max": 1, "step": 0.01, "tooltip": "Amount of Blending to Perform on the Selected Operation"}),
-                Lexicon.FLIP: ("BOOLEAN", {"default": False}),
-                Lexicon.INVERT: ("BOOLEAN", {"default": False, "tooltip": "Invert the mask input"}),
-                "MODE": (EnumScaleMode._member_names_, {"default": EnumScaleMode.MATTE.name}),
-                Lexicon.WH: ("VEC2INT", {"default": (512, 512), "mij":IMAGE_SIZE_MIN, "label": [Lexicon.W, Lexicon.H]}),
-                Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
-                "MATTE": ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True})
+                Lexicon.PIXEL_A: (COZY_TYPE_IMAGE, {
+                    "tooltip": "Background Plate"}),
+                Lexicon.PIXEL_B: (COZY_TYPE_IMAGE, {
+                    "tooltip": "Image to Overlay on Background Plate"}),
+                Lexicon.MASK: (COZY_TYPE_IMAGE, {
+                    "tooltip": "Optional Mask to use for Alpha Blend Operation. If empty, will use the ALPHA of B"}),
+                Lexicon.FUNC: (EnumBlendType._member_names_, {
+                    "default": EnumBlendType.NORMAL.name,
+                    "tooltip": "Blending Operation"}),
+                Lexicon.A: ("FLOAT", {
+                    "default": 1, "min": 0, "max": 1, "step": 0.01,
+                    "tooltip": "Amount of Blending to Perform on the Selected Operation"}),
+                Lexicon.FLIP: ("BOOLEAN", {
+                    "default": False}),
+                Lexicon.INVERT: ("BOOLEAN", {
+                    "default": False, "tooltip": "Invert the mask input"}),
+                "MODE": (EnumScaleMode._member_names_, {
+                    "default": EnumScaleMode.MATTE.name}),
+                Lexicon.WH: ("VEC2", {
+                    "default": (512, 512), "mij":IMAGE_SIZE_MIN, "int": True,
+                    "label": [Lexicon.W, Lexicon.H]}),
+                Lexicon.SAMPLE: (EnumInterpolation._member_names_, {
+                    "default": EnumInterpolation.LANCZOS4.name}),
+                "MATTE": ("VEC4", {
+                    "default": (0, 0, 0, 255), "rgb": True})
             }
         })
         return Lexicon._parse(d)
@@ -304,11 +328,18 @@ Create masks based on specific color ranges within an image. Specify the color r
         d = deep_merge(d, {
             "optional": {
                 Lexicon.PIXEL_A: (COZY_TYPE_IMAGE, {}),
-                "START": ("VEC3INT", {"default": (128, 128, 128), "rgb": True}),
-                Lexicon.BOOLEAN: ("BOOLEAN", {"default": False, "tooltip": "use an end point (start->end) when calculating the filter range"}),
-                "END": ("VEC3INT", {"default": (128, 128, 128), "rgb": True}),
-                Lexicon.FLOAT: ("VEC3", {"default": (0.5,0.5,0.5), "mij":0, "maj":1, "step": 0.01, "tooltip": "the fuzziness use to extend the start and end range(s)"}),
-                "MATTE": ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True}),
+                "START": ("VEC3", {
+                    "default": (128, 128, 128), "rgb": True}),
+                Lexicon.BOOLEAN: ("BOOLEAN", {
+                    "default": False,
+                    "tooltip": "use an end point (start->end) when calculating the filter range"}),
+                "END": ("VEC3", {
+                    "default": (128, 128, 128), "rgb": True}),
+                Lexicon.FLOAT: ("VEC3", {
+                    "default": (0.5,0.5,0.5), "mij":0, "maj":1,
+                    "tooltip": "the fuzziness use to extend the start and end range(s)"}),
+                "MATTE": ("VEC4", {
+                    "default": (0, 0, 0, 255), "rgb": True}),
             }
         })
         return Lexicon._parse(d)
@@ -353,12 +384,20 @@ Combines individual color channels (red, green, blue) along with an optional mas
                 Lexicon.G: (COZY_TYPE_IMAGE, {}),
                 Lexicon.B: (COZY_TYPE_IMAGE, {}),
                 Lexicon.A: (COZY_TYPE_IMAGE, {}),
-                "MODE": (EnumScaleMode._member_names_, {"default": EnumScaleMode.MATTE.name}),
-                Lexicon.WH: ("VEC2INT", {"default": (512, 512), "mij":IMAGE_SIZE_MIN, "label": [Lexicon.W, Lexicon.H]}),
-                Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
-                "MATTE": ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True}),
-                Lexicon.FLIP: ("VEC4", {"mij":0, "maj":1, "step": 0.01, "tooltip": "Invert specific input prior to merging. R, G, B, A."}),
-                Lexicon.INVERT: ("BOOLEAN", {"default": False, "tooltip": "Invert the final merged output"})
+                "MODE": (EnumScaleMode._member_names_, {
+                    "default": EnumScaleMode.MATTE.name}),
+                Lexicon.WH: ("VEC2", {
+                    "default": (512, 512), "mij":IMAGE_SIZE_MIN, "int": True,
+                    "label": [Lexicon.W, Lexicon.H]}),
+                Lexicon.SAMPLE: (EnumInterpolation._member_names_, {
+                    "default": EnumInterpolation.LANCZOS4.name}),
+                "MATTE": ("VEC4", {
+                    "default": (0, 0, 0, 255), "rgb": True}),
+                Lexicon.FLIP: ("VEC4", {
+                    "default": (0,0,0,0), "mij":0, "maj":1,
+                    "tooltip": "Invert specific input prior to merging. R, G, B, A."}),
+                Lexicon.INVERT: ("BOOLEAN", {
+                    "default": False, "tooltip": "Invert the final merged output"})
             }
         })
         return Lexicon._parse(d)
@@ -475,7 +514,7 @@ Swap pixel values between two input images based on specified channel swizzle op
                 "SWAP_A": (EnumPixelSwizzle._member_names_, {
                     "default": EnumPixelSwizzle.ALPHA_A.name,
                     "tooltip": "Replace input Alpha channel with target channel or constant"}),
-                "MATTE": ("VEC4INT", {
+                "MATTE": ("VEC4", {
                     "default": (0, 0, 0, 255), "rgb": True})
             }
         })
@@ -531,13 +570,18 @@ Define a range and apply it to an image for segmentation and feature extraction.
         d = deep_merge(d, {
             "optional": {
                 Lexicon.PIXEL: (COZY_TYPE_IMAGE, {}),
-                "ADAPT": ( EnumThresholdAdapt._member_names_,
-                                {"default": EnumThresholdAdapt.ADAPT_NONE.name,
-                                 "tooltip": "X-Men"}),
-                Lexicon.FUNC: ( EnumThreshold._member_names_, {"default": EnumThreshold.BINARY.name}),
-                Lexicon.THRESHOLD: ("FLOAT", {"default": 0.5, "min": 0, "max": 1, "step": 0.005}),
-                Lexicon.SIZE: ("INT", {"default": 3, "min": 3, "max": 103}),
-                Lexicon.INVERT: ("BOOLEAN", {"default": False, "tooltip": "Invert the mask input"})
+                "ADAPT": ( EnumThresholdAdapt._member_names_, {
+                    "default": EnumThresholdAdapt.ADAPT_NONE.name,
+                    "tooltip": "X-Men"}),
+                Lexicon.FUNC: ( EnumThreshold._member_names_, {
+                    "default": EnumThreshold.BINARY.name}),
+                Lexicon.THRESHOLD: ("FLOAT", {
+                    "default": 0.5, "min": 0, "max": 1, "step": 0.005}),
+                Lexicon.SIZE: ("INT", {
+                    "default": 3, "min": 3, "max": 103}),
+                Lexicon.INVERT: ("BOOLEAN", {
+                    "default": False,
+                    "tooltip": "Invert the mask input"})
             }
         })
         return Lexicon._parse(d)

@@ -166,8 +166,8 @@ Visualize a series of data points over time. It accepts a dynamic number of valu
                 "VAL": ("INT", {
                     "default": 60, "min": 0,
                     "tooltip":"Number of values to graph and display"}),
-                Lexicon.WH: ("VEC2INT", {
-                    "default": (512, 512), "mij":IMAGE_SIZE_MIN,
+                Lexicon.WH: ("VEC2", {
+                    "default": (512, 512), "mij":IMAGE_SIZE_MIN, "int": True,
                     "label": [Lexicon.W, Lexicon.H],
                     "tooltip":"Width and Height of the graph output"}),
             }

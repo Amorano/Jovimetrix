@@ -102,8 +102,8 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
                 "INDEX": ("INT", {
                     "default": 0, "min": 0,
                     "tooltip":"Selected list position"}),
-                "RANGE": ("VEC3INT", {
-                    "default": (0, 0, 1), "mij": 0,
+                "RANGE": ("VEC3", {
+                    "default": (0, 0, 1), "mij": 0, "int": True,
                     "tooltip":"The start, end and step for the range"}),
                 Lexicon.STRING: ("STRING", {
                     "default": "",
@@ -535,14 +535,14 @@ Manage a queue of specific items: media files. Supports various image and video 
                 "MODE": (EnumScaleMode._member_names_, {
                     "default": EnumScaleMode.MATTE.name,
                     "tooltip": "Decide whether the images should be resized to fit"}),
-                Lexicon.WH: ("VEC2INT", {
-                    "default": (512, 512), "mij":IMAGE_SIZE_MIN,
+                Lexicon.WH: ("VEC2", {
+                    "default": (512, 512), "mij":IMAGE_SIZE_MIN, "int": True,
                     "label": [Lexicon.W, Lexicon.H],
                     "tooltip": "Width and Height"}),
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {
                     "default": EnumInterpolation.LANCZOS4.name,
                     "tooltip": "Method for resizing images."}),
-                "MATTE": ("VEC4INT", {
+                "MATTE": ("VEC4", {
                     "default": (0, 0, 0, 255), "rgb": True,
                     "tooltip": "Background color for padding"}),
             },

@@ -169,21 +169,24 @@ Produce waveforms like sine, square, or sawtooth with adjustable frequency, ampl
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                Lexicon.WAVE: (EnumWave._member_names_, {"default": EnumWave.SIN.name}),
-                "FREQ": ("FLOAT", {"default": 1,
-                                   "min": 0, "max": sys.maxsize, "step": 0.01,
-                                   "tooltip": "Frequency"}),
-                Lexicon.AMP: ("FLOAT", {"default": 1,
-                                        "min": 0, "max": sys.maxsize, "step": 0.01}),
-                "PHASE": ("FLOAT", {"default": 0,
-                                          "min": 0.0, "max": 1.0, "step": 0.001, }),
-                "OFFSET": ("FLOAT", {"default": 0,
-                                           "min": 0.0, "max": 1.0, "step": 0.001, }),
-                Lexicon.TIME: ("FLOAT", {"default": 0,
-                                         "min": 0, "max": sys.maxsize, "step": 0.0001}),
-                Lexicon.INVERT: ("BOOLEAN", {"default": False}),
-                "ABSOLUTE": ("BOOLEAN", {"default": False,
-                                         "tooltips": "Return the absolute value of the input"}),
+                Lexicon.WAVE: (EnumWave._member_names_, {
+                    "default": EnumWave.SIN.name}),
+                "FREQ": ("FLOAT", {
+                    "default": 1, "min": 0, "max": sys.maxsize, "step": 0.01,
+                    "tooltip": "Frequency"}),
+                Lexicon.AMP: ("FLOAT", {
+                    "default": 1, "min": 0, "max": sys.maxsize, "step": 0.01}),
+                "PHASE": ("FLOAT", {
+                    "default": 0, "min": 0.0, "max": 1.0, "step": 0.01}),
+                "OFFSET": ("FLOAT", {
+                    "default": 0, "min": 0.0, "max": 1.0, "step": 0.001}),
+                Lexicon.TIME: ("FLOAT", {
+                    "default": 0, "min": 0, "max": sys.maxsize, "step": 0.0001}),
+                Lexicon.INVERT: ("BOOLEAN", {
+                    "default": False}),
+                "ABSOLUTE": ("BOOLEAN", {
+                    "default": False,
+                    "tooltips": "Return the absolute value of the input"}),
             }
         })
         return Lexicon._parse(d)

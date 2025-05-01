@@ -150,7 +150,7 @@ Adjust the color scheme of one image to match another with the Color Match Node.
         num_colors = parse_param(kw, "VAL", EnumConvertType.INT, 255)
         flip = parse_param(kw, Lexicon.FLIP, EnumConvertType.BOOLEAN, False)
         invert = parse_param(kw, Lexicon.INVERT, EnumConvertType.BOOLEAN, False)
-        matte = parse_param(kw, "MATTE", EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
+        matte = parse_param(kw, "MATTE", EnumConvertType.VEC4, [(0, 0, 0, 255)], 0, 255)
         params = list(zip_longest_fill(pA, pB, colormap, colormatch_mode, colormatch_map, num_colors, flip, invert, matte))
         images = []
         pbar = ProgressBar(len(params))
@@ -225,8 +225,8 @@ The top-k colors ordered from most->least used as a strip, tonal palette and 3D 
                     "default": 33, "min": 3, "max": 256,
                     "tooltip":"Number of nodes to use in interpolation of full LUT (256 is every pixel)."
                 }),
-                Lexicon.WH: ("VEC2INT", {
-                    "default": (256, 256), "mij":IMAGE_SIZE_MIN,
+                Lexicon.WH: ("VEC2", {
+                    "default": (256, 256), "mij":IMAGE_SIZE_MIN, "int": True,
                     "label": [Lexicon.W, Lexicon.H]
                 }),
             }
@@ -344,14 +344,14 @@ The gradient image will be translated into a single row lookup table.
                 "MODE": (EnumScaleMode._member_names_, {
                     "default": EnumScaleMode.MATTE.name
                 }),
-                Lexicon.WH: ("VEC2INT", {
-                    "default": (512, 512), "mij":IMAGE_SIZE_MIN,
+                Lexicon.WH: ("VEC2", {
+                    "default": (512, 512), "mij":IMAGE_SIZE_MIN, "int": True,
                     "label": [Lexicon.W, Lexicon.H]
                 }),
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {
                     "default": EnumInterpolation.LANCZOS4.name
                 }),
-                "MATTE": ("VEC4INT", {
+                "MATTE": ("VEC4", {
                     "default": (0, 0, 0, 255), "rgb": True
                 })
             }

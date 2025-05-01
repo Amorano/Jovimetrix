@@ -391,20 +391,27 @@ Execute binary operations like addition, subtraction, multiplication, division, 
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                Lexicon.IN_A: (COZY_TYPE_NUMERICAL, {"default": None,
-                                        "tooltip":"Passes a raw value directly, or supplies defaults for any value inputs without connections"}),
-                Lexicon.IN_B: (COZY_TYPE_NUMERICAL, {"default": None,
-                                        "tooltip":"Passes a raw value directly, or supplies defaults for any value inputs without connections"}),
-                Lexicon.FUNC: (EnumBinaryOperation._member_names_, {"default": EnumBinaryOperation.ADD.name, "tooltip":"Arithmetic operation to perform"}),
-                Lexicon.TYPE: (names_convert, {"default": names_convert[2],
-                                            "tooltip":"Output type desired from resultant operation"}),
+                Lexicon.IN_A: (COZY_TYPE_NUMERICAL, {
+                    "default": None,
+                    "tooltip":"Passes a raw value directly, or supplies defaults for any value inputs without connections"}),
+                Lexicon.IN_B: (COZY_TYPE_NUMERICAL, {
+                    "default": None,
+                    "tooltip":"Passes a raw value directly, or supplies defaults for any value inputs without connections"}),
+                Lexicon.FUNC: (EnumBinaryOperation._member_names_, {
+                    "default": EnumBinaryOperation.ADD.name,
+                    "tooltip":"Arithmetic operation to perform"}),
+                Lexicon.TYPE: (names_convert, {
+                    "default": names_convert[2],
+                    "tooltip":"Output type desired from resultant operation"}),
                 Lexicon.FLIP: ("BOOLEAN", {"default": False}),
-                Lexicon.IN_A+Lexicon.IN_A: ("VEC4", {"default": (0,0,0,0),
-                                        "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W],
-                                        "tooltip":"value vector"}),
-                Lexicon.IN_B+Lexicon.IN_B: ("VEC4", {"default": (0,0,0,0),
-                                        "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W],
-                                        "tooltip":"value vector"}),
+                Lexicon.IN_A+Lexicon.IN_A: ("VEC4", {
+                    "default": (0,0,0,0),
+                    "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W],
+                    "tooltip":"value vector"}),
+                Lexicon.IN_B+Lexicon.IN_B: ("VEC4", {
+                    "default": (0,0,0,0),
+                    "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W],
+                    "tooltip":"value vector"}),
             }
         })
         return Lexicon._parse(d)
@@ -756,13 +763,17 @@ Manipulate strings through filtering
         d = deep_merge(d, {
             "optional": {
                 # split, join, replace, trim/lift
-                Lexicon.FUNC: (EnumConvertString._member_names_, {"default": EnumConvertString.SPLIT.name,
-                                                                  "tooltip":"Operation to perform on the input string"}),
-                Lexicon.KEY: ("STRING", {"default":"", "dynamicPrompt":False,
-                                         "tooltip":"Delimiter (SPLIT/JOIN) or string to use as search string (FIND/REPLACE)."}),
-                "REPLACE": ("STRING", {"default":"", "dynamicPrompt":False}),
-                "RANGE": ("VEC3INT", {"default":(0, -1, 1),
-                                            "tooltip":"Start, End and Step. Values will clip to the actual list size(s)."}),
+                Lexicon.FUNC: (EnumConvertString._member_names_, {
+                    "default": EnumConvertString.SPLIT.name,
+                    "tooltip":"Operation to perform on the input string"}),
+                Lexicon.KEY: ("STRING", {
+                    "default":"", "dynamicPrompt":False,
+                    "tooltip":"Delimiter (SPLIT/JOIN) or string to use as search string (FIND/REPLACE)."}),
+                "REPLACE": ("STRING", {
+                    "default":"", "dynamicPrompt":False}),
+                "RANGE": ("VEC3", {
+                    "default":(0, -1, 1),
+                    "tooltip":"Start, End and Step. Values will clip to the actual list size(s)."}),
             }
         })
         return Lexicon._parse(d)
@@ -838,16 +849,15 @@ Swap components between two vectors based on specified swizzle patterns and valu
                     "tooltip": "Replace input Green channel with target channel or constant"
                 }),
                 "SWAP_Z": (EnumSwizzle._member_names_, {
-                    "default": EnumSwizzle.A_Z.name, "step": 0.01,
+                    "default": EnumSwizzle.A_Z.name,
                     "tooltip": "Replace input Blue channel with target channel or constant"
                 }),
                 "SWAP_W": (EnumSwizzle._member_names_, {
-                    "default": EnumSwizzle.A_W.name, "step": 0.01,
+                    "default": EnumSwizzle.A_W.name,
                     "tooltip": "Replace input W channel with target channel or constant"
                 }),
                 "VECTOR": ("VEC4", {
-                    "default": (0,0,0,0),
-                    "mij": -sys.maxsize, "maj": sys.maxsize, "step": 0.01,
+                    "default": (0,0,0,0), "mij": -sys.maxsize, "maj": sys.maxsize,
                     "tooltip": "Compound value of type float, vec2, vec3 or vec4"
                 })
             }

@@ -76,18 +76,24 @@ Extract a portion of an input image or resize it. It supports various cropping m
         d = deep_merge(d, {
             "optional": {
                 Lexicon.PIXEL: (COZY_TYPE_IMAGE, {}),
-                Lexicon.FUNC: (EnumCropMode._member_names_, {"default": EnumCropMode.CENTER.name}),
-                Lexicon.XY: ("VEC2", {"default": (0, 0), "mij": 0.5, "maj": 0.5, "step": 0.01, "label": [Lexicon.X, Lexicon.Y]}),
-                Lexicon.WH: ("VEC2INT", {"default": (512, 512), "mij": IMAGE_SIZE_MIN, "label": [Lexicon.W, Lexicon.H]}),
-                "TLTR": ("VEC4", {"default": (0, 0, 0, 1),
-                                  "mij": 0, "maj": 1, "step": 0.01,
-                                  "label": [Lexicon.TOP, Lexicon.LEFT, Lexicon.TOP, Lexicon.RIGHT],
-                                  "tooltip": "Top Left - Top Right"}),
-                "BLBR": ("VEC4", {"default": (1, 0, 1, 1),
-                                  "mij": 0, "maj": 1, "step": 0.01,
-                                  "label": [Lexicon.BOTTOM, Lexicon.LEFT, Lexicon.BOTTOM, Lexicon.RIGHT],
-                                  "tooltip": "Bottom Left - Bottom Right"}),
-                "MATTE": ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True})
+                Lexicon.FUNC: (EnumCropMode._member_names_, {
+                    "default": EnumCropMode.CENTER.name}),
+                Lexicon.XY: ("VEC2", {
+                    "default": (0, 0), "mij": 0.5, "maj": 0.5,
+                    "label": [Lexicon.X, Lexicon.Y]}),
+                Lexicon.WH: ("VEC2", {
+                    "default": (512, 512), "mij": IMAGE_SIZE_MIN, "int": True,
+                    "label": [Lexicon.W, Lexicon.H]}),
+                "TLTR": ("VEC4", {
+                    "default": (0, 0, 0, 1), "mij": 0, "maj": 1,
+                    "label": [Lexicon.TOP, Lexicon.LEFT, Lexicon.TOP, Lexicon.RIGHT],
+                    "tooltip": "Top Left - Top Right"}),
+                "BLBR": ("VEC4", {
+                    "default": (1, 0, 1, 1), "mij": 0, "maj": 1,
+                    "label": [Lexicon.BOTTOM, Lexicon.LEFT, Lexicon.BOTTOM, Lexicon.RIGHT],
+                    "tooltip": "Bottom Left - Bottom Right"}),
+                "MATTE": ("VEC4", {
+                    "default": (0, 0, 0, 255), "rgb": True})
             }
         })
         return Lexicon._parse(d)
@@ -145,10 +151,15 @@ Combine multiple input images into a single image by summing their pixel values.
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                "MODE": (EnumScaleMode._member_names_, {"default": EnumScaleMode.MATTE.name}),
-                Lexicon.WH: ("VEC2INT", {"default": (512, 512), "mij":IMAGE_SIZE_MIN, "label": [Lexicon.W, Lexicon.H]}),
-                Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
-                "MATTE": ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True})
+                "MODE": (EnumScaleMode._member_names_, {
+                    "default": EnumScaleMode.MATTE.name}),
+                Lexicon.WH: ("VEC2", {
+                    "default": (512, 512), "mij":IMAGE_SIZE_MIN, "int": True,
+                    "label": [Lexicon.W, Lexicon.H]}),
+                Lexicon.SAMPLE: (EnumInterpolation._member_names_, {
+                    "default": EnumInterpolation.LANCZOS4.name}),
+                "MATTE": ("VEC4", {
+                    "default": (0, 0, 0, 255), "rgb": True})
             }
         })
         return Lexicon._parse(d)
@@ -192,14 +203,21 @@ The axis parameter allows for horizontal, vertical, or grid stacking of images, 
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                "AXIS": (EnumOrientation._member_names_, {"default": EnumOrientation.GRID.name,
-                                                                "tooltip":"Choose the direction in which to stack the images. Options include horizontal, vertical, or a grid layout"}),
-                Lexicon.STEP: ("INT", {"min": 0, "default": 1,
-                                    "tooltip":"How many images are placed before a new row starts (stride)."}),
-                "MODE": (EnumScaleMode._member_names_, {"default": EnumScaleMode.MATTE.name}),
-                Lexicon.WH: ("VEC2INT", {"default": (512, 512), "mij":IMAGE_SIZE_MIN, "label": [Lexicon.W, Lexicon.H]}),
-                Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
-                "MATTE": ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True})
+                "AXIS": (EnumOrientation._member_names_, {
+                    "default": EnumOrientation.GRID.name,
+                    "tooltip":"Choose the direction in which to stack the images. Options include horizontal, vertical, or a grid layout"}),
+                Lexicon.STEP: ("INT", {
+                    "default": 1, "min": 0,
+                    "tooltip":"How many images are placed before a new row starts (stride)."}),
+                "MODE": (EnumScaleMode._member_names_, {
+                    "default": EnumScaleMode.MATTE.name}),
+                Lexicon.WH: ("VEC2", {
+                    "default": (512, 512), "mij":IMAGE_SIZE_MIN, "int": True,
+                    "label": [Lexicon.W, Lexicon.H]}),
+                Lexicon.SAMPLE: (EnumInterpolation._member_names_, {
+                    "default": EnumInterpolation.LANCZOS4.name}),
+                "MATTE": ("VEC4", {
+                    "default": (0, 0, 0, 255), "rgb": True})
             }
         })
         return Lexicon._parse(d)
@@ -238,36 +256,47 @@ Apply various geometric transformations to images, including translation, rotati
         d = deep_merge(d, {
             "optional": {
                 Lexicon.PIXEL: (COZY_TYPE_IMAGE, {}),
-                Lexicon.MASK: (COZY_TYPE_IMAGE, {"tooltip": "Override Image mask"}),
-                Lexicon.XY: ("VEC2", {"default": (0., 0.,),
-                                      "mij": -1., "maj": 1., "step": 0.01,
-                                      "label": [Lexicon.X, Lexicon.Y]}),
-                Lexicon.ANGLE: ("FLOAT", {"default": 0., "step": 0.1}),
-                Lexicon.SIZE: ("VEC2", {"default": (1., 1.),
-                                        "mij": 0.001, "step": 0.01,
-                                        "label": [Lexicon.X, Lexicon.Y]}),
-                "TILE": ("VEC2", {"default": (1., 1.),
-                                        "mij": 1., "step": 0.01,
-                                        "label": [Lexicon.X, Lexicon.Y]}),
-                "EDGE": (EnumEdge._member_names_, {"default": EnumEdge.CLIP.name}),
-                Lexicon.MIRROR: (EnumMirrorMode._member_names_, {"default": EnumMirrorMode.NONE.name}),
-                "PIVOT": ("VEC2", {"default": (0.5, 0.5), "step": 0.005,
-                                         "label": [Lexicon.X, Lexicon.Y]}),
-                "PROJ": (EnumProjection._member_names_, {"default": EnumProjection.NORMAL.name}),
-                "TLTR": ("VEC4", {"default": (0., 0., 1., 0.),
-                                        "mij": 0., "maj": 1., "step": 0.005,
-                                        "label": [Lexicon.TOP, Lexicon.LEFT, Lexicon.TOP, Lexicon.RIGHT],
-                                        "tooltip": "Top Left - Top Right"}),
-                "BLBR": ("VEC4", {"default": (0., 1., 1., 1.),
-                                        "mij": 0., "maj": 1., "step": 0.005,
-                                        "label": [Lexicon.BOTTOM, Lexicon.LEFT, Lexicon.BOTTOM, Lexicon.RIGHT],
-                                        "tooltip": "Bottom Left - Bottom Right"}),
-                Lexicon.STRENGTH: ("FLOAT", {"default": 1, "min": 0, "step": 0.005}),
-                "MODE": (EnumScaleMode._member_names_, {"default": EnumScaleMode.MATTE.name}),
-                Lexicon.WH: ("VEC2INT", {"default": (512, 512),
-                                         "mij":IMAGE_SIZE_MIN, "label": [Lexicon.W, Lexicon.H]}),
-                Lexicon.SAMPLE: (EnumInterpolation._member_names_, {"default": EnumInterpolation.LANCZOS4.name}),
-                "MATTE": ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True})
+                Lexicon.MASK: (COZY_TYPE_IMAGE, {
+                    "tooltip": "Override Image mask"}),
+                Lexicon.XY: ("VEC2", {
+                    "default": (0., 0.,), "mij": -1., "maj": 1.,
+                    "label": [Lexicon.X, Lexicon.Y]}),
+                Lexicon.ANGLE: ("FLOAT", {
+                    "default": 0, "step": 0.01}),
+                Lexicon.SIZE: ("VEC2", {
+                    "default": (1., 1.), "mij": 0.001,
+                    "label": [Lexicon.X, Lexicon.Y]}),
+                "TILE": ("VEC2", {
+                    "default": (1., 1.), "mij": 1.,
+                    "label": [Lexicon.X, Lexicon.Y]}),
+                "EDGE": (EnumEdge._member_names_, {
+                    "default": EnumEdge.CLIP.name}),
+                Lexicon.MIRROR: (EnumMirrorMode._member_names_, {
+                    "default": EnumMirrorMode.NONE.name}),
+                "PIVOT": ("VEC2", {
+                    "default": (0.5, 0.5), "step": 0.005,
+                    "label": [Lexicon.X, Lexicon.Y]}),
+                "PROJ": (EnumProjection._member_names_, {
+                    "default": EnumProjection.NORMAL.name}),
+                "TLTR": ("VEC4", {
+                    "default": (0., 0., 1., 0.), "mij": 0., "maj": 1., "step": 0.005,
+                    "label": [Lexicon.TOP, Lexicon.LEFT, Lexicon.TOP, Lexicon.RIGHT],
+                    "tooltip": "Top Left - Top Right"}),
+                "BLBR": ("VEC4", {
+                    "default": (0., 1., 1., 1.), "mij": 0., "maj": 1., "step": 0.005,
+                    "label": [Lexicon.BOTTOM, Lexicon.LEFT, Lexicon.BOTTOM, Lexicon.RIGHT],
+                    "tooltip": "Bottom Left - Bottom Right"}),
+                Lexicon.STRENGTH: ("FLOAT", {
+                    "default": 1, "min": 0, "step": 0.005}),
+                "MODE": (EnumScaleMode._member_names_, {
+                    "default": EnumScaleMode.MATTE.name}),
+                Lexicon.WH: ("VEC2", {
+                    "default": (512, 512), "mij":IMAGE_SIZE_MIN, "int": True,
+                    "label": [Lexicon.W, Lexicon.H]}),
+                Lexicon.SAMPLE: (EnumInterpolation._member_names_, {
+                    "default": EnumInterpolation.LANCZOS4.name}),
+                "MATTE": ("VEC4", {
+                    "default": (0, 0, 0, 255), "rgb": True})
             }
         })
         return Lexicon._parse(d)
