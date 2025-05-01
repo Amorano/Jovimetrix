@@ -125,15 +125,19 @@ export function widgetHookControl(node, control_key, target, matchFloatSize=fals
     combo.callback = () => {
         const me = oldCallback?.apply(this, arguments);
         widgetHide(node, target, "-jov");
-        if (["VEC2", "VEC2INT", "COORD2D", "VEC3", "VEC3INT", "VEC4", "VEC4INT", "BOOLEAN", "INT", "FLOAT"].includes(combo.value)) {
+        //if (["VEC2", "VEC2INT", "COORD2D", "VEC3", "VEC3INT", "VEC4", "VEC4INT", "BOOLEAN", "INT", "FLOAT"].includes(combo.value)) {
+        if (["VEC2", "VEC3", "VEC4", "BOOLEAN", "INT", "FLOAT"].includes(combo.value)) {
             let type = combo.value;
             if (matchFloatSize) {
                 type = "FLOAT";
-                if (["VEC2", "VEC2INT", "COORD2D"].includes(combo.value)) {
+                // if (["VEC2", "VEC2INT", "COORD2D"].includes(combo.value)) {
+                if (["VEC2"].includes(combo.value)) {
                     type = "VEC2";
-                } else if (["VEC3", "VEC3INT"].includes(combo.value)) {
+                //} else if (["VEC3", "VEC3INT"].includes(combo.value)) {
+                } else if (["VEC3"].includes(combo.value)) {
                     type = "VEC3";
-                } else if (["VEC4", "VEC4INT"].includes(combo.value)) {
+                //} else if (["VEC4", "VEC4INT"].includes(combo.value)) {
+                } else if (["VEC4"].includes(combo.value)) {
                     type = "VEC4";
                 }
             }

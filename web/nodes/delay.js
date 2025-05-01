@@ -2,13 +2,58 @@
 
 import { api } from "../../../scripts/api.js";
 import { app } from "../../../scripts/app.js";
-import { domShowModal } from '../util/util.js'
 import { apiJovimetrix } from '../util/util_jov.js'
 import { bubbles } from '../util/util_fun.js'
 
 const _id = "DELAY (JOV) ✋🏽"
 const EVENT_JOVI_DELAY = "jovi-delay-user";
 const EVENT_JOVI_UPDATE = "jovi-delay-update";
+
+function domShowModal(innerHTML, eventCallback, timeout=null) {
+    return new Promise((resolve, reject) => {
+        const modal = document.createElement("div");
+        modal.className = "modal";
+        modal.innerHTML = innerHTML;
+        document.body.appendChild(modal);
+
+        // center
+        const modalContent = modal.querySelector(".jov-modal-content");
+        modalContent.style.position = "absolute";
+        modalContent.style.left = "50%";
+        modalContent.style.top = "50%";
+        modalContent.style.transform = "translate(-50%, -50%)";
+
+        let timeoutId;
+
+        const handleEvent = (event) => {
+            const targetId = event.target.id;
+            const result = eventCallback(targetId);
+
+            if (result != null) {
+                if (timeoutId) {
+                    clearTimeout(timeoutId);
+                    timeoutId = null;
+                }
+                modal.remove();
+                resolve(result);
+            }
+        };
+        modalContent.addEventListener("click", handleEvent);
+        modalContent.addEventListener("dblclick", handleEvent);
+
+        if (timeout) {
+            timeout *= 1000;
+            timeoutId = setTimeout(() => {
+                modal.remove();
+                reject(new Error("TIMEOUT"));
+            }, timeout);
+        }
+
+        //setTimeout(() => {
+        //    modal.dispatchEvent(new Event('tick'));
+        //}, 1000);
+    });
+}
 
 app.registerExtension({
 	name: 'jovimetrix.node.' + _id,
