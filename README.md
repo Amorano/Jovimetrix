@@ -138,6 +138,12 @@ Nodes that have been migrated:
 
 [Migrated to Jovi_GLSL](https://github.com/Amorano/Jovi_GLSL)
 
+**2025/05/01** @2.0.11:
+* unified widget_vector.js
+* new comfy_cozy support
+* auto-convert all VEC*INT -> VEC* float types
+* readability for node definitions
+
 **2025/04/24** @2.0.10:
 * `SHAPE NODE` fixed for transparency blends when using blurred masks
 
