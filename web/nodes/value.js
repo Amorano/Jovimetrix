@@ -40,15 +40,11 @@ app.registerExtension({
                 this.outputs[0].name = widget_type_name(ab_data.value);
                 this.outputs[0].type = ab_data.value;
                 let type = ab_data.value;
-                if (["LIST", "DICT", "STRING"].includes(ab_data.value)) {
-                    widgetProcessAny(widget_str, ab_data.value);
-                    widget_str.inputEl.className = "comfy-multiline-input";
-                    widget_str.computeSize = widget_str.origComputeSize;
-                } else {
-                    type = "FLOAT";
-                    if (ab_data.value.endsWith("INT")) {
-                        type = "INT";
-                    }
+                type = "FLOAT";
+                if (ab_data.value == "INT") {
+                    type = "INT";
+                } else if (ab_data.value == "BOOLEAN") {
+                    type = "BOOLEAN";
                 }
                 this.outputs[1].type = type;
                 this.outputs[2].type = type;

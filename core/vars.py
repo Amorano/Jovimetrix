@@ -37,10 +37,7 @@ Supplies raw or default values for various data types, supporting vector input w
     def INPUT_TYPES(cls) -> InputType:
         d = super().INPUT_TYPES()
 
-        typ = EnumConvertType._member_names_
-        for t in ['IMAGE', 'LATENT', 'ANY', 'MASK', 'LAYER']:
-            try: typ.pop(typ.index(t))
-            except: pass
+        typ = EnumConvertType._member_names_[:6]
 
         d = deep_merge(d, {
             "optional": {
@@ -66,13 +63,12 @@ Supplies raw or default values for various data types, supporting vector input w
                     "default": (0, 0, 0, 0), #"mij": -sys.maxsize, "maj": sys.maxsize,
                     "label": [Lexicon.X, Lexicon.Y],
                     "tooltip":"default value vector for A"}),
-                "SEED": ("INT", {"default": 0, "min": 0, "max": sys.maxsize}),
                 Lexicon.IN_B+Lexicon.IN_B: ("VEC4", {
                     "default": (1,1,1,1), #"mij": -sys.maxsize, "maj": sys.maxsize,
                     "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W],
                     "tooltip":"default value vector for B"}),
-                Lexicon.STRING: ("STRING", {
-                    "default": "", "dynamicPrompts": False, "multiline": True}),
+                "SEED": ("INT", {
+                    "default": 0, "min": 0, "max": sys.maxsize}),
             }
         })
         return Lexicon._parse(d)
@@ -95,17 +91,13 @@ Supplies raw or default values for various data types, supporting vector input w
         for idx, (raw, r_x, r_y, r_z, r_w, typ, xyzw, seed, yyzw, x_str) in enumerate(params):
             default = [x_str]
             default2 = None
-            if typ not in [EnumConvertType.STRING, EnumConvertType.LIST, \
-                        EnumConvertType.DICT,\
-                        EnumConvertType.IMAGE, EnumConvertType.LATENT, \
-                        EnumConvertType.ANY, EnumConvertType.MASK]:
-                a, b, c, d = xyzw
-                a2, b2, c2, d2 = yyzw
-                default = (a if r_x is None else r_x,
-                    b if r_y is None else r_y,
-                    c if r_z is None else r_z,
-                    d if r_w is None else r_w)
-                default2 = (a2, b2, c2, d2)
+            a, b, c, d = xyzw
+            a2, b2, c2, d2 = yyzw
+            default = (a if r_x is None else r_x,
+                b if r_y is None else r_y,
+                c if r_z is None else r_z,
+                d if r_w is None else r_w)
+            default2 = (a2, b2, c2, d2)
 
             val = parse_value(raw, typ, default)
             val2 = parse_value(default2, typ, default2)
@@ -146,15 +138,14 @@ Supplies raw or default values for various data types, supporting vector input w
 class Vector2Node(CozyBaseNode):
     NAME = "VECTOR2 (JOV)"
     CATEGORY = JOV_CATEGORY
-    RETURN_TYPES = ("VEC2", "VEC2INT", )
-    RETURN_NAMES = ("VEC2", "VEC2INT", )
+    RETURN_TYPES = ("VEC2",)
+    RETURN_NAMES = ("VEC2",)
     OUTPUT_TOOLTIPS = (
         "Vector2 with float values",
-        "Vector2 with integer values",
     )
     SORT = 290
     DESCRIPTION = """
-Outputs a VEC2 or VEC2INT.
+Outputs a VECTOR2.
 """
 
     @classmethod
@@ -163,40 +154,50 @@ Outputs a VEC2 or VEC2INT.
         d = deep_merge(d, {
             "optional": {
                 "X": (COZY_TYPE_NUMBER, {
-                    "default": 0, "min": -sys.maxsize, "max": sys.maxsize,
-                    "tooltip": "1st channel value"}),
+                    "min": -sys.maxsize, "max": sys.maxsize,
+                    "tooltip": "X channel value"}),
                 "Y": (COZY_TYPE_NUMBER, {
+                    "min": -sys.maxsize, "max": sys.maxsize,
+                    "tooltip": "Y channel value"}),
+                "A": ("FLOAT", {
                     "default": 0, "min": -sys.maxsize, "max": sys.maxsize,
-                    "tooltip": "2nd channel value"}),
+                    "tooltip": "Default X channel value"}),
+                "B": ("FLOAT", {
+                    "default": 0, "min": -sys.maxsize, "max": sys.maxsize,
+                    "tooltip": "Default Y channel value"}),
             }
         })
         return Lexicon._parse(d)
 
     def run(self, **kw) -> tuple[tuple[float, ...], tuple[int, ...]]:
-        x = parse_param(kw, "X", EnumConvertType.FLOAT, 0, -sys.maxsize, sys.maxsize)
-        y = parse_param(kw, "Y", EnumConvertType.FLOAT, 0, -sys.maxsize, sys.maxsize)
-        results = []
-        params = list(zip_longest_fill(x, y))
+        x = parse_param(kw, "X", EnumConvertType.FLOAT, None, -sys.maxsize, sys.maxsize)
+        y = parse_param(kw, "Y", EnumConvertType.FLOAT, None, -sys.maxsize, sys.maxsize)
+
+        a = parse_param(kw, "A", EnumConvertType.FLOAT, 0, -sys.maxsize, sys.maxsize)
+        b = parse_param(kw, "B", EnumConvertType.FLOAT, 0, -sys.maxsize, sys.maxsize)
+
+        result = []
+        params = list(zip_longest_fill(x, y, a, b))
         pbar = ProgressBar(len(params))
-        for idx, (x, y) in enumerate(params):
-            x = round(x, 6)
-            y = round(y, 6)
-            results.append([(x, y,), (int(x), int(y),)])
+        for idx, (x, y, a, b) in enumerate(params):
+            x = round(a, 9) if x is None else round(x, 9)
+            y = round(b, 9) if y is None else round(y, 9)
+            result.append((x, y,))
+            #resultY.append((int(x), int(y)))
             pbar.update_absolute(idx)
-        return *list(zip(*results)),
+        return result,
 
 class Vector3Node(CozyBaseNode):
     NAME = "VECTOR3 (JOV)"
     CATEGORY = JOV_CATEGORY
-    RETURN_TYPES = ("VEC3", "VEC3INT", )
-    RETURN_NAMES = ("VEC3", "VEC3INT", )
+    RETURN_TYPES = ("VEC3",)
+    RETURN_NAMES = ("VEC3",)
     OUTPUT_TOOLTIPS = (
         "Vector3 with float values",
-        "Vector3 with integer values",
     )
     SORT = 292
     DESCRIPTION = """
-Outputs a VEC3 or VEC3INT.
+Outputs a VECTOR3.
 """
 
     @classmethod

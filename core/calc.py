@@ -387,7 +387,7 @@ Execute binary operations like addition, subtraction, multiplication, division, 
 
     @classmethod
     def INPUT_TYPES(cls) -> InputType:
-        names_convert = EnumConvertType._member_names_[:10]
+        names_convert = EnumConvertType._member_names_[:6]
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
@@ -418,8 +418,9 @@ Execute binary operations like addition, subtraction, multiplication, division, 
 
     def run(self, **kw) -> tuple[bool]:
         results = []
-        A = parse_param(kw, Lexicon.IN_A, EnumConvertType.ANY, [0])
-        B = parse_param(kw, Lexicon.IN_B, EnumConvertType.ANY, [0])
+        A = parse_param(kw, Lexicon.IN_A, EnumConvertType.ANY, None)
+        print('a', kw[Lexicon.IN_A], A)
+        B = parse_param(kw, Lexicon.IN_B, EnumConvertType.ANY, None)
         a_xyzw = parse_param(kw, Lexicon.IN_A+Lexicon.IN_A, EnumConvertType.VEC4, [(0, 0, 0, 0)])
         b_xyzw = parse_param(kw, Lexicon.IN_B+Lexicon.IN_B, EnumConvertType.VEC4, [(0, 0, 0, 0)])
         op = parse_param(kw, Lexicon.FUNC, EnumBinaryOperation, EnumBinaryOperation.ADD.name)
@@ -430,19 +431,24 @@ Execute binary operations like addition, subtraction, multiplication, division, 
         for idx, (A, B, a_xyzw, b_xyzw, op, typ, flip) in enumerate(params):
             size = min(3, max(0 if not isinstance(A, (list,)) else len(A), 0 if not isinstance(B, (list,)) else len(B)))
             best_type = [EnumConvertType.FLOAT, EnumConvertType.VEC2, EnumConvertType.VEC3, EnumConvertType.VEC4][size]
+            print(type(A), type(B), A, B, a_xyzw)
             val_a = parse_value(A, best_type, a_xyzw)
+            print(val_a)
+            return
             val_a = parse_value(val_a, EnumConvertType.VEC4, a_xyzw)
             val_b = parse_value(B, best_type, b_xyzw)
             val_b = parse_value(val_b, EnumConvertType.VEC4, b_xyzw)
 
-            val_a = parse_value(A, EnumConvertType.VEC4, A if A is not None else a_xyzw)
-            val_b = parse_value(B, EnumConvertType.VEC4, B if B is not None else b_xyzw)
+            print(val_a, val_b)
+
+            #val_a = parse_value(A, EnumConvertType.VEC4, A if A is not None else a_xyzw)
+            #val_b = parse_value(B, EnumConvertType.VEC4, B if B is not None else b_xyzw)
 
             if flip:
                 val_a, val_b = val_b, val_a
-            size = max(1, int(typ.value / 10))
-            val_a = val_a[:size]
-            val_b = val_b[:size]
+            #size = max(1, int(typ.value / 10))
+            val_a = val_a[:size+1]
+            val_b = val_b[:size+1]
 
             match op:
                 # VECTOR
@@ -662,7 +668,7 @@ Additionally, you can specify the easing function (EASE) and the desired output 
     @classmethod
     def INPUT_TYPES(cls) -> InputType:
         d = super().INPUT_TYPES()
-        names_convert = EnumConvertType._member_names_[:10]
+        names_convert = EnumConvertType._member_names_[:6]
         d = deep_merge(d, {
             "optional": {
                 Lexicon.IN_A: (COZY_TYPE_FULL, {
@@ -831,7 +837,7 @@ Swap components between two vectors based on specified swizzle patterns and valu
     @classmethod
     def INPUT_TYPES(cls) -> InputType:
         d = super().INPUT_TYPES()
-        names_convert = EnumConvertType._member_names_[3:10]
+        names_convert = EnumConvertType._member_names_[3:6]
         d = deep_merge(d, {
             "optional": {
                 Lexicon.IN_A: (COZY_TYPE_NUMERICAL, {}),
@@ -856,7 +862,7 @@ Swap components between two vectors based on specified swizzle patterns and valu
                     "default": EnumSwizzle.A_W.name,
                     "tooltip": "Replace input W channel with target channel or constant"
                 }),
-                "VECTOR": ("VEC4", {
+                "VEC": ("VEC4", {
                     "default": (0,0,0,0), "mij": -sys.maxsize, "maj": sys.maxsize,
                     "tooltip": "Compound value of type float, vec2, vec3 or vec4"
                 })

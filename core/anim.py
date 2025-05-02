@@ -153,6 +153,69 @@ A timer and frame counter, emitting pulses or signals based on time intervals. I
             comfy_api_post("jovi-tick", ident, {"i": self.__frame})
         return (results.frame, results.lin, results.fixed, results.trigger, results.batch,)
 
+class TickSimpleNode(CozyBaseNode):
+    NAME = "TICK SIMPLE (JOV) ⏱"
+    CATEGORY = JOV_CATEGORY
+    RETURN_TYPES = ("FLOAT", "FLOAT")
+    RETURN_NAMES = ("VALUE", "LINEAR")
+    OUTPUT_IS_LIST = (True, True,)
+    OUTPUT_TOOLTIPS = (
+        "List of values",
+        "Normalized values (0..1)",
+    )
+    SORT = 55
+    DESCRIPTION = """
+Value generator with normalized values based on based on time interval.
+"""
+
+    @classmethod
+    def INPUT_TYPES(cls) -> InputType:
+        d = super().INPUT_TYPES()
+        d = deep_merge(d, {
+            "optional": {
+                # forces a MOD on CYCLE
+                "VALUE": ("INT", {
+                    "default": 0, "min": -sys.maxsize, "max": sys.maxsize,
+                    "tooltip": "Starting value of the tick"
+                }),
+                # interval between frames
+                "STEP": ("FLOAT", {
+                    "default": 0, "min": -sys.maxsize, "max": sys.maxsize, "precision": 3,
+                    "tooltip": "Amount to add to each frame per tick"
+                }),
+                "LOOP": ("INT", {
+                    "default": 0, "min": -sys.maxsize, "max": sys.maxsize,
+                    "tooltip": "What value before looping starts. 0 means linear playback (no loop point)"
+                }),
+                # how many frames to dump....
+                "BATCH": ("INT", {
+                    "default": 1, "min": 1, "max": 1500,
+                    "tooltip": "Total frames wanted"
+                }),
+            }
+        })
+        return Lexicon._parse(d)
+
+    def run(self, **kw) -> tuple[int, float|int]:
+        value = parse_param(kw, "VALUE", EnumConvertType.INT, 0, -sys.maxsize, sys.maxsize)[0]
+        step = parse_param(kw, "STEP", EnumConvertType.FLOAT, 0, -sys.maxsize, sys.maxsize)[0]
+        loop = parse_param(kw, "LOOP", EnumConvertType.INT, 0, -sys.maxsize, sys.maxsize)[0]
+        batch = parse_param(kw, "BATCH", EnumConvertType.INT, 1, 1, 1500)[0]
+        if loop == 0:
+            loop = batch
+
+        results = []
+        current = float(value)
+        step = step or 1.0
+        pbar = ProgressBar(batch)
+        for idx in range(0, batch):
+            wrapped = (current - value) % loop + value if loop else current
+            lin = (wrapped - value) / loop if loop else 0
+            results.append([round(wrapped, 6), round(lin, 6)])
+            current += step
+            pbar.update_absolute(idx)
+        return *list(zip(*results)),
+
 class WaveGeneratorNode(CozyBaseNode):
     NAME = "WAVE GEN (JOV) 🌊"
     NAME_PRETTY = "WAVE GEN (JOV) 🌊"
