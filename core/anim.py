@@ -19,9 +19,6 @@ from cozy_comfyui.node import \
 from cozy_comfyui.api import \
     comfy_api_post, parse_reset
 
-from .. import \
-    Lexicon
-
 from ..sup.anim import \
     EnumWave, \
     wave_op
@@ -44,7 +41,7 @@ class TickNode(CozyBaseNode):
     NAME = "TICK (JOV) ⏱"
     CATEGORY = JOV_CATEGORY
     RETURN_TYPES = ("INT", "FLOAT", "FLOAT", COZY_TYPE_ANY, COZY_TYPE_ANY,)
-    RETURN_NAMES = ("VAL", Lexicon.LINEAR, Lexicon.FPS, Lexicon.TRIGGER, "BATCH",)
+    RETURN_NAMES = ("VAL", "LINEAR", "FPS", "TRIGGER", "BATCH",)
     OUTPUT_IS_LIST = (True, False, False, False, False,)
     OUTPUT_TOOLTIPS = (
         "Current value for the configured tick as ComfyUI List",
@@ -64,7 +61,7 @@ A timer and frame counter, emitting pulses or signals based on time intervals. I
         d = deep_merge(d, {
             "optional": {
                 # data to pass on a pulse of the loop
-                Lexicon.TRIGGER: (COZY_TYPE_ANY, {
+                "TRIGGER": (COZY_TYPE_ANY, {
                     "default": None,
                     "tooltip":"Output to send when beat (BPM setting) is hit"
                 }),
@@ -73,11 +70,11 @@ A timer and frame counter, emitting pulses or signals based on time intervals. I
                     "default": 0, "min": 0, "max": sys.maxsize,
                     "tooltip": "the current frame number of the tick"
                 }),
-                Lexicon.LOOP: ("INT", {
+                "LOOP": ("INT", {
                     "default": 0, "min": 0, "max": sys.maxsize,
                     "tooltip": "number of frames before looping starts. 0 means continuous playback (no loop point)"
                 }),
-                Lexicon.FPS: ("INT", {
+                "FPS": ("INT", {
                     "default": 24, "min": 1,
                     "tooltip": "Fixed frame step rate based on FPS (1/FPS)"
                 }),
@@ -85,25 +82,26 @@ A timer and frame counter, emitting pulses or signals based on time intervals. I
                     "default": 120, "min": 1, "max": 60000,
                     "tooltip": "BPM trigger rate to send the input. If input is empty, TRUE is sent on trigger"
                 }),
-                Lexicon.NOTE: ("INT", {
+                "NOTE": ("INT", {
                     "default": 4, "min": 1, "max": 256,
-                                    "tooltip":"Number of beats per measure. Quarter note is 4, Eighth is 8, 16 is 16, etc."}),
+                    "tooltip":"Number of beats per measure. Quarter note is 4, Eighth is 8, 16 is 16, etc."}),
                 # stick the current "count"
-                Lexicon.WAIT: ("BOOLEAN", {
+                "HOLD": ("BOOLEAN", {
                     "default": False}),
                 # manual total = 0
-                "RESET": ("BOOLEAN", {"default": False}),
+                "RESET": ("BOOLEAN", {
+                    "default": False}),
                 # how many frames to dump....
                 "BATCH": ("INT", {
                     "default": 1, "min": 1, "max": 32767,
                     "tooltip": "Number of frames wanted"
                 }),
-                Lexicon.STEP: ("INT", {
+                "STEP": ("INT", {
                     "default": 0, "min": 0, "max": sys.maxsize
                 }),
             }
         })
-        return Lexicon._parse(d)
+        return d
 
     def __init__(self, *arg, **kw) -> None:
         super().__init__(*arg, **kw)
@@ -111,17 +109,17 @@ A timer and frame counter, emitting pulses or signals based on time intervals. I
         self.__frame = 0
 
     def run(self, ident, **kw) -> tuple[int, float, float, Any]:
-        passthru = parse_param(kw, Lexicon.TRIGGER, EnumConvertType.ANY, None)[0]
-        stride = parse_param(kw, Lexicon.STEP, EnumConvertType.INT, 0, 0, sys.maxsize)[0]
-        loop = parse_param(kw, Lexicon.LOOP, EnumConvertType.INT, 0, 0, sys.maxsize)[0]
+        passthru = parse_param(kw, "TRIGGER", EnumConvertType.ANY, None)[0]
+        stride = parse_param(kw, "STEP", EnumConvertType.INT, 0, 0, sys.maxsize)[0]
+        loop = parse_param(kw, "LOOP", EnumConvertType.INT, 0, 0, sys.maxsize)[0]
         self.__frame = parse_param(kw, "VALUE", EnumConvertType.INT, self.__frame, 0, sys.maxsize)[0]
         if loop != 0:
             self.__frame %= loop
         # start_frame = max(0, start_frame)
-        hold = parse_param(kw, Lexicon.WAIT, EnumConvertType.BOOLEAN, False)[0]
-        fps = parse_param(kw, Lexicon.FPS, EnumConvertType.INT, 24, 1)[0]
+        hold = parse_param(kw, "HOLD", EnumConvertType.BOOLEAN, False)[0]
+        fps = parse_param(kw, "FPS", EnumConvertType.INT, 24, 1)[0]
         bpm = parse_param(kw, "BPM", EnumConvertType.INT, 120, 1)[0]
-        divisor = parse_param(kw, Lexicon.NOTE, EnumConvertType.INT, 4, 1)[0]
+        divisor = parse_param(kw, "NOTE", EnumConvertType.INT, 4, 1)[0]
         beat = 60. / max(1., bpm) / divisor
         batch = parse_param(kw, "BATCH", EnumConvertType.INT, 1, 1)[0]
         step_fps = 1. / max(1., float(fps))
@@ -194,7 +192,7 @@ Value generator with normalized values based on based on time interval.
                 }),
             }
         })
-        return Lexicon._parse(d)
+        return d
 
     def run(self, **kw) -> tuple[int, float|int]:
         value = parse_param(kw, "VALUE", EnumConvertType.INT, 0, -sys.maxsize, sys.maxsize)[0]
@@ -221,7 +219,7 @@ class WaveGeneratorNode(CozyBaseNode):
     NAME_PRETTY = "WAVE GEN (JOV) 🌊"
     CATEGORY = JOV_CATEGORY
     RETURN_TYPES = ("FLOAT", "INT", )
-    RETURN_NAMES = (Lexicon.FLOAT, Lexicon.INT, )
+    RETURN_NAMES = ("FLOAT", "INT", )
     SORT = 90
     DESCRIPTION = """
 Produce waveforms like sine, square, or sawtooth with adjustable frequency, amplitude, phase, and offset. It's handy for creating oscillating patterns or controlling animation dynamics. This node emits both continuous floating-point values and integer representations of the generated waves.
@@ -232,36 +230,37 @@ Produce waveforms like sine, square, or sawtooth with adjustable frequency, ampl
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                Lexicon.WAVE: (EnumWave._member_names_, {
+                "WAVE": (EnumWave._member_names_, {
                     "default": EnumWave.SIN.name}),
                 "FREQ": ("FLOAT", {
                     "default": 1, "min": 0, "max": sys.maxsize, "step": 0.01,
                     "tooltip": "Frequency"}),
-                Lexicon.AMP: ("FLOAT", {
-                    "default": 1, "min": 0, "max": sys.maxsize, "step": 0.01}),
+                "AMP": ("FLOAT", {
+                    "default": 1, "min": 0, "max": sys.maxsize, "step": 0.01,
+                    "tooltip": "Amplitude"}),
                 "PHASE": ("FLOAT", {
                     "default": 0, "min": 0.0, "max": 1.0, "step": 0.01}),
                 "OFFSET": ("FLOAT", {
                     "default": 0, "min": 0.0, "max": 1.0, "step": 0.001}),
-                Lexicon.TIME: ("FLOAT", {
+                "TIME": ("FLOAT", {
                     "default": 0, "min": 0, "max": sys.maxsize, "step": 0.0001}),
-                Lexicon.INVERT: ("BOOLEAN", {
+                "INVERT": ("BOOLEAN", {
                     "default": False}),
                 "ABSOLUTE": ("BOOLEAN", {
                     "default": False,
                     "tooltips": "Return the absolute value of the input"}),
             }
         })
-        return Lexicon._parse(d)
+        return d
 
     def run(self, **kw) -> tuple[float, int]:
-        op = parse_param(kw, Lexicon.WAVE, EnumWave, EnumWave.SIN.name)
+        op = parse_param(kw, "WAVE", EnumWave, EnumWave.SIN.name)
         freq = parse_param(kw, "FREQ", EnumConvertType.FLOAT, 1., 0.000001, sys.maxsize)
-        amp = parse_param(kw, Lexicon.AMP, EnumConvertType.FLOAT, 1., 0., sys.maxsize)
+        amp = parse_param(kw, "AMP", EnumConvertType.FLOAT, 1., 0., sys.maxsize)
         phase = parse_param(kw, "PHASE", EnumConvertType.FLOAT, 0.)
         shift = parse_param(kw, "OFFSET", EnumConvertType.FLOAT, 0.)
-        delta_time = parse_param(kw, Lexicon.TIME, EnumConvertType.FLOAT, 0., 0., sys.maxsize)
-        invert = parse_param(kw, Lexicon.INVERT, EnumConvertType.BOOLEAN, False)
+        delta_time = parse_param(kw, "TIME", EnumConvertType.FLOAT, 0., 0., sys.maxsize)
+        invert = parse_param(kw, "INVERT", EnumConvertType.BOOLEAN, False)
         absolute = parse_param(kw, "ABSOLUTE", EnumConvertType.BOOLEAN, False)
         results = []
         params = list(zip_longest_fill(op, freq, amp, phase, shift, delta_time, invert, absolute))

@@ -1,12 +1,9 @@
 /**/
 
-/*
-parse a json into a graph
-const workflow = JSON.parse(json);
-await this.loadGraphData(workflow);
-*/
+import { app } from "../../scripts/app.js"
+import { api } from "../../scripts/api.js"
 
-import { app } from "../../../scripts/app.js"
+const _REGEX = /\d/;
 
 export const TypeSlot = {
     Input: 1,
@@ -17,6 +14,193 @@ export const TypeSlotEvent = {
     Connect: true,
     Disconnect: false,
 };
+
+export async function apiJovimetrix(id, cmd, data=null, route="message", ) {
+    try {
+        const response = await api.fetchApi(`/cozy_comfyui/${route}`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                id: id,
+                cmd: cmd,
+                data: data
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error(`Error: ${response.status} - ${response.statusText}`);
+        }
+        return response;
+
+    } catch (error) {
+        console.error("API call to Jovimetrix failed:", error);
+        throw error; // or return { success: false, message: error.message }
+    }
+}
+
+//export const widgetFind = (widgets, name) => widgets.find(w => w.name == name);
+
+function widgetShowVector(widget, values={}, type) {
+    if (["FLOAT"].includes(type)) {
+        type = "VEC1";
+    } else if (["INT"].includes(type)) {
+        type = "VEC1INT";
+    } else if (type == "BOOLEAN") {
+        type = "toggle";
+    }
+
+    if (type !== undefined) {
+        widget.type = type;
+    }
+
+    if (widget.value === undefined) {
+        widget.value = widget.options?.default || {};
+    }
+
+    // convert widget.value to pure dict/object
+    if (Array.isArray(widget.value)) {
+        let new_val = {};
+        for (let i = 0; i < widget.value.length; i++) {
+            new_val[i] = widget.value[i];
+        }
+        widget.value = new_val;
+    }
+
+    widget.options.step = 1;
+    widget.options.round = 1;
+    widget.options.precision = 0;
+    if (widget.type != 'toggle') {
+        let size = 1;
+        const match = _REGEX.exec(widget.type);
+        if (match) {
+            size = match[0];
+        }
+        if (!widget.type.endsWith('INT') && widget.type != 'BOOLEAN') {
+            widget.options.step = 0.01;
+            widget.options.round = 0.001;
+            widget.options.precision = 3;
+        }
+
+        widget.value = {};
+        for (let i = 0; i < size; i++) {
+            widget.value[i] = (widget.options.precision == 0) ? Number(values[i]) : parseFloat(values[i]).toFixed(widget.options.precision);
+            //widget.value[i] = !widget.type.endsWith('INT') ? Math.round(values[i]) : Number(values[i]);
+        }
+    } else {
+        widget.value = values[0] ? true : false;
+    }
+}
+
+export function widgetOutputHookType(node, control_key, match_output=0) {
+    const combo = node.widgets.find(w => w.name == control_key);
+    const output = node.outputs[match_output];
+
+    if (!output || !combo) {
+        throw new Error("Required widgets not found");
+    }
+
+    const oldCallback = combo.callback;
+    combo.callback = () => {
+        const me = oldCallback?.apply(this, arguments);
+        node.outputs[match_output].name = combo.value;
+        node.outputs[match_output].type = combo.value;
+        return me;
+    }
+    setTimeout(() => { combo.callback(); }, 10);
+}
+
+/*
+* matchFloatSize forces the target to be float[n] based on its type size
+*/
+export function widgetHookAB(node, control_key, output_type_match=true) {
+
+    const AA = node.widgets.find(w => w.name == 'AA');
+    const BB = node.widgets.find(w => w.name == 'BB');
+    const combo = node.widgets.find(w => w.name == control_key);
+
+    if (combo === undefined) {
+        return;
+    }
+
+    widgetHookControl(node, control_key, AA);
+    widgetHookControl(node, control_key, BB);
+    if (output_type_match) {
+        widgetOutputHookType(node, control_key);
+    }
+    setTimeout(() => { combo.callback(); }, 5);
+
+    return combo;
+};
+
+/*
+* matchFloatSize forces the target to be float[n] based on its type size
+*/
+export function widgetHookControl(node, control_key, target, matchFloatSize=false) {
+    const initializeTrack = (widget) => {
+        const track = {};
+        for (let i = 0; i < 4; i++) {
+            track[i] = widget.options?.default[i];
+        }
+        Object.assign(track, widget.value);
+        return track;
+    };
+
+    const { widgets } = node;
+    const combo = widgets.find(w => w.name == control_key);
+
+    if (!target || !combo) {
+        throw new Error("Required widgets not found");
+    }
+
+    const data = {
+        //track_xyzw: target.options?.default, //initializeTrack(target),
+        track_xyzw: initializeTrack(target),
+        target,
+        combo
+    };
+
+    const oldCallback = combo.callback;
+    combo.callback = () => {
+        const me = oldCallback?.apply(this, arguments);
+        //widgetHide(node, target, "-jov");
+        //if (["VEC2", "VEC2INT", "COORD2D", "VEC3", "VEC3INT", "VEC4", "VEC4INT", "BOOLEAN", "INT", "FLOAT"].includes(combo.value)) {
+        if (["VEC2", "VEC3", "VEC4", "BOOLEAN", "INT", "FLOAT"].includes(combo.value)) {
+            let type = combo.value;
+            if (matchFloatSize) {
+                type = "FLOAT";
+                // if (["VEC2", "VEC2INT", "COORD2D"].includes(combo.value)) {
+                if (["VEC2"].includes(combo.value)) {
+                    type = "VEC2";
+                //} else if (["VEC3", "VEC3INT"].includes(combo.value)) {
+                } else if (["VEC3"].includes(combo.value)) {
+                    type = "VEC3";
+                //} else if (["VEC4", "VEC4INT"].includes(combo.value)) {
+                } else if (["VEC4"].includes(combo.value)) {
+                    type = "VEC4";
+                }
+            }
+            widgetShowVector(target, data.track_xyzw, type);
+        }
+        nodeFitHeight(node);
+        return me;
+    }
+
+    target.options.menu = false;
+    target.callback = () => {
+        if (target.type == "toggle") {
+            data.track_xyzw[0] = target.value ? 1 : 0;
+        } else {
+            Object.keys(target.value).forEach((key) => {
+                data.track_xyzw[key] = target.value[key];
+            });
+        }
+    };
+
+    return data;
+}
+
 
 export const nodeCleanup = (node) => {
     if (!node.widgets || !node.widgets?.[Symbol.iterator]) {

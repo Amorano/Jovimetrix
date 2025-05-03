@@ -1,10 +1,10 @@
 /**/
 
 import { app } from "../../../scripts/app.js"
-import { nodeAddDynamic } from '../util/util_node.js'
+import { nodeAddDynamic } from '../util.js'
 
 const _id = "FLATTEN (JOV) ⬇️"
-const _prefix = '👾'
+const _prefix = 'IMAGE'
 
 app.registerExtension({
 	name: 'jovimetrix.node.' + _id,

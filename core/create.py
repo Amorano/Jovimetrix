@@ -1,6 +1,5 @@
 """ Jovimetrix - Creation """
 
-import torch
 import numpy as np
 from PIL import ImageFont
 from skimage.filters import gaussian
@@ -9,12 +8,12 @@ from comfy.utils import ProgressBar
 
 from cozy_comfyui import \
     IMAGE_SIZE_MIN, \
-    InputType, EnumConvertType, RGBAMaskType, TensorType, \
+    InputType, EnumConvertType, RGBAMaskType, \
     deep_merge, parse_param, zip_longest_fill
 
 from cozy_comfyui.node import \
     COZY_TYPE_IMAGE, \
-    CozyBaseNode, CozyImageNode
+    CozyImageNode
 
 from cozy_comfyui.image import \
     EnumImageType
@@ -23,19 +22,15 @@ from cozy_comfyui.image.misc import \
     image_stack
 
 from cozy_comfyui.image.convert import \
-    image_matte, image_mask_add, image_convert, \
+    image_mask_add, image_convert, \
     pil_to_cv, cv_to_tensor, cv_to_tensor_full, tensor_to_cv
-
-from .. import \
-    Lexicon
 
 from ..sup.image.channel import \
     channel_solid
 
 from ..sup.image.compose import \
     EnumShapes, \
-    image_blend, shape_ellipse, shape_polygon, shape_quad, image_mask_binary, \
-    image_stereogram
+    image_blend, shape_ellipse, shape_polygon, shape_quad, image_mask_binary
 
 from ..sup.image.adjust import \
     EnumEdge, EnumScaleMode, EnumInterpolation, \
@@ -63,31 +58,34 @@ Generate a constant image or mask of a specified size and color. It can be used 
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                Lexicon.PIXEL: (COZY_TYPE_IMAGE, {
+                "IMAGE": (COZY_TYPE_IMAGE, {
                     "tooltip":"Optional Image to Matte with Selected Color"}),
-                Lexicon.MASK: (COZY_TYPE_IMAGE, {
+                "MASK": (COZY_TYPE_IMAGE, {
                     "tooltip":"Override Image mask"}),
-                Lexicon.RGBA_A: ("VEC4", {
+                "COLOR": ("VEC4", {
                     "default": (0, 0, 0, 255), "rgb": True,
                     "tooltip": "Constant Color to Output"}),
-                "MODE": (EnumScaleMode._member_names_, {"default": EnumScaleMode.MATTE.name}),
-                Lexicon.WH: ("VEC2", {
+                "MODE": (EnumScaleMode._member_names_, {
+                    "default": EnumScaleMode.MATTE.name,
+                    "tooltip": "If the image should be resized to fit within given dimensions or keep the original size"}),
+                "WH": ("VEC2", {
                     "default": (512, 512), "int": True,
-                    "label": [Lexicon.W, Lexicon.H],
+                    "label": ["W", "H"],
                     "tooltip": "Desired Width and Height of the Color Output"}),
-                Lexicon.SAMPLE: (EnumInterpolation._member_names_, {
-                    "default": EnumInterpolation.LANCZOS4.name}),
+                "SAMPLE": (EnumInterpolation._member_names_, {
+                    "default": EnumInterpolation.LANCZOS4.name,
+                    "tooltip": "Sampling method for resizing images"})
             }
         })
-        return Lexicon._parse(d)
+        return d
 
     def run(self, **kw) -> RGBAMaskType:
-        pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
-        mask = parse_param(kw, Lexicon.MASK, EnumConvertType.IMAGE, None)
-        matte = parse_param(kw, Lexicon.RGBA_A, EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], IMAGE_SIZE_MIN)
+        pA = parse_param(kw, "IMAGE", EnumConvertType.IMAGE, None)
+        mask = parse_param(kw, "MASK", EnumConvertType.IMAGE, None)
+        matte = parse_param(kw, "COLOR", EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
+        wihi = parse_param(kw, "WH", EnumConvertType.VEC2INT, [(512, 512)], IMAGE_SIZE_MIN)
         mode = parse_param(kw, "MODE", EnumScaleMode, EnumScaleMode.MATTE.name)
-        sample = parse_param(kw, Lexicon.SAMPLE, EnumInterpolation, EnumInterpolation.LANCZOS4.name)
+        sample = parse_param(kw, "SAMPLE", EnumInterpolation, EnumInterpolation.LANCZOS4.name)
         images = []
         params = list(zip_longest_fill(pA, mask, matte, wihi, mode, sample))
         pbar = ProgressBar(len(params))
@@ -127,21 +125,23 @@ Create n-sided polygons. These shapes can be customized by adjusting parameters 
                     "default": EnumShapes.CIRCLE.name}),
                 "SIDES": ("INT", {
                     "default": 3, "min": 3, "max": 100}),
-                Lexicon.RGBA_A: ("VEC4", {
+                "COLOR": ("VEC4", {
                     "default": (255, 255, 255, 255), "rgb": True,
                     "tooltip": "Main Shape Color"}),
                 "MATTE": ("VEC4", {
                     "default": (0, 0, 0, 255), "rgb": True,
                     "tooltip": "Background Color"}),
-                Lexicon.WH: ("VEC2", {
+                "WH": ("VEC2", {
                     "default": (256, 256), "mij":IMAGE_SIZE_MIN, "int": True,
-                    "label": [Lexicon.W, Lexicon.H]}),
-                Lexicon.XY: ("VEC2", {
-                    "default": (0, 0,), "label": [Lexicon.X, Lexicon.Y]}),
-                Lexicon.ANGLE: ("FLOAT", {
-                    "default": 0, "min": -180, "max": 180, "step": 0.01}),
-                Lexicon.SIZE: ("VEC2", {
-                    "default": (1., 1.), "label": [Lexicon.X, Lexicon.Y]}),
+                    "label": ["W", "H"],
+                    "tooltip": "Width and Height"}),
+                "XY": ("VEC2", {
+                    "default": (0, 0,), "label": ["X", "Y"]}),
+                "ANGLE": ("FLOAT", {
+                    "default": 0, "min": -180, "max": 180, "step": 0.01,
+                    "tooltip": "Rotation Angle"}),
+                "SIZE": ("VEC2", {
+                    "default": (1., 1.), "label": ["X", "Y"]}),
                 "EDGE": (EnumEdge._member_names_, {
                     "default": EnumEdge.CLIP.name}),
                 "BLUR": ("FLOAT", {
@@ -149,17 +149,17 @@ Create n-sided polygons. These shapes can be customized by adjusting parameters 
                     "tooltip": "Edge blur amount (Gaussian blur)"}),
             }
         })
-        return Lexicon._parse(d)
+        return d
 
     def run(self, **kw) -> RGBAMaskType:
         shape = parse_param(kw, "SHAPE", EnumShapes, EnumShapes.CIRCLE.name)
         sides = parse_param(kw, "SIDES", EnumConvertType.INT, 3, 3, 100)
-        angle = parse_param(kw, Lexicon.ANGLE, EnumConvertType.FLOAT, 0)
+        angle = parse_param(kw, "ANGLE", EnumConvertType.FLOAT, 0)
         edge = parse_param(kw, "EDGE", EnumEdge, EnumEdge.CLIP.name)
-        offset = parse_param(kw, Lexicon.XY, EnumConvertType.VEC2, [(0, 0)])
-        size = parse_param(kw, Lexicon.SIZE, EnumConvertType.VEC2, [(1, 1)], zero=0.001)
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(256, 256)], IMAGE_SIZE_MIN)
-        color = parse_param(kw, Lexicon.RGBA_A, EnumConvertType.VEC4INT, [(255, 255, 255, 255)], 0, 255)
+        offset = parse_param(kw, "XY", EnumConvertType.VEC2, [(0, 0)])
+        size = parse_param(kw, "SIZE", EnumConvertType.VEC2, [(1, 1)], zero=0.001)
+        wihi = parse_param(kw, "WH", EnumConvertType.VEC2INT, [(256, 256)], IMAGE_SIZE_MIN)
+        color = parse_param(kw, "COLOR", EnumConvertType.VEC4INT, [(255, 255, 255, 255)], 0, 255)
         matte = parse_param(kw, "MATTE", EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
         blur = parse_param(kw, "BLUR", EnumConvertType.FLOAT, 0)
         params = list(zip_longest_fill(shape, sides, offset, angle, edge, size, wihi, color, matte, blur))
@@ -199,99 +199,6 @@ Create n-sided polygons. These shapes can be customized by adjusting parameters 
             pbar.update_absolute(idx)
         return image_stack(images)
 
-class StereogramNode(CozyImageNode):
-    NAME = "STEREOGRAM (JOV) 📻"
-    CATEGORY = JOV_CATEGORY
-    DESCRIPTION = """
-Generates false perception 3D images from 2D input. Set tile divisions, noise, gamma, and shift parameters to control the stereogram's appearance.
-"""
-
-    @classmethod
-    def INPUT_TYPES(cls) -> InputType:
-        d = super().INPUT_TYPES()
-        d = deep_merge(d, {
-            "optional": {
-                Lexicon.PIXEL: (COZY_TYPE_IMAGE, {}),
-                "DEPTH": (COZY_TYPE_IMAGE, {
-                    "tooltip": "Grayscale image representing a depth map"
-                }),
-                "TILE": ("INT", {
-                    "default": 8, "min": 1}),
-                "NOISE": ("FLOAT", {
-                    "default": 0.33, "min": 0, "max": 1, "step": 0.01}),
-                Lexicon.GAMMA: ("FLOAT", {
-                    "default": 0.33, "min": 0, "max": 1, "step": 0.01}),
-                "SHIFT": ("FLOAT", {
-                    "default": 1., "min": -1, "max": 1, "step": 0.01}),
-                Lexicon.INVERT: ("BOOLEAN", {
-                    "default": False}),
-            }
-        })
-        return Lexicon._parse(d)
-
-    def run(self, **kw) -> RGBAMaskType:
-        pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
-        depth = parse_param(kw, "DEPTH", EnumConvertType.IMAGE, None)
-        divisions = parse_param(kw, "TILE", EnumConvertType.INT, 1, 1, 8)
-        noise = parse_param(kw, "NOISE", EnumConvertType.FLOAT, 1, 0)
-        gamma = parse_param(kw, Lexicon.GAMMA, EnumConvertType.FLOAT, 1, 0)
-        shift = parse_param(kw, "SHIFT", EnumConvertType.FLOAT, 0, 1, -1)
-        invert = parse_param(kw, Lexicon.INVERT, EnumConvertType.BOOLEAN, False)
-        params = list(zip_longest_fill(pA, depth, divisions, noise, gamma, shift, invert))
-        images = []
-        pbar = ProgressBar(len(params))
-        for idx, (pA, depth, divisions, noise, gamma, shift, invert) in enumerate(params):
-            pA = channel_solid(chan=EnumImageType.BGRA) if pA is None else tensor_to_cv(pA)
-            h, w = pA.shape[:2]
-            depth = channel_solid(w, h, chan=EnumImageType.BGRA) if depth is None else tensor_to_cv(depth)
-            if invert:
-                depth = image_invert(depth, 1.0)
-            pA = image_stereogram(pA, depth, divisions, noise, gamma, shift)
-            images.append(cv_to_tensor_full(pA))
-            pbar.update_absolute(idx)
-        return image_stack(images)
-
-class StereoscopicNode(CozyBaseNode):
-    NAME = "STEREOSCOPIC (JOV) 🕶️"
-    CATEGORY = JOV_CATEGORY
-    RETURN_TYPES = ("IMAGE", )
-    RETURN_NAMES = (Lexicon.IMAGE, )
-    DESCRIPTION = """
-Simulates depth perception in images by generating stereoscopic views. It accepts an optional input image for color matte. Adjust baseline and focal length for customized depth effects.
-"""
-    @classmethod
-    def INPUT_TYPES(cls) -> InputType:
-        d = super().INPUT_TYPES()
-        d = deep_merge(d, {
-            "optional": {
-                Lexicon.PIXEL: (COZY_TYPE_IMAGE, {
-                    "tooltip":"Optional Image to Matte with Selected Color"}),
-                Lexicon.INT: ("FLOAT", {
-                    "default": 0.1, "min": 0, "max": 1, "step": 0.01,
-                    "tooltip":"Baseline"}),
-                Lexicon.FOCAL: ("FLOAT", {
-                    "default": 500, "min": 0, "step": 0.01}),
-            }
-        })
-        return Lexicon._parse(d)
-
-    def run(self, **kw) -> tuple[TensorType]:
-        pA = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
-        baseline = parse_param(kw, Lexicon.INT, EnumConvertType.FLOAT, 0, 0.1, 1)
-        focal_length = parse_param(kw, "VAL", EnumConvertType.FLOAT, 500, 0)
-        images = []
-        params = list(zip_longest_fill(pA, baseline, focal_length))
-        pbar = ProgressBar(len(params))
-        for idx, (pA, baseline, focal_length) in enumerate(params):
-            pA = tensor_to_cv(pA) if pA is not None else channel_solid(chan=EnumImageType.GRAYSCALE)
-            # Convert depth image to disparity map
-            disparity_map = np.divide(1.0, pA.astype(np.float32), where=pA!=0)
-            # Compute disparity values based on baseline and focal length
-            disparity_map *= baseline * focal_length
-            images.append(cv_to_tensor(pA))
-            pbar.update_absolute(idx)
-        return torch.stack(images)
-
 class TextNode(CozyImageNode):
     NAME = "TEXT GEN (JOV) 📝"
     CATEGORY = JOV_CATEGORY
@@ -306,18 +213,19 @@ Generates images containing text based on parameters such as font, size, alignme
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                Lexicon.STRING: ("STRING", {
+                "STRING": ("STRING", {
                     "default": "jovimetrix", "multiline": True,
                     "dynamicPrompts": False,
                     "tooltip": "Your Message"}),
                 "FONT": (cls.FONT_NAMES, {
                     "default": cls.FONT_NAMES[0]}),
                 "LETTER": ("BOOLEAN", {
-                    "default": False}),
+                    "default": False,
+                    "tooltip": "If each letter be generated and output in a batch"}),
                 "AUTOSIZE": ("BOOLEAN", {
                     "default": False,
                     "tooltip": "Scale based on Width & Height"}),
-                Lexicon.RGBA_A: ("VEC4", {
+                "COLOR": ("VEC4", {
                     "default": (255, 255, 255, 255), "rgb": True,
                     "tooltip": "Color of the letters"}),
                 "MATTE": ("VEC4", {
@@ -332,35 +240,39 @@ Generates images containing text based on parameters such as font, size, alignme
                     "default": EnumAlignment.CENTER.name,
                     "tooltip": "Top, Center or Bottom alignment"}),
                 "JUSTIFY": (EnumJustify._member_names_, {
-                    "default": EnumJustify.CENTER.name}),
+                    "default": EnumJustify.CENTER.name,
+                    "tooltip": "How to align the text to the side margins of the canvas: Left, Right, or Centered"}),
                 "MARGIN": ("INT", {
-                    "default": 0, "min": -1024, "max": 1024}),
+                    "default": 0, "min": -1024, "max": 1024,
+                    "tooltip": "Whitespace padding around canvas"}),
                 "SPACING": ("INT", {
                     "default": 0, "min": -1024, "max": 1024}),
-                Lexicon.WH: ("VEC2", {
+                "WH": ("VEC2", {
                     "default": (256, 256), "mij":IMAGE_SIZE_MIN, "int": True,
-                    "label": [Lexicon.W, Lexicon.H]}),
-                Lexicon.XY: ("VEC2", {
+                    "label": ["W", "H"],
+                    "tooltip": "Width and Height"}),
+                "XY": ("VEC2", {
                     "default": (0, 0,), "mij": -1, "maj": 1,
-                    "label": [Lexicon.X, Lexicon.Y],
+                    "label": ["X", "Y"],
                     "tooltip":"Offset the position"}),
-                Lexicon.ANGLE: ("FLOAT", {
-                    "default": 0, "step": 0.01}),
+                "ANGLE": ("FLOAT", {
+                    "default": 0, "step": 0.01,
+                    "tooltip": "Rotation Angle"}),
                 "EDGE": (EnumEdge._member_names_, {
                     "default": EnumEdge.CLIP.name}),
-                Lexicon.INVERT: ("BOOLEAN", {
+                "INVERT": ("BOOLEAN", {
                     "default": False,
                     "tooltip": "Invert the mask input"})
             }
         })
-        return Lexicon._parse(d)
+        return d
 
     def run(self, **kw) -> RGBAMaskType:
-        full_text = parse_param(kw, Lexicon.STRING, EnumConvertType.STRING, "jovimetrix")
+        full_text = parse_param(kw, "STRING", EnumConvertType.STRING, "jovimetrix")
         font_idx = parse_param(kw, "FONT", EnumConvertType.STRING, self.FONT_NAMES[0])
         autosize = parse_param(kw, "AUTOSIZE", EnumConvertType.BOOLEAN, False)
         letter = parse_param(kw, "LETTER", EnumConvertType.BOOLEAN, False)
-        color = parse_param(kw, Lexicon.RGBA_A, EnumConvertType.VEC4INT, [(255,255,255,255)], 0, 255)
+        color = parse_param(kw, "COLOR", EnumConvertType.VEC4INT, [(255,255,255,255)], 0, 255)
         matte = parse_param(kw, "MATTE", EnumConvertType.VEC4INT, [(0,0,0,255)], 0, 255)
         columns = parse_param(kw, "COLS", EnumConvertType.INT, 0)
         font_size = parse_param(kw, "SIZE", EnumConvertType.INT, 1)
@@ -368,11 +280,11 @@ Generates images containing text based on parameters such as font, size, alignme
         justify = parse_param(kw, "JUSTIFY", EnumJustify, EnumJustify.CENTER.name)
         margin = parse_param(kw, "MARGIN", EnumConvertType.INT, 0)
         line_spacing = parse_param(kw, "SPACING", EnumConvertType.INT, 0)
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], IMAGE_SIZE_MIN)
-        pos = parse_param(kw, Lexicon.XY, EnumConvertType.VEC2, [(0, 0)], -1, 1)
-        angle = parse_param(kw, Lexicon.ANGLE, EnumConvertType.INT, 0)
+        wihi = parse_param(kw, "WH", EnumConvertType.VEC2INT, [(512, 512)], IMAGE_SIZE_MIN)
+        pos = parse_param(kw, "XY", EnumConvertType.VEC2, [(0, 0)], -1, 1)
+        angle = parse_param(kw, "ANGLE", EnumConvertType.INT, 0)
         edge = parse_param(kw, "EDGE", EnumEdge, EnumEdge.CLIP.name)
-        invert = parse_param(kw, Lexicon.INVERT, EnumConvertType.BOOLEAN, False)
+        invert = parse_param(kw, "INVERT", EnumConvertType.BOOLEAN, False)
         images = []
         params = list(zip_longest_fill(full_text, font_idx, autosize, letter, color,
                                 matte, columns, font_size, align, justify, margin,
@@ -412,3 +324,101 @@ Generates images containing text based on parameters such as font, size, alignme
                 images.append(cv_to_tensor_full(img, matte))
             pbar.update_absolute(idx)
         return image_stack(images)
+
+'''
+class StereogramNode(CozyImageNode):
+    NAME = "STEREOGRAM (JOV) 📻"
+    CATEGORY = JOV_CATEGORY
+    DESCRIPTION = """
+Generates false perception 3D images from 2D input. Set tile divisions, noise, gamma, and shift parameters to control the stereogram's appearance.
+"""
+
+    @classmethod
+    def INPUT_TYPES(cls) -> InputType:
+        d = super().INPUT_TYPES()
+        d = deep_merge(d, {
+            "optional": {
+                "IMAGE": (COZY_TYPE_IMAGE, {
+                    "tooltip": "Pixel Data (RGBA, RGB or Grayscale)"
+                }),
+                "DEPTH": (COZY_TYPE_IMAGE, {
+                    "tooltip": "Grayscale image representing a depth map"
+                }),
+                "TILE": ("INT", {
+                    "default": 8, "min": 1}),
+                "NOISE": ("FLOAT", {
+                    "default": 0.33, "min": 0, "max": 1, "step": 0.01}),
+                "GAMMA": ("FLOAT", {
+                    "default": 0.33, "min": 0, "max": 1, "step": 0.01}),
+                "SHIFT": ("FLOAT", {
+                    "default": 1., "min": -1, "max": 1, "step": 0.01}),
+                "INVERT": ("BOOLEAN", {
+                    "default": False}),
+            }
+        })
+        return d
+
+    def run(self, **kw) -> RGBAMaskType:
+        pA = parse_param(kw, "IMAGE", EnumConvertType.IMAGE, None)
+        depth = parse_param(kw, "DEPTH", EnumConvertType.IMAGE, None)
+        divisions = parse_param(kw, "TILE", EnumConvertType.INT, 1, 1, 8)
+        noise = parse_param(kw, "NOISE", EnumConvertType.FLOAT, 1, 0)
+        gamma = parse_param(kw, "GAMMA", EnumConvertType.FLOAT, 1, 0)
+        shift = parse_param(kw, "SHIFT", EnumConvertType.FLOAT, 0, 1, -1)
+        invert = parse_param(kw, "INVERT", EnumConvertType.BOOLEAN, False)
+        params = list(zip_longest_fill(pA, depth, divisions, noise, gamma, shift, invert))
+        images = []
+        pbar = ProgressBar(len(params))
+        for idx, (pA, depth, divisions, noise, gamma, shift, invert) in enumerate(params):
+            pA = channel_solid(chan=EnumImageType.BGRA) if pA is None else tensor_to_cv(pA)
+            h, w = pA.shape[:2]
+            depth = channel_solid(w, h, chan=EnumImageType.BGRA) if depth is None else tensor_to_cv(depth)
+            if invert:
+                depth = image_invert(depth, 1.0)
+            pA = image_stereogram(pA, depth, divisions, noise, gamma, shift)
+            images.append(cv_to_tensor_full(pA))
+            pbar.update_absolute(idx)
+        return image_stack(images)
+
+class StereoscopicNode(CozyBaseNode):
+    NAME = "STEREOSCOPIC (JOV) 🕶️"
+    CATEGORY = JOV_CATEGORY
+    RETURN_TYPES = ("IMAGE", )
+    RETURN_NAMES = ("IMAGE", )
+    DESCRIPTION = """
+Simulates depth perception in images by generating stereoscopic views. It accepts an optional input image for color matte. Adjust baseline and focal length for customized depth effects.
+"""
+    @classmethod
+    def INPUT_TYPES(cls) -> InputType:
+        d = super().INPUT_TYPES()
+        d = deep_merge(d, {
+            "optional": {
+                "IMAGE": (COZY_TYPE_IMAGE, {
+                    "tooltip":"Optional Image to Matte with Selected Color"}),
+                "INT": ("FLOAT", {
+                    "default": 0.1, "min": 0, "max": 1, "step": 0.01,
+                    "tooltip":"Baseline"}),
+                "FOCAL": ("FLOAT", {
+                    "default": 500, "min": 0, "step": 0.01}),
+            }
+        })
+        return d
+
+    def run(self, **kw) -> tuple[TensorType]:
+        pA = parse_param(kw, "IMAGE", EnumConvertType.IMAGE, None)
+        baseline = parse_param(kw, "INT", EnumConvertType.FLOAT, 0, 0.1, 1)
+        focal_length = parse_param(kw, "VAL", EnumConvertType.FLOAT, 500, 0)
+        images = []
+        params = list(zip_longest_fill(pA, baseline, focal_length))
+        pbar = ProgressBar(len(params))
+        for idx, (pA, baseline, focal_length) in enumerate(params):
+            pA = tensor_to_cv(pA) if pA is not None else channel_solid(chan=EnumImageType.GRAYSCALE)
+            # Convert depth image to disparity map
+            disparity_map = np.divide(1.0, pA.astype(np.float32), where=pA!=0)
+            # Compute disparity values based on baseline and focal length
+            disparity_map *= baseline * focal_length
+            images.append(cv_to_tensor(pA))
+            pbar.update_absolute(idx)
+        return torch.stack(images)
+
+'''

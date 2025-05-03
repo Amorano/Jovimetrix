@@ -1,6 +1,6 @@
 /**/
 
-import { app } from "../../../scripts/app.js";
+import { app } from "../../scripts/app.js";
 
 export const bewm = function(ex, ey) {
     //- adapted from "Anchor Click Canvas Animation" by Nick Sheffield

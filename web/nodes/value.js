@@ -1,9 +1,7 @@
 /**/
 
 import { app } from "../../../scripts/app.js"
-import { widgetHookAB } from '../util/util_jov.js'
-import { nodeFitHeight } from '../util/util_node.js'
-import { widgetHide, widgetProcessAny, widget_type_name } from '../util/util_widget.js'
+import { widgetHookAB, nodeFitHeight} from '../util.js'
 
 const _id = "VALUE (JOV) 🧬"
 
@@ -18,26 +16,18 @@ app.registerExtension({
         nodeType.prototype.onNodeCreated = function () {
             const me = onNodeCreated?.apply(this);
 
-            const widget_str = this.widgets.find(w => w.name == '📝');
-
             this.outputs[1].type = "*";
             this.outputs[2].type = "*";
             this.outputs[3].type = "*";
             this.outputs[4].type = "*";
 
-            widget_str.options.menu = false;
-            widget_str.origComputeSize = widget_str.computeSize;
-
-            const ab_data = widgetHookAB(this, '❓');
+            const ab_data = widgetHookAB(this, 'TYPE');
 
             const oldCallback = ab_data.callback;
             ab_data.callback = () => {
                 oldCallback?.apply(this, arguments);
-                widgetHide(this, widget_str);
-                widget_str.inputEl.className = "jov-hidden";
-                widget_str.computeSize = () => [0, -4];
 
-                this.outputs[0].name = widget_type_name(ab_data.value);
+                this.outputs[0].name = ab_data.value;
                 this.outputs[0].type = ab_data.value;
                 let type = ab_data.value;
                 type = "FLOAT";

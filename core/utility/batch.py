@@ -43,14 +43,16 @@ from cozy_comfyui.api import \
     parse_reset, comfy_api_post
 
 from ... import \
-    ROOT, \
-    Lexicon
+    ROOT
 
 from ...sup.image.adjust import \
     EnumScaleMode, \
     image_scalefit
 
-JOV_CATEGORY = "UTILITY"
+from ...sup.image.compose import \
+    image_by_size
+
+JOV_CATEGORY = "UTILITY/BATCH"
 
 # ==============================================================================
 # === ENUMERATION ===
@@ -62,7 +64,6 @@ class EnumBatchMode(Enum):
     SLICE = 15
     INDEX_LIST = 20
     RANDOM = 5
-    CARTESIAN = 40
 
 # ==============================================================================
 # === CLASS ===
@@ -75,20 +76,18 @@ class ContainsAnyDict(dict):
 class ArrayNode(CozyBaseNode):
     NAME = "ARRAY (JOV) 📚"
     CATEGORY = JOV_CATEGORY
-    INPUT_IS_LIST = True
-    RETURN_TYPES = (COZY_TYPE_ANY, "INT", COZY_TYPE_ANY, "INT", COZY_TYPE_ANY)
-    RETURN_NAMES = (Lexicon.ANY_OUT, "LENGTH", Lexicon.LIST, "FULL SIZE", Lexicon.LIST)
-    OUTPUT_IS_LIST = (False, False, False, False, True)
+    RETURN_TYPES = (COZY_TYPE_ANY, "INT",)
+    RETURN_NAMES = ("ARRAY", "LENGTH",)
+    OUTPUT_IS_LIST = (True, True,)
     OUTPUT_TOOLTIPS = (
         "Output list from selected operation",
         "Length of output list",
-        "Full list",
+        "Full input list",
         "Length of all input elements",
-        "The elements as a COMFYUI list output"
     )
     SORT = 50
     DESCRIPTION = """
-Processes a batch of data based on the selected mode, such as merging, picking, slicing, random selection, or indexing. Allows for flipping the order of processed items and dividing the data into chunks.
+Processes a batch of data based on the selected mode. Merge, pick, slice, random select, or index items. Can reverse the order of items and divide the data into chunks.
 """
 
     @classmethod
@@ -99,30 +98,24 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
                 "MODE": (EnumBatchMode._member_names_, {
                     "default": EnumBatchMode.MERGE.name,
                     "tooltip":"Select a single index, specific range, custom index list or randomized"}),
-                "INDEX": ("INT", {
-                    "default": 0, "min": 0,
-                    "tooltip":"Selected list position"}),
                 "RANGE": ("VEC3", {
                     "default": (0, 0, 1), "mij": 0, "int": True,
                     "tooltip":"The start, end and step for the range"}),
-                Lexicon.STRING: ("STRING", {
+                "INDEX": ("STRING", {
                     "default": "",
                     "tooltip":"Comma separated list of indicies to export"}),
-                "SEED": ("INT", {
-                    "default": 0, "min": 0, "max": sys.maxsize,
-                    "tooltip":"Random seed value"}),
                 "COUNT": ("INT", {
                     "default": 0, "min": 0, "max": sys.maxsize,
                     "tooltip":"How many items to return"}),
-                Lexicon.FLIP: ("BOOLEAN", {
+                "REVERSE": ("BOOLEAN", {
                     "default": False,
                     "tooltip":"reverse the calculated output list"}),
-                "CHUNK": ("INT", {
-                    "default": 0, "min": 0,
-                    "tooltip":"How many items to put inside each 'batched' output. 0 means put all items in a single batch."}),
+                "SEED": ("INT", {
+                    "default": 0, "min": 0, "max": sys.maxsize,
+                    "tooltip":"Random seed value"}),
             }
         })
-        return Lexicon._parse(d)
+        return d
 
     @classmethod
     def batched(cls, iterable, chunk_size, expand:bool=False, fill:Any=None) -> List[Any]:
@@ -131,63 +124,60 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
             return zip_longest(*[iterator] * chunk_size, fillvalue=fill)
         return [iterable[i: i + chunk_size] for i in range(0, len(iterable), chunk_size)]
 
-    def __init__(self, *arg, **kw) -> None:
-        super().__init__(*arg, **kw)
-        self.__seed = None
-
     def run(self, **kw) -> tuple[int, list]:
-        data_list = parse_dynamic(kw, Lexicon.UNKNOWN, EnumConvertType.ANY, None)
-        if data_list is None:
-            logger.warn("no data for list")
-            return (None, [], 0)
-
-        # data_list = [item for sublist in data_list for item in sublist]
+        data_list = parse_dynamic(kw, "❔", EnumConvertType.ANY, None)
         mode = parse_param(kw, "MODE", EnumBatchMode, EnumBatchMode.MERGE.name)[0]
-        index = parse_param(kw, "INDEX", EnumConvertType.INT, 0, 0)[0]
         slice_range = parse_param(kw, "RANGE", EnumConvertType.VEC3INT, [(0, 0, 1)])[0]
-        indices = parse_param(kw, Lexicon.STRING, EnumConvertType.STRING, "")[0]
-        seed = parse_param(kw, "SEED", EnumConvertType.INT, 0)[0]
+        index = parse_param(kw, "INDEX", EnumConvertType.STRING, "")[0]
         count = parse_param(kw, "COUNT", EnumConvertType.INT, 0, 0, sys.maxsize)[0]
-        flip = parse_param(kw, Lexicon.FLIP, EnumConvertType.BOOLEAN, False)[0]
-        batch_chunk = parse_param(kw, "CHUNK", EnumConvertType.INT, 0, 0)[0]
+        reverse = parse_param(kw, "REVERSE", EnumConvertType.BOOLEAN, False)[0]
+        seed = parse_param(kw, "SEED", EnumConvertType.INT, 0)[0]
 
-        full_list = []
+        data = []
         # track latents since they need to be added back to Dict['samples']
-        output_is_image = False
-        output_is_latent = False
+        output_type = None
         for b in data_list:
             if isinstance(b, dict) and "samples" in b:
                 # latents are batched in the x.samples key
-                data = b["samples"]
-                full_list.extend(data)
-                output_is_latent = True
+                if output_type and output_type != EnumConvertType.LATENT:
+                    raise Exception(f"Cannot mix input types {output_type} vs {EnumConvertType.LATENT}")
+                data.extend(b["samples"])
+                output_type = EnumConvertType.LATENT
+
             elif isinstance(b, TensorType):
-                # logger.debug(b.shape)
+                if output_type and output_type not in (EnumConvertType.IMAGE, EnumConvertType.MASK):
+                    raise Exception(f"Cannot mix input types {output_type} vs {EnumConvertType.IMAGE}")
+
                 if b.ndim == 4:
-                    full_list.extend([i for i in b])
+                    b = [i for i in b]
                 else:
-                    full_list.append(b)
-                output_is_image = True
-            elif isinstance(b, (list, set, tuple,)):
-                full_list.extend(b)
+                    b = [b]
+
+                for x in b:
+                    if x.ndim == 2:
+                        x = x.unsqueeze(-1)
+                    data.append(x)
+
+                output_type = EnumConvertType.IMAGE
+
             elif b is not None:
-                full_list.append(b)
+                idx_type = type(b)
+                if output_type and output_type != idx_type:
+                    raise Exception(f"Cannot mix input types {output_type} vs {idx_type}")
+                data.append(b)
 
-        if len(full_list) == 0:
+        if len(data) == 0:
             logger.warning("no data for list")
-            return None, 0, None, 0
-
-        if flip:
-            full_list.reverse()
-
-        data = full_list.copy()
+            return [], [0], [], [0]
 
         if mode == EnumBatchMode.PICK:
-            index = index if index < len(data) else -1
-            data = [data[index]]
+            start, end, step = slice_range
+            start = start if start < len(data) else -1
+            data = [data[start]]
         elif mode == EnumBatchMode.SLICE:
             start, end, step = slice_range
-            end = len(data) if end == 0 else end
+            start = abs(start)
+            end = len(data) if end == 0 else abs(end+1)
             if step == 0:
                 step = 1
             elif step < 0:
@@ -195,66 +185,73 @@ Processes a batch of data based on the selected mode, such as merging, picking, 
                 step = abs(step)
             data = data[start:end:step]
         elif mode == EnumBatchMode.RANDOM:
-            if self.__seed is None or self.__seed != seed:
-                random.seed(seed)
-                self.__seed = seed
+            random.seed(seed)
             if count == 0:
                 count = len(data)
+            else:
+                count = max(1, min(len(data), count))
             data = random.sample(data, k=count)
         elif mode == EnumBatchMode.INDEX_LIST:
             junk = []
-            for x in indices.split(','):
+            for x in index.split(','):
                 if '-' in x:
                     x = x.split('-')
-                    a = int(x[0])
-                    b = int(x[1])
-                    if a > b:
-                        junk = list(range(a, b-1, -1))
-                    else:
-                        junk = list(range(a, b + 1))
-                else:
-                    junk = [int(x)]
-            data = [data[i:j+1] for i, j in zip(junk, junk)]
+                    for idx, v in enumerate(x):
+                        try:
+                            x[idx] = max(0, min(len(data)-1, int(v)))
+                        except ValueError as e:
+                            logger.error(e)
+                            x[idx] = 0
 
-        elif mode == EnumBatchMode.CARTESIAN:
-            logger.warning("NOT IMPLEMENTED - CARTESIAN")
+                    if x[0] > x[1]:
+                        tmp = list(range(x[0], x[1]-1, -1))
+                    else:
+                        tmp = list(range(x[0], x[1]+1))
+                    junk.extend(tmp)
+                else:
+                    idx = max(0, min(len(data)-1, int(x)))
+                    junk.append(idx)
+            if len(junk) > 0:
+                data = [data[i] for i in junk]
 
         if len(data) == 0:
             logger.warning("no data for list")
-            return None, 0, None, 0
+            return [], [0], [], [0]
 
-        if batch_chunk > 0:
-            data = self.batched(data, batch_chunk)
+        # reverse before?
+        if reverse:
+            data.reverse()
 
-        size = len(data)
-        if output_is_image:
-            # _, w, h = image_by_size(data)
-            result = []
-            for d in data:
-                d = tensor_to_cv(d)
-                d = image_convert(d, 4)
-                #d = image_matte(d, (0,0,0,0), w, h)
-                # logger.debug(d.shape)
-                result.append(cv_to_tensor(d))
-
-            if len(result) > 1:
-                data = torch.stack(result)
-            else:
-                data = result[0].unsqueeze(0)
-            size = data.shape[0]
-
+        # cut the list down first
         if count > 0:
             data = data[0:count]
 
-        if not output_is_image and len(data) == 1:
-            data = data[0]
+        size = len(data)
+        if output_type == EnumConvertType.IMAGE:
+            _, w, h = image_by_size(data)
+            result = []
+            for d in data:
+                w2, h2, cc = d.shape
+                if w != w2 or h != h2 or cc != 4:
+                    d = tensor_to_cv(d)
+                    d = image_convert(d, 4)
+                    d = image_matte(d, (0,0,0,0), w, h)
+                    d = cv_to_tensor(d)
+                d = d.unsqueeze(0)
+                result.append(d)
 
-        return data, size, full_list, len(full_list), data
+            size = len(result)
+            data = torch.stack(result)
+        else:
+            data = [data]
+
+        return (data, [size],)
 
 class QueueBaseNode(CozyBaseNode):
     CATEGORY = JOV_CATEGORY
     RETURN_TYPES = (COZY_TYPE_ANY, COZY_TYPE_ANY, "STRING", "INT", "INT", "BOOLEAN")
-    RETURN_NAMES = (Lexicon.ANY_OUT, "QUEUE", "CURRENT", "INDEX", "TOTAL", Lexicon.TRIGGER, )
+    RETURN_NAMES = ("🦄", "QUEUE", "CURRENT", "INDEX", "TOTAL", "TRIGGER", )
+    OUTPUT_IS_LIST = (True, True, True, True, True, True,)
     VIDEO_FORMATS = ['.wav', '.mp3', '.webm', '.mp4', '.avi', '.wmv', '.mkv', '.mov', '.mxf']
 
     @classmethod
@@ -278,13 +275,13 @@ class QueueBaseNode(CozyBaseNode):
                 "VALUE": ("INT", {
                     "default": 0, "min": 0,
                     "tooltip": "The current index for the current queue item"}),
-                Lexicon.WAIT: ("BOOLEAN", {
+                "HOLD": ("BOOLEAN", {
                     "default": False,
                     "tooltip":"Hold the item at the current queue index"}),
                 "STOP": ("BOOLEAN", {
                     "default": False,
                     "tooltip":"When the Queue is out of items, send a `HALT` to ComfyUI."}),
-                Lexicon.LOOP: ("BOOLEAN", {
+                "LOOP": ("BOOLEAN", {
                     "default": True,
                     "tooltip":"If the queue should loop. If `False` and if there are more iterations, will send the previous image."}),
                 "RESET": ("BOOLEAN", {
@@ -292,7 +289,7 @@ class QueueBaseNode(CozyBaseNode):
                     "tooltip":"Reset the queue back to index 1"}),
             }
         })
-        return Lexicon._parse(d)
+        return d
 
     def __init__(self) -> None:
         self.__index = 0
@@ -402,11 +399,11 @@ class QueueBaseNode(CozyBaseNode):
             interrupt_processing()
             return self.__previous, self.__q, self.__current, self.__index_last+1, self.__len
 
-        if (wait := parse_param(kw, Lexicon.WAIT, EnumConvertType.BOOLEAN, False))[0] == True:
+        if (wait := parse_param(kw, "HOLD", EnumConvertType.BOOLEAN, False))[0] == True:
             self.__index = self.__index_last
 
         # otherwise loop around the end
-        loop = parse_param(kw, Lexicon.LOOP, EnumConvertType.BOOLEAN, False)[0]
+        loop = parse_param(kw, "LOOP", EnumConvertType.BOOLEAN, False)[0]
         if loop == True:
             self.__index %= self.__len
         else:
@@ -430,8 +427,8 @@ class QueueBaseNode(CozyBaseNode):
             if mw != 0 or mh != 0 or mc != 0:
                 ret = []
                 mode = parse_param(kw, "MODE", EnumScaleMode, EnumScaleMode.MATTE.name)[0]
-                sample = parse_param(kw, Lexicon.SAMPLE, EnumInterpolation, EnumInterpolation.LANCZOS4.name)[0]
-                wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], IMAGE_SIZE_MIN)[0]
+                sample = parse_param(kw, "SAMPLE", EnumInterpolation, EnumInterpolation.LANCZOS4.name)[0]
+                wihi = parse_param(kw, "WH", EnumConvertType.VEC2INT, [(512, 512)], IMAGE_SIZE_MIN)[0]
                 w2, h2 = wihi
                 matte = parse_param(kw, "MATTE", EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)[0]
                 matte = [matte[0], matte[1], matte[2], 0]
@@ -488,7 +485,8 @@ Manage a queue of items, such as file paths or data. Supports various formats in
 class QueueTooNode(QueueBaseNode):
     NAME = "QUEUE TOO (JOV) 🗃"
     RETURN_TYPES = ("IMAGE", "IMAGE", "MASK", "STRING", "INT", "INT", "BOOLEAN")
-    RETURN_NAMES = (Lexicon.IMAGE, Lexicon.RGB, Lexicon.MASK, "CURRENT", "INDEX", "TOTAL", Lexicon.TRIGGER, )
+    RETURN_NAMES = ("IMAGE", "RGB", "MASK", "CURRENT", "INDEX", "TOTAL", "TRIGGER", )
+    OUTPUT_IS_LIST = (False, False, False, True, True, True, True,)
     OUTPUT_TOOLTIPS = (
         "Full channel [RGBA] image. If there is an alpha, the image will be masked out with it when using this output",
         "Three channel [RGB] image. There will be no alpha",
@@ -508,47 +506,23 @@ Manage a queue of specific items: media files. Supports various image and video 
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                "QUEUE": ("STRING", {
-                    "default": "./res/img/test-a.png", "multiline": True,
-                    "tooltip": ""}),
-                "RECURSE": ("BOOLEAN", {
-                    "default": False,
-                    "tooltip": "Search within sub-directories"}),
-                "BATCH": ("BOOLEAN", {
-                    "default": False,
-                    "tooltip":"Load all items, if they are loadable items, i.e. batch load images from the Queue's list"}),
-                "VALUE": ("INT", {
-                    "default": 0, "min": 0,
-                    "tooltip": "Current index for the current queue item"}),
-                Lexicon.WAIT: ("BOOLEAN", {
-                    "default": False,
-                    "tooltip":"Hold the item at the current queue index"}),
-                "STOP": ("BOOLEAN", {
-                    "default": False,
-                    "tooltip":"When the Queue is out of items, send a `HALT` to ComfyUI."}),
-                Lexicon.LOOP: ("BOOLEAN", {
-                    "default": True,
-                    "tooltip":"If the queue should loop. If `False` and there are more iterations, will send the previous image."}),
-                "RESET": ("BOOLEAN", {
-                    "default": False,
-                    "tooltip":"Reset the queue back to index 1"}),
                 "MODE": (EnumScaleMode._member_names_, {
                     "default": EnumScaleMode.MATTE.name,
-                    "tooltip": "Decide whether the images should be resized to fit"}),
-                Lexicon.WH: ("VEC2", {
+                    "tooltip": "If the image should be resized to fit within given dimensions or keep the original size"}),
+                "WH": ("VEC2", {
                     "default": (512, 512), "mij":IMAGE_SIZE_MIN, "int": True,
-                    "label": [Lexicon.W, Lexicon.H],
+                    "label": ["W", "H"],
                     "tooltip": "Width and Height"}),
-                Lexicon.SAMPLE: (EnumInterpolation._member_names_, {
+                "SAMPLE": (EnumInterpolation._member_names_, {
                     "default": EnumInterpolation.LANCZOS4.name,
-                    "tooltip": "Method for resizing images."}),
+                    "tooltip": "Sampling method for resizing images"}),
                 "MATTE": ("VEC4", {
                     "default": (0, 0, 0, 255), "rgb": True,
                     "tooltip": "Background color for padding"}),
             },
             "hidden": d.get("hidden", {})
         })
-        return Lexicon._parse(d)
+        return d
 
     def run(self, ident, **kw) -> tuple[TensorType, TensorType, TensorType, str, int, int, bool]:
         data, _, current, index, total, trigger = super().run(ident, **kw)

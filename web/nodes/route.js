@@ -4,7 +4,7 @@ import { app } from "../../../scripts/app.js"
 import {
     TypeSlot, TypeSlotEvent, nodeFitHeight,
     nodeVirtualLinkRoot, nodeInputsClear, nodeOutputsClear
-} from '../util/util_node.js'
+}  from '../util.js'
 
 const _id = "ROUTE (JOV) 🚌";
 const _prefix = '🔮';

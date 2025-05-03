@@ -31,14 +31,11 @@ from cozy_comfyui.api import \
     TimedOutException, ComfyAPIMessage, \
     comfy_api_post
 
-from ... import \
-    Lexicon
-
 # ==============================================================================
 # === GLOBAL ===
 # ==============================================================================
 
-JOV_CATEGORY = "UTILITY"
+JOV_CATEGORY = "UTILITY/IO"
 
 # min amount of time before showing the cancel dialog
 JOV_DELAY_MIN = 5
@@ -88,7 +85,7 @@ class DelayNode(CozyBaseNode):
     NAME = "DELAY (JOV) ✋🏽"
     CATEGORY = JOV_CATEGORY
     RETURN_TYPES = (COZY_TYPE_ANY,)
-    RETURN_NAMES = (Lexicon.PASS_OUT,)
+    RETURN_NAMES = ("OUT",)
     OUTPUT_TOOLTIPS = (
         "Pass through data when the delay ends"
     )
@@ -102,22 +99,25 @@ Introduce pauses in the workflow that accept an optional input to pass through a
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                Lexicon.PASS_IN: (COZY_TYPE_ANY, {"default": None,
-                                                 "tooltip":"The data that should be held until the timer completes."}),
-                Lexicon.TIMER: ("INT", {"default" : 0, "min": -1,
-                                        "tooltip":"How long to delay if enabled. 0 means no delay."}),
-                "ENABLE": ("BOOLEAN", {"default": True,
-                                             "tooltip":"Enable or disable the screensaver."})
+                "IN": (COZY_TYPE_ANY, {
+                    "default": None,
+                    "tooltip":"The data that should be held until the timer completes."}),
+                "TIMER": ("INT", {
+                    "default" : 0, "min": -1,
+                    "tooltip":"How long to delay if enabled. 0 means no delay."}),
+                "ENABLE": ("BOOLEAN", {
+                    "default": True,
+                    "tooltip":"Enable or disable the screensaver."})
             }
         })
-        return Lexicon._parse(d)
+        return d
 
     @classmethod
     def IS_CHANGED(cls, **kw) -> float:
         return float("NaN")
 
     def run(self, ident, **kw) -> tuple[Any]:
-        delay = parse_param(kw, Lexicon.TIMER, EnumConvertType.INT, -1, 0, JOV_DELAY_MAX)[0]
+        delay = parse_param(kw, "TIMER", EnumConvertType.INT, -1, 0, JOV_DELAY_MAX)[0]
         if delay < 0:
             delay = JOV_DELAY_MAX
         if delay > JOV_DELAY_MIN:
@@ -139,7 +139,7 @@ Introduce pauses in the workflow that accept an optional input to pass through a
                     logger.info(f"delay [continue] ({step}): {ident}")
             pbar.update_absolute(step)
             step += 1
-        return kw[Lexicon.PASS_IN],
+        return kw["IN"],
 
 class ExportNode(CozyBaseNode):
     NAME = "EXPORT (JOV) 📽"
@@ -156,8 +156,10 @@ Responsible for saving images or animations to disk. It supports various output 
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                Lexicon.PIXEL: (COZY_TYPE_IMAGE, {}),
-                Lexicon.PASS_OUT: ("STRING", {
+                "IMAGE": (COZY_TYPE_IMAGE, {
+                    "tooltip": "Pixel Data (RGBA, RGB or Grayscale)"
+                }),
+                "OUT": ("STRING", {
                     "default": get_output_directory(),
                     "default_top":"<comfy output dir>",
                     "tooltip":"Pass through another route node to pre-populate the outputs."}),
@@ -180,26 +182,26 @@ Responsible for saving images or animations to disk. It supports various output 
                 "QUALITY_M": ("INT", {"default": 100, "min": 1, "max": 100,
                                               "tooltip":"Pass through another route node to pre-populate the outputs."}),
                 # GIF OR GIFSKI
-                Lexicon.FPS: ("INT", {"default": 24, "min": 1, "max": 60,
+                "FPS": ("INT", {"default": 24, "min": 1, "max": 60,
                                               "tooltip":"Pass through another route node to pre-populate the outputs."}),
                 # GIF OR GIFSKI
-                Lexicon.LOOP: ("INT", {"default": 0, "min": 0,
+                "LOOP": ("INT", {"default": 0, "min": 0,
                                               "tooltip":"Pass through another route node to pre-populate the outputs."}),
             }
         })
-        return Lexicon._parse(d)
+        return d
 
     def run(self, **kw) -> None:
-        images = parse_param(kw, Lexicon.PIXEL, EnumConvertType.IMAGE, None)
+        images = parse_param(kw, "IMAGE", EnumConvertType.IMAGE, None)
         suffix = parse_param(kw, "PREFIX", EnumConvertType.STRING, uuid4().hex[:16])[0]
-        output_dir = parse_param(kw, Lexicon.PASS_OUT, EnumConvertType.STRING, "")[0]
+        output_dir = parse_param(kw, "OUT", EnumConvertType.STRING, "")[0]
         format = parse_param(kw, "FORMAT", EnumConvertType.STRING, "gif")[0]
         overwrite = parse_param(kw, "OVERWRITE", EnumConvertType.BOOLEAN, False)[0]
         optimize = parse_param(kw, "OPT", EnumConvertType.BOOLEAN, False)[0]
         quality = parse_param(kw, "QUALITY", EnumConvertType.INT, 90, 0, 100)[0]
         motion = parse_param(kw, "QUALITY_M", EnumConvertType.INT, 100, 0, 100)[0]
-        fps = parse_param(kw, Lexicon.FPS, EnumConvertType.INT, 24, 1, 60)[0]
-        loop = parse_param(kw, Lexicon.LOOP, EnumConvertType.INT, 0, 0)[0]
+        fps = parse_param(kw, "FPS", EnumConvertType.INT, 24, 1, 60)[0]
+        loop = parse_param(kw, "LOOP", EnumConvertType.INT, 0, 0)[0]
         output_dir = Path(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -257,7 +259,7 @@ class RouteNode(CozyBaseNode):
     NAME = "ROUTE (JOV) 🚌"
     CATEGORY = JOV_CATEGORY
     RETURN_TYPES = ("BUS",) + (COZY_TYPE_ANY,) * 127
-    RETURN_NAMES = (Lexicon.ROUTE,)
+    RETURN_NAMES = ("ROUTE",)
     OUTPUT_TOOLTIPS = (
         "Pass through for Route node"
     )
@@ -271,16 +273,16 @@ Routes the input data from the optional input ports to the output port, preservi
         d = super().INPUT_TYPES()
         e = {
             "optional": {
-                Lexicon.ROUTE: ("BUS", {"default": None, "tooltip":"Pass through another route node to pre-populate the outputs."}),
+                "ROUTE": ("BUS", {"default": None, "tooltip":"Pass through another route node to pre-populate the outputs."}),
             }
         }
         d = deep_merge(d, e)
-        return Lexicon._parse(d)
+        return d
 
     def run(self, **kw) -> tuple[Any, ...]:
-        inout = parse_param(kw, Lexicon.ROUTE, EnumConvertType.ANY, None)
+        inout = parse_param(kw, "ROUTE", EnumConvertType.ANY, None)
         vars = kw.copy()
-        vars.pop(Lexicon.ROUTE, None)
+        vars.pop("ROUTE", None)
         vars.pop('ident', None)
 
         parsed = []
@@ -291,7 +293,7 @@ Routes the input data from the optional input ports to the output port, preservi
         junk = *parsed,
         return inout, parsed,
 
-class SaveOutput(CozyBaseNode):
+class SaveOutputNode(CozyBaseNode):
     NAME = "SAVE OUTPUT (JOV) 💾"
     CATEGORY = JOV_CATEGORY
     OUTPUT_NODE = True
@@ -319,7 +321,7 @@ Save the output image along with its metadata to the specified path. Supports sa
                                         "tooltip":"Custom user metadat to save with the file"}),
             }
         })
-        return Lexicon._parse(d)
+        return d
 
     def run(self, **kw) -> dict[str, Any]:
         image = parse_param(kw, 'image', EnumConvertType.IMAGE, None)

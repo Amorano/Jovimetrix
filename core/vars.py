@@ -13,9 +13,6 @@ from cozy_comfyui.node import \
     COZY_TYPE_ANY, COZY_TYPE_NUMERICAL, COZY_TYPE_NUMBER, \
     CozyBaseNode
 
-from .. import \
-    Lexicon
-
 JOV_CATEGORY = "VARIABLE"
 
 # ==============================================================================
@@ -26,7 +23,7 @@ class ValueNode(CozyBaseNode):
     NAME = "VALUE (JOV) 🧬"
     CATEGORY = JOV_CATEGORY
     RETURN_TYPES = (COZY_TYPE_ANY, COZY_TYPE_ANY, COZY_TYPE_ANY, COZY_TYPE_ANY, COZY_TYPE_ANY,)
-    RETURN_NAMES = (Lexicon.ANY_OUT, Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W)
+    RETURN_NAMES = ("🦄", "X", "Y", "Z", "W")
     SORT = 5
     DESCRIPTION = """
 Supplies raw or default values for various data types, supporting vector input with components for X, Y, Z, and W. It also provides a string input option.
@@ -41,49 +38,49 @@ Supplies raw or default values for various data types, supporting vector input w
 
         d = deep_merge(d, {
             "optional": {
-                Lexicon.IN_A: (COZY_TYPE_ANY, {
+                "A": (COZY_TYPE_ANY, {
                     "default": None,
                     "tooltip":"Passes a raw value directly, or supplies defaults for any value inputs without connections"}),
-                Lexicon.TYPE: (typ, {
+                "TYPE": (typ, {
                     "default": EnumConvertType.BOOLEAN.name,
                     "tooltip":"Take the input and convert it into the selected type."}),
-                Lexicon.X: (COZY_TYPE_NUMERICAL, {
+                "X": (COZY_TYPE_NUMERICAL, {
                     "default": 0, "mij": -sys.maxsize, "maj": sys.maxsize,
                     "forceInput": True}),
-                Lexicon.Y: (COZY_TYPE_NUMERICAL, {
+                "Y": (COZY_TYPE_NUMERICAL, {
                     "default": 0, "mij": -sys.maxsize, "maj": sys.maxsize,
                     "forceInput": True}),
-                Lexicon.Z: (COZY_TYPE_NUMERICAL, {
+                "Z": (COZY_TYPE_NUMERICAL, {
                     "default": 0, "mij": -sys.maxsize, "maj": sys.maxsize,
                     "forceInput": True}),
-                Lexicon.W: (COZY_TYPE_NUMERICAL, {
+                "W": (COZY_TYPE_NUMERICAL, {
                     "default": 0, "mij": -sys.maxsize, "maj": sys.maxsize,
                     "forceInput": True}),
-                Lexicon.IN_A+Lexicon.IN_A: ("VEC4", {
+                "AA": ("VEC4", {
                     "default": (0, 0, 0, 0), #"mij": -sys.maxsize, "maj": sys.maxsize,
-                    "label": [Lexicon.X, Lexicon.Y],
+                    "label": ["X", "Y"],
                     "tooltip":"default value vector for A"}),
-                Lexicon.IN_B+Lexicon.IN_B: ("VEC4", {
+                "BB": ("VEC4", {
                     "default": (1,1,1,1), #"mij": -sys.maxsize, "maj": sys.maxsize,
-                    "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W],
+                    "label": ["X", "Y", "Z", "W"],
                     "tooltip":"default value vector for B"}),
                 "SEED": ("INT", {
                     "default": 0, "min": 0, "max": sys.maxsize}),
             }
         })
-        return Lexicon._parse(d)
+        return d
 
     def run(self, **kw) -> tuple[bool]:
-        raw = parse_param(kw, Lexicon.IN_A, EnumConvertType.ANY, [0])
-        r_x = parse_param(kw, Lexicon.X, EnumConvertType.FLOAT, None, -sys.maxsize, sys.maxsize)
-        r_y = parse_param(kw, Lexicon.Y, EnumConvertType.FLOAT, None, -sys.maxsize, sys.maxsize)
-        r_z = parse_param(kw, Lexicon.Z, EnumConvertType.FLOAT, None, -sys.maxsize, sys.maxsize)
-        r_w = parse_param(kw, Lexicon.W, EnumConvertType.FLOAT, None, -sys.maxsize, sys.maxsize)
-        typ = parse_param(kw, Lexicon.TYPE, EnumConvertType, EnumConvertType.BOOLEAN.name)
-        xyzw = parse_param(kw, Lexicon.IN_A+Lexicon.IN_A, EnumConvertType.VEC4, [(0, 0, 0, 0)])
+        raw = parse_param(kw, "A", EnumConvertType.ANY, [0])
+        r_x = parse_param(kw, "X", EnumConvertType.FLOAT, None, -sys.maxsize, sys.maxsize)
+        r_y = parse_param(kw, "Y", EnumConvertType.FLOAT, None, -sys.maxsize, sys.maxsize)
+        r_z = parse_param(kw, "Z", EnumConvertType.FLOAT, None, -sys.maxsize, sys.maxsize)
+        r_w = parse_param(kw, "W", EnumConvertType.FLOAT, None, -sys.maxsize, sys.maxsize)
+        typ = parse_param(kw, "TYPE", EnumConvertType, EnumConvertType.BOOLEAN.name)
+        xyzw = parse_param(kw, "AA", EnumConvertType.VEC4, [(0, 0, 0, 0)])
         seed = parse_param(kw, "SEED", EnumConvertType.INT, 0, 0)
-        yyzw = parse_param(kw, Lexicon.IN_B+Lexicon.IN_B, EnumConvertType.VEC4, [(1, 1, 1, 1)])
-        x_str = parse_param(kw, Lexicon.STRING, EnumConvertType.STRING, "")
+        yyzw = parse_param(kw, "BB", EnumConvertType.VEC4, [(1, 1, 1, 1)])
+        x_str = parse_param(kw, "STRING", EnumConvertType.STRING, "")
         params = list(zip_longest_fill(raw, r_x, r_y, r_z, r_w, typ, xyzw, seed, yyzw, x_str))
         results = []
         pbar = ProgressBar(len(params))
@@ -140,6 +137,7 @@ class Vector2Node(CozyBaseNode):
     CATEGORY = JOV_CATEGORY
     RETURN_TYPES = ("VEC2",)
     RETURN_NAMES = ("VEC2",)
+    OUTPUT_IS_LIST = (True,)
     OUTPUT_TOOLTIPS = (
         "Vector2 with float values",
     )
@@ -167,7 +165,7 @@ Outputs a VECTOR2.
                     "tooltip": "Default Y channel value"}),
             }
         })
-        return Lexicon._parse(d)
+        return d
 
     def run(self, **kw) -> tuple[tuple[float, ...], tuple[int, ...]]:
         x = parse_param(kw, "X", EnumConvertType.FLOAT, None, -sys.maxsize, sys.maxsize)
@@ -216,7 +214,7 @@ Outputs a VECTOR3.
                     "tooltip": "3rd channel value"}),
             }
         })
-        return Lexicon._parse(d)
+        return d
 
     def run(self, **kw) -> tuple[tuple[float, ...], tuple[int, ...]]:
         x = parse_param(kw, "X", EnumConvertType.FLOAT, 0, -sys.maxsize, sys.maxsize)
@@ -244,7 +242,7 @@ class Vector4Node(CozyBaseNode):
     )
     SORT = 294
     DESCRIPTION = """
-Outputs a VEC4 or VEC4INT.
+Outputs a VEC4.
 """
 
     @classmethod
@@ -266,7 +264,7 @@ Outputs a VEC4 or VEC4INT.
                     "tooltip": "4th channel value"}),
             }
         })
-        return Lexicon._parse(d)
+        return d
 
     def run(self, **kw) -> tuple[tuple[float, ...], tuple[int, ...]]:
         x = parse_param(kw, "X", EnumConvertType.FLOAT, 0, -sys.maxsize, sys.maxsize)
@@ -301,11 +299,11 @@ class ParameterNode(CozyBaseNode):
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                Lexicon.PASS_IN: (COZY_TYPE_ANY, {"default": None}),
+                "IN": (COZY_TYPE_ANY, {"default": None}),
             }
         })
-        return Lexicon._parse(d)
+        return d
 
     def run(self, ident, **kw) -> tuple[Any]:
-        return kw[Lexicon.PASS_IN],
+        return kw["IN"],
 '''

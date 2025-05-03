@@ -1,7 +1,7 @@
 /**/
 
 import { app } from "../../../scripts/app.js"
-import { widgetHookControl, widgetHookAB } from '../util/util_jov.js'
+import { widgetHookControl, widgetHookAB } from '../util.js'
 
 const _id = "LERP (JOV) 🔰"
 
@@ -15,9 +15,9 @@ app.registerExtension({
         const onNodeCreated = nodeType.prototype.onNodeCreated
         nodeType.prototype.onNodeCreated = function () {
             const me = onNodeCreated?.apply(this);
-            const alpha = this.widgets.find(w => w.name == '🛟');
-            widgetHookControl(this, '❓', alpha, true);
-            widgetHookAB(this, '❓', false);
+            const alpha = this.widgets.find(w => w.name == 'ALPHA');
+            widgetHookControl(this, 'TYPE', alpha, true);
+            widgetHookAB(this, 'TYPE', false);
             return me;
         }
         return nodeType;

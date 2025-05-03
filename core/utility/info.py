@@ -9,11 +9,6 @@ import numpy as np
 from PIL import Image
 import matplotlib.pyplot as plt
 
-from comfy.utils import ProgressBar
-
-from ... import \
-    Lexicon
-
 from cozy_comfyui import \
     IMAGE_SIZE_MIN, \
     InputType, EnumConvertType, TensorType, \
@@ -29,7 +24,7 @@ from cozy_comfyui.image.convert import \
 from cozy_comfyui.api import \
     parse_reset
 
-JOV_CATEGORY = "UTILITY"
+JOV_CATEGORY = "UTILITY/INFO"
 
 # ==============================================================================
 # === SUPPORT ===
@@ -146,7 +141,7 @@ class GraphNode(CozyBaseNode):
     CATEGORY = JOV_CATEGORY
     OUTPUT_NODE = True
     RETURN_TYPES = ("IMAGE", )
-    RETURN_NAMES = (Lexicon.IMAGE,)
+    RETURN_NAMES = ("IMAGE",)
     OUTPUT_TOOLTIPS = (
         "The graphed image"
     )
@@ -166,13 +161,13 @@ Visualize a series of data points over time. It accepts a dynamic number of valu
                 "VAL": ("INT", {
                     "default": 60, "min": 0,
                     "tooltip":"Number of values to graph and display"}),
-                Lexicon.WH: ("VEC2", {
+                "WH": ("VEC2", {
                     "default": (512, 512), "mij":IMAGE_SIZE_MIN, "int": True,
-                    "label": [Lexicon.W, Lexicon.H],
+                    "label": ["W", "H"],
                     "tooltip":"Width and Height of the graph output"}),
             }
         })
-        return Lexicon._parse(d)
+        return d
 
     @classmethod
     def IS_CHANGED(cls) -> float:
@@ -185,11 +180,11 @@ Visualize a series of data points over time. It accepts a dynamic number of valu
 
     def run(self, ident, **kw) -> tuple[TensorType]:
         slice = parse_param(kw, "VAL", EnumConvertType.INT, 60)[0]
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, [(512, 512)], 1)[0]
+        wihi = parse_param(kw, "WH", EnumConvertType.VEC2INT, [(512, 512)], 1)[0]
         if parse_reset(ident) > 0 or parse_param(kw, "RESET", EnumConvertType.BOOLEAN, False)[0]:
             self.__history = []
         longest_edge = 0
-        dynamic = parse_dynamic(kw, Lexicon.UNKNOWN, EnumConvertType.FLOAT, 0)
+        dynamic = parse_dynamic(kw, "❔", EnumConvertType.FLOAT, 0)
         dynamic = [i[0] for i in dynamic]
         self.__ax.clear()
         for idx, val in enumerate(dynamic):
@@ -222,7 +217,7 @@ class ImageInfoNode(CozyBaseNode):
     NAME = "IMAGE INFO (JOV) 📚"
     CATEGORY = JOV_CATEGORY
     RETURN_TYPES = ("INT", "INT", "INT", "INT", "VEC2", "VEC3")
-    RETURN_NAMES = (Lexicon.INT, Lexicon.W, Lexicon.H, "C", Lexicon.WH, Lexicon.WHC)
+    RETURN_NAMES = ("INT", "W", "H", "C", "WH", "WHC")
     OUTPUT_TOOLTIPS = (
         "Batch count",
         "Width",
@@ -241,14 +236,14 @@ Exports and Displays immediate information about images.
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                Lexicon.PIXEL_A: (COZY_TYPE_IMAGE, {
+                "IMAGE_A": (COZY_TYPE_IMAGE, {
                     "default": None,
                     "tooltip":"The image to examine"})
             }
         })
-        return Lexicon._parse(d)
+        return d
 
     def run(self, **kw) -> tuple[int, list]:
-        image = parse_param(kw, Lexicon.PIXEL_A, EnumConvertType.IMAGE, None)
+        image = parse_param(kw, "IMAGE_A", EnumConvertType.IMAGE, None)
         height, width, cc = image[0].shape
         return (len(image), width, height, cc, (width, height), (width, height, cc))

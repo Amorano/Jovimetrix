@@ -2,7 +2,7 @@
 
 import { app } from "../../../scripts/app.js"
 import { ComfyWidgets } from '../../../scripts/widgets.js';
-import { nodeAddDynamic } from '../util/util_node.js'
+import { nodeAddDynamic } from '../util.js'
 
 const _prefix = '📥'
 const _id = "AKASHIC (JOV) 📓"

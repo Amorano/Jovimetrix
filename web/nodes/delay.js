@@ -2,8 +2,8 @@
 
 import { api } from "../../../scripts/api.js";
 import { app } from "../../../scripts/app.js";
-import { apiJovimetrix } from '../util/util_jov.js'
-import { bubbles } from '../util/util_fun.js'
+import { apiJovimetrix } from '../util.js'
+import { bubbles } from '../fun.js'
 
 const _id = "DELAY (JOV) ✋🏽"
 const EVENT_JOVI_DELAY = "jovi-delay-user";
@@ -65,7 +65,7 @@ app.registerExtension({
         const onNodeCreated = nodeType.prototype.onNodeCreated;
         nodeType.prototype.onNodeCreated = async function () {
             const me = onNodeCreated?.apply(this);
-            const widget_time = this.widgets.find(w => w.name == '⏱');
+            const widget_time = this.widgets.find(w => w.name == 'TIME');
             const widget_enable = this.widgets.find(w => w.name == 'ENABLE');
             this.total_timeout = 0;
             let showing = false;

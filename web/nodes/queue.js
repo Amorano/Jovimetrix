@@ -2,10 +2,9 @@
 
 import { api } from "../../../scripts/api.js";
 import { app } from "../../../scripts/app.js";
-import { ComfyWidgets } from "../../../scripts/widgets.js"
-import { flashBackgroundColor } from '../util/util_fun.js'
-import { TypeSlotEvent, TypeSlot } from '../util/util_node.js'
-import { apiJovimetrix, widgetSizeModeHook } from '../util/util_jov.js'
+import { ComfyWidgets } from '../../../scripts/widgets.js';
+import { apiJovimetrix, TypeSlotEvent, TypeSlot } from '../util.js'
+import { flashBackgroundColor } from '../fun.js'
 
 const _id1 = "QUEUE (JOV) 🗃";
 const _id2 = "QUEUE TOO (JOV) 🗃";
@@ -18,10 +17,6 @@ app.registerExtension({
 	async beforeRegisterNodeDef(nodeType, nodeData, app) {
         if (nodeData.name != _id1 && nodeData.name != _id2) {
             return;
-        }
-
-        if (nodeData.name == _id2) {
-            widgetSizeModeHook(nodeType);
         }
 
         function update_report(self) {
@@ -54,7 +49,7 @@ app.registerExtension({
 
             const widget_queue = this.widgets.find(w => w.name == 'Q');
             const widget_batch = this.widgets.find(w => w.name == 'BATCH');
-            const widget_hold = this.widgets.find(w => w.name == '✋🏽');
+            const widget_hold = this.widgets.find(w => w.name == 'HOLD');
             const widget_reset = this.widgets.find(w => w.name == 'RESET');
 
             widget_queue.inputEl.addEventListener('input', function () {

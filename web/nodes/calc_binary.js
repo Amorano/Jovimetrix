@@ -1,7 +1,7 @@
 /**/
 
 import { app } from "../../../scripts/app.js"
-import { widgetHookAB } from '../util/util_jov.js'
+import { widgetHookAB } from '../util.js'
 
 const _id = "OP BINARY (JOV) 🌟"
 
