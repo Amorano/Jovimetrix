@@ -1,7 +1,7 @@
 /**/
 
 import { app } from "../../../scripts/app.js"
-import { widgetHookControl, widgetHookAB } from "../util.js"
+import { widgetHookControl, widgetHookValue } from "../util.js"
 
 const _id = "LERP (JOV) 🔰"
 
@@ -17,7 +17,8 @@ app.registerExtension({
             const me = onNodeCreated?.apply(this);
             const alpha = this.widgets.find(w => w.name == 'ALPHA');
             widgetHookControl(this, 'TYPE', alpha, true);
-            widgetHookAB(this, 'TYPE', false);
+            widgetHookValue(this, 'TYPE', 'AA');
+            widgetHookValue(this, 'TYPE', 'BB');
             return me;
         }
         return nodeType;

@@ -1,7 +1,7 @@
 /**/
 
 import { app } from "../../../scripts/app.js"
-import { widgetHookAB, nodeFitHeight} from "../util.js"
+import { widgetHookValue, nodeFitHeight} from "../util.js"
 
 const _id = "VALUE (JOV) 🧬"
 
@@ -21,7 +21,8 @@ app.registerExtension({
             this.outputs[3].type = "*";
             this.outputs[4].type = "*";
 
-            const ab_data = widgetHookAB(this, 'TYPE');
+            const ab_data = widgetHookValue(this, 'TYPE', 'AA');
+            widgetHookValue(this, 'TYPE', 'BB');
 
             const oldCallback = ab_data.callback;
             ab_data.callback = () => {

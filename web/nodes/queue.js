@@ -8,7 +8,7 @@ import { flashBackgroundColor } from '../fun.js'
 
 const _id1 = "QUEUE (JOV) 🗃";
 const _id2 = "QUEUE TOO (JOV) 🗃";
-const _prefix = '🦄';
+const _prefix = '❔';
 const EVENT_JOVI_PING = "jovi-queue-ping";
 const EVENT_JOVI_DONE = "jovi-queue-done";
 

@@ -1,7 +1,7 @@
 /**/
 
 import { app } from "../../../scripts/app.js"
-import { TypeSlotEvent, TypeSlot, nodeFitHeight } from "../util.js"
+import { TypeSlotEvent, TypeSlot, nodeFitHeight, widgetHookValue } from "../util.js"
 
 const _id = "OP UNARY (JOV) 🎲"
 
@@ -13,6 +13,13 @@ app.registerExtension({
             return;
         }
 
+        const onNodeCreated = nodeType.prototype.onNodeCreated
+        nodeType.prototype.onNodeCreated = function () {
+            const me = onNodeCreated?.apply(this);
+            widgetHookValue(this, 'TYPE', 'AA');
+            return me;
+        }
+/*
         const onConnectionsChange = nodeType.prototype.onConnectionsChange
         nodeType.prototype.onConnectionsChange = function (slotType, slot_idx, event, link_info, node_slot) {
             const me = onConnectionsChange?.apply(this, arguments);
@@ -41,7 +48,7 @@ app.registerExtension({
             nodeFitHeight(this);
             return me;
         }
-
+*/
        return nodeType;
 	}
 })

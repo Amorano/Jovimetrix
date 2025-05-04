@@ -1,7 +1,7 @@
 /**/
 
 import { app } from "../../../scripts/app.js"
-import { widgetHookAB } from "../util.js"
+import { widgetHookValue } from "../util.js"
 
 const _id = "OP BINARY (JOV) 🌟"
 
@@ -15,7 +15,8 @@ app.registerExtension({
         const onNodeCreated = nodeType.prototype.onNodeCreated
         nodeType.prototype.onNodeCreated = function () {
             const me = onNodeCreated?.apply(this);
-            widgetHookAB(this, '❓');
+            widgetHookValue(this, 'TYPE', 'AA');
+            widgetHookValue(this, 'TYPE', 'BB');
             return me;
         }
 
