@@ -1,7 +1,7 @@
 /**/
 
 import { app } from "../../../scripts/app.js"
-import { nodeAddDynamic } from '../util.js'
+import { nodeAddDynamic } from "../util.js"
 
 const _id = "FLATTEN (JOV) ⬇️"
 const _prefix = 'IMAGE'
@@ -14,6 +14,5 @@ app.registerExtension({
         }
 
         nodeAddDynamic(nodeType, _prefix);
-
 	}
 })

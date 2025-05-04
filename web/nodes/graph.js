@@ -1,7 +1,7 @@
 /**/
 
 import { app } from "../../../scripts/app.js"
-import { apiJovimetrix, nodeAddDynamic } from '../util.js'
+import { apiJovimetrix, nodeAddDynamic } from "../util.js"
 
 const _id = "GRAPH (JOV) 📈"
 const _prefix = '❔'

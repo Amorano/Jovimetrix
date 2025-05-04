@@ -1,7 +1,7 @@
 /**/
 
 import { app } from "../../../scripts/app.js"
-import { widgetHookAB, nodeFitHeight} from '../util.js'
+import { widgetHookAB, nodeFitHeight} from "../util.js"
 
 const _id = "VALUE (JOV) 🧬"
 

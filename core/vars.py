@@ -33,9 +33,7 @@ Supplies raw or default values for various data types, supporting vector input w
     @classmethod
     def INPUT_TYPES(cls) -> InputType:
         d = super().INPUT_TYPES()
-
         typ = EnumConvertType._member_names_[:6]
-
         d = deep_merge(d, {
             "optional": {
                 "A": (COZY_TYPE_ANY, {

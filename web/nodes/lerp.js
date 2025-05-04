@@ -1,7 +1,7 @@
 /**/
 
 import { app } from "../../../scripts/app.js"
-import { widgetHookControl, widgetHookAB } from '../util.js'
+import { widgetHookControl, widgetHookAB } from "../util.js"
 
 const _id = "LERP (JOV) 🔰"
 

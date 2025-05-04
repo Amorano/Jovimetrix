@@ -5,7 +5,7 @@
  */
 
 import { app } from "../../../scripts/app.js"
-import { nodeAddDynamic } from '../util.js'
+import { nodeAddDynamic } from "../util.js"
 
 const _id = "ARRAY (JOV) 📚"
 const _prefix = '❔'

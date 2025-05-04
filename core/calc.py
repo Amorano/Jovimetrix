@@ -160,7 +160,7 @@ OP_UNARY = {
     EnumUnaryOperation.TAN: lambda x: math.tan(x),
     EnumUnaryOperation.NEGATE: lambda x: -x,
     EnumUnaryOperation.RECIPROCAL: lambda x: 1 / x if x != 0 else 0,
-    EnumUnaryOperation.FACTORIAL: lambda x: math.factorial(math.abs(int(x))),
+    EnumUnaryOperation.FACTORIAL: lambda x: math.factorial(abs(int(x))),
     EnumUnaryOperation.EXP: lambda x: math.exp(x),
     EnumUnaryOperation.NOT: lambda x: not x,
     EnumUnaryOperation.BIT_NOT: lambda x: ~int(x),
@@ -216,6 +216,7 @@ class BitSplitNode(CozyBaseNode):
     CATEGORY = JOV_CATEGORY
     RETURN_TYPES = (COZY_TYPE_ANY, "BOOLEAN",)
     RETURN_NAMES = ("BIT", "BOOL",)
+    OUTPUT_IS_LIST = (True, True,)
     OUTPUT_TOOLTIPS = (
         "Bits as Numerical output (0 or 1)",
         "Bits as Boolean output (True or False)"
@@ -272,6 +273,7 @@ class ComparisonNode(CozyBaseNode):
     CATEGORY = JOV_CATEGORY
     RETURN_TYPES = (COZY_TYPE_ANY, COZY_TYPE_ANY,)
     RETURN_NAMES = ("OUT", "VAL",)
+    OUTPUT_IS_LIST = (True, True,)
     OUTPUT_TOOLTIPS = (
         "Outputs the input at PASS or FAIL depending the evaluation",
         "The comparison result value"
@@ -405,6 +407,7 @@ class LerpNode(CozyBaseNode):
     CATEGORY = JOV_CATEGORY
     RETURN_TYPES = (COZY_TYPE_ANY,)
     RETURN_NAMES = ("🦄",)
+    OUTPUT_IS_LIST = (True,)
     OUTPUT_TOOLTIPS = (
         f"Output can vary depending on the type chosen in the {"TYPE"} parameter"
     )
@@ -510,6 +513,7 @@ class OPUnaryNode(CozyBaseNode):
     CATEGORY = JOV_CATEGORY
     RETURN_TYPES = (COZY_TYPE_ANY,)
     RETURN_NAMES = ("❔",)
+    OUTPUT_IS_LIST = (True,)
     OUTPUT_TOOLTIPS = (
         "Output type will match the input type"
     )
@@ -521,12 +525,19 @@ Perform single function operations like absolute value, mean, median, mode, magn
     @classmethod
     def INPUT_TYPES(cls) -> InputType:
         d = super().INPUT_TYPES()
+        typ = EnumConvertType._member_names_[:6]
         d = deep_merge(d, {
             "optional": {
                 "A": (COZY_TYPE_NUMERICAL, {
                     "default": None}),
                 "FUNCTION": (EnumUnaryOperation._member_names_, {
-                    "default": EnumUnaryOperation.ABS.name})
+                    "default": EnumUnaryOperation.ABS.name}),
+                "TYPE": (typ, {
+                    "default": EnumConvertType.FLOAT.name,
+                    "tooltip":"Take the input and convert it into the selected type"}),
+                "FILL": ("BOOLEAN", {
+                    "default": False,
+                    "tooltip":"If the value should fill the output type (VEC*)"}),
             }
         })
         return d
@@ -535,24 +546,16 @@ Perform single function operations like absolute value, mean, median, mode, magn
         results = []
         A = parse_param(kw, "A", EnumConvertType.ANY, 0)
         op = parse_param(kw, "FUNCTION", EnumUnaryOperation, EnumUnaryOperation.ABS.name)
-        params = list(zip_longest_fill(A, op))
+        out = parse_param(kw, "TYPE", EnumConvertType, EnumConvertType.FLOAT.name)
+        fill = parse_param(kw, "FILL", EnumConvertType.BOOLEAN, False)
+        params = list(zip_longest_fill(A, op, out, fill))
         pbar = ProgressBar(len(params))
-        for idx, (A, op) in enumerate(params):
-            typ = EnumConvertType.ANY
-            if isinstance(A, (str, )):
-                typ = EnumConvertType.STRING
-            elif isinstance(A, (bool, )):
+        for idx, (A, op, out, fill) in enumerate(params):
+            typ = EnumConvertType.FLOAT
+            if isinstance(A, (bool, )):
                 typ = EnumConvertType.BOOLEAN
-            elif isinstance(A, (int, )):
-                typ = EnumConvertType.INT
-            elif isinstance(A, (float, )):
-                typ = EnumConvertType.FLOAT
             elif isinstance(A, (list, set, tuple,)):
                 typ = EnumConvertType(len(A) * 10)
-            elif isinstance(A, (dict,)):
-                typ = EnumConvertType.DICT
-            elif isinstance(A, (TensorType,)):
-                typ = EnumConvertType.IMAGE
 
             val = parse_value(A, typ, 0)
             if not isinstance(val, (list, tuple, )):
@@ -593,17 +596,11 @@ Perform single function operations like absolute value, mean, median, mode, magn
                         ret.append(v)
                     val = ret
 
-            convert = int if isinstance(A, (bool, int, np.uint8, np.uint16, np.uint32, np.uint64)) else float
-            ret = []
-            for v in val:
-                try:
-                    ret.append(convert(v))
-                except OverflowError:
-                    ret.append(0)
-                except Exception as e:
-                    logger.error(f"{e} :: {op}")
-                    ret.append(0)
-            val = parse_value(val, typ, 0)
+            if fill:
+                while len(val) < 4:
+                    val.append(val[-1])
+
+            val = parse_value(val, out, 0)
             results.append(val)
             pbar.update_absolute(idx)
         return (results,)
@@ -613,6 +610,7 @@ class OPBinaryNode(CozyBaseNode):
     CATEGORY = JOV_CATEGORY
     RETURN_TYPES = (COZY_TYPE_ANY,)
     RETURN_NAMES = ("❔",)
+    OUTPUT_IS_LIST = (True,)
     OUTPUT_TOOLTIPS = (
         "Output type will match the input type"
     )
@@ -768,6 +766,7 @@ class StringerNode(CozyBaseNode):
     CATEGORY = JOV_CATEGORY
     RETURN_TYPES = ("STRING", "INT",)
     RETURN_NAMES = ("STRING", "COUNT",)
+    OUTPUT_IS_LIST = (True, False,)
     SORT = 44
     DESCRIPTION = """
 Manipulate strings through filtering
@@ -788,7 +787,7 @@ Manipulate strings through filtering
                 "REPLACE": ("STRING", {
                     "default":"", "dynamicPrompt":False}),
                 "RANGE": ("VEC3", {
-                    "default":(0, -1, 1),
+                    "default":(0, -1, 1), "int": True,
                     "tooltip":"Start, End and Step. Values will clip to the actual list size(s)."}),
             }
         })
@@ -796,23 +795,25 @@ Manipulate strings through filtering
 
     def run(self, **kw) -> tuple[TensorType, ...]:
         # turn any all inputs into the
-        data_list = parse_dynamic(kw, "❔", EnumConvertType.ANY, "")
+        data_list = parse_dynamic(kw, "STRING", EnumConvertType.ANY, "")
         if data_list is None:
             logger.warn("no data for list")
-            return ([],)
-        # flat list of ALL the dynamic inputs...
-        #data_list = flatten(data_list)
-        # single operation mode -- like array node
+            return ([], 0)
+
         op = parse_param(kw, "FUNCTION", EnumConvertString, EnumConvertString.SPLIT.name)[0]
         key = parse_param(kw, "KEY", EnumConvertType.STRING, "")[0]
         replace = parse_param(kw, "REPLACE", EnumConvertType.STRING, "")[0]
         stenst = parse_param(kw, "RANGE", EnumConvertType.VEC3INT, (0, -1, 1))[0]
         results = []
+        print(data_list)
         match op:
             case EnumConvertString.SPLIT:
                 results = data_list
                 if key != "":
-                    results = [r.split(key) for r in data_list]
+                    results = []
+                    for d in data_list:
+                        d = [key if len(r) == 0 else r for r in d.split(key)]
+                        results.extend(d)
             case EnumConvertString.JOIN:
                 results = [key.join(data_list)]
             case EnumConvertString.FIND:
@@ -830,15 +831,14 @@ Manipulate strings through filtering
                         results.append(x[start:end:step])
                     else:
                         results.append(x)
-        if len(results) == 0:
-            results = [""]
-        return (results, [len(r) for r in results],) if len(results) > 1 else (results[0], len(results[0]),)
+        return (results, len(results),)
 
 class SwizzleNode(CozyBaseNode):
     NAME = "SWIZZLE (JOV) 😵"
     CATEGORY = JOV_CATEGORY
     RETURN_TYPES = (COZY_TYPE_ANY,)
     RETURN_NAMES = ("🦄",)
+    OUTPUT_IS_LIST = (True,)
     SORT = 40
     DESCRIPTION = """
 Swap components between two vectors based on specified swizzle patterns and values. It provides flexibility in rearranging vector elements dynamically.

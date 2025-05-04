@@ -1,10 +1,10 @@
 /**/
 
 import { app } from "../../../scripts/app.js"
-import { nodeAddDynamic}  from "../util.js"
+import { nodeAddDynamic } from "../util.js"
 
-const _id = "STACK (JOV) ➕"
-const _prefix = 'IMAGE'
+const _id = "STRINGER (JOV) 🪀"
+const _prefix = 'STRING'
 
 app.registerExtension({
 	name: 'jovimetrix.node.' + _id,
@@ -12,6 +12,7 @@ app.registerExtension({
         if (nodeData.name !== _id) {
             return;
         }
+
         nodeAddDynamic(nodeType, _prefix);
 	}
 })

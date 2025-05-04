@@ -2,7 +2,7 @@
 
 import { api } from "../../../scripts/api.js";
 import { app } from "../../../scripts/app.js";
-import { apiJovimetrix } from '../util.js'
+import { apiJovimetrix } from "../util.js"
 import { bubbles } from '../fun.js'
 
 const _id = "DELAY (JOV) ✋🏽"

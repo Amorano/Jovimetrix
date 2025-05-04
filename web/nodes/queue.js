@@ -3,7 +3,7 @@
 import { api } from "../../../scripts/api.js";
 import { app } from "../../../scripts/app.js";
 import { ComfyWidgets } from '../../../scripts/widgets.js';
-import { apiJovimetrix, TypeSlotEvent, TypeSlot } from '../util.js'
+import { apiJovimetrix, TypeSlotEvent, TypeSlot } from "../util.js"
 import { flashBackgroundColor } from '../fun.js'
 
 const _id1 = "QUEUE (JOV) 🗃";
