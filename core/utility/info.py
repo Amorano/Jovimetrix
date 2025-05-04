@@ -180,7 +180,7 @@ Visualize a series of data points over time. It accepts a dynamic number of valu
 
     def run(self, ident, **kw) -> tuple[TensorType]:
         slice = parse_param(kw, "VAL", EnumConvertType.INT, 60)[0]
-        wihi = parse_param(kw, "WH", EnumConvertType.VEC2INT, [(512, 512)], 1)[0]
+        wihi = parse_param(kw, "WH", EnumConvertType.VEC2INT, (512, 512), 1)[0]
         if parse_reset(ident) > 0 or parse_param(kw, "RESET", EnumConvertType.BOOLEAN, False)[0]:
             self.__history = []
         longest_edge = 0
@@ -236,7 +236,7 @@ Exports and Displays immediate information about images.
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                "IMAGE_A": (COZY_TYPE_IMAGE, {
+                "IMAGE": (COZY_TYPE_IMAGE, {
                     "default": None,
                     "tooltip":"The image to examine"})
             }
@@ -244,6 +244,6 @@ Exports and Displays immediate information about images.
         return d
 
     def run(self, **kw) -> tuple[int, list]:
-        image = parse_param(kw, "IMAGE_A", EnumConvertType.IMAGE, None)
+        image = parse_param(kw, "IMAGE", EnumConvertType.IMAGE, None)
         height, width, cc = image[0].shape
         return (len(image), width, height, cc, (width, height), (width, height, cc))

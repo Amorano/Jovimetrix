@@ -36,11 +36,9 @@ export async function apiJovimetrix(id, cmd, data=null, route="message", ) {
 
     } catch (error) {
         console.error("API call to Jovimetrix failed:", error);
-        throw error; // or return { success: false, message: error.message }
+        throw error;
     }
 }
-
-//export const widgetFind = (widgets, name) => widgets.find(w => w.name == name);
 
 function widgetShowVector(widget, values={}, type) {
     if (["FLOAT"].includes(type)) {
@@ -86,7 +84,6 @@ function widgetShowVector(widget, values={}, type) {
         widget.value = {};
         for (let i = 0; i < size; i++) {
             widget.value[i] = (widget.options.precision == 0) ? Number(values[i]) : parseFloat(values[i]).toFixed(widget.options.precision);
-            //widget.value[i] = !widget.type.endsWith('INT') ? Math.round(values[i]) : Number(values[i]);
         }
     } else {
         widget.value = values[0] ? true : false;
@@ -155,7 +152,6 @@ export function widgetHookControl(node, control_key, target, matchFloatSize=fals
     }
 
     const data = {
-        //track_xyzw: target.options?.default, //initializeTrack(target),
         track_xyzw: initializeTrack(target),
         target,
         combo
@@ -164,19 +160,14 @@ export function widgetHookControl(node, control_key, target, matchFloatSize=fals
     const oldCallback = combo.callback;
     combo.callback = () => {
         const me = oldCallback?.apply(this, arguments);
-        //widgetHide(node, target, "-jov");
-        //if (["VEC2", "VEC2INT", "COORD2D", "VEC3", "VEC3INT", "VEC4", "VEC4INT", "BOOLEAN", "INT", "FLOAT"].includes(combo.value)) {
         if (["VEC2", "VEC3", "VEC4", "BOOLEAN", "INT", "FLOAT"].includes(combo.value)) {
             let type = combo.value;
             if (matchFloatSize) {
                 type = "FLOAT";
-                // if (["VEC2", "VEC2INT", "COORD2D"].includes(combo.value)) {
                 if (["VEC2"].includes(combo.value)) {
                     type = "VEC2";
-                //} else if (["VEC3", "VEC3INT"].includes(combo.value)) {
                 } else if (["VEC3"].includes(combo.value)) {
                     type = "VEC3";
-                //} else if (["VEC4", "VEC4INT"].includes(combo.value)) {
                 } else if (["VEC4"].includes(combo.value)) {
                     type = "VEC4";
                 }

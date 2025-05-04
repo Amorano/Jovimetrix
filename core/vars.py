@@ -23,7 +23,7 @@ class ValueNode(CozyBaseNode):
     NAME = "VALUE (JOV) 🧬"
     CATEGORY = JOV_CATEGORY
     RETURN_TYPES = (COZY_TYPE_ANY, COZY_TYPE_ANY, COZY_TYPE_ANY, COZY_TYPE_ANY, COZY_TYPE_ANY,)
-    RETURN_NAMES = ("🦄", "X", "Y", "Z", "W")
+    RETURN_NAMES = ("🦄", "X", "Y", "Z", "W",)
     SORT = 5
     DESCRIPTION = """
 Supplies raw or default values for various data types, supporting vector input with components for X, Y, Z, and W. It also provides a string input option.
@@ -71,15 +71,15 @@ Supplies raw or default values for various data types, supporting vector input w
         return d
 
     def run(self, **kw) -> tuple[bool]:
-        raw = parse_param(kw, "A", EnumConvertType.ANY, [0])
+        raw = parse_param(kw, "A", EnumConvertType.ANY, 0)
         r_x = parse_param(kw, "X", EnumConvertType.FLOAT, None, -sys.maxsize, sys.maxsize)
         r_y = parse_param(kw, "Y", EnumConvertType.FLOAT, None, -sys.maxsize, sys.maxsize)
         r_z = parse_param(kw, "Z", EnumConvertType.FLOAT, None, -sys.maxsize, sys.maxsize)
         r_w = parse_param(kw, "W", EnumConvertType.FLOAT, None, -sys.maxsize, sys.maxsize)
         typ = parse_param(kw, "TYPE", EnumConvertType, EnumConvertType.BOOLEAN.name)
-        xyzw = parse_param(kw, "AA", EnumConvertType.VEC4, [(0, 0, 0, 0)])
+        xyzw = parse_param(kw, "AA", EnumConvertType.VEC4, (0, 0, 0, 0))
         seed = parse_param(kw, "SEED", EnumConvertType.INT, 0, 0)
-        yyzw = parse_param(kw, "BB", EnumConvertType.VEC4, [(1, 1, 1, 1)])
+        yyzw = parse_param(kw, "BB", EnumConvertType.VEC4, (1, 1, 1, 1))
         x_str = parse_param(kw, "STRING", EnumConvertType.STRING, "")
         params = list(zip_longest_fill(raw, r_x, r_y, r_z, r_w, typ, xyzw, seed, yyzw, x_str))
         results = []
@@ -170,7 +170,6 @@ Outputs a VECTOR2.
     def run(self, **kw) -> tuple[tuple[float, ...], tuple[int, ...]]:
         x = parse_param(kw, "X", EnumConvertType.FLOAT, None, -sys.maxsize, sys.maxsize)
         y = parse_param(kw, "Y", EnumConvertType.FLOAT, None, -sys.maxsize, sys.maxsize)
-
         a = parse_param(kw, "A", EnumConvertType.FLOAT, 0, -sys.maxsize, sys.maxsize)
         b = parse_param(kw, "B", EnumConvertType.FLOAT, 0, -sys.maxsize, sys.maxsize)
 
@@ -181,7 +180,6 @@ Outputs a VECTOR2.
             x = round(a, 9) if x is None else round(x, 9)
             y = round(b, 9) if y is None else round(y, 9)
             result.append((x, y,))
-            #resultY.append((int(x), int(y)))
             pbar.update_absolute(idx)
         return result,
 
@@ -190,6 +188,7 @@ class Vector3Node(CozyBaseNode):
     CATEGORY = JOV_CATEGORY
     RETURN_TYPES = ("VEC3",)
     RETURN_NAMES = ("VEC3",)
+    OUTPUT_IS_LIST = (True,)
     OUTPUT_TOOLTIPS = (
         "Vector3 with float values",
     )
@@ -204,41 +203,53 @@ Outputs a VECTOR3.
         d = deep_merge(d, {
             "optional": {
                 "X": (COZY_TYPE_NUMBER, {
-                    "default": 0, "min": -sys.maxsize, "max": sys.maxsize,
-                    "tooltip": "1st channel value"}),
+                    "min": -sys.maxsize, "max": sys.maxsize,
+                    "tooltip": "X channel value"}),
                 "Y": (COZY_TYPE_NUMBER, {
-                    "default": 0, "min": -sys.maxsize, "max": sys.maxsize,
-                    "tooltip": "2nd channel value"}),
+                    "min": -sys.maxsize, "max": sys.maxsize,
+                    "tooltip": "Y channel value"}),
                 "Z": (COZY_TYPE_NUMBER, {
+                    "min": -sys.maxsize, "max": sys.maxsize,
+                    "tooltip": "Z channel value"}),
+                "A": ("FLOAT", {
                     "default": 0, "min": -sys.maxsize, "max": sys.maxsize,
-                    "tooltip": "3rd channel value"}),
+                    "tooltip": "Default X channel value"}),
+                "B": ("FLOAT", {
+                    "default": 0, "min": -sys.maxsize, "max": sys.maxsize,
+                    "tooltip": "Default Y channel value"}),
+                "C": ("FLOAT", {
+                    "default": 0, "min": -sys.maxsize, "max": sys.maxsize,
+                    "tooltip": "Default Z channel value"}),
             }
         })
         return d
 
     def run(self, **kw) -> tuple[tuple[float, ...], tuple[int, ...]]:
-        x = parse_param(kw, "X", EnumConvertType.FLOAT, 0, -sys.maxsize, sys.maxsize)
-        y = parse_param(kw, "Y", EnumConvertType.FLOAT, 0, -sys.maxsize, sys.maxsize)
-        z = parse_param(kw, "Z", EnumConvertType.FLOAT, 0, -sys.maxsize, sys.maxsize)
-        results = []
-        params = list(zip_longest_fill(x, y, z))
+        x = parse_param(kw, "X", EnumConvertType.FLOAT, None, -sys.maxsize, sys.maxsize)
+        y = parse_param(kw, "Y", EnumConvertType.FLOAT, None, -sys.maxsize, sys.maxsize)
+        z = parse_param(kw, "Z", EnumConvertType.FLOAT, None, -sys.maxsize, sys.maxsize)
+        a = parse_param(kw, "A", EnumConvertType.FLOAT, 0, -sys.maxsize, sys.maxsize)
+        b = parse_param(kw, "B", EnumConvertType.FLOAT, 0, -sys.maxsize, sys.maxsize)
+        c = parse_param(kw, "C", EnumConvertType.FLOAT, 0, -sys.maxsize, sys.maxsize)
+        result = []
+        params = list(zip_longest_fill(x, y, z, a, b, c))
         pbar = ProgressBar(len(params))
-        for idx, (x, y, z) in enumerate(params):
-            x = round(x, 6)
-            y = round(y, 6)
-            z = round(z, 6)
-            results.append([(x, y, z,), (int(x), int(y), int(z),)])
+        for idx, (x, y, z, a, b, c) in enumerate(params):
+            x = round(a, 9) if x is None else round(x, 9)
+            y = round(b, 9) if y is None else round(y, 9)
+            z = round(c, 9) if z is None else round(z, 9)
+            result.append((x, y, z,))
             pbar.update_absolute(idx)
-        return *list(zip(*results)),
+        return result,
 
 class Vector4Node(CozyBaseNode):
     NAME = "VECTOR4 (JOV)"
     CATEGORY = JOV_CATEGORY
-    RETURN_TYPES = ("VEC4", "VEC4INT", )
-    RETURN_NAMES = ("VEC4", "VEC4INT", )
+    RETURN_TYPES = ("VEC4",)
+    RETURN_NAMES = ("VEC4",)
+    OUTPUT_IS_LIST = (True,)
     OUTPUT_TOOLTIPS = (
         "Vector4 with float values",
-        "Vector4 with integer values",
     )
     SORT = 294
     DESCRIPTION = """
@@ -251,37 +262,53 @@ Outputs a VEC4.
         d = deep_merge(d, {
             "optional": {
                 "X": (COZY_TYPE_NUMBER, {
-                    "default": 0, "min": -sys.maxsize, "max": sys.maxsize,
-                    "tooltip": "1st channel value"}),
+                    "min": -sys.maxsize, "max": sys.maxsize,
+                    "tooltip": "X channel value"}),
                 "Y": (COZY_TYPE_NUMBER, {
-                    "default": 0, "min": -sys.maxsize, "max": sys.maxsize,
-                    "tooltip": "2nd channel value"}),
+                    "min": -sys.maxsize, "max": sys.maxsize,
+                    "tooltip": "Y channel value"}),
                 "Z": (COZY_TYPE_NUMBER, {
-                    "default": 0, "min": -sys.maxsize, "max": sys.maxsize,
-                    "tooltip": "3rd channel value"}),
+                    "min": -sys.maxsize, "max": sys.maxsize,
+                    "tooltip": "Z channel value"}),
                 "W": (COZY_TYPE_NUMBER, {
+                    "min": -sys.maxsize, "max": sys.maxsize,
+                    "tooltip": "W channel value"}),
+                "A": ("FLOAT", {
                     "default": 0, "min": -sys.maxsize, "max": sys.maxsize,
-                    "tooltip": "4th channel value"}),
+                    "tooltip": "Default X channel value"}),
+                "B": ("FLOAT", {
+                    "default": 0, "min": -sys.maxsize, "max": sys.maxsize,
+                    "tooltip": "Default Y channel value"}),
+                "C": ("FLOAT", {
+                    "default": 0, "min": -sys.maxsize, "max": sys.maxsize,
+                    "tooltip": "Default Z channel value"}),
+                "D": ("FLOAT", {
+                    "default": 0, "min": -sys.maxsize, "max": sys.maxsize,
+                    "tooltip": "Default W channel value"}),
             }
         })
         return d
 
     def run(self, **kw) -> tuple[tuple[float, ...], tuple[int, ...]]:
-        x = parse_param(kw, "X", EnumConvertType.FLOAT, 0, -sys.maxsize, sys.maxsize)
-        y = parse_param(kw, "Y", EnumConvertType.FLOAT, 0, -sys.maxsize, sys.maxsize)
-        z = parse_param(kw, "Z", EnumConvertType.FLOAT, 0, -sys.maxsize, sys.maxsize)
-        w = parse_param(kw, "W", EnumConvertType.FLOAT, 0, -sys.maxsize, sys.maxsize)
-        results = []
-        params = list(zip_longest_fill(x, y, z, w))
+        x = parse_param(kw, "X", EnumConvertType.FLOAT, None, -sys.maxsize, sys.maxsize)
+        y = parse_param(kw, "Y", EnumConvertType.FLOAT, None, -sys.maxsize, sys.maxsize)
+        z = parse_param(kw, "Z", EnumConvertType.FLOAT, None, -sys.maxsize, sys.maxsize)
+        w = parse_param(kw, "W", EnumConvertType.FLOAT, None, -sys.maxsize, sys.maxsize)
+        a = parse_param(kw, "A", EnumConvertType.FLOAT, 0, -sys.maxsize, sys.maxsize)
+        b = parse_param(kw, "B", EnumConvertType.FLOAT, 0, -sys.maxsize, sys.maxsize)
+        c = parse_param(kw, "C", EnumConvertType.FLOAT, 0, -sys.maxsize, sys.maxsize)
+        d = parse_param(kw, "D", EnumConvertType.FLOAT, 0, -sys.maxsize, sys.maxsize)
+        result = []
+        params = list(zip_longest_fill(x, y, z, w, a, b, c, d))
         pbar = ProgressBar(len(params))
-        for idx, (x, y, z, w,) in enumerate(params):
-            x = round(x, 6)
-            y = round(y, 6)
-            z = round(z, 6)
-            w = round(w, 6)
-            results.append([(x, y, z, w,), (int(x), int(y), int(z), int(w),)])
+        for idx, (x, y, z, w, a, b, c, d) in enumerate(params):
+            x = round(a, 9) if x is None else round(x, 9)
+            y = round(b, 9) if y is None else round(y, 9)
+            z = round(c, 9) if z is None else round(z, 9)
+            w = round(d, 9) if w is None else round(w, 9)
+            result.append((x, y, z, w,))
             pbar.update_absolute(idx)
-        return *list(zip(*results)),
+        return result,
 
 '''
 class ParameterNode(CozyBaseNode):

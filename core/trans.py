@@ -92,7 +92,8 @@ Extract a portion of an input image or resize it. It supports various cropping m
                     "label": ["BOTTOM", "LEFT", "BOTTOM", "RIGHT"],
                     "tooltip": "Bottom Left - Bottom Right"}),
                 "MATTE": ("VEC4", {
-                    "default": (0, 0, 0, 255), "rgb": True})
+                    "default": (0, 0, 0, 255), "rgb": True,
+                    "tooltip": "Background Color"})
             }
         })
         return d
@@ -101,11 +102,11 @@ Extract a portion of an input image or resize it. It supports various cropping m
         pA = parse_param(kw, "IMAGE", EnumConvertType.IMAGE, None)
         func = parse_param(kw, "FUNCTION", EnumCropMode, EnumCropMode.CENTER.name)
         # if less than 1 then use as scalar, over 1 = int(size)
-        xy = parse_param(kw, "XY", EnumConvertType.VEC2, [(0, 0,)], 0, 1)
-        wihi = parse_param(kw, "WH", EnumConvertType.VEC2INT, [(512, 512)], IMAGE_SIZE_MIN)
-        tltr = parse_param(kw, "TLTR", EnumConvertType.VEC4, [(0, 0, 0, 1,)], 0, 1)
-        blbr = parse_param(kw, "BLBR", EnumConvertType.VEC4, [(1, 0, 1, 1,)], 0, 1)
-        matte = parse_param(kw, "MATTE", EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
+        xy = parse_param(kw, "XY", EnumConvertType.VEC2, (0, 0,), 0, 1)
+        wihi = parse_param(kw, "WH", EnumConvertType.VEC2INT, (512, 512), IMAGE_SIZE_MIN)
+        tltr = parse_param(kw, "TLTR", EnumConvertType.VEC4, (0, 0, 0, 1,), 0, 1)
+        blbr = parse_param(kw, "BLBR", EnumConvertType.VEC4, (1, 0, 1, 1,), 0, 1)
+        matte = parse_param(kw, "MATTE", EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
         params = list(zip_longest_fill(pA, func, xy, wihi, tltr, blbr, matte))
         images = []
         pbar = ProgressBar(len(params))
@@ -160,7 +161,8 @@ Combine multiple input images into a single image by summing their pixel values.
                     "default": EnumInterpolation.LANCZOS4.name,
                     "tooltip": "Sampling method for resizing images"}),
                 "MATTE": ("VEC4", {
-                    "default": (0, 0, 0, 255), "rgb": True})
+                    "default": (0, 0, 0, 255), "rgb": True,
+                    "tooltip": "Background Color"})
             }
         })
         return d
@@ -174,9 +176,9 @@ Combine multiple input images into a single image by summing their pixel values.
         # be less dumb when merging
         pA = [tensor_to_cv(i) for i in imgs]
         mode = parse_param(kw, "MODE", EnumScaleMode, EnumScaleMode.MATTE.name)
-        wihi = parse_param(kw, "WH", EnumConvertType.VEC2INT, [(512, 512)], IMAGE_SIZE_MIN)
+        wihi = parse_param(kw, "WH", EnumConvertType.VEC2INT, (512, 512), IMAGE_SIZE_MIN)
         sample = parse_param(kw, "SAMPLE", EnumInterpolation, EnumInterpolation.LANCZOS4.name)
-        matte = parse_param(kw, "MATTE", EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
+        matte = parse_param(kw, "MATTE", EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
 
         images = []
         params = list(zip_longest_fill(mode, sample, wihi, matte))
@@ -220,7 +222,8 @@ The axis parameter allows for horizontal, vertical, or grid stacking of images, 
                     "default": EnumInterpolation.LANCZOS4.name,
                     "tooltip": "Sampling method for resizing images"}),
                 "MATTE": ("VEC4", {
-                    "default": (0, 0, 0, 255), "rgb": True})
+                    "default": (0, 0, 0, 255), "rgb": True,
+                    "tooltip": "Background Color"})
             }
         })
         return d
@@ -235,9 +238,9 @@ The axis parameter allows for horizontal, vertical, or grid stacking of images, 
         axis = parse_param(kw, "AXIS", EnumOrientation, EnumOrientation.GRID.name)[0]
         stride = parse_param(kw, "STEP", EnumConvertType.INT, 1)[0]
         mode = parse_param(kw, "MODE", EnumScaleMode, EnumScaleMode.MATTE.name)[0]
-        wihi = parse_param(kw, "WH", EnumConvertType.VEC2INT, [(512, 512)], IMAGE_SIZE_MIN)[0]
+        wihi = parse_param(kw, "WH", EnumConvertType.VEC2INT, (512, 512), IMAGE_SIZE_MIN)[0]
         sample = parse_param(kw, "SAMPLE", EnumInterpolation, EnumInterpolation.LANCZOS4.name)[0]
-        matte = parse_param(kw, "MATTE", EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)[0]
+        matte = parse_param(kw, "MATTE", EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)[0]
         img = image_stacker(images, axis, stride) #, matte)
         if mode != EnumScaleMode.MATTE:
             w, h = wihi
@@ -304,7 +307,8 @@ Apply various geometric transformations to images, including translation, rotati
                     "default": EnumInterpolation.LANCZOS4.name,
                     "tooltip": "Sampling method for resizing images"}),
                 "MATTE": ("VEC4", {
-                    "default": (0, 0, 0, 255), "rgb": True})
+                    "default": (0, 0, 0, 255), "rgb": True,
+                    "tooltip": "Background Color"})
             }
         })
         return d
@@ -312,21 +316,21 @@ Apply various geometric transformations to images, including translation, rotati
     def run(self, **kw) -> RGBAMaskType:
         pA = parse_param(kw, "IMAGE", EnumConvertType.IMAGE, None)
         mask = parse_param(kw, "MASK", EnumConvertType.IMAGE, None)
-        offset = parse_param(kw, "XY", EnumConvertType.VEC2, [(0., 0.)], -2.5, 2.5)
+        offset = parse_param(kw, "XY", EnumConvertType.VEC2, (0., 0.), -2.5, 2.5)
         angle = parse_param(kw, "ANGLE", EnumConvertType.FLOAT, 0)
-        size = parse_param(kw, "SIZE", EnumConvertType.VEC2, [(1., 1.)], 0.001)
+        size = parse_param(kw, "SIZE", EnumConvertType.VEC2, (1., 1.), 0.001)
         edge = parse_param(kw, "EDGE", EnumEdge, EnumEdge.CLIP.name)
         mirror = parse_param(kw, "MIRROR", EnumMirrorMode, EnumMirrorMode.NONE.name)
-        mirror_pivot = parse_param(kw, "PIVOT", EnumConvertType.VEC2, [(0.5, 0.5)], 0, 1)
-        tile_xy = parse_param(kw, "TILE", EnumConvertType.VEC2, [(1., 1.)], 1)
+        mirror_pivot = parse_param(kw, "PIVOT", EnumConvertType.VEC2, (0.5, 0.5), 0, 1)
+        tile_xy = parse_param(kw, "TILE", EnumConvertType.VEC2, (1., 1.), 1)
         proj = parse_param(kw, "PROJ", EnumProjection, EnumProjection.NORMAL.name)
-        tltr = parse_param(kw, "TLTR", EnumConvertType.VEC4, [(0., 0., 1., 0.)], 0, 1)
-        blbr = parse_param(kw, "BLBR", EnumConvertType.VEC4, [(0., 1., 1., 1.)], 0, 1)
+        tltr = parse_param(kw, "TLTR", EnumConvertType.VEC4, (0., 0., 1., 0.), 0, 1)
+        blbr = parse_param(kw, "BLBR", EnumConvertType.VEC4, (0., 1., 1., 1.), 0, 1)
         strength = parse_param(kw, "STRENGTH", EnumConvertType.FLOAT, 1, 0, 1)
         mode = parse_param(kw, "MODE", EnumScaleMode, EnumScaleMode.MATTE.name)
-        wihi = parse_param(kw, "WH", EnumConvertType.VEC2INT, [(512, 512)], IMAGE_SIZE_MIN)
+        wihi = parse_param(kw, "WH", EnumConvertType.VEC2INT, (512, 512), IMAGE_SIZE_MIN)
         sample = parse_param(kw, "SAMPLE", EnumInterpolation, EnumInterpolation.LANCZOS4.name)
-        matte = parse_param(kw, "MATTE", EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
+        matte = parse_param(kw, "MATTE", EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
         params = list(zip_longest_fill(pA, mask, offset, angle, size, edge, tile_xy, mirror, mirror_pivot, proj, strength, tltr, blbr, mode, wihi, sample, matte))
         images = []
         pbar = ProgressBar(len(params))

@@ -16,7 +16,7 @@ from cozy_comfyui.image import \
 
 from cozy_comfyui.image.convert import \
     ImageType, \
-    image_matte, image_mask_add, image_convert, image_to_bgr, \
+    image_matte, image_mask, image_mask_add, image_convert, image_to_bgr, \
     bgr_to_image, cv_to_tensor, tensor_to_cv
 
 from cozy_comfyui.image.crop import \
@@ -382,11 +382,15 @@ def image_scalefit(image: ImageType, width: int, height:int,
 
         case EnumScaleMode.RESIZE_MATTE:
             h, w = image.shape[:2]
-            width = max(width, w)
-            height = max(height, h)
-            canvas = np.full((height, width, 4), matte, dtype=image.dtype)
-            image = image_matte(image, (0,0,0,0), width, height)
+            w2 = max(width, w)
+            h2 = max(height, h)
+            canvas = np.full((h2, w2, 4), matte, dtype=image.dtype)
+            mask = image_mask(image)
+            mask = image_matte(mask, (255, 255, 255, 255), w2, h2)
+            image = image_matte(image, (0,0,0,0), w2, h2)
             image = image_blend(canvas, image)
+            image = image_mask_add(image, mask)
+            image = image_crop_center(image, width, height)
 
         case EnumScaleMode.ASPECT:
             h, w = image.shape[:2]

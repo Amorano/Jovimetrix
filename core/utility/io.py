@@ -308,27 +308,31 @@ Save the output image along with its metadata to the specified path. Supports sa
         d = super().INPUT_TYPES(True, True)
         d = deep_merge(d, {
             "optional": {
-                "image": ("IMAGE", {"default": None,
-                                    "tooltip":""}),
-                "path": ("STRING", {"default": "", "dynamicPrompts":False,
-                                    "tooltip":"Destination path to save the output"}),
-                "fname": ("STRING", {"default": "output", "dynamicPrompts":False,
-                                     "tooltip":"Filename of the output"}),
-                "metadata": ("JSON", {"default": None,
-                                      "tooltip":"Extra metadata to save in the file"}),
-                "usermeta": ("STRING", {"default": "", "multiline": True,
-                                        "dynamicPrompts":False,
-                                        "tooltip":"Custom user metadat to save with the file"}),
+                "IMAGE": ("IMAGE", {
+                    "default": None,
+                    "tooltip":""}),
+                "PATH": ("STRING", {
+                    "default": "", "dynamicPrompts":False,
+                    "tooltip":"Destination path to save the output"}),
+                "NAME": ("STRING", {
+                    "default": "output", "dynamicPrompts":False,
+                    "tooltip":"Filename of the output"}),
+                "META": ("JSON", {
+                    "default": None,
+                    "tooltip":"Extra metadata to save in the file"}),
+                "USER": ("STRING", {
+                    "default": "", "multiline": True, "dynamicPrompts":False,
+                    "tooltip":"Custom user metadat to save with the file"}),
             }
         })
         return d
 
     def run(self, **kw) -> dict[str, Any]:
-        image = parse_param(kw, 'image', EnumConvertType.IMAGE, None)
-        metadata = parse_param(kw, 'metadata', EnumConvertType.DICT, {})
-        usermeta = parse_param(kw, 'usermeta', EnumConvertType.DICT, {})
-        path = parse_param(kw, 'path', EnumConvertType.STRING, "")
-        fname = parse_param(kw, 'fname', EnumConvertType.STRING, "output")
+        image = parse_param(kw, 'IMAGE', EnumConvertType.IMAGE, None)
+        path = parse_param(kw, 'PATH', EnumConvertType.STRING, "")
+        fname = parse_param(kw, 'NAME', EnumConvertType.STRING, "output")
+        metadata = parse_param(kw, 'META', EnumConvertType.DICT, {})
+        usermeta = parse_param(kw, 'USER', EnumConvertType.DICT, {})
         prompt = parse_param(kw, 'prompt', EnumConvertType.STRING, "")
         pnginfo = parse_param(kw, 'extra_pnginfo', EnumConvertType.DICT, {})
         params = list(zip_longest_fill(image, path, fname, metadata, usermeta, prompt, pnginfo))

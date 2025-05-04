@@ -120,19 +120,19 @@ def pixel_convert(color:PixelType, size:int=4, alpha:int=255) -> PixelType:
 These are core functions that most of the support image libraries require.
 """
 
-def image_blend(imageA: ImageType, imageB: ImageType, mask:Optional[ImageType]=None,
+def image_blend(background: ImageType, foreground: ImageType, mask:Optional[ImageType]=None,
                 blendOp:BlendType=BlendType.NORMAL, alpha:float=1) -> ImageType:
     """Blending that will size to the largest input's background."""
 
     # prep A
-    h, w = imageA.shape[:2]
-    imageA = image_convert(imageA, 4, w, h)
-    imageA = cv_to_pil(imageA)
+    h, w = background.shape[:2]
+    background = image_convert(background, 4, w, h)
+    background = cv_to_pil(background)
 
     # prep B
-    cc = imageB.shape[2] if imageB.ndim > 2 else 1
-    imageB = image_convert(imageB, 4, w, h)
-    old_mask = image_mask(imageB, 0)
+    cc = foreground.shape[2] if foreground.ndim > 2 else 1
+    foreground = image_convert(foreground, 4, w, h)
+    old_mask = image_mask(foreground, 0)
 
     if mask is None:
         mask = old_mask
@@ -142,10 +142,10 @@ def image_blend(imageA: ImageType, imageB: ImageType, mask:Optional[ImageType]=N
         if cc == 4:
             mask = cv2.bitwise_and(mask, old_mask)
 
-    imageB[..., 3] = mask
-    imageB = cv_to_pil(imageB)
+    foreground[..., 3] = mask
+    foreground = cv_to_pil(foreground)
     alpha = np.clip(alpha, 0, 1)
-    image = blendLayers(imageA, imageB, blendOp.value, alpha)
+    image = blendLayers(background, foreground, blendOp.value, alpha)
     image = pil_to_cv(image)
     if cc == 4:
         image = image_mask_add(image, mask)

@@ -82,8 +82,8 @@ Generate a constant image or mask of a specified size and color. It can be used 
     def run(self, **kw) -> RGBAMaskType:
         pA = parse_param(kw, "IMAGE", EnumConvertType.IMAGE, None)
         mask = parse_param(kw, "MASK", EnumConvertType.IMAGE, None)
-        matte = parse_param(kw, "COLOR", EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
-        wihi = parse_param(kw, "WH", EnumConvertType.VEC2INT, [(512, 512)], IMAGE_SIZE_MIN)
+        matte = parse_param(kw, "COLOR", EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
+        wihi = parse_param(kw, "WH", EnumConvertType.VEC2INT, (512, 512), IMAGE_SIZE_MIN)
         mode = parse_param(kw, "MODE", EnumScaleMode, EnumScaleMode.MATTE.name)
         sample = parse_param(kw, "SAMPLE", EnumInterpolation, EnumInterpolation.LANCZOS4.name)
         images = []
@@ -91,21 +91,25 @@ Generate a constant image or mask of a specified size and color. It can be used 
         pbar = ProgressBar(len(params))
         for idx, (pA, mask, matte, wihi, mode, sample) in enumerate(params):
             width, height = wihi
-            if mask is not None:
-                mask = tensor_to_cv(mask)
+
             if pA is None:
-                pA = channel_solid(width, height, matte, EnumImageType.BGRA)
-                if mask is not None:
-                    pA = image_mask_add(pA, mask)
-                images.append(cv_to_tensor_full(pA))
+                pA = channel_solid(width, height, (0,0,0,255), EnumImageType.BGRA)
             else:
                 pA = tensor_to_cv(pA)
                 pA = image_convert(pA, 4)
-                if mask is not None:
-                    pA = image_mask_add(pA, mask)
-                if mode != EnumScaleMode.MATTE:
-                    pA = image_scalefit(pA, width, height, mode, sample, matte)
-                images.append(cv_to_tensor_full(pA, matte))
+
+            pB = channel_solid(width, height, matte, EnumImageType.BGRA)
+
+            if mask is None:
+                mask = channel_solid(width, height, (255,255,255,255), EnumImageType.GRAYSCALE)
+            else:
+                mask = tensor_to_cv(mask)
+
+            pA = image_blend(pA, pB, mask)
+
+            if mode != EnumScaleMode.MATTE:
+                pA = image_scalefit(pA, width, height, mode, sample, matte)
+            images.append(cv_to_tensor_full(pA, matte))
             pbar.update_absolute(idx)
         return image_stack(images)
 
@@ -156,11 +160,11 @@ Create n-sided polygons. These shapes can be customized by adjusting parameters 
         sides = parse_param(kw, "SIDES", EnumConvertType.INT, 3, 3, 100)
         angle = parse_param(kw, "ANGLE", EnumConvertType.FLOAT, 0)
         edge = parse_param(kw, "EDGE", EnumEdge, EnumEdge.CLIP.name)
-        offset = parse_param(kw, "XY", EnumConvertType.VEC2, [(0, 0)])
-        size = parse_param(kw, "SIZE", EnumConvertType.VEC2, [(1, 1)], zero=0.001)
-        wihi = parse_param(kw, "WH", EnumConvertType.VEC2INT, [(256, 256)], IMAGE_SIZE_MIN)
-        color = parse_param(kw, "COLOR", EnumConvertType.VEC4INT, [(255, 255, 255, 255)], 0, 255)
-        matte = parse_param(kw, "MATTE", EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
+        offset = parse_param(kw, "XY", EnumConvertType.VEC2, (0, 0))
+        size = parse_param(kw, "SIZE", EnumConvertType.VEC2, (1, 1), zero=0.001)
+        wihi = parse_param(kw, "WH", EnumConvertType.VEC2INT, (256, 256), IMAGE_SIZE_MIN)
+        color = parse_param(kw, "COLOR", EnumConvertType.VEC4INT, (255, 255, 255, 255), 0, 255)
+        matte = parse_param(kw, "MATTE", EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
         blur = parse_param(kw, "BLUR", EnumConvertType.FLOAT, 0)
         params = list(zip_longest_fill(shape, sides, offset, angle, edge, size, wihi, color, matte, blur))
         images = []
@@ -272,16 +276,16 @@ Generates images containing text based on parameters such as font, size, alignme
         font_idx = parse_param(kw, "FONT", EnumConvertType.STRING, self.FONT_NAMES[0])
         autosize = parse_param(kw, "AUTOSIZE", EnumConvertType.BOOLEAN, False)
         letter = parse_param(kw, "LETTER", EnumConvertType.BOOLEAN, False)
-        color = parse_param(kw, "COLOR", EnumConvertType.VEC4INT, [(255,255,255,255)], 0, 255)
-        matte = parse_param(kw, "MATTE", EnumConvertType.VEC4INT, [(0,0,0,255)], 0, 255)
+        color = parse_param(kw, "COLOR", EnumConvertType.VEC4INT, (255,255,255,255), 0, 255)
+        matte = parse_param(kw, "MATTE", EnumConvertType.VEC4INT, (0,0,0,255), 0, 255)
         columns = parse_param(kw, "COLS", EnumConvertType.INT, 0)
         font_size = parse_param(kw, "SIZE", EnumConvertType.INT, 1)
         align = parse_param(kw, "ALIGN", EnumAlignment, EnumAlignment.CENTER.name)
         justify = parse_param(kw, "JUSTIFY", EnumJustify, EnumJustify.CENTER.name)
         margin = parse_param(kw, "MARGIN", EnumConvertType.INT, 0)
         line_spacing = parse_param(kw, "SPACING", EnumConvertType.INT, 0)
-        wihi = parse_param(kw, "WH", EnumConvertType.VEC2INT, [(512, 512)], IMAGE_SIZE_MIN)
-        pos = parse_param(kw, "XY", EnumConvertType.VEC2, [(0, 0)], -1, 1)
+        wihi = parse_param(kw, "WH", EnumConvertType.VEC2INT, (512, 512), IMAGE_SIZE_MIN)
+        pos = parse_param(kw, "XY", EnumConvertType.VEC2, (0, 0), -1, 1)
         angle = parse_param(kw, "ANGLE", EnumConvertType.INT, 0)
         edge = parse_param(kw, "EDGE", EnumEdge, EnumEdge.CLIP.name)
         invert = parse_param(kw, "INVERT", EnumConvertType.BOOLEAN, False)

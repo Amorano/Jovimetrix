@@ -91,7 +91,8 @@ Advanced options include pixelation, quantization, and morphological operations 
                 "GAMMA": ("FLOAT", {
                     "default": 1, "min": 0.00001, "max": 1, "step": 0.01}),
                 "MATTE": ("VEC4", {
-                    "default": (0, 0, 0, 255), "rgb": True}),
+                    "default": (0, 0, 0, 255), "rgb": True,
+                    "tooltip": "Background Color"}),
                 "INVERT": ("BOOLEAN", {
                     "default": False,
                     "tooltip": "Invert the mask input"})
@@ -105,12 +106,12 @@ Advanced options include pixelation, quantization, and morphological operations 
         op = parse_param(kw, "FUNCTION", EnumAdjustOP, EnumAdjustOP.BLUR.name)
         radius = parse_param(kw, "RADIUS", EnumConvertType.INT, 3, 3)
         val = parse_param(kw, "VAL", EnumConvertType.FLOAT, 0, 0)
-        lohi = parse_param(kw, "LoHi", EnumConvertType.VEC2, [(0, 1)], 0, 1)
-        lmh = parse_param(kw, "LMH", EnumConvertType.VEC3, [(0, 0.5, 1)], 0, 1)
-        hsv = parse_param(kw, "HSV", EnumConvertType.VEC3, [(0, 1, 1)], 0, 1)
+        lohi = parse_param(kw, "LoHi", EnumConvertType.VEC2, (0, 1), 0, 1)
+        lmh = parse_param(kw, "LMH", EnumConvertType.VEC3, (0, 0.5, 1), 0, 1)
+        hsv = parse_param(kw, "HSV", EnumConvertType.VEC3, (0, 1, 1), 0, 1)
         contrast = parse_param(kw, "CONTRAST", EnumConvertType.FLOAT, 1, 0, 1)
         gamma = parse_param(kw, "GAMMA", EnumConvertType.FLOAT, 1, 0, 1)
-        matte = parse_param(kw, "MATTE", EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
+        matte = parse_param(kw, "MATTE", EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
         invert = parse_param(kw, "INVERT", EnumConvertType.BOOLEAN, False)
         params = list(zip_longest_fill(pA, mask, op, radius, val, lohi,
                                         lmh, hsv, contrast, gamma, matte, invert))
@@ -253,7 +254,8 @@ Combine two input images using various blending modes, such as normal, screen, m
                     "default": EnumInterpolation.LANCZOS4.name,
                     "tooltip": "Sampling method for resizing images"}),
                 "MATTE": ("VEC4", {
-                    "default": (0, 0, 0, 255), "rgb": True})
+                    "default": (0, 0, 0, 255), "rgb": True,
+                    "tooltip": "Background Color"})
             }
         })
         return d
@@ -266,9 +268,9 @@ Combine two input images using various blending modes, such as normal, screen, m
         alpha = parse_param(kw, "ALPHA", EnumConvertType.FLOAT, 1, 0, 1)
         flip = parse_param(kw, "FLIP", EnumConvertType.BOOLEAN, False)
         mode = parse_param(kw, "MODE", EnumScaleMode, EnumScaleMode.MATTE.name)
-        wihi = parse_param(kw, "WH", EnumConvertType.VEC2INT, [(512, 512)], IMAGE_SIZE_MIN)
+        wihi = parse_param(kw, "WH", EnumConvertType.VEC2INT, (512, 512), IMAGE_SIZE_MIN)
         sample = parse_param(kw, "SAMPLE", EnumInterpolation, EnumInterpolation.LANCZOS4.name)
-        matte = parse_param(kw, "MATTE", EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
+        matte = parse_param(kw, "MATTE", EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
         invert = parse_param(kw, "INVERT", EnumConvertType.BOOLEAN, False)
         params = list(zip_longest_fill(pA, pB, mask, func, alpha, flip, mode, wihi, sample, matte, invert))
         images = []
@@ -333,7 +335,7 @@ Create masks based on specific color ranges within an image. Specify the color r
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                "IMAGE_A": (COZY_TYPE_IMAGE, {
+                "IMAGE": (COZY_TYPE_IMAGE, {
                     "tooltip": "Pixel Data (RGBA, RGB or Grayscale)"
                 }),
                 "START": ("VEC3", {
@@ -347,18 +349,19 @@ Create masks based on specific color ranges within an image. Specify the color r
                     "default": (0.5,0.5,0.5), "mij":0, "maj":1,
                     "tooltip": "the fuzziness use to extend the start and end range(s)"}),
                 "MATTE": ("VEC4", {
-                    "default": (0, 0, 0, 255), "rgb": True}),
+                    "default": (0, 0, 0, 255), "rgb": True,
+                    "tooltip": "Background Color"}),
             }
         })
         return d
 
     def run(self, **kw) -> RGBAMaskType:
-        pA = parse_param(kw, "IMAGE_A", EnumConvertType.IMAGE, None)
-        start = parse_param(kw, "START", EnumConvertType.VEC3INT, [(128,128,128)], 0, 255)
-        use_range = parse_param(kw, "RANGE", EnumConvertType.VEC3, [(0,0,0)], 0, 255)
-        end = parse_param(kw, "END", EnumConvertType.VEC3INT, [(128,128,128)], 0, 255)
-        fuzz = parse_param(kw, "FUZZ", EnumConvertType.VEC3, [(0.5,0.5,0.5)], 0, 1)
-        matte = parse_param(kw, "MATTE", EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
+        pA = parse_param(kw, "IMAGE", EnumConvertType.IMAGE, None)
+        start = parse_param(kw, "START", EnumConvertType.VEC3INT, (128,128,128), 0, 255)
+        use_range = parse_param(kw, "RANGE", EnumConvertType.BOOLEAN, False, 0, 255)
+        end = parse_param(kw, "END", EnumConvertType.VEC3INT, (128,128,128), 0, 255)
+        fuzz = parse_param(kw, "FUZZ", EnumConvertType.VEC3, (0.5,0.5,0.5), 0, 1)
+        matte = parse_param(kw, "MATTE", EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
         params = list(zip_longest_fill(pA, start, use_range, end, fuzz, matte))
         images = []
         pbar = ProgressBar(len(params))
@@ -413,7 +416,8 @@ Combines individual color channels (red, green, blue) along with an optional mas
                     "default": EnumInterpolation.LANCZOS4.name,
                     "tooltip": "Sampling method for resizing images"}),
                 "MATTE": ("VEC4", {
-                    "default": (0, 0, 0, 255), "rgb": True}),
+                    "default": (0, 0, 0, 255), "rgb": True,
+                    "tooltip": "Background Color"}),
                 "FLIP": ("VEC4", {
                     "default": (0,0,0,0), "mij":0, "maj":1,
                     "tooltip": "Invert specific input prior to merging. R, G, B, A."}),
@@ -431,10 +435,10 @@ Combines individual color channels (red, green, blue) along with an optional mas
         B = parse_param(kw, "🟦", EnumConvertType.MASK, None)
         A = parse_param(kw, "⬜", EnumConvertType.MASK, None)
         mode = parse_param(kw, "MODE", EnumScaleMode, EnumScaleMode.MATTE.name)
-        wihi = parse_param(kw, "WH", EnumConvertType.VEC2INT, [(512, 512)], IMAGE_SIZE_MIN)
+        wihi = parse_param(kw, "WH", EnumConvertType.VEC2INT, (512, 512), IMAGE_SIZE_MIN)
         sample = parse_param(kw, "SAMPLE", EnumInterpolation, EnumInterpolation.LANCZOS4.name)
-        matte = parse_param(kw, "MATTE", EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
-        flip = parse_param(kw, "FLIP", EnumConvertType.VEC4, [(0, 0, 0, 0)], 0., 1.)
+        matte = parse_param(kw, "MATTE", EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
+        flip = parse_param(kw, "FLIP", EnumConvertType.VEC4, (0, 0, 0, 0), 0., 1.)
         invert = parse_param(kw, "INVERT", EnumConvertType.BOOLEAN, False)
         params = list(zip_longest_fill(rgba, R, G, B, A, mode, wihi, sample, matte, flip, invert))
         images = []
@@ -543,7 +547,8 @@ Swap pixel values between two input images based on specified channel swizzle op
                     "default": EnumPixelSwizzle.ALPHA_A.name,
                     "tooltip": "Replace input Alpha channel with target channel or constant"}),
                 "MATTE": ("VEC4", {
-                    "default": (0, 0, 0, 255), "rgb": True})
+                    "default": (0, 0, 0, 255), "rgb": True,
+                    "tooltip": "Background Color"})
             }
         })
         return d
@@ -551,11 +556,11 @@ Swap pixel values between two input images based on specified channel swizzle op
     def run(self, **kw) -> RGBAMaskType:
         pA = parse_param(kw, "IMAGE_A", EnumConvertType.IMAGE, None)
         pB = parse_param(kw, "IMAGE_B", EnumConvertType.IMAGE, None)
-        swap_r = parse_param(kw, Lexicon.SWAP_R, EnumPixelSwizzle, EnumPixelSwizzle.RED_A.name)
-        swap_g = parse_param(kw, Lexicon.SWAP_G, EnumPixelSwizzle, EnumPixelSwizzle.GREEN_A.name)
-        swap_b = parse_param(kw, Lexicon.SWAP_B, EnumPixelSwizzle, EnumPixelSwizzle.BLUE_A.name)
-        swap_a = parse_param(kw, Lexicon.SWAP_A, EnumPixelSwizzle, EnumPixelSwizzle.ALPHA_A.name)
-        matte = parse_param(kw, "MATTE", EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
+        swap_r = parse_param(kw, "SWAP_R", EnumPixelSwizzle, EnumPixelSwizzle.RED_A.name)
+        swap_g = parse_param(kw, "SWAP_G", EnumPixelSwizzle, EnumPixelSwizzle.GREEN_A.name)
+        swap_b = parse_param(kw, "SWAP_B", EnumPixelSwizzle, EnumPixelSwizzle.BLUE_A.name)
+        swap_a = parse_param(kw, "SWAP_A", EnumPixelSwizzle, EnumPixelSwizzle.ALPHA_A.name)
+        matte = parse_param(kw, "MATTE", EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
         params = list(zip_longest_fill(pA, pB, swap_r, swap_g, swap_b, swap_a, matte))
         images = []
         pbar = ProgressBar(len(params))

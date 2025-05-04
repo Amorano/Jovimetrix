@@ -240,7 +240,7 @@ IMAGE and MASK will return a TRUE bit for any non-black pixel, as a stream of bi
         return d
 
     def run(self, **kw) -> tuple[List[int], List[bool]]:
-        value = parse_param(kw, "VALUE", EnumConvertType.ANY, [0])
+        value = parse_param(kw, "VALUE", EnumConvertType.ANY, 0)
         bits = parse_param(kw, "BITS", EnumConvertType.INT, 8, 1, 64)
         msb = parse_param(kw, "MSB", EnumConvertType.INT, False)
         params = list(zip_longest_fill(value, bits))
@@ -312,11 +312,11 @@ Evaluates two inputs (A and B) with a specified comparison operators and optiona
         return d
 
     def run(self, **kw) -> tuple[Any, Any]:
-        A = parse_param(kw, "A", EnumConvertType.ANY, [0])
-        B = parse_param(kw, "B", EnumConvertType.ANY, [0])
+        A = parse_param(kw, "A", EnumConvertType.ANY, 0)
+        B = parse_param(kw, "B", EnumConvertType.ANY, 0)
         size = max(len(A), len(B))
-        good = parse_param(kw, "PASS", EnumConvertType.ANY, [0])[:size]
-        fail = parse_param(kw, "FAIL", EnumConvertType.ANY, [0])[:size]
+        good = parse_param(kw, "PASS", EnumConvertType.ANY, 0)[:size]
+        fail = parse_param(kw, "FAIL", EnumConvertType.ANY, 0)[:size]
         op = parse_param(kw, "COMPARE", EnumComparison, EnumComparison.EQUAL.name)[:size]
         flip = parse_param(kw, "FLIP", EnumConvertType.BOOLEAN, False)[:size]
         invert = parse_param(kw, "INVERT", EnumConvertType.BOOLEAN, False)[:size]
@@ -453,11 +453,11 @@ Additionally, you can specify the easing function (EASE) and the desired output 
         return d
 
     def run(self, **kw) -> tuple[Any, Any]:
-        A = parse_param(kw, "A", EnumConvertType.ANY, [0])
-        B = parse_param(kw, "B", EnumConvertType.ANY, [0])
-        a_xyzw = parse_param(kw, "AA", EnumConvertType.VEC4, [(0, 0, 0, 0)])
-        b_xyzw = parse_param(kw, "BB", EnumConvertType.VEC4, [(1, 1, 1, 1)])
-        alpha = parse_param(kw, "FLOAT",EnumConvertType.VEC4, [(0.5,0.5,0.5,0.5)], 0, 1)
+        A = parse_param(kw, "A", EnumConvertType.ANY, 0)
+        B = parse_param(kw, "B", EnumConvertType.ANY, 0)
+        a_xyzw = parse_param(kw, "AA", EnumConvertType.VEC4, (0, 0, 0, 0))
+        b_xyzw = parse_param(kw, "BB", EnumConvertType.VEC4, (1, 1, 1, 1))
+        alpha = parse_param(kw, "FLOAT",EnumConvertType.VEC4, (0.5,0.5,0.5,0.5), 0, 1)
         op = parse_param(kw, "EASE", EnumEase, EnumEase.SIN_IN_OUT.name)
         typ = parse_param(kw, "TYPE", EnumNumberType, EnumNumberType.FLOAT.name)
         values = []
@@ -533,7 +533,7 @@ Perform single function operations like absolute value, mean, median, mode, magn
 
     def run(self, **kw) -> tuple[bool]:
         results = []
-        A = parse_param(kw, "A", EnumConvertType.ANY, [0])
+        A = parse_param(kw, "A", EnumConvertType.ANY, 0)
         op = parse_param(kw, "FUNCTION", EnumUnaryOperation, EnumUnaryOperation.ABS.name)
         params = list(zip_longest_fill(A, op))
         pbar = ProgressBar(len(params))
@@ -658,8 +658,8 @@ Execute binary operations like addition, subtraction, multiplication, division, 
         results = []
         A = parse_param(kw, "A", EnumConvertType.ANY, None)
         B = parse_param(kw, "B", EnumConvertType.ANY, None)
-        a_xyzw = parse_param(kw, "AA", EnumConvertType.VEC4, [(0, 0, 0, 0)])
-        b_xyzw = parse_param(kw, "BB", EnumConvertType.VEC4, [(0, 0, 0, 0)])
+        a_xyzw = parse_param(kw, "AA", EnumConvertType.VEC4, (0, 0, 0, 0))
+        b_xyzw = parse_param(kw, "BB", EnumConvertType.VEC4, (0, 0, 0, 0))
         op = parse_param(kw, "FUNCTION", EnumBinaryOperation, EnumBinaryOperation.ADD.name)
         typ = parse_param(kw, "TYPE", EnumConvertType, EnumConvertType.FLOAT.name)
         flip = parse_param(kw, "FLIP", EnumConvertType.BOOLEAN, False)
@@ -796,7 +796,7 @@ Manipulate strings through filtering
 
     def run(self, **kw) -> tuple[TensorType, ...]:
         # turn any all inputs into the
-        data_list = parse_dynamic(kw, "❔", EnumConvertType.ANY, [""])
+        data_list = parse_dynamic(kw, "❔", EnumConvertType.ANY, "")
         if data_list is None:
             logger.warn("no data for list")
             return ([],)
@@ -806,7 +806,7 @@ Manipulate strings through filtering
         op = parse_param(kw, "FUNCTION", EnumConvertString, EnumConvertString.SPLIT.name)[0]
         key = parse_param(kw, "KEY", EnumConvertType.STRING, "")[0]
         replace = parse_param(kw, "REPLACE", EnumConvertType.STRING, "")[0]
-        stenst = parse_param(kw, "RANGE", EnumConvertType.VEC3INT, [(0, -1, 1)])[0]
+        stenst = parse_param(kw, "RANGE", EnumConvertType.VEC3INT, (0, -1, 1))[0]
         results = []
         match op:
             case EnumConvertString.SPLIT:
@@ -881,8 +881,8 @@ Swap components between two vectors based on specified swizzle patterns and valu
         return d
 
     def run(self, **kw) -> tuple[TensorType, ...]:
-        pA = parse_param(kw, "A", EnumConvertType.VEC4, [(0,0,0,0)])
-        pB = parse_param(kw, "B", EnumConvertType.VEC4, [(0,0,0,0)])
+        pA = parse_param(kw, "A", EnumConvertType.VEC4, (0,0,0,0))
+        pB = parse_param(kw, "B", EnumConvertType.VEC4, (0,0,0,0))
         swap_x = parse_param(kw, "SWAP_X", EnumSwizzle, EnumSwizzle.A_X.name)
         swap_y = parse_param(kw, "SWAP_Y", EnumSwizzle, EnumSwizzle.A_Y.name)
         swap_z = parse_param(kw, "SWAP_Z", EnumSwizzle, EnumSwizzle.A_W.name)

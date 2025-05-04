@@ -69,10 +69,6 @@ class EnumBatchMode(Enum):
 # === CLASS ===
 # ==============================================================================
 
-class ContainsAnyDict(dict):
-    def __contains__(self, key) -> Literal[True]:
-        return True
-
 class ArrayNode(CozyBaseNode):
     NAME = "ARRAY (JOV) 📚"
     CATEGORY = JOV_CATEGORY
@@ -127,7 +123,7 @@ Processes a batch of data based on the selected mode. Merge, pick, slice, random
     def run(self, **kw) -> tuple[int, list]:
         data_list = parse_dynamic(kw, "❔", EnumConvertType.ANY, None)
         mode = parse_param(kw, "MODE", EnumBatchMode, EnumBatchMode.MERGE.name)[0]
-        slice_range = parse_param(kw, "RANGE", EnumConvertType.VEC3INT, [(0, 0, 1)])[0]
+        slice_range = parse_param(kw, "RANGE", EnumConvertType.VEC3INT, (0, 0, 1))[0]
         index = parse_param(kw, "INDEX", EnumConvertType.STRING, "")[0]
         count = parse_param(kw, "COUNT", EnumConvertType.INT, 0, 0, sys.maxsize)[0]
         reverse = parse_param(kw, "REVERSE", EnumConvertType.BOOLEAN, False)[0]
@@ -251,7 +247,7 @@ class QueueBaseNode(CozyBaseNode):
     CATEGORY = JOV_CATEGORY
     RETURN_TYPES = (COZY_TYPE_ANY, COZY_TYPE_ANY, "STRING", "INT", "INT", "BOOLEAN")
     RETURN_NAMES = ("🦄", "QUEUE", "CURRENT", "INDEX", "TOTAL", "TRIGGER", )
-    OUTPUT_IS_LIST = (True, True, True, True, True, True,)
+    #OUTPUT_IS_LIST = (True, True, True, True, True, True,)
     VIDEO_FORMATS = ['.wav', '.mp3', '.webm', '.mp4', '.avi', '.wmv', '.mkv', '.mov', '.mxf']
 
     @classmethod
@@ -272,9 +268,9 @@ class QueueBaseNode(CozyBaseNode):
                 "BATCH": ("BOOLEAN", {
                     "default": False,
                     "tooltip":"Load all items, if they are loadable items, i.e. batch load images from the Queue's list."}),
-                "VALUE": ("INT", {
+                "SELECT": ("INT", {
                     "default": 0, "min": 0,
-                    "tooltip": "The current index for the current queue item"}),
+                    "tooltip": "What index to use for the current queue item. 0 will move to the next item each queue run"}),
                 "HOLD": ("BOOLEAN", {
                     "default": False,
                     "tooltip":"Hold the item at the current queue index"}),
@@ -371,13 +367,20 @@ class QueueBaseNode(CozyBaseNode):
 
         self.__ident = ident
         # should work headless as well
+
+        if (new_val := parse_param(kw, "SELECT", EnumConvertType.INT, 0)[0]) > 0:
+            self.__index = new_val - 1
+
         reset = parse_reset(ident) > 0
         if reset or parse_param(kw, "RESET", EnumConvertType.BOOLEAN, False)[0]:
             self.__q = None
             self.__index = 0
 
-        if (new_val := parse_param(kw, "VALUE", EnumConvertType.INT, 0)[0]) > 0:
-            self.__index = new_val - 1
+        mode = parse_param(kw, "MODE", EnumScaleMode, EnumScaleMode.MATTE.name)[0]
+        sample = parse_param(kw, "SAMPLE", EnumInterpolation, EnumInterpolation.LANCZOS4.name)[0]
+        wihi = parse_param(kw, "WH", EnumConvertType.VEC2INT, (512, 512), IMAGE_SIZE_MIN)[0]
+        w, h = wihi
+        matte = parse_param(kw, "MATTE", EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)[0]
 
         if self.__q is None:
             # process Q into ...
@@ -420,26 +423,21 @@ class QueueBaseNode(CozyBaseNode):
             for idx in range(self.__len):
                 ret = self.process(self.__q[idx])
                 if isinstance(ret, (np.ndarray,)):
-                    h, w, c = ret.shape
-                    mw, mh, mc = max(mw, w), max(mh, h), max(mc, c)
+                    h2, w2, c = ret.shape
+                    mw, mh, mc = max(mw, w2), max(mh, h2), max(mc, c)
                 data.append(ret)
 
             if mw != 0 or mh != 0 or mc != 0:
                 ret = []
-                mode = parse_param(kw, "MODE", EnumScaleMode, EnumScaleMode.MATTE.name)[0]
-                sample = parse_param(kw, "SAMPLE", EnumInterpolation, EnumInterpolation.LANCZOS4.name)[0]
-                wihi = parse_param(kw, "WH", EnumConvertType.VEC2INT, [(512, 512)], IMAGE_SIZE_MIN)[0]
-                w2, h2 = wihi
-                matte = parse_param(kw, "MATTE", EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)[0]
-                matte = [matte[0], matte[1], matte[2], 0]
+                # matte = [matte[0], matte[1], matte[2], 0]
                 pbar = ProgressBar(self.__len)
-
                 for idx, d in enumerate(data):
                     d = image_convert(d, mc)
                     if mode != EnumScaleMode.MATTE:
-                        d = image_scalefit(d, w2, h2, mode=mode, sample=sample)
+                        d = image_scalefit(d, w, h, mode, sample, matte)
+                        d = image_scalefit(d, w, h, EnumScaleMode.RESIZE_MATTE, sample, matte)
                     else:
-                        d = image_matte(d, matte, width=mw, height=mh)
+                        d = image_matte(d, matte, mw, mh)
                     ret.append(cv_to_tensor(d))
                     pbar.update_absolute(idx)
                 data = torch.stack(ret)
@@ -448,6 +446,8 @@ class QueueBaseNode(CozyBaseNode):
         else:
             data = self.process(self.__q[self.__index])
             if isinstance(data, (np.ndarray,)):
+                if mode != EnumScaleMode.MATTE:
+                    data = image_scalefit(data, w, h, mode, sample)
                 data = cv_to_tensor(data).unsqueeze(0)
             self.__index += 1
 
@@ -455,7 +455,7 @@ class QueueBaseNode(CozyBaseNode):
         comfy_api_post("jovi-queue-ping", ident, self.status)
         if stop and batched:
             interrupt_processing()
-        return data, self.__q, self.__current, self.__index, self.__len, self.__index == self.__index_last or batched
+        return data, self.__q, self.__current, self.__index, self.__len, self.__index == self.__len or batched
 
     @property
     def status(self) -> dict[str, Any]:
@@ -485,8 +485,8 @@ Manage a queue of items, such as file paths or data. Supports various formats in
 class QueueTooNode(QueueBaseNode):
     NAME = "QUEUE TOO (JOV) 🗃"
     RETURN_TYPES = ("IMAGE", "IMAGE", "MASK", "STRING", "INT", "INT", "BOOLEAN")
-    RETURN_NAMES = ("IMAGE", "RGB", "MASK", "CURRENT", "INDEX", "TOTAL", "TRIGGER", )
-    OUTPUT_IS_LIST = (False, False, False, True, True, True, True,)
+    RETURN_NAMES = ("RGBA", "RGB", "MASK", "CURRENT", "INDEX", "TOTAL", "TRIGGER", )
+    #OUTPUT_IS_LIST = (False, False, False, True, True, True, True,)
     OUTPUT_TOOLTIPS = (
         "Full channel [RGBA] image. If there is an alpha, the image will be masked out with it when using this output",
         "Three channel [RGB] image. There will be no alpha",

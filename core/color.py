@@ -118,10 +118,10 @@ Adjust the color scheme of one image to match another with the Color Match Node.
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                "IMAGE_A": (COZY_TYPE_IMAGE, {
+                "SOURCE": (COZY_TYPE_IMAGE, {
                     "tooltip": "Pixel Data (RGBA, RGB or Grayscale)"
                 }),
-                "IMAGE_B": (COZY_TYPE_IMAGE, {
+                "TARGET": (COZY_TYPE_IMAGE, {
                     "tooltip": "Pixel Data (RGBA, RGB or Grayscale)"
                 }),
                 "MODE": (EnumColorMatchMode._member_names_, {
@@ -136,25 +136,32 @@ Adjust the color scheme of one image to match another with the Color Match Node.
                     "default": EnumColorMap.HSV.name,
                     "tooltip": "One of two dozen CV2 Built-in Colormap LUT (Look Up Table) Presets"
                 }),
-                "VAL": ("INT", {"default": 255, "min": 0, "max": 255, "tooltip":"The number of colors to use from the LUT during the remap. Will quantize the LUT range."}),
-                "FLIP": ("BOOLEAN", {"default": False}),
-                "INVERT": ("BOOLEAN", {"default": False,
-                                                "tooltip": "Invert the color match output"}),
-                "MATTE": ("VEC4INT", {"default": (0, 0, 0, 255), "rgb": True}),
+                "VAL": ("INT", {
+                    "default": 255, "min": 0, "max": 255,
+                    "tooltip":"The number of colors to use from the LUT during the remap. Will quantize the LUT range."}),
+                "FLIP": ("BOOLEAN", {
+                    "default": False,
+                    "tooltip": "Flip the SOURCE and TARGET inputs"}),
+                "INVERT": ("BOOLEAN", {
+                    "default": False,
+                    "tooltip": "Invert the color match output"}),
+                "MATTE": ("VEC4", {
+                    "default": (0, 0, 0, 255), "rgb": True,
+                    "tooltip": "Background Color"}),
             }
         })
         return d
 
     def run(self, **kw) -> RGBAMaskType:
-        pA = parse_param(kw, "IMAGE_A", EnumConvertType.IMAGE, None)
-        pB = parse_param(kw, "IMAGE_B", EnumConvertType.IMAGE, None)
+        pA = parse_param(kw, "SOURCE", EnumConvertType.IMAGE, None)
+        pB = parse_param(kw, "TARGET", EnumConvertType.IMAGE, None)
         colormatch_mode = parse_param(kw, "MODE", EnumColorMatchMode, EnumColorMatchMode.REINHARD.name)
         colormatch_map = parse_param(kw, f"MAP", EnumColorMatchMap, EnumColorMatchMap.USER_MAP.name)
         colormap = parse_param(kw, "COLORMAP", EnumColorMap, EnumColorMap.HSV.name)
         num_colors = parse_param(kw, "VAL", EnumConvertType.INT, 255)
         flip = parse_param(kw, "FLIP", EnumConvertType.BOOLEAN, False)
         invert = parse_param(kw, "INVERT", EnumConvertType.BOOLEAN, False)
-        matte = parse_param(kw, "MATTE", EnumConvertType.VEC4, [(0, 0, 0, 255)], 0, 255)
+        matte = parse_param(kw, "MATTE", EnumConvertType.VEC4, (0, 0, 0, 255), 0, 255)
         params = list(zip_longest_fill(pA, pB, colormap, colormatch_mode, colormatch_map, num_colors, flip, invert, matte))
         images = []
         pbar = ProgressBar(len(params))
@@ -244,7 +251,7 @@ The top-k colors ordered from most->least used as a strip, tonal palette and 3D 
         kcolors = parse_param(kw, "VAL", EnumConvertType.INT, 12, 1, 255)
         lut_height = parse_param(kw, "SIZE", EnumConvertType.INT, 32, 1, 256)
         nodes = parse_param(kw, "COUNT", EnumConvertType.INT, 33, 1, 255)
-        wihi = parse_param(kw, "WH", EnumConvertType.VEC2INT, [(256, 256)], IMAGE_SIZE_MIN)
+        wihi = parse_param(kw, "WH", EnumConvertType.VEC2INT, (256, 256), IMAGE_SIZE_MIN)
 
         params = list(zip_longest_fill(pA, kcolors, nodes, lut_height, wihi))
         top_colors = []
@@ -302,7 +309,8 @@ Users can customize the angle of separation for color calculations, offering fle
                     "default": 45, "min": -90, "max": 90,
                     "tooltip": "Custom angle of separation to use when calculating colors"
                 }),
-                "INVERT": ("BOOLEAN", {"default": False})
+                "INVERT": ("BOOLEAN", {
+                    "default": False})
             }
         })
         return d
@@ -362,7 +370,8 @@ The gradient image will be translated into a single row lookup table.
                     "tooltip": "Sampling method for resizing images"
                 }),
                 "MATTE": ("VEC4", {
-                    "default": (0, 0, 0, 255), "rgb": True
+                    "default": (0, 0, 0, 255), "rgb": True,
+                    "tooltip": "Background Color"
                 })
             }
         })
@@ -373,9 +382,9 @@ The gradient image will be translated into a single row lookup table.
         gradient = parse_param(kw, "GRADIENT", EnumConvertType.IMAGE, None)
         flip = parse_param(kw, "FLIP", EnumConvertType.BOOLEAN, False)
         mode = parse_param(kw, "MODE", EnumScaleMode, EnumScaleMode.MATTE.name)
-        wihi = parse_param(kw, "WH", EnumConvertType.VEC2INT, [(512, 512)], IMAGE_SIZE_MIN)
+        wihi = parse_param(kw, "WH", EnumConvertType.VEC2INT, (512, 512), IMAGE_SIZE_MIN)
         sample = parse_param(kw, "SAMPLE", EnumInterpolation, EnumInterpolation.LANCZOS4.name)
-        matte = parse_param(kw, "MATTE", EnumConvertType.VEC4INT, [(0, 0, 0, 255)], 0, 255)
+        matte = parse_param(kw, "MATTE", EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
         images = []
         params = list(zip_longest_fill(pA, gradient, flip, mode, sample, wihi, matte))
         pbar = ProgressBar(len(params))
