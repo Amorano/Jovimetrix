@@ -27,7 +27,7 @@ app.registerExtension({
         nodeType.prototype.onNodeCreated = async function () {
             const me = onNodeCreated?.apply(this);
             const self = this;
-            const widget_reset = this.widgets.find(w => w.name == 'RESET');
+            const widget_reset = this.widgets.find(w => w.name == 'reset');
             widget_reset.callback = async() => {
                 widget_reset.value = false;
                 apiJovimetrix(self.id, "reset");

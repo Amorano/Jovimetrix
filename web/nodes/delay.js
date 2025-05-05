@@ -65,8 +65,8 @@ app.registerExtension({
         const onNodeCreated = nodeType.prototype.onNodeCreated;
         nodeType.prototype.onNodeCreated = async function () {
             const me = onNodeCreated?.apply(this);
-            const widget_time = this.widgets.find(w => w.name == 'TIME');
-            const widget_enable = this.widgets.find(w => w.name == 'ENABLE');
+            const widget_time = this.widgets.find(w => w.name == 'time');
+            const widget_enable = this.widgets.find(w => w.name == 'enable');
             this.total_timeout = 0;
             let showing = false;
             let delay_modal;

@@ -10,6 +10,9 @@ from cozy_comfyui import \
     InputType, RGBAMaskType, EnumConvertType, \
     deep_merge, parse_param, zip_longest_fill
 
+from cozy_comfyui.lexicon import \
+    Lexicon
+
 from cozy_comfyui.node import \
     COZY_TYPE_IMAGE, \
     CozyBaseNode, CozyImageNode
@@ -62,57 +65,49 @@ Advanced options include pixelation, quantization, and morphological operations 
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                "IMAGE": (COZY_TYPE_IMAGE, {
-                    "tooltip": "Pixel Data (RGBA, RGB or Grayscale)"
-                }),
-                "MASK": (COZY_TYPE_IMAGE, {
-                    "tooltip": "Pixel Data (RGBA, RGB or Grayscale)"
-                }),
-                "FUNCTION": (EnumAdjustOP._member_names_, {
-                    "default": EnumAdjustOP.BLUR.name,
-                    "tooltip":"Type of adjustment (e.g., blur, sharpen, invert)"}),
-                "RADIUS": ("INT", {
+                Lexicon.IMAGE: (COZY_TYPE_IMAGE, {}),
+                Lexicon.MASK: (COZY_TYPE_IMAGE, {}),
+                Lexicon.FUNCTION: (EnumAdjustOP._member_names_, {
+                    "default": EnumAdjustOP.BLUR.name,}),
+                Lexicon.RADIUS: ("INT", {
                     "default": 3, "min": 3}),
-                "VAL": ("FLOAT", {
+                Lexicon.VALUE: ("FLOAT", {
                     "default": 1, "min": 0, "step": 0.01}),
-                "LoHi": ("VEC2", {
+                Lexicon.LOHI: ("VEC2", {
                     "default": (0, 1), "mij": 0, "maj": 1,
                     "label": ["Low", "HI"]}),
-                "LMH": ("VEC3", {
+                Lexicon.LMH: ("VEC3", {
                     "default": (0, 0.5, 1), "mij": 0, "maj": 1,
-                    "label": ["Low", "MID", "HI"],
-                    "tooltip": "Low, Middle, High"}),
-                "HSV": ("VEC3",{
+                    "label": ["Low", "MID", "HI"],}),
+                Lexicon.HSV: ("VEC3",{
                     "default": (0, 1, 1), "mij": 0, "maj": 1,
-                    "label": ["H", "S", "V"],
-                    "tooltip": "Hue, Saturation and Value"}),
-                "CONTRAST": ("FLOAT", {
+                    "label": ["H", "S", "V"],}),
+                Lexicon.CONTRAST: ("FLOAT", {
                     "default": 0, "min": 0, "max": 1, "step": 0.01}),
-                "GAMMA": ("FLOAT", {
+                Lexicon.GAMMA: ("FLOAT", {
                     "default": 1, "min": 0.00001, "max": 1, "step": 0.01}),
-                "MATTE": ("VEC4", {
-                    "default": (0, 0, 0, 255), "rgb": True,
-                    "tooltip": "Background Color"}),
-                "INVERT": ("BOOLEAN", {
+                Lexicon.MATTE: ("VEC4", {
+                    "default": (0, 0, 0, 255), "rgb": True,}),
+                Lexicon.INVERT: ("BOOLEAN", {
                     "default": False,
                     "tooltip": "Invert the mask input"})
             }
         })
-        return d
+        return Lexicon._parse(d)
 
     def run(self, **kw) -> RGBAMaskType:
-        pA = parse_param(kw, "IMAGE", EnumConvertType.IMAGE, None)
-        mask = parse_param(kw, "MASK", EnumConvertType.IMAGE, None)
-        op = parse_param(kw, "FUNCTION", EnumAdjustOP, EnumAdjustOP.BLUR.name)
-        radius = parse_param(kw, "RADIUS", EnumConvertType.INT, 3, 3)
-        val = parse_param(kw, "VAL", EnumConvertType.FLOAT, 0, 0)
-        lohi = parse_param(kw, "LoHi", EnumConvertType.VEC2, (0, 1), 0, 1)
-        lmh = parse_param(kw, "LMH", EnumConvertType.VEC3, (0, 0.5, 1), 0, 1)
-        hsv = parse_param(kw, "HSV", EnumConvertType.VEC3, (0, 1, 1), 0, 1)
-        contrast = parse_param(kw, "CONTRAST", EnumConvertType.FLOAT, 1, 0, 1)
-        gamma = parse_param(kw, "GAMMA", EnumConvertType.FLOAT, 1, 0, 1)
-        matte = parse_param(kw, "MATTE", EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
-        invert = parse_param(kw, "INVERT", EnumConvertType.BOOLEAN, False)
+        pA = parse_param(kw, Lexicon.IMAGE, EnumConvertType.IMAGE, None)
+        mask = parse_param(kw, Lexicon.MASK, EnumConvertType.IMAGE, None)
+        op = parse_param(kw, Lexicon.FUNCTION, EnumAdjustOP, EnumAdjustOP.BLUR.name)
+        radius = parse_param(kw, Lexicon.RADIUS, EnumConvertType.INT, 3, 3)
+        val = parse_param(kw, Lexicon.VALUE, EnumConvertType.FLOAT, 0, 0)
+        lohi = parse_param(kw, Lexicon.LOHI, EnumConvertType.VEC2, (0, 1), 0, 1)
+        lmh = parse_param(kw, Lexicon.LMH, EnumConvertType.VEC3, (0, 0.5, 1), 0, 1)
+        hsv = parse_param(kw, Lexicon.HSV, EnumConvertType.VEC3, (0, 1, 1), 0, 1)
+        contrast = parse_param(kw, Lexicon.CONTRAST, EnumConvertType.FLOAT, 1, 0, 1)
+        gamma = parse_param(kw, Lexicon.GAMMA, EnumConvertType.FLOAT, 1, 0, 1)
+        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
+        invert = parse_param(kw, Lexicon.INVERT, EnumConvertType.BOOLEAN, False)
         params = list(zip_longest_fill(pA, mask, op, radius, val, lohi,
                                         lmh, hsv, contrast, gamma, matte, invert))
         images = []
@@ -228,50 +223,43 @@ Combine two input images using various blending modes, such as normal, screen, m
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                "IMAGE_A": (COZY_TYPE_IMAGE, {
-                    "tooltip": "Background Plate"}),
-                "IMAGE_B": (COZY_TYPE_IMAGE, {
-                    "tooltip": "Image to Overlay on Background Plate"}),
-                "MASK": (COZY_TYPE_IMAGE, {
+                Lexicon.IMAGE_BACK: (COZY_TYPE_IMAGE, {}),
+                Lexicon.IMAGE_FORE: (COZY_TYPE_IMAGE, {}),
+                Lexicon.MASK: (COZY_TYPE_IMAGE, {
                     "tooltip": "Optional Mask to use for Alpha Blend Operation. If empty, will use the ALPHA of B"}),
-                "FUNCTION": (EnumBlendType._member_names_, {
-                    "default": EnumBlendType.NORMAL.name,
-                    "tooltip": "Blending Operation"}),
-                "ALPHA": ("FLOAT", {
-                    "default": 1, "min": 0, "max": 1, "step": 0.01,
-                    "tooltip": "Amount of Blending to Perform on the Selected Operation"}),
-                "FLIP": ("BOOLEAN", {
+                Lexicon.FUNCTION: (EnumBlendType._member_names_, {
+                    "default": EnumBlendType.NORMAL.name,}),
+                Lexicon.ALPHA: ("FLOAT", {
+                    "default": 1, "min": 0, "max": 1, "step": 0.01,}),
+                Lexicon.FLIP: ("BOOLEAN", {
                     "default": False}),
-                "INVERT": ("BOOLEAN", {
+                Lexicon.INVERT: ("BOOLEAN", {
                     "default": False, "tooltip": "Invert the mask input"}),
-                "MODE": (EnumScaleMode._member_names_, {
-                    "default": EnumScaleMode.MATTE.name,
-                    "tooltip": "If the image should be resized to fit within given dimensions or keep the original size"}),
-                "WH": ("VEC2", {
+                Lexicon.MODE: (EnumScaleMode._member_names_, {
+                    "default": EnumScaleMode.MATTE.name,}),
+                Lexicon.WH: ("VEC2", {
                     "default": (512, 512), "mij":IMAGE_SIZE_MIN, "int": True,
                     "label": ["W", "H"]}),
-                "SAMPLE": (EnumInterpolation._member_names_, {
-                    "default": EnumInterpolation.LANCZOS4.name,
-                    "tooltip": "Sampling method for resizing images"}),
-                "MATTE": ("VEC4", {
-                    "default": (0, 0, 0, 255), "rgb": True,
-                    "tooltip": "Background Color"})
+                Lexicon.SAMPLE: (EnumInterpolation._member_names_, {
+                    "default": EnumInterpolation.LANCZOS4.name,}),
+                Lexicon.MATTE: ("VEC4", {
+                    "default": (0, 0, 0, 255), "rgb": True,})
             }
         })
-        return d
+        return Lexicon._parse(d)
 
     def run(self, **kw) -> RGBAMaskType:
-        pA = parse_param(kw, "IMAGE_A", EnumConvertType.IMAGE, None)
-        pB = parse_param(kw, "IMAGE_B", EnumConvertType.IMAGE, None)
-        mask = parse_param(kw, "MASK", EnumConvertType.MASK, None)
-        func = parse_param(kw, "FUNCTION", EnumBlendType, EnumBlendType.NORMAL.name)
-        alpha = parse_param(kw, "ALPHA", EnumConvertType.FLOAT, 1, 0, 1)
-        flip = parse_param(kw, "FLIP", EnumConvertType.BOOLEAN, False)
-        mode = parse_param(kw, "MODE", EnumScaleMode, EnumScaleMode.MATTE.name)
-        wihi = parse_param(kw, "WH", EnumConvertType.VEC2INT, (512, 512), IMAGE_SIZE_MIN)
-        sample = parse_param(kw, "SAMPLE", EnumInterpolation, EnumInterpolation.LANCZOS4.name)
-        matte = parse_param(kw, "MATTE", EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
-        invert = parse_param(kw, "INVERT", EnumConvertType.BOOLEAN, False)
+        pA = parse_param(kw, Lexicon.IMAGE_BACK, EnumConvertType.IMAGE, None)
+        pB = parse_param(kw, Lexicon.IMAGE_FORE, EnumConvertType.IMAGE, None)
+        mask = parse_param(kw, Lexicon.MASK, EnumConvertType.MASK, None)
+        func = parse_param(kw, Lexicon.FUNCTION, EnumBlendType, EnumBlendType.NORMAL.name)
+        alpha = parse_param(kw, Lexicon.ALPHA, EnumConvertType.FLOAT, 1, 0, 1)
+        flip = parse_param(kw, Lexicon.FLIP, EnumConvertType.BOOLEAN, False)
+        mode = parse_param(kw, Lexicon.MODE, EnumScaleMode, EnumScaleMode.MATTE.name)
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (512, 512), IMAGE_SIZE_MIN)
+        sample = parse_param(kw, Lexicon.SAMPLE, EnumInterpolation, EnumInterpolation.LANCZOS4.name)
+        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
+        invert = parse_param(kw, Lexicon.INVERT, EnumConvertType.BOOLEAN, False)
         params = list(zip_longest_fill(pA, pB, mask, func, alpha, flip, mode, wihi, sample, matte, invert))
         images = []
         pbar = ProgressBar(len(params))
@@ -335,33 +323,29 @@ Create masks based on specific color ranges within an image. Specify the color r
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                "IMAGE": (COZY_TYPE_IMAGE, {
-                    "tooltip": "Pixel Data (RGBA, RGB or Grayscale)"
-                }),
-                "START": ("VEC3", {
+                Lexicon.IMAGE: (COZY_TYPE_IMAGE, {}),
+                Lexicon.START: ("VEC3", {
                     "default": (128, 128, 128), "rgb": True}),
-                "RANGE": ("BOOLEAN", {
+                Lexicon.RANGE: ("BOOLEAN", {
                     "default": False,
-                    "tooltip": "use an end point (start->end) when calculating the filter range"}),
-                "END": ("VEC3", {
+                    "tooltip": "Use an end point (start->end) when calculating the filter range"}),
+                Lexicon.END: ("VEC3", {
                     "default": (128, 128, 128), "rgb": True}),
-                "FUZZ": ("VEC3", {
-                    "default": (0.5,0.5,0.5), "mij":0, "maj":1,
-                    "tooltip": "the fuzziness use to extend the start and end range(s)"}),
-                "MATTE": ("VEC4", {
-                    "default": (0, 0, 0, 255), "rgb": True,
-                    "tooltip": "Background Color"}),
+                Lexicon.FUZZ: ("VEC3", {
+                    "default": (0.5,0.5,0.5), "mij":0, "maj":1,}),
+                Lexicon.MATTE: ("VEC4", {
+                    "default": (0, 0, 0, 255), "rgb": True,}),
             }
         })
-        return d
+        return Lexicon._parse(d)
 
     def run(self, **kw) -> RGBAMaskType:
-        pA = parse_param(kw, "IMAGE", EnumConvertType.IMAGE, None)
-        start = parse_param(kw, "START", EnumConvertType.VEC3INT, (128,128,128), 0, 255)
-        use_range = parse_param(kw, "RANGE", EnumConvertType.BOOLEAN, False, 0, 255)
-        end = parse_param(kw, "END", EnumConvertType.VEC3INT, (128,128,128), 0, 255)
-        fuzz = parse_param(kw, "FUZZ", EnumConvertType.VEC3, (0.5,0.5,0.5), 0, 1)
-        matte = parse_param(kw, "MATTE", EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
+        pA = parse_param(kw, Lexicon.IMAGE, EnumConvertType.IMAGE, None)
+        start = parse_param(kw, Lexicon.START, EnumConvertType.VEC3INT, (128,128,128), 0, 255)
+        use_range = parse_param(kw, Lexicon.RANGE, EnumConvertType.BOOLEAN, False, 0, 255)
+        end = parse_param(kw, Lexicon.END, EnumConvertType.VEC3INT, (128,128,128), 0, 255)
+        fuzz = parse_param(kw, Lexicon.FUZZ, EnumConvertType.VEC3, (0.5,0.5,0.5), 0, 1)
+        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
         params = list(zip_longest_fill(pA, start, use_range, end, fuzz, matte))
         images = []
         pbar = ProgressBar(len(params))
@@ -390,56 +374,41 @@ Combines individual color channels (red, green, blue) along with an optional mas
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                "IMAGE": (COZY_TYPE_IMAGE, {
-                    "tooltip": "Pixel Data (RGBA, RGB or Grayscale)"
-                }),
-                "🟥": (COZY_TYPE_IMAGE, {
-                    "tooltip": "Red"
-                }),
-                "🟩": (COZY_TYPE_IMAGE, {
-                    "tooltip": "Green"
-                }),
-                "🟦": (COZY_TYPE_IMAGE, {
-                    "tooltip": "Blue"
-                }),
-                "⬜": (COZY_TYPE_IMAGE, {
-                    "tooltip": "Alpha"
-                }),
-                "MODE": (EnumScaleMode._member_names_, {
-                    "default": EnumScaleMode.MATTE.name,
-                    "tooltip": "If the image should be resized to fit within given dimensions or keep the original size"}),
-                "WH": ("VEC2", {
+                Lexicon.IMAGE: (COZY_TYPE_IMAGE, {}),
+                Lexicon.CHAN_RED: (COZY_TYPE_IMAGE, {}),
+                Lexicon.CHAN_GREEN: (COZY_TYPE_IMAGE, {}),
+                Lexicon.CHAN_BLUE: (COZY_TYPE_IMAGE, {}),
+                Lexicon.CHAN_ALPHA: (COZY_TYPE_IMAGE, {}),
+                Lexicon.MODE: (EnumScaleMode._member_names_, {
+                    "default": EnumScaleMode.MATTE.name,}),
+                Lexicon.WH: ("VEC2", {
                     "default": (512, 512), "mij":IMAGE_SIZE_MIN, "int": True,
-                    "label": ["W", "H"],
-                    "tooltip": "Width and Height"}),
-                "SAMPLE": (EnumInterpolation._member_names_, {
-                    "default": EnumInterpolation.LANCZOS4.name,
-                    "tooltip": "Sampling method for resizing images"}),
-                "MATTE": ("VEC4", {
-                    "default": (0, 0, 0, 255), "rgb": True,
-                    "tooltip": "Background Color"}),
-                "FLIP": ("VEC4", {
+                    "label": ["W", "H"],}),
+                Lexicon.SAMPLE: (EnumInterpolation._member_names_, {
+                    "default": EnumInterpolation.LANCZOS4.name,}),
+                Lexicon.MATTE: ("VEC4", {
+                    "default": (0, 0, 0, 255), "rgb": True,}),
+                Lexicon.FLIP: ("VEC4", {
                     "default": (0,0,0,0), "mij":0, "maj":1,
                     "tooltip": "Invert specific input prior to merging. R, G, B, A."}),
-                "INVERT": ("BOOLEAN", {
-                    "default": False,
-                    "tooltip": "Invert the final merged output"})
+                Lexicon.INVERT: ("BOOLEAN", {
+                    "default": False,})
             }
         })
-        return d
+        return Lexicon._parse(d)
 
     def run(self, **kw) -> RGBAMaskType:
-        rgba = parse_param(kw, "IMAGE", EnumConvertType.IMAGE, None)
-        R = parse_param(kw, "🟥", EnumConvertType.MASK, None)
-        G = parse_param(kw, "🟩", EnumConvertType.MASK, None)
-        B = parse_param(kw, "🟦", EnumConvertType.MASK, None)
-        A = parse_param(kw, "⬜", EnumConvertType.MASK, None)
-        mode = parse_param(kw, "MODE", EnumScaleMode, EnumScaleMode.MATTE.name)
-        wihi = parse_param(kw, "WH", EnumConvertType.VEC2INT, (512, 512), IMAGE_SIZE_MIN)
-        sample = parse_param(kw, "SAMPLE", EnumInterpolation, EnumInterpolation.LANCZOS4.name)
-        matte = parse_param(kw, "MATTE", EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
-        flip = parse_param(kw, "FLIP", EnumConvertType.VEC4, (0, 0, 0, 0), 0., 1.)
-        invert = parse_param(kw, "INVERT", EnumConvertType.BOOLEAN, False)
+        rgba = parse_param(kw, Lexicon.IMAGE, EnumConvertType.IMAGE, None)
+        R = parse_param(kw, Lexicon.CHAN_RED, EnumConvertType.MASK, None)
+        G = parse_param(kw, Lexicon.CHAN_GREEN, EnumConvertType.MASK, None)
+        B = parse_param(kw, Lexicon.CHAN_BLUE, EnumConvertType.MASK, None)
+        A = parse_param(kw, Lexicon.CHAN_ALPHA, EnumConvertType.MASK, None)
+        mode = parse_param(kw, Lexicon.MODE, EnumScaleMode, EnumScaleMode.MATTE.name)
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (512, 512), IMAGE_SIZE_MIN)
+        sample = parse_param(kw, Lexicon.SAMPLE, EnumInterpolation, EnumInterpolation.LANCZOS4.name)
+        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
+        flip = parse_param(kw, Lexicon.FLIP, EnumConvertType.VEC4, (0, 0, 0, 0), 0., 1.)
+        invert = parse_param(kw, Lexicon.INVERT, EnumConvertType.BOOLEAN, False)
         params = list(zip_longest_fill(rgba, R, G, B, A, mode, wihi, sample, matte, flip, invert))
         images = []
         pbar = ProgressBar(len(params))
@@ -498,16 +467,14 @@ Takes an input image and splits it into its individual color channels (red, gree
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                "IMAGE": (COZY_TYPE_IMAGE, {
-                    "tooltip": "Pixel Data (RGBA, RGB or Grayscale)"
-                })
+                Lexicon.IMAGE: (COZY_TYPE_IMAGE, {})
             }
         })
-        return d
+        return Lexicon._parse(d)
 
     def run(self, **kw) -> RGBAMaskType:
         images = []
-        pA = parse_param(kw, "IMAGE", EnumConvertType.IMAGE, None)
+        pA = parse_param(kw, Lexicon.IMAGE, EnumConvertType.IMAGE, None)
         pbar = ProgressBar(len(pA))
         for idx, pA in enumerate(pA):
             pA = channel_solid(chan=EnumImageType.BGRA) if pA is None else tensor_to_cv(pA)
@@ -528,39 +495,30 @@ Swap pixel values between two input images based on specified channel swizzle op
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                "IMAGE_A": (COZY_TYPE_IMAGE, {
-                    "tooltip": "Pixel Data (RGBA, RGB or Grayscale)"
-                }),
-                "IMAGE_B": (COZY_TYPE_IMAGE, {
-                    "tooltip": "Pixel Data (RGBA, RGB or Grayscale)"
-                }),
-                "SWAP_R": (EnumPixelSwizzle._member_names_, {
-                    "default": EnumPixelSwizzle.RED_A.name,
-                    "tooltip": "Replace input Red channel with target channel or constant"}),
-                "SWAP_G": (EnumPixelSwizzle._member_names_, {
-                    "default": EnumPixelSwizzle.GREEN_A.name,
-                    "tooltip": "Replace input Green channel with target channel or constant"}),
-                "SWAP_B": (EnumPixelSwizzle._member_names_, {
-                    "default": EnumPixelSwizzle.BLUE_A.name,
-                    "tooltip": "Replace input Blue channel with target channel or constant"}),
-                "SWAP_A": (EnumPixelSwizzle._member_names_, {
-                    "default": EnumPixelSwizzle.ALPHA_A.name,
-                    "tooltip": "Replace input Alpha channel with target channel or constant"}),
-                "MATTE": ("VEC4", {
-                    "default": (0, 0, 0, 255), "rgb": True,
-                    "tooltip": "Background Color"})
+                Lexicon.IMAGE_SOURCE: (COZY_TYPE_IMAGE, {}),
+                Lexicon.IMAGE_TARGET: (COZY_TYPE_IMAGE, {}),
+                Lexicon.SWAP_R: (EnumPixelSwizzle._member_names_, {
+                    "default": EnumPixelSwizzle.RED_A.name,}),
+                Lexicon.SWAP_G: (EnumPixelSwizzle._member_names_, {
+                    "default": EnumPixelSwizzle.GREEN_A.name,}),
+                Lexicon.SWAP_B: (EnumPixelSwizzle._member_names_, {
+                    "default": EnumPixelSwizzle.BLUE_A.name,}),
+                Lexicon.SWAP_A: (EnumPixelSwizzle._member_names_, {
+                    "default": EnumPixelSwizzle.ALPHA_A.name,}),
+                Lexicon.MATTE: ("VEC4", {
+                    "default": (0, 0, 0, 255), "rgb": True,})
             }
         })
-        return d
+        return Lexicon._parse(d)
 
     def run(self, **kw) -> RGBAMaskType:
-        pA = parse_param(kw, "IMAGE_A", EnumConvertType.IMAGE, None)
-        pB = parse_param(kw, "IMAGE_B", EnumConvertType.IMAGE, None)
-        swap_r = parse_param(kw, "SWAP_R", EnumPixelSwizzle, EnumPixelSwizzle.RED_A.name)
-        swap_g = parse_param(kw, "SWAP_G", EnumPixelSwizzle, EnumPixelSwizzle.GREEN_A.name)
-        swap_b = parse_param(kw, "SWAP_B", EnumPixelSwizzle, EnumPixelSwizzle.BLUE_A.name)
-        swap_a = parse_param(kw, "SWAP_A", EnumPixelSwizzle, EnumPixelSwizzle.ALPHA_A.name)
-        matte = parse_param(kw, "MATTE", EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
+        pA = parse_param(kw, Lexicon.IMAGE_SOURCE, EnumConvertType.IMAGE, None)
+        pB = parse_param(kw, Lexicon.IMAGE_TARGET, EnumConvertType.IMAGE, None)
+        swap_r = parse_param(kw, Lexicon.SWAP_R, EnumPixelSwizzle, EnumPixelSwizzle.RED_A.name)
+        swap_g = parse_param(kw, Lexicon.SWAP_G, EnumPixelSwizzle, EnumPixelSwizzle.GREEN_A.name)
+        swap_b = parse_param(kw, Lexicon.SWAP_B, EnumPixelSwizzle, EnumPixelSwizzle.BLUE_A.name)
+        swap_a = parse_param(kw, Lexicon.SWAP_A, EnumPixelSwizzle, EnumPixelSwizzle.ALPHA_A.name)
+        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
         params = list(zip_longest_fill(pA, pB, swap_r, swap_g, swap_b, swap_a, matte))
         images = []
         pbar = ProgressBar(len(params))
@@ -602,32 +560,29 @@ Define a range and apply it to an image for segmentation and feature extraction.
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                "IMAGE": (COZY_TYPE_IMAGE, {
-                    "tooltip": "Pixel Data (RGBA, RGB or Grayscale)"
-                }),
-                "ADAPT": ( EnumThresholdAdapt._member_names_, {
-                    "default": EnumThresholdAdapt.ADAPT_NONE.name,
-                    "tooltip": "X-Men"}),
-                "FUNCTION": ( EnumThreshold._member_names_, {
+                Lexicon.IMAGE: (COZY_TYPE_IMAGE, {}),
+                Lexicon.ADAPT: ( EnumThresholdAdapt._member_names_, {
+                    "default": EnumThresholdAdapt.ADAPT_NONE.name,}),
+                Lexicon.FUNCTION: ( EnumThreshold._member_names_, {
                     "default": EnumThreshold.BINARY.name}),
-                "THRESHOLD": ("FLOAT", {
+                Lexicon.THRESHOLD: ("FLOAT", {
                     "default": 0.5, "min": 0, "max": 1, "step": 0.005}),
-                "SIZE": ("INT", {
+                Lexicon.SIZE: ("INT", {
                     "default": 3, "min": 3, "max": 103}),
-                "INVERT": ("BOOLEAN", {
+                Lexicon.INVERT: ("BOOLEAN", {
                     "default": False,
                     "tooltip": "Invert the mask input"})
             }
         })
-        return d
+        return Lexicon._parse(d)
 
     def run(self, **kw) -> RGBAMaskType:
-        pA = parse_param(kw, "IMAGE", EnumConvertType.IMAGE, None)
-        mode = parse_param(kw, "FUNCTION", EnumThreshold, EnumThreshold.BINARY.name)
-        adapt = parse_param(kw, "ADAPT", EnumThresholdAdapt, EnumThresholdAdapt.ADAPT_NONE.name)
-        threshold = parse_param(kw, "THRESHOLD", EnumConvertType.FLOAT, 1, 0, 1)
-        block = parse_param(kw, "SIZE", EnumConvertType.INT, 3, 3)
-        invert = parse_param(kw, "INVERT", EnumConvertType.BOOLEAN, False)
+        pA = parse_param(kw, Lexicon.IMAGE, EnumConvertType.IMAGE, None)
+        mode = parse_param(kw, Lexicon.FUNCTION, EnumThreshold, EnumThreshold.BINARY.name)
+        adapt = parse_param(kw, Lexicon.ADAPT, EnumThresholdAdapt, EnumThresholdAdapt.ADAPT_NONE.name)
+        threshold = parse_param(kw, Lexicon.THRESHOLD, EnumConvertType.FLOAT, 1, 0, 1)
+        block = parse_param(kw, Lexicon.SIZE, EnumConvertType.INT, 3, 3)
+        invert = parse_param(kw, Lexicon.INVERT, EnumConvertType.BOOLEAN, False)
         params = list(zip_longest_fill(pA, mode, adapt, threshold, block, invert))
         images = []
         pbar = ProgressBar(len(params))
@@ -656,14 +611,14 @@ The Histogram Node generates a histogram representation of the input image, show
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                "IMAGE": (COZY_TYPE_IMAGE, {
+                Lexicon.IMAGE": (COZY_TYPE_IMAGE, {
                     "tooltip": "Pixel Data (RGBA, RGB or Grayscale)"}),
             }
         })
-        return d
+        return Lexicon._parse(d)
 
     def run(self, **kw) -> RGBAMaskType:
-        pA = parse_param(kw, "IMAGE", None), EnumConvertType.IMAGE, None)
+        pA = parse_param(kw, Lexicon.IMAGE", None), EnumConvertType.IMAGE, None)
         params = list(zip_longest_fill(pA,))
         images = []
         pbar = ProgressBar(len(params))

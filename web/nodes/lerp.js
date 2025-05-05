@@ -15,10 +15,10 @@ app.registerExtension({
         const onNodeCreated = nodeType.prototype.onNodeCreated
         nodeType.prototype.onNodeCreated = function () {
             const me = onNodeCreated?.apply(this);
-            const alpha = this.widgets.find(w => w.name == 'ALPHA');
-            widgetHookControl(this, 'TYPE', alpha, true);
-            widgetHookValue(this, 'TYPE', 'AA');
-            widgetHookValue(this, 'TYPE', 'BB');
+            const alpha = this.widgets.find(w => w.name == 'alpha');
+            widgetHookControl(this, 'type', alpha, true);
+            widgetHookValue(this, 'type', 'aa');
+            widgetHookValue(this, 'type', 'bb');
             return me;
         }
         return nodeType;

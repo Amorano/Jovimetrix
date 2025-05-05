@@ -10,6 +10,9 @@ from cozy_comfyui import \
     InputType, RGBAMaskType, EnumConvertType, \
     deep_merge, parse_param, parse_dynamic, zip_longest_fill
 
+from cozy_comfyui.lexicon import \
+    Lexicon
+
 from cozy_comfyui.node import \
     COZY_TYPE_IMAGE, \
     CozyImageNode
@@ -72,41 +75,36 @@ Extract a portion of an input image or resize it. It supports various cropping m
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                "IMAGE": (COZY_TYPE_IMAGE, {
-                    "tooltip": "Pixel Data (RGBA, RGB or Grayscale)"
-                }),
-                "FUNCTION": (EnumCropMode._member_names_, {
+                Lexicon.IMAGE: (COZY_TYPE_IMAGE, {}),
+                Lexicon.FUNCTION: (EnumCropMode._member_names_, {
                     "default": EnumCropMode.CENTER.name}),
-                "XY": ("VEC2", {
+                Lexicon.XY: ("VEC2", {
                     "default": (0, 0), "mij": 0.5, "maj": 0.5,
                     "label": ["X", "Y"]}),
-                "WH": ("VEC2", {
+                Lexicon.WH: ("VEC2", {
                     "default": (512, 512), "mij": IMAGE_SIZE_MIN, "int": True,
                     "label": ["W", "H"]}),
-                "TLTR": ("VEC4", {
+                Lexicon.TLTR: ("VEC4", {
                     "default": (0, 0, 0, 1), "mij": 0, "maj": 1,
-                    "label": ["TOP", "LEFT", "TOP", "RIGHT"],
-                    "tooltip": "Top Left - Top Right"}),
-                "BLBR": ("VEC4", {
+                    "label": ["TOP", "LEFT", "TOP", "RIGHT"],}),
+                Lexicon.BLBR: ("VEC4", {
                     "default": (1, 0, 1, 1), "mij": 0, "maj": 1,
-                    "label": ["BOTTOM", "LEFT", "BOTTOM", "RIGHT"],
-                    "tooltip": "Bottom Left - Bottom Right"}),
-                "MATTE": ("VEC4", {
-                    "default": (0, 0, 0, 255), "rgb": True,
-                    "tooltip": "Background Color"})
+                    "label": ["BOTTOM", "LEFT", "BOTTOM", "RIGHT"],}),
+                Lexicon.MATTE: ("VEC4", {
+                    "default": (0, 0, 0, 255), "rgb": True,})
             }
         })
-        return d
+        return Lexicon._parse(d)
 
     def run(self, **kw) -> RGBAMaskType:
-        pA = parse_param(kw, "IMAGE", EnumConvertType.IMAGE, None)
-        func = parse_param(kw, "FUNCTION", EnumCropMode, EnumCropMode.CENTER.name)
+        pA = parse_param(kw, Lexicon.IMAGE, EnumConvertType.IMAGE, None)
+        func = parse_param(kw, Lexicon.FUNCTION, EnumCropMode, EnumCropMode.CENTER.name)
         # if less than 1 then use as scalar, over 1 = int(size)
-        xy = parse_param(kw, "XY", EnumConvertType.VEC2, (0, 0,), 0, 1)
-        wihi = parse_param(kw, "WH", EnumConvertType.VEC2INT, (512, 512), IMAGE_SIZE_MIN)
-        tltr = parse_param(kw, "TLTR", EnumConvertType.VEC4, (0, 0, 0, 1,), 0, 1)
-        blbr = parse_param(kw, "BLBR", EnumConvertType.VEC4, (1, 0, 1, 1,), 0, 1)
-        matte = parse_param(kw, "MATTE", EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
+        xy = parse_param(kw, Lexicon.XY, EnumConvertType.VEC2, (0, 0,), 0, 1)
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (512, 512), IMAGE_SIZE_MIN)
+        tltr = parse_param(kw, Lexicon.TLTR, EnumConvertType.VEC4, (0, 0, 0, 1,), 0, 1)
+        blbr = parse_param(kw, Lexicon.BLBR, EnumConvertType.VEC4, (1, 0, 1, 1,), 0, 1)
+        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
         params = list(zip_longest_fill(pA, func, xy, wihi, tltr, blbr, matte))
         images = []
         pbar = ProgressBar(len(params))
@@ -151,34 +149,31 @@ Combine multiple input images into a single image by summing their pixel values.
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                "MODE": (EnumScaleMode._member_names_, {
-                    "default": EnumScaleMode.MATTE.name,
-                    "tooltip": "If the image should be resized to fit within given dimensions or keep the original size"}),
-                "WH": ("VEC2", {
+                Lexicon.MODE: (EnumScaleMode._member_names_, {
+                    "default": EnumScaleMode.MATTE.name,}),
+                Lexicon.WH: ("VEC2", {
                     "default": (512, 512), "mij":IMAGE_SIZE_MIN, "int": True,
                     "label": ["W", "H"]}),
-                "SAMPLE": (EnumInterpolation._member_names_, {
-                    "default": EnumInterpolation.LANCZOS4.name,
-                    "tooltip": "Sampling method for resizing images"}),
-                "MATTE": ("VEC4", {
-                    "default": (0, 0, 0, 255), "rgb": True,
-                    "tooltip": "Background Color"})
+                Lexicon.SAMPLE: (EnumInterpolation._member_names_, {
+                    "default": EnumInterpolation.LANCZOS4.name,}),
+                Lexicon.MATTE: ("VEC4", {
+                    "default": (0, 0, 0, 255), "rgb": True,})
             }
         })
-        return d
+        return Lexicon._parse(d)
 
     def run(self, **kw) -> RGBAMaskType:
-        imgs = parse_dynamic(kw, "IMAGE", EnumConvertType.IMAGE, None)
+        imgs = parse_dynamic(kw, Lexicon.IMAGE, EnumConvertType.IMAGE, None)
         if imgs is None:
             logger.warning("no images to flatten")
             return ()
 
         # be less dumb when merging
         pA = [tensor_to_cv(i) for i in imgs]
-        mode = parse_param(kw, "MODE", EnumScaleMode, EnumScaleMode.MATTE.name)
-        wihi = parse_param(kw, "WH", EnumConvertType.VEC2INT, (512, 512), IMAGE_SIZE_MIN)
-        sample = parse_param(kw, "SAMPLE", EnumInterpolation, EnumInterpolation.LANCZOS4.name)
-        matte = parse_param(kw, "MATTE", EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
+        mode = parse_param(kw, Lexicon.MODE, EnumScaleMode, EnumScaleMode.MATTE.name)
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (512, 512), IMAGE_SIZE_MIN)
+        sample = parse_param(kw, Lexicon.SAMPLE, EnumInterpolation, EnumInterpolation.LANCZOS4.name)
+        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
 
         images = []
         params = list(zip_longest_fill(mode, sample, wihi, matte))
@@ -206,41 +201,37 @@ The axis parameter allows for horizontal, vertical, or grid stacking of images, 
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                "AXIS": (EnumOrientation._member_names_, {
-                    "default": EnumOrientation.GRID.name,
-                    "tooltip":"Choose the direction in which to stack the images. Options include horizontal, vertical, or a grid layout"}),
-                "STEP": ("INT", {
+                Lexicon.AXIS: (EnumOrientation._member_names_, {
+                    "default": EnumOrientation.GRID.name,}),
+                Lexicon.STEP: ("INT", {
                     "default": 1, "min": 0,
-                    "tooltip":"How many images are placed before a new row starts (stride)."}),
-                "MODE": (EnumScaleMode._member_names_, {
-                    "default": EnumScaleMode.MATTE.name,
-                    "tooltip": "If the image should be resized to fit within given dimensions or keep the original size"}),
-                "WH": ("VEC2", {
+                    "tooltip":"How many images are placed before a new row starts (stride)"}),
+                Lexicon.MODE: (EnumScaleMode._member_names_, {
+                    "default": EnumScaleMode.MATTE.name,}),
+                Lexicon.WH: ("VEC2", {
                     "default": (512, 512), "mij":IMAGE_SIZE_MIN, "int": True,
                     "label": ["W", "H"]}),
-                "SAMPLE": (EnumInterpolation._member_names_, {
-                    "default": EnumInterpolation.LANCZOS4.name,
-                    "tooltip": "Sampling method for resizing images"}),
-                "MATTE": ("VEC4", {
-                    "default": (0, 0, 0, 255), "rgb": True,
-                    "tooltip": "Background Color"})
+                Lexicon.SAMPLE: (EnumInterpolation._member_names_, {
+                    "default": EnumInterpolation.LANCZOS4.name,}),
+                Lexicon.MATTE: ("VEC4", {
+                    "default": (0, 0, 0, 255), "rgb": True,})
             }
         })
-        return d
+        return Lexicon._parse(d)
 
     def run(self, **kw) -> RGBAMaskType:
-        images = parse_dynamic(kw, "IMAGE", EnumConvertType.IMAGE, None)
+        images = parse_dynamic(kw, Lexicon.IMAGE, EnumConvertType.IMAGE, None)
         if len(images) == 0:
             logger.warning("no images to stack")
             return
 
         images = [tensor_to_cv(i) for i in images]
-        axis = parse_param(kw, "AXIS", EnumOrientation, EnumOrientation.GRID.name)[0]
-        stride = parse_param(kw, "STEP", EnumConvertType.INT, 1)[0]
-        mode = parse_param(kw, "MODE", EnumScaleMode, EnumScaleMode.MATTE.name)[0]
-        wihi = parse_param(kw, "WH", EnumConvertType.VEC2INT, (512, 512), IMAGE_SIZE_MIN)[0]
-        sample = parse_param(kw, "SAMPLE", EnumInterpolation, EnumInterpolation.LANCZOS4.name)[0]
-        matte = parse_param(kw, "MATTE", EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)[0]
+        axis = parse_param(kw, Lexicon.AXIS, EnumOrientation, EnumOrientation.GRID.name)[0]
+        stride = parse_param(kw, Lexicon.STEP, EnumConvertType.INT, 1)[0]
+        mode = parse_param(kw, Lexicon.MODE, EnumScaleMode, EnumScaleMode.MATTE.name)[0]
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (512, 512), IMAGE_SIZE_MIN)[0]
+        sample = parse_param(kw, Lexicon.SAMPLE, EnumInterpolation, EnumInterpolation.LANCZOS4.name)[0]
+        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)[0]
         img = image_stacker(images, axis, stride) #, matte)
         if mode != EnumScaleMode.MATTE:
             w, h = wihi
@@ -261,76 +252,68 @@ Apply various geometric transformations to images, including translation, rotati
         d = super().INPUT_TYPES(prompt=True, dynprompt=True)
         d = deep_merge(d, {
             "optional": {
-                "IMAGE": (COZY_TYPE_IMAGE, {
-                    "tooltip": "Pixel Data (RGBA, RGB or Grayscale)"
-                }),
-                "MASK": (COZY_TYPE_IMAGE, {
+                Lexicon.IMAGE: (COZY_TYPE_IMAGE, {}),
+                Lexicon.MASK: (COZY_TYPE_IMAGE, {
                     "tooltip": "Override Image mask"}),
-                "XY": ("VEC2", {
+                Lexicon.XY: ("VEC2", {
                     "default": (0., 0.,), "mij": -1., "maj": 1.,
                     "label": ["X", "Y"]}),
-                "ANGLE": ("FLOAT", {
-                    "default": 0, "step": 0.01,
-                    "tooltip": "Rotation Angle"}),
-                "SIZE": ("VEC2", {
+                Lexicon.ANGLE: ("FLOAT", {
+                    "default": 0, "step": 0.01,}),
+                Lexicon.SIZE: ("VEC2", {
                     "default": (1., 1.), "mij": 0.001,
                     "label": ["X", "Y"]}),
-                "TILE": ("VEC2", {
+                Lexicon.TILE: ("VEC2", {
                     "default": (1., 1.), "mij": 1.,
                     "label": ["X", "Y"]}),
-                "EDGE": (EnumEdge._member_names_, {
+                Lexicon.EDGE: (EnumEdge._member_names_, {
                     "default": EnumEdge.CLIP.name}),
-                "MIRROR": (EnumMirrorMode._member_names_, {
+                Lexicon.MIRROR: (EnumMirrorMode._member_names_, {
                     "default": EnumMirrorMode.NONE.name}),
-                "PIVOT": ("VEC2", {
+                Lexicon.PIVOT: ("VEC2", {
                     "default": (0.5, 0.5), "step": 0.005,
                     "label": ["X", "Y"]}),
-                "PROJ": (EnumProjection._member_names_, {
+                Lexicon.PROJECTION: (EnumProjection._member_names_, {
                     "default": EnumProjection.NORMAL.name}),
-                "TLTR": ("VEC4", {
+                Lexicon.TLTR: ("VEC4", {
                     "default": (0., 0., 1., 0.), "mij": 0., "maj": 1., "step": 0.005,
-                    "label": ["TOP", "LEFT", "TOP", "RIGHT"],
-                    "tooltip": "Top Left - Top Right"}),
-                "BLBR": ("VEC4", {
+                    "label": ["TOP", "LEFT", "TOP", "RIGHT"],}),
+                Lexicon.BLBR: ("VEC4", {
                     "default": (0., 1., 1., 1.), "mij": 0., "maj": 1., "step": 0.005,
-                    "label": ["BOTTOM", "LEFT", "BOTTOM", "RIGHT"],
-                    "tooltip": "Bottom Left - Bottom Right"}),
-                "STRENGTH": ("FLOAT", {
+                    "label": ["BOTTOM", "LEFT", "BOTTOM", "RIGHT"],}),
+                Lexicon.STRENGTH: ("FLOAT", {
                     "default": 1, "min": 0, "step": 0.005}),
-                "MODE": (EnumScaleMode._member_names_, {
-                    "default": EnumScaleMode.MATTE.name,
-                    "tooltip": "If the image should be resized to fit within given dimensions or keep the original size"}),
-                "WH": ("VEC2", {
+                Lexicon.MODE: (EnumScaleMode._member_names_, {
+                    "default": EnumScaleMode.MATTE.name,}),
+                Lexicon.WH: ("VEC2", {
                     "default": (512, 512), "mij":IMAGE_SIZE_MIN, "int": True,
                     "label": ["W", "H"]}),
-                "SAMPLE": (EnumInterpolation._member_names_, {
-                    "default": EnumInterpolation.LANCZOS4.name,
-                    "tooltip": "Sampling method for resizing images"}),
-                "MATTE": ("VEC4", {
-                    "default": (0, 0, 0, 255), "rgb": True,
-                    "tooltip": "Background Color"})
+                Lexicon.SAMPLE: (EnumInterpolation._member_names_, {
+                    "default": EnumInterpolation.LANCZOS4.name,}),
+                Lexicon.MATTE: ("VEC4", {
+                    "default": (0, 0, 0, 255), "rgb": True,})
             }
         })
-        return d
+        return Lexicon._parse(d)
 
     def run(self, **kw) -> RGBAMaskType:
-        pA = parse_param(kw, "IMAGE", EnumConvertType.IMAGE, None)
-        mask = parse_param(kw, "MASK", EnumConvertType.IMAGE, None)
-        offset = parse_param(kw, "XY", EnumConvertType.VEC2, (0., 0.), -2.5, 2.5)
-        angle = parse_param(kw, "ANGLE", EnumConvertType.FLOAT, 0)
-        size = parse_param(kw, "SIZE", EnumConvertType.VEC2, (1., 1.), 0.001)
-        edge = parse_param(kw, "EDGE", EnumEdge, EnumEdge.CLIP.name)
-        mirror = parse_param(kw, "MIRROR", EnumMirrorMode, EnumMirrorMode.NONE.name)
-        mirror_pivot = parse_param(kw, "PIVOT", EnumConvertType.VEC2, (0.5, 0.5), 0, 1)
-        tile_xy = parse_param(kw, "TILE", EnumConvertType.VEC2, (1., 1.), 1)
-        proj = parse_param(kw, "PROJ", EnumProjection, EnumProjection.NORMAL.name)
-        tltr = parse_param(kw, "TLTR", EnumConvertType.VEC4, (0., 0., 1., 0.), 0, 1)
-        blbr = parse_param(kw, "BLBR", EnumConvertType.VEC4, (0., 1., 1., 1.), 0, 1)
-        strength = parse_param(kw, "STRENGTH", EnumConvertType.FLOAT, 1, 0, 1)
-        mode = parse_param(kw, "MODE", EnumScaleMode, EnumScaleMode.MATTE.name)
-        wihi = parse_param(kw, "WH", EnumConvertType.VEC2INT, (512, 512), IMAGE_SIZE_MIN)
-        sample = parse_param(kw, "SAMPLE", EnumInterpolation, EnumInterpolation.LANCZOS4.name)
-        matte = parse_param(kw, "MATTE", EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
+        pA = parse_param(kw, Lexicon.IMAGE, EnumConvertType.IMAGE, None)
+        mask = parse_param(kw, Lexicon.MASK, EnumConvertType.IMAGE, None)
+        offset = parse_param(kw, Lexicon.XY, EnumConvertType.VEC2, (0., 0.), -2.5, 2.5)
+        angle = parse_param(kw, Lexicon.ANGLE, EnumConvertType.FLOAT, 0)
+        size = parse_param(kw, Lexicon.SIZE, EnumConvertType.VEC2, (1., 1.), 0.001)
+        edge = parse_param(kw, Lexicon.EDGE, EnumEdge, EnumEdge.CLIP.name)
+        mirror = parse_param(kw, Lexicon.MIRROR, EnumMirrorMode, EnumMirrorMode.NONE.name)
+        mirror_pivot = parse_param(kw, Lexicon.PIVOT, EnumConvertType.VEC2, (0.5, 0.5), 0, 1)
+        tile_xy = parse_param(kw, Lexicon.TILE, EnumConvertType.VEC2, (1., 1.), 1)
+        proj = parse_param(kw, Lexicon.PROJECTION, EnumProjection, EnumProjection.NORMAL.name)
+        tltr = parse_param(kw, Lexicon.TLTR, EnumConvertType.VEC4, (0., 0., 1., 0.), 0, 1)
+        blbr = parse_param(kw, Lexicon.BLBR, EnumConvertType.VEC4, (0., 1., 1., 1.), 0, 1)
+        strength = parse_param(kw, Lexicon.STRENGTH, EnumConvertType.FLOAT, 1, 0, 1)
+        mode = parse_param(kw, Lexicon.MODE, EnumScaleMode, EnumScaleMode.MATTE.name)
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (512, 512), IMAGE_SIZE_MIN)
+        sample = parse_param(kw, Lexicon.SAMPLE, EnumInterpolation, EnumInterpolation.LANCZOS4.name)
+        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
         params = list(zip_longest_fill(pA, mask, offset, angle, size, edge, tile_xy, mirror, mirror_pivot, proj, strength, tltr, blbr, mode, wihi, sample, matte))
         images = []
         pbar = ProgressBar(len(params))

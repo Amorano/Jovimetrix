@@ -47,10 +47,10 @@ app.registerExtension({
             this.widget_report.inputEl.readOnly = true;
             this.widget_report.serializeValue = async () => { };
 
-            const widget_queue = this.widgets.find(w => w.name == 'Q');
-            const widget_batch = this.widgets.find(w => w.name == 'BATCH');
-            const widget_hold = this.widgets.find(w => w.name == 'HOLD');
-            const widget_reset = this.widgets.find(w => w.name == 'RESET');
+            const widget_queue = this.widgets.find(w => w.name == 'q');
+            const widget_batch = this.widgets.find(w => w.name == 'batch');
+            const widget_hold = this.widgets.find(w => w.name == 'hold');
+            const widget_reset = this.widgets.find(w => w.name == 'reset');
 
             widget_queue.inputEl.addEventListener('input', function () {
                 const value = widget_queue.value.split('\n');
@@ -98,7 +98,7 @@ app.registerExtension({
             if (outputIndex == 0 && inputType == "COMBO") {
                 // can link the "same" list -- user breaks it past that, their problem atm.
 
-                const widget_queue = this.widgets.find(w => w.name == 'Q');
+                const widget_queue = this.widgets.find(w => w.name == 'queue');
                 const widget = inputNode.widgets.find(w => w.name == inputSlot.name);
                 const values = widget.options.values.join('\n');
                 if (this.outputs[0].name != _prefix && widget_queue.value != values) {
@@ -129,7 +129,7 @@ app.registerExtension({
                 this.outputs[0].name = widget.name;
                 if (widget?.origType == "combo" || widget.type == "COMBO") {
                     const values = widget.options.values;
-                    const widget_queue = this.widgets.find(w => w.name == 'Q');
+                    const widget_queue = this.widgets.find(w => w.name == 'queue');
                     // remove all connections that don't match the list?
                     widget_queue.value = values.join('\n');
                     update_list(this, values);

@@ -20,6 +20,9 @@ from cozy_comfyui import \
     InputType, EnumConvertType, \
     deep_merge, parse_param, parse_param_list, zip_longest_fill
 
+from cozy_comfyui.lexicon import \
+    Lexicon
+
 from cozy_comfyui.node import \
     COZY_TYPE_IMAGE, COZY_TYPE_ANY, \
     CozyBaseNode
@@ -99,30 +102,30 @@ Introduce pauses in the workflow that accept an optional input to pass through a
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                "IN": (COZY_TYPE_ANY, {
+                Lexicon.PASS_IN: (COZY_TYPE_ANY, {
                     "default": None,
                     "tooltip":"The data that should be held until the timer completes."}),
-                "TIMER": ("INT", {
+                Lexicon.TIMER: ("INT", {
                     "default" : 0, "min": -1,
                     "tooltip":"How long to delay if enabled. 0 means no delay."}),
-                "ENABLE": ("BOOLEAN", {
+                Lexicon.ENABLE: ("BOOLEAN", {
                     "default": True,
                     "tooltip":"Enable or disable the screensaver."})
             }
         })
-        return d
+        return Lexicon._parse(d)
 
     @classmethod
     def IS_CHANGED(cls, **kw) -> float:
         return float("NaN")
 
     def run(self, ident, **kw) -> tuple[Any]:
-        delay = parse_param(kw, "TIMER", EnumConvertType.INT, -1, 0, JOV_DELAY_MAX)[0]
+        delay = parse_param(kw, Lexicon.TIMER, EnumConvertType.INT, -1, 0, JOV_DELAY_MAX)[0]
         if delay < 0:
             delay = JOV_DELAY_MAX
         if delay > JOV_DELAY_MIN:
             comfy_api_post("jovi-delay-user", ident, {"id": ident, "timeout": delay})
-        # enable = parse_param(kw, "ENABLE", EnumConvertType.BOOLEAN, True)
+        # enable = parse_param(kw, Lexicon.ENABLE, EnumConvertType.BOOLEAN, True)[0]
 
         step = 1
         pbar = ProgressBar(delay)
@@ -139,7 +142,7 @@ Introduce pauses in the workflow that accept an optional input to pass through a
                     logger.info(f"delay [continue] ({step}): {ident}")
             pbar.update_absolute(step)
             step += 1
-        return kw["IN"],
+        return kw[Lexicon.PASS_IN],
 
 class ExportNode(CozyBaseNode):
     NAME = "EXPORT (JOV) 📽"
@@ -156,52 +159,45 @@ Responsible for saving images or animations to disk. It supports various output 
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                "IMAGE": (COZY_TYPE_IMAGE, {
-                    "tooltip": "Pixel Data (RGBA, RGB or Grayscale)"
-                }),
-                "OUT": ("STRING", {
+                Lexicon.IMAGE: (COZY_TYPE_IMAGE, {}),
+                Lexicon.PATH: ("STRING", {
                     "default": get_output_directory(),
-                    "default_top":"<comfy output dir>",
-                    "tooltip":"Pass through another route node to pre-populate the outputs."}),
-                "FORMAT": (FORMATS, {
-                    "default": FORMATS[0],
-                    "tooltip":"Pass through another route node to pre-populate the outputs."}),
-                "PREFIX": ("STRING", {
-                    "default": "jovi",
-                    "tooltip":"Pass through another route node to pre-populate the outputs."}),
-                "OVERWRITE": ("BOOLEAN", {
-                    "default": False,
-                    "tooltip":"Pass through another route node to pre-populate the outputs."}),
+                    "default_top": "<comfy output dir>",}),
+                Lexicon.FORMAT: (FORMATS, {
+                    "default": FORMATS[0],}),
+                Lexicon.PREFIX: ("STRING", {
+                    "default": "jovi",}),
+                Lexicon.OVERWRITE: ("BOOLEAN", {
+                    "default": False,}),
                 # GIF ONLY
-                "OPT": ("BOOLEAN", {
-                    "default": False,
-                    "tooltip":"Pass through another route node to pre-populate the outputs."}),
+                Lexicon.OPTIMIZE: ("BOOLEAN", {
+                    "default": False,}),
                 # GIFSKI ONLY
-                "QUALITY": ("INT", {"default": 90, "min": 1, "max": 100,
-                                              "tooltip":"Pass through another route node to pre-populate the outputs."}),
-                "QUALITY_M": ("INT", {"default": 100, "min": 1, "max": 100,
-                                              "tooltip":"Pass through another route node to pre-populate the outputs."}),
+                Lexicon.QUALITY: ("INT", {
+                    "default": 90, "min": 1, "max": 100,}),
+                Lexicon.QUALITY_M: ("INT", {
+                    "default": 100, "min": 1, "max": 100,}),
                 # GIF OR GIFSKI
-                "FPS": ("INT", {"default": 24, "min": 1, "max": 60,
-                                              "tooltip":"Pass through another route node to pre-populate the outputs."}),
+                Lexicon.FPS: ("INT", {
+                    "default": 24, "min": 1, "max": 60,}),
                 # GIF OR GIFSKI
-                "LOOP": ("INT", {"default": 0, "min": 0,
-                                              "tooltip":"Pass through another route node to pre-populate the outputs."}),
+                Lexicon.LOOP: ("INT", {
+                    "default": 0, "min": 0,}),
             }
         })
-        return d
+        return Lexicon._parse(d)
 
     def run(self, **kw) -> None:
-        images = parse_param(kw, "IMAGE", EnumConvertType.IMAGE, None)
-        suffix = parse_param(kw, "PREFIX", EnumConvertType.STRING, uuid4().hex[:16])[0]
-        output_dir = parse_param(kw, "OUT", EnumConvertType.STRING, "")[0]
-        format = parse_param(kw, "FORMAT", EnumConvertType.STRING, "gif")[0]
-        overwrite = parse_param(kw, "OVERWRITE", EnumConvertType.BOOLEAN, False)[0]
-        optimize = parse_param(kw, "OPT", EnumConvertType.BOOLEAN, False)[0]
-        quality = parse_param(kw, "QUALITY", EnumConvertType.INT, 90, 0, 100)[0]
-        motion = parse_param(kw, "QUALITY_M", EnumConvertType.INT, 100, 0, 100)[0]
-        fps = parse_param(kw, "FPS", EnumConvertType.INT, 24, 1, 60)[0]
-        loop = parse_param(kw, "LOOP", EnumConvertType.INT, 0, 0)[0]
+        images = parse_param(kw, Lexicon.IMAGE, EnumConvertType.IMAGE, None)
+        suffix = parse_param(kw, Lexicon.PREFIX, EnumConvertType.STRING, uuid4().hex[:16])[0]
+        output_dir = parse_param(kw, Lexicon.PATH, EnumConvertType.STRING, "")[0]
+        format = parse_param(kw, Lexicon.FORMAT, EnumConvertType.STRING, "gif")[0]
+        overwrite = parse_param(kw, Lexicon.OVERWRITE, EnumConvertType.BOOLEAN, False)[0]
+        optimize = parse_param(kw, Lexicon.OPTIMIZE, EnumConvertType.BOOLEAN, False)[0]
+        quality = parse_param(kw, Lexicon.QUALITY, EnumConvertType.INT, 90, 0, 100)[0]
+        motion = parse_param(kw, Lexicon.QUALITY_M, EnumConvertType.INT, 100, 0, 100)[0]
+        fps = parse_param(kw, Lexicon.FPS, EnumConvertType.INT, 24, 1, 60)[0]
+        loop = parse_param(kw, Lexicon.LOOP, EnumConvertType.INT, 0, 0)[0]
         output_dir = Path(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -273,16 +269,17 @@ Routes the input data from the optional input ports to the output port, preservi
         d = super().INPUT_TYPES()
         e = {
             "optional": {
-                "ROUTE": ("BUS", {"default": None, "tooltip":"Pass through another route node to pre-populate the outputs."}),
+                Lexicon.ROUTE: ("BUS", {
+                    "default": None,}),
             }
         }
         d = deep_merge(d, e)
-        return d
+        return Lexicon._parse(d)
 
     def run(self, **kw) -> tuple[Any, ...]:
-        inout = parse_param(kw, "ROUTE", EnumConvertType.ANY, None)
+        inout = parse_param(kw, Lexicon.ROUTE, EnumConvertType.ANY, None)
         vars = kw.copy()
-        vars.pop("ROUTE", None)
+        vars.pop(Lexicon.ROUTE, None)
         vars.pop('ident', None)
 
         parsed = []
@@ -300,7 +297,7 @@ class SaveOutputNode(CozyBaseNode):
     RETURN_TYPES = ()
     SORT = 85
     DESCRIPTION = """
-Save the output image along with its metadata to the specified path. Supports saving additional user metadata and prompt information.
+Save images with metadata to any specified path. Can save user metadata and prompt information.
 """
 
     @classmethod
@@ -308,31 +305,25 @@ Save the output image along with its metadata to the specified path. Supports sa
         d = super().INPUT_TYPES(True, True)
         d = deep_merge(d, {
             "optional": {
-                "IMAGE": ("IMAGE", {
-                    "default": None,
-                    "tooltip":""}),
-                "PATH": ("STRING", {
-                    "default": "", "dynamicPrompts":False,
-                    "tooltip":"Destination path to save the output"}),
-                "NAME": ("STRING", {
-                    "default": "output", "dynamicPrompts":False,
-                    "tooltip":"Filename of the output"}),
-                "META": ("JSON", {
-                    "default": None,
-                    "tooltip":"Extra metadata to save in the file"}),
-                "USER": ("STRING", {
-                    "default": "", "multiline": True, "dynamicPrompts":False,
-                    "tooltip":"Custom user metadat to save with the file"}),
+                Lexicon.IMAGE: ("IMAGE", {}),
+                Lexicon.PATH: ("STRING", {
+                    "default": "", "dynamicPrompts":False}),
+                Lexicon.NAME: ("STRING", {
+                    "default": "output", "dynamicPrompts":False,}),
+                Lexicon.META: ("JSON", {
+                    "default": None,}),
+                Lexicon.USER: ("STRING", {
+                    "default": "", "multiline": True, "dynamicPrompts":False,}),
             }
         })
-        return d
+        return Lexicon._parse(d)
 
     def run(self, **kw) -> dict[str, Any]:
-        image = parse_param(kw, 'IMAGE', EnumConvertType.IMAGE, None)
-        path = parse_param(kw, 'PATH', EnumConvertType.STRING, "")
-        fname = parse_param(kw, 'NAME', EnumConvertType.STRING, "output")
-        metadata = parse_param(kw, 'META', EnumConvertType.DICT, {})
-        usermeta = parse_param(kw, 'USER', EnumConvertType.DICT, {})
+        image = parse_param(kw, Lexicon.IMAGE, EnumConvertType.IMAGE, None)
+        path = parse_param(kw, Lexicon.PATH, EnumConvertType.STRING, "")
+        fname = parse_param(kw, Lexicon.NAME, EnumConvertType.STRING, "output")
+        metadata = parse_param(kw, Lexicon.META, EnumConvertType.DICT, {})
+        usermeta = parse_param(kw, Lexicon.USER, EnumConvertType.DICT, {})
         prompt = parse_param(kw, 'prompt', EnumConvertType.STRING, "")
         pnginfo = parse_param(kw, 'extra_pnginfo', EnumConvertType.DICT, {})
         params = list(zip_longest_fill(image, path, fname, metadata, usermeta, prompt, pnginfo))

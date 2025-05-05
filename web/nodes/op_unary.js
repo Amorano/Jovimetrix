@@ -16,7 +16,7 @@ app.registerExtension({
         const onNodeCreated = nodeType.prototype.onNodeCreated
         nodeType.prototype.onNodeCreated = function () {
             const me = onNodeCreated?.apply(this);
-            widgetHookValue(this, 'TYPE', 'AA');
+            widgetHookValue(this, 'type', 'aa');
             return me;
         }
 /*

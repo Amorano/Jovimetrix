@@ -14,6 +14,9 @@ from cozy_comfyui import \
     InputType, EnumConvertType, TensorType, \
     deep_merge, parse_dynamic, parse_param
 
+from cozy_comfyui.lexicon import \
+    Lexicon
+
 from cozy_comfyui.node import \
     COZY_TYPE_IMAGE, \
     CozyBaseNode
@@ -155,19 +158,18 @@ Visualize a series of data points over time. It accepts a dynamic number of valu
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                "RESET": ("BOOLEAN", {
+                Lexicon.RESET: ("BOOLEAN", {
                     "default": False,
                     "tooltip":"Clear the graph history"}),
-                "VAL": ("INT", {
+                Lexicon.VALUE: ("INT", {
                     "default": 60, "min": 0,
                     "tooltip":"Number of values to graph and display"}),
-                "WH": ("VEC2", {
+                Lexicon.WH: ("VEC2", {
                     "default": (512, 512), "mij":IMAGE_SIZE_MIN, "int": True,
-                    "label": ["W", "H"],
-                    "tooltip":"Width and Height of the graph output"}),
+                    "label": ["W", "H"]}),
             }
         })
-        return d
+        return Lexicon._parse(d)
 
     @classmethod
     def IS_CHANGED(cls) -> float:
@@ -179,12 +181,12 @@ Visualize a series of data points over time. It accepts a dynamic number of valu
         self.__fig, self.__ax = plt.subplots(figsize=(5.12, 5.12))
 
     def run(self, ident, **kw) -> tuple[TensorType]:
-        slice = parse_param(kw, "VAL", EnumConvertType.INT, 60)[0]
-        wihi = parse_param(kw, "WH", EnumConvertType.VEC2INT, (512, 512), 1)[0]
-        if parse_reset(ident) > 0 or parse_param(kw, "RESET", EnumConvertType.BOOLEAN, False)[0]:
+        slice = parse_param(kw, Lexicon.VALUE, EnumConvertType.INT, 60)[0]
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (512, 512), 1)[0]
+        if parse_reset(ident) > 0 or parse_param(kw, Lexicon.RESET, EnumConvertType.BOOLEAN, False)[0]:
             self.__history = []
         longest_edge = 0
-        dynamic = parse_dynamic(kw, "❔", EnumConvertType.FLOAT, 0)
+        dynamic = parse_dynamic(kw, Lexicon.DYNAMIC, EnumConvertType.FLOAT, 0)
         dynamic = [i[0] for i in dynamic]
         self.__ax.clear()
         for idx, val in enumerate(dynamic):
@@ -236,14 +238,12 @@ Exports and Displays immediate information about images.
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                "IMAGE": (COZY_TYPE_IMAGE, {
-                    "default": None,
-                    "tooltip":"The image to examine"})
+                Lexicon.IMAGE: (COZY_TYPE_IMAGE, {})
             }
         })
-        return d
+        return Lexicon._parse(d)
 
     def run(self, **kw) -> tuple[int, list]:
-        image = parse_param(kw, "IMAGE", EnumConvertType.IMAGE, None)
+        image = parse_param(kw, Lexicon.IMAGE, EnumConvertType.IMAGE, None)
         height, width, cc = image[0].shape
         return (len(image), width, height, cc, (width, height), (width, height, cc))

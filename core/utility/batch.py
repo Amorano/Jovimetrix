@@ -22,6 +22,9 @@ from cozy_comfyui import \
     InputType, EnumConvertType, TensorType, \
     deep_merge, parse_dynamic, parse_param
 
+from cozy_comfyui.lexicon import \
+    Lexicon
+
 from cozy_comfyui.node import \
     COZY_TYPE_ANY, \
     CozyBaseNode
@@ -83,7 +86,7 @@ class ArrayNode(CozyBaseNode):
     )
     SORT = 50
     DESCRIPTION = """
-Processes a batch of data based on the selected mode. Merge, pick, slice, random select, or index items. Can reverse the order of items and divide the data into chunks.
+Processes a batch of data based on the selected mode. Merge, pick, slice, random select, or index items. Can also reverse the order of items.
 """
 
     @classmethod
@@ -91,27 +94,26 @@ Processes a batch of data based on the selected mode. Merge, pick, slice, random
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                "MODE": (EnumBatchMode._member_names_, {
+                Lexicon.MODE: (EnumBatchMode._member_names_, {
                     "default": EnumBatchMode.MERGE.name,
-                    "tooltip":"Select a single index, specific range, custom index list or randomized"}),
-                "RANGE": ("VEC3", {
+                    "tooltip": "Select a single index, specific range, custom index list or randomized"}),
+                Lexicon.RANGE: ("VEC3", {
                     "default": (0, 0, 1), "mij": 0, "int": True,
-                    "tooltip":"The start, end and step for the range"}),
-                "INDEX": ("STRING", {
+                    "tooltip": "The start, end and step for the range"}),
+                Lexicon.INDEX: ("STRING", {
                     "default": "",
-                    "tooltip":"Comma separated list of indicies to export"}),
-                "COUNT": ("INT", {
+                    "tooltip": "Comma separated list of indicies to export"}),
+                Lexicon.COUNT: ("INT", {
                     "default": 0, "min": 0, "max": sys.maxsize,
-                    "tooltip":"How many items to return"}),
-                "REVERSE": ("BOOLEAN", {
+                    "tooltip": "How many items to return"}),
+                Lexicon.REVERSE: ("BOOLEAN", {
                     "default": False,
-                    "tooltip":"reverse the calculated output list"}),
-                "SEED": ("INT", {
-                    "default": 0, "min": 0, "max": sys.maxsize,
-                    "tooltip":"Random seed value"}),
+                    "tooltip": "Reverse the calculated output list"}),
+                Lexicon.SEED: ("INT", {
+                    "default": 0, "min": 0, "max": sys.maxsize}),
             }
         })
-        return d
+        return Lexicon._parse(d)
 
     @classmethod
     def batched(cls, iterable, chunk_size, expand:bool=False, fill:Any=None) -> List[Any]:
@@ -121,13 +123,13 @@ Processes a batch of data based on the selected mode. Merge, pick, slice, random
         return [iterable[i: i + chunk_size] for i in range(0, len(iterable), chunk_size)]
 
     def run(self, **kw) -> tuple[int, list]:
-        data_list = parse_dynamic(kw, "❔", EnumConvertType.ANY, None)
-        mode = parse_param(kw, "MODE", EnumBatchMode, EnumBatchMode.MERGE.name)[0]
-        slice_range = parse_param(kw, "RANGE", EnumConvertType.VEC3INT, (0, 0, 1))[0]
-        index = parse_param(kw, "INDEX", EnumConvertType.STRING, "")[0]
-        count = parse_param(kw, "COUNT", EnumConvertType.INT, 0, 0, sys.maxsize)[0]
-        reverse = parse_param(kw, "REVERSE", EnumConvertType.BOOLEAN, False)[0]
-        seed = parse_param(kw, "SEED", EnumConvertType.INT, 0)[0]
+        data_list = parse_dynamic(kw, Lexicon.DYNAMIC, EnumConvertType.ANY, None)
+        mode = parse_param(kw, Lexicon.MODE, EnumBatchMode, EnumBatchMode.MERGE.name)[0]
+        slice_range = parse_param(kw, Lexicon.RANGE, EnumConvertType.VEC3INT, (0, 0, 1))[0]
+        index = parse_param(kw, Lexicon.INDEX, EnumConvertType.STRING, "")[0]
+        count = parse_param(kw, Lexicon.COUNT, EnumConvertType.INT, 0, 0, sys.maxsize)[0]
+        reverse = parse_param(kw, Lexicon.REVERSE, EnumConvertType.BOOLEAN, False)[0]
+        seed = parse_param(kw, Lexicon.SEED, EnumConvertType.INT, 0)[0]
 
         data = []
         # track latents since they need to be added back to Dict['samples']
@@ -246,7 +248,7 @@ Processes a batch of data based on the selected mode. Merge, pick, slice, random
 class QueueBaseNode(CozyBaseNode):
     CATEGORY = JOV_CATEGORY
     RETURN_TYPES = (COZY_TYPE_ANY, COZY_TYPE_ANY, "STRING", "INT", "INT", "BOOLEAN")
-    RETURN_NAMES = ("🦄", "QUEUE", "CURRENT", "INDEX", "TOTAL", "TRIGGER", )
+    RETURN_NAMES = ("❔", "QUEUE", "CURRENT", "INDEX", "TOTAL", "TRIGGER", )
     #OUTPUT_IS_LIST = (True, True, True, True, True, True,)
     VIDEO_FORMATS = ['.wav', '.mp3', '.webm', '.mp4', '.avi', '.wmv', '.mkv', '.mov', '.mxf']
 
@@ -259,33 +261,33 @@ class QueueBaseNode(CozyBaseNode):
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                "Q": ("STRING", {
+                Lexicon.QUEUE: ("STRING", {
                     "default": "./res/img/test-a.png", "multiline": True,
-                    "tooltip": "Current items to process during Queue iteration."}),
-                "RECURSE": ("BOOLEAN", {
+                    "tooltip": "Current items to process during Queue iteration"}),
+                Lexicon.RECURSE: ("BOOLEAN", {
                     "default": False,
-                    "tooltip":"Recurse through all subdirectories found"}),
-                "BATCH": ("BOOLEAN", {
+                    "tooltip": "Recurse through all subdirectories found"}),
+                Lexicon.BATCH: ("BOOLEAN", {
                     "default": False,
-                    "tooltip":"Load all items, if they are loadable items, i.e. batch load images from the Queue's list."}),
-                "SELECT": ("INT", {
+                    "tooltip": "Load all items, if they are loadable items, i.e. batch load images from the Queue's list"}),
+                Lexicon.SELECT: ("INT", {
                     "default": 0, "min": 0,
-                    "tooltip": "What index to use for the current queue item. 0 will move to the next item each queue run"}),
-                "HOLD": ("BOOLEAN", {
+                    "tooltip": "The index to use for the current queue item. 0 will move to the next item each queue run"}),
+                Lexicon.HOLD: ("BOOLEAN", {
                     "default": False,
-                    "tooltip":"Hold the item at the current queue index"}),
-                "STOP": ("BOOLEAN", {
+                    "tooltip": "Hold the item at the current queue index"}),
+                Lexicon.STOP: ("BOOLEAN", {
                     "default": False,
-                    "tooltip":"When the Queue is out of items, send a `HALT` to ComfyUI."}),
-                "LOOP": ("BOOLEAN", {
+                    "tooltip": "When the Queue is out of items, send a `HALT` to ComfyUI"}),
+                Lexicon.LOOP: ("BOOLEAN", {
                     "default": True,
-                    "tooltip":"If the queue should loop. If `False` and if there are more iterations, will send the previous image."}),
-                "RESET": ("BOOLEAN", {
+                    "tooltip": "If the queue should loop. If `False` and if there are more iterations, will send the previous image"}),
+                Lexicon.RESET: ("BOOLEAN", {
                     "default": False,
-                    "tooltip":"Reset the queue back to index 1"}),
+                    "tooltip": "Reset the queue back to index 1"}),
             }
         })
-        return d
+        return Lexicon._parse(d)
 
     def __init__(self) -> None:
         self.__index = 0
@@ -368,26 +370,26 @@ class QueueBaseNode(CozyBaseNode):
         self.__ident = ident
         # should work headless as well
 
-        if (new_val := parse_param(kw, "SELECT", EnumConvertType.INT, 0)[0]) > 0:
+        if (new_val := parse_param(kw, Lexicon.SELECT, EnumConvertType.INT, 0)[0]) > 0:
             self.__index = new_val - 1
 
         reset = parse_reset(ident) > 0
-        if reset or parse_param(kw, "RESET", EnumConvertType.BOOLEAN, False)[0]:
+        if reset or parse_param(kw, Lexicon.RESET, EnumConvertType.BOOLEAN, False)[0]:
             self.__q = None
             self.__index = 0
 
-        mode = parse_param(kw, "MODE", EnumScaleMode, EnumScaleMode.MATTE.name)[0]
-        sample = parse_param(kw, "SAMPLE", EnumInterpolation, EnumInterpolation.LANCZOS4.name)[0]
-        wihi = parse_param(kw, "WH", EnumConvertType.VEC2INT, (512, 512), IMAGE_SIZE_MIN)[0]
+        mode = parse_param(kw, Lexicon.MODE, EnumScaleMode, EnumScaleMode.MATTE.name)[0]
+        sample = parse_param(kw, Lexicon.SAMPLE, EnumInterpolation, EnumInterpolation.LANCZOS4.name)[0]
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (512, 512), IMAGE_SIZE_MIN)[0]
         w, h = wihi
-        matte = parse_param(kw, "MATTE", EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)[0]
+        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)[0]
 
         if self.__q is None:
             # process Q into ...
             # check if folder first, file, then string.
             # entry is: data, <filter if folder:*.png,*.jpg>, <repeats:1+>
-            recurse = parse_param(kw, "RECURSE", EnumConvertType.BOOLEAN, False)[0]
-            q = parse_param(kw, "Q", EnumConvertType.STRING, "")[0]
+            recurse = parse_param(kw, Lexicon.RECURSE, EnumConvertType.BOOLEAN, False)[0]
+            q = parse_param(kw, Lexicon.QUEUE, EnumConvertType.STRING, "")[0]
             self.__q = self.__parseQ(q, recurse)
             self.__len = len(self.__q)
             self.__index_last = 0
@@ -396,17 +398,17 @@ class QueueBaseNode(CozyBaseNode):
                 self.__previous = self.process(self.__previous)
 
         # make sure we have more to process if are a single fire queue
-        stop = parse_param(kw, "STOP", EnumConvertType.BOOLEAN, False)[0]
+        stop = parse_param(kw, Lexicon.STOP, EnumConvertType.BOOLEAN, False)[0]
         if stop and self.__index >= self.__len:
             comfy_api_post("jovi-queue-done", ident, self.status)
             interrupt_processing()
             return self.__previous, self.__q, self.__current, self.__index_last+1, self.__len
 
-        if (wait := parse_param(kw, "HOLD", EnumConvertType.BOOLEAN, False))[0] == True:
+        if (wait := parse_param(kw, Lexicon.HOLD, EnumConvertType.BOOLEAN, False))[0] == True:
             self.__index = self.__index_last
 
         # otherwise loop around the end
-        loop = parse_param(kw, "LOOP", EnumConvertType.BOOLEAN, False)[0]
+        loop = parse_param(kw, Lexicon.LOOP, EnumConvertType.BOOLEAN, False)[0]
         if loop == True:
             self.__index %= self.__len
         else:
@@ -417,7 +419,7 @@ class QueueBaseNode(CozyBaseNode):
         self.__index_last = self.__index
         info = f"QUEUE #{ident} [{self.__current}] ({self.__index})"
         batched = False
-        if (batched := parse_param(kw, "BATCH", EnumConvertType.BOOLEAN, False)[0]) == True:
+        if (batched := parse_param(kw, Lexicon.BATCH, EnumConvertType.BOOLEAN, False)[0]) == True:
             data = []
             mw, mh, mc = 0, 0, 0
             for idx in range(self.__len):
@@ -506,30 +508,26 @@ Manage a queue of specific items: media files. Supports various image and video 
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                "MODE": (EnumScaleMode._member_names_, {
-                    "default": EnumScaleMode.MATTE.name,
-                    "tooltip": "If the image should be resized to fit within given dimensions or keep the original size"}),
-                "WH": ("VEC2", {
+                Lexicon.MODE: (EnumScaleMode._member_names_, {
+                    "default": EnumScaleMode.MATTE.name}),
+                Lexicon.WH: ("VEC2", {
                     "default": (512, 512), "mij":IMAGE_SIZE_MIN, "int": True,
-                    "label": ["W", "H"],
-                    "tooltip": "Width and Height"}),
-                "SAMPLE": (EnumInterpolation._member_names_, {
-                    "default": EnumInterpolation.LANCZOS4.name,
-                    "tooltip": "Sampling method for resizing images"}),
-                "MATTE": ("VEC4", {
-                    "default": (0, 0, 0, 255), "rgb": True,
-                    "tooltip": "Background color for padding"}),
+                    "label": ["W", "H"],}),
+                Lexicon.SAMPLE: (EnumInterpolation._member_names_, {
+                    "default": EnumInterpolation.LANCZOS4.name,}),
+                Lexicon.MATTE: ("VEC4", {
+                    "default": (0, 0, 0, 255), "rgb": True,}),
             },
             "hidden": d.get("hidden", {})
         })
-        return d
+        return Lexicon._parse(d)
 
     def run(self, ident, **kw) -> tuple[TensorType, TensorType, TensorType, str, int, int, bool]:
         data, _, current, index, total, trigger = super().run(ident, **kw)
         if not isinstance(data, (TensorType, )):
             data = [None, None, None]
         else:
-            matte = parse_param(kw, "MATTE", EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)[0]
+            matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)[0]
             data = [tensor_to_cv(d) for d in data]
             data = [cv_to_tensor_full(d, matte) for d in data]
             data = [torch.stack(d) for d in zip(*data)]

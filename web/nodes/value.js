@@ -21,8 +21,8 @@ app.registerExtension({
             this.outputs[3].type = "*";
             this.outputs[4].type = "*";
 
-            const ab_data = widgetHookValue(this, 'TYPE', 'AA');
-            widgetHookValue(this, 'TYPE', 'BB');
+            const ab_data = widgetHookValue(this, 'type', 'aa');
+            widgetHookValue(this, 'type', 'bb');
 
             const oldCallback = ab_data.callback;
             ab_data.callback = () => {

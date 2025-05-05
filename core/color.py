@@ -13,6 +13,9 @@ from cozy_comfyui import \
     InputType, RGBAMaskType, EnumConvertType, TensorType, \
     deep_merge, parse_param, zip_longest_fill
 
+from cozy_comfyui.lexicon import \
+    Lexicon
+
 from cozy_comfyui.node import \
     COZY_TYPE_IMAGE, \
     CozyBaseNode, CozyImageNode
@@ -72,30 +75,22 @@ Simulate color blindness effects on images. You can select various types of colo
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                "IMAGE": (COZY_TYPE_IMAGE, {
-                    "tooltip": "Pixel Data (RGBA, RGB or Grayscale)"
-                }),
-                "DEFICIENCY": (EnumCBDeficiency._member_names_, {
-                    "default": EnumCBDeficiency.PROTAN.name,
-                    "tooltip": "Type of color deficiency: Red (Protanopia), Green (Deuteranopia), Blue (Tritanopia)"
-                }),
-                "SIMULATOR": (EnumCBSimulator._member_names_, {
-                    "default": EnumCBSimulator.AUTOSELECT.name,
-                    "tooltip": "Solver to use when translating to new color space"
-                }),
-                "VAL": ("FLOAT", {
-                    "default": 1, "min": 0, "max": 1, "step": 0.001,
-                    "tooltip": "alpha blending"
-                }),
+                Lexicon.IMAGE: (COZY_TYPE_IMAGE, {}),
+                Lexicon.DEFICIENCY: (EnumCBDeficiency._member_names_, {
+                    "default": EnumCBDeficiency.PROTAN.name,}),
+                Lexicon.SOLVER: (EnumCBSimulator._member_names_, {
+                    "default": EnumCBSimulator.AUTOSELECT.name,}),
+                Lexicon.ALPHA: ("FLOAT", {
+                    "default": 1, "min": 0, "max": 1, "step": 0.001,}),
             }
         })
-        return d
+        return Lexicon._parse(d)
 
     def run(self, **kw) -> RGBAMaskType:
-        pA = parse_param(kw, "IMAGE", EnumConvertType.IMAGE, None)
-        deficiency = parse_param(kw, "DEFICIENCY", EnumCBDeficiency, EnumCBDeficiency.PROTAN.name)
-        simulator = parse_param(kw, "SIMULATOR", EnumCBSimulator, EnumCBSimulator.AUTOSELECT.name)
-        severity = parse_param(kw, "VAL", EnumConvertType.FLOAT, 1)
+        pA = parse_param(kw, Lexicon.IMAGE, EnumConvertType.IMAGE, None)
+        deficiency = parse_param(kw, Lexicon.DEFICIENCY, EnumCBDeficiency, EnumCBDeficiency.PROTAN.name)
+        simulator = parse_param(kw, Lexicon.SOLVER, EnumCBSimulator, EnumCBSimulator.AUTOSELECT.name)
+        severity = parse_param(kw, Lexicon.VALUE, EnumConvertType.FLOAT, 1)
         params = list(zip_longest_fill(pA, deficiency, simulator, severity))
         images = []
         pbar = ProgressBar(len(params))
@@ -118,55 +113,43 @@ Adjust the color scheme of one image to match another with the Color Match Node.
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                "SOURCE": (COZY_TYPE_IMAGE, {
-                    "tooltip": "Pixel Data (RGBA, RGB or Grayscale)"
-                }),
-                "TARGET": (COZY_TYPE_IMAGE, {
-                    "tooltip": "Pixel Data (RGBA, RGB or Grayscale)"
-                }),
-                "MODE": (EnumColorMatchMode._member_names_, {
+                Lexicon.IMAGE_SOURCE: (COZY_TYPE_IMAGE, {}),
+                Lexicon.IMAGE_TARGET: (COZY_TYPE_IMAGE, {}),
+                Lexicon.MODE: (EnumColorMatchMode._member_names_, {
                     "default": EnumColorMatchMode.REINHARD.name,
-                    "tooltip": "Match colors from an image or built-in (LUT), Histogram lookups or Reinhard method"
-                }),
-                "MAP": (EnumColorMatchMap._member_names_, {
-                    "default": EnumColorMatchMap.USER_MAP.name,
-                    "tooltip": "Custom image that will be transformed into a LUT or a built-in cv2 LUT"
-                }),
-                "COLORMAP": (EnumColorMap._member_names_, {
-                    "default": EnumColorMap.HSV.name,
-                    "tooltip": "One of two dozen CV2 Built-in Colormap LUT (Look Up Table) Presets"
-                }),
-                "VAL": ("INT", {
+                    "tooltip": "Match colors from an image or built-in (LUT), Histogram lookups or Reinhard method"}),
+                Lexicon.MAP: (EnumColorMatchMap._member_names_, {
+                    "default": EnumColorMatchMap.USER_MAP.name, }),
+                Lexicon.COLORMAP: (EnumColorMap._member_names_, {
+                    "default": EnumColorMap.HSV.name,}),
+                Lexicon.VALUE: ("INT", {
                     "default": 255, "min": 0, "max": 255,
                     "tooltip":"The number of colors to use from the LUT during the remap. Will quantize the LUT range."}),
-                "FLIP": ("BOOLEAN", {
-                    "default": False,
-                    "tooltip": "Flip the SOURCE and TARGET inputs"}),
-                "INVERT": ("BOOLEAN", {
-                    "default": False,
-                    "tooltip": "Invert the color match output"}),
-                "MATTE": ("VEC4", {
-                    "default": (0, 0, 0, 255), "rgb": True,
-                    "tooltip": "Background Color"}),
+                Lexicon.SWAP: ("BOOLEAN", {
+                    "default": False,}),
+                Lexicon.INVERT: ("BOOLEAN", {
+                    "default": False,}),
+                Lexicon.MATTE: ("VEC4", {
+                    "default": (0, 0, 0, 255), "rgb": True,}),
             }
         })
-        return d
+        return Lexicon._parse(d)
 
     def run(self, **kw) -> RGBAMaskType:
-        pA = parse_param(kw, "SOURCE", EnumConvertType.IMAGE, None)
-        pB = parse_param(kw, "TARGET", EnumConvertType.IMAGE, None)
-        colormatch_mode = parse_param(kw, "MODE", EnumColorMatchMode, EnumColorMatchMode.REINHARD.name)
-        colormatch_map = parse_param(kw, f"MAP", EnumColorMatchMap, EnumColorMatchMap.USER_MAP.name)
-        colormap = parse_param(kw, "COLORMAP", EnumColorMap, EnumColorMap.HSV.name)
-        num_colors = parse_param(kw, "VAL", EnumConvertType.INT, 255)
-        flip = parse_param(kw, "FLIP", EnumConvertType.BOOLEAN, False)
-        invert = parse_param(kw, "INVERT", EnumConvertType.BOOLEAN, False)
-        matte = parse_param(kw, "MATTE", EnumConvertType.VEC4, (0, 0, 0, 255), 0, 255)
-        params = list(zip_longest_fill(pA, pB, colormap, colormatch_mode, colormatch_map, num_colors, flip, invert, matte))
+        pA = parse_param(kw, Lexicon.IMAGE_SOURCE, EnumConvertType.IMAGE, None)
+        pB = parse_param(kw, Lexicon.IMAGE_TARGET, EnumConvertType.IMAGE, None)
+        mode = parse_param(kw, Lexicon.MODE, EnumColorMatchMode, EnumColorMatchMode.REINHARD.name)
+        cmap = parse_param(kw, Lexicon.MAP, EnumColorMatchMap, EnumColorMatchMap.USER_MAP.name)
+        colormap = parse_param(kw, Lexicon.COLORMAP, EnumColorMap, EnumColorMap.HSV.name)
+        num_colors = parse_param(kw, Lexicon.VALUE, EnumConvertType.INT, 255)
+        swap = parse_param(kw, Lexicon.SWAP, EnumConvertType.BOOLEAN, False)
+        invert = parse_param(kw, Lexicon.INVERT, EnumConvertType.BOOLEAN, False)
+        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4, (0, 0, 0, 255), 0, 255)
+        params = list(zip_longest_fill(pA, pB, mode, cmap, colormap, num_colors, swap, invert, matte))
         images = []
         pbar = ProgressBar(len(params))
-        for idx, (pA, pB, colormap, mode, cmap, num_colors, flip, invert, matte) in enumerate(params):
-            if flip == True:
+        for idx, (pA, pB, mode, cmap, colormap, num_colors, swap, invert, matte) in enumerate(params):
+            if swap == True:
                 pA, pB = pB, pA
 
             mask = None
@@ -223,35 +206,30 @@ The top-k colors ordered from most->least used as a strip, tonal palette and 3D 
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                "IMAGE": (COZY_TYPE_IMAGE, {
-                    "tooltip": "Pixel Data (RGBA, RGB or Grayscale)"
-                }),
-                "VAL": ("INT", {
+                Lexicon.IMAGE: (COZY_TYPE_IMAGE, {}),
+                Lexicon.VALUE: ("INT", {
                     "default": 12, "min": 1, "max": 255,
-                    "tooltip":"The top K colors to select."
-                }),
-                "SIZE": ("INT", {
+                    "tooltip": "The top K colors to select"}),
+                Lexicon.SIZE: ("INT", {
                     "default": 32, "min": 1, "max": 256,
-                    "tooltip":"Height of the tones in the strip. Width is based on input."
-                }),
-                "COUNT": ("INT", {
+                    "tooltip": "Height of the tones in the strip. Width is based on input"}),
+                Lexicon.COUNT: ("INT", {
                     "default": 33, "min": 3, "max": 256,
-                    "tooltip":"Number of nodes to use in interpolation of full LUT (256 is every pixel)."
-                }),
-                "WH": ("VEC2", {
+                    "tooltip": "Number of nodes to use in interpolation of full LUT (256 is every pixel)"}),
+                Lexicon.WH: ("VEC2", {
                     "default": (256, 256), "mij":IMAGE_SIZE_MIN, "int": True,
                     "label": ["W", "H"]
                 }),
             }
         })
-        return d
+        return Lexicon._parse(d)
 
     def run(self, **kw) -> RGBAMaskType:
-        pA = parse_param(kw, "IMAGE", EnumConvertType.IMAGE, None)
-        kcolors = parse_param(kw, "VAL", EnumConvertType.INT, 12, 1, 255)
-        lut_height = parse_param(kw, "SIZE", EnumConvertType.INT, 32, 1, 256)
-        nodes = parse_param(kw, "COUNT", EnumConvertType.INT, 33, 1, 255)
-        wihi = parse_param(kw, "WH", EnumConvertType.VEC2INT, (256, 256), IMAGE_SIZE_MIN)
+        pA = parse_param(kw, Lexicon.IMAGE, EnumConvertType.IMAGE, None)
+        kcolors = parse_param(kw, Lexicon.VALUE, EnumConvertType.INT, 12, 1, 255)
+        lut_height = parse_param(kw, Lexicon.SIZE, EnumConvertType.INT, 32, 1, 256)
+        nodes = parse_param(kw, Lexicon.COUNT, EnumConvertType.INT, 33, 1, 255)
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (256, 256), IMAGE_SIZE_MIN)
 
         params = list(zip_longest_fill(pA, kcolors, nodes, lut_height, wihi))
         top_colors = []
@@ -299,27 +277,23 @@ Users can customize the angle of separation for color calculations, offering fle
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                "IMAGE": (COZY_TYPE_IMAGE, {
-                    "tooltip": "Pixel Data (RGBA, RGB or Grayscale)"
-                }),
-                "SCHEME": (EnumColorTheory._member_names_, {
-                    "default": EnumColorTheory.COMPLIMENTARY.name
-                }),
-                "VAL": ("INT", {
+                Lexicon.IMAGE: (COZY_TYPE_IMAGE, {}),
+                Lexicon.SCHEME: (EnumColorTheory._member_names_, {
+                    "default": EnumColorTheory.COMPLIMENTARY.name}),
+                Lexicon.VALUE: ("INT", {
                     "default": 45, "min": -90, "max": 90,
-                    "tooltip": "Custom angle of separation to use when calculating colors"
-                }),
-                "INVERT": ("BOOLEAN", {
+                    "tooltip": "Custom angle of separation to use when calculating colors"}),
+                Lexicon.INVERT: ("BOOLEAN", {
                     "default": False})
             }
         })
-        return d
+        return Lexicon._parse(d)
 
     def run(self, **kw) -> tuple[List[TensorType], List[TensorType]]:
-        pA = parse_param(kw, "IMAGE", EnumConvertType.IMAGE, None)
-        scheme = parse_param(kw, "SCHEME", EnumColorTheory, EnumColorTheory.COMPLIMENTARY.name)
-        user = parse_param(kw, "VAL", EnumConvertType.INT, 0, -180, 180)
-        invert = parse_param(kw, "INVERT", EnumConvertType.BOOLEAN, False)
+        pA = parse_param(kw, Lexicon.IMAGE, EnumConvertType.IMAGE, None)
+        scheme = parse_param(kw, Lexicon.SCHEME, EnumColorTheory, EnumColorTheory.COMPLIMENTARY.name)
+        user = parse_param(kw, Lexicon.VALUE, EnumConvertType.INT, 0, -180, 180)
+        invert = parse_param(kw, Lexicon.INVERT, EnumConvertType.BOOLEAN, False)
         params = list(zip_longest_fill(pA, scheme, user, invert))
         images = []
         pbar = ProgressBar(len(params))
@@ -347,48 +321,38 @@ The gradient image will be translated into a single row lookup table.
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                "IMAGE": (COZY_TYPE_IMAGE, {
-                    "tooltip":"Image to remap with gradient input"
-                }),
-                "GRADIENT": (COZY_TYPE_IMAGE, {
-                    "tooltip":f"Look up table (LUT) to remap the input image in `{"IMAGE"}`"
-                }),
-                "FLIP": ("BOOLEAN", {
-                    "default":False,
-                    "tooltip":"Reverse the gradient from left-to-right "
-                }),
-                "MODE": (EnumScaleMode._member_names_, {
-                    "default": EnumScaleMode.MATTE.name,
-                    "tooltip": "If the image should be resized to fit within given dimensions or keep the original size"
-                }),
-                "WH": ("VEC2", {
+                Lexicon.IMAGE: (COZY_TYPE_IMAGE, {
+                    "tooltip": "Image to remap with gradient input"}),
+                Lexicon.GRADIENT: (COZY_TYPE_IMAGE, {
+                    "tooltip": f"Look up table (LUT) to remap the input image in `{"IMAGE"}`"}),
+                Lexicon.REVERSE: ("BOOLEAN", {
+                    "default": False,
+                    "tooltip": "Reverse the gradient from left-to-right"}),
+                Lexicon.MODE: (EnumScaleMode._member_names_, {
+                    "default": EnumScaleMode.MATTE.name,}),
+                Lexicon.WH: ("VEC2", {
                     "default": (512, 512), "mij":IMAGE_SIZE_MIN, "int": True,
-                    "label": ["W", "H"]
-                }),
-                "SAMPLE": (EnumInterpolation._member_names_, {
-                    "default": EnumInterpolation.LANCZOS4.name,
-                    "tooltip": "Sampling method for resizing images"
-                }),
-                "MATTE": ("VEC4", {
-                    "default": (0, 0, 0, 255), "rgb": True,
-                    "tooltip": "Background Color"
-                })
+                    "label": ["W", "H"] }),
+                Lexicon.SAMPLE: (EnumInterpolation._member_names_, {
+                    "default": EnumInterpolation.LANCZOS4.name,}),
+                Lexicon.MATTE: ("VEC4", {
+                    "default": (0, 0, 0, 255), "rgb": True,})
             }
         })
-        return d
+        return Lexicon._parse(d)
 
     def run(self, **kw) -> RGBAMaskType:
-        pA = parse_param(kw, "IMAGE", EnumConvertType.IMAGE, None)
-        gradient = parse_param(kw, "GRADIENT", EnumConvertType.IMAGE, None)
-        flip = parse_param(kw, "FLIP", EnumConvertType.BOOLEAN, False)
-        mode = parse_param(kw, "MODE", EnumScaleMode, EnumScaleMode.MATTE.name)
-        wihi = parse_param(kw, "WH", EnumConvertType.VEC2INT, (512, 512), IMAGE_SIZE_MIN)
-        sample = parse_param(kw, "SAMPLE", EnumInterpolation, EnumInterpolation.LANCZOS4.name)
-        matte = parse_param(kw, "MATTE", EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
+        pA = parse_param(kw, Lexicon.IMAGE, EnumConvertType.IMAGE, None)
+        gradient = parse_param(kw, Lexicon.GRADIENT, EnumConvertType.IMAGE, None)
+        reverse = parse_param(kw, Lexicon.REVERSE, EnumConvertType.BOOLEAN, False)
+        mode = parse_param(kw, Lexicon.MODE, EnumScaleMode, EnumScaleMode.MATTE.name)
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (512, 512), IMAGE_SIZE_MIN)
+        sample = parse_param(kw, Lexicon.SAMPLE, EnumInterpolation, EnumInterpolation.LANCZOS4.name)
+        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
         images = []
-        params = list(zip_longest_fill(pA, gradient, flip, mode, sample, wihi, matte))
+        params = list(zip_longest_fill(pA, gradient, reverse, mode, sample, wihi, matte))
         pbar = ProgressBar(len(params))
-        for idx, (pA, gradient, flip, mode, sample, wihi, matte) in enumerate(params):
+        for idx, (pA, gradient, reverse, mode, sample, wihi, matte) in enumerate(params):
             pA = channel_solid(chan=EnumImageType.BGR) if pA is None else tensor_to_cv(pA)
             mask = None
             if pA.ndim == 3 and pA.shape[2] == 4:
@@ -399,8 +363,10 @@ The gradient image will be translated into a single row lookup table.
             if mode != EnumScaleMode.MATTE:
                 w, h = wihi
                 pA = image_scalefit(pA, w, h, mode, sample)
+
             if mask is not None:
                 pA = image_mask_add(pA, mask)
+
             images.append(cv_to_tensor_full(pA, matte))
             pbar.update_absolute(idx)
         return image_stack(images)
