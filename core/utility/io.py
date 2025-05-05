@@ -267,13 +267,12 @@ Routes the input data from the optional input ports to the output port, preservi
     @classmethod
     def INPUT_TYPES(cls) -> InputType:
         d = super().INPUT_TYPES()
-        e = {
+        d = deep_merge(d, {
             "optional": {
                 Lexicon.ROUTE: ("BUS", {
                     "default": None,}),
             }
-        }
-        d = deep_merge(d, e)
+        })
         return Lexicon._parse(d)
 
     def run(self, **kw) -> tuple[Any, ...]:

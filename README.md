@@ -138,6 +138,16 @@ Nodes that have been migrated:
 
 [Migrated to Jovi_GLSL](https://github.com/Amorano/Jovi_GLSL)
 
+**2025/05/05** @2.1.0:
+* Cleaned up all node defaults
+* Vector nodes aligned for list outputs
+* Cleaned all emoji from input/output
+* Clear all EnumConvertTypes and align with new comfy_cozy
+* Lexicon defines come from Comfy_Cozy module
+* `OP UNARY` fixed factorial
+* Added fill array mode for `OP UNARY`
+* removed `STEREOGRAM` and `STEROSCOPIC` -- they were designed poorly
+
 **2025/05/01** @2.0.11:
 * unified widget_vector.js
 * new comfy_cozy support

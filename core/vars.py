@@ -243,7 +243,7 @@ class Vector4Node(CozyBaseNode):
     )
     SORT = 294
     DESCRIPTION = """
-Outputs a VEC4.
+Outputs a VECTOR4.
 """
 
     @classmethod
