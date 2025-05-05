@@ -4,7 +4,7 @@ import { app } from "../../../scripts/app.js"
 import { nodeAddDynamic } from "../util.js"
 
 const _id = "STRINGER (JOV) 🪀"
-const _prefix = 'STRING'
+const _prefix = 'string'
 
 app.registerExtension({
 	name: 'jovimetrix.node.' + _id,

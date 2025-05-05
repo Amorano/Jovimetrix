@@ -226,12 +226,12 @@ Combine two input images using various blending modes, such as normal, screen, m
                 Lexicon.IMAGE_BACK: (COZY_TYPE_IMAGE, {}),
                 Lexicon.IMAGE_FORE: (COZY_TYPE_IMAGE, {}),
                 Lexicon.MASK: (COZY_TYPE_IMAGE, {
-                    "tooltip": "Optional Mask to use for Alpha Blend Operation. If empty, will use the ALPHA of B"}),
+                    "tooltip": "Optional Mask for Alpha Blending. If empty, it will use the ALPHA of the FOREGROUND"}),
                 Lexicon.FUNCTION: (EnumBlendType._member_names_, {
                     "default": EnumBlendType.NORMAL.name,}),
                 Lexicon.ALPHA: ("FLOAT", {
                     "default": 1, "min": 0, "max": 1, "step": 0.01,}),
-                Lexicon.FLIP: ("BOOLEAN", {
+                Lexicon.SWAP: ("BOOLEAN", {
                     "default": False}),
                 Lexicon.INVERT: ("BOOLEAN", {
                     "default": False, "tooltip": "Invert the mask input"}),
@@ -254,17 +254,17 @@ Combine two input images using various blending modes, such as normal, screen, m
         mask = parse_param(kw, Lexicon.MASK, EnumConvertType.MASK, None)
         func = parse_param(kw, Lexicon.FUNCTION, EnumBlendType, EnumBlendType.NORMAL.name)
         alpha = parse_param(kw, Lexicon.ALPHA, EnumConvertType.FLOAT, 1, 0, 1)
-        flip = parse_param(kw, Lexicon.FLIP, EnumConvertType.BOOLEAN, False)
+        swap = parse_param(kw, Lexicon.SWAP, EnumConvertType.BOOLEAN, False)
         mode = parse_param(kw, Lexicon.MODE, EnumScaleMode, EnumScaleMode.MATTE.name)
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (512, 512), IMAGE_SIZE_MIN)
         sample = parse_param(kw, Lexicon.SAMPLE, EnumInterpolation, EnumInterpolation.LANCZOS4.name)
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
         invert = parse_param(kw, Lexicon.INVERT, EnumConvertType.BOOLEAN, False)
-        params = list(zip_longest_fill(pA, pB, mask, func, alpha, flip, mode, wihi, sample, matte, invert))
+        params = list(zip_longest_fill(pA, pB, mask, func, alpha, swap, mode, wihi, sample, matte, invert))
         images = []
         pbar = ProgressBar(len(params))
-        for idx, (pA, pB, mask, func, alpha, flip, mode, wihi, sample, matte, invert) in enumerate(params):
-            if flip:
+        for idx, (pA, pB, mask, func, alpha, swap, mode, wihi, sample, matte, invert) in enumerate(params):
+            if swap:
                 pA, pB = pB, pA
 
             width, height = IMAGE_SIZE_MIN, IMAGE_SIZE_MIN

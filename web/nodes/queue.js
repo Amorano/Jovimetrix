@@ -47,7 +47,7 @@ app.registerExtension({
             this.widget_report.inputEl.readOnly = true;
             this.widget_report.serializeValue = async () => { };
 
-            const widget_queue = this.widgets.find(w => w.name == 'q');
+            const widget_queue = this.widgets.find(w => w.name == 'queue');
             const widget_batch = this.widgets.find(w => w.name == 'batch');
             const widget_hold = this.widgets.find(w => w.name == 'hold');
             const widget_reset = this.widgets.find(w => w.name == 'reset');

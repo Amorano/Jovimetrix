@@ -147,12 +147,17 @@ Introduce pauses in the workflow that accept an optional input to pass through a
 class ExportNode(CozyBaseNode):
     NAME = "EXPORT (JOV) 📽"
     CATEGORY = JOV_CATEGORY
+    NOT_IDEMPOTENT = True
     OUTPUT_NODE = True
     RETURN_TYPES = ()
     SORT = 2000
     DESCRIPTION = """
 Responsible for saving images or animations to disk. It supports various output formats such as GIF and GIFSKI. Users can specify the output directory, filename prefix, image quality, frame rate, and other parameters. Additionally, it allows overwriting existing files or generating unique filenames to avoid conflicts. The node outputs the saved images or animation as a tensor.
 """
+
+    @classmethod
+    def IS_CHANGED(cls, **kw) -> float:
+        return float('nan')
 
     @classmethod
     def INPUT_TYPES(cls) -> InputType:
@@ -254,7 +259,7 @@ Responsible for saving images or animations to disk. It supports various output 
 class RouteNode(CozyBaseNode):
     NAME = "ROUTE (JOV) 🚌"
     CATEGORY = JOV_CATEGORY
-    RETURN_TYPES = ("BUS",) + (COZY_TYPE_ANY,) * 127
+    RETURN_TYPES = ("BUS",) + (COZY_TYPE_ANY,) * 10
     RETURN_NAMES = ("ROUTE",)
     OUTPUT_TOOLTIPS = (
         "Pass through for Route node"
@@ -286,18 +291,22 @@ Routes the input data from the optional input ports to the output port, preservi
         for x in values:
             p = parse_param_list(x, EnumConvertType.ANY, None)
             parsed.append(p)
-        junk = *parsed,
-        return inout, parsed,
+        return inout, *parsed,
 
 class SaveOutputNode(CozyBaseNode):
     NAME = "SAVE OUTPUT (JOV) 💾"
     CATEGORY = JOV_CATEGORY
+    NOT_IDEMPOTENT = True
     OUTPUT_NODE = True
     RETURN_TYPES = ()
     SORT = 85
     DESCRIPTION = """
 Save images with metadata to any specified path. Can save user metadata and prompt information.
 """
+
+    @classmethod
+    def IS_CHANGED(cls, **kw) -> float:
+        return float('nan')
 
     @classmethod
     def INPUT_TYPES(cls) -> InputType:
@@ -340,6 +349,7 @@ Save images with metadata to any specified path. Can save user metadata and prom
             except Exception as e:
                 logger.error(e)
                 logger.error(usermeta)
+
             metadata["prompt"] = prompt
             metadata["workflow"] = json.dumps(pnginfo)
             image = tensor_to_cv(image)
@@ -352,14 +362,21 @@ Save images with metadata to any specified path. Can save user metadata and prom
                 except Exception as e:
                     logger.error(e)
                     logger.error(x)
+
             if path == "" or path is None:
                 path = get_output_directory()
+
             root = Path(path)
             if not root.exists():
                 root = Path(get_output_directory())
+
             root.mkdir(parents=True, exist_ok=True)
-            fname = (root / fname).with_suffix(".png")
-            logger.info(f"wrote file: {fname}")
-            image.save(fname, pnginfo=meta_png)
+
+            outname = fname
+            if len(params) > 1:
+                outname += f"_{idx}"
+            outname = (root / outname).with_suffix(".png")
+            logger.info(f"wrote file: {outname}")
+            image.save(outname, pnginfo=meta_png)
             pbar.update_absolute(idx)
         return ()

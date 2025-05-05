@@ -219,7 +219,7 @@ class ImageInfoNode(CozyBaseNode):
     NAME = "IMAGE INFO (JOV) 📚"
     CATEGORY = JOV_CATEGORY
     RETURN_TYPES = ("INT", "INT", "INT", "INT", "VEC2", "VEC3")
-    RETURN_NAMES = ("INT", "W", "H", "C", "WH", "WHC")
+    RETURN_NAMES = ("COUNT", "W", "H", "C", "WH", "WHC")
     OUTPUT_TOOLTIPS = (
         "Batch count",
         "Width",
