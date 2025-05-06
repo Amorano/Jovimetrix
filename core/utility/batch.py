@@ -253,8 +253,8 @@ class QueueBaseNode(CozyBaseNode):
     VIDEO_FORMATS = ['.wav', '.mp3', '.webm', '.mp4', '.avi', '.wmv', '.mkv', '.mov', '.mxf']
 
     @classmethod
-    def IS_CHANGED(cls, *arg, **kw) -> float:
-        return float("NaN")
+    def IS_CHANGED(cls, **kw) -> float:
+        return float('nan')
 
     @classmethod
     def INPUT_TYPES(cls) -> InputType:

@@ -1,8 +1,6 @@
 """ Jovimetrix - Animation """
 
 import sys
-import math
-from typing import Any
 
 import numpy as np
 
@@ -16,13 +14,17 @@ from cozy_comfyui.lexicon import \
     Lexicon
 
 from cozy_comfyui.node import \
-    COZY_TYPE_ANY, \
     CozyBaseNode
 
-from cozy_comfyui.api import \
-    comfy_api_post, parse_reset
+from cozy_comfyui.maths.ease import \
+    EnumEase, \
+    ease_op
 
-from ..sup.anim import \
+from cozy_comfyui.maths.norm import \
+    EnumNormalize, \
+    norm_op
+
+from cozy_comfyui.maths.wave import \
     EnumWave, \
     wave_op
 
@@ -43,119 +45,6 @@ class ResultObject(object):
 class TickNode(CozyBaseNode):
     NAME = "TICK (JOV) ⏱"
     CATEGORY = JOV_CATEGORY
-    RETURN_TYPES = ("INT", "FLOAT", "FLOAT", COZY_TYPE_ANY, COZY_TYPE_ANY,)
-    RETURN_NAMES = ("VAL", "LINEAR", "FPS", "TRIGGER", "BATCH",)
-    OUTPUT_IS_LIST = (True, False, False, False, False,)
-    OUTPUT_TOOLTIPS = (
-        "Current value for the configured tick as ComfyUI List",
-        "Normalized tick value (0..1) based on BPM and Loop",
-        "Current 'frame' in the tick based on FPS setting",
-        "Based on the BPM settings, on beat hit, output the input at '⚡'",
-        "Current batch of values for the configured tick as standard list which works in other Jovimetrix nodes",
-    )
-    SORT = 50
-    DESCRIPTION = """
-A timer and frame counter, emitting pulses or signals based on time intervals. It allows precise synchronization and control over animation sequences, with options to adjust FPS, BPM, and loop points. This node is useful for generating time-based events or driving animations with rhythmic precision.
-"""
-
-    @classmethod
-    def INPUT_TYPES(cls) -> InputType:
-        d = super().INPUT_TYPES()
-        d = deep_merge(d, {
-            "optional": {
-                # data to pass on a pulse of the loop
-                Lexicon.TRIGGER: (COZY_TYPE_ANY, {
-                    "default": None,
-                    "tooltip": "Output to send when beat (BPM setting) is hit"
-                }),
-                # forces a MOD on CYCLE
-                Lexicon.VALUE: ("INT", {
-                    "default": 0, "min": 0, "max": sys.maxsize,
-                    "tooltip": "Current frame number of the tick"
-                }),
-                Lexicon.LOOP: ("INT", {
-                    "default": 0, "min": 0, "max": sys.maxsize,
-                    "tooltip": "Number of frames before looping starts. 0 means continuous playback (no loop point)"
-                }),
-                Lexicon.FPS: ("INT", {
-                    "default": 24, "min": 1
-                }),
-                Lexicon.BPM: ("INT", {
-                    "default": 120, "min": 1, "max": 60000,
-                    "tooltip": "BPM trigger rate to send the input. If input is empty, TRUE is sent on trigger"
-                }),
-                Lexicon.NOTE: ("INT", {
-                    "default": 4, "min": 1, "max": 256,
-                    "tooltip": "Number of beats per measure. Quarter note is 4, Eighth is 8, 16 is 16, etc."}),
-                # stick the current "count"
-                Lexicon.HOLD: ("BOOLEAN", {
-                    "default": False}),
-                # manual total = 0
-                Lexicon.RESET: ("BOOLEAN", {
-                    "default": False}),
-                # how many frames to dump....
-                Lexicon.BATCH: ("INT", {
-                    "default": 1, "min": 1, "max": 32767,
-                    "tooltip": "Number of frames wanted"
-                }),
-                Lexicon.STEP: ("INT", {
-                    "default": 0, "min": 0, "max": sys.maxsize
-                }),
-            }
-        })
-        return Lexicon._parse(d)
-
-    def __init__(self, *arg, **kw) -> None:
-        super().__init__(*arg, **kw)
-        # how many pulses we have done -- total unless reset
-        self.__frame = 0
-
-    def run(self, ident, **kw) -> tuple[int, float, float, Any]:
-        passthru = parse_param(kw, Lexicon.TRIGGER, EnumConvertType.ANY, None)[0]
-        stride = parse_param(kw, Lexicon.STEP, EnumConvertType.INT, 0, 0, sys.maxsize)[0]
-        loop = parse_param(kw, Lexicon.LOOP, EnumConvertType.INT, 0, 0, sys.maxsize)[0]
-        self.__frame = parse_param(kw, Lexicon.VALUE, EnumConvertType.INT, self.__frame, 0, sys.maxsize)[0]
-        if loop != 0:
-            self.__frame %= loop
-        # start_frame = max(0, start_frame)
-        hold = parse_param(kw, Lexicon.HOLD, EnumConvertType.BOOLEAN, False)[0]
-        fps = parse_param(kw, Lexicon.FPS, EnumConvertType.INT, 24, 1)[0]
-        bpm = parse_param(kw, Lexicon.BPM, EnumConvertType.INT, 120, 1)[0]
-        divisor = parse_param(kw, Lexicon.NOTE, EnumConvertType.INT, 4, 1)[0]
-        beat = 60. / max(1., bpm) / divisor
-        batch = parse_param(kw, Lexicon.BATCH, EnumConvertType.INT, 1, 1)[0]
-        step_fps = 1. / max(1., float(fps))
-        reset = parse_param(kw, Lexicon.RESET, EnumConvertType.BOOLEAN, False)[0]
-        if loop == 0 and (parse_reset(ident) > 0 or reset):
-            self.__frame = 0
-        trigger = None
-        results = ResultObject()
-        pbar = ProgressBar(batch)
-        step = stride if stride != 0 else max(1, loop / batch)
-        for idx in range(batch):
-            trigger = False
-            lin = self.__frame if loop == 0 else self.__frame / loop
-            fixed_step = math.fmod(self.__frame * step_fps, fps)
-            if (math.fmod(fixed_step, beat) == 0):
-                trigger = [passthru]
-            if loop != 0:
-                self.__frame %= loop
-            results.frame.append(self.__frame)
-            results.lin.append(float(lin))
-            results.fixed.append(float(fixed_step))
-            results.trigger.append(trigger)
-            results.batch.append(self.__frame)
-            if not hold:
-                self.__frame += step
-            pbar.update_absolute(idx)
-
-        if batch < 2:
-            comfy_api_post("jovi-tick", ident, {"i": self.__frame})
-        return (results.frame, results.lin, results.fixed, results.trigger, results.batch,)
-
-class TickSimpleNode(CozyBaseNode):
-    NAME = "TICK SIMPLE (JOV) ⏱"
-    CATEGORY = JOV_CATEGORY
     RETURN_TYPES = ("FLOAT", "FLOAT")
     RETURN_NAMES = ("VALUE", "LINEAR")
     OUTPUT_IS_LIST = (True, True,)
@@ -174,43 +63,76 @@ Value generator with normalized values based on based on time interval.
         d = deep_merge(d, {
             "optional": {
                 # forces a MOD on CYCLE
-                Lexicon.VALUE: ("INT", {
-                    "default": 0, "min": -sys.maxsize, "max": sys.maxsize,
-                    "tooltip": "Starting value of the tick"
+                Lexicon.START: ("INT", {
+                    "default": 0, "min": -sys.maxsize, "max": sys.maxsize
                 }),
                 # interval between frames
                 Lexicon.STEP: ("FLOAT", {
                     "default": 0, "min": -sys.maxsize, "max": sys.maxsize, "precision": 3,
                     "tooltip": "Amount to add to each frame per tick"
                 }),
+                # how many frames to dump....
+                Lexicon.COUNT: ("INT", {
+                    "default": 1, "min": 1, "max": 1500
+                }),
                 Lexicon.LOOP: ("INT", {
-                    "default": 0, "min": -sys.maxsize, "max": sys.maxsize,
+                    "default": 0, "min": 0, "max": sys.maxsize,
                     "tooltip": "What value before looping starts. 0 means linear playback (no loop point)"
                 }),
-                # how many frames to dump....
-                Lexicon.BATCH: ("INT", {
-                    "default": 1, "min": 1, "max": 1500,
-                    "tooltip": "Total frames wanted"
+                Lexicon.PINGPONG: ("BOOLEAN", {
+                    "default": False
                 }),
+                Lexicon.EASE: (["NONE"] + EnumEase._member_names_, {
+                    "default": "NONE"}),
+
             }
         })
         return Lexicon._parse(d)
 
-    def run(self, **kw) -> tuple[int, float|int]:
-        value = parse_param(kw, Lexicon.VALUE, EnumConvertType.INT, 0, -sys.maxsize, sys.maxsize)[0]
+    def run(self, **kw) -> tuple[float, ...]:
+        """
+        Generates a series of numbers with various options including:
+        - Custom start value (supporting floating point and negative numbers)
+        - Custom step value (supporting floating point and negative numbers)
+        - Fixed number of frames
+        - Custom loop point (series restarts after reaching this many steps)
+        - Ping-pong option (reverses direction at end points)
+        - Support for easing functions
+        - Normalized output 0..1, -1..1, L2 or ZScore
+        """
+
+        start = parse_param(kw, Lexicon.START, EnumConvertType.INT, 0, -sys.maxsize, sys.maxsize)[0]
         step = parse_param(kw, Lexicon.STEP, EnumConvertType.FLOAT, 0, -sys.maxsize, sys.maxsize)[0]
-        loop = parse_param(kw, Lexicon.LOOP, EnumConvertType.INT, 0, -sys.maxsize, sys.maxsize)[0]
-        batch = parse_param(kw, Lexicon.BATCH, EnumConvertType.INT, 1, 1, 1500)[0]
+        count = parse_param(kw, Lexicon.COUNT, EnumConvertType.INT, 1, 1, 1500)[0]
+        loop = parse_param(kw, Lexicon.LOOP, EnumConvertType.INT, 0, 0, sys.maxsize)[0]
+        pingpong = parse_param(kw, Lexicon.PINGPONG, EnumConvertType.BOOLEAN, False)[0]
+        ease = parse_param(kw, Lexicon.EASE, EnumEase, EnumEase.SIN_IN_OUT.name)[0]
+        normalize = parse_param(kw, Lexicon.NORMALIZE, EnumNormalize, EnumNormalize.MINMAX.name)[0]
+
         if loop == 0:
-            loop = batch
+            loop = count
 
         results = []
-        current = float(value)
+        current = float(start)
         step = step or 1.0
-        pbar = ProgressBar(batch)
-        for idx in range(0, batch):
-            wrapped = (current - value) % loop + value if loop else current
-            lin = (wrapped - value) / loop if loop else 0
+        cycle_len = 2 * loop
+        pbar = ProgressBar(count)
+        for idx in range(count):
+            if pingpong:
+                mod_pos = (current - start) % cycle_len
+                if mod_pos <= loop:
+                    wrapped = start + mod_pos
+                    lin = mod_pos / loop
+                else:
+                    wrapped = start + (cycle_len - mod_pos)
+                    lin = (cycle_len - mod_pos) / loop
+            else:
+                if idx > 0 and idx % (loop-1) == 0: #count - 1:
+                    wrapped = start + loop
+                else:
+                    wrapped = (current - start) % loop + start
+                lin = (wrapped - start) / loop if loop else 0
+
             results.append([round(wrapped, 6), round(lin, 6)])
             current += step
             pbar.update_absolute(idx)
@@ -275,3 +197,100 @@ Produce waveforms like sine, square, or sawtooth with adjustable frequency, ampl
             results.append([val, int(val)])
             pbar.update_absolute(idx)
         return *list(zip(*results)),
+
+'''
+class TickOldNode(CozyBaseNode):
+    NAME = "TICK OLD (JOV) ⏱"
+    CATEGORY = JOV_CATEGORY
+    RETURN_TYPES = ("INT", "FLOAT", "FLOAT", COZY_TYPE_ANY, COZY_TYPE_ANY,)
+    RETURN_NAMES = ("VAL", "LINEAR", "FPS", "TRIGGER", "BATCH",)
+    OUTPUT_IS_LIST = (True, False, False, False, False,)
+    OUTPUT_TOOLTIPS = (
+        "Current value for the configured tick as ComfyUI List",
+        "Normalized tick value (0..1) based on BPM and Loop",
+        "Current 'frame' in the tick based on FPS setting",
+        "Based on the BPM settings, on beat hit, output the input at '⚡'",
+        "Current batch of values for the configured tick as standard list which works in other Jovimetrix nodes",
+    )
+    SORT = 50
+    DESCRIPTION = """
+A timer and frame counter, emitting pulses or signals based on time intervals. It allows precise synchronization and control over animation sequences, with options to adjust FPS, BPM, and loop points. This node is useful for generating time-based events or driving animations with rhythmic precision.
+"""
+
+    @classmethod
+    def INPUT_TYPES(cls) -> InputType:
+        d = super().INPUT_TYPES()
+        d = deep_merge(d, {
+            "optional": {
+                # data to pass on a pulse of the loop
+                Lexicon.TRIGGER: (COZY_TYPE_ANY, {
+                    "default": None,
+                    "tooltip": "Output to send when beat (BPM setting) is hit"
+                }),
+                # forces a MOD on CYCLE
+                Lexicon.START: ("INT", {
+                    "default": 0, "min": 0, "max": sys.maxsize,
+                }),
+                Lexicon.LOOP: ("INT", {
+                    "default": 0, "min": 0, "max": sys.maxsize,
+                    "tooltip": "Number of frames before looping starts. 0 means continuous playback (no loop point)"
+                }),
+                Lexicon.FPS: ("INT", {
+                    "default": 24, "min": 1
+                }),
+                Lexicon.BPM: ("INT", {
+                    "default": 120, "min": 1, "max": 60000,
+                    "tooltip": "BPM trigger rate to send the input. If input is empty, TRUE is sent on trigger"
+                }),
+                Lexicon.NOTE: ("INT", {
+                    "default": 4, "min": 1, "max": 256,
+                    "tooltip": "Number of beats per measure. Quarter note is 4, Eighth is 8, 16 is 16, etc."}),
+                # how many frames to dump....
+                Lexicon.BATCH: ("INT", {
+                    "default": 1, "min": 1, "max": 32767,
+                    "tooltip": "Number of frames wanted"
+                }),
+                Lexicon.STEP: ("INT", {
+                    "default": 0, "min": 0, "max": sys.maxsize
+                }),
+            }
+        })
+        return Lexicon._parse(d)
+
+    def run(self, ident, **kw) -> tuple[int, float, float, Any]:
+        passthru = parse_param(kw, Lexicon.TRIGGER, EnumConvertType.ANY, None)[0]
+        stride = parse_param(kw, Lexicon.STEP, EnumConvertType.INT, 0, 0, sys.maxsize)[0]
+        loop = parse_param(kw, Lexicon.LOOP, EnumConvertType.INT, 0, 0, sys.maxsize)[0]
+        start = parse_param(kw, Lexicon.START, EnumConvertType.INT, self.__frame, 0, sys.maxsize)[0]
+        if loop != 0:
+            self.__frame %= loop
+        fps = parse_param(kw, Lexicon.FPS, EnumConvertType.INT, 24, 1)[0]
+        bpm = parse_param(kw, Lexicon.BPM, EnumConvertType.INT, 120, 1)[0]
+        divisor = parse_param(kw, Lexicon.NOTE, EnumConvertType.INT, 4, 1)[0]
+        beat = 60. / max(1., bpm) / divisor
+        batch = parse_param(kw, Lexicon.BATCH, EnumConvertType.INT, 1, 1)[0]
+        step_fps = 1. / max(1., float(fps))
+
+        trigger = None
+        results = ResultObject()
+        pbar = ProgressBar(batch)
+        step = stride if stride != 0 else max(1, loop / batch)
+        for idx in range(batch):
+            trigger = False
+            lin = start if loop == 0 else start / loop
+            fixed_step = math.fmod(start * step_fps, fps)
+            if (math.fmod(fixed_step, beat) == 0):
+                trigger = [passthru]
+            if loop != 0:
+                start %= loop
+            results.frame.append(start)
+            results.lin.append(float(lin))
+            results.fixed.append(float(fixed_step))
+            results.trigger.append(trigger)
+            results.batch.append(start)
+            start += step
+            pbar.update_absolute(idx)
+
+        return (results.frame, results.lin, results.fixed, results.trigger, results.batch,)
+
+'''

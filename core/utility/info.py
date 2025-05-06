@@ -172,8 +172,8 @@ Visualize a series of data points over time. It accepts a dynamic number of valu
         return Lexicon._parse(d)
 
     @classmethod
-    def IS_CHANGED(cls) -> float:
-        return float("NaN")
+    def IS_CHANGED(cls, **kw) -> float:
+        return float('nan')
 
     def __init__(self, *arg, **kw) -> None:
         super().__init__(*arg, **kw)

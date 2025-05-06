@@ -161,13 +161,8 @@ export function widgetHookControl(node, control_key, target, matchFloatSize=fals
         if (["VEC2", "VEC3", "VEC4", "BOOLEAN", "INT", "FLOAT"].includes(combo.value)) {
             let type = combo.value;
             if (matchFloatSize) {
-                type = "FLOAT";
-                if (["VEC2"].includes(combo.value)) {
-                    type = "VEC2";
-                } else if (["VEC3"].includes(combo.value)) {
-                    type = "VEC3";
-                } else if (["VEC4"].includes(combo.value)) {
-                    type = "VEC4";
+                if (["BOOLEAN", "INT"].includes(combo.value)) {
+                    type = "FLOAT";
                 }
             }
             widgetShowVector(target, data.track_xyzw, type);

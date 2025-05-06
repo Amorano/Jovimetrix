@@ -24,12 +24,12 @@ from cozy_comfyui.node import \
     COZY_TYPE_ANY, COZY_TYPE_NUMERICAL, COZY_TYPE_FULL, \
     CozyBaseNode
 
-from . import \
-    EnumFillOperation
-
-from ..sup.anim import \
+from cozy_comfyui.maths.ease import \
     EnumEase, \
     ease_op
+
+from . import \
+    EnumFillOperation
 
 JOV_CATEGORY = "CALC"
 
