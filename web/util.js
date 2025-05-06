@@ -3,8 +3,6 @@
 import { app } from "../../scripts/app.js"
 import { api } from "../../scripts/api.js"
 
-const _REGEX = /\d/;
-
 export const TypeSlot = {
     Input: 1,
     Output: 2,
@@ -71,7 +69,7 @@ function widgetShowVector(widget, values={}, type) {
     widget.options.precision = 0;
     if (widget.type != 'toggle') {
         let size = 1;
-        const match = _REGEX.exec(widget.type);
+        const match = /\d/.exec(widget.type);
         if (match) {
             size = match[0];
         }
@@ -90,49 +88,17 @@ function widgetShowVector(widget, values={}, type) {
     }
 }
 
-export function widgetOutputHookType(node, control_key, match_output=0) {
-    const combo = node.widgets.find(w => w.name == control_key);
-    const output = node.outputs[match_output];
+/*
+* matchFloatSize forces the target to be float[n] based on its type size
+*/
+export function widgetHookControl(node, control_key, child_key, matchFloatSize=false) {
 
-    if (!output || !combo) {
+    const target = node.widgets.find(w => w.name == child_key);
+    const combo = node.widgets.find(w => w.name == control_key);
+    if (!target || !combo) {
         throw new Error("Required widgets not found");
     }
 
-    const oldCallback = combo.callback;
-    combo.callback = () => {
-        const me = oldCallback?.apply(this, arguments);
-        node.outputs[match_output].name = combo.value;
-        node.outputs[match_output].type = combo.value;
-        return me;
-    }
-    setTimeout(() => { combo.callback(); }, 10);
-}
-
-/*
-* matchFloatSize forces the target to be float[n] based on its type size
-*/
-export function widgetHookValue(node, control_key, child_key, output_type_match=true) {
-
-    const AA = node.widgets.find(w => w.name == child_key);
-    const combo = node.widgets.find(w => w.name == control_key);
-
-    if (combo === undefined) {
-        return;
-    }
-
-    widgetHookControl(node, control_key, AA);
-    if (output_type_match) {
-        widgetOutputHookType(node, control_key);
-    }
-    setTimeout(() => { combo.callback(); }, 5);
-
-    return combo;
-};
-
-/*
-* matchFloatSize forces the target to be float[n] based on its type size
-*/
-export function widgetHookControl(node, control_key, target, matchFloatSize=false) {
     const initializeTrack = (widget) => {
         const track = {};
         for (let i = 0; i < 4; i++) {
@@ -143,11 +109,6 @@ export function widgetHookControl(node, control_key, target, matchFloatSize=fals
     };
 
     const { widgets } = node;
-    const combo = widgets.find(w => w.name == control_key);
-
-    if (!target || !combo) {
-        throw new Error("Required widgets not found");
-    }
 
     const data = {
         track_xyzw: initializeTrack(target),
@@ -171,7 +132,6 @@ export function widgetHookControl(node, control_key, target, matchFloatSize=fals
         return me;
     }
 
-    target.options.menu = false;
     target.callback = () => {
         if (target.type == "toggle") {
             data.track_xyzw[0] = target.value ? 1 : 0;
@@ -183,22 +143,6 @@ export function widgetHookControl(node, control_key, target, matchFloatSize=fals
     };
 
     return data;
-}
-
-
-export const nodeCleanup = (node) => {
-    if (!node.widgets || !node.widgets?.[Symbol.iterator]) {
-        return
-    }
-    for (const w of node.widgets) {
-        if (w.canvas) {
-            w.canvas.remove()
-        }
-        if (w.inputEl) {
-            w.inputEl.remove()
-        }
-        w.onRemoved?.()
-    }
 }
 
 export function nodeFitHeight(node) {
@@ -335,7 +279,7 @@ export function nodeVirtualLinkRoot(node) {
  * @param {Object} node - The starting node to trace from.
  * @returns {Object} - The first physical node encountered, or the last node if no physical node is found.
  */
-export function nodeVirtualLinkChild(node) {
+function nodeVirtualLinkChild(node) {
     while (node) {
         const { isVirtualNode, findGetter } = node;
 

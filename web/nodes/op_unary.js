@@ -1,7 +1,7 @@
 /**/
 
 import { app } from "../../../scripts/app.js"
-import { TypeSlotEvent, TypeSlot, nodeFitHeight, widgetHookValue } from "../util.js"
+import { widgetHookControl } from "../util.js"
 
 const _id = "OP UNARY (JOV) 🎲"
 
@@ -16,7 +16,7 @@ app.registerExtension({
         const onNodeCreated = nodeType.prototype.onNodeCreated
         nodeType.prototype.onNodeCreated = function () {
             const me = onNodeCreated?.apply(this);
-            widgetHookValue(this, 'type', 'aa');
+            widgetHookControl(this, 'type', 'aa');
             return me;
         }
 /*

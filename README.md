@@ -138,6 +138,12 @@ Nodes that have been migrated:
 
 [Migrated to Jovi_GLSL](https://github.com/Amorano/Jovi_GLSL)
 
+**2025/05/06** @2.1.1:
+* fixed IS_CHANGED in graphnode
+* updated `TICK SIMPLE` in situ of `TICK` to be inclusive of the end range
+* migrated ease, normalization and wave functions to cozy_comfyui
+* first pass preserving values in multi-type fields
+
 **2025/05/05** @2.1.0:
 * Cleaned up all node defaults
 * Vector nodes aligned for list outputs
