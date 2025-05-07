@@ -28,6 +28,9 @@ from cozy_comfyui.maths.wave import \
     EnumWave, \
     wave_op
 
+from cozy_comfyui.maths.series import \
+    seriesLinear
+
 JOV_CATEGORY = "ANIMATION"
 
 # ==============================================================================
@@ -45,12 +48,15 @@ class ResultObject(object):
 class TickNode(CozyBaseNode):
     NAME = "TICK (JOV) ⏱"
     CATEGORY = JOV_CATEGORY
-    RETURN_TYPES = ("FLOAT", "FLOAT")
-    RETURN_NAMES = ("VALUE", "LINEAR")
-    OUTPUT_IS_LIST = (True, True,)
+    RETURN_TYPES = ("FLOAT", "FLOAT", "FLOAT", "FLOAT", "FLOAT")
+    RETURN_NAMES = ("VALUE", "LINEAR", "EASED", "SCALAR_LIN", "SCALAR_EASE")
+    OUTPUT_IS_LIST = (True, True, True, True, True,)
     OUTPUT_TOOLTIPS = (
         "List of values",
-        "Normalized values (0..1)",
+        "Normalized values",
+        "Eased values",
+        "Scalar normalized values",
+        "Scalar eased values",
     )
     SORT = 55
     DESCRIPTION = """
@@ -82,8 +88,13 @@ Value generator with normalized values based on based on time interval.
                 Lexicon.PINGPONG: ("BOOLEAN", {
                     "default": False
                 }),
-                Lexicon.EASE: (["NONE"] + EnumEase._member_names_, {
-                    "default": "NONE"}),
+                Lexicon.EASE: (EnumEase._member_names_, {
+                    "default": EnumEase.LINEAR.name}),
+                Lexicon.NORMALIZE: (EnumNormalize._member_names_, {
+                    "default": EnumNormalize.MINMAX2.name}),
+                Lexicon.SCALAR: ("FLOAT", {
+                    "default": 1.0,
+                })
 
             }
         })
@@ -106,37 +117,26 @@ Value generator with normalized values based on based on time interval.
         count = parse_param(kw, Lexicon.COUNT, EnumConvertType.INT, 1, 1, 1500)[0]
         loop = parse_param(kw, Lexicon.LOOP, EnumConvertType.INT, 0, 0, sys.maxsize)[0]
         pingpong = parse_param(kw, Lexicon.PINGPONG, EnumConvertType.BOOLEAN, False)[0]
-        ease = parse_param(kw, Lexicon.EASE, EnumEase, EnumEase.SIN_IN_OUT.name)[0]
-        normalize = parse_param(kw, Lexicon.NORMALIZE, EnumNormalize, EnumNormalize.MINMAX.name)[0]
+        ease = parse_param(kw, Lexicon.EASE, EnumEase, EnumEase.LINEAR.name)[0]
+        normalize = parse_param(kw, Lexicon.NORMALIZE, EnumNormalize, EnumNormalize.MINMAX1.name)[0]
+        scalar = parse_param(kw, Lexicon.SCALAR, EnumConvertType.FLOAT, 1, 0, sys.maxsize)[0]
 
-        if loop == 0:
-            loop = count
+        if step == 0:
+            step = 1
 
-        results = []
-        current = float(start)
-        step = step or 1.0
-        cycle_len = 2 * loop
-        pbar = ProgressBar(count)
-        for idx in range(count):
-            if pingpong:
-                mod_pos = (current - start) % cycle_len
-                if mod_pos <= loop:
-                    wrapped = start + mod_pos
-                    lin = mod_pos / loop
-                else:
-                    wrapped = start + (cycle_len - mod_pos)
-                    lin = (cycle_len - mod_pos) / loop
-            else:
-                if idx > 0 and idx % (loop-1) == 0: #count - 1:
-                    wrapped = start + loop
-                else:
-                    wrapped = (current - start) % loop + start
-                lin = (wrapped - start) / loop if loop else 0
+        cycle = seriesLinear(start, step, count, loop, pingpong)
+        linear = norm_op(normalize, np.array(cycle))
+        eased = ease_op(ease, linear, len(linear))
+        scalar_linear = linear * scalar
+        scalar_eased = eased * scalar
 
-            results.append([round(wrapped, 6), round(lin, 6)])
-            current += step
-            pbar.update_absolute(idx)
-        return *list(zip(*results)),
+        return (
+            cycle,
+            linear.tolist(),
+            eased.tolist(),
+            scalar_linear.tolist(),
+            scalar_eased.tolist(),
+        )
 
 class WaveGeneratorNode(CozyBaseNode):
     NAME = "WAVE GEN (JOV) 🌊"

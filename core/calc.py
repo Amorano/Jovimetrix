@@ -99,10 +99,6 @@ class EnumConvertString(Enum):
     REPLACE = 50
     SLICE = 70  # start - end - step  = -1, -1, 1
 
-class EnumNumberType(Enum):
-    INT = 0
-    FLOAT = 10
-
 class EnumSwizzle(Enum):
     A_X = 0
     A_Y = 10
@@ -432,7 +428,6 @@ Additionally, you can specify the easing function (EASE) and the desired output 
     @classmethod
     def INPUT_TYPES(cls) -> InputType:
         d = super().INPUT_TYPES()
-        names_convert = EnumConvertType._member_names_[:6]
         d = deep_merge(d, {
             "optional": {
                 Lexicon.IN_A: (COZY_TYPE_FULL, {
@@ -441,11 +436,11 @@ Additionally, you can specify the easing function (EASE) and the desired output 
                     "tooltip": "Custom End Point"}),
                 Lexicon.ALPHA: ("VEC4", {
                     "default": (0.5, 0.5, 0.5, 0.5), "mij": 0., "maj": 1.0,}),
-                Lexicon.TYPE: (names_convert, {
-                    "default": "FLOAT",
+                Lexicon.TYPE: (EnumConvertType._member_names_[:6], {
+                    "default": EnumConvertType.FLOAT.name,
                     "tooltip": "Output type desired from resultant operation"}),
-                Lexicon.EASE: (["NONE"] + EnumEase._member_names_, {
-                    "default": "NONE"}),
+                Lexicon.EASE: (EnumEase._member_names_, {
+                    "default": EnumEase.LINEAR.name}),
                 Lexicon.DEFAULT_A: ("VEC4", {
                     "default": (0, 0, 0, 0)}),
                 Lexicon.DEFAULT_B: ("VEC4", {
@@ -460,8 +455,8 @@ Additionally, you can specify the easing function (EASE) and the desired output 
         A = parse_param(kw, Lexicon.IN_A, EnumConvertType.ANY, 0)
         B = parse_param(kw, Lexicon.IN_B, EnumConvertType.ANY, 0)
         alpha = parse_param(kw, Lexicon.ALPHA,EnumConvertType.VEC4, (0.5,0.5,0.5,0.5), 0, 1)
-        typ = parse_param(kw, Lexicon.TYPE, EnumNumberType, EnumNumberType.FLOAT.name)
-        op = parse_param(kw, Lexicon.EASE, EnumEase, EnumEase.SIN_IN_OUT.name)
+        typ = parse_param(kw, Lexicon.TYPE, EnumConvertType, EnumConvertType.FLOAT.name)
+        op = parse_param(kw, Lexicon.EASE, EnumEase, EnumEase.LINEAR.name)
         a_xyzw = parse_param(kw, Lexicon.DEFAULT_A, EnumConvertType.VEC4, (0, 0, 0, 0))
         b_xyzw = parse_param(kw, Lexicon.DEFAULT_B, EnumConvertType.VEC4, (1, 1, 1, 1))
         fill = parse_param(kw, Lexicon.FILL, EnumConvertType.BOOLEAN, False)
