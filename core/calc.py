@@ -21,7 +21,7 @@ from cozy_comfyui.lexicon import \
     Lexicon
 
 from cozy_comfyui.node import \
-    COZY_TYPE_ANY, COZY_TYPE_NUMERICAL, COZY_TYPE_FULL, \
+    COZY_TYPE_ANY, COZY_TYPE_NUMERICAL, \
     CozyBaseNode
 
 from cozy_comfyui.maths.ease import \
@@ -234,7 +234,7 @@ IMAGE and MASK will return a TRUE bit for any non-black pixel, as a stream of bi
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                Lexicon.VALUE: (COZY_TYPE_FULL, {
+                Lexicon.VALUE: (COZY_TYPE_NUMERICAL, {
                     "default": None,
                     "tooltip": "Value to convert into bits"}),
                 Lexicon.BIT: ("INT", {
@@ -294,10 +294,10 @@ Evaluates two inputs (A and B) with a specified comparison operators and optiona
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                Lexicon.IN_A: (COZY_TYPE_FULL, {
+                Lexicon.IN_A: (COZY_TYPE_NUMERICAL, {
                     "default": 0,
                     "tooltip":"First value to compare"}),
-                Lexicon.IN_B: (COZY_TYPE_FULL, {
+                Lexicon.IN_B: (COZY_TYPE_NUMERICAL, {
                     "default": 0,
                     "tooltip":"Second value to compare"}),
                 Lexicon.SUCCESS: (COZY_TYPE_ANY, {
@@ -430,9 +430,9 @@ Additionally, you can specify the easing function (EASE) and the desired output 
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                Lexicon.IN_A: (COZY_TYPE_FULL, {
+                Lexicon.IN_A: (COZY_TYPE_NUMERICAL, {
                     "tooltip": "Custom Start Point"}),
-                Lexicon.IN_B: (COZY_TYPE_FULL, {
+                Lexicon.IN_B: (COZY_TYPE_NUMERICAL, {
                     "tooltip": "Custom End Point"}),
                 Lexicon.ALPHA: ("VEC4", {
                     "default": (0.5, 0.5, 0.5, 0.5), "mij": 0., "maj": 1.0,}),

@@ -138,6 +138,9 @@ Nodes that have been migrated:
 
 [Migrated to Jovi_GLSL](https://github.com/Amorano/Jovi_GLSL)
 
+**2025/05/08** @2.1.3:
+* fixed for VEC* types using MIN/MAX
+
 **2025/05/07** @2.1.2:
 * `TICK` with normalization and new series generator
 

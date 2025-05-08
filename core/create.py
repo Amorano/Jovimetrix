@@ -154,18 +154,18 @@ Create n-sided polygons. These shapes can be customized by adjusting parameters 
     def run(self, **kw) -> RGBAMaskType:
         shape = parse_param(kw, Lexicon.SHAPE, EnumShapes, EnumShapes.CIRCLE.name)
         sides = parse_param(kw, Lexicon.SIDES, EnumConvertType.INT, 3, 3, 100)
-        angle = parse_param(kw, Lexicon.ANGLE, EnumConvertType.FLOAT, 0)
-        edge = parse_param(kw, Lexicon.EDGE, EnumEdge, EnumEdge.CLIP.name)
-        offset = parse_param(kw, Lexicon.XY, EnumConvertType.VEC2, (0, 0))
-        size = parse_param(kw, Lexicon.SIZE, EnumConvertType.VEC2, (1, 1), zero=0.001)
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (256, 256), IMAGE_SIZE_MIN)
         color = parse_param(kw, Lexicon.COLOR, EnumConvertType.VEC4INT, (255, 255, 255, 255), 0, 255)
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (256, 256), IMAGE_SIZE_MIN)
+        offset = parse_param(kw, Lexicon.XY, EnumConvertType.VEC2, (0, 0))
+        angle = parse_param(kw, Lexicon.ANGLE, EnumConvertType.FLOAT, 0)
+        size = parse_param(kw, Lexicon.SIZE, EnumConvertType.VEC2, (1, 1), zero=0.001)
+        edge = parse_param(kw, Lexicon.EDGE, EnumEdge, EnumEdge.CLIP.name)
         blur = parse_param(kw, Lexicon.BLUR, EnumConvertType.FLOAT, 0)
-        params = list(zip_longest_fill(shape, sides, offset, angle, edge, size, wihi, color, matte, blur))
+        params = list(zip_longest_fill(shape, sides, color, matte, wihi, offset, angle, size, edge, blur))
         images = []
         pbar = ProgressBar(len(params))
-        for idx, (shape, sides, offset, angle, edge, size, wihi, color, matte, blur) in enumerate(params):
+        for idx, (shape, sides, color, matte, wihi, offset, angle, size, edge, blur) in enumerate(params):
             width, height = wihi
             sizeX, sizeY = size
             fill = color[:3][::-1]
