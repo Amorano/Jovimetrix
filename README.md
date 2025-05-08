@@ -138,6 +138,9 @@ Nodes that have been migrated:
 
 [Migrated to Jovi_GLSL](https://github.com/Amorano/Jovi_GLSL)
 
+**2025/05/08** @2.1.4:
+* Support for NUMERICAL (bool, int, float, vecN) inputs on value inputs
+
 **2025/05/08** @2.1.3:
 * fixed for VEC* types using MIN/MAX
 

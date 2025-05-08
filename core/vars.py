@@ -14,7 +14,7 @@ from cozy_comfyui.lexicon import \
     Lexicon
 
 from cozy_comfyui.node import \
-    COZY_TYPE_ANY, COZY_TYPE_NUMERICAL, COZY_TYPE_NUMBER, \
+    COZY_TYPE_ANY, COZY_TYPE_NUMERICAL, \
     CozyBaseNode
 
 from . import \
@@ -156,10 +156,10 @@ Outputs a VECTOR2.
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                Lexicon.X: (COZY_TYPE_NUMBER, {
+                Lexicon.X: (COZY_TYPE_NUMERICAL, {
                     "min": -sys.maxsize, "max": sys.maxsize,
                     "tooltip": "X channel value"}),
-                Lexicon.Y: (COZY_TYPE_NUMBER, {
+                Lexicon.Y: (COZY_TYPE_NUMERICAL, {
                     "min": -sys.maxsize, "max": sys.maxsize,
                     "tooltip": "Y channel value"}),
                 Lexicon.DEFAULT: ("VEC2", {
@@ -202,13 +202,13 @@ Outputs a VECTOR3.
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                Lexicon.X: (COZY_TYPE_NUMBER, {
+                Lexicon.X: (COZY_TYPE_NUMERICAL, {
                     "min": -sys.maxsize, "max": sys.maxsize,
                     "tooltip": "X channel value"}),
-                Lexicon.Y: (COZY_TYPE_NUMBER, {
+                Lexicon.Y: (COZY_TYPE_NUMERICAL, {
                     "min": -sys.maxsize, "max": sys.maxsize,
                     "tooltip": "Y channel value"}),
-                Lexicon.Z: (COZY_TYPE_NUMBER, {
+                Lexicon.Z: (COZY_TYPE_NUMERICAL, {
                     "min": -sys.maxsize, "max": sys.maxsize,
                     "tooltip": "Z channel value"}),
                 Lexicon.DEFAULT: ("VEC3", {
@@ -253,16 +253,16 @@ Outputs a VECTOR4.
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                Lexicon.X: (COZY_TYPE_NUMBER, {
+                Lexicon.X: (COZY_TYPE_NUMERICAL, {
                     "min": -sys.maxsize, "max": sys.maxsize,
                     "tooltip": "X channel value"}),
-                Lexicon.Y: (COZY_TYPE_NUMBER, {
+                Lexicon.Y: (COZY_TYPE_NUMERICAL, {
                     "min": -sys.maxsize, "max": sys.maxsize,
                     "tooltip": "Y channel value"}),
-                Lexicon.Z: (COZY_TYPE_NUMBER, {
+                Lexicon.Z: (COZY_TYPE_NUMERICAL, {
                     "min": -sys.maxsize, "max": sys.maxsize,
                     "tooltip": "Z channel value"}),
-                Lexicon.W: (COZY_TYPE_NUMBER, {
+                Lexicon.W: (COZY_TYPE_NUMERICAL, {
                     "min": -sys.maxsize, "max": sys.maxsize,
                     "tooltip": "W channel value"}),
                 Lexicon.DEFAULT: ("VEC4", {
