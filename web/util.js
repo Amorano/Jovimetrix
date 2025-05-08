@@ -38,13 +38,11 @@ export async function apiJovimetrix(id, cmd, data=null, route="message", ) {
     }
 }
 
-//
-
 function widgetShowVector(widget, values={}, type) {
     if (["FLOAT"].includes(type)) {
-        type = "float";
+        type = "VEC1";
     } else if (["INT"].includes(type)) {
-        type = "int";
+        type = "VEC1INT";
     } else if (type == "BOOLEAN") {
         type = "toggle";
     }
@@ -94,8 +92,9 @@ function widgetShowVector(widget, values={}, type) {
 * matchFloatSize forces the target to be float[n] based on its type size
 */
 export function widgetHookControl(node, control_key, child_key, matchFloatSize=false) {
-    const combo = node.widgets.find(w => w.name == control_key);
+
     const target = node.widgets.find(w => w.name == child_key);
+    const combo = node.widgets.find(w => w.name == control_key);
     if (!target || !combo) {
         throw new Error("Required widgets not found");
     }
@@ -123,8 +122,8 @@ export function widgetHookControl(node, control_key, child_key, matchFloatSize=f
         if (["VEC2", "VEC3", "VEC4", "BOOLEAN", "INT", "FLOAT"].includes(combo.value)) {
             let type = combo.value;
             if (matchFloatSize) {
-                if (["FLOAT", "BOOLEAN", "INT"].includes(combo.value)) {
-                    type = "VEC1";
+                if (["BOOLEAN", "INT"].includes(combo.value)) {
+                    type = "FLOAT";
                 }
             }
             widgetShowVector(target, data.track_xyzw, type);

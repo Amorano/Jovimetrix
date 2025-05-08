@@ -138,6 +138,9 @@ Nodes that have been migrated:
 
 [Migrated to Jovi_GLSL](https://github.com/Amorano/Jovi_GLSL)
 
+**2025/05/07** @2.1.2:
+* `TICK` with normalization and new series generator
+
 **2025/05/06** @2.1.1:
 * fixed IS_CHANGED in graphnode
 * updated `TICK SIMPLE` in situ of `TICK` to be inclusive of the end range
