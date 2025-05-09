@@ -15,35 +15,11 @@ from cozy_comfyui.image import \
 
 from cozy_comfyui.image.convert import \
     ImageType, \
-    image_matte, image_mask, image_mask_add, \
-    image_convert, image_to_bgr, bgr_to_image, cv_to_pil, pil_to_cv
+    image_matte, image_mask, image_mask_add, image_convert, cv_to_pil, pil_to_cv
 
 # ==============================================================================
 # === ENUMERATION ===
 # ==============================================================================
-
-class EnumAdjustOP(Enum):
-    BLUR = 0
-    STACK_BLUR = 1
-    GAUSSIAN_BLUR = 2
-    MEDIAN_BLUR = 3
-    SHARPEN = 10
-    EMBOSS = 20
-    INVERT = 25
-    # MEAN = 30 -- in UNARY
-    # ADAPTIVE_HISTOGRAM = 35
-    HSV = 30
-    LEVELS = 35
-    EQUALIZE = 40
-    PIXELATE = 50
-    QUANTIZE = 55
-    POSTERIZE = 60
-    FIND_EDGES = 80
-    OUTLINE = 70
-    DILATE = 71
-    ERODE = 72
-    OPEN = 73
-    CLOSE = 74
 
 class EnumBlendType(Enum):
     """Rename the blend type names."""
@@ -167,8 +143,6 @@ def image_levels(image: np.ndarray, black_point:int=0, white_point=255,
         numpy.ndarray: Adjusted image tensor.
     """
 
-    image, alpha, cc = image_to_bgr(image)
-
     # Convert points and gamma to float32 for calculations
     black = np.array([black_point] * 3, dtype=np.float32)
     white = np.array([white_point] * 3, dtype=np.float32)
@@ -181,8 +155,8 @@ def image_levels(image: np.ndarray, black_point:int=0, white_point=255,
     image = np.clip((image - black) / (white - black), 0, 1)
     image = (image - mid) / (1.0 - mid)
     image = (image ** (1 / inGamma)) * (outWhite - outBlack) + outBlack
-    image = np.clip(image, 0, 255).astype(np.uint8)
-    return bgr_to_image(image, alpha, cc == 1)
+    return np.clip(image, 0, 255).astype(np.uint8)
+
 
 def image_mask_binary(image: ImageType) -> ImageType:
     """

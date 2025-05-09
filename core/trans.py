@@ -1,5 +1,6 @@
 """ Jovimetrix - Transform """
 
+import sys
 from enum import Enum
 
 from comfy.utils import ProgressBar
@@ -259,7 +260,7 @@ Apply various geometric transformations to images, including translation, rotati
                     "default": (0., 0.,), "mij": -1., "maj": 1.,
                     "label": ["X", "Y"]}),
                 Lexicon.ANGLE: ("FLOAT", {
-                    "default": 0, "step": 0.01,}),
+                    "default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.1,}),
                 Lexicon.SIZE: ("VEC2", {
                     "default": (1., 1.), "mij": 0.001,
                     "label": ["X", "Y"]}),

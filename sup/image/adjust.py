@@ -16,8 +16,7 @@ from cozy_comfyui.image import \
 
 from cozy_comfyui.image.convert import \
     ImageType, \
-    image_matte, image_mask, image_mask_add, image_convert, image_to_bgr, \
-    bgr_to_image, cv_to_tensor, tensor_to_cv
+    image_matte, image_mask, image_mask_add, image_convert, cv_to_tensor, tensor_to_cv
 
 from cozy_comfyui.image.crop import \
     image_crop_center
@@ -97,11 +96,9 @@ class EnumThresholdAdapt(Enum):
 # ==============================================================================
 
 def image_contrast(image: ImageType, value: float) -> ImageType:
-    image, alpha, cc = image_to_bgr(image)
     mean_value = np.mean(image)
     image = (image - mean_value) * value + mean_value
-    image = np.clip(image, 0, 255).astype(np.uint8)
-    return bgr_to_image(image, alpha, cc == 1)
+    return np.clip(image, 0, 255).astype(np.uint8)
 
 def image_edge_wrap(image: ImageType, tileX: float=1., tileY: float=1.,
                     edge:EnumEdge=EnumEdge.WRAP) -> ImageType:
@@ -112,16 +109,13 @@ def image_edge_wrap(image: ImageType, tileX: float=1., tileY: float=1.,
     return cv2.copyMakeBorder(image, tileY, tileY, tileX, tileX, cv2.BORDER_WRAP)
 
 def image_equalize(image:ImageType) -> ImageType:
-    image, alpha, cc = image_to_bgr(image)
     image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     image = cv2.equalizeHist(image)
     image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
-    return bgr_to_image(image, alpha, cc == 1)
+    return image
 
 def image_exposure(image: ImageType, value: float) -> ImageType:
-    image, alpha, cc = image_to_bgr(image)
-    image = np.clip(image * value, 0, 255).astype(np.uint8)
-    return bgr_to_image(image, alpha, cc == 1)
+    return np.clip(image * value, 0, 255).astype(np.uint8)
 
 def image_filter(image:ImageType, start:tuple[int]=(128,128,128),
                  end:tuple[int]=(128,128,128), fuzz:tuple[float]=(0.5,0.5,0.5),
@@ -199,17 +193,13 @@ def image_flatten(image: List[ImageType], width:int=None, height:int=None,
     return current
 
 def image_gamma(image: ImageType, value: float) -> ImageType:
-    # preserve original format
-    image, alpha, cc = image_to_bgr(image)
     if value <= 0:
-        image = (image * 0).astype(np.uint8)
-    else:
-        invGamma = 1.0 / max(0.000001, value)
-        table = cv2.pow(np.arange(256) / 255, invGamma) * 255
-        lookUpTable = np.clip(table, 0, 255).astype(np.uint8)
-        image = cv2.LUT(image, lookUpTable)
-        # now back to the original "format"
-    return bgr_to_image(image, alpha, cc == 1)
+        return np.zeros_like(image, dtype=np.uint8)
+
+    inv_gamma = 1.0 / max(1e-6, value)
+    table = np.power(np.linspace(0, 1, 256), inv_gamma) * 255
+    lookup_table = np.clip(table, 0, 255).astype(np.uint8)
+    return cv2.LUT(image, lookup_table)
 
 def image_histogram(image:ImageType, bins=256) -> ImageType:
     bins = max(image.max(), bins) + 1
@@ -231,14 +221,12 @@ def image_histogram_normalize(image:ImageType)-> ImageType:
     return np.reshape(flatEqualizedImage, image.shape)
 
 def image_hsv(image: ImageType, hue: float, saturation: float, value: float) -> ImageType:
-    image, alpha, cc = image_to_bgr(image)
     image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
     hue *= 255
     image[:, :, 0] = (image[:, :, 0] + hue) % 180
     image[:, :, 1] = np.clip(image[:, :, 1] * saturation, 0, 255)
     image[:, :, 2] = np.clip(image[:, :, 2] * value, 0, 255)
-    image = cv2.cvtColor(image, cv2.COLOR_HSV2BGR)
-    return bgr_to_image(image, alpha, cc == 1)
+    return cv2.cvtColor(image, cv2.COLOR_HSV2BGR)
 
 def image_invert(image: ImageType, value: float) -> ImageType:
     """
@@ -394,10 +382,11 @@ def image_scalefit(image: ImageType, width: int, height:int,
             h2 = max(height, h)
             canvas = np.full((h2, w2, 4), matte, dtype=image.dtype)
             mask = image_mask(image)
-            mask = image_matte(mask, (255, 255, 255, 255), w2, h2)
+            # mask = image_matte(mask, (255, 255, 255, 255), w2, h2)
+
             image = image_matte(image, (0,0,0,0), w2, h2)
             image = image_blend(canvas, image)
-            image = image_mask_add(image, mask)
+            #image = image_mask_add(image, mask)
             image = image_crop_center(image, width, height)
 
         case EnumScaleMode.ASPECT:
@@ -468,7 +457,6 @@ def image_threshold(image:ImageType, threshold:float=0.5,
 
     const = max(-100, min(100, const))
     block = max(3, block if block % 2 == 1 else block + 1)
-    image, alpha, cc = image_to_bgr(image)
     if adapt != EnumThresholdAdapt.ADAPT_NONE:
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         gray = cv2.adaptiveThreshold(gray, 255, adapt.value, cv2.THRESH_BINARY, block, const)
@@ -478,7 +466,7 @@ def image_threshold(image:ImageType, threshold:float=0.5,
     else:
         threshold = int(threshold * 255)
         _, image = cv2.threshold(image, threshold, 255, mode.value)
-    return bgr_to_image(image, alpha, cc == 1)
+    return image
 
 def image_translate(image: ImageType, offset: Coord2D_Float=(0.0, 0.0),
                     edge: EnumEdge=EnumEdge.CLIP, border_value:int=0) -> ImageType:

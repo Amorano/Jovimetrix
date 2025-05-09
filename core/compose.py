@@ -1,6 +1,5 @@
 """ Jovimetrix - Composition """
 
-import cv2
 import numpy as np
 
 from comfy.utils import ProgressBar
@@ -21,7 +20,7 @@ from cozy_comfyui.image import \
     EnumImageType
 
 from cozy_comfyui.image.convert import \
-    image_mask, image_matte, image_convert, tensor_to_cv, \
+    image_matte, image_convert, tensor_to_cv, \
     cv_to_tensor, cv_to_tensor_full
 
 from cozy_comfyui.image.misc import \
@@ -32,183 +31,21 @@ from ..sup.image.color import \
 
 from ..sup.image.adjust import \
     EnumScaleMode, EnumScaleInputMode, EnumInterpolation, EnumThreshold, EnumThresholdAdapt, \
-    image_contrast, image_equalize, image_filter, image_gamma,  \
-    image_hsv, image_invert, image_pixelate, image_posterize, \
-    image_quantize, image_scalefit, image_sharpen, image_swap_channels, \
-    image_threshold, morph_edge_detect, morph_emboss
+    image_filter, image_invert, image_scalefit,image_swap_channels, image_threshold
 
 from ..sup.image.channel import \
     EnumPixelSwizzle, \
     channel_merge, channel_solid
 
 from ..sup.image.compose import \
-    EnumAdjustOP, EnumBlendType, image_by_size, \
-    image_levels, image_split, image_blend
+    EnumBlendType, \
+    image_by_size, image_split, image_blend
 
 JOV_CATEGORY = "COMPOSE"
 
 # ==============================================================================
 # === CLASS ===
 # ==============================================================================
-
-class AdjustNode(CozyImageNode):
-    NAME = "ADJUST (JOV) 🕸️"
-    CATEGORY = JOV_CATEGORY
-    DESCRIPTION = """
-Enhance and modify images with various effects such as blurring, sharpening, color tweaks, and edge detection. Customize parameters like radius, value, and contrast, and use masks for selective effects.
-
-Advanced options include pixelation, quantization, and morphological operations like dilation and erosion. Handle transparency effortlessly to ensure seamless blending of effects. This node is ideal for simple adjustments and complex image transformations.
-"""
-
-    @classmethod
-    def INPUT_TYPES(cls) -> InputType:
-        d = super().INPUT_TYPES()
-        d = deep_merge(d, {
-            "optional": {
-                Lexicon.IMAGE: (COZY_TYPE_IMAGE, {}),
-                Lexicon.MASK: (COZY_TYPE_IMAGE, {}),
-                Lexicon.FUNCTION: (EnumAdjustOP._member_names_, {
-                    "default": EnumAdjustOP.BLUR.name,}),
-                Lexicon.RADIUS: ("INT", {
-                    "default": 3, "min": 3}),
-                Lexicon.VALUE: ("FLOAT", {
-                    "default": 1, "min": 0, "step": 0.01}),
-                Lexicon.LOHI: ("VEC2", {
-                    "default": (0, 1), "mij": 0, "maj": 1,
-                    "label": ["Low", "HI"]}),
-                Lexicon.LMH: ("VEC3", {
-                    "default": (0, 0.5, 1), "mij": 0, "maj": 1,
-                    "label": ["Low", "MID", "HI"],}),
-                Lexicon.HSV: ("VEC3",{
-                    "default": (0, 1, 1), "mij": 0, "maj": 1,
-                    "label": ["H", "S", "V"],}),
-                Lexicon.CONTRAST: ("FLOAT", {
-                    "default": 0, "min": 0, "max": 1, "step": 0.01}),
-                Lexicon.GAMMA: ("FLOAT", {
-                    "default": 1, "min": 0.00001, "max": 1, "step": 0.01}),
-                Lexicon.MATTE: ("VEC4", {
-                    "default": (0, 0, 0, 255), "rgb": True,}),
-                Lexicon.INVERT: ("BOOLEAN", {
-                    "default": False,
-                    "tooltip": "Invert the mask input"})
-            }
-        })
-        return Lexicon._parse(d)
-
-    def run(self, **kw) -> RGBAMaskType:
-        pA = parse_param(kw, Lexicon.IMAGE, EnumConvertType.IMAGE, None)
-        mask = parse_param(kw, Lexicon.MASK, EnumConvertType.IMAGE, None)
-        op = parse_param(kw, Lexicon.FUNCTION, EnumAdjustOP, EnumAdjustOP.BLUR.name)
-        radius = parse_param(kw, Lexicon.RADIUS, EnumConvertType.INT, 3, 3)
-        val = parse_param(kw, Lexicon.VALUE, EnumConvertType.FLOAT, 0, 0)
-        lohi = parse_param(kw, Lexicon.LOHI, EnumConvertType.VEC2, (0, 1), 0, 1)
-        lmh = parse_param(kw, Lexicon.LMH, EnumConvertType.VEC3, (0, 0.5, 1), 0, 1)
-        hsv = parse_param(kw, Lexicon.HSV, EnumConvertType.VEC3, (0, 1, 1), 0, 1)
-        contrast = parse_param(kw, Lexicon.CONTRAST, EnumConvertType.FLOAT, 1, 0, 1)
-        gamma = parse_param(kw, Lexicon.GAMMA, EnumConvertType.FLOAT, 1, 0, 1)
-        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
-        invert = parse_param(kw, Lexicon.INVERT, EnumConvertType.BOOLEAN, False)
-        params = list(zip_longest_fill(pA, mask, op, radius, val, lohi,
-                                        lmh, hsv, contrast, gamma, matte, invert))
-        images = []
-        pbar = ProgressBar(len(params))
-        for idx, (pA, mask, op, radius, val, lohi, lmh, hsv, contrast, gamma, matte, invert) in enumerate(params):
-            pA = tensor_to_cv(pA) if pA is not None else channel_solid(chan=EnumImageType.BGR)
-            img_new = image_convert(pA, 3)
-
-            match op:
-                case EnumAdjustOP.INVERT:
-                    img_new = image_invert(img_new, val)
-
-                case EnumAdjustOP.LEVELS:
-                    l, m, h = lmh
-                    img_new = image_levels(img_new, l, h, m, gamma)
-
-                case EnumAdjustOP.HSV:
-                    h, s, v = hsv
-                    img_new = image_hsv(img_new, h, s, v)
-                    if contrast != 0:
-                        img_new = image_contrast(img_new, 1 - contrast)
-
-                    if gamma != 0:
-                        img_new = image_gamma(img_new, gamma)
-
-                case EnumAdjustOP.FIND_EDGES:
-                    lo, hi = lohi
-                    img_new = morph_edge_detect(img_new, low=lo, high=hi)
-
-                case EnumAdjustOP.BLUR:
-                    img_new = cv2.blur(img_new, (radius, radius))
-
-                case EnumAdjustOP.STACK_BLUR:
-                    r = min(radius, 1399)
-                    if r % 2 == 0:
-                        r += 1
-                    img_new = cv2.stackBlur(img_new, (r, r))
-
-                case EnumAdjustOP.GAUSSIAN_BLUR:
-                    r = min(radius, 999)
-                    if r % 2 == 0:
-                        r += 1
-                    img_new = cv2.GaussianBlur(img_new, (r, r), sigmaX=val)
-
-                case EnumAdjustOP.MEDIAN_BLUR:
-                    r = min(radius, 357)
-                    if r % 2 == 0:
-                        r += 1
-                    img_new = cv2.medianBlur(img_new, r)
-
-                case EnumAdjustOP.SHARPEN:
-                    r = min(radius, 511)
-                    if r % 2 == 0:
-                        r += 1
-                    img_new = image_sharpen(img_new, kernel_size=r, amount=val)
-
-                case EnumAdjustOP.EMBOSS:
-                    img_new = morph_emboss(img_new, val, radius)
-
-                case EnumAdjustOP.EQUALIZE:
-                    img_new = image_equalize(img_new)
-
-                case EnumAdjustOP.PIXELATE:
-                    img_new = image_pixelate(img_new, val / 255.)
-
-                case EnumAdjustOP.QUANTIZE:
-                    img_new = image_quantize(img_new, int(val))
-
-                case EnumAdjustOP.POSTERIZE:
-                    img_new = image_posterize(img_new, int(val))
-
-                case EnumAdjustOP.OUTLINE:
-                    img_new = cv2.morphologyEx(img_new, cv2.MORPH_GRADIENT, (radius, radius))
-
-                case EnumAdjustOP.DILATE:
-                    img_new = cv2.dilate(img_new, (radius, radius), iterations=int(val))
-
-                case EnumAdjustOP.ERODE:
-                    img_new = cv2.erode(img_new, (radius, radius), iterations=int(val))
-
-                case EnumAdjustOP.OPEN:
-                    img_new = cv2.morphologyEx(img_new, cv2.MORPH_OPEN, (radius, radius), iterations=int(val))
-
-                case EnumAdjustOP.CLOSE:
-                    img_new = cv2.morphologyEx(img_new, cv2.MORPH_CLOSE, (radius, radius), iterations=int(val))
-
-            if mask is not None:
-                mask = tensor_to_cv(mask)
-                if invert:
-                    mask = 255 - mask
-
-            img_new = image_blend(pA, img_new, mask)
-            if pA.ndim == 3 and pA.shape[2] == 4:
-                mask = image_mask(pA)
-                img_new = image_convert(img_new, 4)
-                img_new[:,:,3] = mask
-            #    img_new = image_mask_add(mask)
-
-            images.append(cv_to_tensor_full(img_new, matte))
-            pbar.update_absolute(idx)
-        return image_stack(images)
 
 class BlendNode(CozyImageNode):
     NAME = "BLEND (JOV) ⚗️"
@@ -283,15 +120,15 @@ Combine two input images using various blending modes, such as normal, screen, m
             else:
                 height, width = pA.shape[:2]
 
-            clear = list(matte[:3]) + [0]
             if pA is None:
-                pA = channel_solid(width, height, clear, chan=EnumImageType.BGRA)
+                pA = channel_solid(width, height, matte, chan=EnumImageType.BGRA)
             else:
                 pA = tensor_to_cv(pA)
                 matted = pixel_eval(matte, EnumImageType.BGRA)
                 pA = image_matte(pA, matted)
 
             if pB is None:
+                clear = list(matte[:3]) + [0]
                 pB = channel_solid(width, height, clear, chan=EnumImageType.BGRA)
             else:
                 pB = tensor_to_cv(pB)
@@ -309,23 +146,26 @@ Combine two input images using various blending modes, such as normal, screen, m
 
                 _, w, h = image_by_size(imgs)
                 print(w, h)
-                pA = image_scalefit(pA, w, h, inputMode, sample)
-                pB = image_scalefit(pB, w, h, inputMode, sample)
-                if mask is not None:
-                    mask = image_scalefit(mask, w, h, inputMode, sample)
+                pA = image_scalefit(pA, w, h, inputMode, sample, matte)
+                pB = image_scalefit(pB, w, h, inputMode, sample, matte)
 
-                if inputMode != EnumScaleInputMode.RESIZE_MATTE:
-                    pA = image_scalefit(pA, w, h, EnumScaleMode.RESIZE_MATTE, sample)
-                    pB = image_scalefit(pB, w, h, EnumScaleMode.RESIZE_MATTE, sample)
-                    if mask is not None:
-                        mask = image_scalefit(mask, w, h, EnumScaleMode.RESIZE_MATTE, sample)
+                print(pA.shape)
+                print(pB.shape)
+
+                #if mask is not None:
+                #    mask = image_scalefit(mask, w, h, inputMode, sample)
+
+                pA = image_scalefit(pA, w, h, EnumScaleMode.RESIZE_MATTE, sample, matte)
+                pB = image_scalefit(pB, w, h, EnumScaleMode.RESIZE_MATTE, sample, (0,0,0,255))
+                if mask is not None:
+                    mask = image_scalefit(mask, w, h, EnumScaleMode.RESIZE_MATTE, sample, (255,255,255,255))
 
             img = image_blend(pA, pB, mask, func, alpha)
 
             if mode != EnumScaleMode.MATTE:
                 # or mode != EnumScaleMode.RESIZE_MATTE:
                 width, height = wihi
-                img = image_scalefit(img, width, height, mode, sample)
+                img = image_scalefit(img, width, height, mode, sample, matte)
 
             img = cv_to_tensor_full(img, matte)
             images.append(img)
