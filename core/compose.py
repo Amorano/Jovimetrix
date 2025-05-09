@@ -31,7 +31,7 @@ from ..sup.image.color import \
     pixel_eval
 
 from ..sup.image.adjust import \
-    EnumScaleMode, EnumInterpolation, EnumThreshold, EnumThresholdAdapt, \
+    EnumScaleMode, EnumScaleInputMode, EnumInterpolation, EnumThreshold, EnumThresholdAdapt, \
     image_contrast, image_equalize, image_filter, image_gamma,  \
     image_hsv, image_invert, image_pixelate, image_posterize, \
     image_quantize, image_scalefit, image_sharpen, image_swap_channels, \
@@ -42,7 +42,7 @@ from ..sup.image.channel import \
     channel_merge, channel_solid
 
 from ..sup.image.compose import \
-    EnumAdjustOP, EnumBlendType, \
+    EnumAdjustOP, EnumBlendType, image_by_size, \
     image_levels, image_split, image_blend
 
 JOV_CATEGORY = "COMPOSE"
@@ -243,7 +243,9 @@ Combine two input images using various blending modes, such as normal, screen, m
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {
                     "default": EnumInterpolation.LANCZOS4.name,}),
                 Lexicon.MATTE: ("VEC4", {
-                    "default": (0, 0, 0, 255), "rgb": True,})
+                    "default": (0, 0, 0, 255), "rgb": True,}),
+                Lexicon.INPUT: (EnumScaleInputMode._member_names_, {
+                    "default": EnumScaleInputMode.NONE.name,}),
             }
         })
         return Lexicon._parse(d)
@@ -255,15 +257,16 @@ Combine two input images using various blending modes, such as normal, screen, m
         func = parse_param(kw, Lexicon.FUNCTION, EnumBlendType, EnumBlendType.NORMAL.name)
         alpha = parse_param(kw, Lexicon.ALPHA, EnumConvertType.FLOAT, 1, 0, 1)
         swap = parse_param(kw, Lexicon.SWAP, EnumConvertType.BOOLEAN, False)
+        invert = parse_param(kw, Lexicon.INVERT, EnumConvertType.BOOLEAN, False)
         mode = parse_param(kw, Lexicon.MODE, EnumScaleMode, EnumScaleMode.MATTE.name)
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (512, 512), IMAGE_SIZE_MIN)
         sample = parse_param(kw, Lexicon.SAMPLE, EnumInterpolation, EnumInterpolation.LANCZOS4.name)
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
-        invert = parse_param(kw, Lexicon.INVERT, EnumConvertType.BOOLEAN, False)
-        params = list(zip_longest_fill(pA, pB, mask, func, alpha, swap, mode, wihi, sample, matte, invert))
+        inputMode = parse_param(kw, Lexicon.INPUT, EnumScaleInputMode, EnumScaleInputMode.NONE.name)
+        params = list(zip_longest_fill(pA, pB, mask, func, alpha, swap, invert, mode, wihi, sample, matte, inputMode))
         images = []
         pbar = ProgressBar(len(params))
-        for idx, (pA, pB, mask, func, alpha, swap, mode, wihi, sample, matte, invert) in enumerate(params):
+        for idx, (pA, pB, mask, func, alpha, swap, invert, mode, wihi, sample, matte, inputMode) in enumerate(params):
             if swap:
                 pA, pB = pB, pA
 
@@ -280,23 +283,42 @@ Combine two input images using various blending modes, such as normal, screen, m
             else:
                 height, width = pA.shape[:2]
 
+            clear = list(matte[:3]) + [0]
             if pA is None:
-                pA = channel_solid(width, height, matte, chan=EnumImageType.BGRA)
+                pA = channel_solid(width, height, clear, chan=EnumImageType.BGRA)
             else:
                 pA = tensor_to_cv(pA)
                 matted = pixel_eval(matte, EnumImageType.BGRA)
                 pA = image_matte(pA, matted)
 
             if pB is None:
-                pB = channel_solid(width, height, matte, chan=EnumImageType.BGRA)
+                pB = channel_solid(width, height, clear, chan=EnumImageType.BGRA)
             else:
                 pB = tensor_to_cv(pB)
 
             if mask is not None:
                 mask = tensor_to_cv(mask)
-                # mask = image_grayscale(mask)
                 if invert:
                     mask = 255 - mask
+
+            if inputMode != EnumScaleInputMode.NONE:
+                # get the min/max of pA, pB and mask?
+                imgs = [pA, pB]
+                if mask is not None:
+                    imgs += [mask]
+
+                _, w, h = image_by_size(imgs)
+                print(w, h)
+                pA = image_scalefit(pA, w, h, inputMode, sample)
+                pB = image_scalefit(pB, w, h, inputMode, sample)
+                if mask is not None:
+                    mask = image_scalefit(mask, w, h, inputMode, sample)
+
+                if inputMode != EnumScaleInputMode.RESIZE_MATTE:
+                    pA = image_scalefit(pA, w, h, EnumScaleMode.RESIZE_MATTE, sample)
+                    pB = image_scalefit(pB, w, h, EnumScaleMode.RESIZE_MATTE, sample)
+                    if mask is not None:
+                        mask = image_scalefit(mask, w, h, EnumScaleMode.RESIZE_MATTE, sample)
 
             img = image_blend(pA, pB, mask, func, alpha)
 

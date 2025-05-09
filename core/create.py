@@ -81,7 +81,7 @@ Generate a constant image or mask of a specified size and color. It can be used 
 
     def run(self, **kw) -> RGBAMaskType:
         pA = parse_param(kw, Lexicon.IMAGE, EnumConvertType.IMAGE, None)
-        mask = parse_param(kw, Lexicon.MASK, EnumConvertType.IMAGE, None)
+        mask = parse_param(kw, Lexicon.MASK, EnumConvertType.MASK, None)
         matte = parse_param(kw, Lexicon.COLOR, EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (512, 512), IMAGE_SIZE_MIN)
         mode = parse_param(kw, Lexicon.MODE, EnumScaleMode, EnumScaleMode.MATTE.name)
@@ -92,19 +92,20 @@ Generate a constant image or mask of a specified size and color. It can be used 
         for idx, (pA, mask, matte, wihi, mode, sample) in enumerate(params):
             width, height = wihi
 
+            if mask is None:
+                mask = channel_solid(width, height, (255,255,255,255), EnumImageType.GRAYSCALE)
+            else:
+                mask = tensor_to_cv(mask)
+                height, width = mask.shape[:2]
+
             if pA is None:
                 pA = channel_solid(width, height, (0,0,0,255), EnumImageType.BGRA)
             else:
                 pA = tensor_to_cv(pA)
                 pA = image_convert(pA, 4)
+                height, width = pA.shape[:2]
 
             pB = channel_solid(width, height, matte, EnumImageType.BGRA)
-
-            if mask is None:
-                mask = channel_solid(width, height, (255,255,255,255), EnumImageType.GRAYSCALE)
-            else:
-                mask = tensor_to_cv(mask)
-
             pA = image_blend(pA, pB, mask)
 
             if mode != EnumScaleMode.MATTE:

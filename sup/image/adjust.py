@@ -74,6 +74,14 @@ class EnumScaleMode(Enum):
     ASPECT_SHORT = 35
     RESIZE_MATTE = 40
 
+class EnumScaleInputMode(Enum):
+    NONE = 0
+    CROP = 20
+    FIT = 10
+    ASPECT = 30
+    ASPECT_SHORT = 35
+    RESIZE_MATTE = 40
+
 class EnumThreshold(Enum):
     BINARY = cv2.THRESH_BINARY
     TRUNC = cv2.THRESH_TRUNC

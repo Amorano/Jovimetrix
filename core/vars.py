@@ -133,8 +133,6 @@ Supplies raw or default values for various data types, supporting vector input w
             results.append([out, *items])
             pbar.update_absolute(idx)
 
-        if len(results) < 2:
-            return results[0]
         return *list(zip(*results)),
 
 class Vector2Node(CozyBaseNode):
