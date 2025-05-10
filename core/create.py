@@ -99,13 +99,13 @@ Generate a constant image or mask of a specified size and color. It can be used 
                 height, width = mask.shape[:2]
 
             if pA is None:
-                pA = channel_solid(width, height, (0,0,0,255), EnumImageType.BGRA)
+                pA = channel_solid(width, height, (0,0,0,255))
             else:
                 pA = tensor_to_cv(pA)
                 pA = image_convert(pA, 4)
                 height, width = pA.shape[:2]
 
-            pB = channel_solid(width, height, matte, EnumImageType.BGRA)
+            pB = channel_solid(width, height, matte)
             pA = image_blend(pA, pB, mask)
 
             if mode != EnumScaleMode.MATTE:

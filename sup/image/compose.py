@@ -7,7 +7,9 @@ from typing import List, Optional
 import cv2
 import numpy as np
 from PIL import Image, ImageDraw
-from blendmodes.blend import BlendType, blendLayers
+from blendmodes.blend import \
+    BlendType, \
+    blendLayers
 
 from cozy_comfyui.image import \
     PixelType, \
@@ -127,36 +129,50 @@ def image_blend(background: ImageType, foreground: ImageType, mask:Optional[Imag
         image = image_mask_add(image, mask)
     return image
 
-def image_levels(image: np.ndarray, black_point:int=0, white_point=255,
-        mid_point=128, gamma=1.0) -> np.ndarray:
+def image_levels(image: ImageType, in_low=0.0, in_mid=0.5, in_high=1.0, out_low=0.0, out_high=1.0):
     """
-    Adjusts the levels of an image including black, white, midpoints, and gamma correction.
+    Apply levels adjustment to an image.
 
-    Args:
-        image (numpy.ndarray): Input image tensor in RGB(A) format.
-        black_point (int): The black point to adjust shadows. Default is 0.
-        white_point (int): The white point to adjust highlights. Default is 255.
-        mid_point (int): The mid point for mid-tone adjustment. Default is 128.
-        gamma (float): Gamma correction value. Default is 1.0.
+    Parameters:
+        image (ImageType): Input RGB image in float32 format, range [0, 1].
+        in_low (float): Input black point.
+        in_high (float): Input white point.
+        in_mid (float): Input gamma (midtone).
+        out_low (float): Output black clamp.
+        out_high (float): Output white clamp.
 
     Returns:
-        numpy.ndarray: Adjusted image tensor.
+        ImageType: Adjusted image in float32 format, range [0, 1].
     """
 
-    # Convert points and gamma to float32 for calculations
-    black = np.array([black_point] * 3, dtype=np.float32)
-    white = np.array([white_point] * 3, dtype=np.float32)
-    mid = np.array([mid_point] * 3, dtype=np.float32)
-    inGamma = np.array([gamma] * 3, dtype=np.float32)
-    outBlack = np.array([0, 0, 0], dtype=np.float32)
-    outWhite = np.array([255, 255, 255], dtype=np.float32)
+    # Separate alpha channel if it exists
+    has_alpha = image.ndim == 3 and image.shape[2] == 4
+    if has_alpha:
+        alpha = image[..., 3:]
+        image = image[..., :3]
 
-    # Apply levels adjustment
-    image = np.clip((image - black) / (white - black), 0, 1)
-    image = (image - mid) / (1.0 - mid)
-    image = (image ** (1 / inGamma)) * (outWhite - outBlack) + outBlack
-    return np.clip(image, 0, 255).astype(np.uint8)
+    # Ensure image is float32 and in 0–1 range
+    image = image.astype(np.float32) / 255.0
 
+    # Normalize input range
+    scale = max(in_high - in_low, 1e-6)
+    image = (image - in_low) / scale
+    image = np.clip(image, 0.0, 1.0)
+
+    # Apply gamma (midtone)
+    in_mid = max(in_mid, 1e-6)
+    gamma = 1.0 / in_mid
+    image = np.power(image, gamma)
+
+    # Scale to output range
+    image = image * (out_high - out_low) + out_low
+    image = np.clip(image, 0, 1)
+    image = (image * 255).round().astype(np.uint8)
+
+    # Recombine alpha if present
+    if has_alpha:
+        return np.concatenate([image, alpha], axis=2)
+    return image
 
 def image_mask_binary(image: ImageType) -> ImageType:
     """
@@ -240,16 +256,16 @@ def image_split(image: ImageType) -> tuple[ImageType, ...]:
     h, w = image.shape[:2]
 
     # Grayscale image
+    a = np.full((h, w, 1), 255, dtype=image.dtype)
     if image.ndim == 2 or image.shape[2] == 1:
         r = g = b = image
-        a = np.full((h, w), 255, dtype=image.dtype)
-
-    # BGR image
-    elif image.shape[2] == 3:
-        r, g, b = cv2.split(image)
-        a = np.full((h, w), 255, dtype=image.dtype)
+    # RGB(A) image
     else:
-        r, g, b, a = cv2.split(image)
+        r = image[:, :, 0]
+        g = image[:, :, 1]
+        b = image[:, :, 2]
+        if image.shape[2] == 4:
+            a = image[:, :, 3]
     return r, g, b, a
 
 def image_stacker(image_list: List[ImageType],

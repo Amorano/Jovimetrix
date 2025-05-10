@@ -18,9 +18,6 @@ from cozy_comfyui.node import \
     COZY_TYPE_IMAGE, \
     CozyImageNode
 
-from cozy_comfyui.image import \
-    EnumImageType
-
 from cozy_comfyui.image.crop import \
     image_crop, image_crop_center, image_crop_polygonal
 
@@ -319,7 +316,7 @@ Apply various geometric transformations to images, including translation, rotati
         images = []
         pbar = ProgressBar(len(params))
         for idx, (pA, mask, offset, angle, size, edge, tile_xy, mirror, mirror_pivot, proj, strength, tltr, blbr, mode, wihi, sample, matte) in enumerate(params):
-            pA = tensor_to_cv(pA) if pA is not None else channel_solid(chan=EnumImageType.BGRA)
+            pA = tensor_to_cv(pA) if pA is not None else channel_solid()
             if mask is not None:
                 mask = tensor_to_cv(mask)
                 pA = image_mask_add(pA, mask)

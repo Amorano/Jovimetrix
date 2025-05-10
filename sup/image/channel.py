@@ -61,25 +61,24 @@ def channel_add(image:ImageType, color:PixelType=255) -> ImageType:
     return np.concatenate([image, new], axis=-1)
 
 def channel_solid(width:int=IMAGE_SIZE_MIN, height:int=IMAGE_SIZE_MIN, color:PixelType=(0, 0, 0, 255),
-                chan:EnumImageType=EnumImageType.BGR) -> ImageType:
+                chan:EnumImageType=EnumImageType.RGB) -> ImageType:
 
     if chan == EnumImageType.GRAYSCALE:
         color = pixel_eval(color, EnumImageType.GRAYSCALE)
-        what = np.full((height, width, 1), color, dtype=np.uint8)
-        return what
+        return np.full((height, width, 1), color, dtype=np.uint8)
 
     if not type(color) in [list, set, tuple]:
         color = [color]
     color += (0,) * (3 - len(color))
     if chan in [EnumImageType.BGR, EnumImageType.RGB]:
-        if chan == EnumImageType.RGB:
+        if chan == EnumImageType.BGR:
             color = color[2::-1]
         return np.full((height, width, 3), color[:3], dtype=np.uint8)
 
     if len(color) < 4:
         color += (255,)
 
-    if chan == EnumImageType.RGBA:
+    if chan == EnumImageType.BGRA:
         color = color[2::-1]
     return np.full((height, width, 4), color, dtype=np.uint8)
 
@@ -95,8 +94,8 @@ def channel_merge(channels: List[ImageType]) -> ImageType:
             continue
 
         h, w = channel.shape[:2]
-        if channel.ndim > 2:
-            channel = channel[..., 0]
+        if channel.ndim == 3 and channel.shape[2] == 1:
+            channel = channel[:, :, 0]
 
         pad_top = (max_height - h) // 2
         pad_bottom = max_height - h - pad_top

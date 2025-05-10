@@ -22,16 +22,15 @@ from cozy_comfyui.image import \
     EnumImageType
 
 from cozy_comfyui.image.convert import \
-    image_mask, image_convert, tensor_to_cv, cv_to_tensor_full
+    tensor_to_cv, cv_to_tensor_full
 
 from cozy_comfyui.image.misc import \
     image_stack
 
 from ..sup.image.adjust import \
-    image_contrast, image_equalize, image_gamma,  \
+    image_contrast, image_brightness, image_equalize, image_gamma,  \
     image_hsv, image_invert, image_pixelate, image_posterize, \
-    image_quantize, image_sharpen, \
-    morph_edge_detect, morph_emboss
+    image_quantize, image_sharpen, morph_edge_detect, morph_emboss
 
 from ..sup.image.channel import \
     channel_solid
@@ -40,7 +39,6 @@ from ..sup.image.compose import \
     image_levels, image_blend
 
 JOV_CATEGORY = "ADJUST"
-
 
 # ==============================================================================
 # === ENUMERATION ===
@@ -62,14 +60,17 @@ class EnumAdjustEdge(Enum):
     OPEN = 70
     CLOSE = 80
 
+class EnumAdjustLight(Enum):
+    BRIGHTNESS = 10
+    CONTRAST = 20
+    EQUALIZE = 30
+    EXPOSURE = 40
+    GAMMA = 50
+
 class EnumAdjustPixel(Enum):
     PIXELATE = 10
     QUANTIZE = 20
     POSTERIZE = 30
-
-class EnumAdjustLight(Enum):
-    CONTRAST = 10
-    GAMMA = 20
 
 # ==============================================================================
 # === CLASS ===
@@ -140,7 +141,7 @@ Advanced options include pixelation, quantization, and morphological operations 
         images = []
         pbar = ProgressBar(len(params))
         for idx, (pA, mask, op, radius, val, edges, level, equalize, hsv, contrast, gamma, matte, invert) in enumerate(params):
-            pA = tensor_to_cv(pA) if pA is not None else channel_solid(chan=EnumImageType.BGR)
+            pA = tensor_to_cv(pA) if pA is not None else channel_solid()
             img_new = image_convert(pA, 3)
 
             match op:
@@ -211,7 +212,7 @@ Advanced options include pixelation, quantization, and morphological operations 
             img_new = image_levels(img_new, l, h, m, gamma)
 
             if contrast != 0:
-                img_new = image_contrast(img_new, 1. - contrast)
+                img_new = image_contrast(img_new, contrast)
 
             if gamma != 0:
                 img_new = image_gamma(img_new, gamma)
@@ -233,7 +234,7 @@ Advanced options include pixelation, quantization, and morphological operations 
         return image_stack(images)
 '''
 
-class BlurAdjustNode(CozyImageNode):
+class AdjustBlurNode(CozyImageNode):
     NAME = "BLUR (JOV)"
     CATEGORY = JOV_CATEGORY
     DESCRIPTION = """
@@ -288,7 +289,7 @@ Enhance and modify images with various blur effects.
             pbar.update_absolute(idx)
         return image_stack(images)
 
-class EdgeAdjustNode(CozyImageNode):
+class AdjustEdgeNode(CozyImageNode):
     NAME = "EDGE (JOV)"
     CATEGORY = JOV_CATEGORY
     DESCRIPTION = """
@@ -363,7 +364,125 @@ Enhanced edge detection.
             pbar.update_absolute(idx)
         return image_stack(images)
 
-class PixelAdjustNode(CozyImageNode):
+class AdjustLevelNode(CozyImageNode):
+    NAME = "LEVELS (JOV)"
+    CATEGORY = JOV_CATEGORY
+    DESCRIPTION = """
+
+"""
+
+    @classmethod
+    def INPUT_TYPES(cls) -> InputType:
+        d = super().INPUT_TYPES()
+        d = deep_merge(d, {
+            "optional": {
+                Lexicon.IMAGE: (COZY_TYPE_IMAGE, {}),
+                Lexicon.MASK: (COZY_TYPE_IMAGE, {}),
+                Lexicon.LMH: ("VEC3", {
+                    "default": (0,0.5,1), "mij": 0, "maj": 1., "step": 0.01,
+                    "label": ["LOW", "MID", "HIGH"]}),
+                Lexicon.RANGE: ("VEC2", {
+                    "default": (0, 1), "mij": 0, "maj": 1., "step": 0.01,
+                    "label": ["IN", "OUT"]})
+            }
+        })
+        return Lexicon._parse(d)
+
+    def run(self, **kw) -> RGBAMaskType:
+        pA = parse_param(kw, Lexicon.IMAGE, EnumConvertType.IMAGE, None)
+        mask = parse_param(kw, Lexicon.MASK, EnumConvertType.MASK, None)
+        LMH = parse_param(kw, Lexicon.LMH, EnumConvertType.VEC3, (0,0.5,1))
+        inout = parse_param(kw, Lexicon.RANGE, EnumConvertType.VEC2, (0,1))
+
+        params = list(zip_longest_fill(pA, mask, LMH, inout))
+        images = []
+        pbar = ProgressBar(len(params))
+        for idx, (pA, mask, LMH, inout) in enumerate(params):
+            pA = channel_solid() if pA is None else tensor_to_cv(pA)
+            height, width = pA.shape[:2]
+            mask = channel_solid(width, height, 255) if mask is None else tensor_to_cv(mask)
+
+            '''
+            h, s, v = hsv
+            img_new = image_hsv(img_new, h, s, v)
+            '''
+            low, mid, high = LMH
+            start, end = inout
+            # mid = min(high, max(mid, low))
+            pA = image_levels(pA, low, mid, high, start, end)
+            #print(pA.shape, img_new.shape, mask.shape)
+
+            #pA = image_blend(pA, img_new, mask)
+            images.append(cv_to_tensor_full(pA))
+            pbar.update_absolute(idx)
+        return image_stack(images)
+
+class AdjustLightNode(CozyImageNode):
+    NAME = "LIGHT (JOV)"
+    CATEGORY = JOV_CATEGORY
+    DESCRIPTION = """
+
+"""
+
+    @classmethod
+    def INPUT_TYPES(cls) -> InputType:
+        d = super().INPUT_TYPES()
+        d = deep_merge(d, {
+            "optional": {
+                Lexicon.IMAGE: (COZY_TYPE_IMAGE, {}),
+                Lexicon.MASK: (COZY_TYPE_IMAGE, {}),
+                Lexicon.FUNCTION: (EnumAdjustLight._member_names_, {
+                    "default": EnumAdjustLight.CONTRAST.name,}),
+                Lexicon.VALUE: ("FLOAT", {
+                    "default": 0, "min": -1, "max": 1, "step": 0.001}),
+            }
+        })
+        return Lexicon._parse(d)
+
+    def run(self, **kw) -> RGBAMaskType:
+        pA = parse_param(kw, Lexicon.IMAGE, EnumConvertType.IMAGE, None)
+        mask = parse_param(kw, Lexicon.MASK, EnumConvertType.MASK, None)
+        op = parse_param(kw, Lexicon.FUNCTION, EnumAdjustLight, EnumAdjustLight.CONTRAST.name)
+        val = parse_param(kw, Lexicon.VALUE, EnumConvertType.FLOAT, 0)
+
+        params = list(zip_longest_fill(pA, mask, op, val))
+        images = []
+        pbar = ProgressBar(len(params))
+        for idx, (pA, mask, op, val) in enumerate(params):
+            pA = channel_solid() if pA is None else tensor_to_cv(pA)
+            height, width = pA.shape[:2]
+            mask = channel_solid(width, height, (255,255,255,255)) if mask is None else tensor_to_cv(mask)
+
+            match op:
+                case EnumAdjustLight.BRIGHTNESS:
+                    img_new = image_contrast(pA, val)
+
+                case EnumAdjustLight.CONTRAST:
+                    img_new = image_contrast(pA, val)
+
+                case EnumAdjustLight.EQUALIZE:
+                    img_new = image_equalize(pA)
+
+                case EnumAdjustLight.EXPOSURE:
+                    img_new = image_contrast(pA, val)
+
+                case EnumAdjustLight.GAMMA:
+                    img_new = image_gamma(pA, val)
+
+            '''
+            h, s, v = hsv
+            img_new = image_hsv(img_new, h, s, v)
+
+            l, m, h = level
+            img_new = image_levels(img_new, l, h, m, gamma)
+            '''
+
+            pA = image_blend(pA, img_new, mask)
+            images.append(cv_to_tensor_full(pA))
+            pbar.update_absolute(idx)
+        return image_stack(images)
+
+class AdjustPixelNode(CozyImageNode):
     NAME = "PIXEL (JOV)"
     CATEGORY = JOV_CATEGORY
     DESCRIPTION = """
@@ -407,65 +526,6 @@ class PixelAdjustNode(CozyImageNode):
 
                 case EnumAdjustPixel.POSTERIZE:
                     img_new = image_posterize(pA, val)
-
-            pA = image_blend(pA, img_new, mask)
-            images.append(cv_to_tensor_full(pA))
-            pbar.update_absolute(idx)
-        return image_stack(images)
-
-class LightAdjustNode(CozyImageNode):
-    NAME = "LIGHT (JOV)"
-    CATEGORY = JOV_CATEGORY
-    DESCRIPTION = """
-
-"""
-
-    @classmethod
-    def INPUT_TYPES(cls) -> InputType:
-        d = super().INPUT_TYPES()
-        d = deep_merge(d, {
-            "optional": {
-                Lexicon.IMAGE: (COZY_TYPE_IMAGE, {}),
-                Lexicon.MASK: (COZY_TYPE_IMAGE, {}),
-                Lexicon.FUNCTION: (EnumAdjustLight._member_names_, {
-                    "default": EnumAdjustLight.CONTRAST.name,}),
-                Lexicon.VALUE: ("FLOAT", {
-                    "default": 1, "min": 0, "step": 0.01}),
-            }
-        })
-        return Lexicon._parse(d)
-
-    def run(self, **kw) -> RGBAMaskType:
-        pA = parse_param(kw, Lexicon.IMAGE, EnumConvertType.IMAGE, None)
-        mask = parse_param(kw, Lexicon.MASK, EnumConvertType.MASK, None)
-        op = parse_param(kw, Lexicon.FUNCTION, EnumAdjustLight, EnumAdjustLight.PIXELATE.name)
-        val = parse_param(kw, Lexicon.VALUE, EnumConvertType.FLOAT, 0, 0)
-
-        params = list(zip_longest_fill(pA, mask, op, val))
-        images = []
-        pbar = ProgressBar(len(params))
-        for idx, (pA, mask, op, val) in enumerate(params):
-            pA = channel_solid() if pA is None else tensor_to_cv(pA)
-            height, width = pA.shape[:2]
-            mask = channel_solid(width, height, (255,255,255,255)) if mask is None else tensor_to_cv(mask)
-
-            match op:
-                case EnumAdjustLight.CONTRAST:
-                    img_new = image_contrast(pA, 1. - val)
-
-                case EnumAdjustLight.GAMMA:
-                    img_new = image_gamma(pA, val)
-
-            '''
-            h, s, v = hsv
-            img_new = image_hsv(img_new, h, s, v)
-
-            if equalize:
-                img_new = image_equalize(img_new)
-
-            l, m, h = level
-            img_new = image_levels(img_new, l, h, m, gamma)
-            '''
 
             pA = image_blend(pA, img_new, mask)
             images.append(cv_to_tensor_full(pA))

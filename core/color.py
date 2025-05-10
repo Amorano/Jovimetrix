@@ -20,9 +20,6 @@ from cozy_comfyui.node import \
     COZY_TYPE_IMAGE, \
     CozyBaseNode, CozyImageNode
 
-from cozy_comfyui.image import \
-    EnumImageType
-
 from cozy_comfyui.image.convert import \
     image_mask, image_mask_add, tensor_to_cv, \
     cv_to_tensor, cv_to_tensor_full
@@ -95,7 +92,7 @@ Simulate color blindness effects on images. You can select various types of colo
         images = []
         pbar = ProgressBar(len(params))
         for idx, (pA, deficiency, simulator, severity) in enumerate(params):
-            pA = channel_solid(chan=EnumImageType.BGRA) if pA is None else tensor_to_cv(pA)
+            pA = channel_solid() if pA is None else tensor_to_cv(pA)
             pA = color_blind(pA, deficiency, simulator, severity)
             images.append(cv_to_tensor_full(pA))
             pbar.update_absolute(idx)
@@ -154,7 +151,7 @@ Adjust the color scheme of one image to match another with the Color Match Node.
 
             mask = None
             if pA is None:
-                pA = channel_solid(chan=EnumImageType.BGR)
+                pA = channel_solid()
             else:
                 pA = tensor_to_cv(pA)
                 if pA.ndim == 3 and pA.shape[2] == 4:
@@ -162,7 +159,7 @@ Adjust the color scheme of one image to match another with the Color Match Node.
 
             # h, w = pA.shape[:2]
             if pB is None:
-                pB = channel_solid(chan=EnumImageType.BGR)
+                pB = channel_solid()
             else:
                 pB = tensor_to_cv(pB)
 
@@ -240,18 +237,21 @@ The top-k colors ordered from most->least used as a strip, tonal palette and 3D 
         pbar = ProgressBar(len(params) * sum(kcolors))
         for idx, (pA, kcolors, nodes, lut_height, wihi) in enumerate(params):
             if pA is None:
-                pA = channel_solid(chan=EnumImageType.BGRA)
+                pA = channel_solid()
 
             pA = tensor_to_cv(pA)
             colors = color_top_used(pA, kcolors)
 
             # size down to 1px strip then expand to 256 for full gradient
             top_colors.extend([cv_to_tensor(channel_solid(*wihi, color=c)) for c in colors])
-            lut_tonal.append(cv_to_tensor(color_lut_tonal(colors, width=pA.shape[1], height=lut_height)))
+            lut = color_lut_tonal(colors, width=pA.shape[1], height=lut_height)
+            lut_tonal.append(cv_to_tensor(lut))
             full = color_lut_full(colors, nodes)
             lut_full.append(torch.from_numpy(full))
-            lut_visualized.append(cv_to_tensor(color_lut_visualize(full, wihi[1])))
-            gradient = image_gradient_expand(color_lut_palette(colors, 1))
+            lut = color_lut_visualize(full, wihi[1])
+            lut_visualized.append(cv_to_tensor(lut))
+            palette = color_lut_palette(colors, 1)
+            gradient = image_gradient_expand(palette)
             gradient = cv2.resize(gradient, wihi)
             gradients.append(cv_to_tensor(gradient))
             pbar.update_absolute(idx)
@@ -298,7 +298,7 @@ Users can customize the angle of separation for color calculations, offering fle
         images = []
         pbar = ProgressBar(len(params))
         for idx, (img, target, user, invert) in enumerate(params):
-            img = tensor_to_cv(img) if img is not None else channel_solid(chan=EnumImageType.BGRA)
+            img = tensor_to_cv(img) if img is not None else channel_solid()
             img = color_theory(img, user, target)
             if invert:
                 img = (image_invert(s, 1) for s in img)
@@ -353,12 +353,12 @@ The gradient image will be translated into a single row lookup table.
         params = list(zip_longest_fill(pA, gradient, reverse, mode, sample, wihi, matte))
         pbar = ProgressBar(len(params))
         for idx, (pA, gradient, reverse, mode, sample, wihi, matte) in enumerate(params):
-            pA = channel_solid(chan=EnumImageType.BGR) if pA is None else tensor_to_cv(pA)
+            pA = channel_solid() if pA is None else tensor_to_cv(pA)
             mask = None
             if pA.ndim == 3 and pA.shape[2] == 4:
                 mask = image_mask(pA)
 
-            gradient = channel_solid(chan=EnumImageType.BGR) if gradient is None else tensor_to_cv(gradient)
+            gradient = channel_solid() if gradient is None else tensor_to_cv(gradient)
             pA = image_gradient_map(pA, gradient)
             if mode != EnumScaleMode.MATTE:
                 w, h = wihi

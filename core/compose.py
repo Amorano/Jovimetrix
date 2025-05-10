@@ -16,12 +16,8 @@ from cozy_comfyui.node import \
     COZY_TYPE_IMAGE, \
     CozyBaseNode, CozyImageNode
 
-from cozy_comfyui.image import \
-    EnumImageType
-
 from cozy_comfyui.image.convert import \
-    image_matte, image_convert, tensor_to_cv, \
-    cv_to_tensor, cv_to_tensor_full
+    image_mask_add, image_matte, image_convert, tensor_to_cv, cv_to_tensor, cv_to_tensor_full
 
 from cozy_comfyui.image.misc import \
     image_minmax, image_stack
@@ -121,15 +117,16 @@ Combine two input images using various blending modes, such as normal, screen, m
                 height, width = pA.shape[:2]
 
             if pA is None:
-                pA = channel_solid(width, height, matte, chan=EnumImageType.BGRA)
+                pA = channel_solid(width, height, matte,)
             else:
                 pA = tensor_to_cv(pA)
-                matted = pixel_eval(matte, EnumImageType.BGRA)
+                matted = pixel_eval(matte)
+                print("matted", matted)
                 pA = image_matte(pA, matted)
 
             if pB is None:
                 clear = list(matte[:3]) + [0]
-                pB = channel_solid(width, height, clear, chan=EnumImageType.BGRA)
+                pB = channel_solid(width, height, clear)
             else:
                 pB = tensor_to_cv(pB)
 
@@ -145,12 +142,8 @@ Combine two input images using various blending modes, such as normal, screen, m
                     imgs += [mask]
 
                 _, w, h = image_by_size(imgs)
-                print(w, h)
                 pA = image_scalefit(pA, w, h, inputMode, sample, matte)
                 pB = image_scalefit(pB, w, h, inputMode, sample, matte)
-
-                print(pA.shape)
-                print(pB.shape)
 
                 #if mask is not None:
                 #    mask = image_scalefit(mask, w, h, inputMode, sample)
@@ -228,7 +221,7 @@ class PixelMergeNode(CozyImageNode):
     CATEGORY = JOV_CATEGORY
     SORT = 45
     DESCRIPTION = """
-Combines individual color channels (red, green, blue) along with an optional mask channel to create a composite image. This node is useful for merging separate color components into a single image for visualization or further processing.
+Combines individual color channels (red, green, blue) along with an optional mask channel to create a composite image.
 """
 
     @classmethod
@@ -241,17 +234,10 @@ Combines individual color channels (red, green, blue) along with an optional mas
                 Lexicon.CHAN_GREEN: (COZY_TYPE_IMAGE, {}),
                 Lexicon.CHAN_BLUE: (COZY_TYPE_IMAGE, {}),
                 Lexicon.CHAN_ALPHA: (COZY_TYPE_IMAGE, {}),
-                Lexicon.MODE: (EnumScaleMode._member_names_, {
-                    "default": EnumScaleMode.MATTE.name,}),
-                Lexicon.WH: ("VEC2", {
-                    "default": (512, 512), "mij":IMAGE_SIZE_MIN, "int": True,
-                    "label": ["W", "H"],}),
-                Lexicon.SAMPLE: (EnumInterpolation._member_names_, {
-                    "default": EnumInterpolation.LANCZOS4.name,}),
                 Lexicon.MATTE: ("VEC4", {
                     "default": (0, 0, 0, 255), "rgb": True,}),
                 Lexicon.FLIP: ("VEC4", {
-                    "default": (0,0,0,0), "mij":0, "maj":1,
+                    "default": (0,0,0,0), "mij":0, "maj":1, "step": 0.01,
                     "tooltip": "Invert specific input prior to merging. R, G, B, A."}),
                 Lexicon.INVERT: ("BOOLEAN", {
                     "default": False,})
@@ -265,16 +251,13 @@ Combines individual color channels (red, green, blue) along with an optional mas
         G = parse_param(kw, Lexicon.CHAN_GREEN, EnumConvertType.MASK, None)
         B = parse_param(kw, Lexicon.CHAN_BLUE, EnumConvertType.MASK, None)
         A = parse_param(kw, Lexicon.CHAN_ALPHA, EnumConvertType.MASK, None)
-        mode = parse_param(kw, Lexicon.MODE, EnumScaleMode, EnumScaleMode.MATTE.name)
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (512, 512), IMAGE_SIZE_MIN)
-        sample = parse_param(kw, Lexicon.SAMPLE, EnumInterpolation, EnumInterpolation.LANCZOS4.name)
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
         flip = parse_param(kw, Lexicon.FLIP, EnumConvertType.VEC4, (0, 0, 0, 0), 0., 1.)
         invert = parse_param(kw, Lexicon.INVERT, EnumConvertType.BOOLEAN, False)
-        params = list(zip_longest_fill(rgba, R, G, B, A, mode, wihi, sample, matte, flip, invert))
+        params = list(zip_longest_fill(rgba, R, G, B, A, matte, flip, invert))
         images = []
         pbar = ProgressBar(len(params))
-        for idx, (rgba, r, g, b, a, mode, wihi, sample, matte, flip, invert) in enumerate(params):
+        for idx, (rgba, r, g, b, a, matte, flip, invert) in enumerate(params):
             replace = r, g, b, a
             if rgba is not None:
                 rgba = tensor_to_cv(rgba)
@@ -287,22 +270,19 @@ Combines individual color channels (red, green, blue) along with an optional mas
             _, _, w_max, h_max = image_minmax(img)
             for i, x in enumerate(img):
                 if x is None:
-                    x = np.full((h_max, w_max), matte[i], dtype=np.uint8)
+                    x = np.full((h_max, w_max, 1), matte[i], dtype=np.uint8)
                 else:
+                    x = image_convert(x, 1)
                     x = image_scalefit(x, w_max, h_max, EnumScaleMode.ASPECT)
-                if flip[i] > 0:
+
+                if flip[i] != 0:
                     x = image_invert(x, flip[i])
                 img[i] = x
 
             img = channel_merge(img)
-            # img = image_invert(img, 1)
 
-            if mode != EnumScaleMode.MATTE:
-                w, h = wihi
-                img = image_scalefit(img, w, h, mode, sample)
-
-            if invert == True:
-                img = image_invert(img, 1)
+            #if invert == True:
+            #    img = image_invert(img, 1)
 
             images.append(cv_to_tensor_full(img, matte))
             pbar.update_absolute(idx)
@@ -321,7 +301,7 @@ class PixelSplitNode(CozyBaseNode):
     )
     SORT = 40
     DESCRIPTION = """
-Takes an input image and splits it into its individual color channels (red, green, blue), along with a mask channel. This node is useful for separating different color components of an image for further processing or analysis.
+Split an input into individual color channels (red, green, blue, alpha).
 """
 
     @classmethod
@@ -329,17 +309,22 @@ Takes an input image and splits it into its individual color channels (red, gree
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                Lexicon.IMAGE: (COZY_TYPE_IMAGE, {})
+                Lexicon.IMAGE: (COZY_TYPE_IMAGE, {}),
+                Lexicon.MASK: (COZY_TYPE_IMAGE, {})
             }
         })
         return Lexicon._parse(d)
 
     def run(self, **kw) -> RGBAMaskType:
-        images = []
         pA = parse_param(kw, Lexicon.IMAGE, EnumConvertType.IMAGE, None)
-        pbar = ProgressBar(len(pA))
-        for idx, pA in enumerate(pA):
-            pA = channel_solid(chan=EnumImageType.BGRA) if pA is None else tensor_to_cv(pA)
+        mask = parse_param(kw, Lexicon.MASK, EnumConvertType.MASK, None)
+        params = list(zip_longest_fill(pA, mask))
+        images = []
+        pbar = ProgressBar(len(params))
+        for idx, (pA, mask) in enumerate(params):
+            pA = channel_solid() if pA is None else image_convert(tensor_to_cv(pA), 4)
+            if mask is not None:
+                pA = image_mask_add(pA)
             images.append([cv_to_tensor(x, True) for x in image_split(pA)])
             pbar.update_absolute(idx)
         return image_stack(images)
@@ -387,19 +372,19 @@ Swap pixel values between two input images based on specified channel swizzle op
         for idx, (pA, pB, swap_r, swap_g, swap_b, swap_a, matte) in enumerate(params):
             if pA is None:
                 if pB is None:
-                    out = channel_solid(chan=EnumImageType.BGRA)
+                    out = channel_solid()
                     images.append(cv_to_tensor_full(out))
                     pbar.update_absolute(idx)
                     continue
 
                 h, w = pB.shape[:2]
-                pA = channel_solid(w, h, chan=EnumImageType.BGRA)
+                pA = channel_solid(w, h)
             else:
                 h, w = pA.shape[:2]
                 pA = tensor_to_cv(pA)
                 pA = image_convert(pA, 4)
 
-            pB = tensor_to_cv(pB) if pB is not None else channel_solid(w, h, chan=EnumImageType.BGRA)
+            pB = tensor_to_cv(pB) if pB is not None else channel_solid(w, h)
             pB = image_convert(pB, 4)
             pB = image_matte(pB, (0,0,0,0), w, h)
             pB = image_scalefit(pB, w, h, EnumScaleMode.CROP)
@@ -449,7 +434,7 @@ Define a range and apply it to an image for segmentation and feature extraction.
         images = []
         pbar = ProgressBar(len(params))
         for idx, (pA, mode, adapt, th, block, invert) in enumerate(params):
-            pA = tensor_to_cv(pA) if pA is not None else channel_solid(chan=EnumImageType.BGRA)
+            pA = tensor_to_cv(pA) if pA is not None else channel_solid()
             pA = image_threshold(pA, th, mode, adapt, block)
             if invert == True:
                 pA = image_invert(pA, 1)

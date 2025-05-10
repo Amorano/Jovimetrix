@@ -12,7 +12,7 @@ from cozy_comfyui import \
 
 from cozy_comfyui.image import \
     PixelType, \
-    Coord2D_Float, EnumImageType, ImageType
+    Coord2D_Float, ImageType
 
 from cozy_comfyui.image.convert import \
     ImageType, \
@@ -95,10 +95,50 @@ class EnumThresholdAdapt(Enum):
 # === IMAGE ===
 # ==============================================================================
 
-def image_contrast(image: ImageType, value: float) -> ImageType:
-    mean_value = np.mean(image)
-    image = (image - mean_value) * value + mean_value
-    return np.clip(image, 0, 255).astype(np.uint8)
+def image_brightness(image: ImageType, brightness: float=0):
+
+    if brightness != 0:
+        brightness = np.clip(brightness, -1, 1) * 255
+        if brightness > 0:
+            shadow = brightness
+            highlight = 255
+        else:
+            shadow = 0
+            highlight = 255 + brightness
+        alpha_b = (highlight - shadow)/255
+        gamma_b = shadow
+
+        image = cv2.addWeighted(image, alpha_b, image, 0, gamma_b)
+    return image
+
+def image_contrast(image: ImageType, contrast: float) -> ImageType:
+    # Map contrast from [-255, 255] to factor
+    contrast = np.clip(contrast, -1, 1) * 255
+    factor = (255 * (contrast + 255)) / (255 * (255 - contrast))
+
+    def image_contrast_rgb(lab: ImageType) -> ImageType:
+        """Adjust contrast in RGB image using LAB color space and standard contrast scaling."""
+        lab = cv2.cvtColor(lab, cv2.COLOR_RGB2LAB)
+        L, A, B = cv2.split(lab)
+        L = L.astype(np.float32)
+        L = factor * (L - 128) + 128
+        L = np.clip(L, 0, 255).astype(np.uint8)
+        lab = cv2.merge([L, A, B])
+        return cv2.cvtColor(lab, cv2.COLOR_LAB2RGB)
+
+    # Grayscale
+    if image.ndim == 2 or (image.ndim == 3 and image.shape[2] == 1):
+        img = image.astype(np.float32)
+        img = factor * (img - 128) + 128
+        return np.clip(img, 0, 255).astype(np.uint8)
+    # RGB
+    elif image.shape[2] == 3:
+        return image_contrast_rgb(image)
+    # RGBA
+    rgb = image[..., :3]
+    alpha = image[..., 3:]
+    rgb = image_contrast_rgb(rgb)
+    return np.concatenate([rgb, alpha], axis=2)
 
 def image_edge_wrap(image: ImageType, tileX: float=1., tileY: float=1.,
                     edge:EnumEdge=EnumEdge.WRAP) -> ImageType:
@@ -109,9 +149,9 @@ def image_edge_wrap(image: ImageType, tileX: float=1., tileY: float=1.,
     return cv2.copyMakeBorder(image, tileY, tileY, tileX, tileX, cv2.BORDER_WRAP)
 
 def image_equalize(image:ImageType) -> ImageType:
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
     image = cv2.equalizeHist(image)
-    image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
+    image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
     return image
 
 def image_exposure(image: ImageType, value: float) -> ImageType:
@@ -192,12 +232,12 @@ def image_flatten(image: List[ImageType], width:int=None, height:int=None,
         current = cv2.add(current, x)
     return current
 
-def image_gamma(image: ImageType, value: float) -> ImageType:
-    if value <= 0:
+def image_gamma(image: ImageType, gamma: float) -> ImageType:
+    if gamma <= 0:
         return np.zeros_like(image, dtype=np.uint8)
 
-    inv_gamma = 1.0 / max(1e-6, value)
-    table = np.power(np.linspace(0, 1, 256), inv_gamma) * 255
+    gamma = 1.0 / max(1e-6, gamma)
+    table = np.power(np.linspace(0, 1, 256), gamma) * 255
     lookup_table = np.clip(table, 0, 255).astype(np.uint8)
     return cv2.LUT(image, lookup_table)
 
@@ -221,19 +261,19 @@ def image_histogram_normalize(image:ImageType)-> ImageType:
     return np.reshape(flatEqualizedImage, image.shape)
 
 def image_hsv(image: ImageType, hue: float, saturation: float, value: float) -> ImageType:
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+    image = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
     hue *= 255
     image[:, :, 0] = (image[:, :, 0] + hue) % 180
     image[:, :, 1] = np.clip(image[:, :, 1] * saturation, 0, 255)
     image[:, :, 2] = np.clip(image[:, :, 2] * value, 0, 255)
-    return cv2.cvtColor(image, cv2.COLOR_HSV2BGR)
+    return cv2.cvtColor(image, cv2.COLOR_HSV2RGB)
 
 def image_invert(image: ImageType, value: float) -> ImageType:
     """
-    Invert an Grayscale, RGB or RGBA image using a specified inversion intensity.
+    Invert a Grayscale, RGB, or RGBA image using a specified inversion intensity.
 
     Parameters:
-    - image: Input image as a NumPy array (RGB or RGBA).
+    - image: Input image as a NumPy array (grayscale, RGB, or RGBA).
     - value: Float between 0 and 1 representing the intensity of inversion (0: no inversion, 1: full inversion).
 
     Returns:
@@ -241,16 +281,18 @@ def image_invert(image: ImageType, value: float) -> ImageType:
     """
     # Clip the value to be within [0, 1] and scale to [0, 255]
     value = np.clip(value, 0, 1)
+
+    # RGBA
     if image.ndim == 3 and image.shape[2] == 4:
         rgb = image[:, :, :3]
         alpha = image[:, :, 3]
-        mask = alpha > 0
         inverted_rgb = 255 - rgb
-        image = np.where(mask[:, :, None], (1 - value) * rgb + value * inverted_rgb, rgb)
-        return np.dstack((image.astype(np.uint8), alpha))
+        blended_rgb = ((1 - value) * rgb + value * inverted_rgb).astype(np.uint8)
+        return np.dstack((blended_rgb, alpha))
 
-    inverted_image = 255 - image
-    return ((1 - value) * image + value * inverted_image).astype(np.uint8)
+    # Grayscale & RGB
+    inverted = 255 - image
+    return ((1 - value) * image + value * inverted).astype(np.uint8)
 
 def image_mirror(image: ImageType, mode:EnumMirrorMode, x:float=0.5,
                  y:float=0.5) -> ImageType:
@@ -405,8 +447,8 @@ def image_scalefit(image: ImageType, width: int, height:int,
         case EnumScaleMode.FIT:
             image = cv2.resize(image, (width, height), interpolation=sample.value)
 
-    if image.ndim == 2:
-        image = np.expand_dims(image, -1)
+    #if image.ndim == 2:
+    #    image = np.expand_dims(image, -1)
     return image
 
 def image_sharpen(image:ImageType, kernel_size=None, sigma:float=1.0,
@@ -436,7 +478,7 @@ def image_swap_channels(imgA:ImageType, imgB:ImageType,
     imgB = image_scalefit(imgB, w, h, EnumScaleMode.CROP)
 
     matte = (matte[2], matte[1], matte[0], matte[3])
-    out = channel_solid(w, h, matte, EnumImageType.BGRA)
+    out = channel_solid(w, h, matte)
     swap_out = (EnumPixelSwizzle.RED_A,EnumPixelSwizzle.GREEN_A,
                 EnumPixelSwizzle.BLUE_A,EnumPixelSwizzle.ALPHA_A)
 
@@ -458,9 +500,9 @@ def image_threshold(image:ImageType, threshold:float=0.5,
     const = max(-100, min(100, const))
     block = max(3, block if block % 2 == 1 else block + 1)
     if adapt != EnumThresholdAdapt.ADAPT_NONE:
-        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
         gray = cv2.adaptiveThreshold(gray, 255, adapt.value, cv2.THRESH_BINARY, block, const)
-        gray = cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
+        gray = cv2.cvtColor(gray, cv2.COLOR_GRAY2RGB)
         # gray = np.stack([gray, gray, gray], axis=-1)
         image = cv2.bitwise_and(image, gray)
     else:
@@ -525,7 +567,7 @@ def morph_edge_detect(image: ImageType,
                     low: float=0.27,
                     high:float=0.6) -> ImageType:
 
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    #image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     ksize = max(3, ksize)
     image = cv2.GaussianBlur(src=image, ksize=(ksize, ksize+2), sigmaX=0.5)
     # Perform Canny edge detection

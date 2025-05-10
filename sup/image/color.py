@@ -18,9 +18,13 @@ from cozy_comfyui.image import \
 
 from cozy_comfyui.image.convert import \
     ImageType, \
-    image_mask, image_mask_add, image_convert, hsv_to_bgr, bgr_to_hsv
+    image_mask, image_mask_add, image_convert
 
-from .compose import image_blend
+from cozy_comfyui.image.convert import \
+    image_grayscale
+
+from .compose import \
+    image_blend
 
 # ==============================================================================
 # === TYPE ===
@@ -158,7 +162,7 @@ def linear2sRGB(image: ImageType) -> ImageType:
 # ==============================================================================
 
 def pixel_eval(color: PixelType,
-            target: EnumImageType=EnumImageType.BGR,
+            target: EnumImageType=EnumImageType.RGBA,
             precision:EnumIntFloat=EnumIntFloat.INT,
             crunch:EnumGrayscaleCrunch=EnumGrayscaleCrunch.MEAN) -> tuple[PixelType] | PixelType:
     """Evaluates R(GB)(A) pixels in range (0-255) into target target pixel type."""
@@ -568,57 +572,63 @@ def color_top_used(image: ImageType, top_n: int=8) -> List[tuple[int, int, int]]
 # === COLOR ANALYSIS ===
 # ==============================================================================
 
+def rgb_to_hsv(bgr_color: PixelType) -> PixelType:
+    return cv2.cvtColor(np.uint8([[bgr_color]]), cv2.COLOR_RGB2HSV)[0, 0]
+
+def hsv_to_rgb(hsl_color: PixelType) -> PixelType:
+    return cv2.cvtColor(np.uint8([[hsl_color]]), cv2.COLOR_HSV2RGB)[0, 0]
+
 def color_theory_complementary(color: PixelType) -> PixelType:
-    color = bgr_to_hsv(color)
+    color = rgb_to_hsv(color)
     color_a = pixel_hsv_adjust(color, 90, 0, 0)
-    return hsv_to_bgr(color_a)
+    return hsv_to_rgb(color_a)
 
 def color_theory_monochromatic(color: PixelType) -> tuple[PixelType, ...]:
-    color = bgr_to_hsv(color)
+    color = rgb_to_hsv(color)
     sat = 255 / 5
     val = 255 / 5
     color_a = pixel_hsv_adjust(color, 0, -1 * sat, -1 * val, mod_sat=True, mod_value=True)
     color_b = pixel_hsv_adjust(color, 0, -2 * sat, -2 * val, mod_sat=True, mod_value=True)
     color_c = pixel_hsv_adjust(color, 0, -3 * sat, -3 * val, mod_sat=True, mod_value=True)
     color_d = pixel_hsv_adjust(color, 0, -4 * sat, -4 * val, mod_sat=True, mod_value=True)
-    return hsv_to_bgr(color_a), hsv_to_bgr(color_b), hsv_to_bgr(color_c), hsv_to_bgr(color_d)
+    return hsv_to_rgb(color_a), hsv_to_rgb(color_b), hsv_to_rgb(color_c), hsv_to_rgb(color_d)
 
 def color_theory_split_complementary(color: PixelType) -> tuple[PixelType, ...]:
-    color = bgr_to_hsv(color)
+    color = rgb_to_hsv(color)
     color_a = pixel_hsv_adjust(color, 75, 0, 0)
     color_b = pixel_hsv_adjust(color, 105, 0, 0)
-    return hsv_to_bgr(color_a), hsv_to_bgr(color_b)
+    return hsv_to_rgb(color_a), hsv_to_rgb(color_b)
 
 def color_theory_analogous(color: PixelType) -> tuple[PixelType, ...]:
-    color = bgr_to_hsv(color)
+    color = rgb_to_hsv(color)
     color_a = pixel_hsv_adjust(color, 30, 0, 0)
     color_b = pixel_hsv_adjust(color, 15, 0, 0)
     color_c = pixel_hsv_adjust(color, 165, 0, 0)
     color_d = pixel_hsv_adjust(color, 150, 0, 0)
-    return hsv_to_bgr(color_a), hsv_to_bgr(color_b), hsv_to_bgr(color_c), hsv_to_bgr(color_d)
+    return hsv_to_rgb(color_a), hsv_to_rgb(color_b), hsv_to_rgb(color_c), hsv_to_rgb(color_d)
 
 def color_theory_triadic(color: PixelType) -> tuple[PixelType, ...]:
-    color = bgr_to_hsv(color)
+    color = rgb_to_hsv(color)
     color_a = pixel_hsv_adjust(color, 60, 0, 0)
     color_b = pixel_hsv_adjust(color, 120, 0, 0)
-    return hsv_to_bgr(color_a), hsv_to_bgr(color_b)
+    return hsv_to_rgb(color_a), hsv_to_rgb(color_b)
 
 def color_theory_compound(color: PixelType) -> tuple[PixelType, ...]:
-    color = bgr_to_hsv(color)
+    color = rgb_to_hsv(color)
     color_a = pixel_hsv_adjust(color, 90, 0, 0)
     color_b = pixel_hsv_adjust(color, 120, 0, 0)
     color_c = pixel_hsv_adjust(color, 150, 0, 0)
-    return hsv_to_bgr(color_a), hsv_to_bgr(color_b), hsv_to_bgr(color_c)
+    return hsv_to_rgb(color_a), hsv_to_rgb(color_b), hsv_to_rgb(color_c)
 
 def color_theory_square(color: PixelType) -> tuple[PixelType, ...]:
-    color = bgr_to_hsv(color)
+    color = rgb_to_hsv(color)
     color_a = pixel_hsv_adjust(color, 45, 0, 0)
     color_b = pixel_hsv_adjust(color, 90, 0, 0)
     color_c = pixel_hsv_adjust(color, 135, 0, 0)
-    return hsv_to_bgr(color_a), hsv_to_bgr(color_b), hsv_to_bgr(color_c)
+    return hsv_to_rgb(color_a), hsv_to_rgb(color_b), hsv_to_rgb(color_c)
 
 def color_theory_tetrad_custom(color: PixelType, delta:int=0) -> tuple[PixelType, ...]:
-    color = bgr_to_hsv(color)
+    color = rgb_to_hsv(color)
 
     # modulus on neg and pos
     while delta < 0:
@@ -632,7 +642,7 @@ def color_theory_tetrad_custom(color: PixelType, delta:int=0) -> tuple[PixelType
     # just gimme a compliment
     color_c = pixel_hsv_adjust(color, 90 - delta, 0, 0)
     color_d = pixel_hsv_adjust(color, 90 + delta, 0, 0)
-    return hsv_to_bgr(color_a), hsv_to_bgr(color_b), hsv_to_bgr(color_c), hsv_to_bgr(color_d)
+    return hsv_to_rgb(color_a), hsv_to_rgb(color_b), hsv_to_rgb(color_c), hsv_to_rgb(color_d)
 
 def color_theory(image: ImageType, custom:int=0, scheme: EnumColorTheory=EnumColorTheory.COMPLIMENTARY) -> tuple[ImageType, ...]:
 
@@ -684,26 +694,3 @@ def image_gradient_map(image:ImageType, color_map:ImageType, reverse:bool=False)
     gray = image_grayscale(image)
     color_map = image_gradient_expand(color_map)
     return cv2.applyColorMap(gray, color_map)
-
-def image_grayscale(image: ImageType, use_alpha: bool = False) -> ImageType:
-    """Convert image to grayscale, optionally using the alpha channel if present.
-
-    Args:
-        image (ImageType): Input image, potentially with multiple channels.
-        use_alpha (bool): If True and the image has 4 channels, multiply the grayscale
-                          values by the alpha channel. Defaults to False.
-
-    Returns:
-        ImageType: Grayscale image, optionally alpha-multiplied.
-    """
-    if image.ndim == 2 or image.shape[2] == 1:
-        return image
-
-    if image.shape[2] == 4:
-        grayscale = cv2.cvtColor(image, cv2.COLOR_BGRA2GRAY)
-        if use_alpha:
-            alpha_channel = image[:, :, 3] / 255.0
-            grayscale = (grayscale * alpha_channel).astype(np.uint8)
-        return grayscale
-
-    return cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
