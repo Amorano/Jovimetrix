@@ -35,9 +35,13 @@ from cozy_comfyui.image.mask import \
 from cozy_comfyui.image.misc import \
     image_stack
 
-from ..sup.image.mapping import \
+from cozy_comfyui.image.mapping import \
     EnumProjection, \
     remap_fisheye, remap_perspective, remap_polar, remap_sphere
+
+# ==============================================================================
+# === GLOBAL ===
+# ==============================================================================
 
 JOV_CATEGORY = "TRANSFORM"
 

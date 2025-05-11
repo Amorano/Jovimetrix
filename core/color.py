@@ -23,6 +23,13 @@ from cozy_comfyui.node import \
 from cozy_comfyui.image.adjust import \
     image_invert
 
+from cozy_comfyui.image.color import \
+    EnumCBDeficiency, EnumCBSimulator, EnumColorMap, EnumColorTheory, \
+    color_lut_full, color_lut_match, color_lut_palette, \
+    color_lut_tonal, color_lut_visualize, color_match_reinhard, \
+    color_theory, color_blind, color_top_used, image_gradient_expand, \
+    image_gradient_map
+
 from cozy_comfyui.image.channel import \
     channel_solid
 
@@ -39,12 +46,9 @@ from cozy_comfyui.image.mask import \
 from cozy_comfyui.image.misc import \
     image_stack
 
-from ..sup.image.color import \
-    EnumCBDeficiency, EnumCBSimulator, EnumColorMap, EnumColorTheory, \
-    color_lut_full, color_lut_match, color_lut_palette, \
-    color_lut_tonal, color_lut_visualize, color_match_reinhard, \
-    color_theory, color_blind, color_top_used, image_gradient_expand, \
-    image_gradient_map
+# ==============================================================================
+# === GLOBAL ===
+# ==============================================================================
 
 JOV_CATEGORY = "COLOR"
 

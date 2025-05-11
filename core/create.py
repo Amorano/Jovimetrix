@@ -44,9 +44,13 @@ from cozy_comfyui.image.shape import \
     EnumShapes, \
     shape_ellipse, shape_polygon, shape_quad
 
-from ..sup.text import \
+from cozy_comfyui.image.text import \
     EnumAlignment, EnumJustify, \
     font_names, text_autosize, text_draw
+
+# ==============================================================================
+# === GLOBAL ===
+# ==============================================================================
 
 JOV_CATEGORY = "CREATE"
 
