@@ -14,17 +14,23 @@ from blendmodes.blend import BlendType
 
 from cozy_comfyui.image import \
     PixelType, \
-    EnumImageType, ImageType
+    ImageType
+
+from cozy_comfyui.image.compose import \
+    image_blend
 
 from cozy_comfyui.image.convert import \
     ImageType, \
-    image_mask, image_mask_add, image_convert
+    image_convert, image_grayscale
 
-from cozy_comfyui.image.convert import \
-    image_grayscale
+from cozy_comfyui.image.mask import \
+    image_mask, image_mask_add
 
-from .compose import \
-    image_blend
+from cozy_comfyui.image.pixel import \
+    pixel_hsv_adjust
+
+from cozy_comfyui.image.space import \
+    rgb_to_hsv, hsv_to_rgb
 
 # ==============================================================================
 # === TYPE ===
@@ -35,15 +41,6 @@ TYPE_LUT = tuple[int, int, int, int]
 # ==============================================================================
 # === ENUMERATION ===
 # ==============================================================================
-
-class EnumIntFloat(Enum):
-    FLOAT = 0
-    INT = 1
-
-class EnumGrayscaleCrunch(Enum):
-    LOW = 0
-    HIGH = 1
-    MEAN = 2
 
 class EnumColorMap(Enum):
     AUTUMN = cv2.COLORMAP_AUTUMN
@@ -96,141 +93,7 @@ class EnumCBSimulator(Enum):
     VISCHECK = 6
 
 # ==============================================================================
-# === COLOR SPACE CONVERSION ===
-# ==============================================================================
-
-def gamma2linear(image: ImageType) -> ImageType:
-    """Gamma correction for old PCs/CRT monitors"""
-    return np.power(image, 2.2)
-
-def linear2gamma(image: ImageType) -> ImageType:
-    """Inverse gamma correction for old PCs/CRT monitors"""
-    return np.power(np.clip(image, 0., 1.), 1.0 / 2.2)
-
-def sRGB2Linear(image: ImageType) -> ImageType:
-    """Convert sRGB to linearRGB, removing the gamma correction.
-    Works for grayscale, RGB, or RGBA images.
-    """
-    image = image.astype(float) / 255.0
-
-    # If the image has an alpha channel, separate it
-    if image.shape[-1] == 4:
-        rgb = image[..., :3]
-        alpha = image[..., 3]
-    else:
-        rgb = image
-        alpha = None
-
-    gamma = ((rgb + 0.055) / 1.055) ** 2.4
-    scale = rgb / 12.92
-    rgb = np.where(rgb > 0.04045, gamma, scale)
-
-    # Recombine the alpha channel if it exists
-    if alpha is not None:
-        image = np.concatenate((rgb, alpha[..., np.newaxis]), axis=-1)
-    else:
-        image = rgb
-    return (image * 255).astype(np.uint8)
-
-def linear2sRGB(image: ImageType) -> ImageType:
-    """Convert linearRGB to sRGB, applying the gamma correction.
-    Works for grayscale, RGB, or RGBA images.
-    """
-    image = image.astype(float) / 255.0
-
-    # If the image has an alpha channel, separate it
-    if image.shape[-1] == 4:
-        rgb = image[..., :3]
-        alpha = image[..., 3]
-    else:
-        rgb = image
-        alpha = None
-
-    higher = 1.055 * np.power(rgb, 1.0 / 2.4) - 0.055
-    lower = rgb * 12.92
-    rgb = np.where(rgb > 0.0031308, higher, lower)
-
-    # Recombine the alpha channel if it exists
-    if alpha is not None:
-        image = np.concatenate((rgb, alpha[..., np.newaxis]), axis=-1)
-    else:
-        image = rgb
-    return np.clip(image * 255.0, 0, 255).astype(np.uint8)
-
-# ==============================================================================
-# === PIXEL ===
-# ==============================================================================
-
-def pixel_eval(color: PixelType,
-            target: EnumImageType=EnumImageType.RGBA,
-            precision:EnumIntFloat=EnumIntFloat.INT,
-            crunch:EnumGrayscaleCrunch=EnumGrayscaleCrunch.MEAN) -> tuple[PixelType] | PixelType:
-    """Evaluates R(GB)(A) pixels in range (0-255) into target target pixel type."""
-
-    def parse_single_color(c: PixelType) -> PixelType:
-        if not isinstance(c, int):
-            c = np.clip(c, 0, 1)
-            if precision == EnumIntFloat.INT:
-                c = int(c * 255)
-        else:
-            c = np.clip(c, 0, 255)
-            if precision == EnumIntFloat.FLOAT:
-                c /= 255
-        return c
-
-    # make sure we are an RGBA value already
-    if isinstance(color, (float, int)):
-        color = tuple([parse_single_color(color)])
-    elif isinstance(color, (set, tuple, list)):
-        color = tuple([parse_single_color(c) for c in color])
-
-    if target == EnumImageType.GRAYSCALE:
-        alpha = 1
-        if len(color) > 3:
-            alpha = color[3]
-            if precision == EnumIntFloat.INT:
-                alpha /= 255
-            color = color[:3]
-        match crunch:
-            case EnumGrayscaleCrunch.LOW:
-                val = min(color) * alpha
-            case EnumGrayscaleCrunch.HIGH:
-                val = max(color) * alpha
-            case EnumGrayscaleCrunch.MEAN:
-                val = np.mean(color) * alpha
-        if precision == EnumIntFloat.INT:
-            val = int(val)
-        return val
-
-    if len(color) < 3:
-        color += (0,) * (3 - len(color))
-
-    if target in [EnumImageType.RGB, EnumImageType.BGR]:
-        color = color[:3]
-        if target == EnumImageType.BGR:
-            color = color[::-1]
-        return color
-
-    if len(color) < 4:
-        color += (255,)
-
-    if target == EnumImageType.BGRA:
-        color = tuple(color[2::-1]) + tuple([color[-1]])
-    return color
-
-def pixel_hsv_adjust(color:PixelType, hue:int=0, saturation:int=0, value:int=0,
-                     mod_color:bool=True, mod_sat:bool=False,
-                     mod_value:bool=False) -> PixelType:
-    """Adjust an HSV type pixel.
-    OpenCV uses... H: 0-179, S: 0-255, V: 0-255"""
-    hsv = [0, 0, 0]
-    hsv[0] = (color[0] + hue) % 180 if mod_color else np.clip(color[0] + hue, 0, 180)
-    hsv[1] = (color[1] + saturation) % 255 if mod_sat else np.clip(color[1] + saturation, 0, 255)
-    hsv[2] = (color[2] + value) % 255 if mod_value else np.clip(color[2] + value, 0, 255)
-    return hsv
-
-# ==============================================================================
-# === COLOR MATCH ===
+# === SUPPORT ===
 # ==============================================================================
 
 @cuda.jit
@@ -571,12 +434,6 @@ def color_top_used(image: ImageType, top_n: int=8) -> List[tuple[int, int, int]]
 # ==============================================================================
 # === COLOR ANALYSIS ===
 # ==============================================================================
-
-def rgb_to_hsv(bgr_color: PixelType) -> PixelType:
-    return cv2.cvtColor(np.uint8([[bgr_color]]), cv2.COLOR_RGB2HSV)[0, 0]
-
-def hsv_to_rgb(hsl_color: PixelType) -> PixelType:
-    return cv2.cvtColor(np.uint8([[hsl_color]]), cv2.COLOR_HSV2RGB)[0, 0]
 
 def color_theory_complementary(color: PixelType) -> PixelType:
     color = rgb_to_hsv(color)

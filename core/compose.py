@@ -1,6 +1,10 @@
 """ Jovimetrix - Composition """
 
+from enum import Enum
+
 import numpy as np
+from blendmodes.blend import \
+    BlendType
 
 from comfy.utils import ProgressBar
 
@@ -16,28 +20,71 @@ from cozy_comfyui.node import \
     COZY_TYPE_IMAGE, \
     CozyBaseNode, CozyImageNode
 
+from cozy_comfyui.image.adjust import \
+    EnumThreshold, EnumThresholdAdapt, \
+    image_invert, image_filter, image_threshold
+
+from cozy_comfyui.image.channel import \
+    EnumPixelSwizzle, \
+    channel_merge, channel_solid, channel_swap
+
+from cozy_comfyui.image.compose import \
+    image_split, image_blend
+
 from cozy_comfyui.image.convert import \
-    image_mask_add, image_matte, image_convert, tensor_to_cv, cv_to_tensor, cv_to_tensor_full
+    image_convert, tensor_to_cv, cv_to_tensor, cv_to_tensor_full
+
+from cozy_comfyui.image.mask import \
+    image_mask_add, image_matte
 
 from cozy_comfyui.image.misc import \
-    image_minmax, image_stack
+    image_by_size, image_minmax, image_stack
 
-from ..sup.image.color import \
+from cozy_comfyui.image.pixel import \
     pixel_eval
 
-from ..sup.image.adjust import \
-    EnumScaleMode, EnumScaleInputMode, EnumInterpolation, EnumThreshold, EnumThresholdAdapt, \
-    image_filter, image_invert, image_scalefit,image_swap_channels, image_threshold
-
-from ..sup.image.channel import \
-    EnumPixelSwizzle, \
-    channel_merge, channel_solid
-
-from ..sup.image.compose import \
-    EnumBlendType, \
-    image_by_size, image_split, image_blend
+from cozy_comfyui.image.trans import \
+    EnumScaleMode, EnumScaleInputMode, EnumInterpolation, \
+    image_scalefit
 
 JOV_CATEGORY = "COMPOSE"
+
+# ==============================================================================
+# === ENUMERATION ===
+# ==============================================================================
+
+class EnumBlendType(Enum):
+    """Rename the blend type names."""
+    NORMAL = BlendType.NORMAL
+    ADDITIVE = BlendType.ADDITIVE
+    NEGATION = BlendType.NEGATION
+    DIFFERENCE = BlendType.DIFFERENCE
+    MULTIPLY = BlendType.MULTIPLY
+    DIVIDE = BlendType.DIVIDE
+    LIGHTEN = BlendType.LIGHTEN
+    DARKEN = BlendType.DARKEN
+    SCREEN = BlendType.SCREEN
+    BURN = BlendType.COLOURBURN
+    DODGE = BlendType.COLOURDODGE
+    OVERLAY = BlendType.OVERLAY
+    HUE = BlendType.HUE
+    SATURATION = BlendType.SATURATION
+    LUMINOSITY = BlendType.LUMINOSITY
+    COLOR = BlendType.COLOUR
+    SOFT = BlendType.SOFTLIGHT
+    HARD = BlendType.HARDLIGHT
+    PIN = BlendType.PINLIGHT
+    VIVID = BlendType.VIVIDLIGHT
+    EXCLUSION = BlendType.EXCLUSION
+    REFLECT = BlendType.REFLECT
+    GLOW = BlendType.GLOW
+    XOR = BlendType.XOR
+    EXTRACT = BlendType.GRAINEXTRACT
+    MERGE = BlendType.GRAINMERGE
+    DESTIN = BlendType.DESTIN
+    DESTOUT = BlendType.DESTOUT
+    SRCATOP = BlendType.SRCATOP
+    DESTATOP = BlendType.DESTATOP
 
 # ==============================================================================
 # === CLASS ===
@@ -389,7 +436,7 @@ Swap pixel values between two input images based on specified channel swizzle op
             pB = image_matte(pB, (0,0,0,0), w, h)
             pB = image_scalefit(pB, w, h, EnumScaleMode.CROP)
 
-            out = image_swap_channels(pA, pB, (swap_r, swap_g, swap_b, swap_a), matte)
+            out = channel_swap(pA, pB, (swap_r, swap_g, swap_b, swap_a), matte)
 
             images.append(cv_to_tensor_full(out))
             pbar.update_absolute(idx)

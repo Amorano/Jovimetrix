@@ -20,12 +20,24 @@ from cozy_comfyui.node import \
     COZY_TYPE_IMAGE, \
     CozyBaseNode, CozyImageNode
 
+from cozy_comfyui.image.adjust import \
+    image_invert
+
+from cozy_comfyui.image.channel import \
+    channel_solid
+
 from cozy_comfyui.image.convert import \
-    image_mask, image_mask_add, tensor_to_cv, \
-    cv_to_tensor, cv_to_tensor_full
+    tensor_to_cv, cv_to_tensor, cv_to_tensor_full
+
+from cozy_comfyui.image.mask import \
+    image_mask, image_mask_add
 
 from cozy_comfyui.image.misc import \
     image_stack
+
+from cozy_comfyui.image.trans import \
+    EnumScaleMode, EnumInterpolation, \
+    image_scalefit
 
 from ..sup.image.color import \
     EnumCBDeficiency, EnumCBSimulator, EnumColorMap, EnumColorTheory, \
@@ -33,13 +45,6 @@ from ..sup.image.color import \
     color_lut_tonal, color_lut_visualize, color_match_reinhard, \
     color_theory, color_blind, color_top_used, image_gradient_expand, \
     image_gradient_map
-
-from ..sup.image.adjust import \
-    EnumScaleMode, EnumInterpolation, \
-    image_scalefit, image_invert
-
-from ..sup.image.channel import \
-    channel_solid
 
 JOV_CATEGORY = "COLOR"
 

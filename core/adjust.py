@@ -3,7 +3,6 @@
 from enum import Enum
 
 import cv2
-from pyparsing import C
 
 from comfy.utils import ProgressBar
 
@@ -18,25 +17,27 @@ from cozy_comfyui.node import \
     COZY_TYPE_IMAGE, \
     CozyImageNode
 
-from cozy_comfyui.image import \
-    EnumImageType
+# EnumThreshold, EnumThresholdAdapt, image_filter, image_threshold,
+
+from cozy_comfyui.image.adjust import \
+    image_contrast, image_brightness, image_equalize, image_gamma,  \
+    image_hsv, image_invert, image_pixelate, image_posterize, \
+    image_quantize, image_sharpen, image_edge_detect, image_emboss
+
+from cozy_comfyui.image.channel import \
+    channel_solid
+
+from cozy_comfyui.image.compose import \
+    image_levels, image_blend
 
 from cozy_comfyui.image.convert import \
     tensor_to_cv, cv_to_tensor_full
 
+from cozy_comfyui.image.mask import \
+    image_mask
+
 from cozy_comfyui.image.misc import \
     image_stack
-
-from ..sup.image.adjust import \
-    image_contrast, image_brightness, image_equalize, image_gamma,  \
-    image_hsv, image_invert, image_pixelate, image_posterize, \
-    image_quantize, image_sharpen, morph_edge_detect, morph_emboss
-
-from ..sup.image.channel import \
-    channel_solid
-
-from ..sup.image.compose import \
-    image_levels, image_blend
 
 JOV_CATEGORY = "ADJUST"
 
@@ -52,20 +53,32 @@ class EnumAdjustBlur(Enum):
 
 class EnumAdjustEdge(Enum):
     DETECT = 10
-    SHARPEN = 20
-    EMBOSS = 30
-    OUTLINE = 40
-    DILATE = 50
-    ERODE = 60
-    OPEN = 70
-    CLOSE = 80
+    CANNY  = 20
+    LAPLACIAN = 30
+    SOBEL = 40
+    PREWITT = 50
+    SCHARR = 60
+
+class EnumAdjustEnhance(Enum):
+    SHARPEN = 10
+    EMBOSS = 20
+    OUTLINE = 30
+
+class EnumAdjustMorpho(Enum):
+    DILATE = 10
+    ERODE = 20
+    OPEN = 30
+    CLOSE = 40
+    TOPHAT = 50
+    BLACKHAT = 60
+    GRADIENT = 70
 
 class EnumAdjustLight(Enum):
-    BRIGHTNESS = 10
-    CONTRAST = 20
-    EQUALIZE = 30
-    EXPOSURE = 40
-    GAMMA = 50
+    EXPOSURE = 10
+    GAMMA = 20
+    BRIGHTNESS = 30
+    CONTRAST = 40
+    EQUALIZE = 50
 
 class EnumAdjustPixel(Enum):
     PIXELATE = 10
@@ -327,6 +340,76 @@ Enhanced edge detection.
         pbar = ProgressBar(len(params))
         for idx, (pA, mask, op, radius, count, lohi) in enumerate(params):
             pA = channel_solid() if pA is None else tensor_to_cv(pA)
+            alpha = image_mask(pA)
+            height, width = pA.shape[:2]
+            mask = channel_solid(width, height, (255,255,255,255)) if mask is None else tensor_to_cv(mask, chan=1)
+
+            if radius % 2 == 0:
+                radius += 1
+
+            match op:
+                case EnumAdjustEdge.DETECT:
+                    lo, hi = lohi
+                    img_new = image_edge_detect(pA, radius, low=lo, high=hi)
+
+                case EnumAdjustEdge.CANNY:
+                    img_new = image_sharpen(pA, radius, amount=count)
+
+                case EnumAdjustEdge.LAPLACIAN:
+                    img_new = image_emboss(pA, count, radius)
+
+                case EnumAdjustEdge.SOBEL:
+                    img_new = cv2.dilate(pA, (radius, radius), iterations=count)
+
+                case EnumAdjustEdge.PREWITT:
+                    img_new = cv2.erode(pA, (radius, radius), iterations=count)
+
+                case EnumAdjustEdge.SCHARR:
+                    img_new = cv2.morphologyEx(pA, cv2.MORPH_OPEN, (radius, radius), iterations=count)
+
+            pA = image_blend(pA, img_new, mask)
+            images.append(cv_to_tensor_full(pA))
+            pbar.update_absolute(idx)
+        return image_stack(images)
+
+class AdjustEnhanceNode(CozyImageNode):
+    NAME = "ENHANCE (JOV)"
+    CATEGORY = JOV_CATEGORY
+    DESCRIPTION = """
+Enhanced edge detection.
+"""
+
+    @classmethod
+    def INPUT_TYPES(cls) -> InputType:
+        d = super().INPUT_TYPES()
+        d = deep_merge(d, {
+            "optional": {
+                Lexicon.IMAGE: (COZY_TYPE_IMAGE, {}),
+                Lexicon.MASK: (COZY_TYPE_IMAGE, {}),
+                Lexicon.FUNCTION: (EnumAdjustEdge._member_names_, {
+                    "default": EnumAdjustEdge.DETECT.name,}),
+                Lexicon.RADIUS: ("INT", {
+                    "default": 3, "min": 3}),
+                Lexicon.ITERATION: ("INT", {
+                    "default": 1, "min": 1, "max": 1000}),
+                Lexicon.LOHI: ("VEC2", {
+                              "default": (0, 1), "mij": 0, "maj": 1., "step": 0.01})
+            }
+        })
+        return Lexicon._parse(d)
+
+    def run(self, **kw) -> RGBAMaskType:
+        pA = parse_param(kw, Lexicon.IMAGE, EnumConvertType.IMAGE, None)
+        mask = parse_param(kw, Lexicon.MASK, EnumConvertType.MASK, None)
+        op = parse_param(kw, Lexicon.FUNCTION, EnumAdjustEdge, EnumAdjustEdge.DETECT.name)
+        radius = parse_param(kw, Lexicon.RADIUS, EnumConvertType.INT, 3, 3)
+        count = parse_param(kw, Lexicon.ITERATION, EnumConvertType.INT, 1, 1, 1000)
+        lohi = parse_param(kw, Lexicon.LOHI, EnumConvertType.VEC2, 0, 0, 1)
+        params = list(zip_longest_fill(pA, mask, op, radius, count, lohi))
+        images = []
+        pbar = ProgressBar(len(params))
+        for idx, (pA, mask, op, radius, count, lohi) in enumerate(params):
+            pA = channel_solid() if pA is None else tensor_to_cv(pA)
             height, width = pA.shape[:2]
             mask = channel_solid(width, height, (255,255,255,255)) if mask is None else tensor_to_cv(mask)
 
@@ -336,13 +419,13 @@ Enhanced edge detection.
             match op:
                 case EnumAdjustEdge.DETECT:
                     lo, hi = lohi
-                    img_new = morph_edge_detect(pA, low=lo, high=hi)
+                    img_new = image_edge_detect(pA, low=lo, high=hi)
 
                 case EnumAdjustEdge.SHARPEN:
                     img_new = image_sharpen(pA, radius, amount=count)
 
                 case EnumAdjustEdge.EMBOSS:
-                    img_new = morph_emboss(pA, count, radius)
+                    img_new = image_emboss(pA, count, radius)
 
                 case EnumAdjustEdge.DILATE:
                     img_new = cv2.dilate(pA, (radius, radius), iterations=count)

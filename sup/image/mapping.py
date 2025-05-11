@@ -10,9 +10,6 @@ from cozy_comfyui.image import \
     TAU, \
     Coord2D_Float, ImageType
 
-from cozy_comfyui.image.convert import \
-    ImageType
-
 # ==============================================================================
 # === ENUMERATION ===
 # ==============================================================================

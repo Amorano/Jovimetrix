@@ -8,7 +8,7 @@ import random
 from enum import Enum
 from pathlib import Path
 from itertools import zip_longest
-from typing import Any, List, Literal
+from typing import Any, List
 
 import torch
 import numpy as np
@@ -32,12 +32,15 @@ from cozy_comfyui.node import \
 from cozy_comfyui.image import \
     IMAGE_FORMATS
 
+from cozy_comfyui.image.compose import \
+    EnumScaleMode, EnumInterpolation, \
+    image_matte, image_scalefit
+
 from cozy_comfyui.image.convert import \
-    image_convert, cv_to_tensor, cv_to_tensor_full, tensor_to_cv, \
-    image_matte
+    image_convert, cv_to_tensor, cv_to_tensor_full, tensor_to_cv
 
 from cozy_comfyui.image.misc import \
-    EnumInterpolation
+    image_by_size
 
 from cozy_comfyui.image.io import \
     image_load
@@ -47,13 +50,6 @@ from cozy_comfyui.api import \
 
 from ... import \
     ROOT
-
-from ...sup.image.adjust import \
-    EnumScaleMode, \
-    image_scalefit
-
-from ...sup.image.compose import \
-    image_by_size
 
 JOV_CATEGORY = "UTILITY/BATCH"
 
