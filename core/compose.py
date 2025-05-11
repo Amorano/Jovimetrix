@@ -1,10 +1,6 @@
 """ Jovimetrix - Composition """
 
-from enum import Enum
-
 import numpy as np
-from blendmodes.blend import \
-    BlendType
 
 from comfy.utils import ProgressBar
 
@@ -29,7 +25,8 @@ from cozy_comfyui.image.channel import \
     channel_merge, channel_solid, channel_swap
 
 from cozy_comfyui.image.compose import \
-    image_split, image_blend
+    EnumBlendType, EnumScaleMode, EnumScaleInputMode, EnumInterpolation, \
+    image_scalefit, image_split, image_blend
 
 from cozy_comfyui.image.convert import \
     image_convert, tensor_to_cv, cv_to_tensor, cv_to_tensor_full
@@ -43,48 +40,7 @@ from cozy_comfyui.image.misc import \
 from cozy_comfyui.image.pixel import \
     pixel_eval
 
-from cozy_comfyui.image.trans import \
-    EnumScaleMode, EnumScaleInputMode, EnumInterpolation, \
-    image_scalefit
-
 JOV_CATEGORY = "COMPOSE"
-
-# ==============================================================================
-# === ENUMERATION ===
-# ==============================================================================
-
-class EnumBlendType(Enum):
-    """Rename the blend type names."""
-    NORMAL = BlendType.NORMAL
-    ADDITIVE = BlendType.ADDITIVE
-    NEGATION = BlendType.NEGATION
-    DIFFERENCE = BlendType.DIFFERENCE
-    MULTIPLY = BlendType.MULTIPLY
-    DIVIDE = BlendType.DIVIDE
-    LIGHTEN = BlendType.LIGHTEN
-    DARKEN = BlendType.DARKEN
-    SCREEN = BlendType.SCREEN
-    BURN = BlendType.COLOURBURN
-    DODGE = BlendType.COLOURDODGE
-    OVERLAY = BlendType.OVERLAY
-    HUE = BlendType.HUE
-    SATURATION = BlendType.SATURATION
-    LUMINOSITY = BlendType.LUMINOSITY
-    COLOR = BlendType.COLOUR
-    SOFT = BlendType.SOFTLIGHT
-    HARD = BlendType.HARDLIGHT
-    PIN = BlendType.PINLIGHT
-    VIVID = BlendType.VIVIDLIGHT
-    EXCLUSION = BlendType.EXCLUSION
-    REFLECT = BlendType.REFLECT
-    GLOW = BlendType.GLOW
-    XOR = BlendType.XOR
-    EXTRACT = BlendType.GRAINEXTRACT
-    MERGE = BlendType.GRAINMERGE
-    DESTIN = BlendType.DESTIN
-    DESTOUT = BlendType.DESTOUT
-    SRCATOP = BlendType.SRCATOP
-    DESTATOP = BlendType.DESTATOP
 
 # ==============================================================================
 # === CLASS ===

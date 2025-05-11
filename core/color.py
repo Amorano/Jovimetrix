@@ -26,6 +26,10 @@ from cozy_comfyui.image.adjust import \
 from cozy_comfyui.image.channel import \
     channel_solid
 
+from cozy_comfyui.image.compose import \
+    EnumScaleMode, EnumInterpolation, \
+    image_scalefit
+
 from cozy_comfyui.image.convert import \
     tensor_to_cv, cv_to_tensor, cv_to_tensor_full
 
@@ -34,10 +38,6 @@ from cozy_comfyui.image.mask import \
 
 from cozy_comfyui.image.misc import \
     image_stack
-
-from cozy_comfyui.image.trans import \
-    EnumScaleMode, EnumInterpolation, \
-    image_scalefit
 
 from ..sup.image.color import \
     EnumCBDeficiency, EnumCBSimulator, EnumColorMap, EnumColorTheory, \

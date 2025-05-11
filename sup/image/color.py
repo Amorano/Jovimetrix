@@ -10,17 +10,15 @@ from scipy.spatial import KDTree
 from skimage import exposure
 from sklearn.cluster import KMeans
 from daltonlens import simulate
-from blendmodes.blend import BlendType
 
 from cozy_comfyui.image import \
-    PixelType, \
-    ImageType
+    PixelType, ImageType
 
 from cozy_comfyui.image.compose import \
+    EnumBlendType, \
     image_blend
 
 from cozy_comfyui.image.convert import \
-    ImageType, \
     image_convert, image_grayscale
 
 from cozy_comfyui.image.mask import \
@@ -357,7 +355,7 @@ def color_match_histogram(image: ImageType, usermap: ImageType) -> ImageType:
     beta = cv2.cvtColor(usermap, cv2.COLOR_BGR2LAB)
     image = exposure.match_histograms(image, beta, channel_axis=2)
     image = cv2.cvtColor(image, cv2.COLOR_LAB2BGR)
-    image = image_blend(usermap, image, blendOp=BlendType.LUMINOSITY)
+    image = image_blend(usermap, image, blendOp=EnumBlendType.LUMINOSITY)
     image = image_convert(image, cc)
     #if cc == 4:
     #    image[..., 3] = alpha[..., 0]
