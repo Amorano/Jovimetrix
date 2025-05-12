@@ -156,7 +156,7 @@ export function nodeFitHeight(node) {
 /**
  * Manage the slots on a node to allow a dynamic number of inputs
 */
-export function nodeAddDynamic(nodeType, prefix, dynamic_type='*', index_start=0, match_output=false, refresh=true) {
+export async function nodeAddDynamic(nodeType, prefix, dynamic_type='*') {
     /*
     this one should just put the "prefix" as the last empty entry.
     Means we have to pay attention not to collide key names in the
@@ -171,40 +171,23 @@ export function nodeAddDynamic(nodeType, prefix, dynamic_type='*', index_start=0
             return;
         }
 
-        if (self?.outputs && match_output) {
-            while (self.outputs.length > index_start) {
-                self.removeOutput(self.outputs.length-1);
-            }
-        }
-
         if (!self.inputs) {
             return;
         }
 
-        let idx = index_start;
+        let idx = 0;
         let offset = 0;
         while (idx < self.inputs.length-1) {
             const slot = self.inputs[idx];
             const parts = slot.name.split('_');
             if (parts.length == 2 && self.graph) {
                 if (slot.link == null) {
-                    if (match_output) {
-                        self.removeOutput(idx);
-                    }
                     if (idx < self.inputs.length) {
                         self.removeInput(idx);
                     }
                 } else {
                     const name = parts.slice(1).join('');
                     self.inputs[idx].name = `${offset}_${name}`;
-                    if (match_output) {
-                        while(self.outputs.length-1 < idx) {
-                            self.addOutput(prefix, dynamic_type);
-                        }
-                        self.outputs[idx].name = parts[1];
-                        self.outputs[idx].type = self.inputs[idx].type;
-
-                    }
                     idx += 1;
                     offset += 1;
                 }
@@ -215,18 +198,19 @@ export function nodeAddDynamic(nodeType, prefix, dynamic_type='*', index_start=0
         }
     }
 
-    index_start = Math.max(0, index_start);
     const onNodeCreated = nodeType.prototype.onNodeCreated
-    nodeType.prototype.onNodeCreated = function () {
-        const me = onNodeCreated?.apply(this);
-        this.addInput(prefix, dynamic_type);
+    nodeType.prototype.onNodeCreated = async function () {
+        const me = await onNodeCreated?.apply(this);
+        if (this.inputs.length == 0) {
+            this.addInput(prefix, dynamic_type);
+        }
         return me;
     }
 
     const onConnectionsChange = nodeType.prototype.onConnectionsChange
     nodeType.prototype.onConnectionsChange = function (slotType, slot_idx, event, link_info, node_slot) {
         const me = onConnectionsChange?.apply(this, arguments);
-        if (slotType == TypeSlot.Input && slot_idx >= index_start) {
+        if (slotType == TypeSlot.Input) { //} && slot_idx >= index_start) {
             if (link_info && event == TypeSlotEvent.Connect) {
                 const fromNode = this.graph._nodes.find(
                     (otherNode) => otherNode.id == link_info.origin_id
@@ -246,10 +230,9 @@ export function nodeAddDynamic(nodeType, prefix, dynamic_type='*', index_start=0
                 this.addInput(prefix, dynamic_type);
             }
         }
-        if (refresh) {
-            clean_inputs(this);
-        }
-        // nodeFitHeight(this);
+
+        clean_inputs(this);
+        nodeFitHeight(this);
         return me;
     }
 }

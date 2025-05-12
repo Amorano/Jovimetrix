@@ -64,7 +64,7 @@ app.registerExtension({
 
         const onNodeCreated = nodeType.prototype.onNodeCreated;
         nodeType.prototype.onNodeCreated = async function () {
-            const me = onNodeCreated?.apply(this);
+            const me = await onNodeCreated?.apply(this);
             const widget_time = this.widgets.find(w => w.name == 'timer');
             const widget_enable = this.widgets.find(w => w.name == 'enable');
             this.total_timeout = 0;

@@ -27,10 +27,8 @@ from cozy_comfyui.image.convert import \
 from cozy_comfyui.image.compose import \
     EnumOrientation, EnumEdge, EnumMirrorMode, EnumScaleMode, EnumInterpolation, \
     image_edge_wrap, image_mirror, image_scalefit, image_transform, \
-    image_crop, image_crop_center, image_crop_polygonal, image_stacker, image_flatten
-
-from cozy_comfyui.image.mask import \
-    image_mask, image_mask_add
+    image_crop, image_crop_center, image_crop_polygonal, image_stacker, \
+    image_flatten, image_mask, image_mask_add
 
 from cozy_comfyui.image.misc import \
     image_stack

@@ -14,7 +14,7 @@ app.registerExtension({
             return
         }
 
-        nodeAddDynamic(nodeType, _prefix);
+        await nodeAddDynamic(nodeType, _prefix);
 
         const onExecuted = nodeType.prototype.onExecuted;
         nodeType.prototype.onExecuted = async function (message) {

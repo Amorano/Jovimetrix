@@ -34,7 +34,7 @@ app.registerExtension({
 
         const onNodeCreated = nodeType.prototype.onNodeCreated;
         nodeType.prototype.onNodeCreated = async function () {
-            const me = onNodeCreated?.apply(this);
+            const me = await onNodeCreated?.apply(this);
             const self = this;
             this.data_index = 1;
             this.data_current = "";

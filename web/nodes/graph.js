@@ -21,11 +21,12 @@ app.registerExtension({
         if (nodeData.name !== _id) {
             return;
         }
-        nodeAddDynamic(nodeType, _prefix);
+
+        await nodeAddDynamic(nodeType, _prefix);
 
         const onNodeCreated = nodeType.prototype.onNodeCreated;
         nodeType.prototype.onNodeCreated = async function () {
-            const me = onNodeCreated?.apply(this);
+            const me = await onNodeCreated?.apply(this);
             const self = this;
             const widget_reset = this.widgets.find(w => w.name == 'reset');
             widget_reset.callback = async() => {

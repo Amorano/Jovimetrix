@@ -35,13 +35,10 @@ from cozy_comfyui.image.channel import \
 
 from cozy_comfyui.image.compose import \
     EnumScaleMode, EnumInterpolation, \
-    image_scalefit
+    image_scalefit, image_mask, image_mask_add
 
 from cozy_comfyui.image.convert import \
     tensor_to_cv, cv_to_tensor, cv_to_tensor_full
-
-from cozy_comfyui.image.mask import \
-    image_mask, image_mask_add
 
 from cozy_comfyui.image.misc import \
     image_stack

@@ -15,7 +15,7 @@ from cozy_comfyui.lexicon import \
 
 from cozy_comfyui.node import \
     COZY_TYPE_IMAGE, \
-    CozyImageNode
+    CozyImageNode, CozyBaseNode
 
 # EnumThreshold, EnumThresholdAdapt, image_filter, image_threshold,
 
@@ -28,13 +28,10 @@ from cozy_comfyui.image.channel import \
     channel_solid
 
 from cozy_comfyui.image.compose import \
-    image_levels, image_blend
+    image_levels, image_blend, image_mask
 
 from cozy_comfyui.image.convert import \
     tensor_to_cv, cv_to_tensor_full
-
-from cozy_comfyui.image.mask import \
-    image_mask
 
 from cozy_comfyui.image.misc import \
     image_stack
@@ -296,7 +293,7 @@ Enhance and modify images with various blur effects.
                     img_new = cv2.stackBlur(pA, (radius, radius))
 
                 case EnumAdjustBlur.GAUSSIAN_BLUR:
-                    img_new = cv2.GaussianBlur(pA, (radius, radius))
+                    img_new = cv2.GaussianBlur(pA, (radius, radius), 0)
 
                 case EnumAdjustBlur.MEDIAN_BLUR:
                     img_new = cv2.medianBlur(pA, radius)

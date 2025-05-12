@@ -26,13 +26,10 @@ from cozy_comfyui.image.channel import \
 
 from cozy_comfyui.image.compose import \
     EnumBlendType, EnumScaleMode, EnumScaleInputMode, EnumInterpolation, \
-    image_scalefit, image_split, image_blend
+    image_scalefit, image_split, image_blend, image_matte, image_mask_add
 
 from cozy_comfyui.image.convert import \
     image_convert, tensor_to_cv, cv_to_tensor, cv_to_tensor_full
-
-from cozy_comfyui.image.mask import \
-    image_mask_add, image_matte
 
 from cozy_comfyui.image.misc import \
     image_by_size, image_minmax, image_stack

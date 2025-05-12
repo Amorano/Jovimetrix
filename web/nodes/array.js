@@ -17,6 +17,6 @@ app.registerExtension({
             return;
         }
 
-        nodeAddDynamic(nodeType, _prefix);
+        await nodeAddDynamic(nodeType, _prefix);
 	}
 })
