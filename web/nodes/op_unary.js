@@ -16,40 +16,9 @@ app.registerExtension({
         const onNodeCreated = nodeType.prototype.onNodeCreated
         nodeType.prototype.onNodeCreated = async function () {
             const me = await onNodeCreated?.apply(this);
-            widgetHookControl(this, 'type', 'aa');
+            await widgetHookControl(this, 'type', 'aa');
             return me;
         }
-/*
-        const onConnectionsChange = nodeType.prototype.onConnectionsChange
-        nodeType.prototype.onConnectionsChange = function (slotType, slot_idx, event, link_info, node_slot) {
-            const me = onConnectionsChange?.apply(this, arguments);
-            let connected = false;
-            const output = this.outputs[0];
-            if (slotType == TypeSlot.Input && link_info && event == TypeSlotEvent.Connect) {
-                const fromNode = this.graph._nodes.find(
-                    (otherNode) => otherNode.id == link_info.origin_id
-                )
-
-                if (fromNode) {
-                    const parent_link = fromNode.outputs[link_info.origin_slot];
-                    if (parent_link) {
-                        output.type = parent_link.type;
-                        //output.name = parent_link.name;
-                        //output.localized_name = parent_link.localized_name;
-                        connected = true;
-                    }
-                }
-            }
-            if (connected == false) {
-                output.type = "*";
-                //output.name = "❔";
-                //output.localized_name = "❔";
-            }
-            nodeFitHeight(this);
-            return me;
-        }
-*/
-       return nodeType;
+        return nodeType;
 	}
 })
-

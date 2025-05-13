@@ -539,7 +539,7 @@ Perform single function operations like absolute value, mean, median, mode, magn
                     "default": (0,0,0,0),
                     "label": ["X", "Y", "Z", "W"]}),
                 Lexicon.FILL: (EnumFillOperation._member_names_, {
-                    "default": EnumFillOperation.DEFAULT.name}),
+                    "default": EnumFillOperation.DEFAULT.name})
             }
         })
         return Lexicon._parse(d)

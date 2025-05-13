@@ -38,111 +38,80 @@ export async function apiJovimetrix(id, cmd, data=null, route="message", ) {
     }
 }
 
-function widgetShowVector(widget, values={}, type) {
-    if (["FLOAT"].includes(type)) {
-        type = "VEC1";
-    } else if (["INT"].includes(type)) {
-        type = "VEC1INT";
-    } else if (type == "BOOLEAN") {
-        type = "toggle";
-    }
-
-    if (type !== undefined) {
-        widget.type = type;
-    }
-
-    if (widget.value === undefined) {
-        widget.value = widget.options?.default || {};
-    }
-
-    // convert widget.value to pure dict/object
-    if (Array.isArray(widget.value)) {
-        let new_val = {};
-        for (let i = 0; i < widget.value.length; i++) {
-            new_val[i] = widget.value[i];
-        }
-        widget.value = new_val;
-    }
-
-    widget.options.step = 1;
-    widget.options.round = 1;
-    widget.options.precision = 0;
-    if (widget.type != 'toggle') {
-        let size = 1;
-        const match = /\d/.exec(widget.type);
-        if (match) {
-            size = match[0];
-        }
-        if (!widget.type.endsWith('INT') && widget.type != 'BOOLEAN') {
-            widget.options.step = 0.01;
-            widget.options.round = 0.001;
-            widget.options.precision = 3;
-        }
-
-        widget.value = {};
-        for (let i = 0; i < size; i++) {
-            widget.value[i] = (widget.options.precision == 0) ? Number(values[i]) : parseFloat(values[i]).toFixed(widget.options.precision);
-        }
-    } else {
-        widget.value = values[0] ? true : false;
-    }
-}
-
 /*
 * matchFloatSize forces the target to be float[n] based on its type size
 */
-export function widgetHookControl(node, control_key, child_key, matchFloatSize=false) {
-
+export async function widgetHookControl(node, control_key, child_key) {
+    const control = node.widgets.find(w => w.name == control_key);
     const target = node.widgets.find(w => w.name == child_key);
-    const combo = node.widgets.find(w => w.name == control_key);
-    if (!target || !combo) {
+    const target_input = node.inputs.find(w => w.name == child_key);
+
+    if (!control || !target || !target_input) {
         throw new Error("Required widgets not found");
     }
 
-    const initializeTrack = (widget) => {
-        const track = {};
-        for (let i = 0; i < 4; i++) {
-            track[i] = widget.options?.default[i];
-        }
-        Object.assign(track, widget.value);
-        return track;
+    const track_xyzw = {
+        0: target.options?.default?.[0] || 0,
+        1: target.options?.default?.[1] || 0,
+        2: target.options?.default?.[2] || 0,
+        3: target.options?.default?.[3] || 0,
     };
 
-    const { widgets } = node;
+    const controlCallback = control.callback;
+    control.callback = async () => {
+        const me = await controlCallback?.apply(this, arguments);
+        if (["VEC2", "VEC3", "VEC4", "FLOAT", "INT", "BOOLEAN"].includes(control.value)) {
+            target_input.type = control.value;
+            //target.options.step = 0.01;
+            //target.options.round = 0.001;
+            //target.options.precision = 3;
 
-    const data = {
-        track_xyzw: initializeTrack(target),
-        target,
-        combo
-    };
-
-    const oldCallback = combo.callback;
-    combo.callback = () => {
-        const me = oldCallback?.apply(this, arguments);
-        if (["VEC2", "VEC3", "VEC4", "BOOLEAN", "INT", "FLOAT"].includes(combo.value)) {
-            let type = combo.value;
-            if (matchFloatSize) {
-                if (["BOOLEAN", "INT"].includes(combo.value)) {
-                    type = "FLOAT";
-                }
+            if (["INT", "FLOAT", "BOOLEAN"].includes(control.value)) {
+                target.type = "VEC1";
+            } else {
+                target.type = control.value;
             }
-            widgetShowVector(target, data.track_xyzw, type);
+
+            let size = 1;
+            if (control.value == "INT") {
+                target.options.int = true;
+            } else if (["VEC2", "VEC3", "VEC4"].includes(control.value)) {
+                const match = /\d/.exec(control.value);
+                size = match[0];
+            }
+
+            target.value = {};
+            if (["VEC2", "VEC3", "VEC4", "FLOAT"].includes(control.value)) {
+                for (let i = 0; i < size; i++) {
+                    target.value[i] = parseFloat(track_xyzw[i]).toFixed(target.options.precision);
+                }
+            } else if (control.value == "INT") {
+                target.value[0] = Number(track_xyzw[0]);
+            } else if (control.value == "BOOLEAN") {
+                target.value[0] = track_xyzw[0] != 0 ? true : false;
+            }
         }
         nodeFitHeight(node);
         return me;
     }
 
-    target.callback = () => {
+    const targetCallback = target.callback;
+    target.callback = async () => {
+        const me = await targetCallback?.apply(this, arguments);
         if (target.type == "toggle") {
-            data.track_xyzw[0] = target.value ? 1 : 0;
+            track_xyzw[0] = target.value != 0 ? 1 : 0;
+        } else if (["INT", "FLOAT"].includes(target.type)) {
+            track_xyzw[0] = target.value;
         } else {
             Object.keys(target.value).forEach((key) => {
-                data.track_xyzw[key] = target.value[key];
+                track_xyzw[key] = target.value[key];
             });
         }
+        return me;
     };
 
-    return data;
+    await control.callback();
+    return control;
 }
 
 export function nodeFitHeight(node) {

@@ -21,8 +21,8 @@ app.registerExtension({
             this.outputs[3].type = "*";
             this.outputs[4].type = "*";
 
-            const ab_data = widgetHookControl(this, 'type', 'aa');
-            widgetHookControl(this, 'type', 'bb');
+            const ab_data = await widgetHookControl(this, 'type', 'aa');
+            await widgetHookControl(this, 'type', 'bb');
 
             const oldCallback = ab_data.callback;
             ab_data.callback = () => {

@@ -184,30 +184,24 @@ const VectorWidget = (app, inputName, options, initial) => {
                         try {
                             v = eval(v);
                         } catch {
-                            // Suppressed exception
+                            v = old_value[index];
                         }
+                    } else {
+                        v = old_value[index];
                     }
+
                     if (this.value[index] != v) {
                         setTimeout(
                             function () {
                                 clamp(this, v, index);
                                 domInnerValueChange(node, pos, this, this.value, eUp);
-                            }.bind(this), 20)
+                            }.bind(this), 5)
                     }
                 }.bind(this), eUp);
-
-                if (old_value != this.value) {
-                    setTimeout(
-                        function () {
-                            domInnerValueChange(node, pos, this, this.value, eUp);
-                        }.bind(this), 20);
-                }
-
-                return
+                return;
             }
             if (!this.options?.rgb) return;
 
-            //const rgba = widget.value;
             const rgba = Object.values(this?.value || []);
             const color = colorRGB2Hex(rgba.slice(0, 3));
 
@@ -260,23 +254,25 @@ const VectorWidget = (app, inputName, options, initial) => {
 
         pointer.onDrag = (eMove) => {
             if (!eMove.deltaX || !(index > -1)) return;
-
             let v = parseFloat(this.value[index]);
             v += this.options.step * Math.sign(eMove.deltaX);
             clamp(this, v, index);
+            if (widget.callback) {
+                widget.callback(widget.value, app.canvas, node)
+            }
         }
     }
 
     widget.serializeValue = async () => {
         const value = widget.value;
-        if (value === null) {
+        if (widget.value === null) {
             return null;
         }
 
-        if (Array.isArray(value)) {
-            return value.reduce((acc, tuple, index) => ({ ...acc, [index]: tuple }), {});
+        if (Array.isArray(widget.value)) {
+            return widget.value.reduce((acc, tuple, index) => ({ ...acc, [index]: tuple }), {});
         }
-        return value;
+        return widget.value;
     }
 
     return widget;
