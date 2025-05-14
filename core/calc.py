@@ -530,13 +530,14 @@ Perform single function operations like absolute value, mean, median, mode, magn
         d = deep_merge(d, {
             "optional": {
                 Lexicon.IN_A: (COZY_TYPE_NUMERICAL, {
-                    "default": None}),
+                    "default": 0}),
                 Lexicon.FUNCTION: (EnumUnaryOperation._member_names_, {
                     "default": EnumUnaryOperation.ABS.name}),
                 Lexicon.TYPE: (typ, {
                     "default": EnumConvertType.FLOAT.name,}),
                 Lexicon.DEFAULT_A: ("VEC4", {
-                    "default": (0,0,0,0),
+                    "default": (0,0,0,0), "mij": -sys.maxsize, "maj": sys.maxsize,
+                    "precision": 2,
                     "label": ["X", "Y", "Z", "W"]}),
                 Lexicon.FILL: (EnumFillOperation._member_names_, {
                     "default": EnumFillOperation.DEFAULT.name})
@@ -636,10 +637,12 @@ Execute binary operations like addition, subtraction, multiplication, division, 
                 Lexicon.SWAP: ("BOOLEAN", {
                     "default": False}),
                 Lexicon.DEFAULT_A: ("VEC4", {
-                    "default": (0,0,0,0),
+                    "default": (0,0,0,0), "mij": -sys.maxsize, "maj": sys.maxsize,
+                    "precision": 2,
                     "label": ["X", "Y", "Z", "W"]}),
                 Lexicon.DEFAULT_B: ("VEC4", {
-                    "default": (0,0,0,0),
+                    "default": (0,0,0,0), "mij": -sys.maxsize, "maj": sys.maxsize,
+                    "precision": 2,
                     "label": ["X", "Y", "Z", "W"]}),
                 Lexicon.FILL: (EnumFillOperation._member_names_, {
                     "default": EnumFillOperation.DEFAULT.name}),

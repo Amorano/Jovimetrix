@@ -57,26 +57,28 @@ export async function widgetHookControl(node, control_key, child_key) {
         3: target.options?.default?.[3] || 0,
     };
 
+    const track_options = {}
+    Object.assign(track_options, target.options);
+
     const controlCallback = control.callback;
     control.callback = async () => {
         const me = await controlCallback?.apply(this, arguments);
+        Object.assign(target.options, track_options);
+
+        console.info(1, target.options);
         if (["VEC2", "VEC3", "VEC4", "FLOAT", "INT", "BOOLEAN"].includes(control.value)) {
             target_input.type = control.value;
-            //target.options.step = 0.01;
-            //target.options.round = 0.001;
-            //target.options.precision = 3;
 
             if (["INT", "FLOAT", "BOOLEAN"].includes(control.value)) {
                 target.type = "VEC1";
             } else {
                 target.type = control.value;
             }
+            target.options.type = target.type;
 
             let size = 1;
-            if (control.value == "INT") {
-                target.options.int = true;
-            } else if (["VEC2", "VEC3", "VEC4"].includes(control.value)) {
-                const match = /\d/.exec(control.value);
+            if (["VEC2", "VEC3", "VEC4"].includes(target.type)) {
+                const match = /\d/.exec(target.type);
                 size = match[0];
             }
 
@@ -86,11 +88,22 @@ export async function widgetHookControl(node, control_key, child_key) {
                     target.value[i] = parseFloat(track_xyzw[i]).toFixed(target.options.precision);
                 }
             } else if (control.value == "INT") {
+                target.options.step = 1;
+                target.options.round = 0;
+                target.options.precision = 0;
+                target.options.int = true;
+
                 target.value[0] = Number(track_xyzw[0]);
             } else if (control.value == "BOOLEAN") {
-                target.value[0] = track_xyzw[0] != 0 ? true : false;
+                target.options.step = 1;
+                target.options.precision = 0;
+                target.options.mij = 0;
+                target.options.maj = 1;
+                target.options.int = true;
+                target.value[0] = track_xyzw[0] != 0 ? 1 : 0;
             }
         }
+        console.info(2, target.options);
         nodeFitHeight(node);
         return me;
     }

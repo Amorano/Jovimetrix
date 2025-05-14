@@ -54,7 +54,6 @@ const VectorWidget = (app, inputName, options, initial) => {
     /** @type {IWidget} */
     const widget = {
         name: inputName,
-        //type2: options[0],
         type: options[0],
         y: 0,
         value: values,
@@ -62,8 +61,8 @@ const VectorWidget = (app, inputName, options, initial) => {
     }
 
     widget.convert = parseFloat;
-    widget.options.precision = 3;
-    widget.options.step = 0.01;
+    widget.options.precision = widget.options?.precision || 3;
+    widget.options.step = widget.options?.step || 0.01;
     widget.options.round = 1 / 10 ** widget.options.step;
 
     if (widget.options?.rgb || widget.options?.int || false) {
@@ -263,17 +262,31 @@ const VectorWidget = (app, inputName, options, initial) => {
         }
     }
 
-    widget.serializeValue = async () => {
+    widget.serializeValue = async (node, index) => {
         const value = widget.value;
-        if (widget.value === null) {
-            return null;
+
+        if (value === null || value === undefined) {
+            return [];
         }
 
-        if (Array.isArray(widget.value)) {
-            return widget.value.reduce((acc, tuple, index) => ({ ...acc, [index]: tuple }), {});
+        // Convert an object with numeric keys to an array
+        if (typeof value === 'object' && !Array.isArray(value)) {
+            console.info('inner', value)
+            // Extract and sort the keys numerically, then map values
+            return Object.keys(value)
+                .sort((a, b) => Number(a) - Number(b))
+                .map(key => value[key]);
         }
-        return widget.value;
-    }
+
+        // If it's already an array, return it
+        if (Array.isArray(value)) {
+            console.info('array', value)
+            return value;
+        }
+
+        // Fallback: wrap single values in an array
+        return [value];
+    };
 
     return widget;
 }

@@ -298,14 +298,14 @@ Users can customize the angle of separation for color calculations, offering fle
     def run(self, **kw) -> tuple[List[TensorType], List[TensorType]]:
         pA = parse_param(kw, Lexicon.IMAGE, EnumConvertType.IMAGE, None)
         scheme = parse_param(kw, Lexicon.SCHEME, EnumColorTheory, EnumColorTheory.COMPLIMENTARY.name)
-        user = parse_param(kw, Lexicon.VALUE, EnumConvertType.INT, 0, -180, 180)
+        value = parse_param(kw, Lexicon.VALUE, EnumConvertType.INT, 0, -180, 180)
         invert = parse_param(kw, Lexicon.INVERT, EnumConvertType.BOOLEAN, False)
-        params = list(zip_longest_fill(pA, scheme, user, invert))
+        params = list(zip_longest_fill(pA, scheme, value, invert))
         images = []
         pbar = ProgressBar(len(params))
-        for idx, (img, target, user, invert) in enumerate(params):
-            img = tensor_to_cv(img) if img is not None else channel_solid()
-            img = color_theory(img, user, target)
+        for idx, (img, scheme, value, invert) in enumerate(params):
+            img = channel_solid() if img is None else tensor_to_cv(img)
+            img = color_theory(img, value, scheme)
             if invert:
                 img = (image_invert(s, 1) for s in img)
             images.append([cv_to_tensor(a) for a in img])

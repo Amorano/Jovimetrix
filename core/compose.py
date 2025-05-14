@@ -16,6 +16,9 @@ from cozy_comfyui.node import \
     COZY_TYPE_IMAGE, \
     CozyBaseNode, CozyImageNode
 
+from cozy_comfyui.image import \
+    EnumImageType
+
 from cozy_comfyui.image.adjust import \
     EnumThreshold, EnumThresholdAdapt, \
     image_invert, image_filter, image_threshold
@@ -295,13 +298,14 @@ Combines individual color channels (red, green, blue) along with an optional mas
 class PixelSplitNode(CozyBaseNode):
     NAME = "PIXEL SPLIT (JOV) 💔"
     CATEGORY = JOV_CATEGORY
-    RETURN_TYPES = ("MASK", "MASK", "MASK", "MASK",)
-    RETURN_NAMES = ("❤️", "💚", "💙", "🤍")
+    RETURN_TYPES = ("MASK", "MASK", "MASK", "MASK", "IMAGE")
+    RETURN_NAMES = ("❤️", "💚", "💙", "🤍", "RGB")
     OUTPUT_TOOLTIPS = (
         "Single channel output of Red Channel.",
         "Single channel output of Green Channel",
         "Single channel output of Blue Channel",
-        "Single channel output of Alpha Channel"
+        "Single channel output of Alpha Channel",
+        "RGB pack of the input",
     )
     SORT = 40
     DESCRIPTION = """
@@ -313,23 +317,19 @@ Split an input into individual color channels (red, green, blue, alpha).
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                Lexicon.IMAGE: (COZY_TYPE_IMAGE, {}),
-                Lexicon.MASK: (COZY_TYPE_IMAGE, {})
+                Lexicon.IMAGE: (COZY_TYPE_IMAGE, {})
             }
         })
         return Lexicon._parse(d)
 
     def run(self, **kw) -> RGBAMaskType:
         pA = parse_param(kw, Lexicon.IMAGE, EnumConvertType.IMAGE, None)
-        mask = parse_param(kw, Lexicon.MASK, EnumConvertType.MASK, None)
-        params = list(zip_longest_fill(pA, mask))
         images = []
-        pbar = ProgressBar(len(params))
-        for idx, (pA, mask) in enumerate(params):
-            pA = channel_solid() if pA is None else image_convert(tensor_to_cv(pA), 4)
-            if mask is not None:
-                pA = image_mask_add(pA)
-            images.append([cv_to_tensor(x, True) for x in image_split(pA)])
+        pbar = ProgressBar(len(pA))
+        for idx, pA in enumerate(pA):
+            pA = channel_solid(chan=EnumImageType.RGBA) if pA is None else tensor_to_cv(pA, chan=4)
+            out = [cv_to_tensor(x, True) for x in image_split(pA)] + [cv_to_tensor(image_convert(pA, 3))]
+            images.append(out)
             pbar.update_absolute(idx)
         return image_stack(images)
 
