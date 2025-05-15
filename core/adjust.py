@@ -18,20 +18,20 @@ from cozy_comfyui.node import \
     CozyImageNode
 
 from cozy_comfyui.image.adjust import \
-    EnumAdjustBlur, EnumAdjustEdge, EnumAdjustMorpho, \
+    EnumAdjustBlur, EnumAdjustColor, EnumAdjustEdge, EnumAdjustMorpho, \
     image_contrast, image_brightness, image_equalize, image_gamma, \
     image_exposure, image_hsv, image_invert, image_pixelate, image_pixelscale, \
     image_posterize, image_quantize, image_sharpen, image_morphology, \
-    image_emboss, image_blur, image_edge
+    image_emboss, image_blur, image_edge, image_color
 
 from cozy_comfyui.image.channel import \
     channel_solid
 
 from cozy_comfyui.image.compose import \
-    image_levels, image_mask, image_mask_add
+    image_levels
 
 from cozy_comfyui.image.convert import \
-    tensor_to_cv, cv_to_tensor_full
+    tensor_to_cv, cv_to_tensor_full, image_mask, image_mask_add
 
 from cozy_comfyui.image.misc import \
     image_stack
@@ -64,7 +64,7 @@ class EnumAdjustPixel(Enum):
 # ==============================================================================
 
 class AdjustBlurNode(CozyImageNode):
-    NAME = "BLUR (JOV)"
+    NAME = "ADJUST: BLUR (JOV)"
     CATEGORY = JOV_CATEGORY
     DESCRIPTION = """
 Enhance and modify images with various blur effects.
@@ -100,8 +100,43 @@ Enhance and modify images with various blur effects.
             pbar.update_absolute(idx)
         return image_stack(images)
 
+class AdjustColorNode(CozyImageNode):
+    NAME = "ADJUST: COLOR (JOV)"
+    CATEGORY = JOV_CATEGORY
+    DESCRIPTION = """
+Enhance and modify images with various blur effects.
+"""
+
+    @classmethod
+    def INPUT_TYPES(cls) -> InputType:
+        d = super().INPUT_TYPES()
+        d = deep_merge(d, {
+            "optional": {
+                Lexicon.IMAGE: (COZY_TYPE_IMAGE, {}),
+                Lexicon.FUNCTION: (EnumAdjustColor._member_names_, {
+                    "default": EnumAdjustColor.RGB.name,}),
+                Lexicon.VEC: ("VEC3", {
+                    "default": (0,0,0), "mij": -1, "maj": 1, "step": 0.025})
+            }
+        })
+        return Lexicon._parse(d)
+
+    def run(self, **kw) -> RGBAMaskType:
+        pA = parse_param(kw, Lexicon.IMAGE, EnumConvertType.IMAGE, None)
+        op = parse_param(kw, Lexicon.FUNCTION, EnumAdjustColor, EnumAdjustColor.RGB.name)
+        vec = parse_param(kw, Lexicon.VEC, EnumConvertType.VEC3, (0,0,0))
+        params = list(zip_longest_fill(pA, op, vec))
+        images = []
+        pbar = ProgressBar(len(params))
+        for idx, (pA, op, vec) in enumerate(params):
+            pA = channel_solid() if pA is None else tensor_to_cv(pA)
+            pA = image_color(pA, op, vec[0], vec[1], vec[2])
+            images.append(cv_to_tensor_full(pA))
+            pbar.update_absolute(idx)
+        return image_stack(images)
+
 class AdjustEdgeNode(CozyImageNode):
-    NAME = "EDGE (JOV)"
+    NAME = "ADJUST: EDGE (JOV)"
     CATEGORY = JOV_CATEGORY
     DESCRIPTION = """
 Enhanced edge detection.
@@ -144,7 +179,7 @@ Enhanced edge detection.
         return image_stack(images)
 
 class AdjustEmbossNode(CozyImageNode):
-    NAME = "EMBOSS (JOV)"
+    NAME = "ADJUST: EMBOSS (JOV)"
     CATEGORY = JOV_CATEGORY
     DESCRIPTION = """
 Emboss boss mode.
@@ -185,7 +220,7 @@ Emboss boss mode.
         return image_stack(images)
 
 class AdjustLevelNode(CozyImageNode):
-    NAME = "LEVELS (JOV)"
+    NAME = "ADJUST: LEVELS (JOV)"
     CATEGORY = JOV_CATEGORY
     DESCRIPTION = """
 
@@ -228,7 +263,7 @@ class AdjustLevelNode(CozyImageNode):
         return image_stack(images)
 
 class AdjustLightNode(CozyImageNode):
-    NAME = "LIGHT (JOV)"
+    NAME = "ADJUST: LIGHT (JOV)"
     CATEGORY = JOV_CATEGORY
     DESCRIPTION = """
 Tonal adjustments. They can be applied individually or all at the same time in order: brightness, contrast, histogram equalization, exposure, and gamma correction.
@@ -297,7 +332,7 @@ Tonal adjustments. They can be applied individually or all at the same time in o
         return image_stack(images)
 
 class AdjustMorphNode(CozyImageNode):
-    NAME = "MORPHOLOGY (JOV)"
+    NAME = "ADJUST: MORPHOLOGY (JOV)"
     CATEGORY = JOV_CATEGORY
     DESCRIPTION = """
 Operations based on the image shape.
@@ -337,7 +372,7 @@ Operations based on the image shape.
         return image_stack(images)
 
 class AdjustPixelNode(CozyImageNode):
-    NAME = "PIXEL (JOV)"
+    NAME = "ADJUST: PIXEL (JOV)"
     CATEGORY = JOV_CATEGORY
     DESCRIPTION = """
 Pixel-level transformations. The val parameter controls the intensity or resolution of the effect, depending on the operation.
@@ -352,7 +387,7 @@ Pixel-level transformations. The val parameter controls the intensity or resolut
                 Lexicon.FUNCTION: (EnumAdjustPixel._member_names_, {
                     "default": EnumAdjustPixel.PIXELATE.name,}),
                 Lexicon.VALUE: ("FLOAT", {
-                    "default": 1, "min": 0, "max": 1, "step": 0.01})
+                    "default": 0, "min": 0, "max": 1, "step": 0.01})
             }
         })
         return Lexicon._parse(d)
@@ -387,7 +422,7 @@ Pixel-level transformations. The val parameter controls the intensity or resolut
         return image_stack(images)
 
 class AdjustSharpenNode(CozyImageNode):
-    NAME = "SHARPEN (JOV)"
+    NAME = "ADJUST: SHARPEN (JOV)"
     CATEGORY = JOV_CATEGORY
     DESCRIPTION = """
 Sharpen the pixels of an image.

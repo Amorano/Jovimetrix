@@ -35,10 +35,10 @@ from cozy_comfyui.image.channel import \
 
 from cozy_comfyui.image.compose import \
     EnumScaleMode, EnumInterpolation, \
-    image_scalefit, image_mask, image_mask_add
+    image_scalefit
 
 from cozy_comfyui.image.convert import \
-    tensor_to_cv, cv_to_tensor, cv_to_tensor_full
+    tensor_to_cv, cv_to_tensor, cv_to_tensor_full, image_mask, image_mask_add
 
 from cozy_comfyui.image.misc import \
     image_stack
@@ -82,9 +82,7 @@ Simulate color blindness effects on images. You can select various types of colo
                 Lexicon.DEFICIENCY: (EnumCBDeficiency._member_names_, {
                     "default": EnumCBDeficiency.PROTAN.name,}),
                 Lexicon.SOLVER: (EnumCBSimulator._member_names_, {
-                    "default": EnumCBSimulator.AUTOSELECT.name,}),
-                Lexicon.ALPHA: ("FLOAT", {
-                    "default": 1, "min": 0, "max": 1, "step": 0.001,}),
+                    "default": EnumCBSimulator.AUTOSELECT.name,})
             }
         })
         return Lexicon._parse(d)

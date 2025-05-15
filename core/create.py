@@ -29,11 +29,11 @@ from cozy_comfyui.image.channel import \
 
 from cozy_comfyui.image.compose import \
     EnumEdge, EnumScaleMode, EnumInterpolation, \
-    image_rotate, image_scalefit, image_transform, image_translate, image_blend, \
-    image_mask_add, image_mask_binary
+    image_rotate, image_scalefit, image_transform, image_translate, image_blend
 
 from cozy_comfyui.image.convert import \
-    image_convert, pil_to_cv, cv_to_tensor, cv_to_tensor_full, tensor_to_cv
+    image_convert, pil_to_cv, cv_to_tensor, cv_to_tensor_full, tensor_to_cv, \
+    image_mask_add, image_mask_binary
 
 from cozy_comfyui.image.misc import \
     image_stack
