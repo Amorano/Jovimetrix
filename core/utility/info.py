@@ -67,7 +67,6 @@ Visualize data. It accepts various types of data, including images, text, and ot
     def run(self, **kw) -> tuple[Any, Any]:
         kw.pop('ident', None)
         o = kw.values()
-        print("akashic", o)
         output = {"ui": {"b64_images": [], "text": []}}
         if o is None or len(o) == 0:
             output["ui"]["result"] = (None, None, )

@@ -263,28 +263,11 @@ const VectorWidget = (app, inputName, options, initial) => {
         }
     }
 
-    widget.serializeValue = async () => {
-        const value = widget.value;
-
-        if (value === null || value === undefined) {
-            return [];
-        }
-
-        // Convert an object with numeric keys to an array
-        if (typeof value === 'object' && !Array.isArray(value)) {
-            // Extract and sort the keys numerically, then map values
-            return Object.keys(value)
-                .sort((a, b) => Number(a) - Number(b))
-                .map(key => value[key]);
-        }
-
-        // If it's already an array, return it
-        if (Array.isArray(value)) {
-            return value;
-        }
-
-        // Fallback: wrap single values in an array
-        return [value];
+    widget.serializeValue = async (node, index) => {
+        const rawValues = Array.isArray(widget.value)
+            ? widget.value
+            : Object.values(widget.value);
+        return rawValues.map(v => parseFloat(v));
     };
 
     return widget;

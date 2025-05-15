@@ -128,7 +128,6 @@ Combine two input images using various blending modes, such as normal, screen, m
             else:
                 pA = tensor_to_cv(pA)
                 matted = pixel_eval(matte)
-                print("matted", matted)
                 pA = image_matte(pA, matted)
 
             if pB is None:

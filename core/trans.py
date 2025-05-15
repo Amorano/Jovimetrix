@@ -267,7 +267,7 @@ Apply various geometric transformations to images, including translation, rotati
                 Lexicon.MIRROR: (EnumMirrorMode._member_names_, {
                     "default": EnumMirrorMode.NONE.name}),
                 Lexicon.PIVOT: ("VEC2", {
-                    "default": (0.5, 0.5), "step": 0.005,
+                    "default": (0.5, 0.5), "step": 0.01,
                     "label": ["X", "Y"]}),
                 Lexicon.PROJECTION: (EnumProjection._member_names_, {
                     "default": EnumProjection.NORMAL.name}),

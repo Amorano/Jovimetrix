@@ -165,16 +165,16 @@ Outputs a VECTOR2.
                     "min": -sys.maxsize, "max": sys.maxsize,
                     "tooltip": "Y channel value"}),
                 Lexicon.DEFAULT: ("VEC2", {
-                    "default": 0, "mij": -sys.maxsize, "maj": sys.maxsize,
+                    "default": (0,0), "mij": -sys.maxsize, "maj": sys.maxsize,
                     "tooltip": "Default vector value"}),
             }
         })
         return Lexicon._parse(d)
 
     def run(self, **kw) -> tuple[tuple[float, ...]]:
-        x = parse_param(kw, Lexicon.X, EnumConvertType.FLOAT, None, -sys.maxsize, sys.maxsize)
-        y = parse_param(kw, Lexicon.Y, EnumConvertType.FLOAT, None, -sys.maxsize, sys.maxsize)
-        default = parse_param(kw, Lexicon.DEFAULT, EnumConvertType.VEC2, 0, -sys.maxsize, sys.maxsize)
+        x = parse_param(kw, Lexicon.X, EnumConvertType.FLOAT, None)
+        y = parse_param(kw, Lexicon.Y, EnumConvertType.FLOAT, None)
+        default = parse_param(kw, Lexicon.DEFAULT, EnumConvertType.VEC2, (0,0))
         result = []
         params = list(zip_longest_fill(x, y, default))
         pbar = ProgressBar(len(params))
@@ -214,17 +214,17 @@ Outputs a VECTOR3.
                     "min": -sys.maxsize, "max": sys.maxsize,
                     "tooltip": "Z channel value"}),
                 Lexicon.DEFAULT: ("VEC3", {
-                    "default": 0, "mij": -sys.maxsize, "maj": sys.maxsize,
+                    "default": (0,0,0), "mij": -sys.maxsize, "maj": sys.maxsize,
                     "tooltip": "Default vector value"}),
             }
         })
         return Lexicon._parse(d)
 
     def run(self, **kw) -> tuple[tuple[float, ...]]:
-        x = parse_param(kw, Lexicon.X, EnumConvertType.FLOAT, None, -sys.maxsize, sys.maxsize)
-        y = parse_param(kw, Lexicon.Y, EnumConvertType.FLOAT, None, -sys.maxsize, sys.maxsize)
-        z = parse_param(kw, Lexicon.Z, EnumConvertType.FLOAT, None, -sys.maxsize, sys.maxsize)
-        default = parse_param(kw, Lexicon.DEFAULT, EnumConvertType.VEC3, 0, -sys.maxsize, sys.maxsize)
+        x = parse_param(kw, Lexicon.X, EnumConvertType.FLOAT, None)
+        y = parse_param(kw, Lexicon.Y, EnumConvertType.FLOAT, None)
+        z = parse_param(kw, Lexicon.Z, EnumConvertType.FLOAT, None)
+        default = parse_param(kw, Lexicon.DEFAULT, EnumConvertType.VEC3, (0,0,0))
         result = []
         params = list(zip_longest_fill(x, y, z, default))
         pbar = ProgressBar(len(params))
@@ -268,18 +268,18 @@ Outputs a VECTOR4.
                     "min": -sys.maxsize, "max": sys.maxsize,
                     "tooltip": "W channel value"}),
                 Lexicon.DEFAULT: ("VEC4", {
-                    "default": 0, "mij": -sys.maxsize, "maj": sys.maxsize,
+                    "default": (0,0,0,0), "mij": -sys.maxsize, "maj": sys.maxsize,
                     "tooltip": "Default vector value"}),
             }
         })
         return Lexicon._parse(d)
 
     def run(self, **kw) -> tuple[tuple[float, ...]]:
-        x = parse_param(kw, Lexicon.X, EnumConvertType.FLOAT, None, -sys.maxsize, sys.maxsize)
-        y = parse_param(kw, Lexicon.Y, EnumConvertType.FLOAT, None, -sys.maxsize, sys.maxsize)
-        z = parse_param(kw, Lexicon.Z, EnumConvertType.FLOAT, None, -sys.maxsize, sys.maxsize)
-        w = parse_param(kw, Lexicon.W, EnumConvertType.FLOAT, None, -sys.maxsize, sys.maxsize)
-        default = parse_param(kw, Lexicon.DEFAULT, EnumConvertType.VEC4, 0, -sys.maxsize, sys.maxsize)
+        x = parse_param(kw, Lexicon.X, EnumConvertType.FLOAT, None)
+        y = parse_param(kw, Lexicon.Y, EnumConvertType.FLOAT, None)
+        z = parse_param(kw, Lexicon.Z, EnumConvertType.FLOAT, None)
+        w = parse_param(kw, Lexicon.W, EnumConvertType.FLOAT, None)
+        default = parse_param(kw, Lexicon.DEFAULT, EnumConvertType.VEC4, (0,0,0,0))
         result = []
         params = list(zip_longest_fill(x, y, z, w, default))
         pbar = ProgressBar(len(params))
