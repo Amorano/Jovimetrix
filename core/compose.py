@@ -267,9 +267,7 @@ Combines individual color channels (red, green, blue) along with an optional mas
         for idx, (rgba, r, g, b, a, matte, flip, invert) in enumerate(params):
             replace = r, g, b, a
             if rgba is not None:
-                rgba = tensor_to_cv(rgba)
-                rgba = image_convert(rgba, 4)
-                rgba = image_split(rgba)
+                rgba = image_split(tensor_to_cv(rgba, chan=4))
                 img = [tensor_to_cv(replace[i]) if replace[i] is not None else x for i, x in enumerate(rgba)]
             else:
                 img = [tensor_to_cv(x) if x is not None else x for x in replace]

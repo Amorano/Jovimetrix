@@ -65,7 +65,6 @@ export async function widgetHookControl(node, control_key, child_key) {
         const me = await controlCallback?.apply(this, arguments);
         Object.assign(target.options, track_options);
 
-        console.info(1, target.options);
         if (["VEC2", "VEC3", "VEC4", "FLOAT", "INT", "BOOLEAN"].includes(control.value)) {
             target_input.type = control.value;
 
@@ -103,7 +102,6 @@ export async function widgetHookControl(node, control_key, child_key) {
                 target.value[0] = track_xyzw[0] != 0 ? 1 : 0;
             }
         }
-        console.info(2, target.options);
         nodeFitHeight(node);
         return me;
     }

@@ -61,7 +61,7 @@ const VectorWidget = (app, inputName, options, initial) => {
     }
 
     widget.convert = parseFloat;
-    widget.options.precision = widget.options?.precision || 3;
+    widget.options.precision = widget.options?.precision || 2;
     widget.options.step = widget.options?.step || 0.01;
     widget.options.round = 1 / 10 ** widget.options.step;
 
@@ -253,6 +253,7 @@ const VectorWidget = (app, inputName, options, initial) => {
 
         pointer.onDrag = (eMove) => {
             if (!eMove.deltaX || !(index > -1)) return;
+            if (index >= size) return;
             let v = parseFloat(this.value[index]);
             v += this.options.step * Math.sign(eMove.deltaX);
             clamp(this, v, index);
@@ -262,7 +263,7 @@ const VectorWidget = (app, inputName, options, initial) => {
         }
     }
 
-    widget.serializeValue = async (node, index) => {
+    widget.serializeValue = async () => {
         const value = widget.value;
 
         if (value === null || value === undefined) {
@@ -271,7 +272,6 @@ const VectorWidget = (app, inputName, options, initial) => {
 
         // Convert an object with numeric keys to an array
         if (typeof value === 'object' && !Array.isArray(value)) {
-            console.info('inner', value)
             // Extract and sort the keys numerically, then map values
             return Object.keys(value)
                 .sort((a, b) => Number(a) - Number(b))
@@ -280,7 +280,6 @@ const VectorWidget = (app, inputName, options, initial) => {
 
         // If it's already an array, return it
         if (Array.isArray(value)) {
-            console.info('array', value)
             return value;
         }
 
