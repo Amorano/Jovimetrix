@@ -241,7 +241,7 @@ Tonal adjustments. They can be applied individually or all at the same time in o
             "optional": {
                 Lexicon.IMAGE: (COZY_TYPE_IMAGE, {}),
                 Lexicon.BRIGHTNESS: ("FLOAT", {
-                    "default": 0, "min": -1, "max": 1, "step": 0.01}),
+                    "default": 0.5, "min": 0, "max": 1, "step": 0.01}),
                 Lexicon.CONTRAST: ("FLOAT", {
                     "default": 0, "min": -1, "max": 1, "step": 0.01}),
                 Lexicon.EQUALIZE: ("BOOLEAN", {
@@ -256,7 +256,7 @@ Tonal adjustments. They can be applied individually or all at the same time in o
 
     def run(self, **kw) -> RGBAMaskType:
         pA = parse_param(kw, Lexicon.IMAGE, EnumConvertType.IMAGE, None)
-        brightness = parse_param(kw, Lexicon.BRIGHTNESS, EnumConvertType.FLOAT, 0)
+        brightness = parse_param(kw, Lexicon.BRIGHTNESS, EnumConvertType.FLOAT, 0.5)
         contrast = parse_param(kw, Lexicon.CONTRAST, EnumConvertType.FLOAT, 0)
         equalize = parse_param(kw, Lexicon.EQUALIZE, EnumConvertType.FLOAT, 0)
         exposure = parse_param(kw, Lexicon.EXPOSURE, EnumConvertType.FLOAT, 0)
@@ -268,6 +268,7 @@ Tonal adjustments. They can be applied individually or all at the same time in o
             pA = channel_solid() if pA is None else tensor_to_cv(pA)
             alpha = image_mask(pA)
 
+            brightness = 2. * (brightness - 0.5)
             if brightness != 0:
                 pA = image_brightness(pA, brightness)
 
@@ -350,8 +351,8 @@ Pixel-level transformations. The val parameter controls the intensity or resolut
                 Lexicon.IMAGE: (COZY_TYPE_IMAGE, {}),
                 Lexicon.FUNCTION: (EnumAdjustPixel._member_names_, {
                     "default": EnumAdjustPixel.PIXELATE.name,}),
-                Lexicon.VALUE: ("INT", {
-                    "default": 1, "min": 0, "max": 4096, "step": 1}),
+                Lexicon.VALUE: ("FLOAT", {
+                    "default": 1, "min": 0, "max": 1, "step": 0.01})
             }
         })
         return Lexicon._parse(d)
@@ -359,31 +360,28 @@ Pixel-level transformations. The val parameter controls the intensity or resolut
     def run(self, **kw) -> RGBAMaskType:
         pA = parse_param(kw, Lexicon.IMAGE, EnumConvertType.IMAGE, None)
         op = parse_param(kw, Lexicon.FUNCTION, EnumAdjustPixel, EnumAdjustPixel.PIXELATE.name)
-        val = parse_param(kw, Lexicon.VALUE, EnumConvertType.INT, 0)
+        val = parse_param(kw, Lexicon.VALUE, EnumConvertType.FLOAT, 0)
         params = list(zip_longest_fill(pA, op, val))
         images = []
         pbar = ProgressBar(len(params))
         for idx, (pA, op, val) in enumerate(params):
-            pA = channel_solid() if pA is None else tensor_to_cv(pA)
-            #height, width = pA.shape[:2]
-            #mask = channel_solid(width, height, (255,255,255,255)) if mask is None else tensor_to_cv(mask)
+            pA = channel_solid() if pA is None else tensor_to_cv(pA, chan=4)
+            alpha = image_mask(pA)
 
             match op:
                 case EnumAdjustPixel.PIXELATE:
-                    pA = image_pixelate(pA, val)
+                    pA = image_pixelate(pA, val / 2.)
 
                 case EnumAdjustPixel.PIXELSCALE:
                     pA = image_pixelscale(pA, val)
 
                 case EnumAdjustPixel.QUANTIZE:
-                    val = max(0, 256 - val)
                     pA = image_quantize(pA, val)
 
                 case EnumAdjustPixel.POSTERIZE:
-                    val = max(0, 256 - val)
                     pA = image_posterize(pA, val)
 
-            #pA = image_blend(pA, img_new, mask)
+            pA = image_mask_add(pA, alpha)
             images.append(cv_to_tensor_full(pA))
             pbar.update_absolute(idx)
         return image_stack(images)
@@ -402,9 +400,9 @@ Sharpen the pixels of an image.
             "optional": {
                 Lexicon.IMAGE: (COZY_TYPE_IMAGE, {}),
                 Lexicon.AMOUNT: ("FLOAT", {
-                    "default": 0, "min": 0, "max": 255}),
+                    "default": 0, "min": 0, "max": 1, "step": 0.01}),
                 Lexicon.THRESHOLD: ("FLOAT", {
-                    "default": 0, "min": 0, "max": 255})
+                    "default": 0, "min": 0, "max": 1, "step": 0.01})
             }
         })
         return Lexicon._parse(d)
@@ -418,7 +416,7 @@ Sharpen the pixels of an image.
         pbar = ProgressBar(len(params))
         for idx, (pA, amount, threshold) in enumerate(params):
             pA = channel_solid() if pA is None else tensor_to_cv(pA)
-            pA = image_sharpen(pA, amount, threshold=threshold)
+            pA = image_sharpen(pA, amount / 2., threshold=threshold / 25.5)
             images.append(cv_to_tensor_full(pA))
             pbar.update_absolute(idx)
         return image_stack(images)
