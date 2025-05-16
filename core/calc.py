@@ -495,7 +495,6 @@ Additionally, you can specify the easing function (EASE) and the desired output 
                 except OverflowError:
                     ret.append(0)
                 except Exception as e:
-                    logger.error(f"{e} :: {op}")
                     ret.append(0)
             val = ret[0] if size == 1 else ret[:size+1]
             values.append(val)

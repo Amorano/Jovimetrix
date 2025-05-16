@@ -1,7 +1,7 @@
 [project]
 name = "jovimetrix"
 description = "Animation via tick. Parameter manipulation with wave generator. Unary and Binary math support. Value convert int/float/bool, VectorN and Image, Mask types. Shape mask generator. Stack images, do channel ops, split, merge and randomize arrays and batches. Load images & video from anywhere. Dynamic bus routing. Save output anywhere! Flatten, crop, transform; check colorblindness or linear interpolate values."
-version = "2.1.4"
+version = "2.1.5"
 license = { file = "LICENSE" }
 readme = "README.md"
 authors = [{ name = "Alexander G. Morano", email = "amorano@gmail.com" }]
@@ -17,16 +17,11 @@ classifiers = [
 requires-python = ">=3.11"
 dependencies = [
     "aenum",
-    "blendmodes",
     "git+https://github.com/cozy-comfyui/cozy_comfyui@main#egg=cozy_comfyui",
-    "daltonlens",
     "matplotlib",
-    "numba",
     "numpy<2",
     "opencv-contrib-python",
-    "Pillow",
-    "scikit-image",
-    "scikit-learn"
+    "Pillow"
 ]
 
 [project.urls]

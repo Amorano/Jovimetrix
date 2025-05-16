@@ -138,6 +138,18 @@ Nodes that have been migrated:
 
 [Migrated to Jovi_GLSL](https://github.com/Amorano/Jovi_GLSL)
 
+**2025/05/16** @2.1.5:
+* Full compatibility with [ComfyMath Vector](https://github.com/evanspearman/ComfyMath) nodes
+* Masks can be inverted at inputs
+* `EnumScaleInputMode` for `BLEND` node to adjust inputs prior to operation
+* Allow images or mask inputs in `CONSTANT` node to fall through
+* `VALUE` nodes return all items as list, not just >1
+* Added explicit MASK option for `PIXEL SPLIT` node
+* Split `ADJUST` node into `BLUR`, `EDGE`, `LIGHT`, `PIXEL`,
+* Migrated most of image lib to cozy_comfyui
+* widget_vector tweaked to disallow non-numerics
+* widgetHookControl streamlined
+
 **2025/05/08** @2.1.4:
 * Support for NUMERICAL (bool, int, float, vecN) inputs on value inputs
 
