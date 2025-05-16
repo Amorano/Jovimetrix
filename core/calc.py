@@ -183,7 +183,7 @@ OP_UNARY = {
 # === SUPPORT ===
 # ==============================================================================
 
-def to_bits(value):
+def to_bits(value: Any):
     if isinstance(value, int):
         return bin(value)[2:]
     elif isinstance(value, float):
@@ -194,22 +194,32 @@ def to_bits(value):
     else:
         raise TypeError(f"Unsupported type: {type(value)}")
 
-def vector_swap(pA: Any, pB: Any, swap_x: EnumSwizzle, x:float, swap_y:EnumSwizzle, y:float,
-                swap_z:EnumSwizzle, z:float, swap_w:EnumSwizzle, w:float) -> List[float]:
+def vector_swap(pA: Any, pB: Any, swap_x: EnumSwizzle, swap_y:EnumSwizzle,
+                swap_z:EnumSwizzle, swap_w:EnumSwizzle, default:List[float]) -> List[float]:
     """Swap out a vector's values with another vector's values, or a constant fill."""
+
     def parse(target, targetB, swap, val) -> float:
         if swap == EnumSwizzle.CONSTANT:
             return val
         if swap in [EnumSwizzle.B_X, EnumSwizzle.B_Y, EnumSwizzle.B_Z, EnumSwizzle.B_W]:
             target = targetB
         swap = int(swap.value / 10)
-        return target[swap] if swap < len(target) else 0
+        return target[swap]
+
+    while len(pA) < 4:
+        pA.append(0)
+
+    while len(pB) < 4:
+        pB.append(0)
+
+    while len(default) < 4:
+        default.append(0)
 
     return [
-        parse(pA, pB, swap_x, x),
-        parse(pA, pB, swap_y, y),
-        parse(pA, pB, swap_z, z),
-        parse(pA, pB, swap_w, w)
+        parse(pA, pB, swap_x, default[0]),
+        parse(pA, pB, swap_y, default[1]),
+        parse(pA, pB, swap_z, default[2]),
+        parse(pA, pB, swap_w, default[3])
     ]
 
 # ==============================================================================
@@ -241,33 +251,27 @@ IMAGE and MASK will return a TRUE bit for any non-black pixel, as a stream of bi
                 Lexicon.VALUE: (COZY_TYPE_NUMERICAL, {
                     "default": None,
                     "tooltip": "Value to convert into bits"}),
-                Lexicon.BIT: ("INT", {
-                    "default": 8, "min": 1, "max": 64,
-                    "tooltip": "Number of output bits requested"}),
-                Lexicon.MSB: ("BOOLEAN", {
-                    "default": False})
+                Lexicon.BITS: ("INT", {
+                    "default": 8, "min": 0, "max": 64,
+                    "tooltip": "Number of output bits requested"})
             }
         })
         return Lexicon._parse(d)
 
     def run(self, **kw) -> tuple[List[int], List[bool]]:
-        value = parse_param(kw, Lexicon.VALUE, EnumConvertType.ANY, 0)
-        bits = parse_param(kw, Lexicon.BIT, EnumConvertType.INT, 8, 1, 64)
-        msb = parse_param(kw, Lexicon.MSB, EnumConvertType.INT, False)
+        value = parse_param(kw, Lexicon.VALUE, EnumConvertType.LIST, 0)
+        bits = parse_param(kw, Lexicon.BITS, EnumConvertType.INT, 8)
         params = list(zip_longest_fill(value, bits))
         pbar = ProgressBar(len(params))
         results = []
         for idx, (value, bits) in enumerate(params):
-            bit_repr = to_bits(value)
-            if len(bit_repr) > bits:
-                if msb:
-                    bit_repr = bit_repr[bits]
+            bit_repr = to_bits(value[0])[::-1]
+            if bits > 0:
+                if len(bit_repr) > bits:
+                    bit_repr = bit_repr[0:bits]
                 else:
-                    bit_repr = bit_repr[-bits:]
-            elif msb:
-                bit_repr = bit_repr.zfill(bits)
-            else:
-                bit_repr = bit_repr.ljust(bits, '0')
+                    bit_repr = bit_repr.ljust(bits, '0')
+
             int_bits = []
             bool_bits = []
             for b in bit_repr:
@@ -314,7 +318,8 @@ Evaluates two inputs (A and B) with a specified comparison operators and optiona
                     "default": EnumComparison.EQUAL.name,
                     "tooltip": "Comparison function. Sends the data in PASS on successful comparison to OUT, otherwise sends the value in FAIL"}),
                 Lexicon.SWAP: ("BOOLEAN", {
-                    "default": False,}),
+                    "default": False,
+                    "tooltip": "Reverse the A and B inputs"}),
                 Lexicon.INVERT: ("BOOLEAN", {
                     "default": False,
                     "tooltip": "Reverse the PASS and FAIL inputs"}),
@@ -407,6 +412,7 @@ Evaluates two inputs (A and B) with a specified comparison operators and optiona
                 outs = torch.stack(outs)
             else:
                 outs = outs[0].unsqueeze(0)
+            outs = [outs]
         else:
             outs = list(outs)
         return outs, *vals,
@@ -443,14 +449,10 @@ Additionally, you can specify the easing function (EASE) and the desired output 
                 Lexicon.TYPE: (EnumConvertType._member_names_[:6], {
                     "default": EnumConvertType.FLOAT.name,
                     "tooltip": "Output type desired from resultant operation"}),
-                Lexicon.EASE: (EnumEase._member_names_, {
-                    "default": EnumEase.LINEAR.name}),
                 Lexicon.DEFAULT_A: ("VEC4", {
                     "default": (0, 0, 0, 0)}),
                 Lexicon.DEFAULT_B: ("VEC4", {
-                    "default": (1,1,1,1)}),
-                Lexicon.FILL: (EnumFillOperation._member_names_, {
-                    "default": EnumFillOperation.DEFAULT.name}),
+                    "default": (1,1,1,1)})
             }
         })
         return Lexicon._parse(d)
@@ -458,16 +460,14 @@ Additionally, you can specify the easing function (EASE) and the desired output 
     def run(self, **kw) -> tuple[Any, Any]:
         A = parse_param(kw, Lexicon.IN_A, EnumConvertType.ANY, 0)
         B = parse_param(kw, Lexicon.IN_B, EnumConvertType.ANY, 0)
-        alpha = parse_param(kw, Lexicon.ALPHA,EnumConvertType.VEC4, (0.5,0.5,0.5,0.5), 0, 1)
+        alpha = parse_param(kw, Lexicon.ALPHA,EnumConvertType.VEC4, (0.5,0.5,0.5,0.5))
         typ = parse_param(kw, Lexicon.TYPE, EnumConvertType, EnumConvertType.FLOAT.name)
-        op = parse_param(kw, Lexicon.EASE, EnumEase, EnumEase.LINEAR.name)
         a_xyzw = parse_param(kw, Lexicon.DEFAULT_A, EnumConvertType.VEC4, (0, 0, 0, 0))
         b_xyzw = parse_param(kw, Lexicon.DEFAULT_B, EnumConvertType.VEC4, (1, 1, 1, 1))
-        fill = parse_param(kw, Lexicon.FILL, EnumConvertType.BOOLEAN, False)
         values = []
-        params = list(zip_longest_fill(A, B, alpha, typ, op, a_xyzw, b_xyzw, fill,))
+        params = list(zip_longest_fill(A, B, alpha, typ, a_xyzw, b_xyzw))
         pbar = ProgressBar(len(params))
-        for idx, (A, B, alpha, typ, op, a_xyzw, b_xyzw, fill,) in enumerate(params):
+        for idx, (A, B, alpha, typ, a_xyzw, b_xyzw) in enumerate(params):
             size = int(typ.value / 10)
 
             if A is None:
@@ -486,14 +486,7 @@ Additionally, you can specify the easing function (EASE) and the desired output 
                 val_a = [val_a[0]]
                 val_b = [val_b[0]]
 
-            # logger.debug([A, B, val_a, val_b, alpha, size])
-
-            if op == "NONE":
-                val = [val_b[x] * alpha[x] + val_a[x] * (1 - alpha[x]) for x in range(size)]
-            else:
-                # ease = EnumEase[op]
-                val = [ease_op(op, val_a[x], val_b[x], alpha=alpha[x]) for x in range(size)]
-
+            val = [val_b[x] * alpha[x] + val_a[x] * (1 - alpha[x]) for x in range(size)]
             convert = int if "INT" in typ.name else float
             ret = []
             for v in val:
@@ -538,9 +531,7 @@ Perform single function operations like absolute value, mean, median, mode, magn
                 Lexicon.DEFAULT_A: ("VEC4", {
                     "default": (0,0,0,0), "mij": -sys.maxsize, "maj": sys.maxsize,
                     "precision": 2,
-                    "label": ["X", "Y", "Z", "W"]}),
-                Lexicon.FILL: (EnumFillOperation._member_names_, {
-                    "default": EnumFillOperation.DEFAULT.name})
+                    "label": ["X", "Y", "Z", "W"]})
             }
         })
         return Lexicon._parse(d)
@@ -551,15 +542,14 @@ Perform single function operations like absolute value, mean, median, mode, magn
         op = parse_param(kw, Lexicon.FUNCTION, EnumUnaryOperation, EnumUnaryOperation.ABS.name)
         out = parse_param(kw, Lexicon.TYPE, EnumConvertType, EnumConvertType.FLOAT.name)
         a_xyzw = parse_param(kw, Lexicon.DEFAULT_A, EnumConvertType.VEC4, (0, 0, 0, 0))
-        fill = parse_param(kw, Lexicon.FILL, EnumConvertType.BOOLEAN, False)
-        params = list(zip_longest_fill(A, op, out, a_xyzw, fill))
+        params = list(zip_longest_fill(A, op, out, a_xyzw))
         pbar = ProgressBar(len(params))
-        for idx, (A, op, out, a_xyzw, fill) in enumerate(params):
-            size = min(3, max(0 if not isinstance(A, (list,)) else len(A)))
-            best_type = [EnumConvertType.FLOAT, EnumConvertType.VEC2, EnumConvertType.VEC3, EnumConvertType.VEC4][size]
+        for idx, (A, op, out, a_xyzw) in enumerate(params):
+            if not isinstance(A, (list, tuple,)):
+                A = [A]
+            best_type = [EnumConvertType.FLOAT, EnumConvertType.VEC2, EnumConvertType.VEC3, EnumConvertType.VEC4][len(A)-1]
             val = parse_value(A, best_type, a_xyzw)
             val = parse_value(val, EnumConvertType.VEC4, a_xyzw)
-            # val = [float(v) for v in val]
             match op:
                 case EnumUnaryOperation.MEAN:
                     val = [sum(val) / len(val)]
@@ -594,10 +584,6 @@ Perform single function operations like absolute value, mean, median, mode, magn
                             v = 0
                         ret.append(v)
                     val = ret
-
-            if fill:
-                while len(val) < 4:
-                    val.append(val[-1])
 
             val = parse_value(val, out, 0)
             results.append(val)
@@ -638,15 +624,10 @@ Execute binary operations like addition, subtraction, multiplication, division, 
                     "default": False}),
                 Lexicon.DEFAULT_A: ("VEC4", {
                     "default": (0,0,0,0), "mij": -sys.maxsize, "maj": sys.maxsize,
-                    "precision": 2,
                     "label": ["X", "Y", "Z", "W"]}),
                 Lexicon.DEFAULT_B: ("VEC4", {
                     "default": (0,0,0,0), "mij": -sys.maxsize, "maj": sys.maxsize,
-                    "precision": 2,
-                    "label": ["X", "Y", "Z", "W"]}),
-                Lexicon.FILL: (EnumFillOperation._member_names_, {
-                    "default": EnumFillOperation.DEFAULT.name}),
-
+                    "label": ["X", "Y", "Z", "W"]})
             }
         })
         return Lexicon._parse(d)
@@ -660,19 +641,19 @@ Execute binary operations like addition, subtraction, multiplication, division, 
         swap = parse_param(kw, Lexicon.SWAP, EnumConvertType.BOOLEAN, False)
         a_xyzw = parse_param(kw, Lexicon.DEFAULT_A, EnumConvertType.VEC4, (0, 0, 0, 0))
         b_xyzw = parse_param(kw, Lexicon.DEFAULT_B, EnumConvertType.VEC4, (0, 0, 0, 0))
-        fill = parse_param(kw, Lexicon.FILL, EnumConvertType.BOOLEAN, False)
-        params = list(zip_longest_fill(A, B, a_xyzw, b_xyzw, op, typ, swap, fill))
+        params = list(zip_longest_fill(A, B, a_xyzw, b_xyzw, op, typ, swap))
         pbar = ProgressBar(len(params))
-        for idx, (A, B, a_xyzw, b_xyzw, op, typ, swap, fill) in enumerate(params):
-            size = min(3, max(0 if not isinstance(A, (list,)) else len(A), 0 if not isinstance(B, (list,)) else len(B)))
+        for idx, (A, B, a_xyzw, b_xyzw, op, typ, swap) in enumerate(params):
+            if not isinstance(A, (list, tuple,)):
+                A = [A]
+            if not isinstance(B, (list, tuple,)):
+                B = [B]
+            size = min(3, max(len(A)-1, len(B)-1))
             best_type = [EnumConvertType.FLOAT, EnumConvertType.VEC2, EnumConvertType.VEC3, EnumConvertType.VEC4][size]
             val_a = parse_value(A, best_type, a_xyzw)
             val_a = parse_value(val_a, EnumConvertType.VEC4, a_xyzw)
             val_b = parse_value(B, best_type, b_xyzw)
             val_b = parse_value(val_b, EnumConvertType.VEC4, b_xyzw)
-
-            #val_a = parse_value(A, EnumConvertType.VEC4, A if A is not None else a_xyzw)
-            #val_b = parse_value(B, EnumConvertType.VEC4, B if B is not None else b_xyzw)
 
             if swap:
                 val_a, val_b = val_b, val_a
@@ -848,7 +829,7 @@ Swap components between two vectors based on specified swizzle patterns and valu
                 Lexicon.IN_A: (COZY_TYPE_NUMERICAL, {}),
                 Lexicon.IN_B: (COZY_TYPE_NUMERICAL, {}),
                 Lexicon.TYPE: (names_convert, {
-                    "default": names_convert[2]}),
+                    "default": names_convert[0]}),
                 Lexicon.SWAP_X: (EnumSwizzle._member_names_, {
                     "default": EnumSwizzle.A_X.name,}),
                 Lexicon.SWAP_Y: (EnumSwizzle._member_names_, {
@@ -863,20 +844,24 @@ Swap components between two vectors based on specified swizzle patterns and valu
         })
         return Lexicon._parse(d)
 
-    def run(self, **kw) -> tuple[TensorType, ...]:
-        pA = parse_param(kw, Lexicon.IN_A, EnumConvertType.VEC4, (0,0,0,0))
-        pB = parse_param(kw, Lexicon.IN_B, EnumConvertType.VEC4, (0,0,0,0))
+    def run(self, **kw) -> tuple[float, ...]:
+        pA = parse_param(kw, Lexicon.IN_A, EnumConvertType.LIST, None)
+        pB = parse_param(kw, Lexicon.IN_B, EnumConvertType.LIST, None)
+        typ = parse_param(kw, Lexicon.TYPE, EnumConvertType, EnumConvertType.VEC2.name)
         swap_x = parse_param(kw, Lexicon.SWAP_X, EnumSwizzle, EnumSwizzle.A_X.name)
         swap_y = parse_param(kw, Lexicon.SWAP_Y, EnumSwizzle, EnumSwizzle.A_Y.name)
         swap_z = parse_param(kw, Lexicon.SWAP_Z, EnumSwizzle, EnumSwizzle.A_W.name)
         swap_w = parse_param(kw, Lexicon.SWAP_W, EnumSwizzle, EnumSwizzle.A_Z.name)
-        default = parse_param(kw, Lexicon.DEFAULT, EnumConvertType.VEC4, 0, -sys.maxsize, sys.maxsize)
-
-        params = list(zip_longest_fill(pA, pB, swap_x, x, swap_y, y, swap_z, z, swap_w, w))
+        default = parse_param(kw, Lexicon.DEFAULT, EnumConvertType.VEC4, 0)
+        params = list(zip_longest_fill(pA, pB, typ, swap_x, swap_y, swap_z, swap_w, default))
         results = []
         pbar = ProgressBar(len(params))
-        for idx, (pA, pB, swap_x, x, swap_y, y, swap_z, z, swap_w, w) in enumerate(params):
-            val = vector_swap(pA, pB, swap_x, x, swap_y, y, swap_z, z, swap_w, w)
+        for idx, (pA, pB, typ, swap_x, swap_y, swap_z, swap_w, default) in enumerate(params):
+            default = list(default)
+            pA = pA + default[len(pA):]
+            pB = pB + default[len(pB):]
+            val = vector_swap(pA, pB, swap_x, swap_y, swap_z, swap_w, default)
+            val = parse_value(val, typ, val)
             results.append(val)
             pbar.update_absolute(idx)
-        return results
+        return (results,)

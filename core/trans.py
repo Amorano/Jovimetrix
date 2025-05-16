@@ -51,8 +51,6 @@ class EnumCropMode(Enum):
     CENTER = 20
     XY = 0
     FREE = 10
-    HEAD = 15
-    BODY = 25
 
 # ==============================================================================
 # === CLASS ===
@@ -75,7 +73,7 @@ Extract a portion of an input image or resize it. It supports various cropping m
                 Lexicon.FUNCTION: (EnumCropMode._member_names_, {
                     "default": EnumCropMode.CENTER.name}),
                 Lexicon.XY: ("VEC2", {
-                    "default": (0, 0), "mij": 0.5, "maj": 0.5,
+                    "default": (0, 0), "mij": 0., "maj": 1.,
                     "label": ["X", "Y"]}),
                 Lexicon.WH: ("VEC2", {
                     "default": (512, 512), "mij": IMAGE_SIZE_MIN, "int": True,
@@ -96,11 +94,11 @@ Extract a portion of an input image or resize it. It supports various cropping m
         pA = parse_param(kw, Lexicon.IMAGE, EnumConvertType.IMAGE, None)
         func = parse_param(kw, Lexicon.FUNCTION, EnumCropMode, EnumCropMode.CENTER.name)
         # if less than 1 then use as scalar, over 1 = int(size)
-        xy = parse_param(kw, Lexicon.XY, EnumConvertType.VEC2, (0, 0,), 0, 1)
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (512, 512), IMAGE_SIZE_MIN)
-        tltr = parse_param(kw, Lexicon.TLTR, EnumConvertType.VEC4, (0, 0, 0, 1,), 0, 1)
-        blbr = parse_param(kw, Lexicon.BLBR, EnumConvertType.VEC4, (1, 0, 1, 1,), 0, 1)
-        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
+        xy = parse_param(kw, Lexicon.XY, EnumConvertType.VEC2, (0, 0,))
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (512, 512))
+        tltr = parse_param(kw, Lexicon.TLTR, EnumConvertType.VEC4, (0, 0, 0, 1,))
+        blbr = parse_param(kw, Lexicon.BLBR, EnumConvertType.VEC4, (1, 0, 1, 1,))
+        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0, 0, 0, 255))
         params = list(zip_longest_fill(pA, func, xy, wihi, tltr, blbr, matte))
         images = []
         pbar = ProgressBar(len(params))
@@ -122,10 +120,6 @@ Extract a portion of an input image or resize it. It supports various cropping m
                     pA[..., 3] = alpha[..., 0][:,:]
             elif func == EnumCropMode.XY:
                 pA = image_crop(pA, width, height, xy)
-            elif func == EnumCropMode.HEAD:
-                pass
-            elif func == EnumCropMode.BODY:
-                pass
             else:
                 pA = image_crop_center(pA, width, height)
             images.append(cv_to_tensor_full(pA, matte))
@@ -166,18 +160,14 @@ Combine multiple input images into a single image by summing their pixel values.
 
         # be less dumb when merging
         pA = [tensor_to_cv(i) for i in imgs]
-        mode = parse_param(kw, Lexicon.MODE, EnumScaleMode, EnumScaleMode.MATTE.name)
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (512, 512), IMAGE_SIZE_MIN)
-        sample = parse_param(kw, Lexicon.SAMPLE, EnumInterpolation, EnumInterpolation.LANCZOS4.name)
-        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
-
+        mode = parse_param(kw, Lexicon.MODE, EnumScaleMode, EnumScaleMode.MATTE.name)[0]
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (512, 512), IMAGE_SIZE_MIN)[0]
+        sample = parse_param(kw, Lexicon.SAMPLE, EnumInterpolation, EnumInterpolation.LANCZOS4.name)[0]
+        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0, 0, 0, 255))[0]
+        w, h = wihi
+        current = image_flatten(pA, w, h, mode=mode, sample=sample)
         images = []
-        params = list(zip_longest_fill(mode, sample, wihi, matte))
-        pbar = ProgressBar(len(params))
-        for idx, (mode, sample, wihi, matte) in enumerate(params):
-            current = image_flatten(pA)
-            images.append(cv_to_tensor_full(current, matte))
-            pbar.update_absolute(idx)
+        images.append(cv_to_tensor_full(current, matte))
         return image_stack(images)
 
 class StackNode(CozyImageNode):

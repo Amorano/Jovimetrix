@@ -65,13 +65,11 @@ Supplies raw or default values for various data types, supporting vector input w
                 Lexicon.TYPE: (typ, {
                     "default": EnumConvertType.BOOLEAN.name}),
                 Lexicon.DEFAULT_A: ("VEC4", {
-                    "default": (0, 0, 0, 0), #"mij": -sys.maxsize, "maj": sys.maxsize,
+                    "default": (0, 0, 0, 0), "mij": -sys.maxsize, "maj": sys.maxsize,
                     "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W]}),
                 Lexicon.DEFAULT_B: ("VEC4", {
-                    "default": (1,1,1,1), #"mij": -sys.maxsize, "maj": sys.maxsize,
+                    "default": (1,1,1,1), "mij": -sys.maxsize, "maj": sys.maxsize,
                     "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W]}),
-                Lexicon.FILL: (EnumFillOperation._member_names_, {
-                    "default": EnumFillOperation.DEFAULT.name}),
                 Lexicon.SEED: ("INT", {
                     "default": 0, "min": 0, "max": sys.maxsize}),
             }
@@ -80,20 +78,19 @@ Supplies raw or default values for various data types, supporting vector input w
 
     def run(self, **kw) -> tuple[tuple[Any, ...]]:
         raw = parse_param(kw, Lexicon.IN_A, EnumConvertType.ANY, 0)
-        r_x = parse_param(kw, Lexicon.X, EnumConvertType.FLOAT, None, -sys.maxsize, sys.maxsize)
-        r_y = parse_param(kw, Lexicon.Y, EnumConvertType.FLOAT, None, -sys.maxsize, sys.maxsize)
-        r_z = parse_param(kw, Lexicon.Z, EnumConvertType.FLOAT, None, -sys.maxsize, sys.maxsize)
-        r_w = parse_param(kw, Lexicon.W, EnumConvertType.FLOAT, None, -sys.maxsize, sys.maxsize)
+        r_x = parse_param(kw, Lexicon.X, EnumConvertType.FLOAT, None)
+        r_y = parse_param(kw, Lexicon.Y, EnumConvertType.FLOAT, None)
+        r_z = parse_param(kw, Lexicon.Z, EnumConvertType.FLOAT, None)
+        r_w = parse_param(kw, Lexicon.W, EnumConvertType.FLOAT, None)
         typ = parse_param(kw, Lexicon.TYPE, EnumConvertType, EnumConvertType.BOOLEAN.name)
         xyzw = parse_param(kw, Lexicon.DEFAULT_A, EnumConvertType.VEC4, (0, 0, 0, 0))
         yyzw = parse_param(kw, Lexicon.DEFAULT_B, EnumConvertType.VEC4, (1, 1, 1, 1))
-        fill = parse_param(kw, Lexicon.FILL, EnumConvertType.BOOLEAN, False)
-        seed = parse_param(kw, Lexicon.SEED, EnumConvertType.INT, 0, 0)
-        params = list(zip_longest_fill(raw, r_x, r_y, r_z, r_w, typ, xyzw, yyzw, fill, seed))
+        seed = parse_param(kw, Lexicon.SEED, EnumConvertType.INT, 0)
+        params = list(zip_longest_fill(raw, r_x, r_y, r_z, r_w, typ, xyzw, yyzw, seed))
         results = []
         pbar = ProgressBar(len(params))
         old_seed = -1
-        for idx, (raw, r_x, r_y, r_z, r_w, typ, xyzw, yyzw, fill, seed) in enumerate(params):
+        for idx, (raw, r_x, r_y, r_z, r_w, typ, xyzw, yyzw, seed) in enumerate(params):
             # default = [x_str]
             default2 = None
             a, b, c, d = xyzw
@@ -109,10 +106,11 @@ Supplies raw or default values for various data types, supporting vector input w
 
             # check if set to randomize....
             self.UPDATE = False
-            if seed != 0 and isinstance(val, (tuple, list,)) and isinstance(val2, (tuple, list,)):
+            if seed != 0:
                 self.UPDATE = True
-                # mutable to update
-                val = list(val)
+                val = list(val) if isinstance(val, (tuple, list,)) else [val]
+                val2 = list(val2) if isinstance(val2, (tuple, list,)) else [val2]
+
                 for i in range(len(val)):
                     mx = max(val[i], val2[i])
                     mn = min(val[i], val2[i])
@@ -122,18 +120,13 @@ Supplies raw or default values for various data types, supporting vector input w
                         if old_seed != seed:
                             random.seed(seed)
                             old_seed = seed
-                        if typ in [EnumConvertType.VEC2, EnumConvertType.VEC3, EnumConvertType.VEC4]:
-                            val[i] = mn + random.random() * (mx - mn)
-                        else:
+                        if typ in [EnumConvertType.INT, EnumConvertType.BOOLEAN]:
                             val[i] = random.randint(mn, mx)
+                        else:
+                            val[i] = mn + random.random() * (mx - mn)
 
-            out = parse_value(val, typ, val) or 0.
-            items = [0.,0.,0.,0.]
-            if not isinstance(out, (list, tuple,)):
-                items[0] = out
-            else:
-                for i in range(len(out)):
-                    items[i] = out[i]
+            out = parse_value(val, typ, val)
+            items = [out,0,0,0] if not isinstance(out, (tuple, list,)) else out
             results.append([out, *items])
             pbar.update_absolute(idx)
 

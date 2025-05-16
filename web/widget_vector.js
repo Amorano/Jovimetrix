@@ -267,7 +267,8 @@ const VectorWidget = (app, inputName, options, initial) => {
         const rawValues = Array.isArray(widget.value)
             ? widget.value
             : Object.values(widget.value);
-        return rawValues.map(v => parseFloat(v));
+        const funct = widget.options?.int ? Number : parseFloat;
+        return rawValues.map(v => funct(v));
     };
 
     return widget;
