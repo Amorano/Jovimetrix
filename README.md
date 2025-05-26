@@ -138,6 +138,10 @@ Nodes that have been migrated:
 
 [Migrated to Jovi_GLSL](https://github.com/Amorano/Jovi_GLSL)
 
+**2025/05/25** @2.1.6:
+* loosened restriction for python 3.11+ to allow for 3.10+
+* * I make zero guarantee that will actually let 3.10 work and I will not support 3.10
+
 **2025/05/16** @2.1.5:
 * Full compatibility with [ComfyMath Vector](https://github.com/evanspearman/ComfyMath) nodes
 * Masks can be inverted at inputs
