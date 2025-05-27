@@ -53,7 +53,6 @@ JOV_CATEGORY = "COMPOSE"
 class BlendNode(CozyImageNode):
     NAME = "BLEND (JOV) ⚗️"
     CATEGORY = JOV_CATEGORY
-    SORT = 10
     DESCRIPTION = """
 Combine two input images using various blending modes, such as normal, screen, multiply, overlay, etc. It also supports alpha blending and masking to achieve complex compositing effects. This node is essential for creating layered compositions and adding visual richness to images.
 """
@@ -174,7 +173,6 @@ Combine two input images using various blending modes, such as normal, screen, m
 class FilterMaskNode(CozyImageNode):
     NAME = "FILTER MASK (JOV) 🤿"
     CATEGORY = JOV_CATEGORY
-    SORT = 700
     DESCRIPTION = """
 Create masks based on specific color ranges within an image. Specify the color range using start and end values and an optional fuzziness factor to adjust the range. This node allows for precise color-based mask creation, ideal for tasks like object isolation, background removal, or targeted color adjustments.
 """
@@ -225,7 +223,6 @@ Create masks based on specific color ranges within an image. Specify the color r
 class PixelMergeNode(CozyImageNode):
     NAME = "PIXEL MERGE (JOV) 🫂"
     CATEGORY = JOV_CATEGORY
-    SORT = 45
     DESCRIPTION = """
 Combines individual color channels (red, green, blue) along with an optional mask channel to create a composite image.
 """
@@ -304,7 +301,6 @@ class PixelSplitNode(CozyBaseNode):
         "Single channel output of Alpha Channel",
         "RGB pack of the input",
     )
-    SORT = 40
     DESCRIPTION = """
 Split an input into individual color channels (red, green, blue, alpha).
 """
@@ -333,7 +329,6 @@ Split an input into individual color channels (red, green, blue, alpha).
 class PixelSwapNode(CozyImageNode):
     NAME = "PIXEL SWAP (JOV) 🔃"
     CATEGORY = JOV_CATEGORY
-    SORT = 48
     DESCRIPTION = """
 Swap pixel values between two input images based on specified channel swizzle operations. Options include pixel inputs, swap operations for red, green, blue, and alpha channels, and constant values for each channel. The swap operations allow for flexible pixel manipulation by determining the source of each channel in the output image, whether it be from the first image, the second image, or a constant value.
 """
@@ -429,7 +424,7 @@ Define a range and apply it to an image for segmentation and feature extraction.
         mode = parse_param(kw, Lexicon.FUNCTION, EnumThreshold, EnumThreshold.BINARY.name)
         adapt = parse_param(kw, Lexicon.ADAPT, EnumThresholdAdapt, EnumThresholdAdapt.ADAPT_NONE.name)
         threshold = parse_param(kw, Lexicon.THRESHOLD, EnumConvertType.FLOAT, 1, 0, 1)
-        block = parse_param(kw, Lexicon.SIZE, EnumConvertType.INT, 3, 3)
+        block = parse_param(kw, Lexicon.SIZE, EnumConvertType.INT, 3, 3, 103)
         invert = parse_param(kw, Lexicon.INVERT, EnumConvertType.BOOLEAN, False)
         params = list(zip_longest_fill(pA, mode, adapt, threshold, block, invert))
         images = []
@@ -449,7 +444,6 @@ class HistogramNode(JOVImageSimple):
     CATEGORY = JOV_CATEGORY
     RETURN_TYPES = ("IMAGE", )
     RETURN_NAMES = ("IMAGE",)
-    SORT = 40
     DESCRIPTION = """
 The Histogram Node generates a histogram representation of the input image, showing the distribution of pixel intensity values across different bins. This visualization is useful for understanding the overall brightness and contrast characteristics of an image. Additionally, the node performs histogram normalization, which adjusts the pixel values to enhance the contrast of the image. Histogram normalization can be helpful for improving the visual quality of images or preparing them for further image processing tasks.
 """

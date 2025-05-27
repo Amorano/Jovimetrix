@@ -236,7 +236,6 @@ class BitSplitNode(CozyBaseNode):
         "Bits as Numerical output (0 or 1)",
         "Bits as Boolean output (True or False)"
     )
-    SORT = 10
     DESCRIPTION = """
 Split an input into separate bits.
 BOOL, INT and FLOAT use their numbers,
@@ -292,7 +291,6 @@ class ComparisonNode(CozyBaseNode):
         "Outputs the input at PASS or FAIL depending the evaluation",
         "The comparison result value"
     )
-    SORT = 130
     DESCRIPTION = """
 Evaluates two inputs (A and B) with a specified comparison operators and optional values for successful and failed comparisons. The node performs the specified operation element-wise between corresponding elements of A and B. If the comparison is successful for all elements, it returns the success value; otherwise, it returns the failure value. The node supports various comparison operators such as EQUAL, GREATER_THAN, LESS_THAN, AND, OR, IS, IN, etc.
 """
@@ -426,7 +424,6 @@ class LerpNode(CozyBaseNode):
     OUTPUT_TOOLTIPS = (
         f"Output can vary depending on the type chosen in the {"TYPE"} parameter"
     )
-    SORT = 30
     DESCRIPTION = """
 Calculate linear interpolation between two values or vectors based on a blending factor (alpha).
 
@@ -510,7 +507,6 @@ class OPUnaryNode(CozyBaseNode):
     OUTPUT_TOOLTIPS = (
         "Output type will match the input type"
     )
-    SORT = 10
     DESCRIPTION = """
 Perform single function operations like absolute value, mean, median, mode, magnitude, normalization, maximum, or minimum on input values.
 """
@@ -598,8 +594,6 @@ class OPBinaryNode(CozyBaseNode):
     OUTPUT_TOOLTIPS = (
         "Output type will match the input type"
     )
-
-    SORT = 20
     DESCRIPTION = """
 Execute binary operations like addition, subtraction, multiplication, division, and bitwise operations on input values, supporting various data types and vector sizes.
 """
@@ -744,7 +738,6 @@ class StringerNode(CozyBaseNode):
     RETURN_TYPES = ("STRING", "INT",)
     RETURN_NAMES = ("STRING", "COUNT",)
     OUTPUT_IS_LIST = (True, False,)
-    SORT = 44
     DESCRIPTION = """
 Manipulate strings through filtering
 """
@@ -814,7 +807,6 @@ class SwizzleNode(CozyBaseNode):
     RETURN_TYPES = (COZY_TYPE_ANY,)
     RETURN_NAMES = ("❔",)
     OUTPUT_IS_LIST = (True,)
-    SORT = 40
     DESCRIPTION = """
 Swap components between two vectors based on specified swizzle patterns and values. It provides flexibility in rearranging vector elements dynamically.
 """

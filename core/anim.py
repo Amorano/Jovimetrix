@@ -62,7 +62,6 @@ class TickNode(CozyBaseNode):
         "Scalar normalized values",
         "Scalar eased values",
     )
-    SORT = 55
     DESCRIPTION = """
 Value generator with normalized values based on based on time interval.
 """
@@ -148,7 +147,6 @@ class WaveGeneratorNode(CozyBaseNode):
     CATEGORY = JOV_CATEGORY
     RETURN_TYPES = ("FLOAT", "INT", )
     RETURN_NAMES = ("FLOAT", "INT", )
-    SORT = 90
     DESCRIPTION = """
 Produce waveforms like sine, square, or sawtooth with adjustable frequency, amplitude, phase, and offset. It's handy for creating oscillating patterns or controlling animation dynamics. This node emits both continuous floating-point values and integer representations of the generated waves.
 """
@@ -216,7 +214,6 @@ class TickOldNode(CozyBaseNode):
         "Based on the BPM settings, on beat hit, output the input at '⚡'",
         "Current batch of values for the configured tick as standard list which works in other Jovimetrix nodes",
     )
-    SORT = 50
     DESCRIPTION = """
 A timer and frame counter, emitting pulses or signals based on time intervals. It allows precise synchronization and control over animation sequences, with options to adjust FPS, BPM, and loop points. This node is useful for generating time-based events or driving animations with rhythmic precision.
 """

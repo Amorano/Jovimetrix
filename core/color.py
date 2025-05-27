@@ -267,7 +267,6 @@ class ColorTheoryNode(CozyBaseNode):
     CATEGORY = JOV_CATEGORY
     RETURN_TYPES = ("IMAGE", "IMAGE", "IMAGE", "IMAGE", "IMAGE")
     RETURN_NAMES = ("C1", "C2", "C3", "C4", "C5")
-    SORT = 100
     DESCRIPTION = """
 Generate a color harmony based on the selected scheme.
 
@@ -313,7 +312,6 @@ Users can customize the angle of separation for color calculations, offering fle
 class GradientMapNode(CozyImageNode):
     NAME = "GRADIENT MAP (JOV) 🇲🇺"
     CATEGORY = JOV_CATEGORY
-    SORT = 550
     DESCRIPTION = """
 Remaps an input image using a gradient lookup table (LUT).
 

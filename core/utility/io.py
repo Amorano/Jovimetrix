@@ -92,7 +92,6 @@ class DelayNode(CozyBaseNode):
     OUTPUT_TOOLTIPS = (
         "Pass through data when the delay ends"
     )
-    SORT = 240
     DESCRIPTION = """
 Introduce pauses in the workflow that accept an optional input to pass through and a timer parameter to specify the duration of the delay. If no timer is provided, it defaults to a maximum delay. During the delay, it periodically checks for messages to interrupt the delay. Once the delay is completed, it returns the input passed to it. You can disable the screensaver with the `ENABLE` option
 """
@@ -150,7 +149,6 @@ class ExportNode(CozyBaseNode):
     NOT_IDEMPOTENT = True
     OUTPUT_NODE = True
     RETURN_TYPES = ()
-    SORT = 2000
     DESCRIPTION = """
 Responsible for saving images or animations to disk. It supports various output formats such as GIF and GIFSKI. Users can specify the output directory, filename prefix, image quality, frame rate, and other parameters. Additionally, it allows overwriting existing files or generating unique filenames to avoid conflicts. The node outputs the saved images or animation as a tensor.
 """
@@ -264,7 +262,6 @@ class RouteNode(CozyBaseNode):
     OUTPUT_TOOLTIPS = (
         "Pass through for Route node"
     )
-    SORT = 850
     DESCRIPTION = """
 Routes the input data from the optional input ports to the output port, preserving the order of inputs. The `PASS_IN` optional input is directly passed through to the output, while other optional inputs are collected and returned as tuples, preserving the order of insertion.
 """
@@ -299,7 +296,6 @@ class SaveOutputNode(CozyBaseNode):
     NOT_IDEMPOTENT = True
     OUTPUT_NODE = True
     RETURN_TYPES = ()
-    SORT = 85
     DESCRIPTION = """
 Save images with metadata to any specified path. Can save user metadata and prompt information.
 """

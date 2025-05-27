@@ -59,7 +59,6 @@ class AkashicNode(CozyBaseNode):
     CATEGORY = JOV_CATEGORY
     RETURN_NAMES = ()
     OUTPUT_NODE = True
-    SORT = 10
     DESCRIPTION = """
 Visualize data. It accepts various types of data, including images, text, and other types. If no input is provided, it returns an empty result. The output consists of a dictionary containing UI-related information, such as base64-encoded images and text representations of the input data.
 """
@@ -148,7 +147,6 @@ class GraphNode(CozyBaseNode):
     OUTPUT_TOOLTIPS = (
         "The graphed image"
     )
-    SORT = 15
     DESCRIPTION = """
 Visualize a series of data points over time. It accepts a dynamic number of values to graph and display, with options to reset the graph or specify the number of values. The output is an image displaying the graph, allowing users to analyze trends and patterns.
 """
@@ -228,7 +226,6 @@ class ImageInfoNode(CozyBaseNode):
         "Width & Height as a VEC2",
         "Width, Height and Channels as a VEC3"
     )
-    SORT = 55
     DESCRIPTION = """
 Exports and Displays immediate information about images.
 """

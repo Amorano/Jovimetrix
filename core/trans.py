@@ -59,7 +59,6 @@ class EnumCropMode(Enum):
 class CropNode(CozyImageNode):
     NAME = "CROP (JOV) ✂️"
     CATEGORY = JOV_CATEGORY
-    SORT = 5
     DESCRIPTION = """
 Extract a portion of an input image or resize it. It supports various cropping modes, including center cropping, custom XY cropping, and free-form polygonal cropping. This node is useful for preparing image data for specific tasks or extracting regions of interest.
 """
@@ -129,7 +128,6 @@ Extract a portion of an input image or resize it. It supports various cropping m
 class FlattenNode(CozyImageNode):
     NAME = "FLATTEN (JOV) ⬇️"
     CATEGORY = JOV_CATEGORY
-    SORT = 20
     DESCRIPTION = """
 Combine multiple input images into a single image by summing their pixel values. This operation is useful for merging multiple layers or images into one composite image, such as combining different elements of a design or merging masks. Users can specify the blending mode and interpolation method to control how the images are combined. Additionally, a matte can be applied to adjust the transparency of the final composite image.
 """
@@ -179,7 +177,6 @@ class SplitNode(CozyBaseNode):
         "Left/Top image",
         "Right/Bottom image"
     )
-    SORT = 40
     DESCRIPTION = """
 Split an image into two or four images based on the percentages for width and height.
 """
@@ -191,7 +188,7 @@ Split an image into two or four images based on the percentages for width and he
             "optional": {
                 Lexicon.IMAGE: (COZY_TYPE_IMAGE, {}),
                 Lexicon.VALUE: ("FLOAT", {
-                    "default": 0.5, "min": 0, "max": 1.
+                    "default": 0.5, "min": 0, "max": 1
                 }),
                 Lexicon.FLIP: ("BOOLEAN", {
                     "default": False,
@@ -212,22 +209,24 @@ Split an image into two or four images based on the percentages for width and he
 
     def run(self, **kw) -> RGBAMaskType:
         pA = parse_param(kw, Lexicon.IMAGE, EnumConvertType.IMAGE, None)
-        percent = parse_param(kw, Lexicon.VALUE, EnumConvertType.FLOAT, 0.5)
+        percent = parse_param(kw, Lexicon.VALUE, EnumConvertType.FLOAT, 0.5, 0, 1)
         flip = parse_param(kw, Lexicon.FLIP, EnumConvertType.BOOLEAN, False)
         mode = parse_param(kw, Lexicon.MODE, EnumScaleMode, EnumScaleMode.MATTE.name)
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (512, 512), IMAGE_SIZE_MIN)
         sample = parse_param(kw, Lexicon.SAMPLE, EnumInterpolation, EnumInterpolation.LANCZOS4.name)
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
-        w, h = wihi
-        current = image_flatten(pA, w, h, mode=mode, sample=sample)
+        params = list(zip_longest_fill(pA, percent, flip, mode, wihi, sample, matte))
         images = []
-        images.append(cv_to_tensor_full(current, matte))
+        pbar = ProgressBar(len(params))
+        for idx, (pA, percent, flip, mode, wihi, sample, matte) in enumerate(params):
+
+            images.append(cv_to_tensor_full(pA, matte))
+            pbar.update_absolute(idx)
         return image_stack(images)
 
 class StackNode(CozyImageNode):
     NAME = "STACK (JOV) ➕"
     CATEGORY = JOV_CATEGORY
-    SORT = 60
     DESCRIPTION = """
 Merge multiple input images into a single composite image by stacking them along a specified axis.
 
@@ -282,7 +281,6 @@ The axis parameter allows for horizontal, vertical, or grid stacking of images, 
 class TransformNode(CozyImageNode):
     NAME = "TRANSFORM (JOV) 🏝️"
     CATEGORY = JOV_CATEGORY
-    SORT = 80
     DESCRIPTION = """
 Apply various geometric transformations to images, including translation, rotation, scaling, mirroring, tiling and perspective projection. It offers extensive control over image manipulation to achieve desired visual effects.
 """

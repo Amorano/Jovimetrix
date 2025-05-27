@@ -36,7 +36,6 @@ class ValueNode(CozyBaseNode):
     RETURN_TYPES = (COZY_TYPE_ANY, COZY_TYPE_ANY, COZY_TYPE_ANY, COZY_TYPE_ANY, COZY_TYPE_ANY,)
     RETURN_NAMES = ("❔", Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W,)
     OUTPUT_IS_LIST = (True, True, True, True, True,)
-    SORT = 5
     DESCRIPTION = """
 Supplies raw or default values for various data types, supporting vector input with components for X, Y, Z, and W. It also provides a string input option.
 """
@@ -141,7 +140,6 @@ class Vector2Node(CozyBaseNode):
     OUTPUT_TOOLTIPS = (
         "Vector2 with float values",
     )
-    SORT = 290
     DESCRIPTION = """
 Outputs a VECTOR2.
 """
@@ -187,7 +185,6 @@ class Vector3Node(CozyBaseNode):
     OUTPUT_TOOLTIPS = (
         "Vector3 with float values",
     )
-    SORT = 292
     DESCRIPTION = """
 Outputs a VECTOR3.
 """
@@ -238,7 +235,6 @@ class Vector4Node(CozyBaseNode):
     OUTPUT_TOOLTIPS = (
         "Vector4 with float values",
     )
-    SORT = 294
     DESCRIPTION = """
 Outputs a VECTOR4.
 """

@@ -80,7 +80,6 @@ class ArrayNode(CozyBaseNode):
         "Full input list",
         "Length of all input elements",
     )
-    SORT = 50
     DESCRIPTION = """
 Processes a batch of data based on the selected mode. Merge, pick, slice, random select, or index items. Can also reverse the order of items.
 """
@@ -475,7 +474,6 @@ class QueueNode(QueueBaseNode):
         "Total items in the current Queue List",
         "Send a True signal when the queue end index is reached"
     )
-    SORT = 450
     DESCRIPTION = """
 Manage a queue of items, such as file paths or data. Supports various formats including images, videos, text files, and JSON files. You can specify the current index for the queue item, enable pausing the queue, or reset it back to the first index. The node outputs the current item in the queue, the entire queue, the current index, and the total number of items in the queue.
 """
@@ -494,7 +492,6 @@ class QueueTooNode(QueueBaseNode):
         "Total items in the current Queue List",
         "Send a True signal when the queue end index is reached"
     )
-    SORT = 500
     DESCRIPTION = """
 Manage a queue of specific items: media files. Supports various image and video formats. You can specify the current index for the queue item, enable pausing the queue, or reset it back to the first index. The node outputs the current item in the queue, the entire queue, the current index, and the total number of items in the queue.
 """
