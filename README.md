@@ -138,6 +138,11 @@ Nodes that have been migrated:
 
 [Migrated to Jovi_GLSL](https://github.com/Amorano/Jovi_GLSL)
 
+**2025/05/27** @2.1.7:
+* re-ranged all FLOAT to their maximum representations
+* clerical cleanup for JS callbacks
+* added `SPLIT` node to break images into vertical or horizontal slices
+
 **2025/05/25** @2.1.6:
 * loosened restriction for python 3.11+ to allow for 3.10+
 * * I make zero guarantee that will actually let 3.10 work and I will not support 3.10

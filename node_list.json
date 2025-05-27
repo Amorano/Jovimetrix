@@ -37,6 +37,7 @@
     "ROUTE (JOV) \ud83d\ude8c": "Routes the input data from the optional input ports to the output port, preserving the order of inputs",
     "SAVE OUTPUT (JOV) \ud83d\udcbe": "Save images with metadata to any specified path",
     "SHAPE GEN (JOV) \u2728": "Create n-sided polygons",
+    "SPLIT (JOV) \ud83c\udfad": "Split an image into two or four images based on the percentages for width and height",
     "STACK (JOV) \u2795": "Merge multiple input images into a single composite image by stacking them along a specified axis",
     "STRINGER (JOV) \ud83e\ude80": "Manipulate strings through filtering",
     "SWIZZLE (JOV) \ud83d\ude35": "Swap components between two vectors based on specified swizzle patterns and values",

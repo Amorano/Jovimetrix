@@ -1,5 +1,6 @@
 """ Jovimetrix - Transform """
 
+from re import I
 import sys
 from enum import Enum
 
@@ -22,7 +23,7 @@ from cozy_comfyui.image.channel import \
     channel_solid
 
 from cozy_comfyui.image.convert import \
-    tensor_to_cv, cv_to_tensor_full, image_mask, image_mask_add
+    tensor_to_cv, cv_to_tensor_full, cv_to_tensor, image_mask, image_mask_add
 
 from cozy_comfyui.image.compose import \
     EnumOrientation, EnumEdge, EnumMirrorMode, EnumScaleMode, EnumInterpolation, \
@@ -188,7 +189,7 @@ Split an image into two or four images based on the percentages for width and he
             "optional": {
                 Lexicon.IMAGE: (COZY_TYPE_IMAGE, {}),
                 Lexicon.VALUE: ("FLOAT", {
-                    "default": 0.5, "min": 0, "max": 1
+                    "default": 0.5, "min": 0, "max": 1, "step": 0.001
                 }),
                 Lexicon.FLIP: ("BOOLEAN", {
                     "default": False,
@@ -219,8 +220,25 @@ Split an image into two or four images based on the percentages for width and he
         images = []
         pbar = ProgressBar(len(params))
         for idx, (pA, percent, flip, mode, wihi, sample, matte) in enumerate(params):
+            w, h = wihi
+            pA = channel_solid(w, h, matte) if pA is None else tensor_to_cv(pA)
 
-            images.append(cv_to_tensor_full(pA, matte))
+            if flip:
+                size = pA.shape[1]
+                percent = max(1, min(size-1, int(size * percent)))
+                image_a = pA[:, :percent]
+                image_b = pA[:, percent:]
+            else:
+                size = pA.shape[0]
+                percent = max(1, min(size-1, int(size * percent)))
+                image_a = pA[:percent, :]
+                image_b = pA[percent:, :]
+
+            if mode != EnumScaleMode.MATTE:
+                image_a = image_scalefit(image_a, w, h, mode, sample)
+                image_b = image_scalefit(image_b, w, h, mode, sample)
+
+            images.append([cv_to_tensor(img) for img in [image_a, image_b]])
             pbar.update_absolute(idx)
         return image_stack(images)
 
