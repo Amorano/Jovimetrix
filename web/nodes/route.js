@@ -19,7 +19,7 @@ app.registerExtension({
 
         const onNodeCreated = nodeType.prototype.onNodeCreated
         nodeType.prototype.onNodeCreated = async function () {
-            const me = await onNodeCreated?.apply(this);
+            const me = await onNodeCreated?.apply(this, arguments);
             this.addInput(_prefix, _dynamic_type);
             nodeOutputsClear(this, 1);
             return me;

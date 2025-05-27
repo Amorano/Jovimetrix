@@ -445,7 +445,7 @@ Additionally, you can specify the easing function (EASE) and the desired output 
                 Lexicon.IN_B: (COZY_TYPE_NUMERICAL, {
                     "tooltip": "Custom End Point"}),
                 Lexicon.ALPHA: ("VEC4", {
-                    "default": (0.5, 0.5, 0.5, 0.5), "mij": 0., "maj": 1.0,}),
+                    "default": (0.5, 0.5, 0.5, 0.5), "mij": 0, "maj": 1,}),
                 Lexicon.TYPE: (EnumConvertType._member_names_[:6], {
                     "default": EnumConvertType.FLOAT.name,
                     "tooltip": "Output type desired from resultant operation"}),
@@ -528,7 +528,7 @@ Perform single function operations like absolute value, mean, median, mode, magn
                 Lexicon.TYPE: (typ, {
                     "default": EnumConvertType.FLOAT.name,}),
                 Lexicon.DEFAULT_A: ("VEC4", {
-                    "default": (0,0,0,0), "mij": -sys.maxsize, "maj": sys.maxsize,
+                    "default": (0,0,0,0), "mij": -sys.float_info.max, "maj": sys.float_info.max,
                     "precision": 2,
                     "label": ["X", "Y", "Z", "W"]})
             }
@@ -622,10 +622,10 @@ Execute binary operations like addition, subtraction, multiplication, division, 
                 Lexicon.SWAP: ("BOOLEAN", {
                     "default": False}),
                 Lexicon.DEFAULT_A: ("VEC4", {
-                    "default": (0,0,0,0), "mij": -sys.maxsize, "maj": sys.maxsize,
+                    "default": (0,0,0,0), "mij": -sys.float_info.max, "maj": sys.float_info.max,
                     "label": ["X", "Y", "Z", "W"]}),
                 Lexicon.DEFAULT_B: ("VEC4", {
-                    "default": (0,0,0,0), "mij": -sys.maxsize, "maj": sys.maxsize,
+                    "default": (0,0,0,0), "mij": -sys.float_info.max, "maj": sys.float_info.max,
                     "label": ["X", "Y", "Z", "W"]})
             }
         })
@@ -838,7 +838,7 @@ Swap components between two vectors based on specified swizzle patterns and valu
                 Lexicon.SWAP_W: (EnumSwizzle._member_names_, {
                     "default": EnumSwizzle.A_W.name,}),
                 Lexicon.DEFAULT: ("VEC4", {
-                    "default": (0,0,0,0), "mij": -sys.maxsize, "maj": sys.maxsize})
+                    "default": (0,0,0,0), "mij": -sys.float_info.max, "maj": sys.float_info.max})
             }
         })
         return Lexicon._parse(d)
@@ -851,7 +851,7 @@ Swap components between two vectors based on specified swizzle patterns and valu
         swap_y = parse_param(kw, Lexicon.SWAP_Y, EnumSwizzle, EnumSwizzle.A_Y.name)
         swap_z = parse_param(kw, Lexicon.SWAP_Z, EnumSwizzle, EnumSwizzle.A_W.name)
         swap_w = parse_param(kw, Lexicon.SWAP_W, EnumSwizzle, EnumSwizzle.A_Z.name)
-        default = parse_param(kw, Lexicon.DEFAULT, EnumConvertType.VEC4, 0)
+        default = parse_param(kw, Lexicon.DEFAULT, EnumConvertType.VEC4, (0, 0, 0, 0))
         params = list(zip_longest_fill(pA, pB, typ, swap_x, swap_y, swap_z, swap_w, default))
         results = []
         pbar = ProgressBar(len(params))

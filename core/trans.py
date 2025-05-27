@@ -16,7 +16,7 @@ from cozy_comfyui.lexicon import \
 
 from cozy_comfyui.node import \
     COZY_TYPE_IMAGE, \
-    CozyImageNode
+    CozyImageNode, CozyBaseNode
 
 from cozy_comfyui.image.channel import \
     channel_solid
@@ -73,7 +73,7 @@ Extract a portion of an input image or resize it. It supports various cropping m
                 Lexicon.FUNCTION: (EnumCropMode._member_names_, {
                     "default": EnumCropMode.CENTER.name}),
                 Lexicon.XY: ("VEC2", {
-                    "default": (0, 0), "mij": 0., "maj": 1.,
+                    "default": (0, 0), "mij": 0, "maj": 1,
                     "label": ["X", "Y"]}),
                 Lexicon.WH: ("VEC2", {
                     "default": (512, 512), "mij": IMAGE_SIZE_MIN, "int": True,
@@ -95,10 +95,10 @@ Extract a portion of an input image or resize it. It supports various cropping m
         func = parse_param(kw, Lexicon.FUNCTION, EnumCropMode, EnumCropMode.CENTER.name)
         # if less than 1 then use as scalar, over 1 = int(size)
         xy = parse_param(kw, Lexicon.XY, EnumConvertType.VEC2, (0, 0,))
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (512, 512))
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (512, 512), IMAGE_SIZE_MIN)
         tltr = parse_param(kw, Lexicon.TLTR, EnumConvertType.VEC4, (0, 0, 0, 1,))
         blbr = parse_param(kw, Lexicon.BLBR, EnumConvertType.VEC4, (1, 0, 1, 1,))
-        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0, 0, 0, 255))
+        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
         params = list(zip_longest_fill(pA, func, xy, wihi, tltr, blbr, matte))
         images = []
         pbar = ProgressBar(len(params))
@@ -129,7 +129,7 @@ Extract a portion of an input image or resize it. It supports various cropping m
 class FlattenNode(CozyImageNode):
     NAME = "FLATTEN (JOV) ⬇️"
     CATEGORY = JOV_CATEGORY
-    SORT = 500
+    SORT = 20
     DESCRIPTION = """
 Combine multiple input images into a single image by summing their pixel values. This operation is useful for merging multiple layers or images into one composite image, such as combining different elements of a design or merging masks. Users can specify the blending mode and interpolation method to control how the images are combined. Additionally, a matte can be applied to adjust the transparency of the final composite image.
 """
@@ -163,7 +163,61 @@ Combine multiple input images into a single image by summing their pixel values.
         mode = parse_param(kw, Lexicon.MODE, EnumScaleMode, EnumScaleMode.MATTE.name)[0]
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (512, 512), IMAGE_SIZE_MIN)[0]
         sample = parse_param(kw, Lexicon.SAMPLE, EnumInterpolation, EnumInterpolation.LANCZOS4.name)[0]
-        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0, 0, 0, 255))[0]
+        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)[0]
+        w, h = wihi
+        current = image_flatten(pA, w, h, mode=mode, sample=sample)
+        images = []
+        images.append(cv_to_tensor_full(current, matte))
+        return image_stack(images)
+
+class SplitNode(CozyBaseNode):
+    NAME = "SPLIT (JOV) 🎭"
+    CATEGORY = JOV_CATEGORY
+    RETURN_TYPES = ("IMAGE", "IMAGE",)
+    RETURN_NAMES = ("IMAGEA", "IMAGEB",)
+    OUTPUT_TOOLTIPS = (
+        "Left/Top image",
+        "Right/Bottom image"
+    )
+    SORT = 40
+    DESCRIPTION = """
+Split an image into two or four images based on the percentages for width and height.
+"""
+
+    @classmethod
+    def INPUT_TYPES(cls) -> InputType:
+        d = super().INPUT_TYPES()
+        d = deep_merge(d, {
+            "optional": {
+                Lexicon.IMAGE: (COZY_TYPE_IMAGE, {}),
+                Lexicon.VALUE: ("FLOAT", {
+                    "default": 0.5, "min": 0, "max": 1.
+                }),
+                Lexicon.FLIP: ("BOOLEAN", {
+                    "default": False,
+                    "tooltip": "Horizontal split (False) or Vertical split (True)"
+                }),
+                Lexicon.MODE: (EnumScaleMode._member_names_, {
+                    "default": EnumScaleMode.MATTE.name,}),
+                Lexicon.WH: ("VEC2", {
+                    "default": (512, 512), "mij":IMAGE_SIZE_MIN, "int": True,
+                    "label": ["W", "H"]}),
+                Lexicon.SAMPLE: (EnumInterpolation._member_names_, {
+                    "default": EnumInterpolation.LANCZOS4.name,}),
+                Lexicon.MATTE: ("VEC4", {
+                    "default": (0, 0, 0, 255), "rgb": True,})
+            }
+        })
+        return Lexicon._parse(d)
+
+    def run(self, **kw) -> RGBAMaskType:
+        pA = parse_param(kw, Lexicon.IMAGE, EnumConvertType.IMAGE, None)
+        percent = parse_param(kw, Lexicon.VALUE, EnumConvertType.FLOAT, 0.5)
+        flip = parse_param(kw, Lexicon.FLIP, EnumConvertType.BOOLEAN, False)
+        mode = parse_param(kw, Lexicon.MODE, EnumScaleMode, EnumScaleMode.MATTE.name)
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (512, 512), IMAGE_SIZE_MIN)
+        sample = parse_param(kw, Lexicon.SAMPLE, EnumInterpolation, EnumInterpolation.LANCZOS4.name)
+        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
         w, h = wihi
         current = image_flatten(pA, w, h, mode=mode, sample=sample)
         images = []
@@ -173,7 +227,7 @@ Combine multiple input images into a single image by summing their pixel values.
 class StackNode(CozyImageNode):
     NAME = "STACK (JOV) ➕"
     CATEGORY = JOV_CATEGORY
-    SORT = 75
+    SORT = 60
     DESCRIPTION = """
 Merge multiple input images into a single composite image by stacking them along a specified axis.
 
@@ -213,7 +267,7 @@ The axis parameter allows for horizontal, vertical, or grid stacking of images, 
 
         images = [tensor_to_cv(i) for i in images]
         axis = parse_param(kw, Lexicon.AXIS, EnumOrientation, EnumOrientation.GRID.name)[0]
-        stride = parse_param(kw, Lexicon.STEP, EnumConvertType.INT, 1)[0]
+        stride = parse_param(kw, Lexicon.STEP, EnumConvertType.INT, 1, 0)[0]
         mode = parse_param(kw, Lexicon.MODE, EnumScaleMode, EnumScaleMode.MATTE.name)[0]
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (512, 512), IMAGE_SIZE_MIN)[0]
         sample = parse_param(kw, Lexicon.SAMPLE, EnumInterpolation, EnumInterpolation.LANCZOS4.name)[0]
@@ -228,7 +282,7 @@ The axis parameter allows for horizontal, vertical, or grid stacking of images, 
 class TransformNode(CozyImageNode):
     NAME = "TRANSFORM (JOV) 🏝️"
     CATEGORY = JOV_CATEGORY
-    SORT = 0
+    SORT = 80
     DESCRIPTION = """
 Apply various geometric transformations to images, including translation, rotation, scaling, mirroring, tiling and perspective projection. It offers extensive control over image manipulation to achieve desired visual effects.
 """
@@ -242,37 +296,37 @@ Apply various geometric transformations to images, including translation, rotati
                 Lexicon.MASK: (COZY_TYPE_IMAGE, {
                     "tooltip": "Override Image mask"}),
                 Lexicon.XY: ("VEC2", {
-                    "default": (0., 0.,), "mij": -1., "maj": 1.,
+                    "default": (0, 0,), "mij": -1, "maj": 1,
                     "label": ["X", "Y"]}),
                 Lexicon.ANGLE: ("FLOAT", {
-                    "default": 0, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.1,}),
+                    "default": 0, "min": -sys.float_info.max, "max": sys.float_info.max, "step": 0.1,}),
                 Lexicon.SIZE: ("VEC2", {
-                    "default": (1., 1.), "mij": 0.001,
+                    "default": (1, 1), "mij": 0.001,
                     "label": ["X", "Y"]}),
                 Lexicon.TILE: ("VEC2", {
-                    "default": (1., 1.), "mij": 1.,
+                    "default": (1, 1), "mij": 1,
                     "label": ["X", "Y"]}),
                 Lexicon.EDGE: (EnumEdge._member_names_, {
                     "default": EnumEdge.CLIP.name}),
                 Lexicon.MIRROR: (EnumMirrorMode._member_names_, {
                     "default": EnumMirrorMode.NONE.name}),
                 Lexicon.PIVOT: ("VEC2", {
-                    "default": (0.5, 0.5), "step": 0.01,
+                    "default": (0.5, 0.5), "mij": 0, "maj": 1, "step": 0.01,
                     "label": ["X", "Y"]}),
                 Lexicon.PROJECTION: (EnumProjection._member_names_, {
                     "default": EnumProjection.NORMAL.name}),
                 Lexicon.TLTR: ("VEC4", {
-                    "default": (0., 0., 1., 0.), "mij": 0., "maj": 1., "step": 0.005,
+                    "default": (0, 0, 1, 0), "mij": 0, "maj": 1, "step": 0.005,
                     "label": ["TOP", "LEFT", "TOP", "RIGHT"],}),
                 Lexicon.BLBR: ("VEC4", {
-                    "default": (0., 1., 1., 1.), "mij": 0., "maj": 1., "step": 0.005,
+                    "default": (0, 1, 1, 1), "mij": 0, "maj": 1, "step": 0.005,
                     "label": ["BOTTOM", "LEFT", "BOTTOM", "RIGHT"],}),
                 Lexicon.STRENGTH: ("FLOAT", {
-                    "default": 1, "min": 0, "step": 0.005}),
+                    "default": 1, "min": 0, "max": 1, "step": 0.005}),
                 Lexicon.MODE: (EnumScaleMode._member_names_, {
                     "default": EnumScaleMode.MATTE.name,}),
                 Lexicon.WH: ("VEC2", {
-                    "default": (512, 512), "mij":IMAGE_SIZE_MIN, "int": True,
+                    "default": (512, 512), "mij": IMAGE_SIZE_MIN, "int": True,
                     "label": ["W", "H"]}),
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {
                     "default": EnumInterpolation.LANCZOS4.name,}),
@@ -285,16 +339,16 @@ Apply various geometric transformations to images, including translation, rotati
     def run(self, **kw) -> RGBAMaskType:
         pA = parse_param(kw, Lexicon.IMAGE, EnumConvertType.IMAGE, None)
         mask = parse_param(kw, Lexicon.MASK, EnumConvertType.IMAGE, None)
-        offset = parse_param(kw, Lexicon.XY, EnumConvertType.VEC2, (0., 0.), -2.5, 2.5)
+        offset = parse_param(kw, Lexicon.XY, EnumConvertType.VEC2, (0, 0), -1, 1)
         angle = parse_param(kw, Lexicon.ANGLE, EnumConvertType.FLOAT, 0)
-        size = parse_param(kw, Lexicon.SIZE, EnumConvertType.VEC2, (1., 1.), 0.001)
+        size = parse_param(kw, Lexicon.SIZE, EnumConvertType.VEC2, (1, 1), 0.001)
         edge = parse_param(kw, Lexicon.EDGE, EnumEdge, EnumEdge.CLIP.name)
         mirror = parse_param(kw, Lexicon.MIRROR, EnumMirrorMode, EnumMirrorMode.NONE.name)
         mirror_pivot = parse_param(kw, Lexicon.PIVOT, EnumConvertType.VEC2, (0.5, 0.5), 0, 1)
-        tile_xy = parse_param(kw, Lexicon.TILE, EnumConvertType.VEC2, (1., 1.), 1)
+        tile_xy = parse_param(kw, Lexicon.TILE, EnumConvertType.VEC2, (1, 1), 1)
         proj = parse_param(kw, Lexicon.PROJECTION, EnumProjection, EnumProjection.NORMAL.name)
-        tltr = parse_param(kw, Lexicon.TLTR, EnumConvertType.VEC4, (0., 0., 1., 0.), 0, 1)
-        blbr = parse_param(kw, Lexicon.BLBR, EnumConvertType.VEC4, (0., 1., 1., 1.), 0, 1)
+        tltr = parse_param(kw, Lexicon.TLTR, EnumConvertType.VEC4, (0, 0, 1, 0), 0, 1)
+        blbr = parse_param(kw, Lexicon.BLBR, EnumConvertType.VEC4, (0, 1, 1, 1), 0, 1)
         strength = parse_param(kw, Lexicon.STRENGTH, EnumConvertType.FLOAT, 1, 0, 1)
         mode = parse_param(kw, Lexicon.MODE, EnumScaleMode, EnumScaleMode.MATTE.name)
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (512, 512), IMAGE_SIZE_MIN)

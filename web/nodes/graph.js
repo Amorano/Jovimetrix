@@ -26,7 +26,7 @@ app.registerExtension({
 
         const onNodeCreated = nodeType.prototype.onNodeCreated;
         nodeType.prototype.onNodeCreated = async function () {
-            const me = await onNodeCreated?.apply(this);
+            const me = await onNodeCreated?.apply(this, arguments);
             const self = this;
             const widget_reset = this.widgets.find(w => w.name == 'reset');
             widget_reset.callback = async() => {

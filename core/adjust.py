@@ -87,7 +87,7 @@ Enhance and modify images with various blur effects.
     def run(self, **kw) -> RGBAMaskType:
         pA = parse_param(kw, Lexicon.IMAGE, EnumConvertType.IMAGE, None)
         op = parse_param(kw, Lexicon.FUNCTION, EnumAdjustBlur, EnumAdjustBlur.BLUR.name)
-        radius = parse_param(kw, Lexicon.RADIUS, EnumConvertType.INT, 0, 0)
+        radius = parse_param(kw, Lexicon.RADIUS, EnumConvertType.INT, 3)
         params = list(zip_longest_fill(pA, op, radius))
         images = []
         pbar = ProgressBar(len(params))
@@ -155,7 +155,7 @@ Enhanced edge detection.
                 Lexicon.ITERATION: ("INT", {
                     "default": 1, "min": 1, "max": 1000}),
                 Lexicon.LOHI: ("VEC2", {
-                    "default": (0, 1), "mij": 0, "maj": 1., "step": 0.01})
+                    "default": (0, 1), "mij": 0, "maj": 1, "step": 0.01})
             }
         })
         return Lexicon._parse(d)
@@ -192,11 +192,11 @@ Emboss boss mode.
             "optional": {
                 Lexicon.IMAGE: (COZY_TYPE_IMAGE, {}),
                 Lexicon.HEADING: ("FLOAT", {
-                    "default": -45, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.1}),
+                    "default": -45, "min": -sys.float_info.max, "max": sys.float_info.max, "step": 0.1}),
                 Lexicon.ELEVATION: ("FLOAT", {
-                    "default": 45, "min": -sys.maxsize, "max": sys.maxsize, "step": 0.1}),
+                    "default": 45, "min": -sys.float_info.max, "max": sys.float_info.max, "step": 0.1}),
                 Lexicon.DEPTH: ("FLOAT", {
-                    "default": 10, "min": 0, "max": sys.maxsize, "step": 0.1,
+                    "default": 10, "min": 0, "max": sys.float_info.max, "step": 0.1,
                     "tooltip": "Depth perceived from the light angles above"}),
             }
         })
@@ -233,10 +233,10 @@ class AdjustLevelNode(CozyImageNode):
             "optional": {
                 Lexicon.IMAGE: (COZY_TYPE_IMAGE, {}),
                 Lexicon.LMH: ("VEC3", {
-                    "default": (0,0.5,1), "mij": 0, "maj": 1., "step": 0.01,
+                    "default": (0,0.5,1), "mij": 0, "maj": 1, "step": 0.01,
                     "label": ["LOW", "MID", "HIGH"]}),
                 Lexicon.RANGE: ("VEC2", {
-                    "default": (0, 1), "mij": 0, "maj": 1., "step": 0.01,
+                    "default": (0, 1), "mij": 0, "maj": 1, "step": 0.01,
                     "label": ["IN", "OUT"]})
             }
         })

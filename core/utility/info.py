@@ -182,7 +182,7 @@ Visualize a series of data points over time. It accepts a dynamic number of valu
 
     def run(self, ident, **kw) -> tuple[TensorType]:
         slice = parse_param(kw, Lexicon.VALUE, EnumConvertType.INT, 60)[0]
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (512, 512), 1)[0]
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (512, 512), IMAGE_SIZE_MIN)[0]
         if parse_reset(ident) > 0 or parse_param(kw, Lexicon.RESET, EnumConvertType.BOOLEAN, False)[0]:
             self.__history = []
         longest_edge = 0

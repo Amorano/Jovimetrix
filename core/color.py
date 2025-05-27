@@ -215,7 +215,7 @@ The top-k colors ordered from most->least used as a strip, tonal palette and 3D 
                     "default": 32, "min": 1, "max": 256,
                     "tooltip": "Height of the tones in the strip. Width is based on input"}),
                 Lexicon.COUNT: ("INT", {
-                    "default": 33, "min": 3, "max": 256,
+                    "default": 33, "min": 1, "max": 255,
                     "tooltip": "Number of nodes to use in interpolation of full LUT (256 is every pixel)"}),
                 Lexicon.WH: ("VEC2", {
                     "default": (256, 256), "mij":IMAGE_SIZE_MIN, "int": True,
@@ -296,7 +296,7 @@ Users can customize the angle of separation for color calculations, offering fle
     def run(self, **kw) -> tuple[List[TensorType], List[TensorType]]:
         pA = parse_param(kw, Lexicon.IMAGE, EnumConvertType.IMAGE, None)
         scheme = parse_param(kw, Lexicon.SCHEME, EnumColorTheory, EnumColorTheory.COMPLIMENTARY.name)
-        value = parse_param(kw, Lexicon.VALUE, EnumConvertType.INT, 0, -180, 180)
+        value = parse_param(kw, Lexicon.VALUE, EnumConvertType.INT, 45, -90, 90)
         invert = parse_param(kw, Lexicon.INVERT, EnumConvertType.BOOLEAN, False)
         params = list(zip_longest_fill(pA, scheme, value, invert))
         images = []

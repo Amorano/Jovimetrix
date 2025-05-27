@@ -180,7 +180,7 @@ export async function nodeAddDynamic(nodeType, prefix, dynamic_type='*') {
 
     const onNodeCreated = nodeType.prototype.onNodeCreated
     nodeType.prototype.onNodeCreated = async function () {
-        const me = await onNodeCreated?.apply(this);
+        const me = await onNodeCreated?.apply(this, arguments);
         if (this.inputs.length == 0) {
             this.addInput(prefix, dynamic_type);
         }

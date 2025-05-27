@@ -78,7 +78,7 @@ Value generator with normalized values based on based on time interval.
                 }),
                 # interval between frames
                 Lexicon.STEP: ("FLOAT", {
-                    "default": 0, "min": -sys.maxsize, "max": sys.maxsize, "precision": 3,
+                    "default": 0, "min": -sys.float_info.max, "max": sys.float_info.max, "precision": 3,
                     "tooltip": "Amount to add to each frame per tick"
                 }),
                 # how many frames to dump....
@@ -97,7 +97,7 @@ Value generator with normalized values based on based on time interval.
                 Lexicon.NORMALIZE: (EnumNormalize._member_names_, {
                     "default": EnumNormalize.MINMAX2.name}),
                 Lexicon.SCALAR: ("FLOAT", {
-                    "default": 1.0,
+                    "default": 1, "min": 0, "max": sys.float_info.max
                 })
 
             }
@@ -116,14 +116,14 @@ Value generator with normalized values based on based on time interval.
         - Normalized output 0..1, -1..1, L2 or ZScore
         """
 
-        start = parse_param(kw, Lexicon.START, EnumConvertType.INT, 0, -sys.maxsize, sys.maxsize)[0]
-        step = parse_param(kw, Lexicon.STEP, EnumConvertType.FLOAT, 0, -sys.maxsize, sys.maxsize)[0]
+        start = parse_param(kw, Lexicon.START, EnumConvertType.INT, 0)[0]
+        step = parse_param(kw, Lexicon.STEP, EnumConvertType.FLOAT, 0)[0]
         count = parse_param(kw, Lexicon.COUNT, EnumConvertType.INT, 1, 1, 1500)[0]
-        loop = parse_param(kw, Lexicon.LOOP, EnumConvertType.INT, 0, 0, sys.maxsize)[0]
+        loop = parse_param(kw, Lexicon.LOOP, EnumConvertType.INT, 0, 0)[0]
         pingpong = parse_param(kw, Lexicon.PINGPONG, EnumConvertType.BOOLEAN, False)[0]
         ease = parse_param(kw, Lexicon.EASE, EnumEase, EnumEase.LINEAR.name)[0]
         normalize = parse_param(kw, Lexicon.NORMALIZE, EnumNormalize, EnumNormalize.MINMAX1.name)[0]
-        scalar = parse_param(kw, Lexicon.SCALAR, EnumConvertType.FLOAT, 1, 0, sys.maxsize)[0]
+        scalar = parse_param(kw, Lexicon.SCALAR, EnumConvertType.FLOAT, 1, 0)[0]
 
         if step == 0:
             step = 1
@@ -161,15 +161,15 @@ Produce waveforms like sine, square, or sawtooth with adjustable frequency, ampl
                 Lexicon.WAVE: (EnumWave._member_names_, {
                     "default": EnumWave.SIN.name}),
                 Lexicon.FREQ: ("FLOAT", {
-                    "default": 1, "min": 0, "max": sys.maxsize, "step": 0.01,}),
+                    "default": 1, "min": 0, "max": sys.float_info.max, "step": 0.01,}),
                 Lexicon.AMP: ("FLOAT", {
-                    "default": 1, "min": 0, "max": sys.maxsize, "step": 0.01,}),
+                    "default": 1, "min": 0, "max": sys.float_info.max, "step": 0.01,}),
                 Lexicon.PHASE: ("FLOAT", {
-                    "default": 0, "min": 0.0, "max": 1.0, "step": 0.01}),
+                    "default": 0, "min": 0, "max": 1, "step": 0.01}),
                 Lexicon.OFFSET: ("FLOAT", {
-                    "default": 0, "min": 0.0, "max": 1.0, "step": 0.001}),
+                    "default": 0, "min": 0, "max": 1, "step": 0.001}),
                 Lexicon.TIME: ("FLOAT", {
-                    "default": 0, "min": 0, "max": sys.maxsize, "step": 0.0001}),
+                    "default": 0, "min": 0, "max": sys.float_info.max, "step": 0.0001}),
                 Lexicon.INVERT: ("BOOLEAN", {
                     "default": False}),
                 Lexicon.ABSOLUTE: ("BOOLEAN", {
@@ -180,11 +180,11 @@ Produce waveforms like sine, square, or sawtooth with adjustable frequency, ampl
 
     def run(self, **kw) -> tuple[float, int]:
         op = parse_param(kw, Lexicon.WAVE, EnumWave, EnumWave.SIN.name)
-        freq = parse_param(kw, Lexicon.FREQ, EnumConvertType.FLOAT, 1., 0.000001, sys.maxsize)
-        amp = parse_param(kw, Lexicon.AMP, EnumConvertType.FLOAT, 1., 0., sys.maxsize)
-        phase = parse_param(kw, Lexicon.PHASE, EnumConvertType.FLOAT, 0.)
-        shift = parse_param(kw, Lexicon.OFFSET, EnumConvertType.FLOAT, 0.)
-        delta_time = parse_param(kw, Lexicon.TIME, EnumConvertType.FLOAT, 0., 0., sys.maxsize)
+        freq = parse_param(kw, Lexicon.FREQ, EnumConvertType.FLOAT, 1, 0)
+        amp = parse_param(kw, Lexicon.AMP, EnumConvertType.FLOAT, 1, 0)
+        phase = parse_param(kw, Lexicon.PHASE, EnumConvertType.FLOAT, 0, 0)
+        shift = parse_param(kw, Lexicon.OFFSET, EnumConvertType.FLOAT, 0, 0)
+        delta_time = parse_param(kw, Lexicon.TIME, EnumConvertType.FLOAT, 0, 0)
         invert = parse_param(kw, Lexicon.INVERT, EnumConvertType.BOOLEAN, False)
         absolute = parse_param(kw, Lexicon.ABSOLUTE, EnumConvertType.BOOLEAN, False)
         results = []
@@ -197,7 +197,7 @@ Produce waveforms like sine, square, or sawtooth with adjustable frequency, ampl
             val = wave_op(op, phase, freq, amp, shift, delta_time)
             if absolute:
                 val = np.abs(val)
-            val = max(-sys.maxsize, min(val, sys.maxsize))
+            val = max(-sys.float_info.max, min(val, sys.float_info.max))
             results.append([val, int(val)])
             pbar.update_absolute(idx)
         return *list(zip(*results)),
@@ -263,9 +263,9 @@ A timer and frame counter, emitting pulses or signals based on time intervals. I
 
     def run(self, ident, **kw) -> tuple[int, float, float, Any]:
         passthru = parse_param(kw, Lexicon.TRIGGER, EnumConvertType.ANY, None)[0]
-        stride = parse_param(kw, Lexicon.STEP, EnumConvertType.INT, 0, 0, sys.maxsize)[0]
-        loop = parse_param(kw, Lexicon.LOOP, EnumConvertType.INT, 0, 0, sys.maxsize)[0]
-        start = parse_param(kw, Lexicon.START, EnumConvertType.INT, self.__frame, 0, sys.maxsize)[0]
+        stride = parse_param(kw, Lexicon.STEP, EnumConvertType.INT, 0)[0]
+        loop = parse_param(kw, Lexicon.LOOP, EnumConvertType.INT, 0)[0]
+        start = parse_param(kw, Lexicon.START, EnumConvertType.INT, self.__frame)[0]
         if loop != 0:
             self.__frame %= loop
         fps = parse_param(kw, Lexicon.FPS, EnumConvertType.INT, 24, 1)[0]

@@ -89,9 +89,9 @@ Generate a constant image or mask of a specified size and color. It can be used 
     def run(self, **kw) -> RGBAMaskType:
         pA = parse_param(kw, Lexicon.IMAGE, EnumConvertType.IMAGE, None)
         mask = parse_param(kw, Lexicon.MASK, EnumConvertType.MASK, None)
-        matte = parse_param(kw, Lexicon.COLOR, EnumConvertType.VEC4INT, (0, 0, 0, 255))
+        matte = parse_param(kw, Lexicon.COLOR, EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
         mode = parse_param(kw, Lexicon.MODE, EnumScaleMode, EnumScaleMode.MATTE.name)
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (512, 512))
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (512, 512), IMAGE_SIZE_MIN)
         sample = parse_param(kw, Lexicon.SAMPLE, EnumInterpolation, EnumInterpolation.LANCZOS4.name)
         images = []
         params = list(zip_longest_fill(pA, mask, matte, mode, wihi, sample))
@@ -148,12 +148,12 @@ Create n-sided polygons. These shapes can be customized by adjusting parameters 
                     "default": (256, 256), "mij":IMAGE_SIZE_MIN, "int": True,
                     "label": ["W", "H"],}),
                 Lexicon.XY: ("VEC2", {
-                    "default": (0, 0,),
+                    "default": (0, 0,), "mij": -1, "maj": 1,
                     "label": ["X", "Y"]}),
                 Lexicon.ANGLE: ("FLOAT", {
                     "default": 0, "min": -180, "max": 180, "step": 0.01,}),
                 Lexicon.SIZE: ("VEC2", {
-                    "default": (1., 1.),
+                    "default": (1, 1), "mij": 0, "maj": 1,
                     "label": ["X", "Y"]}),
                 Lexicon.EDGE: (EnumEdge._member_names_, {
                     "default": EnumEdge.CLIP.name}),
@@ -165,15 +165,15 @@ Create n-sided polygons. These shapes can be customized by adjusting parameters 
 
     def run(self, **kw) -> RGBAMaskType:
         shape = parse_param(kw, Lexicon.SHAPE, EnumShapes, EnumShapes.CIRCLE.name)
-        sides = parse_param(kw, Lexicon.SIDES, EnumConvertType.INT, 3)
-        color = parse_param(kw, Lexicon.COLOR, EnumConvertType.VEC4INT, (255, 255, 255, 255))
-        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0, 0, 0, 255))
+        sides = parse_param(kw, Lexicon.SIDES, EnumConvertType.INT, 3, 3)
+        color = parse_param(kw, Lexicon.COLOR, EnumConvertType.VEC4INT, (255, 255, 255, 255), 0, 255)
+        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (256, 256), IMAGE_SIZE_MIN)
-        offset = parse_param(kw, Lexicon.XY, EnumConvertType.VEC2, (0, 0))
-        angle = parse_param(kw, Lexicon.ANGLE, EnumConvertType.FLOAT, 0)
-        size = parse_param(kw, Lexicon.SIZE, EnumConvertType.VEC2, (1, 1), zero=0.001)
+        offset = parse_param(kw, Lexicon.XY, EnumConvertType.VEC2, (0, 0), -1, 1)
+        angle = parse_param(kw, Lexicon.ANGLE, EnumConvertType.FLOAT, 0, -180, 180)
+        size = parse_param(kw, Lexicon.SIZE, EnumConvertType.VEC2, (1, 1), 0, 1, zero=0.001)
         edge = parse_param(kw, Lexicon.EDGE, EnumEdge, EnumEdge.CLIP.name)
-        blur = parse_param(kw, Lexicon.BLUR, EnumConvertType.FLOAT, 0)
+        blur = parse_param(kw, Lexicon.BLUR, EnumConvertType.FLOAT, 0, 0)
         params = list(zip_longest_fill(shape, sides, color, matte, wihi, offset, angle, size, edge, blur))
         images = []
         pbar = ProgressBar(len(params))
@@ -277,8 +277,8 @@ Generates images containing text based on parameters such as font, size, alignme
         font_idx = parse_param(kw, Lexicon.FONT, EnumConvertType.STRING, self.FONT_NAMES[0])
         autosize = parse_param(kw, Lexicon.AUTOSIZE, EnumConvertType.BOOLEAN, False)
         letter = parse_param(kw, Lexicon.LETTER, EnumConvertType.BOOLEAN, False)
-        color = parse_param(kw, Lexicon.COLOR, EnumConvertType.VEC4INT, (255,255,255,255), 0, 255)
-        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0,0,0,255), 0, 255)
+        color = parse_param(kw, Lexicon.COLOR, EnumConvertType.VEC4INT, (255,255,255,255))
+        matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0,0,0,255))
         columns = parse_param(kw, Lexicon.COLUMNS, EnumConvertType.INT, 0)
         font_size = parse_param(kw, Lexicon.SIZE, EnumConvertType.INT, 1)
         align = parse_param(kw, Lexicon.ALIGN, EnumAlignment, EnumAlignment.CENTER.name)
@@ -286,7 +286,7 @@ Generates images containing text based on parameters such as font, size, alignme
         margin = parse_param(kw, Lexicon.MARGIN, EnumConvertType.INT, 0)
         line_spacing = parse_param(kw, Lexicon.SPACING, EnumConvertType.INT, 0)
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (512, 512), IMAGE_SIZE_MIN)
-        pos = parse_param(kw, Lexicon.XY, EnumConvertType.VEC2, (0, 0), -1, 1)
+        pos = parse_param(kw, Lexicon.XY, EnumConvertType.VEC2, (0, 0))
         angle = parse_param(kw, Lexicon.ANGLE, EnumConvertType.INT, 0)
         edge = parse_param(kw, Lexicon.EDGE, EnumEdge, EnumEdge.CLIP.name)
         invert = parse_param(kw, Lexicon.INVERT, EnumConvertType.BOOLEAN, False)

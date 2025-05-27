@@ -123,9 +123,9 @@ Processes a batch of data based on the selected mode. Merge, pick, slice, random
         mode = parse_param(kw, Lexicon.MODE, EnumBatchMode, EnumBatchMode.MERGE.name)[0]
         slice_range = parse_param(kw, Lexicon.RANGE, EnumConvertType.VEC3INT, (0, 0, 1))[0]
         index = parse_param(kw, Lexicon.INDEX, EnumConvertType.STRING, "")[0]
-        count = parse_param(kw, Lexicon.COUNT, EnumConvertType.INT, 0, 0, sys.maxsize)[0]
+        count = parse_param(kw, Lexicon.COUNT, EnumConvertType.INT, 0, 0)[0]
         reverse = parse_param(kw, Lexicon.REVERSE, EnumConvertType.BOOLEAN, False)[0]
-        seed = parse_param(kw, Lexicon.SEED, EnumConvertType.INT, 0)[0]
+        seed = parse_param(kw, Lexicon.SEED, EnumConvertType.INT, 0, 0)[0]
 
         data = []
         # track latents since they need to be added back to Dict['samples']

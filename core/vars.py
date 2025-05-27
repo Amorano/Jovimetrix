@@ -51,24 +51,24 @@ Supplies raw or default values for various data types, supporting vector input w
                 Lexicon.IN_A: (COZY_TYPE_ANY, {
                     "default": None,}),
                 Lexicon.X: (COZY_TYPE_NUMERICAL, {
-                    "default": 0, "mij": -sys.maxsize, "maj": sys.maxsize,
+                    "default": 0, "mij": -sys.float_info.max, "maj": sys.float_info.max,
                     "forceInput": True}),
                 Lexicon.Y: (COZY_TYPE_NUMERICAL, {
-                    "default": 0, "mij": -sys.maxsize, "maj": sys.maxsize,
+                    "default": 0, "mij": -sys.float_info.max, "maj": sys.float_info.max,
                     "forceInput": True}),
                 Lexicon.Z: (COZY_TYPE_NUMERICAL, {
-                    "default": 0, "mij": -sys.maxsize, "maj": sys.maxsize,
+                    "default": 0, "mij": -sys.float_info.max, "maj": sys.float_info.max,
                     "forceInput": True}),
                 Lexicon.W: (COZY_TYPE_NUMERICAL, {
-                    "default": 0, "mij": -sys.maxsize, "maj": sys.maxsize,
+                    "default": 0, "mij": -sys.float_info.max, "maj": sys.float_info.max,
                     "forceInput": True}),
                 Lexicon.TYPE: (typ, {
                     "default": EnumConvertType.BOOLEAN.name}),
                 Lexicon.DEFAULT_A: ("VEC4", {
-                    "default": (0, 0, 0, 0), "mij": -sys.maxsize, "maj": sys.maxsize,
+                    "default": (0, 0, 0, 0), "mij": -sys.float_info.max, "maj": sys.float_info.max,
                     "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W]}),
                 Lexicon.DEFAULT_B: ("VEC4", {
-                    "default": (1,1,1,1), "mij": -sys.maxsize, "maj": sys.maxsize,
+                    "default": (1,1,1,1), "mij": -sys.float_info.max, "maj": sys.float_info.max,
                     "label": [Lexicon.X, Lexicon.Y, Lexicon.Z, Lexicon.W]}),
                 Lexicon.SEED: ("INT", {
                     "default": 0, "min": 0, "max": sys.maxsize}),
@@ -152,13 +152,13 @@ Outputs a VECTOR2.
         d = deep_merge(d, {
             "optional": {
                 Lexicon.X: (COZY_TYPE_NUMERICAL, {
-                    "min": -sys.maxsize, "max": sys.maxsize,
+                    "min": -sys.float_info.max, "max": sys.float_info.max,
                     "tooltip": "X channel value"}),
                 Lexicon.Y: (COZY_TYPE_NUMERICAL, {
-                    "min": -sys.maxsize, "max": sys.maxsize,
+                    "min": -sys.float_info.max, "max": sys.float_info.max,
                     "tooltip": "Y channel value"}),
                 Lexicon.DEFAULT: ("VEC2", {
-                    "default": (0,0), "mij": -sys.maxsize, "maj": sys.maxsize,
+                    "default": (0,0), "mij": -sys.float_info.max, "maj": sys.float_info.max,
                     "tooltip": "Default vector value"}),
             }
         })
@@ -198,16 +198,16 @@ Outputs a VECTOR3.
         d = deep_merge(d, {
             "optional": {
                 Lexicon.X: (COZY_TYPE_NUMERICAL, {
-                    "min": -sys.maxsize, "max": sys.maxsize,
+                    "min": -sys.float_info.max, "max": sys.float_info.max,
                     "tooltip": "X channel value"}),
                 Lexicon.Y: (COZY_TYPE_NUMERICAL, {
-                    "min": -sys.maxsize, "max": sys.maxsize,
+                    "min": -sys.float_info.max, "max": sys.float_info.max,
                     "tooltip": "Y channel value"}),
                 Lexicon.Z: (COZY_TYPE_NUMERICAL, {
-                    "min": -sys.maxsize, "max": sys.maxsize,
+                    "min": -sys.float_info.max, "max": sys.float_info.max,
                     "tooltip": "Z channel value"}),
                 Lexicon.DEFAULT: ("VEC3", {
-                    "default": (0,0,0), "mij": -sys.maxsize, "maj": sys.maxsize,
+                    "default": (0,0,0), "mij": -sys.float_info.max, "maj": sys.float_info.max,
                     "tooltip": "Default vector value"}),
             }
         })
@@ -249,19 +249,19 @@ Outputs a VECTOR4.
         d = deep_merge(d, {
             "optional": {
                 Lexicon.X: (COZY_TYPE_NUMERICAL, {
-                    "min": -sys.maxsize, "max": sys.maxsize,
+                    "min": -sys.float_info.max, "max": sys.float_info.max,
                     "tooltip": "X channel value"}),
                 Lexicon.Y: (COZY_TYPE_NUMERICAL, {
-                    "min": -sys.maxsize, "max": sys.maxsize,
+                    "min": -sys.float_info.max, "max": sys.float_info.max,
                     "tooltip": "Y channel value"}),
                 Lexicon.Z: (COZY_TYPE_NUMERICAL, {
-                    "min": -sys.maxsize, "max": sys.maxsize,
+                    "min": -sys.float_info.max, "max": sys.float_info.max,
                     "tooltip": "Z channel value"}),
                 Lexicon.W: (COZY_TYPE_NUMERICAL, {
-                    "min": -sys.maxsize, "max": sys.maxsize,
+                    "min": -sys.float_info.max, "max": sys.float_info.max,
                     "tooltip": "W channel value"}),
                 Lexicon.DEFAULT: ("VEC4", {
-                    "default": (0,0,0,0), "mij": -sys.maxsize, "maj": sys.maxsize,
+                    "default": (0,0,0,0), "mij": -sys.float_info.max, "maj": sys.float_info.max,
                     "tooltip": "Default vector value"}),
             }
         })

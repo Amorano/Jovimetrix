@@ -95,7 +95,7 @@ Combine two input images using various blending modes, such as normal, screen, m
         pB = parse_param(kw, Lexicon.IMAGE_FORE, EnumConvertType.IMAGE, None)
         mask = parse_param(kw, Lexicon.MASK, EnumConvertType.MASK, None)
         func = parse_param(kw, Lexicon.FUNCTION, EnumBlendType, EnumBlendType.NORMAL.name)
-        alpha = parse_param(kw, Lexicon.ALPHA, EnumConvertType.FLOAT, 1, 0, 1)
+        alpha = parse_param(kw, Lexicon.ALPHA, EnumConvertType.FLOAT, 1)
         swap = parse_param(kw, Lexicon.SWAP, EnumConvertType.BOOLEAN, False)
         invert = parse_param(kw, Lexicon.INVERT, EnumConvertType.BOOLEAN, False)
         mode = parse_param(kw, Lexicon.MODE, EnumScaleMode, EnumScaleMode.MATTE.name)
@@ -203,7 +203,7 @@ Create masks based on specific color ranges within an image. Specify the color r
     def run(self, **kw) -> RGBAMaskType:
         pA = parse_param(kw, Lexicon.IMAGE, EnumConvertType.IMAGE, None)
         start = parse_param(kw, Lexicon.START, EnumConvertType.VEC3INT, (128,128,128), 0, 255)
-        use_range = parse_param(kw, Lexicon.RANGE, EnumConvertType.BOOLEAN, False, 0, 255)
+        use_range = parse_param(kw, Lexicon.RANGE, EnumConvertType.BOOLEAN, False)
         end = parse_param(kw, Lexicon.END, EnumConvertType.VEC3INT, (128,128,128), 0, 255)
         fuzz = parse_param(kw, Lexicon.FUZZ, EnumConvertType.VEC3, (0.5,0.5,0.5), 0, 1)
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
@@ -258,7 +258,7 @@ Combines individual color channels (red, green, blue) along with an optional mas
         B = parse_param(kw, Lexicon.CHAN_BLUE, EnumConvertType.MASK, None)
         A = parse_param(kw, Lexicon.CHAN_ALPHA, EnumConvertType.MASK, None)
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
-        flip = parse_param(kw, Lexicon.FLIP, EnumConvertType.VEC4, (0, 0, 0, 0), 0., 1.)
+        flip = parse_param(kw, Lexicon.FLIP, EnumConvertType.VEC4, (0, 0, 0, 0), 0, 1)
         invert = parse_param(kw, Lexicon.INVERT, EnumConvertType.BOOLEAN, False)
         params = list(zip_longest_fill(rgba, R, G, B, A, matte, flip, invert))
         images = []

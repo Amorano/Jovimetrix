@@ -15,7 +15,7 @@ app.registerExtension({
 
         const onNodeCreated = nodeType.prototype.onNodeCreated
         nodeType.prototype.onNodeCreated = async function () {
-            const me = await onNodeCreated?.apply(this);
+            const me = await onNodeCreated?.apply(this, arguments);
             await widgetHookControl(this, 'type', 'aa');
             return me;
         }
