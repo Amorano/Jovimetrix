@@ -138,6 +138,9 @@ Nodes that have been migrated:
 
 [Migrated to Jovi_GLSL](https://github.com/Amorano/Jovi_GLSL)
 
+**2025/05/29** @2.1.8:
+* updated to comfy_cozy 0.0.32
+
 **2025/05/27** @2.1.7:
 * re-ranged all FLOAT to their maximum representations
 * clerical cleanup for JS callbacks

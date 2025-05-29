@@ -266,7 +266,7 @@ The axis parameter allows for horizontal, vertical, or grid stacking of images, 
                 Lexicon.MODE: (EnumScaleMode._member_names_, {
                     "default": EnumScaleMode.MATTE.name,}),
                 Lexicon.WH: ("VEC2", {
-                    "default": (512, 512), "mij":IMAGE_SIZE_MIN, "int": True,
+                    "default": (512, 512), "mij": IMAGE_SIZE_MIN, "int": True,
                     "label": ["W", "H"]}),
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {
                     "default": EnumInterpolation.LANCZOS4.name,}),
