@@ -96,14 +96,10 @@ app.registerExtension({
         const onConnectOutput = nodeType.prototype.onConnectOutput;
         nodeType.prototype.onConnectOutput = function(outputIndex, inputType, inputSlot, inputNode) {
             if (outputIndex == 0 && inputType == "COMBO") {
-                // can link the "same" list -- user breaks it past that, their problem atm.
-
+                // can link the "same" list -- user breaks it past that, their problem atm
                 const widget_queue = this.widgets.find(w => w.name == 'queue');
                 const widget = inputNode.widgets.find(w => w.name == inputSlot.name);
-                const values = widget.options.values.join('\n');
-                if (this.outputs[0].name != _prefix && widget_queue.value != values) {
-                    return false;
-                }
+                widget_queue.value = widget.options.values.join('\n');
             }
             return onConnectOutput?.apply(this, arguments);
         }

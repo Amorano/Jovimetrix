@@ -138,6 +138,10 @@ Nodes that have been migrated:
 
 [Migrated to Jovi_GLSL](https://github.com/Amorano/Jovi_GLSL)
 
+**2025/06/02** @2.1.9:
+* fixed dynamic nodes that already start with inputs (dynamic input wouldnt show up)
+* patched Queue node to work with new `COMBO` style of inputs
+
 **2025/05/29** @2.1.8:
 * updated to comfy_cozy 0.0.32
 

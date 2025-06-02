@@ -145,63 +145,50 @@ export async function nodeAddDynamic(nodeType, prefix, dynamic_type='*') {
     Also need to make sure that we keep any non-dynamic ports.
     */
 
-    // clean off missing slot connects
-    function clean_inputs(self) {
-        if (self.graph === undefined) {
-            return;
-        }
-
-        if (!self.inputs) {
-            return;
-        }
-
-        let idx = 0;
-        let offset = 0;
-        while (idx < self.inputs.length-1) {
-            const slot = self.inputs[idx];
-            const parts = slot.name.split('_');
-            if (parts.length == 2 && self.graph) {
-                if (slot.link == null) {
-                    if (idx < self.inputs.length) {
-                        self.removeInput(idx);
-                    }
-                } else {
-                    const name = parts.slice(1).join('');
-                    self.inputs[idx].name = `${offset}_${name}`;
-                    idx += 1;
-                    offset += 1;
-                }
-            } else {
-                idx += 1;
-            }
-
-        }
-    }
-
     const onNodeCreated = nodeType.prototype.onNodeCreated
     nodeType.prototype.onNodeCreated = async function () {
         const me = await onNodeCreated?.apply(this, arguments);
-        if (this.inputs.length == 0) {
+
+        if (this.inputs.length == 0 || this.inputs[this.inputs.length-1].name != prefix) {
             this.addInput(prefix, dynamic_type);
         }
         return me;
     }
 
+    function slot_name(slot) {
+        return slot.name.split('_');
+    }
+
     const onConnectionsChange = nodeType.prototype.onConnectionsChange
-    nodeType.prototype.onConnectionsChange = function (slotType, slot_idx, event, link_info, node_slot) {
+    nodeType.prototype.onConnectionsChange = async function (slotType, slot_idx, event, link_info, node_slot) {
         const me = onConnectionsChange?.apply(this, arguments);
-        if (slotType == TypeSlot.Input) { //} && slot_idx >= index_start) {
-            if (link_info && event == TypeSlotEvent.Connect) {
-                const fromNode = this.graph._nodes.find(
-                    (otherNode) => otherNode.id == link_info.origin_id
-                )
-                if (fromNode) {
-                    const parent_link = fromNode.outputs[link_info.origin_slot];
-                    if (parent_link) {
-                        node_slot.type = parent_link.type;
-                        node_slot.name = `_${parent_link.name}`;
-                    }
+        const slot_parts = slot_name(node_slot);
+        if ((node_slot.type === dynamic_type || slot_parts.length > 1) && slotType === TypeSlot.Input && link_info !== null) {
+            const fromNode = this.graph._nodes.find(
+                (otherNode) => otherNode.id == link_info.origin_id
+            )
+            const parent_slot = fromNode.outputs[link_info.origin_slot];
+            if (event === TypeSlotEvent.Connect) {
+                node_slot.type = parent_slot.type;
+                node_slot.name = `0_${parent_slot.name}`;
+            } else {
+                this.removeInput(slot_idx);
+                node_slot.type = dynamic_type;
+                node_slot.name = prefix;
+                node_slot.link = null;
+            }
+
+            // clean off missing slot connects
+            let idx = 0;
+            let offset = 0;
+            while (idx < this.inputs.length) {
+                const parts = slot_name(this.inputs[idx]);
+                if (parts.length > 1) {
+                    const name = parts.slice(1).join('');
+                    this.inputs[idx].name = `${offset}_${name}`;
+                    offset += 1;
                 }
+                idx += 1;
             }
 
             // check that the last slot is a dynamic entry....
@@ -209,10 +196,8 @@ export async function nodeAddDynamic(nodeType, prefix, dynamic_type='*') {
             if (last.type != dynamic_type || last.name != prefix) {
                 this.addInput(prefix, dynamic_type);
             }
+            nodeFitHeight(this);
         }
-
-        clean_inputs(this);
-        nodeFitHeight(this);
         return me;
     }
 }
