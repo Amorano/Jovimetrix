@@ -35,9 +35,16 @@ app.registerExtension({
                     textWidget.inputEl.style.border = "1px";
                     textWidget.inputEl.style.backgroundColor = "#222";
                     textWidget.value = this.inputs[i].name + " ";
-                    textWidget.value += message["text"][i]
+                    let raw = message["text"][i]
                         .replace(/\\n/g, '\n')
                         .replace(/"/g, '');
+
+                    try {
+                        raw = JSON.parse('"' + raw.replace(/"/g, '\\"') + '"');
+                    } catch (e) {
+                    }
+
+                    textWidget.value += raw;
                 }
             }
             return me;

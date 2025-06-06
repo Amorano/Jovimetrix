@@ -141,12 +141,15 @@ Combine multiple input images into a single image by summing their pixel values.
                 Lexicon.MODE: (EnumScaleMode._member_names_, {
                     "default": EnumScaleMode.MATTE.name,}),
                 Lexicon.WH: ("VEC2", {
-                    "default": (512, 512), "mij":IMAGE_SIZE_MIN, "int": True,
+                    "default": (512, 512), "mij":1, "int": True,
                     "label": ["W", "H"]}),
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {
                     "default": EnumInterpolation.LANCZOS4.name,}),
                 Lexicon.MATTE: ("VEC4", {
-                    "default": (0, 0, 0, 255), "rgb": True,})
+                    "default": (0, 0, 0, 255), "rgb": True,}),
+                Lexicon.OFFSET: ("VEC2", {
+                    "default": (0, 0), "mij":0, "int": True,
+                    "label": ["X", "Y"]}),
             }
         })
         return Lexicon._parse(d)
@@ -160,11 +163,13 @@ Combine multiple input images into a single image by summing their pixel values.
         # be less dumb when merging
         pA = [tensor_to_cv(i) for i in imgs]
         mode = parse_param(kw, Lexicon.MODE, EnumScaleMode, EnumScaleMode.MATTE.name)[0]
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (512, 512), IMAGE_SIZE_MIN)[0]
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (512, 512), 1)[0]
         sample = parse_param(kw, Lexicon.SAMPLE, EnumInterpolation, EnumInterpolation.LANCZOS4.name)[0]
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)[0]
+        offset = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (0, 0), 0)[0]
         w, h = wihi
-        current = image_flatten(pA, w, h, mode=mode, sample=sample)
+        x, y = offset
+        current = image_flatten(pA, x, y, w, h, mode=mode, sample=sample)
         images = []
         images.append(cv_to_tensor_full(current, matte))
         return image_stack(images)

@@ -32,7 +32,7 @@ from cozy_comfyui.image.compose import \
     image_scalefit, image_split, image_blend, image_matte
 
 from cozy_comfyui.image.convert import \
-    image_convert, tensor_to_cv, cv_to_tensor, cv_to_tensor_full, image_mask_add
+    image_mask, image_convert, tensor_to_cv, cv_to_tensor, cv_to_tensor_full
 
 from cozy_comfyui.image.misc import \
     image_by_size, image_minmax, image_stack
@@ -123,7 +123,7 @@ Combine two input images using various blending modes, such as normal, screen, m
                 height, width = pA.shape[:2]
 
             if pA is None:
-                pA = channel_solid(width, height, matte,)
+                pA = channel_solid(width, height, matte)
             else:
                 pA = tensor_to_cv(pA)
                 matted = pixel_eval(matte)
@@ -135,39 +135,38 @@ Combine two input images using various blending modes, such as normal, screen, m
             else:
                 pB = tensor_to_cv(pB)
 
-            if mask is not None:
-                mask = tensor_to_cv(mask)
-                if invert:
-                    mask = 255 - mask
+            if mask is None:
+                mask = image_mask(pB, 255)
+            else:
+                mask = tensor_to_cv(mask, 1)
+
+            if invert:
+                mask = 255 - mask
 
             if inputMode != EnumScaleInputMode.NONE:
-                # get the min/max of pA, pB and mask?
+                # get the min/max of pA, pB; and mask?
                 imgs = [pA, pB]
-                if mask is not None:
-                    imgs += [mask]
-
                 _, w, h = image_by_size(imgs)
                 pA = image_scalefit(pA, w, h, inputMode, sample, matte)
                 pB = image_scalefit(pB, w, h, inputMode, sample, matte)
-
-                #if mask is not None:
-                #    mask = image_scalefit(mask, w, h, inputMode, sample)
+                mask = image_scalefit(mask, w, h, inputMode, sample)
 
                 pA = image_scalefit(pA, w, h, EnumScaleMode.RESIZE_MATTE, sample, matte)
                 pB = image_scalefit(pB, w, h, EnumScaleMode.RESIZE_MATTE, sample, (0,0,0,255))
-                if mask is not None:
-                    mask = image_scalefit(mask, w, h, EnumScaleMode.RESIZE_MATTE, sample, (255,255,255,255))
+                mask = image_scalefit(mask, w, h, EnumScaleMode.RESIZE_MATTE, sample, (255,255,255,255))
 
             img = image_blend(pA, pB, mask, func, alpha)
+            mask = image_mask(img)
 
             if mode != EnumScaleMode.MATTE:
-                # or mode != EnumScaleMode.RESIZE_MATTE:
                 width, height = wihi
                 img = image_scalefit(img, width, height, mode, sample, matte)
 
             img = cv_to_tensor_full(img, matte)
+            #img = [cv_to_tensor(pA), cv_to_tensor(pB), cv_to_tensor(mask, True)]
             images.append(img)
             pbar.update_absolute(idx)
+
         return image_stack(images)
 
 class FilterMaskNode(CozyImageNode):

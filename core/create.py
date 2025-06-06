@@ -78,7 +78,7 @@ Generate a constant image or mask of a specified size and color. It can be used 
                 Lexicon.MODE: (EnumScaleMode._member_names_, {
                     "default": EnumScaleMode.MATTE.name,}),
                 Lexicon.WH: ("VEC2", {
-                    "default": (512, 512), "mij": IMAGE_SIZE_MIN, "int": True,
+                    "default": (512, 512), "mij": 1, "int": True,
                     "label": ["W", "H"],}),
                 Lexicon.SAMPLE: (EnumInterpolation._member_names_, {
                     "default": EnumInterpolation.LANCZOS4.name,})
@@ -91,7 +91,7 @@ Generate a constant image or mask of a specified size and color. It can be used 
         mask = parse_param(kw, Lexicon.MASK, EnumConvertType.MASK, None)
         matte = parse_param(kw, Lexicon.COLOR, EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
         mode = parse_param(kw, Lexicon.MODE, EnumScaleMode, EnumScaleMode.MATTE.name)
-        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (512, 512), IMAGE_SIZE_MIN)
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (512, 512), 1)
         sample = parse_param(kw, Lexicon.SAMPLE, EnumInterpolation, EnumInterpolation.LANCZOS4.name)
         images = []
         params = list(zip_longest_fill(pA, mask, matte, mode, wihi, sample))

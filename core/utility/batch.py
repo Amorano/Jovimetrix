@@ -249,7 +249,6 @@ class QueueBaseNode(CozyBaseNode):
 
     @classmethod
     def IS_CHANGED(cls, **kw) -> float:
-        print("changed")
         return float('nan')
 
     @classmethod
