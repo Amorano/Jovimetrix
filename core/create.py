@@ -108,13 +108,14 @@ Generate a constant image or mask of a specified size and color. It can be used 
                 h, w = pA.shape[:2]
 
             if mask is None:
-                mask = image_mask(pA)
+                mask = image_mask(pA, 255)
             else:
                 mask = tensor_to_cv(mask, chan=1)
-                mask = image_scalefit(mask, w, h)
+                mask = image_scalefit(mask, w, h, matte=(0,0,0,255))
+                mask = image_convert(mask, 1)
 
             pB = channel_solid(w, h, matte)
-            pA = image_blend(pB, pA, mask)
+            pA = image_blend(pB, pA, 255 - mask)
             pA = image_mask_add(pA, mask)
 
             if mode != EnumScaleMode.MATTE:

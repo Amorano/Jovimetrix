@@ -138,6 +138,10 @@ Nodes that have been migrated:
 
 [Migrated to Jovi_GLSL](https://github.com/Amorano/Jovi_GLSL)
 
+**2025/06/07** @2.1.10:
+* cleaned up image_convert for grayscale/mask
+* updated to cozy_comfyui 0.0.35
+
 **2025/06/06** @2.1.10:
 * updated to comfy_cozy 0.0.34
 * default width and height to 1
