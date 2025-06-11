@@ -190,14 +190,13 @@ export async function nodeAddDynamic(nodeType, prefix, dynamic_type='*') {
                 }
                 idx += 1;
             }
-
-            // check that the last slot is a dynamic entry....
-            let last = this.inputs[this.inputs.length-1];
-            if (last.type != dynamic_type || last.name != prefix) {
-                this.addInput(prefix, dynamic_type);
-            }
-            nodeFitHeight(this);
         }
+        // check that the last slot is a dynamic entry....
+        let last = this.inputs[this.inputs.length-1];
+        if (last.type != dynamic_type || last.name != prefix) {
+            this.addInput(prefix, dynamic_type);
+        }
+        nodeFitHeight(this);
         return me;
     }
 }

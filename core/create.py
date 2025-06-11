@@ -115,7 +115,7 @@ Generate a constant image or mask of a specified size and color. It can be used 
                 mask = image_convert(mask, 1)
 
             pB = channel_solid(w, h, matte)
-            pA = image_blend(pB, pA, 255 - mask)
+            pA = image_blend(pB, pA, mask)
             pA = image_mask_add(pA, mask)
 
             if mode != EnumScaleMode.MATTE:
