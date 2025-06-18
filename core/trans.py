@@ -380,9 +380,11 @@ Apply various geometric transformations to images, including translation, rotati
         pbar = ProgressBar(len(params))
         for idx, (pA, mask, offset, angle, size, edge, tile_xy, mirror, mirror_pivot, proj, strength, tltr, blbr, mode, wihi, sample, matte) in enumerate(params):
             pA = tensor_to_cv(pA) if pA is not None else channel_solid()
-            if mask is not None:
+            if mask is None:
+                mask = image_mask(pA, 255)
+            else:
                 mask = tensor_to_cv(mask)
-                pA = image_mask_add(pA, mask)
+            pA = image_mask_add(pA, mask)
 
             h, w = pA.shape[:2]
             pA = image_transform(pA, offset, angle, size, sample, edge)
