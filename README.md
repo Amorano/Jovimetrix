@@ -138,6 +138,9 @@ Nodes that have been migrated:
 
 [Migrated to Jovi_GLSL](https://github.com/Amorano/Jovi_GLSL)
 
+**2025/06/18** @2.1.14:
+* fixed resize_matte mode to use full mask/alpha
+
 **2025/06/18** @2.1.13:
 * allow hex codes for vectors
 * updated to cozy_comfyui 0.0.36
