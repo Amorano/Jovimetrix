@@ -138,6 +138,9 @@ Nodes that have been migrated:
 
 [Migrated to Jovi_GLSL](https://github.com/Amorano/Jovi_GLSL)
 
+**2025/06/28** @2.1.15:
+* `GRAPH NODE` updated to use new mechanism in cozy_comfyui 0.0.37 for list of list parse on dynamics
+
 **2025/06/18** @2.1.14:
 * fixed resize_matte mode to use full mask/alpha
 

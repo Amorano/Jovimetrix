@@ -169,6 +169,8 @@ Visualize a series of data points over time. It accepts a dynamic number of valu
         })
         return Lexicon._parse(d)
 
+
+
     @classmethod
     def IS_CHANGED(cls, **kw) -> float:
         return float('nan')
@@ -184,8 +186,7 @@ Visualize a series of data points over time. It accepts a dynamic number of valu
         if parse_reset(ident) > 0 or parse_param(kw, Lexicon.RESET, EnumConvertType.BOOLEAN, False)[0]:
             self.__history = []
         longest_edge = 0
-        dynamic = parse_dynamic(kw, Lexicon.DYNAMIC, EnumConvertType.FLOAT, 0)
-        dynamic = [i[0] for i in dynamic]
+        dynamic = parse_dynamic(kw, Lexicon.DYNAMIC, EnumConvertType.FLOAT, 0, extend=False)
         self.__ax.clear()
         for idx, val in enumerate(dynamic):
             if isinstance(val, (set, tuple,)):
