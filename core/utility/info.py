@@ -169,8 +169,6 @@ Visualize a series of data points over time. It accepts a dynamic number of valu
         })
         return Lexicon._parse(d)
 
-
-
     @classmethod
     def IS_CHANGED(cls, **kw) -> float:
         return float('nan')

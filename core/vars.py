@@ -17,9 +17,6 @@ from cozy_comfyui.node import \
     COZY_TYPE_ANY, COZY_TYPE_NUMERICAL, \
     CozyBaseNode
 
-from . import \
-    EnumFillOperation
-
 # ==============================================================================
 # === GLOBAL ===
 # ==============================================================================

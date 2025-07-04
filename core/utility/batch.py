@@ -8,7 +8,7 @@ import random
 from enum import Enum
 from pathlib import Path
 from itertools import zip_longest
-from typing import Any, List
+from typing import Any
 
 import torch
 import numpy as np
@@ -111,7 +111,7 @@ Processes a batch of data based on the selected mode. Merge, pick, slice, random
         return Lexicon._parse(d)
 
     @classmethod
-    def batched(cls, iterable, chunk_size, expand:bool=False, fill:Any=None) -> List[Any]:
+    def batched(cls, iterable, chunk_size, expand:bool=False, fill:Any=None) -> list[Any]:
         if expand:
             iterator = iter(iterable)
             return zip_longest(*[iterator] * chunk_size, fillvalue=fill)
@@ -295,7 +295,7 @@ class QueueBaseNode(CozyBaseNode):
         self.__last_q_value = {}
 
     # consume the list into iterable items to load/process
-    def __parseQ(self, data: Any, recurse: bool=False) -> List[str]:
+    def __parseQ(self, data: Any, recurse: bool=False) -> list[str]:
         entries = []
         for line in data.strip().split('\n'):
             if len(line) == 0:
@@ -360,7 +360,7 @@ class QueueBaseNode(CozyBaseNode):
                     self.__last_q_value[q_data] = json.load(f)
         return self.__last_q_value.get(q_data, q_data)
 
-    def run(self, ident, **kw) -> tuple[Any, List[str], str, int, int]:
+    def run(self, ident, **kw) -> tuple[Any, list[str], str, int, int]:
 
         self.__ident = ident
         # should work headless as well

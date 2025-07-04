@@ -1,6 +1,5 @@
 """ Jovimetrix - Transform """
 
-from re import I
 import sys
 from enum import Enum
 

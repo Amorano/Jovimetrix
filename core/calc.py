@@ -4,7 +4,7 @@ import sys
 import math
 import struct
 from enum import Enum
-from typing import Any, List
+from typing import Any
 from collections import Counter
 
 import torch
@@ -23,13 +23,6 @@ from cozy_comfyui.lexicon import \
 from cozy_comfyui.node import \
     COZY_TYPE_ANY, COZY_TYPE_NUMERICAL, \
     CozyBaseNode
-
-from cozy_comfyui.maths.ease import \
-    EnumEase, \
-    ease_op
-
-from . import \
-    EnumFillOperation
 
 # ==============================================================================
 # === GLOBAL ===
@@ -195,7 +188,7 @@ def to_bits(value: Any):
         raise TypeError(f"Unsupported type: {type(value)}")
 
 def vector_swap(pA: Any, pB: Any, swap_x: EnumSwizzle, swap_y:EnumSwizzle,
-                swap_z:EnumSwizzle, swap_w:EnumSwizzle, default:List[float]) -> List[float]:
+                swap_z:EnumSwizzle, swap_w:EnumSwizzle, default:list[float]) -> list[float]:
     """Swap out a vector's values with another vector's values, or a constant fill."""
 
     def parse(target, targetB, swap, val) -> float:
@@ -257,7 +250,7 @@ IMAGE and MASK will return a TRUE bit for any non-black pixel, as a stream of bi
         })
         return Lexicon._parse(d)
 
-    def run(self, **kw) -> tuple[List[int], List[bool]]:
+    def run(self, **kw) -> tuple[list[int], list[bool]]:
         value = parse_param(kw, Lexicon.VALUE, EnumConvertType.LIST, 0)
         bits = parse_param(kw, Lexicon.BITS, EnumConvertType.INT, 8)
         params = list(zip_longest_fill(value, bits))

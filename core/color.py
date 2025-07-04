@@ -1,7 +1,6 @@
 """ Jovimetrix - Color """
 
 from enum import Enum
-from typing import List
 
 import cv2
 import torch
@@ -292,7 +291,7 @@ Users can customize the angle of separation for color calculations, offering fle
         })
         return Lexicon._parse(d)
 
-    def run(self, **kw) -> tuple[List[TensorType], List[TensorType]]:
+    def run(self, **kw) -> tuple[list[TensorType], list[TensorType]]:
         pA = parse_param(kw, Lexicon.IMAGE, EnumConvertType.IMAGE, None)
         scheme = parse_param(kw, Lexicon.SCHEME, EnumColorTheory, EnumColorTheory.COMPLIMENTARY.name)
         value = parse_param(kw, Lexicon.VALUE, EnumConvertType.INT, 45, -90, 90)

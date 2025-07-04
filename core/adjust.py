@@ -2,7 +2,7 @@
 
 import sys
 from enum import Enum
-from typing import Any, List
+from typing import Any
 
 from comfy.utils import ProgressBar
 
@@ -360,7 +360,7 @@ Operations based on the image shape.
         kernel = parse_param(kw, Lexicon.RADIUS, EnumConvertType.INT, 1)
         count = parse_param(kw, Lexicon.ITERATION, EnumConvertType.INT, 1)
         params = list(zip_longest_fill(pA, op, kernel, count))
-        images: List[Any] = []
+        images: list[Any] = []
         pbar = ProgressBar(len(params))
         for idx, (pA, op, kernel, count) in enumerate(params):
             pA = channel_solid() if pA is None else tensor_to_cv(pA)
