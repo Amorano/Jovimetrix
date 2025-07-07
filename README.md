@@ -138,6 +138,9 @@ Nodes that have been migrated:
 
 [Migrated to Jovi_GLSL](https://github.com/Amorano/Jovi_GLSL)
 
+**2025/07/07** @2.1.17:
+* updated to cozy_comfyui 0.0.39
+
 **2025/07/04** @2.1.16:
 * Type hint updates
 
