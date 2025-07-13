@@ -1,6 +1,6 @@
 aenum
 git+https://github.com/cozy-comfyui/cozy_comfyui@main#egg=cozy_comfyui
 matplotlib
-numpy<2
+numpy>=1.25.0
 opencv-contrib-python
 Pillow

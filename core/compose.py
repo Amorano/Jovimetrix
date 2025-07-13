@@ -37,9 +37,6 @@ from cozy_comfyui.image.convert import \
 from cozy_comfyui.image.misc import \
     image_by_size, image_minmax, image_stack
 
-from cozy_comfyui.image.pixel import \
-    pixel_eval
-
 # ==============================================================================
 # === GLOBAL ===
 # ==============================================================================
@@ -90,8 +87,8 @@ Combine two input images using various blending modes, such as normal, screen, m
         return Lexicon._parse(d)
 
     def run(self, **kw) -> RGBAMaskType:
-        pA = parse_param(kw, Lexicon.IMAGE_BACK, EnumConvertType.IMAGE, None)
-        pB = parse_param(kw, Lexicon.IMAGE_FORE, EnumConvertType.IMAGE, None)
+        back = parse_param(kw, Lexicon.IMAGE_BACK, EnumConvertType.IMAGE, None)
+        fore = parse_param(kw, Lexicon.IMAGE_FORE, EnumConvertType.IMAGE, None)
         mask = parse_param(kw, Lexicon.MASK, EnumConvertType.MASK, None)
         func = parse_param(kw, Lexicon.FUNCTION, EnumBlendType, EnumBlendType.NORMAL.name)
         alpha = parse_param(kw, Lexicon.ALPHA, EnumConvertType.FLOAT, 1)
@@ -102,41 +99,41 @@ Combine two input images using various blending modes, such as normal, screen, m
         sample = parse_param(kw, Lexicon.SAMPLE, EnumInterpolation, EnumInterpolation.LANCZOS4.name)
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)
         inputMode = parse_param(kw, Lexicon.INPUT, EnumScaleInputMode, EnumScaleInputMode.NONE.name)
-        params = list(zip_longest_fill(pA, pB, mask, func, alpha, swap, invert, mode, wihi, sample, matte, inputMode))
+        params = list(zip_longest_fill(back, fore, mask, func, alpha, swap, invert, mode, wihi, sample, matte, inputMode))
         images = []
         pbar = ProgressBar(len(params))
-        for idx, (pA, pB, mask, func, alpha, swap, invert, mode, wihi, sample, matte, inputMode) in enumerate(params):
+        for idx, (back, fore, mask, func, alpha, swap, invert, mode, wihi, sample, matte, inputMode) in enumerate(params):
             if swap:
-                pA, pB = pB, pA
+                back, fore = fore, back
 
             width, height = IMAGE_SIZE_MIN, IMAGE_SIZE_MIN
-            if pA is None:
-                if pB is None:
+            if back is None:
+                if fore is None:
                     if mask is None:
                         if mode != EnumScaleMode.MATTE:
                             width, height = wihi
                     else:
                         height, width = mask.shape[:2]
                 else:
-                    height, width = pB.shape[:2]
+                    height, width = fore.shape[:2]
             else:
-                height, width = pA.shape[:2]
+                height, width = back.shape[:2]
 
-            if pA is None:
-                pA = channel_solid(width, height, matte)
+            if back is None:
+                back = channel_solid(width, height, matte)
             else:
-                pA = tensor_to_cv(pA)
-                matted = pixel_eval(matte)
-                pA = image_matte(pA, matted)
+                back = tensor_to_cv(back)
+                #matted = pixel_eval(matte)
+                #back = image_matte(back, matted)
 
-            if pB is None:
+            if fore is None:
                 clear = list(matte[:3]) + [0]
-                pB = channel_solid(width, height, clear)
+                fore = channel_solid(width, height, clear)
             else:
-                pB = tensor_to_cv(pB)
+                fore = tensor_to_cv(fore)
 
             if mask is None:
-                mask = image_mask(pB, 255)
+                mask = image_mask(fore, 255)
             else:
                 mask = tensor_to_cv(mask, 1)
 
@@ -144,18 +141,18 @@ Combine two input images using various blending modes, such as normal, screen, m
                 mask = 255 - mask
 
             if inputMode != EnumScaleInputMode.NONE:
-                # get the min/max of pA, pB; and mask?
-                imgs = [pA, pB]
+                # get the min/max of back, fore; and mask?
+                imgs = [back, fore]
                 _, w, h = image_by_size(imgs)
-                pA = image_scalefit(pA, w, h, inputMode, sample, matte)
-                pB = image_scalefit(pB, w, h, inputMode, sample, matte)
+                back = image_scalefit(back, w, h, inputMode, sample, matte)
+                fore = image_scalefit(fore, w, h, inputMode, sample, matte)
                 mask = image_scalefit(mask, w, h, inputMode, sample)
 
-                pA = image_scalefit(pA, w, h, EnumScaleMode.RESIZE_MATTE, sample, matte)
-                pB = image_scalefit(pB, w, h, EnumScaleMode.RESIZE_MATTE, sample, (0,0,0,255))
+                back = image_scalefit(back, w, h, EnumScaleMode.RESIZE_MATTE, sample, matte)
+                fore = image_scalefit(fore, w, h, EnumScaleMode.RESIZE_MATTE, sample, (0,0,0,255))
                 mask = image_scalefit(mask, w, h, EnumScaleMode.RESIZE_MATTE, sample, (255,255,255,255))
 
-            img = image_blend(pA, pB, mask, func, alpha)
+            img = image_blend(back, fore, mask, func, alpha)
             mask = image_mask(img)
 
             if mode != EnumScaleMode.MATTE:
@@ -163,7 +160,7 @@ Combine two input images using various blending modes, such as normal, screen, m
                 img = image_scalefit(img, width, height, mode, sample, matte)
 
             img = cv_to_tensor_full(img, matte)
-            #img = [cv_to_tensor(pA), cv_to_tensor(pB), cv_to_tensor(mask, True)]
+            #img = [cv_to_tensor(back), cv_to_tensor(fore), cv_to_tensor(mask, True)]
             images.append(img)
             pbar.update_absolute(idx)
 

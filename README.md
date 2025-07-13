@@ -138,6 +138,9 @@ Nodes that have been migrated:
 
 [Migrated to Jovi_GLSL](https://github.com/Amorano/Jovi_GLSL)
 
+**2025/07/13** @2.1.18:
+* allow numpy>=1.25.0
+
 **2025/07/07** @2.1.17:
 * updated to cozy_comfyui 0.0.39
 
