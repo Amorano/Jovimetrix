@@ -10,6 +10,7 @@
     "ADJUST: SHARPEN (JOV)": "Sharpen the pixels of an image",
     "AKASHIC (JOV) \ud83d\udcd3": "Visualize data",
     "ARRAY (JOV) \ud83d\udcda": "Processes a batch of data based on the selected mode",
+    "BATCH TO LIST (JOV)": "Convert a batch of values into a pure python list of values",
     "BIT SPLIT (JOV) \u2b44": "Split an input into separate bits",
     "BLEND (JOV) \u2697\ufe0f": "Combine two input images using various blending modes, such as normal, screen, multiply, overlay, etc",
     "COLOR BLIND (JOV) \ud83d\udc41\u200d\ud83d\udde8": "Simulate color blindness effects on images",

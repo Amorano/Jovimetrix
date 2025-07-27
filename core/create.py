@@ -202,6 +202,7 @@ Create n-sided polygons. These shapes can be customized by adjusting parameters 
                 rgb = (gaussian(rgb, sigma=blur, channel_axis=2) * 255).astype(np.uint8)
                 mask = (gaussian(mask, sigma=blur, channel_axis=2) * 255).astype(np.uint8)
 
+            mask = (mask * (color[3] / 255.)).astype(np.uint8)
             back = list(matte[:3]) + [255]
             canvas = np.full((height, width, 4), back, dtype=rgb.dtype)
             rgba = image_blend(canvas, rgb, mask)

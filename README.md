@@ -138,6 +138,10 @@ Nodes that have been migrated:
 
 [Migrated to Jovi_GLSL](https://github.com/Amorano/Jovi_GLSL)
 
+**2025/07/27** @2.1.19:
+* added `BATCH TO LIST` node
+* `VECTOR` node(s) default step changed to 0.1
+
 **2025/07/13** @2.1.18:
 * allow numpy>=1.25.0
 

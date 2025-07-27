@@ -240,6 +240,29 @@ Processes a batch of data based on the selected mode. Merge, pick, slice, random
 
         return (data, [size],)
 
+class BatchToList(CozyBaseNode):
+    NAME = "BATCH TO LIST (JOV)"
+    NAME_PRETTY = "BATCH TO LIST (JOV)"
+    CATEGORY = JOV_CATEGORY
+    RETURN_TYPES = (COZY_TYPE_ANY, )
+    RETURN_NAMES = ("LIST", )
+    DESCRIPTION = """
+Convert a batch of values into a pure python list of values.
+"""
+    @classmethod
+    def INPUT_TYPES(cls) -> InputType:
+        d = super().INPUT_TYPES()
+        return deep_merge(d, {
+            "optional": {
+                Lexicon.BATCH: (COZY_TYPE_ANY, {}),
+            }
+        })
+
+    def run(self, **kw) -> tuple[list[Any]]:
+        batch = parse_param(kw, Lexicon.BATCH, EnumConvertType.LIST, [])
+        batch = [f[0] for f in batch]
+        return (batch,)
+
 class QueueBaseNode(CozyBaseNode):
     CATEGORY = JOV_CATEGORY
     RETURN_TYPES = (COZY_TYPE_ANY, COZY_TYPE_ANY, "STRING", "INT", "INT", "BOOLEAN")

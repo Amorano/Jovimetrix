@@ -62,7 +62,7 @@ const VectorWidget = (app, inputName, options, initial) => {
 
     widget.convert = parseFloat;
     widget.options.precision = widget.options?.precision || 2;
-    widget.options.step = widget.options?.step || 0.01;
+    widget.options.step = widget.options?.step || 0.1;
     widget.options.round = 1 / 10 ** widget.options.step;
 
     if (widget.options?.rgb || widget.options?.int || false) {
