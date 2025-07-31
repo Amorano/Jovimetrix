@@ -21,7 +21,7 @@ from cozy_comfyui.lexicon import \
     Lexicon
 
 from cozy_comfyui.node import \
-    COZY_TYPE_ANY, COZY_TYPE_NUMERICAL, \
+    COZY_TYPE_ANY, COZY_TYPE_NUMERICAL, COZY_TYPE_FULL, \
     CozyBaseNode
 
 # ==============================================================================
@@ -510,7 +510,7 @@ Perform single function operations like absolute value, mean, median, mode, magn
         typ = EnumConvertType._member_names_[:6]
         d = deep_merge(d, {
             "optional": {
-                Lexicon.IN_A: (COZY_TYPE_NUMERICAL, {
+                Lexicon.IN_A: (COZY_TYPE_FULL, {
                     "default": 0}),
                 Lexicon.FUNCTION: (EnumUnaryOperation._member_names_, {
                     "default": EnumUnaryOperation.ABS.name}),
@@ -597,9 +597,9 @@ Execute binary operations like addition, subtraction, multiplication, division, 
         d = super().INPUT_TYPES()
         d = deep_merge(d, {
             "optional": {
-                Lexicon.IN_A: (COZY_TYPE_NUMERICAL, {
+                Lexicon.IN_A: (COZY_TYPE_FULL, {
                     "default": None}),
-                Lexicon.IN_B: (COZY_TYPE_NUMERICAL, {
+                Lexicon.IN_B: (COZY_TYPE_FULL, {
                     "default": None}),
                 Lexicon.FUNCTION: (EnumBinaryOperation._member_names_, {
                     "default": EnumBinaryOperation.ADD.name,}),
