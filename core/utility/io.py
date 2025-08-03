@@ -46,8 +46,8 @@ try: JOV_DELAY_MIN = int(os.getenv("JOV_DELAY_MIN", JOV_DELAY_MIN))
 except: pass
 JOV_DELAY_MIN = max(1, JOV_DELAY_MIN)
 
-# max 10 minutes to start
-JOV_DELAY_MAX = 600
+# max 115 days
+JOV_DELAY_MAX = 10000000
 try: JOV_DELAY_MAX = int(os.getenv("JOV_DELAY_MAX", JOV_DELAY_MAX))
 except: pass
 
@@ -90,7 +90,7 @@ class DelayNode(CozyBaseNode):
     RETURN_TYPES = (COZY_TYPE_ANY,)
     RETURN_NAMES = ("OUT",)
     OUTPUT_TOOLTIPS = (
-        "Pass through data when the delay ends"
+        "Pass through data when the delay ends",
     )
     DESCRIPTION = """
 Introduce pauses in the workflow that accept an optional input to pass through and a timer parameter to specify the duration of the delay. If no timer is provided, it defaults to a maximum delay. During the delay, it periodically checks for messages to interrupt the delay. Once the delay is completed, it returns the input passed to it. You can disable the screensaver with the `ENABLE` option
@@ -119,7 +119,7 @@ Introduce pauses in the workflow that accept an optional input to pass through a
         return float('nan')
 
     def run(self, ident, **kw) -> tuple[Any]:
-        delay = parse_param(kw, Lexicon.TIMER, EnumConvertType.INT, -1, 0, JOV_DELAY_MAX)[0]
+        delay = parse_param(kw, Lexicon.TIMER, EnumConvertType.INT, -1, -1, JOV_DELAY_MAX)[0]
         if delay < 0:
             delay = JOV_DELAY_MAX
         if delay > JOV_DELAY_MIN:
@@ -141,7 +141,8 @@ Introduce pauses in the workflow that accept an optional input to pass through a
                     logger.info(f"delay [continue] ({step}): {ident}")
             pbar.update_absolute(step)
             step += 1
-        return kw[Lexicon.PASS_IN],
+
+        return kw[Lexicon.PASS_IN]
 
 class ExportNode(CozyBaseNode):
     NAME = "EXPORT (JOV) 📽"
@@ -260,7 +261,7 @@ class RouteNode(CozyBaseNode):
     RETURN_TYPES = ("BUS",) + (COZY_TYPE_ANY,) * 10
     RETURN_NAMES = ("ROUTE",)
     OUTPUT_TOOLTIPS = (
-        "Pass through for Route node"
+        "Pass through for Route node",
     )
     DESCRIPTION = """
 Routes the input data from the optional input ports to the output port, preserving the order of inputs. The `PASS_IN` optional input is directly passed through to the output, while other optional inputs are collected and returned as tuples, preserving the order of insertion.

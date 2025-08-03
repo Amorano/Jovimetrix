@@ -1,0 +1,21 @@
+/**/
+
+.jov-modal-content {
+  max-width: 100%;
+  max-height: 100%;
+  overflow: visible;
+  position: relative;
+  margin: 3px;
+  padding: 3px;
+  table-layout: fixed;
+  text-align: center;
+  background-color: var(--bg-color);
+  border-style: solid;
+  border-color: rgb(95, 85, 75);
+}
+
+.jov-delay-header {
+  font-weight: bold;
+  font-size: 1.5em;
+  text-align: center;
+}

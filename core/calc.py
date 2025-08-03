@@ -415,7 +415,7 @@ class LerpNode(CozyBaseNode):
     RETURN_NAMES = ("❔",)
     OUTPUT_IS_LIST = (True,)
     OUTPUT_TOOLTIPS = (
-        f"Output can vary depending on the type chosen in the {"TYPE"} parameter"
+        f"Output can vary depending on the type chosen in the {"TYPE"} parameter",
     )
     DESCRIPTION = """
 Calculate linear interpolation between two values or vectors based on a blending factor (alpha).
@@ -498,7 +498,7 @@ class OPUnaryNode(CozyBaseNode):
     RETURN_NAMES = ("❔",)
     OUTPUT_IS_LIST = (True,)
     OUTPUT_TOOLTIPS = (
-        "Output type will match the input type"
+        "Output type will match the input type",
     )
     DESCRIPTION = """
 Perform single function operations like absolute value, mean, median, mode, magnitude, normalization, maximum, or minimum on input values.
@@ -585,7 +585,7 @@ class OPBinaryNode(CozyBaseNode):
     RETURN_NAMES = ("❔",)
     OUTPUT_IS_LIST = (True,)
     OUTPUT_TOOLTIPS = (
-        "Output type will match the input type"
+        "Output type will match the input type",
     )
     DESCRIPTION = """
 Execute binary operations like addition, subtraction, multiplication, division, and bitwise operations on input values, supporting various data types and vector sizes.

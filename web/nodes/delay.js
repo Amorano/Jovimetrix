@@ -77,8 +77,10 @@ app.registerExtension({
                     return;
                 }
 
-                if (widget_time.value > 4 && widget_enable.value == true) {
+                const time = event.detail.timeout;
+                if (time > 4 && widget_enable.value == true) {
                     bubbles();
+                    console.info(time, widget_enable.value);
                 }
 
                 showing = true;
@@ -94,7 +96,7 @@ app.registerExtension({
                     (button) => {
                         return (button != "jov-submit-cancel");
                     },
-                    widget_time.value);
+                    time);
 
                 let value = false;
                 try {

@@ -145,7 +145,7 @@ class GraphNode(CozyBaseNode):
     RETURN_TYPES = ("IMAGE", )
     RETURN_NAMES = ("IMAGE",)
     OUTPUT_TOOLTIPS = (
-        "The graphed image"
+        "The graphed image",
     )
     DESCRIPTION = """
 Visualize a series of data points over time. It accepts a dynamic number of values to graph and display, with options to reset the graph or specify the number of values. The output is an image displaying the graph, allowing users to analyze trends and patterns.

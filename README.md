@@ -138,6 +138,11 @@ Nodes that have been migrated:
 
 [Migrated to Jovi_GLSL](https://github.com/Amorano/Jovi_GLSL)
 
+**2025/08/03** @2.1.21:
+* fixed css for `DELAY` node
+* delay node timer extended to 150+ days
+* all tooltips checked to be TUPLE entries
+
 **2025/07/31** @2.1.20:
 * support for tensors in `OP UNARY` or `OP BINARY`
 
