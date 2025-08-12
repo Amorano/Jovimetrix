@@ -138,6 +138,9 @@ Nodes that have been migrated:
 
 [Migrated to Jovi_GLSL](https://github.com/Amorano/Jovi_GLSL)
 
+**2025/08/12** @2.1.22:
+* tick allows for float/int start
+
 **2025/08/03** @2.1.21:
 * fixed css for `DELAY` node
 * delay node timer extended to 150+ days

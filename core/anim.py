@@ -72,7 +72,7 @@ Value generator with normalized values based on based on time interval.
         d = deep_merge(d, {
             "optional": {
                 # forces a MOD on CYCLE
-                Lexicon.START: ("INT", {
+                Lexicon.START: ("FLOAT", {
                     "default": 0, "min": -sys.maxsize, "max": sys.maxsize
                 }),
                 # interval between frames
@@ -115,7 +115,7 @@ Value generator with normalized values based on based on time interval.
         - Normalized output 0..1, -1..1, L2 or ZScore
         """
 
-        start = parse_param(kw, Lexicon.START, EnumConvertType.INT, 0)[0]
+        start = parse_param(kw, Lexicon.START, EnumConvertType.FLOAT, 0)[0]
         step = parse_param(kw, Lexicon.STEP, EnumConvertType.FLOAT, 0)[0]
         count = parse_param(kw, Lexicon.COUNT, EnumConvertType.INT, 1, 1, 1500)[0]
         loop = parse_param(kw, Lexicon.LOOP, EnumConvertType.INT, 0, 0)[0]
