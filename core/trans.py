@@ -165,13 +165,12 @@ Combine multiple input images into a single image by summing their pixel values.
         wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (512, 512), 1)[0]
         sample = parse_param(kw, Lexicon.SAMPLE, EnumInterpolation, EnumInterpolation.LANCZOS4.name)[0]
         matte = parse_param(kw, Lexicon.MATTE, EnumConvertType.VEC4INT, (0, 0, 0, 255), 0, 255)[0]
-        offset = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (0, 0), 0)[0]
+        offset = parse_param(kw, Lexicon.OFFSET, EnumConvertType.VEC2INT, (0, 0), 0)[0]
         w, h = wihi
         x, y = offset
-        current = image_flatten(pA, x, y, w, h, mode=mode, sample=sample)
-        images = []
-        images.append(cv_to_tensor_full(current, matte))
-        return image_stack(images)
+        pA = image_flatten(pA, x, y, w, h, mode=mode, sample=sample)
+        pA = [cv_to_tensor_full(pA, matte)]
+        return image_stack(pA)
 
 class SplitNode(CozyBaseNode):
     NAME = "SPLIT (JOV) 🎭"

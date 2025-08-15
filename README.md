@@ -138,6 +138,9 @@ Nodes that have been migrated:
 
 [Migrated to Jovi_GLSL](https://github.com/Amorano/Jovi_GLSL)
 
+**2025/08/15** @2.1.23:
+* fixed regression in `FLATTEN` node
+
 **2025/08/12** @2.1.22:
 * tick allows for float/int start
 
