@@ -138,6 +138,11 @@ Nodes that have been migrated:
 
 [Migrated to Jovi_GLSL](https://github.com/Amorano/Jovi_GLSL)
 
+**2025/09/04** @2.1.24:
+* `AUTO LEVEL` node
+* `HISTOGRAM` node
+* new support for cozy_comfy (v3+ comfy node spec)
+
 **2025/08/15** @2.1.23:
 * fixed regression in `FLATTEN` node
 

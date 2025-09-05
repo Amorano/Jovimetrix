@@ -4,6 +4,8 @@ import sys
 from enum import Enum
 from typing import Any
 
+import comfy.model_management
+from comfy_api.latest import ComfyExtension, io
 from comfy.utils import ProgressBar
 
 from cozy_comfyui import \
@@ -13,6 +15,10 @@ from cozy_comfyui import \
 from cozy_comfyui.lexicon import \
     Lexicon
 
+from cozy_comfy.node import \
+    COZY_TYPE_IMAGE as COZY_TYPE_IMAGEv3, \
+    CozyImageNode as CozyImageNodev3
+
 from cozy_comfyui.node import \
     COZY_TYPE_IMAGE, \
     CozyImageNode
@@ -20,7 +26,7 @@ from cozy_comfyui.node import \
 from cozy_comfyui.image.adjust import \
     EnumAdjustBlur, EnumAdjustColor, EnumAdjustEdge, EnumAdjustMorpho, \
     image_contrast, image_brightness, image_equalize, image_gamma, \
-    image_exposure, image_hsv, image_invert, image_pixelate, image_pixelscale, \
+    image_exposure, image_pixelate, image_pixelscale, \
     image_posterize, image_quantize, image_sharpen, image_morphology, \
     image_emboss, image_blur, image_edge, image_color
 
@@ -441,6 +447,62 @@ Sharpen the pixels of an image.
             }
         })
         return Lexicon._parse(d)
+
+    def run(self, **kw) -> RGBAMaskType:
+        pA = parse_param(kw, Lexicon.IMAGE, EnumConvertType.IMAGE, None)
+        amount = parse_param(kw, Lexicon.AMOUNT, EnumConvertType.FLOAT, 0)
+        threshold = parse_param(kw, Lexicon.THRESHOLD, EnumConvertType.FLOAT, 0)
+        params = list(zip_longest_fill(pA, amount, threshold))
+        images = []
+        pbar = ProgressBar(len(params))
+        for idx, (pA, amount, threshold) in enumerate(params):
+            pA = channel_solid() if pA is None else tensor_to_cv(pA)
+            pA = image_sharpen(pA, amount / 2., threshold=threshold / 25.5)
+            images.append(cv_to_tensor_full(pA))
+            pbar.update_absolute(idx)
+        return image_stack(images)
+
+class AdjustSharpenNodev3(CozyImageNodev3):
+    NAME = "ADJUST: SHARPEN (JOV)"
+    CATEGORY = JOV_CATEGORY
+    DESCRIPTION = """
+Sharpen the pixels of an image.
+"""
+    @classmethod
+    def define_schema(cls, **kwarg) -> io.Schema:
+        schema = super(**kwarg).define_schema()
+        # schema.
+        schema.inputs.extend([
+            io.MultiType.Input(
+                id=Lexicon.IMAGE,
+                types=COZY_TYPE_IMAGEv3,
+                display_name=Lexicon.IMAGE,
+                optional=True,
+                tooltip=Lexicon.IMAGE[1]
+            ),
+            io.Float.Input(
+                id=Lexicon.AMOUNT,
+                display_name=Lexicon.AMOUNT,
+                optional=True,
+                default= 0,
+                min=0,
+                max=1,
+                step=0.01,
+                tooltip=Lexicon.AMOUNT[1]
+            ),
+            io.Float.Input(
+                id=Lexicon.THRESHOLD,
+                display_name=Lexicon.THRESHOLD,
+                optional=True,
+                default= 0,
+                min=0,
+                max=1,
+                step=0.01,
+                tooltip=Lexicon.THRESHOLD[1]
+            )
+
+        ])
+        return schema
 
     def run(self, **kw) -> RGBAMaskType:
         pA = parse_param(kw, Lexicon.IMAGE, EnumConvertType.IMAGE, None)

@@ -1,5 +1,7 @@
 """ Jovimetrix - Composition """
 
+from enum import Enum
+
 import numpy as np
 
 from comfy.utils import ProgressBar
@@ -21,7 +23,8 @@ from cozy_comfyui.image import \
 
 from cozy_comfyui.image.adjust import \
     EnumThreshold, EnumThresholdAdapt, \
-    image_invert, image_filter, image_threshold
+    image_histogram2, image_invert, image_filter, image_threshold, \
+    image_autolevel, image_autolevel_histogram
 
 from cozy_comfyui.image.channel import \
     EnumPixelSwizzle, \
@@ -29,6 +32,7 @@ from cozy_comfyui.image.channel import \
 
 from cozy_comfyui.image.compose import \
     EnumBlendType, EnumScaleMode, EnumScaleInputMode, EnumInterpolation, \
+    image_resize, \
     image_scalefit, image_split, image_blend, image_matte
 
 from cozy_comfyui.image.convert import \
@@ -44,8 +48,64 @@ from cozy_comfyui.image.misc import \
 JOV_CATEGORY = "COMPOSE"
 
 # ==============================================================================
+# === ENUMERATION ===
+# ==============================================================================
+
+class EnumAutoLevel(Enum):
+    AUTO = 10
+    HISTOGRAM = 20
+
+# ==============================================================================
 # === CLASS ===
 # ==============================================================================
+
+class AutoLevelNode(CozyImageNode):
+    NAME = "AUTO LEVEL (JOV)"
+    CATEGORY = JOV_CATEGORY
+    DESCRIPTION = """
+Automatically adjusts image levels so that the darkest pixel becomes black
+and the brightest pixel becomes white, enhancing overall contrast.
+"""
+
+    @classmethod
+    def INPUT_TYPES(cls) -> InputType:
+        d = super().INPUT_TYPES()
+        d = deep_merge(d, {
+            "required": {
+                Lexicon.IMAGE: (COZY_TYPE_IMAGE, {
+                    "tooltip": "Pixel Data (RGBA, RGB, or Grayscale)"
+                }),
+                Lexicon.MODE: (EnumAutoLevel._member_names_, {
+                    "default": EnumAutoLevel.AUTO.name,
+                    "tooltip": "Autolevel linearly or with Histogram bin values, per channel"
+                }),
+                "clip": ("FLOAT", {
+                    "default": 0.5, "min": 0, "max": 1.0, "step": 0.01
+                })
+            }
+        })
+        return Lexicon._parse(d)
+
+    def run(self, **kw) -> RGBAMaskType:
+        pA = parse_param(kw, Lexicon.IMAGE, EnumConvertType.IMAGE, None)
+        mode = parse_param(kw, Lexicon.MODE, EnumAutoLevel, EnumAutoLevel.AUTO.name)
+        clip = parse_param(kw, "clip", EnumConvertType.FLOAT, 0.5, 0, 1)
+
+        params = list(zip_longest_fill(pA, mode, clip))
+        images = []
+        pbar = ProgressBar(len(params))
+        for idx, (pA, mode, clip) in enumerate(params):
+            img = tensor_to_cv(pA)
+            match mode:
+                case EnumAutoLevel.AUTO:
+                    leveled = image_autolevel(img)
+
+                case EnumAutoLevel.HISTOGRAM:
+                    leveled = image_autolevel_histogram(img, clip)
+
+            images.append(cv_to_tensor_full(leveled))
+            pbar.update_absolute(idx)
+        return image_stack(images)
 
 class BlendNode(CozyImageNode):
     NAME = "BLEND (JOV) ⚗️"
@@ -213,6 +273,42 @@ Create masks based on specific color ranges within an image. Specify the color r
                 img = np.concatenate((img, alpha_channel), axis=2)
             img[..., 3] = mask[:,:]
             images.append(cv_to_tensor_full(img, matte))
+            pbar.update_absolute(idx)
+        return image_stack(images)
+
+class HistogramNode(CozyImageNode):
+    NAME = "HISTOGRAM (JOV)"
+    CATEGORY = JOV_CATEGORY
+    DESCRIPTION = """
+The Histogram Node generates a histogram representation of the input image, showing the distribution of pixel intensity values across different bins. This visualization is useful for understanding the overall brightness and contrast characteristics of an image. Additionally, the node performs histogram normalization, which adjusts the pixel values to enhance the contrast of the image. Histogram normalization can be helpful for improving the visual quality of images or preparing them for further image processing tasks.
+"""
+
+    @classmethod
+    def INPUT_TYPES(cls) -> InputType:
+        d = super().INPUT_TYPES()
+        d = deep_merge(d, {
+            "optional": {
+                Lexicon.IMAGE: (COZY_TYPE_IMAGE, {
+                    "tooltip": "Pixel Data (RGBA, RGB or Grayscale)"}),
+                Lexicon.WH: ("VEC2", {
+                    "default": (512, 512), "mij":IMAGE_SIZE_MIN, "int": True,
+                    "label": ["W", "H"]}),
+            }
+        })
+        return Lexicon._parse(d)
+
+    def run(self, **kw) -> RGBAMaskType:
+        pA = parse_param(kw, Lexicon.IMAGE, EnumConvertType.IMAGE, None)
+        wihi = parse_param(kw, Lexicon.WH, EnumConvertType.VEC2INT, (512, 512), IMAGE_SIZE_MIN)
+        params = list(zip_longest_fill(pA, wihi))
+        images = []
+        pbar = ProgressBar(len(params))
+        for idx, (pA, wihi) in enumerate(params):
+            pA = tensor_to_cv(pA) if pA is not None else channel_solid()
+            hist_img = image_histogram2(pA, bins=256)
+            width, height = wihi
+            hist_img = image_resize(hist_img, width, height, EnumInterpolation.NEAREST)
+            images.append(cv_to_tensor_full(hist_img))
             pbar.update_absolute(idx)
         return image_stack(images)
 
@@ -433,37 +529,3 @@ Define a range and apply it to an image for segmentation and feature extraction.
             images.append(cv_to_tensor_full(pA))
             pbar.update_absolute(idx)
         return image_stack(images)
-
-'''
-class HistogramNode(JOVImageSimple):
-    NAME = "HISTOGRAM (JOV) 👁‍🗨"
-    CATEGORY = JOV_CATEGORY
-    RETURN_TYPES = ("IMAGE", )
-    RETURN_NAMES = ("IMAGE",)
-    DESCRIPTION = """
-The Histogram Node generates a histogram representation of the input image, showing the distribution of pixel intensity values across different bins. This visualization is useful for understanding the overall brightness and contrast characteristics of an image. Additionally, the node performs histogram normalization, which adjusts the pixel values to enhance the contrast of the image. Histogram normalization can be helpful for improving the visual quality of images or preparing them for further image processing tasks.
-"""
-
-    @classmethod
-    def INPUT_TYPES(cls) -> InputType:
-        d = super().INPUT_TYPES()
-        d = deep_merge(d, {
-            "optional": {
-                Lexicon.IMAGE": (COZY_TYPE_IMAGE, {
-                    "tooltip": "Pixel Data (RGBA, RGB or Grayscale)"}),
-            }
-        })
-        return Lexicon._parse(d)
-
-    def run(self, **kw) -> RGBAMaskType:
-        pA = parse_param(kw, Lexicon.IMAGE", None), EnumConvertType.IMAGE, None)
-        params = list(zip_longest_fill(pA,))
-        images = []
-        pbar = ProgressBar(len(params))
-        for idx, (pA, ) in enumerate(params):
-            pA = image_histogram(pA)
-            pA = image_histogram_normalize(pA)
-            images.append(cv_to_tensor(pA))
-            pbar.update_absolute(idx)
-        return image_stack(images)
-'''
