@@ -1,7 +1,5 @@
 """ Jovimetrix - Composition """
 
-from enum import Enum
-
 import numpy as np
 
 from comfy.utils import ProgressBar
@@ -23,8 +21,7 @@ from cozy_comfyui.image import \
 
 from cozy_comfyui.image.adjust import \
     EnumThreshold, EnumThresholdAdapt, \
-    image_histogram2, image_invert, image_filter, image_threshold, \
-    image_autolevel, image_autolevel_histogram
+    image_histogram2, image_invert, image_filter, image_threshold
 
 from cozy_comfyui.image.channel import \
     EnumPixelSwizzle, \
@@ -48,64 +45,8 @@ from cozy_comfyui.image.misc import \
 JOV_CATEGORY = "COMPOSE"
 
 # ==============================================================================
-# === ENUMERATION ===
-# ==============================================================================
-
-class EnumAutoLevel(Enum):
-    AUTO = 10
-    HISTOGRAM = 20
-
-# ==============================================================================
 # === CLASS ===
 # ==============================================================================
-
-class AutoLevelNode(CozyImageNode):
-    NAME = "AUTO LEVEL (JOV)"
-    CATEGORY = JOV_CATEGORY
-    DESCRIPTION = """
-Automatically adjusts image levels so that the darkest pixel becomes black
-and the brightest pixel becomes white, enhancing overall contrast.
-"""
-
-    @classmethod
-    def INPUT_TYPES(cls) -> InputType:
-        d = super().INPUT_TYPES()
-        d = deep_merge(d, {
-            "required": {
-                Lexicon.IMAGE: (COZY_TYPE_IMAGE, {
-                    "tooltip": "Pixel Data (RGBA, RGB, or Grayscale)"
-                }),
-                Lexicon.MODE: (EnumAutoLevel._member_names_, {
-                    "default": EnumAutoLevel.AUTO.name,
-                    "tooltip": "Autolevel linearly or with Histogram bin values, per channel"
-                }),
-                "clip": ("FLOAT", {
-                    "default": 0.5, "min": 0, "max": 1.0, "step": 0.01
-                })
-            }
-        })
-        return Lexicon._parse(d)
-
-    def run(self, **kw) -> RGBAMaskType:
-        pA = parse_param(kw, Lexicon.IMAGE, EnumConvertType.IMAGE, None)
-        mode = parse_param(kw, Lexicon.MODE, EnumAutoLevel, EnumAutoLevel.AUTO.name)
-        clip = parse_param(kw, "clip", EnumConvertType.FLOAT, 0.5, 0, 1)
-
-        params = list(zip_longest_fill(pA, mode, clip))
-        images = []
-        pbar = ProgressBar(len(params))
-        for idx, (pA, mode, clip) in enumerate(params):
-            img = tensor_to_cv(pA)
-            match mode:
-                case EnumAutoLevel.AUTO:
-                    leveled = image_autolevel(img)
-
-                case EnumAutoLevel.HISTOGRAM:
-                    leveled = image_autolevel_histogram(img, clip)
-
-            images.append(cv_to_tensor_full(leveled))
-            pbar.update_absolute(idx)
-        return image_stack(images)
 
 class BlendNode(CozyImageNode):
     NAME = "BLEND (JOV) ⚗️"

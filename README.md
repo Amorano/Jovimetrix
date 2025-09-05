@@ -138,8 +138,8 @@ Nodes that have been migrated:
 
 [Migrated to Jovi_GLSL](https://github.com/Amorano/Jovi_GLSL)
 
-**2025/09/04** @2.1.24:
-* `AUTO LEVEL` node
+**2025/09/04** @2.1.25:
+* Auto-level for `LEVEL` node
 * `HISTOGRAM` node
 * new support for cozy_comfy (v3+ comfy node spec)
 

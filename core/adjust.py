@@ -3,6 +3,7 @@
 import sys
 from enum import Enum
 from typing import Any
+from typing_extensions import override
 
 import comfy.model_management
 from comfy_api.latest import ComfyExtension, io
@@ -28,7 +29,8 @@ from cozy_comfyui.image.adjust import \
     image_contrast, image_brightness, image_equalize, image_gamma, \
     image_exposure, image_pixelate, image_pixelscale, \
     image_posterize, image_quantize, image_sharpen, image_morphology, \
-    image_emboss, image_blur, image_edge, image_color
+    image_emboss, image_blur, image_edge, image_color, \
+    image_autolevel, image_autolevel_histogram
 
 from cozy_comfyui.image.channel import \
     channel_solid
@@ -51,6 +53,11 @@ JOV_CATEGORY = "ADJUST"
 # ==============================================================================
 # === ENUMERATION ===
 # ==============================================================================
+
+class EnumAutoLevel(Enum):
+    MANUAL = 10
+    AUTO = 20
+    HISTOGRAM = 30
 
 class EnumAdjustLight(Enum):
     EXPOSURE = 10
@@ -229,7 +236,8 @@ class AdjustLevelNode(CozyImageNode):
     NAME = "ADJUST: LEVELS (JOV)"
     CATEGORY = JOV_CATEGORY
     DESCRIPTION = """
-
+Manual or automatic adjust image levels so that the darkest pixel becomes black
+and the brightest pixel becomes white, enhancing overall contrast.
 """
 
     @classmethod
@@ -243,7 +251,14 @@ class AdjustLevelNode(CozyImageNode):
                     "label": ["LOW", "MID", "HIGH"]}),
                 Lexicon.RANGE: ("VEC2", {
                     "default": (0, 1), "mij": 0, "maj": 1, "step": 0.01,
-                    "label": ["IN", "OUT"]})
+                    "label": ["IN", "OUT"]}),
+                Lexicon.MODE: (EnumAutoLevel._member_names_, {
+                    "default": EnumAutoLevel.MANUAL.name,
+                    "tooltip": "Autolevel linearly or with Histogram bin values, per channel"
+                }),
+                "clip": ("FLOAT", {
+                    "default": 0.5, "min": 0, "max": 1.0, "step": 0.01
+                })
             }
         })
         return Lexicon._parse(d)
@@ -252,18 +267,29 @@ class AdjustLevelNode(CozyImageNode):
         pA = parse_param(kw, Lexicon.IMAGE, EnumConvertType.IMAGE, None)
         LMH = parse_param(kw, Lexicon.LMH, EnumConvertType.VEC3, (0,0.5,1))
         inout = parse_param(kw, Lexicon.RANGE, EnumConvertType.VEC2, (0,1))
-        params = list(zip_longest_fill(pA, LMH, inout))
+        mode = parse_param(kw, Lexicon.MODE, EnumAutoLevel, EnumAutoLevel.AUTO.name)
+        clip = parse_param(kw, "clip", EnumConvertType.FLOAT, 0.5, 0, 1)
+        params = list(zip_longest_fill(pA, LMH, inout, mode, clip))
         images = []
         pbar = ProgressBar(len(params))
-        for idx, (pA, LMH, inout) in enumerate(params):
+        for idx, (pA, LMH, inout, mode, clip) in enumerate(params):
             pA = channel_solid() if pA is None else tensor_to_cv(pA)
             '''
             h, s, v = hsv
             img_new = image_hsv(img_new, h, s, v)
             '''
-            low, mid, high = LMH
-            start, end = inout
-            pA = image_levels(pA, low, mid, high, start, end)
+            match mode:
+                case EnumAutoLevel.MANUAL:
+                    low, mid, high = LMH
+                    start, end = inout
+                    pA = image_levels(pA, low, mid, high, start, end)
+
+                case EnumAutoLevel.AUTO:
+                    pA = image_autolevel(pA)
+
+                case EnumAutoLevel.HISTOGRAM:
+                    pA = image_autolevel_histogram(pA, clip)
+
             images.append(cv_to_tensor_full(pA))
             pbar.update_absolute(idx)
         return image_stack(images)
@@ -463,15 +489,13 @@ Sharpen the pixels of an image.
         return image_stack(images)
 
 class AdjustSharpenNodev3(CozyImageNodev3):
-    NAME = "ADJUST: SHARPEN (JOV)"
-    CATEGORY = JOV_CATEGORY
-    DESCRIPTION = """
-Sharpen the pixels of an image.
-"""
     @classmethod
     def define_schema(cls, **kwarg) -> io.Schema:
         schema = super(**kwarg).define_schema()
-        # schema.
+        schema.display_name = "ADJUST: SHARPEN (JOV)"
+        schema.category = JOV_CATEGORY
+        schema.description = "Sharpen the pixels of an image."
+
         schema.inputs.extend([
             io.MultiType.Input(
                 id=Lexicon.IMAGE[0],
@@ -504,7 +528,8 @@ Sharpen the pixels of an image.
         ])
         return schema
 
-    def run(self, **kw) -> RGBAMaskType:
+    @classmethod
+    def execute(self, *arg, **kw) -> io.NodeOutput:
         pA = parse_param(kw, Lexicon.IMAGE, EnumConvertType.IMAGE, None)
         amount = parse_param(kw, Lexicon.AMOUNT, EnumConvertType.FLOAT, 0)
         threshold = parse_param(kw, Lexicon.THRESHOLD, EnumConvertType.FLOAT, 0)
@@ -516,4 +541,14 @@ Sharpen the pixels of an image.
             pA = image_sharpen(pA, amount / 2., threshold=threshold / 25.5)
             images.append(cv_to_tensor_full(pA))
             pbar.update_absolute(idx)
-        return image_stack(images)
+        return io.NodeOutput(image_stack(images))
+
+class AdjustExtension(ComfyExtension):
+    @override
+    async def get_node_list(self) -> list[type[io.ComfyNode]]:
+        return [
+            AdjustSharpenNodev3
+        ]
+
+async def comfy_entrypoint() -> AdjustExtension:
+    return AdjustExtension()
