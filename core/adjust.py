@@ -474,15 +474,15 @@ Sharpen the pixels of an image.
         # schema.
         schema.inputs.extend([
             io.MultiType.Input(
-                id=Lexicon.IMAGE,
+                id=Lexicon.IMAGE[0],
                 types=COZY_TYPE_IMAGEv3,
-                display_name=Lexicon.IMAGE,
+                display_name=Lexicon.IMAGE[0],
                 optional=True,
                 tooltip=Lexicon.IMAGE[1]
             ),
             io.Float.Input(
-                id=Lexicon.AMOUNT,
-                display_name=Lexicon.AMOUNT,
+                id=Lexicon.AMOUNT[0],
+                display_name=Lexicon.AMOUNT[0],
                 optional=True,
                 default= 0,
                 min=0,
@@ -491,8 +491,8 @@ Sharpen the pixels of an image.
                 tooltip=Lexicon.AMOUNT[1]
             ),
             io.Float.Input(
-                id=Lexicon.THRESHOLD,
-                display_name=Lexicon.THRESHOLD,
+                id=Lexicon.THRESHOLD[0],
+                display_name=Lexicon.THRESHOLD[0],
                 optional=True,
                 default= 0,
                 min=0,
